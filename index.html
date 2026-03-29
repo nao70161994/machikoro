@@ -8,91 +8,197 @@
 </head>
 <body>
     <div id="titleScreen">
-        <canvas id="cityCanvas"></canvas>
-        <div class="title-content">
-            <div class="title-header">
-                <h1>🏙️ 街コロ</h1>
-                <p class="title-subtitle">MACHI KORO</p>
-                <div class="title-buttons-row">
-                    <button class="rules-btn" onclick="showRules()">📖 ルール</button>
-                    <button class="rules-btn" onclick="showCardSelect()">🃏 カード選択</button>
+        <canvas id="cityCanvas" style="position:absolute;bottom:0;left:0;width:100%;pointer-events:none;z-index:0;"></canvas>
+        <h1>🏙️ 街コロ</h1>
+        <p class="title-logo-sub">MACHI KORO</p>
+        <div class="title-logo-deco"><span>🏙️ ボードゲーム 🏙️</span></div>
+        
+        <div class="title-buttons-row">
+            <button class="rules-btn" onclick="showRules()">📖 ルール説明</button>
+            <button class="rules-btn" onclick="showCardSelect()">🃏 カード選択</button>
+        </div>
+
+    <!-- ルール説明モーダル -->
+    <div id="rulesModal" class="modal" style="display:none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📖 街コロ ルール説明</h2>
+                <button onclick="closeRules()">✕</button>
+            </div>
+            <div class="modal-body">
+    
+                <div class="rules-section">
+                    <h3>🎯 勝利条件</h3>
+                    <p>4つのランドマーク（駅・ショッピングモール・遊園地・電波塔）をすべて建設したプレイヤーの勝利！</p>
+                    <p>※プラスセットの場合は港・空港も含む</p>
                 </div>
-            </div>
-
-            <!-- タブ -->
-            <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('local')" id="tabLocal">🏠 ローカル</button>
-                <button class="tab-btn" onclick="switchTab('online')" id="tabOnline">🌐 オンライン</button>
-            </div>
-
-            <!-- ローカル対戦タブ -->
-            <div id="tabContentLocal" class="tab-content">
-                <div class="setting-section">
-                    <div class="setting-label">プレイ人数</div>
-                    <div class="player-select">
-                        <button onclick="changeCount(-1)">－</button>
-                        <span id="playerCount">2</span>人
-                        <button onclick="changeCount(1)">＋</button>
+    
+                <div class="rules-section">
+                    <h3>🎲 基本ルール</h3>
+                    <ul>
+                        <li>自分のターンにサイコロを1個振る</li>
+                        <li>出た目に応じて施設カードが発動しコインを獲得</li>
+                        <li>建設フェーズで施設またはランドマークを1つ建設できる</li>
+                        <li>建設はしなくてもよい</li>
+                        <li>紫カード（大施設）は1枚しか持てない</li>
+                    </ul>
+                </div>
+    
+                <div class="rules-section">
+                    <h3>🔄 発動順序</h3>
+                    <div class="order-list">
+                        <div class="order-item red">① 赤カード：ダイスを振ったプレイヤーからコインを奪う</div>
+                        <div class="order-item blue">② 青カード：誰のターンでも発動・銀行からもらう</div>
+                        <div class="order-item green">③ 緑カード：自分のターンのみ・銀行からもらう</div>
+                        <div class="order-item purple">④ 紫カード：自分のターンのみ・特殊効果</div>
                     </div>
                 </div>
-                <div id="playerSettings" class="setting-section"></div>
-                <div class="setting-section">
-                    <div class="setting-label">CPUの速さ</div>
-                    <div class="speed-setting">
-                        <input type="range" id="cpuSpeed" min="500" max="3000" step="500" value="1500"
-                            oninput="document.getElementById('speedLabel').textContent = (this.value/1000) + '秒'">
-                        <span id="speedLabel">1.5秒</span>
-                    </div>
-                </div>
-                <button id="btnStart" onclick="startGame()">ゲーム開始</button>
-            </div>
-
-            <!-- オンライン対戦タブ -->
-            <div id="tabContentOnline" class="tab-content" style="display:none">
-                <div class="setting-section">
-                    <div class="setting-label">あなたの名前</div>
-                    <input id="playerNameInput" type="text" placeholder="名前を入力" maxlength="10" class="text-input">
-                </div>
-
-                <div class="online-tabs">
-                    <button class="online-tab-btn active" onclick="switchOnlineTab('create')" id="onlineTabCreate">ルームを作る</button>
-                    <button class="online-tab-btn" onclick="switchOnlineTab('join')" id="onlineTabJoin">ルームに参加</button>
-                </div>
-
-                <!-- ルーム作成 -->
-                <div id="onlineCreate">
-                    <div class="setting-section">
-                        <div class="setting-label">プレイ人数</div>
-                        <div class="player-select">
-                            <button onclick="changeOnlineCount(-1)">－</button>
-                            <span id="onlinePlayerCount">2</span>人
-                            <button onclick="changeOnlineCount(1)">＋</button>
+    
+                <div class="rules-section">
+                    <h3>🎨 カードの色</h3>
+                    <div class="color-list">
+                        <div class="color-item">
+                            <span class="color-badge blue-badge">青</span>
+                            <span>誰のターンでも発動。銀行からコインをもらう</span>
+                        </div>
+                        <div class="color-item">
+                            <span class="color-badge green-badge">緑</span>
+                            <span>自分のターンのみ発動。銀行からコインをもらう</span>
+                        </div>
+                        <div class="color-item">
+                            <span class="color-badge red-badge">赤</span>
+                            <span>他人のターンに発動。ダイスを振った人からコインを奪う</span>
+                        </div>
+                        <div class="color-item">
+                            <span class="color-badge purple-badge">紫</span>
+                            <span>自分のターンのみ発動。強力な特殊効果。1枚しか持てない</span>
                         </div>
                     </div>
-                    <div id="onlinePlayerSettings" class="setting-section"></div>
-                    <div class="setting-section">
-                        <div class="setting-label">CPUの速さ</div>
-                        <div class="speed-setting">
-                            <input type="range" id="onlineCpuSpeed" min="500" max="3000" step="500" value="1500"
-                                oninput="document.getElementById('onlineSpeedLabel').textContent = (this.value/1000) + '秒'">
-                            <span id="onlineSpeedLabel">1.5秒</span>
+                </div>
+    
+                <div class="rules-section">
+                    <h3>🏛️ ランドマーク効果</h3>
+                    <div class="landmark-list">
+                        <div class="landmark-item">
+                            <span>🚉 駅（4コイン）</span>
+                            <span>サイコロを1個か2個か選べる</span>
+                        </div>
+                        <div class="landmark-item">
+                            <span>🛍️ ショッピングモール（10コイン）</span>
+                            <span>飲食店・商店の収入+1コイン</span>
+                        </div>
+                        <div class="landmark-item">
+                            <span>🎡 遊園地（16コイン）</span>
+                            <span>ゾロ目でもう1ターン</span>
+                        </div>
+                        <div class="landmark-item">
+                            <span>📡 電波塔（22コイン）</span>
+                            <span>1ターン1回だけ振り直せる</span>
+                        </div>
+                        <div class="landmark-item">
+                            <span>⚓ 港（2コイン）</span>
+                            <span>ダイス合計10以上で+2するか選べる</span>
+                        </div>
+                        <div class="landmark-item">
+                            <span>✈️ 空港（30コイン）</span>
+                            <span>建設しないターンに+10コイン</span>
                         </div>
                     </div>
-                    <button onclick="showCreateRoom()">🏠 ルームを作る</button>
                 </div>
-
-                <!-- ルーム参加 -->
-                <div id="onlineJoin" style="display:none">
-                    <div class="setting-section">
-                        <div class="setting-label">ルームID</div>
-                        <input id="roomIdInput" type="text" placeholder="6文字のルームID" maxlength="6"
-                            class="text-input" style="text-transform:uppercase">
-                    </div>
-                    <button onclick="joinRoom()">🚪 参加する</button>
-                </div>
-
-                <div id="onlineStatus" class="online-status"></div>
+    
             </div>
+        </div>
+    </div>
+        
+        <!-- カード選択モーダル -->
+        <div id="cardSelectModal" class="modal" style="display:none">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🃏 カード選択</h2>
+                    <button onclick="closeCardSelect()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">
+                        使用するカードセットを選んでください
+                    </p>
+        
+                    <div class="card-set-section">
+                        <div class="card-set-header">
+                            <span>📦 基本セット</span>
+                            <button onclick="toggleSet('basic')" id="btnSetBasic" class="set-toggle on">ON</button>
+                        </div>
+                        <div id="cardListBasic" class="card-toggle-list"></div>
+                    </div>
+        
+                    <div class="card-set-section">
+                        <div class="card-set-header">
+                            <span>📦 プラス</span>
+                            <button onclick="toggleSet('plus')" id="btnSetPlus" class="set-toggle on">ON</button>
+                        </div>
+                        <div id="cardListPlus" class="card-toggle-list"></div>
+                    </div>
+        
+                    <div class="card-set-section">
+                        <div class="card-set-header">
+                            <span>📦 シャープ</span>
+                            <button onclick="toggleSet('sharp')" id="btnSetSharp" class="set-toggle on">ON</button>
+                        </div>
+                        <div id="cardListSharp" class="card-toggle-list"></div>
+                    </div>
+        
+                    <button onclick="closeCardSelect()" style="margin-top:8px;text-align:center;background:#e94560;">
+                        決定
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ローカル対戦 -->
+        <div class="title-box">
+            <p>🏠 ローカル対戦</p>
+            <div class="player-select">
+                <button onclick="changeCount(-1)">－</button>
+                <span id="playerCount">2</span>人
+                <button onclick="changeCount(1)">＋</button>
+            </div>
+            <div id="playerSettings"></div>
+            <div class="speed-setting">
+                <p>CPUの速さ</p>
+                <input type="range" id="cpuSpeed" min="500" max="3000" step="500" value="1500"
+                    oninput="document.getElementById('speedLabel').textContent = (this.value/1000) + '秒'">
+                <span id="speedLabel">1.5秒</span>
+            </div>
+            <button id="btnStart" onclick="startGame()">ローカルゲーム開始</button>
+        </div>
+
+        <!-- オンライン対戦 -->
+        <div class="title-box" style="margin-top:16px">
+            <p>🌐 オンライン対戦</p>
+            <input id="playerNameInput" type="text" placeholder="あなたの名前" maxlength="10">
+
+            <div class="online-divider">── ルームを作る ──</div>
+            <div class="player-select">
+                <button onclick="changeOnlineCount(-1)">－</button>
+                <span id="onlinePlayerCount">2</span>人
+                <button onclick="changeOnlineCount(1)">＋</button>
+            </div>
+            <div id="onlinePlayerSettings"></div>
+            <div class="speed-setting">
+                <p>CPUの速さ</p>
+                <input type="range" id="onlineCpuSpeed" min="500" max="3000" step="500" value="1500"
+                    oninput="document.getElementById('onlineSpeedLabel').textContent = (this.value/1000) + '秒'">
+                <span id="onlineSpeedLabel">1.5秒</span>
+            </div>
+            <button onclick="showCreateRoom()">🏠 ルームを作る</button>
+
+            <div class="online-divider">── ルームに参加 ──</div>
+            <div id="roomInput">
+                <input id="roomIdInput" type="text" placeholder="ルームID（6文字）" maxlength="6"
+                    style="text-transform:uppercase">
+                <button onclick="joinRoom()">参加する</button>
+            </div>
+
+            <div id="onlineStatus" class="online-status"></div>
         </div>
     </div>
 
@@ -111,96 +217,6 @@
         <div id="players"></div>
         <div id="buildMenu"></div>
         <button class="btn-restart" onclick="restartGame()">🔄 最初からやり直す</button>
-    </div>
-
-    <!-- ルール説明モーダル -->
-    <div id="rulesModal" class="modal" style="display:none">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📖 街コロ ルール説明</h2>
-                <button onclick="closeRules()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="rules-section">
-                    <h3>🎯 勝利条件</h3>
-                    <p>4つのランドマーク（駅・ショッピングモール・遊園地・電波塔）をすべて建設したプレイヤーの勝利！</p>
-                </div>
-                <div class="rules-section">
-                    <h3>🎲 基本ルール</h3>
-                    <ul>
-                        <li>自分のターンにサイコロを1個振る</li>
-                        <li>出た目に応じて施設カードが発動しコインを獲得</li>
-                        <li>建設フェーズで施設またはランドマークを1つ建設できる</li>
-                        <li>建設はしなくてもよい</li>
-                        <li>紫カード（大施設）は1枚しか持てない</li>
-                    </ul>
-                </div>
-                <div class="rules-section">
-                    <h3>🔄 発動順序</h3>
-                    <div class="order-list">
-                        <div class="order-item red">① 赤カード：ダイスを振ったプレイヤーからコインを奪う</div>
-                        <div class="order-item blue">② 青カード：誰のターンでも発動・銀行からもらう</div>
-                        <div class="order-item green">③ 緑カード：自分のターンのみ・銀行からもらう</div>
-                        <div class="order-item purple">④ 紫カード：自分のターンのみ・特殊効果</div>
-                    </div>
-                </div>
-                <div class="rules-section">
-                    <h3>🎨 カードの色</h3>
-                    <div class="color-list">
-                        <div class="color-item"><span class="color-badge blue-badge">青</span><span>誰のターンでも発動。銀行からコインをもらう</span></div>
-                        <div class="color-item"><span class="color-badge green-badge">緑</span><span>自分のターンのみ発動。銀行からコインをもらう</span></div>
-                        <div class="color-item"><span class="color-badge red-badge">赤</span><span>他人のターンに発動。ダイスを振った人からコインを奪う</span></div>
-                        <div class="color-item"><span class="color-badge purple-badge">紫</span><span>自分のターンのみ発動。強力な特殊効果。1枚しか持てない</span></div>
-                    </div>
-                </div>
-                <div class="rules-section">
-                    <h3>🏛️ ランドマーク効果</h3>
-                    <div class="landmark-list">
-                        <div class="landmark-item"><span>🚉 駅（4コイン）</span><span>サイコロを1個か2個か選べる</span></div>
-                        <div class="landmark-item"><span>🛍️ ショッピングモール（10コイン）</span><span>飲食店・商店の収入+1コイン</span></div>
-                        <div class="landmark-item"><span>🎡 遊園地（16コイン）</span><span>ゾロ目でもう1ターン</span></div>
-                        <div class="landmark-item"><span>📡 電波塔（22コイン）</span><span>1ターン1回だけ振り直せる</span></div>
-                        <div class="landmark-item"><span>⚓ 港（2コイン）</span><span>ダイス合計10以上で+2するか選べる</span></div>
-                        <div class="landmark-item"><span>✈️ 空港（30コイン）</span><span>建設しないターンに+10コイン</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- カード選択モーダル -->
-    <div id="cardSelectModal" class="modal" style="display:none">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>🃏 カード選択</h2>
-                <button onclick="closeCardSelect()">✕</button>
-            </div>
-            <div class="modal-body">
-                <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">使用するカードを選んでください</p>
-                <div class="card-set-section">
-                    <div class="card-set-header">
-                        <span>📦 基本セット</span>
-                        <button onclick="toggleSet('basic')" id="btnSetBasic" class="set-toggle on">ON</button>
-                    </div>
-                    <div id="cardListBasic" class="card-toggle-list"></div>
-                </div>
-                <div class="card-set-section">
-                    <div class="card-set-header">
-                        <span>📦 プラス</span>
-                        <button onclick="toggleSet('plus')" id="btnSetPlus" class="set-toggle on">ON</button>
-                    </div>
-                    <div id="cardListPlus" class="card-toggle-list"></div>
-                </div>
-                <div class="card-set-section">
-                    <div class="card-set-header">
-                        <span>📦 シャープ</span>
-                        <button onclick="toggleSet('sharp')" id="btnSetSharp" class="set-toggle on">ON</button>
-                    </div>
-                    <div id="cardListSharp" class="card-toggle-list"></div>
-                </div>
-                <button onclick="closeCardSelect()" style="margin-top:8px;text-align:center;background:#e94560;">決定</button>
-            </div>
-        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>

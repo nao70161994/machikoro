@@ -1076,3 +1076,197 @@ button:not(:disabled):active {
     outline: none;
     border-color: #f0c040;
 }
+
+/* ===== タイトルロゴ改善 ===== */
+.title-header h1 {
+    font-size: 52px;
+    letter-spacing: 6px;
+    color: #f0c040;
+    text-shadow:
+        0 0 10px rgba(240,192,64,0.8),
+        0 0 30px rgba(240,192,64,0.4),
+        0 0 60px rgba(240,192,64,0.2);
+    animation: titleGlow 3s ease-in-out infinite;
+    margin-bottom: 4px;
+    font-family: 'Helvetica Neue', sans-serif;
+}
+
+.title-logo-sub {
+    font-size: 11px;
+    letter-spacing: 8px;
+    color: rgba(240,192,64,0.6);
+    margin-bottom: 16px;
+}
+
+.title-logo-deco {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.title-logo-deco::before,
+.title-logo-deco::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(240,192,64,0.4), transparent);
+}
+
+.title-logo-deco span {
+    font-size: 12px;
+    color: rgba(240,192,64,0.5);
+    letter-spacing: 3px;
+}
+
+/* ===== ゲーム画面レイアウト改善 ===== */
+#gameScreen {
+    padding-bottom: 32px;
+}
+
+#gameScreen h1 {
+    text-align: center;
+    font-size: 20px;
+    color: #f0c040;
+    margin-bottom: 8px;
+    letter-spacing: 3px;
+}
+
+.game-top {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: start;
+}
+
+.dice-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.status {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+/* ===== プレイヤー情報改善 ===== */
+.player-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.player-icon {
+    font-size: 14px;
+    background: #2a2a4a;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.player-coin-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.player-coins {
+    font-size: 16px;
+    color: #f0c040;
+    font-weight: bold;
+}
+
+.player-landmarks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 6px 0 4px;
+}
+
+.landmark-badge {
+    font-size: 18px;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+}
+
+.landmark-badge.built {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(240,192,64,0.6));
+}
+
+/* ===== カードっぽいUI ===== */
+.card-btn {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 10px 10px 10px 14px;
+    background: linear-gradient(135deg, #1a1a2e, #16162a);
+    border: 1px solid #2a2a4a;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.card-btn:not(:disabled):active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.card-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+.card-btn:disabled {
+    opacity: 0.35;
+}
+
+.card-btn-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.card-name {
+    font-size: 13px;
+    font-weight: bold;
+    color: #fffffe;
+}
+
+.card-cost {
+    font-size: 13px;
+    color: #f0c040;
+    font-weight: bold;
+}
+
+.card-info {
+    font-size: 10px;
+    color: #6a7a8a;
+    margin-bottom: 2px;
+}
+
+.card-effect {
+    font-size: 11px;
+    color: #8a9aaa;
+}
+
+.build-section h4 {
+    font-size: 11px;
+    color: #a7a9be;
+    letter-spacing: 2px;
+    margin: 12px 0 6px;
+    text-transform: uppercase;
+}
+
+#buildMenu h3 {
+    font-size: 14px;
+    color: #f0c040;
+    margin-bottom: 4px;
+}

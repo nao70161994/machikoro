@@ -620,37 +620,45 @@ function renderPlayers() {
     const html = game.players.map((p, idx) => {
         const isActive = idx === game.currentPlayerIndex;
         const isCPU = cpuPlayers[idx] !== null;
+        const cpuLabel = isCPU
+            ? `🤖${cpuPlayers[idx].difficulty === 'weak' ? '弱' : cpuPlayers[idx].difficulty === 'normal' ? '普' : '強'}`
+            : '👤';
 
+        // ランドマーク
         const landmarks = Object.entries(p.landmarks)
             .map(([name, built]) =>
-                `<span class="landmark-badge ${built ? 'built' : ''}" title="${name}">
-                    ${getLandmarkEmoji(name)}
-                </span>`)
+                `<span class="landmark-badge ${built ? 'built' : ''}" title="${name}">${getLandmarkEmoji(name)}</span>`)
             .join("");
 
+        // カード集計
         const cards = {};
         for (const c of p.cards) {
-            const key = c.name;
-            if (!cards[key]) cards[key] = { count: 0, dormant: 0 };
-            cards[key].count++;
-            if (p.isDormant(c)) cards[key].dormant++;
+            if (!cards[c.name]) cards[c.name] = { count: 0, dormant: 0, color: c.color };
+            cards[c.name].count++;
+            if (p.isDormant(c)) cards[c.name].dormant++;
         }
+        const colorDot = { blue: "#3b82f6", green: "#22c55e", red: "#ef4444", purple: "#a855f7" };
         const cardHtml = Object.entries(cards).map(([name, info]) => {
-            const dormantText = info.dormant > 0 ? `💤${info.dormant}` : '';
-            return `<span class="card-badge">${name}×${info.count}${dormantText}</span>`;
+            const dormantText = info.dormant > 0 ? `💤` : '';
+            return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}">
+                ${name}×${info.count}${dormantText}
+            </span>`;
         }).join("");
 
         const itCoins = p.itVentureCoins > 0 ? `<span class="it-badge">💻${p.itVentureCoins}</span>` : "";
         const loanCount = p.cards.filter(c => c.effect === "loan").length;
         const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : "";
 
-        const cpuLabel = isCPU
-            ? ` 🤖${cpuPlayers[idx].difficulty === 'weak' ? '(弱)' : cpuPlayers[idx].difficulty === 'normal' ? '(普)' : '(強)'}`
-            : '';
         return `<div class="player-box ${isActive ? 'active' : ''}">
             <div class="player-header">
-                <span class="player-name">${isActive ? '▶ ' : ''}${p.name}${cpuLabel}</span>
-                <span class="player-coins">🪙 ${p.coins} ${itCoins}${loanBadge}</span>
+                <div class="player-name-row">
+                    <span class="player-icon">${cpuLabel}</span>
+                    <span class="player-name">${isActive ? '▶ ' : ''}${p.name}</span>
+                </div>
+                <div class="player-coin-row">
+                    <span class="player-coins">🪙 ${p.coins}</span>
+                    ${itCoins}${loanBadge}
+                </div>
             </div>
             <div class="player-landmarks">${landmarks}</div>
             <div class="player-cards">${cardHtml}</div>
