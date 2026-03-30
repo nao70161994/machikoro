@@ -112,12 +112,12 @@ function buildPlayerList(room) {
         return room.players.map(p => p.name);
     }
     return room.playerSettings.map((s, i) => {
-        const p = room.players.find(p => p.index === i);
-        if (p) return p.name;
         if (s.type === "cpu") {
             const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
             return `CPU（${diffLabel}）`;
         }
+        const p = room.players.find(p => p.index === i);
+        if (p) return p.name;
         return "待機中...";
     });
 }
@@ -136,11 +136,14 @@ function checkGameStart(io, roomId) {
         let cpuCount = 0;
         const playerNames = room.playerSettings.length > 0
             ? room.playerSettings.map((s, i) => {
+                if (s.type === "cpu") {
+                    cpuCount++;
+                    const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
+                    return `CPU${cpuCount}（${diffLabel}）`;
+                }
                 const p = room.players.find(p => p.index === i);
                 if (p) return p.name;
-                cpuCount++;
-                const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
-                return `CPU${cpuCount}（${diffLabel}）`;
+                return "不明";
             })
             : room.players.map(p => p.name);
 
