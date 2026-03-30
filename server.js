@@ -16,9 +16,15 @@ io.on('connection', (socket) => {
 
     socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards }) => {
         const roomId = Math.random().toString(36).substr(2, 6).toUpperCase();
+        // ホストの人間枠を探す
+        let hostIndex = 0;
+        if (playerSettings && playerSettings.length > 0) {
+            hostIndex = playerSettings.findIndex(s => s.type === "human");
+            if (hostIndex === -1) hostIndex = 0;
+        }
         rooms[roomId] = {
             enabledCards: enabledCards || null,
-            players: [{ id: socket.id, name: playerName, index: 0 }],
+            players: [{ id: socket.id, name: playerName, index: hostIndex }],
             maxPlayers: playerCount,
             playerSettings: playerSettings || [],
             cpuSpeed: cpuSpeed || 1500,
@@ -26,8 +32,8 @@ io.on('connection', (socket) => {
         };
         socket.join(roomId);
         socket.roomId = roomId;
-        socket.playerIndex = 0;
-        socket.emit('roomCreated', { roomId, playerIndex: 0 });
+        socket.playerIndex = hostIndex;
+        socket.emit('roomCreated', { roomId, playerIndex: hostIndex });
 
         // 参加者リストを送信
         const playerList = buildPlayerList(rooms[roomId]);
@@ -108,7 +114,10 @@ function buildPlayerList(room) {
     return room.playerSettings.map((s, i) => {
         const p = room.players.find(p => p.index === i);
         if (p) return p.name;
-        if (s.type === "cpu") return `CPU（${s.difficulty}）`;
+        if (s.type === "cpu") {
+            const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
+            return `CPU（${diffLabel}）`;
+        }
         return "待機中...";
     });
 }
@@ -124,11 +133,14 @@ function checkGameStart(io, roomId) {
 
     if (room.players.length >= humanSlots) {
         room.started = true;
+        let cpuCount = 0;
         const playerNames = room.playerSettings.length > 0
             ? room.playerSettings.map((s, i) => {
                 const p = room.players.find(p => p.index === i);
                 if (p) return p.name;
-                return `CPU（${s.difficulty}）`;
+                cpuCount++;
+                const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
+                return `CPU${cpuCount}（${diffLabel}）`;
             })
             : room.players.map(p => p.name);
 
