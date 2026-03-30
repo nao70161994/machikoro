@@ -20,14 +20,81 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1020 40%, #2a1a10 70%, #1a0a00 100%);
 }
 
-#titleScreen h1 {
-    font-size: 48px;
+#cityCanvas {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.title-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.title-header {
+    text-align: center;
+    padding-top: 24px;
+}
+
+.title-header h1 {
+    font-size: 52px;
+    letter-spacing: 6px;
     color: #f0c040;
-    text-shadow: 0 0 20px rgba(240,192,64,0.5);
-    margin-bottom: 8px;
-    letter-spacing: 4px;
+    text-shadow:
+        0 0 10px rgba(240,192,64,0.8),
+        0 0 30px rgba(240,192,64,0.4),
+        0 0 60px rgba(240,192,64,0.2);
+    animation: titleGlow 3s ease-in-out infinite;
+    margin-bottom: 4px;
+    font-family: 'Helvetica Neue', sans-serif;
+}
+
+.title-logo-sub {
+    font-size: 11px;
+    letter-spacing: 8px;
+    color: rgba(240,192,64,0.6);
+    margin-bottom: 16px;
+}
+
+.title-logo-deco {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.title-logo-deco::before,
+.title-logo-deco::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(240,192,64,0.4), transparent);
+}
+
+.title-logo-deco span {
+    font-size: 12px;
+    color: rgba(240,192,64,0.5);
+    letter-spacing: 3px;
+}
+
+@keyframes titleGlow {
+    0%, 100% { filter: brightness(1); }
+    50%       { filter: brightness(1.3); }
 }
 
 .title-subtitle {
@@ -39,12 +106,13 @@ body {
 
 .title-box {
     position: relative;
-    z-index: 10;
+    z-index: 1;
     background: #1a1a2e;
     border-radius: 16px;
     padding: 32px 24px;
     width: 100%;
     border: 1px solid #2a2a4a;
+    box-shadow: 0 0 30px rgba(240, 192, 64, 0.1);
 }
 
 .title-box p {
@@ -54,6 +122,71 @@ body {
     text-align: center;
 }
 
+/* ===== タブ ===== */
+.tab-bar {
+    display: flex;
+    background: #0f0e17;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    border: 1px solid #2a2a4a;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    background: transparent;
+    color: #a7a9be;
+    border: none;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: #1a1a2e;
+    color: #f0c040;
+    border: 1px solid #2a2a4a;
+}
+
+.tab-content {
+    background: #1a1a2e;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #2a2a4a;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 80px;
+}
+
+/* ===== オンラインタブ ===== */
+.online-tabs {
+    display: flex;
+    gap: 4px;
+    background: #0f0e17;
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.online-tab-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-align: center;
+    background: transparent;
+    color: #a7a9be;
+    border: none;
+}
+
+.online-tab-btn.active {
+    background: #2a2a4a;
+    color: #fffffe;
+}
+
+/* ===== プレイヤー人数選択 ===== */
 .player-select {
     display: flex;
     align-items: center;
@@ -87,291 +220,33 @@ body {
     text-align: center;
 }
 
-#btnStart {
-    width: 100%;
-    font-size: 18px;
-    padding: 16px;
-    background: linear-gradient(135deg, #f0c040, #e8a020);
-    border: none;
-    border-radius: 12px;
-    color: #0f0e17;
-    font-weight: bold;
-    cursor: pointer;
-    letter-spacing: 2px;
-}
-
-#btnStart:active {
-    opacity: 0.8;
-}
-
-/* ===== ゲーム画面 ===== */
-#gameScreen h1 {
-    text-align: center;
-    font-size: 24px;
-    color: #f0c040;
-    margin-bottom: 12px;
-}
-
-.status {
-    text-align: center;
-    font-size: 16px;
-    background: #1a1a2e;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #2a2a4a;
-}
-
-.dice {
-    text-align: center;
-    font-size: 52px;
-    margin: 8px 0;
-}
-
-.buttons {
+/* ===== 設定セクション ===== */
+.setting-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
 }
 
-button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    background: #1a1a2e;
-    color: #fffffe;
-    font-size: 14px;
-    text-align: left;
-    cursor: pointer;
-    border: 1px solid #2a2a4a;
-}
-
-button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-button:not(:disabled):active {
-    background: #2a2a4a;
-}
-
-#btnRoll {
-    background: linear-gradient(135deg, #e94560, #c73652);
-    border: none;
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 14px;
-}
-
-#btnReroll {
-    background: #1a3a4a;
-    text-align: center;
-}
-
-#btnSkip {
-    text-align: center;
-    color: #a7a9be;
-}
-
-/* ===== ログ ===== */
-.log {
-    background: #1a1a2e;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 12px;
-    font-size: 13px;
-    min-height: 48px;
-    line-height: 2;
-    border: 1px solid #2a2a4a;
-    max-height: 120px;
-    overflow-y: auto;
-}
-
-/* ===== プレイヤー情報 ===== */
-#players {
-    margin-bottom: 12px;
-}
-
-.player-box {
-    background: #1a1a2e;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 8px;
-    border: 1px solid #2a2a4a;
-}
-
-.player-box.active {
-    border-color: #f0c040;
-}
-
-.player-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.player-name {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.player-coins {
-    font-size: 18px;
-    color: #f0c040;
-    font-weight: bold;
-}
-
-.player-landmarks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 6px;
-}
-
-.landmark-badge {
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: #2a2a4a;
-}
-
-.landmark-badge.built {
-    background: #1a3a2a;
-    color: #4ade80;
-    border: 1px solid #4ade80;
-}
-
-.player-cards {
-    font-size: 11px;
-    color: #a7a9be;
-    line-height: 1.6;
-}
-
-/* ===== 建設メニュー ===== */
-#buildMenu {
-    margin-bottom: 12px;
-}
-
-#buildMenu h3 {
-    margin-bottom: 10px;
-    color: #f0c040;
-    font-size: 15px;
-}
-
-#buildMenu h4 {
-    margin: 10px 0 6px;
-    color: #a7a9be;
+.setting-label {
     font-size: 12px;
+    color: #a7a9be;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.build-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-
-.card-btn {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 10px 10px 14px;
-    border-radius: 8px;
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    text-align: left;
-    cursor: pointer;
+.text-input {
     width: 100%;
-}
-
-.card-btn:disabled {
-    opacity: 0.3;
-}
-
-.card-btn-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2px;
-}
-
-.card-name {
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.card-cost {
-    color: #f0c040;
-    font-size: 13px;
-}
-
-.card-info {
-    font-size: 11px;
-    color: #a7a9be;
-}
-
-.card-effect {
-    font-size: 11px;
-    color: #7a9abe;
-    margin-top: 2px;
-}
-
-/* ===== ダイス選択 ===== */
-.dice-choose {
-    background: #1a1a2e;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 12px;
-    text-align: center;
-    border: 1px solid #f0c040;
-}
-
-.dice-choose p {
-    margin-bottom: 10px;
-    color: #f0c040;
-    font-size: 14px;
-}
-
-.dice-choose button {
-    width: 48%;
-    font-size: 16px;
-    text-align: center;
-    margin: 0 1%;
-    padding: 12px;
-    background: #2a2a4a;
-    border-radius: 8px;
-}
-
-/* ===== pendingメニュー ===== */
-.pending-box {
-    background: #1a1a2e;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 12px;
-    border: 1px solid #e94560;
-}
-
-.pending-box p {
-    margin-bottom: 10px;
-    color: #e94560;
-    font-size: 14px;
-}
-
-/* ===== やり直しボタン ===== */
-.btn-restart {
-    width: 100%;
-    margin-top: 8px;
     padding: 10px;
-    background: #2a2a4a;
+    background: #0f0e17;
+    border: 1px solid #2a2a4a;
     border-radius: 8px;
-    font-size: 13px;
-    text-align: center;
-    color: #a7a9be;
+    color: #fffffe;
+    font-size: 16px;
+}
+
+.text-input:focus {
+    outline: none;
+    border-color: #f0c040;
 }
 
 .speed-setting {
@@ -401,174 +276,24 @@ button:not(:disabled):active {
     text-align: right;
 }
 
-/* ===== サイコロアニメーション ===== */
-@keyframes diceRoll {
-    0%   { transform: rotate(0deg) scale(1); }
-    25%  { transform: rotate(90deg) scale(1.2); }
-    50%  { transform: rotate(180deg) scale(0.8); }
-    75%  { transform: rotate(270deg) scale(1.2); }
-    100% { transform: rotate(360deg) scale(1); }
-}
-
-@keyframes diceAppear {
-    0%   { transform: scale(0); opacity: 0; }
-    60%  { transform: scale(1.3); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-.dice {
-    transition: all 0.3s;
-    display: inline-block;
+/* ===== スタートボタン ===== */
+#btnStart {
     width: 100%;
-    text-align: center;
-}
-
-.dice.rolling {
-    animation: diceRoll 0.6s ease-in-out;
-}
-
-.dice.appeared {
-    animation: diceAppear 0.4s ease-out;
-}
-
-/* ===== カードグリッド ===== */
-.build-section .card-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-}
-
-.card-btn {
-    display: flex;
-    flex-direction: column;
-    padding: 8px 8px 8px 12px;
-    border-radius: 8px;
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    text-align: left;
-    cursor: pointer;
-    width: 100%;
-    min-height: 80px;
-}
-
-.card-btn:disabled {
-    opacity: 0.3;
-}
-
-.card-btn:not(:disabled):active {
-    background: #2a2a4a;
-}
-
-.card-badge {
-    display: inline-block;
-    font-size: 10px;
-    padding: 2px 5px;
-    border-radius: 4px;
-    background: #2a2a4a;
-    margin: 1px;
-}
-
-.it-badge {
-    font-size: 12px;
-    color: #60a5fa;
-    margin-left: 4px;
-}
-
-.loan-badge {
-    font-size: 12px;
-    color: #f87171;
-    margin-left: 4px;
-}
-
-/* ===== タイトル改善 ===== */
-#titleScreen {
-    background: radial-gradient(ellipse at center, #1a1a3e 0%, #0f0e17 100%);
-}
-
-#titleScreen h1 {
-    font-size: 52px;
-    background: linear-gradient(135deg, #f0c040, #e8a020, #f0c040);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
-    animation: titleGlow 3s ease-in-out infinite;
-}
-
-@keyframes titleGlow {
-    0%, 100% { filter: brightness(1); }
-    50%       { filter: brightness(1.3); }
-}
-
-.title-box {
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 0 30px rgba(240, 192, 64, 0.1);
-}
-
-/* ===== 勝利画面 ===== */
-.winner-screen {
-    text-align: center;
-    padding: 8px;
-}
-
-.winner-emoji {
-    font-size: 48px;
-    animation: winnerBounce 0.6s ease-in-out infinite alternate;
-}
-
-.winner-title {
-    font-size: 24px;
+    font-size: 18px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f0c040, #e8a020);
+    border: none;
+    border-radius: 12px;
+    color: #0f0e17;
     font-weight: bold;
-    color: #f0c040;
-    margin: 8px 0 4px;
-}
-
-.winner-sub {
-    font-size: 14px;
-    color: #a7a9be;
-}
-
-@keyframes winnerBounce {
-    0%   { transform: translateY(0); }
-    100% { transform: translateY(-8px); }
-}
-
-/* ===== 街の夜景背景 ===== */
-#titleScreen {
+    cursor: pointer;
+    letter-spacing: 2px;
     position: relative;
-    overflow: hidden;
+    z-index: 10;
 }
 
-.city-skyline {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 200px;
-    pointer-events: none;
-}
-
-.building {
-    position: absolute;
-    bottom: 0;
-    background: #1a1a2e;
-    border-top: 2px solid #2a2a4a;
-}
-
-.building::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        radial-gradient(1px 1px at 20% 30%, rgba(255,240,100,0.8) 0%, transparent 100%),
-        radial-gradient(1px 1px at 40% 60%, rgba(255,240,100,0.6) 0%, transparent 100%),
-        radial-gradient(1px 1px at 60% 25%, rgba(255,240,100,0.8) 0%, transparent 100%),
-        radial-gradient(1px 1px at 80% 50%, rgba(255,240,100,0.6) 0%, transparent 100%);
-    background-size: 20px 20px;
+#btnStart:active {
+    opacity: 0.8;
 }
 
 /* ===== オンライン対戦UI ===== */
@@ -583,6 +308,8 @@ button:not(:disabled):active {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    position: relative;
+    z-index: 10;
 }
 
 .online-box input[type="text"] {
@@ -607,6 +334,8 @@ button:not(:disabled):active {
     background: #1a3a4a;
     border-radius: 8px;
     font-size: 14px;
+    position: relative;
+    z-index: 10;
 }
 
 .online-status {
@@ -633,22 +362,20 @@ button:not(:disabled):active {
     text-align: center;
 }
 
-#btnStart {
+/* ===== ルール説明ボタン ===== */
+.title-buttons-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
     position: relative;
     z-index: 10;
 }
 
-.online-box {
-    position: relative;
-    z-index: 10;
+.title-buttons-row .rules-btn {
+    margin-bottom: 0;
+    flex: 1;
 }
 
-.online-buttons button {
-    position: relative;
-    z-index: 10;
-}
-
-/* ===== ルール説明 ===== */
 .rules-btn {
     position: relative;
     z-index: 10;
@@ -663,6 +390,7 @@ button:not(:disabled):active {
     text-align: center;
 }
 
+/* ===== モーダル ===== */
 .modal {
     position: fixed;
     top: 0;
@@ -814,19 +542,6 @@ button:not(:disabled):active {
 }
 
 /* ===== カード選択 ===== */
-.title-buttons-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    position: relative;
-    z-index: 10;
-}
-
-.title-buttons-row .rules-btn {
-    margin-bottom: 0;
-    flex: 1;
-}
-
 .card-set-section {
     background: #0f0e17;
     border-radius: 10px;
@@ -875,252 +590,39 @@ button:not(:disabled):active {
 .card-toggle-btn.on  { opacity: 1; border-color: #f0c040; }
 .card-toggle-btn.off { opacity: 0.4; }
 
-/* ===== サイコロデザイン改善 ===== */
-.dice-display {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    margin: 8px 0;
-}
-
-.dice-face {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, #fffffe, #e0e0e0);
-    border-radius: 12px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    padding: 8px;
-    gap: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.5);
-}
-
-.dot {
-    width: 100%;
-    height: 100%;
-    background: #1a1a2e;
-    border-radius: 50%;
-}
-
-.dot.hidden { background: transparent; }
-
-@keyframes diceRoll {
-    0%   { transform: rotate(0deg) scale(1); }
-    25%  { transform: rotate(90deg) scale(1.2); }
-    50%  { transform: rotate(180deg) scale(0.8); }
-    75%  { transform: rotate(270deg) scale(1.2); }
-    100% { transform: rotate(360deg) scale(1); }
-}
-
-.dice-face.rolling {
-    animation: diceRoll 0.6s ease-in-out;
-}
-
-/* ===== ログ改善 ===== */
-.log {
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-.log-item {
-    padding: 3px 6px;
-    border-radius: 4px;
-    margin-bottom: 2px;
-    font-size: 12px;
-    line-height: 1.6;
-    border-left: 3px solid transparent;
-}
-
-.log-item.log-dice    { border-color: #f0c040; background: rgba(240,192,64,0.05); }
-.log-item.log-gain    { border-color: #22c55e; background: rgba(34,197,94,0.05); color: #86efac; }
-.log-item.log-lose    { border-color: #ef4444; background: rgba(239,68,68,0.05); color: #fca5a5; }
-.log-item.log-build   { border-color: #3b82f6; background: rgba(59,130,246,0.05); color: #93c5fd; }
-.log-item.log-special { border-color: #a855f7; background: rgba(168,85,247,0.05); color: #d8b4fe; }
-.log-item.log-system  { border-color: #a7a9be; background: transparent; color: #a7a9be; }
-.log-item.log-error   { border-color: #ef4444; color: #fca5a5; }
-
-/* ===== タイトル画面リニューアル ===== */
-#titleScreen {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(180deg, #0a0a1a 0%, #1a1020 40%, #2a1a10 70%, #1a0a00 100%);
-}
-
-#cityCanvas {
+/* ===== 夜景Canvas ===== */
+.city-skyline {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
+    height: 200px;
     pointer-events: none;
-    z-index: 0;
 }
 
-.title-content {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 480px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.title-header {
-    text-align: center;
-    padding-top: 24px;
-}
-
-.title-header h1 {
-    font-size: 48px;
-    color: #f0c040;
-    text-shadow: 0 0 20px rgba(240,192,64,0.5), 0 0 40px rgba(240,192,64,0.2);
-    animation: titleGlow 3s ease-in-out infinite;
-    margin-bottom: 4px;
-}
-
-/* ===== タブ ===== */
-.tab-bar {
-    display: flex;
-    background: #0f0e17;
-    border-radius: 12px;
-    padding: 4px;
-    gap: 4px;
-    border: 1px solid #2a2a4a;
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    background: transparent;
-    color: #a7a9be;
-    border: none;
-    transition: all 0.2s;
-}
-
-.tab-btn.active {
+.building {
+    position: absolute;
+    bottom: 0;
     background: #1a1a2e;
-    color: #f0c040;
-    border: 1px solid #2a2a4a;
+    border-top: 2px solid #2a2a4a;
 }
 
-.tab-content {
-    background: #1a1a2e;
-    border-radius: 12px;
-    padding: 16px;
-    border: 1px solid #2a2a4a;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 80px;
-}
-
-/* ===== オンラインタブ ===== */
-.online-tabs {
-    display: flex;
-    gap: 4px;
-    background: #0f0e17;
-    border-radius: 8px;
-    padding: 3px;
-}
-
-.online-tab-btn {
-    flex: 1;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 13px;
-    text-align: center;
-    background: transparent;
-    color: #a7a9be;
-    border: none;
-}
-
-.online-tab-btn.active {
-    background: #2a2a4a;
-    color: #fffffe;
-}
-
-/* ===== 設定セクション ===== */
-.setting-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.setting-label {
-    font-size: 12px;
-    color: #a7a9be;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.text-input {
-    width: 100%;
-    padding: 10px;
-    background: #0f0e17;
-    border: 1px solid #2a2a4a;
-    border-radius: 8px;
-    color: #fffffe;
-    font-size: 16px;
-}
-
-.text-input:focus {
-    outline: none;
-    border-color: #f0c040;
-}
-
-/* ===== タイトルロゴ改善 ===== */
-.title-header h1 {
-    font-size: 52px;
-    letter-spacing: 6px;
-    color: #f0c040;
-    text-shadow:
-        0 0 10px rgba(240,192,64,0.8),
-        0 0 30px rgba(240,192,64,0.4),
-        0 0 60px rgba(240,192,64,0.2);
-    animation: titleGlow 3s ease-in-out infinite;
-    margin-bottom: 4px;
-    font-family: 'Helvetica Neue', sans-serif;
-}
-
-.title-logo-sub {
-    font-size: 11px;
-    letter-spacing: 8px;
-    color: rgba(240,192,64,0.6);
-    margin-bottom: 16px;
-}
-
-.title-logo-deco {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.title-logo-deco::before,
-.title-logo-deco::after {
+.building::before {
     content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(240,192,64,0.4), transparent);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,240,100,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 60%, rgba(255,240,100,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 25%, rgba(255,240,100,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 50%, rgba(255,240,100,0.6) 0%, transparent 100%);
+    background-size: 20px 20px;
 }
 
-.title-logo-deco span {
-    font-size: 12px;
-    color: rgba(240,192,64,0.5);
-    letter-spacing: 3px;
-}
-
-/* ===== ゲーム画面レイアウト改善 ===== */
+/* ===== ゲーム画面 ===== */
 #gameScreen {
     padding-bottom: 32px;
 }
@@ -1149,11 +651,186 @@ button:not(:disabled):active {
 }
 
 .status {
+    text-align: center;
     font-size: 15px;
     font-weight: bold;
+    background: #1a1a2e;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #2a2a4a;
 }
 
-/* ===== プレイヤー情報改善 ===== */
+/* ===== サイコロ ===== */
+.dice {
+    text-align: center;
+    font-size: 52px;
+    margin: 8px 0;
+    transition: all 0.3s;
+    display: inline-block;
+    width: 100%;
+}
+
+@keyframes diceRoll {
+    0%   { transform: rotate(0deg) scale(1); }
+    25%  { transform: rotate(90deg) scale(1.2); }
+    50%  { transform: rotate(180deg) scale(0.8); }
+    75%  { transform: rotate(270deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes diceAppear {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.dice.rolling  { animation: diceRoll 0.6s ease-in-out; }
+.dice.appeared { animation: diceAppear 0.4s ease-out; }
+
+/* ===== サイコロリアルデザイン ===== */
+.dice-display {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 8px 0;
+}
+
+.dice-face {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #fffffe, #e0e0e0);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 8px;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.5);
+}
+
+.dice-face.rolling {
+    animation: diceRoll 0.6s ease-in-out;
+}
+
+.dot {
+    width: 100%;
+    height: 100%;
+    background: #1a1a2e;
+    border-radius: 50%;
+}
+
+.dot.hidden { background: transparent; }
+
+/* ===== ボタン共通 ===== */
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #fffffe;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    border: 1px solid #2a2a4a;
+}
+
+button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+button:not(:disabled):active {
+    background: #2a2a4a;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+#btnRoll {
+    background: linear-gradient(135deg, #e94560, #c73652);
+    border: none;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 14px;
+}
+
+#btnReroll {
+    background: #1a3a4a;
+    text-align: center;
+}
+
+#btnSkip {
+    text-align: center;
+    color: #a7a9be;
+}
+
+/* ===== ログ ===== */
+.log {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    min-height: 48px;
+    line-height: 2;
+    border: 1px solid #2a2a4a;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.log-item {
+    padding: 3px 6px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    font-size: 12px;
+    line-height: 1.6;
+    border-left: 3px solid transparent;
+}
+
+.log-item.log-dice    { border-color: #f0c040; background: rgba(240,192,64,0.05); }
+.log-item.log-gain    { border-color: #22c55e; background: rgba(34,197,94,0.05);  color: #86efac; }
+.log-item.log-lose    { border-color: #ef4444; background: rgba(239,68,68,0.05);  color: #fca5a5; }
+.log-item.log-build   { border-color: #3b82f6; background: rgba(59,130,246,0.05); color: #93c5fd; }
+.log-item.log-special { border-color: #a855f7; background: rgba(168,85,247,0.05); color: #d8b4fe; }
+.log-item.log-system  { border-color: #a7a9be; background: transparent; color: #a7a9be; }
+.log-item.log-error   { border-color: #ef4444; color: #fca5a5; }
+
+/* ===== プレイヤー情報 ===== */
+#players {
+    margin-bottom: 12px;
+}
+
+.player-box {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #2a2a4a;
+}
+
+.player-box.active {
+    border-color: #f0c040;
+}
+
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.player-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
 .player-name-row {
     display: flex;
     align-items: center;
@@ -1197,20 +874,67 @@ button:not(:disabled):active {
     filter: drop-shadow(0 0 4px rgba(240,192,64,0.6));
 }
 
-/* ===== カードっぽいUI ===== */
+.player-cards {
+    font-size: 11px;
+    color: #a7a9be;
+    line-height: 1.6;
+}
+
+/* ===== 建設メニュー ===== */
+#buildMenu {
+    margin-bottom: 12px;
+}
+
+#buildMenu h3 {
+    font-size: 14px;
+    color: #f0c040;
+    margin-bottom: 4px;
+}
+
+#buildMenu h4 {
+    margin: 10px 0 6px;
+    color: #a7a9be;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.build-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.build-section h4 {
+    font-size: 11px;
+    color: #a7a9be;
+    letter-spacing: 2px;
+    margin: 12px 0 6px;
+    text-transform: uppercase;
+}
+
+.build-section .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+/* ===== カードボタン ===== */
 .card-btn {
     position: relative;
     overflow: hidden;
-    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
     padding: 10px 10px 10px 14px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #1a1a2e, #16162a);
     border: 1px solid #2a2a4a;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+    min-height: 80px;
     transition: transform 0.1s, box-shadow 0.1s;
-}
-
-.card-btn:not(:disabled):active {
-    transform: scale(0.97);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .card-btn::after {
@@ -1225,6 +949,11 @@ button:not(:disabled):active {
 
 .card-btn:disabled {
     opacity: 0.35;
+}
+
+.card-btn:not(:disabled):active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .card-btn-top {
@@ -1257,16 +986,104 @@ button:not(:disabled):active {
     color: #8a9aaa;
 }
 
-.build-section h4 {
-    font-size: 11px;
-    color: #a7a9be;
-    letter-spacing: 2px;
-    margin: 12px 0 6px;
-    text-transform: uppercase;
+.card-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #2a2a4a;
+    margin: 1px;
 }
 
-#buildMenu h3 {
-    font-size: 14px;
+.it-badge {
+    font-size: 12px;
+    color: #60a5fa;
+    margin-left: 4px;
+}
+
+.loan-badge {
+    font-size: 12px;
+    color: #f87171;
+    margin-left: 4px;
+}
+
+/* ===== ダイス選択 ===== */
+.dice-choose {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    text-align: center;
+    border: 1px solid #f0c040;
+}
+
+.dice-choose p {
+    margin-bottom: 10px;
     color: #f0c040;
-    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.dice-choose button {
+    width: 48%;
+    font-size: 16px;
+    text-align: center;
+    margin: 0 1%;
+    padding: 12px;
+    background: #2a2a4a;
+    border-radius: 8px;
+}
+
+/* ===== pendingメニュー ===== */
+.pending-box {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #e94560;
+}
+
+.pending-box p {
+    margin-bottom: 10px;
+    color: #e94560;
+    font-size: 14px;
+}
+
+/* ===== やり直しボタン ===== */
+.btn-restart {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    background: #2a2a4a;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    color: #a7a9be;
+}
+
+/* ===== 勝利画面 ===== */
+.winner-screen {
+    text-align: center;
+    padding: 8px;
+}
+
+.winner-emoji {
+    font-size: 48px;
+    animation: winnerBounce 0.6s ease-in-out infinite alternate;
+}
+
+.winner-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #f0c040;
+    margin: 8px 0 4px;
+}
+
+.winner-sub {
+    font-size: 14px;
+    color: #a7a9be;
+}
+
+@keyframes winnerBounce {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-8px); }
 }
