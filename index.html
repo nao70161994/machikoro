@@ -93,14 +93,15 @@
     </div>
 
     <div id="gameScreen" style="display:none">
-        <h1>🏙️ 街コロ</h1>
         <div id="status" class="status"></div>
-        <div id="diceResult" class="dice"></div>
-        <div id="diceChoose"></div>
-        <div class="buttons">
-            <button id="btnRoll" onclick="onRoll()">サイコロを振る</button>
-            <button id="btnReroll" onclick="onReroll()" style="display:none">📡 電波塔で振り直す</button>
-            <button id="btnSkip" onclick="onSkip()" disabled>建設しないでターン終了</button>
+        <div class="game-action-panel">
+            <div id="diceResult"></div>
+            <div id="diceChoose"></div>
+            <div class="buttons">
+                <button id="btnRoll" onclick="onRoll()">🎲 サイコロを振る</button>
+                <button id="btnReroll" onclick="onReroll()" style="display:none">📡 電波塔で振り直す</button>
+                <button id="btnSkip" onclick="onSkip()" disabled>建設しないでターン終了</button>
+            </div>
         </div>
         <div id="log" class="log"></div>
         <div id="pendingMenu"></div>

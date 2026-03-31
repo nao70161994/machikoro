@@ -627,7 +627,7 @@ function renderPlayers() {
         // ランドマーク
         const landmarks = Object.entries(p.landmarks)
             .map(([name, built]) =>
-                `<span class="landmark-badge ${built ? 'built' : ''}" title="${name}">${getLandmarkEmoji(name)}</span>`)
+                `<span class="landmark-badge ${built ? 'built' : ''}">${getLandmarkEmoji(name)} ${name}</span>`)
             .join("");
 
         // カード集計
@@ -743,15 +743,20 @@ function renderBuildMenu() {
             current.coins >= card.cost &&
             !(card.color === "purple" && current.countCard(card.name) > 0);
         const effectText = getEffectText(card);
-        return `<button class="card-btn" onclick="onBuildCard('${card.name}')"
-            ${canBuildThis ? "" : "disabled"}
-            style="border-left: 4px solid ${colorMap[card.color]}">
-            <div class="card-btn-top">
-                <span class="card-name">${card.name}</span>
-                <span class="card-cost">💰${card.cost}</span>
+        return `<button class="card-btn card-color-${card.color}" onclick="onBuildCard('${card.name}')"
+            ${canBuildThis ? "" : "disabled"}>
+            <div class="card-top-strip">
+                <span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span>
+                <span class="card-category-tag">${card.category}</span>
             </div>
-            <div class="card-info">🎲[${card.diceNums.join(",")}]　残り${stock}枚　${card.category}</div>
-            <div class="card-effect">${effectText}</div>
+            <div class="card-body">
+                <div class="card-btn-top">
+                    <span class="card-name">${card.name}</span>
+                    <span class="card-cost">💰${card.cost}</span>
+                </div>
+                <div class="card-effect">${effectText}</div>
+            </div>
+            <div class="card-footer">残り${stock}枚</div>
         </button>`;
     }).join("");
 
@@ -760,14 +765,19 @@ function renderBuildMenu() {
         .map(([name, built]) => {
             const cost = Player.landmarkCost(name);
             const canBuildThis = canBuild && !built && current.coins >= cost;
-            return `<button class="card-btn" onclick="onBuildLandmark('${name}')"
-                ${canBuildThis ? "" : "disabled"}
-                style="border-left: 4px solid #f0c040">
-                <div class="card-btn-top">
-                    <span class="card-name">${getLandmarkEmoji(name)} ${name}</span>
-                    <span class="card-cost">${built ? "✅建設済" : "💰" + cost}</span>
+            return `<button class="card-btn card-color-landmark" onclick="onBuildLandmark('${name}')"
+                ${canBuildThis ? "" : "disabled"}>
+                <div class="card-top-strip">
+                    <span class="card-dice-num">${getLandmarkEmoji(name)}</span>
+                    <span class="card-category-tag">ランドマーク</span>
                 </div>
-                <div class="card-effect">${getLandmarkEffectText(name)}</div>
+                <div class="card-body">
+                    <div class="card-btn-top">
+                        <span class="card-name">${name}</span>
+                        <span class="card-cost">${built ? "✅済" : "💰" + cost}</span>
+                    </div>
+                    <div class="card-effect">${getLandmarkEffectText(name)}</div>
+                </div>
             </button>`;
         }).join("");
 
