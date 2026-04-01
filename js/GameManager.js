@@ -365,6 +365,7 @@ class GameManager {
     resolveBusiness(myCardName, targetIndex, theirCardName) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
+        if (!target || target === current) { this.addLog(`❌ 交換相手を選び直してください`); return; }
         const myCard = current.cards.find(c => c.name === myCardName && c.category !== "大施設");
         const theirCard = target.cards.find(c => c.name === theirCardName && c.category !== "大施設");
         if (!myCard || !theirCard) { this.addLog(`❌ 交換できない施設です`); return; }
@@ -403,6 +404,7 @@ class GameManager {
     resolveMover(myCardName, targetIndex) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
+        if (!target || target === current) { this.addLog(`❌ 渡す相手を選び直してください`); return; }
         const myCard = current.cards.find(c => c.name === myCardName && c.category !== "大施設");
         if (!myCard) { this.addLog(`❌ 渡せない施設です`); return; }
         const myCardWasDormant = current.isDormant(myCard);

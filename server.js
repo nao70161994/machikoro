@@ -163,7 +163,11 @@ io.on('connection', (socket) => {
                     io.to(roomId).emit('playerList', playerList);
                 }
             } else {
-                io.to(roomId).emit('playerDisconnected', socket.playerIndex);
+                const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
+                io.to(roomId).emit('playerDisconnected', {
+                    playerIndex: socket.playerIndex,
+                    playerName: disconnectedPlayer?.name || `プレイヤー${socket.playerIndex + 1}`,
+                });
             }
             console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
         }

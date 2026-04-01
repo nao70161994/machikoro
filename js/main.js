@@ -393,8 +393,8 @@ function initSocket() {
         render();
     });
 
-    socket.on('playerDisconnected', (playerIndex) => {
-        alert(`プレイヤー${playerIndex + 1}が切断しました`);
+    socket.on('playerDisconnected', ({ playerIndex, playerName }) => {
+        alert(`${playerName || `プレイヤー${playerIndex + 1}`}が切断しました`);
     });
 
     socket.on('error', (msg) => {
