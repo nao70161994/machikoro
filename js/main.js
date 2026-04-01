@@ -32,6 +32,7 @@ let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 let isRoomHost = false; // ルーム作成者かどうか
+let cpuScheduleToken = 0;
 
 function changeOnlineCount(delta) {
     onlineSelectedCount = Math.min(10, Math.max(2, onlineSelectedCount + delta));
@@ -122,6 +123,7 @@ function restartGame() {
     if (!confirm("最初からやり直しますか？\n現在のゲームは終了します")) return;
     localStorage.removeItem('savedGame');
     localStorage.removeItem('onlineSession');
+    cpuScheduleToken++;
     if (socket) {
         socket.disconnect();
         socket = null;
@@ -143,6 +145,7 @@ function restartGame() {
 }
 
 function init(playerCount) {
+    cpuScheduleToken++;
     prevCoins = null;
     stopConfetti();
     winSoundPlayed = false;
@@ -186,6 +189,13 @@ function cpuDo(action, data, fallback) {
     render();
 }
 
+function queueCPUStep(token, delay, fn) {
+    setTimeout(() => {
+        if (token !== cpuScheduleToken) return;
+        fn();
+    }, delay);
+}
+
 function scheduleCPU() {
     if (isReplaying) return;
     if (isOnlineGame && !isRoomHost) return;
@@ -193,14 +203,15 @@ function scheduleCPU() {
     const ci = game.currentPlayerIndex;
     if (!cpuPlayers[ci]) return;
     const cpu = cpuPlayers[ci];
+    const token = ++cpuScheduleToken;
 
-    setTimeout(() => {
+    queueCPUStep(token, cpuSpeed, () => {
         if (game.phase === "roll") {
             const forceDice = Math.floor(Math.random() * 6) + 1;
             const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
             cpuDo('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
         }
-        setTimeout(() => {
+        queueCPUStep(token, cpuSpeed, () => {
             if (game.phase === "selectDice") {
                 const useTwo = cpu.chooseDiceCount(game);
                 const d1 = Math.floor(Math.random() * 6) + 1;
@@ -208,7 +219,7 @@ function scheduleCPU() {
                 const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
                 cpuDo('selectDice', { useTwo, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
             }
-            setTimeout(() => {
+            queueCPUStep(token, cpuSpeed, () => {
                 if (game.phase === "rerollConfirm") {
                     if (cpu.chooseReroll(game)) {
                         const forceDice = Math.floor(Math.random() * 6) + 1;
@@ -218,12 +229,12 @@ function scheduleCPU() {
                         cpuDo('skipReroll', {}, () => game.skipReroll());
                     }
                 }
-                setTimeout(() => {
+                queueCPUStep(token, cpuSpeed, () => {
                     if (game.phase === "harborChoice") {
                         const useBonus = cpu.chooseHarbor(game);
                         cpuDo('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
                     }
-                    setTimeout(() => {
+                    queueCPUStep(token, cpuSpeed, () => {
                         if (game.phase === "pending") {
                             if (game.pendingTV > 0) {
                                 const targetIndex = cpu.chooseTVTarget(game);
@@ -271,31 +282,31 @@ function scheduleCPU() {
                                 }
                             }
                         }
-                        setTimeout(() => {
+                        queueCPUStep(token, cpuSpeed, () => {
                             if (game.phase === "build") {
                                 cpu.build(game, SHOP_STOCK);
                                 render();
                             }
-                            setTimeout(() => {
+                            queueCPUStep(token, cpuSpeed, () => {
                                 if (game.phase === "build") {
                                     cpuDo('nextTurn', {}, () => game.nextTurn());
                                 }
-                                setTimeout(() => {
+                                queueCPUStep(token, cpuSpeed, () => {
                                     if (game.pendingIT) {
                                         const doSave = cpu.difficulty !== "weak" && game.currentPlayer().coins >= 1;
                                         cpuDo('resolveIT', { doSave }, () => game.resolveIT(doSave));
                                     }
-                                    setTimeout(() => {
+                                    queueCPUStep(token, 500, () => {
                                         if (!game.checkWinner()) scheduleCPU();
-                                    }, 500);
-                                }, cpuSpeed);
-                            }, cpuSpeed);
-                        }, cpuSpeed);
-                    }, cpuSpeed);
-                }, cpuSpeed);
-            }, cpuSpeed);
-        }, cpuSpeed);
-    }, cpuSpeed);
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 }
 
 // オンライン対戦
@@ -355,6 +366,7 @@ function initSocket() {
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         myPlayerIndex = playerIndex;
+        cpuScheduleToken++;
 
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
@@ -1592,6 +1604,7 @@ function resumeGame() {
     if (!raw) return;
     try {
         const state = JSON.parse(raw);
+        cpuScheduleToken++;
 
         cpuSpeed = state.cpuSpeed || 1500;
         if (state.enabledCardsList) enabledCards = new Set(state.enabledCardsList);
