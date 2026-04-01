@@ -92,6 +92,7 @@ function startGame() {
 }
 
 function restartGame() {
+    if (!confirm("最初からやり直しますか？\n現在のゲームは終了します")) return;
     isOnlineGame = false;
     isRoomHost = false;
     myPlayerIndex = -1;
@@ -897,7 +898,9 @@ function onResolveIT(doSave) {
 
 function onBuildCard(name) {
     const card = CARDS.find(c => c.name === name);
-    if (card && game.buildCard(card)) {
+    if (!card) return;
+    if (!confirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`)) return;
+    if (game.buildCard(card)) {
         SHOP_STOCK[name]--;
         sendAction('buildCard', { cardName: name });
     }
@@ -906,6 +909,8 @@ function onBuildCard(name) {
 }
 
 function onBuildLandmark(name) {
+    const cost = Player.landmarkCost(name);
+    if (!confirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`)) return;
     game.buildLandmark(name);
     sendAction('buildLandmark', { name });
     render();
@@ -913,6 +918,10 @@ function onBuildLandmark(name) {
 }
 
 function onSkip() {
+    const msg = game.currentPlayer().landmarks["空港"]
+        ? "建設せずにターン終了しますか？\n✈️ 空港効果で+10コイン獲得します"
+        : "建設せずにターン終了しますか？";
+    if (!confirm(msg)) return;
     game.nextTurn();
     sendAction('nextTurn');
     render();
