@@ -16,6 +16,17 @@ let confettiPieces = [];
 let winStreak = parseInt(localStorage.getItem('winStreak') || '0');
 let lastWinnerName = localStorage.getItem('lastWinnerName') || '';
 
+// サウンド
+let audioCtx = null;
+let winSoundPlayed = false;
+
+// オートスキップ
+let autoSkipPending = false;
+let autoSkipTimeout = null;
+
+// 取り消し
+let undoState = null;
+
 // オンライン対戦
 let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
@@ -63,6 +74,7 @@ function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
     document.getElementById("playerCount").textContent = selectedCount;
     renderPlayerSettings();
+    saveSettings();
 }
 
 function renderPlayerSettings() {
@@ -90,10 +102,12 @@ function onChangePlayerType(index, value) {
     } else {
         playerSettings[index] = { type: "cpu", difficulty: value };
     }
+    saveSettings();
 }
 
 function startGame() {
     cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
+    saveSettings();
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
     cpuPlayers = playerSettings.map(s =>
@@ -120,6 +134,9 @@ function restartGame() {
 function init(playerCount) {
     prevCoins = null;
     stopConfetti();
+    winSoundPlayed = false;
+    cancelAutoSkip();
+    undoState = null;
     game = new GameManager(playerCount);
     for (const card of CARDS) {
         SHOP_STOCK[card.name] = enabledCards.has(card.name) ? 6 : 0;
@@ -455,6 +472,7 @@ function render() {
                 <div class="winner-stats">${scoreRows}</div>
             </div>`;
 
+        if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); }
         startConfetti();
         document.getElementById("btnRoll").disabled = true;
         const btnSkip = document.getElementById("btnSkip");
@@ -518,6 +536,7 @@ function render() {
     prevCoins = game.players.map(p => p.coins);
 
     renderBuildMenu();
+    checkAutoSkip();
 }
 
 function renderDiceChoose() {
@@ -694,7 +713,7 @@ function renderPlayers() {
         const colorDot = { blue: "#3b82f6", green: "#22c55e", red: "#ef4444", purple: "#a855f7" };
         const cardHtml = Object.entries(cards).map(([name, info]) => {
             const dormantText = info.dormant > 0 ? `💤` : '';
-            return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}">
+            return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" onclick="showCardDetail('${name}')">
                 ${name}×${info.count}${dormantText}
             </span>`;
         }).join("");
@@ -798,7 +817,7 @@ function renderBuildMenu() {
             !(card.color === "purple" && current.countCard(card.name) > 0);
         const effectText = getEffectText(card);
         return `<div class="card-wrapper">
-            <button class="card-btn card-color-${card.color}" onclick="onBuildCard('${card.name}')"
+            <button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')"
                 ${canBuildThis ? "" : "disabled"}>
                 <div class="card-top-strip">
                     <span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span>
@@ -823,7 +842,7 @@ function renderBuildMenu() {
             const cost = Player.landmarkCost(name);
             const canBuildThis = canBuild && !built && current.coins >= cost;
             return `<div class="card-wrapper">
-                <button class="card-btn card-color-landmark" onclick="onBuildLandmark('${name}')"
+                <button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')"
                     ${canBuildThis ? "" : "disabled"}>
                     <div class="card-top-strip">
                         <span class="card-dice-num">${getLandmarkEmoji(name)}</span>
@@ -841,13 +860,17 @@ function renderBuildMenu() {
             </div>`;
         }).join("");
 
+    const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn)
+        ? `<button class="undo-btn" onclick="doUndo()">↩ 建設を取り消す</button>` : '';
     document.getElementById("buildMenu").innerHTML = `
         <h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>
+        ${undoBtn}
         <div class="build-section"><h4>施設カード</h4><div class="card-grid">${cardHtml}</div></div>
         <div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
 }
 
 function onRoll() {
+    playSound('dice');
     if (game.currentPlayer().landmarks["駅"]) {
         // 駅あり：アニメーションなしで即座に選択肢を表示
         game.rollDice(null, null);
@@ -872,6 +895,7 @@ function onRoll() {
 }
 
 function onSelectDiceCount(useTwo) {
+    playSound('dice');
     updateDiceDisplay(null, true);
     setTimeout(() => {
         const d1 = Math.floor(Math.random() * 6) + 1;
@@ -959,9 +983,12 @@ function onBuildCard(name) {
     const card = CARDS.find(c => c.name === name);
     if (!card) return;
     if (!confirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`)) return;
+    saveUndoState();
+    cancelAutoSkip();
     if (game.buildCard(card)) {
         SHOP_STOCK[name]--;
         sendAction('buildCard', { cardName: name });
+        playSound('build');
     }
     render();
     scheduleCPU();
@@ -970,8 +997,11 @@ function onBuildCard(name) {
 function onBuildLandmark(name) {
     const cost = Player.landmarkCost(name);
     if (!confirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`)) return;
+    saveUndoState();
+    cancelAutoSkip();
     game.buildLandmark(name);
     sendAction('buildLandmark', { name });
+    playSound('build');
     render();
     scheduleCPU();
 }
@@ -986,6 +1016,8 @@ function onSkip() {
         msg = "建設せずにターン終了しますか？";
     }
     if (!confirm(msg)) return;
+    cancelAutoSkip();
+    undoState = null;
     game.nextTurn();
     sendAction('nextTurn');
     render();
@@ -1310,6 +1342,7 @@ function toggleLog() {
 
 // ===== コイン獲得アニメーション =====
 function showCoinAnimation(playerIndex, diff) {
+    if (diff > 0) playSound('coin');
     const boxes = document.querySelectorAll('.player-box');
     if (!boxes[playerIndex]) return;
     const box = boxes[playerIndex];
@@ -1408,8 +1441,182 @@ function closeCardDetail() {
     document.getElementById('cardDetailModal').style.display = 'none';
 }
 
+// ===== サウンド =====
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+
+function playSound(type) {
+    try {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        switch (type) {
+            case 'dice': {
+                const bufferSize = Math.floor(ctx.sampleRate * 0.08);
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+                const src = ctx.createBufferSource();
+                src.buffer = buffer;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.5, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+                src.connect(g); g.connect(ctx.destination);
+                src.start();
+                break;
+            }
+            case 'coin': {
+                [523, 659].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.connect(g); g.connect(ctx.destination);
+                    const t = ctx.currentTime + i * 0.08;
+                    osc.frequency.value = freq;
+                    g.gain.setValueAtTime(0, t);
+                    g.gain.linearRampToValueAtTime(0.15, t + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                    osc.start(t); osc.stop(t + 0.2);
+                });
+                break;
+            }
+            case 'build': {
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.type = 'triangle';
+                osc.connect(g); g.connect(ctx.destination);
+                osc.frequency.setValueAtTime(392, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(523, ctx.currentTime + 0.1);
+                g.gain.setValueAtTime(0.2, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                osc.start(); osc.stop(ctx.currentTime + 0.35);
+                break;
+            }
+            case 'win': {
+                [523, 659, 784, 1047].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.frequency.value = freq;
+                    const t = ctx.currentTime + i * 0.12;
+                    g.gain.setValueAtTime(0, t);
+                    g.gain.linearRampToValueAtTime(0.2, t + 0.04);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                    osc.start(t); osc.stop(t + 0.5);
+                });
+                break;
+            }
+        }
+    } catch(e) {}
+}
+
+// ===== オートスキップ =====
+function cancelAutoSkip() {
+    if (autoSkipTimeout) { clearTimeout(autoSkipTimeout); autoSkipTimeout = null; }
+    autoSkipPending = false;
+}
+
+function checkAutoSkip() {
+    if (autoSkipPending) return;
+    if (!game || game.checkWinner()) return;
+    if (game.phase !== "build") { cancelAutoSkip(); return; }
+    if (cpuPlayers[game.currentPlayerIndex]) return;
+    if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return;
+    if (game.pendingRenovation > 0) return;
+    if (game.builtThisTurn) { cancelAutoSkip(); return; }
+
+    const current = game.currentPlayer();
+    const canAffordCard = CARDS.some(card =>
+        SHOP_STOCK[card.name] > 0 &&
+        current.coins >= card.cost &&
+        card.cost > 0 &&
+        !(card.color === "purple" && current.countCard(card.name) > 0)
+    );
+    const canAffordLandmark = Object.entries(current.landmarks)
+        .some(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name));
+
+    if (!canAffordCard && !canAffordLandmark) {
+        autoSkipPending = true;
+        autoSkipTimeout = setTimeout(() => {
+            autoSkipPending = false;
+            autoSkipTimeout = null;
+            if (game && game.phase === "build" && !game.builtThisTurn) {
+                game.nextTurn();
+                sendAction('nextTurn');
+                render();
+                scheduleCPU();
+            }
+        }, 1500);
+    }
+}
+
+// ===== 取り消し =====
+function saveUndoState() {
+    undoState = {
+        playerCoins:        game.players.map(p => p.coins),
+        playerCardNames:    game.players.map(p => p.cards.map(c => c.name)),
+        playerLandmarks:    game.players.map(p => Object.assign({}, p.landmarks)),
+        playerItVenture:    game.players.map(p => p.itVentureCoins),
+        shopStock:          Object.assign({}, SHOP_STOCK),
+        builtThisTurn:      game.builtThisTurn,
+        log:                [...game.log],
+    };
+}
+
+function doUndo() {
+    if (!undoState) return;
+    game.players.forEach((p, i) => {
+        p.coins = undoState.playerCoins[i];
+        p.cards = undoState.playerCardNames[i].map(name => CARDS.find(c => c.name === name)).filter(Boolean);
+        p.landmarks = Object.assign({}, undoState.playerLandmarks[i]);
+        p.itVentureCoins = undoState.playerItVenture[i];
+    });
+    Object.assign(SHOP_STOCK, undoState.shopStock);
+    game.builtThisTurn = undoState.builtThisTurn;
+    game.log = [...undoState.log];
+    undoState = null;
+    prevCoins = null;
+    cancelAutoSkip();
+    render();
+}
+
+// ===== ゲーム設定の保存・読込 =====
+function saveSettings() {
+    try {
+        localStorage.setItem('selectedCount', selectedCount);
+        localStorage.setItem('playerSettings', JSON.stringify(playerSettings));
+        const speedEl = document.getElementById('cpuSpeed');
+        if (speedEl) localStorage.setItem('cpuSpeed', speedEl.value);
+    } catch(e) {}
+}
+
+function loadSettings() {
+    try {
+        const count = parseInt(localStorage.getItem('selectedCount') || '2');
+        selectedCount = Math.min(10, Math.max(2, count));
+        document.getElementById("playerCount").textContent = selectedCount;
+
+        const ps = localStorage.getItem('playerSettings');
+        if (ps) {
+            const parsed = JSON.parse(ps);
+            playerSettings = parsed.slice(0, selectedCount);
+        }
+
+        const speed = localStorage.getItem('cpuSpeed');
+        if (speed) {
+            const speedEl = document.getElementById('cpuSpeed');
+            if (speedEl) {
+                speedEl.value = speed;
+                document.getElementById('speedLabel').textContent = (parseInt(speed) / 1000) + '秒';
+            }
+        }
+    } catch(e) {}
+    renderPlayerSettings();
+}
+
 // 初期表示
-renderPlayerSettings();
+loadSettings();
 renderOnlinePlayerSettings();;
 drawCitySkyline();
 window.addEventListener("resize", drawCitySkyline);

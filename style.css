@@ -1295,3 +1295,41 @@ button:not(:disabled):active {
     border-radius: 8px;
     border-left: 3px solid #f0c040;
 }
+
+/* ===== 建設可能カードのハイライト ===== */
+@keyframes affordGlow {
+    0%, 100% { box-shadow: 0 0 4px rgba(240,192,64,0.3); }
+    50%       { box-shadow: 0 0 14px rgba(240,192,64,0.8), 0 0 4px rgba(240,192,64,0.5); }
+}
+
+.card-btn.can-afford {
+    border-color: rgba(240,192,64,0.6);
+    animation: affordGlow 1.6s ease-in-out infinite;
+}
+
+/* ===== 取り消しボタン ===== */
+.undo-btn {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 8px;
+    color: #fca5a5;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.undo-btn:active {
+    background: rgba(239,68,68,0.25);
+}
+
+/* ===== カードバッジ（クリック可） ===== */
+.card-badge {
+    cursor: pointer;
+}
+
+.card-badge:active {
+    opacity: 0.7;
+}
