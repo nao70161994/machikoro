@@ -101,14 +101,24 @@ io.on('connection', (socket) => {
         if (!roomId) return;
         const room = rooms[roomId];
         if (!room || !room.started) return;
-        if (!validateGameAction(room, socket, action, data)) {
+        const validation = validateGameAction(room, socket, action, data);
+        if (!validation.ok) {
             socket.emit('error', '無効な操作です');
             return;
         }
-        if (room.actionLog) {
-            room.actionLog.push({ action, data });
+        let safeData = data;
+        if (action === 'buildCard' || action === 'buildLandmark') {
+            room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
+        } else if (action === 'undoBuild') {
+            safeData = { state: room.lastUndoState };
+            room.lastUndoState = null;
+        } else if (action === 'nextTurn') {
+            room.lastUndoState = null;
         }
-        socket.to(roomId).emit('gameAction', { action, data, playerIndex: socket.playerIndex });
+        if (room.actionLog) {
+            room.actionLog.push({ action, data: safeData });
+        }
+        socket.to(roomId).emit('gameAction', { action, data: safeData, playerIndex: socket.playerIndex });
     });
 
     socket.on('rejoinRoom', ({ roomId, playerIndex, playerName }) => {
@@ -275,31 +285,67 @@ function restoreUndoMirror(game, shopStock, state, createCardByName) {
     game.log = [...state.log];
 }
 
+function makeUndoStateFromMirror(game, shopStock) {
+    return {
+        playerCoins: game.players.map(p => p.coins),
+        playerCardNames: game.players.map(p => p.cards.map(c => c.name)),
+        playerDormantIndices: game.players.map(p =>
+            p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0)
+        ),
+        playerLandmarks: game.players.map(p => Object.assign({}, p.landmarks)),
+        playerItVenture: game.players.map(p => p.itVentureCoins),
+        playerHasYakusho: game.players.map(p => p.hasYakusho),
+        shopStock: Object.assign({}, shopStock),
+        builtThisTurn: game.builtThisTurn,
+        log: [...game.log],
+    };
+}
+
 function validateGameAction(room, socket, action, data) {
     const mirror = createRoomMirror(room);
-    if (!mirror) return false;
-    const { game, cpuPlayers } = mirror;
+    if (!mirror) return { ok: false };
+    const { game, cpuPlayers, shopStock } = mirror;
     const currentIndex = game.currentPlayerIndex;
     const currentIsCpu = !!cpuPlayers[currentIndex];
     const hostPlayerIndex = room.hostPlayerIndex;
 
     if (currentIsCpu) {
-        if (socket.playerIndex !== hostPlayerIndex) return false;
+        if (socket.playerIndex !== hostPlayerIndex) return { ok: false };
     } else if (socket.playerIndex !== currentIndex) {
-        return false;
+        return { ok: false };
     }
 
     const allowed = getAllowedActions(game);
-    if (!allowed.has(action)) return false;
+    if (!allowed.has(action)) return { ok: false };
 
     if (action === 'resolveTV') {
-        return Number.isInteger(data.targetIndex) &&
+        return {
+            ok: Number.isInteger(data.targetIndex) &&
             data.targetIndex >= 0 &&
             data.targetIndex < game.players.length &&
-            data.targetIndex !== currentIndex;
+            data.targetIndex !== currentIndex,
+            mirror,
+        };
     }
 
-    return true;
+    if (action === 'buildCard') {
+        const cardName = data?.cardName;
+        const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(c => c.name));
+        const card = gameRuntime.createCardByName(cardName);
+        return {
+            ok: !!card && enabledCards.has(cardName) && (shopStock[cardName] || 0) > 0,
+            mirror,
+        };
+    }
+
+    if (action === 'undoBuild') {
+        return {
+            ok: !!room.lastUndoState && game.builtThisTurn,
+            mirror,
+        };
+    }
+
+    return { ok: true, mirror };
 }
 
 function getAllowedActions(game) {
@@ -370,6 +416,7 @@ function checkGameStart(io, roomId) {
         };
         rooms[roomId].gameStartPayload = gameStartPayload;
         rooms[roomId].actionLog = [];
+        rooms[roomId].lastUndoState = null;
         io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${playerNames.join(', ')}`);
     }
