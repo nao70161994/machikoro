@@ -122,9 +122,15 @@ function restartGame() {
     if (!confirm("最初からやり直しますか？\n現在のゲームは終了します")) return;
     localStorage.removeItem('savedGame');
     localStorage.removeItem('onlineSession');
+    if (socket) {
+        socket.disconnect();
+        socket = null;
+    }
     isOnlineGame = false;
     isRoomHost = false;
     myPlayerIndex = -1;
+    myRoomId = null;
+    isReplaying = false;
     document.getElementById("gameScreen").style.display = "none";
     document.getElementById("titleScreen").style.display = "block";
     selectedCount = 2;

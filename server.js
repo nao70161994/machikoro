@@ -126,7 +126,18 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const roomId = socket.roomId;
         if (roomId && rooms[roomId]) {
-            io.to(roomId).emit('playerDisconnected', socket.playerIndex);
+            const room = rooms[roomId];
+            if (!room.started) {
+                room.players = room.players.filter(p => p.id !== socket.id);
+                if (room.players.length === 0) {
+                    delete rooms[roomId];
+                } else {
+                    const playerList = buildPlayerList(room);
+                    io.to(roomId).emit('playerList', playerList);
+                }
+            } else {
+                io.to(roomId).emit('playerDisconnected', socket.playerIndex);
+            }
             console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
         }
     });
