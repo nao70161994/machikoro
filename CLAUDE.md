@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 開発環境
 
 - Android + Termux 環境。通常は `/tmp` が存在しないため Bash ツールが失敗するが、**`termux-chroot` 使用時は `/tmp` が利用可能になり Bash ツールも使える**。`termux-chroot` を使っていない場合はファイル操作を Read / Edit / Write / Glob / Grep ツールで行うこと。
-- git コマンドはユーザーが手動でターミナルから実行する。Push 用コマンドを提示する形で対応すること。
+- `termux-chroot` 使用時は git コマンドも Bash ツールで直接実行できる。使っていない場合はコマンドを提示してユーザーに手動実行してもらうこと。
 
 ## サーバー起動
 
