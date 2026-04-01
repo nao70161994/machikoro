@@ -783,7 +783,7 @@ function renderBuildMenu() {
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    const canBuild = game.phase === "build" && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0;
+    const canBuild = game.phase === "build" && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
 
     const colorMap = {
         blue: "#3b82f6", green: "#22c55e",
@@ -977,9 +977,14 @@ function onBuildLandmark(name) {
 }
 
 function onSkip() {
-    const msg = game.currentPlayer().landmarks["空港"]
-        ? "建設せずにターン終了しますか？\n✈️ 空港効果で+10コイン獲得します"
-        : "建設せずにターン終了しますか？";
+    let msg;
+    if (game.builtThisTurn) {
+        msg = "建設完了・ターン終了しますか？";
+    } else if (game.currentPlayer().landmarks["空港"]) {
+        msg = "建設せずにターン終了しますか？\n✈️ 空港効果で+10コイン獲得します";
+    } else {
+        msg = "建設せずにターン終了しますか？";
+    }
     if (!confirm(msg)) return;
     game.nextTurn();
     sendAction('nextTurn');
