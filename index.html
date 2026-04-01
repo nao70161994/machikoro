@@ -103,7 +103,13 @@
                 <button id="btnSkip" onclick="onSkip()" disabled>建設しないでターン終了</button>
             </div>
         </div>
-        <div id="log" class="log"></div>
+        <div class="log-container">
+            <div class="log-header" onclick="toggleLog()">
+                <span>📋 ログ</span>
+                <span id="logToggleIcon">▼</span>
+            </div>
+            <div id="log" class="log"></div>
+        </div>
         <div id="pendingMenu"></div>
         <div id="players"></div>
         <div id="buildMenu"></div>
@@ -195,6 +201,18 @@
                 </div>
                 <button onclick="closeCardSelect()" style="margin-top:8px;text-align:center;background:#e94560;">決定</button>
             </div>
+        </div>
+    </div>
+
+    <canvas id="confettiCanvas" style="position:fixed;top:0;left:0;pointer-events:none;z-index:999;display:none"></canvas>
+
+    <div id="cardDetailModal" class="modal" style="display:none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="cardDetailTitle">カード詳細</h2>
+                <button onclick="closeCardDetail()">✕</button>
+            </div>
+            <div class="modal-body" id="cardDetailBody"></div>
         </div>
     </div>
 

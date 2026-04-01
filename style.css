@@ -1125,3 +1125,164 @@ button:not(:disabled):active {
     0%   { transform: translateY(0); }
     100% { transform: translateY(-8px); }
 }
+
+/* ===== 勝利画面統計 ===== */
+.winner-stats {
+    margin-top: 12px;
+    background: #0f0e17;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12px;
+}
+
+.winner-stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid #2a2a4a;
+    color: #a7a9be;
+}
+
+.winner-stats-row:last-child { border-bottom: none; }
+.winner-stats-row.highlight  { color: #f0c040; background: rgba(240,192,64,0.05); }
+
+.win-streak {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #f0c040;
+    background: rgba(240,192,64,0.1);
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+}
+
+/* ===== アクティブプレイヤーアニメーション ===== */
+@keyframes activePulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(240,192,64,0.3); border-color: #f0c040; }
+    50%       { box-shadow: 0 0 16px rgba(240,192,64,0.7); border-color: #f0c040; }
+}
+
+.player-box.active {
+    animation: activePulse 2s ease-in-out infinite;
+}
+
+/* ===== カード背景色づけ ===== */
+.card-color-blue   { background: linear-gradient(160deg, #161e2e, #14182a); }
+.card-color-green  { background: linear-gradient(160deg, #161e1a, #14201a); }
+.card-color-red    { background: linear-gradient(160deg, #1e1616, #201414); }
+.card-color-purple { background: linear-gradient(160deg, #1a1626, #181422); }
+.card-color-landmark { background: linear-gradient(160deg, #1e1c14, #1c1a12); }
+
+/* ===== コイン獲得アニメーション ===== */
+@keyframes coinFloat {
+    0%   { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-40px); opacity: 0; }
+}
+
+.coin-float {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: none;
+    animation: coinFloat 1s ease-out forwards;
+    z-index: 10;
+}
+
+.coin-gain { color: #22c55e; }
+.coin-lose { color: #ef4444; }
+
+/* ===== ログ折りたたみ ===== */
+.log-container {
+    margin-bottom: 12px;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px 8px 0 0;
+    font-size: 12px;
+    color: #a7a9be;
+    cursor: pointer;
+    user-select: none;
+}
+
+.log-container .log {
+    border-radius: 0 0 10px 10px;
+    margin-bottom: 0;
+}
+
+.log-container .log.collapsed {
+    display: none;
+}
+
+.log-header.collapsed {
+    border-radius: 8px;
+}
+
+/* ===== カードラッパー（詳細ボタン用）===== */
+.card-wrapper {
+    position: relative;
+}
+
+.card-detail-btn {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(167,169,190,0.15);
+    border: 1px solid rgba(167,169,190,0.3);
+    color: #a7a9be;
+    font-size: 11px;
+    text-align: center;
+    line-height: 18px;
+    cursor: pointer;
+    z-index: 10;
+    padding: 0;
+    width: 20px;
+}
+
+.card-detail-btn:active {
+    background: rgba(167,169,190,0.3);
+}
+
+/* ===== カード詳細モーダル ===== */
+.card-detail-section {
+    background: #0f0e17;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.card-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #a7a9be;
+}
+
+.card-detail-row span:last-child {
+    color: #fffffe;
+    font-weight: bold;
+}
+
+.card-detail-effect {
+    font-size: 13px;
+    color: #fffffe;
+    line-height: 1.7;
+    padding: 8px 12px;
+    background: #0f0e17;
+    border-radius: 8px;
+    border-left: 3px solid #f0c040;
+}

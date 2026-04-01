@@ -5,6 +5,17 @@ let playerSettings = [];
 let cpuPlayers = [];
 let cpuSpeed = 1500;
 
+// コインアニメーション用
+let prevCoins = null;
+
+// 紙吹雪
+let confettiInterval = null;
+let confettiPieces = [];
+
+// 連勝記録
+let winStreak = parseInt(localStorage.getItem('winStreak') || '0');
+let lastWinnerName = localStorage.getItem('lastWinnerName') || '';
+
 // オンライン対戦
 let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
@@ -107,6 +118,8 @@ function restartGame() {
 }
 
 function init(playerCount) {
+    prevCoins = null;
+    stopConfetti();
     game = new GameManager(playerCount);
     for (const card of CARDS) {
         SHOP_STOCK[card.name] = enabledCards.has(card.name) ? 6 : 0;
@@ -407,12 +420,42 @@ function render() {
     if (winner) {
         const winnerIdx = game.players.indexOf(winner);
         const isCPUWinner = cpuPlayers[winnerIdx] !== null;
+
+        // 連勝記録更新
+        if (winner.name === lastWinnerName) {
+            winStreak++;
+        } else {
+            winStreak = 1;
+            lastWinnerName = winner.name;
+        }
+        localStorage.setItem('winStreak', winStreak);
+        localStorage.setItem('lastWinnerName', lastWinnerName);
+
+        // 最終スコア表
+        const scoreRows = game.players
+            .slice()
+            .sort((a, b) => b.coins - a.coins)
+            .map(p => {
+                const isW = p === winner;
+                return `<div class="winner-stats-row ${isW ? 'highlight' : ''}">
+                    <span>${isW ? '🏆 ' : ''}${p.name}</span>
+                    <span>🪙 ${p.coins}</span>
+                </div>`;
+            }).join('');
+
+        const streakHtml = winStreak >= 2
+            ? `<div class="win-streak">🔥 ${winner.name} ${winStreak}連勝中！</div>` : '';
+
         document.getElementById("status").innerHTML = `
             <div class="winner-screen">
                 <div class="winner-emoji">🏆</div>
                 <div class="winner-title">${winner.name}の勝利！</div>
-                <div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました</div>
+                <div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>
+                ${streakHtml}
+                <div class="winner-stats">${scoreRows}</div>
             </div>`;
+
+        startConfetti();
         document.getElementById("btnRoll").disabled = true;
         const btnSkip = document.getElementById("btnSkip");
         btnSkip.disabled = true;
@@ -464,6 +507,16 @@ function render() {
     logEl.scrollTop = logEl.scrollHeight;
 
     renderPlayers();
+
+    // コイン変化アニメーション
+    if (prevCoins) {
+        game.players.forEach((p, i) => {
+            const diff = p.coins - prevCoins[i];
+            if (diff !== 0) showCoinAnimation(i, diff);
+        });
+    }
+    prevCoins = game.players.map(p => p.coins);
+
     renderBuildMenu();
 }
 
@@ -744,21 +797,24 @@ function renderBuildMenu() {
             current.coins >= card.cost &&
             !(card.color === "purple" && current.countCard(card.name) > 0);
         const effectText = getEffectText(card);
-        return `<button class="card-btn card-color-${card.color}" onclick="onBuildCard('${card.name}')"
-            ${canBuildThis ? "" : "disabled"}>
-            <div class="card-top-strip">
-                <span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span>
-                <span class="card-category-tag">${card.category}</span>
-            </div>
-            <div class="card-body">
-                <div class="card-btn-top">
-                    <span class="card-name">${card.name}</span>
-                    <span class="card-cost">💰${card.cost}</span>
+        return `<div class="card-wrapper">
+            <button class="card-btn card-color-${card.color}" onclick="onBuildCard('${card.name}')"
+                ${canBuildThis ? "" : "disabled"}>
+                <div class="card-top-strip">
+                    <span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span>
+                    <span class="card-category-tag">${card.category}</span>
                 </div>
-                <div class="card-effect">${effectText}</div>
-            </div>
-            <div class="card-footer">残り${stock}枚</div>
-        </button>`;
+                <div class="card-body">
+                    <div class="card-btn-top">
+                        <span class="card-name">${card.name}</span>
+                        <span class="card-cost">💰${card.cost}</span>
+                    </div>
+                    <div class="card-effect">${effectText}</div>
+                </div>
+                <div class="card-footer">残り${stock}枚</div>
+            </button>
+            <button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button>
+        </div>`;
     }).join("");
 
     const landmarkHtml = Object.entries(current.landmarks)
@@ -766,20 +822,23 @@ function renderBuildMenu() {
         .map(([name, built]) => {
             const cost = Player.landmarkCost(name);
             const canBuildThis = canBuild && !built && current.coins >= cost;
-            return `<button class="card-btn card-color-landmark" onclick="onBuildLandmark('${name}')"
-                ${canBuildThis ? "" : "disabled"}>
-                <div class="card-top-strip">
-                    <span class="card-dice-num">${getLandmarkEmoji(name)}</span>
-                    <span class="card-category-tag">ランドマーク</span>
-                </div>
-                <div class="card-body">
-                    <div class="card-btn-top">
-                        <span class="card-name">${name}</span>
-                        <span class="card-cost">${built ? "✅済" : "💰" + cost}</span>
+            return `<div class="card-wrapper">
+                <button class="card-btn card-color-landmark" onclick="onBuildLandmark('${name}')"
+                    ${canBuildThis ? "" : "disabled"}>
+                    <div class="card-top-strip">
+                        <span class="card-dice-num">${getLandmarkEmoji(name)}</span>
+                        <span class="card-category-tag">ランドマーク</span>
                     </div>
-                    <div class="card-effect">${getLandmarkEffectText(name)}</div>
-                </div>
-            </button>`;
+                    <div class="card-body">
+                        <div class="card-btn-top">
+                            <span class="card-name">${name}</span>
+                            <span class="card-cost">${built ? "✅済" : "💰" + cost}</span>
+                        </div>
+                        <div class="card-effect">${getLandmarkEffectText(name)}</div>
+                    </div>
+                </button>
+                <button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button>
+            </div>`;
         }).join("");
 
     document.getElementById("buildMenu").innerHTML = `
@@ -1232,6 +1291,116 @@ function toggleSet(set) {
         else enabledCards.add(name);
     }
     renderCardSelectModal();
+}
+
+// ===== ログ折りたたみ =====
+function toggleLog() {
+    const log = document.getElementById("log");
+    const icon = document.getElementById("logToggleIcon");
+    const header = document.querySelector(".log-header");
+    const collapsed = log.classList.toggle("collapsed");
+    icon.textContent = collapsed ? "▶" : "▼";
+    header.classList.toggle("collapsed", collapsed);
+}
+
+// ===== コイン獲得アニメーション =====
+function showCoinAnimation(playerIndex, diff) {
+    const boxes = document.querySelectorAll('.player-box');
+    if (!boxes[playerIndex]) return;
+    const box = boxes[playerIndex];
+    box.style.position = 'relative';
+    const el = document.createElement('div');
+    el.className = `coin-float ${diff > 0 ? 'coin-gain' : 'coin-lose'}`;
+    el.textContent = (diff > 0 ? '+' : '') + diff + '🪙';
+    box.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+// ===== 紙吹雪 =====
+function startConfetti() {
+    const canvas = document.getElementById('confettiCanvas');
+    canvas.style.display = 'block';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const colors = ['#f0c040','#e94560','#3b82f6','#22c55e','#a855f7','#ffffff'];
+    confettiPieces = Array.from({ length: 80 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        r: Math.random() * 5 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speed: Math.random() * 2.5 + 1,
+        angle: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.15,
+    }));
+    if (confettiInterval) clearInterval(confettiInterval);
+    confettiInterval = setInterval(() => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const p of confettiPieces) {
+            p.y += p.speed;
+            p.angle += p.spin;
+            if (p.y > canvas.height) p.y = -10;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 1.8);
+            ctx.restore();
+        }
+    }, 16);
+    // 5秒後に自動停止
+    setTimeout(stopConfetti, 5000);
+}
+
+function stopConfetti() {
+    if (confettiInterval) {
+        clearInterval(confettiInterval);
+        confettiInterval = null;
+    }
+    const canvas = document.getElementById('confettiCanvas');
+    if (canvas) {
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+    }
+}
+
+// ===== カード詳細モーダル =====
+function showCardDetail(name, isLandmark = false) {
+    const modal = document.getElementById('cardDetailModal');
+    const title = document.getElementById('cardDetailTitle');
+    const body = document.getElementById('cardDetailBody');
+
+    if (isLandmark) {
+        const emoji = getLandmarkEmoji(name);
+        const cost = Player.landmarkCost(name);
+        const effect = getLandmarkEffectText(name);
+        title.textContent = `${emoji} ${name}`;
+        body.innerHTML = `
+            <div class="card-detail-section">
+                <div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div>
+                <div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div>
+            </div>
+            <div class="card-detail-effect">${effect}</div>`;
+    } else {
+        const card = CARDS.find(c => c.name === name);
+        if (!card) return;
+        const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
+        const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
+        const effect = getEffectText(card);
+        title.textContent = card.name;
+        body.innerHTML = `
+            <div class="card-detail-section">
+                <div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div>
+                <div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div>
+                <div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[card.color]}">${colorNames[card.color]}</span> ${card.category}</span></div>
+            </div>
+            <div class="card-detail-effect">${effect}</div>`;
+    }
+    modal.style.display = 'flex';
+}
+
+function closeCardDetail() {
+    document.getElementById('cardDetailModal').style.display = 'none';
 }
 
 // 初期表示

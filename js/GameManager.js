@@ -16,6 +16,7 @@ class GameManager {
         this.pendingIT = false;
         this.usedReroll = false;
         this.pendingTunaDice = null;
+        this.turnCount = 0;
 
         for (let i = 0; i < playerCount; i++) {
             const p = new Player(`プレイヤー${i + 1}`);
@@ -515,6 +516,7 @@ class GameManager {
             return;
         }
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        this.turnCount++;
         this.phase = "roll";
         this.log = [];
         this.builtThisTurn = false;
