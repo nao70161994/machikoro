@@ -340,7 +340,7 @@ class GameManager {
         }
 
         if (!this.pendingTV && !this.pendingBusiness &&
-            !this.pendingCleaning && !this.pendingMover) {
+            !this.pendingCleaning && !this.pendingMover && !this.pendingRenovation) {
             this.phase = "build";
         } else {
             this.phase = "pending";
@@ -526,7 +526,8 @@ class GameManager {
         this.pendingCleaning = 0;
         this.pendingMover = 0;
         this.pendingIT = false;
-        
+        this.pendingRenovation = 0;
+
         this.addLog(`👤 ${this.currentPlayer().name}のターン`);
     }
 
