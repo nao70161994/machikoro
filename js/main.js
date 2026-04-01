@@ -118,6 +118,7 @@ function startGame() {
 
 function restartGame() {
     if (!confirm("最初からやり直しますか？\n現在のゲームは終了します")) return;
+    localStorage.removeItem('savedGame');
     isOnlineGame = false;
     isRoomHost = false;
     myPlayerIndex = -1;
@@ -128,6 +129,7 @@ function restartGame() {
     cpuPlayers = [];
     document.getElementById("playerCount").textContent = 2;
     renderPlayerSettings();
+    updateResumeButton();
     drawCitySkyline();
 }
 
@@ -473,6 +475,8 @@ function render() {
             </div>`;
 
         if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); }
+        localStorage.removeItem('savedGame');
+        updateResumeButton();
         startConfetti();
         document.getElementById("btnRoll").disabled = true;
         const btnSkip = document.getElementById("btnSkip");
@@ -537,6 +541,7 @@ function render() {
 
     renderBuildMenu();
     checkAutoSkip();
+    saveGameState();
 }
 
 function renderDiceChoose() {
@@ -1441,6 +1446,127 @@ function closeCardDetail() {
     document.getElementById('cardDetailModal').style.display = 'none';
 }
 
+// ===== ゲーム状態の自動セーブ・リストア =====
+function saveGameState() {
+    if (!game || isOnlineGame) return;
+    if (game.checkWinner()) return;
+    try {
+        const state = {
+            players: game.players.map(p => ({
+                name: p.name,
+                coins: p.coins,
+                cards: p.cards.map(c => c.name),
+                dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
+                landmarks: Object.assign({}, p.landmarks),
+                itVentureCoins: p.itVentureCoins,
+                hasLoan: p.hasLoan,
+                hasYakusho: p.hasYakusho,
+            })),
+            currentPlayerIndex: game.currentPlayerIndex,
+            phase: game.phase,
+            log: game.log.slice(-30),
+            lastDiceResult: game.lastDiceResult,
+            lastDice1: game.lastDice1,
+            lastDice2: game.lastDice2,
+            builtThisTurn: game.builtThisTurn,
+            pendingTV: game.pendingTV,
+            pendingBusiness: game.pendingBusiness,
+            pendingCleaning: game.pendingCleaning,
+            pendingMover: game.pendingMover,
+            pendingRenovation: game.pendingRenovation,
+            pendingIT: game.pendingIT,
+            usedReroll: game.usedReroll,
+            pendingTunaDice: game.pendingTunaDice,
+            turnCount: game.turnCount,
+            shopStock: Object.assign({}, SHOP_STOCK),
+            cpuSettings: cpuPlayers.map(c => c ? { difficulty: c.difficulty } : null),
+            cpuSpeed,
+            enabledCardsList: [...enabledCards],
+        };
+        localStorage.setItem('savedGame', JSON.stringify(state));
+    } catch(e) {}
+}
+
+function updateResumeButton() {
+    const section = document.getElementById('resumeSection');
+    if (section) section.style.display = localStorage.getItem('savedGame') ? 'flex' : 'none';
+}
+
+function deleteSavedGame() {
+    if (!confirm("セーブデータを削除しますか？")) return;
+    localStorage.removeItem('savedGame');
+    updateResumeButton();
+}
+
+function resumeGame() {
+    const raw = localStorage.getItem('savedGame');
+    if (!raw) return;
+    try {
+        const state = JSON.parse(raw);
+
+        cpuSpeed = state.cpuSpeed || 1500;
+        if (state.enabledCardsList) enabledCards = new Set(state.enabledCardsList);
+
+        // ゲームオブジェクトを再構築
+        game = new GameManager(state.players.length);
+
+        // ショップ在庫を復元
+        for (const [name, count] of Object.entries(state.shopStock)) {
+            SHOP_STOCK[name] = count;
+        }
+
+        // プレイヤーを復元
+        state.players.forEach((ps, i) => {
+            const p = game.players[i];
+            p.name = ps.name;
+            p.coins = ps.coins;
+            p.cards = ps.cards.map(name => {
+                const found = CARDS.find(c => c.name === name);
+                return found ? new Card(found.name, found.cost, found.diceNums, found.income, found.color, found.category, found.effect) : null;
+            }).filter(Boolean);
+            p.dormantCards = ps.dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
+            p.landmarks = Object.assign({}, ps.landmarks);
+            p.itVentureCoins = ps.itVentureCoins || 0;
+            p.hasLoan = ps.hasLoan || false;
+            p.hasYakusho = ps.hasYakusho !== false;
+        });
+
+        // ゲーム状態を復元
+        game.currentPlayerIndex = state.currentPlayerIndex;
+        game.phase = state.phase;
+        game.log = state.log || [];
+        game.lastDiceResult = state.lastDiceResult || 0;
+        game.lastDice1 = state.lastDice1 || 0;
+        game.lastDice2 = state.lastDice2 || 0;
+        game.builtThisTurn = state.builtThisTurn || false;
+        game.pendingTV = state.pendingTV || 0;
+        game.pendingBusiness = state.pendingBusiness || 0;
+        game.pendingCleaning = state.pendingCleaning || 0;
+        game.pendingMover = state.pendingMover || 0;
+        game.pendingRenovation = state.pendingRenovation || 0;
+        game.pendingIT = state.pendingIT || false;
+        game.usedReroll = state.usedReroll || false;
+        game.pendingTunaDice = state.pendingTunaDice || null;
+        game.turnCount = state.turnCount || 0;
+
+        cpuPlayers = state.cpuSettings.map(s => s ? new CPU(s.difficulty) : null);
+
+        prevCoins = null;
+        winSoundPlayed = false;
+        cancelAutoSkip();
+        undoState = null;
+
+        document.getElementById("titleScreen").style.display = "none";
+        document.getElementById("gameScreen").style.display = "block";
+        render();
+        scheduleCPU();
+    } catch(e) {
+        localStorage.removeItem('savedGame');
+        updateResumeButton();
+        alert("セーブデータの読み込みに失敗しました");
+    }
+}
+
 // ===== サウンド =====
 function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1618,5 +1744,6 @@ function loadSettings() {
 // 初期表示
 loadSettings();
 renderOnlinePlayerSettings();;
+updateResumeButton();
 drawCitySkyline();
 window.addEventListener("resize", drawCitySkyline);

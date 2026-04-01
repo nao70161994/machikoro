@@ -1307,6 +1307,36 @@ button:not(:disabled):active {
     animation: affordGlow 1.6s ease-in-out infinite;
 }
 
+/* ===== 続きから再開 ===== */
+#resumeSection {
+    display: flex;
+    gap: 6px;
+    margin-top: -4px;
+}
+
+.resume-btn {
+    flex: 1;
+    padding: 10px;
+    background: linear-gradient(135deg, #1a4a3a, #1a3a2a);
+    border: 1px solid #22c55e;
+    border-radius: 10px;
+    color: #86efac;
+    font-size: 14px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.delete-save-btn {
+    width: 40px;
+    padding: 0;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    color: #6a7a8a;
+    font-size: 16px;
+    text-align: center;
+}
+
 /* ===== 取り消しボタン ===== */
 .undo-btn {
     width: 100%;
