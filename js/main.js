@@ -67,8 +67,10 @@ function onChangeOnlinePlayerType(index, value) {
 }
 let socket = null;
 let myPlayerIndex = -1;
+let myPlayerName = '';
 let isOnlineGame = false;
 let myRoomId = null;
+let isReplaying = false;
 
 function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
@@ -119,6 +121,7 @@ function startGame() {
 function restartGame() {
     if (!confirm("最初からやり直しますか？\n現在のゲームは終了します")) return;
     localStorage.removeItem('savedGame');
+    localStorage.removeItem('onlineSession');
     isOnlineGame = false;
     isRoomHost = false;
     myPlayerIndex = -1;
@@ -178,6 +181,7 @@ function cpuDo(action, data, fallback) {
 }
 
 function scheduleCPU() {
+    if (isReplaying) return;
     if (isOnlineGame && !isRoomHost) return;
     if (!game || game.checkWinner()) return;
     const ci = game.currentPlayerIndex;
@@ -318,13 +322,53 @@ function initSocket() {
         isOnlineGame = true;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
+        // initOnlineGame がmyPlayerIndexを上書きする前に保存
+        try {
+            localStorage.setItem('onlineSession', JSON.stringify({
+                roomId: myRoomId,
+                playerIndex: myPlayerIndex,
+                playerName: myPlayerName,
+                isRoomHost,
+            }));
+            updateResumeButton();
+        } catch(e) {}
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
         initOnlineGame(playerNames, ps, playerOrder);
     });
 
     socket.on('gameAction', ({ action, data, playerIndex }) => {
-        handleRemoteAction(action, data);
+        applyAction(action, data);
+        render();
+        scheduleCPU();
+    });
+
+    socket.on('rejoinData', ({ gameStartPayload, actionLog, playerIndex }) => {
+        const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec } = gameStartPayload;
+        isOnlineGame = true;
+        cpuSpeed = cs || 1500;
+        if (ec) enabledCards = new Set(ec);
+        myPlayerIndex = playerIndex;
+
+        document.getElementById("titleScreen").style.display = "none";
+        document.getElementById("gameScreen").style.display = "block";
+
+        // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
+        isReplaying = true;
+        initOnlineGame(playerNames, ps, playerOrder);
+        for (const { action, data } of actionLog) {
+            applyAction(action, data);
+        }
+        isReplaying = false;
+        prevCoins = null;
+        undoState = null;
+        render();
+        scheduleCPU();
+    });
+
+    socket.on('playerRejoined', ({ playerIndex, playerName }) => {
+        game && game.addLog(`🔌 ${playerName}が再接続しました`);
+        render();
     });
 
     socket.on('playerDisconnected', (playerIndex) => {
@@ -339,6 +383,7 @@ function initSocket() {
 function showCreateRoom() {
     const name = document.getElementById("playerNameInput").value.trim();
     if (!name) { alert("名前を入力してください"); return; }
+    myPlayerName = name;
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
     initSocket();
     isRoomHost = true;
@@ -362,6 +407,7 @@ function joinRoom() {
     const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
     if (!name) { alert("名前を入力してください"); return; }
     if (roomId.length !== 6) { alert("ルームIDは6文字です"); return; }
+    myPlayerName = name;
     initSocket();
     socket.emit('joinRoom', { roomId, playerName: name });
 }
@@ -401,26 +447,31 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     scheduleCPU();
 }
 
-function handleRemoteAction(action, data) {
+function applyAction(action, data) {
     switch(action) {
-        case 'rollDice':      game.rollDice(data.forceDice, data.tunaDice); break;
-        case 'selectDice':    game.selectDiceCount(data.useTwo, data.d1, data.d2, data.tunaDice); break;
-        case 'skipReroll':    game.skipReroll(); break;
-        case 'rerollDice':    game.rerollDice(data.forceDice, data.tunaDice); break;
-        case 'resolveHarbor': game.resolveHarbor(data.useBonus); break;
-        case 'resolveTV':     game.resolveTV(data.targetIndex); break;
+        case 'rollDice':        game.rollDice(data.forceDice, data.tunaDice); break;
+        case 'selectDice':      game.selectDiceCount(data.useTwo, data.d1, data.d2, data.tunaDice); break;
+        case 'skipReroll':      game.skipReroll(); break;
+        case 'rerollDice':      game.rerollDice(data.forceDice, data.tunaDice); break;
+        case 'resolveHarbor':   game.resolveHarbor(data.useBonus); break;
+        case 'resolveTV':       game.resolveTV(data.targetIndex); break;
         case 'resolveBusiness': game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard); break;
         case 'resolveCleaning': game.resolveCleaning(data.cardName); break;
-        case 'resolveMover':  game.resolveMover(data.cardName, data.targetIndex); break;
+        case 'resolveMover':    game.resolveMover(data.cardName, data.targetIndex); break;
         case 'resolveRenovation': game.resolveRenovation(data.landmarkName); break;
-        case 'resolveIT':     game.resolveIT(data.doSave); break;
-        case 'buildCard':
+        case 'resolveIT':       game.resolveIT(data.doSave); break;
+        case 'buildCard': {
             const card = CARDS.find(c => c.name === data.cardName);
             if (card && game.buildCard(card)) SHOP_STOCK[data.cardName]--;
             break;
-        case 'buildLandmark': game.buildLandmark(data.name); break;
-        case 'nextTurn':      game.nextTurn(); break;
+        }
+        case 'buildLandmark':   game.buildLandmark(data.name); break;
+        case 'nextTurn':        game.nextTurn(); break;
     }
+}
+
+function handleRemoteAction(action, data) {
+    applyAction(action, data);
     render();
     scheduleCPU();
 }
@@ -476,6 +527,7 @@ function render() {
 
         if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); }
         localStorage.removeItem('savedGame');
+        localStorage.removeItem('onlineSession');
         updateResumeButton();
         startConfetti();
         document.getElementById("btnRoll").disabled = true;
@@ -1488,14 +1540,45 @@ function saveGameState() {
 }
 
 function updateResumeButton() {
-    const section = document.getElementById('resumeSection');
-    if (section) section.style.display = localStorage.getItem('savedGame') ? 'flex' : 'none';
+    const localSection = document.getElementById('resumeSection');
+    if (localSection) localSection.style.display = localStorage.getItem('savedGame') ? 'flex' : 'none';
+    const onlineSection = document.getElementById('onlineResumeSection');
+    if (onlineSection) onlineSection.style.display = localStorage.getItem('onlineSession') ? 'block' : 'none';
 }
 
 function deleteSavedGame() {
     if (!confirm("セーブデータを削除しますか？")) return;
     localStorage.removeItem('savedGame');
     updateResumeButton();
+}
+
+function deleteOnlineSession() {
+    if (!confirm("オンライン再接続データを削除しますか？")) return;
+    localStorage.removeItem('onlineSession');
+    updateResumeButton();
+}
+
+function reconnectOnline() {
+    const raw = localStorage.getItem('onlineSession');
+    if (!raw) return;
+    try {
+        const session = JSON.parse(raw);
+        isRoomHost = session.isRoomHost || false;
+        myPlayerName = session.playerName || '';
+        myRoomId = session.roomId;
+        initSocket();
+        document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
+        switchTab('online');
+        socket.emit('rejoinRoom', {
+            roomId: session.roomId,
+            playerIndex: session.playerIndex,
+            playerName: session.playerName,
+        });
+    } catch(e) {
+        localStorage.removeItem('onlineSession');
+        updateResumeButton();
+        alert('再接続データの読み込みに失敗しました');
+    }
 }
 
 function resumeGame() {

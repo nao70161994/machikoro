@@ -95,7 +95,32 @@ io.on('connection', (socket) => {
     socket.on('gameAction', ({ action, data }) => {
         const roomId = socket.roomId;
         if (!roomId) return;
+        if (rooms[roomId] && rooms[roomId].actionLog) {
+            rooms[roomId].actionLog.push({ action, data });
+        }
         socket.to(roomId).emit('gameAction', { action, data, playerIndex: socket.playerIndex });
+    });
+
+    socket.on('rejoinRoom', ({ roomId, playerIndex, playerName }) => {
+        const room = rooms[roomId];
+        if (!room) { socket.emit('error', 'ルームが見つかりません（サーバーが再起動した可能性があります）'); return; }
+        if (!room.started) { socket.emit('error', 'ゲームはまだ開始されていません'); return; }
+
+        const player = room.players.find(p => p.index === playerIndex && p.name === playerName);
+        if (!player) { socket.emit('error', '再接続情報が一致しません'); return; }
+
+        player.id = socket.id;
+        socket.join(roomId);
+        socket.roomId = roomId;
+        socket.playerIndex = playerIndex;
+
+        socket.emit('rejoinData', {
+            gameStartPayload: room.gameStartPayload,
+            actionLog: room.actionLog || [],
+            playerIndex,
+        });
+        io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
+        console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
     });
 
     socket.on('disconnect', () => {
@@ -154,13 +179,16 @@ function checkGameStart(io, roomId) {
             [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
         }
 
-        io.to(roomId).emit('gameStart', {
+        const gameStartPayload = {
             enabledCards: room.enabledCards,
             playerNames,
             playerSettings: room.playerSettings,
             cpuSpeed: room.cpuSpeed,
             playerOrder
-        });
+        };
+        rooms[roomId].gameStartPayload = gameStartPayload;
+        rooms[roomId].actionLog = [];
+        io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${playerNames.join(', ')}`);
     }
 }
