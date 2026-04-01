@@ -466,6 +466,7 @@ function applyAction(action, data) {
             break;
         }
         case 'buildLandmark':   game.buildLandmark(data.name); break;
+        case 'undoBuild':       restoreUndoSnapshot(data.state); break;
         case 'nextTurn':        game.nextTurn(); break;
     }
 }
@@ -1765,28 +1766,45 @@ function saveUndoState() {
     undoState = {
         playerCoins:        game.players.map(p => p.coins),
         playerCardNames:    game.players.map(p => p.cards.map(c => c.name)),
+        playerDormantIndices: game.players.map(p =>
+            p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0)
+        ),
         playerLandmarks:    game.players.map(p => Object.assign({}, p.landmarks)),
         playerItVenture:    game.players.map(p => p.itVentureCoins),
+        playerHasLoan:      game.players.map(p => p.hasLoan),
+        playerHasYakusho:   game.players.map(p => p.hasYakusho),
         shopStock:          Object.assign({}, SHOP_STOCK),
         builtThisTurn:      game.builtThisTurn,
         log:                [...game.log],
     };
 }
 
-function doUndo() {
-    if (!undoState) return;
+function restoreUndoSnapshot(state) {
+    if (!state) return;
     game.players.forEach((p, i) => {
-        p.coins = undoState.playerCoins[i];
-        p.cards = undoState.playerCardNames[i].map(name => CARDS.find(c => c.name === name)).filter(Boolean);
-        p.landmarks = Object.assign({}, undoState.playerLandmarks[i]);
-        p.itVentureCoins = undoState.playerItVenture[i];
+        p.coins = state.playerCoins[i];
+        p.cards = state.playerCardNames[i].map(name => CARDS.find(c => c.name === name)).filter(Boolean);
+        p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
+        p.landmarks = Object.assign({}, state.playerLandmarks[i]);
+        p.itVentureCoins = state.playerItVenture[i];
+        p.hasLoan = state.playerHasLoan?.[i] || false;
+        p.hasYakusho = state.playerHasYakusho?.[i] !== false;
     });
-    Object.assign(SHOP_STOCK, undoState.shopStock);
-    game.builtThisTurn = undoState.builtThisTurn;
-    game.log = [...undoState.log];
+    Object.assign(SHOP_STOCK, state.shopStock);
+    game.builtThisTurn = state.builtThisTurn;
+    game.log = [...state.log];
     undoState = null;
     prevCoins = null;
     cancelAutoSkip();
+}
+
+function doUndo() {
+    if (!undoState) return;
+    const state = undoState;
+    if (isOnlineGame) {
+        sendAction('undoBuild', { state });
+    }
+    restoreUndoSnapshot(state);
     render();
 }
 
