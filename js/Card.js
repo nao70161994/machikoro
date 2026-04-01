@@ -34,7 +34,7 @@ const CARDS = [
 
     // ===== プラス =====
     // 青カード
-    new Card("花畑",     2, [4],     2, "blue",  "農園",   "normal"),
+    new Card("花畑",     2, [4],     1, "blue",  "農園",   "normal"),
     new Card("サンマ漁船",2, [8],     3, "blue",  "海産",   "harbor"),
     new Card("マグロ漁船",5, [12,13,14],0,"blue", "海産",   "tuna"),
     // 緑カード
