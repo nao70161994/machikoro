@@ -145,7 +145,7 @@ class GameManager {
                 }
 
                 let amount = card.income;
-                if (current.landmarks["ショッピングモール"] &&
+                if (other.landmarks["ショッピングモール"] &&
                     (card.category === "飲食店" || card.category === "商店")) amount += 1;
                 amount = Math.min(amount, current.coins);
                 current.coins -= amount;
