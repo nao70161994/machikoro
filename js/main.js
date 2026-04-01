@@ -402,6 +402,10 @@ function initSocket() {
             isReconnectingOnline = false;
             localStorage.removeItem('onlineSession');
             updateResumeButton();
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
         }
         document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
     });

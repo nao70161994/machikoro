@@ -77,6 +77,10 @@ io.on('connection', (socket) => {
                 }
             }
         } else {
+            if (room.players.length >= room.maxPlayers) {
+                socket.emit('error', '参加できる枠がありません');
+                return;
+            }
             playerIndex = room.players.length;
         }
 
