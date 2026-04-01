@@ -460,7 +460,7 @@ class GameManager {
             this.addLog(`❌ 大施設は1枚しか持てません`); return false;
         }
         current.coins -= card.cost;
-        current.addCard(card);
+        current.addCard(cloneCard(card));
         if (card.effect === "loan") {
             current.coins += 5;
             this.addLog(`💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`);

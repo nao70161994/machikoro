@@ -1604,10 +1604,7 @@ function resumeGame() {
             const p = game.players[i];
             p.name = ps.name;
             p.coins = ps.coins;
-            p.cards = ps.cards.map(name => {
-                const found = CARDS.find(c => c.name === name);
-                return found ? new Card(found.name, found.cost, found.diceNums, found.income, found.color, found.category, found.effect) : null;
-            }).filter(Boolean);
+            p.cards = ps.cards.map(name => createCardByName(name)).filter(Boolean);
             p.dormantCards = ps.dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
             p.landmarks = Object.assign({}, ps.landmarks);
             p.itVentureCoins = ps.itVentureCoins || 0;
@@ -1783,7 +1780,7 @@ function restoreUndoSnapshot(state) {
     if (!state) return;
     game.players.forEach((p, i) => {
         p.coins = state.playerCoins[i];
-        p.cards = state.playerCardNames[i].map(name => CARDS.find(c => c.name === name)).filter(Boolean);
+        p.cards = state.playerCardNames[i].map(name => createCardByName(name)).filter(Boolean);
         p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
         p.landmarks = Object.assign({}, state.playerLandmarks[i]);
         p.itVentureCoins = state.playerItVenture[i];

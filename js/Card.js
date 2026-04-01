@@ -67,3 +67,13 @@ CARDS.push(new Card("会員制BAR",  4, [12,13,14],0,"red",  "飲食店", "membe
 CARDS.push(new Card("清掃業",     4, [8],     0, "purple", "大施設", "cleaning"));
 CARDS.push(new Card("ITベンチャー",1,[10],    0, "purple", "大施設", "itstartup"));
 CARDS.push(new Card("公園",       3, [11,12,13],0,"purple","大施設", "park"));
+
+function cloneCard(card) {
+    if (!card) return null;
+    return new Card(card.name, card.cost, [...card.diceNums], card.income, card.color, card.category, card.effect);
+}
+
+function createCardByName(name) {
+    const card = CARDS.find(c => c.name === name);
+    return cloneCard(card);
+}
