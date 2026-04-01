@@ -320,7 +320,7 @@ function initSocket() {
         document.getElementById("onlineStatus").innerHTML = `
             <div>ルームを作成しました！</div>
             <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">参加者を待っています...</div>`;
+            <div class="waiting-players">プレイヤーを待っています...</div>`;
     });
 
     socket.on('roomJoined', ({ roomId, playerIndex }) => {
@@ -332,7 +332,7 @@ function initSocket() {
     socket.on('playerList', (players) => {
         document.getElementById("onlineStatus").innerHTML = `
             <div class="room-id-display">${myRoomId}</div>
-            <div class="waiting-players">参加者: ${players.join('、')} (${players.length}人)</div>`;
+            <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
     socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec }) => {

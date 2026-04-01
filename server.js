@@ -23,7 +23,10 @@ io.on('connection', (socket) => {
         let hostIndex = 0;
         if (playerSettings && playerSettings.length > 0) {
             hostIndex = playerSettings.findIndex(s => s.type === "human");
-            if (hostIndex === -1) hostIndex = 0;
+            if (hostIndex === -1) {
+                socket.emit('error', 'オンライン対戦は最低1人の人間プレイヤーが必要です');
+                return;
+            }
         }
         rooms[roomId] = {
             enabledCards: enabledCards || null,
