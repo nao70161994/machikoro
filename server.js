@@ -2,10 +2,13 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
+const vm = require('vm');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const gameRuntime = loadGameRuntime();
 
 app.use(express.static(path.join(__dirname)));
 
@@ -25,6 +28,7 @@ io.on('connection', (socket) => {
         rooms[roomId] = {
             enabledCards: enabledCards || null,
             players: [{ id: socket.id, name: playerName, index: hostIndex }],
+            hostPlayerIndex: hostIndex,
             maxPlayers: playerCount,
             playerSettings: playerSettings || [],
             cpuSpeed: cpuSpeed || 1500,
@@ -95,8 +99,14 @@ io.on('connection', (socket) => {
     socket.on('gameAction', ({ action, data }) => {
         const roomId = socket.roomId;
         if (!roomId) return;
-        if (rooms[roomId] && rooms[roomId].actionLog) {
-            rooms[roomId].actionLog.push({ action, data });
+        const room = rooms[roomId];
+        if (!room || !room.started) return;
+        if (!validateGameAction(room, socket, action, data)) {
+            socket.emit('error', '無効な操作です');
+            return;
+        }
+        if (room.actionLog) {
+            room.actionLog.push({ action, data });
         }
         socket.to(roomId).emit('gameAction', { action, data, playerIndex: socket.playerIndex });
     });
@@ -156,6 +166,167 @@ function buildPlayerList(room) {
         if (p) return p.name;
         return "待機中...";
     });
+}
+
+function loadGameRuntime() {
+    const context = { console };
+    vm.createContext(context);
+    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js']) {
+        const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
+        vm.runInContext(source, context, { filename: file });
+    }
+    vm.runInContext(
+        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName;',
+        context
+    );
+    return context;
+}
+
+function createRoomMirror(room) {
+    if (!room.gameStartPayload) return null;
+    const { GameManager, CARDS, createCardByName } = gameRuntime;
+    const { playerNames, playerSettings, playerOrder, enabledCards } = room.gameStartPayload;
+    const game = new GameManager(playerNames.length);
+    const shopStock = {};
+    const enabled = new Set(enabledCards || CARDS.map(c => c.name));
+    for (const card of CARDS) {
+        shopStock[card.name] = enabled.has(card.name) ? 6 : 0;
+    }
+
+    const order = playerOrder || playerNames.map((_, i) => i);
+    for (let i = 0; i < playerNames.length; i++) {
+        const originalIndex = order[i];
+        game.players[i].name = playerNames[originalIndex];
+    }
+    const cpuPlayers = (playerSettings && playerSettings.length > 0)
+        ? order.map(originalIndex => playerSettings[originalIndex]?.type === 'cpu')
+        : game.players.map(() => false);
+
+    for (const { action, data } of room.actionLog || []) {
+        applyActionToMirror(game, shopStock, action, data, createCardByName);
+    }
+    return { game, shopStock, cpuPlayers };
+}
+
+function applyActionToMirror(game, shopStock, action, data, createCardByName) {
+    switch (action) {
+        case 'rollDice':
+            game.rollDice(data.forceDice, data.tunaDice);
+            break;
+        case 'selectDice':
+            game.selectDiceCount(data.useTwo, data.d1, data.d2, data.tunaDice);
+            break;
+        case 'skipReroll':
+            game.skipReroll();
+            break;
+        case 'rerollDice':
+            game.rerollDice(data.forceDice, data.tunaDice);
+            break;
+        case 'resolveHarbor':
+            game.resolveHarbor(data.useBonus);
+            break;
+        case 'resolveTV':
+            game.resolveTV(data.targetIndex);
+            break;
+        case 'resolveBusiness':
+            game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard);
+            break;
+        case 'resolveCleaning':
+            game.resolveCleaning(data.cardName);
+            break;
+        case 'resolveMover':
+            game.resolveMover(data.cardName, data.targetIndex);
+            break;
+        case 'resolveRenovation':
+            game.resolveRenovation(data.landmarkName);
+            break;
+        case 'resolveIT':
+            game.resolveIT(data.doSave);
+            break;
+        case 'buildCard': {
+            const card = createCardByName(data.cardName);
+            if (card && game.buildCard(card)) shopStock[data.cardName]--;
+            break;
+        }
+        case 'buildLandmark':
+            game.buildLandmark(data.name);
+            break;
+        case 'undoBuild':
+            restoreUndoMirror(game, shopStock, data.state, createCardByName);
+            break;
+        case 'nextTurn':
+            game.nextTurn();
+            break;
+    }
+}
+
+function restoreUndoMirror(game, shopStock, state, createCardByName) {
+    if (!state) return;
+    game.players.forEach((p, i) => {
+        p.coins = state.playerCoins[i];
+        p.cards = state.playerCardNames[i].map(name => createCardByName(name)).filter(Boolean);
+        p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
+        p.landmarks = Object.assign({}, state.playerLandmarks[i]);
+        p.itVentureCoins = state.playerItVenture[i];
+        p.hasYakusho = state.playerHasYakusho?.[i] !== false;
+    });
+    Object.assign(shopStock, state.shopStock);
+    game.builtThisTurn = state.builtThisTurn;
+    game.log = [...state.log];
+}
+
+function validateGameAction(room, socket, action, data) {
+    const mirror = createRoomMirror(room);
+    if (!mirror) return false;
+    const { game, cpuPlayers } = mirror;
+    const currentIndex = game.currentPlayerIndex;
+    const currentIsCpu = !!cpuPlayers[currentIndex];
+    const hostPlayerIndex = room.hostPlayerIndex;
+
+    if (currentIsCpu) {
+        if (socket.playerIndex !== hostPlayerIndex) return false;
+    } else if (socket.playerIndex !== currentIndex) {
+        return false;
+    }
+
+    const allowed = getAllowedActions(game);
+    if (!allowed.has(action)) return false;
+
+    if (action === 'resolveTV') {
+        return Number.isInteger(data.targetIndex) &&
+            data.targetIndex >= 0 &&
+            data.targetIndex < game.players.length &&
+            data.targetIndex !== currentIndex;
+    }
+
+    return true;
+}
+
+function getAllowedActions(game) {
+    if (game.pendingIT) return new Set(['resolveIT']);
+    switch (game.phase) {
+        case 'roll':
+            return new Set(['rollDice']);
+        case 'selectDice':
+            return new Set(['selectDice']);
+        case 'rerollConfirm':
+            return new Set(['rerollDice', 'skipReroll']);
+        case 'harborChoice':
+            return new Set(['resolveHarbor']);
+        case 'pending': {
+            const actions = new Set();
+            if (game.pendingTV > 0) actions.add('resolveTV');
+            if (game.pendingBusiness > 0) actions.add('resolveBusiness');
+            if (game.pendingCleaning > 0) actions.add('resolveCleaning');
+            if (game.pendingMover > 0) actions.add('resolveMover');
+            if (game.pendingRenovation > 0) actions.add('resolveRenovation');
+            return actions;
+        }
+        case 'build':
+            return new Set(['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild']);
+        default:
+            return new Set();
+    }
 }
 
 function checkGameStart(io, roomId) {

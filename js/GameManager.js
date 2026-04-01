@@ -350,6 +350,10 @@ class GameManager {
     resolveTV(targetIndex) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
+        if (!target || target === current) {
+            this.addLog(`❌ 対象プレイヤーを選び直してください`);
+            return;
+        }
         const steal = Math.min(5, target.coins);
         target.coins -= steal;
         current.coins += steal;
