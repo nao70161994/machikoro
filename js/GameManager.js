@@ -368,10 +368,16 @@ class GameManager {
         const myCard = current.cards.find(c => c.name === myCardName && c.category !== "大施設");
         const theirCard = target.cards.find(c => c.name === theirCardName && c.category !== "大施設");
         if (!myCard || !theirCard) { this.addLog(`❌ 交換できない施設です`); return; }
+        const myCardWasDormant = current.isDormant(myCard);
+        const theirCardWasDormant = target.isDormant(theirCard);
+        current.revive(myCard);
+        target.revive(theirCard);
         current.cards.splice(current.cards.indexOf(myCard), 1);
         target.cards.splice(target.cards.indexOf(theirCard), 1);
         current.cards.push(theirCard);
         target.cards.push(myCard);
+        if (theirCardWasDormant) current.makeDormant(theirCard);
+        if (myCardWasDormant) target.makeDormant(myCard);
         this.addLog(`🔄 ${myCardName} ⇔ ${target.name}の${theirCardName} を交換しました`);
         this.pendingBusiness--;
         this._checkPending();
@@ -399,8 +405,11 @@ class GameManager {
         const target = this.players[targetIndex];
         const myCard = current.cards.find(c => c.name === myCardName && c.category !== "大施設");
         if (!myCard) { this.addLog(`❌ 渡せない施設です`); return; }
+        const myCardWasDormant = current.isDormant(myCard);
+        current.revive(myCard);
         current.cards.splice(current.cards.indexOf(myCard), 1);
         target.cards.push(myCard);
+        if (myCardWasDormant) target.makeDormant(myCard);
         current.coins += 4;
         this.addLog(`🚚 ${myCardName}を${target.name}に渡して+4コイン`);
         this.pendingMover--;
