@@ -5,7 +5,6 @@ class Player {
         this.cards = [];
         this.dormantCards = []; // 休業中のカード
         this.itVentureCoins = 0; // ITベンチャーの積立コイン
-        this.hasLoan = false;    // 貸金業を持っているか
 
         this.landmarks = {
             "駅":             false,

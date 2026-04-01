@@ -1518,7 +1518,6 @@ function saveGameState() {
                 dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
                 landmarks: Object.assign({}, p.landmarks),
                 itVentureCoins: p.itVentureCoins,
-                hasLoan: p.hasLoan,
                 hasYakusho: p.hasYakusho,
             })),
             currentPlayerIndex: game.currentPlayerIndex,
@@ -1614,7 +1613,6 @@ function resumeGame() {
             p.dormantCards = ps.dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
             p.landmarks = Object.assign({}, ps.landmarks);
             p.itVentureCoins = ps.itVentureCoins || 0;
-            p.hasLoan = ps.hasLoan || false;
             p.hasYakusho = ps.hasYakusho !== false;
         });
 
@@ -1774,7 +1772,6 @@ function saveUndoState() {
         ),
         playerLandmarks:    game.players.map(p => Object.assign({}, p.landmarks)),
         playerItVenture:    game.players.map(p => p.itVentureCoins),
-        playerHasLoan:      game.players.map(p => p.hasLoan),
         playerHasYakusho:   game.players.map(p => p.hasYakusho),
         shopStock:          Object.assign({}, SHOP_STOCK),
         builtThisTurn:      game.builtThisTurn,
@@ -1790,7 +1787,6 @@ function restoreUndoSnapshot(state) {
         p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
         p.landmarks = Object.assign({}, state.playerLandmarks[i]);
         p.itVentureCoins = state.playerItVenture[i];
-        p.hasLoan = state.playerHasLoan?.[i] || false;
         p.hasYakusho = state.playerHasYakusho?.[i] !== false;
     });
     Object.assign(SHOP_STOCK, state.shopStock);
