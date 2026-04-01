@@ -72,6 +72,7 @@ let myPlayerName = '';
 let isOnlineGame = false;
 let myRoomId = null;
 let isReplaying = false;
+let isReconnectingOnline = false;
 
 function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
@@ -363,6 +364,7 @@ function initSocket() {
     socket.on('rejoinData', ({ gameStartPayload, actionLog, playerIndex }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec } = gameStartPayload;
         isOnlineGame = true;
+        isReconnectingOnline = false;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         myPlayerIndex = playerIndex;
@@ -385,7 +387,9 @@ function initSocket() {
     });
 
     socket.on('playerRejoined', ({ playerIndex, playerName }) => {
-        game && game.addLog(`🔌 ${playerName}が再接続しました`);
+        if (playerIndex !== myPlayerIndex) {
+            game && game.addLog(`🔌 ${playerName}が再接続しました`);
+        }
         render();
     });
 
@@ -394,6 +398,11 @@ function initSocket() {
     });
 
     socket.on('error', (msg) => {
+        if (isReconnectingOnline) {
+            isReconnectingOnline = false;
+            localStorage.removeItem('onlineSession');
+            updateResumeButton();
+        }
         document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
     });
 }
@@ -1581,6 +1590,7 @@ function reconnectOnline() {
     if (!raw) return;
     try {
         const session = JSON.parse(raw);
+        isReconnectingOnline = true;
         isRoomHost = session.isRoomHost || false;
         myPlayerName = session.playerName || '';
         myRoomId = session.roomId;
@@ -1593,6 +1603,7 @@ function reconnectOnline() {
             playerName: session.playerName,
         });
     } catch(e) {
+        isReconnectingOnline = false;
         localStorage.removeItem('onlineSession');
         updateResumeButton();
         alert('再接続データの読み込みに失敗しました');
