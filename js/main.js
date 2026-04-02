@@ -212,6 +212,7 @@ function cpuDo(action, data, fallback) {
     }
     fallback();
     render();
+    scheduleCPU();
 }
 
 function queueCPUStep(token, delay, fn) {
@@ -315,7 +316,7 @@ function scheduleCPU() {
                                 render();
                             }
                             queueCPUStep(token, cpuSpeed, () => {
-                                if (game.phase === "build") {
+                                if (game.phase === "build" && !game.pendingIT) {
                                     cpuDo('nextTurn', {}, () => game.nextTurn());
                                 }
                                 queueCPUStep(token, cpuSpeed, () => {
