@@ -1,44 +1,52 @@
-# Machikoro
+# Machi Koroゲーム
 
-## Project Description
-Machikoro is a popular card game where players aim to build the most prosperous city by investing in various establishments. The game provides a unique blend of strategy and luck, as players roll dice to earn income from their establishments and compete to complete key landmarks.
+## プロジェクトの説明
+Machi Koroは、プレイヤーが自分の都市を成長させることを目指すサイコロを使った戦略ゲームです。ゲームは簡単に学ぶことができ、さまざまな戦略を使用できます。
 
-## Setup Instructions
-To set up the Machikoro project locally, follow these steps:
-
-1. **Clone the repository:**  
+## セットアップ手順
+1. リポジトリをクローンします:
    ```bash
-   git clone https://github.com/nao70161994/machikoro.git
-   cd machikoro
-   ```  
-2. **Install dependencies:**  
-   Depending on your setup, you may need to install additional dependencies. If you are using Node.js, run:  
+   git clone https://github.com/ユーザー名/MachiKoro.git
+   cd MachiKoro
+   ```
+2. 必要なパッケージをインストールします:
    ```bash
    npm install
-   ```  
-3. **Run the project:**  
-   You can start the project by running:  
+   ```
+
+## 機能
+- プレイヤーは都市を建設し、拡大できる。
+- 異なるタイプの建物があり、戦略的に選ぶことで勝利のチャンスが増します。
+- サイコロの出目に基づいたリソース管理。
+
+## ゲームプレイの概要
+プレイヤーはサイコロを振り、指定されたリソースを獲得します。都市を拡張するためにさまざまな建物を購入し、他のプレイヤーと競い合います。
+
+## プロジェクト構造
+```
+MachiKoro/
+├── src/
+│   ├── index.js
+│   ├── app.js
+│   └── ...
+├── test/
+│   ├── app.test.js
+│   └── ...
+└── README.md
+```
+
+## 開発のガイドライン
+- コードはクリーンで整理されたスタイルで書くこと。
+- プルリクエストには、変更内容の詳細な説明をつけること。
+
+## テスト手順
+1. ユニットテストを実行する:
    ```bash
-   npm start
-   ```  
+   npm test
+   ```
 
-## Features
-- **Multiple Game Modes:** Play solo or with up to 4 players.
-- **Customizable Game Rules:** Tailor the rules to fit your preferred style of play.
-- **Diverse Card Types:** Choose from various establishments and landmarks that provide different benefits.
-- **Visual Representation:** Intuitive graphics that enhance the gaming experience.
+## 貢献方法
+与えられたバグを修正したり、新機能を追加したい場合は、プルリクエストを作成してください。開発のフォークを作成し、それに基づいて作業してください。
 
-## Gameplay Overview
-Machikoro is a game of strategic decision-making. Players roll dice to earn money, which they can use to buy new establishments. These establishments provide specific benefits when triggered by dice rolls. The goal is to complete your landmarks before the other players. Each turn, players must decide whether to invest in short-term gains or longer-term strategies, making for a dynamic gaming experience.
-
-## Development Guidelines
-- **Code Structure:** Maintain a clean and organized code structure for ease of navigation and collaboration.
-- **Commit Messages:** Use clear, descriptive commit messages.
-- **Pull Requests:** Before merging, ensure that your code is thoroughly tested and reviewed. Create a pull request to integrate your changes.
-- **Documentation:** Keep code well-documented for better understanding and future reference.
-
-## License
-This project is open source and available under the [MIT License](LICENSE).  
-
-## Contact Information
-For any inquiries, you can reach me at [your-email@example.com].
+## ライセンス
+このプロジェクトはMITライセンスの下でライセンスされています。
