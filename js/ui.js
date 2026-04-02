@@ -71,12 +71,20 @@ function renderLog() {
 
     // ターン切り替えやリロール時に game.log がリセットされる
     if (cur.length < prevLogLength) {
-        if (fullLog.length > 0 && cur.length > 0) fullLog.push("__SEP__");
+        const isReroll = cur.length > 0 && cur[0].startsWith("📡");
+        if (!isReroll && fullLog.length > 0 && cur.length > 0) fullLog.push("__SEP__");
         fullLog.push(...cur);
     } else {
         fullLog.push(...cur.slice(prevLogLength));
     }
     prevLogLength = cur.length;
+
+    // 最大件数を超えたら古いエントリを切り捨て
+    const MAX_FULL_LOG = 300;
+    if (fullLog.length > MAX_FULL_LOG) {
+        fullLog = fullLog.slice(fullLog.length - MAX_FULL_LOG);
+        while (fullLog.length > 0 && fullLog[0] === "__SEP__") fullLog.shift();
+    }
 
     const entryCount = fullLog.filter(e => e !== "__SEP__").length;
     titleEl.textContent = `📋 ログ (${entryCount})`;
@@ -292,6 +300,10 @@ function render() {
 
     document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    if (game.phase === "roll" && game.currentPlayerIndex !== prevPlayerIndex) {
+        if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
+        prevPlayerIndex = game.currentPlayerIndex;
+    }
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     document.getElementById("btnRoll").disabled = game.phase !== "roll" || isCPUTurn || !isMyTurn;
     const btnSkip = document.getElementById("btnSkip");
@@ -356,10 +368,19 @@ function renderPending() {
         const current = game.currentPlayer();
         const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p>自分の施設：</p><select id="myCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => {
+        const myDefaultIdx = myCards[0]?.index ?? 0;
+        const myChips = myCards.map(({ card, index }, j) =>
+            `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'myCardSelect')">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
+        ).join("");
+        const othersHtml = others.map(({ p, i }) => {
             const theirCards = p.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
-            return `<p>${escapeHtml(p.name)}の施設：</p><select id="theirCardSelect_${i}">${theirCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${p.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select><button onclick="onResolveBusiness(${i})">${escapeHtml(p.name)}と交換</button>`;
-        }).join("")}</div>`;
+            const theirDefaultIdx = theirCards[0]?.index ?? 0;
+            const theirChips = theirCards.map(({ card, index }, j) =>
+                `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'theirCardSelect_${i}')">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
+            ).join("");
+            return `<p class="bc-label">${escapeHtml(p.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="theirCardSelect_${i}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" onclick="onResolveBusiness(${i})">⇄ ${escapeHtml(p.name)}と交換</button>`;
+        }).join("");
+        html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
     }
     if (game.pendingCleaning > 0) {
         const allCardNames = [...new Set(game.players.flatMap(p => p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).map(c => c.name)))];
@@ -495,6 +516,31 @@ function renderBuildMenu() {
     document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
 }
 
+function bcSelectCard(btn, inputId) {
+    const group = btn.closest('.bc-chip-group');
+    if (group) group.querySelectorAll('.bc-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById(inputId).value = btn.dataset.idx;
+}
+
+function showTurnAnnouncer(name, isCPU) {
+    const el = document.getElementById("turnAnnouncer");
+    const text = document.getElementById("turnAnnouncerText");
+    if (!el || !text) return;
+    if (announcerTimer) { clearTimeout(announcerTimer); announcerTimer = null; }
+    el.classList.remove("hiding");
+    el.style.display = "flex";
+    text.textContent = `${isCPU ? "🤖" : "👤"} ${name} のターン`;
+    announcerTimer = setTimeout(() => {
+        el.classList.add("hiding");
+        announcerTimer = setTimeout(() => {
+            el.style.display = "none";
+            el.classList.remove("hiding");
+            announcerTimer = null;
+        }, 400);
+    }, 1300);
+}
+
 function switchTab(tab) {
     document.getElementById("tabContentLocal").style.display = tab === "local" ? "flex" : "none";
     document.getElementById("tabContentOnline").style.display = tab === "online" ? "flex" : "none";
@@ -527,8 +573,10 @@ let enabledCards = new Set(CARDS.map(c => c.name));
 let enabledLandmarks = new Set(Player.landmarkNames());
 let fullLog = [];
 let prevLogLength = 0;
+let prevPlayerIndex = -1;
+let announcerTimer = null;
 
-function resetFullLog() { fullLog = []; prevLogLength = 0; }
+function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; }
 
 function showCardSelect() {
     renderCardSelectModal();

@@ -1224,10 +1224,98 @@ button:not(:disabled):active {
     background: rgba(233,69,96,0.4);
 }
 
-.pending-box select {
-    cursor: default;
-    text-align: left;
-    background: rgba(30,26,48,0.9);
+/* ビジネスセンター カードチップ */
+.bc-label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: rgba(255,255,255,0.6) !important;
+    text-align: left !important;
+    margin-bottom: 8px !important;
+}
+
+.bc-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.bc-chip {
+    width: auto !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    border-radius: 20px !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    color: rgba(255,255,255,0.75) !important;
+    margin-bottom: 0 !important;
+    transition: background 0.12s, border-color 0.12s, color 0.12s !important;
+}
+
+.bc-chip.selected {
+    background: rgba(233,69,96,0.28) !important;
+    border-color: rgba(233,69,96,0.7) !important;
+    color: #fffffe !important;
+}
+
+.bc-chip:not(:disabled):hover {
+    background: rgba(233,69,96,0.18) !important;
+    border-color: rgba(233,69,96,0.5) !important;
+}
+
+.bc-exchange-btn {
+    width: 100%;
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+    text-align: center !important;
+    border-radius: 10px !important;
+    background: rgba(233,69,96,0.18) !important;
+    border: 1px solid rgba(233,69,96,0.45) !important;
+    margin-bottom: 12px !important;
+}
+
+.bc-exchange-btn:not(:disabled):hover {
+    background: rgba(233,69,96,0.32) !important;
+}
+
+/* ===== ターン開始アナウンサー ===== */
+@keyframes announcerIn {
+    from { opacity: 0; transform: scale(0.88); }
+    to   { opacity: 1; transform: scale(1); }
+}
+@keyframes announcerOut {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.92); }
+}
+
+.turn-announcer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 700;
+}
+
+.turn-announcer-content {
+    background: linear-gradient(135deg, #1e1a30 0%, #0f0e1a 100%);
+    border: 1px solid rgba(240,192,64,0.45);
+    border-radius: 18px;
+    padding: 18px 36px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #f0c040;
+    text-shadow: 0 0 24px rgba(240,192,64,0.5);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+    animation: announcerIn 0.28s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.turn-announcer.hiding .turn-announcer-content {
+    animation: announcerOut 0.38s ease forwards;
 }
 
 /* ===== やり直しボタン ===== */
