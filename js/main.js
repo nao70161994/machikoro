@@ -173,6 +173,7 @@ function init(playerCount) {
     winSoundPlayed = false;
     cancelAutoSkip();
     undoState = null;
+    resetFullLog();
     game = new GameManager(playerCount);
     if (enabledLandmarks.size === 0) enabledLandmarks = new Set(Player.landmarkNames());
     game.enabledLandmarks = new Set(enabledLandmarks);
@@ -484,6 +485,7 @@ function joinRoom() {
 
 function initOnlineGame(playerNames, ps, playerOrder) {
     const count = playerNames.length;
+    resetFullLog();
     game = new GameManager(count);
     game.enabledLandmarks = new Set(enabledLandmarks.size > 0 ? enabledLandmarks : Player.landmarkNames());
     for (const card of CARDS) {

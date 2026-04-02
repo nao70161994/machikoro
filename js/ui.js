@@ -67,22 +67,42 @@ function renderLog() {
     const summaryEl = document.getElementById("logSummary");
     if (!logEl || !titleEl || !summaryEl) return;
 
-    const logs = game.log || [];
-    titleEl.textContent = `📋 ログ (${logs.length})`;
-    logEl.innerHTML = logs.map((entry, index) => {
+    const cur = game.log || [];
+
+    // ターン切り替えやリロール時に game.log がリセットされる
+    if (cur.length < prevLogLength) {
+        if (fullLog.length > 0 && cur.length > 0) fullLog.push("__SEP__");
+        fullLog.push(...cur);
+    } else {
+        fullLog.push(...cur.slice(prevLogLength));
+    }
+    prevLogLength = cur.length;
+
+    const entryCount = fullLog.filter(e => e !== "__SEP__").length;
+    titleEl.textContent = `📋 ログ (${entryCount})`;
+
+    // 最後の実エントリのインデックスを求める
+    let lastEntryIdx = -1;
+    for (let i = fullLog.length - 1; i >= 0; i--) {
+        if (fullLog[i] !== "__SEP__") { lastEntryIdx = i; break; }
+    }
+
+    logEl.innerHTML = fullLog.map((entry, index) => {
+        if (entry === "__SEP__") return `<div class="log-separator"></div>`;
         const { cls } = classifyLogEntry(entry);
-        const latestCls = index === logs.length - 1 ? " log-latest" : "";
+        const latestCls = index === lastEntryIdx ? " log-latest" : "";
         return `<div class="log-item ${cls}${latestCls}">${escapeHtml(entry)}</div>`;
     }).join("");
 
-    const recent = logs.slice(-8);
+    // サマリーは現在ターンのログのみ使用
+    const recent = cur.slice(-8);
     const counts = { "収入": 0, "支払い": 0, "建設": 0, "特殊": 0, "ダイス": 0 };
     recent.forEach(entry => {
         const { label } = classifyLogEntry(entry);
         if (counts[label] !== undefined) counts[label]++;
     });
     const summaryParts = [];
-    const latest = logs[logs.length - 1];
+    const latest = cur[cur.length - 1];
     if (latest) {
         summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest)}</span>`);
         const details = extractLogDetails(latest);
@@ -322,9 +342,11 @@ function renderDiceChoose() {
 
 function renderPending() {
     const el = document.getElementById("pendingMenu");
-    if (game.phase !== "pending" && !game.pendingIT && game.pendingRenovation <= 0) { el.innerHTML = ""; return; }
+    const modal = document.getElementById("pendingModal");
+    const hide = () => { el.innerHTML = ""; modal.style.display = "none"; };
+    if (game.phase !== "pending" && !game.pendingIT && game.pendingRenovation <= 0) { hide(); return; }
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    if (!isMyTurn) { el.innerHTML = ""; return; }
+    if (!isMyTurn) { hide(); return; }
     let html = "";
     if (game.pendingTV > 0) {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
@@ -360,6 +382,7 @@ function renderPending() {
         html += `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button onclick="onResolveIT(true)" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button onclick="onResolveIT(false)">スキップ</button></div>`;
     }
     el.innerHTML = html;
+    modal.style.display = html ? "flex" : "none";
 }
 
 function renderPlayers() {
@@ -451,7 +474,13 @@ function renderBuildMenu() {
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
     const canBuild = game.phase === "build" && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
-    const cardHtml = CARDS.map(card => {
+    const COLOR_ORDER = { blue: 0, green: 1, red: 2, purple: 3 };
+    const sortedCards = [...CARDS].sort((a, b) => {
+        const cd = (COLOR_ORDER[a.color] ?? 9) - (COLOR_ORDER[b.color] ?? 9);
+        if (cd !== 0) return cd;
+        return Math.min(...a.diceNums) - Math.min(...b.diceNums);
+    });
+    const cardHtml = sortedCards.map(card => {
         const stock = SHOP_STOCK[card.name];
         if (stock <= 0) return "";
         const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCard(card.name) > 0);
@@ -496,6 +525,10 @@ const CARD_SETS = {
 
 let enabledCards = new Set(CARDS.map(c => c.name));
 let enabledLandmarks = new Set(Player.landmarkNames());
+let fullLog = [];
+let prevLogLength = 0;
+
+function resetFullLog() { fullLog = []; prevLogLength = 0; }
 
 function showCardSelect() {
     renderCardSelectModal();

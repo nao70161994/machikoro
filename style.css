@@ -825,6 +825,25 @@ button:not(:disabled):active {
 .log-item.log-error   { border-color: #ef4444; color: #fca5a5; }
 .log-item.log-latest  { box-shadow: inset 0 0 0 1px rgba(240,192,64,0.25); }
 
+.log-separator {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 6px 0;
+    position: relative;
+}
+.log-separator::after {
+    content: "── ターン ──";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    color: rgba(167,169,190,0.5);
+    background: #1a1a2e;
+    padding: 0 6px;
+    white-space: nowrap;
+}
+
 .log-summary {
     display: flex;
     flex-wrap: wrap;
@@ -1132,28 +1151,83 @@ button:not(:disabled):active {
     border-radius: 8px;
 }
 
-/* ===== pendingメニュー ===== */
-@keyframes pendingPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(233,69,96,0.0), 0 4px 16px rgba(0,0,0,0.5); }
-    50%       { box-shadow: 0 0 0 3px rgba(233,69,96,0.2), 0 4px 16px rgba(0,0,0,0.5); }
+/* ===== pendingモーダル ===== */
+.pending-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.pending-modal-inner {
+    background: linear-gradient(160deg, #1e1a30 0%, #0f0e1a 100%);
+    border-radius: 18px;
+    padding: 22px 20px 18px;
+    width: 100%;
+    max-width: 440px;
+    border: 2px solid rgba(233,69,96,0.55);
+    box-shadow: 0 0 48px rgba(233,69,96,0.18), 0 12px 40px rgba(0,0,0,0.8);
+    animation: modalSlideIn 0.22s cubic-bezier(0.22,1,0.36,1) both;
 }
 
 .pending-box {
-    background: linear-gradient(135deg, #1e1a2e 0%, #0f0e1a 100%);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(233,69,96,0.5);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: pendingPulse 2s ease-in-out infinite;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-bottom: 0;
 }
 
 .pending-box p {
-    margin-bottom: 10px;
-    color: #ff6b7a;
-    font-size: 14px;
-    font-weight: 600;
+    margin-bottom: 14px;
+    color: #ff8a95;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
     letter-spacing: 0.02em;
+}
+
+.pending-box button,
+.pending-box select {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 14px 16px;
+    font-size: 16px;
+    text-align: center;
+    border-radius: 10px;
+    background: rgba(233,69,96,0.12);
+    border: 1px solid rgba(233,69,96,0.35);
+    color: #fffffe;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.pending-box button:last-child {
+    margin-bottom: 0;
+}
+
+.pending-box button:not(:disabled):hover {
+    background: rgba(233,69,96,0.28);
+    border-color: rgba(233,69,96,0.6);
+}
+
+.pending-box button:not(:disabled):active {
+    background: rgba(233,69,96,0.4);
+}
+
+.pending-box select {
+    cursor: default;
+    text-align: left;
+    background: rgba(30,26,48,0.9);
 }
 
 /* ===== やり直しボタン ===== */
