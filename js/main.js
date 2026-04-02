@@ -71,8 +71,23 @@ let myPlayerIndex = -1;
 let myPlayerName = '';
 let isOnlineGame = false;
 let myRoomId = null;
+let reconnectToken = '';
 let isReplaying = false;
 let isReconnectingOnline = false;
+
+function saveOnlineSession() {
+    if (!myRoomId || myPlayerIndex < 0 || !myPlayerName || !reconnectToken) return;
+    try {
+        localStorage.setItem('onlineSession', JSON.stringify({
+            roomId: myRoomId,
+            playerIndex: myPlayerIndex,
+            playerName: myPlayerName,
+            reconnectToken,
+            isRoomHost,
+        }));
+        updateResumeButton();
+    } catch (e) {}
+}
 
 function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
@@ -133,6 +148,7 @@ function restartGame() {
         isRoomHost = false;
         myPlayerIndex = -1;
         myRoomId = null;
+        reconnectToken = '';
         isReplaying = false;
         document.getElementById("gameScreen").style.display = "none";
         document.getElementById("titleScreen").style.display = "block";
@@ -316,18 +332,20 @@ function initSocket() {
     if (socket) return;
     socket = io();
 
-    socket.on('roomCreated', ({ roomId, playerIndex }) => {
+    socket.on('roomCreated', ({ roomId, playerIndex, reconnectToken: token }) => {
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
+        reconnectToken = token;
         document.getElementById("onlineStatus").innerHTML = `
             <div>ルームを作成しました！</div>
             <div class="room-id-display">${roomId}</div>
             <div class="waiting-players">プレイヤーを待っています...</div>`;
     });
 
-    socket.on('roomJoined', ({ roomId, playerIndex }) => {
+    socket.on('roomJoined', ({ roomId, playerIndex, reconnectToken: token }) => {
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
+        reconnectToken = token;
         document.getElementById("onlineStatus").textContent = `ルーム ${roomId} に参加しました！`;
     });
 
@@ -342,15 +360,7 @@ function initSocket() {
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         // initOnlineGame がmyPlayerIndexを上書きする前に保存
-        try {
-            localStorage.setItem('onlineSession', JSON.stringify({
-                roomId: myRoomId,
-                playerIndex: myPlayerIndex,
-                playerName: myPlayerName,
-                isRoomHost,
-            }));
-            updateResumeButton();
-        } catch(e) {}
+        saveOnlineSession();
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
         initOnlineGame(playerNames, ps, playerOrder);
@@ -412,6 +422,7 @@ function initSocket() {
             try {
                 const s = JSON.parse(raw);
                 s.isRoomHost = isRoomHost;
+                s.reconnectToken = reconnectToken || s.reconnectToken || '';
                 localStorage.setItem('onlineSession', JSON.stringify(s));
             } catch (_) {}
         }
@@ -1642,6 +1653,7 @@ function reconnectOnline() {
         isRoomHost = session.isRoomHost || false;
         myPlayerName = session.playerName || '';
         myRoomId = session.roomId;
+        reconnectToken = session.reconnectToken || '';
         initSocket();
         document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
         switchTab('online');
@@ -1649,6 +1661,7 @@ function reconnectOnline() {
             roomId: session.roomId,
             playerIndex: session.playerIndex,
             playerName: session.playerName,
+            reconnectToken: session.reconnectToken,
         });
     } catch(e) {
         isReconnectingOnline = false;

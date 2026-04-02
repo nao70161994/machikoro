@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,6 +17,13 @@ const rooms = {};
 
 function sanitizeName(name) {
     return String(name || '').trim().slice(0, 20).replace(/[<>&"'`]/g, '');
+}
+
+function generateReconnectToken() {
+    if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return crypto.randomBytes(16).toString('hex');
 }
 
 // 開始済みルームのGC（2時間アクティビティなしで削除）
@@ -38,6 +46,7 @@ io.on('connection', (socket) => {
         if (!playerName) { socket.emit('error', '名前が無効です'); return; }
         let roomId;
         do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); } while (rooms[roomId]);
+        const reconnectToken = generateReconnectToken();
         // ホストの人間枠を探す
         let hostIndex = 0;
         if (playerSettings && playerSettings.length > 0) {
@@ -49,7 +58,7 @@ io.on('connection', (socket) => {
         }
         rooms[roomId] = {
             enabledCards: enabledCards || null,
-            players: [{ id: socket.id, name: playerName, index: hostIndex }],
+            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
             hostPlayerIndex: hostIndex,
             maxPlayers: playerCount,
             playerSettings: playerSettings || [],
@@ -59,7 +68,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = hostIndex;
-        socket.emit('roomCreated', { roomId, playerIndex: hostIndex });
+        socket.emit('roomCreated', { roomId, playerIndex: hostIndex, reconnectToken });
 
         // 参加者リストを送信
         const playerList = buildPlayerList(rooms[roomId]);
@@ -110,11 +119,12 @@ io.on('connection', (socket) => {
             return;
         }
 
-        room.players.push({ id: socket.id, name: playerName, index: playerIndex });
+        const reconnectToken = generateReconnectToken();
+        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken });
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
-        socket.emit('roomJoined', { roomId, playerIndex });
+        socket.emit('roomJoined', { roomId, playerIndex, reconnectToken });
 
         // 参加者リストを送信
         const playerList = buildPlayerList(room);
@@ -150,12 +160,16 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('gameAction', { action, data: safeData, playerIndex: socket.playerIndex });
     });
 
-    socket.on('rejoinRoom', ({ roomId, playerIndex, playerName }) => {
+    socket.on('rejoinRoom', ({ roomId, playerIndex, playerName, reconnectToken }) => {
         const room = rooms[roomId];
         if (!room) { socket.emit('error', 'ルームが見つかりません（サーバーが再起動した可能性があります）'); return; }
         if (!room.started) { socket.emit('error', 'ゲームはまだ開始されていません'); return; }
 
-        const player = room.players.find(p => p.index === playerIndex && p.name === playerName);
+        const player = room.players.find(p =>
+            p.index === playerIndex &&
+            p.name === playerName &&
+            p.reconnectToken === reconnectToken
+        );
         if (!player) { socket.emit('error', '再接続情報が一致しません'); return; }
 
         player.id = socket.id;
@@ -374,8 +388,14 @@ function validateGameAction(room, socket, action, data) {
         const cardName = data?.cardName;
         const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(c => c.name));
         const card = gameRuntime.createCardByName(cardName);
+        const current = game.currentPlayer();
         return {
-            ok: !!card && enabledCards.has(cardName) && (shopStock[cardName] || 0) > 0,
+            ok: !!card &&
+                enabledCards.has(cardName) &&
+                (shopStock[cardName] || 0) > 0 &&
+                !game.builtThisTurn &&
+                current.coins >= card.cost &&
+                !(card.color === 'purple' && current.countCard(card.name) > 0),
             mirror,
         };
     }
