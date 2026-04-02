@@ -121,28 +121,29 @@ function startGame() {
 }
 
 function restartGame() {
-    if (!confirm("最初からやり直しますか？\n現在のゲームは終了します")) return;
-    localStorage.removeItem('savedGame');
-    localStorage.removeItem('onlineSession');
-    cpuScheduleToken++;
-    if (socket) {
-        socket.disconnect();
-        socket = null;
-    }
-    isOnlineGame = false;
-    isRoomHost = false;
-    myPlayerIndex = -1;
-    myRoomId = null;
-    isReplaying = false;
-    document.getElementById("gameScreen").style.display = "none";
-    document.getElementById("titleScreen").style.display = "block";
-    selectedCount = 2;
-    playerSettings = [];
-    cpuPlayers = [];
-    document.getElementById("playerCount").textContent = 2;
-    renderPlayerSettings();
-    updateResumeButton();
-    drawCitySkyline();
+    showConfirm("最初からやり直しますか？\n現在のゲームは終了します", () => {
+        localStorage.removeItem('savedGame');
+        localStorage.removeItem('onlineSession');
+        cpuScheduleToken++;
+        if (socket) {
+            socket.disconnect();
+            socket = null;
+        }
+        isOnlineGame = false;
+        isRoomHost = false;
+        myPlayerIndex = -1;
+        myRoomId = null;
+        isReplaying = false;
+        document.getElementById("gameScreen").style.display = "none";
+        document.getElementById("titleScreen").style.display = "block";
+        selectedCount = 2;
+        playerSettings = [];
+        cpuPlayers = [];
+        document.getElementById("playerCount").textContent = 2;
+        renderPlayerSettings();
+        updateResumeButton();
+        drawCitySkyline();
+    });
 }
 
 function init(playerCount) {
@@ -1071,28 +1072,30 @@ function onResolveIT(doSave) {
 function onBuildCard(name) {
     const card = CARDS.find(c => c.name === name);
     if (!card) return;
-    if (!confirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`)) return;
-    saveUndoState();
-    cancelAutoSkip();
-    if (game.buildCard(card)) {
-        SHOP_STOCK[name]--;
-        sendAction('buildCard', { cardName: name });
-        playSound('build');
-    }
-    render();
-    scheduleCPU();
+    showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
+        saveUndoState();
+        cancelAutoSkip();
+        if (game.buildCard(card)) {
+            SHOP_STOCK[name]--;
+            sendAction('buildCard', { cardName: name });
+            playSound('build');
+        }
+        render();
+        scheduleCPU();
+    });
 }
 
 function onBuildLandmark(name) {
     const cost = Player.landmarkCost(name);
-    if (!confirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`)) return;
-    saveUndoState();
-    cancelAutoSkip();
-    game.buildLandmark(name);
-    sendAction('buildLandmark', { name });
-    playSound('build');
-    render();
-    scheduleCPU();
+    showConfirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`, () => {
+        saveUndoState();
+        cancelAutoSkip();
+        game.buildLandmark(name);
+        sendAction('buildLandmark', { name });
+        playSound('build');
+        render();
+        scheduleCPU();
+    });
 }
 
 function onSkip() {
@@ -1104,13 +1107,14 @@ function onSkip() {
     } else {
         msg = "建設せずにターン終了しますか？";
     }
-    if (!confirm(msg)) return;
-    cancelAutoSkip();
-    undoState = null;
-    game.nextTurn();
-    sendAction('nextTurn');
-    render();
-    scheduleCPU();
+    showConfirm(msg, () => {
+        cancelAutoSkip();
+        undoState = null;
+        game.nextTurn();
+        sendAction('nextTurn');
+        render();
+        scheduleCPU();
+    });
 }
 
 // サイコロの目を描画
@@ -1530,6 +1534,20 @@ function closeCardDetail() {
     document.getElementById('cardDetailModal').style.display = 'none';
 }
 
+// ===== カスタム確認ダイアログ =====
+function showConfirm(message, onOk) {
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmMessage').textContent = message;
+    modal.style.display = 'flex';
+    document.getElementById('confirmOkBtn').onclick = () => {
+        modal.style.display = 'none';
+        onOk();
+    };
+    document.getElementById('confirmCancelBtn').onclick = () => {
+        modal.style.display = 'none';
+    };
+}
+
 // ===== ゲーム状態の自動セーブ・リストア =====
 function saveGameState() {
     if (!game || isOnlineGame) return;
@@ -1578,15 +1596,17 @@ function updateResumeButton() {
 }
 
 function deleteSavedGame() {
-    if (!confirm("セーブデータを削除しますか？")) return;
-    localStorage.removeItem('savedGame');
-    updateResumeButton();
+    showConfirm("セーブデータを削除しますか？", () => {
+        localStorage.removeItem('savedGame');
+        updateResumeButton();
+    });
 }
 
 function deleteOnlineSession() {
-    if (!confirm("オンライン再接続データを削除しますか？")) return;
-    localStorage.removeItem('onlineSession');
-    updateResumeButton();
+    showConfirm("オンライン再接続データを削除しますか？", () => {
+        localStorage.removeItem('onlineSession');
+        updateResumeButton();
+    });
 }
 
 function reconnectOnline() {

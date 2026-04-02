@@ -1264,6 +1264,53 @@ button:not(:disabled):active {
     border-radius: 8px;
 }
 
+/* ===== 確認ダイアログ ===== */
+.confirm-modal-content {
+    max-width: 300px;
+}
+
+.confirm-modal-body {
+    padding: 24px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#confirmMessage {
+    color: #e0e0f0;
+    font-size: 15px;
+    line-height: 1.7;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.confirm-btn-cancel {
+    flex: 1;
+    padding: 11px;
+    background: rgba(167,169,190,0.1);
+    border: 1px solid rgba(167,169,190,0.25);
+    border-radius: 10px;
+    color: #a7a9be;
+    font-size: 15px;
+}
+
+.confirm-btn-ok {
+    flex: 1;
+    padding: 11px;
+    background: linear-gradient(135deg, #e94560, #c73652);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 4px 12px rgba(233,69,96,0.35);
+}
+
 /* ===== カードラッパー（詳細ボタン用）===== */
 .card-wrapper {
     position: relative;
