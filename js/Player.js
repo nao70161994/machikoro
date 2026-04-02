@@ -6,14 +6,9 @@ class Player {
         this.dormantCards = []; // 休業中のカード
         this.itVentureCoins = 0; // ITベンチャーの積立コイン
 
-        this.landmarks = {
-            "駅":             false,
-            "ショッピングモール": false,
-            "遊園地":         false,
-            "電波塔":         false,
-            "港":             false,
-            "空港":           false,
-        };
+        this.landmarks = Object.fromEntries(
+            Player._LANDMARK_DEFS.map(d => [d.name, false])
+        );
 
         // 役所は特殊初期カードとして別管理
         this.hasYakusho = true;
@@ -48,24 +43,19 @@ class Player {
     }
 
     static landmarkNames() {
-        return [
-            "駅",
-            "ショッピングモール",
-            "遊園地",
-            "電波塔",
-            "港",
-            "空港",
-        ];
+        return Player._LANDMARK_DEFS.map(d => d.name);
     }
 
     static landmarkCost(name) {
-        return {
-            "駅":             4,
-            "ショッピングモール": 10,
-            "遊園地":         16,
-            "電波塔":         22,
-            "港":             2,
-            "空港":           30,
-        }[name] ?? 0;
+        return (Player._LANDMARK_DEFS.find(d => d.name === name) ?? { cost: 0 }).cost;
     }
 }
+
+Player._LANDMARK_DEFS = [
+    { name: "駅",             cost: 4  },
+    { name: "ショッピングモール", cost: 10 },
+    { name: "遊園地",         cost: 16 },
+    { name: "電波塔",         cost: 22 },
+    { name: "港",             cost: 2  },
+    { name: "空港",           cost: 30 },
+];

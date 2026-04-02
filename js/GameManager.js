@@ -130,7 +130,26 @@ class GameManager {
         const current = this.currentPlayer();
         const ci = this.currentPlayerIndex;
 
-        // 赤カード
+        this._processRed(current, ci, dice);
+        this._processBlue(dice, tunaDice);
+        this._processGreen(current, dice);
+        this._processPurple(current, ci, dice);
+
+        // 役所：建設フェーズ開始時コイン0なら+1
+        if (current.coins === 0 && current.hasYakusho) {
+            current.coins += 1;
+            this.addLog(`🏛️ 役所効果 → +1コイン`);
+        }
+
+        if (!this.pendingTV && !this.pendingBusiness &&
+            !this.pendingCleaning && !this.pendingMover && !this.pendingRenovation) {
+            this.phase = "build";
+        } else {
+            this.phase = "pending";
+        }
+    }
+
+    _processRed(current, ci, dice) {
         for (let i = 0; i < this.players.length; i++) {
             if (i === ci) continue;
             const other = this.players[i];
@@ -168,8 +187,9 @@ class GameManager {
                 this.addLog(`💸 ${other.name}の${card.name}発動 → ${amount}コイン獲得`);
             }
         }
+    }
 
-        // 青カード
+    _processBlue(dice, tunaDice) {
         for (const p of this.players) {
             for (const card of p.cards) {
                 if (p.isDormant(card)) continue;
@@ -199,8 +219,9 @@ class GameManager {
                 }
             }
         }
+    }
 
-        // 緑カード
+    _processGreen(current, dice) {
         for (const card of current.cards) {
             if (current.isDormant(card)) continue;
             if (card.color !== "green" || !card.diceNums.includes(dice)) continue;
@@ -244,7 +265,6 @@ class GameManager {
             } else if (card.effect === "loan") {
                 continue;
             } else if (card.effect === "renovation") {
-                // 建設済みランドマークがある場合のみ発動
                 const builtLandmarks = Object.entries(current.landmarks)
                     .filter(([name, built]) => built && name !== "役所");
                 if (builtLandmarks.length > 0) {
@@ -265,7 +285,7 @@ class GameManager {
                 this.addLog(`🏪 ${card.name}発動 → +${amount}コイン`);
             }
         }
-        
+
         // 貸金業：自分のターンに5か6が出たら枚数×2コイン支払い
         if (dice === 5 || dice === 6) {
             const loanCount = current.cards.filter(c => c.effect === "loan").length;
@@ -275,8 +295,9 @@ class GameManager {
                 this.addLog(`💳 貸金業×${loanCount}：${pay}コイン支払い`);
             }
         }
+    }
 
-        // 紫カード
+    _processPurple(current, ci, dice) {
         for (const card of current.cards) {
             if (current.isDormant(card)) continue;
             if (card.color !== "purple" || !card.diceNums.includes(dice)) continue;
@@ -327,7 +348,6 @@ class GameManager {
                 this.pendingCleaning++;
                 this.addLog(`🧹 清掃業発動 → 休業にする施設を選んでください`);
             } else if (card.effect === "itstartup") {
-                // ITベンチャー：全員から積立額を奪う
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
@@ -345,19 +365,6 @@ class GameManager {
                 current.coins += remainder;
                 this.addLog(`🌳 公園発動 → 全員${each}コインに均等分配`);
             }
-        }
-
-        // 役所：建設フェーズ開始時コイン0なら+1
-        if (current.coins === 0 && current.hasYakusho) {
-            current.coins += 1;
-            this.addLog(`🏛️ 役所効果 → +1コイン`);
-        }
-
-        if (!this.pendingTV && !this.pendingBusiness &&
-            !this.pendingCleaning && !this.pendingMover && !this.pendingRenovation) {
-            this.phase = "build";
-        } else {
-            this.phase = "pending";
         }
     }
 
