@@ -9,24 +9,134 @@ class CPU {
 
     // ===== サイコロ判断 =====
 
+    _cardActivationValue(card, game, owner, roller, dice) {
+        const ownerIndex = game.players.indexOf(owner);
+        const rollerIndex = game.players.indexOf(roller);
+        const isCurrentTurn = ownerIndex === rollerIndex;
+        const opponents = game.players.filter((_, i) => i !== ownerIndex);
+        const livingCards = owner.cards.filter(c => !owner.isDormant(c));
+
+        if (card.color === "blue") {
+            if (card.effect === "harbor") return owner.landmarks["港"] ? card.income : 0;
+            if (card.effect === "tuna") return owner.landmarks["港"] ? 7 : 0;
+            return card.income;
+        }
+
+        if (card.color === "red") {
+            if (isCurrentTurn) return 0;
+            if (card.effect === "harbor_red") return roller.landmarks["港"] ? card.income : 0;
+            if (card.effect === "frenchr") return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 2 ? card.income : 0;
+            if (card.effect === "memberbar") return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 3 ? Math.max(roller.coins, 4) : 0;
+            return card.income + (roller.landmarks["ショッピングモール"] && card.category === "飲食店" ? 1 : 0);
+        }
+
+        if (!isCurrentTurn) return 0;
+
+        switch (card.effect) {
+            case "cheese":
+                return owner.countCard("牧場") * card.income;
+            case "furniture":
+                return (owner.countCard("森林") + owner.countCard("鉱山")) * card.income;
+            case "flower":
+                return owner.countCard("花畑") * card.income;
+            case "market":
+                return livingCards.filter(c => c.category === "農園").length * card.income;
+            case "foodwarehouse":
+                return livingCards.filter(c => c.category === "飲食店").length * card.income;
+            case "drinkfactory":
+                return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category === "飲食店" && !p.isDormant(c)).length, 0) * card.income;
+            case "winery":
+                return owner.cards.filter(c => c.name === "ブドウ園" && !owner.isDormant(c)).length * card.income;
+            case "stadium":
+                return opponents.length * card.income;
+            case "tv":
+                return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
+            case "publisher":
+                return opponents.reduce((sum, p) =>
+                    sum + p.cards.filter(c => (c.category === "飲食店" || c.category === "商店") && !p.isDormant(c)).length, 0);
+            case "taxoffice":
+                return opponents.filter(p => p.coins >= 10).length * 5;
+            case "fewlandmark":
+            case "cornfield":
+                return Object.values(owner.landmarks).filter(Boolean).length <= 1 ? card.income : 0;
+            case "loan":
+                return (dice === 5 || dice === 6) ? -2 : 0;
+            case "business":
+                return 4;
+            case "cleaning":
+                return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).length, 0) * 0.4;
+            case "mover":
+                return 4;
+            case "renovation":
+                return Object.values(owner.landmarks).filter(([v]) => v).length ? 3 : 0;
+            case "itstartup":
+                return opponents.length * Math.max(owner.itVentureCoins, 1);
+            case "park":
+                return 2;
+            default: {
+                let amount = card.income;
+                if (owner.landmarks["ショッピングモール"] &&
+                    (card.category === "飲食店" || card.category === "商店")) amount += 1;
+                return amount;
+            }
+        }
+    }
+
+    _estimateRollScore(game, dice) {
+        let score = 0;
+        const current = game.currentPlayer();
+        for (const player of game.players) {
+            for (const card of player.cards) {
+                if (player.isDormant(card)) continue;
+                if (!card.diceNums.includes(dice)) continue;
+                const value = this._cardActivationValue(card, game, player, current, dice);
+                if (player === current) score += value;
+                else score -= value * (card.color === "blue" ? 0.7 : 1);
+            }
+        }
+        return score;
+    }
+
+    _expectedDiceScore(game, useTwo) {
+        const weights = useTwo
+            ? { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 }
+            : { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1 };
+        let totalWeight = 0;
+        let totalScore = 0;
+        for (const [diceText, weight] of Object.entries(weights)) {
+            const dice = parseInt(diceText, 10);
+            totalWeight += weight;
+            totalScore += this._estimateRollScore(game, dice) * weight;
+        }
+        return totalWeight > 0 ? totalScore / totalWeight : 0;
+    }
+
     chooseDiceCount(game) {
         if (this.difficulty === "weak") return Math.random() < 0.5;
-        return true;
+        const oneScore = this._expectedDiceScore(game, false);
+        const twoScore = this._expectedDiceScore(game, true);
+        if (this.difficulty === "normal") {
+            return twoScore > oneScore + 0.8;
+        }
+        return twoScore >= oneScore;
     }
 
     chooseReroll(game) {
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;
-        if (this.difficulty === "normal") return dice <= 3;
-        // 強い：自分のカードが発動する目かチェック
-        const current = game.currentPlayer();
-        const myDiceNums = new Set(current.cards.flatMap(c => c.diceNums));
-        return !myDiceNums.has(dice) || dice <= 3;
+        const currentScore = this._estimateRollScore(game, dice);
+        const usingTwoDice = game.lastDice2 > 0;
+        const rerollScore = this._expectedDiceScore(game, usingTwoDice);
+        if (this.difficulty === "normal") return rerollScore > currentScore + 1.2;
+        return rerollScore > currentScore + 0.3;
     }
 
     chooseHarbor(game) {
         if (this.difficulty === "weak") return Math.random() < 0.5;
-        return true;
+        const keepScore = this._estimateRollScore(game, game.lastDiceResult);
+        const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
+        if (this.difficulty === "normal") return bonusScore > keepScore + 0.5;
+        return bonusScore >= keepScore;
     }
 
     chooseTVTarget(game) {
@@ -56,7 +166,11 @@ class CPU {
                 if (i === ci) continue;
                 const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
                 if (theirCards.length === 0) continue;
-                const theirBest = theirCards.sort((a, b) => b.cost - a.cost)[0];
+                const theirBest = theirCards.sort((a, b) => {
+                    const av = b.cost + (game.players[i].isDormant(b) ? 1.5 : 0);
+                    const bv = a.cost + (game.players[i].isDormant(a) ? 1.5 : 0);
+                    return av - bv;
+                })[0];
                 game.resolveBusiness(current.cards.indexOf(myWorst), i, game.players[i].cards.indexOf(theirBest));
                 return;
             }
@@ -163,6 +277,39 @@ class CPU {
         game.buildLandmark(name);
     }
 
+    _landmarkUrgency(name, current, game) {
+        const builtCount = Object.values(current.landmarks).filter(Boolean).length;
+        const opponentMaxBuilt = Math.max(0, ...game.players
+            .filter(p => p !== current)
+            .map(p => Object.values(p.landmarks).filter(Boolean).length));
+        if (name === "駅") return builtCount < 2 ? 8 : 5;
+        if (name === "ショッピングモール") return current.cards.filter(c => c.category === "飲食店" || c.category === "商店").length >= 3 ? 8 : 4;
+        if (name === "港") return current.cards.some(c => c.effect === "harbor" || c.effect === "harbor_red" || c.effect === "tuna") ? 7 : 3;
+        if (name === "電波塔") return builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
+        if (name === "遊園地") return current.landmarks["駅"] ? 5 : 2;
+        if (name === "空港") return builtCount >= 4 ? 6 : 1;
+        return 0;
+    }
+
+    _maybeBuyLandmark(current, game, reserve = 0, minUrgency = 0) {
+        const landmarkPriority = ["駅", "ショッピングモール", "港", "電波塔", "遊園地", "空港"];
+        let best = null;
+        for (const name of landmarkPriority) {
+            const cost = Player.landmarkCost(name);
+            if (current.landmarks[name] || current.coins < cost + reserve) continue;
+            const urgency = this._landmarkUrgency(name, current, game);
+            if (urgency < minUrgency) continue;
+            if (!best || urgency > best.urgency || (urgency === best.urgency && cost < best.cost)) {
+                best = { name, cost, urgency };
+            }
+        }
+        if (best) {
+            this._buyLandmark(best.name, game);
+            return true;
+        }
+        return false;
+    }
+
     // 弱いCPU：ランダム購入
     buildWeak(game, shopStock) {
         const current = game.currentPlayer();
@@ -179,18 +326,10 @@ class CPU {
     buildNormal(game, shopStock) {
         const current = game.currentPlayer();
 
-        // ランドマーク：安い順に買えたら買う
-        const landmarkPriority = ["港", "駅", "ショッピングモール", "遊園地", "電波塔", "空港"];
-        for (const name of landmarkPriority) {
-            const cost = Player.landmarkCost(name);
-            if (!current.landmarks[name] && current.coins >= cost) {
-                this._buyLandmark(name, game);
-                return;
-            }
-        }
-
         // シナジーチェック
         if (this._trySynergy(current, game, shopStock)) return;
+
+        if (this._maybeBuyLandmark(current, game, 1, 6)) return;
 
         // スコア順にカードを選ぶ
         const affordable = CARDS.filter(card =>
@@ -200,7 +339,11 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         );
         const sorted = this.sortAffordable(affordable, game, current);
-        if (sorted.length > 0) this._buyCard(sorted[0].card, game, shopStock);
+        if (sorted.length > 0 && sorted[0].score >= 1.1) {
+            this._buyCard(sorted[0].card, game, shopStock);
+            return;
+        }
+        this._maybeBuyLandmark(current, game, 0, 4);
     }
 
     // 強いCPU：状況判断型
@@ -208,7 +351,6 @@ class CPU {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const builtCount = Object.values(current.landmarks).filter(v => v).length;
-        const landmarkPriority = ["港", "駅", "ショッピングモール", "遊園地", "電波塔", "空港"];
 
         // 誰かが勝利に近い（ランドマーク4つ以上）→ 緊急モード：ランドマーク最優先
         const opponentMaxBuilt = Math.max(...game.players
@@ -216,38 +358,15 @@ class CPU {
             .map(p => Object.values(p.landmarks).filter(v => v).length));
         const emergencyMode = opponentMaxBuilt >= 4 || builtCount >= 4;
 
-        if (emergencyMode) {
-            for (const name of landmarkPriority) {
-                const cost = Player.landmarkCost(name);
-                if (!current.landmarks[name] && current.coins >= cost) {
-                    this._buyLandmark(name, game);
-                    return;
-                }
-            }
-        }
-
-        // 序盤：港・駅は早めに取る（コインが余っていれば）
-        for (const name of ["港", "駅"]) {
-            const cost = Player.landmarkCost(name);
-            if (!current.landmarks[name] && current.coins >= cost + 2) {
-                this._buyLandmark(name, game);
-                return;
-            }
-        }
+        if (emergencyMode && this._maybeBuyLandmark(current, game, 0, 3)) return;
 
         // シナジーチェック
         if (this._trySynergy(current, game, shopStock)) return;
 
+        if (this._maybeBuyLandmark(current, game, 2, 6)) return;
+
         // ランドマーク3つ以上 → 残りのランドマーク優先
-        if (builtCount >= 3) {
-            for (const name of landmarkPriority) {
-                const cost = Player.landmarkCost(name);
-                if (!current.landmarks[name] && current.coins >= cost) {
-                    this._buyLandmark(name, game);
-                    return;
-                }
-            }
-        }
+        if (builtCount >= 3 && this._maybeBuyLandmark(current, game, 0, 3)) return;
 
         // 相手が10コイン以上持っていたら攻撃カードを優先
         const richOpponent = game.players.some((p, i) => i !== ci && p.coins >= 10);
@@ -262,15 +381,6 @@ class CPU {
             }
         }
 
-        // ランドマーク購入（通常）
-        for (const name of landmarkPriority) {
-            const cost = Player.landmarkCost(name);
-            if (!current.landmarks[name] && current.coins >= cost) {
-                this._buyLandmark(name, game);
-                return;
-            }
-        }
-
         // スコア順にカードを選ぶ
         const affordable = CARDS.filter(card =>
             shopStock[card.name] > 0 &&
@@ -279,7 +389,14 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         );
         const sorted = this.sortAffordable(affordable, game, current);
-        if (sorted.length > 0) this._buyCard(sorted[0].card, game, shopStock);
+        if (sorted.length > 0) {
+            const [best, second] = sorted;
+            if (!second || best.score >= second.score * 0.95) {
+                this._buyCard(best.card, game, shopStock);
+                return;
+            }
+        }
+        this._maybeBuyLandmark(current, game, 0, 2);
     }
 
     // シナジー購入チェック（普通・強い共通）
@@ -300,6 +417,8 @@ class CPU {
         if (try_("フラワーショップ", 1, current.countCard("花畑") >= 2)) return true;
         if (try_("青果市場",    2, current.cards.filter(c => c.category === "農園").length >= 3)) return true;
         if (try_("食品倉庫",    2, current.cards.filter(c => c.category === "飲食店").length >= 3)) return true;
+        if (try_("テレビ局",    7, game.players.some(p => p !== current && p.coins >= 6) && current.countCard("テレビ局") === 0)) return true;
+        if (try_("税務署",      4, game.players.some(p => p !== current && p.coins >= 10) && current.countCard("税務署") === 0)) return true;
 
         return false;
     }
