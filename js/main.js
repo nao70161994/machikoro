@@ -68,6 +68,7 @@ function onChangeOnlinePlayerType(index, value) {
 }
 let socket = null;
 let myPlayerIndex = -1;
+let myOriginalPlayerIndex = -1;
 let myPlayerName = '';
 let isOnlineGame = false;
 let myRoomId = null;
@@ -76,11 +77,11 @@ let isReplaying = false;
 let isReconnectingOnline = false;
 
 function saveOnlineSession() {
-    if (!myRoomId || myPlayerIndex < 0 || !myPlayerName || !reconnectToken) return;
+    if (!myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return;
     try {
         localStorage.setItem('onlineSession', JSON.stringify({
             roomId: myRoomId,
-            playerIndex: myPlayerIndex,
+            playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,
             reconnectToken,
             isRoomHost,
@@ -147,6 +148,7 @@ function restartGame() {
         isOnlineGame = false;
         isRoomHost = false;
         myPlayerIndex = -1;
+        myOriginalPlayerIndex = -1;
         myRoomId = null;
         reconnectToken = '';
         isReplaying = false;
@@ -333,6 +335,7 @@ function initSocket() {
     socket = io();
 
     socket.on('roomCreated', ({ roomId, playerIndex, reconnectToken: token }) => {
+        myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
         reconnectToken = token;
@@ -343,6 +346,7 @@ function initSocket() {
     });
 
     socket.on('roomJoined', ({ roomId, playerIndex, reconnectToken: token }) => {
+        myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
         reconnectToken = token;
@@ -378,6 +382,7 @@ function initSocket() {
         isReconnectingOnline = false;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
+        myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         cpuScheduleToken++;
 
@@ -398,7 +403,7 @@ function initSocket() {
     });
 
     socket.on('playerRejoined', ({ playerIndex, playerName }) => {
-        if (playerIndex !== myPlayerIndex) {
+        if (playerIndex !== myOriginalPlayerIndex) {
             game && game.addLog(`🔌 ${playerName}が再接続しました`);
         }
         render();
@@ -409,7 +414,7 @@ function initSocket() {
     });
 
     socket.on('hostChanged', ({ newHostPlayerIndex }) => {
-        if (myPlayerIndex === newHostPlayerIndex) {
+        if (myOriginalPlayerIndex === newHostPlayerIndex) {
             isRoomHost = true;
             game.addLog(`👑 あなたがホストになりました`);
             render();
@@ -494,8 +499,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
 
     // myPlayerIndexをシャッフル後の位置に更新
     // order[i] === 元のindex なので、自分の元indexがorderの何番目かを探す
-    const originalMyIndex = myPlayerIndex;
-    myPlayerIndex = order.indexOf(originalMyIndex);
+    myPlayerIndex = order.indexOf(myOriginalPlayerIndex);
     if (myPlayerIndex === -1) myPlayerIndex = 0; // 見つからない場合はホスト
     
     game.addLog(`👤 ${game.currentPlayer().name}のターン`);
