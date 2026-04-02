@@ -1,12 +1,3 @@
-function cpuDo(action, data, fallback) {
-    if (typeof sendAction === "function" && typeof isOnlineGame !== "undefined" && isOnlineGame) {
-        sendAction(action, data);
-        fallback();
-    } else {
-        fallback();
-    }
-}
-
 class CPU {
     constructor(difficulty) {
         this.difficulty = difficulty;
@@ -66,11 +57,7 @@ class CPU {
                 const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
                 if (theirCards.length === 0) continue;
                 const theirBest = theirCards.sort((a, b) => b.cost - a.cost)[0];
-                cpuDo(
-                    'resolveBusiness',
-                    { myCard: myWorst.name, targetIndex: i, theirCard: theirBest.name },
-                    () => game.resolveBusiness(myWorst.name, i, theirBest.name)
-                );
+                game.resolveBusiness(myWorst.name, i, theirBest.name);
                 return;
             }
         } else {
@@ -80,11 +67,7 @@ class CPU {
                 if (theirCards.length === 0) continue;
                 const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                 const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
-                cpuDo(
-                    'resolveBusiness',
-                    { myCard: myCard.name, targetIndex: i, theirCard: theirCard.name },
-                    () => game.resolveBusiness(myCard.name, i, theirCard.name)
-                );
+                game.resolveBusiness(myCard.name, i, theirCard.name);
                 return;
             }
         }
@@ -173,13 +156,11 @@ class CPU {
     }
 
     _buyCard(card, game, shopStock) {
-        cpuDo('buildCard', { cardName: card.name }, () => {
-            if (game.buildCard(card)) shopStock[card.name]--;
-        });
+        if (game.buildCard(card)) shopStock[card.name]--;
     }
 
     _buyLandmark(name, game) {
-        cpuDo('buildLandmark', { name }, () => game.buildLandmark(name));
+        game.buildLandmark(name);
     }
 
     // 弱いCPU：ランダム購入

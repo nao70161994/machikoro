@@ -357,6 +357,65 @@ function makeUndoStateFromMirror(game, shopStock) {
     };
 }
 
+function isPlainObject(value) {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isNonEmptyString(value) {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isPlayerIndex(value, game) {
+    return Number.isInteger(value) && value >= 0 && value < game.players.length;
+}
+
+function hasPendingAction(game, action) {
+    if (game.phase !== 'pending') return false;
+    if (action === 'resolveBusiness') return game.pendingBusiness > 0;
+    if (action === 'resolveCleaning') return game.pendingCleaning > 0;
+    if (action === 'resolveMover') return game.pendingMover > 0;
+    if (action === 'resolveRenovation') return game.pendingRenovation > 0;
+    return false;
+}
+
+function validateBusinessPayload(game, data) {
+    if (!hasPendingAction(game, 'resolveBusiness') || !isPlainObject(data)) return false;
+    const { myCard, targetIndex, theirCard } = data;
+    if (!isNonEmptyString(myCard) || !isNonEmptyString(theirCard) || !isPlayerIndex(targetIndex, game)) {
+        return false;
+    }
+    if (targetIndex === game.currentPlayerIndex) return false;
+    const current = game.currentPlayer();
+    const target = game.players[targetIndex];
+    return !!current.cards.find(card => card.name === myCard && card.category !== '大施設') &&
+        !!target.cards.find(card => card.name === theirCard && card.category !== '大施設');
+}
+
+function validateCleaningPayload(game, data) {
+    if (!hasPendingAction(game, 'resolveCleaning') || !isPlainObject(data)) return false;
+    if (!isNonEmptyString(data.cardName)) return false;
+    return game.players.some(player =>
+        player.cards.some(card => card.name === data.cardName && !player.isDormant(card))
+    );
+}
+
+function validateMoverPayload(game, data) {
+    if (!hasPendingAction(game, 'resolveMover') || !isPlainObject(data)) return false;
+    const { cardName, targetIndex } = data;
+    if (!isNonEmptyString(cardName) || !isPlayerIndex(targetIndex, game)) return false;
+    if (targetIndex === game.currentPlayerIndex) return false;
+    const current = game.currentPlayer();
+    return !!current.cards.find(card => card.name === cardName && card.category !== '大施設');
+}
+
+function validateRenovationPayload(game, data) {
+    if (!hasPendingAction(game, 'resolveRenovation') || !isPlainObject(data)) return false;
+    if (!isNonEmptyString(data.landmarkName)) return false;
+    const current = game.currentPlayer();
+    if (!Object.prototype.hasOwnProperty.call(current.landmarks, data.landmarkName)) return false;
+    return current.landmarks[data.landmarkName] === true;
+}
+
 function validateGameAction(room, socket, action, data) {
     const mirror = createRoomMirror(room);
     if (!mirror) return { ok: false };
@@ -380,6 +439,34 @@ function validateGameAction(room, socket, action, data) {
             data.targetIndex >= 0 &&
             data.targetIndex < game.players.length &&
             data.targetIndex !== currentIndex,
+            mirror,
+        };
+    }
+
+    if (action === 'resolveBusiness') {
+        return {
+            ok: validateBusinessPayload(game, data),
+            mirror,
+        };
+    }
+
+    if (action === 'resolveCleaning') {
+        return {
+            ok: validateCleaningPayload(game, data),
+            mirror,
+        };
+    }
+
+    if (action === 'resolveMover') {
+        return {
+            ok: validateMoverPayload(game, data),
+            mirror,
+        };
+    }
+
+    if (action === 'resolveRenovation') {
+        return {
+            ok: validateRenovationPayload(game, data),
             mirror,
         };
     }

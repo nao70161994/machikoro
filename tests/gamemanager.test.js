@@ -1,0 +1,89 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+function loadGameRuntime() {
+    const context = { console };
+    vm.createContext(context);
+    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js']) {
+        const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+        vm.runInContext(source, context, { filename: file });
+    }
+    vm.runInContext(
+        'this.GameManager = GameManager; this.createCardByName = createCardByName;',
+        context
+    );
+    return context;
+}
+
+const runtime = loadGameRuntime();
+const GameManager = runtime.GameManager;
+const createCardByName = runtime.createCardByName;
+
+function runTest(name, fn) {
+    try {
+        fn();
+        console.log(`テスト成功: ${name}`);
+    } catch (error) {
+        console.error(`テスト失敗: ${name}`);
+        console.error(error.stack);
+        process.exitCode = 1;
+    }
+}
+
+runTest('rollDice後にフェーズが適切に遷移する', () => {
+    const normalGame = new GameManager(2);
+    normalGame.rollDice(1);
+    assert.strictEqual(normalGame.phase, 'build');
+
+    const stationGame = new GameManager(2);
+    stationGame.currentPlayer().landmarks['駅'] = true;
+    stationGame.rollDice();
+    assert.strictEqual(stationGame.phase, 'selectDice');
+    stationGame.selectDiceCount(false, 1);
+    assert.strictEqual(stationGame.phase, 'build');
+});
+
+runTest('改装屋のpendingRenovationがランドマーク状況に応じて変化する', () => {
+    const pendingGame = new GameManager(2);
+    pendingGame.currentPlayer().addCard(createCardByName('改装屋'));
+    pendingGame.currentPlayer().landmarks['駅'] = true;
+    pendingGame.rollDice();
+    pendingGame.selectDiceCount(false, 4);
+    assert.strictEqual(pendingGame.pendingRenovation, 1);
+    assert.strictEqual(pendingGame.phase, 'pending');
+
+    const skipGame = new GameManager(2);
+    skipGame.currentPlayer().addCard(createCardByName('改装屋'));
+    skipGame.rollDice(4);
+    assert.strictEqual(skipGame.pendingRenovation, 0);
+    assert.strictEqual(skipGame.phase, 'build');
+});
+
+runTest('buildCardが所持金不足と紫カード重複を拒否する', () => {
+    const poorGame = new GameManager(2);
+    poorGame.currentPlayer().coins = 5;
+    assert.strictEqual(poorGame.buildCard(createCardByName('鉱山')), false);
+    assert.strictEqual(poorGame.currentPlayer().coins, 5);
+
+    const duplicateGame = new GameManager(2);
+    duplicateGame.currentPlayer().coins = 20;
+    duplicateGame.currentPlayer().addCard(createCardByName('スタジアム'));
+    assert.strictEqual(duplicateGame.buildCard(createCardByName('スタジアム')), false);
+    assert.strictEqual(duplicateGame.currentPlayer().coins, 20);
+});
+
+runTest('nextTurnでpendingRenovationがリセットされる', () => {
+    const game = new GameManager(2);
+    game.phase = 'build';
+    game.pendingRenovation = 2;
+    game.nextTurn();
+    assert.strictEqual(game.pendingRenovation, 0);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.strictEqual(game.phase, 'roll');
+});
+
+if (process.exitCode) {
+    throw new Error('GameManagerテストで失敗が発生しました');
+}
