@@ -26,6 +26,7 @@ let autoSkipTimeout = null;
 
 // 取り消し
 let undoState = null;
+let tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
 
 // オンライン対戦
 let onlineSelectedCount = 2;
@@ -214,6 +215,145 @@ function queueCPUStep(token, delay, fn) {
         if (token !== cpuScheduleToken) return;
         fn();
     }, delay);
+}
+
+function classifyLogEntry(entry) {
+    let cls = "log-system";
+    let label = "進行";
+    if (entry.startsWith("🎲") || entry.startsWith("📡") || entry.startsWith("⚓") || entry.startsWith("🚉")) {
+        cls = "log-dice";
+        label = "ダイス";
+    } else if (entry.startsWith("💸") || entry.startsWith("🍸") || entry.startsWith("🍽️")) {
+        cls = "log-lose";
+        label = "支払い";
+    } else if (entry.startsWith("🌾") || entry.startsWith("🏪") || entry.startsWith("🐟") || entry.startsWith("🌽") || entry.startsWith("🍷") || entry.startsWith("💻")) {
+        cls = "log-gain";
+        label = "収入";
+    } else if (entry.startsWith("🏗️") || entry.startsWith("🏆") || entry.startsWith("🔨")) {
+        cls = "log-build";
+        label = "建設";
+    } else if (entry.startsWith("🏟️") || entry.startsWith("📺") || entry.startsWith("🏢") || entry.startsWith("🧹") || entry.startsWith("🚚") || entry.startsWith("📰") || entry.startsWith("🏛️") || entry.startsWith("🌳")) {
+        cls = "log-special";
+        label = "特殊";
+    } else if (entry.startsWith("❌")) {
+        cls = "log-error";
+        label = "エラー";
+    }
+    return { cls, label };
+}
+
+function renderLog() {
+    const logEl = document.getElementById("log");
+    const titleEl = document.getElementById("logTitle");
+    const summaryEl = document.getElementById("logSummary");
+    if (!logEl || !titleEl || !summaryEl) return;
+
+    const logs = game.log || [];
+    titleEl.textContent = `📋 ログ (${logs.length})`;
+    logEl.innerHTML = logs.map((entry, index) => {
+        const { cls } = classifyLogEntry(entry);
+        const latestCls = index === logs.length - 1 ? " log-latest" : "";
+        return `<div class="log-item ${cls}${latestCls}">${escapeHtml(entry)}</div>`;
+    }).join("");
+
+    const recent = logs.slice(-8);
+    const counts = { "収入": 0, "支払い": 0, "建設": 0, "特殊": 0, "ダイス": 0 };
+    recent.forEach(entry => {
+        const { label } = classifyLogEntry(entry);
+        if (counts[label] !== undefined) counts[label]++;
+    });
+    const summaryParts = [];
+    const latest = logs[logs.length - 1];
+    if (latest) {
+        summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest)}</span>`);
+    } else {
+        summaryParts.push(`<span class="log-chip">ログはまだありません</span>`);
+    }
+    Object.entries(counts).forEach(([label, count]) => {
+        if (count > 0) {
+            summaryParts.push(`<span class="log-chip">${label} ${count}</span>`);
+        }
+    });
+    summaryEl.innerHTML = summaryParts.join("");
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function getTutorialMessage() {
+    if (!game) return "";
+    const current = game.currentPlayer();
+    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    if (!isMyTurn) return `${current.name}の操作待ちです。ログと盤面を見ながら次の購入候補を確認してください。`;
+    if (isCPUTurn) return `${current.name}はCPUです。処理が終わるまで待ちます。`;
+    if (game.phase === "roll") return "サイコロを振って収入処理を開始します。赤・青・緑・紫の順に効果が解決されます。";
+    if (game.phase === "selectDice") return "駅の効果です。1個なら安全、2個なら高い出目や港・遊園地を狙えます。";
+    if (game.phase === "rerollConfirm") return `電波塔の効果です。現在の出目 ${game.lastDiceResult} を使うか、振り直すか決めてください。`;
+    if (game.phase === "harborChoice") return `港の効果です。合計 ${game.lastDiceResult} に +2 して有利な発動帯へ寄せられるか確認してください。`;
+    if (game.pendingTV > 0) return "テレビ局です。所持コインが多い相手を選ぶと効率が高いです。";
+    if (game.pendingBusiness > 0) return "ビジネスセンターです。同名カードでも個別に選べます。休業中カードを渡すかも含めて選んでください。";
+    if (game.pendingCleaning > 0) return "清掃業です。選んだ名前の施設は全員分まとめて休業になります。枚数が多い施設を狙うと得です。";
+    if (game.pendingMover > 0) return "引越し屋です。休業中カードも渡せます。渡した先でも休業状態はそのまま残ります。";
+    if (game.pendingRenovation > 0) return "改装屋です。今すぐ8コインが欲しいときに、優先度の低いランドマークを戻します。";
+    if (game.pendingIT) return "ITベンチャーです。1コイン積み立てると、次回以降の奪取額が増えます。";
+    if (game.phase === "build") {
+        if (game.builtThisTurn) return "このターンの建設は終わっています。問題なければターン終了してください。";
+        const affordableCards = CARDS.filter(card =>
+            SHOP_STOCK[card.name] > 0 &&
+            current.coins >= card.cost &&
+            !(card.color === "purple" && current.countCard(card.name) > 0)
+        ).sort((a, b) => a.cost - b.cost);
+        const affordableLandmarks = Object.entries(current.landmarks)
+            .filter(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name))
+            .sort((a, b) => Player.landmarkCost(a[0]) - Player.landmarkCost(b[0]));
+        if (!affordableCards.length && !affordableLandmarks.length) {
+            return "今の所持コインでは建設できません。建設せずにターン終了して次の収入を狙います。";
+        }
+        const hints = [];
+        if (affordableCards[0]) hints.push(`施設なら ${affordableCards[0].name}（${affordableCards[0].cost}コイン）`);
+        if (affordableLandmarks[0]) hints.push(`ランドマークなら ${affordableLandmarks[0][0]}（${Player.landmarkCost(affordableLandmarks[0][0])}コイン）`);
+        return `建設フェーズです。${hints.join("、")} が候補です。ログを見て不足している収入帯を補ってください。`;
+    }
+    return "盤面を確認して次の行動を選んでください。";
+}
+
+function renderTutorial() {
+    syncTutorialControls();
+    const box = document.getElementById("tutorialBox");
+    if (!box) return;
+    if (!tutorialEnabled || !game || game.checkWinner()) {
+        box.style.display = "none";
+        box.innerHTML = "";
+        return;
+    }
+    box.style.display = "block";
+    box.innerHTML = `<div class="tutorial-title">GUIDE</div><div class="tutorial-body">${escapeHtml(getTutorialMessage())}</div>`;
+}
+
+function setTutorialEnabled(enabled) {
+    tutorialEnabled = !!enabled;
+    try {
+        localStorage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
+    } catch (e) {}
+    syncTutorialControls();
+    renderTutorial();
+}
+
+function onToggleTutorial(enabled) {
+    setTutorialEnabled(enabled);
+}
+
+function toggleTutorial() {
+    setTutorialEnabled(!tutorialEnabled);
+}
+
+function syncTutorialControls() {
+    const checkbox = document.getElementById("tutorialEnabled");
+    if (checkbox) checkbox.checked = tutorialEnabled;
+    const btn = document.getElementById("btnTutorialToggle");
+    if (btn) {
+        btn.textContent = tutorialEnabled ? "💡 ガイド ON" : "💡 ガイド OFF";
+        btn.classList.toggle("active", tutorialEnabled);
+    }
 }
 
 function scheduleCPU() {
@@ -549,6 +689,7 @@ function render() {
     if (!game) return;
     const current = game.currentPlayer();
     const winner = game.checkWinner();
+    syncTutorialControls();
 
     if (winner) {
         const winnerIdx = game.players.indexOf(winner);
@@ -600,6 +741,8 @@ function render() {
         document.getElementById("btnReroll").style.display = "none";
         document.getElementById("diceChoose").innerHTML = "";
         document.getElementById("buildMenu").innerHTML = "";
+        renderTutorial();
+        renderLog();
         renderPlayers();
         return;
     }
@@ -626,23 +769,8 @@ function render() {
 
     renderDiceChoose();
     renderPending();
-
-    document.getElementById("log").innerHTML =
-        game.log.map(l => {
-            let cls = "log-system";
-            if (l.startsWith("🎲") || l.startsWith("📡") || l.startsWith("⚓") || l.startsWith("🚉")) cls = "log-dice";
-            else if (l.startsWith("💸") || l.startsWith("🍸") || l.startsWith("🍽️")) cls = "log-lose";
-            else if (l.startsWith("🌾") || l.startsWith("🏪") || l.startsWith("🐟") || l.startsWith("🌽") || l.startsWith("🍷") || l.startsWith("💻")) cls = "log-gain";
-            else if (l.startsWith("🏗️") || l.startsWith("🏆") || l.startsWith("🔨")) cls = "log-build";
-            else if (l.startsWith("🏟️") || l.startsWith("📺") || l.startsWith("🏢") || l.startsWith("🧹") || l.startsWith("🚚") || l.startsWith("📰") || l.startsWith("🏛️") || l.startsWith("🌳")) cls = "log-special";
-            else if (l.startsWith("❌")) cls = "log-error";
-            else if (l.startsWith("👤") || l.startsWith("🎡") || l.startsWith("✈️") || l.startsWith("💳")) cls = "log-system";
-            return `<div class="log-item ${cls}">${l}</div>`;
-        }).join("");
-    // 最新ログに自動スクロール
-    const logEl = document.getElementById("log");
-    logEl.scrollTop = logEl.scrollHeight;
-
+    renderTutorial();
+    renderLog();
     renderPlayers();
 
     // コイン変化アニメーション
@@ -1463,9 +1591,11 @@ function toggleSet(set) {
 // ===== ログ折りたたみ =====
 function toggleLog() {
     const log = document.getElementById("log");
+    const summary = document.getElementById("logSummary");
     const icon = document.getElementById("logToggleIcon");
     const header = document.querySelector(".log-header");
     const collapsed = log.classList.toggle("collapsed");
+    if (summary) summary.classList.toggle("collapsed", collapsed);
     icon.textContent = collapsed ? "▶" : "▼";
     header.classList.toggle("collapsed", collapsed);
 }
@@ -1909,6 +2039,7 @@ function saveSettings() {
     try {
         localStorage.setItem('selectedCount', selectedCount);
         localStorage.setItem('playerSettings', JSON.stringify(playerSettings));
+        localStorage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
         const speedEl = document.getElementById('cpuSpeed');
         if (speedEl) localStorage.setItem('cpuSpeed', speedEl.value);
     } catch(e) {}
@@ -1934,7 +2065,9 @@ function loadSettings() {
                 document.getElementById('speedLabel').textContent = (parseInt(speed) / 1000) + '秒';
             }
         }
+        tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
     } catch(e) {}
+    syncTutorialControls();
     renderPlayerSettings();
 }
 

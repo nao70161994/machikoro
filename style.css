@@ -276,6 +276,22 @@ body {
     text-align: right;
 }
 
+.toggle-setting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #0f0e17;
+    border: 1px solid #2a2a4a;
+    color: #fffffe;
+    font-size: 14px;
+}
+
+.toggle-setting input {
+    accent-color: #f0c040;
+}
+
 /* ===== スタートボタン ===== */
 #btnStart {
     width: 100%;
@@ -807,6 +823,32 @@ button:not(:disabled):active {
 .log-item.log-special { border-color: #a855f7; background: rgba(168,85,247,0.05); color: #d8b4fe; }
 .log-item.log-system  { border-color: #a7a9be; background: transparent; color: #a7a9be; }
 .log-item.log-error   { border-color: #ef4444; color: #fca5a5; }
+.log-item.log-latest  { box-shadow: inset 0 0 0 1px rgba(240,192,64,0.25); }
+
+.log-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px 0;
+    background: #1a1a2e;
+    border-left: 1px solid #2a2a4a;
+    border-right: 1px solid #2a2a4a;
+}
+
+.log-chip {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: #c9cbdf;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.log-chip.highlight {
+    color: #fffffe;
+    background: rgba(240,192,64,0.12);
+    border-color: rgba(240,192,64,0.25);
+}
 
 /* ===== プレイヤー情報 ===== */
 #players {
@@ -1254,14 +1296,60 @@ button:not(:disabled):active {
 .log-container .log {
     border-radius: 0 0 10px 10px;
     margin-bottom: 0;
+    border-top: none;
 }
 
 .log-container .log.collapsed {
     display: none;
 }
 
+.log-summary.collapsed {
+    display: none;
+}
+
 .log-header.collapsed {
     border-radius: 8px;
+}
+
+.tutorial-box {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(240,192,64,0.12), rgba(59,130,246,0.08));
+    border: 1px solid rgba(240,192,64,0.25);
+    color: #fffffe;
+}
+
+.tutorial-title {
+    font-size: 12px;
+    color: #f0c040;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.tutorial-body {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.panel-tools {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.tutorial-toggle-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    color: #c9cbdf;
+}
+
+.tutorial-toggle-btn.active {
+    color: #0f0e17;
+    background: #f0c040;
+    border-color: #f0c040;
 }
 
 /* ===== 確認ダイアログ ===== */

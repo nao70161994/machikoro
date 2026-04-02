@@ -53,6 +53,13 @@
                         <span id="speedLabel">1.5秒</span>
                     </div>
                 </div>
+                <div class="setting-section">
+                    <div class="setting-label">チュートリアル表示</div>
+                    <label class="toggle-setting">
+                        <input id="tutorialEnabled" type="checkbox" onchange="onToggleTutorial(this.checked)">
+                        <span>現在のフェーズに応じたガイドを表示する</span>
+                    </label>
+                </div>
                 <button id="btnStart" onclick="startGame()">ゲーム開始</button>
                 <div id="resumeSection" style="display:none">
                     <button id="btnResume" onclick="resumeGame()" class="resume-btn">▶ 続きから再開</button>
@@ -108,7 +115,11 @@
 
     <div id="gameScreen" style="display:none">
         <div id="status" class="status"></div>
+        <div id="tutorialBox" class="tutorial-box" style="display:none"></div>
         <div class="game-action-panel">
+            <div class="panel-tools">
+                <button id="btnTutorialToggle" class="tutorial-toggle-btn" onclick="toggleTutorial()"></button>
+            </div>
             <div id="diceResult"></div>
             <div id="diceChoose"></div>
             <div class="buttons">
@@ -119,9 +130,10 @@
         </div>
         <div class="log-container">
             <div class="log-header" onclick="toggleLog()">
-                <span>📋 ログ</span>
+                <span id="logTitle">📋 ログ</span>
                 <span id="logToggleIcon">▼</span>
             </div>
+            <div id="logSummary" class="log-summary"></div>
             <div id="log" class="log"></div>
         </div>
         <div id="pendingMenu"></div>

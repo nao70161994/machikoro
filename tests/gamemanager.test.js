@@ -115,6 +115,38 @@ runTest('引越し屋とビジネスセンターがカード単位で休業状�
     assert.strictEqual(businessGame.currentPlayer().cards.some(c => c.name === '森林'), true);
 });
 
+runTest('清掃業は同名カードを全て休業にする', () => {
+    const game = new GameManager(2);
+    const cafeA = createCardByName('カフェ');
+    const cafeB = createCardByName('カフェ');
+    const family = createCardByName('ファミレス');
+    game.currentPlayer().cards = [cafeA, family];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [cafeB];
+    game.players[1].dormantCards = [];
+
+    game.resolveCleaning('カフェ');
+
+    assert.strictEqual(game.currentPlayer().isDormant(cafeA), true);
+    assert.strictEqual(game.players[1].isDormant(cafeB), true);
+    assert.strictEqual(game.currentPlayer().isDormant(family), false);
+});
+
+runTest('ワイナリーは発動したカードだけ休業する', () => {
+    const game = new GameManager(2);
+    const grape = createCardByName('ブドウ園');
+    const wineryA = createCardByName('ワイナリー');
+    const wineryB = createCardByName('ワイナリー');
+    game.currentPlayer().cards = [grape, wineryA, wineryB];
+    game.currentPlayer().dormantCards = [];
+    game.currentPlayer().makeDormant(wineryA);
+
+    game.rollDice(9);
+
+    assert.strictEqual(game.currentPlayer().isDormant(wineryA), false);
+    assert.strictEqual(game.currentPlayer().isDormant(wineryB), true);
+});
+
 if (process.exitCode) {
     throw new Error('GameManagerテストで失敗が発生しました');
 }
