@@ -20,8 +20,14 @@ node server.js        # ローカル起動（http://localhost:3000）
 **フロントエンド**: バニラJS（フレームワークなし）。`index.html` に全UI。スクリプトはロード順に依存している：
 
 ```
-Card.js → Player.js → GameManager.js → CPU.js → main.js
+Card.js → Player.js → GameManager.js → CPU.js → ui.js → storage.js → main.js
 ```
+
+| ファイル | 役割 |
+|---------|------|
+| `js/ui.js` | ログ描画・分類（`classifyLogEntry` / `extractLogDetails`）・UI補助 |
+| `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`） |
+| `js/main.js` | ゲーム進行・オンライン通信・CPU制御・イベントハンドラ |
 
 **バックエンド**: `server.js`（Node.js + Express + Socket.IO）。ゲームロジックは**クライアント側で動く**。サーバーはアクションの中継とルーム管理のみ。
 
@@ -36,6 +42,18 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - `harborChoice`: 港ランドマーク所持 + ダイス合計10以上の2個振り時のみ
 - `pending`: テレビ局・ビジネスセンター・清掃業・引越し屋・改装屋・ITベンチャーの保留処理
 
+### 勝利条件・ランドマーク設定
+
+- ゲーム開始時に使用するランドマークを選択できる（`enabledLandmarks: Set<string>`）
+- `game.enabledLandmarks` に格納され、`Player.hasWon(enabledLandmarks)` で勝利判定
+- デフォルトは `Player.landmarkNames()` が返す全ランドマーク（駅・ショッピングモール・遊園地・電波塔・港・空港）
+- 遊園地のゾロ目判定は**ロール時点**の所持状態で行う（`hadAmusementParkAtRoll` フラグ）
+
+### チュートリアル
+
+- `tutorialEnabled`（デフォルト `true`）/ `tutorialLevel`（`'beginner'` など）でローカルストレージ管理
+- チュートリアル中はゲームの進行に合わせてヒントを表示
+
 ### オンライン対戦の設計
 
 - **ホスト**がCPUターンを実行し、全アクションを `sendAction()` でサーバーに送信
@@ -49,16 +67,17 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 ### CPU（js/CPU.js）
 
-`difficulty`: `"weak"` / `"normal"` / `"strong"` の3段階。`build()` は `buildWeak` / `buildNormal` / `buildStrong` に委譲。スコアリングは `evalCard()` + `sortAffordable()` でコスパ評価。
+`difficulty`: `"weak"` / `"normal"` / `"strong"` の3段階。`build()` は `buildWeak` / `buildNormal` / `buildStrong` に委譲。スコアリングは `evalCard()` + `sortAffordable()` でコスパ評価。CPU判断ロジックは大幅に強化済み（手番ごとの期待値・他プレイヤー状況考慮）。
 
 ### ローカルストレージ
 
 | キー | 内容 |
 |------|------|
 | `savedGame` | ローカルゲームの中断状態（JSON） |
-| `onlineSession` | オンライン再接続用情報（roomId・playerIndex・playerName・isRoomHost・**reconnectToken**） |
+| `onlineSession` | オンライン再接続用情報（roomId・playerIndex・playerName・isRoomHost・reconnectToken） |
 | `selectedCount` / `playerSettings` / `cpuSpeed` | タイトル画面の設定 |
 | `winStreak` / `lastWinnerName` | 連勝記録 |
+| `tutorialEnabled` / `tutorialLevel` | チュートリアル設定 |
 
 ### カード追加時の注意
 
@@ -80,11 +99,19 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 npm test    # tests/run-all.js → gamemanager.test.js + server.test.js
 ```
 
-Node.js 組み込み `assert` モジュールのみ使用。新機能追加時は `tests/gamemanager.test.js` に単体テストを追加すること。
+Node.js 組み込み `assert` モジュールのみ使用。
+
+| ファイル | 内容 |
+|---------|------|
+| `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard検証など） |
+| `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName 等） |
+| `tests/run-all.js` | 両テストを順次実行するエントリポイント |
+
+新機能追加時は対応するテストファイルにケースを追加すること。
 
 ### 既知の制約
 
 - `isReplaying = true` の間は `render()` と `scheduleCPU()` が抑制される（オンライン再接続のリプレイ中）
 - ランドマーク「役所」は `Player.landmarks` に含まれず `hasYakusho` フラグで別管理
 - 紫カード（大施設）は1人1枚制限: `card.color === "purple" && current.countCard(card.name) > 0` でチェック
-- `main.js` は約1900行の単一ファイル（UI描画・オンライン同期・保存復元・音・入力処理が混在）。分割は将来課題
+- `main.js` は約1116行（`ui.js` / `storage.js` に分割済み）。さらなる分割は将来課題
