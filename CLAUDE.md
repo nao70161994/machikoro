@@ -42,6 +42,10 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - **全クライアント**が `applyAction()` でゲームロジックを同一に進める（サーバーにゲーム状態はない）
 - サイコロの乱数はホストが生成して `forceDice` として送信 → 全クライアントで同じ目になる
 - サーバーはアクションログ（`room.actionLog`）を蓄積し、再接続時のリプレイに使用
+- ホスト切断時は残存プレイヤーの先頭が新ホストになり `hostChanged` イベントで通知される
+- 再接続トークン（UUID）をルーム作成・参加時に発行。`rejoinRoom` 時に `roomId + playerIndex + playerName + reconnectToken` の4つが一致しないと拒否される
+- 開始済みルームは2時間アクティビティがないと自動削除（`lastTouchedAt` + TTL）
+- プレイヤー名はサーバー受信時に `sanitizeName()` でバリデーション・20文字以内に制限
 
 ### CPU（js/CPU.js）
 
@@ -52,7 +56,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 | キー | 内容 |
 |------|------|
 | `savedGame` | ローカルゲームの中断状態（JSON） |
-| `onlineSession` | オンライン再接続用情報（roomId・playerIndex・playerName・isRoomHost） |
+| `onlineSession` | オンライン再接続用情報（roomId・playerIndex・playerName・isRoomHost・**reconnectToken**） |
 | `selectedCount` / `playerSettings` / `cpuSpeed` | タイトル画面の設定 |
 | `winStreak` / `lastWinnerName` | 連勝記録 |
 
@@ -63,8 +67,24 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - `CPU.evalCard()` に新 effect のスコアロジックを追加
 - `GameManager.processIncome()` に発動ロジックを追加
 
+### セキュリティ・バリデーション
+
+- プレイヤー名は `sanitizeName()` でHTMLタグ・特殊文字を除去（サーバー側）
+- フロントエンドは `escapeHtml()` でプレイヤー名・カード名を `innerHTML` に挿入前にエスケープ
+- `validateGameAction()` でアクションの妥当性をサーバー側で検証（フェーズ・権限・所持金・在庫・紫重複など）
+- ブラウザネイティブ `confirm()` は廃止済み。確認ダイアログはカスタムモーダル `showConfirm()` を使うこと
+
+### テスト
+
+```
+npm test    # tests/run-all.js → gamemanager.test.js + server.test.js
+```
+
+Node.js 組み込み `assert` モジュールのみ使用。新機能追加時は `tests/gamemanager.test.js` に単体テストを追加すること。
+
 ### 既知の制約
 
 - `isReplaying = true` の間は `render()` と `scheduleCPU()` が抑制される（オンライン再接続のリプレイ中）
 - ランドマーク「役所」は `Player.landmarks` に含まれず `hasYakusho` フラグで別管理
 - 紫カード（大施設）は1人1枚制限: `card.color === "purple" && current.countCard(card.name) > 0` でチェック
+- `main.js` は約1900行の単一ファイル（UI描画・オンライン同期・保存復元・音・入力処理が混在）。分割は将来課題
