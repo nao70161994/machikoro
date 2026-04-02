@@ -14,11 +14,30 @@ app.use(express.static(path.join(__dirname)));
 
 const rooms = {};
 
+function sanitizeName(name) {
+    return String(name || '').trim().slice(0, 20).replace(/[<>&"'`]/g, '');
+}
+
+// 開始済みルームのGC（2時間アクティビティなしで削除）
+setInterval(() => {
+    const TTL = 2 * 60 * 60 * 1000;
+    const now = Date.now();
+    for (const [id, room] of Object.entries(rooms)) {
+        if (room.started && room.lastTouchedAt && now - room.lastTouchedAt > TTL) {
+            delete rooms[id];
+            console.log(`ルーム削除（TTL）: ${id}`);
+        }
+    }
+}, 10 * 60 * 1000);
+
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
 
     socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards }) => {
-        const roomId = Math.random().toString(36).substr(2, 6).toUpperCase();
+        playerName = sanitizeName(playerName);
+        if (!playerName) { socket.emit('error', '名前が無効です'); return; }
+        let roomId;
+        do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); } while (rooms[roomId]);
         // ホストの人間枠を探す
         let hostIndex = 0;
         if (playerSettings && playerSettings.length > 0) {
@@ -52,6 +71,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('joinRoom', ({ roomId, playerName }) => {
+        playerName = sanitizeName(playerName);
+        if (!playerName) { socket.emit('error', '名前が無効です'); return; }
         const room = rooms[roomId];
         if (!room) { socket.emit('error', 'ルームが見つかりません'); return; }
         if (room.started) { socket.emit('error', 'ゲームはすでに開始されています'); return; }
@@ -124,6 +145,7 @@ io.on('connection', (socket) => {
         }
         if (room.actionLog) {
             room.actionLog.push({ action, data: safeData });
+            room.lastTouchedAt = Date.now();
         }
         socket.to(roomId).emit('gameAction', { action, data: safeData, playerIndex: socket.playerIndex });
     });
@@ -168,6 +190,15 @@ io.on('connection', (socket) => {
                     playerIndex: socket.playerIndex,
                     playerName: disconnectedPlayer?.name || `プレイヤー${socket.playerIndex + 1}`,
                 });
+                // ホストが切断した場合、残存プレイヤーの中から新ホストを選出
+                if (socket.playerIndex === room.hostPlayerIndex) {
+                    const remaining = room.players.filter(p => p.id !== socket.id);
+                    if (remaining.length > 0) {
+                        room.hostPlayerIndex = remaining[0].index;
+                        io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
+                        console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+                    }
+                }
             }
             console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
         }
@@ -428,6 +459,7 @@ function checkGameStart(io, roomId) {
         rooms[roomId].gameStartPayload = gameStartPayload;
         rooms[roomId].actionLog = [];
         rooms[roomId].lastUndoState = null;
+        rooms[roomId].lastTouchedAt = Date.now();
         io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${playerNames.join(', ')}`);
     }

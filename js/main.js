@@ -398,6 +398,25 @@ function initSocket() {
         alert(`${playerName || `プレイヤー${playerIndex + 1}`}が切断しました`);
     });
 
+    socket.on('hostChanged', ({ newHostPlayerIndex }) => {
+        if (myPlayerIndex === newHostPlayerIndex) {
+            isRoomHost = true;
+            game.addLog(`👑 あなたがホストになりました`);
+            render();
+            scheduleCPU();
+        } else {
+            isRoomHost = false;
+        }
+        const raw = localStorage.getItem('onlineSession');
+        if (raw) {
+            try {
+                const s = JSON.parse(raw);
+                s.isRoomHost = isRoomHost;
+                localStorage.setItem('onlineSession', JSON.stringify(s));
+            } catch (_) {}
+        }
+    });
+
     socket.on('error', (msg) => {
         if (isReconnectingOnline) {
             isReconnectingOnline = false;
@@ -426,12 +445,6 @@ function showCreateRoom() {
         cpuSpeed: onlineCpuSpeed,
         enabledCards: [...enabledCards]
     });
-}
-
-function showJoinRoom() {
-    const name = document.getElementById("playerNameInput").value.trim();
-    if (!name) { alert("名前を入力してください"); return; }
-    document.getElementById("roomInput").style.display = "block";
 }
 
 function joinRoom() {
@@ -541,18 +554,18 @@ function render() {
             .map(p => {
                 const isW = p === winner;
                 return `<div class="winner-stats-row ${isW ? 'highlight' : ''}">
-                    <span>${isW ? '🏆 ' : ''}${p.name}</span>
+                    <span>${isW ? '🏆 ' : ''}${escapeHtml(p.name)}</span>
                     <span>🪙 ${p.coins}</span>
                 </div>`;
             }).join('');
 
         const streakHtml = winStreak >= 2
-            ? `<div class="win-streak">🔥 ${winner.name} ${winStreak}連勝中！</div>` : '';
+            ? `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>` : '';
 
         document.getElementById("status").innerHTML = `
             <div class="winner-screen">
                 <div class="winner-emoji">🏆</div>
-                <div class="winner-title">${winner.name}の勝利！</div>
+                <div class="winner-title">${escapeHtml(winner.name)}の勝利！</div>
                 <div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>
                 ${streakHtml}
                 <div class="winner-stats">${scoreRows}</div>
@@ -680,7 +693,7 @@ function renderPending() {
         html += `<div class="pending-box">
             <p>📺 テレビ局：コインを奪う相手を選んでください</p>
             ${others.map(({ p, i }) =>
-                `<button onclick="onResolveTV(${i})">${p.name}（🪙${p.coins}）</button>`
+                `<button onclick="onResolveTV(${i})">${escapeHtml(p.name)}（🪙${p.coins}）</button>`
             ).join("")}
         </div>`;
     }
@@ -703,11 +716,11 @@ function renderPending() {
                 const theirCards = [...new Set(p.cards
                     .filter(c => c.category !== "大施設")
                     .map(c => c.name))];
-                return `<p>${p.name}の施設：</p>
+                return `<p>${escapeHtml(p.name)}の施設：</p>
                     <select id="theirCardSelect_${i}">
-                        ${theirCards.map(n => `<option value="${n}">${n}</option>`).join("")}
+                        ${theirCards.map(n => `<option value="${n}">${escapeHtml(n)}</option>`).join("")}
                     </select>
-                    <button onclick="onResolveBusiness(${i})">${p.name}と交換</button>`;
+                    <button onclick="onResolveBusiness(${i})">${escapeHtml(p.name)}と交換</button>`;
             }).join("")}
         </div>`;
     }
@@ -742,7 +755,7 @@ function renderPending() {
                 ${myCards.map(n => `<option value="${n}">${n}</option>`).join("")}
             </select>
             ${others.map(({ p, i }) =>
-                `<button onclick="onResolveMover(${i})">${p.name}に渡す</button>`
+                `<button onclick="onResolveMover(${i})">${escapeHtml(p.name)}に渡す</button>`
             ).join("")}
         </div>`;
     }
@@ -816,7 +829,7 @@ function renderPlayers() {
             <div class="player-header">
                 <div class="player-name-row">
                     <span class="player-icon">${cpuLabel}</span>
-                    <span class="player-name">${isActive ? '▶ ' : ''}${p.name}</span>
+                    <span class="player-name">${isActive ? '▶ ' : ''}${escapeHtml(p.name)}</span>
                 </div>
                 <div class="player-coin-row">
                     <span class="player-coins">🪙 ${p.coins}</span>
@@ -1090,9 +1103,10 @@ function onBuildLandmark(name) {
     showConfirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`, () => {
         saveUndoState();
         cancelAutoSkip();
-        game.buildLandmark(name);
-        sendAction('buildLandmark', { name });
-        playSound('build');
+        if (game.buildLandmark(name)) {
+            sendAction('buildLandmark', { name });
+            playSound('build');
+        }
         render();
         scheduleCPU();
     });
@@ -1532,6 +1546,16 @@ function showCardDetail(name, isLandmark = false) {
 
 function closeCardDetail() {
     document.getElementById('cardDetailModal').style.display = 'none';
+}
+
+// ===== ユーティリティ =====
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // ===== カスタム確認ダイアログ =====
