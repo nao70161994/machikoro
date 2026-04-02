@@ -57,7 +57,7 @@ class CPU {
                 const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
                 if (theirCards.length === 0) continue;
                 const theirBest = theirCards.sort((a, b) => b.cost - a.cost)[0];
-                game.resolveBusiness(myWorst.name, i, theirBest.name);
+                game.resolveBusiness(current.cards.indexOf(myWorst), i, game.players[i].cards.indexOf(theirBest));
                 return;
             }
         } else {
@@ -67,7 +67,7 @@ class CPU {
                 if (theirCards.length === 0) continue;
                 const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                 const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
-                game.resolveBusiness(myCard.name, i, theirCard.name);
+                game.resolveBusiness(current.cards.indexOf(myCard), i, game.players[i].cards.indexOf(theirCard));
                 return;
             }
         }

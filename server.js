@@ -301,7 +301,7 @@ function applyActionToMirror(game, shopStock, action, data, createCardByName) {
             game.resolveCleaning(data.cardName);
             break;
         case 'resolveMover':
-            game.resolveMover(data.cardName, data.targetIndex);
+            game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex);
             break;
         case 'resolveRenovation':
             game.resolveRenovation(data.landmarkName);

@@ -84,6 +84,37 @@ runTest('nextTurnでpendingRenovationがリセットされる', () => {
     assert.strictEqual(game.phase, 'roll');
 });
 
+runTest('引越し屋とビジネスセンターがカード単位で休業状態を引き継ぐ', () => {
+    const moverGame = new GameManager(2);
+    const moverCard = createCardByName('引越し屋');
+    const cafeA = createCardByName('カフェ');
+    const cafeB = createCardByName('カフェ');
+    moverGame.currentPlayer().cards = [cafeA, cafeB, moverCard];
+    moverGame.currentPlayer().dormantCards = [];
+    moverGame.players[1].cards = [];
+    moverGame.players[1].dormantCards = [];
+    moverGame.currentPlayer().makeDormant(cafeB);
+    moverGame.resolveMover(1, 1);
+    assert.strictEqual(moverGame.players[1].cards.length, 1);
+    assert.strictEqual(moverGame.players[1].cards[0], cafeB);
+    assert.strictEqual(moverGame.players[1].isDormant(cafeB), true);
+    assert.strictEqual(moverGame.currentPlayer().cards.includes(cafeB), false);
+
+    const businessGame = new GameManager(2);
+    const bakeryA = createCardByName('パン屋');
+    const bakeryB = createCardByName('パン屋');
+    const forest = createCardByName('森林');
+    businessGame.currentPlayer().cards = [bakeryA, bakeryB];
+    businessGame.players[1].cards = [forest];
+    businessGame.currentPlayer().dormantCards = [];
+    businessGame.players[1].dormantCards = [];
+    businessGame.currentPlayer().makeDormant(bakeryB);
+    businessGame.resolveBusiness(1, 1, 0);
+    assert.strictEqual(businessGame.players[1].cards.includes(bakeryB), true);
+    assert.strictEqual(businessGame.players[1].isDormant(bakeryB), true);
+    assert.strictEqual(businessGame.currentPlayer().cards.some(c => c.name === '森林'), true);
+});
+
 if (process.exitCode) {
     throw new Error('GameManagerテストで失敗が発生しました');
 }

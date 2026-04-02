@@ -29,6 +29,15 @@ class GameManager {
 
     currentPlayer() { return this.players[this.currentPlayerIndex]; }
 
+    _resolveCardRef(player, ref) {
+        if (!player) return null;
+        if (Number.isInteger(ref)) {
+            const card = player.cards[ref];
+            return (card && card.category !== "大施設") ? card : null;
+        }
+        return player.cards.find(c => c.name === ref && c.category !== "大施設") || null;
+    }
+
     rollDice(forceDice = null, tunaDice = null) {
         if (this.phase !== "roll") return;
         if (this.currentPlayer().landmarks["駅"]) {
@@ -362,12 +371,12 @@ class GameManager {
         this._checkPending();
     }
 
-    resolveBusiness(myCardName, targetIndex, theirCardName) {
+    resolveBusiness(myCardRef, targetIndex, theirCardRef) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) { this.addLog(`❌ 交換相手を選び直してください`); return; }
-        const myCard = current.cards.find(c => c.name === myCardName && c.category !== "大施設");
-        const theirCard = target.cards.find(c => c.name === theirCardName && c.category !== "大施設");
+        const myCard = this._resolveCardRef(current, myCardRef);
+        const theirCard = this._resolveCardRef(target, theirCardRef);
         if (!myCard || !theirCard) { this.addLog(`❌ 交換できない施設です`); return; }
         const myCardWasDormant = current.isDormant(myCard);
         const theirCardWasDormant = target.isDormant(theirCard);
@@ -379,7 +388,7 @@ class GameManager {
         target.cards.push(myCard);
         if (theirCardWasDormant) current.makeDormant(theirCard);
         if (myCardWasDormant) target.makeDormant(myCard);
-        this.addLog(`🔄 ${myCardName} ⇔ ${target.name}の${theirCardName} を交換しました`);
+        this.addLog(`🔄 ${myCard.name} ⇔ ${target.name}の${theirCard.name} を交換しました`);
         this.pendingBusiness--;
         this._checkPending();
     }
@@ -401,11 +410,11 @@ class GameManager {
         this._checkPending();
     }
 
-    resolveMover(myCardName, targetIndex) {
+    resolveMover(myCardRef, targetIndex) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) { this.addLog(`❌ 渡す相手を選び直してください`); return; }
-        const myCard = current.cards.find(c => c.name === myCardName && c.category !== "大施設");
+        const myCard = this._resolveCardRef(current, myCardRef);
         if (!myCard) { this.addLog(`❌ 渡せない施設です`); return; }
         const myCardWasDormant = current.isDormant(myCard);
         current.revive(myCard);
@@ -413,7 +422,7 @@ class GameManager {
         target.cards.push(myCard);
         if (myCardWasDormant) target.makeDormant(myCard);
         current.coins += 4;
-        this.addLog(`🚚 ${myCardName}を${target.name}に渡して+4コイン`);
+        this.addLog(`🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
         this.pendingMover--;
         this._checkPending();
     }

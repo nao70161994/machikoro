@@ -269,8 +269,10 @@ function scheduleCPU() {
                                     if (theirCards.length === 0) continue;
                                     const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                                     const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
-                                    cpuDo('resolveBusiness', { myCard: myCard.name, targetIndex: i, theirCard: theirCard.name },
-                                        () => game.resolveBusiness(myCard.name, i, theirCard.name));
+                                    const myCardIndex = cur.cards.indexOf(myCard);
+                                    const theirCardIndex = game.players[i].cards.indexOf(theirCard);
+                                    cpuDo('resolveBusiness', { myCard: myCardIndex, targetIndex: i, theirCard: theirCardIndex },
+                                        () => game.resolveBusiness(myCardIndex, i, theirCardIndex));
                                     break;
                                 }
                             }
@@ -284,12 +286,12 @@ function scheduleCPU() {
                             }
                             if (game.pendingMover > 0) {
                                 const cur = game.currentPlayer();
-                                const myCards = cur.cards.filter(c => c.category !== "大施設" && !cur.isDormant(c));
+                                const myCards = cur.cards.filter(c => c.category !== "大施設");
                                 const others = game.players.map((p, i) => i).filter(i => i !== game.currentPlayerIndex);
                                 if (myCards.length > 0 && others.length > 0) {
-                                    const cardName = myCards[0].name;
+                                    const cardIndex = cur.cards.indexOf(myCards[0]);
                                     const targetIndex = others[0];
-                                    cpuDo('resolveMover', { cardName, targetIndex }, () => game.resolveMover(cardName, targetIndex));
+                                    cpuDo('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
                                 }
                             }
                             if (game.pendingRenovation > 0) {
@@ -517,7 +519,7 @@ function applyAction(action, data) {
         case 'resolveTV':       game.resolveTV(data.targetIndex); break;
         case 'resolveBusiness': game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard); break;
         case 'resolveCleaning': game.resolveCleaning(data.cardName); break;
-        case 'resolveMover':    game.resolveMover(data.cardName, data.targetIndex); break;
+        case 'resolveMover':    game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex); break;
         case 'resolveRenovation': game.resolveRenovation(data.landmarkName); break;
         case 'resolveIT':       game.resolveIT(data.doSave); break;
         case 'buildCard': {
@@ -715,9 +717,9 @@ function renderPending() {
 
     if (game.pendingBusiness > 0) {
         const current = game.currentPlayer();
-        const myCards = [...new Set(current.cards
-            .filter(c => c.category !== "大施設")
-            .map(c => c.name))];
+        const myCards = current.cards
+            .map((card, index) => ({ card, index }))
+            .filter(({ card }) => card.category !== "大施設");
         const others = game.players
             .map((p, i) => ({ p, i }))
             .filter(({ i }) => i !== game.currentPlayerIndex);
@@ -725,15 +727,19 @@ function renderPending() {
             <p>🏢 ビジネスセンター：施設を交換します</p>
             <p>自分の施設：</p>
             <select id="myCardSelect">
-                ${myCards.map(n => `<option value="${n}">${n}</option>`).join("")}
+                ${myCards.map(({ card, index }) =>
+                    `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`
+                ).join("")}
             </select>
             ${others.map(({ p, i }) => {
-                const theirCards = [...new Set(p.cards
-                    .filter(c => c.category !== "大施設")
-                    .map(c => c.name))];
+                const theirCards = p.cards
+                    .map((card, index) => ({ card, index }))
+                    .filter(({ card }) => card.category !== "大施設");
                 return `<p>${escapeHtml(p.name)}の施設：</p>
                     <select id="theirCardSelect_${i}">
-                        ${theirCards.map(n => `<option value="${n}">${escapeHtml(n)}</option>`).join("")}
+                        ${theirCards.map(({ card, index }) =>
+                            `<option value="${index}">${escapeHtml(card.name)}${p.isDormant(card) ? '（休業中）' : ''}</option>`
+                        ).join("")}
                     </select>
                     <button onclick="onResolveBusiness(${i})">${escapeHtml(p.name)}と交換</button>`;
             }).join("")}
@@ -757,9 +763,9 @@ function renderPending() {
 
     if (game.pendingMover > 0) {
         const current = game.currentPlayer();
-        const myCards = [...new Set(current.cards
-            .filter(c => c.category !== "大施設" && !current.isDormant(c))
-            .map(c => c.name))];
+        const myCards = current.cards
+            .map((card, index) => ({ card, index }))
+            .filter(({ card }) => card.category !== "大施設");
         const others = game.players
             .map((p, i) => ({ p, i }))
             .filter(({ i }) => i !== game.currentPlayerIndex);
@@ -767,7 +773,9 @@ function renderPending() {
             <p>🚚 引越し屋：渡す施設と相手を選んでください</p>
             <p>渡す施設：</p>
             <select id="moverCardSelect">
-                ${myCards.map(n => `<option value="${n}">${n}</option>`).join("")}
+                ${myCards.map(({ card, index }) =>
+                    `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`
+                ).join("")}
             </select>
             ${others.map(({ p, i }) =>
                 `<button onclick="onResolveMover(${i})">${escapeHtml(p.name)}に渡す</button>`
@@ -1060,8 +1068,8 @@ function onResolveTV(i) {
 }
 
 function onResolveBusiness(targetIndex) {
-    const myCard = document.getElementById("myCardSelect").value;
-    const theirCard = document.getElementById(`theirCardSelect_${targetIndex}`).value;
+    const myCard = parseInt(document.getElementById("myCardSelect").value, 10);
+    const theirCard = parseInt(document.getElementById(`theirCardSelect_${targetIndex}`).value, 10);
     game.resolveBusiness(myCard, targetIndex, theirCard);
     sendAction('resolveBusiness', { myCard, targetIndex, theirCard });
     render();
@@ -1076,9 +1084,9 @@ function onResolveCleaning(cardName) {
 }
 
 function onResolveMover(targetIndex) {
-    const cardName = document.getElementById("moverCardSelect").value;
-    game.resolveMover(cardName, targetIndex);
-    sendAction('resolveMover', { cardName, targetIndex });
+    const cardIndex = parseInt(document.getElementById("moverCardSelect").value, 10);
+    game.resolveMover(cardIndex, targetIndex);
+    sendAction('resolveMover', { cardIndex, targetIndex });
     render();
     scheduleCPU();
 }
