@@ -27,7 +27,7 @@ function generateReconnectToken() {
 }
 
 // 開始済みルームのGC（2時間アクティビティなしで削除）
-setInterval(() => {
+const roomGcInterval = setInterval(() => {
     const TTL = 2 * 60 * 60 * 1000;
     const now = Date.now();
     for (const [id, room] of Object.entries(rooms)) {
@@ -37,6 +37,9 @@ setInterval(() => {
         }
     }
 }, 10 * 60 * 1000);
+if (typeof roomGcInterval.unref === 'function') {
+    roomGcInterval.unref();
+}
 
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
@@ -381,14 +384,14 @@ function hasPendingAction(game, action) {
 function validateBusinessPayload(game, data) {
     if (!hasPendingAction(game, 'resolveBusiness') || !isPlainObject(data)) return false;
     const { myCard, targetIndex, theirCard } = data;
-    if (!isNonEmptyString(myCard) || !isNonEmptyString(theirCard) || !isPlayerIndex(targetIndex, game)) {
+    if (!isPlayerIndex(targetIndex, game)) {
         return false;
     }
     if (targetIndex === game.currentPlayerIndex) return false;
     const current = game.currentPlayer();
     const target = game.players[targetIndex];
-    return !!current.cards.find(card => card.name === myCard && card.category !== '大施設') &&
-        !!target.cards.find(card => card.name === theirCard && card.category !== '大施設');
+    return !!game._resolveCardRef(current, myCard) &&
+        !!game._resolveCardRef(target, theirCard);
 }
 
 function validateCleaningPayload(game, data) {
@@ -401,11 +404,12 @@ function validateCleaningPayload(game, data) {
 
 function validateMoverPayload(game, data) {
     if (!hasPendingAction(game, 'resolveMover') || !isPlainObject(data)) return false;
-    const { cardName, targetIndex } = data;
-    if (!isNonEmptyString(cardName) || !isPlayerIndex(targetIndex, game)) return false;
+    const cardRef = Object.prototype.hasOwnProperty.call(data, 'cardIndex') ? data.cardIndex : data.cardName;
+    const { targetIndex } = data;
+    if (!isPlayerIndex(targetIndex, game)) return false;
     if (targetIndex === game.currentPlayerIndex) return false;
     const current = game.currentPlayer();
-    return !!current.cards.find(card => card.name === cardName && card.category !== '大施設');
+    return !!game._resolveCardRef(current, cardRef);
 }
 
 function validateRenovationPayload(game, data) {
@@ -573,6 +577,25 @@ function checkGameStart(io, roomId) {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`サーバー起動: http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`サーバー起動: http://localhost:${PORT}`);
+    });
+}
+
+module.exports = {
+    sanitizeName,
+    buildPlayerList,
+    createRoomMirror,
+    applyActionToMirror,
+    restoreUndoMirror,
+    makeUndoStateFromMirror,
+    validateBusinessPayload,
+    validateCleaningPayload,
+    validateMoverPayload,
+    validateRenovationPayload,
+    validateGameAction,
+    getAllowedActions,
+    checkGameStart,
+    loadGameRuntime,
+};

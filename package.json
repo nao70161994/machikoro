@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/gamemanager.test.js"
+    "test": "node tests/run-all.js"
   },
   "keywords": [],
   "author": "",

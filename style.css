@@ -803,7 +803,7 @@ button:not(:disabled):active {
     min-height: 48px;
     line-height: 2;
     border: 1px solid #2a2a4a;
-    max-height: 150px;
+    max-height: 220px;
     overflow-y: auto;
 }
 
@@ -829,7 +829,7 @@ button:not(:disabled):active {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 8px 10px 0;
+    padding: 8px 10px 6px;
     background: #1a1a2e;
     border-left: 1px solid #2a2a4a;
     border-right: 1px solid #2a2a4a;
@@ -1313,11 +1313,12 @@ button:not(:disabled):active {
 
 .tutorial-box {
     margin-bottom: 12px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-radius: 10px;
     background: linear-gradient(135deg, rgba(240,192,64,0.12), rgba(59,130,246,0.08));
     border: 1px solid rgba(240,192,64,0.25);
     color: #fffffe;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
 .tutorial-title {
@@ -1335,6 +1336,7 @@ button:not(:disabled):active {
 .panel-tools {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
 }
@@ -1345,6 +1347,7 @@ button:not(:disabled):active {
     background: #1a1a2e;
     border: 1px solid #2a2a4a;
     color: #c9cbdf;
+    min-height: 36px;
 }
 
 .tutorial-toggle-btn.active {
@@ -1374,11 +1377,11 @@ button:not(:disabled):active {
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 8px;
+    width: 100%;
 }
 
 .log-detail-card {
-    flex: 1;
-    min-width: 88px;
+    flex: 1 1 110px;
     padding: 7px 8px;
     border-radius: 8px;
     background: rgba(255,255,255,0.03);
