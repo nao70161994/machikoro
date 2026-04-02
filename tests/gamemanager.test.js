@@ -11,7 +11,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.GameManager = GameManager; this.createCardByName = createCardByName;',
+        'this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS;',
         context
     );
     return context;
@@ -169,6 +169,106 @@ runTest('有効なランドマークだけ建てれば勝利になる', () => {
 
     game.currentPlayer().landmarks['ショッピングモール'] = true;
     assert.strictEqual(game.checkWinner(), game.currentPlayer());
+});
+
+runTest('テレビ局はresolveTVで指定プレイヤーから最大5コイン奪う', () => {
+    const game = new GameManager(2);
+    game.pendingTV = 1;
+    game.phase = 'pending';
+    game.players[1].coins = 10;
+    const prevMyCoins = game.currentPlayer().coins;
+
+    game.resolveTV(1);
+
+    assert.strictEqual(game.currentPlayer().coins, prevMyCoins + 5);
+    assert.strictEqual(game.players[1].coins, 5);
+    assert.strictEqual(game.pendingTV, 0);
+
+    // 相手コインが少ない場合は持っている分だけ奪う
+    const game2 = new GameManager(2);
+    game2.pendingTV = 1;
+    game2.phase = 'pending';
+    game2.players[1].coins = 3;
+    const prev2 = game2.currentPlayer().coins;
+    game2.resolveTV(1);
+    assert.strictEqual(game2.currentPlayer().coins, prev2 + 3);
+    assert.strictEqual(game2.players[1].coins, 0);
+});
+
+runTest('ITベンチャーはresolveIT(true)で積立、false でスキップ', () => {
+    // resolveIT は _doNextTurn() を呼ぶのでターンが移る → players[0] で直接確認
+    const game = new GameManager(2);
+    game.pendingIT = true;
+    const p0 = game.players[0];
+    p0.coins = 5;
+    p0.itVentureCoins = 2;
+
+    game.resolveIT(true);
+
+    assert.strictEqual(p0.coins, 4);           // 5 - 1
+    assert.strictEqual(p0.itVentureCoins, 3);  // 2 + 1
+    assert.strictEqual(game.currentPlayerIndex, 1); // ターンが次へ
+
+    const game2 = new GameManager(2);
+    game2.pendingIT = true;
+    const p0b = game2.players[0];
+    p0b.coins = 5;
+    p0b.itVentureCoins = 1;
+
+    game2.resolveIT(false);
+
+    assert.strictEqual(p0b.coins, 5);          // 変化なし
+    assert.strictEqual(p0b.itVentureCoins, 1); // 変化なし
+});
+
+runTest('電波塔rerollDiceはlogをリセットしてphaseをrollに戻す', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().landmarks['電波塔'] = true;
+    game.rollDice(3);
+    assert.strictEqual(game.phase, 'rerollConfirm');
+    const logBeforeReroll = [...game.log];
+    assert.ok(logBeforeReroll.length > 0);
+
+    game.rerollDice(5);
+
+    // rerollDice内でlog=[]→addLogするのでログがリセットされ新エントリのみになる
+    assert.ok(!game.log.includes(logBeforeReroll[0]));
+    assert.ok(game.log.some(e => e.startsWith('📡')));
+});
+
+runTest('nextTurnでgame.logがリセットされ新ターンのエントリになる', () => {
+    const game = new GameManager(2);
+    game.rollDice(1);
+    game.phase = 'build';
+    const prevLog = [...game.log];
+    assert.ok(prevLog.length > 0);
+
+    game.nextTurn();
+
+    assert.ok(!game.log.some(e => prevLog.includes(e) && !e.startsWith('👤')));
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.ok(game.log.some(e => e.startsWith('👤')));
+});
+
+runTest('CARDSを色順→ダイス出目順にソートできる', () => {
+    const COLOR_ORDER = { blue: 0, green: 1, red: 2, purple: 3 };
+    const sorted = [...runtime.CARDS].sort((a, b) => {
+        const cd = (COLOR_ORDER[a.color] ?? 9) - (COLOR_ORDER[b.color] ?? 9);
+        if (cd !== 0) return cd;
+        return Math.min(...a.diceNums) - Math.min(...b.diceNums);
+    });
+    for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1], cur = sorted[i];
+        const po = COLOR_ORDER[prev.color] ?? 9;
+        const co = COLOR_ORDER[cur.color] ?? 9;
+        assert.ok(po <= co, `色順が正しくない: ${prev.name}(${prev.color}) > ${cur.name}(${cur.color})`);
+        if (po === co) {
+            assert.ok(
+                Math.min(...prev.diceNums) <= Math.min(...cur.diceNums),
+                `同色内のダイス順が正しくない: ${prev.name} > ${cur.name}`
+            );
+        }
+    }
 });
 
 if (process.exitCode) {

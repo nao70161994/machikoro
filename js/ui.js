@@ -501,7 +501,12 @@ function renderBuildMenu() {
         if (cd !== 0) return cd;
         return Math.min(...a.diceNums) - Math.min(...b.diceNums);
     });
-    const cardHtml = sortedCards.map(card => {
+    const filterDefs = [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫']];
+    const filterBtnsHtml = filterDefs.map(([c, label]) =>
+        `<button class="card-filter-btn${cardFilter === c ? ' active' : ''}" onclick="setCardFilter('${c}')">${label}</button>`
+    ).join('');
+    const visibleCards = cardFilter ? sortedCards.filter(c => c.color === cardFilter) : sortedCards;
+    const cardHtml = visibleCards.map(card => {
         const stock = SHOP_STOCK[card.name];
         if (stock <= 0) return "";
         const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCard(card.name) > 0);
@@ -513,7 +518,12 @@ function renderBuildMenu() {
         return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${name}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button></div>`;
     }).join("");
     const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" onclick="doUndo()">↩ 建設を取り消す</button>` : '';
-    document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+    document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+}
+
+function setCardFilter(color) {
+    cardFilter = color;
+    renderBuildMenu();
 }
 
 function bcSelectCard(btn, inputId) {
@@ -575,8 +585,9 @@ let fullLog = [];
 let prevLogLength = 0;
 let prevPlayerIndex = -1;
 let announcerTimer = null;
+let cardFilter = '';
 
-function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; }
+function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; cardFilter = ''; }
 
 function showCardSelect() {
     renderCardSelectModal();

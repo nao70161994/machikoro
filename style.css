@@ -995,6 +995,38 @@ button:not(:disabled):active {
     gap: 6px;
 }
 
+.card-filter-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.card-filter-btn {
+    width: auto;
+    padding: 5px 14px;
+    font-size: 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.card-filter-btn.active {
+    background: rgba(240,192,64,0.18);
+    border-color: rgba(240,192,64,0.5);
+    color: #f0c040;
+}
+
+.card-filter-btn:not(:disabled):hover {
+    background: rgba(240,192,64,0.1);
+    border-color: rgba(240,192,64,0.35);
+    color: rgba(240,192,64,0.85);
+}
+
 /* ===== カードボタン ===== */
 .card-btn {
     position: relative;

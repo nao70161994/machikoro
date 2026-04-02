@@ -25,7 +25,7 @@ Card.js → Player.js → GameManager.js → CPU.js → ui.js → storage.js →
 
 | ファイル | 役割 |
 |---------|------|
-| `js/ui.js` | ログ描画・分類（`classifyLogEntry` / `extractLogDetails`）・UI補助 |
+| `js/ui.js` | ログ描画・分類・pending モーダル・カードフィルター・ターンアナウンサー・buildMenu レンダリング・`CARD_SETS` / `enabledCards` / `enabledLandmarks` |
 | `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`） |
 | `js/main.js` | ゲーム進行・オンライン通信・CPU制御・イベントハンドラ |
 
@@ -79,10 +79,18 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 | `winStreak` / `lastWinnerName` | 連勝記録 |
 | `tutorialEnabled` / `tutorialLevel` | チュートリアル設定 |
 
+### UI 設計メモ
+
+- **pending ダイアログ**（テレビ局・改装屋等）は `#pendingModal` のフルスクリーンオーバーレイで表示。`renderPending()` が innerHTML を書き換え、コンテンツがある間だけ `display:flex`。
+- **ビジネスセンター**のカード選択は `<select>` ではなくタップ可能な `.bc-chip` ボタン方式。`bcSelectCard()` が選択状態と hidden input を更新。`onResolveBusiness()` は hidden input の値をそのまま参照する。
+- **ログ全履歴**は `fullLog[]` 配列で管理（最大300件）。`game.log` のリセットを `prevLogLength` との比較で検知し、ターン切り替えには `__SEP__` 区切り文字を挿入。電波塔リロール（`cur[0].startsWith("📡")`）の場合は区切りを挿入しない。
+- **ターンアナウンサー**は `#turnAnnouncer` の fixed オーバーレイ。`prevPlayerIndex` の変化を `render()` 内で検知し、`showTurnAnnouncer()` で1.3秒表示後フェードアウト。`isReplaying = true` のときは発火しない。
+- **カードフィルター**は `cardFilter` 変数（`''` = 全て）で管理。`setCardFilter()` を呼ぶと `renderBuildMenu()` が再実行される。
+
 ### カード追加時の注意
 
 - `js/Card.js` の `CARDS` 配列に追加
-- `js/main.js` の `CARD_SETS`（basic / plus / sharp）にも追加
+- `js/ui.js` の `CARD_SETS`（basic / plus / sharp）にも追加
 - `CPU.evalCard()` に新 effect のスコアロジックを追加
 - `GameManager.processIncome()` に発動ロジックを追加
 
@@ -103,11 +111,11 @@ Node.js 組み込み `assert` モジュールのみ使用。
 
 | ファイル | 内容 |
 |---------|------|
-| `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard検証など） |
+| `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard・テレビ局・ITベンチャー・電波塔・ログリセット・CARDSソート検証など） |
 | `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName 等） |
 | `tests/run-all.js` | 両テストを順次実行するエントリポイント |
 
-新機能追加時は対応するテストファイルにケースを追加すること。
+新機能追加時は対応するテストファイルにケースを追加すること。UI 固有の処理（DOM 操作・アニメーション）はブラウザ環境依存のため Node.js テストでは検証できない。GameManager ロジックに集中してテストを書く。
 
 ### 既知の制約
 
@@ -115,3 +123,4 @@ Node.js 組み込み `assert` モジュールのみ使用。
 - ランドマーク「役所」は `Player.landmarks` に含まれず `hasYakusho` フラグで別管理
 - 紫カード（大施設）は1人1枚制限: `card.color === "purple" && current.countCard(card.name) > 0` でチェック
 - `main.js` は約1116行（`ui.js` / `storage.js` に分割済み）。さらなる分割は将来課題
+- `CARD_SETS` は `ui.js` に定義されている（`main.js` ではない）
