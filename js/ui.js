@@ -1,0 +1,591 @@
+function classifyLogEntry(entry) {
+    let cls = "log-system";
+    let label = "進行";
+    if (entry.startsWith("🎲") || entry.startsWith("📡") || entry.startsWith("⚓") || entry.startsWith("🚉")) {
+        cls = "log-dice";
+        label = "ダイス";
+    } else if (entry.startsWith("💸") || entry.startsWith("🍸") || entry.startsWith("🍽️")) {
+        cls = "log-lose";
+        label = "支払い";
+    } else if (entry.startsWith("🌾") || entry.startsWith("🏪") || entry.startsWith("🐟") || entry.startsWith("🌽") || entry.startsWith("🍷") || entry.startsWith("💻")) {
+        cls = "log-gain";
+        label = "収入";
+    } else if (entry.startsWith("🏗️") || entry.startsWith("🏆") || entry.startsWith("🔨")) {
+        cls = "log-build";
+        label = "建設";
+    } else if (entry.startsWith("🏟️") || entry.startsWith("📺") || entry.startsWith("🏢") || entry.startsWith("🧹") || entry.startsWith("🚚") || entry.startsWith("📰") || entry.startsWith("🏛️") || entry.startsWith("🌳")) {
+        cls = "log-special";
+        label = "特殊";
+    } else if (entry.startsWith("❌")) {
+        cls = "log-error";
+        label = "エラー";
+    }
+    return { cls, label };
+}
+
+function extractLogDetails(entry) {
+    const detail = { actor: '', target: '', amount: '', subject: '' };
+    if (!entry) return detail;
+    const amountMatch = entry.match(/([+-]?\d+)コイン/);
+    if (amountMatch) detail.amount = amountMatch[1];
+
+    const actorPatterns = [
+        /^(?:🌾|🏪|🐟|💸|🍸|🍽️|📰|🏛️)\s+([^の\s]+)の/,
+        /^(?:📺|🚚)\s+([^か\s]+)から/,
+        /^(?:🔄)\s+([^ ]+)/,
+        /^(?:👤)\s+([^の]+)のターン/
+    ];
+    for (const pattern of actorPatterns) {
+        const match = entry.match(pattern);
+        if (match) {
+            detail.actor = match[1];
+            break;
+        }
+    }
+
+    const targetMatch = entry.match(/(?:から|を)([^に\s]+)(?:に|の)?/);
+    if (targetMatch && !detail.target) detail.target = targetMatch[1];
+
+    const subjectPatterns = [
+        /の([^発動\s]+)発動/,
+        /^(?:🏗️|🔨|🚚|🧹|🍷|📺|🏢)\s*([^を⇔ ]+)/,
+        /^(?:🌾|🏪|🐟|💸|🍸|🍽️)\s+[^の]+の([^発動\s]+)/
+    ];
+    for (const pattern of subjectPatterns) {
+        const match = entry.match(pattern);
+        if (match) {
+            detail.subject = match[1];
+            break;
+        }
+    }
+    return detail;
+}
+
+function renderLog() {
+    const logEl = document.getElementById("log");
+    const titleEl = document.getElementById("logTitle");
+    const summaryEl = document.getElementById("logSummary");
+    if (!logEl || !titleEl || !summaryEl) return;
+
+    const logs = game.log || [];
+    titleEl.textContent = `📋 ログ (${logs.length})`;
+    logEl.innerHTML = logs.map((entry, index) => {
+        const { cls } = classifyLogEntry(entry);
+        const latestCls = index === logs.length - 1 ? " log-latest" : "";
+        return `<div class="log-item ${cls}${latestCls}">${escapeHtml(entry)}</div>`;
+    }).join("");
+
+    const recent = logs.slice(-8);
+    const counts = { "収入": 0, "支払い": 0, "建設": 0, "特殊": 0, "ダイス": 0 };
+    recent.forEach(entry => {
+        const { label } = classifyLogEntry(entry);
+        if (counts[label] !== undefined) counts[label]++;
+    });
+    const summaryParts = [];
+    const latest = logs[logs.length - 1];
+    if (latest) {
+        summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest)}</span>`);
+        const details = extractLogDetails(latest);
+        const detailCards = [];
+        if (details.actor) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">${escapeHtml(details.actor)}</span></span>`);
+        if (details.subject) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">対象カード</span><span class="log-detail-value">${escapeHtml(details.subject)}</span></span>`);
+        if (details.target) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">相手/対象</span><span class="log-detail-value">${escapeHtml(details.target)}</span></span>`);
+        if (details.amount) {
+            const amountText = `${details.amount.startsWith('-') ? '' : '+'}${details.amount}コイン`;
+            detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">${escapeHtml(amountText)}</span></span>`);
+        }
+        if (detailCards.length > 0) summaryParts.push(`<div class="log-detail-row">${detailCards.join("")}</div>`);
+    } else {
+        summaryParts.push(`<span class="log-chip">ログはまだありません</span>`);
+    }
+    Object.entries(counts).forEach(([label, count]) => {
+        if (count > 0) summaryParts.push(`<span class="log-chip">${label} ${count}</span>`);
+    });
+    summaryEl.innerHTML = summaryParts.join("");
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function getTutorialHints(current) {
+    const affordableCards = CARDS.filter(card =>
+        SHOP_STOCK[card.name] > 0 &&
+        current.coins >= card.cost &&
+        !(card.color === "purple" && current.countCard(card.name) > 0)
+    ).sort((a, b) => a.cost - b.cost);
+    const affordableLandmarks = Object.entries(current.landmarks)
+        .filter(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name))
+        .sort((a, b) => Player.landmarkCost(a[0]) - Player.landmarkCost(b[0]));
+    return { affordableCards, affordableLandmarks };
+}
+
+function getTutorialMessage() {
+    if (!game) return { title: "", body: "", tags: [] };
+    const current = game.currentPlayer();
+    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    const levelText = tutorialLevel === 'advanced' ? '上級者向け' : '初心者向け';
+    if (!isMyTurn) {
+        return {
+            title: `${levelText}ガイド`,
+            body: tutorialLevel === 'advanced'
+                ? `${current.name}の操作待ちです。相手の次ターン購入圏と、現在のログから発動帯の偏りを確認してください。`
+                : `${current.name}の操作待ちです。ログと盤面を見ながら次の購入候補を確認してください。`,
+            tags: [current.name, '待機中']
+        };
+    }
+    if (isCPUTurn) return { title: `${levelText}ガイド`, body: `${current.name}はCPUです。処理が終わるまで待ちます。ログで収入差を確認してください。`, tags: ['CPUターン'] };
+    if (game.phase === "roll") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "サイコロ前です。自分の発動帯と相手の赤カード帯を見て、今回は安全重視か上振れ狙いかを決めます。" : "サイコロを振って収入処理を開始します。赤・青・緑・紫の順に効果が解決されます。", tags: ['サイコロ前', `所持 ${current.coins}コイン`] };
+    if (game.phase === "selectDice") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "駅の選択です。2個は高コスト緑や港・遊園地と相性が良い一方、赤カード帯にも入りやすくなります。" : "駅の効果です。1個なら安全、2個なら高い出目や港・遊園地を狙えます。", tags: ['駅', '1個/2個選択'] };
+    if (game.phase === "rerollConfirm") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? `電波塔です。現在 ${game.lastDiceResult}。自分の緑紫発動と相手の赤発動の損得差で判断します。` : `電波塔の効果です。現在の出目 ${game.lastDiceResult} を使うか、振り直すか決めてください。`, tags: ['電波塔', `現在 ${game.lastDiceResult}`] };
+    if (game.phase === "harborChoice") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? `港の選択です。合計 ${game.lastDiceResult} を ${game.lastDiceResult + 2} に寄せることで、発動する青緑赤の帯がどう変わるか確認します。` : `港の効果です。合計 ${game.lastDiceResult} に +2 して有利な発動帯へ寄せられるか確認してください。`, tags: ['港', `候補 ${game.lastDiceResult}/${game.lastDiceResult + 2}`] };
+    if (game.pendingTV > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "テレビ局です。最多所持コインだけでなく、次ターンに大型建設へ届く相手を崩すと効果的です。" : "テレビ局です。所持コインが多い相手を選ぶと効率が高いです。", tags: ['テレビ局'] };
+    if (game.pendingBusiness > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "ビジネスセンターです。休業中カードを押し付けるか、高コスト施設を奪うかで盤面差を作れます。" : "ビジネスセンターです。同名カードでも個別に選べます。休業中カードを渡すかも含めて選んでください。", tags: ['ビジネスセンター', '個別選択'] };
+    if (game.pendingCleaning > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "清掃業です。枚数が多い施設名を止めると収入差を広げやすいです。次の出目帯も意識してください。" : "清掃業です。選んだ名前の施設は全員分まとめて休業になります。枚数が多い施設を狙うと得です。", tags: ['清掃業'] };
+    if (game.pendingMover > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "引越し屋です。低効率施設や休業中施設を渡して+4しつつ、相手の次ターン期待値を調整できます。" : "引越し屋です。休業中カードも渡せます。渡した先でも休業状態はそのまま残ります。", tags: ['引越し屋', '+4コイン'] };
+    if (game.pendingRenovation > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "改装屋です。建て直し優先度の低いランドマークを戻して、今ターンの購入効率を優先します。" : "改装屋です。今すぐ8コインが欲しいときに、優先度の低いランドマークを戻します。", tags: ['改装屋', '+8コイン'] };
+    if (game.pendingIT) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "ITベンチャーです。奪取予定人数と次巡の安全性を見て、積立を厚くするか判断します。" : "ITベンチャーです。1コイン積み立てると、次回以降の奪取額が増えます。", tags: ['ITベンチャー'] };
+    if (game.phase === "build") {
+        if (game.builtThisTurn) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "建設済みです。ログ要約を見て、このターンの収支が狙い通りだったか確認してから終了します。" : "このターンの建設は終わっています。問題なければターン終了してください。", tags: ['建設済み'] };
+        const { affordableCards, affordableLandmarks } = getTutorialHints(current);
+        if (!affordableCards.length && !affordableLandmarks.length) {
+            return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "建設不可です。次に欲しい帯の施設を決め、相手の赤カードを踏みにくい出目戦略を意識します。" : "今の所持コインでは建設できません。建設せずにターン終了して次の収入を狙います。", tags: ['建設不可'] };
+        }
+        const hints = [];
+        if (affordableCards[0]) hints.push(`施設 ${affordableCards[0].name}（${affordableCards[0].cost}コイン）`);
+        if (affordableLandmarks[0]) hints.push(`ランドマーク ${affordableLandmarks[0][0]}（${Player.landmarkCost(affordableLandmarks[0][0])}コイン）`);
+        return {
+            title: `${levelText}ガイド`,
+            body: tutorialLevel === 'advanced'
+                ? `建設フェーズです。最安候補は ${hints.join(" / ")} です。直近ログで伸びた帯をさらに太らせるか、弱い帯を補うかで選びます。`
+                : `建設フェーズです。${hints.join("、")} が候補です。ログを見て不足している収入帯を補ってください。`,
+            tags: [`所持 ${current.coins}コイン`, `候補 ${affordableCards.length + affordableLandmarks.length}件`]
+        };
+    }
+    return { title: `${levelText}ガイド`, body: "盤面を確認して次の行動を選んでください。", tags: [] };
+}
+
+function renderTutorial() {
+    syncTutorialControls();
+    const box = document.getElementById("tutorialBox");
+    if (!box) return;
+    if (!tutorialEnabled || !game || game.checkWinner()) {
+        box.style.display = "none";
+        box.innerHTML = "";
+        return;
+    }
+    const message = getTutorialMessage();
+    box.style.display = "block";
+    box.innerHTML = `
+        <div class="tutorial-title">${escapeHtml(message.title || "GUIDE")}</div>
+        <div class="tutorial-body">${escapeHtml(message.body || "")}</div>
+        ${message.tags && message.tags.length ? `<div class="tutorial-meta">${message.tags.map(tag => `<span class="tutorial-tag">${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
+    `;
+}
+
+function setTutorialEnabled(enabled) {
+    tutorialEnabled = !!enabled;
+    try {
+        localStorage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
+    } catch (e) {}
+    syncTutorialControls();
+    renderTutorial();
+}
+
+function onToggleTutorial(enabled) {
+    setTutorialEnabled(enabled);
+}
+
+function toggleTutorial() {
+    setTutorialEnabled(!tutorialEnabled);
+}
+
+function onChangeTutorialLevel(level) {
+    tutorialLevel = level === 'advanced' ? 'advanced' : 'beginner';
+    try {
+        localStorage.setItem('tutorialLevel', tutorialLevel);
+    } catch (e) {}
+    syncTutorialControls();
+    renderTutorial();
+}
+
+function cycleTutorialLevel() {
+    onChangeTutorialLevel(tutorialLevel === 'beginner' ? 'advanced' : 'beginner');
+}
+
+function syncTutorialControls() {
+    const checkbox = document.getElementById("tutorialEnabled");
+    if (checkbox) checkbox.checked = tutorialEnabled;
+    const select = document.getElementById("tutorialLevel");
+    if (select) select.value = tutorialLevel;
+    const btn = document.getElementById("btnTutorialToggle");
+    if (btn) {
+        btn.textContent = tutorialEnabled ? "💡 ガイド ON" : "💡 ガイド OFF";
+        btn.classList.toggle("active", tutorialEnabled);
+    }
+    const levelBtn = document.getElementById("btnTutorialLevel");
+    if (levelBtn) {
+        levelBtn.textContent = tutorialLevel === 'advanced' ? "🧠 上級者" : "🌱 初心者";
+        levelBtn.classList.toggle("active", tutorialEnabled);
+    }
+}
+
+function render() {
+    if (!game) return;
+    const current = game.currentPlayer();
+    const winner = game.checkWinner();
+    syncTutorialControls();
+
+    if (winner) {
+        const winnerIdx = game.players.indexOf(winner);
+        const isCPUWinner = cpuPlayers[winnerIdx] !== null;
+        if (winner.name === lastWinnerName) winStreak++;
+        else { winStreak = 1; lastWinnerName = winner.name; }
+        localStorage.setItem('winStreak', winStreak);
+        localStorage.setItem('lastWinnerName', lastWinnerName);
+        const scoreRows = game.players.slice().sort((a, b) => b.coins - a.coins).map(p => {
+            const isW = p === winner;
+            return `<div class="winner-stats-row ${isW ? 'highlight' : ''}"><span>${isW ? '🏆 ' : ''}${escapeHtml(p.name)}</span><span>🪙 ${p.coins}</span></div>`;
+        }).join('');
+        const streakHtml = winStreak >= 2 ? `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>` : '';
+        document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div></div>`;
+        if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); }
+        localStorage.removeItem('savedGame');
+        localStorage.removeItem('onlineSession');
+        updateResumeButton();
+        startConfetti();
+        document.getElementById("btnRoll").disabled = true;
+        const btnSkip = document.getElementById("btnSkip");
+        btnSkip.disabled = true;
+        btnSkip.textContent = "建設しないでターン終了";
+        document.getElementById("btnReroll").style.display = "none";
+        document.getElementById("diceChoose").innerHTML = "";
+        document.getElementById("buildMenu").innerHTML = "";
+        renderTutorial();
+        renderLog();
+        renderPlayers();
+        return;
+    }
+
+    document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
+    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    document.getElementById("btnRoll").disabled = game.phase !== "roll" || isCPUTurn || !isMyTurn;
+    const btnSkip = document.getElementById("btnSkip");
+    btnSkip.disabled = game.phase !== "build" || isCPUTurn || game.pendingRenovation > 0 || !isMyTurn;
+    btnSkip.textContent = game.builtThisTurn ? "建設完了・ターン終了" : "建設しないでターン終了";
+    document.getElementById("btnReroll").style.display = "none";
+
+    if (game.lastDice1 > 0 && game.lastDice2 > 0) updateDiceDisplay([game.lastDice1, game.lastDice2]);
+    else if (game.lastDiceResult > 0) updateDiceDisplay([game.lastDiceResult]);
+    else updateDiceDisplay(null);
+
+    renderDiceChoose();
+    renderPending();
+    renderTutorial();
+    renderLog();
+    renderPlayers();
+
+    if (prevCoins) {
+        game.players.forEach((p, i) => {
+            const diff = p.coins - prevCoins[i];
+            if (diff !== 0) showCoinAnimation(i, diff);
+        });
+    }
+    prevCoins = game.players.map(p => p.coins);
+    renderBuildMenu();
+    checkAutoSkip();
+    saveGameState();
+}
+
+function renderDiceChoose() {
+    const el = document.getElementById("diceChoose");
+    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    if (!isMyTurn) { el.innerHTML = ""; return; }
+    if (game.phase === "selectDice") {
+        el.innerHTML = `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button onclick="onSelectDiceCount(false)">🎲 1個</button><button onclick="onSelectDiceCount(true)">🎲🎲 2個（合計を使う）</button></div>`;
+        return;
+    }
+    if (game.phase === "rerollConfirm") {
+        el.innerHTML = `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button onclick="onReroll()">振り直す</button><button onclick="onSkipReroll()">このまま使う</button></div>`;
+        return;
+    }
+    if (game.phase === "harborChoice") {
+        el.innerHTML = `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button onclick="onResolveHarbor(true)">+2する（→${game.lastDiceResult + 2}）</button><button onclick="onResolveHarbor(false)">そのまま使う（${game.lastDiceResult}）</button></div>`;
+        return;
+    }
+    el.innerHTML = "";
+}
+
+function renderPending() {
+    const el = document.getElementById("pendingMenu");
+    if (game.phase !== "pending" && !game.pendingIT && game.pendingRenovation <= 0) { el.innerHTML = ""; return; }
+    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    if (!isMyTurn) { el.innerHTML = ""; return; }
+    let html = "";
+    if (game.pendingTV > 0) {
+        const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
+        html += `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${others.map(({ p, i }) => `<button onclick="onResolveTV(${i})">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
+    }
+    if (game.pendingBusiness > 0) {
+        const current = game.currentPlayer();
+        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
+        const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
+        html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p>自分の施設：</p><select id="myCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => {
+            const theirCards = p.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
+            return `<p>${escapeHtml(p.name)}の施設：</p><select id="theirCardSelect_${i}">${theirCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${p.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select><button onclick="onResolveBusiness(${i})">${escapeHtml(p.name)}と交換</button>`;
+        }).join("")}</div>`;
+    }
+    if (game.pendingCleaning > 0) {
+        const allCardNames = [...new Set(game.players.flatMap(p => p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).map(c => c.name)))];
+        html += `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button onclick="onResolveCleaning('${name}')">${name}</button>`).join("")}</div>`;
+    }
+    if (game.pendingMover > 0) {
+        const current = game.currentPlayer();
+        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
+        const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
+        html += `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button onclick="onResolveMover(${i})">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
+    }
+    if (game.pendingRenovation > 0) {
+        const current = game.currentPlayer();
+        const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== "役所").map(([name]) => name);
+        html += `<div class="pending-box"><p>🔨 改装屋：取り壊すランドマークを選んでください（+8コイン）</p>${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button onclick="onResolveRenovation('${name}')">${name}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
+    }
+    if (game.pendingIT) {
+        const cur = game.currentPlayer();
+        const canSave = cur.coins >= 1;
+        html += `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button onclick="onResolveIT(true)" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button onclick="onResolveIT(false)">スキップ</button></div>`;
+    }
+    el.innerHTML = html;
+}
+
+function renderPlayers() {
+    const html = game.players.map((p, idx) => {
+        const isActive = idx === game.currentPlayerIndex;
+        const isCPU = cpuPlayers[idx] !== null;
+        const cpuLabel = isCPU ? `🤖${cpuPlayers[idx].difficulty === 'weak' ? '弱' : cpuPlayers[idx].difficulty === 'normal' ? '普' : '強'}` : '👤';
+        const landmarks = Object.entries(p.landmarks).map(([name, built]) => `<span class="landmark-badge ${built ? 'built' : ''}">${getLandmarkEmoji(name)} ${name}</span>`).join("");
+        const cards = {};
+        for (const c of p.cards) {
+            if (!cards[c.name]) cards[c.name] = { count: 0, dormant: 0, color: c.color };
+            cards[c.name].count++;
+            if (p.isDormant(c)) cards[c.name].dormant++;
+        }
+        const colorDot = { blue: "#3b82f6", green: "#22c55e", red: "#ef4444", purple: "#a855f7" };
+        const cardHtml = Object.entries(cards).map(([name, info]) => {
+            const dormantText = info.dormant > 0 ? `💤` : '';
+            return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" onclick="showCardDetail('${name}')">${name}×${info.count}${dormantText}</span>`;
+        }).join("");
+        const itCoins = p.itVentureCoins > 0 ? `<span class="it-badge">💻${p.itVentureCoins}</span>` : "";
+        const loanCount = p.cards.filter(c => c.effect === "loan").length;
+        const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : "";
+        return `<div class="player-box ${isActive ? 'active' : ''}"><div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${escapeHtml(p.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${p.coins}</span>${itCoins}${loanBadge}</div></div><div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
+    }).join("");
+    document.getElementById("players").innerHTML = html;
+}
+
+function getEffectText(card) {
+    switch(card.effect) {
+        case "cheese": return "牧場1軒につき+" + card.income + "コイン";
+        case "furniture": return "森林・鉱山1軒につき+" + card.income + "コイン";
+        case "market": return "農園系1軒につき+" + card.income + "コイン";
+        case "flower": return "花畑1軒につき+" + card.income + "コイン";
+        case "foodwarehouse": return "飲食店1軒につき+" + card.income + "コイン";
+        case "stadium": return "全員から" + card.income + "コイン奪う";
+        case "tv": return "任意の1人から" + card.income + "コイン奪う";
+        case "business": return "大施設以外を他プレイヤーと交換";
+        case "publisher": return "全員の飲食店・商店1軒につき1コイン奪う";
+        case "taxoffice": return "10コイン以上の全員から半分奪う";
+        case "harbor": return "港あり：+" + card.income + "コイン";
+        case "harbor_red": return "港あり：相手から" + card.income + "コイン奪う";
+        case "tuna": return "港あり：ダイス2個分コイン";
+        case "cornfield":
+        case "fewlandmark": return "ランドマーク0-1軒なら+1コイン";
+        case "renovation": return "ランドマーク1軒を戻して+8コイン";
+        case "loan": return "建設時+5コイン・5か6が出たら-2コイン";
+        case "winery": return "ブドウ園1軒につき+6コイン（自身休業）";
+        case "mover": return "大施設以外を相手に渡して+4コイン";
+        case "drinkfactory": return "全員の飲食店1軒につき+1コイン";
+        case "frenchr": return "相手ランドマーク2軒以上なら5コイン奪う";
+        case "memberbar": return "相手ランドマーク3軒以上なら全コイン奪う";
+        case "cleaning": return "施設1種を休業にして休業数コイン獲得";
+        case "itstartup": return "ターン終了時1コイン積立・全員から積立額奪う";
+        case "park": return "全員のコインを均等分配";
+        default:
+            if (card.color === "red") return "相手から" + card.income + "コイン奪う";
+            return "+" + card.income + "コイン";
+    }
+}
+
+function getLandmarkEffectText(name) {
+    return {
+        "駅": "サイコロを1個か2個か選べる",
+        "ショッピングモール": "飲食店・商店の収入+1",
+        "遊園地": "ゾロ目でもう1ターン",
+        "電波塔": "1ターン1回振り直せる",
+        "港": "ダイス合計10以上で+2選択可",
+        "空港": "建設しないターンに+10コイン",
+    }[name] || "";
+}
+
+function getLandmarkEmoji(name) {
+    return {
+        "駅": "🚉",
+        "ショッピングモール": "🛍️",
+        "遊園地": "🎡",
+        "電波塔": "📡",
+        "港": "⚓",
+        "空港": "✈️",
+        "役所": "🏛️",
+    }[name] || "🏛️";
+}
+
+function renderBuildMenu() {
+    const current = game.currentPlayer();
+    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    const canBuild = game.phase === "build" && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
+    const cardHtml = CARDS.map(card => {
+        const stock = SHOP_STOCK[card.name];
+        if (stock <= 0) return "";
+        const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCard(card.name) > 0);
+        return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${card.category}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${card.name}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button></div>`;
+    }).join("");
+    const landmarkHtml = Object.entries(current.landmarks).filter(([name]) => name !== "役所").map(([name, built]) => {
+        const cost = Player.landmarkCost(name);
+        const canBuildThis = canBuild && !built && current.coins >= cost;
+        return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${name}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button></div>`;
+    }).join("");
+    const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" onclick="doUndo()">↩ 建設を取り消す</button>` : '';
+    document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+}
+
+function switchTab(tab) {
+    document.getElementById("tabContentLocal").style.display = tab === "local" ? "flex" : "none";
+    document.getElementById("tabContentOnline").style.display = tab === "online" ? "flex" : "none";
+    document.getElementById("tabLocal").className = `tab-btn ${tab === "local" ? "active" : ""}`;
+    document.getElementById("tabOnline").className = `tab-btn ${tab === "online" ? "active" : ""}`;
+}
+
+function switchOnlineTab(tab) {
+    document.getElementById("onlineCreate").style.display = tab === "create" ? "block" : "none";
+    document.getElementById("onlineJoin").style.display = tab === "join" ? "block" : "none";
+    document.getElementById("onlineTabCreate").className = `online-tab-btn ${tab === "create" ? "active" : ""}`;
+    document.getElementById("onlineTabJoin").className = `online-tab-btn ${tab === "join" ? "active" : ""}`;
+}
+
+function showRules() {
+    document.getElementById("rulesModal").style.display = "flex";
+}
+
+function closeRules() {
+    document.getElementById("rulesModal").style.display = "none";
+}
+
+const CARD_SETS = {
+    basic: ["麦畑","牧場","パン屋","カフェ","コンビニ","森林","スタジアム","チーズ工場","家具工場","鉱山","ファミレス","リンゴ園","青果市場","テレビ局","ビジネスセンター"],
+    plus: ["花畑","サンマ漁船","マグロ漁船","フラワーショップ","食品倉庫","寿司屋","ピザ屋","バーガーショップ","出版社","税務署"],
+    sharp: ["コーン畑","ブドウ園","雑貨屋","改装屋","貸金業","ワイナリー","引越し屋","ドリンク工場","高級フレンチ","会員制BAR","清掃業","ITベンチャー","公園"],
+};
+
+let enabledCards = new Set(CARDS.map(c => c.name));
+
+function showCardSelect() {
+    renderCardSelectModal();
+    document.getElementById("cardSelectModal").style.display = "flex";
+}
+
+function closeCardSelect() {
+    document.getElementById("cardSelectModal").style.display = "none";
+}
+
+function renderCardSelectModal() {
+    for (const [set, cards] of Object.entries(CARD_SETS)) {
+        const el = document.getElementById(`cardList${set.charAt(0).toUpperCase() + set.slice(1)}`);
+        el.innerHTML = cards.map(name => {
+            const on = enabledCards.has(name);
+            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" onclick="toggleCard('${name}')" id="cardToggle_${name}">${name}</button>`;
+        }).join("");
+        const allOn = cards.every(n => enabledCards.has(n));
+        const btn = document.getElementById(`btnSet${set.charAt(0).toUpperCase() + set.slice(1)}`);
+        btn.textContent = allOn ? "ON" : "OFF";
+        btn.className = `set-toggle ${allOn ? 'on' : 'off'}`;
+    }
+}
+
+function toggleCard(name) {
+    if (enabledCards.has(name)) {
+        if (name === "麦畑" || name === "パン屋") return;
+        enabledCards.delete(name);
+    } else {
+        enabledCards.add(name);
+    }
+    renderCardSelectModal();
+}
+
+function toggleSet(set) {
+    const cards = CARD_SETS[set];
+    const allOn = cards.every(n => enabledCards.has(n));
+    for (const name of cards) {
+        if (name === "麦畑" || name === "パン屋") continue;
+        if (allOn) enabledCards.delete(name);
+        else enabledCards.add(name);
+    }
+    renderCardSelectModal();
+}
+
+function toggleLog() {
+    const log = document.getElementById("log");
+    const summary = document.getElementById("logSummary");
+    const icon = document.getElementById("logToggleIcon");
+    const header = document.querySelector(".log-header");
+    const collapsed = log.classList.toggle("collapsed");
+    if (summary) summary.classList.toggle("collapsed", collapsed);
+    icon.textContent = collapsed ? "▶" : "▼";
+    header.classList.toggle("collapsed", collapsed);
+}
+
+function showCardDetail(name, isLandmark = false) {
+    const modal = document.getElementById('cardDetailModal');
+    const title = document.getElementById('cardDetailTitle');
+    const body = document.getElementById('cardDetailBody');
+    if (isLandmark) {
+        const emoji = getLandmarkEmoji(name);
+        const cost = Player.landmarkCost(name);
+        const effect = getLandmarkEffectText(name);
+        title.textContent = `${emoji} ${name}`;
+        body.innerHTML = `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`;
+    } else {
+        const card = CARDS.find(c => c.name === name);
+        if (!card) return;
+        const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
+        const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
+        title.textContent = card.name;
+        body.innerHTML = `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[card.color]}">${colorNames[card.color]}</span> ${card.category}</span></div></div><div class="card-detail-effect">${getEffectText(card)}</div>`;
+    }
+    modal.style.display = 'flex';
+}
+
+function closeCardDetail() {
+    document.getElementById('cardDetailModal').style.display = 'none';
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function showConfirm(message, onOk) {
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmMessage').textContent = message;
+    modal.style.display = 'flex';
+    document.getElementById('confirmOkBtn').onclick = () => {
+        modal.style.display = 'none';
+        onOk();
+    };
+    document.getElementById('confirmCancelBtn').onclick = () => {
+        modal.style.display = 'none';
+    };
+}
