@@ -174,6 +174,8 @@ function init(playerCount) {
     cancelAutoSkip();
     undoState = null;
     game = new GameManager(playerCount);
+    if (enabledLandmarks.size === 0) enabledLandmarks = new Set(Player.landmarkNames());
+    game.enabledLandmarks = new Set(enabledLandmarks);
     for (const card of CARDS) {
         SHOP_STOCK[card.name] = enabledCards.has(card.name) ? 6 : 0;
     }
@@ -363,10 +365,11 @@ function initSocket() {
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
-    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec }) => {
+    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el }) => {
         isOnlineGame = true;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
+        enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         // initOnlineGame がmyPlayerIndexを上書きする前に保存
         saveOnlineSession();
         document.getElementById("titleScreen").style.display = "none";
@@ -381,11 +384,12 @@ function initSocket() {
     });
 
     socket.on('rejoinData', ({ gameStartPayload, actionLog, playerIndex }) => {
-        const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec } = gameStartPayload;
+        const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         isOnlineGame = true;
         isReconnectingOnline = false;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
+        enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         cpuScheduleToken++;
@@ -463,7 +467,8 @@ function showCreateRoom() {
         playerCount: onlineSelectedCount,
         playerSettings: onlinePlayerSettings,
         cpuSpeed: onlineCpuSpeed,
-        enabledCards: [...enabledCards]
+        enabledCards: [...enabledCards],
+        enabledLandmarks: [...enabledLandmarks]
     });
 }
 
@@ -480,6 +485,7 @@ function joinRoom() {
 function initOnlineGame(playerNames, ps, playerOrder) {
     const count = playerNames.length;
     game = new GameManager(count);
+    game.enabledLandmarks = new Set(enabledLandmarks.size > 0 ? enabledLandmarks : Player.landmarkNames());
     for (const card of CARDS) {
         SHOP_STOCK[card.name] = enabledCards.has(card.name) ? 6 : 0;
     }

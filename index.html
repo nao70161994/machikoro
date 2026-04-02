@@ -156,7 +156,7 @@
             <div class="modal-body">
                 <div class="rules-section">
                     <h3>🎯 勝利条件</h3>
-                    <p>6つのランドマーク（駅・ショッピングモール・遊園地・電波塔・港・空港）をすべて建設したプレイヤーの勝利！</p>
+                    <p>今回の対戦で有効になっているランドマークをすべて建設したプレイヤーの勝利です。</p>
                 </div>
                 <div class="rules-section">
                     <h3>🎲 基本ルール</h3>
@@ -205,11 +205,11 @@
     <div id="cardSelectModal" class="modal" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🃏 カード選択</h2>
+                <h2>🃏 カード・ランドマーク選択</h2>
                 <button onclick="closeCardSelect()">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">使用するカードを選んでください</p>
+                <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">使用するカードとランドマークを選んでください（ランドマークは最低1つ必要です）</p>
                 <div class="card-set-section">
                     <div class="card-set-header">
                         <span>📦 基本セット</span>
@@ -230,6 +230,12 @@
                         <button onclick="toggleSet('sharp')" id="btnSetSharp" class="set-toggle on">ON</button>
                     </div>
                     <div id="cardListSharp" class="card-toggle-list"></div>
+                </div>
+                <div class="card-set-section">
+                    <div class="card-set-header">
+                        <span>🏆 ランドマーク</span>
+                    </div>
+                    <div id="landmarkList" class="card-toggle-list"></div>
                 </div>
                 <button onclick="closeCardSelect()" style="margin-top:8px;text-align:center;background:#e94560;">決定</button>
             </div>

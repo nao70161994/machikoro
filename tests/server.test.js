@@ -29,6 +29,7 @@ function makeRoom() {
             cpuSpeed: 1500,
             playerOrder: [0, 1],
             enabledCards: ['麦畑', 'パン屋', 'カフェ', 'ビジネスセンター', '引越し屋'],
+            enabledLandmarks: ['駅', 'ショッピングモール'],
         },
         actionLog: [],
         lastUndoState: null,
@@ -93,6 +94,13 @@ runTest('online validateGameAction は lastUndoState があると undoBuild を�
     ];
     const result = validateGameAction(room, { playerIndex: 0 }, 'undoBuild', {});
     assert.strictEqual(result.ok, true);
+});
+
+runTest('online validateGameAction は無効化されたランドマーク建設を拒否する', () => {
+    const room = makeRoom();
+    room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } }];
+    const result = validateGameAction(room, { playerIndex: 0 }, 'buildLandmark', { name: '港' });
+    assert.strictEqual(result.ok, false);
 });
 
 if (process.exitCode) {

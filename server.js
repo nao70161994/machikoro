@@ -44,12 +44,21 @@ if (typeof roomGcInterval.unref === 'function') {
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
 
-    socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards }) => {
+    socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks }) => {
         playerName = sanitizeName(playerName);
         if (!playerName) { socket.emit('error', '名前が無効です'); return; }
         let roomId;
         do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); } while (rooms[roomId]);
         const reconnectToken = generateReconnectToken();
+        const allLandmarks = gameRuntime.Player.landmarkNames();
+        const validLandmarks = new Set(allLandmarks);
+        const selectedLandmarks = Array.isArray(enabledLandmarks)
+            ? enabledLandmarks.filter(name => validLandmarks.has(name))
+            : allLandmarks;
+        if (selectedLandmarks.length === 0) {
+            socket.emit('error', 'ランドマークは最低1つ必要です');
+            return;
+        }
         // ホストの人間枠を探す
         let hostIndex = 0;
         if (playerSettings && playerSettings.length > 0) {
@@ -61,6 +70,7 @@ io.on('connection', (socket) => {
         }
         rooms[roomId] = {
             enabledCards: enabledCards || null,
+            enabledLandmarks: selectedLandmarks,
             players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
             hostPlayerIndex: hostIndex,
             maxPlayers: playerCount,
@@ -253,9 +263,10 @@ function loadGameRuntime() {
 
 function createRoomMirror(room) {
     if (!room.gameStartPayload) return null;
-    const { GameManager, CARDS, createCardByName } = gameRuntime;
-    const { playerNames, playerSettings, playerOrder, enabledCards } = room.gameStartPayload;
+    const { GameManager, CARDS, createCardByName, Player } = gameRuntime;
+    const { playerNames, playerSettings, playerOrder, enabledCards, enabledLandmarks } = room.gameStartPayload;
     const game = new GameManager(playerNames.length);
+    game.enabledLandmarks = new Set((enabledLandmarks && enabledLandmarks.length > 0) ? enabledLandmarks : Player.landmarkNames());
     const shopStock = {};
     const enabled = new Set(enabledCards || CARDS.map(c => c.name));
     for (const card of CARDS) {
@@ -342,6 +353,7 @@ function restoreUndoMirror(game, shopStock, state, createCardByName) {
     Object.assign(shopStock, state.shopStock);
     game.builtThisTurn = state.builtThisTurn;
     game.log = [...state.log];
+    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
 }
 
 function makeUndoStateFromMirror(game, shopStock) {
@@ -354,6 +366,7 @@ function makeUndoStateFromMirror(game, shopStock) {
         playerLandmarks: game.players.map(p => Object.assign({}, p.landmarks)),
         playerItVenture: game.players.map(p => p.itVentureCoins),
         playerHasYakusho: game.players.map(p => p.hasYakusho),
+        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
         shopStock: Object.assign({}, shopStock),
         builtThisTurn: game.builtThisTurn,
         log: [...game.log],
@@ -491,6 +504,20 @@ function validateGameAction(room, socket, action, data) {
         };
     }
 
+    if (action === 'buildLandmark') {
+        const name = data?.name;
+        const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
+        const current = game.currentPlayer();
+        const cost = gameRuntime.Player.landmarkCost(name);
+        return {
+            ok: enabledLandmarks.has(name) &&
+                !game.builtThisTurn &&
+                !current.landmarks[name] &&
+                current.coins >= cost,
+            mirror,
+        };
+    }
+
     if (action === 'undoBuild') {
         return {
             ok: !!room.lastUndoState && game.builtThisTurn,
@@ -562,6 +589,7 @@ function checkGameStart(io, roomId) {
 
         const gameStartPayload = {
             enabledCards: room.enabledCards,
+            enabledLandmarks: room.enabledLandmarks,
             playerNames,
             playerSettings: room.playerSettings,
             cpuSpeed: room.cpuSpeed,

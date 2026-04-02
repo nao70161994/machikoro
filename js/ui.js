@@ -112,7 +112,12 @@ function getTutorialHints(current) {
         !(card.color === "purple" && current.countCard(card.name) > 0)
     ).sort((a, b) => a.cost - b.cost);
     const affordableLandmarks = Object.entries(current.landmarks)
-        .filter(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name))
+        .filter(([name, built]) =>
+            enabledLandmarks.has(name) &&
+            !built &&
+            name !== "役所" &&
+            current.coins >= Player.landmarkCost(name)
+        )
         .sort((a, b) => Player.landmarkCost(a[0]) - Player.landmarkCost(b[0]));
     return { affordableCards, affordableLandmarks };
 }
@@ -362,7 +367,10 @@ function renderPlayers() {
         const isActive = idx === game.currentPlayerIndex;
         const isCPU = cpuPlayers[idx] !== null;
         const cpuLabel = isCPU ? `🤖${cpuPlayers[idx].difficulty === 'weak' ? '弱' : cpuPlayers[idx].difficulty === 'normal' ? '普' : '強'}` : '👤';
-        const landmarks = Object.entries(p.landmarks).map(([name, built]) => `<span class="landmark-badge ${built ? 'built' : ''}">${getLandmarkEmoji(name)} ${name}</span>`).join("");
+        const landmarks = Object.entries(p.landmarks)
+            .filter(([name]) => enabledLandmarks.has(name))
+            .map(([name, built]) => `<span class="landmark-badge ${built ? 'built' : ''}">${getLandmarkEmoji(name)} ${name}</span>`)
+            .join("");
         const cards = {};
         for (const c of p.cards) {
             if (!cards[c.name]) cards[c.name] = { count: 0, dormant: 0, color: c.color };
@@ -449,7 +457,7 @@ function renderBuildMenu() {
         const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCard(card.name) > 0);
         return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${card.category}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${card.name}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button></div>`;
     }).join("");
-    const landmarkHtml = Object.entries(current.landmarks).filter(([name]) => name !== "役所").map(([name, built]) => {
+    const landmarkHtml = Object.entries(current.landmarks).filter(([name]) => enabledLandmarks.has(name)).map(([name, built]) => {
         const cost = Player.landmarkCost(name);
         const canBuildThis = canBuild && !built && current.coins >= cost;
         return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${name}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button></div>`;
@@ -487,6 +495,7 @@ const CARD_SETS = {
 };
 
 let enabledCards = new Set(CARDS.map(c => c.name));
+let enabledLandmarks = new Set(Player.landmarkNames());
 
 function showCardSelect() {
     renderCardSelectModal();
@@ -509,6 +518,13 @@ function renderCardSelectModal() {
         btn.textContent = allOn ? "ON" : "OFF";
         btn.className = `set-toggle ${allOn ? 'on' : 'off'}`;
     }
+    const landmarkList = document.getElementById("landmarkList");
+    if (landmarkList) {
+        landmarkList.innerHTML = Player.landmarkNames().map(name => {
+            const on = enabledLandmarks.has(name);
+            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" onclick="toggleLandmark('${name}')">${getLandmarkEmoji(name)} ${name}</button>`;
+        }).join("");
+    }
 }
 
 function toggleCard(name) {
@@ -528,6 +544,16 @@ function toggleSet(set) {
         if (name === "麦畑" || name === "パン屋") continue;
         if (allOn) enabledCards.delete(name);
         else enabledCards.add(name);
+    }
+    renderCardSelectModal();
+}
+
+function toggleLandmark(name) {
+    if (enabledLandmarks.has(name)) {
+        if (enabledLandmarks.size === 1) return;
+        enabledLandmarks.delete(name);
+    } else {
+        enabledLandmarks.add(name);
     }
     renderCardSelectModal();
 }

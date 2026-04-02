@@ -42,9 +42,20 @@ class Player {
         this.dormantCards = this.dormantCards.filter(c => c !== card);
     }
 
-    // 全ランドマーク建設済みか
-    hasWon() {
-        return Object.values(this.landmarks).every(v => v === true);
+    // 有効なランドマークを全て建設済みか
+    hasWon(enabledLandmarks = Player.landmarkNames()) {
+        return enabledLandmarks.every(name => this.landmarks[name] === true);
+    }
+
+    static landmarkNames() {
+        return [
+            "駅",
+            "ショッピングモール",
+            "遊園地",
+            "電波塔",
+            "港",
+            "空港",
+        ];
     }
 
     static landmarkCost(name) {

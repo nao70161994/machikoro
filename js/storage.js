@@ -28,10 +28,12 @@ function saveGameState() {
             usedReroll: game.usedReroll,
             pendingTunaDice: game.pendingTunaDice,
             turnCount: game.turnCount,
+            hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
             shopStock: Object.assign({}, SHOP_STOCK),
             cpuSettings: cpuPlayers.map(c => c ? { difficulty: c.difficulty } : null),
             cpuSpeed,
             enabledCardsList: [...enabledCards],
+            enabledLandmarksList: [...enabledLandmarks],
         };
         localStorage.setItem('savedGame', JSON.stringify(state));
     } catch(e) {}
@@ -93,7 +95,13 @@ function resumeGame() {
         cpuScheduleToken++;
         cpuSpeed = state.cpuSpeed || 1500;
         if (state.enabledCardsList) enabledCards = new Set(state.enabledCardsList);
+        if (state.enabledLandmarksList && state.enabledLandmarksList.length > 0) {
+            enabledLandmarks = new Set(state.enabledLandmarksList);
+        } else {
+            enabledLandmarks = new Set(Player.landmarkNames());
+        }
         game = new GameManager(state.players.length);
+        game.enabledLandmarks = new Set(enabledLandmarks);
         for (const [name, count] of Object.entries(state.shopStock)) SHOP_STOCK[name] = count;
         state.players.forEach((ps, i) => {
             const p = game.players[i];
@@ -121,6 +129,7 @@ function resumeGame() {
         game.usedReroll = state.usedReroll || false;
         game.pendingTunaDice = state.pendingTunaDice || null;
         game.turnCount = state.turnCount || 0;
+        game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
         cpuPlayers = state.cpuSettings.map(s => s ? new CPU(s.difficulty) : null);
         prevCoins = null;
         winSoundPlayed = false;
@@ -145,6 +154,7 @@ function saveUndoState() {
         playerLandmarks: game.players.map(p => Object.assign({}, p.landmarks)),
         playerItVenture: game.players.map(p => p.itVentureCoins),
         playerHasYakusho: game.players.map(p => p.hasYakusho),
+        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
         shopStock: Object.assign({}, SHOP_STOCK),
         builtThisTurn: game.builtThisTurn,
         log: [...game.log],
@@ -164,6 +174,7 @@ function restoreUndoSnapshot(state) {
     Object.assign(SHOP_STOCK, state.shopStock);
     game.builtThisTurn = state.builtThisTurn;
     game.log = [...state.log];
+    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
     undoState = null;
     prevCoins = null;
     cancelAutoSkip();

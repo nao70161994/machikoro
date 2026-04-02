@@ -147,6 +147,30 @@ runTest('ワイナリーは発動したカードだけ休業する', () => {
     assert.strictEqual(game.currentPlayer().isDormant(wineryB), true);
 });
 
+runTest('遊園地はサイコロを振った時点で所持していないと発動しない', () => {
+    const game = new GameManager(2);
+    game.phase = 'build';
+    game.lastDice1 = 3;
+    game.lastDice2 = 3;
+    game.hadAmusementParkAtRoll = false;
+    game.currentPlayer().landmarks['遊園地'] = true;
+
+    game.nextTurn();
+
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.strictEqual(game.phase, 'roll');
+});
+
+runTest('有効なランドマークだけ建てれば勝利になる', () => {
+    const game = new GameManager(2);
+    game.enabledLandmarks = new Set(['駅', 'ショッピングモール']);
+    game.currentPlayer().landmarks['駅'] = true;
+    assert.strictEqual(game.checkWinner(), null);
+
+    game.currentPlayer().landmarks['ショッピングモール'] = true;
+    assert.strictEqual(game.checkWinner(), game.currentPlayer());
+});
+
 if (process.exitCode) {
     throw new Error('GameManagerテストで失敗が発生しました');
 }

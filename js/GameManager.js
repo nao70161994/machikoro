@@ -17,6 +17,8 @@ class GameManager {
         this.usedReroll = false;
         this.pendingTunaDice = null;
         this.turnCount = 0;
+        this.enabledLandmarks = new Set(Player.landmarkNames());
+        this.hadAmusementParkAtRoll = false;
 
         for (let i = 0; i < playerCount; i++) {
             const p = new Player(`プレイヤー${i + 1}`);
@@ -49,6 +51,7 @@ class GameManager {
             this.lastDice1 = 0;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
+            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
             this.addLog(`🎲 ${d1} が出ました`);
             this.afterRoll(tunaDice);
         }
@@ -62,12 +65,14 @@ class GameManager {
             this.lastDice1 = d1;
             this.lastDice2 = d2;
             this.lastDiceResult = d1 + d2;
+            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
             this.addLog(`🎲 ${d1}+${d2}=${this.lastDiceResult}`);
         } else {
             const d1 = forceDice1 !== null ? forceDice1 : Math.floor(Math.random() * 6) + 1;
             this.lastDice1 = d1;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
+            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
             this.addLog(`🎲 ${d1} が出ました`);
         }
         this.afterRoll(tunaDice || this.pendingTunaDice);
@@ -498,6 +503,7 @@ class GameManager {
         if (this.builtThisTurn) { this.addLog(`❌ 建設は1ターンに1度だけです`); return false; }
         const current = this.currentPlayer();
         const cost = Player.landmarkCost(name);
+        if (!this.enabledLandmarks.has(name)) { this.addLog(`❌ このランドマークは今回使用しません`); return false; }
         if (current.coins < cost) { this.addLog(`❌ コインが足りません`); return false; }
         if (current.landmarks[name]) { this.addLog(`❌ すでに建設済みです`); return false; }
         current.coins -= cost;
@@ -524,7 +530,7 @@ class GameManager {
     }
 
     _doNextTurn() {
-        if (this.currentPlayer().landmarks["遊園地"] &&
+        if (this.hadAmusementParkAtRoll &&
             this.lastDice1 > 0 && this.lastDice1 === this.lastDice2) {
             this.phase = "roll";
             this.log = [];
@@ -536,9 +542,11 @@ class GameManager {
             this.pendingMover = 0;
             this.pendingIT = false;
             this.pendingRenovation = 0;
+            this.hadAmusementParkAtRoll = false;
             this.addLog(`🎡 遊園地効果！ゾロ目でもう一度ターン`);
             return;
         }
+        this.hadAmusementParkAtRoll = false;
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.turnCount++;
         this.phase = "roll";
@@ -555,6 +563,6 @@ class GameManager {
         this.addLog(`👤 ${this.currentPlayer().name}のターン`);
     }
 
-    checkWinner() { return this.players.find(p => p.hasWon()) || null; }
+    checkWinner() { return this.players.find(p => p.hasWon([...this.enabledLandmarks])) || null; }
     addLog(msg) { this.log.push(msg); }
 }

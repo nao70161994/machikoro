@@ -296,6 +296,7 @@ class CPU {
         let best = null;
         for (const name of landmarkPriority) {
             const cost = Player.landmarkCost(name);
+            if (!game.enabledLandmarks || !game.enabledLandmarks.has(name)) continue;
             if (current.landmarks[name] || current.coins < cost + reserve) continue;
             const urgency = this._landmarkUrgency(name, current, game);
             if (urgency < minUrgency) continue;
