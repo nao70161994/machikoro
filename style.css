@@ -1335,6 +1335,7 @@ button:not(:disabled):active {
 .panel-tools {
     display: flex;
     justify-content: flex-end;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
@@ -1350,6 +1351,52 @@ button:not(:disabled):active {
     color: #0f0e17;
     background: #f0c040;
     border-color: #f0c040;
+}
+
+.tutorial-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.tutorial-tag {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: #f6e6a5;
+    background: rgba(15,14,23,0.35);
+    border: 1px solid rgba(240,192,64,0.18);
+}
+
+.log-detail-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.log-detail-card {
+    flex: 1;
+    min-width: 88px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.log-detail-label {
+    display: block;
+    font-size: 10px;
+    color: #a7a9be;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.log-detail-value {
+    display: block;
+    font-size: 12px;
+    color: #fffffe;
 }
 
 /* ===== 確認ダイアログ ===== */

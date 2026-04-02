@@ -59,6 +59,10 @@
                         <input id="tutorialEnabled" type="checkbox" onchange="onToggleTutorial(this.checked)">
                         <span>現在のフェーズに応じたガイドを表示する</span>
                     </label>
+                    <select id="tutorialLevel" class="text-input" onchange="onChangeTutorialLevel(this.value)">
+                        <option value="beginner">初心者向け</option>
+                        <option value="advanced">上級者向け</option>
+                    </select>
                 </div>
                 <button id="btnStart" onclick="startGame()">ゲーム開始</button>
                 <div id="resumeSection" style="display:none">
@@ -113,12 +117,13 @@
         </div>
     </div>
 
-    <div id="gameScreen" style="display:none">
+        <div id="gameScreen" style="display:none">
         <div id="status" class="status"></div>
         <div id="tutorialBox" class="tutorial-box" style="display:none"></div>
         <div class="game-action-panel">
             <div class="panel-tools">
                 <button id="btnTutorialToggle" class="tutorial-toggle-btn" onclick="toggleTutorial()"></button>
+                <button id="btnTutorialLevel" class="tutorial-toggle-btn" onclick="cycleTutorialLevel()"></button>
             </div>
             <div id="diceResult"></div>
             <div id="diceChoose"></div>

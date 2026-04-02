@@ -27,6 +27,7 @@ let autoSkipTimeout = null;
 // 取り消し
 let undoState = null;
 let tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
+let tutorialLevel = localStorage.getItem('tutorialLevel') || 'beginner';
 
 // オンライン対戦
 let onlineSelectedCount = 2;
@@ -242,6 +243,44 @@ function classifyLogEntry(entry) {
     return { cls, label };
 }
 
+function extractLogDetails(entry) {
+    const detail = { actor: '', target: '', amount: '', subject: '' };
+    if (!entry) return detail;
+    const amountMatch = entry.match(/([+-]?\d+)コイン/);
+    if (amountMatch) detail.amount = amountMatch[1];
+
+    const actorPatterns = [
+        /^(?:🌾|🏪|🐟|💸|🍸|🍽️|📰|🏛️)\s+([^の\s]+)の/,
+        /^(?:📺|🚚)\s+([^か\s]+)から/,
+        /^(?:🔄)\s+([^ ]+)/,
+        /^(?:👤)\s+([^の]+)のターン/
+    ];
+    for (const pattern of actorPatterns) {
+        const match = entry.match(pattern);
+        if (match) {
+            detail.actor = match[1];
+            break;
+        }
+    }
+
+    const targetMatch = entry.match(/(?:から|を)([^に\s]+)(?:に|の)?/);
+    if (targetMatch && !detail.target) detail.target = targetMatch[1];
+
+    const subjectPatterns = [
+        /の([^発動\s]+)発動/,
+        /^(?:🏗️|🔨|🚚|🧹|🍷|📺|🏢)\s*([^を⇔ ]+)/,
+        /^(?:🌾|🏪|🐟|💸|🍸|🍽️)\s+[^の]+の([^発動\s]+)/
+    ];
+    for (const pattern of subjectPatterns) {
+        const match = entry.match(pattern);
+        if (match) {
+            detail.subject = match[1];
+            break;
+        }
+    }
+    return detail;
+}
+
 function renderLog() {
     const logEl = document.getElementById("log");
     const titleEl = document.getElementById("logTitle");
@@ -266,6 +305,24 @@ function renderLog() {
     const latest = logs[logs.length - 1];
     if (latest) {
         summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest)}</span>`);
+        const details = extractLogDetails(latest);
+        const detailCards = [];
+        if (details.actor) {
+            detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">${escapeHtml(details.actor)}</span></span>`);
+        }
+        if (details.subject) {
+            detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">対象カード</span><span class="log-detail-value">${escapeHtml(details.subject)}</span></span>`);
+        }
+        if (details.target) {
+            detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">相手/対象</span><span class="log-detail-value">${escapeHtml(details.target)}</span></span>`);
+        }
+        if (details.amount) {
+            const amountText = `${details.amount.startsWith('-') ? '' : '+'}${details.amount}コイン`;
+            detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">${escapeHtml(amountText)}</span></span>`);
+        }
+        if (detailCards.length > 0) {
+            summaryParts.push(`<div class="log-detail-row">${detailCards.join("")}</div>`);
+        }
     } else {
         summaryParts.push(`<span class="log-chip">ログはまだありません</span>`);
     }
@@ -278,42 +335,141 @@ function renderLog() {
     logEl.scrollTop = logEl.scrollHeight;
 }
 
+function getTutorialHints(current) {
+    const hints = [];
+    const affordableCards = CARDS.filter(card =>
+        SHOP_STOCK[card.name] > 0 &&
+        current.coins >= card.cost &&
+        !(card.color === "purple" && current.countCard(card.name) > 0)
+    ).sort((a, b) => a.cost - b.cost);
+    const affordableLandmarks = Object.entries(current.landmarks)
+        .filter(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name))
+        .sort((a, b) => Player.landmarkCost(a[0]) - Player.landmarkCost(b[0]));
+    return { affordableCards, affordableLandmarks };
+}
+
 function getTutorialMessage() {
-    if (!game) return "";
+    if (!game) return { title: "", body: "", tags: [] };
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    if (!isMyTurn) return `${current.name}の操作待ちです。ログと盤面を見ながら次の購入候補を確認してください。`;
-    if (isCPUTurn) return `${current.name}はCPUです。処理が終わるまで待ちます。`;
-    if (game.phase === "roll") return "サイコロを振って収入処理を開始します。赤・青・緑・紫の順に効果が解決されます。";
-    if (game.phase === "selectDice") return "駅の効果です。1個なら安全、2個なら高い出目や港・遊園地を狙えます。";
-    if (game.phase === "rerollConfirm") return `電波塔の効果です。現在の出目 ${game.lastDiceResult} を使うか、振り直すか決めてください。`;
-    if (game.phase === "harborChoice") return `港の効果です。合計 ${game.lastDiceResult} に +2 して有利な発動帯へ寄せられるか確認してください。`;
-    if (game.pendingTV > 0) return "テレビ局です。所持コインが多い相手を選ぶと効率が高いです。";
-    if (game.pendingBusiness > 0) return "ビジネスセンターです。同名カードでも個別に選べます。休業中カードを渡すかも含めて選んでください。";
-    if (game.pendingCleaning > 0) return "清掃業です。選んだ名前の施設は全員分まとめて休業になります。枚数が多い施設を狙うと得です。";
-    if (game.pendingMover > 0) return "引越し屋です。休業中カードも渡せます。渡した先でも休業状態はそのまま残ります。";
-    if (game.pendingRenovation > 0) return "改装屋です。今すぐ8コインが欲しいときに、優先度の低いランドマークを戻します。";
-    if (game.pendingIT) return "ITベンチャーです。1コイン積み立てると、次回以降の奪取額が増えます。";
+    const levelText = tutorialLevel === 'advanced' ? '上級者向け' : '初心者向け';
+    if (!isMyTurn) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? `${current.name}の操作待ちです。相手の次ターン購入圏と、現在のログから発動帯の偏りを確認してください。`
+            : `${current.name}の操作待ちです。ログと盤面を見ながら次の購入候補を確認してください。`,
+        tags: [current.name, '待機中']
+    };
+    if (isCPUTurn) return {
+        title: `${levelText}ガイド`,
+        body: `${current.name}はCPUです。処理が終わるまで待ちます。ログで収入差を確認してください。`,
+        tags: ['CPUターン']
+    };
+    if (game.phase === "roll") return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "サイコロ前です。自分の発動帯と相手の赤カード帯を見て、今回は安全重視か上振れ狙いかを決めます。"
+            : "サイコロを振って収入処理を開始します。赤・青・緑・紫の順に効果が解決されます。",
+        tags: ['サイコロ前', `所持 ${current.coins}コイン`]
+    };
+    if (game.phase === "selectDice") return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "駅の選択です。2個は高コスト緑や港・遊園地と相性が良い一方、赤カード帯にも入りやすくなります。"
+            : "駅の効果です。1個なら安全、2個なら高い出目や港・遊園地を狙えます。",
+        tags: ['駅', '1個/2個選択']
+    };
+    if (game.phase === "rerollConfirm") return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? `電波塔です。現在 ${game.lastDiceResult}。自分の緑紫発動と相手の赤発動の損得差で判断します。`
+            : `電波塔の効果です。現在の出目 ${game.lastDiceResult} を使うか、振り直すか決めてください。`,
+        tags: ['電波塔', `現在 ${game.lastDiceResult}`]
+    };
+    if (game.phase === "harborChoice") return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? `港の選択です。合計 ${game.lastDiceResult} を ${game.lastDiceResult + 2} に寄せることで、発動する青緑赤の帯がどう変わるか確認します。`
+            : `港の効果です。合計 ${game.lastDiceResult} に +2 して有利な発動帯へ寄せられるか確認してください。`,
+        tags: ['港', `候補 ${game.lastDiceResult}/${game.lastDiceResult + 2}`]
+    };
+    if (game.pendingTV > 0) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "テレビ局です。最多所持コインだけでなく、次ターンに大型建設へ届く相手を崩すと効果的です。"
+            : "テレビ局です。所持コインが多い相手を選ぶと効率が高いです。",
+        tags: ['テレビ局']
+    };
+    if (game.pendingBusiness > 0) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "ビジネスセンターです。休業中カードを押し付けるか、高コスト施設を奪うかで盤面差を作れます。"
+            : "ビジネスセンターです。同名カードでも個別に選べます。休業中カードを渡すかも含めて選んでください。",
+        tags: ['ビジネスセンター', '個別選択']
+    };
+    if (game.pendingCleaning > 0) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "清掃業です。枚数が多い施設名を止めると収入差を広げやすいです。次の出目帯も意識してください。"
+            : "清掃業です。選んだ名前の施設は全員分まとめて休業になります。枚数が多い施設を狙うと得です。",
+        tags: ['清掃業']
+    };
+    if (game.pendingMover > 0) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "引越し屋です。低効率施設や休業中施設を渡して+4しつつ、相手の次ターン期待値を調整できます。"
+            : "引越し屋です。休業中カードも渡せます。渡した先でも休業状態はそのまま残ります。",
+        tags: ['引越し屋', '+4コイン']
+    };
+    if (game.pendingRenovation > 0) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "改装屋です。建て直し優先度の低いランドマークを戻して、今ターンの購入効率を優先します。"
+            : "改装屋です。今すぐ8コインが欲しいときに、優先度の低いランドマークを戻します。",
+        tags: ['改装屋', '+8コイン']
+    };
+    if (game.pendingIT) return {
+        title: `${levelText}ガイド`,
+        body: tutorialLevel === 'advanced'
+            ? "ITベンチャーです。奪取予定人数と次巡の安全性を見て、積立を厚くするか判断します。"
+            : "ITベンチャーです。1コイン積み立てると、次回以降の奪取額が増えます。",
+        tags: ['ITベンチャー']
+    };
     if (game.phase === "build") {
-        if (game.builtThisTurn) return "このターンの建設は終わっています。問題なければターン終了してください。";
-        const affordableCards = CARDS.filter(card =>
-            SHOP_STOCK[card.name] > 0 &&
-            current.coins >= card.cost &&
-            !(card.color === "purple" && current.countCard(card.name) > 0)
-        ).sort((a, b) => a.cost - b.cost);
-        const affordableLandmarks = Object.entries(current.landmarks)
-            .filter(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name))
-            .sort((a, b) => Player.landmarkCost(a[0]) - Player.landmarkCost(b[0]));
+        if (game.builtThisTurn) return {
+            title: `${levelText}ガイド`,
+            body: tutorialLevel === 'advanced'
+                ? "建設済みです。ログ要約を見て、このターンの収支が狙い通りだったか確認してから終了します。"
+                : "このターンの建設は終わっています。問題なければターン終了してください。",
+            tags: ['建設済み']
+        };
+        const { affordableCards, affordableLandmarks } = getTutorialHints(current);
         if (!affordableCards.length && !affordableLandmarks.length) {
-            return "今の所持コインでは建設できません。建設せずにターン終了して次の収入を狙います。";
+            return {
+                title: `${levelText}ガイド`,
+                body: tutorialLevel === 'advanced'
+                    ? "建設不可です。次に欲しい帯の施設を決め、相手の赤カードを踏みにくい出目戦略を意識します。"
+                    : "今の所持コインでは建設できません。建設せずにターン終了して次の収入を狙います。",
+                tags: ['建設不可']
+            };
         }
         const hints = [];
-        if (affordableCards[0]) hints.push(`施設なら ${affordableCards[0].name}（${affordableCards[0].cost}コイン）`);
-        if (affordableLandmarks[0]) hints.push(`ランドマークなら ${affordableLandmarks[0][0]}（${Player.landmarkCost(affordableLandmarks[0][0])}コイン）`);
-        return `建設フェーズです。${hints.join("、")} が候補です。ログを見て不足している収入帯を補ってください。`;
+        if (affordableCards[0]) hints.push(`施設 ${affordableCards[0].name}（${affordableCards[0].cost}コイン）`);
+        if (affordableLandmarks[0]) hints.push(`ランドマーク ${affordableLandmarks[0][0]}（${Player.landmarkCost(affordableLandmarks[0][0])}コイン）`);
+        return {
+            title: `${levelText}ガイド`,
+            body: tutorialLevel === 'advanced'
+                ? `建設フェーズです。最安候補は ${hints.join(" / ")} です。直近ログで伸びた帯をさらに太らせるか、弱い帯を補うかで選びます。`
+                : `建設フェーズです。${hints.join("、")} が候補です。ログを見て不足している収入帯を補ってください。`,
+            tags: [`所持 ${current.coins}コイン`, `候補 ${affordableCards.length + affordableLandmarks.length}件`]
+        };
     }
-    return "盤面を確認して次の行動を選んでください。";
+    return {
+        title: `${levelText}ガイド`,
+        body: "盤面を確認して次の行動を選んでください。",
+        tags: []
+    };
 }
 
 function renderTutorial() {
@@ -325,8 +481,13 @@ function renderTutorial() {
         box.innerHTML = "";
         return;
     }
+    const message = getTutorialMessage();
     box.style.display = "block";
-    box.innerHTML = `<div class="tutorial-title">GUIDE</div><div class="tutorial-body">${escapeHtml(getTutorialMessage())}</div>`;
+    box.innerHTML = `
+        <div class="tutorial-title">${escapeHtml(message.title || "GUIDE")}</div>
+        <div class="tutorial-body">${escapeHtml(message.body || "")}</div>
+        ${message.tags && message.tags.length ? `<div class="tutorial-meta">${message.tags.map(tag => `<span class="tutorial-tag">${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
+    `;
 }
 
 function setTutorialEnabled(enabled) {
@@ -346,13 +507,33 @@ function toggleTutorial() {
     setTutorialEnabled(!tutorialEnabled);
 }
 
+function onChangeTutorialLevel(level) {
+    tutorialLevel = level === 'advanced' ? 'advanced' : 'beginner';
+    try {
+        localStorage.setItem('tutorialLevel', tutorialLevel);
+    } catch (e) {}
+    syncTutorialControls();
+    renderTutorial();
+}
+
+function cycleTutorialLevel() {
+    onChangeTutorialLevel(tutorialLevel === 'beginner' ? 'advanced' : 'beginner');
+}
+
 function syncTutorialControls() {
     const checkbox = document.getElementById("tutorialEnabled");
     if (checkbox) checkbox.checked = tutorialEnabled;
+    const select = document.getElementById("tutorialLevel");
+    if (select) select.value = tutorialLevel;
     const btn = document.getElementById("btnTutorialToggle");
     if (btn) {
         btn.textContent = tutorialEnabled ? "💡 ガイド ON" : "💡 ガイド OFF";
         btn.classList.toggle("active", tutorialEnabled);
+    }
+    const levelBtn = document.getElementById("btnTutorialLevel");
+    if (levelBtn) {
+        levelBtn.textContent = tutorialLevel === 'advanced' ? "🧠 上級者" : "🌱 初心者";
+        levelBtn.classList.toggle("active", tutorialEnabled);
     }
 }
 
@@ -2040,6 +2221,7 @@ function saveSettings() {
         localStorage.setItem('selectedCount', selectedCount);
         localStorage.setItem('playerSettings', JSON.stringify(playerSettings));
         localStorage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
+        localStorage.setItem('tutorialLevel', tutorialLevel);
         const speedEl = document.getElementById('cpuSpeed');
         if (speedEl) localStorage.setItem('cpuSpeed', speedEl.value);
     } catch(e) {}
@@ -2066,6 +2248,7 @@ function loadSettings() {
             }
         }
         tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
+        tutorialLevel = localStorage.getItem('tutorialLevel') === 'advanced' ? 'advanced' : 'beginner';
     } catch(e) {}
     syncTutorialControls();
     renderPlayerSettings();
