@@ -69,6 +69,13 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 `difficulty`: `"weak"` / `"normal"` / `"strong"` の3段階。`build()` は `buildWeak` / `buildNormal` / `buildStrong` に委譲。スコアリングは `evalCard()` + `sortAffordable()` でコスパ評価。CPU判断ロジックは大幅に強化済み（手番ごとの期待値・他プレイヤー状況考慮）。
 
+#### CPU進行チェーン（main.js）
+
+- `scheduleCPU()` はトークン方式で自己再起動チェーンを形成。`cpuScheduleToken` をインクリメントし、古いチェーンは自動破棄される
+- `cpuDo(action, data, fallback)` はアクションを実行後に `scheduleCPU()` を呼び、次フェーズへ自動進行する
+- 駅（`selectDice`）・電波塔（`rerollConfirm`）・港（`harborChoice`）の各フェーズも `scheduleCPU` チェーンで処理される
+- ITベンチャー所持時は `nextTurn` ステップに `!game.pendingIT` ガードがあり、`pendingIT=true` の間は再進行しない（無限ループ防止）
+
 ### ローカルストレージ
 
 | キー | 内容 |

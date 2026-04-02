@@ -271,6 +271,123 @@ runTest('CARDSを色順→ダイス出目順にソートできる', () => {
     }
 });
 
+runTest('駅あり rollDice → selectDice → selectDiceCount でフェーズが進む', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().landmarks['駅'] = true;
+
+    game.rollDice();
+    assert.strictEqual(game.phase, 'selectDice');
+
+    game.selectDiceCount(false, 3);
+    assert.strictEqual(game.phase, 'build');
+    assert.strictEqual(game.lastDiceResult, 3);
+
+    // 2個振りも同様に進む
+    const game2 = new GameManager(2);
+    game2.currentPlayer().landmarks['駅'] = true;
+    game2.rollDice();
+    game2.selectDiceCount(true, 2, 4);
+    assert.strictEqual(game2.lastDiceResult, 6);
+    assert.strictEqual(game2.phase, 'build');
+});
+
+runTest('駅+電波塔 selectDiceCount → rerollConfirm → rerollDice でフェーズが進む', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().landmarks['駅'] = true;
+    game.currentPlayer().landmarks['電波塔'] = true;
+
+    game.rollDice();
+    assert.strictEqual(game.phase, 'selectDice');
+
+    game.selectDiceCount(false, 3);
+    assert.strictEqual(game.phase, 'rerollConfirm');
+    assert.strictEqual(game.lastDiceResult, 3);
+
+    // rerollDice → rollDice → 駅あり → selectDice に戻る（usedReroll=true）
+    game.rerollDice();
+    assert.strictEqual(game.phase, 'selectDice');
+    assert.strictEqual(game.usedReroll, true);
+
+    // 2回目のselectDiceCount: usedReroll=true なので電波塔が発動せずbuildへ
+    game.selectDiceCount(false, 5);
+    assert.strictEqual(game.phase, 'build');
+    assert.strictEqual(game.lastDiceResult, 5);
+});
+
+runTest('駅+港 2個振り sum≥10 → harborChoice → resolveHarbor でフェーズが進む', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().landmarks['駅'] = true;
+    game.currentPlayer().landmarks['港'] = true;
+
+    game.rollDice();
+    game.selectDiceCount(true, 5, 6); // sum=11
+    assert.strictEqual(game.phase, 'harborChoice');
+    assert.strictEqual(game.lastDiceResult, 11);
+
+    game.resolveHarbor(true);
+    assert.strictEqual(game.lastDiceResult, 13);
+    assert.strictEqual(game.phase, 'build');
+
+    // +2しない場合
+    const game2 = new GameManager(2);
+    game2.currentPlayer().landmarks['駅'] = true;
+    game2.currentPlayer().landmarks['港'] = true;
+    game2.rollDice();
+    game2.selectDiceCount(true, 5, 6);
+    game2.resolveHarbor(false);
+    assert.strictEqual(game2.lastDiceResult, 11);
+    assert.strictEqual(game2.phase, 'build');
+
+    // sum<10 では harborChoice に入らない
+    const game3 = new GameManager(2);
+    game3.currentPlayer().landmarks['駅'] = true;
+    game3.currentPlayer().landmarks['港'] = true;
+    game3.rollDice();
+    game3.selectDiceCount(true, 3, 4); // sum=7
+    assert.strictEqual(game3.phase, 'build');
+});
+
+runTest('駅+電波塔+港の3段フェーズ遷移が正しく動く', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().landmarks['駅'] = true;
+    game.currentPlayer().landmarks['電波塔'] = true;
+    game.currentPlayer().landmarks['港'] = true;
+
+    // roll → selectDice
+    game.rollDice();
+    assert.strictEqual(game.phase, 'selectDice');
+
+    // selectDice → 2個振り sum=10 → 電波塔があるのでrerollConfirm
+    game.selectDiceCount(true, 4, 6);
+    assert.strictEqual(game.phase, 'rerollConfirm');
+
+    // skipReroll → 港判定 → harborChoice
+    game.skipReroll();
+    assert.strictEqual(game.phase, 'harborChoice');
+    assert.strictEqual(game.lastDiceResult, 10);
+
+    // harborChoice → +2 → build
+    game.resolveHarbor(true);
+    assert.strictEqual(game.lastDiceResult, 12);
+    assert.strictEqual(game.phase, 'build');
+});
+
+runTest('ITベンチャーのnextTurnでpendingITが設定されresolveIT後にターンが進む', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().addCard(createCardByName('ITベンチャー'));
+    game.phase = 'build';
+
+    game.nextTurn();
+
+    assert.strictEqual(game.pendingIT, true);
+    assert.strictEqual(game.currentPlayerIndex, 0); // まだターン変わっていない
+
+    game.resolveIT(false);
+    assert.strictEqual(game.pendingIT, false);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.strictEqual(game.phase, 'roll');
+});
+
 if (process.exitCode) {
     throw new Error('GameManagerテストで失敗が発生しました');
 }
