@@ -2,65 +2,56 @@
 
 ## Project Structure & Module Organization
 
-This repository is a small vanilla JavaScript web app for Machi Koro.
+This repo is a small vanilla JavaScript Machi Koro web app.
 
-- `index.html`: app shell and script loading order.
-- `style.css`: all UI styling.
-- `server.js`: Express + Socket.IO server for static hosting and online play.
-- `js/Card.js`: card definitions and card factory helpers.
+- `index.html`: app shell and script load order.
+- `style.css`: all visual styling.
+- `server.js`: Express + Socket.IO server for local hosting and online rooms.
+- `js/Card.js`: card data, shared catalog, card factory helpers.
 - `js/Player.js`: player state model.
-- `js/GameManager.js`: core game rules and turn flow.
+- `js/GameManager.js`: rules engine, turn flow, pending effects.
 - `js/CPU.js`: CPU decision logic.
-- `js/main.js`: UI, rendering, local storage, online sync, and client actions.
+- `js/ui.js`: rendering, tutorial UI, log UI, card/rules modals.
+- `js/storage.js`: save/resume, reconnect, undo, settings persistence.
+- `js/main.js`: game bootstrapping, online wiring, CPU scheduling, input handlers.
+- `tests/gamemanager.test.js`: regression tests for core rules.
 
-There is currently no `tests/` directory.
+Keep rule changes in `js/GameManager.js`, UI work in `js/ui.js`, persistence in `js/storage.js`, and network flow in `server.js` / `js/main.js`.
 
 ## Build, Test, and Development Commands
 
-- `npm install`: install dependencies.
-- `node server.js`: run the local server on `http://localhost:3000`.
+- `npm install`: install runtime dependencies.
+- `node server.js`: start the app locally at `http://localhost:3000`.
+- `npm test`: run `tests/gamemanager.test.js`.
+- `node --check js/main.js`: syntax-check a client file after edits.
 - `node --check server.js`: syntax-check the server.
-- `node --check js/main.js`: syntax-check a client script after edits.
 
-`npm test` is only a placeholder and currently exits with an error by design.
+When touching multiple client files, run `node --check` on each edited `js/*.js` file.
 
 ## Coding Style & Naming Conventions
 
-- Use 4-space indentation in JavaScript, HTML, and CSS.
-- Prefer plain ES/CommonJS patterns already used in the repo; do not introduce a framework or bundler casually.
-- Keep browser globals simple and explicit.
-- Use `camelCase` for functions/variables and preserve existing Japanese game term names in strings and card names.
-- Keep files focused:
-  rule changes in `js/GameManager.js`, UI changes in `js/main.js`, card content in `js/Card.js`.
-
-There is no configured formatter or linter, so match the surrounding style exactly.
+- Use 4-space indentation in JS, HTML, and CSS.
+- Follow existing plain browser-global/CommonJS patterns; do not add a bundler or framework casually.
+- Use `camelCase` for functions and variables.
+- Preserve existing Japanese card names, labels, and game terms.
+- Match surrounding style exactly; there is no formatter or linter configured.
 
 ## Testing Guidelines
 
-There is no automated test suite yet. Validate changes with targeted checks:
-
-- Run `node --check` on edited JS files.
-- Test both local play and online play when changing shared game logic.
-- For online changes, verify room create/join, reconnect, CPU turns, and sync-sensitive actions such as build/undo.
-
-If you add tests, place them in a new `tests/` directory and keep names aligned with the module under test.
+- Add or update regression tests in `tests/gamemanager.test.js` when changing rules.
+- After client refactors, run syntax checks plus `npm test`.
+- For online changes, manually verify room create/join, reconnect, CPU turns, build, and undo sync.
 
 ## Commit & Pull Request Guidelines
 
-Recent commits use short imperative subjects, for example:
+Recent history uses short imperative commit subjects, for example:
 
-- `Validate online actions on server`
-- `Preserve dormancy when moving cards`
+- `Split UI and storage helpers from main`
+- `Expand tutorial levels and log details`
+- `Fix per-card pending action selection`
 
-Follow the same pattern: one-line, present-tense, action-first summaries.
-
-PRs should include:
-
-- a short description of the behavior change
-- affected areas (`server.js`, `js/GameManager.js`, etc.)
-- manual verification steps
-- screenshots or screen recordings for visible UI changes
+Keep commits focused and action-first. PRs should include the behavior change, affected files, manual verification steps, and screenshots for visible UI changes.
 
 ## Architecture Notes
 
-The server validates and relays online actions, but most game rules live in `js/GameManager.js`. Keep client and server behavior aligned when changing online flow, undo logic, stock handling, or CPU automation.
+`GameManager` is the source of truth for rules. The server validates and relays online actions, while the client renders state and schedules CPU play. Keep server validation, client actions, and saved-state restore logic aligned whenever you change online flow or turn resolution.
