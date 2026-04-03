@@ -62,6 +62,7 @@ function onChangePlayerType(index, value) {
 function startGame() {
     cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
     saveSettings();
+    resetStatsRecorded();
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
     cpuPlayers = playerSettings.map(s =>

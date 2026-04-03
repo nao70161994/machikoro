@@ -1784,6 +1784,120 @@ button:not(:disabled):active {
     text-align: center;
 }
 
+/* ===== 統計タブ ===== */
+.stats-empty {
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px 0;
+    line-height: 1.8;
+}
+
+.stats-overview {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.stats-overview-item {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.stats-big {
+    font-size: 22px;
+    font-weight: bold;
+    color: #f5a623;
+}
+
+.stats-ov-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+}
+
+.stats-section-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: rgba(255,255,255,0.7);
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stats-hint {
+    font-size: 11px;
+    font-weight: normal;
+    color: rgba(255,255,255,0.35);
+}
+
+.stats-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stats-card-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.stats-rank {
+    width: 18px;
+    text-align: right;
+    color: rgba(255,255,255,0.4);
+    flex-shrink: 0;
+}
+
+.stats-card-name {
+    width: 80px;
+    flex-shrink: 0;
+    color: #fffffe;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stats-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stats-bar {
+    height: 100%;
+    background: #f5a623;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.stats-bar-lm {
+    background: #7c6af5;
+}
+
+.stats-pct {
+    width: 32px;
+    text-align: right;
+    color: #f5a623;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.stats-count {
+    width: 32px;
+    text-align: right;
+    color: rgba(255,255,255,0.35);
+    flex-shrink: 0;
+}
+
 /* ===== PWAインストールバナー ===== */
 #pwaInstallBanner {
     position: fixed;

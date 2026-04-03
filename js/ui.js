@@ -270,7 +270,7 @@ function render() {
         }).join('');
         const streakHtml = winStreak >= 2 ? `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>` : '';
         document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div></div>`;
-        if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); }
+        if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); recordGameStats(winner, game, cpuPlayers); }
         localStorage.removeItem('savedGame');
         localStorage.removeItem('onlineSession');
         updateResumeButton();
@@ -502,10 +502,13 @@ function showTurnAnnouncer(name, isCPU) {
 }
 
 function switchTab(tab) {
-    document.getElementById("tabContentLocal").style.display = tab === "local" ? "flex" : "none";
-    document.getElementById("tabContentOnline").style.display = tab === "online" ? "flex" : "none";
-    document.getElementById("tabLocal").className = `tab-btn ${tab === "local" ? "active" : ""}`;
+    document.getElementById("tabContentLocal").style.display  = tab === "local"   ? "flex"  : "none";
+    document.getElementById("tabContentOnline").style.display = tab === "online"  ? "flex"  : "none";
+    document.getElementById("tabContentStats").style.display  = tab === "stats"   ? "block" : "none";
+    document.getElementById("tabLocal").className  = `tab-btn ${tab === "local"  ? "active" : ""}`;
     document.getElementById("tabOnline").className = `tab-btn ${tab === "online" ? "active" : ""}`;
+    document.getElementById("tabStats").className  = `tab-btn ${tab === "stats"  ? "active" : ""}`;
+    if (tab === "stats") renderStats();
 }
 
 function switchOnlineTab(tab) {
