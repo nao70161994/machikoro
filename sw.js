@@ -46,32 +46,50 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// フェッチ: キャッシュ優先 → ネットワークにフォールバック
-// socket.io はネットワーク専用（オフライン時はオンライン機能が使えないだけでOK）
+// フェッチ戦略:
+//   JS / CSS / HTML → ネットワーク優先（失敗時はキャッシュ）
+//   画像・アイコン  → キャッシュ優先（失敗時はネットワーク）
+//   socket.io      → キャッシュしない
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
-  // socket.io はキャッシュしない
-  if (url.pathname.startsWith('/socket.io')) {
-    return;
-  }
+  if (url.pathname.startsWith('/socket.io')) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // GETリクエストのみキャッシュに追加
-        if (event.request.method === 'GET' && response.status === 200) {
+  const isAsset = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff2?)$/.test(url.pathname);
+
+  if (isAsset) {
+    // キャッシュ優先（画像は変わらないので高速配信）
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+  } else {
+    // ネットワーク優先（JS/CSS/HTMLは常に最新を取得、オフライン時はキャッシュ）
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       }).catch(() => {
-        // オフライン時にHTMLリクエストが来たらルートを返す
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/');
-        }
-      });
-    })
-  );
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.headers.get('accept')?.includes('text/html')) {
+            return caches.match('/');
+          }
+        });
+      })
+    );
+  }
 });
