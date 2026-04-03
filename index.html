@@ -293,6 +293,19 @@
         </div>
     </div>
 
+    <!-- クラッシュ回復画面 -->
+    <div id="crashScreen" style="display:none">
+        <div class="crash-box">
+            <div class="crash-icon">⚠️</div>
+            <div class="crash-title">エラーが発生しました</div>
+            <div id="crashMessage" class="crash-message"></div>
+            <div class="crash-actions">
+                <button onclick="location.reload()" class="crash-btn-primary">🔄 タイトルに戻る</button>
+                <button id="crashResumeBtn" onclick="crashResume()" class="crash-btn-secondary" style="display:none">▶ セーブから再開</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PWA更新バナー -->
     <div id="pwaUpdateBanner" style="display:none">
         <div class="pwa-banner-text">

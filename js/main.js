@@ -737,6 +737,35 @@ updateResumeButton();
 drawCitySkyline();
 window.addEventListener("resize", drawCitySkyline);
 
+// ===== クラッシュ回復 =====
+let _crashShown = false;
+
+function showCrashScreen(err) {
+    if (_crashShown) return;
+    _crashShown = true;
+    cpuScheduleToken++; // CPUループを停止
+    const el = document.getElementById('crashScreen');
+    if (!el) return;
+    const msg = (err instanceof Error ? err.stack || err.message : String(err || '不明なエラー')).slice(0, 300);
+    document.getElementById('crashMessage').textContent = msg;
+    const resumeBtn = document.getElementById('crashResumeBtn');
+    if (resumeBtn) resumeBtn.style.display = localStorage.getItem('savedGame') ? 'block' : 'none';
+    el.style.display = 'flex';
+}
+
+function crashResume() {
+    _crashShown = false;
+    document.getElementById('crashScreen').style.display = 'none';
+    resumeGame();
+}
+
+window.addEventListener('error', (e) => {
+    showCrashScreen(e.error || e.message);
+});
+window.addEventListener('unhandledrejection', (e) => {
+    showCrashScreen(e.reason);
+});
+
 // ===== オフライン検知 =====
 function updateOnlineTabState() {
     const offline = !navigator.onLine;

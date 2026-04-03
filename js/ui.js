@@ -252,6 +252,14 @@ function syncTutorialControls() {
 }
 
 function render() {
+    try {
+        _render();
+    } catch (err) {
+        if (typeof showCrashScreen === 'function') showCrashScreen(err);
+    }
+}
+
+function _render() {
     if (!game) return;
     const current = game.currentPlayer();
     const winner = game.checkWinner();
