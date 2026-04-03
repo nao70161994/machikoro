@@ -5,11 +5,30 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const gameRuntime = loadGameRuntime();
+
+// デプロイごとにキャッシュバージョンを自動更新するためgitハッシュを取得
+let BUILD_HASH;
+try {
+    BUILD_HASH = execSync('git rev-parse --short HEAD', { timeout: 3000 }).toString().trim();
+} catch {
+    BUILD_HASH = Date.now().toString(36);
+}
+console.log(`Build hash: ${BUILD_HASH}`);
+
+// sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）
+const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
+const swContent = swTemplate.replace("'machikoro-v1'", `'machikoro-${BUILD_HASH}'`);
+app.get('/sw.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(swContent);
+});
 
 app.use(express.static(path.join(__dirname)));
 
