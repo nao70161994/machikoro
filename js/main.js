@@ -29,11 +29,12 @@ let undoState = null;
 let tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
 let tutorialLevel = localStorage.getItem('tutorialLevel') || 'beginner';
 
-// オンライン対戦
+// オンライン対戦（タイトル画面設定）
 let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
-let isRoomHost = false; // ルーム作成者かどうか
+
+// CPU進行チェーン制御
 let cpuScheduleToken = 0;
 
 function changeOnlineCount(delta) {
@@ -68,15 +69,29 @@ function onChangeOnlinePlayerType(index, value) {
         onlinePlayerSettings[index] = { type: "cpu", difficulty: value };
     }
 }
+// オンライン対戦（セッション状態）— resetOnlineState() でまとめてリセット
 let socket = null;
+let isOnlineGame = false;
+let isRoomHost = false;
 let myPlayerIndex = -1;
 let myOriginalPlayerIndex = -1;
 let myPlayerName = '';
-let isOnlineGame = false;
 let myRoomId = null;
 let reconnectToken = '';
 let isReplaying = false;
 let isReconnectingOnline = false;
+
+function resetOnlineState() {
+    if (socket) { socket.disconnect(); socket = null; }
+    isOnlineGame = false;
+    isRoomHost = false;
+    myPlayerIndex = -1;
+    myOriginalPlayerIndex = -1;
+    myRoomId = null;
+    reconnectToken = '';
+    isReplaying = false;
+    isReconnectingOnline = false;
+}
 
 function saveOnlineSession() {
     if (!myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return;
@@ -143,17 +158,7 @@ function restartGame() {
         localStorage.removeItem('savedGame');
         localStorage.removeItem('onlineSession');
         cpuScheduleToken++;
-        if (socket) {
-            socket.disconnect();
-            socket = null;
-        }
-        isOnlineGame = false;
-        isRoomHost = false;
-        myPlayerIndex = -1;
-        myOriginalPlayerIndex = -1;
-        myRoomId = null;
-        reconnectToken = '';
-        isReplaying = false;
+        resetOnlineState();
         document.getElementById("gameScreen").style.display = "none";
         document.getElementById("titleScreen").style.display = "block";
         selectedCount = 2;

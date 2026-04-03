@@ -427,7 +427,7 @@ function renderPlayers() {
             return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" onclick="showCardDetail('${name}')">${name}×${info.count}${dormantText}</span>`;
         }).join("");
         const itCoins = p.itVentureCoins > 0 ? `<span class="it-badge">💻${p.itVentureCoins}</span>` : "";
-        const loanCount = p.cards.filter(c => c.effect === "loan").length;
+        const loanCount = p.cards.filter(c => c.effect === CARD_EFFECTS.LOAN).length;
         const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : "";
         return `<div class="player-box ${isActive ? 'active' : ''}"><div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${escapeHtml(p.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${p.coins}</span>${itCoins}${loanBadge}</div></div><div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
     }).join("");
@@ -436,31 +436,31 @@ function renderPlayers() {
 
 function getEffectText(card) {
     switch(card.effect) {
-        case "cheese": return "牧場1軒につき+" + card.income + "コイン";
-        case "furniture": return "森林・鉱山1軒につき+" + card.income + "コイン";
-        case "market": return "農園系1軒につき+" + card.income + "コイン";
-        case "flower": return "花畑1軒につき+" + card.income + "コイン";
-        case "foodwarehouse": return "飲食店1軒につき+" + card.income + "コイン";
-        case "stadium": return "全員から" + card.income + "コイン奪う";
-        case "tv": return "任意の1人から" + card.income + "コイン奪う";
-        case "business": return "大施設以外を他プレイヤーと交換";
-        case "publisher": return "全員の飲食店・商店1軒につき1コイン奪う";
-        case "taxoffice": return "10コイン以上の全員から半分奪う";
-        case "harbor": return "港あり：+" + card.income + "コイン";
-        case "harbor_red": return "港あり：相手から" + card.income + "コイン奪う";
-        case "tuna": return "港あり：ダイス2個分コイン";
-        case "cornfield":
-        case "fewlandmark": return "ランドマーク0-1軒なら+1コイン";
-        case "renovation": return "ランドマーク1軒を戻して+8コイン";
-        case "loan": return "建設時+5コイン・5か6が出たら-2コイン";
-        case "winery": return "ブドウ園1軒につき+6コイン（自身休業）";
-        case "mover": return "大施設以外を相手に渡して+4コイン";
-        case "drinkfactory": return "全員の飲食店1軒につき+1コイン";
-        case "frenchr": return "相手ランドマーク2軒以上なら5コイン奪う";
-        case "memberbar": return "相手ランドマーク3軒以上なら全コイン奪う";
-        case "cleaning": return "施設1種を休業にして休業数コイン獲得";
-        case "itstartup": return "ターン終了時1コイン積立・全員から積立額奪う";
-        case "park": return "全員のコインを均等分配";
+        case CARD_EFFECTS.CHEESE: return "牧場1軒につき+" + card.income + "コイン";
+        case CARD_EFFECTS.FURNITURE: return "森林・鉱山1軒につき+" + card.income + "コイン";
+        case CARD_EFFECTS.MARKET: return "農園系1軒につき+" + card.income + "コイン";
+        case CARD_EFFECTS.FLOWER: return "花畑1軒につき+" + card.income + "コイン";
+        case CARD_EFFECTS.FOODWAREHOUSE: return "飲食店1軒につき+" + card.income + "コイン";
+        case CARD_EFFECTS.STADIUM: return "全員から" + card.income + "コイン奪う";
+        case CARD_EFFECTS.TV: return "任意の1人から" + card.income + "コイン奪う";
+        case CARD_EFFECTS.BUSINESS: return "大施設以外を他プレイヤーと交換";
+        case CARD_EFFECTS.PUBLISHER: return "全員の飲食店・商店1軒につき1コイン奪う";
+        case CARD_EFFECTS.TAXOFFICE: return "10コイン以上の全員から半分奪う";
+        case CARD_EFFECTS.HARBOR: return "港あり：+" + card.income + "コイン";
+        case CARD_EFFECTS.HARBOR_RED: return "港あり：相手から" + card.income + "コイン奪う";
+        case CARD_EFFECTS.TUNA: return "港あり：ダイス2個分コイン";
+        case CARD_EFFECTS.CORNFIELD:
+        case CARD_EFFECTS.FEWLANDMARK: return "ランドマーク0-1軒なら+1コイン";
+        case CARD_EFFECTS.RENOVATION: return "ランドマーク1軒を戻して+8コイン";
+        case CARD_EFFECTS.LOAN: return "建設時+5コイン・5か6が出たら-2コイン";
+        case CARD_EFFECTS.WINERY: return "ブドウ園1軒につき+6コイン（自身休業）";
+        case CARD_EFFECTS.MOVER: return "大施設以外を相手に渡して+4コイン";
+        case CARD_EFFECTS.DRINKFACTORY: return "全員の飲食店1軒につき+1コイン";
+        case CARD_EFFECTS.FRENCHR: return "相手ランドマーク2軒以上なら5コイン奪う";
+        case CARD_EFFECTS.MEMBERBAR: return "相手ランドマーク3軒以上なら全コイン奪う";
+        case CARD_EFFECTS.CLEANING: return "施設1種を休業にして休業数コイン獲得";
+        case CARD_EFFECTS.ITSTARTUP: return "ターン終了時1コイン積立・全員から積立額奪う";
+        case CARD_EFFECTS.PARK: return "全員のコインを均等分配";
         default:
             if (card.color === "red") return "相手から" + card.income + "コイン奪う";
             return "+" + card.income + "コイン";

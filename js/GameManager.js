@@ -156,9 +156,9 @@ class GameManager {
             for (const card of other.cards) {
                 if (other.isDormant(card)) continue;
                 if (card.color !== "red" || !card.diceNums.includes(dice)) continue;
-                if (card.effect === "harbor_red" && !other.landmarks["港"]) continue;
+                if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks["港"]) continue;
 
-                if (card.effect === "frenchr") {
+                if (card.effect === CARD_EFFECTS.FRENCHR) {
                     const built = Object.values(current.landmarks).filter(v => v).length;
                     if (built < 2) continue;
                     const steal = Math.min(card.income, current.coins);
@@ -168,7 +168,7 @@ class GameManager {
                     continue;
                 }
 
-                if (card.effect === "memberbar") {
+                if (card.effect === CARD_EFFECTS.MEMBERBAR) {
                     const built = Object.values(current.landmarks).filter(v => v).length;
                     if (built < 3) continue;
                     const steal = current.coins;
@@ -195,18 +195,18 @@ class GameManager {
                 if (p.isDormant(card)) continue;
                 if (card.color !== "blue" || !card.diceNums.includes(dice)) continue;
 
-                if (card.effect === "cornfield") {
+                if (card.effect === CARD_EFFECTS.CORNFIELD) {
                     const built = Object.values(p.landmarks).filter(v => v).length;
                     if (built > 1) continue;
                     p.coins += card.income;
                     this.addLog(`🌽 ${p.name}のコーン畑発動 → +${card.income}コイン`);
                     continue;
                 }
-                if (card.effect === "harbor") {
+                if (card.effect === CARD_EFFECTS.HARBOR) {
                     if (!p.landmarks["港"]) continue;
                     p.coins += card.income;
                     this.addLog(`🐟 ${p.name}の${card.name}発動 → +${card.income}コイン`);
-                } else if (card.effect === "tuna") {
+                } else if (card.effect === CARD_EFFECTS.TUNA) {
                     if (!p.landmarks["港"]) continue;
                     const t1 = tunaDice ? tunaDice[0] : Math.floor(Math.random() * 6) + 1;
                     const t2 = tunaDice ? tunaDice[1] : Math.floor(Math.random() * 6) + 1;
@@ -227,20 +227,20 @@ class GameManager {
             if (card.color !== "green" || !card.diceNums.includes(dice)) continue;
             let amount = 0;
 
-            if (card.effect === "cheese") {
+            if (card.effect === CARD_EFFECTS.CHEESE) {
                 amount = current.countCard("牧場") * card.income;
-            } else if (card.effect === "furniture") {
+            } else if (card.effect === CARD_EFFECTS.FURNITURE) {
                 amount = (current.countCard("森林") + current.countCard("鉱山")) * card.income;
-            } else if (card.effect === "market") {
+            } else if (card.effect === CARD_EFFECTS.MARKET) {
                 amount = current.cards.filter(c => c.category === "農園" && !current.isDormant(c)).length * card.income;
-            } else if (card.effect === "flower") {
+            } else if (card.effect === CARD_EFFECTS.FLOWER) {
                 amount = current.countCard("花畑") * card.income;
-            } else if (card.effect === "foodwarehouse") {
+            } else if (card.effect === CARD_EFFECTS.FOODWAREHOUSE) {
                 amount = current.cards.filter(c => c.category === "飲食店" && !current.isDormant(c)).length * card.income;
-            } else if (card.effect === "fewlandmark") {
+            } else if (card.effect === CARD_EFFECTS.FEWLANDMARK) {
                 const built = Object.values(current.landmarks).filter(v => v).length;
                 if (built <= 1) amount = card.income;
-            } else if (card.effect === "winery") {
+            } else if (card.effect === CARD_EFFECTS.WINERY) {
                 const grapes = current.cards.filter(c => c.name === "ブドウ園" && !current.isDormant(c)).length;
                 const dormantWinery = current.dormantCards.find(c => c.name === "ワイナリー");
                 if (dormantWinery) current.revive(dormantWinery);
@@ -252,19 +252,19 @@ class GameManager {
                     this.addLog(`💤 ワイナリーが休業`);
                 }
                 continue;
-            } else if (card.effect === "mover") {
+            } else if (card.effect === CARD_EFFECTS.MOVER) {
                 this.pendingMover++;
                 this.addLog(`🚚 引越し屋発動 → 渡す施設を選んでください`);
                 continue;
-            } else if (card.effect === "drinkfactory") {
+            } else if (card.effect === CARD_EFFECTS.DRINKFACTORY) {
                 let total = 0;
                 for (const p of this.players) {
                     total += p.cards.filter(c => c.category === "飲食店" && !p.isDormant(c)).length;
                 }
                 amount = total * card.income;
-            } else if (card.effect === "loan") {
+            } else if (card.effect === CARD_EFFECTS.LOAN) {
                 continue;
-            } else if (card.effect === "renovation") {
+            } else if (card.effect === CARD_EFFECTS.RENOVATION) {
                 const builtLandmarks = Object.entries(current.landmarks)
                     .filter(([name, built]) => built && name !== "役所");
                 if (builtLandmarks.length > 0) {
@@ -288,7 +288,7 @@ class GameManager {
 
         // 貸金業：自分のターンに5か6が出たら枚数×2コイン支払い
         if (dice === 5 || dice === 6) {
-            const loanCount = current.cards.filter(c => c.effect === "loan").length;
+            const loanCount = current.cards.filter(c => c.effect === CARD_EFFECTS.LOAN).length;
             if (loanCount > 0) {
                 const pay = Math.min(loanCount * 2, current.coins);
                 current.coins -= pay;
@@ -302,7 +302,7 @@ class GameManager {
             if (current.isDormant(card)) continue;
             if (card.color !== "purple" || !card.diceNums.includes(dice)) continue;
 
-            if (card.effect === "stadium") {
+            if (card.effect === CARD_EFFECTS.STADIUM) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
@@ -312,13 +312,13 @@ class GameManager {
                 }
                 current.coins += total;
                 this.addLog(`🏟️ スタジアム発動 → +${total}コイン`);
-            } else if (card.effect === "tv") {
+            } else if (card.effect === CARD_EFFECTS.TV) {
                 this.pendingTV++;
                 this.addLog(`📺 テレビ局発動 → 対象プレイヤーを選んでください`);
-            } else if (card.effect === "business") {
+            } else if (card.effect === CARD_EFFECTS.BUSINESS) {
                 this.pendingBusiness++;
                 this.addLog(`🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
-            } else if (card.effect === "publisher") {
+            } else if (card.effect === CARD_EFFECTS.PUBLISHER) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
@@ -331,7 +331,7 @@ class GameManager {
                 }
                 current.coins += total;
                 this.addLog(`📰 出版社発動 → 合計+${total}コイン`);
-            } else if (card.effect === "taxoffice") {
+            } else if (card.effect === CARD_EFFECTS.TAXOFFICE) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
@@ -344,10 +344,10 @@ class GameManager {
                 }
                 current.coins += total;
                 this.addLog(`🏛️ 税務署発動 → 合計+${total}コイン`);
-            } else if (card.effect === "cleaning") {
+            } else if (card.effect === CARD_EFFECTS.CLEANING) {
                 this.pendingCleaning++;
                 this.addLog(`🧹 清掃業発動 → 休業にする施設を選んでください`);
-            } else if (card.effect === "itstartup") {
+            } else if (card.effect === CARD_EFFECTS.ITSTARTUP) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
@@ -357,7 +357,7 @@ class GameManager {
                 }
                 current.coins += total;
                 this.addLog(`💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${total}コイン`);
-            } else if (card.effect === "park") {
+            } else if (card.effect === CARD_EFFECTS.PARK) {
                 const total = this.players.reduce((sum, p) => sum + p.coins, 0);
                 const each = Math.floor(total / this.players.length);
                 const remainder = total - each * this.players.length;

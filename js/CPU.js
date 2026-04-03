@@ -17,61 +17,61 @@ class CPU {
         const livingCards = owner.cards.filter(c => !owner.isDormant(c));
 
         if (card.color === "blue") {
-            if (card.effect === "harbor") return owner.landmarks["港"] ? card.income : 0;
-            if (card.effect === "tuna") return owner.landmarks["港"] ? 7 : 0;
+            if (card.effect === CARD_EFFECTS.HARBOR) return owner.landmarks["港"] ? card.income : 0;
+            if (card.effect === CARD_EFFECTS.TUNA) return owner.landmarks["港"] ? 7 : 0;
             return card.income;
         }
 
         if (card.color === "red") {
             if (isCurrentTurn) return 0;
-            if (card.effect === "harbor_red") return roller.landmarks["港"] ? card.income : 0;
-            if (card.effect === "frenchr") return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 2 ? card.income : 0;
-            if (card.effect === "memberbar") return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 3 ? Math.max(roller.coins, 4) : 0;
+            if (card.effect === CARD_EFFECTS.HARBOR_RED) return roller.landmarks["港"] ? card.income : 0;
+            if (card.effect === CARD_EFFECTS.FRENCHR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 2 ? card.income : 0;
+            if (card.effect === CARD_EFFECTS.MEMBERBAR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 3 ? Math.max(roller.coins, 4) : 0;
             return card.income + (roller.landmarks["ショッピングモール"] && card.category === "飲食店" ? 1 : 0);
         }
 
         if (!isCurrentTurn) return 0;
 
         switch (card.effect) {
-            case "cheese":
+            case CARD_EFFECTS.CHEESE:
                 return owner.countCard("牧場") * card.income;
-            case "furniture":
+            case CARD_EFFECTS.FURNITURE:
                 return (owner.countCard("森林") + owner.countCard("鉱山")) * card.income;
-            case "flower":
+            case CARD_EFFECTS.FLOWER:
                 return owner.countCard("花畑") * card.income;
-            case "market":
+            case CARD_EFFECTS.MARKET:
                 return livingCards.filter(c => c.category === "農園").length * card.income;
-            case "foodwarehouse":
+            case CARD_EFFECTS.FOODWAREHOUSE:
                 return livingCards.filter(c => c.category === "飲食店").length * card.income;
-            case "drinkfactory":
+            case CARD_EFFECTS.DRINKFACTORY:
                 return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category === "飲食店" && !p.isDormant(c)).length, 0) * card.income;
-            case "winery":
+            case CARD_EFFECTS.WINERY:
                 return owner.cards.filter(c => c.name === "ブドウ園" && !owner.isDormant(c)).length * card.income;
-            case "stadium":
+            case CARD_EFFECTS.STADIUM:
                 return opponents.length * card.income;
-            case "tv":
+            case CARD_EFFECTS.TV:
                 return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
-            case "publisher":
+            case CARD_EFFECTS.PUBLISHER:
                 return opponents.reduce((sum, p) =>
                     sum + p.cards.filter(c => (c.category === "飲食店" || c.category === "商店") && !p.isDormant(c)).length, 0);
-            case "taxoffice":
+            case CARD_EFFECTS.TAXOFFICE:
                 return opponents.filter(p => p.coins >= 10).length * 5;
-            case "fewlandmark":
-            case "cornfield":
+            case CARD_EFFECTS.FEWLANDMARK:
+            case CARD_EFFECTS.CORNFIELD:
                 return Object.values(owner.landmarks).filter(Boolean).length <= 1 ? card.income : 0;
-            case "loan":
+            case CARD_EFFECTS.LOAN:
                 return (dice === 5 || dice === 6) ? -2 : 0;
-            case "business":
+            case CARD_EFFECTS.BUSINESS:
                 return 4;
-            case "cleaning":
+            case CARD_EFFECTS.CLEANING:
                 return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).length, 0) * 0.4;
-            case "mover":
+            case CARD_EFFECTS.MOVER:
                 return 4;
-            case "renovation":
+            case CARD_EFFECTS.RENOVATION:
                 return Object.values(owner.landmarks).filter(([v]) => v).length ? 3 : 0;
-            case "itstartup":
+            case CARD_EFFECTS.ITSTARTUP:
                 return opponents.length * Math.max(owner.itVentureCoins, 1);
-            case "park":
+            case CARD_EFFECTS.PARK:
                 return 2;
             default: {
                 let amount = card.income;
@@ -197,52 +197,52 @@ class CPU {
         const opponents = game.players.filter((_, i) => i !== ci);
 
         switch (card.effect) {
-            case "cheese":
+            case CARD_EFFECTS.CHEESE:
                 return player.countCard("牧場") * card.income;
-            case "furniture":
+            case CARD_EFFECTS.FURNITURE:
                 return (player.countCard("森林") + player.countCard("鉱山")) * card.income;
-            case "flower":
+            case CARD_EFFECTS.FLOWER:
                 return player.countCard("花畑") * card.income;
-            case "market":
+            case CARD_EFFECTS.MARKET:
                 return player.cards.filter(c => c.category === "農園").length * card.income;
-            case "foodwarehouse":
+            case CARD_EFFECTS.FOODWAREHOUSE:
                 return player.cards.filter(c => c.category === "飲食店").length * card.income;
-            case "drinkfactory":
+            case CARD_EFFECTS.DRINKFACTORY:
                 return game.players.reduce((s, p) =>
                     s + p.cards.filter(c => c.category === "飲食店").length, 0) * card.income;
-            case "winery":
+            case CARD_EFFECTS.WINERY:
                 return player.cards.filter(c => c.name === "ブドウ園").length * card.income;
-            case "stadium":
+            case CARD_EFFECTS.STADIUM:
                 return opponents.length * card.income;
-            case "tv":
+            case CARD_EFFECTS.TV:
                 return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
-            case "publisher":
+            case CARD_EFFECTS.PUBLISHER:
                 return opponents.reduce((s, p) =>
                     s + p.cards.filter(c => c.category === "飲食店" || c.category === "商店").length, 0);
-            case "taxoffice":
+            case CARD_EFFECTS.TAXOFFICE:
                 return opponents.filter(p => p.coins >= 10).length * 5;
-            case "harbor":
+            case CARD_EFFECTS.HARBOR:
                 return player.landmarks["港"] ? card.income : card.income * 0.4;
-            case "harbor_red":
+            case CARD_EFFECTS.HARBOR_RED:
                 return player.landmarks["港"] ? card.income : 0;
-            case "tuna":
+            case CARD_EFFECTS.TUNA:
                 return player.landmarks["港"] ? 7 : 0;
-            case "cornfield":
-            case "fewlandmark": {
+            case CARD_EFFECTS.CORNFIELD:
+            case CARD_EFFECTS.FEWLANDMARK: {
                 const built = Object.values(player.landmarks).filter(v => v).length;
                 return built <= 1 ? card.income : 0;
             }
-            case "loan":
+            case CARD_EFFECTS.LOAN:
                 return 1;
-            case "itstartup":
+            case CARD_EFFECTS.ITSTARTUP:
                 return opponents.length * 2;
-            case "renovation":
-            case "cleaning":
-            case "mover":
+            case CARD_EFFECTS.RENOVATION:
+            case CARD_EFFECTS.CLEANING:
+            case CARD_EFFECTS.MOVER:
                 return 2;
-            case "business":
+            case CARD_EFFECTS.BUSINESS:
                 return 3;
-            case "park":
+            case CARD_EFFECTS.PARK:
                 return 1;
             default:
                 return card.income;
