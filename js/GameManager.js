@@ -162,7 +162,7 @@ class GameManager {
                 return owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income;
             case CARD_EFFECTS.FEWLANDMARK:
             case CARD_EFFECTS.CORNFIELD: {
-                const built = Object.values(owner.landmarks).filter(v => v).length;
+                const built = owner.builtLandmarkCount();
                 return built <= 1 ? card.income : 0;
             }
             case CARD_EFFECTS.WINERY:
@@ -213,7 +213,7 @@ class GameManager {
                 if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks[LANDMARK_NAMES.HARBOR]) continue;
 
                 if (card.effect === CARD_EFFECTS.FRENCHR) {
-                    const built = Object.values(current.landmarks).filter(v => v).length;
+                    const built = current.builtLandmarkCount();
                     if (built < 2) continue;
                     const steal = Math.min(card.income, current.coins);
                     current.coins -= steal;
@@ -223,7 +223,7 @@ class GameManager {
                 }
 
                 if (card.effect === CARD_EFFECTS.MEMBERBAR) {
-                    const built = Object.values(current.landmarks).filter(v => v).length;
+                    const built = current.builtLandmarkCount();
                     if (built < 3) continue;
                     const steal = current.coins;
                     current.coins = 0;
@@ -250,7 +250,7 @@ class GameManager {
                 if (card.color !== "blue" || !card.diceNums.includes(dice)) continue;
 
                 if (card.effect === CARD_EFFECTS.CORNFIELD) {
-                    const built = Object.values(p.landmarks).filter(v => v).length;
+                    const built = p.builtLandmarkCount();
                     if (built > 1) continue;
                     p.coins += card.income;
                     this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${card.income}コイン`);

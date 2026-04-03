@@ -356,14 +356,14 @@ function renderPending() {
     }
     if (game.pendingBusiness > 0) {
         const current = game.currentPlayer();
-        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== CARD_CATEGORIES.MAJOR);
+        const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         const myDefaultIdx = myCards[0]?.index ?? 0;
         const myChips = myCards.map(({ card, index }, j) =>
             `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'myCardSelect')">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
         ).join("");
         const othersHtml = others.map(({ p, i }) => {
-            const theirCards = p.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== CARD_CATEGORIES.MAJOR);
+            const theirCards = p.getMinorCards().map(card => ({ card, index: p.cards.indexOf(card) }));
             const theirDefaultIdx = theirCards[0]?.index ?? 0;
             const theirChips = theirCards.map(({ card, index }, j) =>
                 `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'theirCardSelect_${i}')">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
@@ -373,12 +373,12 @@ function renderPending() {
         html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
     }
     if (game.pendingCleaning > 0) {
-        const allCardNames = [...new Set(game.players.flatMap(p => p.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(c)).map(c => c.name)))];
+        const allCardNames = [...new Set(game.players.flatMap(p => p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
         html += `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button onclick="onResolveCleaning('${name}')">${name}</button>`).join("")}</div>`;
     }
     if (game.pendingMover > 0) {
         const current = game.currentPlayer();
-        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== CARD_CATEGORIES.MAJOR);
+        const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         html += `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button onclick="onResolveMover(${i})">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
     }

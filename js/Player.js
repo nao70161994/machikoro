@@ -47,6 +47,16 @@ class Player {
         this.dormantCards = this.dormantCards.filter(c => c !== card);
     }
 
+    // 建設済みランドマーク数
+    builtLandmarkCount() {
+        return Object.values(this.landmarks).filter(v => v).length;
+    }
+
+    // 大施設以外のカード一覧
+    getMinorCards() {
+        return this.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+    }
+
     // 有効なランドマークを全て建設済みか
     hasWon(enabledLandmarks = Player.landmarkNames()) {
         return enabledLandmarks.every(name => this.landmarks[name] === true);

@@ -281,10 +281,10 @@ const CPU_PHASE_HANDLERS = [
             }
             if (game.pendingBusiness > 0) {
                 const cur = game.currentPlayer();
-                const myCards = cur.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+                const myCards = cur.getMinorCards();
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === game.currentPlayerIndex) continue;
-                    const theirCards = game.players[i].cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+                    const theirCards = game.players[i].getMinorCards();
                     if (theirCards.length === 0) continue;
                     const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                     const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
@@ -297,7 +297,7 @@ const CPU_PHASE_HANDLERS = [
             }
             if (game.pendingCleaning > 0) {
                 const allNames = [...new Set(game.players.flatMap(p =>
-                    p.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(c)).map(c => c.name)))];
+                    p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
                 if (allNames.length > 0) {
                     const cardName = allNames[Math.floor(Math.random() * allNames.length)];
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
@@ -305,7 +305,7 @@ const CPU_PHASE_HANDLERS = [
             }
             if (game.pendingMover > 0) {
                 const cur = game.currentPlayer();
-                const myCards = cur.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+                const myCards = cur.getMinorCards();
                 const others = game.players.map((p, i) => i).filter(i => i !== game.currentPlayerIndex);
                 if (myCards.length > 0 && others.length > 0) {
                     const cardIndex = cur.cards.indexOf(myCards[0]);

@@ -25,8 +25,8 @@ class CPU {
         if (card.color === "red") {
             if (isCurrentTurn) return 0;
             if (card.effect === CARD_EFFECTS.HARBOR_RED) return roller.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
-            if (card.effect === CARD_EFFECTS.FRENCHR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 2 ? card.income : 0;
-            if (card.effect === CARD_EFFECTS.MEMBERBAR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 3 ? Math.max(roller.coins, 4) : 0;
+            if (card.effect === CARD_EFFECTS.FRENCHR) return roller.landmarks && roller.builtLandmarkCount() >= 2 ? card.income : 0;
+            if (card.effect === CARD_EFFECTS.MEMBERBAR) return roller.landmarks && roller.builtLandmarkCount() >= 3 ? Math.max(roller.coins, 4) : 0;
             return card.income + (roller.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0);
         }
 
@@ -56,11 +56,11 @@ class CPU {
             case CARD_EFFECTS.BUSINESS:
                 return 4;
             case CARD_EFFECTS.CLEANING:
-                return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(c)).length, 0) * 0.4;
+                return game.players.reduce((sum, p) => sum + p.getMinorCards().filter(c => !p.isDormant(c)).length, 0) * 0.4;
             case CARD_EFFECTS.MOVER:
                 return 4;
             case CARD_EFFECTS.RENOVATION:
-                return Object.values(owner.landmarks).filter(v => v).length ? 3 : 0;
+                return owner.builtLandmarkCount() ? 3 : 0;
             case CARD_EFFECTS.ITSTARTUP:
                 return opponents.length * Math.max(owner.itVentureCoins, 1);
             case CARD_EFFECTS.PARK:
@@ -148,7 +148,7 @@ class CPU {
     resolveBusiness(game) {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
-        const myCards = current.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+        const myCards = current.getMinorCards();
         if (myCards.length === 0) { game.pendingBusiness = false; game.phase = GAME_PHASES.BUILD; return; }
 
         if (this.difficulty === "strong") {
@@ -156,7 +156,7 @@ class CPU {
             const myWorst = myCards.sort((a, b) => a.cost - b.cost)[0];
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
-                const theirCards = game.players[i].cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+                const theirCards = game.players[i].getMinorCards();
                 if (theirCards.length === 0) continue;
                 const theirBest = theirCards.sort((a, b) => {
                     const av = b.cost + (game.players[i].isDormant(b) ? 1.5 : 0);
@@ -169,7 +169,7 @@ class CPU {
         } else {
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
-                const theirCards = game.players[i].cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+                const theirCards = game.players[i].getMinorCards();
                 if (theirCards.length === 0) continue;
                 const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                 const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
@@ -260,10 +260,10 @@ class CPU {
     }
 
     _landmarkUrgency(name, current, game) {
-        const builtCount = Object.values(current.landmarks).filter(Boolean).length;
+        const builtCount = current.builtLandmarkCount();
         const opponentMaxBuilt = Math.max(0, ...game.players
             .filter(p => p !== current)
-            .map(p => Object.values(p.landmarks).filter(Boolean).length));
+            .map(p => p.builtLandmarkCount()));
         if (name === LANDMARK_NAMES.STATION)       return builtCount < 2 ? 8 : 5;
         if (name === LANDMARK_NAMES.SHOPPING_MALL)  return current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
         if (name === LANDMARK_NAMES.HARBOR)         return current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
@@ -333,12 +333,12 @@ class CPU {
     buildStrong(game, shopStock) {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
-        const builtCount = Object.values(current.landmarks).filter(v => v).length;
+        const builtCount = current.builtLandmarkCount();
 
         // 誰かが勝利に近い（ランドマーク4つ以上）→ 緊急モード：ランドマーク最優先
         const opponentMaxBuilt = Math.max(...game.players
             .filter((_, i) => i !== ci)
-            .map(p => Object.values(p.landmarks).filter(v => v).length));
+            .map(p => p.builtLandmarkCount()));
         const emergencyMode = opponentMaxBuilt >= 4 || builtCount >= 4;
 
         if (emergencyMode && this._maybeBuyLandmark(current, game, 0, 3)) return;
