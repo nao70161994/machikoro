@@ -1,3 +1,13 @@
+const LOG_TYPES = Object.freeze({
+    DICE:    "dice",
+    GAIN:    "gain",
+    LOSE:    "lose",
+    BUILD:   "build",
+    SPECIAL: "special",
+    SYSTEM:  "system",
+    ERROR:   "error",
+});
+
 class GameManager {
     constructor(playerCount) {
         this.players = [];
@@ -45,14 +55,14 @@ class GameManager {
         if (this.currentPlayer().landmarks["駅"]) {
             this.phase = "selectDice";
             this.pendingTunaDice = tunaDice;
-            this.addLog(`🚉 駅：1個か2個か選んでください`);
+            this.addLog(LOG_TYPES.DICE, `🚉 駅：1個か2個か選んでください`);
         } else {
             const d1 = forceDice !== null ? forceDice : Math.floor(Math.random() * 6) + 1;
             this.lastDice1 = 0;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
             this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
-            this.addLog(`🎲 ${d1} が出ました`);
+            this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
             this.afterRoll(tunaDice);
         }
     }
@@ -66,14 +76,14 @@ class GameManager {
             this.lastDice2 = d2;
             this.lastDiceResult = d1 + d2;
             this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
-            this.addLog(`🎲 ${d1}+${d2}=${this.lastDiceResult}`);
+            this.addLog(LOG_TYPES.DICE, `🎲 ${d1}+${d2}=${this.lastDiceResult}`);
         } else {
             const d1 = forceDice1 !== null ? forceDice1 : Math.floor(Math.random() * 6) + 1;
             this.lastDice1 = d1;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
             this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
-            this.addLog(`🎲 ${d1} が出ました`);
+            this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
         }
         this.afterRoll(tunaDice || this.pendingTunaDice);
     }
@@ -94,7 +104,7 @@ class GameManager {
         this.lastDice1 = 0;
         this.lastDice2 = 0;
         this.log = [];
-        this.addLog("📡 電波塔で振り直します");
+        this.addLog(LOG_TYPES.DICE, "📡 電波塔で振り直します");
         this.phase = "roll";
         this.rollDice(forceDice, tunaDice);
     }
@@ -109,7 +119,7 @@ class GameManager {
         if (useTwo && this.currentPlayer().landmarks["港"] && this.lastDiceResult >= 10) {
             this.phase = "harborChoice";
             this.pendingTunaDice = tunaDice;
-            this.addLog(`⚓ 港効果：合計${this.lastDiceResult}に+2しますか？`);
+            this.addLog(LOG_TYPES.DICE, `⚓ 港効果：合計${this.lastDiceResult}に+2しますか？`);
         } else {
             this.processIncome(tunaDice);
         }
@@ -118,9 +128,9 @@ class GameManager {
     resolveHarbor(useBonus, tunaDice = null) {
         if (useBonus) {
             this.lastDiceResult += 2;
-            this.addLog(`⚓ 港効果+2 → ${this.lastDiceResult}`);
+            this.addLog(LOG_TYPES.DICE, `⚓ 港効果+2 → ${this.lastDiceResult}`);
         } else {
-            this.addLog(`→ そのまま ${this.lastDiceResult} を使用`);
+            this.addLog(LOG_TYPES.DICE, `→ そのまま ${this.lastDiceResult} を使用`);
         }
         this.processIncome(tunaDice || this.pendingTunaDice);
     }
@@ -173,7 +183,7 @@ class GameManager {
         // 役所：建設フェーズ開始時コイン0なら+1
         if (current.coins === 0 && current.hasYakusho) {
             current.coins += 1;
-            this.addLog(`🏛️ 役所効果 → +1コイン`);
+            this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`);
         }
 
         if (!this.pendingTV && !this.pendingBusiness &&
@@ -199,7 +209,7 @@ class GameManager {
                     const steal = Math.min(card.income, current.coins);
                     current.coins -= steal;
                     other.coins += steal;
-                    this.addLog(`🍽️ ${other.name}の高級フレンチ発動 → ${steal}コイン獲得`);
+                    this.addLog(LOG_TYPES.LOSE, `🍽️ ${other.name}の高級フレンチ発動 → ${steal}コイン獲得`);
                     continue;
                 }
 
@@ -209,7 +219,7 @@ class GameManager {
                     const steal = current.coins;
                     current.coins = 0;
                     other.coins += steal;
-                    this.addLog(`🍸 ${other.name}の会員制BAR発動 → ${steal}コイン全奪取`);
+                    this.addLog(LOG_TYPES.LOSE, `🍸 ${other.name}の会員制BAR発動 → ${steal}コイン全奪取`);
                     continue;
                 }
 
@@ -219,7 +229,7 @@ class GameManager {
                 amount = Math.min(amount, current.coins);
                 current.coins -= amount;
                 other.coins += amount;
-                this.addLog(`💸 ${other.name}の${card.name}発動 → ${amount}コイン獲得`);
+                this.addLog(LOG_TYPES.LOSE, `💸 ${other.name}の${card.name}発動 → ${amount}コイン獲得`);
             }
         }
     }
@@ -234,23 +244,23 @@ class GameManager {
                     const built = Object.values(p.landmarks).filter(v => v).length;
                     if (built > 1) continue;
                     p.coins += card.income;
-                    this.addLog(`🌽 ${p.name}のコーン畑発動 → +${card.income}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${card.income}コイン`);
                     continue;
                 }
                 if (card.effect === CARD_EFFECTS.HARBOR) {
                     if (!p.landmarks["港"]) continue;
                     p.coins += card.income;
-                    this.addLog(`🐟 ${p.name}の${card.name}発動 → +${card.income}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${card.income}コイン`);
                 } else if (card.effect === CARD_EFFECTS.TUNA) {
                     if (!p.landmarks["港"]) continue;
                     const t1 = tunaDice ? tunaDice[0] : Math.floor(Math.random() * 6) + 1;
                     const t2 = tunaDice ? tunaDice[1] : Math.floor(Math.random() * 6) + 1;
                     const earn = t1 + t2;
                     p.coins += earn;
-                    this.addLog(`🐟 ${p.name}のマグロ漁船発動 → 🎲${t1}+${t2}=${earn}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${t1}+${t2}=${earn}コイン`);
                 } else {
                     p.coins += card.income;
-                    this.addLog(`🌾 ${p.name}の${card.name}発動 → +${card.income}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${card.income}コイン`);
                 }
             }
         }
@@ -268,15 +278,15 @@ class GameManager {
                 const amount = GameManager.calcCardIncome(card, current, this);
                 if (amount > 0) {
                     current.coins += amount;
-                    this.addLog(`🍷 ワイナリー発動 → +${amount}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${amount}コイン`);
                     current.makeDormant(card);
-                    this.addLog(`💤 ワイナリーが休業`);
+                    this.addLog(LOG_TYPES.SPECIAL, `💤 ワイナリーが休業`);
                 }
                 continue;
             }
             if (card.effect === CARD_EFFECTS.MOVER) {
                 this.pendingMover++;
-                this.addLog(`🚚 引越し屋発動 → 渡す施設を選んでください`);
+                this.addLog(LOG_TYPES.SPECIAL, `🚚 引越し屋発動 → 渡す施設を選んでください`);
                 continue;
             }
             if (card.effect === CARD_EFFECTS.LOAN) continue;
@@ -285,9 +295,9 @@ class GameManager {
                     .filter(([name, built]) => built && name !== "役所");
                 if (builtLandmarks.length > 0) {
                     this.pendingRenovation++;
-                    this.addLog(`🔨 改装屋発動 → 戻すランドマークを選んでください`);
+                    this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋発動 → 戻すランドマークを選んでください`);
                 } else {
-                    this.addLog(`🔨 改装屋：建設済みランドマークがないため不発`);
+                    this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
                 }
                 continue;
             }
@@ -295,7 +305,7 @@ class GameManager {
             const amount = GameManager.calcCardIncome(card, current, this);
             if (amount > 0) {
                 current.coins += amount;
-                this.addLog(`🏪 ${card.name}発動 → +${amount}コイン`);
+                this.addLog(LOG_TYPES.GAIN, `🏪 ${card.name}発動 → +${amount}コイン`);
             }
         }
 
@@ -305,7 +315,7 @@ class GameManager {
             if (loanCount > 0) {
                 const pay = Math.min(loanCount * 2, current.coins);
                 current.coins -= pay;
-                this.addLog(`💳 貸金業×${loanCount}：${pay}コイン支払い`);
+                this.addLog(LOG_TYPES.LOSE, `💳 貸金業×${loanCount}：${pay}コイン支払い`);
             }
         }
     }
@@ -324,13 +334,13 @@ class GameManager {
                     total += steal;
                 }
                 current.coins += total;
-                this.addLog(`🏟️ スタジアム発動 → +${total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.TV) {
                 this.pendingTV++;
-                this.addLog(`📺 テレビ局発動 → 対象プレイヤーを選んでください`);
+                this.addLog(LOG_TYPES.SPECIAL, `📺 テレビ局発動 → 対象プレイヤーを選んでください`);
             } else if (card.effect === CARD_EFFECTS.BUSINESS) {
                 this.pendingBusiness++;
-                this.addLog(`🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
+                this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
             } else if (card.effect === CARD_EFFECTS.PUBLISHER) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
@@ -340,10 +350,10 @@ class GameManager {
                     const steal = Math.min(count, this.players[i].coins);
                     this.players[i].coins -= steal;
                     total += steal;
-                    if (steal > 0) this.addLog(`📰 ${this.players[i].name}から${steal}コイン`);
+                    if (steal > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[i].name}から${steal}コイン`);
                 }
                 current.coins += total;
-                this.addLog(`📰 出版社発動 → 合計+${total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.TAXOFFICE) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
@@ -352,14 +362,14 @@ class GameManager {
                         const steal = Math.floor(this.players[i].coins / 2);
                         this.players[i].coins -= steal;
                         total += steal;
-                        this.addLog(`🏛️ ${this.players[i].name}から${steal}コイン`);
+                        this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[i].name}から${steal}コイン`);
                     }
                 }
                 current.coins += total;
-                this.addLog(`🏛️ 税務署発動 → 合計+${total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.CLEANING) {
                 this.pendingCleaning++;
-                this.addLog(`🧹 清掃業発動 → 休業にする施設を選んでください`);
+                this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にする施設を選んでください`);
             } else if (card.effect === CARD_EFFECTS.ITSTARTUP) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
@@ -369,14 +379,14 @@ class GameManager {
                     total += steal;
                 }
                 current.coins += total;
-                this.addLog(`💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.PARK) {
                 const total = this.players.reduce((sum, p) => sum + p.coins, 0);
                 const each = Math.floor(total / this.players.length);
                 const remainder = total - each * this.players.length;
                 for (const p of this.players) p.coins = each;
                 current.coins += remainder;
-                this.addLog(`🌳 公園発動 → 全員${each}コインに均等分配`);
+                this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${each}コインに均等分配`);
             }
         }
     }
@@ -385,13 +395,13 @@ class GameManager {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) {
-            this.addLog(`❌ 対象プレイヤーを選び直してください`);
+            this.addLog(LOG_TYPES.ERROR, `❌ 対象プレイヤーを選び直してください`);
             return;
         }
         const steal = Math.min(5, target.coins);
         target.coins -= steal;
         current.coins += steal;
-        this.addLog(`📺 ${target.name}から${steal}コイン奪いました`);
+        this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${steal}コイン奪いました`);
         this.pendingTV--;
         this._checkPending();
     }
@@ -399,10 +409,10 @@ class GameManager {
     resolveBusiness(myCardRef, targetIndex, theirCardRef) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
-        if (!target || target === current) { this.addLog(`❌ 交換相手を選び直してください`); return; }
+        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 交換相手を選び直してください`); return; }
         const myCard = this._resolveCardRef(current, myCardRef);
         const theirCard = this._resolveCardRef(target, theirCardRef);
-        if (!myCard || !theirCard) { this.addLog(`❌ 交換できない施設です`); return; }
+        if (!myCard || !theirCard) { this.addLog(LOG_TYPES.ERROR, `❌ 交換できない施設です`); return; }
         const myCardWasDormant = current.isDormant(myCard);
         const theirCardWasDormant = target.isDormant(theirCard);
         current.revive(myCard);
@@ -413,7 +423,7 @@ class GameManager {
         target.cards.push(myCard);
         if (theirCardWasDormant) current.makeDormant(theirCard);
         if (myCardWasDormant) target.makeDormant(myCard);
-        this.addLog(`🔄 ${myCard.name} ⇔ ${target.name}の${theirCard.name} を交換しました`);
+        this.addLog(LOG_TYPES.SPECIAL, `🔄 ${myCard.name} ⇔ ${target.name}の${theirCard.name} を交換しました`);
         this.pendingBusiness--;
         this._checkPending();
     }
@@ -430,7 +440,7 @@ class GameManager {
             }
         }
         current.coins += count;
-        this.addLog(`🧹 ${cardName}×${count}軒を休業 → +${count}コイン`);
+        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${count}軒を休業 → +${count}コイン`);
         this.pendingCleaning--;
         this._checkPending();
     }
@@ -438,29 +448,29 @@ class GameManager {
     resolveMover(myCardRef, targetIndex) {
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
-        if (!target || target === current) { this.addLog(`❌ 渡す相手を選び直してください`); return; }
+        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 渡す相手を選び直してください`); return; }
         const myCard = this._resolveCardRef(current, myCardRef);
-        if (!myCard) { this.addLog(`❌ 渡せない施設です`); return; }
+        if (!myCard) { this.addLog(LOG_TYPES.ERROR, `❌ 渡せない施設です`); return; }
         const myCardWasDormant = current.isDormant(myCard);
         current.revive(myCard);
         current.cards.splice(current.cards.indexOf(myCard), 1);
         target.cards.push(myCard);
         if (myCardWasDormant) target.makeDormant(myCard);
         current.coins += 4;
-        this.addLog(`🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
+        this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
         this.pendingMover--;
         this._checkPending();
     }
-    
+
     resolveRenovation(landmarkName) {
         const current = this.currentPlayer();
         if (!current.landmarks[landmarkName]) {
-            this.addLog(`❌ そのランドマークは建設されていません`);
+            this.addLog(LOG_TYPES.ERROR, `❌ そのランドマークは建設されていません`);
             return;
         }
         current.landmarks[landmarkName] = false;
         current.coins += 8;
-        this.addLog(`🔨 ${landmarkName}を取り壊して+8コイン`);
+        this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+8コイン`);
         this.pendingRenovation--;
 
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ
@@ -468,13 +478,13 @@ class GameManager {
             const builtLandmarks = Object.entries(current.landmarks)
                 .filter(([name, built]) => built && name !== "役所");
             if (builtLandmarks.length > 0) break;
-            this.addLog(`🔨 改装屋：建設済みランドマークがないため不発`);
+            this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
             this.pendingRenovation--;
         }
 
         this._checkPending();
     }
-    
+
     _checkPending() {
         if (this.pendingTV <= 0 && this.pendingBusiness <= 0 &&
             this.pendingCleaning <= 0 && this.pendingMover <= 0 &&
@@ -488,47 +498,47 @@ class GameManager {
         const current = this.currentPlayer();
         if (doSave) {
             if (current.coins < 1) {
-                this.addLog(`❌ コインが足りません`);
+                this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`);
             } else {
                 current.coins -= 1;
                 current.itVentureCoins += 1;
-                this.addLog(`💻 ITベンチャー積立 → 合計${current.itVentureCoins}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立 → 合計${current.itVentureCoins}コイン`);
             }
         } else {
-            this.addLog(`💻 ITベンチャー積立スキップ`);
+            this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立スキップ`);
         }
         this.pendingIT = false;
         this._doNextTurn();
     }
 
     buildCard(card) {
-        if (this.builtThisTurn) { this.addLog(`❌ 建設は1ターンに1度だけです`); return false; }
+        if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
         const current = this.currentPlayer();
-        if (current.coins < card.cost) { this.addLog(`❌ コインが足りません`); return false; }
+        if (current.coins < card.cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
         if (card.color === "purple" && current.countCard(card.name) > 0) {
-            this.addLog(`❌ 大施設は1枚しか持てません`); return false;
+            this.addLog(LOG_TYPES.ERROR, `❌ 大施設は1枚しか持てません`); return false;
         }
         current.coins -= card.cost;
         current.addCard(cloneCard(card));
-        if (card.effect === "loan") {
+        if (card.effect === CARD_EFFECTS.LOAN) {
             current.coins += 5;
-            this.addLog(`💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`);
+            this.addLog(LOG_TYPES.BUILD, `💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`);
         }
-        this.addLog(`🏗️ ${card.name}を建設！`);
+        this.addLog(LOG_TYPES.BUILD, `🏗️ ${card.name}を建設！`);
         this.builtThisTurn = true;
         return true;
     }
 
     buildLandmark(name) {
-        if (this.builtThisTurn) { this.addLog(`❌ 建設は1ターンに1度だけです`); return false; }
+        if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
         const current = this.currentPlayer();
         const cost = Player.landmarkCost(name);
-        if (!this.enabledLandmarks.has(name)) { this.addLog(`❌ このランドマークは今回使用しません`); return false; }
-        if (current.coins < cost) { this.addLog(`❌ コインが足りません`); return false; }
-        if (current.landmarks[name]) { this.addLog(`❌ すでに建設済みです`); return false; }
+        if (!this.enabledLandmarks.has(name)) { this.addLog(LOG_TYPES.ERROR, `❌ このランドマークは今回使用しません`); return false; }
+        if (current.coins < cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
+        if (current.landmarks[name]) { this.addLog(LOG_TYPES.ERROR, `❌ すでに建設済みです`); return false; }
         current.coins -= cost;
         current.landmarks[name] = true;
-        this.addLog(`🏆 ${name}を建設！`);
+        this.addLog(LOG_TYPES.BUILD, `🏆 ${name}を建設！`);
         this.builtThisTurn = true;
         return true;
     }
@@ -537,13 +547,13 @@ class GameManager {
         const current = this.currentPlayer();
         if (!this.builtThisTurn && current.landmarks["空港"]) {
             current.coins += 10;
-            this.addLog(`✈️ 空港効果！建設なしで+10コイン`);
+            this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`);
         }
         // ITベンチャー：任意で積立
-        const itCard = current.cards.find(c => c.effect === "itstartup" && !current.isDormant(c));
+        const itCard = current.cards.find(c => c.effect === CARD_EFFECTS.ITSTARTUP && !current.isDormant(c));
         if (itCard) {
             this.pendingIT = true;
-            this.addLog(`💻 ITベンチャー：1コイン積立しますか？（現在${current.itVentureCoins}コイン積立中）`);
+            this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー：1コイン積立しますか？（現在${current.itVentureCoins}コイン積立中）`);
             return;
         }
         this._doNextTurn();
@@ -563,7 +573,7 @@ class GameManager {
             this.pendingIT = false;
             this.pendingRenovation = 0;
             this.hadAmusementParkAtRoll = false;
-            this.addLog(`🎡 遊園地効果！ゾロ目でもう一度ターン`);
+            this.addLog(LOG_TYPES.SYSTEM, `🎡 遊園地効果！ゾロ目でもう一度ターン`);
             return;
         }
         this.hadAmusementParkAtRoll = false;
@@ -580,9 +590,9 @@ class GameManager {
         this.pendingIT = false;
         this.pendingRenovation = 0;
 
-        this.addLog(`👤 ${this.currentPlayer().name}のターン`);
+        this.addLog(LOG_TYPES.SYSTEM, `👤 ${this.currentPlayer().name}のターン`);
     }
 
     checkWinner() { return this.players.find(p => p.hasWon([...this.enabledLandmarks])) || null; }
-    addLog(msg) { this.log.push(msg); }
+    addLog(type, msg) { this.log.push({ type, message: msg }); }
 }

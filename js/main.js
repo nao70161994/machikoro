@@ -205,7 +205,7 @@ function init(playerCount) {
         );
     }
     cpuPlayers = shuffledCpuPlayers;
-    game.addLog(`👤 ${game.currentPlayer().name}のターン`);
+    game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
     render();
     scheduleCPU();
 }
@@ -452,7 +452,7 @@ function initSocket() {
 
     socket.on('playerRejoined', ({ playerIndex, playerName }) => {
         if (playerIndex !== myOriginalPlayerIndex) {
-            game && game.addLog(`🔌 ${playerName}が再接続しました`);
+            game && game.addLog(LOG_TYPES.SYSTEM, `🔌 ${playerName}が再接続しました`);
         }
         render();
     });
@@ -464,7 +464,7 @@ function initSocket() {
     socket.on('hostChanged', ({ newHostPlayerIndex }) => {
         if (myOriginalPlayerIndex === newHostPlayerIndex) {
             isRoomHost = true;
-            game.addLog(`👑 あなたがホストになりました`);
+            game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
             render();
             scheduleCPU();
         } else {
@@ -553,7 +553,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     myPlayerIndex = order.indexOf(myOriginalPlayerIndex);
     if (myPlayerIndex === -1) myPlayerIndex = 0; // 見つからない場合はホスト
     
-    game.addLog(`👤 ${game.currentPlayer().name}のターン`);
+    game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
     render();
     scheduleCPU();
 }

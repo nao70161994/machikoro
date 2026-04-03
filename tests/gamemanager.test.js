@@ -233,7 +233,7 @@ runTest('電波塔rerollDiceはlogをリセットしてphaseをrollに戻す', (
 
     // rerollDice内でlog=[]→addLogするのでログがリセットされ新エントリのみになる
     assert.ok(!game.log.includes(logBeforeReroll[0]));
-    assert.ok(game.log.some(e => e.startsWith('📡')));
+    assert.ok(game.log.some(e => e.message.startsWith('📡')));
 });
 
 runTest('nextTurnでgame.logがリセットされ新ターンのエントリになる', () => {
@@ -245,9 +245,9 @@ runTest('nextTurnでgame.logがリセットされ新ターンのエントリに�
 
     game.nextTurn();
 
-    assert.ok(!game.log.some(e => prevLog.includes(e) && !e.startsWith('👤')));
+    assert.ok(!game.log.some(e => prevLog.includes(e) && !e.message.startsWith('👤')));
     assert.strictEqual(game.currentPlayerIndex, 1);
-    assert.ok(game.log.some(e => e.startsWith('👤')));
+    assert.ok(game.log.some(e => e.message.startsWith('👤')));
 });
 
 runTest('CARDSを色順→ダイス出目順にソートできる', () => {

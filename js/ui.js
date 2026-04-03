@@ -1,32 +1,22 @@
+const LOG_TYPE_DISPLAY = {
+    [LOG_TYPES.DICE]:    { cls: "log-dice",    label: "ダイス" },
+    [LOG_TYPES.GAIN]:    { cls: "log-gain",    label: "収入"   },
+    [LOG_TYPES.LOSE]:    { cls: "log-lose",    label: "支払い" },
+    [LOG_TYPES.BUILD]:   { cls: "log-build",   label: "建設"   },
+    [LOG_TYPES.SPECIAL]: { cls: "log-special", label: "特殊"   },
+    [LOG_TYPES.SYSTEM]:  { cls: "log-system",  label: "進行"   },
+    [LOG_TYPES.ERROR]:   { cls: "log-error",   label: "エラー" },
+};
+
 function classifyLogEntry(entry) {
-    let cls = "log-system";
-    let label = "進行";
-    if (entry.startsWith("🎲") || entry.startsWith("📡") || entry.startsWith("⚓") || entry.startsWith("🚉")) {
-        cls = "log-dice";
-        label = "ダイス";
-    } else if (entry.startsWith("💸") || entry.startsWith("🍸") || entry.startsWith("🍽️")) {
-        cls = "log-lose";
-        label = "支払い";
-    } else if (entry.startsWith("🌾") || entry.startsWith("🏪") || entry.startsWith("🐟") || entry.startsWith("🌽") || entry.startsWith("🍷") || entry.startsWith("💻")) {
-        cls = "log-gain";
-        label = "収入";
-    } else if (entry.startsWith("🏗️") || entry.startsWith("🏆") || entry.startsWith("🔨")) {
-        cls = "log-build";
-        label = "建設";
-    } else if (entry.startsWith("🏟️") || entry.startsWith("📺") || entry.startsWith("🏢") || entry.startsWith("🧹") || entry.startsWith("🚚") || entry.startsWith("📰") || entry.startsWith("🏛️") || entry.startsWith("🌳")) {
-        cls = "log-special";
-        label = "特殊";
-    } else if (entry.startsWith("❌")) {
-        cls = "log-error";
-        label = "エラー";
-    }
-    return { cls, label };
+    return LOG_TYPE_DISPLAY[entry.type] || { cls: "log-system", label: "進行" };
 }
 
 function extractLogDetails(entry) {
     const detail = { actor: '', target: '', amount: '', subject: '' };
     if (!entry) return detail;
-    const amountMatch = entry.match(/([+-]?\d+)コイン/);
+    const entry_msg = entry.message || entry;
+    const amountMatch = entry_msg.match(/([+-]?\d+)コイン/);
     if (amountMatch) detail.amount = amountMatch[1];
 
     const actorPatterns = [
@@ -36,14 +26,14 @@ function extractLogDetails(entry) {
         /^(?:👤)\s+([^の]+)のターン/
     ];
     for (const pattern of actorPatterns) {
-        const match = entry.match(pattern);
+        const match = entry_msg.match(pattern);
         if (match) {
             detail.actor = match[1];
             break;
         }
     }
 
-    const targetMatch = entry.match(/(?:から|を)([^に\s]+)(?:に|の)?/);
+    const targetMatch = entry_msg.match(/(?:から|を)([^に\s]+)(?:に|の)?/);
     if (targetMatch && !detail.target) detail.target = targetMatch[1];
 
     const subjectPatterns = [
@@ -52,7 +42,7 @@ function extractLogDetails(entry) {
         /^(?:🌾|🏪|🐟|💸|🍸|🍽️)\s+[^の]+の([^発動\s]+)/
     ];
     for (const pattern of subjectPatterns) {
-        const match = entry.match(pattern);
+        const match = entry_msg.match(pattern);
         if (match) {
             detail.subject = match[1];
             break;
@@ -71,7 +61,7 @@ function renderLog() {
 
     // ターン切り替えやリロール時に game.log がリセットされる
     if (cur.length < prevLogLength) {
-        const isReroll = cur.length > 0 && cur[0].startsWith("📡");
+        const isReroll = cur.length > 0 && cur[0]?.message?.startsWith("📡");
         if (!isReroll && fullLog.length > 0 && cur.length > 0) fullLog.push("__SEP__");
         fullLog.push(...cur);
     } else {
@@ -99,7 +89,7 @@ function renderLog() {
         if (entry === "__SEP__") return `<div class="log-separator"></div>`;
         const { cls } = classifyLogEntry(entry);
         const latestCls = index === lastEntryIdx ? " log-latest" : "";
-        return `<div class="log-item ${cls}${latestCls}">${escapeHtml(entry)}</div>`;
+        return `<div class="log-item ${cls}${latestCls}">${escapeHtml(entry.message)}</div>`;
     }).join("");
 
     // サマリーは現在ターンのログのみ使用
@@ -112,7 +102,7 @@ function renderLog() {
     const summaryParts = [];
     const latest = cur[cur.length - 1];
     if (latest) {
-        summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest)}</span>`);
+        summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest.message)}</span>`);
         const details = extractLogDetails(latest);
         const detailCards = [];
         if (details.actor) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">${escapeHtml(details.actor)}</span></span>`);
