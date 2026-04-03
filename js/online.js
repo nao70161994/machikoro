@@ -180,6 +180,16 @@ function initSocket() {
         }
     });
 
+    socket.on('connect', () => {
+        const el = document.getElementById("onlineStatus");
+        if (el && el.textContent.startsWith('⏳')) el.textContent = '';
+    });
+
+    socket.on('connect_error', () => {
+        document.getElementById("onlineStatus").textContent =
+            '⏳ サーバーに接続中です。初回は起動に30秒ほどかかる場合があります...';
+    });
+
     socket.on('error', (msg) => {
         if (isReconnectingOnline) {
             isReconnectingOnline = false;
