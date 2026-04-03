@@ -5,6 +5,7 @@ const testFiles = [
     'gamemanager.test.js',
     'server.test.js',
     'cpu.test.js',
+    'online.test.js',
 ];
 
 let failed = false;

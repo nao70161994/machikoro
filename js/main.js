@@ -698,7 +698,7 @@ function cancelAutoSkip() {
 function checkAutoSkip() {
     if (autoSkipPending) return;
     if (!game || game.checkWinner()) return;
-    if (game.phase !== "build") { cancelAutoSkip(); return; }
+    if (game.phase !== GAME_PHASES.BUILD) { cancelAutoSkip(); return; }
     if (cpuPlayers[game.currentPlayerIndex]) return;
     if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return;
     if (game.pendingRenovation > 0) return;
