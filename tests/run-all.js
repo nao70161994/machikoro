@@ -4,6 +4,7 @@ const path = require('path');
 const testFiles = [
     'gamemanager.test.js',
     'server.test.js',
+    'cpu.test.js',
 ];
 
 let failed = false;

@@ -172,6 +172,114 @@ runTest('validateRenovationPayload は建設済みランドマークのみ受け
     assert.strictEqual(validateRenovationPayload(game, { landmarkName: '存在しないランドマーク' }), false);
 });
 
+// ===== フェーズガード =====
+
+runTest('validateGameAction は ROLL フェーズ以外で rollDice を拒否する', () => {
+    const room = makeRoom();
+    // rollDice後はBUILDフェーズになっている
+    room.actionLog = [{ action: 'rollDice', data: { forceDice: 3, tunaDice: [1, 1] } }];
+    const result = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: 2, tunaDice: [1, 1] });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は SELECT_DICE フェーズ以外で selectDice を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'selectDice', { useTwo: true, d1: 3, d2: 4, tunaDice: [1, 1] });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は REROLL_CONFIRM フェーズ以外で rerollDice を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'rerollDice', { forceDice: 5, tunaDice: [1, 1] });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は REROLL_CONFIRM フェーズ以外で skipReroll を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'skipReroll', {});
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は HARBOR_CHOICE フェーズ以外で resolveHarbor を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveHarbor', { useBonus: true });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は PENDING フェーズ以外で resolveTV を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveTV', { targetIndex: 1 });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は PENDING フェーズ以外で resolveBusiness を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveBusiness', { myCard: 0, targetIndex: 1, theirCard: 0 });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は PENDING フェーズ以外で resolveCleaning を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveCleaning', { cardName: '麦畑' });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は PENDING フェーズ以外で resolveMover を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveMover', { cardName: '麦畑', targetIndex: 1 });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は PENDING フェーズ以外で resolveRenovation を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveRenovation', { landmarkName: '駅' });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は PENDING フェーズ以外で resolveIT を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ（pendingIT もない）
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveIT', { doSave: true });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は BUILD フェーズ以外で buildCard を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'buildCard', { cardName: '麦畑' });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は BUILD フェーズ以外で buildLandmark を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'buildLandmark', { name: '駅' });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は BUILD フェーズ以外で nextTurn を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'nextTurn', {});
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は BUILD フェーズ以外で undoBuild を拒否する', () => {
+    const room = makeRoom();
+    // actionLog なし → ROLLフェーズ
+    const result = validateGameAction(room, { playerIndex: 0 }, 'undoBuild', {});
+    assert.strictEqual(result.ok, false);
+});
+
 if (process.exitCode) {
     throw new Error('serverテストで失敗が発生しました');
 }
