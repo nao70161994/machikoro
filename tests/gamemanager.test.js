@@ -11,7 +11,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS;',
+        'this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS; this.LOG_TYPES = LOG_TYPES;',
         context
     );
     return context;
@@ -386,6 +386,250 @@ runTest('ITベンチャーのnextTurnでpendingITが設定されresolveIT後に�
     assert.strictEqual(game.pendingIT, false);
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.strictEqual(game.phase, 'roll');
+});
+
+// ===== LOG_TYPES / addLog 構造 =====
+
+runTest('addLogエントリが{type,message}構造を持ちLOG_TYPESの値を使う', () => {
+    const LOG_TYPES = runtime.LOG_TYPES;
+    assert.ok(LOG_TYPES, 'LOG_TYPESがエクスポートされていない');
+    const validTypes = new Set(Object.values(LOG_TYPES));
+    const game = new GameManager(2);
+    game.rollDice(1); // 🎲ダイス + 麦畑収入(gain)
+    assert.ok(game.log.length > 0, 'ログが空');
+    for (const entry of game.log) {
+        assert.ok(typeof entry === 'object' && entry !== null, `エントリがオブジェクトでない: ${JSON.stringify(entry)}`);
+        assert.ok(typeof entry.type === 'string', 'typeが文字列でない');
+        assert.ok(typeof entry.message === 'string', 'messageが文字列でない');
+        assert.ok(validTypes.has(entry.type), `未知のtype: ${entry.type}`);
+    }
+    assert.ok(game.log.some(e => e.type === LOG_TYPES.DICE), 'diceタイプがない');
+    assert.ok(game.log.some(e => e.type === LOG_TYPES.GAIN), 'gainタイプがない');
+});
+
+// ===== processIncome / 収入計算 =====
+
+runTest('青カード（麦畑）がダイス1で全プレイヤーに収入をもたらす', () => {
+    const game = new GameManager(2);
+    const coins0 = game.players[0].coins;
+    const coins1 = game.players[1].coins;
+    // 両者が麦畑(dice 1, +1)を初期所持
+    game.rollDice(1);
+    assert.strictEqual(game.players[0].coins, coins0 + 1);
+    assert.strictEqual(game.players[1].coins, coins1 + 1);
+});
+
+runTest('赤カード（カフェ）は現在プレイヤーから1コイン徴収する', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    const p1 = game.players[1];
+    p0.cards = [createCardByName('麦畑')];
+    p0.dormantCards = [];
+    p1.cards = [createCardByName('カフェ')]; // red, dice 3, income 1
+    p1.dormantCards = [];
+    p0.coins = 5;
+    p1.coins = 0;
+    game.rollDice(3);
+    assert.strictEqual(p0.coins, 4);
+    assert.strictEqual(p1.coins, 1);
+    assert.ok(game.log.some(e => e.type === 'lose'));
+    // p0のコインが0なら徴収なし
+    const game2 = new GameManager(2);
+    game2.currentPlayer().cards = [];
+    game2.currentPlayer().dormantCards = [];
+    game2.players[1].cards = [createCardByName('カフェ')];
+    game2.players[1].dormantCards = [];
+    game2.currentPlayer().coins = 0;
+    game2.players[1].coins = 0;
+    game2.rollDice(3);
+    assert.strictEqual(game2.players[1].coins, 0);
+});
+
+runTest('チーズ工場は牧場枚数×3コインを得る', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('チーズ工場')];
+    p0.dormantCards = [];
+    const coinsBefore = p0.coins;
+    game.rollDice(7); // チーズ工場 dice=7
+    assert.strictEqual(p0.coins, coinsBefore + 6); // 2牧場 × 3
+    // 牧場0枚の場合は収入なし
+    const game2 = new GameManager(2);
+    const p0b = game2.currentPlayer();
+    p0b.cards = [createCardByName('チーズ工場')];
+    p0b.dormantCards = [];
+    const coinsBefore2 = p0b.coins;
+    game2.rollDice(7);
+    assert.strictEqual(p0b.coins, coinsBefore2);
+});
+
+runTest('ショッピングモール所持で飲食店・商店の緑カードが+1コイン', () => {
+    // モールなし: パン屋(飲食店, dice 2-3, income 1) → +1
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('パン屋')];
+    p0.dormantCards = [];
+    p0.coins = 0;
+    game.rollDice(2);
+    assert.strictEqual(p0.coins, 1);
+    // モールあり: パン屋 → +2
+    const game2 = new GameManager(2);
+    const p0b = game2.currentPlayer();
+    p0b.cards = [createCardByName('パン屋')];
+    p0b.dormantCards = [];
+    p0b.landmarks['ショッピングモール'] = true;
+    p0b.coins = 0;
+    game2.rollDice(2);
+    assert.strictEqual(p0b.coins, 2);
+});
+
+runTest('貸金業は5か6が出ると枚数×2コイン支払う', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('貸金業'), createCardByName('貸金業')];
+    p0.dormantCards = [];
+    p0.coins = 10;
+    game.rollDice(5); // 2枚 × 2 = 4コイン支払い
+    assert.strictEqual(p0.coins, 6);
+    assert.ok(game.log.some(e => e.type === 'lose' && e.message.includes('貸金業')));
+    // 5か6以外は支払いなし
+    const game2 = new GameManager(2);
+    const p0b = game2.currentPlayer();
+    p0b.cards = [createCardByName('貸金業')];
+    p0b.dormantCards = [];
+    p0b.coins = 10;
+    game2.rollDice(3);
+    assert.strictEqual(p0b.coins, 10);
+});
+
+// ===== buildCard / buildLandmark =====
+
+runTest('buildCardが成功するとコインが減りカードが追加される', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.coins = 10;
+    const result = game.buildCard(createCardByName('森林')); // cost 3
+    assert.strictEqual(result, true);
+    assert.strictEqual(p0.coins, 7);
+    assert.ok(p0.cards.some(c => c.name === '森林'));
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('森林')));
+    // 貸金業はcost 0で建設後+5コイン付与
+    const game2 = new GameManager(2);
+    game2.currentPlayer().coins = 10;
+    game2.buildCard(createCardByName('貸金業')); // cost 0, +5
+    assert.strictEqual(game2.currentPlayer().coins, 15);
+});
+
+runTest('buildLandmarkが成功するとコインが減りランドマークが建設される', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.coins = 10;
+    const result = game.buildLandmark('駅'); // cost 4
+    assert.strictEqual(result, true);
+    assert.strictEqual(p0.coins, 6);
+    assert.strictEqual(p0.landmarks['駅'], true);
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('駅')));
+    // 二重建設は拒否
+    const game2 = new GameManager(2);
+    game2.currentPlayer().coins = 20;
+    game2.currentPlayer().landmarks['駅'] = true;
+    assert.strictEqual(game2.buildLandmark('駅'), false);
+});
+
+// ===== ランドマーク効果 =====
+
+runTest('空港効果：建設しないターン終了で+10コイン', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.landmarks['空港'] = true;
+    game.phase = 'build';
+    game.builtThisTurn = false;
+    const coinsBefore = p0.coins;
+    game.nextTurn();
+    assert.strictEqual(p0.coins, coinsBefore + 10);
+    // 建設済みの場合は+10されない
+    const game2 = new GameManager(2);
+    game2.currentPlayer().landmarks['空港'] = true;
+    game2.phase = 'build';
+    game2.builtThisTurn = true;
+    const coinsBefore2 = game2.players[0].coins;
+    game2.nextTurn();
+    assert.strictEqual(game2.players[0].coins, coinsBefore2);
+});
+
+runTest('遊園地効果：ゾロ目でターン継続しphaseがrollに戻る', () => {
+    const game = new GameManager(2);
+    game.phase = 'build';
+    game.lastDice1 = 4;
+    game.lastDice2 = 4;
+    game.hadAmusementParkAtRoll = true;
+    const ci = game.currentPlayerIndex;
+    game.nextTurn();
+    assert.strictEqual(game.currentPlayerIndex, ci, 'ゾロ目なのにプレイヤーが変わった');
+    assert.strictEqual(game.phase, 'roll');
+    assert.ok(game.log.some(e => e.type === 'system' && e.message.includes('遊園地')));
+    // ゾロ目でない場合はターンが進む
+    const game2 = new GameManager(2);
+    game2.phase = 'build';
+    game2.lastDice1 = 3;
+    game2.lastDice2 = 4;
+    game2.hadAmusementParkAtRoll = true;
+    game2.nextTurn();
+    assert.strictEqual(game2.currentPlayerIndex, 1, 'ターンが進んでいない');
+});
+
+// ===== resolveRenovation =====
+
+runTest('resolveRenovationでランドマークを取り壊して+8コインを得る', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.landmarks['駅'] = true;
+    game.pendingRenovation = 1;
+    game.phase = 'pending';
+    p0.coins = 0;
+    game.resolveRenovation('駅');
+    assert.strictEqual(p0.landmarks['駅'], false);
+    assert.strictEqual(p0.coins, 8);
+    assert.strictEqual(game.pendingRenovation, 0);
+    assert.strictEqual(game.phase, 'build');
+    assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('駅')));
+    // 未建設ランドマークは拒否してpendingRenovationを減らさない
+    const game2 = new GameManager(2);
+    game2.pendingRenovation = 1;
+    game2.phase = 'pending';
+    game2.resolveRenovation('駅');
+    assert.strictEqual(game2.pendingRenovation, 1);
+    assert.ok(game2.log.some(e => e.type === 'error'));
+});
+
+// ===== calcCardIncome =====
+
+runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を計算する', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    // CHEESE: 牧場2枚 × income3 = 6
+    p0.cards = [createCardByName('牧場'), createCardByName('牧場')];
+    p0.dormantCards = [];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('チーズ工場'), p0, game), 6);
+    // FURNITURE: (森林1+鉱山1) × income3 = 6
+    p0.cards = [createCardByName('森林'), createCardByName('鉱山')];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('家具工場'), p0, game), 6);
+    // MARKET: 農園2枚 × income2 = 4
+    p0.cards = [createCardByName('麦畑'), createCardByName('花畑')];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('青果市場'), p0, game), 4);
+    // FEWLANDMARK: ランドマーク0個 → income1
+    Object.keys(p0.landmarks).forEach(k => { p0.landmarks[k] = false; });
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), p0, game), 1);
+    // ランドマーク2個以上 → 0
+    p0.landmarks['駅'] = true;
+    p0.landmarks['ショッピングモール'] = true;
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), p0, game), 0);
+    // 休業中のカードはカウントしない
+    p0.cards = [createCardByName('牧場'), createCardByName('牧場')];
+    p0.dormantCards = [p0.cards[0]];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('チーズ工場'), p0, game), 3); // 1枚のみ
 });
 
 if (process.exitCode) {

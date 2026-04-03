@@ -1,9 +1,12 @@
 const assert = require('assert');
 const {
     loadGameRuntime,
+    sanitizeName,
     validateGameAction,
     validateBusinessPayload,
+    validateCleaningPayload,
     validateMoverPayload,
+    validateRenovationPayload,
     makeUndoStateFromMirror,
 } = require('../server');
 
@@ -101,6 +104,72 @@ runTest('online validateGameAction は無効化されたランドマーク建設
     room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } }];
     const result = validateGameAction(room, { playerIndex: 0 }, 'buildLandmark', { name: '港' });
     assert.strictEqual(result.ok, false);
+});
+
+// ===== sanitizeName =====
+
+runTest('sanitizeName がHTMLタグ・特殊文字を除去し20文字に制限する', () => {
+    assert.strictEqual(sanitizeName('<b>name</b>'), 'bname/b');
+    assert.strictEqual(sanitizeName('a'.repeat(25)), 'a'.repeat(20));
+    assert.strictEqual(sanitizeName('  Alice  '), 'Alice');
+    assert.strictEqual(sanitizeName(null), '');
+    assert.strictEqual(sanitizeName('<>&"\'`'), '');
+});
+
+// ===== validateGameAction =====
+
+runTest('validateGameAction は非現在プレイヤーのアクションを拒否する', () => {
+    const room = makeRoom();
+    room.actionLog = []; // プレイヤー0のターン
+    // プレイヤー1がrollDiceを試みる
+    const result = validateGameAction(room, { playerIndex: 1 }, 'rollDice', { forceDice: 3, tunaDice: [1, 1] });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction は enabledCards に含まれないカードの建設を拒否する', () => {
+    const room = makeRoom();
+    // enabledCards: ['麦畑','パン屋','カフェ','ビジネスセンター','引越し屋']
+    // 鉱山はリストにない
+    room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } }];
+    const result = validateGameAction(room, { playerIndex: 0 }, 'buildCard', { cardName: '鉱山' });
+    assert.strictEqual(result.ok, false);
+});
+
+// ===== validateCleaningPayload =====
+
+runTest('validateCleaningPayload は休業済みカードを対象にできない', () => {
+    const { GameManager, createCardByName } = makeGame();
+    const game = new GameManager(2);
+    const cafe = createCardByName('カフェ');
+    game.currentPlayer().cards = [cafe];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [];
+    game.players[1].dormantCards = [];
+    game.phase = 'pending';
+    game.pendingCleaning = 1;
+    // アクティブなカフェは対象にできる
+    assert.strictEqual(validateCleaningPayload(game, { cardName: 'カフェ' }), true);
+    // 休業中は対象にできない
+    game.currentPlayer().makeDormant(cafe);
+    assert.strictEqual(validateCleaningPayload(game, { cardName: 'カフェ' }), false);
+    // 存在しないカード名は拒否
+    assert.strictEqual(validateCleaningPayload(game, { cardName: '存在しないカード' }), false);
+});
+
+// ===== validateRenovationPayload =====
+
+runTest('validateRenovationPayload は建設済みランドマークのみ受け付ける', () => {
+    const { GameManager } = makeGame();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingRenovation = 1;
+    // 未建設は拒否
+    assert.strictEqual(validateRenovationPayload(game, { landmarkName: '駅' }), false);
+    // 建設済みは許可
+    game.currentPlayer().landmarks['駅'] = true;
+    assert.strictEqual(validateRenovationPayload(game, { landmarkName: '駅' }), true);
+    // 無効なランドマーク名は拒否
+    assert.strictEqual(validateRenovationPayload(game, { landmarkName: '存在しないランドマーク' }), false);
 });
 
 if (process.exitCode) {
