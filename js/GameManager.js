@@ -61,7 +61,7 @@ class GameManager {
 
     rollDice(forceDice = null, tunaDice = null) {
         if (this.phase !== GAME_PHASES.ROLL) return;
-        if (this.currentPlayer().landmarks["駅"]) {
+        if (this.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
             this.phase = GAME_PHASES.SELECT_DICE;
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `🚉 駅：1個か2個か選んでください`);
@@ -70,7 +70,7 @@ class GameManager {
             this.lastDice1 = 0;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
-            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
+            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
             this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
             this.afterRoll(tunaDice);
         }
@@ -84,21 +84,21 @@ class GameManager {
             this.lastDice1 = d1;
             this.lastDice2 = d2;
             this.lastDiceResult = d1 + d2;
-            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
+            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
             this.addLog(LOG_TYPES.DICE, `🎲 ${d1}+${d2}=${this.lastDiceResult}`);
         } else {
             const d1 = forceDice1 !== null ? forceDice1 : Math.floor(Math.random() * 6) + 1;
             this.lastDice1 = d1;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
-            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks["遊園地"];
+            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
             this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
         }
         this.afterRoll(tunaDice || this.pendingTunaDice);
     }
 
     afterRoll(tunaDice = null) {
-        if (this.currentPlayer().landmarks["電波塔"] && !this.usedReroll) {
+        if (this.currentPlayer().landmarks[LANDMARK_NAMES.RADIO_TOWER] && !this.usedReroll) {
             this.phase = GAME_PHASES.REROLL_CONFIRM;
             this.pendingTunaDice = tunaDice;
         } else {
@@ -125,7 +125,7 @@ class GameManager {
 
     applyHarborOrIncome(tunaDice = null) {
         const useTwo = this.lastDice1 > 0 && this.lastDice2 > 0;
-        if (useTwo && this.currentPlayer().landmarks["港"] && this.lastDiceResult >= 10) {
+        if (useTwo && this.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] && this.lastDiceResult >= 10) {
             this.phase = GAME_PHASES.HARBOR_CHOICE;
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `⚓ 港効果：合計${this.lastDiceResult}に+2しますか？`);
@@ -172,7 +172,7 @@ class GameManager {
                     sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income;
             default: {
                 let amount = card.income;
-                if (owner.landmarks["ショッピングモール"] &&
+                if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
                     (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
                 return amount;
             }
@@ -210,7 +210,7 @@ class GameManager {
             for (const card of other.cards) {
                 if (other.isDormant(card)) continue;
                 if (card.color !== "red" || !card.diceNums.includes(dice)) continue;
-                if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks["港"]) continue;
+                if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks[LANDMARK_NAMES.HARBOR]) continue;
 
                 if (card.effect === CARD_EFFECTS.FRENCHR) {
                     const built = Object.values(current.landmarks).filter(v => v).length;
@@ -233,7 +233,7 @@ class GameManager {
                 }
 
                 let amount = card.income;
-                if (other.landmarks["ショッピングモール"] &&
+                if (other.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
                     (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
                 amount = Math.min(amount, current.coins);
                 current.coins -= amount;
@@ -257,11 +257,11 @@ class GameManager {
                     continue;
                 }
                 if (card.effect === CARD_EFFECTS.HARBOR) {
-                    if (!p.landmarks["港"]) continue;
+                    if (!p.landmarks[LANDMARK_NAMES.HARBOR]) continue;
                     p.coins += card.income;
                     this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${card.income}コイン`);
                 } else if (card.effect === CARD_EFFECTS.TUNA) {
-                    if (!p.landmarks["港"]) continue;
+                    if (!p.landmarks[LANDMARK_NAMES.HARBOR]) continue;
                     const t1 = tunaDice ? tunaDice[0] : Math.floor(Math.random() * 6) + 1;
                     const t2 = tunaDice ? tunaDice[1] : Math.floor(Math.random() * 6) + 1;
                     const earn = t1 + t2;
@@ -301,7 +301,7 @@ class GameManager {
             if (card.effect === CARD_EFFECTS.LOAN) continue;
             if (card.effect === CARD_EFFECTS.RENOVATION) {
                 const builtLandmarks = Object.entries(current.landmarks)
-                    .filter(([name, built]) => built && name !== "役所");
+                    .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
                 if (builtLandmarks.length > 0) {
                     this.pendingRenovation++;
                     this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋発動 → 戻すランドマークを選んでください`);
@@ -485,7 +485,7 @@ class GameManager {
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ
         while (this.pendingRenovation > 0) {
             const builtLandmarks = Object.entries(current.landmarks)
-                .filter(([name, built]) => built && name !== "役所");
+                .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
             if (builtLandmarks.length > 0) break;
             this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
             this.pendingRenovation--;
@@ -554,7 +554,7 @@ class GameManager {
 
     nextTurn() {
         const current = this.currentPlayer();
-        if (!this.builtThisTurn && current.landmarks["空港"]) {
+        if (!this.builtThisTurn && current.landmarks[LANDMARK_NAMES.AIRPORT]) {
             current.coins += 10;
             this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`);
         }

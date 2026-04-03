@@ -38,8 +38,14 @@ Card.js → Player.js → GameManager.js → CPU.js → ui.js → storage.js →
 #### `CARD_EFFECTS`（js/Card.js）
 `Object.freeze()` でフリーズされた文字列定数。`NORMAL`, `CHEESE`, `FURNITURE`, `MARKET`, `FLOWER`, `FOODWAREHOUSE`, `FEWLANDMARK`, `WINERY`, `MOVER`, `DRINKFACTORY`, `LOAN`, `RENOVATION`, `HARBOR`, `HARBOR_RED`, `TUNA`, `CORNFIELD`, `FRENCHR`, `MEMBERBAR`, `STADIUM`, `TV`, `BUSINESS`, `PUBLISHER`, `TAXOFFICE`, `CLEANING`, `ITSTARTUP`, `PARK`。新カード追加時は必ずここに追加してから使うこと（文字列リテラル直書き禁止）。
 
+#### `CARD_EFFECT_DESCRIPTIONS`（js/Card.js）
+`Object.freeze()` でフリーズされた説明文関数マップ。各エフェクトに対して `(income) => string` の関数が入っている。`ui.js` の `getEffectText(card)` が `CARD_EFFECT_DESCRIPTIONS[card.effect](card.income)` で参照する。新カード追加時は必ずここにも説明を追加すること。
+
 #### `CARD_CATEGORIES`（js/Card.js）
 `Object.freeze()` でフリーズされた分類定数。`FARM`（農園）・`LIVESTOCK`（畜産）・`INDUSTRY`（工業）・`RESTAURANT`（飲食店）・`SHOP`（商店）・`FISHERY`（海産）・`MAJOR`（大施設）。カテゴリ比較は必ずこれを使う（日本語文字列リテラル直書き禁止）。
+
+#### `LANDMARK_NAMES`（js/Player.js）
+`Object.freeze()` でフリーズされたランドマーク名定数。`STATION`（駅）・`SHOPPING_MALL`（ショッピングモール）・`AMUSEMENT_PARK`（遊園地）・`RADIO_TOWER`（電波塔）・`HARBOR`（港）・`AIRPORT`（空港）・`YAKUSHO`（役所）。ランドマーク名の比較・参照は必ずこれを使う（文字列リテラル直書き禁止）。`Player._LANDMARK_DEFS` の各エントリは `name`・`cost`・`emoji`・`effect` を持つ。`getLandmarkEmoji()`・`getLandmarkEffectText()` は `_LANDMARK_DEFS` を参照する。
 
 #### `GAME_PHASES`（js/GameManager.js）
 `Object.freeze()` でフリーズされたフェーズ定数。`ROLL`, `SELECT_DICE`, `REROLL_CONFIRM`, `HARBOR_CHOICE`, `PENDING`, `BUILD`。`this.phase` への代入・比較は必ずこれを使う。
@@ -48,7 +54,7 @@ Card.js → Player.js → GameManager.js → CPU.js → ui.js → storage.js →
 `Object.freeze()` でフリーズされたログ種別定数。`DICE`, `GAIN`, `LOSE`, `BUILD`, `SPECIAL`, `SYSTEM`, `ERROR`。`addLog(type, msg)` の第1引数はこれを使う。ログエントリは `{ type: string, message: string }` オブジェクト（文字列ではない）。
 
 ### server.js での定数利用
-`loadGameRuntime()` の vm.runInContext で `GAME_PHASES`・`CARD_CATEGORIES` をコンテキストからエクスポートしている。`getAllowedActions()` は `gameRuntime.GAME_PHASES` をデストラクチャして使う。
+`loadGameRuntime()` の vm.runInContext で `GAME_PHASES`・`CARD_CATEGORIES`・`LANDMARK_NAMES` をコンテキストからエクスポートしている。`getAllowedActions()` は `gameRuntime.GAME_PHASES` をデストラクチャして使う。
 
 ### ゲームフロー（GameManager のフェーズ遷移）
 
@@ -119,6 +125,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 - `js/Card.js` の `CARD_EFFECTS` に新 effect を追加してから `CARDS` 配列にカードを追加
 - `CARD_CATEGORIES` の既存分類を使う（新分類が必要なら `CARD_CATEGORIES` に追加）
+- `CARD_EFFECT_DESCRIPTIONS` に説明文関数を追加
 - `js/ui.js` の `CARD_SETS`（basic / plus / sharp）にも追加
 - `CPU.evalCard()` に新 effect のスコアロジックを追加
 - `GameManager.processIncome()` に発動ロジックを追加

@@ -17,17 +17,17 @@ class CPU {
         const livingCards = owner.cards.filter(c => !owner.isDormant(c));
 
         if (card.color === "blue") {
-            if (card.effect === CARD_EFFECTS.HARBOR) return owner.landmarks["港"] ? card.income : 0;
-            if (card.effect === CARD_EFFECTS.TUNA) return owner.landmarks["港"] ? 7 : 0;
+            if (card.effect === CARD_EFFECTS.HARBOR) return owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
+            if (card.effect === CARD_EFFECTS.TUNA) return owner.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0;
             return card.income;
         }
 
         if (card.color === "red") {
             if (isCurrentTurn) return 0;
-            if (card.effect === CARD_EFFECTS.HARBOR_RED) return roller.landmarks["港"] ? card.income : 0;
+            if (card.effect === CARD_EFFECTS.HARBOR_RED) return roller.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
             if (card.effect === CARD_EFFECTS.FRENCHR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 2 ? card.income : 0;
             if (card.effect === CARD_EFFECTS.MEMBERBAR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 3 ? Math.max(roller.coins, 4) : 0;
-            return card.income + (roller.landmarks["ショッピングモール"] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0);
+            return card.income + (roller.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0);
         }
 
         if (!isCurrentTurn) return 0;
@@ -67,7 +67,7 @@ class CPU {
                 return 2;
             default: {
                 let amount = card.income;
-                if (owner.landmarks["ショッピングモール"] &&
+                if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
                     (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
                 return amount;
             }
@@ -209,11 +209,11 @@ class CPU {
             case CARD_EFFECTS.TAXOFFICE:
                 return opponents.filter(p => p.coins >= 10).length * 5;
             case CARD_EFFECTS.HARBOR:
-                return player.landmarks["港"] ? card.income : card.income * 0.4;
+                return player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : card.income * 0.4;
             case CARD_EFFECTS.HARBOR_RED:
-                return player.landmarks["港"] ? card.income : 0;
+                return player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
             case CARD_EFFECTS.TUNA:
-                return player.landmarks["港"] ? 7 : 0;
+                return player.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0;
             case CARD_EFFECTS.LOAN:
                 return 1;
             case CARD_EFFECTS.ITSTARTUP:
@@ -264,17 +264,17 @@ class CPU {
         const opponentMaxBuilt = Math.max(0, ...game.players
             .filter(p => p !== current)
             .map(p => Object.values(p.landmarks).filter(Boolean).length));
-        if (name === "駅") return builtCount < 2 ? 8 : 5;
-        if (name === "ショッピングモール") return current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
-        if (name === "港") return current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
-        if (name === "電波塔") return builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
-        if (name === "遊園地") return current.landmarks["駅"] ? 5 : 2;
-        if (name === "空港") return builtCount >= 4 ? 6 : 1;
+        if (name === LANDMARK_NAMES.STATION)       return builtCount < 2 ? 8 : 5;
+        if (name === LANDMARK_NAMES.SHOPPING_MALL)  return current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
+        if (name === LANDMARK_NAMES.HARBOR)         return current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
+        if (name === LANDMARK_NAMES.RADIO_TOWER)    return builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
+        if (name === LANDMARK_NAMES.AMUSEMENT_PARK) return current.landmarks[LANDMARK_NAMES.STATION] ? 5 : 2;
+        if (name === LANDMARK_NAMES.AIRPORT)        return builtCount >= 4 ? 6 : 1;
         return 0;
     }
 
     _maybeBuyLandmark(current, game, reserve = 0, minUrgency = 0) {
-        const landmarkPriority = ["駅", "ショッピングモール", "港", "電波塔", "遊園地", "空港"];
+        const landmarkPriority = [LANDMARK_NAMES.STATION, LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.HARBOR, LANDMARK_NAMES.RADIO_TOWER, LANDMARK_NAMES.AMUSEMENT_PARK, LANDMARK_NAMES.AIRPORT];
         let best = null;
         for (const name of landmarkPriority) {
             const cost = Player.landmarkCost(name);

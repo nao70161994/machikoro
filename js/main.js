@@ -596,7 +596,7 @@ function sendAction(action, data = {}) {
 
 function onRoll() {
     playSound('dice');
-    if (game.currentPlayer().landmarks["駅"]) {
+    if (game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
         // 駅あり：アニメーションなしで即座に選択肢を表示
         game.rollDice(null, null);
         sendAction('rollDice', { forceDice: null, tunaDice: null });
@@ -738,7 +738,7 @@ function onSkip() {
     let msg;
     if (game.builtThisTurn) {
         msg = "建設完了・ターン終了しますか？";
-    } else if (game.currentPlayer().landmarks["空港"]) {
+    } else if (game.currentPlayer().landmarks[LANDMARK_NAMES.AIRPORT]) {
         msg = "建設せずにターン終了しますか？\n✈️ 空港効果で+10コイン獲得します";
     } else {
         msg = "建設せずにターン終了しますか？";

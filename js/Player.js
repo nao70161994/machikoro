@@ -1,3 +1,13 @@
+const LANDMARK_NAMES = Object.freeze({
+    STATION:        "駅",
+    SHOPPING_MALL:  "ショッピングモール",
+    AMUSEMENT_PARK: "遊園地",
+    RADIO_TOWER:    "電波塔",
+    HARBOR:         "港",
+    AIRPORT:        "空港",
+    YAKUSHO:        "役所",
+});
+
 class Player {
     constructor(name) {
         this.name = name;
@@ -52,10 +62,10 @@ class Player {
 }
 
 Player._LANDMARK_DEFS = [
-    { name: "駅",             cost: 4  },
-    { name: "ショッピングモール", cost: 10 },
-    { name: "遊園地",         cost: 16 },
-    { name: "電波塔",         cost: 22 },
-    { name: "港",             cost: 2  },
-    { name: "空港",           cost: 30 },
+    { name: LANDMARK_NAMES.STATION,        cost: 4,  emoji: "🚉",  effect: "サイコロを1個か2個か選べる" },
+    { name: LANDMARK_NAMES.SHOPPING_MALL,  cost: 10, emoji: "🛍️", effect: "飲食店・商店の収入+1" },
+    { name: LANDMARK_NAMES.AMUSEMENT_PARK, cost: 16, emoji: "🎡", effect: "ゾロ目でもう1ターン" },
+    { name: LANDMARK_NAMES.RADIO_TOWER,    cost: 22, emoji: "📡", effect: "1ターン1回振り直せる" },
+    { name: LANDMARK_NAMES.HARBOR,         cost: 2,  emoji: "⚓",  effect: "ダイス合計10以上で+2選択可" },
+    { name: LANDMARK_NAMES.AIRPORT,        cost: 30, emoji: "✈️", effect: "建設しないターンに+10コイン" },
 ];

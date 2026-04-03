@@ -133,7 +133,7 @@ function getTutorialHints(current) {
         .filter(([name, built]) =>
             enabledLandmarks.has(name) &&
             !built &&
-            name !== "役所" &&
+            name !== LANDMARK_NAMES.YAKUSHO &&
             current.coins >= Player.landmarkCost(name)
         )
         .sort((a, b) => Player.landmarkCost(a[0]) - Player.landmarkCost(b[0]));
@@ -156,17 +156,17 @@ function getTutorialMessage() {
         };
     }
     if (isCPUTurn) return { title: `${levelText}ガイド`, body: `${current.name}はCPUです。処理が終わるまで待ちます。ログで収入差を確認してください。`, tags: ['CPUターン'] };
-    if (game.phase === "roll") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "サイコロ前です。自分の発動帯と相手の赤カード帯を見て、今回は安全重視か上振れ狙いかを決めます。" : "サイコロを振って収入処理を開始します。赤・青・緑・紫の順に効果が解決されます。", tags: ['サイコロ前', `所持 ${current.coins}コイン`] };
-    if (game.phase === "selectDice") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "駅の選択です。2個は高コスト緑や港・遊園地と相性が良い一方、赤カード帯にも入りやすくなります。" : "駅の効果です。1個なら安全、2個なら高い出目や港・遊園地を狙えます。", tags: ['駅', '1個/2個選択'] };
-    if (game.phase === "rerollConfirm") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? `電波塔です。現在 ${game.lastDiceResult}。自分の緑紫発動と相手の赤発動の損得差で判断します。` : `電波塔の効果です。現在の出目 ${game.lastDiceResult} を使うか、振り直すか決めてください。`, tags: ['電波塔', `現在 ${game.lastDiceResult}`] };
-    if (game.phase === "harborChoice") return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? `港の選択です。合計 ${game.lastDiceResult} を ${game.lastDiceResult + 2} に寄せることで、発動する青緑赤の帯がどう変わるか確認します。` : `港の効果です。合計 ${game.lastDiceResult} に +2 して有利な発動帯へ寄せられるか確認してください。`, tags: ['港', `候補 ${game.lastDiceResult}/${game.lastDiceResult + 2}`] };
+    if (game.phase === GAME_PHASES.ROLL) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "サイコロ前です。自分の発動帯と相手の赤カード帯を見て、今回は安全重視か上振れ狙いかを決めます。" : "サイコロを振って収入処理を開始します。赤・青・緑・紫の順に効果が解決されます。", tags: ['サイコロ前', `所持 ${current.coins}コイン`] };
+    if (game.phase === GAME_PHASES.SELECT_DICE) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "駅の選択です。2個は高コスト緑や港・遊園地と相性が良い一方、赤カード帯にも入りやすくなります。" : "駅の効果です。1個なら安全、2個なら高い出目や港・遊園地を狙えます。", tags: ['駅', '1個/2個選択'] };
+    if (game.phase === GAME_PHASES.REROLL_CONFIRM) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? `電波塔です。現在 ${game.lastDiceResult}。自分の緑紫発動と相手の赤発動の損得差で判断します。` : `電波塔の効果です。現在の出目 ${game.lastDiceResult} を使うか、振り直すか決めてください。`, tags: ['電波塔', `現在 ${game.lastDiceResult}`] };
+    if (game.phase === GAME_PHASES.HARBOR_CHOICE) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? `港の選択です。合計 ${game.lastDiceResult} を ${game.lastDiceResult + 2} に寄せることで、発動する青緑赤の帯がどう変わるか確認します。` : `港の効果です。合計 ${game.lastDiceResult} に +2 して有利な発動帯へ寄せられるか確認してください。`, tags: ['港', `候補 ${game.lastDiceResult}/${game.lastDiceResult + 2}`] };
     if (game.pendingTV > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "テレビ局です。最多所持コインだけでなく、次ターンに大型建設へ届く相手を崩すと効果的です。" : "テレビ局です。所持コインが多い相手を選ぶと効率が高いです。", tags: ['テレビ局'] };
     if (game.pendingBusiness > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "ビジネスセンターです。休業中カードを押し付けるか、高コスト施設を奪うかで盤面差を作れます。" : "ビジネスセンターです。同名カードでも個別に選べます。休業中カードを渡すかも含めて選んでください。", tags: ['ビジネスセンター', '個別選択'] };
     if (game.pendingCleaning > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "清掃業です。枚数が多い施設名を止めると収入差を広げやすいです。次の出目帯も意識してください。" : "清掃業です。選んだ名前の施設は全員分まとめて休業になります。枚数が多い施設を狙うと得です。", tags: ['清掃業'] };
     if (game.pendingMover > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "引越し屋です。低効率施設や休業中施設を渡して+4しつつ、相手の次ターン期待値を調整できます。" : "引越し屋です。休業中カードも渡せます。渡した先でも休業状態はそのまま残ります。", tags: ['引越し屋', '+4コイン'] };
     if (game.pendingRenovation > 0) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "改装屋です。建て直し優先度の低いランドマークを戻して、今ターンの購入効率を優先します。" : "改装屋です。今すぐ8コインが欲しいときに、優先度の低いランドマークを戻します。", tags: ['改装屋', '+8コイン'] };
     if (game.pendingIT) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "ITベンチャーです。奪取予定人数と次巡の安全性を見て、積立を厚くするか判断します。" : "ITベンチャーです。1コイン積み立てると、次回以降の奪取額が増えます。", tags: ['ITベンチャー'] };
-    if (game.phase === "build") {
+    if (game.phase === GAME_PHASES.BUILD) {
         if (game.builtThisTurn) return { title: `${levelText}ガイド`, body: tutorialLevel === 'advanced' ? "建設済みです。ログ要約を見て、このターンの収支が狙い通りだったか確認してから終了します。" : "このターンの建設は終わっています。問題なければターン終了してください。", tags: ['建設済み'] };
         const { affordableCards, affordableLandmarks } = getTutorialHints(current);
         if (!affordableCards.length && !affordableLandmarks.length) {
@@ -290,14 +290,14 @@ function render() {
 
     document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    if (game.phase === "roll" && game.currentPlayerIndex !== prevPlayerIndex) {
+    if (game.phase === GAME_PHASES.ROLL && game.currentPlayerIndex !== prevPlayerIndex) {
         if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
         prevPlayerIndex = game.currentPlayerIndex;
     }
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    document.getElementById("btnRoll").disabled = game.phase !== "roll" || isCPUTurn || !isMyTurn;
+    document.getElementById("btnRoll").disabled = game.phase !== GAME_PHASES.ROLL || isCPUTurn || !isMyTurn;
     const btnSkip = document.getElementById("btnSkip");
-    btnSkip.disabled = game.phase !== "build" || isCPUTurn || game.pendingRenovation > 0 || !isMyTurn;
+    btnSkip.disabled = game.phase !== GAME_PHASES.BUILD || isCPUTurn || game.pendingRenovation > 0 || !isMyTurn;
     btnSkip.textContent = game.builtThisTurn ? "建設完了・ターン終了" : "建設しないでターン終了";
     document.getElementById("btnReroll").style.display = "none";
 
@@ -327,15 +327,15 @@ function renderDiceChoose() {
     const el = document.getElementById("diceChoose");
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     if (!isMyTurn) { el.innerHTML = ""; return; }
-    if (game.phase === "selectDice") {
+    if (game.phase === GAME_PHASES.SELECT_DICE) {
         el.innerHTML = `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button onclick="onSelectDiceCount(false)">🎲 1個</button><button onclick="onSelectDiceCount(true)">🎲🎲 2個（合計を使う）</button></div>`;
         return;
     }
-    if (game.phase === "rerollConfirm") {
+    if (game.phase === GAME_PHASES.REROLL_CONFIRM) {
         el.innerHTML = `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button onclick="onReroll()">振り直す</button><button onclick="onSkipReroll()">このまま使う</button></div>`;
         return;
     }
-    if (game.phase === "harborChoice") {
+    if (game.phase === GAME_PHASES.HARBOR_CHOICE) {
         el.innerHTML = `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button onclick="onResolveHarbor(true)">+2する（→${game.lastDiceResult + 2}）</button><button onclick="onResolveHarbor(false)">そのまま使う（${game.lastDiceResult}）</button></div>`;
         return;
     }
@@ -346,7 +346,7 @@ function renderPending() {
     const el = document.getElementById("pendingMenu");
     const modal = document.getElementById("pendingModal");
     const hide = () => { el.innerHTML = ""; modal.style.display = "none"; };
-    if (game.phase !== "pending" && !game.pendingIT && game.pendingRenovation <= 0) { hide(); return; }
+    if (game.phase !== GAME_PHASES.PENDING && !game.pendingIT && game.pendingRenovation <= 0) { hide(); return; }
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     if (!isMyTurn) { hide(); return; }
     let html = "";
@@ -356,14 +356,14 @@ function renderPending() {
     }
     if (game.pendingBusiness > 0) {
         const current = game.currentPlayer();
-        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
+        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== CARD_CATEGORIES.MAJOR);
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         const myDefaultIdx = myCards[0]?.index ?? 0;
         const myChips = myCards.map(({ card, index }, j) =>
             `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'myCardSelect')">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
         ).join("");
         const othersHtml = others.map(({ p, i }) => {
-            const theirCards = p.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
+            const theirCards = p.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== CARD_CATEGORIES.MAJOR);
             const theirDefaultIdx = theirCards[0]?.index ?? 0;
             const theirChips = theirCards.map(({ card, index }, j) =>
                 `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'theirCardSelect_${i}')">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
@@ -373,18 +373,18 @@ function renderPending() {
         html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
     }
     if (game.pendingCleaning > 0) {
-        const allCardNames = [...new Set(game.players.flatMap(p => p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).map(c => c.name)))];
+        const allCardNames = [...new Set(game.players.flatMap(p => p.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(c)).map(c => c.name)))];
         html += `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button onclick="onResolveCleaning('${name}')">${name}</button>`).join("")}</div>`;
     }
     if (game.pendingMover > 0) {
         const current = game.currentPlayer();
-        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== "大施設");
+        const myCards = current.cards.map((card, index) => ({ card, index })).filter(({ card }) => card.category !== CARD_CATEGORIES.MAJOR);
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         html += `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button onclick="onResolveMover(${i})">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
     }
     if (game.pendingRenovation > 0) {
         const current = game.currentPlayer();
-        const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== "役所").map(([name]) => name);
+        const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO).map(([name]) => name);
         html += `<div class="pending-box"><p>🔨 改装屋：取り壊すランドマークを選んでください（+8コイン）</p>${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button onclick="onResolveRenovation('${name}')">${name}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
     }
     if (game.pendingIT) {
@@ -425,66 +425,26 @@ function renderPlayers() {
 }
 
 function getEffectText(card) {
-    switch(card.effect) {
-        case CARD_EFFECTS.CHEESE: return "牧場1軒につき+" + card.income + "コイン";
-        case CARD_EFFECTS.FURNITURE: return "森林・鉱山1軒につき+" + card.income + "コイン";
-        case CARD_EFFECTS.MARKET: return "農園系1軒につき+" + card.income + "コイン";
-        case CARD_EFFECTS.FLOWER: return "花畑1軒につき+" + card.income + "コイン";
-        case CARD_EFFECTS.FOODWAREHOUSE: return "飲食店1軒につき+" + card.income + "コイン";
-        case CARD_EFFECTS.STADIUM: return "全員から" + card.income + "コイン奪う";
-        case CARD_EFFECTS.TV: return "任意の1人から" + card.income + "コイン奪う";
-        case CARD_EFFECTS.BUSINESS: return "大施設以外を他プレイヤーと交換";
-        case CARD_EFFECTS.PUBLISHER: return "全員の飲食店・商店1軒につき1コイン奪う";
-        case CARD_EFFECTS.TAXOFFICE: return "10コイン以上の全員から半分奪う";
-        case CARD_EFFECTS.HARBOR: return "港あり：+" + card.income + "コイン";
-        case CARD_EFFECTS.HARBOR_RED: return "港あり：相手から" + card.income + "コイン奪う";
-        case CARD_EFFECTS.TUNA: return "港あり：ダイス2個分コイン";
-        case CARD_EFFECTS.CORNFIELD:
-        case CARD_EFFECTS.FEWLANDMARK: return "ランドマーク0-1軒なら+1コイン";
-        case CARD_EFFECTS.RENOVATION: return "ランドマーク1軒を戻して+8コイン";
-        case CARD_EFFECTS.LOAN: return "建設時+5コイン・5か6が出たら-2コイン";
-        case CARD_EFFECTS.WINERY: return "ブドウ園1軒につき+6コイン（自身休業）";
-        case CARD_EFFECTS.MOVER: return "大施設以外を相手に渡して+4コイン";
-        case CARD_EFFECTS.DRINKFACTORY: return "全員の飲食店1軒につき+1コイン";
-        case CARD_EFFECTS.FRENCHR: return "相手ランドマーク2軒以上なら5コイン奪う";
-        case CARD_EFFECTS.MEMBERBAR: return "相手ランドマーク3軒以上なら全コイン奪う";
-        case CARD_EFFECTS.CLEANING: return "施設1種を休業にして休業数コイン獲得";
-        case CARD_EFFECTS.ITSTARTUP: return "ターン終了時1コイン積立・全員から積立額奪う";
-        case CARD_EFFECTS.PARK: return "全員のコインを均等分配";
-        default:
-            if (card.color === "red") return "相手から" + card.income + "コイン奪う";
-            return "+" + card.income + "コイン";
-    }
+    const fn = CARD_EFFECT_DESCRIPTIONS[card.effect];
+    if (fn) return fn(card.income);
+    if (card.color === "red") return "相手から" + card.income + "コイン奪う";
+    return "+" + card.income + "コイン";
 }
 
 function getLandmarkEffectText(name) {
-    return {
-        "駅": "サイコロを1個か2個か選べる",
-        "ショッピングモール": "飲食店・商店の収入+1",
-        "遊園地": "ゾロ目でもう1ターン",
-        "電波塔": "1ターン1回振り直せる",
-        "港": "ダイス合計10以上で+2選択可",
-        "空港": "建設しないターンに+10コイン",
-    }[name] || "";
+    return (Player._LANDMARK_DEFS.find(d => d.name === name) || {}).effect || "";
 }
 
 function getLandmarkEmoji(name) {
-    return {
-        "駅": "🚉",
-        "ショッピングモール": "🛍️",
-        "遊園地": "🎡",
-        "電波塔": "📡",
-        "港": "⚓",
-        "空港": "✈️",
-        "役所": "🏛️",
-    }[name] || "🏛️";
+    if (name === LANDMARK_NAMES.YAKUSHO) return "🏛️";
+    return (Player._LANDMARK_DEFS.find(d => d.name === name) || {}).emoji || "🏛️";
 }
 
 function renderBuildMenu() {
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    const canBuild = game.phase === "build" && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
+    const canBuild = game.phase === GAME_PHASES.BUILD && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
     const COLOR_ORDER = { blue: 0, green: 1, red: 2, purple: 3 };
     const sortedCards = [...CARDS].sort((a, b) => {
         const cd = (COLOR_ORDER[a.color] ?? 9) - (COLOR_ORDER[b.color] ?? 9);

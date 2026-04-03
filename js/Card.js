@@ -107,6 +107,34 @@ CARDS.push(new Card("清掃業",     4, [8],     0, "purple", CARD_CATEGORIES.MA
 CARDS.push(new Card("ITベンチャー",1,[10],    0, "purple", CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.ITSTARTUP));
 CARDS.push(new Card("公園",       3, [11,12,13],0,"purple",CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.PARK));
 
+const CARD_EFFECT_DESCRIPTIONS = Object.freeze({
+    [CARD_EFFECTS.CHEESE]:       (i) => `牧場1軒につき+${i}コイン`,
+    [CARD_EFFECTS.FURNITURE]:    (i) => `森林・鉱山1軒につき+${i}コイン`,
+    [CARD_EFFECTS.MARKET]:       (i) => `農園系1軒につき+${i}コイン`,
+    [CARD_EFFECTS.FLOWER]:       (i) => `花畑1軒につき+${i}コイン`,
+    [CARD_EFFECTS.FOODWAREHOUSE]:(i) => `飲食店1軒につき+${i}コイン`,
+    [CARD_EFFECTS.STADIUM]:      (i) => `全員から${i}コイン奪う`,
+    [CARD_EFFECTS.TV]:           (i) => `任意の1人から${i}コイン奪う`,
+    [CARD_EFFECTS.BUSINESS]:     ()  => `大施設以外を他プレイヤーと交換`,
+    [CARD_EFFECTS.PUBLISHER]:    ()  => `全員の飲食店・商店1軒につき1コイン奪う`,
+    [CARD_EFFECTS.TAXOFFICE]:    ()  => `10コイン以上の全員から半分奪う`,
+    [CARD_EFFECTS.HARBOR]:       (i) => `港あり：+${i}コイン`,
+    [CARD_EFFECTS.HARBOR_RED]:   (i) => `港あり：相手から${i}コイン奪う`,
+    [CARD_EFFECTS.TUNA]:         ()  => `港あり：ダイス2個分コイン`,
+    [CARD_EFFECTS.CORNFIELD]:    ()  => `ランドマーク0-1軒なら+1コイン`,
+    [CARD_EFFECTS.FEWLANDMARK]:  ()  => `ランドマーク0-1軒なら+1コイン`,
+    [CARD_EFFECTS.RENOVATION]:   ()  => `ランドマーク1軒を戻して+8コイン`,
+    [CARD_EFFECTS.LOAN]:         ()  => `建設時+5コイン・5か6が出たら-2コイン`,
+    [CARD_EFFECTS.WINERY]:       ()  => `ブドウ園1軒につき+6コイン（自身休業）`,
+    [CARD_EFFECTS.MOVER]:        ()  => `大施設以外を相手に渡して+4コイン`,
+    [CARD_EFFECTS.DRINKFACTORY]: ()  => `全員の飲食店1軒につき+1コイン`,
+    [CARD_EFFECTS.FRENCHR]:      ()  => `相手ランドマーク2軒以上なら5コイン奪う`,
+    [CARD_EFFECTS.MEMBERBAR]:    ()  => `相手ランドマーク3軒以上なら全コイン奪う`,
+    [CARD_EFFECTS.CLEANING]:     ()  => `施設1種を休業にして休業数コイン獲得`,
+    [CARD_EFFECTS.ITSTARTUP]:    ()  => `ターン終了時1コイン積立・全員から積立額奪う`,
+    [CARD_EFFECTS.PARK]:         ()  => `全員のコインを均等分配`,
+});
+
 function cloneCard(card) {
     if (!card) return null;
     return new Card(card.name, card.cost, [...card.diceNums], card.income, card.color, card.category, card.effect);
