@@ -255,7 +255,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName;',
+        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.GAME_PHASES = GAME_PHASES; this.CARD_CATEGORIES = CARD_CATEGORIES;',
         context
     );
     return context;
@@ -386,7 +386,7 @@ function isPlayerIndex(value, game) {
 }
 
 function hasPendingAction(game, action) {
-    if (game.phase !== 'pending') return false;
+    if (game.phase !== gameRuntime.GAME_PHASES.PENDING) return false;
     if (action === 'resolveBusiness') return game.pendingBusiness > 0;
     if (action === 'resolveCleaning') return game.pendingCleaning > 0;
     if (action === 'resolveMover') return game.pendingMover > 0;
@@ -529,17 +529,18 @@ function validateGameAction(room, socket, action, data) {
 }
 
 function getAllowedActions(game) {
+    const { ROLL, SELECT_DICE, REROLL_CONFIRM, HARBOR_CHOICE, PENDING, BUILD } = gameRuntime.GAME_PHASES;
     if (game.pendingIT) return new Set(['resolveIT']);
     switch (game.phase) {
-        case 'roll':
+        case ROLL:
             return new Set(['rollDice']);
-        case 'selectDice':
+        case SELECT_DICE:
             return new Set(['selectDice']);
-        case 'rerollConfirm':
+        case REROLL_CONFIRM:
             return new Set(['rerollDice', 'skipReroll']);
-        case 'harborChoice':
+        case HARBOR_CHOICE:
             return new Set(['resolveHarbor']);
-        case 'pending': {
+        case PENDING: {
             const actions = new Set();
             if (game.pendingTV > 0) actions.add('resolveTV');
             if (game.pendingBusiness > 0) actions.add('resolveBusiness');
@@ -548,7 +549,7 @@ function getAllowedActions(game) {
             if (game.pendingRenovation > 0) actions.add('resolveRenovation');
             return actions;
         }
-        case 'build':
+        case BUILD:
             return new Set(['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild']);
         default:
             return new Set();

@@ -11,7 +11,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS; this.LOG_TYPES = LOG_TYPES;',
+        'this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS; this.LOG_TYPES = LOG_TYPES; this.GAME_PHASES = GAME_PHASES; this.CARD_CATEGORIES = CARD_CATEGORIES;',
         context
     );
     return context;

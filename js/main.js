@@ -233,7 +233,7 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "roll",
         run(cpu) {
-            if (game.phase !== "roll") return;
+            if (game.phase !== GAME_PHASES.ROLL) return;
             const forceDice = Math.floor(Math.random() * 6) + 1;
             const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
             cpuDo('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
@@ -242,7 +242,7 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "selectDice",
         run(cpu) {
-            if (game.phase !== "selectDice") return;
+            if (game.phase !== GAME_PHASES.SELECT_DICE) return;
             const useTwo = cpu.chooseDiceCount(game);
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
@@ -253,7 +253,7 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "rerollConfirm",
         run(cpu) {
-            if (game.phase !== "rerollConfirm") return;
+            if (game.phase !== GAME_PHASES.REROLL_CONFIRM) return;
             if (cpu.chooseReroll(game)) {
                 const forceDice = Math.floor(Math.random() * 6) + 1;
                 const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
@@ -266,7 +266,7 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "harborChoice",
         run(cpu) {
-            if (game.phase !== "harborChoice") return;
+            if (game.phase !== GAME_PHASES.HARBOR_CHOICE) return;
             const useBonus = cpu.chooseHarbor(game);
             cpuDo('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
         },
@@ -274,17 +274,17 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "pending",
         run(cpu) {
-            if (game.phase !== "pending") return;
+            if (game.phase !== GAME_PHASES.PENDING) return;
             if (game.pendingTV > 0) {
                 const targetIndex = cpu.chooseTVTarget(game);
                 cpuDo('resolveTV', { targetIndex }, () => game.resolveTV(targetIndex));
             }
             if (game.pendingBusiness > 0) {
                 const cur = game.currentPlayer();
-                const myCards = cur.cards.filter(c => c.category !== "大施設");
+                const myCards = cur.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === game.currentPlayerIndex) continue;
-                    const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
+                    const theirCards = game.players[i].cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
                     if (theirCards.length === 0) continue;
                     const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                     const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
@@ -297,7 +297,7 @@ const CPU_PHASE_HANDLERS = [
             }
             if (game.pendingCleaning > 0) {
                 const allNames = [...new Set(game.players.flatMap(p =>
-                    p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).map(c => c.name)))];
+                    p.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(c)).map(c => c.name)))];
                 if (allNames.length > 0) {
                     const cardName = allNames[Math.floor(Math.random() * allNames.length)];
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
@@ -305,7 +305,7 @@ const CPU_PHASE_HANDLERS = [
             }
             if (game.pendingMover > 0) {
                 const cur = game.currentPlayer();
-                const myCards = cur.cards.filter(c => c.category !== "大施設");
+                const myCards = cur.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
                 const others = game.players.map((p, i) => i).filter(i => i !== game.currentPlayerIndex);
                 if (myCards.length > 0 && others.length > 0) {
                     const cardIndex = cur.cards.indexOf(myCards[0]);
@@ -327,7 +327,7 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "build",
         run(cpu) {
-            if (game.phase !== "build") return;
+            if (game.phase !== GAME_PHASES.BUILD) return;
             cpu.build(game, SHOP_STOCK);
             render();
         },
@@ -335,7 +335,7 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "nextTurn",
         run(cpu) {
-            if (game.phase !== "build" || game.pendingIT) return;
+            if (game.phase !== GAME_PHASES.BUILD || game.pendingIT) return;
             cpuDo('nextTurn', {}, () => game.nextTurn());
         },
     },

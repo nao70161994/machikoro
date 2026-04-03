@@ -8,6 +8,15 @@ const LOG_TYPES = Object.freeze({
     ERROR:   "error",
 });
 
+const GAME_PHASES = Object.freeze({
+    ROLL:           "roll",
+    SELECT_DICE:    "selectDice",
+    REROLL_CONFIRM: "rerollConfirm",
+    HARBOR_CHOICE:  "harborChoice",
+    PENDING:        "pending",
+    BUILD:          "build",
+});
+
 class GameManager {
     constructor(playerCount) {
         this.players = [];
@@ -15,7 +24,7 @@ class GameManager {
         this.lastDiceResult = 0;
         this.lastDice1 = 0;
         this.lastDice2 = 0;
-        this.phase = "roll";
+        this.phase = GAME_PHASES.ROLL;
         this.log = [];
         this.builtThisTurn = false;
         this.pendingTV = 0;
@@ -32,8 +41,8 @@ class GameManager {
 
         for (let i = 0; i < playerCount; i++) {
             const p = new Player(`プレイヤー${i + 1}`);
-            p.addCard(new Card("麦畑", 1, [1], 1, "blue", "農園", "normal"));
-            p.addCard(new Card("パン屋", 1, [2,3], 1, "green", "飲食店", "normal"));
+            p.addCard(createCardByName("麦畑"));
+            p.addCard(createCardByName("パン屋"));
             this.players.push(p);
         }
 
@@ -45,15 +54,15 @@ class GameManager {
         if (!player) return null;
         if (Number.isInteger(ref)) {
             const card = player.cards[ref];
-            return (card && card.category !== "大施設") ? card : null;
+            return (card && card.category !== CARD_CATEGORIES.MAJOR) ? card : null;
         }
-        return player.cards.find(c => c.name === ref && c.category !== "大施設") || null;
+        return player.cards.find(c => c.name === ref && c.category !== CARD_CATEGORIES.MAJOR) || null;
     }
 
     rollDice(forceDice = null, tunaDice = null) {
-        if (this.phase !== "roll") return;
+        if (this.phase !== GAME_PHASES.ROLL) return;
         if (this.currentPlayer().landmarks["駅"]) {
-            this.phase = "selectDice";
+            this.phase = GAME_PHASES.SELECT_DICE;
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `🚉 駅：1個か2個か選んでください`);
         } else {
@@ -68,7 +77,7 @@ class GameManager {
     }
 
     selectDiceCount(useTwo, forceDice1 = null, forceDice2 = null, tunaDice = null) {
-        if (this.phase !== "selectDice") return;
+        if (this.phase !== GAME_PHASES.SELECT_DICE) return;
         if (useTwo) {
             const d1 = forceDice1 !== null ? forceDice1 : Math.floor(Math.random() * 6) + 1;
             const d2 = forceDice2 !== null ? forceDice2 : Math.floor(Math.random() * 6) + 1;
@@ -90,7 +99,7 @@ class GameManager {
 
     afterRoll(tunaDice = null) {
         if (this.currentPlayer().landmarks["電波塔"] && !this.usedReroll) {
-            this.phase = "rerollConfirm";
+            this.phase = GAME_PHASES.REROLL_CONFIRM;
             this.pendingTunaDice = tunaDice;
         } else {
             this.applyHarborOrIncome(tunaDice);
@@ -98,26 +107,26 @@ class GameManager {
     }
 
     rerollDice(forceDice = null, tunaDice = null) {
-        if (this.phase !== "rerollConfirm") return;
+        if (this.phase !== GAME_PHASES.REROLL_CONFIRM) return;
         this.usedReroll = true;
         this.lastDiceResult = 0;
         this.lastDice1 = 0;
         this.lastDice2 = 0;
         this.log = [];
         this.addLog(LOG_TYPES.DICE, "📡 電波塔で振り直します");
-        this.phase = "roll";
+        this.phase = GAME_PHASES.ROLL;
         this.rollDice(forceDice, tunaDice);
     }
 
     skipReroll() {
-        if (this.phase !== "rerollConfirm") return;
+        if (this.phase !== GAME_PHASES.REROLL_CONFIRM) return;
         this.applyHarborOrIncome(this.pendingTunaDice);
     }
 
     applyHarborOrIncome(tunaDice = null) {
         const useTwo = this.lastDice1 > 0 && this.lastDice2 > 0;
         if (useTwo && this.currentPlayer().landmarks["港"] && this.lastDiceResult >= 10) {
-            this.phase = "harborChoice";
+            this.phase = GAME_PHASES.HARBOR_CHOICE;
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `⚓ 港効果：合計${this.lastDiceResult}に+2しますか？`);
         } else {
@@ -146,11 +155,11 @@ class GameManager {
             case CARD_EFFECTS.FURNITURE:
                 return (owner.countCard("森林") + owner.countCard("鉱山")) * card.income;
             case CARD_EFFECTS.MARKET:
-                return owner.cards.filter(c => c.category === "農園" && !owner.isDormant(c)).length * card.income;
+                return owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !owner.isDormant(c)).length * card.income;
             case CARD_EFFECTS.FLOWER:
                 return owner.countCard("花畑") * card.income;
             case CARD_EFFECTS.FOODWAREHOUSE:
-                return owner.cards.filter(c => c.category === "飲食店" && !owner.isDormant(c)).length * card.income;
+                return owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income;
             case CARD_EFFECTS.FEWLANDMARK:
             case CARD_EFFECTS.CORNFIELD: {
                 const built = Object.values(owner.landmarks).filter(v => v).length;
@@ -160,11 +169,11 @@ class GameManager {
                 return owner.cards.filter(c => c.name === "ブドウ園" && !owner.isDormant(c)).length * card.income;
             case CARD_EFFECTS.DRINKFACTORY:
                 return game.players.reduce((sum, p) =>
-                    sum + p.cards.filter(c => c.category === "飲食店" && !p.isDormant(c)).length, 0) * card.income;
+                    sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income;
             default: {
                 let amount = card.income;
                 if (owner.landmarks["ショッピングモール"] &&
-                    (card.category === "飲食店" || card.category === "商店")) amount += 1;
+                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
                 return amount;
             }
         }
@@ -188,9 +197,9 @@ class GameManager {
 
         if (!this.pendingTV && !this.pendingBusiness &&
             !this.pendingCleaning && !this.pendingMover && !this.pendingRenovation) {
-            this.phase = "build";
+            this.phase = GAME_PHASES.BUILD;
         } else {
-            this.phase = "pending";
+            this.phase = GAME_PHASES.PENDING;
         }
     }
 
@@ -225,7 +234,7 @@ class GameManager {
 
                 let amount = card.income;
                 if (other.landmarks["ショッピングモール"] &&
-                    (card.category === "飲食店" || card.category === "商店")) amount += 1;
+                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
                 amount = Math.min(amount, current.coins);
                 current.coins -= amount;
                 other.coins += amount;
@@ -346,7 +355,7 @@ class GameManager {
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
                     const count = this.players[i].cards.filter(
-                        c => (c.category === "飲食店" || c.category === "商店") && !this.players[i].isDormant(c)).length;
+                        c => (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP) && !this.players[i].isDormant(c)).length;
                     const steal = Math.min(count, this.players[i].coins);
                     this.players[i].coins -= steal;
                     total += steal;
@@ -489,7 +498,7 @@ class GameManager {
         if (this.pendingTV <= 0 && this.pendingBusiness <= 0 &&
             this.pendingCleaning <= 0 && this.pendingMover <= 0 &&
             this.pendingRenovation <= 0) {
-            this.phase = "build";
+            this.phase = GAME_PHASES.BUILD;
         }
     }
 
@@ -562,7 +571,7 @@ class GameManager {
     _doNextTurn() {
         if (this.hadAmusementParkAtRoll &&
             this.lastDice1 > 0 && this.lastDice1 === this.lastDice2) {
-            this.phase = "roll";
+            this.phase = GAME_PHASES.ROLL;
             this.log = [];
             this.builtThisTurn = false;
             this.usedReroll = false;
@@ -579,7 +588,7 @@ class GameManager {
         this.hadAmusementParkAtRoll = false;
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.turnCount++;
-        this.phase = "roll";
+        this.phase = GAME_PHASES.ROLL;
         this.log = [];
         this.builtThisTurn = false;
         this.usedReroll = false;

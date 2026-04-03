@@ -27,7 +27,7 @@ class CPU {
             if (card.effect === CARD_EFFECTS.HARBOR_RED) return roller.landmarks["港"] ? card.income : 0;
             if (card.effect === CARD_EFFECTS.FRENCHR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 2 ? card.income : 0;
             if (card.effect === CARD_EFFECTS.MEMBERBAR) return roller.landmarks && Object.values(roller.landmarks).filter(Boolean).length >= 3 ? Math.max(roller.coins, 4) : 0;
-            return card.income + (roller.landmarks["ショッピングモール"] && card.category === "飲食店" ? 1 : 0);
+            return card.income + (roller.landmarks["ショッピングモール"] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0);
         }
 
         if (!isCurrentTurn) return 0;
@@ -48,7 +48,7 @@ class CPU {
                 return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
             case CARD_EFFECTS.PUBLISHER:
                 return opponents.reduce((sum, p) =>
-                    sum + p.cards.filter(c => (c.category === "飲食店" || c.category === "商店") && !p.isDormant(c)).length, 0);
+                    sum + p.cards.filter(c => (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP) && !p.isDormant(c)).length, 0);
             case CARD_EFFECTS.TAXOFFICE:
                 return opponents.filter(p => p.coins >= 10).length * 5;
             case CARD_EFFECTS.LOAN:
@@ -56,11 +56,11 @@ class CPU {
             case CARD_EFFECTS.BUSINESS:
                 return 4;
             case CARD_EFFECTS.CLEANING:
-                return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).length, 0) * 0.4;
+                return game.players.reduce((sum, p) => sum + p.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(c)).length, 0) * 0.4;
             case CARD_EFFECTS.MOVER:
                 return 4;
             case CARD_EFFECTS.RENOVATION:
-                return Object.values(owner.landmarks).filter(([v]) => v).length ? 3 : 0;
+                return Object.values(owner.landmarks).filter(v => v).length ? 3 : 0;
             case CARD_EFFECTS.ITSTARTUP:
                 return opponents.length * Math.max(owner.itVentureCoins, 1);
             case CARD_EFFECTS.PARK:
@@ -68,7 +68,7 @@ class CPU {
             default: {
                 let amount = card.income;
                 if (owner.landmarks["ショッピングモール"] &&
-                    (card.category === "飲食店" || card.category === "商店")) amount += 1;
+                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
                 return amount;
             }
         }
@@ -148,15 +148,15 @@ class CPU {
     resolveBusiness(game) {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
-        const myCards = current.cards.filter(c => c.category !== "大施設");
-        if (myCards.length === 0) { game.pendingBusiness = false; game.phase = "build"; return; }
+        const myCards = current.cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
+        if (myCards.length === 0) { game.pendingBusiness = false; game.phase = GAME_PHASES.BUILD; return; }
 
         if (this.difficulty === "strong") {
             // 強い：最も価値の低い自分のカードと最も価値の高い相手のカードを交換
             const myWorst = myCards.sort((a, b) => a.cost - b.cost)[0];
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
-                const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
+                const theirCards = game.players[i].cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
                 if (theirCards.length === 0) continue;
                 const theirBest = theirCards.sort((a, b) => {
                     const av = b.cost + (game.players[i].isDormant(b) ? 1.5 : 0);
@@ -169,7 +169,7 @@ class CPU {
         } else {
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
-                const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
+                const theirCards = game.players[i].cards.filter(c => c.category !== CARD_CATEGORIES.MAJOR);
                 if (theirCards.length === 0) continue;
                 const myCard = myCards[Math.floor(Math.random() * myCards.length)];
                 const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
@@ -178,7 +178,7 @@ class CPU {
             }
         }
         game.pendingBusiness = false;
-        game.phase = "build";
+        game.phase = GAME_PHASES.BUILD;
     }
 
     // ===== カード評価 =====
@@ -205,7 +205,7 @@ class CPU {
                 return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
             case CARD_EFFECTS.PUBLISHER:
                 return opponents.reduce((s, p) =>
-                    s + p.cards.filter(c => c.category === "飲食店" || c.category === "商店").length, 0);
+                    s + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length, 0);
             case CARD_EFFECTS.TAXOFFICE:
                 return opponents.filter(p => p.coins >= 10).length * 5;
             case CARD_EFFECTS.HARBOR:
@@ -265,8 +265,8 @@ class CPU {
             .filter(p => p !== current)
             .map(p => Object.values(p.landmarks).filter(Boolean).length));
         if (name === "駅") return builtCount < 2 ? 8 : 5;
-        if (name === "ショッピングモール") return current.cards.filter(c => c.category === "飲食店" || c.category === "商店").length >= 3 ? 8 : 4;
-        if (name === "港") return current.cards.some(c => c.effect === "harbor" || c.effect === "harbor_red" || c.effect === "tuna") ? 7 : 3;
+        if (name === "ショッピングモール") return current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
+        if (name === "港") return current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
         if (name === "電波塔") return builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
         if (name === "遊園地") return current.landmarks["駅"] ? 5 : 2;
         if (name === "空港") return builtCount >= 4 ? 6 : 1;
@@ -398,8 +398,8 @@ class CPU {
         if (try_("家具工場",    3, current.countCard("森林") + current.countCard("鉱山") >= 2)) return true;
         if (try_("ワイナリー",  3, current.countCard("ブドウ園") >= 2)) return true;
         if (try_("フラワーショップ", 1, current.countCard("花畑") >= 2)) return true;
-        if (try_("青果市場",    2, current.cards.filter(c => c.category === "農園").length >= 3)) return true;
-        if (try_("食品倉庫",    2, current.cards.filter(c => c.category === "飲食店").length >= 3)) return true;
+        if (try_("青果市場",    2, current.cards.filter(c => c.category === CARD_CATEGORIES.FARM).length >= 3)) return true;
+        if (try_("食品倉庫",    2, current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT).length >= 3)) return true;
         if (try_("テレビ局",    7, game.players.some(p => p !== current && p.coins >= 6) && current.countCard("テレビ局") === 0)) return true;
         if (try_("税務署",      4, game.players.some(p => p !== current && p.coins >= 10) && current.countCard("税務署") === 0)) return true;
 

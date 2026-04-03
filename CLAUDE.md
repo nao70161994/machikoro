@@ -25,11 +25,30 @@ Card.js → Player.js → GameManager.js → CPU.js → ui.js → storage.js →
 
 | ファイル | 役割 |
 |---------|------|
+| `js/Card.js` | `Card` クラス・`CARD_EFFECTS`・`CARD_CATEGORIES`・`CARDS` 配列・`createCardByName()` |
+| `js/GameManager.js` | `GameManager` クラス・`LOG_TYPES`・`GAME_PHASES` |
 | `js/ui.js` | ログ描画・分類・pending モーダル・カードフィルター・ターンアナウンサー・buildMenu レンダリング・`CARD_SETS` / `enabledCards` / `enabledLandmarks` |
 | `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`） |
-| `js/main.js` | ゲーム進行・オンライン通信・CPU制御・イベントハンドラ |
+| `js/main.js` | ゲーム進行・オンライン通信・CPU制御・イベントハンドラ・`CPU_PHASE_HANDLERS` |
 
 **バックエンド**: `server.js`（Node.js + Express + Socket.IO）。ゲームロジックは**クライアント側で動く**。サーバーはアクションの中継とルーム管理のみ。
+
+### 定数
+
+#### `CARD_EFFECTS`（js/Card.js）
+`Object.freeze()` でフリーズされた文字列定数。`NORMAL`, `CHEESE`, `FURNITURE`, `MARKET`, `FLOWER`, `FOODWAREHOUSE`, `FEWLANDMARK`, `WINERY`, `MOVER`, `DRINKFACTORY`, `LOAN`, `RENOVATION`, `HARBOR`, `HARBOR_RED`, `TUNA`, `CORNFIELD`, `FRENCHR`, `MEMBERBAR`, `STADIUM`, `TV`, `BUSINESS`, `PUBLISHER`, `TAXOFFICE`, `CLEANING`, `ITSTARTUP`, `PARK`。新カード追加時は必ずここに追加してから使うこと（文字列リテラル直書き禁止）。
+
+#### `CARD_CATEGORIES`（js/Card.js）
+`Object.freeze()` でフリーズされた分類定数。`FARM`（農園）・`LIVESTOCK`（畜産）・`INDUSTRY`（工業）・`RESTAURANT`（飲食店）・`SHOP`（商店）・`FISHERY`（海産）・`MAJOR`（大施設）。カテゴリ比較は必ずこれを使う（日本語文字列リテラル直書き禁止）。
+
+#### `GAME_PHASES`（js/GameManager.js）
+`Object.freeze()` でフリーズされたフェーズ定数。`ROLL`, `SELECT_DICE`, `REROLL_CONFIRM`, `HARBOR_CHOICE`, `PENDING`, `BUILD`。`this.phase` への代入・比較は必ずこれを使う。
+
+#### `LOG_TYPES`（js/GameManager.js）
+`Object.freeze()` でフリーズされたログ種別定数。`DICE`, `GAIN`, `LOSE`, `BUILD`, `SPECIAL`, `SYSTEM`, `ERROR`。`addLog(type, msg)` の第1引数はこれを使う。ログエントリは `{ type: string, message: string }` オブジェクト（文字列ではない）。
+
+### server.js での定数利用
+`loadGameRuntime()` の vm.runInContext で `GAME_PHASES`・`CARD_CATEGORIES` をコンテキストからエクスポートしている。`getAllowedActions()` は `gameRuntime.GAME_PHASES` をデストラクチャして使う。
 
 ### ゲームフロー（GameManager のフェーズ遷移）
 
@@ -69,11 +88,13 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 `difficulty`: `"weak"` / `"normal"` / `"strong"` の3段階。`build()` は `buildWeak` / `buildNormal` / `buildStrong` に委譲。スコアリングは `evalCard()` + `sortAffordable()` でコスパ評価。CPU判断ロジックは大幅に強化済み（手番ごとの期待値・他プレイヤー状況考慮）。
 
+`GameManager.calcCardIncome(card, owner, game)` 静的メソッドで multiplier 系の収入を計算（CPU と GameManager の両方が使用）。
+
 #### CPU進行チェーン（main.js）
 
 - `scheduleCPU()` はトークン方式で自己再起動チェーンを形成。`cpuScheduleToken` をインクリメントし、古いチェーンは自動破棄される
 - `cpuDo(action, data, fallback)` はアクションを実行後に `scheduleCPU()` を呼び、次フェーズへ自動進行する
-- 駅（`selectDice`）・電波塔（`rerollConfirm`）・港（`harborChoice`）の各フェーズも `scheduleCPU` チェーンで処理される
+- `CPU_PHASE_HANDLERS` テーブル（配列）でフェーズごとの処理を定義。新フェーズ追加時はここに1エントリ追加するだけ。フェーズ判定は `GAME_PHASES` 定数を使う
 - ITベンチャー所持時は `nextTurn` ステップに `!game.pendingIT` ガードがあり、`pendingIT=true` の間は再進行しない（無限ループ防止）
 
 ### ローカルストレージ
@@ -90,13 +111,14 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 - **pending ダイアログ**（テレビ局・改装屋等）は `#pendingModal` のフルスクリーンオーバーレイで表示。`renderPending()` が innerHTML を書き換え、コンテンツがある間だけ `display:flex`。
 - **ビジネスセンター**のカード選択は `<select>` ではなくタップ可能な `.bc-chip` ボタン方式。`bcSelectCard()` が選択状態と hidden input を更新。`onResolveBusiness()` は hidden input の値をそのまま参照する。
-- **ログ全履歴**は `fullLog[]` 配列で管理（最大300件）。`game.log` のリセットを `prevLogLength` との比較で検知し、ターン切り替えには `__SEP__` 区切り文字を挿入。電波塔リロール（`cur[0].startsWith("📡")`）の場合は区切りを挿入しない。
+- **ログ全履歴**は `fullLog[]` 配列で管理（最大300件）。ログエントリは `{ type, message }` オブジェクト。`game.log` のリセットを `prevLogLength` との比較で検知し、ターン切り替えには `__SEP__` 区切り文字（文字列）を挿入。電波塔リロール（`cur[0]?.message?.startsWith("📡")`）の場合は区切りを挿入しない。
 - **ターンアナウンサー**は `#turnAnnouncer` の fixed オーバーレイ。`prevPlayerIndex` の変化を `render()` 内で検知し、`showTurnAnnouncer()` で1.3秒表示後フェードアウト。`isReplaying = true` のときは発火しない。
 - **カードフィルター**は `cardFilter` 変数（`''` = 全て）で管理。`setCardFilter()` を呼ぶと `renderBuildMenu()` が再実行される。
 
 ### カード追加時の注意
 
-- `js/Card.js` の `CARDS` 配列に追加
+- `js/Card.js` の `CARD_EFFECTS` に新 effect を追加してから `CARDS` 配列にカードを追加
+- `CARD_CATEGORIES` の既存分類を使う（新分類が必要なら `CARD_CATEGORIES` に追加）
 - `js/ui.js` の `CARD_SETS`（basic / plus / sharp）にも追加
 - `CPU.evalCard()` に新 effect のスコアロジックを追加
 - `GameManager.processIncome()` に発動ロジックを追加
@@ -114,12 +136,12 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 npm test    # tests/run-all.js → gamemanager.test.js + server.test.js
 ```
 
-Node.js 組み込み `assert` モジュールのみ使用。
+Node.js 組み込み `assert` モジュールのみ使用。現在 **40テスト**（gamemanager.test.js: 31, server.test.js: 9）。
 
 | ファイル | 内容 |
 |---------|------|
-| `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard・テレビ局・ITベンチャー・電波塔・ログリセット・CARDSソート検証など） |
-| `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName 等） |
+| `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard・テレビ局・ITベンチャー・電波塔・ログリセット・CARDSソート・processIncome・calcCardIncome・LOG_TYPES構造など） |
+| `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName・validateCleaningPayload・validateRenovationPayload 等） |
 | `tests/run-all.js` | 両テストを順次実行するエントリポイント |
 
 新機能追加時は対応するテストファイルにケースを追加すること。UI 固有の処理（DOM 操作・アニメーション）はブラウザ環境依存のため Node.js テストでは検証できない。GameManager ロジックに集中してテストを書く。
