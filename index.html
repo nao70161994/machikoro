@@ -120,6 +120,9 @@
                     <button onclick="joinRoom()">🚪 参加する</button>
                 </div>
 
+                <div id="offlineNotice" class="offline-notice" style="display:none">
+                    📵 オフライン中です。オンライン対戦にはネット接続が必要です。
+                </div>
                 <div id="onlineStatus" class="online-status"></div>
             </div>
         </div>
@@ -285,6 +288,18 @@
         </div>
     </div>
 
+    <!-- PWA更新バナー -->
+    <div id="pwaUpdateBanner" style="display:none">
+        <div class="pwa-banner-text">
+            <span class="pwa-banner-icon">🔄</span>
+            <span>新しいバージョンがあります</span>
+        </div>
+        <div class="pwa-banner-actions">
+            <button class="pwa-banner-btn" onclick="pwaApplyUpdate()">今すぐ更新</button>
+            <button class="pwa-banner-dismiss" onclick="document.getElementById('pwaUpdateBanner').style.display='none'">×</button>
+        </div>
+    </div>
+
     <!-- PWAインストールバナー -->
     <div id="pwaInstallBanner" style="display:none">
         <div class="pwa-banner-text">
@@ -310,9 +325,26 @@
     <script src="js/main.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
+        let _waitingSW = null;
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+              const sw = reg.installing;
+              sw.addEventListener('statechange', () => {
+                if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                  _waitingSW = sw;
+                  document.getElementById('pwaUpdateBanner').style.display = 'block';
+                }
+              });
+            });
+          }).catch(() => {});
         });
+        window.pwaApplyUpdate = () => {
+          if (_waitingSW) {
+            _waitingSW.postMessage({ type: 'SKIP_WAITING' });
+            navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+          }
+        };
       }
     </script>
 </body>

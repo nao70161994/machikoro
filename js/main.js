@@ -736,6 +736,22 @@ updateResumeButton();
 drawCitySkyline();
 window.addEventListener("resize", drawCitySkyline);
 
+// ===== オフライン検知 =====
+function updateOnlineTabState() {
+    const offline = !navigator.onLine;
+    const tabBtn = document.getElementById('tabOnline');
+    const notice = document.getElementById('offlineNotice');
+    const createBtn = document.querySelector('#onlineCreate button');
+    const joinBtn = document.querySelector('#onlineJoin button');
+    if (tabBtn) tabBtn.style.opacity = offline ? '0.4' : '';
+    if (notice) notice.style.display = offline ? 'block' : 'none';
+    if (createBtn) createBtn.disabled = offline;
+    if (joinBtn) joinBtn.disabled = offline;
+}
+window.addEventListener('online',  updateOnlineTabState);
+window.addEventListener('offline', updateOnlineTabState);
+updateOnlineTabState();
+
 // ===== PWAインストールバナー =====
 let _pwaInstallEvent = null;
 

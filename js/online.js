@@ -157,7 +157,9 @@ function initSocket() {
     });
 
     socket.on('playerDisconnected', ({ playerIndex, playerName }) => {
-        alert(`${playerName || `プレイヤー${playerIndex + 1}`}が切断しました`);
+        const name = playerName || `プレイヤー${playerIndex + 1}`;
+        game && game.addLog(LOG_TYPES.SYSTEM, `🔌 ${name}が切断しました`);
+        render();
     });
 
     socket.on('hostChanged', ({ newHostPlayerIndex }) => {

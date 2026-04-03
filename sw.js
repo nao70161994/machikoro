@@ -23,6 +23,11 @@ const STATIC_ASSETS = [
   '/icons/icon-512.png',
 ];
 
+// 「今すぐ更新」ボタンからのメッセージを受け取る
+self.addEventListener('message', (event) => {
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 // インストール: 全アセットをキャッシュ
 self.addEventListener('install', (event) => {
   event.waitUntil(
