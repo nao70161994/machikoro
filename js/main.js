@@ -227,6 +227,128 @@ function queueCPUStep(token, delay, fn) {
     }, delay);
 }
 
+// フェーズごとの CPU ハンドラテーブル。
+// 新フェーズを追加するときはここに1エントリ追加するだけでよい。
+const CPU_PHASE_HANDLERS = [
+    {
+        name: "roll",
+        run(cpu) {
+            if (game.phase !== "roll") return;
+            const forceDice = Math.floor(Math.random() * 6) + 1;
+            const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+            cpuDo('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
+        },
+    },
+    {
+        name: "selectDice",
+        run(cpu) {
+            if (game.phase !== "selectDice") return;
+            const useTwo = cpu.chooseDiceCount(game);
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+            cpuDo('selectDice', { useTwo, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
+        },
+    },
+    {
+        name: "rerollConfirm",
+        run(cpu) {
+            if (game.phase !== "rerollConfirm") return;
+            if (cpu.chooseReroll(game)) {
+                const forceDice = Math.floor(Math.random() * 6) + 1;
+                const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+                cpuDo('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
+            } else {
+                cpuDo('skipReroll', {}, () => game.skipReroll());
+            }
+        },
+    },
+    {
+        name: "harborChoice",
+        run(cpu) {
+            if (game.phase !== "harborChoice") return;
+            const useBonus = cpu.chooseHarbor(game);
+            cpuDo('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
+        },
+    },
+    {
+        name: "pending",
+        run(cpu) {
+            if (game.phase !== "pending") return;
+            if (game.pendingTV > 0) {
+                const targetIndex = cpu.chooseTVTarget(game);
+                cpuDo('resolveTV', { targetIndex }, () => game.resolveTV(targetIndex));
+            }
+            if (game.pendingBusiness > 0) {
+                const cur = game.currentPlayer();
+                const myCards = cur.cards.filter(c => c.category !== "大施設");
+                for (let i = 0; i < game.players.length; i++) {
+                    if (i === game.currentPlayerIndex) continue;
+                    const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
+                    if (theirCards.length === 0) continue;
+                    const myCard = myCards[Math.floor(Math.random() * myCards.length)];
+                    const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
+                    const myCardIndex = cur.cards.indexOf(myCard);
+                    const theirCardIndex = game.players[i].cards.indexOf(theirCard);
+                    cpuDo('resolveBusiness', { myCard: myCardIndex, targetIndex: i, theirCard: theirCardIndex },
+                        () => game.resolveBusiness(myCardIndex, i, theirCardIndex));
+                    break;
+                }
+            }
+            if (game.pendingCleaning > 0) {
+                const allNames = [...new Set(game.players.flatMap(p =>
+                    p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).map(c => c.name)))];
+                if (allNames.length > 0) {
+                    const cardName = allNames[Math.floor(Math.random() * allNames.length)];
+                    cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
+                }
+            }
+            if (game.pendingMover > 0) {
+                const cur = game.currentPlayer();
+                const myCards = cur.cards.filter(c => c.category !== "大施設");
+                const others = game.players.map((p, i) => i).filter(i => i !== game.currentPlayerIndex);
+                if (myCards.length > 0 && others.length > 0) {
+                    const cardIndex = cur.cards.indexOf(myCards[0]);
+                    const targetIndex = others[0];
+                    cpuDo('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
+                }
+            }
+            if (game.pendingRenovation > 0) {
+                const cur = game.currentPlayer();
+                const builtLandmarks = Object.entries(cur.landmarks)
+                    .filter(([name, built]) => built && name !== "役所").map(([name]) => name);
+                if (builtLandmarks.length > 0) {
+                    const landmarkName = builtLandmarks[builtLandmarks.length - 1];
+                    cpuDo('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
+                }
+            }
+        },
+    },
+    {
+        name: "build",
+        run(cpu) {
+            if (game.phase !== "build") return;
+            cpu.build(game, SHOP_STOCK);
+            render();
+        },
+    },
+    {
+        name: "nextTurn",
+        run(cpu) {
+            if (game.phase !== "build" || game.pendingIT) return;
+            cpuDo('nextTurn', {}, () => game.nextTurn());
+        },
+    },
+    {
+        name: "resolveIT",
+        run(cpu) {
+            if (!game.pendingIT) return;
+            const doSave = cpu.difficulty !== "weak" && game.currentPlayer().coins >= 1;
+            cpuDo('resolveIT', { doSave }, () => game.resolveIT(doSave));
+        },
+    },
+];
+
 function scheduleCPU() {
     if (isReplaying) return;
     if (isOnlineGame && !isRoomHost) return;
@@ -235,111 +357,22 @@ function scheduleCPU() {
     if (!cpuPlayers[ci]) return;
     const cpu = cpuPlayers[ci];
     const token = ++cpuScheduleToken;
+    let stepIndex = 0;
 
-    queueCPUStep(token, cpuSpeed, () => {
-        if (game.phase === "roll") {
-            const forceDice = Math.floor(Math.random() * 6) + 1;
-            const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
-            cpuDo('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
+    function runNextStep() {
+        if (token !== cpuScheduleToken) return;
+        if (stepIndex >= CPU_PHASE_HANDLERS.length) {
+            queueCPUStep(token, 500, () => { if (!game.checkWinner()) scheduleCPU(); });
+            return;
         }
+        const step = CPU_PHASE_HANDLERS[stepIndex++];
         queueCPUStep(token, cpuSpeed, () => {
-            if (game.phase === "selectDice") {
-                const useTwo = cpu.chooseDiceCount(game);
-                const d1 = Math.floor(Math.random() * 6) + 1;
-                const d2 = Math.floor(Math.random() * 6) + 1;
-                const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
-                cpuDo('selectDice', { useTwo, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
-            }
-            queueCPUStep(token, cpuSpeed, () => {
-                if (game.phase === "rerollConfirm") {
-                    if (cpu.chooseReroll(game)) {
-                        const forceDice = Math.floor(Math.random() * 6) + 1;
-                        const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
-                        cpuDo('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
-                    } else {
-                        cpuDo('skipReroll', {}, () => game.skipReroll());
-                    }
-                }
-                queueCPUStep(token, cpuSpeed, () => {
-                    if (game.phase === "harborChoice") {
-                        const useBonus = cpu.chooseHarbor(game);
-                        cpuDo('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
-                    }
-                    queueCPUStep(token, cpuSpeed, () => {
-                        if (game.phase === "pending") {
-                            if (game.pendingTV > 0) {
-                                const targetIndex = cpu.chooseTVTarget(game);
-                                cpuDo('resolveTV', { targetIndex }, () => game.resolveTV(targetIndex));
-                            }
-                            if (game.pendingBusiness > 0) {
-                                const cur = game.currentPlayer();
-                                const myCards = cur.cards.filter(c => c.category !== "大施設");
-                                for (let i = 0; i < game.players.length; i++) {
-                                    if (i === game.currentPlayerIndex) continue;
-                                    const theirCards = game.players[i].cards.filter(c => c.category !== "大施設");
-                                    if (theirCards.length === 0) continue;
-                                    const myCard = myCards[Math.floor(Math.random() * myCards.length)];
-                                    const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
-                                    const myCardIndex = cur.cards.indexOf(myCard);
-                                    const theirCardIndex = game.players[i].cards.indexOf(theirCard);
-                                    cpuDo('resolveBusiness', { myCard: myCardIndex, targetIndex: i, theirCard: theirCardIndex },
-                                        () => game.resolveBusiness(myCardIndex, i, theirCardIndex));
-                                    break;
-                                }
-                            }
-                            if (game.pendingCleaning > 0) {
-                                const allNames = [...new Set(game.players.flatMap(p =>
-                                    p.cards.filter(c => c.category !== "大施設" && !p.isDormant(c)).map(c => c.name)))];
-                                if (allNames.length > 0) {
-                                    const cardName = allNames[Math.floor(Math.random() * allNames.length)];
-                                    cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
-                                }
-                            }
-                            if (game.pendingMover > 0) {
-                                const cur = game.currentPlayer();
-                                const myCards = cur.cards.filter(c => c.category !== "大施設");
-                                const others = game.players.map((p, i) => i).filter(i => i !== game.currentPlayerIndex);
-                                if (myCards.length > 0 && others.length > 0) {
-                                    const cardIndex = cur.cards.indexOf(myCards[0]);
-                                    const targetIndex = others[0];
-                                    cpuDo('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
-                                }
-                            }
-                            if (game.pendingRenovation > 0) {
-                                const cur = game.currentPlayer();
-                                const builtLandmarks = Object.entries(cur.landmarks)
-                                    .filter(([name, built]) => built && name !== "役所").map(([name]) => name);
-                                if (builtLandmarks.length > 0) {
-                                    const landmarkName = builtLandmarks[builtLandmarks.length - 1];
-                                    cpuDo('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
-                                }
-                            }
-                        }
-                        queueCPUStep(token, cpuSpeed, () => {
-                            if (game.phase === "build") {
-                                cpu.build(game, SHOP_STOCK);
-                                render();
-                            }
-                            queueCPUStep(token, cpuSpeed, () => {
-                                if (game.phase === "build" && !game.pendingIT) {
-                                    cpuDo('nextTurn', {}, () => game.nextTurn());
-                                }
-                                queueCPUStep(token, cpuSpeed, () => {
-                                    if (game.pendingIT) {
-                                        const doSave = cpu.difficulty !== "weak" && game.currentPlayer().coins >= 1;
-                                        cpuDo('resolveIT', { doSave }, () => game.resolveIT(doSave));
-                                    }
-                                    queueCPUStep(token, 500, () => {
-                                        if (!game.checkWinner()) scheduleCPU();
-                                    });
-                                });
-                            });
-                        });
-                    });
-                });
-            });
+            step.run(cpu);
+            runNextStep();
         });
-    });
+    }
+
+    runNextStep();
 }
 
 // オンライン対戦
