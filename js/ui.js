@@ -355,7 +355,8 @@ function renderPending() {
     const modal = document.getElementById("pendingModal");
     const hide = () => { el.innerHTML = ""; modal.style.display = "none"; };
     if (game.phase !== GAME_PHASES.PENDING && !game.pendingIT && game.pendingRenovation <= 0) { hide(); return; }
-    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    const isMyTurn = (!isOnlineGame && !isCPUTurn) || (isOnlineGame && game.currentPlayerIndex === myPlayerIndex);
     if (!isMyTurn) { hide(); return; }
     let html = "";
     if (game.pendingTV > 0) {

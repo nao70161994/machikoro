@@ -294,22 +294,26 @@ runTest('_landmarkUrgency: 電波塔はbuiltCount>=3か相手maxBuilt>=4で8、�
 
 // ===== sortAffordable =====
 
-runTest('sortAffordable: スコア/コスト比の高いカードが先頭に来る', () => {
+runTest('sortAffordable: ダイス確率を加味したスコア順にソートされる', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
     const player = game.currentPlayer();
     player.cards = [];
     player.dormantCards = [];
 
-    // 麦畑(cost 1, income 1 → ratio 1.0)
-    // 鉱山(cost 6, income 5 → ratio ~0.83)
-    // パン屋(cost 1, income 1 → ratio 1.0)
-    const cards = [createCardByName('鉱山'), createCardByName('麦畑'), createCardByName('パン屋')];
+    // ダイス頻度重み: dice1=1, dice2=1, dice3=2, dice9=4
+    // 鉱山(dice 9, income 5, cost 6): score = 5*4/6 ≈ 3.33
+    // パン屋(dice 2-3, income 1, cost 1): score = 1*(1+2)/1 = 3.0
+    // 麦畑(dice 1, income 1, cost 1): score = 1*1/1 = 1.0
+    // → 鉱山 > パン屋 > 麦畑
+    const cards = [createCardByName('麦畑'), createCardByName('鉱山'), createCardByName('パン屋')];
     const sorted = cpu.sortAffordable(cards, game, player);
 
     assert.strictEqual(sorted.length, 3);
-    // 鉱山はratio最低なので最後
-    assert.strictEqual(sorted[sorted.length - 1].card.name, '鉱山');
+    // 麦畑はダイス頻度が最低なので最後
+    assert.strictEqual(sorted[sorted.length - 1].card.name, '麦畑');
+    // 鉱山はダイス頻度×収入/コストが最高なので先頭
+    assert.strictEqual(sorted[0].card.name, '鉱山');
     // 全てスコアフィールドを持つ
     for (const entry of sorted) {
         assert.ok(typeof entry.score === 'number');

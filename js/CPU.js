@@ -231,11 +231,17 @@ class CPU {
         }
     }
 
-    // 購入可能カードをスコア順にソート
+    // ダイス出目の重み（2個振り最大値は出目7が最頻）
+    _diceFreq(diceNums) {
+        const w = {1:1,2:1,3:2,4:3,5:4,6:5,7:6,8:5,9:4,10:3,11:2,12:1,13:1,14:1};
+        return diceNums.reduce((s, d) => s + (w[d] || 0), 0);
+    }
+
+    // 購入可能カードをスコア順にソート（ダイス確率を加味）
     sortAffordable(cards, game, player) {
         return cards.map(card => ({
             card,
-            score: this.evalCard(card, game, player) / Math.max(card.cost, 1)
+            score: this.evalCard(card, game, player) * this._diceFreq(card.diceNums) / Math.max(card.cost, 1)
         })).sort((a, b) => b.score - a.score);
     }
 
@@ -322,7 +328,7 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         );
         const sorted = this.sortAffordable(affordable, game, current);
-        if (sorted.length > 0 && sorted[0].score >= 1.1) {
+        if (sorted.length > 0 && sorted[0].score >= 0.9) {
             this._buyCard(sorted[0].card, game, shopStock);
             return;
         }
