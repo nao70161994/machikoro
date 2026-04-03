@@ -280,6 +280,47 @@ runTest('validateGameAction は BUILD フェーズ以外で undoBuild を拒否�
     assert.strictEqual(result.ok, false);
 });
 
+runTest('validateBusinessPayload は範囲外のカードindexを拒否する', () => {
+    const { GameManager, createCardByName } = makeGame();
+    const game = new GameManager(2);
+    game.currentPlayer().cards = [
+        createCardByName('麦畑'),
+        createCardByName('ビジネスセンター'),
+    ];
+    game.players[1].cards = [createCardByName('カフェ')];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].dormantCards = [];
+    game.phase = 'pending';
+    game.pendingBusiness = 1;
+    // 存在しないindex(99)は拒否
+    assert.strictEqual(validateBusinessPayload(game, { myCard: 99, targetIndex: 1, theirCard: 0 }), false);
+    // 相手indexが自分と同じは拒否
+    assert.strictEqual(validateBusinessPayload(game, { myCard: 0, targetIndex: 0, theirCard: 0 }), false);
+});
+
+runTest('validateGameAction は gameStartPayload がない場合に拒否する', () => {
+    const room = makeRoom();
+    room.gameStartPayload = null;
+    const result = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: 1, tunaDice: [1, 1] });
+    assert.strictEqual(result.ok, false);
+});
+
+runTest('validateGameAction はCPUターン中にホストのアクションを許可し非ホストを拒否する', () => {
+    const room = makeRoom();
+    // p0のターン（CPUに設定）
+    room.playerSettings = [{ type: 'cpu', difficulty: 'normal' }, { type: 'human' }];
+    room.gameStartPayload.playerSettings = room.playerSettings;
+    room.hostPlayerIndex = 1; // p1がホスト
+
+    // ホスト(p1)はp0のCPUターンを代理できる
+    const allow = validateGameAction(room, { playerIndex: 1 }, 'rollDice', { forceDice: 3, tunaDice: [1, 1] });
+    assert.strictEqual(allow.ok, true);
+
+    // 非ホスト(p0自身)はCPUターンを操作できない
+    const deny = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: 3, tunaDice: [1, 1] });
+    assert.strictEqual(deny.ok, false);
+});
+
 if (process.exitCode) {
     throw new Error('serverテストで失敗が発生しました');
 }

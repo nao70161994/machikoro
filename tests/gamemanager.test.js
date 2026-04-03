@@ -632,6 +632,198 @@ runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を�
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('チーズ工場'), p0, game), 3); // 1枚のみ
 });
 
+// ===== Player メソッド =====
+
+runTest('Player.builtLandmarkCount が建設済みランドマーク数を返す', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    assert.strictEqual(p0.builtLandmarkCount(), 0);
+    p0.landmarks['駅'] = true;
+    assert.strictEqual(p0.builtLandmarkCount(), 1);
+    p0.landmarks['ショッピングモール'] = true;
+    assert.strictEqual(p0.builtLandmarkCount(), 2);
+});
+
+runTest('Player.getMinorCards が大施設を除いたカード一覧を返す', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.cards = [
+        createCardByName('麦畑'),
+        createCardByName('スタジアム'),
+        createCardByName('カフェ'),
+    ];
+    const minor = p0.getMinorCards();
+    assert.strictEqual(minor.length, 2);
+    assert.ok(minor.every(c => c.name !== 'スタジアム'));
+});
+
+runTest('Player.hasWon が enabledLandmarks を全て建設済みのときだけ true を返す', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    const enabled = ['駅', 'ショッピングモール'];
+    assert.strictEqual(p0.hasWon(enabled), false);
+    p0.landmarks['駅'] = true;
+    assert.strictEqual(p0.hasWon(enabled), false);
+    p0.landmarks['ショッピングモール'] = true;
+    assert.strictEqual(p0.hasWon(enabled), true);
+    // 未使用のランドマークが未建設でも勝利扱い
+    assert.strictEqual(p0.hasWon(['駅']), true);
+});
+
+// ===== calcCardIncome 追加 =====
+
+runTest('calcCardIncome が WINERY・FLOWER・FOODWAREHOUSE・DRINKFACTORY を計算する', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+
+    // WINERY: ブドウ園2枚 × income6 = 12
+    p0.cards = [createCardByName('ブドウ園'), createCardByName('ブドウ園')];
+    p0.dormantCards = [];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('ワイナリー'), p0, game), 12);
+
+    // FLOWER: 花畑2枚 × income1 = 2
+    p0.cards = [createCardByName('花畑'), createCardByName('花畑')];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('フラワーショップ'), p0, game), 2);
+
+    // FOODWAREHOUSE: 飲食店2枚(カフェ×2) × income2 = 4
+    p0.cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('食品倉庫'), p0, game), 4);
+
+    // DRINKFACTORY: 全員の飲食店合計 × income1
+    // p0: カフェ×2, p1: カフェ×1 → 合計3 × 1 = 3
+    game.players[1].cards = [createCardByName('カフェ')];
+    game.players[1].dormantCards = [];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('ドリンク工場'), p0, game), 3);
+});
+
+// ===== processIncome 追加 =====
+
+runTest('スタジアムが各相手から最大2コイン奪う', () => {
+    const game = new GameManager(3);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('スタジアム')];
+    p0.dormantCards = [];
+    game.players[1].coins = 5;
+    game.players[2].coins = 1; // 1しか持っていない
+    const before = p0.coins;
+
+    game.rollDice(6); // スタジアム dice=6
+
+    assert.strictEqual(game.players[1].coins, 3); // 2奪われた
+    assert.strictEqual(game.players[2].coins, 0); // 1奪われた
+    assert.strictEqual(p0.coins, before + 3);     // 合計+3
+});
+
+runTest('出版社が相手の飲食店・商店枚数分コインを奪う', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('出版社')];
+    p0.dormantCards = [];
+    // p1: カフェ(飲食店)×2, パン屋(商店)×1 → 3枚 → 3コイン奪われる
+    game.players[1].cards = [
+        createCardByName('カフェ'),
+        createCardByName('カフェ'),
+        createCardByName('パン屋'),
+    ];
+    game.players[1].dormantCards = [];
+    game.players[1].coins = 10;
+    const before = p0.coins;
+
+    game.rollDice(7); // 出版社 dice=7
+
+    assert.strictEqual(game.players[1].coins, 7);
+    assert.strictEqual(p0.coins, before + 3);
+});
+
+runTest('税務署が10コイン以上の相手から半分奪う', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('税務署')];
+    p0.dormantCards = [];
+    game.players[1].coins = 12;
+    const before = p0.coins;
+
+    game.rollDice(8); // 税務署 dice=8 or 9
+
+    assert.strictEqual(game.players[1].coins, 6); // 12→6（半分徴収）
+    assert.strictEqual(p0.coins, before + 6);
+
+    // 9コイン以下の場合は徴収しない
+    const game2 = new GameManager(2);
+    game2.currentPlayer().cards = [createCardByName('税務署')];
+    game2.currentPlayer().dormantCards = [];
+    game2.players[1].coins = 9;
+    const before2 = game2.currentPlayer().coins;
+    game2.rollDice(8);
+    assert.strictEqual(game2.players[1].coins, 9);
+    assert.strictEqual(game2.currentPlayer().coins, before2);
+});
+
+runTest('寿司屋（HARBOR_RED）は港ランドマーク所持時のみ発動する', () => {
+    // 港あり: 相手から3コイン奪う
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    const p1 = game.players[1];
+    p0.cards = [];
+    p0.dormantCards = [];
+    p1.cards = [createCardByName('寿司屋')];
+    p1.dormantCards = [];
+    p1.landmarks['港'] = true;
+    p0.coins = 5;
+    p1.coins = 0;
+
+    game.rollDice(1); // 寿司屋 dice=1
+
+    assert.strictEqual(p0.coins, 2); // 3奪われた
+    assert.strictEqual(p1.coins, 3);
+
+    // 港なし: 発動しない
+    const game2 = new GameManager(2);
+    game2.currentPlayer().cards = [];
+    game2.currentPlayer().dormantCards = [];
+    game2.players[1].cards = [createCardByName('寿司屋')];
+    game2.players[1].dormantCards = [];
+    game2.players[1].landmarks['港'] = false;
+    game2.currentPlayer().coins = 5;
+    game2.players[1].coins = 0;
+
+    game2.rollDice(1);
+
+    assert.strictEqual(game2.currentPlayer().coins, 5); // 変化なし
+    assert.strictEqual(game2.players[1].coins, 0);
+});
+
+runTest('ワイナリーはブドウ園枚数×6コイン取得後に休業する', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    const winery = createCardByName('ワイナリー');
+    p0.cards = [createCardByName('ブドウ園'), createCardByName('ブドウ園'), winery];
+    p0.dormantCards = [];
+    const before = p0.coins;
+
+    game.rollDice(9); // ワイナリー dice=9
+
+    assert.strictEqual(p0.coins, before + 12); // 2×6
+    assert.strictEqual(p0.isDormant(winery), true);
+});
+
+runTest('公園はコインを全員に均等分配する', () => {
+    const game = new GameManager(3);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('公園')];
+    p0.dormantCards = [];
+    p0.coins = 10;
+    game.players[1].coins = 5;
+    game.players[2].coins = 3;
+    // 合計18 / 3 = 6 (余り0)
+
+    game.rollDice(11); // 公園 dice=11-13
+
+    assert.strictEqual(p0.coins, 6);
+    assert.strictEqual(game.players[1].coins, 6);
+    assert.strictEqual(game.players[2].coins, 6);
+});
+
 if (process.exitCode) {
     throw new Error('GameManagerテストで失敗が発生しました');
 }
