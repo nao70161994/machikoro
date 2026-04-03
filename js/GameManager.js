@@ -125,6 +125,41 @@ class GameManager {
         this.processIncome(tunaDice || this.pendingTunaDice);
     }
 
+    // 緑カードの収入額を計算する共有メソッド。
+    // _processGreen・CPU._cardActivationValue・CPU.evalCard が参照することで
+    // ゲームロジックと CPU 予測の乖離を防ぐ。
+    // 副作用（pendingMover++ など）を持つカードは含まない。
+    static calcCardIncome(card, owner, game) {
+        switch (card.effect) {
+            case CARD_EFFECTS.CHEESE:
+                return owner.countCard("牧場") * card.income;
+            case CARD_EFFECTS.FURNITURE:
+                return (owner.countCard("森林") + owner.countCard("鉱山")) * card.income;
+            case CARD_EFFECTS.MARKET:
+                return owner.cards.filter(c => c.category === "農園" && !owner.isDormant(c)).length * card.income;
+            case CARD_EFFECTS.FLOWER:
+                return owner.countCard("花畑") * card.income;
+            case CARD_EFFECTS.FOODWAREHOUSE:
+                return owner.cards.filter(c => c.category === "飲食店" && !owner.isDormant(c)).length * card.income;
+            case CARD_EFFECTS.FEWLANDMARK:
+            case CARD_EFFECTS.CORNFIELD: {
+                const built = Object.values(owner.landmarks).filter(v => v).length;
+                return built <= 1 ? card.income : 0;
+            }
+            case CARD_EFFECTS.WINERY:
+                return owner.cards.filter(c => c.name === "ブドウ園" && !owner.isDormant(c)).length * card.income;
+            case CARD_EFFECTS.DRINKFACTORY:
+                return game.players.reduce((sum, p) =>
+                    sum + p.cards.filter(c => c.category === "飲食店" && !p.isDormant(c)).length, 0) * card.income;
+            default: {
+                let amount = card.income;
+                if (owner.landmarks["ショッピングモール"] &&
+                    (card.category === "飲食店" || card.category === "商店")) amount += 1;
+                return amount;
+            }
+        }
+    }
+
     processIncome(tunaDice = null) {
         const dice = this.lastDiceResult;
         const current = this.currentPlayer();
@@ -225,26 +260,12 @@ class GameManager {
         for (const card of current.cards) {
             if (current.isDormant(card)) continue;
             if (card.color !== "green" || !card.diceNums.includes(dice)) continue;
-            let amount = 0;
 
-            if (card.effect === CARD_EFFECTS.CHEESE) {
-                amount = current.countCard("牧場") * card.income;
-            } else if (card.effect === CARD_EFFECTS.FURNITURE) {
-                amount = (current.countCard("森林") + current.countCard("鉱山")) * card.income;
-            } else if (card.effect === CARD_EFFECTS.MARKET) {
-                amount = current.cards.filter(c => c.category === "農園" && !current.isDormant(c)).length * card.income;
-            } else if (card.effect === CARD_EFFECTS.FLOWER) {
-                amount = current.countCard("花畑") * card.income;
-            } else if (card.effect === CARD_EFFECTS.FOODWAREHOUSE) {
-                amount = current.cards.filter(c => c.category === "飲食店" && !current.isDormant(c)).length * card.income;
-            } else if (card.effect === CARD_EFFECTS.FEWLANDMARK) {
-                const built = Object.values(current.landmarks).filter(v => v).length;
-                if (built <= 1) amount = card.income;
-            } else if (card.effect === CARD_EFFECTS.WINERY) {
-                const grapes = current.cards.filter(c => c.name === "ブドウ園" && !current.isDormant(c)).length;
+            // 副作用を持つカードは先に処理して continue
+            if (card.effect === CARD_EFFECTS.WINERY) {
                 const dormantWinery = current.dormantCards.find(c => c.name === "ワイナリー");
                 if (dormantWinery) current.revive(dormantWinery);
-                amount = grapes * card.income;
+                const amount = GameManager.calcCardIncome(card, current, this);
                 if (amount > 0) {
                     current.coins += amount;
                     this.addLog(`🍷 ワイナリー発動 → +${amount}コイン`);
@@ -252,19 +273,14 @@ class GameManager {
                     this.addLog(`💤 ワイナリーが休業`);
                 }
                 continue;
-            } else if (card.effect === CARD_EFFECTS.MOVER) {
+            }
+            if (card.effect === CARD_EFFECTS.MOVER) {
                 this.pendingMover++;
                 this.addLog(`🚚 引越し屋発動 → 渡す施設を選んでください`);
                 continue;
-            } else if (card.effect === CARD_EFFECTS.DRINKFACTORY) {
-                let total = 0;
-                for (const p of this.players) {
-                    total += p.cards.filter(c => c.category === "飲食店" && !p.isDormant(c)).length;
-                }
-                amount = total * card.income;
-            } else if (card.effect === CARD_EFFECTS.LOAN) {
-                continue;
-            } else if (card.effect === CARD_EFFECTS.RENOVATION) {
+            }
+            if (card.effect === CARD_EFFECTS.LOAN) continue;
+            if (card.effect === CARD_EFFECTS.RENOVATION) {
                 const builtLandmarks = Object.entries(current.landmarks)
                     .filter(([name, built]) => built && name !== "役所");
                 if (builtLandmarks.length > 0) {
@@ -274,12 +290,9 @@ class GameManager {
                     this.addLog(`🔨 改装屋：建設済みランドマークがないため不発`);
                 }
                 continue;
-            } else {
-                amount = card.income;
-                if (current.landmarks["ショッピングモール"] &&
-                    (card.category === "飲食店" || card.category === "商店")) amount += 1;
             }
 
+            const amount = GameManager.calcCardIncome(card, current, this);
             if (amount > 0) {
                 current.coins += amount;
                 this.addLog(`🏪 ${card.name}発動 → +${amount}コイン`);
