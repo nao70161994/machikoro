@@ -20,16 +20,19 @@ node server.js        # ローカル起動（http://localhost:3000）
 **フロントエンド**: バニラJS（フレームワークなし）。`index.html` に全UI。スクリプトはロード順に依存している：
 
 ```
-Card.js → Player.js → GameManager.js → CPU.js → ui.js → storage.js → main.js
+Card.js → Player.js → GameManager.js → CPU.js → confetti.js → audio.js → online.js → ui.js → storage.js → main.js
 ```
 
 | ファイル | 役割 |
 |---------|------|
 | `js/Card.js` | `Card` クラス・`CARD_EFFECTS`・`CARD_CATEGORIES`・`CARDS` 配列・`createCardByName()` |
 | `js/GameManager.js` | `GameManager` クラス・`LOG_TYPES`・`GAME_PHASES` |
+| `js/confetti.js` | 紙吹雪アニメーション（`startConfetti` / `stopConfetti`） |
+| `js/audio.js` | サウンド再生（`playSound` / `getAudioCtx`・`winSoundPlayed`） |
+| `js/online.js` | Socket.IO・オンラインセッション・`initSocket` / `applyAction` / `sendAction` / `initOnlineGame` |
 | `js/ui.js` | ログ描画・分類・pending モーダル・カードフィルター・ターンアナウンサー・buildMenu レンダリング・`CARD_SETS` / `enabledCards` / `enabledLandmarks` |
 | `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`） |
-| `js/main.js` | ゲーム進行・オンライン通信・CPU制御・イベントハンドラ・`CPU_PHASE_HANDLERS` |
+| `js/main.js` | ゲーム進行・CPU制御・イベントハンドラ・`CPU_PHASE_HANDLERS`・タイトル画面 |
 
 **バックエンド**: `server.js`（Node.js + Express + Socket.IO）。ゲームロジックは**クライアント側で動く**。サーバーはアクションの中継とルーム管理のみ。
 
