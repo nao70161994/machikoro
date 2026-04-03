@@ -735,3 +735,31 @@ renderOnlinePlayerSettings();;
 updateResumeButton();
 drawCitySkyline();
 window.addEventListener("resize", drawCitySkyline);
+
+// ===== PWAインストールバナー =====
+let _pwaInstallEvent = null;
+
+// すでにインストール済み or 非表示にした場合は何もしない
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    // インストール済み: バナー不要
+} else if (!localStorage.getItem('pwaInstallDismissed')) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _pwaInstallEvent = e;
+        document.getElementById('pwaInstallBanner').style.display = 'block';
+    });
+}
+
+function pwaInstallPrompt() {
+    if (!_pwaInstallEvent) return;
+    _pwaInstallEvent.prompt();
+    _pwaInstallEvent.userChoice.then(() => {
+        document.getElementById('pwaInstallBanner').style.display = 'none';
+        _pwaInstallEvent = null;
+    });
+}
+
+function pwaInstallDismiss() {
+    document.getElementById('pwaInstallBanner').style.display = 'none';
+    localStorage.setItem('pwaInstallDismissed', '1');
+}

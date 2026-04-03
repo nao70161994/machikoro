@@ -285,6 +285,18 @@
         </div>
     </div>
 
+    <!-- PWAインストールバナー -->
+    <div id="pwaInstallBanner" style="display:none">
+        <div class="pwa-banner-text">
+            <span class="pwa-banner-icon">🏙️</span>
+            <span>ホーム画面に追加するとオフラインでも遊べます</span>
+        </div>
+        <div class="pwa-banner-actions">
+            <button class="pwa-banner-btn" onclick="pwaInstallPrompt()">追加する</button>
+            <button class="pwa-banner-dismiss" onclick="pwaInstallDismiss()">×</button>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/Card.js"></script>
     <script src="js/Player.js"></script>
