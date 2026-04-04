@@ -23,13 +23,13 @@ jobs:
       - name: Bubblewrap インストール
         run: npm install -g @bubblewrap/cli
 
-      - name: Bubblewrap 設定（JDKの質問をスキップ）
+      - name: Bubblewrap 設定（JDK・Android SDKの質問をスキップ）
         run: |
           mkdir -p ~/.bubblewrap
           cat > ~/.bubblewrap/config.json << EOF
           {
             "jdkPath": "${JAVA_HOME}",
-            "androidSdkPath": "${HOME}/.bubblewrap/android_sdk"
+            "androidSdkPath": "${ANDROID_SDK_ROOT}"
           }
           EOF
 
