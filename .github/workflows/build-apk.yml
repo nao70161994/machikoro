@@ -1,0 +1,89 @@
+name: TWA APK ビルド
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Bubblewrap インストール
+        run: npm install -g @bubblewrap/cli
+
+      - name: キーストア生成
+        run: |
+          keytool -genkey -v \
+            -keystore android.keystore \
+            -alias android \
+            -keyalg RSA -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Machikoro,O=Machikoro,C=JP"
+
+      - name: SHA256フィンガープリント出力（assetlinks.json用）
+        run: |
+          echo "=== assetlinks.json に使うSHA256フィンガープリント ==="
+          keytool -list -v \
+            -keystore android.keystore \
+            -alias android \
+            -storepass android \
+            | grep "SHA256:"
+
+      - name: twa-manifest.json 作成
+        run: |
+          cat > twa-manifest.json << 'EOF'
+          {
+            "packageId": "com.machikoro.game",
+            "host": "machikoro-9jv2.onrender.com",
+            "name": "街コロ",
+            "launcherName": "街コロ",
+            "display": "standalone",
+            "orientation": "portrait",
+            "themeColor": "#0f0e17",
+            "backgroundColor": "#0f0e17",
+            "startUrl": "/",
+            "iconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
+            "maskableIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
+            "monochromeIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
+            "appVersion": "1",
+            "appVersionCode": 1,
+            "signingKey": {
+              "path": "android.keystore",
+              "alias": "android"
+            },
+            "generatorApp": "bubblewrap-cli",
+            "webManifestUrl": "https://machikoro-9jv2.onrender.com/manifest.json",
+            "sdkVersion": "34",
+            "minSdkVersion": "21",
+            "isChromeOSOnly": false,
+            "enableNotifications": false,
+            "features": {},
+            "alphaDependencies": { "enabled": false },
+            "enableSiteSettingsShortcut": true,
+            "metaQuest": { "enabled": false }
+          }
+          EOF
+
+      - name: APK ビルド
+        run: printf "android\nandroid\n" | bubblewrap build --skipPwaValidation
+
+      - name: APK アップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: machikoro-apk
+          path: '*.apk'
+          retention-days: 14

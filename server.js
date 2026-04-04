@@ -24,6 +24,22 @@ console.log(`Build hash: ${BUILD_HASH}`);
 // sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
 const swContent = swTemplate.replace("'machikoro-v1'", `'machikoro-${BUILD_HASH}'`);
+// TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
+const ASSET_LINKS = [{
+    relation: ['delegate_permission/common.handle_all_urls'],
+    target: {
+        namespace: 'android_app',
+        package_name: 'com.machikoro.game',
+        sha256_cert_fingerprints: [
+            'PLACEHOLDER_UPDATE_AFTER_FIRST_BUILD'
+        ]
+    }
+}];
+app.get('/.well-known/assetlinks.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.json(ASSET_LINKS);
+});
+
 app.get('/sw.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
