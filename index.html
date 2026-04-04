@@ -310,10 +310,10 @@
     <div id="pwaUpdateBanner" style="display:none">
         <div class="pwa-banner-text">
             <span class="pwa-banner-icon">🔄</span>
-            <span>新しいバージョンがあります</span>
+            <span id="pwaUpdateMsg">新しいバージョンがあります</span>
         </div>
         <div class="pwa-banner-actions">
-            <button class="pwa-banner-btn" onclick="pwaApplyUpdate()">今すぐ更新</button>
+            <button id="pwaUpdateBtn" class="pwa-banner-btn" onclick="pwaApplyUpdate()">今すぐ更新</button>
             <button class="pwa-banner-dismiss" onclick="document.getElementById('pwaUpdateBanner').style.display='none'">×</button>
         </div>
     </div>
@@ -352,10 +352,19 @@
         function _handleWaitingSW(sw) {
           _waitingSW = sw;
           if (!_isInGame()) {
-            // タイトル画面なら自動適用（ゲーム中は手動更新バナーを表示）
+            // タイトル画面なら自動適用
             sw.postMessage({ type: 'SKIP_WAITING' });
           } else {
-            document.getElementById('pwaUpdateBanner').style.display = 'block';
+            // ゲーム中：オンライン対戦中は更新ボタンを無効化して警告
+            const banner = document.getElementById('pwaUpdateBanner');
+            const btn = document.getElementById('pwaUpdateBtn');
+            const msg = document.getElementById('pwaUpdateMsg');
+            if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
+              msg.textContent = '新バージョンあり（ゲーム終了後に再起動してください）';
+              btn.disabled = true;
+              btn.style.opacity = '0.4';
+            }
+            banner.style.display = 'block';
           }
         }
         navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
