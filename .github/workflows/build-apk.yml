@@ -103,19 +103,12 @@ jobs:
 
       - name: APK ビルド前確認
         run: |
-          echo "=== bubblewrap location ==="
-          which bubblewrap
-          npm root -g
-          echo "=== bubblewrap install dir ==="
           NPM_ROOT=$(npm root -g)
-          ls ${NPM_ROOT}/@bubblewrap/ 2>/dev/null || echo "not found at npm root"
-          echo "=== twa-manifest.json content ==="
-          cat twa-manifest.json | head -5
-          echo "=== Error string search ==="
-          NPM_ROOT=$(npm root -g)
-          grep -r "androidSdk isn" ${NPM_ROOT}/@bubblewrap/ 2>/dev/null | head -5 || echo "not found"
-          echo "=== Config.js search ==="
-          find ${NPM_ROOT}/@bubblewrap/ -name "Config.js" 2>/dev/null | head -3 || echo "not found"
+          CORE="${NPM_ROOT}/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib"
+          echo "=== Config.js ==="
+          cat "${CORE}/Config.js"
+          echo "=== AndroidSdkTools.js (validation部分) ==="
+          grep -n "androidSdk\|jdk\|fileExists\|pathExists\|build-tools\|validate\|Result" "${CORE}/androidSdk/AndroidSdkTools.js" | head -50 || true
 
       - name: APK ビルド
         run: bubblewrap build --skipPwaValidation
