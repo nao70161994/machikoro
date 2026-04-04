@@ -258,11 +258,20 @@ class CPU {
     }
 
     _buyCard(card, game, shopStock) {
-        if (game.buildCard(card)) shopStock[card.name]--;
+        if (game.buildCard(card)) {
+            shopStock[card.name]--;
+            if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof sendAction === 'function') {
+                sendAction('buildCard', { cardName: card.name });
+            }
+        }
     }
 
     _buyLandmark(name, game) {
-        game.buildLandmark(name);
+        if (game.buildLandmark(name)) {
+            if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof sendAction === 'function') {
+                sendAction('buildLandmark', { name });
+            }
+        }
     }
 
     _landmarkUrgency(name, current, game) {
