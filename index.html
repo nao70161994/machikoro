@@ -345,22 +345,30 @@
     <script>
       if ('serviceWorker' in navigator) {
         let _waitingSW = null;
-        function _showUpdateBanner(sw) {
+        function _isInGame() {
+          const gs = document.getElementById('gameScreen');
+          return gs && gs.style.display !== 'none' && gs.style.display !== '';
+        }
+        function _handleWaitingSW(sw) {
           _waitingSW = sw;
-          document.getElementById('pwaUpdateBanner').style.display = 'block';
+          if (!_isInGame()) {
+            // タイトル画面なら自動適用（ゲーム中は手動更新バナーを表示）
+            sw.postMessage({ type: 'SKIP_WAITING' });
+          } else {
+            document.getElementById('pwaUpdateBanner').style.display = 'block';
+          }
         }
         navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then(reg => {
-            // 既に待機中のSWがある場合（再訪問時）
             if (reg.waiting && navigator.serviceWorker.controller) {
-              _showUpdateBanner(reg.waiting);
+              _handleWaitingSW(reg.waiting);
             }
             reg.addEventListener('updatefound', () => {
               const sw = reg.installing;
               sw.addEventListener('statechange', () => {
                 if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-                  _showUpdateBanner(sw);
+                  _handleWaitingSW(sw);
                 }
               });
             });
