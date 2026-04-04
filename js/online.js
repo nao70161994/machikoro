@@ -104,13 +104,19 @@ function initSocket() {
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
-    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el }) => {
+    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions }) => {
         isOnlineGame = true;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
-        // initOnlineGame がmyPlayerIndexを上書きする前に保存
         saveOnlineSession();
+        // バージョン不一致チェック
+        if (versions && versions.length > 1) {
+            const unique = [...new Set(versions)];
+            if (unique.length > 1) {
+                game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
+            }
+        }
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
         initOnlineGame(playerNames, ps, playerOrder);
@@ -213,13 +219,16 @@ function showCreateRoom() {
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
     initSocket();
     isRoomHost = true;
-    socket.emit('createRoom', {
-        playerName: name,
-        playerCount: onlineSelectedCount,
-        playerSettings: onlinePlayerSettings,
-        cpuSpeed: onlineCpuSpeed,
-        enabledCards: [...enabledCards],
-        enabledLandmarks: [...enabledLandmarks]
+    fetch('/api/version').then(r => r.json()).catch(() => ({ hash: 'unknown' })).then(({ hash }) => {
+        socket.emit('createRoom', {
+            playerName: name,
+            playerCount: onlineSelectedCount,
+            playerSettings: onlinePlayerSettings,
+            cpuSpeed: onlineCpuSpeed,
+            enabledCards: [...enabledCards],
+            enabledLandmarks: [...enabledLandmarks],
+            clientVersion: hash
+        });
     });
 }
 
@@ -230,7 +239,9 @@ function joinRoom() {
     if (roomId.length !== 6) { alert("ルームIDは6文字です"); return; }
     myPlayerName = name;
     initSocket();
-    socket.emit('joinRoom', { roomId, playerName: name });
+    fetch('/api/version').then(r => r.json()).catch(() => ({ hash: 'unknown' })).then(({ hash }) => {
+        socket.emit('joinRoom', { roomId, playerName: name, clientVersion: hash });
+    });
 }
 
 function initOnlineGame(playerNames, ps, playerOrder) {

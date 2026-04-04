@@ -46,6 +46,10 @@ app.get('/sw.js', (req, res) => {
     res.send(swContent);
 });
 
+app.get('/api/version', (req, res) => {
+    res.json({ hash: BUILD_HASH });
+});
+
 app.use(express.static(path.join(__dirname)));
 
 const rooms = {};
@@ -79,7 +83,8 @@ if (typeof roomGcInterval.unref === 'function') {
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
 
-    socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks }) => {
+    socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion }) => {
+        socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { socket.emit('error', '名前が無効です'); return; }
         let roomId;
@@ -127,7 +132,8 @@ io.on('connection', (socket) => {
         console.log(`ルーム作成: ${roomId} (${playerCount}人)`);
     });
 
-    socket.on('joinRoom', ({ roomId, playerName }) => {
+    socket.on('joinRoom', ({ roomId, playerName, clientVersion }) => {
+        socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { socket.emit('error', '名前が無効です'); return; }
         const room = rooms[roomId];
@@ -623,13 +629,18 @@ function checkGameStart(io, roomId) {
             [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
         }
 
+        const versions = room.players.map(p => {
+            const s = io.sockets.sockets.get(p.id);
+            return s ? (s.clientVersion || 'unknown') : 'unknown';
+        });
         const gameStartPayload = {
             enabledCards: room.enabledCards,
             enabledLandmarks: room.enabledLandmarks,
             playerNames,
             playerSettings: room.playerSettings,
             cpuSpeed: room.cpuSpeed,
-            playerOrder
+            playerOrder,
+            versions
         };
         rooms[roomId].gameStartPayload = gameStartPayload;
         rooms[roomId].actionLog = [];
