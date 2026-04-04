@@ -20,31 +20,29 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Android SDK 確認・コンポーネントインストール
-        run: |
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
-          echo "ANDROID_HOME=${ANDROID_HOME}"
-          ls /usr/local/lib/android/sdk/ 2>/dev/null && echo "SDK found" || echo "SDK not found"
-          ls /usr/local/lib/android/sdk/build-tools/ 2>/dev/null && echo "build-tools found" || echo "build-tools not found"
-          SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
-          if [ -f "${SDKMANAGER}" ]; then
-            echo "y" | ${SDKMANAGER} --install "build-tools;34.0.0" "platforms;android-34" "platform-tools" 2>&1 | tail -5
-          else
-            echo "sdkmanager not found at ${SDKMANAGER}"
-            find /usr/local/lib/android/ -name "sdkmanager" 2>/dev/null || echo "sdkmanager not found anywhere"
-          fi
-          echo "=== build-tools after install ==="
-          ls /usr/local/lib/android/sdk/build-tools/ 2>/dev/null || echo "still not found"
-
       - name: Bubblewrap インストール
         run: npm install -g @bubblewrap/cli
 
-      - name: Bubblewrap 設定（JDK・Android SDKの質問をスキップ）
+      - name: Bubblewrap 設定（Node.jsで確実に書き込む）
         run: |
-          mkdir -p ~/.bubblewrap
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "${JAVA_HOME}" "/usr/local/lib/android/sdk" > ~/.bubblewrap/config.json
-          echo "=== bubblewrap config ==="
-          cat ~/.bubblewrap/config.json
+          node -e "
+          const os = require('os');
+          const fs = require('fs');
+          const path = require('path');
+          const dir = path.join(os.homedir(), '.bubblewrap');
+          fs.mkdirSync(dir, { recursive: true });
+          const config = {
+            jdkPath: process.env.JAVA_HOME,
+            androidSdkPath: '/usr/local/lib/android/sdk'
+          };
+          const configPath = path.join(dir, 'config.json');
+          fs.writeFileSync(configPath, JSON.stringify(config));
+          console.log('Written to:', configPath);
+          console.log('Content:', fs.readFileSync(configPath, 'utf8'));
+          console.log('JDK exists:', fs.existsSync(config.jdkPath));
+          console.log('SDK exists:', fs.existsSync(config.androidSdkPath));
+          console.log('build-tools exists:', fs.existsSync(path.join(config.androidSdkPath, 'build-tools')));
+          "
 
       - name: キーストア生成
         run: |
@@ -86,7 +84,9 @@ jobs:
             "appVersionCode": 1,
             "signingKey": {
               "path": "android.keystore",
-              "alias": "android"
+              "alias": "android",
+              "keypassword": "android",
+              "storePassword": "android"
             },
             "generatorApp": "bubblewrap-cli",
             "webManifestUrl": "https://machikoro-9jv2.onrender.com/manifest.json",
@@ -102,7 +102,7 @@ jobs:
           EOF
 
       - name: APK ビルド
-        run: printf "android\nandroid\n" | bubblewrap build --skipPwaValidation
+        run: bubblewrap build --skipPwaValidation
 
       - name: APK アップロード
         uses: actions/upload-artifact@v4
