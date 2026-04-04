@@ -655,6 +655,13 @@ function checkGameStart(io, roomId) {
     }
 }
 
+process.on('uncaughtException', (err) => {
+    console.error('uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('unhandledRejection:', reason);
+});
+
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
     server.listen(PORT, '0.0.0.0', () => {
