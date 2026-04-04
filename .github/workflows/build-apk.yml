@@ -107,7 +107,7 @@ jobs:
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: APK ビルド
-        run: printf "Y\nandroid\nandroid\n" | bubblewrap build --skipPwaValidation
+        run: printf "Y\nandroid\nandroid\nandroid\nandroid\n" | bubblewrap build --skipPwaValidation
 
       - name: APK アップロード
         uses: actions/upload-artifact@v4
