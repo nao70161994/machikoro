@@ -105,10 +105,13 @@ jobs:
         run: |
           NPM_ROOT=$(npm root -g)
           CORE="${NPM_ROOT}/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib"
-          echo "=== Config.js ==="
-          cat "${CORE}/Config.js"
-          echo "=== AndroidSdkTools.js (validation部分) ==="
-          grep -n "androidSdk\|jdk\|fileExists\|pathExists\|build-tools\|validate\|Result" "${CORE}/androidSdk/AndroidSdkTools.js" | head -50 || true
+          CLI="${NPM_ROOT}/@bubblewrap/cli/dist/lib"
+          echo "=== BUILD_TOOLS_VERSION ==="
+          grep -n "BUILD_TOOLS_VERSION" "${CORE}/androidSdk/AndroidSdkTools.js" | head -5 || true
+          echo "=== validatePath full ==="
+          sed -n '215,235p' "${CORE}/androidSdk/AndroidSdkTools.js"
+          echo "=== build command config loading ==="
+          cat "${CLI}/cmds/build.js" 2>/dev/null | head -80 || ls "${CLI}/" 2>/dev/null || find ${NPM_ROOT}/@bubblewrap/cli/dist -name "build.js" 2>/dev/null | head -3
 
       - name: APK ビルド
         run: bubblewrap build --skipPwaValidation
