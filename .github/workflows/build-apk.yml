@@ -124,5 +124,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: machikoro-apk
-          path: '*.apk'
+          path: |
+            app-release-signed.apk
+            app/build/outputs/apk/release/*.apk
           retention-days: 14
