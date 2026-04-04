@@ -103,24 +103,15 @@ jobs:
 
       - name: APK ビルド前確認
         run: |
-          echo "=== JDK bin/java ==="
-          ls ${JAVA_HOME}/bin/java && echo "java binary OK" || echo "java binary MISSING"
-          echo "=== bubblewrap version ==="
-          bubblewrap --version 2>/dev/null || echo "version unavailable"
-          echo "=== bubblewrap build --help ==="
-          bubblewrap build --help 2>/dev/null | head -20 || true
-          echo "=== bubblewrap source Config check ==="
-          node -e "
-          try {
-            const Config = require('/usr/local/lib/node_modules/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib/Config');
-            console.log('Config keys:', Object.keys(Config));
-          } catch(e) {
-            try {
-              const Config = require('/usr/local/lib/node_modules/@bubblewrap/core/dist/lib/Config');
-              console.log('Config keys (top):', Object.keys(Config));
-            } catch(e2) { console.log('Cannot load Config:', e2.message); }
-          }
-          "
+          echo "=== Error source location ==="
+          grep -r "androidSdk isn" /usr/local/lib/node_modules/@bubblewrap/ 2>/dev/null | head -5
+          echo "=== Config.js location ==="
+          find /usr/local/lib/node_modules/@bubblewrap/ -name "Config.js" 2>/dev/null
+          echo "=== twa-manifest.json content ==="
+          cat twa-manifest.json | head -10
+          echo "=== Config.js content ==="
+          CONFIG_JS=$(find /usr/local/lib/node_modules/@bubblewrap/ -name "Config.js" 2>/dev/null | head -1)
+          cat "${CONFIG_JS}" | head -100
 
       - name: APK ビルド
         run: bubblewrap build --skipPwaValidation
