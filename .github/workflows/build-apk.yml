@@ -26,12 +26,9 @@ jobs:
       - name: Bubblewrap 設定（JDK・Android SDKの質問をスキップ）
         run: |
           mkdir -p ~/.bubblewrap
-          cat > ~/.bubblewrap/config.json << EOF
-          {
-            "jdkPath": "${JAVA_HOME}",
-            "androidSdkPath": "${ANDROID_SDK_ROOT}"
-          }
-          EOF
+          echo "{\"jdkPath\":\"${JAVA_HOME}\",\"androidSdkPath\":\"${ANDROID_SDK_ROOT}\"}" > ~/.bubblewrap/config.json
+          echo "=== bubblewrap config ==="
+          cat ~/.bubblewrap/config.json
 
       - name: キーストア生成
         run: |
