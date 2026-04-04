@@ -193,7 +193,14 @@ io.on('connection', (socket) => {
         if (!roomId) return;
         const room = rooms[roomId];
         if (!room || !room.started) return;
-        const validation = validateGameAction(room, socket, action, data);
+        let validation;
+        try {
+            validation = validateGameAction(room, socket, action, data);
+        } catch (e) {
+            console.error('validateGameAction error:', e);
+            socket.emit('error', '無効な操作です');
+            return;
+        }
         if (!validation.ok) {
             socket.emit('error', '無効な操作です');
             return;
@@ -241,34 +248,38 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        const roomId = socket.roomId;
-        if (roomId && rooms[roomId]) {
-            const room = rooms[roomId];
-            if (!room.started) {
-                room.players = room.players.filter(p => p.id !== socket.id);
-                if (room.players.length === 0) {
-                    delete rooms[roomId];
+        try {
+            const roomId = socket.roomId;
+            if (roomId && rooms[roomId]) {
+                const room = rooms[roomId];
+                if (!room.started) {
+                    room.players = room.players.filter(p => p.id !== socket.id);
+                    if (room.players.length === 0) {
+                        delete rooms[roomId];
+                    } else {
+                        const playerList = buildPlayerList(room);
+                        io.to(roomId).emit('playerList', playerList);
+                    }
                 } else {
-                    const playerList = buildPlayerList(room);
-                    io.to(roomId).emit('playerList', playerList);
-                }
-            } else {
-                const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
-                io.to(roomId).emit('playerDisconnected', {
-                    playerIndex: socket.playerIndex,
-                    playerName: disconnectedPlayer?.name || `プレイヤー${socket.playerIndex + 1}`,
-                });
-                // ホストが切断した場合、残存プレイヤーの中から新ホストを選出
-                if (socket.playerIndex === room.hostPlayerIndex) {
-                    const remaining = room.players.filter(p => p.id !== socket.id);
-                    if (remaining.length > 0) {
-                        room.hostPlayerIndex = remaining[0].index;
-                        io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
-                        console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+                    const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
+                    io.to(roomId).emit('playerDisconnected', {
+                        playerIndex: socket.playerIndex,
+                        playerName: disconnectedPlayer?.name || `プレイヤー${socket.playerIndex + 1}`,
+                    });
+                    // ホストが切断した場合、残存プレイヤーの中から新ホストを選出
+                    if (socket.playerIndex === room.hostPlayerIndex) {
+                        const remaining = room.players.filter(p => p.id !== socket.id);
+                        if (remaining.length > 0) {
+                            room.hostPlayerIndex = remaining[0].index;
+                            io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
+                            console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+                        }
                     }
                 }
+                console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
             }
-            console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
+        } catch (e) {
+            console.error('disconnect handler error:', e);
         }
     });
 });
