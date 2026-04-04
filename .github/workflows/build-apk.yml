@@ -107,7 +107,18 @@ jobs:
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: APK ビルド
-        run: printf "Y\nandroid\nandroid\nandroid\nandroid\n" | bubblewrap build --skipPwaValidation
+        run: |
+          which expect || sudo apt-get install -y expect
+          expect << 'EXPECTEOF'
+set timeout 300
+spawn bubblewrap build --skipPwaValidation
+expect {
+  -re {\(Y/n\)} { send "Y\r"; exp_continue }
+  "Key Store:"  { send "android\r"; exp_continue }
+  "Key:"        { send "android\r"; exp_continue }
+  eof           { }
+}
+EXPECTEOF
 
       - name: APK アップロード
         uses: actions/upload-artifact@v4
