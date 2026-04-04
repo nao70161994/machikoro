@@ -482,9 +482,13 @@ function validateGameAction(room, socket, action, data) {
     const currentIsCpu = !!cpuPlayers[currentIndex];
     const hostPlayerIndex = room.hostPlayerIndex;
 
+    // playerOrderシャッフル後のゲーム内位置→元のプレイヤーインデックスに変換
+    const playerOrder = room.gameStartPayload?.playerOrder;
+    const originalCurrentIndex = playerOrder ? playerOrder[currentIndex] : currentIndex;
+
     if (currentIsCpu) {
         if (socket.playerIndex !== hostPlayerIndex) return { ok: false };
-    } else if (socket.playerIndex !== currentIndex) {
+    } else if (socket.playerIndex !== originalCurrentIndex) {
         return { ok: false };
     }
 
