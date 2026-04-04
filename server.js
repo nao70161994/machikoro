@@ -31,7 +31,7 @@ const ASSET_LINKS = [{
         namespace: 'android_app',
         package_name: 'com.machikoro.game',
         sha256_cert_fingerprints: [
-            'B9:AB:7D:7D:3D:0F:1F:DC:58:8A:78:FA:07:AB:40:4B:16:C7:C5:B2:D4:4A:E0:D9:1E:CC:CA:CA:24:D8:BD:69'
+            '27:35:FB:EC:2C:82:C0:DD:5D:4D:24:C1:0F:36:6C:C2:F6:69:91:ED:6B:6B:80:15:BD:DE:2A:22:49:DC:2A:D1'
         ]
     }
 }];
