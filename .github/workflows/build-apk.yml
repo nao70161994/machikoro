@@ -103,19 +103,23 @@ jobs:
 
       - name: APK ビルド前確認
         run: |
-          echo "HOME=${HOME}"
-          node -e "const os=require('os'); console.log('node homedir:', os.homedir());"
-          ls -la ~/.bubblewrap/ 2>/dev/null || echo "~/.bubblewrap not found"
-          cat ~/.bubblewrap/config.json 2>/dev/null || echo "config.json NOT FOUND"
+          echo "=== JDK bin/java ==="
+          ls ${JAVA_HOME}/bin/java && echo "java binary OK" || echo "java binary MISSING"
+          echo "=== bubblewrap version ==="
+          bubblewrap --version 2>/dev/null || echo "version unavailable"
+          echo "=== bubblewrap build --help ==="
+          bubblewrap build --help 2>/dev/null | head -20 || true
+          echo "=== bubblewrap source Config check ==="
           node -e "
-          const fs=require('fs'), path=require('path'), os=require('os');
-          const cp = path.join(os.homedir(),'.bubblewrap','config.json');
-          if(fs.existsSync(cp)){
-            const c=JSON.parse(fs.readFileSync(cp,'utf8'));
-            console.log('jdkPath:', c.jdkPath, '| exists:', fs.existsSync(c.jdkPath));
-            console.log('androidSdkPath:', c.androidSdkPath, '| exists:', fs.existsSync(c.androidSdkPath));
-            console.log('build-tools:', fs.existsSync(path.join(c.androidSdkPath,'build-tools')));
-          } else { console.log('CONFIG MISSING'); }
+          try {
+            const Config = require('/usr/local/lib/node_modules/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib/Config');
+            console.log('Config keys:', Object.keys(Config));
+          } catch(e) {
+            try {
+              const Config = require('/usr/local/lib/node_modules/@bubblewrap/core/dist/lib/Config');
+              console.log('Config keys (top):', Object.keys(Config));
+            } catch(e2) { console.log('Cannot load Config:', e2.message); }
+          }
           "
 
       - name: APK ビルド
