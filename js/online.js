@@ -110,16 +110,16 @@ function initSocket() {
         if (ec) enabledCards = new Set(ec);
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         saveOnlineSession();
-        // バージョン不一致チェック
+        document.getElementById("titleScreen").style.display = "none";
+        document.getElementById("gameScreen").style.display = "block";
+        initOnlineGame(playerNames, ps, playerOrder);
+        // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
         if (versions && versions.length > 1) {
             const unique = [...new Set(versions)];
             if (unique.length > 1) {
                 game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
             }
         }
-        document.getElementById("titleScreen").style.display = "none";
-        document.getElementById("gameScreen").style.display = "block";
-        initOnlineGame(playerNames, ps, playerOrder);
     });
 
     socket.on('gameAction', ({ action, data, playerIndex }) => {
