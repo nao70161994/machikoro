@@ -20,12 +20,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Android SDK 確認
+      - name: Android SDK 確認・コンポーネントインストール
         run: |
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
           echo "ANDROID_HOME=${ANDROID_HOME}"
           ls /usr/local/lib/android/sdk/ 2>/dev/null && echo "SDK found" || echo "SDK not found"
-          ls /usr/local/lib/android/sdk/build-tools/ 2>/dev/null || echo "build-tools not found"
+          ls /usr/local/lib/android/sdk/build-tools/ 2>/dev/null && echo "build-tools found" || echo "build-tools not found"
+          SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
+          if [ -f "${SDKMANAGER}" ]; then
+            echo "y" | ${SDKMANAGER} --install "build-tools;34.0.0" "platforms;android-34" "platform-tools" 2>&1 | tail -5
+          else
+            echo "sdkmanager not found at ${SDKMANAGER}"
+            find /usr/local/lib/android/ -name "sdkmanager" 2>/dev/null || echo "sdkmanager not found anywhere"
+          fi
+          echo "=== build-tools after install ==="
+          ls /usr/local/lib/android/sdk/build-tools/ 2>/dev/null || echo "still not found"
 
       - name: Bubblewrap インストール
         run: npm install -g @bubblewrap/cli
