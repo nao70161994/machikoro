@@ -110,7 +110,8 @@ jobs:
         run: |
           which expect || sudo apt-get install -y expect
           expect << 'EXPECTEOF'
-          set timeout 300
+          set timeout 600
+          log_user 1
           spawn bubblewrap build --skipPwaValidation
           expect {
             -re {\(Y/n\)} { send "Y\r"; exp_continue }
@@ -118,10 +119,16 @@ jobs:
             "Key:"        { send "android\r"; exp_continue }
             eof           { }
           }
+          lassign [wait] pid spawnid os_error_flag value
+          exit $value
           EXPECTEOF
 
       - name: APK ファイル確認
-        run: find . -name "*.apk" 2>/dev/null || echo "APK not found"
+        run: |
+          echo "=== カレントディレクトリ ==="
+          ls -la
+          echo "=== APK検索（全体） ==="
+          find /home/runner -name "*.apk" 2>/dev/null | head -20 || echo "not found"
 
       - name: APK アップロード
         uses: actions/upload-artifact@v4
