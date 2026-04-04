@@ -120,6 +120,9 @@ jobs:
           }
           EXPECTEOF
 
+      - name: APK ファイル確認
+        run: find . -name "*.apk" 2>/dev/null || echo "APK not found"
+
       - name: APK アップロード
         uses: actions/upload-artifact@v4
         with:
