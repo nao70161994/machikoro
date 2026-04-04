@@ -97,7 +97,8 @@ jobs:
             "features": {},
             "alphaDependencies": { "enabled": false },
             "enableSiteSettingsShortcut": true,
-            "metaQuest": { "enabled": false }
+            "metaQuest": { "enabled": false },
+            "splashScreenFadeOutDuration": 300
           }
           EOF
 
