@@ -101,6 +101,23 @@ jobs:
           }
           EOF
 
+      - name: APK ビルド前確認
+        run: |
+          echo "HOME=${HOME}"
+          node -e "const os=require('os'); console.log('node homedir:', os.homedir());"
+          ls -la ~/.bubblewrap/ 2>/dev/null || echo "~/.bubblewrap not found"
+          cat ~/.bubblewrap/config.json 2>/dev/null || echo "config.json NOT FOUND"
+          node -e "
+          const fs=require('fs'), path=require('path'), os=require('os');
+          const cp = path.join(os.homedir(),'.bubblewrap','config.json');
+          if(fs.existsSync(cp)){
+            const c=JSON.parse(fs.readFileSync(cp,'utf8'));
+            console.log('jdkPath:', c.jdkPath, '| exists:', fs.existsSync(c.jdkPath));
+            console.log('androidSdkPath:', c.androidSdkPath, '| exists:', fs.existsSync(c.androidSdkPath));
+            console.log('build-tools:', fs.existsSync(path.join(c.androidSdkPath,'build-tools')));
+          } else { console.log('CONFIG MISSING'); }
+          "
+
       - name: APK ビルド
         run: bubblewrap build --skipPwaValidation
 
