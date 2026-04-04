@@ -345,14 +345,22 @@
     <script>
       if ('serviceWorker' in navigator) {
         let _waitingSW = null;
+        function _showUpdateBanner(sw) {
+          _waitingSW = sw;
+          document.getElementById('pwaUpdateBanner').style.display = 'block';
+        }
+        navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then(reg => {
+            // 既に待機中のSWがある場合（再訪問時）
+            if (reg.waiting && navigator.serviceWorker.controller) {
+              _showUpdateBanner(reg.waiting);
+            }
             reg.addEventListener('updatefound', () => {
               const sw = reg.installing;
               sw.addEventListener('statechange', () => {
                 if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-                  _waitingSW = sw;
-                  document.getElementById('pwaUpdateBanner').style.display = 'block';
+                  _showUpdateBanner(sw);
                 }
               });
             });
@@ -361,7 +369,8 @@
         window.pwaApplyUpdate = () => {
           if (_waitingSW) {
             _waitingSW.postMessage({ type: 'SKIP_WAITING' });
-            navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+          } else {
+            location.reload();
           }
         };
       }
