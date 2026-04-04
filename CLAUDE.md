@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 node server.js        # ローカル起動（http://localhost:3000）
 ```
 
-デプロイ先: Render（`process.env.PORT` を使用）。無料枠のため15分非アクティブでスリープする。
+デプロイ先: Render（`process.env.PORT` を使用）。無料枠のため15分非アクティブでスリープ、かつインフラ側で1日1〜2回強制再起動される場合がある。UptimeRobot で監視しても防げない。
 
 ## アーキテクチャ概要
 
@@ -29,9 +29,9 @@ Card.js → Player.js → GameManager.js → CPU.js → confetti.js → audio.js
 | `js/GameManager.js` | `GameManager` クラス・`LOG_TYPES`・`GAME_PHASES` |
 | `js/confetti.js` | 紙吹雪アニメーション（`startConfetti` / `stopConfetti`） |
 | `js/audio.js` | サウンド再生（`playSound` / `getAudioCtx`・`winSoundPlayed`） |
-| `js/online.js` | Socket.IO・オンラインセッション・`initSocket` / `applyAction` / `sendAction` / `initOnlineGame` |
+| `js/online.js` | Socket.IO・オンラインセッション・`initSocket` / `applyAction` / `sendAction` / `initOnlineGame`・サーバー再起動復元ロジック |
 | `js/ui.js` | ログ描画・分類・pending モーダル・カードフィルター・ターンアナウンサー・buildMenu レンダリング・`CARD_SETS` / `enabledCards` / `enabledLandmarks` |
-| `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`） |
+| `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`）・`reconnectOnline()` |
 | `js/main.js` | ゲーム進行・CPU制御・イベントハンドラ・`CPU_PHASE_HANDLERS`・タイトル画面 |
 
 **バックエンド**: `server.js`（Node.js + Express + Socket.IO）。ゲームロジックは**クライアント側で動く**。サーバーはアクションの中継とルーム管理のみ。
@@ -89,9 +89,19 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - サイコロの乱数はホストが生成して `forceDice` として送信 → 全クライアントで同じ目になる
 - サーバーはアクションログ（`room.actionLog`）を蓄積し、再接続時のリプレイに使用
 - ホスト切断時は残存プレイヤーの先頭が新ホストになり `hostChanged` イベントで通知される
-- 再接続トークン（UUID）をルーム作成・参加時に発行。`rejoinRoom` 時に `roomId + playerIndex + playerName + reconnectToken` の4つが一致しないと拒否される
+- 再接続トークン（UUID）をルーム作成・参加時に発行。`rejoinRoom` 時に `roomId + playerIndex + playerName + reconnectToken` の4つが一致しないと拒否される（復元済みルームはトークン検証をスキップし名前のみ確認）
 - 開始済みルームは2時間アクティビティがないと自動削除（`lastTouchedAt` + TTL）
 - プレイヤー名はサーバー受信時に `sanitizeName()` でバリデーション・20文字以内に制限
+- **プレイヤー順シャッフル**: ゲーム開始時にサーバーが `playerOrder` 配列を生成。`validateGameAction()` は `playerOrder[currentIndex]` で元のプレイヤーインデックスに変換してから `socket.playerIndex` と比較する（直接比較するとシャッフル後に人間プレイヤーのアクションが全拒否される）
+
+#### サーバー再起動後の復元フロー
+
+- 全クライアントがゲーム開始時の `gameStartPayload` を `localStorage('onlineGameStart')` に保存
+- `sendAction` / `socket.on('gameAction')` のたびに `localStorage('onlineActionLog')` へ追記
+- `rejoinRoom` でルームが見つからない場合はサーバーが `ROOM_NOT_FOUND` エラーを返す
+- **ホスト**: `ROOM_NOT_FOUND` を受け取ると `recreateRoom` イベントを送信 → サーバーがアクションログからルームを再構築 → `rejoinData` で復帰
+- **非ホスト**: `ROOM_NOT_FOUND` を受け取ると3秒ごと最大8回 `rejoinRoom` をリトライ（ホストの復元完了を待つ）
+- 復元されたルームは `room.restored = true` フラグが立つ
 
 ### CPU（js/CPU.js）
 
@@ -99,12 +109,15 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 `GameManager.calcCardIncome(card, owner, game)` 静的メソッドで multiplier 系の収入を計算（CPU と GameManager の両方が使用）。
 
+**重要**: `_buyCard()` と `_buyLandmark()` はオンライン対戦中（`isOnlineGame === true`）に `sendAction()` を呼ぶ。これにより非ホスト側にCPUの建設アクションが伝わる。`typeof isOnlineGame !== 'undefined'` ガードによりテスト環境では呼ばれない。
+
 #### CPU進行チェーン（main.js）
 
 - `scheduleCPU()` はトークン方式で自己再起動チェーンを形成。`cpuScheduleToken` をインクリメントし、古いチェーンは自動破棄される
 - `cpuDo(action, data, fallback)` はアクションを実行後に `scheduleCPU()` を呼び、次フェーズへ自動進行する
 - `CPU_PHASE_HANDLERS` テーブル（配列）でフェーズごとの処理を定義。新フェーズ追加時はここに1エントリ追加するだけ。フェーズ判定は `GAME_PHASES` 定数を使う
 - ITベンチャー所持時は `nextTurn` ステップに `!game.pendingIT` ガードがあり、`pendingIT=true` の間は再進行しない（無限ループ防止）
+- **build フェーズ**は `cpuDo` を使わず `cpu.build()` を直接呼ぶ。建設アクションの送信は `_buyCard` / `_buyLandmark` 内部で行う
 
 ### ローカルストレージ
 
@@ -112,6 +125,8 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 |------|------|
 | `savedGame` | ローカルゲームの中断状態（JSON） |
 | `onlineSession` | オンライン再接続用情報（roomId・playerIndex・playerName・isRoomHost・reconnectToken） |
+| `onlineGameStart` | オンラインゲーム開始時の `gameStartPayload`（サーバー再起動復元用） |
+| `onlineActionLog` | オンラインゲームの全アクションログ（サーバー再起動復元用） |
 | `selectedCount` / `playerSettings` / `cpuSpeed` | タイトル画面の設定 |
 | `winStreak` / `lastWinnerName` | 連勝記録 |
 | `tutorialEnabled` / `tutorialLevel` | チュートリアル設定 |
@@ -137,22 +152,24 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 - プレイヤー名は `sanitizeName()` でHTMLタグ・特殊文字を除去（サーバー側）
 - フロントエンドは `escapeHtml()` でプレイヤー名・カード名を `innerHTML` に挿入前にエスケープ
-- `validateGameAction()` でアクションの妥当性をサーバー側で検証（フェーズ・権限・所持金・在庫・紫重複など）
+- `validateGameAction()` でアクションの妥当性をサーバー側で検証（フェーズ・権限・所持金・在庫・紫重複など）。内部で例外が発生してもtry-catchでキャッチしサーバーは落ちない
 - ブラウザネイティブ `confirm()` は廃止済み。確認ダイアログはカスタムモーダル `showConfirm()` を使うこと
 
 ### テスト
 
 ```
-npm test    # tests/run-all.js → gamemanager.test.js + server.test.js
+npm test    # tests/run-all.js → gamemanager.test.js + server.test.js + cpu.test.js + online.test.js
 ```
 
-Node.js 組み込み `assert` モジュールのみ使用。現在 **40テスト**（gamemanager.test.js: 31, server.test.js: 9）。
+Node.js 組み込み `assert` モジュールのみ使用。現在 **93テスト**（gamemanager.test.js: 41, server.test.js: 27, cpu.test.js: 15, online.test.js: 10）。
 
 | ファイル | 内容 |
 |---------|------|
 | `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard・テレビ局・ITベンチャー・電波塔・ログリセット・CARDSソート・processIncome・calcCardIncome・LOG_TYPES構造など） |
-| `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName・validateCleaningPayload・validateRenovationPayload 等） |
-| `tests/run-all.js` | 両テストを順次実行するエントリポイント |
+| `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName・validateCleaningPayload・validateRenovationPayload・playerOrderシャッフル対応等） |
+| `tests/cpu.test.js` | CPU単体テスト（evalCard・chooseDiceCount・chooseReroll・_landmarkUrgency・sortAffordable） |
+| `tests/online.test.js` | オンライン関連テスト（applyAction・initOnlineGame） |
+| `tests/run-all.js` | 4ファイルを順次実行するエントリポイント |
 
 新機能追加時は対応するテストファイルにケースを追加すること。UI 固有の処理（DOM 操作・アニメーション）はブラウザ環境依存のため Node.js テストでは検証できない。GameManager ロジックに集中してテストを書く。
 
