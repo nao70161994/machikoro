@@ -110,15 +110,15 @@ jobs:
         run: |
           which expect || sudo apt-get install -y expect
           expect << 'EXPECTEOF'
-set timeout 300
-spawn bubblewrap build --skipPwaValidation
-expect {
-  -re {\(Y/n\)} { send "Y\r"; exp_continue }
-  "Key Store:"  { send "android\r"; exp_continue }
-  "Key:"        { send "android\r"; exp_continue }
-  eof           { }
-}
-EXPECTEOF
+          set timeout 300
+          spawn bubblewrap build --skipPwaValidation
+          expect {
+            -re {\(Y/n\)} { send "Y\r"; exp_continue }
+            "Key Store:"  { send "android\r"; exp_continue }
+            "Key:"        { send "android\r"; exp_continue }
+            eof           { }
+          }
+          EXPECTEOF
 
       - name: APK アップロード
         uses: actions/upload-artifact@v4
