@@ -20,13 +20,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Android SDK 確認
+        run: |
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+          ls /usr/local/lib/android/sdk/ 2>/dev/null && echo "SDK found at /usr/local/lib/android/sdk" || echo "SDK not found"
+          ls /usr/local/lib/android/sdk/build-tools/ 2>/dev/null || echo "build-tools not found"
+
       - name: Bubblewrap インストール
         run: npm install -g @bubblewrap/cli
 
       - name: Bubblewrap 設定（JDK・Android SDKの質問をスキップ）
         run: |
           mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"${JAVA_HOME}\",\"androidSdkPath\":\"${ANDROID_SDK_ROOT}\"}" > ~/.bubblewrap/config.json
+          SDK_PATH="/usr/local/lib/android/sdk"
+          JAVA_PATH="${JAVA_HOME}"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "${JAVA_PATH}" "${SDK_PATH}" > ~/.bubblewrap/config.json
           echo "=== bubblewrap config ==="
           cat ~/.bubblewrap/config.json
 
@@ -53,37 +62,37 @@ jobs:
       - name: twa-manifest.json 作成
         run: |
           cat > twa-manifest.json << 'EOF'
-          {
-            "packageId": "com.machikoro.game",
-            "host": "machikoro-9jv2.onrender.com",
-            "name": "街コロ",
-            "launcherName": "街コロ",
-            "display": "standalone",
-            "orientation": "portrait",
-            "themeColor": "#0f0e17",
-            "backgroundColor": "#0f0e17",
-            "startUrl": "/",
-            "iconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
-            "maskableIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
-            "monochromeIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
-            "appVersion": "1",
-            "appVersionCode": 1,
-            "signingKey": {
-              "path": "android.keystore",
-              "alias": "android"
-            },
-            "generatorApp": "bubblewrap-cli",
-            "webManifestUrl": "https://machikoro-9jv2.onrender.com/manifest.json",
-            "sdkVersion": "34",
-            "minSdkVersion": "21",
-            "isChromeOSOnly": false,
-            "enableNotifications": false,
-            "features": {},
-            "alphaDependencies": { "enabled": false },
-            "enableSiteSettingsShortcut": true,
-            "metaQuest": { "enabled": false }
-          }
-          EOF
+{
+  "packageId": "com.machikoro.game",
+  "host": "machikoro-9jv2.onrender.com",
+  "name": "街コロ",
+  "launcherName": "街コロ",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0f0e17",
+  "backgroundColor": "#0f0e17",
+  "startUrl": "/",
+  "iconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
+  "maskableIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
+  "monochromeIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
+  "appVersion": "1",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "android.keystore",
+    "alias": "android"
+  },
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://machikoro-9jv2.onrender.com/manifest.json",
+  "sdkVersion": "34",
+  "minSdkVersion": "21",
+  "isChromeOSOnly": false,
+  "enableNotifications": false,
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "metaQuest": { "enabled": false }
+}
+EOF
 
       - name: APK ビルド
         run: printf "android\nandroid\n" | bubblewrap build --skipPwaValidation
