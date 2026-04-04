@@ -47,6 +47,8 @@ let myRoomId = null;
 let reconnectToken = '';
 let isReplaying = false;
 let isReconnectingOnline = false;
+let _rejoinRetryCount = 0;
+let _rejoinRetryTimer = null;
 
 function resetOnlineState() {
     if (socket) { socket.disconnect(); socket = null; }
@@ -58,6 +60,17 @@ function resetOnlineState() {
     reconnectToken = '';
     isReplaying = false;
     isReconnectingOnline = false;
+    _rejoinRetryCount = 0;
+    if (_rejoinRetryTimer) { clearTimeout(_rejoinRetryTimer); _rejoinRetryTimer = null; }
+}
+
+function _saveActionLog(action, data) {
+    try {
+        const raw = localStorage.getItem('onlineActionLog');
+        const log = raw ? JSON.parse(raw) : [];
+        log.push({ action, data });
+        localStorage.setItem('onlineActionLog', JSON.stringify(log));
+    } catch(e) {}
 }
 
 function saveOnlineSession() {
@@ -109,6 +122,11 @@ function initSocket() {
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
+        // ゲーム開始データとアクションログをlocalStorageに保存（サーバー再起動後の復元用）
+        try {
+            localStorage.setItem('onlineGameStart', JSON.stringify({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions }));
+            localStorage.setItem('onlineActionLog', JSON.stringify([]));
+        } catch(e) {}
         saveOnlineSession();
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
@@ -123,6 +141,7 @@ function initSocket() {
     });
 
     socket.on('gameAction', ({ action, data, playerIndex }) => {
+        _saveActionLog(action, data);
         applyAction(action, data);
         render();
         scheduleCPU();
@@ -199,6 +218,14 @@ function initSocket() {
     });
 
     socket.on('error', (msg) => {
+        if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
+            if (isRoomHost) {
+                _tryRestoreRoom();
+            } else {
+                _scheduleRejoinRetry();
+            }
+            return;
+        }
         if (isReconnectingOnline) {
             isReconnectingOnline = false;
             localStorage.removeItem('onlineSession');
@@ -312,6 +339,55 @@ function handleRemoteAction(action, data) {
 
 function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {
+        _saveActionLog(action, data);
         socket.emit('gameAction', { action, data });
     }
+}
+
+function _tryRestoreRoom() {
+    try {
+        const raw = localStorage.getItem('onlineGameStart');
+        const logRaw = localStorage.getItem('onlineActionLog');
+        if (!raw) {
+            document.getElementById("onlineStatus").textContent = '❌ 復元データが見つかりません';
+            return;
+        }
+        const gameStartPayload = JSON.parse(raw);
+        const actionLog = logRaw ? JSON.parse(logRaw) : [];
+        document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
+        socket.emit('recreateRoom', {
+            roomId: myRoomId,
+            gameStartPayload,
+            actionLog,
+            playerIndex: myOriginalPlayerIndex,
+            playerName: myPlayerName,
+        });
+    } catch(e) {
+        document.getElementById("onlineStatus").textContent = '❌ 復元に失敗しました';
+    }
+}
+
+function _scheduleRejoinRetry() {
+    const MAX_RETRY = 8;
+    if (_rejoinRetryCount >= MAX_RETRY) {
+        document.getElementById("onlineStatus").textContent = '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。';
+        isReconnectingOnline = false;
+        return;
+    }
+    _rejoinRetryCount++;
+    document.getElementById("onlineStatus").textContent = `⏳ ホストの復元を待っています... (${_rejoinRetryCount}/${MAX_RETRY})`;
+    _rejoinRetryTimer = setTimeout(() => {
+        if (!socket || !isReconnectingOnline) return;
+        const raw = localStorage.getItem('onlineSession');
+        if (!raw) return;
+        try {
+            const session = JSON.parse(raw);
+            socket.emit('rejoinRoom', {
+                roomId: session.roomId,
+                playerIndex: session.playerIndex,
+                playerName: session.playerName,
+                reconnectToken: session.reconnectToken,
+            });
+        } catch(e) {}
+    }, 3000);
 }

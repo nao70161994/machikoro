@@ -223,14 +223,22 @@ io.on('connection', (socket) => {
 
     socket.on('rejoinRoom', ({ roomId, playerIndex, playerName, reconnectToken }) => {
         const room = rooms[roomId];
-        if (!room) { socket.emit('error', 'ルームが見つかりません（サーバーが再起動した可能性があります）'); return; }
+        if (!room) { socket.emit('error', 'ROOM_NOT_FOUND'); return; }
         if (!room.started) { socket.emit('error', 'ゲームはまだ開始されていません'); return; }
 
-        const player = room.players.find(p =>
+        let player = room.players.find(p =>
             p.index === playerIndex &&
             p.name === playerName &&
             p.reconnectToken === reconnectToken
         );
+        // サーバー再起動後に復元されたルームはトークン検証をスキップし名前のみ確認
+        if (!player && room.restored) {
+            const names = room.gameStartPayload?.playerNames || [];
+            if (Number.isInteger(playerIndex) && names[playerIndex] === playerName) {
+                player = { id: socket.id, index: playerIndex, name: playerName, reconnectToken: '' };
+                room.players.push(player);
+            }
+        }
         if (!player) { socket.emit('error', '再接続情報が一致しません'); return; }
 
         player.id = socket.id;
@@ -245,6 +253,40 @@ io.on('connection', (socket) => {
         });
         io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
         console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
+    });
+
+    // サーバー再起動後にホストがルームを復元する
+    socket.on('recreateRoom', ({ roomId, gameStartPayload, actionLog, playerIndex, playerName }) => {
+        if (!roomId || !gameStartPayload) { socket.emit('error', '復元データが不完全です'); return; }
+        if (rooms[roomId]) {
+            // ルームが既に存在する場合は通常の再接続へ誘導
+            socket.emit('error', 'ROOM_NOT_FOUND'); // 再度rejoinRoomを試みさせる
+            return;
+        }
+        const playerNames = gameStartPayload.playerNames || [];
+        if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
+            socket.emit('error', '復元データが不完全です'); return;
+        }
+        rooms[roomId] = {
+            players: [{ id: socket.id, index: playerIndex, name: playerName, reconnectToken: '' }],
+            playerSettings: gameStartPayload.playerSettings || [],
+            maxPlayers: playerNames.length,
+            started: true,
+            restored: true,
+            hostPlayerIndex: playerIndex,
+            enabledCards: gameStartPayload.enabledCards || [],
+            enabledLandmarks: gameStartPayload.enabledLandmarks || [],
+            cpuSpeed: gameStartPayload.cpuSpeed || 1500,
+            gameStartPayload,
+            actionLog: actionLog || [],
+            lastUndoState: null,
+            lastTouchedAt: Date.now(),
+        };
+        socket.join(roomId);
+        socket.roomId = roomId;
+        socket.playerIndex = playerIndex;
+        socket.emit('rejoinData', { gameStartPayload, actionLog: actionLog || [], playerIndex });
+        console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
     });
 
     socket.on('disconnect', () => {
