@@ -101,8 +101,10 @@ jobs:
           }
           EOF
 
-      - name: SDK tools ディレクトリ作成（bubblewrap validatePath対策）
-        run: mkdir -p /usr/local/lib/android/sdk/tools
+      - name: SDK tools ディレクトリ作成・ライセンス事前承認
+        run: |
+          mkdir -p /usr/local/lib/android/sdk/tools
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: APK ビルド
         run: printf "Y\nandroid\nandroid\n" | bubblewrap build --skipPwaValidation
