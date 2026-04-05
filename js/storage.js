@@ -220,7 +220,9 @@ function loadSettings() {
             const speedEl = document.getElementById('cpuSpeed');
             if (speedEl) {
                 speedEl.value = speed;
-                document.getElementById('speedLabel').textContent = (parseInt(speed) / 1000) + '秒';
+                document.getElementById('speedLabel').textContent = typeof formatCpuSpeedLabel === 'function'
+                    ? formatCpuSpeedLabel(speed)
+                    : ((parseInt(speed, 10) / 1000) + '秒');
             }
         }
         tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';

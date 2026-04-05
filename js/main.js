@@ -48,6 +48,12 @@ function getLocalCpuLabel(difficulty) {
     return 'AI（最強）';
 }
 
+function formatCpuSpeedLabel(value) {
+    const speed = parseInt(value, 10);
+    if (speed <= 100) return '超高速';
+    return (speed / 1000) + '秒';
+}
+
 function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
     document.getElementById("playerCount").textContent = selectedCount;

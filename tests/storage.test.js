@@ -227,6 +227,8 @@ runTest('storage doUndo はオンラインで undoBuild を送信する', () => 
 runTest('storage loadSettings は旧設定にもローカル名の初期値を補う', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('selectedCount', '3');
+    rt.formatCpuSpeedLabel = (value) => parseInt(value, 10) <= 100 ? '超高速' : ((parseInt(value, 10) / 1000) + '秒');
+    rt.localStorage.setItem('cpuSpeed', '100');
     rt.localStorage.setItem('playerSettings', JSON.stringify([
         { type: 'human', difficulty: 'normal' },
         { type: 'cpu', difficulty: 'strong' },
@@ -240,6 +242,7 @@ runTest('storage loadSettings は旧設定にもローカル名の初期値を�
     assert.strictEqual(settings[0].name, 'プレイヤー1');
     assert.strictEqual(settings[1].name, 'プレイヤー2');
     assert.strictEqual(settings[2].name, '花子');
+    assert.strictEqual(rt.elements.speedLabel.textContent, '超高速');
 });
 
 if (process.exitCode) {

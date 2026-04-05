@@ -199,6 +199,13 @@ runTest('main renderPlayerSettings は AI（最強）オプションを表示す
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
 });
 
+runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', () => {
+    const rt = loadMainRuntime();
+
+    assert.strictEqual(rt.formatCpuSpeedLabel(100), '超高速');
+    assert.strictEqual(rt.formatCpuSpeedLabel(500), '0.5秒');
+});
+
 runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(2);
