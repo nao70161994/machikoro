@@ -1,6 +1,7 @@
 class CPU {
     constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
+        this.simulationMode = options.simulationMode || "full";
         this.expertPreset = options.expertPreset || "default";
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
         this.expertProfileTunings = Object.assign(
@@ -170,6 +171,10 @@ class CPU {
             profilePreset ? CPU._resolveExpertTuning(profilePreset) : {},
             profileTuning || {}
         );
+        if (this.simulationMode === "fast") {
+            this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.65).toFixed(3));
+            this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(2, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.5));
+        }
         return this.expertTuning;
     }
 
@@ -304,7 +309,7 @@ class CPU {
     _scoreExpertChoiceState(game, focusIndex) {
         const tuning = this.expertTuning;
         let score = this._evaluatePosition(game, focusIndex);
-        if (!game.checkWinner()) {
+        if (!game.checkWinner() && this._shouldUseExpertChoiceLookahead(game, focusIndex)) {
             score += this._simulateLookahead(
                 game,
                 this._simulationShopStock(),
@@ -313,6 +318,13 @@ class CPU {
             ) * Math.min(0.35, tuning.lookaheadWeight * 0.5);
         }
         return score;
+    }
+
+    _shouldUseExpertChoiceLookahead(game, focusIndex) {
+        if (this.simulationMode !== "fast") return true;
+        const player = game.players[focusIndex];
+        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+        return remainingLandmarks <= 3 || game.phase === GAME_PHASES.BUILD;
     }
 
     _expectedExpertChoiceValue(game, focusIndex, outcomes, applyOutcome) {
@@ -346,6 +358,26 @@ class CPU {
         if (!target || maxThreat <= 0) return 0;
         const threat = this._estimateOpponentThreat(target, game);
         return (threat / maxThreat) * weight;
+    }
+
+    _crowdCleaningBonus(game, cardName, weight = 1) {
+        if (!game || game.players.length < 4) return 0;
+        const ci = game.currentPlayerIndex;
+        let maxThreat = -Infinity;
+        let bonus = 0;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === ci) continue;
+            maxThreat = Math.max(maxThreat, this._estimateOpponentThreat(game.players[i], game));
+        }
+        if (maxThreat <= 0) return 0;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === ci) continue;
+            const opponent = game.players[i];
+            const threatRatio = this._estimateOpponentThreat(opponent, game) / maxThreat;
+            const matching = opponent.getMinorCards().filter(card => card.name === cardName && !opponent.isDormant(card)).length;
+            bonus += matching * threatRatio * weight;
+        }
+        return bonus;
     }
 
     chooseDiceCount(game) {
@@ -525,7 +557,8 @@ class CPU {
         for (const name of names) {
             let score;
             if (this.difficulty === "expert") {
-                score = this._scoreExpertPendingChoice(game, clone => clone.resolveCleaning(name));
+                score = this._scoreExpertPendingChoice(game, clone => clone.resolveCleaning(name)) +
+                    this._crowdCleaningBonus(game, name, 3);
             } else {
                 let ownPenalty = 0;
                 let targetGain = 0;
@@ -563,7 +596,7 @@ class CPU {
                 if (this.difficulty === "expert") {
                     score = this._scoreExpertPendingChoice(game, clone =>
                         clone.resolveMover(move.cardIndex, move.targetIndex)
-                    );
+                    ) - this._crowdLeaderBonus(game, i, 8);
                 } else {
                     const myLoss = this._ownedCardValue(card, game, current);
                     const gift = this._receivedCardValue(card, game, target);

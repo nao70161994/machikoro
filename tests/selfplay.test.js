@@ -51,13 +51,14 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
 });
 
 runTest('parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '12', '--seed', '5', '--max-steps', '9000', '--format', 'json', '--details', '--expert-preset', 'rush', '--compare-presets', 'default,rush', 'expert', 'strong']);
+    const args = parseArgs(['--games', '12', '--seed', '5', '--max-steps', '9000', '--format', 'json', '--details', '--fast', '--expert-preset', 'rush', '--compare-presets', 'default,rush', 'expert', 'strong']);
 
     assert.strictEqual(args.games, 12);
     assert.strictEqual(args.seed, 5);
     assert.strictEqual(args.maxSteps, 9000);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.details, true);
+    assert.strictEqual(args.fast, true);
     assert.strictEqual(args.expertPreset, 'rush');
     assert.deepStrictEqual(args.comparePresets, ['default', 'rush']);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
@@ -104,6 +105,17 @@ runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
     });
 
     assert.strictEqual(result.expertProfileTunings.crowd.lookaheadWeight, 0.42);
+});
+
+runTest('simulateGame は fast モード指定を結果に保持する', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'strong', 'strong', 'normal'],
+        seed: 11,
+        maxSteps: 6000,
+        fast: true,
+    });
+
+    assert.strictEqual(result.fast, true);
 });
 
 if (process.exitCode) {

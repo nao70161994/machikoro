@@ -43,6 +43,7 @@ function createPlayers(runtime, difficulties, options = {}) {
     return difficulties.map(difficulty => {
         if (difficulty !== 'expert') return new runtime.CPU(difficulty);
         return new runtime.CPU(difficulty, {
+            simulationMode: options.fast ? 'fast' : 'full',
             expertPreset: options.expertPreset,
             expertTuning: options.expertTuning,
             expertProfilePresets: options.expertProfilePresets,
@@ -225,6 +226,7 @@ function simulateGame(options = {}) {
         expertTuning: options.expertTuning || null,
         expertProfilePresets: options.expertProfilePresets || null,
         expertProfileTunings: options.expertProfileTunings || null,
+        fast: !!options.fast,
         finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
     };
 }
@@ -292,6 +294,7 @@ function parseArgs(argv) {
     let details = false;
     let expertPreset = 'default';
     let comparePresets = null;
+    let fast = false;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -301,6 +304,7 @@ function parseArgs(argv) {
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--details') details = true;
+        else if (arg === '--fast') fast = true;
         else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
         else if (arg === '--compare-presets') comparePresets = (argv[++i] || 'default').split(',').filter(Boolean);
         else players.push(arg);
@@ -312,6 +316,7 @@ function parseArgs(argv) {
         maxSteps,
         format,
         details,
+        fast,
         expertPreset,
         comparePresets,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],

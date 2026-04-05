@@ -359,6 +359,22 @@ runTest('_crowdLeaderBonus は多人数戦のトップ相手に高い補正を�
     assert.ok(cpu._crowdLeaderBonus(game, 1, 12) > cpu._crowdLeaderBonus(game, 2, 12));
 });
 
+runTest('_crowdCleaningBonus はリーダーが多く持つカード名で高くなる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const leader = game.players[1];
+    const follower = game.players[2];
+
+    leader.coins = 8;
+    leader.landmarks[LANDMARK_NAMES.STATION] = true;
+    leader.cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    leader.dormantCards = [];
+    follower.cards = [createCardByName('パン屋')];
+    follower.dormantCards = [];
+
+    assert.ok(cpu._crowdCleaningBonus(game, 'カフェ', 3) > cpu._crowdCleaningBonus(game, 'パン屋', 3));
+});
+
 runTest('_evaluatePosition は到達可能ランドマークと安定収入を高く評価する', () => {
     const cpu = new CPU("expert");
     const richGame = new GameManager(2);
@@ -672,6 +688,22 @@ runTest('chooseCleaningTarget: expert は盤面評価で休業対象を選ぶ', 
     assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
 });
 
+runTest('chooseCleaningTarget: expert は多人数戦でリーダーの主力を狙いやすい', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const leader = game.players[1];
+    const other = game.players[2];
+
+    leader.coins = 8;
+    leader.landmarks[LANDMARK_NAMES.STATION] = true;
+    leader.cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    leader.dormantCards = [];
+    other.cards = [createCardByName('パン屋'), createCardByName('パン屋')];
+    other.dormantCards = [];
+
+    assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+});
+
 runTest('chooseMoverMove: 価値の低い休業中カードを優先して渡す', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(3);
@@ -700,6 +732,32 @@ runTest('chooseMoverMove: expert は盤面評価で渡すカードを選ぶ', ()
     const move = cpu.chooseMoverMove(game);
     assert.ok(move);
     assert.strictEqual(current.cards[move.cardIndex].name, '麦畑');
+});
+
+runTest('chooseMoverMove: expert は多人数戦でリーダーへ渡しにくい', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const leader = game.players[1];
+
+    leader.coins = 8;
+    leader.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('麦畑')];
+    current.dormantCards = [];
+
+    const move = cpu.chooseMoverMove(game);
+    assert.ok(move);
+    assert.notStrictEqual(move.targetIndex, 1);
+});
+
+runTest('expert fast mode は lookahead を軽くする', () => {
+    const cpu = new CPU("expert", { simulationMode: "fast" });
+    const game = new GameManager(4);
+
+    cpu._syncExpertTuningForGame(game);
+
+    assert.ok(cpu.expertTuning.lookaheadWeight < cpu.baseExpertTuning.lookaheadWeight);
+    assert.ok(cpu.expertTuning.lateGameLookaheadStepsPerPlayer < cpu.baseExpertTuning.lateGameLookaheadStepsPerPlayer);
 });
 
 runTest('chooseRenovationTarget: expert は盤面評価で対象を選ぶ', () => {
