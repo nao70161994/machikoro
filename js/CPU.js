@@ -327,8 +327,10 @@ class CPU {
             this.buildWeak(game, shopStock);
         } else if (this.difficulty === "normal") {
             this.buildNormal(game, shopStock);
-        } else {
+        } else if (this.difficulty === "strong") {
             this.buildStrong(game, shopStock);
+        } else {
+            this.buildExpert(game, shopStock);
         }
     }
 
@@ -451,6 +453,112 @@ class CPU {
         if (current.coins < Player.landmarkCost(name)) return false;
         this._buyLandmark(name, game);
         return true;
+    }
+
+    _cloneGame(game) {
+        const clone = new GameManager(game.players.length);
+        clone.enabledLandmarks = new Set(game.enabledLandmarks || Player.landmarkNames());
+        clone.players.forEach((player, index) => {
+            const source = game.players[index];
+            player.name = source.name;
+            player.coins = source.coins;
+            player.cards = source.cards.map(card => cloneCard(card));
+            player.dormantCards = source.dormantCards.map(dormant => source.cards.indexOf(dormant))
+                .filter(i => i >= 0)
+                .map(i => player.cards[i])
+                .filter(Boolean);
+            player.landmarks = Object.assign({}, source.landmarks);
+            player.itVentureCoins = source.itVentureCoins || 0;
+            player.hasYakusho = source.hasYakusho !== false;
+        });
+        clone.currentPlayerIndex = game.currentPlayerIndex;
+        clone.phase = game.phase;
+        clone.lastDiceResult = game.lastDiceResult || 0;
+        clone.lastDice1 = game.lastDice1 || 0;
+        clone.lastDice2 = game.lastDice2 || 0;
+        clone.builtThisTurn = game.builtThisTurn || false;
+        clone.pendingTV = game.pendingTV || 0;
+        clone.pendingBusiness = game.pendingBusiness || 0;
+        clone.pendingCleaning = game.pendingCleaning || 0;
+        clone.pendingMover = game.pendingMover || 0;
+        clone.pendingRenovation = game.pendingRenovation || 0;
+        clone.pendingIT = game.pendingIT || false;
+        clone.usedReroll = game.usedReroll || false;
+        clone.pendingTunaDice = game.pendingTunaDice || null;
+        clone.turnCount = game.turnCount || 0;
+        clone.hadAmusementParkAtRoll = game.hadAmusementParkAtRoll || false;
+        clone.log = [];
+        return clone;
+    }
+
+    _estimatePlayerTurnValue(game, playerIndex) {
+        const original = game.currentPlayerIndex;
+        game.currentPlayerIndex = playerIndex;
+        const useTwo = game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION];
+        const value = Math.max(
+            this._expectedDiceScore(game, false),
+            useTwo ? this._expectedDiceScore(game, true) : -Infinity
+        );
+        game.currentPlayerIndex = original;
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    _evaluatePosition(game, playerIndex) {
+        const player = game.players[playerIndex];
+        if (player.hasWon([...game.enabledLandmarks])) return 100000;
+        const myTurnValue = this._estimatePlayerTurnValue(game, playerIndex);
+        const myLandmarkProgress = [...game.enabledLandmarks].filter(name => player.landmarks[name]).length;
+        let score = player.coins * 1.1 + myTurnValue * 3.2 + myLandmarkProgress * 14 + player.builtLandmarkCount() * 8;
+        if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === playerIndex) continue;
+            const opponent = game.players[i];
+            const opponentTurnValue = this._estimatePlayerTurnValue(game, i);
+            const opponentProgress = [...game.enabledLandmarks].filter(name => opponent.landmarks[name]).length;
+            score -= opponent.coins * 0.4 + opponentTurnValue * 1.8 + opponentProgress * 9 + opponent.builtLandmarkCount() * 5;
+        }
+        return score;
+    }
+
+    _listExpertBuildOptions(game, shopStock) {
+        const current = game.currentPlayer();
+        const options = [{ type: 'skip' }];
+        for (const name of Player.landmarkNames()) {
+            if (!game.enabledLandmarks || !game.enabledLandmarks.has(name)) continue;
+            if (current.landmarks[name]) continue;
+            const cost = Player.landmarkCost(name);
+            if (current.coins >= cost) options.push({ type: 'landmark', name });
+        }
+        const affordable = CARDS.filter(card =>
+            shopStock[card.name] > 0 &&
+            current.coins >= card.cost &&
+            !(card.color === "purple" && current.countCard(card.name) > 0)
+        );
+        const ranked = this.sortAffordable(affordable, game, current);
+        for (const entry of ranked.slice(0, 6)) {
+            options.push({ type: 'card', cardName: entry.card.name });
+        }
+        return options;
+    }
+
+    _scoreExpertBuildOption(game, shopStock, action) {
+        const ci = game.currentPlayerIndex;
+        const clone = this._cloneGame(game);
+        const stock = Object.assign({}, shopStock);
+        const current = clone.currentPlayer();
+        if (action.type === 'landmark') {
+            if (!clone.buildLandmark(action.name)) return -Infinity;
+        } else if (action.type === 'card') {
+            const card = CARDS.find(c => c.name === action.cardName);
+            if (!card || !clone.buildCard(card)) return -Infinity;
+            stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
+        } else if (action.type === 'skip') {
+            clone.builtThisTurn = false;
+        }
+        let score = this._evaluatePosition(clone, ci);
+        if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += 10;
+        if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
+        return score;
     }
 
     _shouldHoldForLandmark(current, game, bestCardScore, maxShortfall) {
@@ -581,6 +689,25 @@ class CPU {
             }
         }
         this._maybeBuyLandmark(current, game, 0, 2);
+    }
+
+    buildExpert(game, shopStock) {
+        const current = game.currentPlayer();
+        if (this._buyWinningLandmark(current, game)) return;
+
+        let best = null;
+        for (const action of this._listExpertBuildOptions(game, shopStock)) {
+            const score = this._scoreExpertBuildOption(game, shopStock, action);
+            if (!best || score > best.score) best = Object.assign({ score }, action);
+        }
+
+        if (!best || best.type === 'skip') return;
+        if (best.type === 'landmark') {
+            this._buyLandmark(best.name, game);
+            return;
+        }
+        const card = CARDS.find(c => c.name === best.cardName);
+        if (card) this._buyCard(card, game, shopStock);
     }
 
     // シナジー購入チェック（普通・強い共通）

@@ -220,6 +220,17 @@ runTest('main changeCount は人数を2..10にクランプして表示を更新�
     assert.strictEqual(rt.__test.elements.playerCount.textContent, 10);
 });
 
+runTest('main renderPlayerSettings は CPU（最強）オプションを表示する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([{ type: 'cpu', difficulty: 'expert' }, { type: 'human', difficulty: 'normal' }]);
+
+    rt.renderPlayerSettings();
+
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（最強）'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
+});
+
 runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);

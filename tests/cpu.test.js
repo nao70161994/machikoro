@@ -11,7 +11,7 @@ function loadCPURuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.CPU = CPU; this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS; this.CARD_EFFECTS = CARD_EFFECTS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES;',
+        'this.CPU = CPU; this.GameManager = GameManager; this.Player = Player; this.createCardByName = createCardByName; this.CARDS = CARDS; this.CARD_EFFECTS = CARD_EFFECTS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES;',
         context
     );
     return context;
@@ -20,6 +20,7 @@ function loadCPURuntime() {
 const runtime = loadCPURuntime();
 const CPU = runtime.CPU;
 const GameManager = runtime.GameManager;
+const Player = runtime.Player;
 const createCardByName = runtime.createCardByName;
 const CARDS = runtime.CARDS;
 const CARD_EFFECTS = runtime.CARD_EFFECTS;
@@ -454,6 +455,41 @@ runTest('buildWeak: 勝てる局面ではランダム購入せず最後のラン
 
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
     assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('_listExpertBuildOptions: expert はスキップ・ランドマーク・上位カード候補を列挙する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 6;
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    const options = cpu._listExpertBuildOptions(game, stock);
+
+    assert.ok(options.some(option => option.type === 'skip'));
+    assert.ok(options.some(option => option.type === 'landmark'));
+    assert.ok(options.some(option => option.type === 'card'));
+});
+
+runTest('_scoreExpertBuildOption: 勝利ランドマークは大きなボーナスで評価される', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 4;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    const landmarkScore = cpu._scoreExpertBuildOption(game, stock, { type: 'landmark', name: LANDMARK_NAMES.STATION });
+    const cardScore = cpu._scoreExpertBuildOption(game, stock, { type: 'card', cardName: 'コンビニ' });
+
+    assert.ok(landmarkScore > cardScore);
 });
 
 if (process.exitCode) {
