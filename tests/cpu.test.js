@@ -1010,6 +1010,54 @@ runTest('buildExpert: 建てられるランドマークがある高コイン時�
     );
 });
 
+runTest('buildNormal: 近いランドマーク保留がなければ何かしら建設する', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 2;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+
+    cpu.buildNormal(game, stock);
+
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('buildStrong: 買える候補があるなら通常は建設する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 3;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+
+    cpu.buildStrong(game, stock);
+
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('buildExpert: 空港がなければ skip より建設候補を優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 1;
+    current.landmarks[LANDMARK_NAMES.AIRPORT] = false;
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }

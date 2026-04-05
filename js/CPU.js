@@ -1109,6 +1109,9 @@ class CPU {
     _scoreExpertBuildOption(game, shopStock, action) {
         const ci = game.currentPlayerIndex;
         const tuning = this.expertTuning;
+        const affordableBuildCount = this._listExpertBuildOptions(game, shopStock)
+            .filter(option => option.type !== 'skip')
+            .length;
         const clone = this._cloneGame(game);
         const stock = Object.assign({}, shopStock);
         const current = clone.currentPlayer();
@@ -1130,6 +1133,9 @@ class CPU {
         if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
         if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
         if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
+        if (action.type === 'skip' && affordableBuildCount > 0 && !current.landmarks[LANDMARK_NAMES.AIRPORT]) {
+            score -= Math.min(12, 4 + affordableBuildCount * 1.5);
+        }
         if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
         return score;
     }
@@ -1295,7 +1301,8 @@ class CPU {
             this._buyCard(sorted[0].card, game, shopStock);
             return;
         }
-        this._maybeBuyLandmark(current, game, 0, 4);
+        if (this._maybeBuyLandmark(current, game, 0, 4)) return;
+        if (sorted.length > 0) this._buyCard(sorted[0].card, game, shopStock);
     }
 
     // 強いCPU：状況判断型
@@ -1350,7 +1357,8 @@ class CPU {
                 return;
             }
         }
-        this._maybeBuyLandmark(current, game, 0, 2);
+        if (this._maybeBuyLandmark(current, game, 0, 2)) return;
+        if (sorted.length > 0) this._buyCard(sorted[0].card, game, shopStock);
     }
 
     buildExpert(game, shopStock) {
@@ -1364,7 +1372,16 @@ class CPU {
             if (!best || score > best.score) best = Object.assign({ score }, action);
         }
 
-        if (!best || best.type === 'skip') return;
+        if (!best) return;
+        if (best.type === 'skip') {
+            if (current.landmarks[LANDMARK_NAMES.AIRPORT]) return;
+            const fallback = this._listExpertBuildOptions(game, shopStock)
+                .filter(action => action.type !== 'skip')
+                .map(action => Object.assign({ score: this._scoreExpertBuildOption(game, shopStock, action) }, action))
+                .sort((a, b) => b.score - a.score)[0];
+            if (!fallback) return;
+            best = fallback;
+        }
         if (best.type === 'landmark') {
             this._buyLandmark(best.name, game);
             return;
