@@ -177,6 +177,25 @@ runTest('chooseDiceCount: expert は先読み評価で選択を返す', () => {
     assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean');
 });
 
+runTest('expert tuning は人数別設定で自動切替される', () => {
+    const cpu = new CPU("expert", {
+        expertProfileTunings: {
+            duel: { lookaheadWeight: 0.91 },
+            crowd: { lookaheadWeight: 0.42 },
+        },
+    });
+    const duel = new GameManager(2);
+    const crowd = new GameManager(4);
+
+    cpu._syncExpertTuningForGame(duel);
+    assert.strictEqual(cpu._expertProfileName(duel), 'duel');
+    assert.strictEqual(cpu.expertTuning.lookaheadWeight, 0.91);
+
+    cpu._syncExpertTuningForGame(crowd);
+    assert.strictEqual(cpu._expertProfileName(crowd), 'crowd');
+    assert.strictEqual(cpu.expertTuning.lookaheadWeight, 0.42);
+});
+
 // ===== chooseReroll =====
 
 runTest('chooseReroll: 現在スコアが低い場合にリロールを選択する（strong）', () => {

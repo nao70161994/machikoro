@@ -89,6 +89,12 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 3
 npm run tune-expert -- --games 8 --profiles duel,crowd --top 1 --propose-preset hybridDefault
 ```
 
+人数別の専用プリセット断片も同時に出力:
+
+```bash
+npm run tune-expert -- --games 8 --profiles duel,crowd --top 1 --propose-preset hybridDefault --emit-profile-presets
+```
+
 提案プリセットを基準と自動比較:
 
 ```bash
@@ -118,6 +124,7 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 
 - `--emit-preset` を付けると、`CPU._expertPresets()` に貼り付けやすい JS オブジェクト断片も出力します。
 - `--profiles duel,crowd` を付けると 2人戦と多人数戦を分けて同じ候補集合を比較できます。
 - `--propose-preset <name>` を付けると、各プロファイルの首位候補から差分を合成した提案プリセットも出力します。
+- `--emit-profile-presets` を付けると、`duel` / `trio` / `crowd` ごとの専用 tuning 断片と、そのまま `expertProfileTunings` に渡せるマップも出力します。
 - `--evaluate-proposal` を付けると、生成した提案プリセットを基準プリセットと同条件で再戦させ、人数別の勝ち数差を表示します。
 - `--proposal-depth N` を付けると、各プロファイルの上位 `N` 件を組み合わせた提案候補をまとめてランキングします。
 - `--finalist-count N --finalist-games M` を付けると、ランキング上位 `N` 候補だけを `M` 試合で再評価します。

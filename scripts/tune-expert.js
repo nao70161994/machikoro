@@ -1,6 +1,18 @@
 const path = require('path');
 
 const { loadRuntime, runSeries } = require(path.join(__dirname, 'selfplay.js'));
+let activeLoadRuntime = loadRuntime;
+let activeRunSeries = runSeries;
+
+function setTuneExpertDeps(overrides = {}) {
+    if (overrides.loadRuntime) activeLoadRuntime = overrides.loadRuntime;
+    if (overrides.runSeries) activeRunSeries = overrides.runSeries;
+}
+
+function resetTuneExpertDeps() {
+    activeLoadRuntime = loadRuntime;
+    activeRunSeries = runSeries;
+}
 
 function parseArgs(argv) {
     let games = 8;
@@ -17,6 +29,7 @@ function parseArgs(argv) {
     let finalistGames = 0;
     let finalistCount = 0;
     let emitWinners = false;
+    let emitProfilePresets = false;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -35,6 +48,7 @@ function parseArgs(argv) {
         else if (arg === '--finalist-games') finalistGames = parseInt(argv[++i] || '0', 10);
         else if (arg === '--finalist-count') finalistCount = parseInt(argv[++i] || '0', 10);
         else if (arg === '--emit-winners') emitWinners = true;
+        else if (arg === '--emit-profile-presets') emitProfilePresets = true;
         else players.push(arg);
     }
 
@@ -53,6 +67,7 @@ function parseArgs(argv) {
         finalistGames,
         finalistCount,
         emitWinners,
+        emitProfilePresets,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -151,10 +166,10 @@ function summarizeCandidate(result, candidate) {
 }
 
 function tuneExpert(options = {}) {
-    const runtime = loadRuntime();
+    const runtime = activeLoadRuntime();
     const candidates = buildCandidateTunings(runtime, options.basePreset || 'default');
     const rankings = candidates.map((candidate, index) => {
-        const result = runSeries({
+        const result = activeRunSeries({
             games: options.games,
             seed: (options.seed || 1) + index * (options.games || 1),
             maxSteps: options.maxSteps,
@@ -200,7 +215,7 @@ function _diffFromBase(base, tuning) {
 }
 
 function proposePresetFromProfiles(profileResults, options = {}) {
-    const runtime = loadRuntime();
+    const runtime = activeLoadRuntime();
     const basePreset = options.basePreset || 'default';
     const base = runtime.CPU._resolveExpertTuning(basePreset);
     const contributions = {};
@@ -249,6 +264,28 @@ function proposePerProfilePresets(profileResults, options = {}) {
     }).filter(entry => entry.proposal && entry.proposal.profiles[0].leader);
 }
 
+function evaluatePerProfileProposals(profileProposals, options = {}) {
+    return profileProposals.map((entry, index) => {
+        const evaluation = evaluateProposalAgainstBase(entry.proposal, Object.assign({}, options, {
+            profiles: [entry.profile],
+            seed: (options.seed || 1) + index * 3000,
+        }))[0];
+        return {
+            profile: entry.profile,
+            proposal: entry.proposal,
+            evaluation,
+        };
+    });
+}
+
+function formatProfilePresetMap(profileProposals) {
+    const lines = profileProposals.map(entry => {
+        const tuning = JSON.stringify(entry.proposal.tuning);
+        return `    ${entry.profile}: ${tuning},`;
+    });
+    return `{\n${lines.join('\n')}\n}`;
+}
+
 function enumerateProfileLeaderCombos(profileResults, depth = 1) {
     const limit = Math.max(1, depth || 1);
     const lists = profileResults.map(entry => ({
@@ -275,7 +312,7 @@ function enumerateProfileLeaderCombos(profileResults, depth = 1) {
 }
 
 function proposePresetFromCombo(combo, options = {}) {
-    const runtime = loadRuntime();
+    const runtime = activeLoadRuntime();
     const basePreset = options.basePreset || 'default';
     const base = runtime.CPU._resolveExpertTuning(basePreset);
     const contributions = {};
@@ -310,14 +347,14 @@ function evaluateProposalAgainstBase(proposal, options = {}) {
     return profiles.map((profile, index) => {
         const players = profilePlayers(profile);
         const seed = (options.seed || 1) + index * 2000;
-        const baseResult = runSeries({
+        const baseResult = activeRunSeries({
             games: options.games,
             seed,
             maxSteps: options.maxSteps,
             players,
             expertPreset: proposal.basePreset,
         });
-        const proposalResult = runSeries({
+        const proposalResult = activeRunSeries({
             games: options.games,
             seed,
             maxSteps: options.maxSteps,
@@ -423,6 +460,16 @@ function printProfileResults(results, options = {}) {
         const output = { results };
         if (options.proposePreset) {
             output.proposal = proposePresetFromProfiles(results, options);
+            if (options.emitProfilePresets) {
+                output.profileProposals = proposePerProfilePresets(results, options);
+                output.profilePresetMap = output.profileProposals.reduce((acc, entry) => {
+                    acc[entry.profile] = entry.proposal.tuning;
+                    return acc;
+                }, {});
+                if (options.evaluateProposal) {
+                    output.profileProposalEvaluation = evaluatePerProfileProposals(output.profileProposals, options);
+                }
+            }
             if (options.evaluateProposal) {
                 output.evaluation = evaluateProposalAgainstBase(output.proposal, options);
                 if ((options.proposalDepth || 1) > 1) {
@@ -451,6 +498,25 @@ function printProfileResults(results, options = {}) {
             console.log(`${profile.profile}: ${profile.leader || 'none'}`);
         }
         console.log(formatPresetObject(proposal.name, proposal.tuning));
+        if (options.emitProfilePresets) {
+            const profileProposals = proposePerProfilePresets(results, options);
+            console.log('[profile-proposals]');
+            for (const entry of profileProposals) {
+                console.log(`${entry.profile}: ${entry.proposal.profiles[0].leader || 'none'}`);
+                console.log(formatPresetObject(entry.proposal.name, entry.proposal.tuning));
+            }
+            console.log('[profile-preset-map]');
+            console.log(formatProfilePresetMap(profileProposals));
+            if (options.evaluateProposal) {
+                console.log('[profile-proposal-evaluation]');
+                for (const entry of evaluatePerProfileProposals(profileProposals, options)) {
+                    const result = entry.evaluation;
+                    console.log(
+                        `${entry.profile} proposalWins=${result.proposalWins}/${options.games || 8} baseWins=${result.baseWins}/${options.games || 8} winDelta=${result.winDelta} turns=${result.proposalAverageTurns.toFixed(1)} vs ${result.baseAverageTurns.toFixed(1)} exhaustedDelta=${result.exhaustedDelta}`
+                    );
+                }
+            }
+        }
         if (options.evaluateProposal) {
             console.log('[proposal-evaluation]');
             for (const entry of evaluateProposalAgainstBase(proposal, options)) {
@@ -509,9 +575,13 @@ module.exports = {
     proposePerProfilePresets,
     proposePresetFromCombo,
     evaluateProposalAgainstBase,
+    evaluatePerProfileProposals,
+    formatProfilePresetMap,
     rankProposalsFromProfiles,
     runFinalistPlayoff,
     selectWinningFinalists,
+    setTuneExpertDeps,
+    resetTuneExpertDeps,
     tuneExpert,
     tuneExpertProfiles,
 };

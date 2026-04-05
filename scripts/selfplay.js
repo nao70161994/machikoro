@@ -45,6 +45,8 @@ function createPlayers(runtime, difficulties, options = {}) {
         return new runtime.CPU(difficulty, {
             expertPreset: options.expertPreset,
             expertTuning: options.expertTuning,
+            expertProfilePresets: options.expertProfilePresets,
+            expertProfileTunings: options.expertProfileTunings,
         });
     });
 }
@@ -221,6 +223,8 @@ function simulateGame(options = {}) {
         seed: options.seed || 1,
         expertPreset: options.expertPreset || 'default',
         expertTuning: options.expertTuning || null,
+        expertProfilePresets: options.expertProfilePresets || null,
+        expertProfileTunings: options.expertProfileTunings || null,
         finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
     };
 }

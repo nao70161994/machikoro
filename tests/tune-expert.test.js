@@ -1,8 +1,41 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePerProfilePresets, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, runFinalistPlayoff, selectWinningFinalists, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluatePerProfileProposals, evaluateProposalAgainstBase, formatPresetObject, formatProfilePresetMap, profilePlayers, proposePerProfilePresets, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, resetTuneExpertDeps, runFinalistPlayoff, selectWinningFinalists, setTuneExpertDeps, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
+
+function withFakeRunSeries(fn) {
+    setTuneExpertDeps({
+        loadRuntime,
+        runSeries(options = {}) {
+            const players = (options.players || ['expert', 'strong']).slice();
+            const games = options.games || 2;
+            const tuning = options.expertTuning || {};
+            const lookahead = tuning.lookaheadWeight || 0;
+            const late = tuning.lateProgressBonus || 0;
+            const spamPenalty = tuning.lowValueSpamPenalty || 0;
+            const isCrowd = players.length >= 4;
+            const expertWins = Math.max(0, Math.min(games,
+                isCrowd
+                    ? 1 + (late >= 9 ? 1 : 0) + (spamPenalty >= 5 ? 1 : 0)
+                    : 1 + (lookahead >= 0.75 ? 1 : 0) + (spamPenalty <= 5.1 ? 1 : 0)
+            ));
+            return {
+                games,
+                players,
+                wins: Object.fromEntries(players.map((player, index) => [player, index === 0 ? expertWins : (games - expertWins)])),
+                averageTurns: isCrowd ? 26 - expertWins : 18 - expertWins,
+                exhausted: 0,
+                seatWins: players.map((_, index) => index === 0 ? expertWins : 0),
+            };
+        },
+    });
+    try {
+        fn();
+    } finally {
+        resetTuneExpertDeps();
+    }
+}
 
 function runTest(name, fn) {
     try {
@@ -16,7 +49,7 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', '--proposal-depth', '2', '--finalist-count', '2', '--finalist-games', '12', '--emit-winners', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', '--proposal-depth', '2', '--finalist-count', '2', '--finalist-games', '12', '--emit-winners', '--emit-profile-presets', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -31,6 +64,7 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.strictEqual(args.finalistCount, 2);
     assert.strictEqual(args.finalistGames, 12);
     assert.strictEqual(args.emitWinners, true);
+    assert.strictEqual(args.emitProfilePresets, true);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -54,35 +88,39 @@ runTest('profilePlayers は既知プロファイルの並びを返す', () => {
 });
 
 runTest('tuneExpert は候補を勝率順に返す', () => {
-    const result = tuneExpert({
-        games: 2,
-        seed: 1,
-        maxSteps: 4000,
-        basePreset: 'default',
-        top: 2,
-        players: ['expert', 'strong'],
+    withFakeRunSeries(() => {
+        const result = tuneExpert({
+            games: 2,
+            seed: 1,
+            maxSteps: 4000,
+            basePreset: 'default',
+            top: 2,
+            players: ['expert', 'strong'],
+        });
+        assert.strictEqual(result.basePreset, 'default');
+        assert.ok(result.rankings.length >= result.top.length);
+        assert.strictEqual(result.top.length, 2);
+        assert.ok(result.top[0].winRate >= result.top[1].winRate);
+        assert.ok(typeof result.top[0].tuning.coinWeight === 'number');
     });
-    assert.strictEqual(result.basePreset, 'default');
-    assert.ok(result.rankings.length >= result.top.length);
-    assert.strictEqual(result.top.length, 2);
-    assert.ok(result.top[0].winRate >= result.top[1].winRate);
-    assert.ok(typeof result.top[0].tuning.coinWeight === 'number');
 });
 
 runTest('tuneExpertProfiles は複数プロファイルの結果を返す', () => {
-    const results = tuneExpertProfiles({
-        games: 2,
-        seed: 1,
-        maxSteps: 4000,
-        basePreset: 'default',
-        top: 1,
-        profiles: ['duel', 'crowd'],
+    withFakeRunSeries(() => {
+        const results = tuneExpertProfiles({
+            games: 2,
+            seed: 1,
+            maxSteps: 4000,
+            basePreset: 'default',
+            top: 1,
+            profiles: ['duel', 'crowd'],
+        });
+        assert.strictEqual(results.length, 2);
+        assert.strictEqual(results[0].profile, 'duel');
+        assert.strictEqual(results[1].profile, 'crowd');
+        assert.strictEqual(results[0].result.players.length, 2);
+        assert.strictEqual(results[1].result.players.length, 4);
     });
-    assert.strictEqual(results.length, 2);
-    assert.strictEqual(results[0].profile, 'duel');
-    assert.strictEqual(results[1].profile, 'crowd');
-    assert.strictEqual(results[0].result.players.length, 2);
-    assert.strictEqual(results[1].result.players.length, 4);
 });
 
 runTest('proposePresetFromProfiles は各プロファイル首位候補の差分をまとめる', () => {
@@ -138,6 +176,47 @@ runTest('proposePerProfilePresets は人数別の専用提案を返す', () => {
     assert.strictEqual(proposals[1].proposal.tuning.lateProgressBonus, 9.2);
 });
 
+runTest('evaluatePerProfileProposals は人数別提案を個別評価する', () => {
+    withFakeRunSeries(() => {
+        const evaluations = evaluatePerProfileProposals([
+            {
+                profile: 'duel',
+                proposal: {
+                    name: 'expert_duel',
+                    basePreset: 'default',
+                    tuning: { lookaheadWeight: 0.77 },
+                },
+            },
+            {
+                profile: 'crowd',
+                proposal: {
+                    name: 'expert_crowd',
+                    basePreset: 'default',
+                    tuning: { lateProgressBonus: 9.2 },
+                },
+            },
+        ], {
+            games: 2,
+            seed: 1,
+            maxSteps: 4000,
+        });
+
+        assert.strictEqual(evaluations.length, 2);
+        assert.strictEqual(evaluations[0].profile, 'duel');
+        assert.strictEqual(evaluations[1].profile, 'crowd');
+        assert.ok(typeof evaluations[0].evaluation.winDelta === 'number');
+    });
+});
+
+runTest('formatProfilePresetMap は人数別 tuning のマップ文字列を返す', () => {
+    const output = formatProfilePresetMap([
+        { profile: 'duel', proposal: { tuning: { lookaheadWeight: 0.77 } } },
+        { profile: 'crowd', proposal: { tuning: { lateProgressBonus: 9.2 } } },
+    ]);
+    assert.ok(output.includes('duel: {"lookaheadWeight":0.77}'));
+    assert.ok(output.includes('crowd: {"lateProgressBonus":9.2}'));
+});
+
 runTest('enumerateProfileLeaderCombos は上位候補の組み合わせを列挙する', () => {
     const combos = enumerateProfileLeaderCombos([
         { profile: 'duel', result: { top: [{ name: 'a' }, { name: 'b' }] } },
@@ -163,29 +242,32 @@ runTest('proposePresetFromCombo は組み合わせから提案プリセットを
 });
 
 runTest('evaluateProposalAgainstBase は基準との差分成績を返す', () => {
-    const evaluation = evaluateProposalAgainstBase({
-        name: 'hybridDefault',
-        basePreset: 'default',
-        tuning: {
-            lookaheadWeight: 0.77,
-            lateProgressBonus: 9.2,
-        },
-    }, {
-        games: 2,
-        seed: 1,
-        maxSteps: 4000,
-        profiles: ['duel', 'crowd'],
-    });
+    withFakeRunSeries(() => {
+        const evaluation = evaluateProposalAgainstBase({
+            name: 'hybridDefault',
+            basePreset: 'default',
+            tuning: {
+                lookaheadWeight: 0.77,
+                lateProgressBonus: 9.2,
+            },
+        }, {
+            games: 2,
+            seed: 1,
+            maxSteps: 4000,
+            profiles: ['duel', 'crowd'],
+        });
 
-    assert.strictEqual(evaluation.length, 2);
-    assert.strictEqual(evaluation[0].profile, 'duel');
-    assert.strictEqual(evaluation[1].profile, 'crowd');
-    assert.ok(typeof evaluation[0].winDelta === 'number');
-    assert.ok(typeof evaluation[1].proposalAverageTurns === 'number');
+        assert.strictEqual(evaluation.length, 2);
+        assert.strictEqual(evaluation[0].profile, 'duel');
+        assert.strictEqual(evaluation[1].profile, 'crowd');
+        assert.ok(typeof evaluation[0].winDelta === 'number');
+        assert.ok(typeof evaluation[1].proposalAverageTurns === 'number');
+    });
 });
 
 runTest('rankProposalsFromProfiles は提案候補を比較順に返す', () => {
-    const rankings = rankProposalsFromProfiles([
+    withFakeRunSeries(() => {
+        const rankings = rankProposalsFromProfiles([
         {
             profile: 'duel',
             result: {
@@ -204,22 +286,24 @@ runTest('rankProposalsFromProfiles は提案候補を比較順に返す', () => 
                 ],
             },
         },
-    ], {
-        basePreset: 'default',
-        proposePreset: 'hybridDefault',
-        profiles: ['duel', 'crowd'],
-        proposalDepth: 2,
-        games: 2,
-        seed: 1,
-        maxSteps: 4000,
+        ], {
+            basePreset: 'default',
+            proposePreset: 'hybridDefault',
+            profiles: ['duel', 'crowd'],
+            proposalDepth: 2,
+            games: 2,
+            seed: 1,
+            maxSteps: 4000,
+        });
+        assert.strictEqual(rankings.length, 4);
+        assert.ok(typeof rankings[0].totalWinDelta === 'number');
+        assert.ok(rankings[0].proposal.name.startsWith('hybridDefault'));
     });
-    assert.strictEqual(rankings.length, 4);
-    assert.ok(typeof rankings[0].totalWinDelta === 'number');
-    assert.ok(rankings[0].proposal.name.startsWith('hybridDefault'));
 });
 
 runTest('runFinalistPlayoff は上位候補を長めの条件で再評価する', () => {
-    const rankings = rankProposalsFromProfiles([
+    withFakeRunSeries(() => {
+        const rankings = rankProposalsFromProfiles([
         {
             profile: 'duel',
             result: {
@@ -238,25 +322,26 @@ runTest('runFinalistPlayoff は上位候補を長めの条件で再評価する'
                 ],
             },
         },
-    ], {
-        basePreset: 'default',
-        proposePreset: 'hybridDefault',
-        profiles: ['duel', 'crowd'],
-        proposalDepth: 2,
-        games: 2,
-        seed: 1,
-        maxSteps: 4000,
+        ], {
+            basePreset: 'default',
+            proposePreset: 'hybridDefault',
+            profiles: ['duel', 'crowd'],
+            proposalDepth: 2,
+            games: 2,
+            seed: 1,
+            maxSteps: 4000,
+        });
+        const finalists = runFinalistPlayoff(rankings, {
+            profiles: ['duel', 'crowd'],
+            finalistCount: 2,
+            finalistGames: 2,
+            seed: 1,
+            maxSteps: 4000,
+        });
+        assert.strictEqual(finalists.length, 2);
+        assert.ok(typeof finalists[0].totalWinDelta === 'number');
+        assert.ok(finalists[0].proposal.name.startsWith('hybridDefault'));
     });
-    const finalists = runFinalistPlayoff(rankings, {
-        profiles: ['duel', 'crowd'],
-        finalistCount: 2,
-        finalistGames: 2,
-        seed: 1,
-        maxSteps: 4000,
-    });
-    assert.strictEqual(finalists.length, 2);
-    assert.ok(typeof finalists[0].totalWinDelta === 'number');
-    assert.ok(finalists[0].proposal.name.startsWith('hybridDefault'));
 });
 
 runTest('selectWinningFinalists は勝ち越し候補だけを返す', () => {

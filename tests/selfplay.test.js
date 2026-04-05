@@ -93,6 +93,19 @@ runTest('simulateGame は expert 指定なしでも default を既定プリセ�
     assert.strictEqual(cpu.expertPreset, 'default');
 });
 
+runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'strong', 'strong', 'normal'],
+        seed: 11,
+        maxSteps: 6000,
+        expertProfileTunings: {
+            crowd: { lookaheadWeight: 0.42 },
+        },
+    });
+
+    assert.strictEqual(result.expertProfileTunings.crowd.lookaheadWeight, 0.42);
+});
+
 if (process.exitCode) {
     throw new Error('selfplayテストで失敗が発生しました');
 }

@@ -2,11 +2,15 @@ class CPU {
     constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
         this.expertPreset = options.expertPreset || "default";
-        this.expertTuning = Object.assign(
+        this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
+        this.expertProfileTunings = Object.assign({}, options.expertProfileTunings || {});
+        this.baseExpertTuning = Object.assign(
             {},
             CPU._resolveExpertTuning(this.expertPreset),
             options.expertTuning || {}
         );
+        this.activeExpertPreset = this.expertPreset;
+        this.expertTuning = Object.assign({}, this.baseExpertTuning);
     }
 
     static _expertPresets() {
@@ -126,6 +130,28 @@ class CPU {
             massAttackFactor: 1,
             airportBias: 1,
         };
+    }
+
+    _expertProfileName(game) {
+        if (!game || !game.players) return "crowd";
+        if (game.players.length <= 2) return "duel";
+        if (game.players.length === 3) return "trio";
+        return "crowd";
+    }
+
+    _syncExpertTuningForGame(game) {
+        if (this.difficulty !== "expert") return this.expertTuning;
+        const profile = this._expertProfileName(game);
+        const profilePreset = this.expertProfilePresets[profile];
+        const profileTuning = this.expertProfileTunings[profile];
+        this.activeExpertPreset = profilePreset || this.expertPreset;
+        this.expertTuning = Object.assign(
+            {},
+            this.baseExpertTuning,
+            profilePreset ? CPU._resolveExpertTuning(profilePreset) : {},
+            profileTuning || {}
+        );
+        return this.expertTuning;
     }
 
     // ===== サイコロ判断 =====
@@ -283,6 +309,7 @@ class CPU {
     }
 
     chooseDiceCount(game) {
+        this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
             const focusIndex = game.currentPlayerIndex;
@@ -309,6 +336,7 @@ class CPU {
     }
 
     chooseReroll(game) {
+        this._syncExpertTuningForGame(game);
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
@@ -336,6 +364,7 @@ class CPU {
     }
 
     chooseHarbor(game) {
+        this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
             const focusIndex = game.currentPlayerIndex;
@@ -361,6 +390,7 @@ class CPU {
     }
 
     chooseTVTarget(game) {
+        this._syncExpertTuningForGame(game);
         const ci = game.currentPlayerIndex;
         let bestScore = -Infinity;
         let targetIndex = -1;
@@ -380,6 +410,7 @@ class CPU {
     }
 
     chooseBusinessMove(game) {
+        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const myCards = current.getMinorCards();
@@ -423,6 +454,7 @@ class CPU {
     }
 
     chooseCleaningTarget(game) {
+        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         let best = null;
         const names = [...new Set(game.players.flatMap(p =>
@@ -447,6 +479,7 @@ class CPU {
     }
 
     chooseMoverMove(game) {
+        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         let best = null;
@@ -472,6 +505,7 @@ class CPU {
     }
 
     chooseRenovationTarget(game) {
+        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         let best = null;
         for (const [name, built] of Object.entries(current.landmarks)) {
@@ -483,6 +517,7 @@ class CPU {
     }
 
     chooseITSave(game) {
+        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;
@@ -594,6 +629,7 @@ class CPU {
     // ===== 購入戦略 =====
 
     build(game, shopStock) {
+        this._syncExpertTuningForGame(game);
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return;
         if (this.difficulty === "weak") {
             this.buildWeak(game, shopStock);
