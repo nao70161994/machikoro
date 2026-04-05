@@ -791,6 +791,19 @@ runTest('chooseRenovationTarget: expert は盤面評価で対象を選ぶ', () =
     assert.ok([LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.AMUSEMENT_PARK].includes(target));
 });
 
+runTest('chooseRenovationTarget: expert は価値の高いランドマークを壊しにくい', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.cards = [createCardByName('パン屋')];
+
+    const target = cpu.chooseRenovationTarget(game);
+    assert.strictEqual(target, LANDMARK_NAMES.SHOPPING_MALL);
+});
+
 runTest('chooseITSave: expert は多人数戦で積立を優先する', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(4);

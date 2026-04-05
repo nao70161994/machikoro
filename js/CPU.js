@@ -620,7 +620,8 @@ class CPU {
             let bestName = null;
             for (const [name, built] of Object.entries(current.landmarks)) {
                 if (!built || name === LANDMARK_NAMES.YAKUSHO) continue;
-                const score = this._scoreExpertPendingChoice(game, clone => clone.resolveRenovation(name));
+                const demolitionValue = this._builtLandmarkValue(name, current, game);
+                const score = this._scoreExpertPendingChoice(game, clone => clone.resolveRenovation(name)) - demolitionValue * 3;
                 if (score > bestScore) {
                     bestScore = score;
                     bestName = name;
