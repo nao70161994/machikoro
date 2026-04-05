@@ -416,6 +416,46 @@ runTest('_shouldHoldForLandmark: 重要ランドマーク直前なら貯金を�
     assert.strictEqual(cpu._shouldHoldForLandmark(current, game, 4, 4), true);
 });
 
+runTest('buildNormal: 勝てる局面ではカードより最後のランドマークを優先する', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 4;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    cpu.build(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], true);
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('buildWeak: 勝てる局面ではランダム購入せず最後のランドマークを建てる', () => {
+    const cpu = new CPU("weak");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 2;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    cpu.build(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }

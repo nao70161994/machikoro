@@ -443,6 +443,16 @@ class CPU {
         return this._landmarkUrgency(name, current, game) * 2 + Player.landmarkCost(name) * 0.15;
     }
 
+    _buyWinningLandmark(current, game) {
+        const remaining = Player.landmarkNames()
+            .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
+        if (remaining.length !== 1) return false;
+        const name = remaining[0];
+        if (current.coins < Player.landmarkCost(name)) return false;
+        this._buyLandmark(name, game);
+        return true;
+    }
+
     _shouldHoldForLandmark(current, game, bestCardScore, maxShortfall) {
         let best = null;
         for (const name of Player.landmarkNames()) {
@@ -482,6 +492,7 @@ class CPU {
     // 弱いCPU：ランダム購入
     buildWeak(game, shopStock) {
         const current = game.currentPlayer();
+        if (this._buyWinningLandmark(current, game)) return;
         const affordable = CARDS.filter(card =>
             shopStock[card.name] > 0 &&
             current.coins >= card.cost &&
@@ -494,6 +505,7 @@ class CPU {
     // 普通CPU：シナジー＋コスパ重視
     buildNormal(game, shopStock) {
         const current = game.currentPlayer();
+        if (this._buyWinningLandmark(current, game)) return;
 
         // シナジーチェック
         if (this._trySynergy(current, game, shopStock)) return;
@@ -521,6 +533,7 @@ class CPU {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const builtCount = current.builtLandmarkCount();
+        if (this._buyWinningLandmark(current, game)) return;
 
         // 誰かが勝利に近い（ランドマーク4つ以上）→ 緊急モード：ランドマーク最優先
         const opponentMaxBuilt = Math.max(...game.players
