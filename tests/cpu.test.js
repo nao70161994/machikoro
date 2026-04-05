@@ -548,6 +548,27 @@ runTest('_scoreExpertBuildOption: 勝利ランドマークは大きなボーナ�
     assert.ok(landmarkScore > cardScore);
 });
 
+runTest('buildExpert: 終盤は改装屋の積み増しよりランドマークを優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 16;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.cards = [createCardByName('改装屋'), createCardByName('改装屋'), createCardByName('パン屋')];
+    current.dormantCards = [];
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    cpu.build(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK], true);
+    assert.strictEqual(current.countCard('改装屋'), 2);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }

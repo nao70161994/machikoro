@@ -542,6 +542,19 @@ class CPU {
         return true;
     }
 
+    _buyLateGameLandmark(current, game) {
+        const remaining = Player.landmarkNames()
+            .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
+        if (remaining.length === 0 || remaining.length > 2) return false;
+        const affordable = remaining
+            .map(name => ({ name, cost: Player.landmarkCost(name), urgency: this._landmarkUrgency(name, current, game) }))
+            .filter(entry => current.coins >= entry.cost)
+            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost);
+        if (affordable.length === 0) return false;
+        this._buyLandmark(affordable[0].name, game);
+        return true;
+    }
+
     _cloneGame(game) {
         const clone = new GameManager(game.players.length);
         clone.enabledLandmarks = new Set(game.enabledLandmarks || Player.landmarkNames());
@@ -594,17 +607,32 @@ class CPU {
         const player = game.players[playerIndex];
         if (player.hasWon([...game.enabledLandmarks])) return 100000;
         const myTurnValue = this._estimatePlayerTurnValue(game, playerIndex);
-        const myLandmarkProgress = [...game.enabledLandmarks].filter(name => player.landmarks[name]).length;
+        const enabledLandmarks = [...game.enabledLandmarks];
+        const myLandmarkProgress = enabledLandmarks.filter(name => player.landmarks[name]).length;
+        const remainingLandmarks = enabledLandmarks.filter(name => !player.landmarks[name]);
+        const lowValueSpam = player.countCard("改装屋") + player.countCard("貸金業") + player.countCard("雑貨屋");
         let score = player.coins * 1.1 + myTurnValue * 3.2 + myLandmarkProgress * 14 + player.builtLandmarkCount() * 8;
+        if (remainingLandmarks.length <= 2) score += player.coins * 1.6 + myLandmarkProgress * 8;
+        if (remainingLandmarks.length <= 1) score += player.coins * 2.2;
+        if (lowValueSpam > 4) score -= (lowValueSpam - 4) * 6;
         if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
         for (let i = 0; i < game.players.length; i++) {
             if (i === playerIndex) continue;
             const opponent = game.players[i];
             const opponentTurnValue = this._estimatePlayerTurnValue(game, i);
-            const opponentProgress = [...game.enabledLandmarks].filter(name => opponent.landmarks[name]).length;
+            const opponentProgress = enabledLandmarks.filter(name => opponent.landmarks[name]).length;
             score -= opponent.coins * 0.4 + opponentTurnValue * 1.8 + opponentProgress * 9 + opponent.builtLandmarkCount() * 5;
         }
         return score;
+    }
+
+    _scoreExpertCardPenalty(cardName, player, game) {
+        const copies = player.countCard(cardName);
+        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+        if (cardName === "改装屋") return copies >= 2 ? 10 + copies * 4 : 0;
+        if (cardName === "貸金業") return copies >= 3 ? 8 + copies * 3 : 0;
+        if (cardName === "雑貨屋") return remainingLandmarks <= 2 && copies >= 3 ? 8 + copies * 2 : 0;
+        return 0;
     }
 
     _listExpertBuildOptions(game, shopStock) {
@@ -633,17 +661,22 @@ class CPU {
         const clone = this._cloneGame(game);
         const stock = Object.assign({}, shopStock);
         const current = clone.currentPlayer();
+        let scorePenalty = 0;
         if (action.type === 'landmark') {
             if (!clone.buildLandmark(action.name)) return -Infinity;
         } else if (action.type === 'card') {
             const card = CARDS.find(c => c.name === action.cardName);
             if (!card || !clone.buildCard(card)) return -Infinity;
             stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
+            scorePenalty = this._scoreExpertCardPenalty(card.name, current, clone);
         } else if (action.type === 'skip') {
             clone.builtThisTurn = false;
         }
         let score = this._evaluatePosition(clone, ci);
         score += this._simulateLookahead(clone, stock, ci, game.players.length * 6) * 0.7;
+        const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
+        if (action.type === 'landmark') score += 24 + (remainingLandmarks <= 2 ? 18 : 0);
+        if (action.type === 'card' && remainingLandmarks <= 2) score -= scorePenalty || 0;
         if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += 10;
         if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 8;
         if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
@@ -871,6 +904,7 @@ class CPU {
     buildExpert(game, shopStock) {
         const current = game.currentPlayer();
         if (this._buyWinningLandmark(current, game)) return;
+        if (this._buyLateGameLandmark(current, game)) return;
 
         let best = null;
         for (const action of this._listExpertBuildOptions(game, shopStock)) {
