@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePresetFromProfiles, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -16,7 +16,7 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', '--proposal-depth', '2', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -27,6 +27,7 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
     assert.strictEqual(args.proposePreset, 'hybridRush');
     assert.strictEqual(args.evaluateProposal, true);
+    assert.strictEqual(args.proposalDepth, 2);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -109,6 +110,30 @@ runTest('proposePresetFromProfiles は各プロファイル首位候補の差分
     assert.strictEqual(proposal.tuning.lateProgressBonus, 9.2);
 });
 
+runTest('enumerateProfileLeaderCombos は上位候補の組み合わせを列挙する', () => {
+    const combos = enumerateProfileLeaderCombos([
+        { profile: 'duel', result: { top: [{ name: 'a' }, { name: 'b' }] } },
+        { profile: 'crowd', result: { top: [{ name: 'c' }, { name: 'd' }] } },
+    ], 2);
+    assert.strictEqual(combos.length, 4);
+    assert.strictEqual(combos[0].length, 2);
+    assert.strictEqual(combos[0][0].profile, 'duel');
+    assert.strictEqual(combos[0][1].profile, 'crowd');
+});
+
+runTest('proposePresetFromCombo は組み合わせから提案プリセットを作る', () => {
+    const proposal = proposePresetFromCombo([
+        { profile: 'duel', leader: { name: 'duelTop', tuning: { lookaheadWeight: 0.77, lateCoinWeight: 1.6 } } },
+        { profile: 'crowd', leader: { name: 'crowdTop', tuning: { lookaheadWeight: 0.7, lateProgressBonus: 9.2 } } },
+    ], {
+        basePreset: 'default',
+        proposePreset: 'comboDefault',
+    });
+    assert.strictEqual(proposal.name, 'comboDefault');
+    assert.strictEqual(proposal.tuning.lookaheadWeight, 0.77);
+    assert.strictEqual(proposal.tuning.lateProgressBonus, 9.2);
+});
+
 runTest('evaluateProposalAgainstBase は基準との差分成績を返す', () => {
     const evaluation = evaluateProposalAgainstBase({
         name: 'hybridDefault',
@@ -129,6 +154,40 @@ runTest('evaluateProposalAgainstBase は基準との差分成績を返す', () =
     assert.strictEqual(evaluation[1].profile, 'crowd');
     assert.ok(typeof evaluation[0].winDelta === 'number');
     assert.ok(typeof evaluation[1].proposalAverageTurns === 'number');
+});
+
+runTest('rankProposalsFromProfiles は提案候補を比較順に返す', () => {
+    const rankings = rankProposalsFromProfiles([
+        {
+            profile: 'duel',
+            result: {
+                top: [
+                    { name: 'duelA', tuning: { lookaheadWeight: 0.77 } },
+                    { name: 'duelB', tuning: { lookaheadWeight: 0.63 } },
+                ],
+            },
+        },
+        {
+            profile: 'crowd',
+            result: {
+                top: [
+                    { name: 'crowdA', tuning: { lateProgressBonus: 9.2 } },
+                    { name: 'crowdB', tuning: { lateProgressBonus: 6.8 } },
+                ],
+            },
+        },
+    ], {
+        basePreset: 'default',
+        proposePreset: 'hybridDefault',
+        profiles: ['duel', 'crowd'],
+        proposalDepth: 2,
+        games: 2,
+        seed: 1,
+        maxSteps: 4000,
+    });
+    assert.strictEqual(rankings.length, 4);
+    assert.ok(typeof rankings[0].totalWinDelta === 'number');
+    assert.ok(rankings[0].proposal.name.startsWith('hybridDefault'));
 });
 
 runTest('formatPresetObject は CPU プリセット形式の文字列を返す', () => {

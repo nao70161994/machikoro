@@ -13,6 +13,7 @@ function parseArgs(argv) {
     let profiles = null;
     let proposePreset = null;
     let evaluateProposal = false;
+    let proposalDepth = 1;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -27,6 +28,7 @@ function parseArgs(argv) {
         else if (arg === '--profiles') profiles = (argv[++i] || '').split(',').filter(Boolean);
         else if (arg === '--propose-preset') proposePreset = argv[++i] || 'profileBlend';
         else if (arg === '--evaluate-proposal') evaluateProposal = true;
+        else if (arg === '--proposal-depth') proposalDepth = parseInt(argv[++i] || '1', 10);
         else players.push(arg);
     }
 
@@ -41,6 +43,7 @@ function parseArgs(argv) {
         profiles,
         proposePreset,
         evaluateProposal,
+        proposalDepth,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -197,6 +200,62 @@ function proposePresetFromProfiles(profileResults, options = {}) {
     };
 }
 
+function enumerateProfileLeaderCombos(profileResults, depth = 1) {
+    const limit = Math.max(1, depth || 1);
+    const lists = profileResults.map(entry => ({
+        profile: entry.profile,
+        leaders: (entry.result.top || []).slice(0, limit),
+    })).filter(entry => entry.leaders.length > 0);
+    const combos = [];
+
+    function walk(index, acc) {
+        if (index >= lists.length) {
+            combos.push(acc.slice());
+            return;
+        }
+        const entry = lists[index];
+        for (const leader of entry.leaders) {
+            acc.push({ profile: entry.profile, leader });
+            walk(index + 1, acc);
+            acc.pop();
+        }
+    }
+
+    walk(0, []);
+    return combos;
+}
+
+function proposePresetFromCombo(combo, options = {}) {
+    const runtime = loadRuntime();
+    const basePreset = options.basePreset || 'default';
+    const base = runtime.CPU._resolveExpertTuning(basePreset);
+    const contributions = {};
+
+    for (const entry of combo) {
+        const diff = _diffFromBase(base, entry.leader.tuning);
+        for (const [key, value] of Object.entries(diff)) {
+            if (!contributions[key]) contributions[key] = [];
+            contributions[key].push(value);
+        }
+    }
+
+    const tuning = {};
+    for (const [key, values] of Object.entries(contributions)) {
+        const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+        tuning[key] = Number(average.toFixed(3));
+    }
+
+    return {
+        name: options.proposePreset || 'profileBlend',
+        basePreset,
+        tuning,
+        profiles: combo.map(entry => ({
+            profile: entry.profile,
+            leader: entry.leader.name,
+        })),
+    };
+}
+
 function evaluateProposalAgainstBase(proposal, options = {}) {
     const profiles = options.profiles || ['duel', 'crowd'];
     return profiles.map((profile, index) => {
@@ -234,6 +293,29 @@ function evaluateProposalAgainstBase(proposal, options = {}) {
     });
 }
 
+function rankProposalsFromProfiles(profileResults, options = {}) {
+    const combos = enumerateProfileLeaderCombos(profileResults, options.proposalDepth || 1);
+    return combos.map((combo, index) => {
+        const proposal = proposePresetFromCombo(combo, {
+            basePreset: options.basePreset,
+            proposePreset: `${options.proposePreset || 'profileBlend'}${index + 1}`,
+        });
+        const evaluation = evaluateProposalAgainstBase(proposal, options);
+        const totalWinDelta = evaluation.reduce((sum, entry) => sum + entry.winDelta, 0);
+        const totalTurnDelta = evaluation.reduce((sum, entry) => sum + (entry.proposalAverageTurns - entry.baseAverageTurns), 0);
+        return {
+            proposal,
+            evaluation,
+            totalWinDelta,
+            totalTurnDelta,
+        };
+    }).sort((a, b) =>
+        b.totalWinDelta - a.totalWinDelta ||
+        a.totalTurnDelta - b.totalTurnDelta ||
+        a.proposal.name.localeCompare(b.proposal.name)
+    );
+}
+
 function formatPresetObject(name, tuning) {
     const entries = Object.entries(tuning)
         .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
@@ -265,6 +347,9 @@ function printProfileResults(results, options = {}) {
             output.proposal = proposePresetFromProfiles(results, options);
             if (options.evaluateProposal) {
                 output.evaluation = evaluateProposalAgainstBase(output.proposal, options);
+                if ((options.proposalDepth || 1) > 1) {
+                    output.proposalRankings = rankProposalsFromProfiles(results, options);
+                }
             }
         }
         console.log(JSON.stringify(output, null, 2));
@@ -289,6 +374,14 @@ function printProfileResults(results, options = {}) {
                     `${entry.profile} proposalWins=${entry.proposalWins}/${options.games || 8} baseWins=${entry.baseWins}/${options.games || 8} winDelta=${entry.winDelta} turns=${entry.proposalAverageTurns.toFixed(1)} vs ${entry.baseAverageTurns.toFixed(1)} exhaustedDelta=${entry.exhaustedDelta}`
                 );
             }
+            if ((options.proposalDepth || 1) > 1) {
+                console.log('[proposal-ranking]');
+                for (const ranked of rankProposalsFromProfiles(results, options)) {
+                    console.log(
+                        `${ranked.proposal.name} totalWinDelta=${ranked.totalWinDelta} totalTurnDelta=${ranked.totalTurnDelta.toFixed(1)} leaders=${ranked.proposal.profiles.map(entry => `${entry.profile}:${entry.leader}`).join(',')}`
+                    );
+                }
+            }
         }
     }
 }
@@ -307,8 +400,11 @@ module.exports = {
     buildCandidateTunings,
     formatPresetObject,
     profilePlayers,
+    enumerateProfileLeaderCombos,
     proposePresetFromProfiles,
+    proposePresetFromCombo,
     evaluateProposalAgainstBase,
+    rankProposalsFromProfiles,
     tuneExpert,
     tuneExpertProfiles,
 };
