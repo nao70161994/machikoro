@@ -95,6 +95,20 @@ runTest('recordGameStats はオンライン成績を all と online に記録す
     assert.strictEqual(stats.players.Bob.totalGames, 1);
 });
 
+runTest('recordGameStats はローカルCPUも難易度別に記録する', () => {
+    const rt = loadStatsRuntime();
+    const game = makeGame();
+
+    rt.recordGameStats(game.players[0], game, [{ difficulty: 'strong' }, null]);
+    const stats = rt.loadStats();
+
+    assert.strictEqual(stats.all.totalGames, 2);
+    assert.strictEqual(stats.local.totalGames, 2);
+    assert.strictEqual(stats.cpuTypes['CPU（強）'].totalGames, 1);
+    assert.strictEqual(stats.cpuTypes['CPU（強）'].wins, 1);
+    assert.strictEqual(stats.players.Bob.totalGames, 1);
+});
+
 runTest('renderStats は統計モード切替ボタンを表示する', () => {
     const rt = loadStatsRuntime();
     const game = makeGame();
@@ -112,6 +126,14 @@ runTest('renderStats はプレイヤー別フィルタを表示する', () => {
     rt.renderStats();
     assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('Alice')"));
     assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('Bob')"));
+});
+
+runTest('renderStats はCPU別フィルタを表示する', () => {
+    const rt = loadStatsRuntime();
+    const game = makeGame();
+    rt.recordGameStats(game.players[0], game, [{ difficulty: 'expert' }, null]);
+    rt.renderStats();
+    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('AI（最強）')"));
 });
 
 runTest('recordGameStats は reset なしで二重記録しない', () => {

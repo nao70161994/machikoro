@@ -201,11 +201,20 @@ function saveSettings() {
 
 function loadSettings() {
     try {
+        const normalizeName = typeof normalizeLocalPlayerName === 'function'
+            ? normalizeLocalPlayerName
+            : ((name, index) => String(name || '').trim() || `プレイヤー${index + 1}`);
         const count = parseInt(localStorage.getItem('selectedCount') || '2');
         selectedCount = Math.min(10, Math.max(2, count));
         document.getElementById("playerCount").textContent = selectedCount;
         const ps = localStorage.getItem('playerSettings');
-        if (ps) playerSettings = JSON.parse(ps).slice(0, selectedCount);
+        if (ps) {
+            playerSettings = JSON.parse(ps).slice(0, selectedCount).map((setting, index) => ({
+                type: setting.type === 'cpu' ? 'cpu' : 'human',
+                difficulty: setting.difficulty || 'normal',
+                name: normalizeName(setting.name, index),
+            }));
+        }
         const speed = localStorage.getItem('cpuSpeed');
         if (speed) {
             const speedEl = document.getElementById('cpuSpeed');

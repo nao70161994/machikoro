@@ -67,6 +67,10 @@ function loadStorageRuntime() {
         enabledLandmarks: new Set(['駅', 'ショッピングモール']),
         cpuPlayers: [],
         cpuSpeed: 1500,
+        selectedCount: 2,
+        playerSettings: [],
+        tutorialEnabled: true,
+        tutorialLevel: 'beginner',
         game: null,
         isOnlineGame: false,
         isReconnectingOnline: false,
@@ -91,6 +95,8 @@ function loadStorageRuntime() {
         resetOnlineState() {},
         switchTab(tab) { context.switchedTab = tab; },
         updateResumeButton: null,
+        syncTutorialControls() {},
+        renderPlayerSettings() { context.renderPlayerSettingsCalls = (context.renderPlayerSettingsCalls || 0) + 1; },
         sendAction(name, payload) { context.sentActions.push({ name, payload }); },
         showConfirm(message, cb) { confirmCount++; cb(); },
         alert(message) { alerts.push(message); },
@@ -109,6 +115,8 @@ function loadStorageRuntime() {
             setUndoState(value) { undoState = value; },
             getUndoState: () => undoState,
             getCpuPlayers: () => cpuPlayers,
+            getPlayerSettings: () => playerSettings,
+            getSelectedCount: () => selectedCount,
         };
     `, context);
     return context;
@@ -214,6 +222,24 @@ runTest('storage doUndo はオンラインで undoBuild を送信する', () => 
 
     assert.strictEqual(rt.sentActions.length, 1);
     assert.strictEqual(rt.sentActions[0].name, 'undoBuild');
+});
+
+runTest('storage loadSettings は旧設定にもローカル名の初期値を補う', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('selectedCount', '3');
+    rt.localStorage.setItem('playerSettings', JSON.stringify([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+        { type: 'human', difficulty: 'normal', name: '花子' },
+    ]));
+
+    rt.loadSettings();
+
+    const settings = rt.__test.getPlayerSettings();
+    assert.strictEqual(rt.__test.getSelectedCount(), 3);
+    assert.strictEqual(settings[0].name, 'プレイヤー1');
+    assert.strictEqual(settings[1].name, 'プレイヤー2');
+    assert.strictEqual(settings[2].name, '花子');
 });
 
 if (process.exitCode) {

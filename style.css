@@ -276,6 +276,45 @@ body {
     text-align: right;
 }
 
+.player-setting {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #2a2a4a;
+}
+
+.player-setting + .player-setting {
+    margin-top: 8px;
+}
+
+.player-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-setting-name {
+    flex: 0 0 auto;
+    color: #fffffe;
+    font-size: 14px;
+}
+
+.player-setting-select {
+    flex: 1;
+}
+
+.player-name-input {
+    font-size: 14px;
+}
+
+.player-setting-cpu-label {
+    color: #a7a9be;
+    font-size: 12px;
+}
+
 .toggle-setting {
     display: flex;
     align-items: center;
@@ -1919,6 +1958,13 @@ button:not(:disabled):active {
     margin-bottom: 10px;
 }
 
+.stats-filter-group-label {
+    margin: 4px 0 6px;
+    color: #a7a9be;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
 .stats-player-btn {
     padding: 7px 10px;
     border-radius: 999px;
@@ -1938,6 +1984,11 @@ button:not(:disabled):active {
 .stats-player-btn.clear {
     color: #fca5a5;
     border-color: rgba(239,68,68,0.3);
+}
+
+.stats-player-btn.cpu {
+    color: #93c5fd;
+    border-color: rgba(59,130,246,0.3);
 }
 
 .stats-overview {

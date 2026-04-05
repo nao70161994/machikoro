@@ -24,6 +24,30 @@ let tutorialLevel = localStorage.getItem('tutorialLevel') || 'beginner';
 // CPU進行チェーン制御
 let cpuScheduleToken = 0;
 
+function escapeAttribute(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function defaultLocalPlayerName(index) {
+    return `プレイヤー${index + 1}`;
+}
+
+function normalizeLocalPlayerName(name, index) {
+    const trimmed = String(name || '').trim();
+    return trimmed || defaultLocalPlayerName(index);
+}
+
+function getLocalCpuLabel(difficulty) {
+    if (difficulty === 'weak') return 'CPU（弱）';
+    if (difficulty === 'normal') return 'CPU（普通）';
+    if (difficulty === 'strong') return 'CPU（強）';
+    return 'AI（最強）';
+}
+
 function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
     document.getElementById("playerCount").textContent = selectedCount;
@@ -33,19 +57,36 @@ function changeCount(delta) {
 
 function renderPlayerSettings() {
     while (playerSettings.length < selectedCount) {
-        playerSettings.push({ type: "human", difficulty: "normal" });
+        const index = playerSettings.length;
+        playerSettings.push({ type: "human", difficulty: "normal", name: defaultLocalPlayerName(index) });
     }
-    playerSettings = playerSettings.slice(0, selectedCount);
+    playerSettings = playerSettings.slice(0, selectedCount).map((setting, index) => ({
+        type: setting.type === "cpu" ? "cpu" : "human",
+        difficulty: setting.difficulty || "normal",
+        name: normalizeLocalPlayerName(setting.name, index),
+    }));
     const html = playerSettings.map((s, i) => `
         <div class="player-setting">
-            <span class="player-setting-name">プレイヤー${i + 1}</span>
-            <select onchange="onChangePlayerType(${i}, this.value)" class="player-setting-select">
-                <option value="human" ${s.type === "human" ? "selected" : ""}>人間</option>
-                <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
-                <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
-                <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
-                <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
-            </select>
+            <div class="player-setting-row">
+                <span class="player-setting-name">プレイヤー${i + 1}</span>
+                <select onchange="onChangePlayerType(${i}, this.value)" class="player-setting-select">
+                    <option value="human" ${s.type === "human" ? "selected" : ""}>人間</option>
+                    <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
+                    <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
+                    <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
+                    <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
+                </select>
+            </div>
+            ${s.type === "human" ? `
+                <input
+                    type="text"
+                    maxlength="12"
+                    class="text-input player-name-input"
+                    placeholder="${defaultLocalPlayerName(i)}"
+                    value="${escapeAttribute(s.name)}"
+                    oninput="onChangePlayerName(${i}, this.value)"
+                >
+            ` : `<div class="player-setting-cpu-label">${getLocalCpuLabel(s.difficulty)}として統計を記録</div>`}
         </div>
     `).join("");
     document.getElementById("playerSettings").innerHTML = html;
@@ -53,10 +94,27 @@ function renderPlayerSettings() {
 
 function onChangePlayerType(index, value) {
     if (value === "human") {
-        playerSettings[index] = { type: "human", difficulty: "normal" };
+        playerSettings[index] = {
+            type: "human",
+            difficulty: "normal",
+            name: normalizeLocalPlayerName(playerSettings[index]?.name, index),
+        };
     } else {
-        playerSettings[index] = { type: "cpu", difficulty: value };
+        playerSettings[index] = {
+            type: "cpu",
+            difficulty: value,
+            name: normalizeLocalPlayerName(playerSettings[index]?.name, index),
+        };
     }
+    renderPlayerSettings();
+    saveSettings();
+}
+
+function onChangePlayerName(index, value) {
+    if (!playerSettings[index]) {
+        playerSettings[index] = { type: "human", difficulty: "normal", name: defaultLocalPlayerName(index) };
+    }
+    playerSettings[index].name = value;
     saveSettings();
 }
 
@@ -116,10 +174,13 @@ function init(playerCount) {
     const shuffledCpuPlayers = [];
     for (let i = 0; i < playerCount; i++) {
         const originalIndex = order[i];
-        game.players[i].name = `プレイヤー${originalIndex + 1}`;
+        const setting = playerSettings[originalIndex] || {};
+        game.players[i].name = setting.type === "cpu"
+            ? getLocalCpuLabel(setting.difficulty)
+            : normalizeLocalPlayerName(setting.name, originalIndex);
         shuffledCpuPlayers.push(
-            playerSettings[originalIndex]?.type === "cpu"
-                ? new CPU(playerSettings[originalIndex].difficulty)
+            setting.type === "cpu"
+                ? new CPU(setting.difficulty)
                 : null
         );
     }

@@ -17,6 +17,7 @@ function createDefaultStats() {
         local: createEmptyStatsBucket(),
         online: createEmptyStatsBucket(),
         players: {},
+        cpuTypes: {},
     };
 }
 
@@ -35,14 +36,19 @@ function normalizeStats(raw) {
     if (!raw || typeof raw !== 'object') return base;
     if (raw.all && raw.local && raw.online) {
         const players = {};
+        const cpuTypes = {};
         for (const [name, bucket] of Object.entries(raw.players || {})) {
             players[name] = cloneStatsBucket(bucket);
+        }
+        for (const [name, bucket] of Object.entries(raw.cpuTypes || {})) {
+            cpuTypes[name] = cloneStatsBucket(bucket);
         }
         return {
             all: cloneStatsBucket(raw.all),
             local: cloneStatsBucket(raw.local),
             online: cloneStatsBucket(raw.online),
             players,
+            cpuTypes,
         };
     }
     // 旧形式はローカル統計として扱う
@@ -52,6 +58,7 @@ function normalizeStats(raw) {
         local: cloneStatsBucket(legacy),
         online: createEmptyStatsBucket(),
         players: {},
+        cpuTypes: {},
     };
 }
 
@@ -86,6 +93,19 @@ function ensurePlayerStatsBucket(stats, playerName) {
     return stats.players[playerName];
 }
 
+function ensureCpuStatsBucket(stats, cpuLabel) {
+    if (!stats.cpuTypes[cpuLabel]) stats.cpuTypes[cpuLabel] = createEmptyStatsBucket();
+    return stats.cpuTypes[cpuLabel];
+}
+
+function getCpuStatsLabel(cpu) {
+    if (!cpu) return '';
+    if (cpu.difficulty === 'weak') return 'CPU（弱）';
+    if (cpu.difficulty === 'normal') return 'CPU（普通）';
+    if (cpu.difficulty === 'strong') return 'CPU（強）';
+    return 'AI（最強）';
+}
+
 function updateStatsBucket(bucket, player, won, game) {
     bucket.totalGames++;
     if (won) bucket.wins++;
@@ -107,8 +127,31 @@ function updateStatsBucket(bucket, player, won, game) {
 
 function getRecordTargets(game, cpuPlayers) {
     return game.players
-        .map((player, index) => ({ player, index }))
-        .filter((_, index) => !cpuPlayers[index]);
+        .map((player, index) => {
+            const cpu = cpuPlayers[index];
+            return {
+                player,
+                index,
+                bucketType: cpu ? 'cpu' : 'player',
+                bucketKey: cpu ? getCpuStatsLabel(cpu) : player.name,
+            };
+        })
+        .filter(target => !!target.bucketKey);
+}
+
+function updateNamedStats(stats, target, player, won, game) {
+    if (target.bucketType === 'cpu') {
+        updateStatsBucket(ensureCpuStatsBucket(stats, target.bucketKey), player, won, game);
+        return;
+    }
+    updateStatsBucket(ensurePlayerStatsBucket(stats, target.bucketKey), player, won, game);
+}
+
+function getFilteredStatsBucket(stats, filterName) {
+    if (!filterName) return null;
+    if (stats.players[filterName]) return stats.players[filterName];
+    if (stats.cpuTypes[filterName]) return stats.cpuTypes[filterName];
+    return createEmptyStatsBucket();
 }
 
 // ゲーム終了時に呼び出す（ui.js の render から）
@@ -121,11 +164,12 @@ function recordGameStats(winner, game, cpuPlayers) {
     const targets = getRecordTargets(game, cpuPlayers);
     if (targets.length === 0) return;
 
-    for (const { player, index } of targets) {
+    for (const target of targets) {
+        const { player, index } = target;
         const won = game.players.indexOf(winner) === index;
         updateStatsBucket(stats.all, player, won, game);
         updateStatsBucket(stats[mode], player, won, game);
-        updateStatsBucket(ensurePlayerStatsBucket(stats, player.name), player, won, game);
+        updateNamedStats(stats, target, player, won, game);
     }
     saveStats(stats);
 }
@@ -157,7 +201,8 @@ function renderStats() {
 
     const stats = loadStats();
     const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
-    const bucket = _statsPlayerFilter ? (stats.players[_statsPlayerFilter] || createEmptyStatsBucket()) : getCurrentStatsBucket(stats, _statsViewMode);
+    const cpuLabels = Object.keys(stats.cpuTypes).sort((a, b) => a.localeCompare(b, 'ja'));
+    const bucket = _statsPlayerFilter ? getFilteredStatsBucket(stats, _statsPlayerFilter) : getCurrentStatsBucket(stats, _statsViewMode);
     const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
     const filterTabsHtml = `
         <div class="stats-filter-tabs">
@@ -165,10 +210,13 @@ function renderStats() {
             <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'local' ? 'active' : ''}" onclick="setStatsViewMode('local')">ローカル</button>
             <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'online' ? 'active' : ''}" onclick="setStatsViewMode('online')">オンライン</button>
         </div>
-        ${playerNames.length ? `<div class="stats-player-filters">
+        ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
             ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" onclick="setStatsPlayerFilter('${escapeJsSingleQuoted(name)}')">${escapeHtml(name)}</button>`).join('')}
-            ${_statsPlayerFilter ? `<button class="stats-player-btn clear" onclick="setStatsPlayerFilter('')">解除</button>` : ''}
         </div>` : ''}
+        ${cpuLabels.length ? `<div class="stats-filter-group-label">CPU別</div><div class="stats-player-filters">
+            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${_statsPlayerFilter === name ? 'active' : ''}" onclick="setStatsPlayerFilter('${escapeJsSingleQuoted(name)}')">${escapeHtml(name)}</button>`).join('')}
+        </div>` : ''}
+        ${_statsPlayerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" onclick="setStatsPlayerFilter('')">解除</button></div>` : ''}
     `;
 
     if (bucket.totalGames === 0) {

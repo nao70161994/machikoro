@@ -199,6 +199,21 @@ runTest('main renderPlayerSettings は AI（最強）オプションを表示す
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
 });
 
+runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: '太郎' },
+        { type: 'cpu', difficulty: 'strong', name: 'unused' },
+    ]);
+
+    rt.renderPlayerSettings();
+
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="太郎"'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('onChangePlayerName(0, this.value)'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（強）として統計を記録'));
+});
+
 runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);
@@ -249,13 +264,13 @@ runTest('main showCrashScreen はクラッシュ表示と保存データ復帰�
     assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
 });
 
-runTest('main init は固定乱数でプレイヤー順シャッフルを再現できる', () => {
+runTest('main init は固定乱数でプレイヤー順シャッフル後も名前設定を反映する', () => {
     const rt = loadMainRuntime();
     rt.Math.random = createSequenceRandom([0.9, 0.0, 0.0]);
     rt.__test.setPlayerSettings([
-        { type: 'human', difficulty: 'normal' },
-        { type: 'human', difficulty: 'normal' },
-        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal', name: '花子' },
+        { type: 'cpu', difficulty: 'strong', name: 'ignored' },
+        { type: 'human', difficulty: 'normal', name: '太郎' },
     ]);
     rt.enabledCards = new Set(['麦畑', '鉱山']);
     rt.enabledLandmarks = new Set(['駅', '空港']);
@@ -263,7 +278,7 @@ runTest('main init は固定乱数でプレイヤー順シャッフルを再現�
     rt.init(3);
 
     const names = rt.__test.getGame().players.map(player => player.name);
-    assert.deepStrictEqual(names, ['プレイヤー2', 'プレイヤー1', 'プレイヤー3']);
+    assert.deepStrictEqual(names, ['CPU（強）', '花子', '太郎']);
 });
 
 runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {
