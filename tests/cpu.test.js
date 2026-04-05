@@ -514,6 +514,25 @@ runTest('chooseTVTarget: 勝利に近い相手を優先して狙う', () => {
     assert.strictEqual(cpu.chooseTVTarget(game), 2);
 });
 
+runTest('chooseTVTarget: expert は盤面評価で対象を選ぶ', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(3);
+
+    game.currentPlayer().coins = 0;
+    game.players[1].coins = 5;
+    game.players[2].coins = 5;
+    game.players[2].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[2].landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    game.players[2].landmarks[LANDMARK_NAMES.HARBOR] = true;
+    game.players[2].landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+
+    const score1 = cpu._scoreExpertPendingChoice(game, clone => clone.resolveTV(1));
+    const score2 = cpu._scoreExpertPendingChoice(game, clone => clone.resolveTV(2));
+    const expected = score2 > score1 ? 2 : 1;
+
+    assert.strictEqual(cpu.chooseTVTarget(game), expected);
+});
+
 runTest('chooseBusinessMove: 弱い自分のカードを強い相手カードと交換する', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(2);
@@ -532,6 +551,23 @@ runTest('chooseBusinessMove: 弱い自分のカードを強い相手カードと
     assert.strictEqual(move.targetIndex, 1);
 });
 
+runTest('chooseBusinessMove: expert は盤面評価で交換先を選ぶ', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const opponent = game.players[1];
+
+    current.cards = [createCardByName('麦畑'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+    opponent.cards = [createCardByName('鉱山'), createCardByName('森林')];
+    opponent.dormantCards = [];
+
+    const move = cpu.chooseBusinessMove(game);
+    assert.ok(move);
+    assert.strictEqual(current.cards[move.myCard].name, '麦畑');
+    assert.strictEqual(opponent.cards[move.theirCard].name, '鉱山');
+});
+
 runTest('chooseCleaningTarget: 自分より相手の被害が大きいカード名を選ぶ', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(3);
@@ -542,6 +578,21 @@ runTest('chooseCleaningTarget: 自分より相手の被害が大きいカード�
     game.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ'), createCardByName('カフェ')];
     game.players[1].dormantCards = [];
     game.players[2].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    game.players[2].dormantCards = [];
+
+    assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+});
+
+runTest('chooseCleaningTarget: expert は盤面評価で休業対象を選ぶ', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    game.players[1].dormantCards = [];
+    game.players[2].cards = [createCardByName('カフェ')];
     game.players[2].dormantCards = [];
 
     assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
@@ -560,6 +611,33 @@ runTest('chooseMoverMove: 価値の低い休業中カードを優先して渡す
     const move = cpu.chooseMoverMove(game);
     assert.ok(move);
     assert.strictEqual(current.cards[move.cardIndex].name, '麦畑');
+});
+
+runTest('chooseMoverMove: expert は盤面評価で渡すカードを選ぶ', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+
+    const wheat = createCardByName('麦畑');
+    const mine = createCardByName('鉱山');
+    current.cards = [wheat, mine];
+    current.dormantCards = [wheat];
+
+    const move = cpu.chooseMoverMove(game);
+    assert.ok(move);
+    assert.strictEqual(current.cards[move.cardIndex].name, '麦畑');
+});
+
+runTest('chooseRenovationTarget: expert は盤面評価で対象を選ぶ', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+
+    const target = cpu.chooseRenovationTarget(game);
+    assert.ok([LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.AMUSEMENT_PARK].includes(target));
 });
 
 runTest('chooseITSave: expert は多人数戦で積立を優先する', () => {

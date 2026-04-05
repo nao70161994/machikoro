@@ -323,6 +323,13 @@ class CPU {
         return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
     }
 
+    _scoreExpertPendingChoice(game, applyChoice) {
+        const focusIndex = game.currentPlayerIndex;
+        const clone = this._cloneGame(game);
+        applyChoice(clone);
+        return this._scoreExpertChoiceState(clone, focusIndex);
+    }
+
     chooseDiceCount(game) {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
@@ -407,6 +414,21 @@ class CPU {
     chooseTVTarget(game) {
         this._syncExpertTuningForGame(game);
         const ci = game.currentPlayerIndex;
+        if (this.difficulty === "expert") {
+            let bestScore = -Infinity;
+            let targetIndex = -1;
+            for (let i = 0; i < game.players.length; i++) {
+                if (i === ci) continue;
+                const target = game.players[i];
+                if (!target || target.coins <= 0) continue;
+                const score = this._scoreExpertPendingChoice(game, clone => clone.resolveTV(i));
+                if (score > bestScore) {
+                    bestScore = score;
+                    targetIndex = i;
+                }
+            }
+            if (targetIndex >= 0) return targetIndex;
+        }
         let bestScore = -Infinity;
         let targetIndex = -1;
         for (let i = 0; i < game.players.length; i++) {
@@ -433,24 +455,31 @@ class CPU {
 
         let bestMove = null;
         for (const myCard of myCards) {
-            const myLoss = this._ownedCardValue(myCard, game, current);
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
                 const target = game.players[i];
                 for (const theirCard of target.getMinorCards()) {
-                    const gain = this._receivedCardValue(theirCard, game, current);
-                    const denial = this._ownedCardValue(theirCard, game, target) * 0.7;
-                    const gift = this._receivedCardValue(myCard, game, target) * 0.45;
-                    const score = gain + denial - myLoss - gift +
-                        target.builtLandmarkCount() * 0.8 +
-                        (target.coins >= 10 ? 1.5 : 0);
+                    const move = {
+                        myCard: current.cards.indexOf(myCard),
+                        targetIndex: i,
+                        theirCard: target.cards.indexOf(theirCard),
+                    };
+                    let score;
+                    if (this.difficulty === "expert") {
+                        score = this._scoreExpertPendingChoice(game, clone =>
+                            clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
+                        );
+                    } else {
+                        const myLoss = this._ownedCardValue(myCard, game, current);
+                        const gain = this._receivedCardValue(theirCard, game, current);
+                        const denial = this._ownedCardValue(theirCard, game, target) * 0.7;
+                        const gift = this._receivedCardValue(myCard, game, target) * 0.45;
+                        score = gain + denial - myLoss - gift +
+                            target.builtLandmarkCount() * 0.8 +
+                            (target.coins >= 10 ? 1.5 : 0);
+                    }
                     if (!bestMove || score > bestMove.score) {
-                        bestMove = {
-                            myCard: current.cards.indexOf(myCard),
-                            targetIndex: i,
-                            theirCard: target.cards.indexOf(theirCard),
-                            score
-                        };
+                        bestMove = Object.assign({ score }, move);
                     }
                 }
             }
@@ -475,22 +504,27 @@ class CPU {
         const names = [...new Set(game.players.flatMap(p =>
             p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
         for (const name of names) {
-            let ownPenalty = 0;
-            let targetGain = 0;
-            let count = 0;
-            for (const player of game.players) {
-                for (const card of player.getMinorCards()) {
-                    if (card.name !== name || player.isDormant(card)) continue;
-                    count++;
-                    const value = this._ownedCardValue(card, game, player);
-                    if (player === current) ownPenalty += value;
-                    else targetGain += value;
+            let score;
+            if (this.difficulty === "expert") {
+                score = this._scoreExpertPendingChoice(game, clone => clone.resolveCleaning(name));
+            } else {
+                let ownPenalty = 0;
+                let targetGain = 0;
+                let count = 0;
+                for (const player of game.players) {
+                    for (const card of player.getMinorCards()) {
+                        if (card.name !== name || player.isDormant(card)) continue;
+                        count++;
+                        const value = this._ownedCardValue(card, game, player);
+                        if (player === current) ownPenalty += value;
+                        else targetGain += value;
+                    }
                 }
+                score = count + targetGain * 0.7 - ownPenalty * 1.2;
             }
-            const score = count + targetGain * 0.7 - ownPenalty * 1.2;
             if (!best || score > best.score) best = { cardName: name, score };
         }
-        return best && best.score > 0 ? best.cardName : null;
+        return best ? best.cardName : null;
     }
 
     chooseMoverMove(game) {
@@ -499,20 +533,27 @@ class CPU {
         const ci = game.currentPlayerIndex;
         let best = null;
         for (const card of current.getMinorCards()) {
-            const myLoss = this._ownedCardValue(card, game, current);
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
                 const target = game.players[i];
-                const gift = this._receivedCardValue(card, game, target);
-                const score = 4 - myLoss - gift * 0.6 -
-                    target.builtLandmarkCount() * 0.6 +
-                    (current.isDormant(card) ? 2.5 : 0);
+                const move = {
+                    cardIndex: current.cards.indexOf(card),
+                    targetIndex: i,
+                };
+                let score;
+                if (this.difficulty === "expert") {
+                    score = this._scoreExpertPendingChoice(game, clone =>
+                        clone.resolveMover(move.cardIndex, move.targetIndex)
+                    );
+                } else {
+                    const myLoss = this._ownedCardValue(card, game, current);
+                    const gift = this._receivedCardValue(card, game, target);
+                    score = 4 - myLoss - gift * 0.6 -
+                        target.builtLandmarkCount() * 0.6 +
+                        (current.isDormant(card) ? 2.5 : 0);
+                }
                 if (!best || score > best.score) {
-                    best = {
-                        cardIndex: current.cards.indexOf(card),
-                        targetIndex: i,
-                        score
-                    };
+                    best = Object.assign({ score }, move);
                 }
             }
         }
@@ -522,6 +563,19 @@ class CPU {
     chooseRenovationTarget(game) {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
+        if (this.difficulty === "expert") {
+            let bestScore = -Infinity;
+            let bestName = null;
+            for (const [name, built] of Object.entries(current.landmarks)) {
+                if (!built || name === LANDMARK_NAMES.YAKUSHO) continue;
+                const score = this._scoreExpertPendingChoice(game, clone => clone.resolveRenovation(name));
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestName = name;
+                }
+            }
+            if (bestName) return bestName;
+        }
         let best = null;
         for (const [name, built] of Object.entries(current.landmarks)) {
             if (!built || name === LANDMARK_NAMES.YAKUSHO) continue;
