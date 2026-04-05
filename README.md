@@ -107,6 +107,12 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 
 npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 2 --propose-preset hybridDefault --evaluate-proposal --finalist-count 2 --finalist-games 20
 ```
 
+勝ち越し候補だけをプリセット断片として出力:
+
+```bash
+npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 2 --propose-preset hybridDefault --evaluate-proposal --finalist-count 2 --finalist-games 20 --emit-winners
+```
+
 - 基準プリセットの近傍候補を自動生成して self-play で比較します。
 - `--format json` を付けると候補ごとの係数と勝率一覧を JSON で出力します。
 - `--emit-preset` を付けると、`CPU._expertPresets()` に貼り付けやすい JS オブジェクト断片も出力します。
@@ -115,6 +121,7 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 
 - `--evaluate-proposal` を付けると、生成した提案プリセットを基準プリセットと同条件で再戦させ、人数別の勝ち数差を表示します。
 - `--proposal-depth N` を付けると、各プロファイルの上位 `N` 件を組み合わせた提案候補をまとめてランキングします。
 - `--finalist-count N --finalist-games M` を付けると、ランキング上位 `N` 候補だけを `M` 試合で再評価します。
+- `--emit-winners` を付けると、`finalist` 再評価で勝ち越した候補だけを `CPU._expertPresets()` に貼り付けやすい形で出力します。
 
 ## プロジェクト構成
 

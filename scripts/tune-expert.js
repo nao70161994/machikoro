@@ -16,6 +16,7 @@ function parseArgs(argv) {
     let proposalDepth = 1;
     let finalistGames = 0;
     let finalistCount = 0;
+    let emitWinners = false;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -33,6 +34,7 @@ function parseArgs(argv) {
         else if (arg === '--proposal-depth') proposalDepth = parseInt(argv[++i] || '1', 10);
         else if (arg === '--finalist-games') finalistGames = parseInt(argv[++i] || '0', 10);
         else if (arg === '--finalist-count') finalistCount = parseInt(argv[++i] || '0', 10);
+        else if (arg === '--emit-winners') emitWinners = true;
         else players.push(arg);
     }
 
@@ -50,6 +52,7 @@ function parseArgs(argv) {
         proposalDepth,
         finalistGames,
         finalistCount,
+        emitWinners,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -347,6 +350,10 @@ function runFinalistPlayoff(rankings, options = {}) {
     );
 }
 
+function selectWinningFinalists(finalists) {
+    return finalists.filter(entry => entry.totalWinDelta > 0);
+}
+
 function formatPresetObject(name, tuning) {
     const entries = Object.entries(tuning)
         .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
@@ -382,6 +389,9 @@ function printProfileResults(results, options = {}) {
                     output.proposalRankings = rankProposalsFromProfiles(results, options);
                     if ((options.finalistGames || 0) > 0 && (options.finalistCount || 0) > 0) {
                         output.finalists = runFinalistPlayoff(output.proposalRankings, options);
+                        if (options.emitWinners) {
+                            output.winners = selectWinningFinalists(output.finalists);
+                        }
                     }
                 }
             }
@@ -418,10 +428,21 @@ function printProfileResults(results, options = {}) {
                 }
                 if ((options.finalistGames || 0) > 0 && (options.finalistCount || 0) > 0) {
                     console.log('[proposal-finalists]');
-                    for (const finalist of runFinalistPlayoff(rankings, options)) {
+                    const finalists = runFinalistPlayoff(rankings, options);
+                    for (const finalist of finalists) {
                         console.log(
                             `${finalist.proposal.name} totalWinDelta=${finalist.totalWinDelta} totalTurnDelta=${finalist.totalTurnDelta.toFixed(1)} games=${options.finalistGames}`
                         );
+                    }
+                    if (options.emitWinners) {
+                        console.log('[proposal-winners]');
+                        const winners = selectWinningFinalists(finalists);
+                        if (winners.length === 0) {
+                            console.log('none');
+                        }
+                        for (const winner of winners) {
+                            console.log(formatPresetObject(winner.proposal.name, winner.proposal.tuning));
+                        }
                     }
                 }
             }
@@ -449,6 +470,7 @@ module.exports = {
     evaluateProposalAgainstBase,
     rankProposalsFromProfiles,
     runFinalistPlayoff,
+    selectWinningFinalists,
     tuneExpert,
     tuneExpertProfiles,
 };

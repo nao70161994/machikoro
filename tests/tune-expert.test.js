@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, runFinalistPlayoff, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, runFinalistPlayoff, selectWinningFinalists, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -16,7 +16,7 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', '--proposal-depth', '2', '--finalist-count', '2', '--finalist-games', '12', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', '--proposal-depth', '2', '--finalist-count', '2', '--finalist-games', '12', '--emit-winners', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -30,6 +30,7 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.strictEqual(args.proposalDepth, 2);
     assert.strictEqual(args.finalistCount, 2);
     assert.strictEqual(args.finalistGames, 12);
+    assert.strictEqual(args.emitWinners, true);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -231,6 +232,16 @@ runTest('runFinalistPlayoff は上位候補を長めの条件で再評価する'
     assert.strictEqual(finalists.length, 2);
     assert.ok(typeof finalists[0].totalWinDelta === 'number');
     assert.ok(finalists[0].proposal.name.startsWith('hybridDefault'));
+});
+
+runTest('selectWinningFinalists は勝ち越し候補だけを返す', () => {
+    const winners = selectWinningFinalists([
+        { proposal: { name: 'a' }, totalWinDelta: 2 },
+        { proposal: { name: 'b' }, totalWinDelta: 0 },
+        { proposal: { name: 'c' }, totalWinDelta: -1 },
+    ]);
+    assert.strictEqual(winners.length, 1);
+    assert.strictEqual(winners[0].proposal.name, 'a');
 });
 
 runTest('formatPresetObject は CPU プリセット形式の文字列を返す', () => {
