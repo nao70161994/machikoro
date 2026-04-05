@@ -198,45 +198,27 @@ const CPU_PHASE_HANDLERS = [
                 cpuDo('resolveTV', { targetIndex }, () => game.resolveTV(targetIndex));
             }
             if (game.pendingBusiness > 0) {
-                const cur = game.currentPlayer();
-                const myCards = cur.getMinorCards();
-                for (let i = 0; i < game.players.length; i++) {
-                    if (i === game.currentPlayerIndex) continue;
-                    const theirCards = game.players[i].getMinorCards();
-                    if (theirCards.length === 0) continue;
-                    const myCard = myCards[Math.floor(Math.random() * myCards.length)];
-                    const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
-                    const myCardIndex = cur.cards.indexOf(myCard);
-                    const theirCardIndex = game.players[i].cards.indexOf(theirCard);
-                    cpuDo('resolveBusiness', { myCard: myCardIndex, targetIndex: i, theirCard: theirCardIndex },
-                        () => game.resolveBusiness(myCardIndex, i, theirCardIndex));
-                    break;
+                const move = cpu.chooseBusinessMove(game);
+                if (move) {
+                    cpuDo('resolveBusiness', move,
+                        () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard));
                 }
             }
             if (game.pendingCleaning > 0) {
-                const allNames = [...new Set(game.players.flatMap(p =>
-                    p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
-                if (allNames.length > 0) {
-                    const cardName = allNames[Math.floor(Math.random() * allNames.length)];
+                const cardName = cpu.chooseCleaningTarget(game);
+                if (cardName) {
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
                 }
             }
             if (game.pendingMover > 0) {
-                const cur = game.currentPlayer();
-                const myCards = cur.getMinorCards();
-                const others = game.players.map((p, i) => i).filter(i => i !== game.currentPlayerIndex);
-                if (myCards.length > 0 && others.length > 0) {
-                    const cardIndex = cur.cards.indexOf(myCards[0]);
-                    const targetIndex = others[0];
-                    cpuDo('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
+                const move = cpu.chooseMoverMove(game);
+                if (move) {
+                    cpuDo('resolveMover', move, () => game.resolveMover(move.cardIndex, move.targetIndex));
                 }
             }
             if (game.pendingRenovation > 0) {
-                const cur = game.currentPlayer();
-                const builtLandmarks = Object.entries(cur.landmarks)
-                    .filter(([name, built]) => built && name !== "役所").map(([name]) => name);
-                if (builtLandmarks.length > 0) {
-                    const landmarkName = builtLandmarks[builtLandmarks.length - 1];
+                const landmarkName = cpu.chooseRenovationTarget(game);
+                if (landmarkName) {
                     cpuDo('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
                 }
             }

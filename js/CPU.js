@@ -133,52 +133,124 @@ class CPU {
 
     chooseTVTarget(game) {
         const ci = game.currentPlayerIndex;
-        let maxCoins = -1;
+        let bestScore = -Infinity;
         let targetIndex = -1;
         for (let i = 0; i < game.players.length; i++) {
             if (i === ci) continue;
-            if (game.players[i].coins > maxCoins) {
-                maxCoins = game.players[i].coins;
+            const opponent = game.players[i];
+            const steal = Math.min(5, opponent.coins);
+            const score = steal * 2.2 +
+                opponent.builtLandmarkCount() * 2.5 +
+                this._coinsTowardsNextLandmark(opponent) * 0.25;
+            if (score > bestScore) {
+                bestScore = score;
                 targetIndex = i;
             }
         }
         return targetIndex;
     }
 
-    resolveBusiness(game) {
+    chooseBusinessMove(game) {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const myCards = current.getMinorCards();
-        if (myCards.length === 0) { game.pendingBusiness = false; game.phase = GAME_PHASES.BUILD; return; }
+        if (myCards.length === 0) return null;
 
-        if (this.difficulty === "strong") {
-            // 強い：最も価値の低い自分のカードと最も価値の高い相手のカードを交換
-            const myWorst = myCards.sort((a, b) => a.cost - b.cost)[0];
+        let bestMove = null;
+        for (const myCard of myCards) {
+            const myLoss = this._ownedCardValue(myCard, game, current);
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
-                const theirCards = game.players[i].getMinorCards();
-                if (theirCards.length === 0) continue;
-                const theirBest = theirCards.sort((a, b) => {
-                    const av = b.cost + (game.players[i].isDormant(b) ? 1.5 : 0);
-                    const bv = a.cost + (game.players[i].isDormant(a) ? 1.5 : 0);
-                    return av - bv;
-                })[0];
-                game.resolveBusiness(current.cards.indexOf(myWorst), i, game.players[i].cards.indexOf(theirBest));
-                return;
-            }
-        } else {
-            for (let i = 0; i < game.players.length; i++) {
-                if (i === ci) continue;
-                const theirCards = game.players[i].getMinorCards();
-                if (theirCards.length === 0) continue;
-                const myCard = myCards[Math.floor(Math.random() * myCards.length)];
-                const theirCard = theirCards[Math.floor(Math.random() * theirCards.length)];
-                game.resolveBusiness(current.cards.indexOf(myCard), i, game.players[i].cards.indexOf(theirCard));
-                return;
+                const target = game.players[i];
+                for (const theirCard of target.getMinorCards()) {
+                    const gain = this._receivedCardValue(theirCard, game, current);
+                    const denial = this._ownedCardValue(theirCard, game, target) * 0.7;
+                    const gift = this._receivedCardValue(myCard, game, target) * 0.45;
+                    const score = gain + denial - myLoss - gift +
+                        target.builtLandmarkCount() * 0.8 +
+                        (target.coins >= 10 ? 1.5 : 0);
+                    if (!bestMove || score > bestMove.score) {
+                        bestMove = {
+                            myCard: current.cards.indexOf(myCard),
+                            targetIndex: i,
+                            theirCard: target.cards.indexOf(theirCard),
+                            score
+                        };
+                    }
+                }
             }
         }
-        game.pendingBusiness = false;
-        game.phase = GAME_PHASES.BUILD;
+        return bestMove;
+    }
+
+    resolveBusiness(game) {
+        const move = this.chooseBusinessMove(game);
+        if (!move) {
+            game.pendingBusiness = false;
+            game.phase = GAME_PHASES.BUILD;
+            return;
+        }
+        game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
+    }
+
+    chooseCleaningTarget(game) {
+        const current = game.currentPlayer();
+        let best = null;
+        const names = [...new Set(game.players.flatMap(p =>
+            p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
+        for (const name of names) {
+            let ownPenalty = 0;
+            let targetGain = 0;
+            let count = 0;
+            for (const player of game.players) {
+                for (const card of player.getMinorCards()) {
+                    if (card.name !== name || player.isDormant(card)) continue;
+                    count++;
+                    const value = this._ownedCardValue(card, game, player);
+                    if (player === current) ownPenalty += value;
+                    else targetGain += value;
+                }
+            }
+            const score = count + targetGain * 0.7 - ownPenalty * 1.2;
+            if (!best || score > best.score) best = { cardName: name, score };
+        }
+        return best && best.score > 0 ? best.cardName : null;
+    }
+
+    chooseMoverMove(game) {
+        const current = game.currentPlayer();
+        const ci = game.currentPlayerIndex;
+        let best = null;
+        for (const card of current.getMinorCards()) {
+            const myLoss = this._ownedCardValue(card, game, current);
+            for (let i = 0; i < game.players.length; i++) {
+                if (i === ci) continue;
+                const target = game.players[i];
+                const gift = this._receivedCardValue(card, game, target);
+                const score = 4 - myLoss - gift * 0.6 -
+                    target.builtLandmarkCount() * 0.6 +
+                    (current.isDormant(card) ? 2.5 : 0);
+                if (!best || score > best.score) {
+                    best = {
+                        cardIndex: current.cards.indexOf(card),
+                        targetIndex: i,
+                        score
+                    };
+                }
+            }
+        }
+        return best;
+    }
+
+    chooseRenovationTarget(game) {
+        const current = game.currentPlayer();
+        let best = null;
+        for (const [name, built] of Object.entries(current.landmarks)) {
+            if (!built || name === LANDMARK_NAMES.YAKUSHO) continue;
+            const score = this._builtLandmarkValue(name, current, game);
+            if (!best || score < best.score) best = { name, score };
+        }
+        return best ? best.name : null;
     }
 
     // ===== カード評価 =====
@@ -215,17 +287,19 @@ class CPU {
             case CARD_EFFECTS.TUNA:
                 return player.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0;
             case CARD_EFFECTS.LOAN:
-                return 1;
+                return player.coins <= 4 ? 3.5 : 1.2;
             case CARD_EFFECTS.ITSTARTUP:
-                return opponents.length * 2;
+                return opponents.length * Math.max(2, player.itVentureCoins + 1);
             case CARD_EFFECTS.RENOVATION:
+                return player.builtLandmarkCount() > 0 ? 3.5 : 0;
             case CARD_EFFECTS.CLEANING:
+                return this._estimateCleaningValue(game, player);
             case CARD_EFFECTS.MOVER:
-                return 2;
+                return this._estimateMoverValue(game, player);
             case CARD_EFFECTS.BUSINESS:
-                return 3;
+                return this._estimateBusinessValue(game, player);
             case CARD_EFFECTS.PARK:
-                return 1;
+                return this._estimateParkValue(game, player);
             default:
                 return card.income;
         }
@@ -291,6 +365,100 @@ class CPU {
         return 0;
     }
 
+    _coinsTowardsNextLandmark(player) {
+        const remainingCosts = Player.landmarkNames()
+            .filter(name => !player.landmarks[name])
+            .map(name => Player.landmarkCost(name));
+        if (remainingCosts.length === 0) return 0;
+        return Math.max(0, player.coins - Math.min(...remainingCosts));
+    }
+
+    _estimateBusinessValue(game, player) {
+        const ci = game.players.indexOf(player);
+        const myCards = player.getMinorCards();
+        if (myCards.length === 0) return 0;
+        let best = 0;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === ci) continue;
+            const target = game.players[i];
+            for (const myCard of myCards) {
+                for (const theirCard of target.getMinorCards()) {
+                    const score = this._receivedCardValue(theirCard, game, player) -
+                        this._ownedCardValue(myCard, game, player) * 0.8 +
+                        this._ownedCardValue(theirCard, game, target) * 0.5;
+                    if (score > best) best = score;
+                }
+            }
+        }
+        return best;
+    }
+
+    _estimateCleaningValue(game, player) {
+        let best = 0;
+        const names = [...new Set(game.players.flatMap(p => p.getMinorCards().map(c => c.name)))];
+        for (const name of names) {
+            let score = 0;
+            for (const owner of game.players) {
+                for (const card of owner.getMinorCards()) {
+                    if (card.name !== name || owner.isDormant(card)) continue;
+                    score += 1;
+                    if (owner === player) score -= this._ownedCardValue(card, game, owner);
+                    else score += this._ownedCardValue(card, game, owner) * 0.7;
+                }
+            }
+            if (score > best) best = score;
+        }
+        return best;
+    }
+
+    _estimateMoverValue(game, player) {
+        const myCards = player.getMinorCards();
+        if (myCards.length === 0) return 0;
+        let best = -Infinity;
+        for (const card of myCards) {
+            const score = 4 - this._ownedCardValue(card, game, player) + (player.isDormant(card) ? 2 : 0);
+            if (score > best) best = score;
+        }
+        return Math.max(best, 0);
+    }
+
+    _estimateParkValue(game, player) {
+        const total = game.players.reduce((sum, p) => sum + p.coins, 0);
+        return total / Math.max(game.players.length, 1) - player.coins;
+    }
+
+    _receivedCardValue(card, game, player) {
+        return this.evalCard(card, game, player) * this._diceFreq(card.diceNums) + card.cost * 1.4;
+    }
+
+    _ownedCardValue(card, game, player) {
+        let value = this._receivedCardValue(card, game, player);
+        if (player.isDormant(card)) value *= 0.35;
+        if (card.color === "red") value += 1.5;
+        if (card.color === "purple") value += 2;
+        return value;
+    }
+
+    _builtLandmarkValue(name, current, game) {
+        return this._landmarkUrgency(name, current, game) * 2 + Player.landmarkCost(name) * 0.15;
+    }
+
+    _shouldHoldForLandmark(current, game, bestCardScore, maxShortfall) {
+        let best = null;
+        for (const name of Player.landmarkNames()) {
+            if (!game.enabledLandmarks || !game.enabledLandmarks.has(name) || current.landmarks[name]) continue;
+            const cost = Player.landmarkCost(name);
+            const shortfall = cost - current.coins;
+            if (shortfall <= 0 || shortfall > maxShortfall) continue;
+            const urgency = this._landmarkUrgency(name, current, game);
+            if (!best || urgency > best.urgency || (urgency === best.urgency && shortfall < best.shortfall)) {
+                best = { urgency, shortfall };
+            }
+        }
+        if (!best) return false;
+        return best.urgency >= 6 && bestCardScore < (best.urgency - best.shortfall) * 1.2;
+    }
+
     _maybeBuyLandmark(current, game, reserve = 0, minUrgency = 0) {
         const landmarkPriority = [LANDMARK_NAMES.STATION, LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.HARBOR, LANDMARK_NAMES.RADIO_TOWER, LANDMARK_NAMES.AMUSEMENT_PARK, LANDMARK_NAMES.AIRPORT];
         let best = null;
@@ -340,6 +508,7 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         );
         const sorted = this.sortAffordable(affordable, game, current);
+        if (sorted.length > 0 && this._shouldHoldForLandmark(current, game, sorted[0].score, 2)) return;
         if (sorted.length > 0 && sorted[0].score >= 0.9) {
             this._buyCard(sorted[0].card, game, shopStock);
             return;
@@ -392,6 +561,7 @@ class CPU {
         const sorted = this.sortAffordable(affordable, game, current);
         if (sorted.length > 0) {
             const [best, second] = sorted;
+            if (this._shouldHoldForLandmark(current, game, best.score, 4)) return;
             if (!second || best.score >= second.score * 0.95) {
                 this._buyCard(best.card, game, shopStock);
                 return;

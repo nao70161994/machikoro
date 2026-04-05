@@ -338,6 +338,84 @@ runTest('build: builtThisTurn 済みなら追加建設を試みない', () => {
     assert.strictEqual(game.builtThisTurn, true);
 });
 
+runTest('chooseTVTarget: 勝利に近い相手を優先して狙う', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(3);
+    const targetByCoins = game.players[1];
+    const targetByLead = game.players[2];
+
+    targetByCoins.coins = 8;
+    targetByLead.coins = 4;
+    targetByLead.landmarks[LANDMARK_NAMES.STATION] = true;
+    targetByLead.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    targetByLead.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    targetByLead.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
+});
+
+runTest('chooseBusinessMove: 弱い自分のカードを強い相手カードと交換する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const opponent = game.players[1];
+
+    current.cards = [createCardByName('麦畑'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+    opponent.cards = [createCardByName('鉱山'), createCardByName('森林')];
+    opponent.dormantCards = [];
+
+    const move = cpu.chooseBusinessMove(game);
+    assert.ok(move);
+    assert.strictEqual(current.cards[move.myCard].name, '麦畑');
+    assert.strictEqual(opponent.cards[move.theirCard].name, '鉱山');
+    assert.strictEqual(move.targetIndex, 1);
+});
+
+runTest('chooseCleaningTarget: 自分より相手の被害が大きいカード名を選ぶ', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ'), createCardByName('カフェ')];
+    game.players[1].dormantCards = [];
+    game.players[2].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    game.players[2].dormantCards = [];
+
+    assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+});
+
+runTest('chooseMoverMove: 価値の低い休業中カードを優先して渡す', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+
+    const wheat = createCardByName('麦畑');
+    const mine = createCardByName('鉱山');
+    current.cards = [wheat, mine];
+    current.dormantCards = [wheat];
+
+    const move = cpu.chooseMoverMove(game);
+    assert.ok(move);
+    assert.strictEqual(current.cards[move.cardIndex].name, '麦畑');
+});
+
+runTest('_shouldHoldForLandmark: 重要ランドマーク直前なら貯金を優先する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 9;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [
+        createCardByName('パン屋'),
+        createCardByName('コンビニ'),
+        createCardByName('カフェ')
+    ];
+    assert.strictEqual(cpu._shouldHoldForLandmark(current, game, 4, 4), true);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }
