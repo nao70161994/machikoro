@@ -1882,6 +1882,64 @@ button:not(:disabled):active {
     line-height: 1.8;
 }
 
+.stats-filter-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.stats-filter-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #2a2a4a;
+    background: #0f0e17;
+    color: #a7a9be;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.stats-filter-btn.active {
+    background: #2a2a4a;
+    color: #fffffe;
+    border-color: rgba(240,192,64,0.4);
+}
+
+.stats-mode-label {
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #f0c040;
+    letter-spacing: 1px;
+}
+
+.stats-player-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.stats-player-btn {
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid #2a2a4a;
+    background: rgba(255,255,255,0.04);
+    color: #c7cad1;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.stats-player-btn.active {
+    background: rgba(240,192,64,0.14);
+    color: #fffffe;
+    border-color: rgba(240,192,64,0.45);
+}
+
+.stats-player-btn.clear {
+    color: #fca5a5;
+    border-color: rgba(239,68,68,0.3);
+}
+
 .stats-overview {
     display: flex;
     gap: 8px;

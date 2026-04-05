@@ -1,52 +1,133 @@
 /**
  * stats.js - ゲーム統計の記録・表示
- * ローカルゲームのみ記録（オンラインは除外）
+ * ローカル / オンライン / 全体 を分けて保持する
  */
 
 let _statsRecorded = false;
+let _statsViewMode = 'all';
+let _statsPlayerFilter = '';
+
+function createEmptyStatsBucket() {
+    return { totalGames: 0, wins: 0, totalTurns: 0, cardStats: {}, landmarkStats: {} };
+}
+
+function createDefaultStats() {
+    return {
+        all: createEmptyStatsBucket(),
+        local: createEmptyStatsBucket(),
+        online: createEmptyStatsBucket(),
+        players: {},
+    };
+}
+
+function cloneStatsBucket(bucket) {
+    return {
+        totalGames: bucket.totalGames || 0,
+        wins: bucket.wins || 0,
+        totalTurns: bucket.totalTurns || 0,
+        cardStats: Object.assign({}, bucket.cardStats || {}),
+        landmarkStats: Object.assign({}, bucket.landmarkStats || {}),
+    };
+}
+
+function normalizeStats(raw) {
+    const base = createDefaultStats();
+    if (!raw || typeof raw !== 'object') return base;
+    if (raw.all && raw.local && raw.online) {
+        const players = {};
+        for (const [name, bucket] of Object.entries(raw.players || {})) {
+            players[name] = cloneStatsBucket(bucket);
+        }
+        return {
+            all: cloneStatsBucket(raw.all),
+            local: cloneStatsBucket(raw.local),
+            online: cloneStatsBucket(raw.online),
+            players,
+        };
+    }
+    // 旧形式はローカル統計として扱う
+    const legacy = cloneStatsBucket(raw);
+    return {
+        all: cloneStatsBucket(legacy),
+        local: cloneStatsBucket(legacy),
+        online: createEmptyStatsBucket(),
+        players: {},
+    };
+}
 
 function loadStats() {
     try {
         const raw = localStorage.getItem('gameStats');
-        if (raw) return JSON.parse(raw);
+        if (raw) return normalizeStats(JSON.parse(raw));
     } catch (e) {}
-    return { totalGames: 0, wins: 0, totalTurns: 0, cardStats: {}, landmarkStats: {} };
+    return createDefaultStats();
+}
+
+function saveStats(stats) {
+    try { localStorage.setItem('gameStats', JSON.stringify(stats)); } catch (e) {}
+}
+
+function getStatsModeLabel(mode) {
+    if (mode === 'local') return 'ローカル';
+    if (mode === 'online') return 'オンライン';
+    return '全体';
+}
+
+function getCurrentStatsBucket(stats, mode) {
+    return stats[mode] || createEmptyStatsBucket();
+}
+
+function escapeJsSingleQuoted(value) {
+    return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function ensurePlayerStatsBucket(stats, playerName) {
+    if (!stats.players[playerName]) stats.players[playerName] = createEmptyStatsBucket();
+    return stats.players[playerName];
+}
+
+function updateStatsBucket(bucket, player, won, game) {
+    bucket.totalGames++;
+    if (won) bucket.wins++;
+    bucket.totalTurns += game.turnCount || 0;
+
+    for (const card of player.cards) {
+        if (!bucket.cardStats[card.name]) bucket.cardStats[card.name] = { winWith: 0, loseWith: 0 };
+        if (won) bucket.cardStats[card.name].winWith++;
+        else bucket.cardStats[card.name].loseWith++;
+    }
+
+    for (const [name, built] of Object.entries(player.landmarks)) {
+        if (!built) continue;
+        if (!bucket.landmarkStats[name]) bucket.landmarkStats[name] = { winWith: 0, loseWith: 0 };
+        if (won) bucket.landmarkStats[name].winWith++;
+        else bucket.landmarkStats[name].loseWith++;
+    }
+}
+
+function getRecordTargets(game, cpuPlayers) {
+    return game.players
+        .map((player, index) => ({ player, index }))
+        .filter((_, index) => !cpuPlayers[index]);
 }
 
 // ゲーム終了時に呼び出す（ui.js の render から）
 function recordGameStats(winner, game, cpuPlayers) {
     if (_statsRecorded) return;
-    if (typeof isOnlineGame !== 'undefined' && isOnlineGame) return;
     _statsRecorded = true;
 
-    // 人間プレイヤーを特定（最初の1人）
-    const humanIdx = game.players.findIndex((_, i) => !cpuPlayers[i]);
-    if (humanIdx < 0) return;
-
-    const player = game.players[humanIdx];
-    const won = game.players.indexOf(winner) === humanIdx;
+    const mode = (typeof isOnlineGame !== 'undefined' && isOnlineGame) ? 'online' : 'local';
     const stats = loadStats();
+    const targets = getRecordTargets(game, cpuPlayers);
+    if (targets.length === 0) return;
 
-    stats.totalGames++;
-    if (won) stats.wins++;
-    stats.totalTurns += game.turnCount || 0;
-
-    // 所持カード統計
-    for (const card of player.cards) {
-        if (!stats.cardStats[card.name]) stats.cardStats[card.name] = { winWith: 0, loseWith: 0 };
-        if (won) stats.cardStats[card.name].winWith++;
-        else      stats.cardStats[card.name].loseWith++;
+    for (const { player, index } of targets) {
+        const won = game.players.indexOf(winner) === index;
+        updateStatsBucket(stats.all, player, won, game);
+        updateStatsBucket(stats[mode], player, won, game);
+        updateStatsBucket(ensurePlayerStatsBucket(stats, player.name), player, won, game);
     }
-
-    // ランドマーク統計
-    for (const [name, built] of Object.entries(player.landmarks)) {
-        if (!built) continue;
-        if (!stats.landmarkStats[name]) stats.landmarkStats[name] = { winWith: 0, loseWith: 0 };
-        if (won) stats.landmarkStats[name].winWith++;
-        else      stats.landmarkStats[name].loseWith++;
-    }
-
-    try { localStorage.setItem('gameStats', JSON.stringify(stats)); } catch (e) {}
+    saveStats(stats);
 }
 
 // ゲーム開始時にリセット
@@ -59,22 +140,49 @@ function clearStats() {
     renderStats();
 }
 
+function setStatsViewMode(mode) {
+    _statsViewMode = ['all', 'local', 'online'].includes(mode) ? mode : 'all';
+    _statsPlayerFilter = '';
+    renderStats();
+}
+
+function setStatsPlayerFilter(playerName) {
+    _statsPlayerFilter = playerName || '';
+    renderStats();
+}
+
 function renderStats() {
     const el = document.getElementById('tabContentStats');
     if (!el) return;
 
     const stats = loadStats();
+    const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
+    const bucket = _statsPlayerFilter ? (stats.players[_statsPlayerFilter] || createEmptyStatsBucket()) : getCurrentStatsBucket(stats, _statsViewMode);
+    const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
+    const filterTabsHtml = `
+        <div class="stats-filter-tabs">
+            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'all' ? 'active' : ''}" onclick="setStatsViewMode('all')">全体</button>
+            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'local' ? 'active' : ''}" onclick="setStatsViewMode('local')">ローカル</button>
+            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'online' ? 'active' : ''}" onclick="setStatsViewMode('online')">オンライン</button>
+        </div>
+        ${playerNames.length ? `<div class="stats-player-filters">
+            ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" onclick="setStatsPlayerFilter('${escapeJsSingleQuoted(name)}')">${escapeHtml(name)}</button>`).join('')}
+            ${_statsPlayerFilter ? `<button class="stats-player-btn clear" onclick="setStatsPlayerFilter('')">解除</button>` : ''}
+        </div>` : ''}
+    `;
 
-    if (stats.totalGames === 0) {
-        el.innerHTML = '<div class="stats-empty">まだゲームの記録がありません。<br>ローカルゲームをプレイすると記録されます。</div>';
+    if (bucket.totalGames === 0) {
+        el.innerHTML = `
+            ${filterTabsHtml}
+            <div class="stats-empty">まだ${_statsPlayerFilter || getStatsModeLabel(_statsViewMode)}の記録がありません。<br>${_statsViewMode === 'online' ? 'オンライン対戦を完了すると記録されます。' : 'ゲームをプレイすると記録されます。'}</div>
+        `;
         return;
     }
 
-    const winRate = Math.round(stats.wins / stats.totalGames * 100);
-    const avgTurns = Math.round(stats.totalTurns / stats.totalGames);
+    const winRate = Math.round(bucket.wins / bucket.totalGames * 100);
+    const avgTurns = Math.round(bucket.totalTurns / bucket.totalGames);
 
-    // カード勝率ランキング（3戦以上のみ表示）
-    const cardEntries = Object.entries(stats.cardStats)
+    const cardEntries = Object.entries(bucket.cardStats)
         .map(([name, s]) => {
             const total = s.winWith + s.loseWith;
             return { name, total, rate: total > 0 ? s.winWith / total : 0 };
@@ -93,8 +201,7 @@ function renderStats() {
         </div>`;
     }).join('') || '<div class="stats-empty">3戦以上のデータがまだありません</div>';
 
-    // ランドマーク建設率
-    const lmRows = Object.entries(stats.landmarkStats)
+    const lmRows = Object.entries(bucket.landmarkStats)
         .map(([name, s]) => {
             const total = s.winWith + s.loseWith;
             const pct = total > 0 ? Math.round(s.winWith / total * 100) : 0;
@@ -107,9 +214,12 @@ function renderStats() {
         }).join('');
 
     el.innerHTML = `
+        ${filterTabsHtml}
+        <div class="stats-mode-label">${modeLabel}</div>
+
         <div class="stats-overview">
             <div class="stats-overview-item">
-                <div class="stats-big">${stats.totalGames}</div>
+                <div class="stats-big">${bucket.totalGames}</div>
                 <div class="stats-ov-label">総ゲーム数</div>
             </div>
             <div class="stats-overview-item">

@@ -7,6 +7,7 @@ const testFiles = [
     'cpu.test.js',
     'online.test.js',
     'main.test.js',
+    'stats.test.js',
 ];
 
 let failed = false;
