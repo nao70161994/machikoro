@@ -220,14 +220,14 @@ runTest('main changeCount は人数を2..10にクランプして表示を更新�
     assert.strictEqual(rt.__test.elements.playerCount.textContent, 10);
 });
 
-runTest('main renderPlayerSettings は CPU（最強）オプションを表示する', () => {
+runTest('main renderPlayerSettings は AI（最強）オプションを表示する', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(2);
     rt.__test.setPlayerSettings([{ type: 'cpu', difficulty: 'expert' }, { type: 'human', difficulty: 'normal' }]);
 
     rt.renderPlayerSettings();
 
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（最強）'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（最強）'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
 });
 
