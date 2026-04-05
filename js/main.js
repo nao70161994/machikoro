@@ -713,7 +713,12 @@ function checkAutoSkip() {
         !(card.color === "purple" && current.countCard(card.name) > 0)
     );
     const canAffordLandmark = Object.entries(current.landmarks)
-        .some(([name, built]) => !built && name !== "役所" && current.coins >= Player.landmarkCost(name));
+        .some(([name, built]) =>
+            enabledLandmarks.has(name) &&
+            !built &&
+            name !== LANDMARK_NAMES.YAKUSHO &&
+            current.coins >= Player.landmarkCost(name)
+        );
 
     if (!canAffordCard && !canAffordLandmark) {
         autoSkipPending = true;
@@ -729,13 +734,6 @@ function checkAutoSkip() {
         }, 1500);
     }
 }
-
-// 初期表示
-loadSettings();
-renderOnlinePlayerSettings();;
-updateResumeButton();
-drawCitySkyline();
-window.addEventListener("resize", drawCitySkyline);
 
 // ===== クラッシュ回復 =====
 let _crashShown = false;
@@ -759,13 +757,6 @@ function crashResume() {
     resumeGame();
 }
 
-window.addEventListener('error', (e) => {
-    showCrashScreen(e.error || e.message);
-});
-window.addEventListener('unhandledrejection', (e) => {
-    showCrashScreen(e.reason);
-});
-
 // ===== オフライン検知 =====
 function updateOnlineTabState() {
     const offline = !navigator.onLine;
@@ -778,23 +769,9 @@ function updateOnlineTabState() {
     if (createBtn) createBtn.disabled = offline;
     if (joinBtn) joinBtn.disabled = offline;
 }
-window.addEventListener('online',  updateOnlineTabState);
-window.addEventListener('offline', updateOnlineTabState);
-updateOnlineTabState();
 
 // ===== PWAインストールバナー =====
 let _pwaInstallEvent = null;
-
-// すでにインストール済み or 非表示にした場合は何もしない
-if (window.matchMedia('(display-mode: standalone)').matches) {
-    // インストール済み: バナー不要
-} else if (!localStorage.getItem('pwaInstallDismissed')) {
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        _pwaInstallEvent = e;
-        document.getElementById('pwaInstallBanner').style.display = 'block';
-    });
-}
 
 function pwaInstallPrompt() {
     if (!_pwaInstallEvent) return;
@@ -809,3 +786,46 @@ function pwaInstallDismiss() {
     document.getElementById('pwaInstallBanner').style.display = 'none';
     localStorage.setItem('pwaInstallDismissed', '1');
 }
+
+function bindCrashHandlers() {
+    window.addEventListener('error', (e) => {
+        showCrashScreen(e.error || e.message);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+        showCrashScreen(e.reason);
+    });
+}
+
+function bindOnlineStatusHandlers() {
+    window.addEventListener('online', updateOnlineTabState);
+    window.addEventListener('offline', updateOnlineTabState);
+    updateOnlineTabState();
+}
+
+function bindPwaInstallHandlers() {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        return;
+    }
+    if (localStorage.getItem('pwaInstallDismissed')) {
+        return;
+    }
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _pwaInstallEvent = e;
+        document.getElementById('pwaInstallBanner').style.display = 'block';
+    });
+}
+
+function initMainView() {
+    loadSettings();
+    renderOnlinePlayerSettings();
+    updateResumeButton();
+    drawCitySkyline();
+    window.addEventListener("resize", drawCitySkyline);
+    bindCrashHandlers();
+    bindOnlineStatusHandlers();
+    bindPwaInstallHandlers();
+}
+
+// 初期表示
+initMainView();

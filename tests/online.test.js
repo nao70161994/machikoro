@@ -53,6 +53,7 @@ function loadOnlineRuntime() {
         this.setEnabledCards = (s) => { enabledCards = s; };
         this.setEnabledLandmarks = (s) => { enabledLandmarks = s; };
         this.applyAction = applyAction;
+        this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
         this.myPlayerIndex = myPlayerIndex;
     `, context);
@@ -189,6 +190,58 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     const cpuPlayers = rt.getCpuPlayers();
     assert.strictEqual(cpuPlayers[0], null);
     assert.ok(cpuPlayers[1] !== null);
+});
+
+runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () => {
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    rt.restoreOnlineSnapshot({
+        players: [
+            {
+                name: 'Alice',
+                coins: 7,
+                cards: ['麦畑', 'パン屋'],
+                dormantIndices: [1],
+                landmarks: { 駅: true, ショッピングモール: false, 遊園地: false, 電波塔: false, 港: false, 空港: false },
+                itVentureCoins: 2,
+                hasYakusho: true,
+            },
+            {
+                name: 'Bob',
+                coins: 3,
+                cards: ['麦畑'],
+                dormantIndices: [],
+                landmarks: { 駅: false, ショッピングモール: false, 遊園地: false, 電波塔: false, 港: false, 空港: false },
+                itVentureCoins: 0,
+                hasYakusho: true,
+            },
+        ],
+        currentPlayerIndex: 1,
+        phase: GAME_PHASES.BUILD,
+        log: [{ type: LOG_TYPES.SYSTEM, message: 'test' }],
+        lastDiceResult: 5,
+        lastDice1: 2,
+        lastDice2: 3,
+        builtThisTurn: true,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        usedReroll: true,
+        pendingTunaDice: [1, 2],
+        turnCount: 4,
+        hadAmusementParkAtRoll: true,
+        shopStock: { 麦畑: 4, パン屋: 5 },
+    });
+    const g = rt.getGame();
+    assert.strictEqual(g.currentPlayerIndex, 1);
+    assert.strictEqual(g.players[0].coins, 7);
+    assert.strictEqual(g.players[0].dormantCards.length, 1);
+    assert.strictEqual(rt.getShopStock()['麦畑'], 4);
+    assert.strictEqual(g.turnCount, 4);
 });
 
 if (process.exitCode) {

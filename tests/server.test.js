@@ -1,7 +1,14 @@
 const assert = require('assert');
 const {
+    resolveBuildHash,
     loadGameRuntime,
     sanitizeName,
+    resolveRejoinPlayer,
+    getRemainingConnectedPlayers,
+    serializeMirrorState,
+    restoreMirrorState,
+    compactRoomActionLog,
+    createRoomMirror,
     validateGameAction,
     validateBusinessPayload,
     validateCleaningPayload,
@@ -114,6 +121,14 @@ runTest('sanitizeName がHTMLタグ・特殊文字を除去し20文字に制限�
     assert.strictEqual(sanitizeName('  Alice  '), 'Alice');
     assert.strictEqual(sanitizeName(null), '');
     assert.strictEqual(sanitizeName('<>&"\'`'), '');
+});
+
+runTest('resolveBuildHash は環境変数 BUILD_HASH を優先する', () => {
+    const before = process.env.BUILD_HASH;
+    process.env.BUILD_HASH = 'from-env';
+    assert.strictEqual(resolveBuildHash(), 'from-env');
+    if (before === undefined) delete process.env.BUILD_HASH;
+    else process.env.BUILD_HASH = before;
 });
 
 // ===== validateGameAction =====
@@ -319,6 +334,82 @@ runTest('validateGameAction はCPUターン中にホストのアクションを�
     // 非ホスト(p0自身)はCPUターンを操作できない
     const deny = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: 3, tunaDice: [1, 1] });
     assert.strictEqual(deny.ok, false);
+});
+
+runTest('resolveRejoinPlayer は復元済みルームで既存プレイヤーを再利用し重複追加しない', () => {
+    const room = {
+        restored: true,
+        players: [{ id: null, index: 0, name: 'Alice', reconnectToken: '' }],
+        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+    };
+
+    const player = resolveRejoinPlayer(room, 0, 'Alice', 'ignored-token', 'socket-1');
+    assert.ok(player);
+    assert.strictEqual(room.players.length, 1);
+    assert.strictEqual(room.players[0].id, 'socket-1');
+});
+
+runTest('resolveRejoinPlayer は復元済みルームで未登録プレイヤーだけを追加する', () => {
+    const room = {
+        restored: true,
+        players: [{ id: null, index: 0, name: 'Alice', reconnectToken: '' }],
+        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+    };
+
+    const player = resolveRejoinPlayer(room, 1, 'Bob', 'ignored-token', 'socket-2');
+    assert.ok(player);
+    assert.strictEqual(room.players.length, 2);
+    assert.strictEqual(room.players[1].name, 'Bob');
+});
+
+runTest('getRemainingConnectedPlayers は切断済み・幽霊プレイヤーをホスト候補から除外する', () => {
+    const room = {
+        players: [
+            { id: null, index: 0, name: 'Host' },
+            { id: 'socket-stale', index: 1, name: 'Ghost' },
+            { id: 'socket-live', index: 2, name: 'Live' },
+        ],
+    };
+    const sockets = new Map([
+        ['socket-live', {}],
+    ]);
+
+    const remaining = getRemainingConnectedPlayers(room, sockets, 'socket-host');
+    assert.deepStrictEqual(remaining.map(p => p.index), [2]);
+});
+
+runTest('compactRoomActionLog は長いログを stateSnapshot に圧縮してミラー状態を維持する', () => {
+    const room = {
+        hostPlayerIndex: 0,
+        started: true,
+        restored: false,
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        gameStartPayload: {
+            playerNames: ['A', 'B'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅', 'ショッピングモール'],
+        },
+        actionLog: [],
+        lastUndoState: null,
+        stateSnapshot: null,
+    };
+    for (let i = 0; i < 201; i++) {
+        room.actionLog.push({ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } });
+        room.actionLog.push({ action: 'nextTurn', data: {} });
+    }
+
+    const before = createRoomMirror(room);
+    compactRoomActionLog(room);
+    const after = createRoomMirror(room);
+
+    assert.ok(room.stateSnapshot);
+    assert.strictEqual(room.actionLog.length, 0);
+    assert.strictEqual(after.game.currentPlayerIndex, before.game.currentPlayerIndex);
+    assert.deepStrictEqual(after.game.players.map(p => p.coins), before.game.players.map(p => p.coins));
+    assert.strictEqual(after.game.turnCount, before.game.turnCount);
 });
 
 if (process.exitCode) {

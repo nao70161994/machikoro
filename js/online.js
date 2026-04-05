@@ -49,6 +49,7 @@ let isReplaying = false;
 let isReconnectingOnline = false;
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
+const APP_ERROR_EVENT = 'appError';
 
 function resetOnlineState() {
     if (socket) { socket.disconnect(); socket = null; }
@@ -147,7 +148,7 @@ function initSocket() {
         scheduleCPU();
     });
 
-    socket.on('rejoinData', ({ gameStartPayload, actionLog, playerIndex }) => {
+    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, playerIndex }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         isOnlineGame = true;
         isReconnectingOnline = false;
@@ -164,6 +165,9 @@ function initSocket() {
         // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
         isReplaying = true;
         initOnlineGame(playerNames, ps, playerOrder);
+        if (stateSnapshot) {
+            restoreOnlineSnapshot(stateSnapshot);
+        }
         for (const { action, data } of actionLog) {
             applyAction(action, data);
         }
@@ -217,7 +221,7 @@ function initSocket() {
             '⏳ サーバーに接続中です。初回は起動に30秒ほどかかる場合があります...';
     });
 
-    socket.on('error', (msg) => {
+    socket.on(APP_ERROR_EVENT, (msg) => {
         if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
             if (isRoomHost) {
                 _tryRestoreRoom();
@@ -329,6 +333,39 @@ function applyAction(action, data) {
         case 'undoBuild':       restoreUndoSnapshot(data.state); break;
         case 'nextTurn':        game.nextTurn(); break;
     }
+}
+
+function restoreOnlineSnapshot(state) {
+    if (!state || !game) return;
+    game.players.forEach((p, i) => {
+        const playerState = state.players?.[i];
+        if (!playerState) return;
+        p.name = playerState.name;
+        p.coins = playerState.coins;
+        p.cards = playerState.cards.map(name => createCardByName(name)).filter(Boolean);
+        p.dormantCards = (playerState.dormantIndices || []).map(idx => p.cards[idx]).filter(Boolean);
+        p.landmarks = Object.assign({}, playerState.landmarks);
+        p.itVentureCoins = playerState.itVentureCoins || 0;
+        p.hasYakusho = playerState.hasYakusho !== false;
+    });
+    Object.assign(SHOP_STOCK, state.shopStock || {});
+    game.currentPlayerIndex = state.currentPlayerIndex || 0;
+    game.phase = state.phase || game.phase;
+    game.log = state.log || [];
+    game.lastDiceResult = state.lastDiceResult || 0;
+    game.lastDice1 = state.lastDice1 || 0;
+    game.lastDice2 = state.lastDice2 || 0;
+    game.builtThisTurn = state.builtThisTurn || false;
+    game.pendingTV = state.pendingTV || 0;
+    game.pendingBusiness = state.pendingBusiness || 0;
+    game.pendingCleaning = state.pendingCleaning || 0;
+    game.pendingMover = state.pendingMover || 0;
+    game.pendingRenovation = state.pendingRenovation || 0;
+    game.pendingIT = state.pendingIT || false;
+    game.usedReroll = state.usedReroll || false;
+    game.pendingTunaDice = state.pendingTunaDice || null;
+    game.turnCount = state.turnCount || 0;
+    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
 }
 
 function handleRemoteAction(action, data) {

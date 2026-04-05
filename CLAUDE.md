@@ -87,12 +87,13 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - **ホスト**がCPUターンを実行し、全アクションを `sendAction()` でサーバーに送信
 - **全クライアント**が `applyAction()` でゲームロジックを同一に進める（サーバーにゲーム状態はない）
 - サイコロの乱数はホストが生成して `forceDice` として送信 → 全クライアントで同じ目になる
-- サーバーはアクションログ（`room.actionLog`）を蓄積し、再接続時のリプレイに使用
+- サーバーはアクションログ（`room.actionLog`）を蓄積し、長くなりすぎた場合は `stateSnapshot` に圧縮してから差分ログだけを保持する
 - ホスト切断時は残存プレイヤーの先頭が新ホストになり `hostChanged` イベントで通知される
 - 再接続トークン（UUID）をルーム作成・参加時に発行。`rejoinRoom` 時に `roomId + playerIndex + playerName + reconnectToken` の4つが一致しないと拒否される（復元済みルームはトークン検証をスキップし名前のみ確認）
 - 開始済みルームは2時間アクティビティがないと自動削除（`lastTouchedAt` + TTL）
 - プレイヤー名はサーバー受信時に `sanitizeName()` でバリデーション・20文字以内に制限
 - **プレイヤー順シャッフル**: ゲーム開始時にサーバーが `playerOrder` 配列を生成。`validateGameAction()` は `playerOrder[currentIndex]` で元のプレイヤーインデックスに変換してから `socket.playerIndex` と比較する（直接比較するとシャッフル後に人間プレイヤーのアクションが全拒否される）
+- 業務エラー通知は Socket.IO 標準の `error` ではなく専用イベント `appError` を使う
 
 #### サーバー再起動後の復元フロー
 
@@ -102,6 +103,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - **ホスト**: `ROOM_NOT_FOUND` を受け取ると `recreateRoom` イベントを送信 → サーバーがアクションログからルームを再構築 → `rejoinData` で復帰
 - **非ホスト**: `ROOM_NOT_FOUND` を受け取ると3秒ごと最大8回 `rejoinRoom` をリトライ（ホストの復元完了を待つ）
 - 復元されたルームは `room.restored = true` フラグが立つ
+- `rejoinData` は `stateSnapshot` を含む場合があり、クライアントは「初期化 → snapshot 復元 → 残り actionLog 再生」で再構築する
 
 ### CPU（js/CPU.js）
 
@@ -179,4 +181,5 @@ Node.js 組み込み `assert` モジュールのみ使用。現在 **93テスト
 - ランドマーク「役所」は `Player.landmarks` に含まれず `hasYakusho` フラグで別管理
 - 紫カード（大施設）は1人1枚制限: `card.color === "purple" && current.countCard(card.name) > 0` でチェック
 - `main.js` は約1116行（`ui.js` / `storage.js` に分割済み）。さらなる分割は将来課題
+- `main.js` の末尾には `initMainView()` があり、タイトル初期描画・クラッシュ監視・オフライン監視・PWA インストールバナー初期化を束ねる
 - `CARD_SETS` は `ui.js` に定義されている（`main.js` ではない）

@@ -11,15 +11,21 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const gameRuntime = loadGameRuntime();
+const MAX_ACTION_LOG_LENGTH = 200;
 
-// デプロイごとにキャッシュバージョンを自動更新するためgitハッシュを取得
-let BUILD_HASH;
-try {
-    BUILD_HASH = execSync('git rev-parse --short HEAD', { timeout: 3000 }).toString().trim();
-} catch {
-    BUILD_HASH = Date.now().toString(36);
+function resolveBuildHash() {
+    if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
+    try {
+        return execSync('git rev-parse --short HEAD', { timeout: 3000 }).toString().trim();
+    } catch {
+        return Date.now().toString(36);
+    }
 }
-console.log(`Build hash: ${BUILD_HASH}`);
+
+const BUILD_HASH = require.main === module ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
+if (require.main === module) {
+    console.log(`Build hash: ${BUILD_HASH}`);
+}
 
 // sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
@@ -53,6 +59,11 @@ app.get('/api/version', (req, res) => {
 app.use(express.static(path.join(__dirname)));
 
 const rooms = {};
+const APP_ERROR_EVENT = 'appError';
+
+function emitAppError(socket, message) {
+    socket.emit(APP_ERROR_EVENT, message);
+}
 
 function sanitizeName(name) {
     return String(name || '').trim().slice(0, 20).replace(/[<>&"'`]/g, '');
@@ -86,7 +97,7 @@ io.on('connection', (socket) => {
     socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion }) => {
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
-        if (!playerName) { socket.emit('error', '名前が無効です'); return; }
+        if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
         let roomId;
         do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); } while (rooms[roomId]);
         const reconnectToken = generateReconnectToken();
@@ -96,7 +107,7 @@ io.on('connection', (socket) => {
             ? enabledLandmarks.filter(name => validLandmarks.has(name))
             : allLandmarks;
         if (selectedLandmarks.length === 0) {
-            socket.emit('error', 'ランドマークは最低1つ必要です');
+            emitAppError(socket, 'ランドマークは最低1つ必要です');
             return;
         }
         // ホストの人間枠を探す
@@ -104,7 +115,7 @@ io.on('connection', (socket) => {
         if (playerSettings && playerSettings.length > 0) {
             hostIndex = playerSettings.findIndex(s => s.type === "human");
             if (hostIndex === -1) {
-                socket.emit('error', 'オンライン対戦は最低1人の人間プレイヤーが必要です');
+                emitAppError(socket, 'オンライン対戦は最低1人の人間プレイヤーが必要です');
                 return;
             }
         }
@@ -135,18 +146,18 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomId, playerName, clientVersion }) => {
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
-        if (!playerName) { socket.emit('error', '名前が無効です'); return; }
+        if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
         const room = rooms[roomId];
-        if (!room) { socket.emit('error', 'ルームが見つかりません'); return; }
-        if (room.started) { socket.emit('error', 'ゲームはすでに開始されています'); return; }
+        if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
+        if (room.started) { emitAppError(socket, 'ゲームはすでに開始されています'); return; }
 
         // 重複参加チェック
         if (room.players.some(p => p.id === socket.id)) {
-            socket.emit('error', 'すでにこのルームに参加しています');
+            emitAppError(socket, 'すでにこのルームに参加しています');
             return;
         }
         if (room.players.some(p => p.name === playerName)) {
-            socket.emit('error', 'その名前はすでに使われています');
+            emitAppError(socket, 'その名前はすでに使われています');
             return;
         }
 
@@ -162,14 +173,14 @@ io.on('connection', (socket) => {
             }
         } else {
             if (room.players.length >= room.maxPlayers) {
-                socket.emit('error', '参加できる枠がありません');
+                emitAppError(socket, '参加できる枠がありません');
                 return;
             }
             playerIndex = room.players.length;
         }
 
         if (playerIndex === -1) {
-            socket.emit('error', '参加できる枠がありません');
+            emitAppError(socket, '参加できる枠がありません');
             return;
         }
 
@@ -198,11 +209,11 @@ io.on('connection', (socket) => {
             validation = validateGameAction(room, socket, action, data);
         } catch (e) {
             console.error('validateGameAction error:', e);
-            socket.emit('error', '無効な操作です');
+            emitAppError(socket, '無効な操作です');
             return;
         }
         if (!validation.ok) {
-            socket.emit('error', '無効な操作です');
+            emitAppError(socket, '無効な操作です');
             return;
         }
         let safeData = data;
@@ -216,6 +227,7 @@ io.on('connection', (socket) => {
         }
         if (room.actionLog) {
             room.actionLog.push({ action, data: safeData });
+            compactRoomActionLog(room);
             room.lastTouchedAt = Date.now();
         }
         socket.to(roomId).emit('gameAction', { action, data: safeData, playerIndex: socket.playerIndex });
@@ -223,31 +235,19 @@ io.on('connection', (socket) => {
 
     socket.on('rejoinRoom', ({ roomId, playerIndex, playerName, reconnectToken }) => {
         const room = rooms[roomId];
-        if (!room) { socket.emit('error', 'ROOM_NOT_FOUND'); return; }
-        if (!room.started) { socket.emit('error', 'ゲームはまだ開始されていません'); return; }
+        if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
+        if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
 
-        let player = room.players.find(p =>
-            p.index === playerIndex &&
-            p.name === playerName &&
-            p.reconnectToken === reconnectToken
-        );
-        // サーバー再起動後に復元されたルームはトークン検証をスキップし名前のみ確認
-        if (!player && room.restored) {
-            const names = room.gameStartPayload?.playerNames || [];
-            if (Number.isInteger(playerIndex) && names[playerIndex] === playerName) {
-                player = { id: socket.id, index: playerIndex, name: playerName, reconnectToken: '' };
-                room.players.push(player);
-            }
-        }
-        if (!player) { socket.emit('error', '再接続情報が一致しません'); return; }
+        const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
+        if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }
 
-        player.id = socket.id;
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
 
         socket.emit('rejoinData', {
             gameStartPayload: room.gameStartPayload,
+            stateSnapshot: room.stateSnapshot || null,
             actionLog: room.actionLog || [],
             playerIndex,
         });
@@ -257,15 +257,15 @@ io.on('connection', (socket) => {
 
     // サーバー再起動後にホストがルームを復元する
     socket.on('recreateRoom', ({ roomId, gameStartPayload, actionLog, playerIndex, playerName }) => {
-        if (!roomId || !gameStartPayload) { socket.emit('error', '復元データが不完全です'); return; }
+        if (!roomId || !gameStartPayload) { emitAppError(socket, '復元データが不完全です'); return; }
         if (rooms[roomId]) {
             // ルームが既に存在する場合は通常の再接続へ誘導
-            socket.emit('error', 'ROOM_NOT_FOUND'); // 再度rejoinRoomを試みさせる
+            emitAppError(socket, 'ROOM_NOT_FOUND'); // 再度rejoinRoomを試みさせる
             return;
         }
         const playerNames = gameStartPayload.playerNames || [];
         if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
-            socket.emit('error', '復元データが不完全です'); return;
+            emitAppError(socket, '復元データが不完全です'); return;
         }
         rooms[roomId] = {
             players: [{ id: socket.id, index: playerIndex, name: playerName, reconnectToken: '' }],
@@ -278,6 +278,7 @@ io.on('connection', (socket) => {
             enabledLandmarks: gameStartPayload.enabledLandmarks || [],
             cpuSpeed: gameStartPayload.cpuSpeed || 1500,
             gameStartPayload,
+            stateSnapshot: null,
             actionLog: actionLog || [],
             lastUndoState: null,
             lastTouchedAt: Date.now(),
@@ -285,7 +286,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
-        socket.emit('rejoinData', { gameStartPayload, actionLog: actionLog || [], playerIndex });
+        socket.emit('rejoinData', { gameStartPayload, stateSnapshot: null, actionLog: actionLog || [], playerIndex });
         console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
     });
 
@@ -304,13 +305,14 @@ io.on('connection', (socket) => {
                     }
                 } else {
                     const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
+                    if (disconnectedPlayer) disconnectedPlayer.id = null;
                     io.to(roomId).emit('playerDisconnected', {
                         playerIndex: socket.playerIndex,
                         playerName: disconnectedPlayer?.name || `プレイヤー${socket.playerIndex + 1}`,
                     });
                     // ホストが切断した場合、残存プレイヤーの中から新ホストを選出
                     if (socket.playerIndex === room.hostPlayerIndex) {
-                        const remaining = room.players.filter(p => p.id !== socket.id);
+                        const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
                         if (remaining.length > 0) {
                             room.hostPlayerIndex = remaining[0].index;
                             io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
@@ -325,6 +327,75 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socketId) {
+    let player = room.players.find(p =>
+        p.index === playerIndex &&
+        p.name === playerName &&
+        p.reconnectToken === reconnectToken
+    );
+    if (!player && room.restored) {
+        const names = room.gameStartPayload?.playerNames || [];
+        if (Number.isInteger(playerIndex) && names[playerIndex] === playerName) {
+            player = room.players.find(p => p.index === playerIndex && p.name === playerName);
+            if (!player) {
+                player = { id: socketId, index: playerIndex, name: playerName, reconnectToken: '' };
+                room.players.push(player);
+            }
+        }
+    }
+    if (!player) return null;
+    player.id = socketId;
+    return player;
+}
+
+function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
+    return room.players.filter(p =>
+        p.id &&
+        p.id !== disconnectedSocketId &&
+        sockets.has(p.id)
+    );
+}
+
+function serializeMirrorState(game, shopStock) {
+    return {
+        players: game.players.map(p => ({
+            name: p.name,
+            coins: p.coins,
+            cards: p.cards.map(c => c.name),
+            dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
+            landmarks: Object.assign({}, p.landmarks),
+            itVentureCoins: p.itVentureCoins,
+            hasYakusho: p.hasYakusho,
+        })),
+        currentPlayerIndex: game.currentPlayerIndex,
+        phase: game.phase,
+        log: [...game.log],
+        lastDiceResult: game.lastDiceResult,
+        lastDice1: game.lastDice1,
+        lastDice2: game.lastDice2,
+        builtThisTurn: game.builtThisTurn,
+        pendingTV: game.pendingTV,
+        pendingBusiness: game.pendingBusiness,
+        pendingCleaning: game.pendingCleaning,
+        pendingMover: game.pendingMover,
+        pendingRenovation: game.pendingRenovation,
+        pendingIT: game.pendingIT,
+        usedReroll: game.usedReroll,
+        pendingTunaDice: game.pendingTunaDice,
+        turnCount: game.turnCount,
+        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
+        shopStock: Object.assign({}, shopStock),
+    };
+}
+
+function compactRoomActionLog(room) {
+    if (!room.actionLog || room.actionLog.length <= MAX_ACTION_LOG_LENGTH) return;
+    const mirror = createRoomMirror(room);
+    if (!mirror) return;
+    room.stateSnapshot = serializeMirrorState(mirror.game, mirror.shopStock);
+    room.actionLog = [];
+}
 
 function buildPlayerList(room) {
     if (room.playerSettings.length === 0) {
@@ -376,10 +447,46 @@ function createRoomMirror(room) {
         ? order.map(originalIndex => playerSettings[originalIndex]?.type === 'cpu')
         : game.players.map(() => false);
 
+    if (room.stateSnapshot) {
+        restoreMirrorState(game, shopStock, room.stateSnapshot, createCardByName);
+    }
     for (const { action, data } of room.actionLog || []) {
         applyActionToMirror(game, shopStock, action, data, createCardByName);
     }
     return { game, shopStock, cpuPlayers };
+}
+
+function restoreMirrorState(game, shopStock, state, createCardByName) {
+    if (!state) return;
+    game.players.forEach((p, i) => {
+        const playerState = state.players[i];
+        if (!playerState) return;
+        p.name = playerState.name;
+        p.coins = playerState.coins;
+        p.cards = playerState.cards.map(name => createCardByName(name)).filter(Boolean);
+        p.dormantCards = (playerState.dormantIndices || []).map(idx => p.cards[idx]).filter(Boolean);
+        p.landmarks = Object.assign({}, playerState.landmarks);
+        p.itVentureCoins = playerState.itVentureCoins || 0;
+        p.hasYakusho = playerState.hasYakusho !== false;
+    });
+    Object.assign(shopStock, state.shopStock || {});
+    game.currentPlayerIndex = state.currentPlayerIndex || 0;
+    game.phase = state.phase || game.phase;
+    game.log = state.log || [];
+    game.lastDiceResult = state.lastDiceResult || 0;
+    game.lastDice1 = state.lastDice1 || 0;
+    game.lastDice2 = state.lastDice2 || 0;
+    game.builtThisTurn = state.builtThisTurn || false;
+    game.pendingTV = state.pendingTV || 0;
+    game.pendingBusiness = state.pendingBusiness || 0;
+    game.pendingCleaning = state.pendingCleaning || 0;
+    game.pendingMover = state.pendingMover || 0;
+    game.pendingRenovation = state.pendingRenovation || 0;
+    game.pendingIT = state.pendingIT || false;
+    game.usedReroll = state.usedReroll || false;
+    game.pendingTunaDice = state.pendingTunaDice || null;
+    game.turnCount = state.turnCount || 0;
+    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
 }
 
 function applyActionToMirror(game, shopStock, action, data, createCardByName) {
@@ -700,6 +807,7 @@ function checkGameStart(io, roomId) {
             versions
         };
         rooms[roomId].gameStartPayload = gameStartPayload;
+        rooms[roomId].stateSnapshot = null;
         rooms[roomId].actionLog = [];
         rooms[roomId].lastUndoState = null;
         rooms[roomId].lastTouchedAt = Date.now();
@@ -723,8 +831,16 @@ if (require.main === module) {
 }
 
 module.exports = {
+    APP_ERROR_EVENT,
+    emitAppError,
+    resolveBuildHash,
     sanitizeName,
     buildPlayerList,
+    resolveRejoinPlayer,
+    getRemainingConnectedPlayers,
+    serializeMirrorState,
+    restoreMirrorState,
+    compactRoomActionLog,
     createRoomMirror,
     applyActionToMirror,
     restoreUndoMirror,

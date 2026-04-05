@@ -1,66 +1,273 @@
-import { JSDOM } from 'jsdom';
-import { setup, initGlobals, validateCpuSpeed, restoreSession, validatePlayerSettings, verifyShopStock, validatePlayerNames, extractCpuSpeed, registerSocketEvents, generateUITemplate, updateSelectedCount, handleRenderGameError } from '../src/main';
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
 
-// Setup JSDOM environment
-const jsdom = new JSDOM('<!doctype html><html><body></body></html>');
-const { window } = jsdom;
-const { document } = window;
+function makeElement(overrides = {}) {
+    return Object.assign({
+        style: {},
+        textContent: '',
+        innerHTML: '',
+        value: '',
+        checked: false,
+        disabled: false,
+        classList: { toggle() {} },
+        appendChild() {},
+        remove() {},
+        getContext() {
+            return {
+                clearRect() {},
+                createLinearGradient() { return { addColorStop() {} }; },
+                createRadialGradient() { return { addColorStop() {} }; },
+                fillRect() {},
+                beginPath() {},
+                arc() {},
+                fill() {},
+                ellipse() {},
+                strokeRect() {},
+                moveTo() {},
+                lineTo() {},
+                stroke() {},
+            };
+        },
+    }, overrides);
+}
 
-// Initialize global variables for tests
-global.window = window;
-global.document = document;
+function loadMainRuntime() {
+    const elements = {
+        playerCount: makeElement(),
+        playerSettings: makeElement(),
+        cpuSpeed: makeElement({ value: '1500' }),
+        speedLabel: makeElement(),
+        resumeSection: makeElement(),
+        onlineResumeSection: makeElement(),
+        cityCanvas: makeElement(),
+        crashScreen: makeElement(),
+        crashMessage: makeElement(),
+        crashResumeBtn: makeElement(),
+        tabOnline: makeElement(),
+        offlineNotice: makeElement(),
+        pwaInstallBanner: makeElement(),
+        titleScreen: makeElement(),
+        gameScreen: makeElement(),
+    };
 
-describe('Main Module Tests', () => {
-    beforeAll(() => {
-        initGlobals();
-    });
+    const localStorageData = new Map();
+    const sentActions = [];
+    const timeouts = [];
+    const eventHandlers = {};
 
-    test('CPU speed validation', () => {
-        expect(validateCpuSpeed()).toBeDefined();  // Adjust expected value as needed
-    });
+    const context = {
+        console,
+        Math,
+        elements,
+        localStorageData,
+        timeouts,
+        sentActions,
+        document: {
+            getElementById(id) {
+                if (!elements[id]) elements[id] = makeElement();
+                return elements[id];
+            },
+            querySelector(selector) {
+                if (selector === '#onlineCreate button' || selector === '#onlineJoin button') {
+                    return makeElement();
+                }
+                return null;
+            },
+            querySelectorAll() { return []; },
+            createElement() { return makeElement(); },
+        },
+        window: {
+            innerWidth: 360,
+            addEventListener(name, handler) { eventHandlers[name] = handler; },
+            matchMedia() { return { matches: false }; },
+        },
+        navigator: { onLine: true },
+        localStorage: {
+            getItem(key) { return localStorageData.has(key) ? localStorageData.get(key) : null; },
+            setItem(key, value) { localStorageData.set(key, String(value)); },
+            removeItem(key) { localStorageData.delete(key); },
+        },
+        setTimeout(fn) {
+            timeouts.push(fn);
+            return timeouts.length;
+        },
+        clearTimeout() {},
+        stopConfetti() {},
+        playSound() {},
+        showConfirm(message, cb) { cb(); },
+        resetStatsRecorded() {},
+        resetOnlineState() {},
+        resetFullLog() {},
+        renderOnlinePlayerSettings() {},
+        updateResumeButton() {},
+        loadSettings() {},
+        drawCitySkyline() {},
+        updateOnlineTabState() {},
+        syncTutorialControls() {},
+        render() {},
+        showCrashScreen() {},
+        switchTab() {},
+        scheduleCPU() {},
+        saveSettings() {},
+        updateDiceDisplay() {},
+        sendAction(action, data) { sentActions.push({ action, data }); },
+        saveGameState() {},
+        cancelAutoSkip() {},
+        alert() {},
+        fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
+        io() { return { on() {}, emit() {}, disconnect() {} }; },
+        enabledCards: new Set(),
+        enabledLandmarks: new Set(),
+        isOnlineGame: false,
+        isReplaying: false,
+        myPlayerIndex: 0,
+        winSoundPlayed: false,
+        LOG_TYPES: { SYSTEM: 'system' },
+        GAME_PHASES: {
+            ROLL: 'roll',
+            SELECT_DICE: 'selectDice',
+            REROLL_CONFIRM: 'rerollConfirm',
+            HARBOR_CHOICE: 'harborChoice',
+            PENDING: 'pending',
+            BUILD: 'build',
+        },
+        LANDMARK_NAMES: {
+            STATION: '駅',
+            AIRPORT: '空港',
+            YAKUSHO: '役所',
+        },
+        Player: {
+            landmarkNames() { return ['駅', 'ショッピングモール', '遊園地', '電波塔', '港', '空港']; },
+            landmarkCost() { return 4; },
+        },
+        CPU: class CPU {},
+        GameManager: class GameManager {
+            constructor(count) {
+                this.players = Array.from({ length: count }, (_, i) => ({
+                    name: `P${i + 1}`,
+                    coins: 0,
+                    cards: [],
+                    landmarks: { 駅: false, 空港: false, 役所: false },
+                    countCard() { return 0; },
+                }));
+                this.currentPlayerIndex = 0;
+                this.phase = 'build';
+                this.pendingRenovation = 0;
+                this.builtThisTurn = false;
+            }
+            currentPlayer() { return this.players[this.currentPlayerIndex]; }
+            nextTurn() { this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length; }
+            checkWinner() { return null; }
+            addLog() {}
+        },
+        CARDS: [
+            { name: '麦畑', cost: 1, color: 'blue' },
+            { name: '鉱山', cost: 6, color: 'green' },
+        ],
+        SHOP_STOCK: {},
+    };
+    context.global = context;
+    vm.createContext(context);
 
-    test('LocalStorage session restore', () => {
-        restoreSession();
-        expect(localStorage.getItem('session')).toBeDefined();  // Check session restoration
-    });
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    vm.runInContext(source, context, { filename: 'js/main.js' });
+    vm.runInContext(`
+        this.__test = {
+            elements,
+            localStorageData,
+            sentActions,
+            flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
+            setSelectedCount: (value) => { selectedCount = value; },
+            getSelectedCount: () => selectedCount,
+            setPlayerSettings: (value) => { playerSettings = value; },
+            setGame: (value) => { game = value; },
+            setCpuPlayers: (value) => { cpuPlayers = value; },
+            setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
+            getAutoSkipPending: () => autoSkipPending,
+            getCpuScheduleToken: () => cpuScheduleToken,
+        };
+    `, context);
+    context.__test.elements = elements;
+    return context;
+}
 
-    test('Player settings validation', () => {
-        const settings = { /* Mock settings object */ };
-        expect(validatePlayerSettings(settings)).toBeTruthy();
-    });
+function runTest(name, fn) {
+    try {
+        fn();
+        console.log(`テスト成功: ${name}`);
+    } catch (error) {
+        console.error(`テスト失敗: ${name}`);
+        console.error(error.stack);
+        process.exitCode = 1;
+    }
+}
 
-    test('SHOP_STOCK verification', () => {
-        expect(verifyShopStock()).toEqual(expect.arrayContaining([/* Expected stock items */]));
-    });
+runTest('main changeCount は人数を2..10にクランプして表示を更新する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([{ type: 'human', difficulty: 'normal' }]);
 
-    test('Player names validation', () => {
-        const names = ['Alice', 'Bob'];
-        expect(validatePlayerNames(names)).toHaveLength(names.length);
-    });
+    rt.changeCount(-5);
+    assert.strictEqual(rt.__test.getSelectedCount(), 2);
+    assert.strictEqual(rt.__test.elements.playerCount.textContent, 2);
 
-    test('CPU speed extraction', () => {
-        expect(extractCpuSpeed()).toMatch(/[0-9]+()/); // Validate output format
-    });
-
-    test('Socket.IO event registration', () => {
-        const spy = jest.spyOn(socket, 'on');
-        registerSocketEvents();
-        expect(spy).toHaveBeenCalled();
-    });
-
-    test('UI template generation', () => {
-        const template = generateUITemplate();
-        expect(template).toContain('<div>'); // Check if template contains basic HTML
-    });
-
-    test('selectedCount updates', () => {
-        updateSelectedCount(1);
-        expect(global.selectedCount).toBe(1); // Validate selectedCount update
-    });
-
-    test('renderGame error handling', () => {
-        expect(() => { handleRenderGameError(); }).not.toThrow(); // Expect no errors
-    });
-
-    // Additional tests for other client-side functionalities
+    rt.changeCount(20);
+    assert.strictEqual(rt.__test.getSelectedCount(), 10);
+    assert.strictEqual(rt.__test.elements.playerCount.textContent, 10);
 });
+
+runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = false;
+    game.pendingRenovation = 0;
+    game.currentPlayer().coins = 0;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = false;
+    rt.myPlayerIndex = 0;
+
+    rt.checkAutoSkip();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.deepStrictEqual(rt.__test.sentActions.map(x => x.action), ['nextTurn']);
+    assert.strictEqual(rt.__test.getAutoSkipPending(), false);
+});
+
+runTest('main checkAutoSkip は無効化ランドマークしか残っていない場合も自動終了する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    game.currentPlayer().landmarks.駅 = false;
+    game.currentPlayer().landmarks.空港 = false;
+    rt.enabledLandmarks = new Set();
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.checkAutoSkip();
+    rt.__test.flushTimeouts();
+
+    assert.deepStrictEqual(rt.__test.sentActions.map(x => x.action), ['nextTurn']);
+});
+
+runTest('main showCrashScreen はクラッシュ表示と保存データ復帰ボタンを出す', () => {
+    const rt = loadMainRuntime();
+    rt.localStorage.setItem('savedGame', '{"ok":true}');
+    const beforeToken = rt.__test.getCpuScheduleToken();
+
+    rt.showCrashScreen(new Error('boom'));
+
+    assert.strictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
+    assert.ok(rt.__test.elements.crashMessage.textContent.includes('boom'));
+    assert.strictEqual(rt.__test.elements.crashResumeBtn.style.display, 'block');
+    assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
+});
+
+if (process.exitCode) {
+    throw new Error('mainテストで失敗が発生しました');
+}
