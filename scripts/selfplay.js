@@ -166,6 +166,29 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
     }
 }
 
+function summarizePlayer(player, enabledLandmarks) {
+    const landmarkNames = [...enabledLandmarks];
+    const builtLandmarks = landmarkNames.filter(name => player.landmarks[name]);
+    const cardCounts = {};
+    for (const card of player.cards) {
+        cardCounts[card.name] = (cardCounts[card.name] || 0) + 1;
+    }
+    const topCards = Object.entries(cardCounts)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
+        .slice(0, 5)
+        .map(([name, count]) => ({ name, count }));
+    return {
+        name: player.name,
+        coins: player.coins,
+        builtLandmarks,
+        missingLandmarks: landmarkNames.filter(name => !player.landmarks[name]),
+        builtLandmarkCount: builtLandmarks.length,
+        topCards,
+        itVentureCoins: player.itVentureCoins || 0,
+        totalCards: player.cards.length,
+    };
+}
+
 function simulateGame(options = {}) {
     const runtime = options.runtime || loadRuntime();
     const difficulties = options.difficulties || ['expert', 'strong'];
@@ -189,6 +212,8 @@ function simulateGame(options = {}) {
         turns: game.turnCount,
         exhausted: safety >= maxSteps,
         difficulties: difficulties.slice(),
+        seed: options.seed || 1,
+        finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
     };
 }
 
@@ -204,17 +229,29 @@ function runSeries(options = {}) {
     const seatWins = players.map(() => 0);
     let exhausted = 0;
     let turns = 0;
+    const matchLog = [];
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
+        const seed = (options.seed || 1) + i;
         const result = simulateGame({
             runtime,
             difficulties: lineup,
-            seed: (options.seed || 1) + i,
+            seed,
             maxSteps: options.maxSteps,
         });
         turns += result.turns;
         if (result.exhausted) exhausted++;
+        matchLog.push({
+            game: i + 1,
+            seed,
+            lineup,
+            winnerIndex: result.winner,
+            winnerDifficulty: result.winner >= 0 ? lineup[result.winner] : null,
+            turns: result.turns,
+            exhausted: result.exhausted,
+            finalState: result.finalState,
+        });
         if (result.winner >= 0) {
             wins[lineup[result.winner]]++;
             seatWins[result.winner]++;
@@ -228,6 +265,7 @@ function runSeries(options = {}) {
         seatWins,
         exhausted,
         averageTurns: games > 0 ? turns / games : 0,
+        matchLog,
     };
 }
 
@@ -235,6 +273,8 @@ function parseArgs(argv) {
     let games = 20;
     let seed = 1;
     let maxSteps = 5000;
+    let format = 'text';
+    let details = false;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -242,6 +282,8 @@ function parseArgs(argv) {
         if (arg === '--games') games = parseInt(argv[++i] || '20', 10);
         else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        else if (arg === '--format') format = argv[++i] || 'text';
+        else if (arg === '--details') details = true;
         else players.push(arg);
     }
 
@@ -249,11 +291,17 @@ function parseArgs(argv) {
         games,
         seed,
         maxSteps,
+        format,
+        details,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
 
-function printSeries(result) {
+function printSeries(result, options = {}) {
+    if (options.format === 'json') {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+    }
     console.log(`games=${result.games} players=${result.players.join(',')}`);
     for (const [difficulty, winCount] of Object.entries(result.wins)) {
         const rate = result.games > 0 ? ((winCount / result.games) * 100).toFixed(1) : '0.0';
@@ -261,10 +309,26 @@ function printSeries(result) {
     }
     console.log(`seatWins=${result.seatWins.join(',')}`);
     console.log(`averageTurns=${result.averageTurns.toFixed(1)} exhausted=${result.exhausted}`);
+    if (options.details) {
+        for (const match of result.matchLog) {
+            console.log(
+                `game=${match.game} seed=${match.seed} lineup=${match.lineup.join(',')} winner=${match.winnerDifficulty || 'none'} turns=${match.turns} exhausted=${match.exhausted}`
+            );
+            for (let i = 0; i < match.finalState.length; i++) {
+                const player = match.finalState[i];
+                const role = match.lineup[i];
+                const topCards = player.topCards.map(card => `${card.name}x${card.count}`).join(',');
+                console.log(
+                    `  p${i + 1}=${role} coins=${player.coins} landmarks=${player.builtLandmarkCount}/${player.builtLandmarks.length + player.missingLandmarks.length} built=${player.builtLandmarks.join('|') || '-'} missing=${player.missingLandmarks.join('|') || '-'} cards=${topCards || '-'}`
+                );
+            }
+        }
+    }
 }
 
 if (require.main === module) {
-    printSeries(runSeries(parseArgs(process.argv.slice(2))));
+    const options = parseArgs(process.argv.slice(2));
+    printSeries(runSeries(options), options);
 }
 
 module.exports = {

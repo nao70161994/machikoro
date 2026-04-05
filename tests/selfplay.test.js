@@ -24,6 +24,9 @@ runTest('simulateGame は CPU 同士の試合を最後まで進められる', ()
     assert.strictEqual(result.exhausted, false);
     assert.ok(result.winner >= 0);
     assert.ok(result.turns > 0);
+    assert.strictEqual(result.finalState.length, 3);
+    assert.ok(typeof result.finalState[0].coins === 'number');
+    assert.ok(Array.isArray(result.finalState[0].builtLandmarks));
 });
 
 runTest('runSeries は難易度ごとの勝利数を集計する', () => {
@@ -37,14 +40,20 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.strictEqual(result.games, 6);
     assert.strictEqual(result.wins.expert + result.wins.strong, 6);
     assert.strictEqual(result.seatWins.length, 2);
+    assert.strictEqual(result.matchLog.length, 6);
+    assert.ok(typeof result.matchLog[0].seed === 'number');
+    assert.strictEqual(result.matchLog[0].finalState.length, 2);
+    assert.ok(Array.isArray(result.matchLog[0].finalState[0].topCards));
 });
 
 runTest('parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '12', '--seed', '5', '--max-steps', '9000', 'expert', 'strong']);
+    const args = parseArgs(['--games', '12', '--seed', '5', '--max-steps', '9000', '--format', 'json', '--details', 'expert', 'strong']);
 
     assert.strictEqual(args.games, 12);
     assert.strictEqual(args.seed, 5);
     assert.strictEqual(args.maxSteps, 9000);
+    assert.strictEqual(args.format, 'json');
+    assert.strictEqual(args.details, true);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
