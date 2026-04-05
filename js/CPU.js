@@ -1002,10 +1002,29 @@ class CPU {
     _scoreExpertCardPenalty(cardName, player, game) {
         const copies = player.countCard(cardName);
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        if (cardName === "改装屋") return copies >= 2 ? 10 + copies * 4 : 0;
-        if (cardName === "貸金業") return copies >= 3 ? 8 + copies * 3 : 0;
+        if (cardName === "改装屋") {
+            if (player.builtLandmarkCount() === 0) return 18 + copies * 5;
+            return copies >= 2 ? 10 + copies * 4 : 0;
+        }
+        if (cardName === "貸金業") {
+            if (remainingLandmarks <= 3 && copies >= 2) return 12 + copies * 4;
+            return copies >= 3 ? 8 + copies * 3 : 0;
+        }
         if (cardName === "雑貨屋") return remainingLandmarks <= 2 && copies >= 3 ? 8 + copies * 2 : 0;
         return 0;
+    }
+
+    _scoreExpertLandmarkDelayPenalty(player, game) {
+        const remaining = [...game.enabledLandmarks]
+            .filter(name => !player.landmarks[name])
+            .map(name => ({ name, cost: Player.landmarkCost(name), urgency: this._landmarkUrgency(name, player, game) }));
+        if (remaining.length === 0) return 0;
+        const affordable = remaining.filter(entry => player.coins >= entry.cost)
+            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost);
+        if (affordable.length === 0) return 0;
+        const best = affordable[0];
+        const surplus = player.coins - best.cost;
+        return Math.max(0, best.urgency * 2 + Math.min(12, surplus * 0.4));
     }
 
     _listExpertBuildOptions(game, shopStock) {
@@ -1050,7 +1069,7 @@ class CPU {
         score += this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer) * tuning.lookaheadWeight;
         const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
         if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
-        if (action.type === 'card' && remainingLandmarks <= 2) score -= scorePenalty || 0;
+        if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
         if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
         if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
         if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;

@@ -375,6 +375,15 @@ runTest('_evaluatePosition は危険なトップ相手がいる盤面を低く�
     assert.ok(cpu._evaluatePosition(safeGame, 0) > cpu._evaluatePosition(dangerGame, 0));
 });
 
+runTest('_scoreExpertLandmarkDelayPenalty は建てられるランドマークがあると正になる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    current.coins = 12;
+    assert.ok(cpu._scoreExpertLandmarkDelayPenalty(current, game) > 0);
+});
+
 // ===== _landmarkUrgency =====
 
 runTest('_landmarkUrgency: 駅はbuiltCount<2で緊急度8、>=2で5を返す', () => {
@@ -815,6 +824,34 @@ runTest('buildExpert: 終盤は改装屋の積み増しよりランドマーク�
 
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK], true);
     assert.strictEqual(current.countCard('改装屋'), 2);
+});
+
+runTest('buildExpert: 建てられるランドマークがある高コイン時はカードよりランドマークを優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 20;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.cards = [
+        createCardByName('麦畑'),
+        createCardByName('青果市場'),
+        createCardByName('改装屋'),
+        createCardByName('改装屋'),
+    ];
+    current.dormantCards = [];
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    cpu.build(game, stock);
+
+    assert.ok(
+        current.landmarks[LANDMARK_NAMES.HARBOR] ||
+        current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] ||
+        current.landmarks[LANDMARK_NAMES.RADIO_TOWER] ||
+        current.landmarks[LANDMARK_NAMES.AIRPORT]
+    );
 });
 
 if (process.exitCode) {
