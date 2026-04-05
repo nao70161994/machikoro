@@ -430,7 +430,28 @@ class CPU {
     }
 
     _receivedCardValue(card, game, player) {
-        return this.evalCard(card, game, player) * this._diceFreq(card.diceNums) + card.cost * 1.4;
+        let baseValue;
+        switch (card.effect) {
+            case CARD_EFFECTS.BUSINESS:
+                baseValue = 3.5;
+                break;
+            case CARD_EFFECTS.CLEANING:
+                baseValue = 3;
+                break;
+            case CARD_EFFECTS.MOVER:
+                baseValue = 2.5;
+                break;
+            case CARD_EFFECTS.PARK:
+                baseValue = 1.5;
+                break;
+            case CARD_EFFECTS.RENOVATION:
+                baseValue = 2.5;
+                break;
+            default:
+                baseValue = this.evalCard(card, game, player);
+                break;
+        }
+        return baseValue * this._diceFreq(card.diceNums) + card.cost * 1.4;
     }
 
     _ownedCardValue(card, game, player) {
