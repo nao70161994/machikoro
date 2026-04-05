@@ -10,6 +10,7 @@ function parseArgs(argv) {
     let top = 5;
     let format = 'text';
     let emitPreset = false;
+    let profiles = null;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -21,6 +22,7 @@ function parseArgs(argv) {
         else if (arg === '--top') top = parseInt(argv[++i] || '5', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--emit-preset') emitPreset = true;
+        else if (arg === '--profiles') profiles = (argv[++i] || '').split(',').filter(Boolean);
         else players.push(arg);
     }
 
@@ -32,8 +34,16 @@ function parseArgs(argv) {
         top,
         format,
         emitPreset,
+        profiles,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
+}
+
+function profilePlayers(name) {
+    if (name === 'duel') return ['expert', 'strong'];
+    if (name === 'trio') return ['expert', 'strong', 'strong'];
+    if (name === 'crowd') return ['expert', 'strong', 'strong', 'normal'];
+    return ['expert', 'strong', 'strong', 'normal'];
 }
 
 function buildCandidateTunings(runtime, basePreset = 'default') {
@@ -128,6 +138,18 @@ function tuneExpert(options = {}) {
     };
 }
 
+function tuneExpertProfiles(options = {}) {
+    const profiles = options.profiles || ['duel', 'crowd'];
+    return profiles.map((profile, index) => ({
+        profile,
+        result: tuneExpert(Object.assign({}, options, {
+            profiles: null,
+            players: profilePlayers(profile),
+            seed: (options.seed || 1) + index * 1000,
+        })),
+    }));
+}
+
 function formatPresetObject(name, tuning) {
     const entries = Object.entries(tuning)
         .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
@@ -152,14 +174,31 @@ function printTuningResults(result, options = {}) {
     }
 }
 
+function printProfileResults(results, options = {}) {
+    if (options.format === 'json') {
+        console.log(JSON.stringify(results, null, 2));
+        return;
+    }
+    for (const entry of results) {
+        console.log(`[${entry.profile}]`);
+        printTuningResults(entry.result, options);
+    }
+}
+
 if (require.main === module) {
     const options = parseArgs(process.argv.slice(2));
-    printTuningResults(tuneExpert(options), options);
+    if (options.profiles && options.profiles.length > 0) {
+        printProfileResults(tuneExpertProfiles(options), options);
+    } else {
+        printTuningResults(tuneExpert(options), options);
+    }
 }
 
 module.exports = {
     parseArgs,
     buildCandidateTunings,
     formatPresetObject,
+    profilePlayers,
     tuneExpert,
+    tuneExpertProfiles,
 };

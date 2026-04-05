@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, formatPresetObject, tuneExpert } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, formatPresetObject, profilePlayers, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -16,7 +16,7 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -24,6 +24,7 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.strictEqual(args.top, 3);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.emitPreset, true);
+    assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -40,6 +41,12 @@ runTest('buildCandidateTunings は基準プリセットを含む複数候補を�
     assert.ok(candidates.some(candidate => candidate.name.includes('landmarkRush')));
 });
 
+runTest('profilePlayers は既知プロファイルの並びを返す', () => {
+    assert.deepStrictEqual(profilePlayers('duel'), ['expert', 'strong']);
+    assert.deepStrictEqual(profilePlayers('trio'), ['expert', 'strong', 'strong']);
+    assert.deepStrictEqual(profilePlayers('crowd'), ['expert', 'strong', 'strong', 'normal']);
+});
+
 runTest('tuneExpert は候補を勝率順に返す', () => {
     const result = tuneExpert({
         games: 2,
@@ -54,6 +61,22 @@ runTest('tuneExpert は候補を勝率順に返す', () => {
     assert.strictEqual(result.top.length, 2);
     assert.ok(result.top[0].winRate >= result.top[1].winRate);
     assert.ok(typeof result.top[0].tuning.coinWeight === 'number');
+});
+
+runTest('tuneExpertProfiles は複数プロファイルの結果を返す', () => {
+    const results = tuneExpertProfiles({
+        games: 2,
+        seed: 1,
+        maxSteps: 4000,
+        basePreset: 'default',
+        top: 1,
+        profiles: ['duel', 'crowd'],
+    });
+    assert.strictEqual(results.length, 2);
+    assert.strictEqual(results[0].profile, 'duel');
+    assert.strictEqual(results[1].profile, 'crowd');
+    assert.strictEqual(results[0].result.players.length, 2);
+    assert.strictEqual(results[1].result.players.length, 4);
 });
 
 runTest('formatPresetObject は CPU プリセット形式の文字列を返す', () => {
