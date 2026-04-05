@@ -1,17 +1,12 @@
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
 const vm = require('vm');
+const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
 
 function loadOnlineRuntime() {
-    const storage = new Map();
+    const { storage, localStorage } = createStorage();
     const context = {
         console,
-        localStorage: {
-            getItem(key) { return storage.has(key) ? storage.get(key) : null; },
-            setItem(key, value) { storage.set(key, String(value)); },
-            removeItem(key) { storage.delete(key); },
-        },
+        localStorage,
         document: {
             getElementById() {
                 return { style: {}, textContent: '', innerHTML: '' };
@@ -21,10 +16,7 @@ function loadOnlineRuntime() {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js']) {
-        const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-        vm.runInContext(source, context, { filename: file });
-    }
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js']);
 
     // online.js が参照するグローバルをモック
     vm.runInContext(`
@@ -38,20 +30,28 @@ function loadOnlineRuntime() {
         let undoState = null;
         let cpuScheduleToken = 0;
         let statsResetCount = 0;
+        let renderCount = 0;
+        let scheduleCount = 0;
+        let socketHandlers = {};
+        let socketEmits = [];
+        let socketDisconnected = false;
         const CPU = class { constructor() {} };
-        function render() {}
-        function scheduleCPU() {}
+        function render() { renderCount++; }
+        function scheduleCPU() { scheduleCount++; }
         function resetFullLog() {}
         function resetStatsRecorded() { statsResetCount++; }
         function restoreUndoSnapshot(state) { game = state.game; }
         function updateResumeButton() {}
-        const io = () => ({ on() {}, emit() {}, disconnect() {} });
+        const io = () => ({
+            on(name, handler) { socketHandlers[name] = handler; },
+            emit(name, payload) { socketEmits.push({ name, payload }); },
+            disconnect() { socketDisconnected = true; },
+        });
         const alert = () => {};
     `, context);
 
     // online.js をロード
-    const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
-    vm.runInContext(onlineSource, context, { filename: 'js/online.js' });
+    loadScript(context, 'js/online.js');
 
     // テスト用エクスポート
     vm.runInContext(`
@@ -68,6 +68,11 @@ function loadOnlineRuntime() {
         this.setEnabledCards = (s) => { enabledCards = s; };
         this.setEnabledLandmarks = (s) => { enabledLandmarks = s; };
         this.getStatsResetCount = () => statsResetCount;
+        this.getRenderCount = () => renderCount;
+        this.getScheduleCount = () => scheduleCount;
+        this.getSocketHandlers = () => socketHandlers;
+        this.getSocketEmits = () => socketEmits;
+        this.getSocketDisconnected = () => socketDisconnected;
         this.applyAction = applyAction;
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this._saveActionLog = _saveActionLog;
@@ -76,6 +81,7 @@ function loadOnlineRuntime() {
         this.handleAppError = handleAppError;
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
+        this.initSocket = initSocket;
         this.setOnlineState = (v) => {
             if (typeof v.socket !== 'undefined') socket = v.socket;
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
@@ -97,17 +103,6 @@ function makeGame(count = 2) {
     // SHOP_STOCK を初期化
     for (const card of CARDS) rt.getShopStock()[card.name] = 6;
     return g;
-}
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
-    }
 }
 
 // ===== applyAction =====
@@ -225,6 +220,46 @@ runTest('initOnlineGame: 統計記録フラグをリセットする', () => {
     const before = rt.getStatsResetCount();
     rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
     assert.strictEqual(rt.getStatsResetCount(), before + 1);
+});
+
+runTest('initSocket gameStart→gameAction→rejoinData で再接続復元できる', () => {
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+    });
+    handlers.gameAction({ action: 'buildCard', data: { cardName: '麦畑' }, playerIndex: 0 });
+    const snapshot = rt.buildOnlineSnapshot();
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+        },
+        stateSnapshot: snapshot,
+        actionLog: [{ action: 'nextTurn', data: {} }],
+        playerIndex: 0,
+    });
+
+    const game = rt.getGame();
+    assert.strictEqual(game.players[0].name, 'Alice');
+    assert.ok(game.players[0].countCard('麦畑') >= 2);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.ok(rt.getRenderCount() > 0);
+    assert.ok(rt.getScheduleCount() > 0);
 });
 
 runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () => {

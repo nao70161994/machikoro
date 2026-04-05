@@ -1,18 +1,16 @@
 const assert = require('assert');
 const path = require('path');
+const { runTest } = require('./helpers/test-utils');
 
-const { loadRuntime, simulateGame, runSeries, comparePresets, parseArgs } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
-    }
-}
+const {
+    loadRuntime,
+    simulateGame,
+    runSeries,
+    comparePresets,
+    parseArgs,
+    printSeries,
+    printPresetComparison,
+} = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 runTest('simulateGame は CPU 同士の試合を最後まで進められる', () => {
     const result = simulateGame({
@@ -116,6 +114,120 @@ runTest('simulateGame は fast モード指定を結果に保持する', () => {
     });
 
     assert.strictEqual(result.fast, true);
+});
+
+runTest('simulateGame は maxSteps 到達時に exhausted を返す', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'strong'],
+        seed: 3,
+        maxSteps: 1,
+    });
+
+    assert.strictEqual(result.exhausted, true);
+    assert.strictEqual(result.winner, -1);
+});
+
+runTest('parseArgs はプレイヤー未指定時に既定 lineup を使う', () => {
+    const args = parseArgs([]);
+    assert.deepStrictEqual(args.players, ['expert', 'strong', 'strong', 'normal']);
+    assert.strictEqual(args.comparePresets, null);
+});
+
+runTest('printSeries は text/details 形式で明細を出力する', () => {
+    const lines = [];
+    const realLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+        printSeries({
+            games: 1,
+            players: ['expert', 'strong'],
+            wins: { expert: 1, strong: 0 },
+            seatWins: [1, 0],
+            averageTurns: 12.5,
+            exhausted: 0,
+            matchLog: [{
+                game: 1,
+                seed: 7,
+                lineup: ['expert', 'strong'],
+                winnerDifficulty: 'expert',
+                turns: 12,
+                exhausted: false,
+                expertPreset: 'default',
+                finalState: [{
+                    coins: 9,
+                    builtLandmarkCount: 1,
+                    builtLandmarks: ['駅'],
+                    missingLandmarks: ['ショッピングモール'],
+                    topCards: [{ name: '麦畑', count: 2 }],
+                }, {
+                    coins: 3,
+                    builtLandmarkCount: 0,
+                    builtLandmarks: [],
+                    missingLandmarks: ['駅', 'ショッピングモール'],
+                    topCards: [],
+                }],
+            }],
+        }, { format: 'text', details: true, expertPreset: 'default' });
+    } finally {
+        console.log = realLog;
+    }
+
+    assert.ok(lines.some(line => String(line).includes('games=1 players=expert,strong expertPreset=default')));
+    assert.ok(lines.some(line => String(line).includes('expert: 1 wins (100.0%)')));
+    assert.ok(lines.some(line => String(line).includes('game=1 seed=7 lineup=expert,strong winner=expert')));
+    assert.ok(lines.some(line => String(line).includes('p1=expert coins=9')));
+});
+
+runTest('printSeries は json 形式で結果をそのまま出力する', () => {
+    const lines = [];
+    const realLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+        printSeries({ games: 1, wins: { expert: 1 } }, { format: 'json' });
+    } finally {
+        console.log = realLog;
+    }
+
+    assert.strictEqual(JSON.parse(lines[0]).games, 1);
+});
+
+runTest('printPresetComparison は text 形式で各 preset を出力する', () => {
+    const lines = [];
+    const realLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+        printPresetComparison([
+            {
+                preset: 'default',
+                result: {
+                    games: 1,
+                    players: ['expert', 'strong'],
+                    wins: { expert: 1, strong: 0 },
+                    seatWins: [1, 0],
+                    averageTurns: 10,
+                    exhausted: 0,
+                    matchLog: [],
+                },
+            },
+            {
+                preset: 'rush',
+                result: {
+                    games: 1,
+                    players: ['expert', 'strong'],
+                    wins: { expert: 0, strong: 1 },
+                    seatWins: [0, 1],
+                    averageTurns: 9,
+                    exhausted: 0,
+                    matchLog: [],
+                },
+            },
+        ], { format: 'text' });
+    } finally {
+        console.log = realLog;
+    }
+
+    assert.ok(lines.some(line => String(line).includes('expertPreset=default')));
+    assert.ok(lines.some(line => String(line).includes('expertPreset=rush')));
 });
 
 if (process.exitCode) {

@@ -1,21 +1,6 @@
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-
-function loadCPURuntime() {
-    const context = { console };
-    vm.createContext(context);
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/CPU.js']) {
-        const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-        vm.runInContext(source, context, { filename: file });
-    }
-    vm.runInContext(
-        'this.CPU = CPU; this.GameManager = GameManager; this.Player = Player; this.createCardByName = createCardByName; this.CARDS = CARDS; this.CARD_EFFECTS = CARD_EFFECTS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES;',
-        context
-    );
-    return context;
-}
+const { runTest } = require('./helpers/test-utils');
+const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
 const runtime = loadCPURuntime();
 const CPU = runtime.CPU;
@@ -26,17 +11,6 @@ const CARDS = runtime.CARDS;
 const CARD_EFFECTS = runtime.CARD_EFFECTS;
 const CARD_CATEGORIES = runtime.CARD_CATEGORIES;
 const LANDMARK_NAMES = runtime.LANDMARK_NAMES;
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
-    }
-}
 
 // ===== evalCard =====
 
@@ -206,6 +180,51 @@ runTest('expert は既定で人数別 profile tuning を持つ', () => {
 
     cpu._syncExpertTuningForGame(crowd);
     assert.strictEqual(cpu.expertTuning.landmarkActionBonus, 21.6);
+});
+
+runTest('all CPU difficulties: 勝てる最後のランドマークがあるなら必ず建てる', () => {
+    for (const difficulty of ['weak', 'normal', 'strong', 'expert']) {
+        const cpu = new CPU(difficulty);
+        const game = new GameManager(2);
+        const current = game.currentPlayer();
+        current.landmarks = {
+            駅: true,
+            ショッピングモール: true,
+            遊園地: true,
+            電波塔: false,
+            港: false,
+            空港: false,
+            役所: true,
+        };
+        game.enabledLandmarks = new Set(['駅', 'ショッピングモール', '遊園地', '電波塔']);
+        current.coins = Player.landmarkCost('電波塔');
+        game.phase = runtime.GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+
+        cpu.build(game);
+
+        assert.strictEqual(current.landmarks['電波塔'], true, `difficulty=${difficulty}`);
+    }
+});
+
+runTest('all CPU difficulties: builtThisTurn 後は盤面を変えない', () => {
+    for (const difficulty of ['weak', 'normal', 'strong', 'expert']) {
+        const cpu = new CPU(difficulty);
+        const game = new GameManager(2);
+        const current = game.currentPlayer();
+        current.coins = 20;
+        const beforeCoins = current.coins;
+        const beforeCards = current.cards.length;
+        const beforeBuilt = current.builtLandmarkCount();
+        game.phase = runtime.GAME_PHASES.BUILD;
+        game.builtThisTurn = true;
+
+        cpu.build(game);
+
+        assert.strictEqual(current.coins, beforeCoins, `difficulty=${difficulty}`);
+        assert.strictEqual(current.cards.length, beforeCards, `difficulty=${difficulty}`);
+        assert.strictEqual(current.builtLandmarkCount(), beforeBuilt, `difficulty=${difficulty}`);
+    }
 });
 
 // ===== chooseReroll =====

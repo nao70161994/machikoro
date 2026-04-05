@@ -1,5 +1,6 @@
 const assert = require('assert');
 const path = require('path');
+const { runTest } = require('./helpers/test-utils');
 
 const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluatePerProfileProposals, evaluateProposalAgainstBase, formatPresetObject, formatProfilePresetMap, profilePlayers, proposePerProfilePresets, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, resetTuneExpertDeps, runFinalistPlayoff, selectWinningFinalists, setTuneExpertDeps, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
@@ -34,17 +35,6 @@ function withFakeRunSeries(fn) {
         fn();
     } finally {
         resetTuneExpertDeps();
-    }
-}
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
     }
 }
 

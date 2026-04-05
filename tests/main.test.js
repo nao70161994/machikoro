@@ -2,36 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-
-function makeElement(overrides = {}) {
-    return Object.assign({
-        style: {},
-        textContent: '',
-        innerHTML: '',
-        value: '',
-        checked: false,
-        disabled: false,
-        classList: { toggle() {} },
-        appendChild() {},
-        remove() {},
-        getContext() {
-            return {
-                clearRect() {},
-                createLinearGradient() { return { addColorStop() {} }; },
-                createRadialGradient() { return { addColorStop() {} }; },
-                fillRect() {},
-                beginPath() {},
-                arc() {},
-                fill() {},
-                ellipse() {},
-                strokeRect() {},
-                moveTo() {},
-                lineTo() {},
-                stroke() {},
-            };
-        },
-    }, overrides);
-}
+const { createSequenceRandom, createStorage, makeElement, runTest } = require('./helpers/test-utils');
 
 function loadMainRuntime() {
     const elements = {
@@ -52,10 +23,17 @@ function loadMainRuntime() {
         gameScreen: makeElement(),
     };
 
-    const localStorageData = new Map();
     const sentActions = [];
     const timeouts = [];
     const eventHandlers = {};
+    const counters = {
+        renderOnlinePlayerSettings: 0,
+        updateResumeButton: 0,
+        loadSettings: 0,
+        drawCitySkyline: 0,
+        resumeGame: 0,
+    };
+    const { storage: localStorageData, localStorage } = createStorage();
     const createdButtons = {
         '#onlineCreate button': makeElement(),
         '#onlineJoin button': makeElement(),
@@ -64,6 +42,7 @@ function loadMainRuntime() {
     const context = {
         console,
         Math,
+        counters,
         elements,
         eventHandlers,
         localStorageData,
@@ -86,11 +65,7 @@ function loadMainRuntime() {
             matchMedia() { return { matches: false }; },
         },
         navigator: { onLine: true },
-        localStorage: {
-            getItem(key) { return localStorageData.has(key) ? localStorageData.get(key) : null; },
-            setItem(key, value) { localStorageData.set(key, String(value)); },
-            removeItem(key) { localStorageData.delete(key); },
-        },
+        localStorage,
         setTimeout(fn) {
             timeouts.push(fn);
             return timeouts.length;
@@ -102,9 +77,9 @@ function loadMainRuntime() {
         resetStatsRecorded() {},
         resetOnlineState() {},
         resetFullLog() {},
-        renderOnlinePlayerSettings() {},
-        updateResumeButton() {},
-        loadSettings() {},
+        renderOnlinePlayerSettings() { counters.renderOnlinePlayerSettings++; },
+        updateResumeButton() { counters.updateResumeButton++; },
+        loadSettings() { counters.loadSettings++; },
         syncTutorialControls() {},
         render() {},
         switchTab() {},
@@ -166,6 +141,8 @@ function loadMainRuntime() {
             { name: '鉱山', cost: 6, color: 'green' },
         ],
         SHOP_STOCK: {},
+        drawCitySkyline() { counters.drawCitySkyline++; },
+        resumeGame() { counters.resumeGame++; },
     };
     context.global = context;
     vm.createContext(context);
@@ -185,25 +162,16 @@ function loadMainRuntime() {
             getSelectedCount: () => selectedCount,
             setPlayerSettings: (value) => { playerSettings = value; },
             setGame: (value) => { game = value; },
+            getGame: () => game,
             setCpuPlayers: (value) => { cpuPlayers = value; },
             setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
             getAutoSkipPending: () => autoSkipPending,
             getCpuScheduleToken: () => cpuScheduleToken,
+            counters,
         };
     `, context);
     context.__test.elements = elements;
     return context;
-}
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
-    }
 }
 
 runTest('main changeCount は人数を2..10にクランプして表示を更新する', () => {
@@ -281,6 +249,23 @@ runTest('main showCrashScreen はクラッシュ表示と保存データ復帰�
     assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
 });
 
+runTest('main init は固定乱数でプレイヤー順シャッフルを再現できる', () => {
+    const rt = loadMainRuntime();
+    rt.Math.random = createSequenceRandom([0.9, 0.0, 0.0]);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.enabledCards = new Set(['麦畑', '鉱山']);
+    rt.enabledLandmarks = new Set(['駅', '空港']);
+
+    rt.init(3);
+
+    const names = rt.__test.getGame().players.map(player => player.name);
+    assert.deepStrictEqual(names, ['プレイヤー2', 'プレイヤー1', 'プレイヤー3']);
+});
+
 runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {
     const rt = loadMainRuntime();
     rt.navigator.onLine = false;
@@ -295,20 +280,74 @@ runTest('appShell bindPwaInstallHandlers は beforeinstallprompt を購読する
     assert.ok(rt.__test.eventHandlers.beforeinstallprompt);
 });
 
+runTest('appShell pwaInstallDismiss はバナーを閉じて localStorage に記録する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.elements.pwaInstallBanner.style.display = 'block';
+
+    rt.pwaInstallDismiss();
+
+    assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'none');
+    assert.strictEqual(rt.localStorage.getItem('pwaInstallDismissed'), '1');
+});
+
+runTest('appShell crashResume はクラッシュ画面を閉じて resumeGame を呼ぶ', () => {
+    const rt = loadMainRuntime();
+    rt.showCrashScreen(new Error('boom'));
+
+    rt.crashResume();
+
+    assert.strictEqual(rt.__test.elements.crashScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.counters.resumeGame, 1);
+});
+
+runTest('appShell bindCrashHandlers は error と rejection を crash 画面へ流す', () => {
+    const rt = loadMainRuntime();
+
+    rt.__test.eventHandlers.error({ message: 'sync boom' });
+    assert.strictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
+
+    rt.crashResume();
+    rt.__test.eventHandlers.unhandledrejection({ reason: new Error('async boom') });
+    assert.ok(rt.__test.elements.crashMessage.textContent.includes('async boom'));
+});
+
+runTest('appShell initMainView は shell 初期化をまとめて呼ぶ', () => {
+    const rt = loadMainRuntime();
+    const before = { ...rt.__test.counters };
+
+    rt.initMainView();
+
+    assert.ok(rt.__test.counters.loadSettings >= before.loadSettings + 1);
+    assert.ok(rt.__test.counters.renderOnlinePlayerSettings >= before.renderOnlinePlayerSettings + 1);
+    assert.ok(rt.__test.counters.updateResumeButton >= before.updateResumeButton + 1);
+    assert.ok(rt.__test.eventHandlers.resize);
+});
+
 runTest('index.html は統計タブをオンラインタブの外に配置している', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const onlineStart = html.indexOf('<div id="tabContentOnline"');
     const statsStart = html.indexOf('<div id="tabContentStats"');
+    const localStart = html.indexOf('<div id="tabContentLocal"');
     const onlineStatus = html.indexOf('<div id="onlineStatus"');
     const gameScreen = html.indexOf('<div id="gameScreen"');
+    const scriptStats = html.indexOf('<script src="js/stats.js"></script>');
+    const scriptUi = html.indexOf('<script src="js/ui.js"></script>');
+    const scriptMain = html.indexOf('<script src="js/main.js"></script>');
 
+    assert.ok(localStart >= 0);
     assert.ok(onlineStart >= 0);
     assert.ok(statsStart >= 0);
     assert.ok(onlineStatus >= 0);
     assert.ok(gameScreen >= 0);
+    assert.ok(scriptStats >= 0);
+    assert.ok(scriptUi >= 0);
+    assert.ok(scriptMain >= 0);
+    assert.ok(localStart < onlineStart);
     assert.ok(onlineStart < onlineStatus);
     assert.ok(onlineStatus < statsStart);
     assert.ok(statsStart < gameScreen);
+    assert.ok(scriptUi < scriptStats);
+    assert.ok(scriptStats < scriptMain);
 });
 
 if (process.exitCode) {

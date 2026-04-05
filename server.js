@@ -831,6 +831,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+    __rooms: rooms,
     APP_ERROR_EVENT,
     emitAppError,
     resolveBuildHash,

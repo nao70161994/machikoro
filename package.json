@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run-all.js",
+    "test": "node tests/run-all.js unit",
+    "test:sim": "node tests/run-all.js sim",
+    "test:all": "node tests/run-all.js all",
+    "test:coverage": "node scripts/test-coverage.js",
     "selfplay": "node scripts/selfplay.js",
     "tune-expert": "node scripts/tune-expert.js"
   },

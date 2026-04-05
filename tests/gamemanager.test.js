@@ -1,36 +1,10 @@
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-
-function loadGameRuntime() {
-    const context = { console };
-    vm.createContext(context);
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js']) {
-        const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-        vm.runInContext(source, context, { filename: file });
-    }
-    vm.runInContext(
-        'this.GameManager = GameManager; this.createCardByName = createCardByName; this.CARDS = CARDS; this.LOG_TYPES = LOG_TYPES; this.GAME_PHASES = GAME_PHASES; this.CARD_CATEGORIES = CARD_CATEGORIES;',
-        context
-    );
-    return context;
-}
+const { runTest } = require('./helpers/test-utils');
+const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 const runtime = loadGameRuntime();
 const GameManager = runtime.GameManager;
 const createCardByName = runtime.createCardByName;
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
-    }
-}
 
 runTest('rollDice後にフェーズが適切に遷移する', () => {
     const normalGame = new GameManager(2);

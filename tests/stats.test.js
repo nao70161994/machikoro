@@ -1,20 +1,15 @@
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
 const vm = require('vm');
+const { createStorage, loadScript, runTest } = require('./helpers/test-utils');
 
 function loadStatsRuntime() {
-    const storage = new Map();
+    const { storage, localStorage } = createStorage();
     const statsEl = { innerHTML: '' };
     const context = {
         console,
         storage,
         statsEl,
-        localStorage: {
-            getItem(key) { return storage.has(key) ? storage.get(key) : null; },
-            setItem(key, value) { storage.set(key, String(value)); },
-            removeItem(key) { storage.delete(key); },
-        },
+        localStorage,
         document: {
             getElementById(id) {
                 if (id === 'tabContentStats') return statsEl;
@@ -27,8 +22,7 @@ function loadStatsRuntime() {
     };
     context.global = context;
     vm.createContext(context);
-    const source = fs.readFileSync(path.join(__dirname, '..', 'js/stats.js'), 'utf8');
-    vm.runInContext(source, context, { filename: 'js/stats.js' });
+    loadScript(context, 'js/stats.js');
     vm.runInContext(`
         this.__test = {
             storage,
@@ -38,17 +32,6 @@ function loadStatsRuntime() {
         };
     `, context);
     return context;
-}
-
-function runTest(name, fn) {
-    try {
-        fn();
-        console.log(`テスト成功: ${name}`);
-    } catch (error) {
-        console.error(`テスト失敗: ${name}`);
-        console.error(error.stack);
-        process.exitCode = 1;
-    }
 }
 
 function makeGame() {
@@ -129,6 +112,16 @@ runTest('renderStats はプレイヤー別フィルタを表示する', () => {
     rt.renderStats();
     assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('Alice')"));
     assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('Bob')"));
+});
+
+runTest('recordGameStats は reset なしで二重記録しない', () => {
+    const rt = loadStatsRuntime();
+    const game = makeGame();
+    rt.recordGameStats(game.players[0], game, [null, null]);
+    rt.recordGameStats(game.players[0], game, [null, null]);
+    const stats = rt.loadStats();
+    assert.strictEqual(stats.local.totalGames, 2);
+    assert.strictEqual(stats.players.Alice.totalGames, 1);
 });
 
 if (process.exitCode) {

@@ -385,4 +385,6 @@ module.exports = {
     runSeries,
     comparePresets,
     parseArgs,
+    printSeries,
+    printPresetComparison,
 };

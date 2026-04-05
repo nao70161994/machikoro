@@ -17,6 +17,12 @@ const {
     validateMoverPayload,
     validateRenovationPayload,
     makeUndoStateFromMirror,
+    applyActionToMirror,
+    restoreUndoMirror,
+    getAllowedActions,
+    buildPlayerList,
+    checkGameStart,
+    __rooms,
 } = require('../server');
 
 function runTest(name, fn) {
@@ -156,6 +162,27 @@ runTest('validateGameAction は enabledCards に含まれないカードの建�
     room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } }];
     const result = validateGameAction(room, { playerIndex: 0 }, 'buildCard', { cardName: '鉱山' });
     assert.strictEqual(result.ok, false);
+});
+
+runTest('getAllowedActions は pendingIT 中に resolveIT のみ返す', () => {
+    const { GameManager } = makeGame();
+    const game = new GameManager(2);
+    game.phase = 'build';
+    game.pendingIT = true;
+    assert.deepStrictEqual([...getAllowedActions(game)], ['resolveIT']);
+});
+
+runTest('getAllowedActions は pending の内容から解決可能アクションを列挙する', () => {
+    const { GameManager } = makeGame();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingBusiness = 1;
+    game.pendingCleaning = 1;
+    game.pendingMover = 1;
+    assert.deepStrictEqual(
+        [...getAllowedActions(game)],
+        ['resolveBusiness', 'resolveCleaning', 'resolveMover']
+    );
 });
 
 // ===== validateCleaningPayload =====
@@ -418,6 +445,151 @@ runTest('compactRoomActionLog は長いログを stateSnapshot に圧縮して�
     assert.strictEqual(after.game.currentPlayerIndex, before.game.currentPlayerIndex);
     assert.deepStrictEqual(after.game.players.map(p => p.coins), before.game.players.map(p => p.coins));
     assert.strictEqual(after.game.turnCount, before.game.turnCount);
+});
+
+runTest('applyActionToMirror は undoBuild で保存済み状態を復元する', () => {
+    const { GameManager, createCardByName } = makeGame();
+    const game = new GameManager(2);
+    const shopStock = { 麦畑: 6 };
+    game.phase = 'build';
+    const snapshot = makeUndoStateFromMirror(game, shopStock);
+
+    game.currentPlayer().coins = 0;
+    game.currentPlayer().cards.push(createCardByName('麦畑'));
+    shopStock['麦畑'] = 5;
+
+    applyActionToMirror(game, shopStock, 'undoBuild', { state: snapshot }, createCardByName);
+
+    assert.strictEqual(game.currentPlayer().coins, snapshot.playerCoins[0]);
+    assert.strictEqual(game.currentPlayer().countCard('麦畑'), 1);
+    assert.strictEqual(shopStock['麦畑'], 6);
+});
+
+runTest('restoreUndoMirror は state が null のとき何もしない', () => {
+    const { GameManager } = makeGame();
+    const game = new GameManager(2);
+    const shopStock = { 麦畑: 6 };
+    game.currentPlayer().coins = 9;
+
+    restoreUndoMirror(game, shopStock, null, () => null);
+
+    assert.strictEqual(game.currentPlayer().coins, 9);
+    assert.strictEqual(shopStock['麦畑'], 6);
+});
+
+runTest('buildPlayerList は CPU と待機中プレイヤーを設定に応じて表示する', () => {
+    const room = {
+        playerSettings: [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'normal' },
+            { type: 'human' },
+        ],
+        players: [
+            { index: 0, name: 'Alice' },
+        ],
+    };
+    assert.deepStrictEqual(buildPlayerList(room), ['Alice', 'CPU（普）', '待機中...']);
+});
+
+runTest('buildPlayerList は設定がないルームで参加者名をそのまま返す', () => {
+    const room = {
+        playerSettings: [],
+        players: [{ name: 'Alice' }, { name: 'Bob' }],
+    };
+    assert.deepStrictEqual(buildPlayerList(room), ['Alice', 'Bob']);
+});
+
+runTest('checkGameStart は人間枠が揃うと gameStart を送る', () => {
+    const roomId = 'ROOM01';
+    const emitted = [];
+    const io = {
+        sockets: {
+            sockets: new Map([
+                ['s1', { clientVersion: 'v1' }],
+            ]),
+        },
+        to(targetRoomId) {
+            return {
+                emit(name, payload) {
+                    emitted.push({ targetRoomId, name, payload });
+                },
+            };
+        },
+    };
+    const room = {
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        players: [{ id: 's1', index: 0, name: 'Alice' }],
+        hostPlayerIndex: 0,
+        maxPlayers: 2,
+        playerSettings: [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'strong' },
+        ],
+        cpuSpeed: 1500,
+        started: false,
+    };
+    const realNow = Date.now;
+    const realRandom = Math.random;
+    Date.now = () => 12345;
+    Math.random = () => 0;
+    try {
+        __rooms[roomId] = room;
+        checkGameStart(io, roomId);
+
+        assert.strictEqual(room.started, true);
+        assert.strictEqual(room.gameStartPayload.playerNames[0], 'Alice');
+        assert.strictEqual(room.gameStartPayload.playerNames[1], 'CPU1（強）');
+        assert.deepStrictEqual(room.gameStartPayload.playerOrder, [1, 0]);
+        assert.deepStrictEqual(room.gameStartPayload.versions, ['v1']);
+        assert.strictEqual(room.lastTouchedAt, 12345);
+        assert.deepStrictEqual(emitted, [{
+            targetRoomId: roomId,
+            name: 'gameStart',
+            payload: room.gameStartPayload,
+        }]);
+    } finally {
+        delete __rooms[roomId];
+        Math.random = realRandom;
+        Date.now = realNow;
+    }
+});
+
+runTest('checkGameStart は人間枠が不足している間は開始しない', () => {
+    const roomId = 'ROOM02';
+    const emitted = [];
+    const io = {
+        sockets: { sockets: new Map() },
+        to(targetRoomId) {
+            return {
+                emit(name, payload) {
+                    emitted.push({ targetRoomId, name, payload });
+                },
+            };
+        },
+    };
+    __rooms[roomId] = {
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        players: [{ id: 's1', index: 0, name: 'Alice' }],
+        hostPlayerIndex: 0,
+        maxPlayers: 3,
+        playerSettings: [
+            { type: 'human' },
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'normal' },
+        ],
+        cpuSpeed: 1500,
+        started: false,
+    };
+    try {
+        checkGameStart(io, roomId);
+        assert.strictEqual(__rooms[roomId].started, false);
+        assert.deepStrictEqual(emitted, []);
+        assert.strictEqual(__rooms[roomId].gameStartPayload, undefined);
+    } finally {
+        delete __rooms[roomId];
+    }
 });
 
 if (process.exitCode) {
