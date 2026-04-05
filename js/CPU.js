@@ -2,11 +2,15 @@ class CPU {
     constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
         this.expertPreset = options.expertPreset || "default";
-        this.expertTuning = CPU._resolveExpertTuning(this.expertPreset);
+        this.expertTuning = Object.assign(
+            {},
+            CPU._resolveExpertTuning(this.expertPreset),
+            options.expertTuning || {}
+        );
     }
 
-    static _resolveExpertTuning(presetName = "default") {
-        const presets = {
+    static _expertPresets() {
+        return {
             default: {
                 coinWeight: 1.1,
                 turnWeight: 3.2,
@@ -65,6 +69,10 @@ class CPU {
                 lateGameLookaheadStepsPerPlayer: 7,
             },
         };
+    }
+
+    static _resolveExpertTuning(presetName = "default") {
+        const presets = CPU._expertPresets();
         return Object.assign({}, presets.default, presets[presetName] || {});
     }
 

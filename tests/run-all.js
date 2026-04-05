@@ -6,6 +6,7 @@ const testFiles = [
     'server.test.js',
     'cpu.test.js',
     'selfplay.test.js',
+    'tune-expert.test.js',
     'online.test.js',
     'main.test.js',
     'stats.test.js',

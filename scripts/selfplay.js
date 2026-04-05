@@ -40,9 +40,13 @@ function createShopStock(cards) {
 }
 
 function createPlayers(runtime, difficulties, options = {}) {
-    return difficulties.map(difficulty =>
-        new runtime.CPU(difficulty, difficulty === 'expert' ? { expertPreset: options.expertPreset } : {})
-    );
+    return difficulties.map(difficulty => {
+        if (difficulty !== 'expert') return new runtime.CPU(difficulty);
+        return new runtime.CPU(difficulty, {
+            expertPreset: options.expertPreset,
+            expertTuning: options.expertTuning,
+        });
+    });
 }
 
 function fallbackBusiness(game) {
@@ -216,6 +220,7 @@ function simulateGame(options = {}) {
         difficulties: difficulties.slice(),
         seed: options.seed || 1,
         expertPreset: options.expertPreset || 'default',
+        expertTuning: options.expertTuning || null,
         finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
     };
 }
@@ -255,6 +260,7 @@ function runSeries(options = {}) {
             turns: result.turns,
             exhausted: result.exhausted,
             expertPreset: result.expertPreset,
+            expertTuning: result.expertTuning,
             finalState: result.finalState,
         });
         if (result.winner >= 0) {
