@@ -53,6 +53,23 @@ node --check js/online.js
 - CPU 手番進行
 - Undo 同期
 
+CPU の自己対戦:
+
+```bash
+npm run selfplay -- --games 20 expert strong strong normal
+```
+
+`expert` の評価プリセット比較:
+
+```bash
+npm run selfplay -- --games 20 --compare-presets default,rush,economy expert strong strong normal
+```
+
+- `--expert-preset <name>` で `expert` の評価係数セットを切り替えます。
+- `--compare-presets a,b,c` で複数プリセットを同条件で連続比較します。
+- `--format json` を付けると集計と試合明細を JSON で出力します。
+- `--details` を付けると各試合の勝者、ターン数、最終盤面サマリを表示します。
+
 ## プロジェクト構成
 
 主要ファイル:

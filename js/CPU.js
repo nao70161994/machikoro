@@ -1,6 +1,71 @@
 class CPU {
-    constructor(difficulty) {
+    constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
+        this.expertPreset = options.expertPreset || "default";
+        this.expertTuning = CPU._resolveExpertTuning(this.expertPreset);
+    }
+
+    static _resolveExpertTuning(presetName = "default") {
+        const presets = {
+            default: {
+                coinWeight: 1.1,
+                turnWeight: 3.2,
+                landmarkWeight: 14,
+                builtLandmarkWeight: 8,
+                lateCoinWeight: 1.6,
+                finalCoinWeight: 2.2,
+                lateProgressBonus: 8,
+                lowValueSpamThreshold: 4,
+                lowValueSpamPenalty: 6,
+                landmarkActionBonus: 24,
+                lateLandmarkActionBonus: 18,
+                skipAirportBonus: 10,
+                skipPenalty: 8,
+                winLookaheadBonus: 5000,
+                loseLookaheadPenalty: 3000,
+                lookaheadWeight: 0.7,
+                lateGameLookaheadStepsPerPlayer: 6,
+            },
+            rush: {
+                coinWeight: 1.25,
+                turnWeight: 3.1,
+                landmarkWeight: 16,
+                builtLandmarkWeight: 9,
+                lateCoinWeight: 2.0,
+                finalCoinWeight: 2.8,
+                lateProgressBonus: 10,
+                lowValueSpamThreshold: 3,
+                lowValueSpamPenalty: 8,
+                landmarkActionBonus: 30,
+                lateLandmarkActionBonus: 26,
+                skipAirportBonus: 8,
+                skipPenalty: 12,
+                winLookaheadBonus: 6000,
+                loseLookaheadPenalty: 3200,
+                lookaheadWeight: 0.75,
+                lateGameLookaheadStepsPerPlayer: 6,
+            },
+            economy: {
+                coinWeight: 1.3,
+                turnWeight: 3.5,
+                landmarkWeight: 13,
+                builtLandmarkWeight: 7,
+                lateCoinWeight: 1.4,
+                finalCoinWeight: 2.0,
+                lateProgressBonus: 6,
+                lowValueSpamThreshold: 5,
+                lowValueSpamPenalty: 4,
+                landmarkActionBonus: 20,
+                lateLandmarkActionBonus: 12,
+                skipAirportBonus: 14,
+                skipPenalty: 6,
+                winLookaheadBonus: 4800,
+                loseLookaheadPenalty: 2800,
+                lookaheadWeight: 0.65,
+                lateGameLookaheadStepsPerPlayer: 7,
+            },
+        };
+        return Object.assign({}, presets.default, presets[presetName] || {});
     }
 
     takeTurn(game, shopStock) {
@@ -605,16 +670,22 @@ class CPU {
 
     _evaluatePosition(game, playerIndex) {
         const player = game.players[playerIndex];
+        const tuning = this.expertTuning;
         if (player.hasWon([...game.enabledLandmarks])) return 100000;
         const myTurnValue = this._estimatePlayerTurnValue(game, playerIndex);
         const enabledLandmarks = [...game.enabledLandmarks];
         const myLandmarkProgress = enabledLandmarks.filter(name => player.landmarks[name]).length;
         const remainingLandmarks = enabledLandmarks.filter(name => !player.landmarks[name]);
         const lowValueSpam = player.countCard("改装屋") + player.countCard("貸金業") + player.countCard("雑貨屋");
-        let score = player.coins * 1.1 + myTurnValue * 3.2 + myLandmarkProgress * 14 + player.builtLandmarkCount() * 8;
-        if (remainingLandmarks.length <= 2) score += player.coins * 1.6 + myLandmarkProgress * 8;
-        if (remainingLandmarks.length <= 1) score += player.coins * 2.2;
-        if (lowValueSpam > 4) score -= (lowValueSpam - 4) * 6;
+        let score = player.coins * tuning.coinWeight +
+            myTurnValue * tuning.turnWeight +
+            myLandmarkProgress * tuning.landmarkWeight +
+            player.builtLandmarkCount() * tuning.builtLandmarkWeight;
+        if (remainingLandmarks.length <= 2) score += player.coins * tuning.lateCoinWeight + myLandmarkProgress * tuning.lateProgressBonus;
+        if (remainingLandmarks.length <= 1) score += player.coins * tuning.finalCoinWeight;
+        if (lowValueSpam > tuning.lowValueSpamThreshold) {
+            score -= (lowValueSpam - tuning.lowValueSpamThreshold) * tuning.lowValueSpamPenalty;
+        }
         if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
         for (let i = 0; i < game.players.length; i++) {
             if (i === playerIndex) continue;
@@ -658,6 +729,7 @@ class CPU {
 
     _scoreExpertBuildOption(game, shopStock, action) {
         const ci = game.currentPlayerIndex;
+        const tuning = this.expertTuning;
         const clone = this._cloneGame(game);
         const stock = Object.assign({}, shopStock);
         const current = clone.currentPlayer();
@@ -673,12 +745,12 @@ class CPU {
             clone.builtThisTurn = false;
         }
         let score = this._evaluatePosition(clone, ci);
-        score += this._simulateLookahead(clone, stock, ci, game.players.length * 6) * 0.7;
+        score += this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer) * tuning.lookaheadWeight;
         const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
-        if (action.type === 'landmark') score += 24 + (remainingLandmarks <= 2 ? 18 : 0);
+        if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
         if (action.type === 'card' && remainingLandmarks <= 2) score -= scorePenalty || 0;
-        if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += 10;
-        if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 8;
+        if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
+        if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
         if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
         return score;
     }
@@ -693,6 +765,7 @@ class CPU {
 
     _simulateLookahead(game, shopStock, focusIndex, maxSteps) {
         const cpus = game.players.map(() => new CPU('strong'));
+        const tuning = this.expertTuning;
         const seed = game.turnCount + focusIndex * 97 + game.currentPlayer().coins * 13 + maxSteps;
         const rng = this._createPlayoutRng(seed);
         let safety = 0;
@@ -703,7 +776,7 @@ class CPU {
         }
         if (game.checkWinner()) {
             const winnerIndex = game.players.indexOf(game.checkWinner());
-            return winnerIndex === focusIndex ? 5000 : -3000;
+            return winnerIndex === focusIndex ? tuning.winLookaheadBonus : -tuning.loseLookaheadPenalty;
         }
         return this._evaluatePosition(game, focusIndex);
     }

@@ -39,8 +39,10 @@ function createShopStock(cards) {
     return stock;
 }
 
-function createPlayers(runtime, difficulties) {
-    return difficulties.map(difficulty => new runtime.CPU(difficulty));
+function createPlayers(runtime, difficulties, options = {}) {
+    return difficulties.map(difficulty =>
+        new runtime.CPU(difficulty, difficulty === 'expert' ? { expertPreset: options.expertPreset } : {})
+    );
 }
 
 function fallbackBusiness(game) {
@@ -194,7 +196,7 @@ function simulateGame(options = {}) {
     const difficulties = options.difficulties || ['expert', 'strong'];
     const game = new runtime.GameManager(difficulties.length);
     const shopStock = createShopStock(runtime.CARDS);
-    const cpuPlayers = createPlayers(runtime, difficulties);
+    const cpuPlayers = createPlayers(runtime, difficulties, options);
     const rng = createRng(options.seed || 1);
     runtime.Math.random = rng;
     game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
@@ -213,6 +215,7 @@ function simulateGame(options = {}) {
         exhausted: safety >= maxSteps,
         difficulties: difficulties.slice(),
         seed: options.seed || 1,
+        expertPreset: options.expertPreset || 'default',
         finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
     };
 }
@@ -239,6 +242,7 @@ function runSeries(options = {}) {
             difficulties: lineup,
             seed,
             maxSteps: options.maxSteps,
+            expertPreset: options.expertPreset,
         });
         turns += result.turns;
         if (result.exhausted) exhausted++;
@@ -250,6 +254,7 @@ function runSeries(options = {}) {
             winnerDifficulty: result.winner >= 0 ? lineup[result.winner] : null,
             turns: result.turns,
             exhausted: result.exhausted,
+            expertPreset: result.expertPreset,
             finalState: result.finalState,
         });
         if (result.winner >= 0) {
@@ -275,6 +280,8 @@ function parseArgs(argv) {
     let maxSteps = 5000;
     let format = 'text';
     let details = false;
+    let expertPreset = 'default';
+    let comparePresets = null;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -284,6 +291,8 @@ function parseArgs(argv) {
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--details') details = true;
+        else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
+        else if (arg === '--compare-presets') comparePresets = (argv[++i] || 'default').split(',').filter(Boolean);
         else players.push(arg);
     }
 
@@ -293,8 +302,18 @@ function parseArgs(argv) {
         maxSteps,
         format,
         details,
+        expertPreset,
+        comparePresets,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
+}
+
+function comparePresets(options) {
+    const presets = options.comparePresets || ['default', 'rush', 'economy'];
+    return presets.map(preset => ({
+        preset,
+        result: runSeries(Object.assign({}, options, { expertPreset: preset, comparePresets: null })),
+    }));
 }
 
 function printSeries(result, options = {}) {
@@ -302,7 +321,7 @@ function printSeries(result, options = {}) {
         console.log(JSON.stringify(result, null, 2));
         return;
     }
-    console.log(`games=${result.games} players=${result.players.join(',')}`);
+    console.log(`games=${result.games} players=${result.players.join(',')} expertPreset=${options.expertPreset || 'default'}`);
     for (const [difficulty, winCount] of Object.entries(result.wins)) {
         const rate = result.games > 0 ? ((winCount / result.games) * 100).toFixed(1) : '0.0';
         console.log(`${difficulty}: ${winCount} wins (${rate}%)`);
@@ -311,9 +330,9 @@ function printSeries(result, options = {}) {
     console.log(`averageTurns=${result.averageTurns.toFixed(1)} exhausted=${result.exhausted}`);
     if (options.details) {
         for (const match of result.matchLog) {
-            console.log(
-                `game=${match.game} seed=${match.seed} lineup=${match.lineup.join(',')} winner=${match.winnerDifficulty || 'none'} turns=${match.turns} exhausted=${match.exhausted}`
-            );
+                console.log(
+                    `game=${match.game} seed=${match.seed} lineup=${match.lineup.join(',')} winner=${match.winnerDifficulty || 'none'} turns=${match.turns} exhausted=${match.exhausted} preset=${match.expertPreset}`
+                );
             for (let i = 0; i < match.finalState.length; i++) {
                 const player = match.finalState[i];
                 const role = match.lineup[i];
@@ -326,14 +345,29 @@ function printSeries(result, options = {}) {
     }
 }
 
+function printPresetComparison(comparisons, options = {}) {
+    if (options.format === 'json') {
+        console.log(JSON.stringify(comparisons, null, 2));
+        return;
+    }
+    for (const entry of comparisons) {
+        printSeries(entry.result, Object.assign({}, options, { expertPreset: entry.preset, details: false }));
+    }
+}
+
 if (require.main === module) {
     const options = parseArgs(process.argv.slice(2));
-    printSeries(runSeries(options), options);
+    if (options.comparePresets && options.comparePresets.length > 0) {
+        printPresetComparison(comparePresets(options), options);
+    } else {
+        printSeries(runSeries(options), options);
+    }
 }
 
 module.exports = {
     loadRuntime,
     simulateGame,
     runSeries,
+    comparePresets,
     parseArgs,
 };
