@@ -60,8 +60,8 @@ runTest('evalCard: STADIUMは対戦相手数 × incomeを返す', () => {
 
     const game4p = new GameManager(4);
     const player4 = game4p.currentPlayer();
-    // 4人ゲームなので相手は3人
-    assert.strictEqual(cpu.evalCard(stadium, game4p, player4), 6);
+    // 4人ゲームでは全体攻撃補正で基礎値6より高く評価する
+    assert.ok(cpu.evalCard(stadium, game4p, player4) > 6);
 });
 
 runTest('evalCard: TVは相手の最大コインと上限incomeの小さい方を返す', () => {
@@ -293,6 +293,17 @@ runTest('_landmarkUrgency: 電波塔はbuiltCount>=3か相手maxBuilt>=4で8、�
     assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, game2.players[0], game2), 8);
 });
 
+runTest('_landmarkUrgency: 2人戦は4人戦よりランドマークを急ぐ', () => {
+    const cpu = new CPU("normal");
+    const duel = new GameManager(2);
+    const crowded = new GameManager(4);
+
+    assert.ok(
+        cpu._landmarkUrgency(LANDMARK_NAMES.STATION, duel.currentPlayer(), duel) >
+        cpu._landmarkUrgency(LANDMARK_NAMES.STATION, crowded.currentPlayer(), crowded)
+    );
+});
+
 // ===== sortAffordable =====
 
 runTest('sortAffordable: ダイス確率を加味したスコア順にソートされる', () => {
@@ -320,6 +331,26 @@ runTest('sortAffordable: ダイス確率を加味したスコア順にソート�
         assert.ok(typeof entry.score === 'number');
         assert.ok(typeof entry.card === 'object' && entry.card !== null);
     }
+});
+
+runTest('evalCard: 多人数戦では赤カードと全体攻撃カードを高く評価する', () => {
+    const cpu = new CPU("strong");
+    const duel = new GameManager(2);
+    const crowded = new GameManager(4);
+    const redCard = createCardByName('カフェ');
+    const stadium = createCardByName('スタジアム');
+
+    assert.ok(cpu.evalCard(redCard, crowded, crowded.currentPlayer()) > cpu.evalCard(redCard, duel, duel.currentPlayer()));
+    assert.ok(cpu.evalCard(stadium, crowded, crowded.currentPlayer()) > cpu.evalCard(stadium, duel, duel.currentPlayer()));
+});
+
+runTest('evalCard: 2人戦では緑カードを4人戦より高く評価する', () => {
+    const cpu = new CPU("strong");
+    const duel = new GameManager(2);
+    const crowded = new GameManager(4);
+    const bakery = createCardByName('パン屋');
+
+    assert.ok(cpu.evalCard(bakery, duel, duel.currentPlayer()) > cpu.evalCard(bakery, crowded, crowded.currentPlayer()));
 });
 
 runTest('build: builtThisTurn 済みなら追加建設を試みない', () => {

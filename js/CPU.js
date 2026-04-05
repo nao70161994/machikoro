@@ -7,6 +7,41 @@ class CPU {
         // scheduleCPU側で処理
     }
 
+    _playerCountProfile(game) {
+        const count = game.players.length;
+        if (count >= 4) {
+            return {
+                landmarkBias: 0.9,
+                blueFactor: 1.18,
+                redFactor: 1.25,
+                greenFactor: 0.95,
+                purpleFactor: 1.18,
+                massAttackFactor: 1.3,
+                airportBias: 0.9,
+            };
+        }
+        if (count === 3) {
+            return {
+                landmarkBias: 1,
+                blueFactor: 1.05,
+                redFactor: 1.08,
+                greenFactor: 1,
+                purpleFactor: 1.05,
+                massAttackFactor: 1.08,
+                airportBias: 1,
+            };
+        }
+        return {
+            landmarkBias: 1,
+            blueFactor: 1,
+            redFactor: 1,
+            greenFactor: 1,
+            purpleFactor: 1,
+            massAttackFactor: 1,
+            airportBias: 1,
+        };
+    }
+
     // ===== サイコロ判断 =====
 
     _cardActivationValue(card, game, owner, roller, dice) {
@@ -259,6 +294,7 @@ class CPU {
     evalCard(card, game, player) {
         const ci = game.players.indexOf(player);
         const opponents = game.players.filter((_, i) => i !== ci);
+        const profile = this._playerCountProfile(game);
 
         switch (card.effect) {
             case CARD_EFFECTS.CHEESE:
@@ -270,37 +306,41 @@ class CPU {
             case CARD_EFFECTS.WINERY:
             case CARD_EFFECTS.FEWLANDMARK:
             case CARD_EFFECTS.CORNFIELD:
-                return GameManager.calcCardIncome(card, player, game);
+                return GameManager.calcCardIncome(card, player, game) * profile.greenFactor;
             case CARD_EFFECTS.STADIUM:
-                return opponents.length * card.income;
+                return opponents.length * card.income * profile.massAttackFactor;
             case CARD_EFFECTS.TV:
-                return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
+                return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0)) * profile.purpleFactor;
             case CARD_EFFECTS.PUBLISHER:
                 return opponents.reduce((s, p) =>
-                    s + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length, 0);
+                    s + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length, 0) * profile.massAttackFactor;
             case CARD_EFFECTS.TAXOFFICE:
-                return opponents.filter(p => p.coins >= 10).length * 5;
+                return opponents.filter(p => p.coins >= 10).length * 5 * profile.massAttackFactor;
             case CARD_EFFECTS.HARBOR:
-                return player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : card.income * 0.4;
+                return (player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : card.income * 0.4) * profile.blueFactor;
             case CARD_EFFECTS.HARBOR_RED:
-                return player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
+                return (player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0) * profile.redFactor;
             case CARD_EFFECTS.TUNA:
-                return player.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0;
+                return (player.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0) * profile.blueFactor;
             case CARD_EFFECTS.LOAN:
-                return player.coins <= 4 ? 3.5 : 1.2;
+                return (player.coins <= 4 ? 3.5 : 1.2) * profile.greenFactor;
             case CARD_EFFECTS.ITSTARTUP:
-                return opponents.length * Math.max(2, player.itVentureCoins + 1);
+                return opponents.length * Math.max(2, player.itVentureCoins + 1) * profile.massAttackFactor;
             case CARD_EFFECTS.RENOVATION:
-                return player.builtLandmarkCount() > 0 ? 3.5 : 0;
+                return (player.builtLandmarkCount() > 0 ? 3.5 : 0) * profile.greenFactor;
             case CARD_EFFECTS.CLEANING:
-                return this._estimateCleaningValue(game, player);
+                return this._estimateCleaningValue(game, player) * profile.massAttackFactor;
             case CARD_EFFECTS.MOVER:
-                return this._estimateMoverValue(game, player);
+                return this._estimateMoverValue(game, player) * profile.greenFactor;
             case CARD_EFFECTS.BUSINESS:
-                return this._estimateBusinessValue(game, player);
+                return this._estimateBusinessValue(game, player) * (game.players.length <= 2 ? 1.15 : 1);
             case CARD_EFFECTS.PARK:
-                return this._estimateParkValue(game, player);
+                return this._estimateParkValue(game, player) * profile.massAttackFactor;
             default:
+                if (card.color === "blue") return card.income * profile.blueFactor;
+                if (card.color === "red") return card.income * profile.redFactor;
+                if (card.color === "green") return card.income * profile.greenFactor;
+                if (card.color === "purple") return card.income * profile.purpleFactor;
                 return card.income;
         }
     }
@@ -358,13 +398,16 @@ class CPU {
         const opponentMaxBuilt = Math.max(0, ...game.players
             .filter(p => p !== current)
             .map(p => p.builtLandmarkCount()));
-        if (name === LANDMARK_NAMES.STATION)       return builtCount < 2 ? 8 : 5;
-        if (name === LANDMARK_NAMES.SHOPPING_MALL)  return current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
-        if (name === LANDMARK_NAMES.HARBOR)         return current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
-        if (name === LANDMARK_NAMES.RADIO_TOWER)    return builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
-        if (name === LANDMARK_NAMES.AMUSEMENT_PARK) return current.landmarks[LANDMARK_NAMES.STATION] ? 5 : 2;
-        if (name === LANDMARK_NAMES.AIRPORT)        return builtCount >= 4 ? 6 : 1;
-        return 0;
+        const profile = this._playerCountProfile(game);
+        let urgency = 0;
+        if (name === LANDMARK_NAMES.STATION) urgency = builtCount < 2 ? 8 : 5;
+        else if (name === LANDMARK_NAMES.SHOPPING_MALL) urgency = current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
+        else if (name === LANDMARK_NAMES.HARBOR) urgency = current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
+        else if (name === LANDMARK_NAMES.RADIO_TOWER) urgency = builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
+        else if (name === LANDMARK_NAMES.AMUSEMENT_PARK) urgency = current.landmarks[LANDMARK_NAMES.STATION] ? 5 : 2;
+        else if (name === LANDMARK_NAMES.AIRPORT) urgency = builtCount >= 4 ? 6 : 1;
+        if (name === LANDMARK_NAMES.AIRPORT) return Math.round(urgency * profile.airportBias);
+        return Math.round(urgency * profile.landmarkBias);
     }
 
     _coinsTowardsNextLandmark(player) {
