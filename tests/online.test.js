@@ -37,10 +37,12 @@ function loadOnlineRuntime() {
         let prevCoins = null;
         let undoState = null;
         let cpuScheduleToken = 0;
+        let statsResetCount = 0;
         const CPU = class { constructor() {} };
         function render() {}
         function scheduleCPU() {}
         function resetFullLog() {}
+        function resetStatsRecorded() { statsResetCount++; }
         function restoreUndoSnapshot(state) { game = state.game; }
         function updateResumeButton() {}
         const io = () => ({ on() {}, emit() {}, disconnect() {} });
@@ -65,6 +67,7 @@ function loadOnlineRuntime() {
         this.getCpuPlayers = () => cpuPlayers;
         this.setEnabledCards = (s) => { enabledCards = s; };
         this.setEnabledLandmarks = (s) => { enabledLandmarks = s; };
+        this.getStatsResetCount = () => statsResetCount;
         this.applyAction = applyAction;
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this._saveActionLog = _saveActionLog;
@@ -214,6 +217,14 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     const cpuPlayers = rt.getCpuPlayers();
     assert.strictEqual(cpuPlayers[0], null);
     assert.ok(cpuPlayers[1] !== null);
+});
+
+runTest('initOnlineGame: 統計記録フラグをリセットする', () => {
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    const before = rt.getStatsResetCount();
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    assert.strictEqual(rt.getStatsResetCount(), before + 1);
 });
 
 runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () => {

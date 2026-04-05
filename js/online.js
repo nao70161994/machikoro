@@ -331,6 +331,9 @@ function joinRoom() {
 function initOnlineGame(playerNames, ps, playerOrder) {
     const count = playerNames.length;
     resetFullLog();
+    if (typeof resetStatsRecorded === "function") {
+        resetStatsRecorded();
+    }
     game = new GameManager(count);
     game.enabledLandmarks = new Set(enabledLandmarks.size > 0 ? enabledLandmarks : Player.landmarkNames());
     for (const card of CARDS) {

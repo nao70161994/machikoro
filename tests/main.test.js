@@ -295,6 +295,22 @@ runTest('appShell bindPwaInstallHandlers は beforeinstallprompt を購読する
     assert.ok(rt.__test.eventHandlers.beforeinstallprompt);
 });
 
+runTest('index.html は統計タブをオンラインタブの外に配置している', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const onlineStart = html.indexOf('<div id="tabContentOnline"');
+    const statsStart = html.indexOf('<div id="tabContentStats"');
+    const onlineStatus = html.indexOf('<div id="onlineStatus"');
+    const gameScreen = html.indexOf('<div id="gameScreen"');
+
+    assert.ok(onlineStart >= 0);
+    assert.ok(statsStart >= 0);
+    assert.ok(onlineStatus >= 0);
+    assert.ok(gameScreen >= 0);
+    assert.ok(onlineStart < onlineStatus);
+    assert.ok(onlineStatus < statsStart);
+    assert.ok(statsStart < gameScreen);
+});
+
 if (process.exitCode) {
     throw new Error('mainテストで失敗が発生しました');
 }
