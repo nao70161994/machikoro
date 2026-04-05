@@ -17,6 +17,13 @@ const GAME_PHASES = Object.freeze({
     BUILD:          "build",
 });
 
+function formatDiceOutcome(d1, d2, total) {
+    if (d1 > 0 && d2 > 0) {
+        return `${d1}+${d2}=${total}`;
+    }
+    return `${total}`;
+}
+
 class GameManager {
     constructor(playerCount) {
         this.players = [];
@@ -108,14 +115,20 @@ class GameManager {
 
     rerollDice(forceDice = null, tunaDice = null) {
         if (this.phase !== GAME_PHASES.REROLL_CONFIRM) return;
+        const prevDice1 = this.lastDice1;
+        const prevDice2 = this.lastDice2;
+        const prevResult = this.lastDiceResult;
         this.usedReroll = true;
         this.lastDiceResult = 0;
         this.lastDice1 = 0;
         this.lastDice2 = 0;
         this.log = [];
-        this.addLog(LOG_TYPES.DICE, "📡 電波塔で振り直します");
         this.phase = GAME_PHASES.ROLL;
         this.rollDice(forceDice, tunaDice);
+        this.addLog(
+            LOG_TYPES.DICE,
+            `📡 電波塔で振り直し: ${formatDiceOutcome(prevDice1, prevDice2, prevResult)} → ${formatDiceOutcome(this.lastDice1, this.lastDice2, this.lastDiceResult)}`
+        );
     }
 
     skipReroll() {

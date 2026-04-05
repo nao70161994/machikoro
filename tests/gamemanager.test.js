@@ -207,7 +207,8 @@ runTest('電波塔rerollDiceはlogをリセットしてphaseをrollに戻す', (
 
     // rerollDice内でlog=[]→addLogするのでログがリセットされ新エントリのみになる
     assert.ok(!game.log.includes(logBeforeReroll[0]));
-    assert.ok(game.log.some(e => e.message.startsWith('📡')));
+    assert.ok(game.log.some(e => e.message.includes('📡 電波塔で振り直し: 3 → 5')));
+    assert.ok(game.log.some(e => e.message.includes('🎲 5 が出ました')));
 });
 
 runTest('nextTurnでgame.logがリセットされ新ターンのエントリになる', () => {
