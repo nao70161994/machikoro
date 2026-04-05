@@ -6,10 +6,12 @@ const {
     loadRuntime,
     simulateGame,
     runSeries,
+    runDifficultyLadder,
     comparePresets,
     parseArgs,
     printSeries,
     printPresetComparison,
+    printDifficultyLadder,
 } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 runTest('simulateGame は CPU 同士の試合を最後まで進められる', () => {
@@ -48,14 +50,29 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.ok(Array.isArray(result.matchLog[0].finalState[0].topCards));
 });
 
+runTest('runDifficultyLadder は難易度差確認向けの対戦セットを返す', () => {
+    const result = runDifficultyLadder({
+        games: 2,
+        seed: 3,
+        maxSteps: 4000,
+    });
+
+    assert.strictEqual(result.length, 3);
+    assert.deepStrictEqual(result[0].players, ['normal', 'weak']);
+    assert.deepStrictEqual(result[1].players, ['strong', 'normal']);
+    assert.deepStrictEqual(result[2].players, ['expert', 'strong']);
+    assert.strictEqual(result[0].result.games, 2);
+});
+
 runTest('parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '12', '--seed', '5', '--max-steps', '9000', '--format', 'json', '--details', '--fast', '--expert-preset', 'rush', '--compare-presets', 'default,rush', 'expert', 'strong']);
+    const args = parseArgs(['--games', '12', '--seed', '5', '--max-steps', '9000', '--format', 'json', '--details', '--ladder', '--fast', '--expert-preset', 'rush', '--compare-presets', 'default,rush', 'expert', 'strong']);
 
     assert.strictEqual(args.games, 12);
     assert.strictEqual(args.seed, 5);
     assert.strictEqual(args.maxSteps, 9000);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.details, true);
+    assert.strictEqual(args.ladder, true);
     assert.strictEqual(args.fast, true);
     assert.strictEqual(args.expertPreset, 'rush');
     assert.deepStrictEqual(args.comparePresets, ['default', 'rush']);
@@ -228,6 +245,32 @@ runTest('printPresetComparison は text 形式で各 preset を出力する', ()
 
     assert.ok(lines.some(line => String(line).includes('expertPreset=default')));
     assert.ok(lines.some(line => String(line).includes('expertPreset=rush')));
+});
+
+runTest('printDifficultyLadder は各対戦セットを text で出力する', () => {
+    const lines = [];
+    const realLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+        printDifficultyLadder([
+            {
+                players: ['normal', 'weak'],
+                result: {
+                    games: 1,
+                    players: ['normal', 'weak'],
+                    wins: { normal: 1, weak: 0 },
+                    seatWins: [1, 0],
+                    averageTurns: 10,
+                    exhausted: 0,
+                    matchLog: [],
+                },
+            },
+        ], { format: 'text' });
+    } finally {
+        console.log = realLog;
+    }
+
+    assert.ok(lines.some(line => String(line).includes('players=normal,weak')));
 });
 
 if (process.exitCode) {

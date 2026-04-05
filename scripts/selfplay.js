@@ -286,6 +286,18 @@ function runSeries(options = {}) {
     };
 }
 
+function runDifficultyLadder(options = {}) {
+    const matchups = options.matchups || [
+        ['normal', 'weak'],
+        ['strong', 'normal'],
+        ['expert', 'strong'],
+    ];
+    return matchups.map(players => ({
+        players: players.slice(),
+        result: runSeries(Object.assign({}, options, { players })),
+    }));
+}
+
 function parseArgs(argv) {
     let games = 20;
     let seed = 1;
@@ -294,6 +306,7 @@ function parseArgs(argv) {
     let details = false;
     let expertPreset = 'default';
     let comparePresets = null;
+    let ladder = false;
     let fast = false;
     const players = [];
 
@@ -304,6 +317,7 @@ function parseArgs(argv) {
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--details') details = true;
+        else if (arg === '--ladder') ladder = true;
         else if (arg === '--fast') fast = true;
         else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
         else if (arg === '--compare-presets') comparePresets = (argv[++i] || 'default').split(',').filter(Boolean);
@@ -317,6 +331,7 @@ function parseArgs(argv) {
         format,
         details,
         fast,
+        ladder,
         expertPreset,
         comparePresets,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
@@ -370,9 +385,24 @@ function printPresetComparison(comparisons, options = {}) {
     }
 }
 
+function printDifficultyLadder(entries, options = {}) {
+    if (options.format === 'json') {
+        console.log(JSON.stringify(entries, null, 2));
+        return;
+    }
+    for (const entry of entries) {
+        printSeries(entry.result, Object.assign({}, options, {
+            expertPreset: entry.players.includes('expert') ? (options.expertPreset || 'default') : 'n/a',
+            details: false,
+        }));
+    }
+}
+
 if (require.main === module) {
     const options = parseArgs(process.argv.slice(2));
-    if (options.comparePresets && options.comparePresets.length > 0) {
+    if (options.ladder) {
+        printDifficultyLadder(runDifficultyLadder(options), options);
+    } else if (options.comparePresets && options.comparePresets.length > 0) {
         printPresetComparison(comparePresets(options), options);
     } else {
         printSeries(runSeries(options), options);
@@ -383,8 +413,10 @@ module.exports = {
     loadRuntime,
     simulateGame,
     runSeries,
+    runDifficultyLadder,
     comparePresets,
     parseArgs,
     printSeries,
     printPresetComparison,
+    printDifficultyLadder,
 };

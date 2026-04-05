@@ -2,7 +2,7 @@ const vm = require('vm');
 const { loadScripts } = require('./test-utils');
 
 function loadGameRuntime() {
-    const context = { console };
+    const context = { console, Math: Object.create(Math) };
     vm.createContext(context);
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js']);
     vm.runInContext(
@@ -13,7 +13,7 @@ function loadGameRuntime() {
 }
 
 function loadCPURuntime() {
-    const context = { console };
+    const context = { console, Math: Object.create(Math) };
     vm.createContext(context);
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/CPU.js']);
     vm.runInContext(
