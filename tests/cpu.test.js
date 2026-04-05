@@ -704,6 +704,37 @@ runTest('chooseITSave: expert は重要ランドマーク直前なら積立を�
     assert.strictEqual(cpu.chooseITSave(game), false);
 });
 
+runTest('chooseITSave: normal は終盤の空港レースでは積立しない', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    current.coins = 25;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+
+    assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
+runTest('chooseITSave: strong は積立過多なら空港だけ残っていても見送る', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    current.coins = 18;
+    current.itVentureCoins = 10;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+
+    assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
 runTest('chooseITSave: expert は先読み評価で積立可否を返す', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(3);

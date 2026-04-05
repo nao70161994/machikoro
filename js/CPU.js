@@ -594,16 +594,25 @@ class CPU {
         const current = game.currentPlayer();
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;
-        if (this.difficulty === "normal") return true;
 
-        const urgentLandmark = Player.landmarkNames()
+        const remainingLandmarks = Player.landmarkNames()
+            .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
+        const urgentLandmark = remainingLandmarks
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name])
             .map(name => ({
+                name,
                 shortfall: Player.landmarkCost(name) - current.coins,
                 urgency: this._landmarkUrgency(name, current, game),
             }))
             .filter(entry => entry.shortfall >= 0)
             .sort((a, b) => a.shortfall - b.shortfall || b.urgency - a.urgency)[0];
+        const closeToFinish = remainingLandmarks.length <= 2;
+        const airportOnly = remainingLandmarks.length === 1 && remainingLandmarks[0] === LANDMARK_NAMES.AIRPORT;
+        const nearLandmark = urgentLandmark && (urgentLandmark.shortfall <= 3 || (airportOnly && urgentLandmark.shortfall <= 6));
+        const overSaved = current.itVentureCoins >= 8;
+
+        if ((closeToFinish && nearLandmark) || (airportOnly && overSaved)) return false;
+        if (this.difficulty === "normal") return !closeToFinish;
 
         if (this.difficulty === "expert") {
             if (urgentLandmark && urgentLandmark.shortfall <= 1 && urgentLandmark.urgency >= 7) return false;
@@ -625,7 +634,7 @@ class CPU {
             return saveScore >= skipScore;
         }
 
-        return !urgentLandmark || urgentLandmark.shortfall > 0 || urgentLandmark.urgency < 7;
+        return (!urgentLandmark || urgentLandmark.shortfall > 0 || urgentLandmark.urgency < 7) && !closeToFinish;
     }
 
     // ===== カード評価 =====
