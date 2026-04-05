@@ -11,6 +11,7 @@ function parseArgs(argv) {
     let format = 'text';
     let emitPreset = false;
     let profiles = null;
+    let proposePreset = null;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -23,6 +24,7 @@ function parseArgs(argv) {
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--emit-preset') emitPreset = true;
         else if (arg === '--profiles') profiles = (argv[++i] || '').split(',').filter(Boolean);
+        else if (arg === '--propose-preset') proposePreset = argv[++i] || 'profileBlend';
         else players.push(arg);
     }
 
@@ -35,6 +37,7 @@ function parseArgs(argv) {
         format,
         emitPreset,
         profiles,
+        proposePreset,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -150,6 +153,47 @@ function tuneExpertProfiles(options = {}) {
     }));
 }
 
+function _diffFromBase(base, tuning) {
+    const diff = {};
+    for (const [key, value] of Object.entries(tuning)) {
+        if (base[key] !== value) diff[key] = value;
+    }
+    return diff;
+}
+
+function proposePresetFromProfiles(profileResults, options = {}) {
+    const runtime = loadRuntime();
+    const basePreset = options.basePreset || 'default';
+    const base = runtime.CPU._resolveExpertTuning(basePreset);
+    const contributions = {};
+
+    for (const entry of profileResults) {
+        const leader = entry.result.top[0];
+        if (!leader) continue;
+        const diff = _diffFromBase(base, leader.tuning);
+        for (const [key, value] of Object.entries(diff)) {
+            if (!contributions[key]) contributions[key] = [];
+            contributions[key].push(value);
+        }
+    }
+
+    const tuning = {};
+    for (const [key, values] of Object.entries(contributions)) {
+        const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+        tuning[key] = Number(average.toFixed(3));
+    }
+
+    return {
+        name: options.proposePreset || 'profileBlend',
+        basePreset,
+        tuning,
+        profiles: profileResults.map(entry => ({
+            profile: entry.profile,
+            leader: entry.result.top[0] ? entry.result.top[0].name : null,
+        })),
+    };
+}
+
 function formatPresetObject(name, tuning) {
     const entries = Object.entries(tuning)
         .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
@@ -176,12 +220,25 @@ function printTuningResults(result, options = {}) {
 
 function printProfileResults(results, options = {}) {
     if (options.format === 'json') {
-        console.log(JSON.stringify(results, null, 2));
+        const output = { results };
+        if (options.proposePreset) {
+            output.proposal = proposePresetFromProfiles(results, options);
+        }
+        console.log(JSON.stringify(output, null, 2));
         return;
     }
     for (const entry of results) {
         console.log(`[${entry.profile}]`);
         printTuningResults(entry.result, options);
+    }
+    if (options.proposePreset) {
+        const proposal = proposePresetFromProfiles(results, options);
+        console.log('[proposal]');
+        console.log(`basePreset=${proposal.basePreset} name=${proposal.name}`);
+        for (const profile of proposal.profiles) {
+            console.log(`${profile.profile}: ${profile.leader || 'none'}`);
+        }
+        console.log(formatPresetObject(proposal.name, proposal.tuning));
     }
 }
 
@@ -199,6 +256,7 @@ module.exports = {
     buildCandidateTunings,
     formatPresetObject,
     profilePlayers,
+    proposePresetFromProfiles,
     tuneExpert,
     tuneExpertProfiles,
 };

@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, formatPresetObject, profilePlayers, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, formatPresetObject, profilePlayers, proposePresetFromProfiles, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -16,7 +16,7 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -25,6 +25,7 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.emitPreset, true);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
+    assert.strictEqual(args.proposePreset, 'hybridRush');
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -77,6 +78,34 @@ runTest('tuneExpertProfiles は複数プロファイルの結果を返す', () =
     assert.strictEqual(results[1].profile, 'crowd');
     assert.strictEqual(results[0].result.players.length, 2);
     assert.strictEqual(results[1].result.players.length, 4);
+});
+
+runTest('proposePresetFromProfiles は各プロファイル首位候補の差分をまとめる', () => {
+    const proposal = proposePresetFromProfiles([
+        {
+            profile: 'duel',
+            result: {
+                top: [{ name: 'duelWinner', tuning: { coinWeight: 1.21, lateCoinWeight: 1.44, skipPenalty: 8 } }],
+            },
+        },
+        {
+            profile: 'crowd',
+            result: {
+                top: [{ name: 'crowdWinner', tuning: { coinWeight: 1.1, lateCoinWeight: 1.6, lateProgressBonus: 9.2 } }],
+            },
+        },
+    ], {
+        basePreset: 'default',
+        proposePreset: 'hybridDefault',
+    });
+
+    assert.strictEqual(proposal.name, 'hybridDefault');
+    assert.strictEqual(proposal.basePreset, 'default');
+    assert.strictEqual(proposal.profiles.length, 2);
+    assert.strictEqual(proposal.profiles[0].leader, 'duelWinner');
+    assert.strictEqual(proposal.tuning.coinWeight, 1.21);
+    assert.strictEqual(proposal.tuning.lateCoinWeight, 1.44);
+    assert.strictEqual(proposal.tuning.lateProgressBonus, 9.2);
 });
 
 runTest('formatPresetObject は CPU プリセット形式の文字列を返す', () => {

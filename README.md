@@ -83,10 +83,17 @@ npm run tune-expert -- --games 8 --base-preset default --top 5 expert strong str
 npm run tune-expert -- --games 8 --profiles duel,crowd --top 3
 ```
 
+人数別の上位候補から提案プリセットを生成:
+
+```bash
+npm run tune-expert -- --games 8 --profiles duel,crowd --top 1 --propose-preset hybridDefault
+```
+
 - 基準プリセットの近傍候補を自動生成して self-play で比較します。
 - `--format json` を付けると候補ごとの係数と勝率一覧を JSON で出力します。
 - `--emit-preset` を付けると、`CPU._expertPresets()` に貼り付けやすい JS オブジェクト断片も出力します。
 - `--profiles duel,crowd` を付けると 2人戦と多人数戦を分けて同じ候補集合を比較できます。
+- `--propose-preset <name>` を付けると、各プロファイルの首位候補から差分を合成した提案プリセットも出力します。
 
 ## プロジェクト構成
 
