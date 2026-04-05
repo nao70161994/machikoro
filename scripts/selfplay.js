@@ -155,7 +155,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
             return;
         case runtime.GAME_PHASES.BUILD:
             if (game.pendingIT) {
-                game.resolveIT(cpu.difficulty !== 'weak' && game.currentPlayer().coins >= 1);
+                game.resolveIT(cpu.chooseITSave(game));
                 return;
             }
             cpu.build(game, shopStock);

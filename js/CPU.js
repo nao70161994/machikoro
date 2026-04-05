@@ -288,6 +288,29 @@ class CPU {
         return best ? best.name : null;
     }
 
+    chooseITSave(game) {
+        const current = game.currentPlayer();
+        if (current.coins < 1) return false;
+        if (this.difficulty === "weak") return false;
+        if (this.difficulty === "normal") return true;
+
+        const urgentLandmark = Player.landmarkNames()
+            .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name])
+            .map(name => ({
+                shortfall: Player.landmarkCost(name) - current.coins,
+                urgency: this._landmarkUrgency(name, current, game),
+            }))
+            .filter(entry => entry.shortfall >= 0)
+            .sort((a, b) => a.shortfall - b.shortfall || b.urgency - a.urgency)[0];
+
+        if (this.difficulty === "expert") {
+            if (urgentLandmark && urgentLandmark.shortfall <= 1 && urgentLandmark.urgency >= 7) return false;
+            return game.players.length >= 3 || current.itVentureCoins >= 1 || current.coins >= 8;
+        }
+
+        return !urgentLandmark || urgentLandmark.shortfall > 0 || urgentLandmark.urgency < 7;
+    }
+
     // ===== カード評価 =====
 
     // ゲーム状況を踏まえたカードの期待収入スコア
@@ -620,9 +643,99 @@ class CPU {
             clone.builtThisTurn = false;
         }
         let score = this._evaluatePosition(clone, ci);
+        score += this._simulateLookahead(clone, stock, ci, game.players.length * 6) * 0.7;
         if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += 10;
+        if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 8;
         if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
         return score;
+    }
+
+    _createPlayoutRng(seed) {
+        let state = (seed >>> 0) || 1;
+        return () => {
+            state = (state * 1664525 + 1013904223) >>> 0;
+            return state / 0x100000000;
+        };
+    }
+
+    _simulateLookahead(game, shopStock, focusIndex, maxSteps) {
+        const cpus = game.players.map(() => new CPU('strong'));
+        const seed = game.turnCount + focusIndex * 97 + game.currentPlayer().coins * 13 + maxSteps;
+        const rng = this._createPlayoutRng(seed);
+        let safety = 0;
+        while (!game.checkWinner() && safety < maxSteps) {
+            const cpu = cpus[game.currentPlayerIndex];
+            this._runSimulationStep(game, cpu, shopStock, rng);
+            safety++;
+        }
+        if (game.checkWinner()) {
+            const winnerIndex = game.players.indexOf(game.checkWinner());
+            return winnerIndex === focusIndex ? 5000 : -3000;
+        }
+        return this._evaluatePosition(game, focusIndex);
+    }
+
+    _runSimulationStep(game, cpu, shopStock, rng) {
+        const die = () => Math.floor(rng() * 6) + 1;
+        const tunaDice = [die(), die()];
+        switch (game.phase) {
+            case GAME_PHASES.ROLL:
+                game.rollDice(die(), tunaDice);
+                return;
+            case GAME_PHASES.SELECT_DICE: {
+                const useTwo = cpu.chooseDiceCount(game);
+                game.selectDiceCount(useTwo, die(), die(), tunaDice);
+                return;
+            }
+            case GAME_PHASES.REROLL_CONFIRM:
+                if (cpu.chooseReroll(game)) game.rerollDice(die(), tunaDice);
+                else game.skipReroll();
+                return;
+            case GAME_PHASES.HARBOR_CHOICE:
+                game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
+                return;
+            case GAME_PHASES.PENDING:
+                if (game.pendingTV > 0) {
+                    game.resolveTV(cpu.chooseTVTarget(game));
+                    return;
+                }
+                if (game.pendingBusiness > 0) {
+                    const move = cpu.chooseBusinessMove(game);
+                    if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
+                    else { game.pendingBusiness = 0; game._checkPending(); }
+                    return;
+                }
+                if (game.pendingCleaning > 0) {
+                    const cardName = cpu.chooseCleaningTarget(game);
+                    if (cardName) game.resolveCleaning(cardName);
+                    else { game.pendingCleaning = 0; game._checkPending(); }
+                    return;
+                }
+                if (game.pendingMover > 0) {
+                    const move = cpu.chooseMoverMove(game);
+                    if (move) game.resolveMover(move.cardIndex, move.targetIndex);
+                    else { game.pendingMover = 0; game._checkPending(); }
+                    return;
+                }
+                if (game.pendingRenovation > 0) {
+                    const landmarkName = cpu.chooseRenovationTarget(game);
+                    if (landmarkName) game.resolveRenovation(landmarkName);
+                    else { game.pendingRenovation = 0; game._checkPending(); }
+                    return;
+                }
+                game.phase = GAME_PHASES.BUILD;
+                return;
+            case GAME_PHASES.BUILD:
+                if (game.pendingIT) {
+                    game.resolveIT(cpu.chooseITSave(game));
+                    return;
+                }
+                cpu.build(game, shopStock);
+                if (!game.pendingIT && game.phase === GAME_PHASES.BUILD) game.nextTurn();
+                return;
+            default:
+                return;
+        }
     }
 
     _shouldHoldForLandmark(current, game, bestCardScore, maxShortfall) {

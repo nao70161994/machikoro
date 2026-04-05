@@ -244,7 +244,7 @@ const CPU_PHASE_HANDLERS = [
         name: "resolveIT",
         run(cpu) {
             if (!game.pendingIT) return;
-            const doSave = cpu.difficulty !== "weak" && game.currentPlayer().coins >= 1;
+            const doSave = cpu.chooseITSave(game);
             cpuDo('resolveIT', { doSave }, () => game.resolveIT(doSave));
         },
     },

@@ -434,6 +434,31 @@ runTest('chooseMoverMove: 価値の低い休業中カードを優先して渡す
     assert.strictEqual(current.cards[move.cardIndex].name, '麦畑');
 });
 
+runTest('chooseITSave: expert は多人数戦で積立を優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.coins = 3;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+
+    assert.strictEqual(cpu.chooseITSave(game), true);
+});
+
+runTest('chooseITSave: expert は重要ランドマーク直前なら積立を見送る', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 9;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [
+        createCardByName('パン屋'),
+        createCardByName('コンビニ'),
+        createCardByName('カフェ')
+    ];
+
+    assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
 runTest('_shouldHoldForLandmark: 重要ランドマーク直前なら貯金を優先する', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(2);
