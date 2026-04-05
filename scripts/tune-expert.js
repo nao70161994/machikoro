@@ -12,6 +12,7 @@ function parseArgs(argv) {
     let emitPreset = false;
     let profiles = null;
     let proposePreset = null;
+    let evaluateProposal = false;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -25,6 +26,7 @@ function parseArgs(argv) {
         else if (arg === '--emit-preset') emitPreset = true;
         else if (arg === '--profiles') profiles = (argv[++i] || '').split(',').filter(Boolean);
         else if (arg === '--propose-preset') proposePreset = argv[++i] || 'profileBlend';
+        else if (arg === '--evaluate-proposal') evaluateProposal = true;
         else players.push(arg);
     }
 
@@ -38,6 +40,7 @@ function parseArgs(argv) {
         emitPreset,
         profiles,
         proposePreset,
+        evaluateProposal,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -194,6 +197,43 @@ function proposePresetFromProfiles(profileResults, options = {}) {
     };
 }
 
+function evaluateProposalAgainstBase(proposal, options = {}) {
+    const profiles = options.profiles || ['duel', 'crowd'];
+    return profiles.map((profile, index) => {
+        const players = profilePlayers(profile);
+        const seed = (options.seed || 1) + index * 2000;
+        const baseResult = runSeries({
+            games: options.games,
+            seed,
+            maxSteps: options.maxSteps,
+            players,
+            expertPreset: proposal.basePreset,
+        });
+        const proposalResult = runSeries({
+            games: options.games,
+            seed,
+            maxSteps: options.maxSteps,
+            players,
+            expertPreset: proposal.basePreset,
+            expertTuning: proposal.tuning,
+        });
+        const baseWins = baseResult.wins.expert || 0;
+        const proposalWins = proposalResult.wins.expert || 0;
+        return {
+            profile,
+            players,
+            basePreset: proposal.basePreset,
+            proposalName: proposal.name,
+            baseWins,
+            proposalWins,
+            winDelta: proposalWins - baseWins,
+            baseAverageTurns: baseResult.averageTurns,
+            proposalAverageTurns: proposalResult.averageTurns,
+            exhaustedDelta: proposalResult.exhausted - baseResult.exhausted,
+        };
+    });
+}
+
 function formatPresetObject(name, tuning) {
     const entries = Object.entries(tuning)
         .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
@@ -223,6 +263,9 @@ function printProfileResults(results, options = {}) {
         const output = { results };
         if (options.proposePreset) {
             output.proposal = proposePresetFromProfiles(results, options);
+            if (options.evaluateProposal) {
+                output.evaluation = evaluateProposalAgainstBase(output.proposal, options);
+            }
         }
         console.log(JSON.stringify(output, null, 2));
         return;
@@ -239,6 +282,14 @@ function printProfileResults(results, options = {}) {
             console.log(`${profile.profile}: ${profile.leader || 'none'}`);
         }
         console.log(formatPresetObject(proposal.name, proposal.tuning));
+        if (options.evaluateProposal) {
+            console.log('[proposal-evaluation]');
+            for (const entry of evaluateProposalAgainstBase(proposal, options)) {
+                console.log(
+                    `${entry.profile} proposalWins=${entry.proposalWins}/${options.games || 8} baseWins=${entry.baseWins}/${options.games || 8} winDelta=${entry.winDelta} turns=${entry.proposalAverageTurns.toFixed(1)} vs ${entry.baseAverageTurns.toFixed(1)} exhaustedDelta=${entry.exhaustedDelta}`
+                );
+            }
+        }
     }
 }
 
@@ -257,6 +308,7 @@ module.exports = {
     formatPresetObject,
     profilePlayers,
     proposePresetFromProfiles,
+    evaluateProposalAgainstBase,
     tuneExpert,
     tuneExpertProfiles,
 };

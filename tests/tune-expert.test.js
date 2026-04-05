@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, formatPresetObject, profilePlayers, proposePresetFromProfiles, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePresetFromProfiles, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -16,7 +16,7 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', '--profiles', 'duel,crowd', '--propose-preset', 'hybridRush', '--evaluate-proposal', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -26,6 +26,7 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.strictEqual(args.emitPreset, true);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
     assert.strictEqual(args.proposePreset, 'hybridRush');
+    assert.strictEqual(args.evaluateProposal, true);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -106,6 +107,28 @@ runTest('proposePresetFromProfiles は各プロファイル首位候補の差分
     assert.strictEqual(proposal.tuning.coinWeight, 1.21);
     assert.strictEqual(proposal.tuning.lateCoinWeight, 1.44);
     assert.strictEqual(proposal.tuning.lateProgressBonus, 9.2);
+});
+
+runTest('evaluateProposalAgainstBase は基準との差分成績を返す', () => {
+    const evaluation = evaluateProposalAgainstBase({
+        name: 'hybridDefault',
+        basePreset: 'default',
+        tuning: {
+            lookaheadWeight: 0.77,
+            lateProgressBonus: 9.2,
+        },
+    }, {
+        games: 2,
+        seed: 1,
+        maxSteps: 4000,
+        profiles: ['duel', 'crowd'],
+    });
+
+    assert.strictEqual(evaluation.length, 2);
+    assert.strictEqual(evaluation[0].profile, 'duel');
+    assert.strictEqual(evaluation[1].profile, 'crowd');
+    assert.ok(typeof evaluation[0].winDelta === 'number');
+    assert.ok(typeof evaluation[1].proposalAverageTurns === 'number');
 });
 
 runTest('formatPresetObject は CPU プリセット形式の文字列を返す', () => {
