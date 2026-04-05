@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { simulateGame, runSeries, comparePresets, parseArgs } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
+const { loadRuntime, simulateGame, runSeries, comparePresets, parseArgs } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
     try {
@@ -78,6 +78,19 @@ runTest('comparePresets は複数プリセットの集計を返す', () => {
     assert.strictEqual(comparisons[0].preset, 'default');
     assert.strictEqual(comparisons[1].preset, 'rush');
     assert.strictEqual(comparisons[0].result.games, 2);
+});
+
+runTest('simulateGame は expert 指定なしでも default を既定プリセットとして使える', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'strong'],
+        seed: 7,
+        maxSteps: 4000,
+    });
+
+    assert.strictEqual(result.expertPreset, 'default');
+    const runtime = loadRuntime();
+    const cpu = new runtime.CPU('expert');
+    assert.strictEqual(cpu.expertPreset, 'default');
 });
 
 if (process.exitCode) {

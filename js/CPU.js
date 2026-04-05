@@ -30,6 +30,10 @@ class CPU {
                 lookaheadWeight: 0.7,
                 lateGameLookaheadStepsPerPlayer: 6,
             },
+            refined: {
+                lateCoinWeight: 1.44,
+                skipPenalty: 10,
+            },
             rush: {
                 coinWeight: 1.25,
                 turnWeight: 3.1,

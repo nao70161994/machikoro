@@ -315,7 +315,7 @@ function parseArgs(argv) {
 }
 
 function comparePresets(options) {
-    const presets = options.comparePresets || ['default', 'rush', 'economy'];
+    const presets = options.comparePresets || ['default', 'refined', 'rush', 'economy'];
     return presets.map(preset => ({
         preset,
         result: runSeries(Object.assign({}, options, { expertPreset: preset, comparePresets: null })),

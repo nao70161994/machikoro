@@ -69,6 +69,7 @@ npm run selfplay -- --games 20 --compare-presets default,rush,economy expert str
 - `--compare-presets a,b,c` で複数プリセットを同条件で連続比較します。
 - `--format json` を付けると集計と試合明細を JSON で出力します。
 - `--details` を付けると各試合の勝者、ターン数、最終盤面サマリを表示します。
+- 通常の `expert` CPU は `default` プリセットを使います。`refined` は探索で出た候補として比較用に残しています。
 
 `expert` の近傍探索:
 

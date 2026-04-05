@@ -27,6 +27,11 @@ runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
+runTest('parseArgs は basePreset 未指定時に default を使う', () => {
+    const args = parseArgs([]);
+    assert.strictEqual(args.basePreset, 'default');
+});
+
 runTest('buildCandidateTunings は基準プリセットを含む複数候補を生成する', () => {
     const runtime = loadRuntime();
     const candidates = buildCandidateTunings(runtime, 'default');
