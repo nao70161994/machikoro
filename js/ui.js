@@ -268,10 +268,12 @@ function _render() {
     if (winner) {
         const winnerIdx = game.players.indexOf(winner);
         const isCPUWinner = cpuPlayers[winnerIdx] !== null;
-        if (winner.name === lastWinnerName) winStreak++;
-        else { winStreak = 1; lastWinnerName = winner.name; }
-        localStorage.setItem('winStreak', winStreak);
-        localStorage.setItem('lastWinnerName', lastWinnerName);
+        if (!winSoundPlayed) {
+            if (winner.name === lastWinnerName) winStreak++;
+            else { winStreak = 1; lastWinnerName = winner.name; }
+            localStorage.setItem('winStreak', winStreak);
+            localStorage.setItem('lastWinnerName', lastWinnerName);
+        }
         const scoreRows = game.players.slice().sort((a, b) => b.coins - a.coins).map(p => {
             const isW = p === winner;
             return `<div class="winner-stats-row ${isW ? 'highlight' : ''}"><span>${isW ? '🏆 ' : ''}${escapeHtml(p.name)}</span><span>🪙 ${p.coins}</span></div>`;

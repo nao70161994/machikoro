@@ -134,6 +134,44 @@ runTest('render は勝利時に recordGameStats を一度だけ呼ぶ', () => {
     assert.ok(elements.status.innerHTML.includes('Aliceの勝利'));
 });
 
+runTest('render は同じ勝利画面の再描画で連勝数を二重加算しない', () => {
+    const { context } = loadUiRuntime();
+    context.lastWinnerName = 'Alice';
+    context.winStreak = 2;
+    context.game = {
+        turnCount: 8,
+        currentPlayerIndex: 0,
+        phase: 'build',
+        log: [],
+        players: [
+            {
+                name: 'Alice',
+                coins: 10,
+                cards: [],
+                landmarks: { 駅: true, ショッピングモール: true, 遊園地: true, 電波塔: true, 港: false, 空港: false },
+                isDormant() { return false; },
+            },
+            {
+                name: 'Bob',
+                coins: 3,
+                cards: [],
+                landmarks: { 駅: false, ショッピングモール: false, 遊園地: false, 電波塔: false, 港: false, 空港: false },
+                isDormant() { return false; },
+            },
+        ],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+        checkWinner() { return this.players[0]; },
+    };
+
+    context.render();
+    const first = context.localStorage.getItem('winStreak');
+    context.render();
+    const second = context.localStorage.getItem('winStreak');
+
+    assert.strictEqual(first, '3');
+    assert.strictEqual(second, '3');
+});
+
 if (process.exitCode) {
     throw new Error('uiテストで失敗が発生しました');
 }
