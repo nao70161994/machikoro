@@ -36,6 +36,7 @@ Client modules:
 - `js/audio.js`: sound helpers.
 - `js/confetti.js`: confetti animation helpers.
 - `js/stats.js`: gameplay stats helpers/UI support.
+- `js/appShell.js`: crash UI, offline notice, PWA install banner, shell-level view initialization.
 
 Tests:
 
@@ -63,7 +64,7 @@ Critical invariants:
 - `GameManager` is the source of truth for gameplay rules.
 - Online play is deterministic: the host generates authoritative actions and all clients replay them.
 - The server does not own full game state; it validates actions and relays/rebuilds room state from session metadata and action logs.
-- Long-running online rooms may compact old actions into a server-side `stateSnapshot`; reconnect logic must handle both snapshot restore and tail action replay.
+- Long-running online rooms may compact old actions into a server-side `stateSnapshot`; the client may also compact `onlineActionLog` into `onlineStateSnapshot`. Reconnect logic must handle both snapshot restore and tail action replay.
 - Reconnect and post-restart room recovery are first-class features, not edge cases.
 
 Important gameplay/runtime details from the current implementation:

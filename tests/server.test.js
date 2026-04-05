@@ -1,5 +1,7 @@
 const assert = require('assert');
 const {
+    APP_ERROR_EVENT,
+    emitAppError,
     resolveBuildHash,
     loadGameRuntime,
     sanitizeName,
@@ -121,6 +123,12 @@ runTest('sanitizeName がHTMLタグ・特殊文字を除去し20文字に制限�
     assert.strictEqual(sanitizeName('  Alice  '), 'Alice');
     assert.strictEqual(sanitizeName(null), '');
     assert.strictEqual(sanitizeName('<>&"\'`'), '');
+});
+
+runTest('emitAppError は appError イベントでメッセージを送る', () => {
+    const emitted = [];
+    emitAppError({ emit(name, payload) { emitted.push({ name, payload }); } }, 'bad');
+    assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: 'bad' }]);
 });
 
 runTest('resolveBuildHash は環境変数 BUILD_HASH を優先する', () => {

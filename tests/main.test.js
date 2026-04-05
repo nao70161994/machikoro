@@ -56,11 +56,16 @@ function loadMainRuntime() {
     const sentActions = [];
     const timeouts = [];
     const eventHandlers = {};
+    const createdButtons = {
+        '#onlineCreate button': makeElement(),
+        '#onlineJoin button': makeElement(),
+    };
 
     const context = {
         console,
         Math,
         elements,
+        eventHandlers,
         localStorageData,
         timeouts,
         sentActions,
@@ -70,10 +75,7 @@ function loadMainRuntime() {
                 return elements[id];
             },
             querySelector(selector) {
-                if (selector === '#onlineCreate button' || selector === '#onlineJoin button') {
-                    return makeElement();
-                }
-                return null;
+                return createdButtons[selector] || null;
             },
             querySelectorAll() { return []; },
             createElement() { return makeElement(); },
@@ -103,11 +105,8 @@ function loadMainRuntime() {
         renderOnlinePlayerSettings() {},
         updateResumeButton() {},
         loadSettings() {},
-        drawCitySkyline() {},
-        updateOnlineTabState() {},
         syncTutorialControls() {},
         render() {},
-        showCrashScreen() {},
         switchTab() {},
         scheduleCPU() {},
         saveSettings() {},
@@ -171,11 +170,14 @@ function loadMainRuntime() {
     context.global = context;
     vm.createContext(context);
 
-    const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
-    vm.runInContext(source, context, { filename: 'js/main.js' });
+    const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
+    vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
+    const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
         this.__test = {
             elements,
+            eventHandlers,
             localStorageData,
             sentActions,
             flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
@@ -266,6 +268,20 @@ runTest('main showCrashScreen はクラッシュ表示と保存データ復帰�
     assert.ok(rt.__test.elements.crashMessage.textContent.includes('boom'));
     assert.strictEqual(rt.__test.elements.crashResumeBtn.style.display, 'block');
     assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
+});
+
+runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {
+    const rt = loadMainRuntime();
+    rt.navigator.onLine = false;
+    rt.updateOnlineTabState();
+
+    assert.strictEqual(rt.__test.elements.offlineNotice.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.tabOnline.style.opacity, '0.4');
+});
+
+runTest('appShell bindPwaInstallHandlers は beforeinstallprompt を購読する', () => {
+    const rt = loadMainRuntime();
+    assert.ok(rt.__test.eventHandlers.beforeinstallprompt);
 });
 
 if (process.exitCode) {

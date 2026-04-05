@@ -20,7 +20,7 @@ node server.js        # ローカル起動（http://localhost:3000）
 **フロントエンド**: バニラJS（フレームワークなし）。`index.html` に全UI。スクリプトはロード順に依存している：
 
 ```
-Card.js → Player.js → GameManager.js → CPU.js → confetti.js → audio.js → online.js → ui.js → storage.js → main.js
+Card.js → Player.js → GameManager.js → CPU.js → confetti.js → audio.js → online.js → ui.js → storage.js → stats.js → appShell.js → main.js
 ```
 
 | ファイル | 役割 |
@@ -32,6 +32,7 @@ Card.js → Player.js → GameManager.js → CPU.js → confetti.js → audio.js
 | `js/online.js` | Socket.IO・オンラインセッション・`initSocket` / `applyAction` / `sendAction` / `initOnlineGame`・サーバー再起動復元ロジック |
 | `js/ui.js` | ログ描画・分類・pending モーダル・カードフィルター・ターンアナウンサー・buildMenu レンダリング・`CARD_SETS` / `enabledCards` / `enabledLandmarks` |
 | `js/storage.js` | ローカルゲーム保存・復元（`saveGameState` / `loadGameState`）・`reconnectOnline()` |
+| `js/appShell.js` | クラッシュ画面・オフライン通知・PWA インストール導線・`initMainView()` |
 | `js/main.js` | ゲーム進行・CPU制御・イベントハンドラ・`CPU_PHASE_HANDLERS`・タイトル画面 |
 
 **バックエンド**: `server.js`（Node.js + Express + Socket.IO）。ゲームロジックは**クライアント側で動く**。サーバーはアクションの中継とルーム管理のみ。
@@ -98,7 +99,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 #### サーバー再起動後の復元フロー
 
 - 全クライアントがゲーム開始時の `gameStartPayload` を `localStorage('onlineGameStart')` に保存
-- `sendAction` / `socket.on('gameAction')` のたびに `localStorage('onlineActionLog')` へ追記
+- `sendAction` / `socket.on('gameAction')` のたびに `localStorage('onlineActionLog')` へ追記し、長くなりすぎた場合は `onlineStateSnapshot` に圧縮する
 - `rejoinRoom` でルームが見つからない場合はサーバーが `ROOM_NOT_FOUND` エラーを返す
 - **ホスト**: `ROOM_NOT_FOUND` を受け取ると `recreateRoom` イベントを送信 → サーバーがアクションログからルームを再構築 → `rejoinData` で復帰
 - **非ホスト**: `ROOM_NOT_FOUND` を受け取ると3秒ごと最大8回 `rejoinRoom` をリトライ（ホストの復元完了を待つ）
@@ -129,6 +130,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 | `onlineSession` | オンライン再接続用情報（roomId・playerIndex・playerName・isRoomHost・reconnectToken） |
 | `onlineGameStart` | オンラインゲーム開始時の `gameStartPayload`（サーバー再起動復元用） |
 | `onlineActionLog` | オンラインゲームの全アクションログ（サーバー再起動復元用） |
+| `onlineStateSnapshot` | クライアント側で古い actionLog を圧縮したスナップショット |
 | `selectedCount` / `playerSettings` / `cpuSpeed` | タイトル画面の設定 |
 | `winStreak` / `lastWinnerName` | 連勝記録 |
 | `tutorialEnabled` / `tutorialLevel` | チュートリアル設定 |

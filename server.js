@@ -256,7 +256,7 @@ io.on('connection', (socket) => {
     });
 
     // サーバー再起動後にホストがルームを復元する
-    socket.on('recreateRoom', ({ roomId, gameStartPayload, actionLog, playerIndex, playerName }) => {
+    socket.on('recreateRoom', ({ roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName }) => {
         if (!roomId || !gameStartPayload) { emitAppError(socket, '復元データが不完全です'); return; }
         if (rooms[roomId]) {
             // ルームが既に存在する場合は通常の再接続へ誘導
@@ -278,7 +278,7 @@ io.on('connection', (socket) => {
             enabledLandmarks: gameStartPayload.enabledLandmarks || [],
             cpuSpeed: gameStartPayload.cpuSpeed || 1500,
             gameStartPayload,
-            stateSnapshot: null,
+            stateSnapshot: stateSnapshot || null,
             actionLog: actionLog || [],
             lastUndoState: null,
             lastTouchedAt: Date.now(),

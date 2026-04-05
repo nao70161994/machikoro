@@ -50,6 +50,7 @@ let isReconnectingOnline = false;
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 const APP_ERROR_EVENT = 'appError';
+const ONLINE_ACTION_LOG_LIMIT = 200;
 
 function resetOnlineState() {
     if (socket) { socket.disconnect(); socket = null; }
@@ -67,11 +68,59 @@ function resetOnlineState() {
 
 function _saveActionLog(action, data) {
     try {
-        const raw = localStorage.getItem('onlineActionLog');
-        const log = raw ? JSON.parse(raw) : [];
+        let log = _readOnlineActionLog();
+        if (log.length >= ONLINE_ACTION_LOG_LIMIT && game) {
+            const snapshot = buildOnlineSnapshot();
+            if (snapshot) {
+                localStorage.setItem('onlineStateSnapshot', JSON.stringify(snapshot));
+                log = [];
+            }
+        }
         log.push({ action, data });
         localStorage.setItem('onlineActionLog', JSON.stringify(log));
     } catch(e) {}
+}
+
+function _readOnlineActionLog() {
+    try {
+        const raw = localStorage.getItem('onlineActionLog');
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function buildOnlineSnapshot() {
+    if (!game) return null;
+    return {
+        players: game.players.map(p => ({
+            name: p.name,
+            coins: p.coins,
+            cards: p.cards.map(c => c.name),
+            dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
+            landmarks: Object.assign({}, p.landmarks),
+            itVentureCoins: p.itVentureCoins,
+            hasYakusho: p.hasYakusho,
+        })),
+        currentPlayerIndex: game.currentPlayerIndex,
+        phase: game.phase,
+        log: [...game.log],
+        lastDiceResult: game.lastDiceResult,
+        lastDice1: game.lastDice1,
+        lastDice2: game.lastDice2,
+        builtThisTurn: game.builtThisTurn,
+        pendingTV: game.pendingTV,
+        pendingBusiness: game.pendingBusiness,
+        pendingCleaning: game.pendingCleaning,
+        pendingMover: game.pendingMover,
+        pendingRenovation: game.pendingRenovation,
+        pendingIT: game.pendingIT,
+        usedReroll: game.usedReroll,
+        pendingTunaDice: game.pendingTunaDice,
+        turnCount: game.turnCount,
+        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
+        shopStock: Object.assign({}, SHOP_STOCK),
+    };
 }
 
 function saveOnlineSession() {
@@ -126,6 +175,7 @@ function initSocket() {
         // ゲーム開始データとアクションログをlocalStorageに保存（サーバー再起動後の復元用）
         try {
             localStorage.setItem('onlineGameStart', JSON.stringify({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions }));
+            localStorage.removeItem('onlineStateSnapshot');
             localStorage.setItem('onlineActionLog', JSON.stringify([]));
         } catch(e) {}
         saveOnlineSession();
@@ -221,26 +271,28 @@ function initSocket() {
             '⏳ サーバーに接続中です。初回は起動に30秒ほどかかる場合があります...';
     });
 
-    socket.on(APP_ERROR_EVENT, (msg) => {
-        if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
-            if (isRoomHost) {
-                _tryRestoreRoom();
-            } else {
-                _scheduleRejoinRetry();
-            }
-            return;
+    socket.on(APP_ERROR_EVENT, handleAppError);
+}
+
+function handleAppError(msg) {
+    if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
+        if (isRoomHost) {
+            _tryRestoreRoom();
+        } else {
+            _scheduleRejoinRetry();
         }
-        if (isReconnectingOnline) {
-            isReconnectingOnline = false;
-            localStorage.removeItem('onlineSession');
-            updateResumeButton();
-            if (socket) {
-                socket.disconnect();
-                socket = null;
-            }
+        return;
+    }
+    if (isReconnectingOnline) {
+        isReconnectingOnline = false;
+        localStorage.removeItem('onlineSession');
+        updateResumeButton();
+        if (socket) {
+            socket.disconnect();
+            socket = null;
         }
-        document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
-    });
+    }
+    document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
 }
 
 function showCreateRoom() {
@@ -385,16 +437,19 @@ function _tryRestoreRoom() {
     try {
         const raw = localStorage.getItem('onlineGameStart');
         const logRaw = localStorage.getItem('onlineActionLog');
+        const snapshotRaw = localStorage.getItem('onlineStateSnapshot');
         if (!raw) {
             document.getElementById("onlineStatus").textContent = '❌ 復元データが見つかりません';
             return;
         }
         const gameStartPayload = JSON.parse(raw);
+        const stateSnapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
         const actionLog = logRaw ? JSON.parse(logRaw) : [];
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,
             gameStartPayload,
+            stateSnapshot,
             actionLog,
             playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,

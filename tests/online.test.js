@@ -4,7 +4,20 @@ const path = require('path');
 const vm = require('vm');
 
 function loadOnlineRuntime() {
-    const context = { console };
+    const storage = new Map();
+    const context = {
+        console,
+        localStorage: {
+            getItem(key) { return storage.has(key) ? storage.get(key) : null; },
+            setItem(key, value) { storage.set(key, String(value)); },
+            removeItem(key) { storage.delete(key); },
+        },
+        document: {
+            getElementById() {
+                return { style: {}, textContent: '', innerHTML: '' };
+            },
+        },
+    };
     vm.createContext(context);
 
     // ゲームロジック本体をロード
@@ -30,7 +43,7 @@ function loadOnlineRuntime() {
         function resetFullLog() {}
         function restoreUndoSnapshot(state) { game = state.game; }
         function updateResumeButton() {}
-        const io = () => ({});
+        const io = () => ({ on() {}, emit() {}, disconnect() {} });
         const alert = () => {};
     `, context);
 
@@ -53,8 +66,19 @@ function loadOnlineRuntime() {
         this.setEnabledCards = (s) => { enabledCards = s; };
         this.setEnabledLandmarks = (s) => { enabledLandmarks = s; };
         this.applyAction = applyAction;
+        this.APP_ERROR_EVENT = APP_ERROR_EVENT;
+        this._saveActionLog = _saveActionLog;
+        this._readOnlineActionLog = _readOnlineActionLog;
+        this.buildOnlineSnapshot = buildOnlineSnapshot;
+        this.handleAppError = handleAppError;
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
+        this.setOnlineState = (v) => {
+            if (typeof v.socket !== 'undefined') socket = v.socket;
+            if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
+            if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
+        };
+        this.getOnlineState = () => ({ socket, isReconnectingOnline, isRoomHost });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
 
@@ -242,6 +266,39 @@ runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () =
     assert.strictEqual(g.players[0].dormantCards.length, 1);
     assert.strictEqual(rt.getShopStock()['麦畑'], 4);
     assert.strictEqual(g.turnCount, 4);
+});
+
+runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    const game = rt.getGame();
+    game.currentPlayer().coins = 9;
+    for (let i = 0; i < 200; i++) {
+        rt._saveActionLog('nextTurn', {});
+    }
+    rt._saveActionLog('buildLandmark', { name: '駅' });
+    const log = rt._readOnlineActionLog();
+    const snapshot = JSON.parse(rt.localStorage.getItem('onlineStateSnapshot'));
+    assert.strictEqual(log.length, 1);
+    assert.strictEqual(log[0].action, 'buildLandmark');
+    assert.strictEqual(snapshot.players[0].coins, 9);
+});
+
+runTest('handleAppError は再接続中にオンラインセッションを破棄して切断する', () => {
+    const rt = loadOnlineRuntime();
+    let disconnected = false;
+    rt.localStorage.setItem('onlineSession', '{"roomId":"ROOM01"}');
+    rt.setOnlineState({
+        socket: { disconnect() { disconnected = true; } },
+        isReconnectingOnline: true,
+        isRoomHost: false,
+    });
+    rt.handleAppError('再接続に失敗');
+    assert.strictEqual(disconnected, true);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
 });
 
 if (process.exitCode) {
