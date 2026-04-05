@@ -66,14 +66,26 @@ function profilePlayers(name) {
 
 function buildCandidateTunings(runtime, basePreset = 'default') {
     const base = runtime.CPU._resolveExpertTuning(basePreset);
-    const candidates = [
-        { name: `${basePreset}:base`, tuning: Object.assign({}, base) },
-    ];
+    const candidates = [];
+    const seen = new Set();
+    const addCandidate = (name, tuning) => {
+        const key = JSON.stringify(tuning);
+        if (seen.has(key)) return;
+        seen.add(key);
+        candidates.push({ name, tuning });
+    };
+
+    addCandidate(`${basePreset}:base`, Object.assign({}, base));
     const variations = [
         ['coinWeight', [0.9, 1.1]],
+        ['turnWeight', [0.92, 1.08]],
         ['landmarkWeight', [0.9, 1.1]],
+        ['builtLandmarkWeight', [0.9, 1.1]],
         ['lateCoinWeight', [0.9, 1.15]],
         ['lateProgressBonus', [0.85, 1.15]],
+        ['landmarkActionBonus', [0.9, 1.12]],
+        ['lateLandmarkActionBonus', [0.9, 1.15]],
+        ['lowValueSpamPenalty', [0.85, 1.15]],
         ['skipPenalty', [0.75, 1.25]],
         ['lookaheadWeight', [0.9, 1.1]],
     ];
@@ -84,29 +96,40 @@ function buildCandidateTunings(runtime, basePreset = 'default') {
             const value = base[field];
             if (typeof value !== 'number') continue;
             tuning[field] = Number((value * multiplier).toFixed(3));
-            candidates.push({
-                name: `${basePreset}:${field}x${multiplier}`,
-                tuning,
-            });
+            addCandidate(`${basePreset}:${field}x${multiplier}`, tuning);
         }
     }
 
-    candidates.push({
-        name: `${basePreset}:landmarkRush`,
-        tuning: Object.assign({}, base, {
+    addCandidate(`${basePreset}:landmarkRush`, Object.assign({}, base, {
             landmarkWeight: Number((base.landmarkWeight * 1.12).toFixed(3)),
             lateProgressBonus: Number((base.lateProgressBonus * 1.2).toFixed(3)),
             skipPenalty: Number((base.skipPenalty * 1.2).toFixed(3)),
-        }),
-    });
-    candidates.push({
-        name: `${basePreset}:cashTempo`,
-        tuning: Object.assign({}, base, {
+            landmarkActionBonus: Number((base.landmarkActionBonus * 1.08).toFixed(3)),
+        }));
+    addCandidate(`${basePreset}:cashTempo`, Object.assign({}, base, {
             coinWeight: Number((base.coinWeight * 1.08).toFixed(3)),
             turnWeight: Number((base.turnWeight * 1.06).toFixed(3)),
             lateCoinWeight: Number((base.lateCoinWeight * 1.12).toFixed(3)),
-        }),
-    });
+            lookaheadWeight: Number((base.lookaheadWeight * 0.96).toFixed(3)),
+        }));
+    addCandidate(`${basePreset}:antiSpamCloser`, Object.assign({}, base, {
+            lowValueSpamPenalty: Number((base.lowValueSpamPenalty * 1.2).toFixed(3)),
+            landmarkActionBonus: Number((base.landmarkActionBonus * 1.08).toFixed(3)),
+            lateLandmarkActionBonus: Number((base.lateLandmarkActionBonus * 1.12).toFixed(3)),
+            skipPenalty: Number((base.skipPenalty * 1.1).toFixed(3)),
+        }));
+    addCandidate(`${basePreset}:tempoCloser`, Object.assign({}, base, {
+            turnWeight: Number((base.turnWeight * 1.08).toFixed(3)),
+            builtLandmarkWeight: Number((base.builtLandmarkWeight * 1.1).toFixed(3)),
+            lookaheadWeight: Number((base.lookaheadWeight * 1.08).toFixed(3)),
+            lateProgressBonus: Number((base.lateProgressBonus * 1.12).toFixed(3)),
+        }));
+    addCandidate(`${basePreset}:patientCloser`, Object.assign({}, base, {
+            lateCoinWeight: Number((base.lateCoinWeight * 0.9).toFixed(3)),
+            skipPenalty: Number((base.skipPenalty * 1.15).toFixed(3)),
+            landmarkActionBonus: Number((base.landmarkActionBonus * 1.12).toFixed(3)),
+            lateLandmarkActionBonus: Number((base.lateLandmarkActionBonus * 1.15).toFixed(3)),
+        }));
 
     return candidates;
 }
