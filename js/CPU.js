@@ -334,6 +334,20 @@ class CPU {
         return this._scoreExpertChoiceState(clone, focusIndex);
     }
 
+    _crowdLeaderBonus(game, targetIndex, weight = 1) {
+        if (!game || game.players.length < 4 || targetIndex < 0) return 0;
+        const ci = game.currentPlayerIndex;
+        let maxThreat = -Infinity;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === ci) continue;
+            maxThreat = Math.max(maxThreat, this._estimateOpponentThreat(game.players[i], game));
+        }
+        const target = game.players[targetIndex];
+        if (!target || maxThreat <= 0) return 0;
+        const threat = this._estimateOpponentThreat(target, game);
+        return (threat / maxThreat) * weight;
+    }
+
     chooseDiceCount(game) {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
@@ -425,7 +439,8 @@ class CPU {
                 if (i === ci) continue;
                 const target = game.players[i];
                 if (!target || target.coins <= 0) continue;
-                const score = this._scoreExpertPendingChoice(game, clone => clone.resolveTV(i));
+                const score = this._scoreExpertPendingChoice(game, clone => clone.resolveTV(i)) +
+                    this._crowdLeaderBonus(game, i, 12);
                 if (score > bestScore) {
                     bestScore = score;
                     targetIndex = i;
@@ -472,7 +487,7 @@ class CPU {
                     if (this.difficulty === "expert") {
                         score = this._scoreExpertPendingChoice(game, clone =>
                             clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
-                        );
+                        ) + this._crowdLeaderBonus(game, i, 10);
                     } else {
                         const myLoss = this._ownedCardValue(myCard, game, current);
                         const gain = this._receivedCardValue(theirCard, game, current);

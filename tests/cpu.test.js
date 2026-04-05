@@ -345,6 +345,20 @@ runTest('_estimateOpponentThreat は進行した相手ほど高く見積もる',
     assert.ok(cpu._estimateOpponentThreat(leader, game) > cpu._estimateOpponentThreat(follower, game));
 });
 
+runTest('_crowdLeaderBonus は多人数戦のトップ相手に高い補正を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const leader = game.players[1];
+    const follower = game.players[2];
+
+    leader.coins = 8;
+    leader.landmarks[LANDMARK_NAMES.STATION] = true;
+    leader.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    follower.coins = 3;
+
+    assert.ok(cpu._crowdLeaderBonus(game, 1, 12) > cpu._crowdLeaderBonus(game, 2, 12));
+});
+
 runTest('_evaluatePosition は到達可能ランドマークと安定収入を高く評価する', () => {
     const cpu = new CPU("expert");
     const richGame = new GameManager(2);
@@ -605,6 +619,27 @@ runTest('chooseBusinessMove: expert は盤面評価で交換先を選ぶ', () =>
     assert.ok(move);
     assert.strictEqual(current.cards[move.myCard].name, '麦畑');
     assert.strictEqual(opponent.cards[move.theirCard].name, '鉱山');
+});
+
+runTest('chooseBusinessMove: expert は多人数戦でリーダー妨害を優先できる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const leader = game.players[1];
+    const other = game.players[2];
+
+    current.cards = [createCardByName('麦畑')];
+    current.dormantCards = [];
+    leader.coins = 9;
+    leader.landmarks[LANDMARK_NAMES.STATION] = true;
+    leader.cards = [createCardByName('鉱山')];
+    leader.dormantCards = [];
+    other.cards = [createCardByName('森林')];
+    other.dormantCards = [];
+
+    const move = cpu.chooseBusinessMove(game);
+    assert.ok(move);
+    assert.strictEqual(move.targetIndex, 1);
 });
 
 runTest('chooseCleaningTarget: 自分より相手の被害が大きいカード名を選ぶ', () => {
