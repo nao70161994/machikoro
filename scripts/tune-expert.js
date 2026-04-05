@@ -14,6 +14,8 @@ function parseArgs(argv) {
     let proposePreset = null;
     let evaluateProposal = false;
     let proposalDepth = 1;
+    let finalistGames = 0;
+    let finalistCount = 0;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -29,6 +31,8 @@ function parseArgs(argv) {
         else if (arg === '--propose-preset') proposePreset = argv[++i] || 'profileBlend';
         else if (arg === '--evaluate-proposal') evaluateProposal = true;
         else if (arg === '--proposal-depth') proposalDepth = parseInt(argv[++i] || '1', 10);
+        else if (arg === '--finalist-games') finalistGames = parseInt(argv[++i] || '0', 10);
+        else if (arg === '--finalist-count') finalistCount = parseInt(argv[++i] || '0', 10);
         else players.push(arg);
     }
 
@@ -44,6 +48,8 @@ function parseArgs(argv) {
         proposePreset,
         evaluateProposal,
         proposalDepth,
+        finalistGames,
+        finalistCount,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -316,6 +322,31 @@ function rankProposalsFromProfiles(profileResults, options = {}) {
     );
 }
 
+function runFinalistPlayoff(rankings, options = {}) {
+    const finalistCount = Math.max(0, options.finalistCount || 0);
+    const finalistGames = Math.max(0, options.finalistGames || 0);
+    if (finalistCount <= 0 || finalistGames <= 0) return [];
+    const finalists = rankings.slice(0, finalistCount);
+    return finalists.map((entry, index) => {
+        const evaluation = evaluateProposalAgainstBase(entry.proposal, Object.assign({}, options, {
+            games: finalistGames,
+            seed: (options.seed || 1) + 5000 + index * 500,
+        }));
+        const totalWinDelta = evaluation.reduce((sum, item) => sum + item.winDelta, 0);
+        const totalTurnDelta = evaluation.reduce((sum, item) => sum + (item.proposalAverageTurns - item.baseAverageTurns), 0);
+        return {
+            proposal: entry.proposal,
+            evaluation,
+            totalWinDelta,
+            totalTurnDelta,
+        };
+    }).sort((a, b) =>
+        b.totalWinDelta - a.totalWinDelta ||
+        a.totalTurnDelta - b.totalTurnDelta ||
+        a.proposal.name.localeCompare(b.proposal.name)
+    );
+}
+
 function formatPresetObject(name, tuning) {
     const entries = Object.entries(tuning)
         .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
@@ -349,6 +380,9 @@ function printProfileResults(results, options = {}) {
                 output.evaluation = evaluateProposalAgainstBase(output.proposal, options);
                 if ((options.proposalDepth || 1) > 1) {
                     output.proposalRankings = rankProposalsFromProfiles(results, options);
+                    if ((options.finalistGames || 0) > 0 && (options.finalistCount || 0) > 0) {
+                        output.finalists = runFinalistPlayoff(output.proposalRankings, options);
+                    }
                 }
             }
         }
@@ -376,10 +410,19 @@ function printProfileResults(results, options = {}) {
             }
             if ((options.proposalDepth || 1) > 1) {
                 console.log('[proposal-ranking]');
-                for (const ranked of rankProposalsFromProfiles(results, options)) {
+                const rankings = rankProposalsFromProfiles(results, options);
+                for (const ranked of rankings) {
                     console.log(
                         `${ranked.proposal.name} totalWinDelta=${ranked.totalWinDelta} totalTurnDelta=${ranked.totalTurnDelta.toFixed(1)} leaders=${ranked.proposal.profiles.map(entry => `${entry.profile}:${entry.leader}`).join(',')}`
                     );
+                }
+                if ((options.finalistGames || 0) > 0 && (options.finalistCount || 0) > 0) {
+                    console.log('[proposal-finalists]');
+                    for (const finalist of runFinalistPlayoff(rankings, options)) {
+                        console.log(
+                            `${finalist.proposal.name} totalWinDelta=${finalist.totalWinDelta} totalTurnDelta=${finalist.totalTurnDelta.toFixed(1)} games=${options.finalistGames}`
+                        );
+                    }
                 }
             }
         }
@@ -405,6 +448,7 @@ module.exports = {
     proposePresetFromCombo,
     evaluateProposalAgainstBase,
     rankProposalsFromProfiles,
+    runFinalistPlayoff,
     tuneExpert,
     tuneExpertProfiles,
 };
