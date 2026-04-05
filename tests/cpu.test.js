@@ -196,6 +196,18 @@ runTest('expert tuning は人数別設定で自動切替される', () => {
     assert.strictEqual(cpu.expertTuning.lookaheadWeight, 0.42);
 });
 
+runTest('expert は既定で人数別 profile tuning を持つ', () => {
+    const cpu = new CPU("expert");
+    const duel = new GameManager(2);
+    const crowd = new GameManager(4);
+
+    cpu._syncExpertTuningForGame(duel);
+    assert.strictEqual(cpu.expertTuning.lowValueSpamPenalty, 5.1);
+
+    cpu._syncExpertTuningForGame(crowd);
+    assert.strictEqual(cpu.expertTuning.landmarkActionBonus, 21.6);
+});
+
 // ===== chooseReroll =====
 
 runTest('chooseReroll: 現在スコアが低い場合にリロールを選択する（strong）', () => {

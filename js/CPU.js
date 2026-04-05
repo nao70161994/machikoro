@@ -3,7 +3,11 @@ class CPU {
         this.difficulty = difficulty;
         this.expertPreset = options.expertPreset || "default";
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
-        this.expertProfileTunings = Object.assign({}, options.expertProfileTunings || {});
+        this.expertProfileTunings = Object.assign(
+            {},
+            difficulty === "expert" ? CPU._defaultExpertProfileTunings() : {},
+            options.expertProfileTunings || {}
+        );
         this.baseExpertTuning = Object.assign(
             {},
             CPU._resolveExpertTuning(this.expertPreset),
@@ -91,6 +95,17 @@ class CPU {
     static _resolveExpertTuning(presetName = "default") {
         const presets = CPU._expertPresets();
         return Object.assign({}, presets.default, presets[presetName] || {});
+    }
+
+    static _defaultExpertProfileTunings() {
+        return {
+            duel: {
+                lowValueSpamPenalty: 5.1,
+            },
+            crowd: {
+                landmarkActionBonus: 21.6,
+            },
+        };
     }
 
     takeTurn(game, shopStock) {

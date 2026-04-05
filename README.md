@@ -129,6 +129,7 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 
 - `--proposal-depth N` を付けると、各プロファイルの上位 `N` 件を組み合わせた提案候補をまとめてランキングします。
 - `--finalist-count N --finalist-games M` を付けると、ランキング上位 `N` 候補だけを `M` 試合で再評価します。
 - `--emit-winners` を付けると、`finalist` 再評価で勝ち越した候補だけを `CPU._expertPresets()` に貼り付けやすい形で出力します。
+- 現在の既定 `expert` は、小サンプル self-play の人数別首位候補に合わせて `duel` で `lowValueSpamPenalty=5.1`、`crowd` で `landmarkActionBonus=21.6` を自動適用します。
 
 ## プロジェクト構成
 
