@@ -78,6 +78,7 @@ npm run tune-expert -- --games 8 --base-preset default --top 5 expert strong str
 
 - 基準プリセットの近傍候補を自動生成して self-play で比較します。
 - `--format json` を付けると候補ごとの係数と勝率一覧を JSON で出力します。
+- `--emit-preset` を付けると、`CPU._expertPresets()` に貼り付けやすい JS オブジェクト断片も出力します。
 
 ## プロジェクト構成
 

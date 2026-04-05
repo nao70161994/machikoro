@@ -9,6 +9,7 @@ function parseArgs(argv) {
     let basePreset = 'default';
     let top = 5;
     let format = 'text';
+    let emitPreset = false;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -19,6 +20,7 @@ function parseArgs(argv) {
         else if (arg === '--base-preset') basePreset = argv[++i] || 'default';
         else if (arg === '--top') top = parseInt(argv[++i] || '5', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
+        else if (arg === '--emit-preset') emitPreset = true;
         else players.push(arg);
     }
 
@@ -29,6 +31,7 @@ function parseArgs(argv) {
         basePreset,
         top,
         format,
+        emitPreset,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };
 }
@@ -125,6 +128,13 @@ function tuneExpert(options = {}) {
     };
 }
 
+function formatPresetObject(name, tuning) {
+    const entries = Object.entries(tuning)
+        .map(([key, value]) => `    ${key}: ${typeof value === 'number' ? value : JSON.stringify(value)},`)
+        .join('\n');
+    return `${name}: {\n${entries}\n},`;
+}
+
 function printTuningResults(result, options = {}) {
     if (options.format === 'json') {
         console.log(JSON.stringify(result, null, 2));
@@ -135,6 +145,10 @@ function printTuningResults(result, options = {}) {
         console.log(
             `${entry.name} winRate=${(entry.winRate * 100).toFixed(1)}% expertWins=${entry.expertWins}/${entry.games} averageTurns=${entry.averageTurns.toFixed(1)} exhausted=${entry.exhausted}`
         );
+        if (options.emitPreset) {
+            const presetName = entry.name.replace(/[^a-zA-Z0-9]+/g, '_');
+            console.log(formatPresetObject(presetName, entry.tuning));
+        }
     }
 }
 
@@ -146,5 +160,6 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     buildCandidateTunings,
+    formatPresetObject,
     tuneExpert,
 };

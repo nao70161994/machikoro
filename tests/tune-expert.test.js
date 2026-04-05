@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, tuneExpert } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, formatPresetObject, tuneExpert } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -16,13 +16,14 @@ function runTest(name, fn) {
 }
 
 runTest('parseArgs は tune-expert CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', 'expert', 'strong']);
+    const args = parseArgs(['--games', '6', '--seed', '9', '--max-steps', '7000', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--emit-preset', 'expert', 'strong']);
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.basePreset, 'rush');
     assert.strictEqual(args.top, 3);
     assert.strictEqual(args.format, 'json');
+    assert.strictEqual(args.emitPreset, true);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
 });
 
@@ -48,6 +49,16 @@ runTest('tuneExpert は候補を勝率順に返す', () => {
     assert.strictEqual(result.top.length, 2);
     assert.ok(result.top[0].winRate >= result.top[1].winRate);
     assert.ok(typeof result.top[0].tuning.coinWeight === 'number');
+});
+
+runTest('formatPresetObject は CPU プリセット形式の文字列を返す', () => {
+    const output = formatPresetObject('testPreset', {
+        coinWeight: 1.2,
+        lookaheadWeight: 0.8,
+    });
+    assert.ok(output.includes('testPreset: {'));
+    assert.ok(output.includes('coinWeight: 1.2'));
+    assert.ok(output.includes('lookaheadWeight: 0.8'));
 });
 
 if (process.exitCode) {
