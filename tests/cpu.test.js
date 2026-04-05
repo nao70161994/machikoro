@@ -328,6 +328,23 @@ runTest('_estimateRedPressure は相手の赤カード圧を見積もる', () =>
     assert.ok(pressure >= 5);
 });
 
+runTest('_estimateOpponentThreat は進行した相手ほど高く見積もる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(3);
+    const leader = game.players[1];
+    const follower = game.players[2];
+
+    leader.coins = 8;
+    leader.landmarks[LANDMARK_NAMES.STATION] = true;
+    leader.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    leader.cards.push(createCardByName('コンビニ'));
+    leader.dormantCards = [];
+
+    follower.coins = 3;
+
+    assert.ok(cpu._estimateOpponentThreat(leader, game) > cpu._estimateOpponentThreat(follower, game));
+});
+
 runTest('_evaluatePosition は到達可能ランドマークと安定収入を高く評価する', () => {
     const cpu = new CPU("expert");
     const richGame = new GameManager(2);
@@ -343,6 +360,19 @@ runTest('_evaluatePosition は到達可能ランドマークと安定収入を�
     poor.dormantCards = [];
 
     assert.ok(cpu._evaluatePosition(richGame, 0) > cpu._evaluatePosition(poorGame, 0));
+});
+
+runTest('_evaluatePosition は危険なトップ相手がいる盤面を低く評価する', () => {
+    const cpu = new CPU("expert");
+    const safeGame = new GameManager(3);
+    const dangerGame = new GameManager(3);
+
+    dangerGame.players[1].coins = 8;
+    dangerGame.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    dangerGame.players[1].landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    dangerGame.players[1].landmarks[LANDMARK_NAMES.HARBOR] = true;
+
+    assert.ok(cpu._evaluatePosition(safeGame, 0) > cpu._evaluatePosition(dangerGame, 0));
 });
 
 // ===== _landmarkUrgency =====

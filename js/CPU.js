@@ -27,6 +27,7 @@ class CPU {
                 landmarkReachWeight: 6,
                 stableIncomeWeight: 1.4,
                 redPressureWeight: 1.1,
+                leaderThreatWeight: 1.3,
                 lateCoinWeight: 1.6,
                 finalCoinWeight: 2.2,
                 lateProgressBonus: 8,
@@ -53,6 +54,7 @@ class CPU {
                 landmarkReachWeight: 7,
                 stableIncomeWeight: 1.1,
                 redPressureWeight: 1.2,
+                leaderThreatWeight: 1.45,
                 lateCoinWeight: 2.0,
                 finalCoinWeight: 2.8,
                 lateProgressBonus: 10,
@@ -75,6 +77,7 @@ class CPU {
                 landmarkReachWeight: 5,
                 stableIncomeWeight: 1.7,
                 redPressureWeight: 0.8,
+                leaderThreatWeight: 1.1,
                 lateCoinWeight: 1.4,
                 finalCoinWeight: 2.0,
                 lateProgressBonus: 6,
@@ -104,6 +107,7 @@ class CPU {
             },
             crowd: {
                 landmarkActionBonus: 21.6,
+                leaderThreatWeight: 1.6,
             },
         };
     }
@@ -946,6 +950,18 @@ class CPU {
         return pressure;
     }
 
+    _estimateOpponentThreat(opponent, game) {
+        const enabledLandmarks = [...game.enabledLandmarks];
+        const progress = enabledLandmarks.filter(name => opponent.landmarks[name]).length;
+        const turnValue = this._estimatePlayerTurnValue(game, game.players.indexOf(opponent));
+        const reachable = this._countReachableLandmarks(opponent, enabledLandmarks);
+        return opponent.coins * 0.4 +
+            turnValue * 1.8 +
+            progress * 9 +
+            opponent.builtLandmarkCount() * 5 +
+            reachable * 6;
+    }
+
     _evaluatePosition(game, playerIndex) {
         const player = game.players[playerIndex];
         const tuning = this.expertTuning;
@@ -971,13 +987,15 @@ class CPU {
             score -= (lowValueSpam - tuning.lowValueSpamThreshold) * tuning.lowValueSpamPenalty;
         }
         if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
+        let maxOpponentThreat = 0;
         for (let i = 0; i < game.players.length; i++) {
             if (i === playerIndex) continue;
             const opponent = game.players[i];
-            const opponentTurnValue = this._estimatePlayerTurnValue(game, i);
-            const opponentProgress = enabledLandmarks.filter(name => opponent.landmarks[name]).length;
-            score -= opponent.coins * 0.4 + opponentTurnValue * 1.8 + opponentProgress * 9 + opponent.builtLandmarkCount() * 5;
+            const threat = this._estimateOpponentThreat(opponent, game);
+            maxOpponentThreat = Math.max(maxOpponentThreat, threat);
+            score -= threat;
         }
+        score -= maxOpponentThreat * tuning.leaderThreatWeight;
         return score;
     }
 
