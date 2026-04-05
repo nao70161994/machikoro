@@ -166,6 +166,17 @@ runTest('chooseDiceCount: 1個振りが有利な場合falseを返す（strong）
     assert.strictEqual(typeof result, 'boolean');
 });
 
+runTest('chooseDiceCount: expert は先読み評価で選択を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('チーズ工場'), createCardByName('牧場'), createCardByName('牧場')];
+    current.dormantCards = [];
+
+    assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean');
+});
+
 // ===== chooseReroll =====
 
 runTest('chooseReroll: 現在スコアが低い場合にリロールを選択する（strong）', () => {
@@ -215,6 +226,36 @@ runTest('chooseReroll: 現在スコアが高い場合はリロールしない（
     const result = cpu.chooseReroll(game);
     // 現在スコア=15（3鉱山×5）、期待値は低いのでfalseになるはず
     assert.strictEqual(result, false);
+});
+
+runTest('chooseReroll: expert は先読み評価でリロール可否を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.cards = [createCardByName('パン屋'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+    game.lastDice1 = 1;
+    game.lastDice2 = 0;
+    game.lastDiceResult = 1;
+
+    assert.strictEqual(typeof cpu.chooseReroll(game), 'boolean');
+});
+
+runTest('chooseHarbor: expert は先読み評価で港ボーナス可否を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.cards = [createCardByName('サンマ漁船'), createCardByName('マグロ漁船')];
+    current.dormantCards = [];
+    game.phase = runtime.GAME_PHASES.HARBOR_CHOICE;
+    game.lastDice1 = 4;
+    game.lastDice2 = 6;
+    game.lastDiceResult = 10;
+    game.pendingTunaDice = [4, 6];
+
+    assert.strictEqual(typeof cpu.chooseHarbor(game), 'boolean');
 });
 
 runTest('_countReachableLandmarks は今の所持金で建てられる残りランドマーク数を返す', () => {
@@ -513,6 +554,18 @@ runTest('chooseITSave: expert は重要ランドマーク直前なら積立を�
     ];
 
     assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
+runTest('chooseITSave: expert は先読み評価で積立可否を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.coins = 6;
+    current.itVentureCoins = 1;
+    current.cards = [createCardByName('ITベンチャー')];
+    current.dormantCards = [];
+
+    assert.strictEqual(typeof cpu.chooseITSave(game), 'boolean');
 });
 
 runTest('_shouldHoldForLandmark: 重要ランドマーク直前なら貯金を優先する', () => {

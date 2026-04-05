@@ -1,7 +1,7 @@
 const assert = require('assert');
 const path = require('path');
 
-const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, runFinalistPlayoff, selectWinningFinalists, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
+const { parseArgs, buildCandidateTunings, enumerateProfileLeaderCombos, evaluateProposalAgainstBase, formatPresetObject, profilePlayers, proposePerProfilePresets, proposePresetFromCombo, proposePresetFromProfiles, rankProposalsFromProfiles, runFinalistPlayoff, selectWinningFinalists, tuneExpert, tuneExpertProfiles } = require(path.join(__dirname, '..', 'scripts', 'tune-expert.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 function runTest(name, fn) {
@@ -111,6 +111,31 @@ runTest('proposePresetFromProfiles は各プロファイル首位候補の差分
     assert.strictEqual(proposal.tuning.coinWeight, 1.21);
     assert.strictEqual(proposal.tuning.lateCoinWeight, 1.44);
     assert.strictEqual(proposal.tuning.lateProgressBonus, 9.2);
+});
+
+runTest('proposePerProfilePresets は人数別の専用提案を返す', () => {
+    const proposals = proposePerProfilePresets([
+        {
+            profile: 'duel',
+            result: {
+                top: [{ name: 'duelWinner', tuning: { lookaheadWeight: 0.77 } }],
+            },
+        },
+        {
+            profile: 'crowd',
+            result: {
+                top: [{ name: 'crowdWinner', tuning: { lateProgressBonus: 9.2 } }],
+            },
+        },
+    ], {
+        basePreset: 'default',
+        proposePreset: 'expertProfile',
+    });
+
+    assert.strictEqual(proposals.length, 2);
+    assert.strictEqual(proposals[0].profile, 'duel');
+    assert.ok(proposals[0].proposal.name.startsWith('expertProfile_duel'));
+    assert.strictEqual(proposals[1].proposal.tuning.lateProgressBonus, 9.2);
 });
 
 runTest('enumerateProfileLeaderCombos は上位候補の組み合わせを列挙する', () => {

@@ -224,8 +224,82 @@ class CPU {
         return totalWeight > 0 ? totalScore / totalWeight : 0;
     }
 
+    _diceOutcomeWeights(useTwo) {
+        if (!useTwo) {
+            return [
+                { weight: 1, dice1: 1, dice2: 0, total: 1 },
+                { weight: 1, dice1: 2, dice2: 0, total: 2 },
+                { weight: 1, dice1: 3, dice2: 0, total: 3 },
+                { weight: 1, dice1: 4, dice2: 0, total: 4 },
+                { weight: 1, dice1: 5, dice2: 0, total: 5 },
+                { weight: 1, dice1: 6, dice2: 0, total: 6 },
+            ];
+        }
+        return [
+            { weight: 1, dice1: 1, dice2: 1, total: 2 },
+            { weight: 2, dice1: 1, dice2: 2, total: 3 },
+            { weight: 3, dice1: 1, dice2: 3, total: 4 },
+            { weight: 4, dice1: 1, dice2: 4, total: 5 },
+            { weight: 5, dice1: 1, dice2: 5, total: 6 },
+            { weight: 6, dice1: 1, dice2: 6, total: 7 },
+            { weight: 5, dice1: 2, dice2: 6, total: 8 },
+            { weight: 4, dice1: 3, dice2: 6, total: 9 },
+            { weight: 3, dice1: 4, dice2: 6, total: 10 },
+            { weight: 2, dice1: 5, dice2: 6, total: 11 },
+            { weight: 1, dice1: 6, dice2: 6, total: 12 },
+        ];
+    }
+
+    _simulationShopStock() {
+        const stock = {};
+        for (const card of CARDS) stock[card.name] = 6;
+        return stock;
+    }
+
+    _scoreExpertChoiceState(game, focusIndex) {
+        const tuning = this.expertTuning;
+        let score = this._evaluatePosition(game, focusIndex);
+        if (!game.checkWinner()) {
+            score += this._simulateLookahead(
+                game,
+                this._simulationShopStock(),
+                focusIndex,
+                Math.max(2, game.players.length * 2)
+            ) * Math.min(0.35, tuning.lookaheadWeight * 0.5);
+        }
+        return score;
+    }
+
+    _expectedExpertChoiceValue(game, focusIndex, outcomes, applyOutcome) {
+        let totalWeight = 0;
+        let totalScore = 0;
+        for (const outcome of outcomes) {
+            const clone = this._cloneGame(game);
+            applyOutcome(clone, outcome);
+            totalWeight += outcome.weight;
+            totalScore += this._scoreExpertChoiceState(clone, focusIndex) * outcome.weight;
+        }
+        return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+    }
+
     chooseDiceCount(game) {
         if (this.difficulty === "weak") return Math.random() < 0.5;
+        if (this.difficulty === "expert") {
+            const focusIndex = game.currentPlayerIndex;
+            const oneScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                this._diceOutcomeWeights(false),
+                (clone, outcome) => clone.selectDiceCount(false, outcome.dice1, null, [outcome.dice1, outcome.dice1])
+            );
+            const twoScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                this._diceOutcomeWeights(true),
+                (clone, outcome) => clone.selectDiceCount(true, outcome.dice1, outcome.dice2, [outcome.dice1, outcome.dice2])
+            );
+            return twoScore >= oneScore;
+        }
         const oneScore = this._expectedDiceScore(game, false);
         const twoScore = this._expectedDiceScore(game, true);
         if (this.difficulty === "normal") {
@@ -237,6 +311,23 @@ class CPU {
     chooseReroll(game) {
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;
+        if (this.difficulty === "expert") {
+            const focusIndex = game.currentPlayerIndex;
+            const usingTwoDice = game.lastDice2 > 0;
+            const keepScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                [{ weight: 1, dice1: game.lastDice1 || game.lastDiceResult, dice2: game.lastDice2 || 0 }],
+                (clone) => clone.skipReroll()
+            );
+            const rerollScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                this._diceOutcomeWeights(usingTwoDice),
+                (clone, outcome) => clone.rerollDice(outcome.total, [outcome.dice1, outcome.dice2 || outcome.dice1])
+            );
+            return rerollScore > keepScore;
+        }
         const currentScore = this._estimateRollScore(game, dice);
         const usingTwoDice = game.lastDice2 > 0;
         const rerollScore = this._expectedDiceScore(game, usingTwoDice);
@@ -246,6 +337,23 @@ class CPU {
 
     chooseHarbor(game) {
         if (this.difficulty === "weak") return Math.random() < 0.5;
+        if (this.difficulty === "expert") {
+            const focusIndex = game.currentPlayerIndex;
+            const outcomes = [{ weight: 1, tunaDice: game.pendingTunaDice || [game.lastDice1 || 1, game.lastDice2 || 1] }];
+            const keepScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                outcomes,
+                (clone, outcome) => clone.resolveHarbor(false, outcome.tunaDice)
+            );
+            const bonusScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                outcomes,
+                (clone, outcome) => clone.resolveHarbor(true, outcome.tunaDice)
+            );
+            return bonusScore >= keepScore;
+        }
         const keepScore = this._estimateRollScore(game, game.lastDiceResult);
         const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
         if (this.difficulty === "normal") return bonusScore > keepScore + 0.5;
@@ -391,7 +499,22 @@ class CPU {
 
         if (this.difficulty === "expert") {
             if (urgentLandmark && urgentLandmark.shortfall <= 1 && urgentLandmark.urgency >= 7) return false;
-            return game.players.length >= 3 || current.itVentureCoins >= 1 || current.coins >= 8;
+            const focusIndex = game.currentPlayerIndex;
+            const skipScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                [{ weight: 1 }],
+                clone => clone.resolveIT(false)
+            );
+            const saveScore = this._expectedExpertChoiceValue(
+                game,
+                focusIndex,
+                [{ weight: 1 }],
+                clone => clone.resolveIT(true)
+            );
+            const baselineSave = game.players.length >= 3 || current.itVentureCoins >= 1 || current.coins >= 8;
+            if (baselineSave && saveScore >= skipScore - 5) return true;
+            return saveScore >= skipScore;
         }
 
         return !urgentLandmark || urgentLandmark.shortfall > 0 || urgentLandmark.urgency < 7;

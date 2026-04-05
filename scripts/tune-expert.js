@@ -232,6 +232,23 @@ function proposePresetFromProfiles(profileResults, options = {}) {
     };
 }
 
+function proposePerProfilePresets(profileResults, options = {}) {
+    return profileResults.map((entry, index) => {
+        const leader = entry.result.top[0];
+        const baseName = options.proposePreset || 'profileBlend';
+        return {
+            profile: entry.profile,
+            proposal: proposePresetFromCombo(
+                [{ profile: entry.profile, leader }],
+                {
+                    basePreset: options.basePreset,
+                    proposePreset: `${baseName}_${entry.profile}_${index + 1}`,
+                }
+            ),
+        };
+    }).filter(entry => entry.proposal && entry.proposal.profiles[0].leader);
+}
+
 function enumerateProfileLeaderCombos(profileResults, depth = 1) {
     const limit = Math.max(1, depth || 1);
     const lists = profileResults.map(entry => ({
@@ -489,6 +506,7 @@ module.exports = {
     profilePlayers,
     enumerateProfileLeaderCombos,
     proposePresetFromProfiles,
+    proposePerProfilePresets,
     proposePresetFromCombo,
     evaluateProposalAgainstBase,
     rankProposalsFromProfiles,
