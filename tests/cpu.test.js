@@ -321,6 +321,23 @@ runTest('sortAffordable: ダイス確率を加味したスコア順にソート�
     }
 });
 
+runTest('build: builtThisTurn 済みなら追加建設を試みない', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    current.coins = 20;
+    const beforeCards = current.cards.length;
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    cpu.build(game, stock);
+
+    assert.strictEqual(current.cards.length, beforeCards);
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }

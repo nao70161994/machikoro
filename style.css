@@ -1197,7 +1197,8 @@ button:not(:disabled):active {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow-y: auto;
 }
 
 .pending-modal-inner {
@@ -1206,9 +1207,12 @@ button:not(:disabled):active {
     padding: 22px 20px 18px;
     width: 100%;
     max-width: 440px;
+    max-height: calc(100dvh - 24px);
     border: 2px solid rgba(233,69,96,0.55);
     box-shadow: 0 0 48px rgba(233,69,96,0.18), 0 12px 40px rgba(0,0,0,0.8);
     animation: modalSlideIn 0.22s cubic-bezier(0.22,1,0.36,1) both;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .pending-box {
@@ -1225,6 +1229,7 @@ button:not(:disabled):active {
     font-weight: 700;
     text-align: center;
     letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
 }
 
 .pending-box button,
@@ -1241,6 +1246,8 @@ button:not(:disabled):active {
     color: #fffffe;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .pending-box button:last-child {
@@ -1282,6 +1289,8 @@ button:not(:disabled):active {
     color: rgba(255,255,255,0.75) !important;
     margin-bottom: 0 !important;
     transition: background 0.12s, border-color 0.12s, color 0.12s !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
 }
 
 .bc-chip.selected {

@@ -248,6 +248,7 @@ class CPU {
     // ===== 購入戦略 =====
 
     build(game, shopStock) {
+        if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return;
         if (this.difficulty === "weak") {
             this.buildWeak(game, shopStock);
         } else if (this.difficulty === "normal") {
@@ -258,6 +259,7 @@ class CPU {
     }
 
     _buyCard(card, game, shopStock) {
+        if (!game || game.builtThisTurn) return;
         if (game.buildCard(card)) {
             shopStock[card.name]--;
             if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof sendAction === 'function') {
@@ -267,6 +269,7 @@ class CPU {
     }
 
     _buyLandmark(name, game) {
+        if (!game || game.builtThisTurn) return;
         if (game.buildLandmark(name)) {
             if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof sendAction === 'function') {
                 sendAction('buildLandmark', { name });
