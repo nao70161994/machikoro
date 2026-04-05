@@ -16,6 +16,9 @@ class CPU {
                 turnWeight: 3.2,
                 landmarkWeight: 14,
                 builtLandmarkWeight: 8,
+                landmarkReachWeight: 6,
+                stableIncomeWeight: 1.4,
+                redPressureWeight: 1.1,
                 lateCoinWeight: 1.6,
                 finalCoinWeight: 2.2,
                 lateProgressBonus: 8,
@@ -39,6 +42,9 @@ class CPU {
                 turnWeight: 3.1,
                 landmarkWeight: 16,
                 builtLandmarkWeight: 9,
+                landmarkReachWeight: 7,
+                stableIncomeWeight: 1.1,
+                redPressureWeight: 1.2,
                 lateCoinWeight: 2.0,
                 finalCoinWeight: 2.8,
                 lateProgressBonus: 10,
@@ -58,6 +64,9 @@ class CPU {
                 turnWeight: 3.5,
                 landmarkWeight: 13,
                 builtLandmarkWeight: 7,
+                landmarkReachWeight: 5,
+                stableIncomeWeight: 1.7,
+                redPressureWeight: 0.8,
                 lateCoinWeight: 1.4,
                 finalCoinWeight: 2.0,
                 lateProgressBonus: 6,
@@ -680,6 +689,35 @@ class CPU {
         return Number.isFinite(value) ? value : 0;
     }
 
+    _countReachableLandmarks(player, enabledLandmarks) {
+        return enabledLandmarks.filter(name =>
+            !player.landmarks[name] && player.coins >= Player.landmarkCost(name)
+        ).length;
+    }
+
+    _estimateStableIncome(game, player) {
+        let total = 0;
+        for (const card of player.cards) {
+            if (player.isDormant(card)) continue;
+            if (card.color !== "blue" && card.color !== "green") continue;
+            total += this._ownedCardValue(card, game, player);
+        }
+        return total;
+    }
+
+    _estimateRedPressure(game, playerIndex) {
+        let pressure = 0;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === playerIndex) continue;
+            const opponent = game.players[i];
+            for (const card of opponent.cards) {
+                if (opponent.isDormant(card) || card.color !== "red") continue;
+                pressure += this._ownedCardValue(card, game, opponent);
+            }
+        }
+        return pressure;
+    }
+
     _evaluatePosition(game, playerIndex) {
         const player = game.players[playerIndex];
         const tuning = this.expertTuning;
@@ -688,11 +726,17 @@ class CPU {
         const enabledLandmarks = [...game.enabledLandmarks];
         const myLandmarkProgress = enabledLandmarks.filter(name => player.landmarks[name]).length;
         const remainingLandmarks = enabledLandmarks.filter(name => !player.landmarks[name]);
+        const reachableLandmarks = this._countReachableLandmarks(player, enabledLandmarks);
+        const stableIncome = this._estimateStableIncome(game, player);
+        const redPressure = this._estimateRedPressure(game, playerIndex);
         const lowValueSpam = player.countCard("改装屋") + player.countCard("貸金業") + player.countCard("雑貨屋");
         let score = player.coins * tuning.coinWeight +
             myTurnValue * tuning.turnWeight +
             myLandmarkProgress * tuning.landmarkWeight +
-            player.builtLandmarkCount() * tuning.builtLandmarkWeight;
+            player.builtLandmarkCount() * tuning.builtLandmarkWeight +
+            reachableLandmarks * tuning.landmarkReachWeight +
+            stableIncome * tuning.stableIncomeWeight -
+            redPressure * tuning.redPressureWeight;
         if (remainingLandmarks.length <= 2) score += player.coins * tuning.lateCoinWeight + myLandmarkProgress * tuning.lateProgressBonus;
         if (remainingLandmarks.length <= 1) score += player.coins * tuning.finalCoinWeight;
         if (lowValueSpam > tuning.lowValueSpamThreshold) {

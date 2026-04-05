@@ -217,6 +217,62 @@ runTest('chooseReroll: 現在スコアが高い場合はリロールしない（
     assert.strictEqual(result, false);
 });
 
+runTest('_countReachableLandmarks は今の所持金で建てられる残りランドマーク数を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 5;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+
+    const reachable = cpu._countReachableLandmarks(current, [...game.enabledLandmarks]);
+    assert.strictEqual(reachable, 1);
+});
+
+runTest('_estimateStableIncome は青・緑カードの安定収入を見積もる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.cards = [
+        createCardByName('麦畑'),
+        createCardByName('パン屋'),
+        createCardByName('カフェ'),
+    ];
+    current.dormantCards = [];
+
+    const stableIncome = cpu._estimateStableIncome(game, current);
+    assert.ok(stableIncome >= 2);
+});
+
+runTest('_estimateRedPressure は相手の赤カード圧を見積もる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(3);
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('寿司屋')];
+    game.players[1].dormantCards = [];
+    game.players[1].landmarks[LANDMARK_NAMES.HARBOR] = true;
+    game.players[2].cards = [createCardByName('カフェ')];
+    game.players[2].dormantCards = [];
+
+    const pressure = cpu._estimateRedPressure(game, 0);
+    assert.ok(pressure >= 5);
+});
+
+runTest('_evaluatePosition は到達可能ランドマークと安定収入を高く評価する', () => {
+    const cpu = new CPU("expert");
+    const richGame = new GameManager(2);
+    const rich = richGame.currentPlayer();
+    rich.coins = 12;
+    rich.cards = [createCardByName('麦畑'), createCardByName('パン屋')];
+    rich.dormantCards = [];
+
+    const poorGame = new GameManager(2);
+    const poor = poorGame.currentPlayer();
+    poor.coins = 1;
+    poor.cards = [createCardByName('カフェ')];
+    poor.dormantCards = [];
+
+    assert.ok(cpu._evaluatePosition(richGame, 0) > cpu._evaluatePosition(poorGame, 0));
+});
+
 // ===== _landmarkUrgency =====
 
 runTest('_landmarkUrgency: 駅はbuiltCount<2で緊急度8、>=2で5を返す', () => {
