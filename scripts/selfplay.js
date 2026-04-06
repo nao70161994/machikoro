@@ -43,7 +43,9 @@ function createPlayers(runtime, difficulties, options = {}) {
     return difficulties.map(difficulty => {
         if (difficulty !== 'expert') return new runtime.CPU(difficulty);
         return new runtime.CPU(difficulty, {
+            expertPurpose: options.expertPurpose || 'training',
             simulationMode: options.lite ? 'lite' : (options.fast ? 'fast' : 'full'),
+            profileStats: options.profileStats,
             expertPreset: options.expertPreset,
             expertTuning: options.expertTuning,
             expertProfilePresets: options.expertProfilePresets,
@@ -223,6 +225,7 @@ function simulateGame(options = {}) {
         difficulties: difficulties.slice(),
         seed: options.seed || 1,
         expertPreset: options.expertPreset || 'default',
+        expertPurpose: options.expertPurpose || 'training',
         expertTuning: options.expertTuning || null,
         expertProfilePresets: options.expertProfilePresets || null,
         expertProfileTunings: options.expertProfileTunings || null,
@@ -254,7 +257,13 @@ function runSeries(options = {}) {
             difficulties: lineup,
             seed,
             maxSteps: options.maxSteps,
+            profileStats: options.profileStats,
             expertPreset: options.expertPreset,
+            expertTuning: options.expertTuning,
+            expertProfilePresets: options.expertProfilePresets,
+            expertProfileTunings: options.expertProfileTunings,
+            fast: options.fast,
+            lite: options.lite,
         });
         turns += result.turns;
         if (result.exhausted) exhausted++;

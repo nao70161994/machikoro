@@ -9,6 +9,7 @@
     "test:all": "node tests/run-all.js all",
     "test:coverage": "node scripts/test-coverage.js",
     "selfplay": "node scripts/selfplay.js",
+    "profile:expert": "node scripts/profile-expert.js",
     "tune-expert": "node scripts/tune-expert.js",
     "train-expert-crowd": "node scripts/train-expert-crowd.js"
   },

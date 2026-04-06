@@ -130,7 +130,7 @@ function resumeGame() {
         game.pendingTunaDice = state.pendingTunaDice || null;
         game.turnCount = state.turnCount || 0;
         game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
-        cpuPlayers = state.cpuSettings.map(s => s ? new CPU(s.difficulty) : null);
+        cpuPlayers = state.cpuSettings.map(s => s ? new CPU(s.difficulty, { expertPurpose: "live" }) : null);
         prevCoins = null;
         winSoundPlayed = false;
         cancelAutoSkip();

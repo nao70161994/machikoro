@@ -1,8 +1,12 @@
 class CPU {
     constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
-        this.simulationMode = options.simulationMode || "full";
+        this.expertPurpose = options.expertPurpose || "training";
+        this.simulationMode = options.simulationMode || (
+            difficulty === "expert" && this.expertPurpose === "live" ? "realtime" : "full"
+        );
         this.expertPreset = options.expertPreset || "default";
+        this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
         this.expertProfileTunings = Object.assign(
             {},
@@ -16,6 +20,53 @@ class CPU {
         );
         this.activeExpertPreset = this.expertPreset;
         this.expertTuning = Object.assign({}, this.baseExpertTuning);
+    }
+
+    _isLiveExpert() {
+        return this.difficulty === "expert" && this.expertPurpose === "live";
+    }
+
+    static _nowMs() {
+        if (typeof performance !== "undefined" && performance && typeof performance.now === "function") {
+            return performance.now();
+        }
+        return Date.now();
+    }
+
+    static _cardByNameMap() {
+        if (!CPU.__cardByNameMap) {
+            CPU.__cardByNameMap = Object.fromEntries(CARDS.map(card => [card.name, card]));
+        }
+        return CPU.__cardByNameMap;
+    }
+
+    _cardByName(name) {
+        return CPU._cardByNameMap()[name] || null;
+    }
+
+    _profileMeasure(label, fn) {
+        if (!this.profileStats) return fn();
+        const startedAt = CPU._nowMs();
+        try {
+            return fn();
+        } finally {
+            const entry = this.profileStats[label] || (this.profileStats[label] = { calls: 0, timeMs: 0 });
+            entry.calls++;
+            entry.timeMs = Number((entry.timeMs + (CPU._nowMs() - startedAt)).toFixed(3));
+        }
+    }
+
+    _profileCount(label, amount = 1) {
+        if (!this.profileStats) return;
+        const entry = this.profileStats[label] || (this.profileStats[label] = { count: 0 });
+        entry.count = (entry.count || 0) + amount;
+    }
+
+    getProfileSummary() {
+        if (!this.profileStats) return [];
+        return Object.entries(this.profileStats)
+            .map(([label, value]) => Object.assign({ label }, value))
+            .sort((a, b) => (b.timeMs || 0) - (a.timeMs || 0) || (b.count || 0) - (a.count || 0) || a.label.localeCompare(b.label));
     }
 
     static _expertPresets() {
@@ -179,6 +230,10 @@ class CPU {
             profilePreset ? CPU._resolveExpertTuning(profilePreset) : {},
             profileTuning || {}
         );
+        if (this.simulationMode === "realtime") {
+            this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.12).toFixed(3));
+            this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(1, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.2));
+        }
         if (this.simulationMode === "fast" || this.simulationMode === "lite") {
             this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.65).toFixed(3));
             this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(2, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.5));
@@ -342,41 +397,54 @@ class CPU {
     }
 
     _scoreExpertChoiceState(game, focusIndex) {
-        const tuning = this.expertTuning;
-        let score = this._evaluatePosition(game, focusIndex);
-        if (!game.checkWinner() && this._shouldUseExpertChoiceLookahead(game, focusIndex)) {
-            score += this._simulateLookahead(
-                game,
-                this._simulationShopStock(),
-                focusIndex,
-                Math.max(2, game.players.length * 2)
-            ) * Math.min(0.35, tuning.lookaheadWeight * 0.5);
-        }
-        return score;
+        return this._profileMeasure("expert.choiceState", () => {
+            const tuning = this.expertTuning;
+            let score = this._evaluatePosition(game, focusIndex);
+            if (!game.checkWinner() && this._shouldUseExpertChoiceLookahead(game, focusIndex)) {
+                score += this._profileMeasure("expert.choiceLookahead", () =>
+                    this._simulateLookahead(
+                        game,
+                        this._simulationShopStock(),
+                        focusIndex,
+                        Math.max(2, game.players.length * 2)
+                    )
+                ) * Math.min(0.35, tuning.lookaheadWeight * 0.5);
+            }
+            return score;
+        });
     }
 
     _shouldUseExpertChoiceLookahead(game, focusIndex) {
-        if (this.simulationMode === "lite") {
-            const player = game.players[focusIndex];
-            const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-            return remainingLandmarks <= 1 && game.phase === GAME_PHASES.BUILD;
-        }
-        if (this.simulationMode !== "fast") return true;
         const player = game.players[focusIndex];
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        return remainingLandmarks <= 3 || game.phase === GAME_PHASES.BUILD;
+        if (this.simulationMode === "realtime") {
+            if (game.players.length >= 4) return false;
+            return game.phase === GAME_PHASES.BUILD && remainingLandmarks <= 1;
+        }
+        if (this.simulationMode === "lite") {
+            return remainingLandmarks <= 1 && game.phase === GAME_PHASES.BUILD;
+        }
+        if (this.simulationMode === "fast") {
+            return game.phase === GAME_PHASES.BUILD || remainingLandmarks <= 2;
+        }
+        if (game.players.length >= 4) {
+            return game.phase === GAME_PHASES.BUILD && remainingLandmarks <= 2;
+        }
+        return game.phase === GAME_PHASES.BUILD || remainingLandmarks <= 2;
     }
 
     _expectedExpertChoiceValue(game, focusIndex, outcomes, applyOutcome) {
-        let totalWeight = 0;
-        let totalScore = 0;
-        for (const outcome of outcomes) {
-            const clone = this._cloneGame(game);
-            applyOutcome(clone, outcome);
-            totalWeight += outcome.weight;
-            totalScore += this._scoreExpertChoiceState(clone, focusIndex) * outcome.weight;
-        }
-        return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+        return this._profileMeasure("expert.expectedChoiceValue", () => {
+            let totalWeight = 0;
+            let totalScore = 0;
+            for (const outcome of outcomes) {
+                const clone = this._cloneGame(game);
+                applyOutcome(clone, outcome);
+                totalWeight += outcome.weight;
+                totalScore += this._scoreExpertChoiceState(clone, focusIndex) * outcome.weight;
+            }
+            return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+        });
     }
 
     _scoreExpertPendingChoice(game, applyChoice) {
@@ -454,12 +522,15 @@ class CPU {
     _scoreStrongChoiceState(game, focusIndex) {
         const player = game.players[focusIndex];
         const landmarkPressure = this._isEndgameMode(player, game, 2) ? 6 : 0;
+        const winDistance = this._estimateWinDistance(player, game);
         return this._estimatePurchasePlanValue(player, game, "strong") +
             this._estimatePlayerTurnValue(game, focusIndex) * 0.35 +
             player.coins * 0.18 +
             player.builtLandmarkCount() * 2.8 +
             landmarkPressure -
-            this._estimateRedPressure(game, focusIndex) * 0.08;
+            winDistance * 1.2 -
+            this._estimateRedPressure(game, focusIndex) * 0.08 -
+            this._duplicateRenovationPenalty(player, "strong");
     }
 
     _expectedStrongChoiceValue(game, focusIndex, outcomes, applyOutcome) {
@@ -1013,6 +1084,16 @@ class CPU {
         return penalty;
     }
 
+    _duplicateRenovationPenalty(player, difficulty = this.difficulty) {
+        if (!player) return 0;
+        const copies = player.countCard("改装屋");
+        const extraCopies = Math.max(0, copies - 1);
+        if (extraCopies <= 0) return 0;
+        if (difficulty === "expert") return extraCopies * 14 + Math.max(0, extraCopies - 1) * 6;
+        if (difficulty === "strong") return extraCopies * 8 + Math.max(0, extraCopies - 1) * 3;
+        return extraCopies * 4;
+    }
+
     _strongRolePressure(card, game, player) {
         const cards = player.cards || [];
         const blueCount = cards.filter(c => c.color === "blue").length;
@@ -1066,6 +1147,37 @@ class CPU {
         if (card.color === "blue" && blueCount === 0) {
             penalty -= 0.25 * intensity;
         }
+        return penalty;
+    }
+
+    _strongConditionalCardAdjustment(card, game, player) {
+        if (this.difficulty !== "strong" || !card || !game || !player) return 0;
+        if (card.effect !== CARD_EFFECTS.FRENCHR && card.effect !== CARD_EFFECTS.MEMBERBAR) return 0;
+        const threshold = card.effect === CARD_EFFECTS.FRENCHR ? 2 : 3;
+        const readyOpponents = game.players.filter(p => p !== player && p.builtLandmarkCount() >= threshold).length;
+        if (readyOpponents > 0) return readyOpponents * (card.effect === CARD_EFFECTS.FRENCHR ? 1.6 : 2.2);
+        const nearOpponents = game.players.filter(p => p !== player && p.builtLandmarkCount() === threshold - 1).length;
+        return nearOpponents > 0 ? -1.2 : -3.6;
+    }
+
+    _strongLandmarkThresholdPenalty(name, current, game) {
+        if (this.difficulty !== "strong" || !name || !current || !game) return 0;
+        const nextBuiltCount = current.builtLandmarkCount() + 1;
+        let penalty = 0;
+        if (nextBuiltCount === 2) {
+            const cornfieldCount = current.countCard('コーン畑') + current.countCard('雑貨屋');
+            if (cornfieldCount > 0) penalty += cornfieldCount * 2.2;
+        }
+        for (const opponent of game.players) {
+            if (opponent === current) continue;
+            const frenchCount = opponent.cards.filter(card => !opponent.isDormant(card) && card.effect === CARD_EFFECTS.FRENCHR).length;
+            const memberBarCount = opponent.cards.filter(card => !opponent.isDormant(card) && card.effect === CARD_EFFECTS.MEMBERBAR).length;
+            if (nextBuiltCount >= 2 && frenchCount > 0) penalty += frenchCount * 2.6;
+            if (nextBuiltCount >= 3 && memberBarCount > 0) penalty += memberBarCount * 4.2;
+        }
+        const remaining = this._remainingEnabledLandmarks(current, game).length;
+        if (remaining <= 2) penalty *= 0.35;
+        else if (remaining <= 3) penalty *= 0.6;
         return penalty;
     }
 
@@ -1167,16 +1279,25 @@ class CPU {
         const cheapEngineCards = current.cards.filter(card => card && card.cost <= 3).length;
 
         if (name === LANDMARK_NAMES.STATION) {
+            if (game.players.length >= 4) {
+                if (highVarianceCards >= 1) return 3;
+                return 2;
+            }
             if (highVarianceCards >= 2) return 2;
             if (highVarianceCards >= 1) return 1;
             return 0;
         }
         if (name === LANDMARK_NAMES.SHOPPING_MALL) {
+            if (game.players.length >= 4) {
+                if (shopRestaurantCards >= 4) return 2;
+                return 1;
+            }
             if (shopRestaurantCards >= 5) return 1;
             return 0;
         }
         if (name === LANDMARK_NAMES.HARBOR) {
             let bonus = 0;
+            if (game.players.length >= 4) bonus += 1;
             if (current.countCard('マグロ漁船') >= 2) bonus += 2;
             else if (current.countCard('マグロ漁船') >= 1) bonus += 1;
             if (harborCards >= 3) bonus += 1;
@@ -1237,6 +1358,13 @@ class CPU {
         score += this._landmarkCardSynergyBonus(card, game, player);
         score -= this._cardSpamPenalty(card, player, intensity);
         score -= this._economyBalancePenalty(card, game, player, intensity);
+        if (options.difficulty === "strong") score += this._strongConditionalCardAdjustment(card, game, player);
+        if (card.effect === CARD_EFFECTS.RENOVATION && options.difficulty === "strong") {
+            const owned = player.countCard("改装屋");
+            if (owned >= 1) {
+                score -= this._duplicateRenovationPenalty({ countCard: () => owned + 1 }, "strong");
+            }
+        }
         if (options.difficulty === "strong") score += this._strongRolePressure(card, game, player);
         if (options.difficulty === "normal") score += this._normalSafetyAdjustment(card, game, player);
         if (options.difficulty === "strong" && game.players.length >= 4) {
@@ -1257,6 +1385,12 @@ class CPU {
             if (oneDieOpponents >= 2 && highDice) score -= 1.4;
             if (oneDieOpponents >= 2 && highDice && (card.color === "red" || card.color === "purple")) score -= 1.0;
             if (premiumPurple && !this._strongPremiumPurpleReady(card, game, player)) score -= 3.2;
+            if (lowDice && (card.color === "blue" || card.color === "green")) score += 0.9;
+            if (lowDice && card.color === "green" && card.cost <= 3) score += 0.6;
+            if (lowDice && card.color === "blue" && card.cost <= 2) score += 0.4;
+            if (!player.landmarks[LANDMARK_NAMES.STATION] && lowDice && card.color === "green") score += 0.5;
+            if (!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.name === 'コンビニ') score += 0.6;
+            if (!player.landmarks[LANDMARK_NAMES.STATION] && card.name === 'パン屋') score += 0.5;
         }
         return score;
     }
@@ -1276,7 +1410,8 @@ class CPU {
             const cost = Player.landmarkCost(name);
             if (current.coins < cost + reserve) continue;
             const urgency = this._landmarkUrgency(name, current, game);
-            const score = urgency * 2.2 + Math.max(0, current.coins - cost - reserve) * 0.08;
+            const thresholdPenalty = this._strongLandmarkThresholdPenalty(name, current, game);
+            const score = urgency * 2.2 + Math.max(0, current.coins - cost - reserve) * 0.08 - thresholdPenalty;
             if (!best || score > best.score || (score === best.score && cost < best.cost)) {
                 best = { name, cost, urgency, score };
             }
@@ -1641,39 +1776,41 @@ class CPU {
     }
 
     _cloneGame(game) {
-        const clone = new GameManager(game.players.length);
-        clone.enabledLandmarks = new Set(game.enabledLandmarks || Player.landmarkNames());
-        clone.players.forEach((player, index) => {
-            const source = game.players[index];
-            player.name = source.name;
-            player.coins = source.coins;
-            player.cards = source.cards.map(card => cloneCard(card));
-            player.dormantCards = source.dormantCards.map(dormant => source.cards.indexOf(dormant))
-                .filter(i => i >= 0)
-                .map(i => player.cards[i])
-                .filter(Boolean);
-            player.landmarks = Object.assign({}, source.landmarks);
-            player.itVentureCoins = source.itVentureCoins || 0;
-            player.hasYakusho = source.hasYakusho !== false;
+        return this._profileMeasure("expert.cloneGame", () => {
+            const clone = new GameManager(game.players.length);
+            clone.enabledLandmarks = new Set(game.enabledLandmarks || Player.landmarkNames());
+            clone.players.forEach((player, index) => {
+                const source = game.players[index];
+                player.name = source.name;
+                player.coins = source.coins;
+                player.cards = source.cards.map(card => cloneCard(card));
+                player.dormantCards = source.dormantCards.map(dormant => source.cards.indexOf(dormant))
+                    .filter(i => i >= 0)
+                    .map(i => player.cards[i])
+                    .filter(Boolean);
+                player.landmarks = Object.assign({}, source.landmarks);
+                player.itVentureCoins = source.itVentureCoins || 0;
+                player.hasYakusho = source.hasYakusho !== false;
+            });
+            clone.currentPlayerIndex = game.currentPlayerIndex;
+            clone.phase = game.phase;
+            clone.lastDiceResult = game.lastDiceResult || 0;
+            clone.lastDice1 = game.lastDice1 || 0;
+            clone.lastDice2 = game.lastDice2 || 0;
+            clone.builtThisTurn = game.builtThisTurn || false;
+            clone.pendingTV = game.pendingTV || 0;
+            clone.pendingBusiness = game.pendingBusiness || 0;
+            clone.pendingCleaning = game.pendingCleaning || 0;
+            clone.pendingMover = game.pendingMover || 0;
+            clone.pendingRenovation = game.pendingRenovation || 0;
+            clone.pendingIT = game.pendingIT || false;
+            clone.usedReroll = game.usedReroll || false;
+            clone.pendingTunaDice = game.pendingTunaDice || null;
+            clone.turnCount = game.turnCount || 0;
+            clone.hadAmusementParkAtRoll = game.hadAmusementParkAtRoll || false;
+            clone.log = [];
+            return clone;
         });
-        clone.currentPlayerIndex = game.currentPlayerIndex;
-        clone.phase = game.phase;
-        clone.lastDiceResult = game.lastDiceResult || 0;
-        clone.lastDice1 = game.lastDice1 || 0;
-        clone.lastDice2 = game.lastDice2 || 0;
-        clone.builtThisTurn = game.builtThisTurn || false;
-        clone.pendingTV = game.pendingTV || 0;
-        clone.pendingBusiness = game.pendingBusiness || 0;
-        clone.pendingCleaning = game.pendingCleaning || 0;
-        clone.pendingMover = game.pendingMover || 0;
-        clone.pendingRenovation = game.pendingRenovation || 0;
-        clone.pendingIT = game.pendingIT || false;
-        clone.usedReroll = game.usedReroll || false;
-        clone.pendingTunaDice = game.pendingTunaDice || null;
-        clone.turnCount = game.turnCount || 0;
-        clone.hadAmusementParkAtRoll = game.hadAmusementParkAtRoll || false;
-        clone.log = [];
-        return clone;
     }
 
     _estimatePlayerTurnValue(game, playerIndex) {
@@ -1704,6 +1841,28 @@ class CPU {
         return total;
     }
 
+    _estimateWinDistance(player, game) {
+        if (!player || !game || !game.enabledLandmarks) return Infinity;
+        const remaining = [...game.enabledLandmarks]
+            .filter(name => !player.landmarks[name])
+            .map(name => Player.landmarkCost(name));
+        if (remaining.length === 0) return 0;
+        const playerIndex = game.players.indexOf(player);
+        const turnValue = playerIndex >= 0 ? this._estimatePlayerTurnValue(game, playerIndex) : 0;
+        const reachable = this._countReachableLandmarks(player, [...game.enabledLandmarks]);
+        const totalRemainingCost = remaining.reduce((sum, cost) => sum + cost, 0);
+        const cheapestRemainingCost = Math.min(...remaining);
+        const effectiveRemainingCost = Math.max(
+            0,
+            totalRemainingCost - player.coins - reachable * 2.5 - Math.max(0, player.coins - cheapestRemainingCost) * 0.4
+        );
+        const expectedGainPerTurn = Math.max(
+            1.5,
+            turnValue * 0.6 + reachable * 1.8 + player.builtLandmarkCount() * 0.6
+        );
+        return Number((effectiveRemainingCost / expectedGainPerTurn + remaining.length * 0.35).toFixed(3));
+    }
+
     _estimateRedPressure(game, playerIndex) {
         let pressure = 0;
         for (let i = 0; i < game.players.length; i++) {
@@ -1722,11 +1881,13 @@ class CPU {
         const progress = enabledLandmarks.filter(name => opponent.landmarks[name]).length;
         const turnValue = this._estimatePlayerTurnValue(game, game.players.indexOf(opponent));
         const reachable = this._countReachableLandmarks(opponent, enabledLandmarks);
+        const winDistance = this._estimateWinDistance(opponent, game);
         return opponent.coins * 0.4 +
             turnValue * 1.8 +
             progress * 9 +
             opponent.builtLandmarkCount() * 5 +
-            reachable * 6;
+            reachable * 6 +
+            Math.max(0, 18 - winDistance) * 1.4;
     }
 
     _evaluatePosition(game, playerIndex) {
@@ -1739,6 +1900,7 @@ class CPU {
         const remainingLandmarks = enabledLandmarks.filter(name => !player.landmarks[name]);
         const reachableLandmarks = this._countReachableLandmarks(player, enabledLandmarks);
         const stableIncome = this._estimateStableIncome(game, player);
+        const winDistance = this._estimateWinDistance(player, game);
         const redPressure = this._estimateRedPressure(game, playerIndex);
         const lowValueSpam = player.countCard("改装屋") + player.countCard("貸金業") + player.countCard("雑貨屋");
         let score = player.coins * tuning.coinWeight +
@@ -1747,12 +1909,14 @@ class CPU {
             player.builtLandmarkCount() * tuning.builtLandmarkWeight +
             reachableLandmarks * tuning.landmarkReachWeight +
             stableIncome * tuning.stableIncomeWeight -
+            winDistance * 1.8 -
             redPressure * tuning.redPressureWeight;
         if (remainingLandmarks.length <= 2) score += player.coins * tuning.lateCoinWeight + myLandmarkProgress * tuning.lateProgressBonus;
         if (remainingLandmarks.length <= 1) score += player.coins * tuning.finalCoinWeight;
         if (lowValueSpam > tuning.lowValueSpamThreshold) {
             score -= (lowValueSpam - tuning.lowValueSpamThreshold) * tuning.lowValueSpamPenalty;
         }
+        score -= this._duplicateRenovationPenalty(player, "expert");
         if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
         let maxOpponentThreat = 0;
         for (let i = 0; i < game.players.length; i++) {
@@ -1775,7 +1939,7 @@ class CPU {
         }
         if (cardName === "改装屋") {
             if (player.builtLandmarkCount() === 0) return 18 + copies * 5;
-            return copies >= 2 ? 10 + copies * 4 : 0;
+            return copies >= 2 ? 18 + copies * 8 : 0;
         }
         if (cardName === "貸金業") {
             if (remainingLandmarks <= 3 && copies >= 2) return 12 + copies * 4;
@@ -1813,47 +1977,54 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         );
         const ranked = this.sortAffordable(affordable, game, current);
-        const candidateLimit = this.simulationMode === "lite" ? 3 : 6;
+        const candidateLimit = this.simulationMode === "realtime" ? 2 : (this.simulationMode === "lite" ? 2 : (this.simulationMode === "fast" ? 3 : 4));
         for (const entry of ranked.slice(0, candidateLimit)) {
             options.push({ type: 'card', cardName: entry.card.name });
         }
         return options;
     }
 
-    _scoreExpertBuildOption(game, shopStock, action) {
-        const ci = game.currentPlayerIndex;
-        const tuning = this.expertTuning;
-        const affordableBuildCount = this._listExpertBuildOptions(game, shopStock)
-            .filter(option => option.type !== 'skip')
-            .length;
-        const clone = this._cloneGame(game);
-        const stock = Object.assign({}, shopStock);
-        const current = clone.currentPlayer();
-        let scorePenalty = 0;
-        if (action.type === 'landmark') {
-            if (!clone.buildLandmark(action.name)) return -Infinity;
-        } else if (action.type === 'card') {
-            const card = CARDS.find(c => c.name === action.cardName);
-            if (!card || !clone.buildCard(card)) return -Infinity;
-            stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
-            scorePenalty = this._scoreExpertCardPenalty(card.name, current, clone);
-        } else if (action.type === 'skip') {
-            clone.builtThisTurn = false;
-        }
-        let score = this._evaluatePosition(clone, ci);
-        if (this.simulationMode !== "lite") {
-            score += this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer) * tuning.lookaheadWeight;
-        }
-        const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
-        if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
-        if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
-        if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
-        if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
-        if (action.type === 'skip' && affordableBuildCount > 0 && !current.landmarks[LANDMARK_NAMES.AIRPORT]) {
-            score -= Math.min(12, 4 + affordableBuildCount * 1.5);
-        }
-        if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
-        return score;
+    _scoreExpertBuildOption(game, shopStock, action, context = null) {
+        return this._profileMeasure("expert.scoreBuildOption", () => {
+            const ci = game.currentPlayerIndex;
+            const tuning = this.expertTuning;
+            const affordableBuildCount = context && typeof context.affordableBuildCount === "number"
+                ? context.affordableBuildCount
+                : this._listExpertBuildOptions(game, shopStock).filter(option => option.type !== 'skip').length;
+            const clone = this._cloneGame(game);
+            const stock = Object.assign({}, shopStock);
+            const current = clone.currentPlayer();
+            let scorePenalty = 0;
+            if (action.type === 'landmark') {
+                if (!clone.buildLandmark(action.name)) return -Infinity;
+            } else if (action.type === 'card') {
+                const card = this._cardByName(action.cardName);
+                if (!card || !clone.buildCard(card)) return -Infinity;
+                stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
+                scorePenalty = this._scoreExpertCardPenalty(card.name, current, clone);
+            } else if (action.type === 'skip') {
+                clone.builtThisTurn = false;
+            }
+            let score = this._evaluatePosition(clone, ci);
+            const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
+            const allowBuildLookahead = this.simulationMode === "realtime"
+                ? (game.players.length < 4 && action.type === 'landmark' && remainingLandmarks <= 1)
+                : (this.simulationMode !== "lite" && (action.type === 'landmark' || remainingLandmarks <= 2));
+            if (allowBuildLookahead) {
+                score += this._profileMeasure("expert.buildLookahead", () =>
+                    this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer)
+                ) * tuning.lookaheadWeight;
+            }
+            if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
+            if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
+            if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
+            if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
+            if (action.type === 'skip' && affordableBuildCount > 0 && !current.landmarks[LANDMARK_NAMES.AIRPORT]) {
+                score -= Math.min(12, 4 + affordableBuildCount * 1.5);
+            }
+            if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
+            return score;
+        });
     }
 
     _listStrongBuildOptions(game, shopStock) {
@@ -1898,7 +2069,7 @@ class CPU {
         if (action.type === 'landmark') {
             if (!clone.buildLandmark(action.name)) return -Infinity;
         } else {
-            const card = CARDS.find(c => c.name === action.cardName);
+            const card = this._cardByName(action.cardName);
             if (!card || !clone.buildCard(card)) return -Infinity;
             stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
         }
@@ -1909,7 +2080,7 @@ class CPU {
             score += urgency * 3.5;
             if (targetLandmark && action.name === targetLandmark.name) score += 6;
         } else {
-            const card = CARDS.find(c => c.name === action.cardName);
+            const card = this._cardByName(action.cardName);
             const stableIncome = this._estimateStableIncome(game, game.currentPlayer());
             if (targetLandmark) {
                 const shortfall = targetLandmark.cost - game.currentPlayer().coins;
@@ -1930,21 +2101,24 @@ class CPU {
     }
 
     _simulateLookahead(game, shopStock, focusIndex, maxSteps) {
-        const cpus = game.players.map(() => new CPU('strong'));
-        const tuning = this.expertTuning;
-        const seed = game.turnCount + focusIndex * 97 + game.currentPlayer().coins * 13 + maxSteps;
-        const rng = this._createPlayoutRng(seed);
-        let safety = 0;
-        while (!game.checkWinner() && safety < maxSteps) {
-            const cpu = cpus[game.currentPlayerIndex];
-            this._runSimulationStep(game, cpu, shopStock, rng);
-            safety++;
-        }
-        if (game.checkWinner()) {
-            const winnerIndex = game.players.indexOf(game.checkWinner());
-            return winnerIndex === focusIndex ? tuning.winLookaheadBonus : -tuning.loseLookaheadPenalty;
-        }
-        return this._evaluatePosition(game, focusIndex);
+        return this._profileMeasure("expert.simulateLookahead", () => {
+            const cpus = game.players.map(() => new CPU('strong'));
+            const tuning = this.expertTuning;
+            const seed = game.turnCount + focusIndex * 97 + game.currentPlayer().coins * 13 + maxSteps;
+            const rng = this._createPlayoutRng(seed);
+            let safety = 0;
+            while (!game.checkWinner() && safety < maxSteps) {
+                const cpu = cpus[game.currentPlayerIndex];
+                this._runSimulationStep(game, cpu, shopStock, rng);
+                safety++;
+            }
+            this._profileCount("expert.lookaheadSteps", safety);
+            if (game.checkWinner()) {
+                const winnerIndex = game.players.indexOf(game.checkWinner());
+                return winnerIndex === focusIndex ? tuning.winLookaheadBonus : -tuning.loseLookaheadPenalty;
+            }
+            return this._evaluatePosition(game, focusIndex);
+        });
     }
 
     _runSimulationStep(game, cpu, shopStock, rng) {
@@ -2110,19 +2284,21 @@ class CPU {
             const current = game.currentPlayer();
             if (this._buyWinningLandmark(current, game)) return;
             if (this._tryEndgameBuild(current, game, shopStock, "strong")) return;
-
+            
             const bestAffordableLandmark = this._bestAffordableLandmark(current, game);
             if (bestAffordableLandmark && (
-                bestAffordableLandmark.urgency >= 7 ||
-                current.coins >= 12 ||
-                current.coins >= bestAffordableLandmark.cost + 6
+                bestAffordableLandmark.urgency >= 6 ||
+                current.coins >= 10 ||
+                current.coins >= bestAffordableLandmark.cost + 4 ||
+                (current.builtLandmarkCount() < 3 && bestAffordableLandmark.urgency >= 5)
             )) {
                 this._buyLandmark(bestAffordableLandmark.name, game);
                 return;
             }
 
+            if (this._maybeBuyLandmark(current, game, 0, 5)) return;
             if (this._trySynergy(current, game, shopStock)) return;
-            if (this._maybeBuyLandmark(current, game, 1, 6)) return;
+            if (this._maybeBuyLandmark(current, game, 1, 5)) return;
 
             const affordable = CARDS.filter(card =>
                 shopStock[card.name] > 0 &&
@@ -2152,12 +2328,12 @@ class CPU {
                     ? premiumPurple
                     : null
             ) || bestEconomy || (sorted.length > 0 ? sorted[0] : null);
-            if (best && this._shouldHoldForLandmark(current, game, best.score, 2)) return;
+            if (best && current.builtLandmarkCount() >= 3 && this._shouldHoldForLandmark(current, game, best.score, 2)) return;
             if (best && best.score >= 0.9) {
                 this._buyCard(best.card, game, shopStock);
                 return;
             }
-            if (this._maybeBuyLandmark(current, game, 0, 4)) return;
+            if (this._maybeBuyLandmark(current, game, 0, 3)) return;
             if (best) this._buyCard(best.card, game, shopStock);
             return;
         }
@@ -2189,7 +2365,7 @@ class CPU {
             this._buyLandmark(best.name, game);
             return;
         }
-        const card = CARDS.find(c => c.name === best.cardName);
+        const card = this._cardByName(best.cardName);
         if (card) this._buyCard(card, game, shopStock);
     }
 
@@ -2197,6 +2373,10 @@ class CPU {
         const current = game.currentPlayer();
         if (this._buyWinningLandmark(current, game)) return;
         if (this._buyLateGameLandmark(current, game)) return;
+        if (this.simulationMode === "realtime" && game.players.length >= 4) {
+            this.buildNormal(game, shopStock);
+            return;
+        }
         if (this.simulationMode === "lite" && game.players.length >= 4) {
             this.buildNormal(game, shopStock);
             return;
@@ -2206,27 +2386,30 @@ class CPU {
             return;
         }
 
+        const options = this._listExpertBuildOptions(game, shopStock);
+        const buildContext = {
+            affordableBuildCount: options.filter(action => action.type !== 'skip').length,
+        };
         let best = null;
-        for (const action of this._listExpertBuildOptions(game, shopStock)) {
-            const score = this._scoreExpertBuildOption(game, shopStock, action);
-            if (!best || score > best.score) best = Object.assign({ score }, action);
+        let bestNonSkip = null;
+        for (const action of options) {
+            const score = this._scoreExpertBuildOption(game, shopStock, action, buildContext);
+            const scored = Object.assign({ score }, action);
+            if (!best || score > best.score) best = scored;
+            if (action.type !== 'skip' && (!bestNonSkip || score > bestNonSkip.score)) bestNonSkip = scored;
         }
 
         if (!best) return;
         if (best.type === 'skip') {
             if (current.landmarks[LANDMARK_NAMES.AIRPORT]) return;
-            const fallback = this._listExpertBuildOptions(game, shopStock)
-                .filter(action => action.type !== 'skip')
-                .map(action => Object.assign({ score: this._scoreExpertBuildOption(game, shopStock, action) }, action))
-                .sort((a, b) => b.score - a.score)[0];
-            if (!fallback) return;
-            best = fallback;
+            if (!bestNonSkip) return;
+            best = bestNonSkip;
         }
         if (best.type === 'landmark') {
             this._buyLandmark(best.name, game);
             return;
         }
-        const card = CARDS.find(c => c.name === best.cardName);
+        const card = this._cardByName(best.cardName);
         if (card) this._buyCard(card, game, shopStock);
     }
 
@@ -2234,7 +2417,7 @@ class CPU {
     _trySynergy(current, game, shopStock) {
         const try_ = (name, cost, condition) => {
             if (!condition) return false;
-            const card = CARDS.find(c => c.name === name);
+            const card = this._cardByName(name);
             if (card && shopStock[name] > 0 && current.coins >= cost) {
                 this._buyCard(card, game, shopStock);
                 return true;

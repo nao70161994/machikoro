@@ -131,7 +131,7 @@ function startGame() {
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
     cpuPlayers = playerSettings.map(s =>
-        s.type === "cpu" ? new CPU(s.difficulty) : null
+        s.type === "cpu" ? new CPU(s.difficulty, { expertPurpose: "live" }) : null
     );
     init(selectedCount);
 }
@@ -186,7 +186,7 @@ function init(playerCount) {
             : normalizeLocalPlayerName(setting.name, originalIndex);
         shuffledCpuPlayers.push(
             setting.type === "cpu"
-                ? new CPU(setting.difficulty)
+                ? new CPU(setting.difficulty, { expertPurpose: "live" })
                 : null
         );
     }

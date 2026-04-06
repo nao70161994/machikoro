@@ -104,9 +104,11 @@ runTest('simulateGame は expert 指定なしでも default を既定プリセ�
     });
 
     assert.strictEqual(result.expertPreset, 'default');
+    assert.strictEqual(result.expertPurpose, 'training');
     const runtime = loadRuntime();
     const cpu = new runtime.CPU('expert');
     assert.strictEqual(cpu.expertPreset, 'default');
+    assert.strictEqual(cpu.expertPurpose, 'training');
 });
 
 runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {

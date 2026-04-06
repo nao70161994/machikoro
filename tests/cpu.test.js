@@ -199,6 +199,50 @@ runTest('expert は既定で人数別 profile tuning を持つ', () => {
     assert.strictEqual(cpu.expertTuning.leaderThreatWeight, 0.08);
 });
 
+runTest('expertPurpose: live は realtime モードを既定にする', () => {
+    const cpu = new CPU("expert", { expertPurpose: "live" });
+    assert.strictEqual(cpu.expertPurpose, 'live');
+    assert.strictEqual(cpu.simulationMode, 'realtime');
+});
+
+runTest('expert realtime: 4人戦では choice lookahead を使わない', () => {
+    const cpu = new CPU("expert", { expertPurpose: "live" });
+    const game = new GameManager(4);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+
+    assert.strictEqual(cpu._shouldUseExpertChoiceLookahead(game, game.currentPlayerIndex), false);
+});
+
+runTest('expert profiler: profileStats 指定時は choice/lookahead 計測を蓄積する', () => {
+    const profileStats = {};
+    const cpu = new CPU("expert", { simulationMode: "lite", profileStats });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+
+    cpu._syncExpertTuningForGame(game);
+    cpu._scoreExpertChoiceState(game, game.currentPlayerIndex);
+
+    const summary = cpu.getProfileSummary();
+    assert.ok(summary.some(entry => entry.label === 'expert.choiceState'));
+    assert.ok(summary.some(entry => entry.label === 'expert.choiceLookahead'));
+    assert.ok(summary.some(entry => entry.label === 'expert.simulateLookahead'));
+    assert.ok((profileStats['expert.lookaheadSteps'] || {}).count > 0);
+});
+
 runTest('_expertCrowdNormalPlan: expert 4人戦の序中盤では normal 寄りプランを使う', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(4);
@@ -373,6 +417,24 @@ runTest('_estimateStableIncome は青・緑カードの安定収入を見積も�
 
     const stableIncome = cpu._estimateStableIncome(game, current);
     assert.ok(stableIncome >= 2);
+});
+
+runTest('_estimateWinDistance は同じ建設数でも資金と収入が厚い方を近く見る', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const near = game.currentPlayer();
+    const far = game.players[1];
+
+    near.landmarks[LANDMARK_NAMES.STATION] = true;
+    far.landmarks[LANDMARK_NAMES.STATION] = true;
+    near.coins = 14;
+    far.coins = 2;
+    near.cards = [createCardByName('麦畑'), createCardByName('パン屋'), createCardByName('コンビニ')];
+    far.cards = [createCardByName('麦畑')];
+    near.dormantCards = [];
+    far.dormantCards = [];
+
+    assert.ok(cpu._estimateWinDistance(near, game) < cpu._estimateWinDistance(far, game));
 });
 
 runTest('_estimateRedPressure は相手の赤カード圧を見積もる', () => {
@@ -1255,6 +1317,23 @@ runTest('buildExpert: 終盤は改装屋の積み増しよりランドマーク�
     assert.strictEqual(current.countCard('改装屋'), 2);
 });
 
+runTest('buildExpert: 改装屋2枚目以降の所持は局面評価で強くマイナスされる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    cpu._syncExpertTuningForGame(game);
+
+    const baseScore = cpu._evaluatePosition(game, game.currentPlayerIndex);
+    current.addCard(createCardByName('改装屋'));
+    const oneRenovationScore = cpu._evaluatePosition(game, game.currentPlayerIndex);
+    current.addCard(createCardByName('改装屋'));
+    const twoRenovationScore = cpu._evaluatePosition(game, game.currentPlayerIndex);
+
+    assert.ok(twoRenovationScore < oneRenovationScore - 8);
+    assert.ok(twoRenovationScore < baseScore);
+});
+
 runTest('buildExpert: 建てられるランドマークがある高コイン時はカードよりランドマークを優先する', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);
@@ -1421,6 +1500,59 @@ runTest('buildStrong: 4人戦ではテレビ局を改装屋より強い紫とし
     const renovationScore = cpu._strongPurpleAdjustment(renovation, game, current);
 
     assert.ok(tvScore > renovationScore);
+});
+
+runTest('buildStrong: 高級フレンチは相手が条件未達だと購入評価を下げる', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.coins = 5;
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = false;
+    game.players[1].landmarks[LANDMARK_NAMES.SHOPPING_MALL] = false;
+    game.players[1].landmarks[LANDMARK_NAMES.HARBOR] = false;
+    game.players[1].landmarks[LANDMARK_NAMES.RADIO_TOWER] = false;
+    game.players[1].landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = false;
+    game.players[1].landmarks[LANDMARK_NAMES.AIRPORT] = false;
+
+    const french = createCardByName('高級フレンチ');
+    const bakery = createCardByName('パン屋');
+    const frenchScore = cpu._scoreAffordablePurchase(french, game, current, { intensity: 1.4, difficulty: 'strong' });
+    const bakeryScore = cpu._scoreAffordablePurchase(bakery, game, current, { intensity: 1.4, difficulty: 'strong' });
+
+    assert.ok(frenchScore < bakeryScore);
+});
+
+runTest('buildStrong: コーン畑持ちで相手に高級フレンチがあると2軒目ランドマークを少し嫌う', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('コーン畑')];
+    current.dormantCards = [];
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[1].cards = [createCardByName('高級フレンチ')];
+    game.players[1].dormantCards = [];
+
+    const mallPenalty = cpu._strongLandmarkThresholdPenalty(LANDMARK_NAMES.SHOPPING_MALL, current, game);
+
+    assert.ok(mallPenalty > 0);
+});
+
+runTest('buildStrong: 改装屋2枚目は購入評価で強いマイナスを受ける', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 8;
+    current.cards = [createCardByName('改装屋'), createCardByName('パン屋')];
+    current.dormantCards = [];
+
+    const renovation = createCardByName('改装屋');
+    const bakery = createCardByName('パン屋');
+    const renovationScore = cpu._scoreAffordablePurchase(renovation, game, current, { intensity: 1.4, difficulty: 'strong' });
+    const bakeryScore = cpu._scoreAffordablePurchase(bakery, game, current, { intensity: 1.4, difficulty: 'strong' });
+
+    assert.ok(renovationScore < bakeryScore);
 });
 
 runTest('buildStrong: 4人戦序盤は強い紫をまだ早取りしすぎない', () => {
