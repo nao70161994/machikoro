@@ -24,6 +24,21 @@ function formatDiceOutcome(d1, d2, total) {
     return `${total}`;
 }
 
+function rollRandomDie() {
+    const cryptoApi = (typeof window !== "undefined" && window.crypto && typeof window.crypto.getRandomValues === "function")
+        ? window.crypto
+        : null;
+    if (cryptoApi) {
+        const buffer = new Uint8Array(1);
+        const limit = 252;
+        do {
+            cryptoApi.getRandomValues(buffer);
+        } while (buffer[0] >= limit);
+        return (buffer[0] % 6) + 1;
+    }
+    return Math.floor(Math.random() * 6) + 1;
+}
+
 class GameManager {
     constructor(playerCount) {
         this.players = [];
@@ -73,7 +88,7 @@ class GameManager {
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `🚉 駅：1個か2個か選んでください`);
         } else {
-            const d1 = forceDice !== null ? forceDice : Math.floor(Math.random() * 6) + 1;
+            const d1 = forceDice !== null ? forceDice : rollRandomDie();
             this.lastDice1 = 0;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
@@ -86,15 +101,15 @@ class GameManager {
     selectDiceCount(useTwo, forceDice1 = null, forceDice2 = null, tunaDice = null) {
         if (this.phase !== GAME_PHASES.SELECT_DICE) return;
         if (useTwo) {
-            const d1 = forceDice1 !== null ? forceDice1 : Math.floor(Math.random() * 6) + 1;
-            const d2 = forceDice2 !== null ? forceDice2 : Math.floor(Math.random() * 6) + 1;
+            const d1 = forceDice1 !== null ? forceDice1 : rollRandomDie();
+            const d2 = forceDice2 !== null ? forceDice2 : rollRandomDie();
             this.lastDice1 = d1;
             this.lastDice2 = d2;
             this.lastDiceResult = d1 + d2;
             this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
             this.addLog(LOG_TYPES.DICE, `🎲 ${d1}+${d2}=${this.lastDiceResult}`);
         } else {
-            const d1 = forceDice1 !== null ? forceDice1 : Math.floor(Math.random() * 6) + 1;
+            const d1 = forceDice1 !== null ? forceDice1 : rollRandomDie();
             this.lastDice1 = d1;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
@@ -275,8 +290,8 @@ class GameManager {
                     this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${card.income}コイン`);
                 } else if (card.effect === CARD_EFFECTS.TUNA) {
                     if (!p.landmarks[LANDMARK_NAMES.HARBOR]) continue;
-                    const t1 = tunaDice ? tunaDice[0] : Math.floor(Math.random() * 6) + 1;
-                    const t2 = tunaDice ? tunaDice[1] : Math.floor(Math.random() * 6) + 1;
+                    const t1 = tunaDice ? tunaDice[0] : rollRandomDie();
+                    const t2 = tunaDice ? tunaDice[1] : rollRandomDie();
                     const earn = t1 + t2;
                     p.coins += earn;
                     this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${t1}+${t2}=${earn}コイン`);

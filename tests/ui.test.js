@@ -20,6 +20,8 @@ function loadUiRuntime() {
         log: makeElement(),
         logTitle: makeElement(),
         logSummary: makeElement(),
+        pendingModal: makeElement(),
+        pendingMenu: makeElement(),
         players: makeElement(),
         tutorialBox: makeElement(),
     };
@@ -170,6 +172,30 @@ runTest('render は同じ勝利画面の再描画で連勝数を二重加算し�
 
     assert.strictEqual(first, '3');
     assert.strictEqual(second, '3');
+});
+
+runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.game = {
+        currentPlayerIndex: 0,
+        phase: 'pending',
+        pendingTV: 1,
+        pendingIT: false,
+        pendingRenovation: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        players: [
+            { name: 'Alice', coins: 3 },
+            { name: 'Bob', coins: 8 },
+        ],
+    };
+
+    context.renderPending();
+
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.ok(elements.pendingMenu.innerHTML.includes('盤面確認中もこのパネルは開いたままです'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('Bob'));
 });
 
 if (process.exitCode) {

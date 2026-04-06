@@ -220,8 +220,8 @@ const CPU_PHASE_HANDLERS = [
         name: "roll",
         run(cpu) {
             if (game.phase !== GAME_PHASES.ROLL) return;
-            const forceDice = Math.floor(Math.random() * 6) + 1;
-            const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+            const forceDice = rollRandomDie();
+            const tunaDice = [rollRandomDie(), rollRandomDie()];
             cpuDo('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
         },
     },
@@ -230,9 +230,9 @@ const CPU_PHASE_HANDLERS = [
         run(cpu) {
             if (game.phase !== GAME_PHASES.SELECT_DICE) return;
             const useTwo = cpu.chooseDiceCount(game);
-            const d1 = Math.floor(Math.random() * 6) + 1;
-            const d2 = Math.floor(Math.random() * 6) + 1;
-            const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+            const d1 = rollRandomDie();
+            const d2 = rollRandomDie();
+            const tunaDice = [rollRandomDie(), rollRandomDie()];
             cpuDo('selectDice', { useTwo, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
         },
     },
@@ -241,8 +241,8 @@ const CPU_PHASE_HANDLERS = [
         run(cpu) {
             if (game.phase !== GAME_PHASES.REROLL_CONFIRM) return;
             if (cpu.chooseReroll(game)) {
-                const forceDice = Math.floor(Math.random() * 6) + 1;
-                const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+                const forceDice = rollRandomDie();
+                const tunaDice = [rollRandomDie(), rollRandomDie()];
                 cpuDo('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
             } else {
                 cpuDo('skipReroll', {}, () => game.skipReroll());
@@ -355,11 +355,8 @@ function onRoll() {
         // 駅なし：アニメーションあり
         updateDiceDisplay(null, true);
         setTimeout(() => {
-            const forceDice = Math.floor(Math.random() * 6) + 1;
-            const tunaDice = [
-                Math.floor(Math.random() * 6) + 1,
-                Math.floor(Math.random() * 6) + 1
-            ];
+            const forceDice = rollRandomDie();
+            const tunaDice = [rollRandomDie(), rollRandomDie()];
             game.rollDice(forceDice, tunaDice);
             sendAction('rollDice', { forceDice, tunaDice });
             render();
@@ -372,12 +369,9 @@ function onSelectDiceCount(useTwo) {
     playSound('dice');
     updateDiceDisplay(null, true);
     setTimeout(() => {
-        const d1 = Math.floor(Math.random() * 6) + 1;
-        const d2 = useTwo ? Math.floor(Math.random() * 6) + 1 : 0;
-        const tunaDice = [
-            Math.floor(Math.random() * 6) + 1,
-            Math.floor(Math.random() * 6) + 1
-        ];
+        const d1 = rollRandomDie();
+        const d2 = useTwo ? rollRandomDie() : 0;
+        const tunaDice = [rollRandomDie(), rollRandomDie()];
         game.selectDiceCount(useTwo, d1, d2, tunaDice);
         sendAction('selectDice', { useTwo, d1, d2, tunaDice });
         render();
@@ -386,8 +380,8 @@ function onSelectDiceCount(useTwo) {
 }
 
 function onReroll() {
-    const forceDice = Math.floor(Math.random() * 6) + 1;
-    const tunaDice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+    const forceDice = rollRandomDie();
+    const tunaDice = [rollRandomDie(), rollRandomDie()];
     game.rerollDice(forceDice, tunaDice);
     sendAction('rerollDice', { forceDice, tunaDice });
     render();

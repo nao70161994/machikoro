@@ -19,6 +19,22 @@ runTest('rollDice後にフェーズが適切に遷移する', () => {
     assert.strictEqual(stationGame.phase, 'build');
 });
 
+runTest('rollRandomDieはwindow.cryptoがあればそれを優先する', () => {
+    runtime.window = {
+        crypto: {
+            getRandomValues(buffer) {
+                buffer[0] = 5;
+                return buffer;
+            },
+        },
+    };
+    runtime.Math.random = () => {
+        throw new Error('Math.random should not be used when crypto is available');
+    };
+
+    assert.strictEqual(runtime.rollRandomDie(), 6);
+});
+
 runTest('改装屋のpendingRenovationがランドマーク状況に応じて変化する', () => {
     const pendingGame = new GameManager(2);
     pendingGame.currentPlayer().addCard(createCardByName('改装屋'));

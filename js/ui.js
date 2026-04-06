@@ -361,9 +361,10 @@ function renderPending() {
     const isMyTurn = (!isOnlineGame && !isCPUTurn) || (isOnlineGame && game.currentPlayerIndex === myPlayerIndex);
     if (!isMyTurn) { hide(); return; }
     let html = "";
+    const inspectHint = `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
     if (game.pendingTV > 0) {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        html += `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${others.map(({ p, i }) => `<button onclick="onResolveTV(${i})">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
+        html += `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${inspectHint}${others.map(({ p, i }) => `<button onclick="onResolveTV(${i})">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
     }
     if (game.pendingBusiness > 0) {
         const current = game.currentPlayer();
