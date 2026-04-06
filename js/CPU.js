@@ -477,7 +477,7 @@ class CPU {
     chooseDiceCount(game) {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
-        if (this.difficulty === "expert") {
+        if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
             if (this._expertCrowdNormalPlan(game)) {
                 const oneScore = this._expectedDiceScore(game, false);
                 const twoScore = this._expectedDiceScore(game, true);
@@ -703,7 +703,7 @@ class CPU {
                         theirCard: target.cards.indexOf(theirCard),
                     };
                     let score;
-                    if (this.difficulty === "expert") {
+                    if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
                         score = this._scoreExpertPendingChoice(game, clone =>
                             clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
                         ) + this._expertCrowdDisruptionBonus(game, i, 10);
@@ -751,7 +751,7 @@ class CPU {
             p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
         for (const name of names) {
             let score;
-            if (this.difficulty === "expert") {
+            if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
                 score = this._scoreExpertPendingChoice(game, clone => clone.resolveCleaning(name)) +
                     this._expertCrowdCleaningWeight(game, name, 3);
             } else if (this.difficulty === "strong" && game.players.length >= 4) {
@@ -805,7 +805,7 @@ class CPU {
                     targetIndex: i,
                 };
                 let score;
-                if (this.difficulty === "expert") {
+                if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
                     score = this._scoreExpertPendingChoice(game, clone =>
                         clone.resolveMover(move.cardIndex, move.targetIndex)
                     ) - this._expertCrowdDisruptionBonus(game, i, 8);
@@ -831,7 +831,7 @@ class CPU {
     chooseRenovationTarget(game) {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
-        if (this.difficulty === "expert") {
+        if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
             let bestScore = -Infinity;
             let bestName = null;
             for (const [name, built] of Object.entries(current.landmarks)) {
