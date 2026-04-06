@@ -1918,6 +1918,15 @@ class CPU {
             Math.max(0, 18 - winDistance) * 1.4;
     }
 
+    _bestOpponentWinDistance(game, playerIndex) {
+        let best = Infinity;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === playerIndex) continue;
+            best = Math.min(best, this._estimateWinDistance(game.players[i], game));
+        }
+        return best;
+    }
+
     _evaluatePosition(game, playerIndex) {
         const player = game.players[playerIndex];
         const tuning = this.expertTuning;
@@ -2145,7 +2154,9 @@ class CPU {
                 const winnerIndex = game.players.indexOf(game.checkWinner());
                 return winnerIndex === focusIndex ? tuning.winLookaheadBonus : -tuning.loseLookaheadPenalty;
             }
-            return this._evaluatePosition(game, focusIndex);
+            const focusDistance = this._estimateWinDistance(game.players[focusIndex], game);
+            const bestOpponentDistance = this._bestOpponentWinDistance(game, focusIndex);
+            return (bestOpponentDistance - focusDistance) * 4.5;
         });
     }
 
