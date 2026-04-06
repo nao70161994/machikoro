@@ -396,6 +396,19 @@ class CPU {
         return stock;
     }
 
+    _expertLookaheadSteps(game, focusIndex, baseSteps) {
+        const player = game.players[focusIndex];
+        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+        let steps = Math.max(2, baseSteps);
+        if (remainingLandmarks <= 1) steps += game.players.length * 2;
+        else if (remainingLandmarks <= 2) steps += game.players.length;
+        if (game.phase === GAME_PHASES.BUILD) steps += 1;
+        if (game.players.length >= 4 && remainingLandmarks >= 4) steps = Math.max(2, steps - game.players.length);
+        if (this.simulationMode === "fast") steps = Math.max(2, Math.round(steps * 0.8));
+        if (this.simulationMode === "lite") steps = Math.max(2, Math.round(steps * 0.65));
+        return steps;
+    }
+
     _scoreExpertChoiceState(game, focusIndex) {
         return this._profileMeasure("expert.choiceState", () => {
             const tuning = this.expertTuning;
@@ -406,7 +419,7 @@ class CPU {
                         game,
                         this._simulationShopStock(),
                         focusIndex,
-                        Math.max(2, game.players.length * 2)
+                        this._expertLookaheadSteps(game, focusIndex, game.players.length * 2)
                     )
                 ) * Math.min(0.35, tuning.lookaheadWeight * 0.5);
             }
@@ -2049,7 +2062,12 @@ class CPU {
                 : (this.simulationMode !== "lite" && (action.type === 'landmark' || remainingLandmarks <= 2));
             if (allowBuildLookahead) {
                 score += this._profileMeasure("expert.buildLookahead", () =>
-                    this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer)
+                    this._simulateLookahead(
+                        clone,
+                        stock,
+                        ci,
+                        this._expertLookaheadSteps(clone, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer)
+                    )
                 ) * tuning.lookaheadWeight;
             }
             if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
