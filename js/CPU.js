@@ -736,8 +736,13 @@ class CPU {
                 if (i === ci) continue;
                 const target = game.players[i];
                 if (!target || target.coins <= 0) continue;
+                const targetDistance = this._estimateWinDistance(target, game);
+                const racePressure = Math.max(0, 18 - targetDistance);
+                const nextLandmarkPressure = this._coinsTowardsNextLandmark(target) * 0.4;
                 const score = this._scoreExpertPendingChoice(game, clone => clone.resolveTV(i)) +
-                    this._expertCrowdDisruptionBonus(game, i, 12);
+                    this._expertCrowdDisruptionBonus(game, i, 12) +
+                    racePressure * 0.7 +
+                    nextLandmarkPressure;
                 if (score > bestScore) {
                     bestScore = score;
                     targetIndex = i;
@@ -788,9 +793,17 @@ class CPU {
                     };
                     let score;
                     if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
+                        const targetDistance = this._estimateWinDistance(target, game);
+                        const racePressure = Math.max(0, 18 - targetDistance);
+                        const denialValue = this._ownedCardValue(theirCard, game, target);
+                        const giftValue = this._receivedCardValue(myCard, game, target);
                         score = this._scoreExpertPendingChoice(game, clone =>
                             clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
-                        ) + this._expertCrowdDisruptionBonus(game, i, 10);
+                        ) +
+                            this._expertCrowdDisruptionBonus(game, i, 10) +
+                            denialValue * 0.45 +
+                            racePressure * 0.75 -
+                            giftValue * 0.2;
                     } else if (this.difficulty === "strong" && game.players.length >= 4) {
                         score = disruptionReady
                             ? this._scoreStrongPendingChoice(game, clone =>
@@ -836,8 +849,23 @@ class CPU {
         for (const name of names) {
             let score;
             if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
+                let targetValue = 0;
+                let racePressure = 0;
+                for (let i = 0; i < game.players.length; i++) {
+                    const player = game.players[i];
+                    if (player === current) continue;
+                    const distance = this._estimateWinDistance(player, game);
+                    const pressure = Math.max(0, 18 - distance);
+                    for (const card of player.getMinorCards()) {
+                        if (card.name !== name || player.isDormant(card)) continue;
+                        targetValue += this._ownedCardValue(card, game, player);
+                        racePressure += pressure;
+                    }
+                }
                 score = this._scoreExpertPendingChoice(game, clone => clone.resolveCleaning(name)) +
-                    this._expertCrowdCleaningWeight(game, name, 3);
+                    this._expertCrowdCleaningWeight(game, name, 3) +
+                    targetValue * 0.18 +
+                    racePressure * 0.45;
             } else if (this.difficulty === "strong" && game.players.length >= 4) {
                 score = disruptionReady
                     ? this._scoreStrongPendingChoice(game, clone => clone.resolveCleaning(name))

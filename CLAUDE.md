@@ -117,8 +117,13 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - `expert` は `expertPreset` + `expertProfileTunings` で人数別 tuning を持つ
 - 2人戦 (`duel`) と 4人戦 (`crowd`) は別調整前提
 - 4人戦の `expert` は現在調整途中で、序中盤は `normal` 寄りの crowd-normal 方針を使う
-- `simulationMode` は `"full"` / `"fast"` / `"lite"` を持つ
+- `simulationMode` は `"full"` / `"fast"` / `"lite"` に加えて、実戦用の軽量 `"realtime"` を持つ
+- `expertPurpose: "training" | "live"` で学習用と実戦用を分離している。通常対戦は `live`、self-play / tuning は `training`
 - `"lite"` は self-play 専用のさらに軽い mode で、4人戦比較・学習用
+- 局面評価は `winDistance` を中心に見る。残ランドマーク総コスト、進行収入、次ランドマーク到達遅延をまとめて勝利距離として扱う
+- `lookahead` は未決着時に単なる静的評価ではなく「自分と最短相手の `winDistance` 差」を返す
+- `lookahead` の深さは局面依存で、終盤ほど深く、4人戦序盤ほど浅くする
+- `TV` / `Business` / `Cleaning` の pending 選択は、通常の盤面評価に加えて相手の進行圧や `winDistance` を使った専用補正を持つ
 
 **重要**: `_buyCard()` と `_buyLandmark()` はオンライン対戦中（`isOnlineGame === true`）に `sendAction()` を呼ぶ。これにより非ホスト側にCPUの建設アクションが伝わる。`typeof isOnlineGame !== 'undefined'` ガードによりテスト環境では呼ばれない。
 

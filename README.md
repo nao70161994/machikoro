@@ -77,7 +77,10 @@ npm run selfplay -- --games 10 --lite expert normal normal normal
 - `--details` を付けると各試合の勝者、ターン数、最終盤面サマリを表示します。
 - `--fast` は `expert` の探索を軽くした比較用モードです。
 - `--lite` はさらに軽い self-play 専用モードで、4 人戦 `expert` の比較・学習を回しやすくするためのものです。
-- 通常の `expert` CPU は `default` プリセットを使います。`refined` は探索で出た候補として比較用に残しています。
+- 通常の `expert` CPU は `default` プリセットを使い、実戦では `expertPurpose: "live"` の軽量ロジック、self-play / tuning では `training` の重いロジックを使います。
+- 現在の `expert` は `winDistance` ベースの局面評価、未決着 lookahead の勝利距離差評価、局面依存の lookahead 深さ調整を含みます。
+- `TV` / `Business` / `Cleaning` の pending 選択には、相手の進行圧を使った専用補正が入っています。
+- `refined` は探索で出た候補として比較用に残しています。
 
 `expert` の近傍探索:
 
@@ -148,6 +151,7 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 - `train-expert-crowd` は `expert vs normal,normal,normal` を前提に、`lite` self-play で crowd tuning を探索します。
 - 現在の 4 人戦 `expert` は調整途中で、序中盤を `normal` 寄りにした crowd-normal 方針を使っています。
 - 既定 `expert` の `crowd` tuning も、妨害寄りではなく安定収入とランドマーク進行を重視する方向に更新済みです。
+- 4 人戦でも終盤は `winDistance` と pending 妨害評価を使って、先行相手への干渉を少し強めています。
 
 ## プロジェクト構成
 
