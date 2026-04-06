@@ -1841,26 +1841,54 @@ class CPU {
         return total;
     }
 
+    _estimateProgressIncome(game, player) {
+        if (!game || !player) return 0;
+        let total = 0;
+        for (const card of player.cards) {
+            if (!card || player.isDormant(card)) continue;
+            if (card.color !== "blue" && card.color !== "green") continue;
+            if ([
+                CARD_EFFECTS.LOAN,
+                CARD_EFFECTS.RENOVATION,
+                CARD_EFFECTS.ITSTARTUP,
+                CARD_EFFECTS.PARK,
+                CARD_EFFECTS.BUSINESS,
+                CARD_EFFECTS.CLEANING,
+                CARD_EFFECTS.MOVER,
+            ].includes(card.effect)) continue;
+            total += this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6;
+        }
+        return total;
+    }
+
     _estimateWinDistance(player, game) {
         if (!player || !game || !game.enabledLandmarks) return Infinity;
         const remaining = [...game.enabledLandmarks]
             .filter(name => !player.landmarks[name])
-            .map(name => Player.landmarkCost(name));
+            .map(name => ({
+                name,
+                cost: Player.landmarkCost(name),
+                urgency: this._landmarkUrgency(name, player, game),
+            }));
         if (remaining.length === 0) return 0;
         const playerIndex = game.players.indexOf(player);
         const turnValue = playerIndex >= 0 ? this._estimatePlayerTurnValue(game, playerIndex) : 0;
-        const reachable = this._countReachableLandmarks(player, [...game.enabledLandmarks]);
-        const totalRemainingCost = remaining.reduce((sum, cost) => sum + cost, 0);
-        const cheapestRemainingCost = Math.min(...remaining);
-        const effectiveRemainingCost = Math.max(
-            0,
-            totalRemainingCost - player.coins - reachable * 2.5 - Math.max(0, player.coins - cheapestRemainingCost) * 0.4
+        const reachable = remaining.filter(entry => player.coins >= entry.cost).length;
+        const totalRemainingCost = remaining.reduce((sum, entry) => sum + entry.cost, 0);
+        const nextLandmark = remaining
+            .slice()
+            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost)[0];
+        const nextShortfall = Math.max(0, nextLandmark.cost - player.coins);
+        const progressIncome = this._estimateProgressIncome(game, player);
+        const effectiveGainPerTurn = Math.max(
+            1.2,
+            progressIncome * 0.85 + turnValue * 0.12 + reachable * 0.6
         );
-        const expectedGainPerTurn = Math.max(
-            1.5,
-            turnValue * 0.6 + reachable * 1.8 + player.builtLandmarkCount() * 0.6
-        );
-        return Number((effectiveRemainingCost / expectedGainPerTurn + remaining.length * 0.35).toFixed(3));
+        const routeCost = totalRemainingCost - Math.min(player.coins, totalRemainingCost);
+        const landmarkSteps = routeCost / effectiveGainPerTurn;
+        const nextStepDelay = nextShortfall / Math.max(1, progressIncome * 0.9 + turnValue * 0.08);
+        const distance = landmarkSteps + nextStepDelay * 0.7 + remaining.length * 0.45 - reachable * 0.5;
+        return Number(Math.max(0, distance).toFixed(3));
     }
 
     _estimateRedPressure(game, playerIndex) {
