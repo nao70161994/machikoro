@@ -46,6 +46,9 @@ Tests:
 - `tests/cpu.test.js`: CPU decision logic tests.
 - `tests/online.test.js`: online client flow tests.
 - `tests/main.test.js`: main bootstrap / flow regression tests.
+- `tests/selfplay.test.js`: self-play script regression tests.
+- `tests/tune-expert.test.js`: expert tuning script regression tests.
+- `tests/train-expert-crowd.test.js`: 4-player `expert vs normal,normal,normal` tuning helper tests.
 
 Default ownership rules:
 
@@ -74,6 +77,10 @@ Important gameplay/runtime details from the current implementation:
 - Log entries are structured objects, not free-form strings.
 - Player order can be shuffled for online play, so validations must use the server's mapped player order rather than assuming UI index equals socket player index.
 - CPU turns are host-driven online. Changes to CPU action timing must be checked for duplicate sends and stalled turns.
+- `expert` CPU has profile-specific tuning. Current work treats 4-player `expert` as a separate balancing problem from 2-player `expert`.
+- `scripts/selfplay.js` supports `--fast` and `--lite` for cheaper `expert` evaluation. `--lite` is intended for repeated self-play/tuning loops, especially in 4-player crowd scenarios.
+- `scripts/tune-expert.js` supports `crowdNormal` / `crowd-normal` to compare `expert` directly against `normal,normal,normal`.
+- `scripts/train-expert-crowd.js` is the current lightweight tuning helper for `expert vs normal,normal,normal`.
 - App-level Socket.IO failures use the dedicated `appError` event; avoid overloading transport-level `error`.
 - Service Worker/version mismatch behavior is part of the product. If you touch cached assets, startup flow, or online game screens, consider update-banner and reload behavior.
 
@@ -97,6 +104,7 @@ Expected verification:
 
 - If you edit one or more client files, run `node --check` on each edited `js/*.js` file.
 - If you change rules, online flow, server validation, or shared gameplay behavior, run `npm test`.
+- If you change CPU/self-play/tuning behavior, run the relevant targeted tests (`tests/cpu.test.js`, `tests/selfplay.test.js`, `tests/tune-expert.test.js`, `tests/train-expert-crowd.test.js`) in addition to `npm test` when practical.
 - If you change online/reconnect behavior, manually verify room create/join, reconnect, host migration or restart recovery, CPU turns, and undo sync.
 - If you change PWA/update behavior, manually verify Service Worker update prompts and reload behavior.
 

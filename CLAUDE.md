@@ -108,9 +108,17 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 ### CPU（js/CPU.js）
 
-`difficulty`: `"weak"` / `"normal"` / `"strong"` の3段階。`build()` は `buildWeak` / `buildNormal` / `buildStrong` に委譲。スコアリングは `evalCard()` + `sortAffordable()` でコスパ評価。CPU判断ロジックは大幅に強化済み（手番ごとの期待値・他プレイヤー状況考慮）。
+`difficulty`: `"weak"` / `"normal"` / `"strong"` / `"expert"` の4段階。`build()` は `buildWeak` / `buildNormal` / `buildStrong` / `buildExpert` に委譲。CPU判断ロジックは大幅に強化済みで、人数別プロファイル・pending 解決・自己対戦用軽量モードまで持つ。
 
 `GameManager.calcCardIncome(card, owner, game)` 静的メソッドで multiplier 系の収入を計算（CPU と GameManager の両方が使用）。
+
+#### expert の補足
+
+- `expert` は `expertPreset` + `expertProfileTunings` で人数別 tuning を持つ
+- 2人戦 (`duel`) と 4人戦 (`crowd`) は別調整前提
+- 4人戦の `expert` は現在調整途中で、序中盤は `normal` 寄りの crowd-normal 方針を使う
+- `simulationMode` は `"full"` / `"fast"` / `"lite"` を持つ
+- `"lite"` は self-play 専用のさらに軽い mode で、4人戦比較・学習用
 
 **重要**: `_buyCard()` と `_buyLandmark()` はオンライン対戦中（`isOnlineGame === true`）に `sendAction()` を呼ぶ。これにより非ホスト側にCPUの建設アクションが伝わる。`typeof isOnlineGame !== 'undefined'` ガードによりテスト環境では呼ばれない。
 
@@ -165,13 +173,24 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 npm test    # tests/run-all.js → gamemanager.test.js + server.test.js + cpu.test.js + online.test.js
 ```
 
+自己対戦・tuning 関連:
+
+```
+npm run selfplay -- --games 10 --lite expert normal normal normal
+npm run tune-expert -- --games 8 --profiles duel,crowdNormal --top 3
+npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --profile crowdNormal
+```
+
 Node.js 組み込み `assert` モジュールのみ使用。現在 **93テスト**（gamemanager.test.js: 41, server.test.js: 27, cpu.test.js: 15, online.test.js: 10）。
 
 | ファイル | 内容 |
 |---------|------|
 | `tests/gamemanager.test.js` | GameManager 単体テスト（フェーズ遷移・pendingRenovation・buildCard・テレビ局・ITベンチャー・電波塔・ログリセット・CARDSソート・processIncome・calcCardIncome・LOG_TYPES構造など） |
 | `tests/server.test.js` | サーバー回帰テスト（validateGameAction・sanitizeName・validateCleaningPayload・validateRenovationPayload・playerOrderシャッフル対応等） |
-| `tests/cpu.test.js` | CPU単体テスト（evalCard・chooseDiceCount・chooseReroll・_landmarkUrgency・sortAffordable） |
+| `tests/cpu.test.js` | CPU単体テスト（evalCard・chooseDiceCount・chooseReroll・_landmarkUrgency・sortAffordable・expert crowd/light mode） |
+| `tests/selfplay.test.js` | `scripts/selfplay.js` の回帰テスト |
+| `tests/tune-expert.test.js` | `scripts/tune-expert.js` の回帰テスト |
+| `tests/train-expert-crowd.test.js` | `scripts/train-expert-crowd.js` の回帰テスト |
 | `tests/online.test.js` | オンライン関連テスト（applyAction・initOnlineGame） |
 | `tests/run-all.js` | 4ファイルを順次実行するエントリポイント |
 

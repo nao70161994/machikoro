@@ -65,10 +65,18 @@ npm run selfplay -- --games 20 expert strong strong normal
 npm run selfplay -- --games 20 --compare-presets default,rush,economy expert strong strong normal
 ```
 
+軽量な `expert` 自己対戦:
+
+```bash
+npm run selfplay -- --games 10 --lite expert normal normal normal
+```
+
 - `--expert-preset <name>` で `expert` の評価係数セットを切り替えます。
 - `--compare-presets a,b,c` で複数プリセットを同条件で連続比較します。
 - `--format json` を付けると集計と試合明細を JSON で出力します。
 - `--details` を付けると各試合の勝者、ターン数、最終盤面サマリを表示します。
+- `--fast` は `expert` の探索を軽くした比較用モードです。
+- `--lite` はさらに軽い self-play 専用モードで、4 人戦 `expert` の比較・学習を回しやすくするためのものです。
 - 通常の `expert` CPU は `default` プリセットを使います。`refined` は探索で出た候補として比較用に残しています。
 
 `expert` の近傍探索:
@@ -129,7 +137,17 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 
 - `--proposal-depth N` を付けると、各プロファイルの上位 `N` 件を組み合わせた提案候補をまとめてランキングします。
 - `--finalist-count N --finalist-games M` を付けると、ランキング上位 `N` 候補だけを `M` 試合で再評価します。
 - `--emit-winners` を付けると、`finalist` 再評価で勝ち越した候補だけを `CPU._expertPresets()` に貼り付けやすい形で出力します。
-- 現在の既定 `expert` は、小サンプル self-play の人数別首位候補に合わせて `duel` で `lowValueSpamPenalty=5.1`、`crowd` で `landmarkActionBonus=21.6` を自動適用します。
+- `crowdNormal` / `crowd-normal` プロファイルを使うと、`expert vs normal,normal,normal` 専用の探索ができます。
+
+4 人戦 `expert` 向けの軽量探索:
+
+```bash
+npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --profile crowdNormal
+```
+
+- `train-expert-crowd` は `expert vs normal,normal,normal` を前提に、`lite` self-play で crowd tuning を探索します。
+- 現在の 4 人戦 `expert` は調整途中で、序中盤を `normal` 寄りにした crowd-normal 方針を使っています。
+- 既定 `expert` の `crowd` tuning も、妨害寄りではなく安定収入とランドマーク進行を重視する方向に更新済みです。
 
 ## プロジェクト構成
 
@@ -153,6 +171,12 @@ npm run tune-expert -- --games 8 --profiles duel,crowd --top 2 --proposal-depth 
 - `js/main.js`: 起動、入力、CPU 進行、タイトル/ゲーム画面制御
 - `js/stats.js`: ローカル統計表示
 - `js/appShell.js`: クラッシュ表示、オフライン表示、PWA インストールバナー、初期ビュー初期化
+
+自己対戦 / tuning スクリプト:
+
+- `scripts/selfplay.js`: CPU 自己対戦、プリセット比較、`--fast` / `--lite` 軽量モード
+- `scripts/tune-expert.js`: `expert` の近傍探索、人数別プロファイル比較
+- `scripts/train-expert-crowd.js`: `expert vs normal,normal,normal` 専用の crowd tuning 探索
 
 テスト:
 
