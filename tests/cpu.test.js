@@ -195,8 +195,33 @@ runTest('expert は既定で人数別 profile tuning を持つ', () => {
     assert.strictEqual(cpu.expertTuning.lowValueSpamPenalty, 5.1);
 
     cpu._syncExpertTuningForGame(crowd);
-    assert.strictEqual(cpu.expertTuning.landmarkActionBonus, 22);
-    assert.strictEqual(cpu.expertTuning.leaderThreatWeight, 0.35);
+    assert.strictEqual(cpu.expertTuning.landmarkActionBonus, 18);
+    assert.strictEqual(cpu.expertTuning.leaderThreatWeight, 0.08);
+});
+
+runTest('_expertCrowdNormalPlan: expert 4人戦の序中盤では normal 寄りプランを使う', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    assert.strictEqual(cpu._expertCrowdNormalPlan(game), true);
+
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    current.cards = [
+        createCardByName('コンビニ'),
+        createCardByName('コンビニ'),
+        createCardByName('コンビニ'),
+        createCardByName('コンビニ'),
+        createCardByName('麦畑'),
+        createCardByName('麦畑'),
+        createCardByName('パン屋'),
+        createCardByName('パン屋'),
+        createCardByName('カフェ'),
+    ];
+    assert.strictEqual(cpu._expertCrowdNormalPlan(game), false);
 });
 
 runTest('all CPU difficulties: 勝てる最後のランドマークがあるなら必ず建てる', () => {
@@ -380,6 +405,33 @@ runTest('_estimateOpponentThreat は進行した相手ほど高く見積もる',
     assert.ok(cpu._estimateOpponentThreat(leader, game) > cpu._estimateOpponentThreat(follower, game));
 });
 
+runTest('_opponentDilutionFactor は対戦人数が増えるほど小さくなる', () => {
+    const cpu = new CPU("strong");
+    const duel = new GameManager(2);
+    const crowd = new GameManager(4);
+
+    assert.strictEqual(cpu._opponentDilutionFactor(duel), 1);
+    assert.strictEqual(cpu._opponentDilutionFactor(crowd), 1 / 3);
+});
+
+runTest('_strongCrowdOneDieOpponents は駅未建設の相手人数を返す', () => {
+    const cpu = new CPU("strong");
+    const crowd = new GameManager(4);
+
+    crowd.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+
+    assert.strictEqual(cpu._strongCrowdOneDieOpponents(crowd), 2);
+});
+
+runTest('_strongCrowdAttackScale は4人戦strongで妨害価値をさらに薄める', () => {
+    const cpu = new CPU("strong");
+    const duel = new GameManager(2);
+    const crowd = new GameManager(4);
+
+    assert.strictEqual(cpu._strongCrowdAttackScale(duel), 1);
+    assert.strictEqual(cpu._strongCrowdAttackScale(crowd), (1 / 3) * 0.45);
+});
+
 runTest('_crowdLeaderBonus は多人数戦のトップ相手に高い補正を返す', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(4);
@@ -468,61 +520,101 @@ runTest('_landmarkUrgency: 駅はbuiltCount<2で緊急度8、>=2で5を返す', 
     assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.STATION, current, game), 5);
 });
 
-runTest('_landmarkUrgency: ショッピングモールは飲食店/商店カード>=3で8、未満で4を返す', () => {
+runTest('_landmarkUrgency: ショッピングモールは対象カードが多いほど高くなる', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
     const current = game.currentPlayer();
 
-    // 飲食店・商店合計2枚（<3）
     current.cards = [createCardByName('パン屋'), createCardByName('カフェ')];
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.SHOPPING_MALL, current, game), 4);
+    const base = cpu._landmarkUrgency(LANDMARK_NAMES.SHOPPING_MALL, current, game);
 
-    // 飲食店・商店合計3枚（>=3）
-    current.cards = [createCardByName('パン屋'), createCardByName('カフェ'), createCardByName('コンビニ')];
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.SHOPPING_MALL, current, game), 8);
+    current.cards = [
+        createCardByName('パン屋'),
+        createCardByName('カフェ'),
+        createCardByName('コンビニ'),
+        createCardByName('カフェ'),
+        createCardByName('パン屋'),
+    ];
+    assert.ok(cpu._landmarkUrgency(LANDMARK_NAMES.SHOPPING_MALL, current, game) > base);
 });
 
-runTest('_landmarkUrgency: 港は関連カード所持で7、未所持で3を返す', () => {
-    const cpu = new CPU("normal");
+runTest('_landmarkUrgency: 港は関連カードと特にマグロ漁船で高くなる', () => {
+    const cpu = new CPU("strong");
     const game = new GameManager(2);
     const current = game.currentPlayer();
 
-    // 港関連カードなし
     current.cards = [createCardByName('麦畑')];
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.HARBOR, current, game), 3);
+    const base = cpu._landmarkUrgency(LANDMARK_NAMES.HARBOR, current, game);
 
-    // サンマ漁船（harbor effect）を所持
     current.cards = [createCardByName('サンマ漁船')];
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.HARBOR, current, game), 7);
+    const withHarborCard = cpu._landmarkUrgency(LANDMARK_NAMES.HARBOR, current, game);
+    assert.ok(withHarborCard > base);
 
-    // マグロ漁船（tuna effect）を所持
-    current.cards = [createCardByName('マグロ漁船')];
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.HARBOR, current, game), 7);
+    current.cards = [createCardByName('マグロ漁船'), createCardByName('マグロ漁船')];
+    assert.ok(cpu._landmarkUrgency(LANDMARK_NAMES.HARBOR, current, game) > withHarborCard);
 });
 
-runTest('_landmarkUrgency: 電波塔はbuiltCount>=3か相手maxBuilt>=4で8、それ以外で4を返す', () => {
-    const cpu = new CPU("normal");
+runTest('_landmarkUrgency: 電波塔は進行局面や高分散構成で高くなる', () => {
+    const cpu = new CPU("strong");
     const game = new GameManager(2);
     const current = game.currentPlayer();
-    const opponent = game.players[1];
+    const base = cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, current, game);
 
-    // builtCount=0、相手builtCount=0
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, current, game), 4);
-
-    // 自分builtCount=3以上
     current.landmarks[LANDMARK_NAMES.STATION] = true;
     current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
     current.landmarks[LANDMARK_NAMES.HARBOR] = true;
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, current, game), 8);
+    const progressed = cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, current, game);
+    assert.ok(progressed > base);
 
-    // 自分リセット、相手builtCount=4以上
     const game2 = new GameManager(2);
-    const opp2 = game2.players[1];
-    opp2.landmarks[LANDMARK_NAMES.STATION] = true;
-    opp2.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
-    opp2.landmarks[LANDMARK_NAMES.HARBOR] = true;
-    opp2.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
-    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, game2.players[0], game2), 8);
+    const current2 = game2.currentPlayer();
+    current2.landmarks[LANDMARK_NAMES.STATION] = true;
+    current2.cards = [
+        createCardByName('チーズ工場'),
+        createCardByName('家具工場'),
+        createCardByName('マグロ漁船'),
+        createCardByName('テレビ局'),
+    ];
+    current2.dormantCards = [];
+    assert.ok(cpu._landmarkUrgency(LANDMARK_NAMES.RADIO_TOWER, current2, game2) > base);
+});
+
+runTest('_landmarkUrgency: 空港は終盤や盤面成熟時に高くなる', () => {
+    const cpu = new CPU("normal");
+    const early = new GameManager(2);
+    const late = new GameManager(2);
+
+    late.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+    late.currentPlayer().landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    late.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] = true;
+    late.currentPlayer().landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    late.currentPlayer().cards = [createCardByName('麦畑')];
+    late.currentPlayer().dormantCards = [];
+
+    assert.ok(
+        cpu._landmarkUrgency(LANDMARK_NAMES.AIRPORT, late.currentPlayer(), late) >
+        cpu._landmarkUrgency(LANDMARK_NAMES.AIRPORT, early.currentPlayer(), early)
+    );
+});
+
+runTest('_landmarkUrgency: 遊園地は2個振り恩恵カードが多いと高くなる', () => {
+    const cpu = new CPU("strong");
+    const baseGame = new GameManager(2);
+    const richGame = new GameManager(2);
+
+    baseGame.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+    richGame.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+    richGame.currentPlayer().cards = [
+        createCardByName('チーズ工場'),
+        createCardByName('家具工場'),
+        createCardByName('テレビ局'),
+    ];
+    richGame.currentPlayer().dormantCards = [];
+
+    assert.ok(
+        cpu._landmarkUrgency(LANDMARK_NAMES.AMUSEMENT_PARK, richGame.currentPlayer(), richGame) >
+        cpu._landmarkUrgency(LANDMARK_NAMES.AMUSEMENT_PARK, baseGame.currentPlayer(), baseGame)
+    );
 });
 
 runTest('_landmarkUrgency: 4人戦は2人戦以上にランドマークを急ぐ', () => {
@@ -545,24 +637,53 @@ runTest('sortAffordable: ダイス確率を加味したスコア順にソート�
     player.cards = [];
     player.dormantCards = [];
 
-    // ダイス頻度重み: dice1=1, dice2=1, dice3=2, dice9=4
-    // 鉱山(dice 9, income 5, cost 6): score = 5*4/6 ≈ 3.33
-    // パン屋(dice 2-3, income 1, cost 1): score = 1*(1+2)/1 = 3.0
-    // 麦畑(dice 1, income 1, cost 1): score = 1*1/1 = 1.0
-    // → 鉱山 > パン屋 > 麦畑
+    // 駅なしでは自分ターン系カードは1個振り前提で評価される
     const cards = [createCardByName('麦畑'), createCardByName('鉱山'), createCardByName('パン屋')];
     const sorted = cpu.sortAffordable(cards, game, player);
 
     assert.strictEqual(sorted.length, 3);
-    // 麦畑はダイス頻度が最低なので最後
-    assert.strictEqual(sorted[sorted.length - 1].card.name, '麦畑');
-    // 鉱山はダイス頻度×収入/コストが最高なので先頭
-    assert.strictEqual(sorted[0].card.name, '鉱山');
+    assert.strictEqual(sorted[0].card.name, '麦畑');
+    assert.strictEqual(sorted[sorted.length - 1].card.name, '鉱山');
     // 全てスコアフィールドを持つ
     for (const entry of sorted) {
         assert.ok(typeof entry.score === 'number');
         assert.ok(typeof entry.card === 'object' && entry.card !== null);
     }
+});
+
+runTest('_cardDiceFreq: 緑/紫は自分の駅所持で高出目を評価しやすくなる', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    const cheese = createCardByName('チーズ工場');
+
+    const noStation = cpu._cardDiceFreq(cheese, game, player);
+    player.landmarks[LANDMARK_NAMES.STATION] = true;
+    const withStation = cpu._cardDiceFreq(cheese, game, player);
+
+    assert.ok(withStation > noStation);
+});
+
+runTest('_cardDiceFreq: 赤は相手の駅所持で高出目を評価しやすくなる', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    const target = game.players[1];
+    const family = createCardByName('ファミレス');
+
+    const noStation = cpu._cardDiceFreq(family, game, player);
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    const withStation = cpu._cardDiceFreq(family, game, player);
+
+    assert.ok(withStation > noStation);
+});
+
+runTest('_strongSoftCapValue: strong は大きすぎる単発収入を逓減評価する', () => {
+    const cpu = new CPU("strong");
+
+    assert.strictEqual(cpu._strongSoftCapValue(10), 10);
+    assert.ok(cpu._strongSoftCapValue(20) < 20);
+    assert.ok(cpu._strongSoftCapValue(40) < 30);
 });
 
 runTest('evalCard: 多人数戦では全体攻撃は維持しつつ赤カード偏重を抑える', () => {
@@ -583,6 +704,51 @@ runTest('evalCard: 4人戦では安定収入カードを2人戦以上に評価�
     const bakery = createCardByName('パン屋');
 
     assert.ok(cpu.evalCard(bakery, crowded, crowded.currentPlayer()) > cpu.evalCard(bakery, duel, duel.currentPlayer()));
+});
+
+runTest('strong tempo: 青/赤は駅未建設の相手が多いほど出目6以下カードを高く見る', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    const wheat = createCardByName('麦畑');
+    const tuna = createCardByName('マグロ漁船');
+
+    const earlyScore = cpu._scoreAffordablePurchase(wheat, game, current, { difficulty: "strong" });
+    const earlyHighScore = cpu._scoreAffordablePurchase(tuna, game, current, { difficulty: "strong" });
+
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[2].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[3].landmarks[LANDMARK_NAMES.STATION] = true;
+
+    const lateScore = cpu._scoreAffordablePurchase(wheat, game, current, { difficulty: "strong" });
+    const lateHighScore = cpu._scoreAffordablePurchase(tuna, game, current, { difficulty: "strong" });
+
+    assert.ok(earlyScore > lateScore);
+    assert.ok(earlyHighScore < lateHighScore);
+});
+
+runTest('strong tempo: 緑/紫は相手ではなく自分の駅状況で出目帯を評価する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const bakery = createCardByName('パン屋');
+    const cheese = createCardByName('チーズ工場');
+
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[2].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[3].landmarks[LANDMARK_NAMES.STATION] = true;
+
+    current.landmarks[LANDMARK_NAMES.STATION] = false;
+    const oneDieLow = cpu._scoreAffordablePurchase(bakery, game, current, { difficulty: "strong" });
+    const oneDieHigh = cpu._scoreAffordablePurchase(cheese, game, current, { difficulty: "strong" });
+
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    const twoDiceLow = cpu._scoreAffordablePurchase(bakery, game, current, { difficulty: "strong" });
+    const twoDiceHigh = cpu._scoreAffordablePurchase(cheese, game, current, { difficulty: "strong" });
+
+    assert.ok(oneDieLow > twoDiceLow);
+    assert.ok(oneDieHigh < twoDiceHigh);
 });
 
 runTest('build: builtThisTurn 済みなら追加建設を試みない', () => {
@@ -693,6 +859,36 @@ runTest('chooseBusinessMove: expert は多人数戦でリーダー妨害を優�
     assert.strictEqual(move.targetIndex, 1);
 });
 
+runTest('chooseBusinessMove: strong は相手のキーカードを交換対象にしやすい', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+
+    game.players[1].cards = [
+        createCardByName('牧場'),
+        createCardByName('牧場'),
+        createCardByName('牧場'),
+        createCardByName('チーズ工場'),
+        createCardByName('カフェ'),
+    ];
+    game.players[1].dormantCards = [];
+
+    game.players[2].cards = [
+        createCardByName('カフェ'),
+        createCardByName('麦畑'),
+    ];
+    game.players[2].dormantCards = [];
+
+    const move = cpu.chooseBusinessMove(game);
+    const target = game.players[move.targetIndex];
+    const theirCard = target.cards[move.theirCard];
+
+    assert.strictEqual(move.targetIndex, 1);
+    assert.strictEqual(theirCard.name, 'チーズ工場');
+});
+
 runTest('chooseCleaningTarget: 自分より相手の被害が大きいカード名を選ぶ', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(3);
@@ -737,6 +933,32 @@ runTest('chooseCleaningTarget: expert は多人数戦でリーダーの主力を
     other.dormantCards = [];
 
     assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+});
+
+runTest('chooseCleaningTarget: strong は相手エンジンの主力カード名を狙いやすい', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+
+    game.players[1].cards = [
+        createCardByName('牧場'),
+        createCardByName('牧場'),
+        createCardByName('牧場'),
+        createCardByName('チーズ工場'),
+        createCardByName('チーズ工場'),
+    ];
+    game.players[1].dormantCards = [];
+
+    game.players[2].cards = [
+        createCardByName('カフェ'),
+        createCardByName('カフェ'),
+        createCardByName('カフェ'),
+    ];
+    game.players[2].dormantCards = [];
+
+    assert.strictEqual(cpu.chooseCleaningTarget(game), 'チーズ工場');
 });
 
 runTest('chooseMoverMove: 価値の低い休業中カードを優先して渡す', () => {
@@ -795,6 +1017,19 @@ runTest('expert fast mode は lookahead を軽くする', () => {
     assert.ok(cpu.expertTuning.lateGameLookaheadStepsPerPlayer < cpu.baseExpertTuning.lateGameLookaheadStepsPerPlayer);
 });
 
+runTest('expert lite mode は fast よりさらに lookahead を軽くする', () => {
+    const fastCpu = new CPU("expert", { simulationMode: "fast" });
+    const liteCpu = new CPU("expert", { simulationMode: "lite" });
+    const game = new GameManager(4);
+
+    fastCpu._syncExpertTuningForGame(game);
+    liteCpu._syncExpertTuningForGame(game);
+
+    assert.ok(liteCpu.expertTuning.lookaheadWeight < fastCpu.expertTuning.lookaheadWeight);
+    assert.ok(liteCpu.expertTuning.lateGameLookaheadStepsPerPlayer <= fastCpu.expertTuning.lateGameLookaheadStepsPerPlayer);
+    assert.strictEqual(liteCpu._shouldUseExpertChoiceLookahead(game, game.currentPlayerIndex), false);
+});
+
 runTest('chooseRenovationTarget: expert は盤面評価で対象を選ぶ', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);
@@ -820,14 +1055,14 @@ runTest('chooseRenovationTarget: expert は価値の高いランドマークを�
     assert.strictEqual(target, LANDMARK_NAMES.SHOPPING_MALL);
 });
 
-runTest('chooseITSave: expert は4人戦序盤で積立を抑える', () => {
+runTest('chooseITSave: expert は4人戦序盤では normal 寄りに積立できる', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(4);
     const current = game.currentPlayer();
     current.coins = 3;
     current.landmarks[LANDMARK_NAMES.STATION] = true;
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITSave(game), true);
 });
 
 runTest('chooseITSave: expert は重要ランドマーク直前なら積立を見送る', () => {
@@ -1130,6 +1365,119 @@ runTest('buildStrong: 赤カード過多なら収入基盤やランドマーク�
     assert.notStrictEqual(current.countCard('カフェ'), 4);
 });
 
+runTest('buildStrong: 4人戦序中盤は normal 寄りにランドマークを優先する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.coins = 12;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('カフェ'), createCardByName('カフェ'), createCardByName('麦畑')];
+    current.dormantCards = [];
+
+    cpu.buildStrong(game, stock);
+
+    assert.ok(current.builtLandmarkCount() >= 2 || current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] || current.landmarks[LANDMARK_NAMES.HARBOR]);
+});
+
+runTest('buildStrong: 4人戦では駅未建設の相手が多い間は低出目の経済カード評価が上がる', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.coins = 5;
+    current.cards = [];
+    current.dormantCards = [];
+    for (let i = 1; i < game.players.length; i++) {
+        game.players[i].landmarks[LANDMARK_NAMES.STATION] = false;
+    }
+
+    const lowDice = createCardByName('パン屋');
+    const highDice = createCardByName('チーズ工場');
+    const lowScore = cpu._scoreAffordablePurchase(lowDice, game, current, { intensity: 1.4, difficulty: 'strong' });
+    const highScore = cpu._scoreAffordablePurchase(highDice, game, current, { intensity: 1.4, difficulty: 'strong' });
+
+    assert.ok(lowScore > highScore);
+});
+
+runTest('buildStrong: 4人戦ではテレビ局を改装屋より強い紫として補正する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.coins = 7;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('パン屋'), createCardByName('コンビニ'), createCardByName('麦畑')];
+    current.dormantCards = [];
+    game.players[1].coins = 8;
+    game.players[2].coins = 6;
+    game.players[3].coins = 5;
+
+    const tv = createCardByName('テレビ局');
+    const renovation = createCardByName('改装屋');
+    const tvScore = cpu._strongPurpleAdjustment(tv, game, current);
+    const renovationScore = cpu._strongPurpleAdjustment(renovation, game, current);
+
+    assert.ok(tvScore > renovationScore);
+});
+
+runTest('buildStrong: 4人戦序盤は強い紫をまだ早取りしすぎない', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.coins = 7;
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+
+    const tv = createCardByName('テレビ局');
+    const bakery = createCardByName('パン屋');
+    const tvScore = cpu._scoreAffordablePurchase(tv, game, current, { difficulty: 'strong' });
+    const bakeryScore = cpu._scoreAffordablePurchase(bakery, game, current, { difficulty: 'strong' });
+
+    assert.ok(bakeryScore > tvScore);
+});
+
+runTest('landmark synergy: 駅があると高出目カードをやや高く評価する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const cheese = createCardByName('チーズ工場');
+
+    const noStation = cpu._scoreAffordablePurchase(cheese, game, current, { difficulty: 'strong' });
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    const withStation = cpu._scoreAffordablePurchase(cheese, game, current, { difficulty: 'strong' });
+
+    assert.ok(withStation > noStation);
+});
+
+runTest('landmark synergy: ショッピングモールがあると商店/飲食店を高く評価する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const convenience = createCardByName('コンビニ');
+
+    const noMall = cpu._scoreAffordablePurchase(convenience, game, current, { difficulty: 'strong' });
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    const withMall = cpu._scoreAffordablePurchase(convenience, game, current, { difficulty: 'strong' });
+
+    assert.ok(withMall > noMall);
+});
+
+runTest('landmark synergy: 港があると港系カードを高く評価する', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const tuna = createCardByName('マグロ漁船');
+
+    const noHarbor = cpu._scoreAffordablePurchase(tuna, game, current, { difficulty: 'strong' });
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    const withHarbor = cpu._scoreAffordablePurchase(tuna, game, current, { difficulty: 'strong' });
+
+    assert.ok(withHarbor > noHarbor);
+});
+
 runTest('_strongTargetLandmark: strong は現在の最優先ランドマークを返す', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(2);
@@ -1175,6 +1523,21 @@ runTest('buildExpert: 空港がなければ skip より建設候補を優先す�
     game.phase = runtime.GAME_PHASES.BUILD;
     current.coins = 1;
     current.landmarks[LANDMARK_NAMES.AIRPORT] = false;
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('buildExpert: lite 4人戦では buildNormal ベースで進める', () => {
+    const cpu = new CPU("expert", { simulationMode: "lite" });
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 8;
 
     cpu.buildExpert(game, stock);
 

@@ -107,12 +107,16 @@ class CPU {
                 lowValueSpamPenalty: 5.1,
             },
             crowd: {
-                stableIncomeWeight: 2.7,
-                redPressureWeight: 0.4,
-                landmarkActionBonus: 22,
-                lateLandmarkActionBonus: 16,
-                leaderThreatWeight: 0.35,
-                lookaheadWeight: 0.48,
+                coinWeight: 1.22,
+                turnWeight: 3.35,
+                stableIncomeWeight: 3.4,
+                redPressureWeight: 0.14,
+                leaderThreatWeight: 0.08,
+                lateCoinWeight: 2.05,
+                finalCoinWeight: 2.55,
+                landmarkActionBonus: 18,
+                lateLandmarkActionBonus: 14,
+                lookaheadWeight: 0.28,
             },
         };
     }
@@ -175,16 +179,43 @@ class CPU {
             profilePreset ? CPU._resolveExpertTuning(profilePreset) : {},
             profileTuning || {}
         );
-        if (this.simulationMode === "fast") {
+        if (this.simulationMode === "fast" || this.simulationMode === "lite") {
             this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.65).toFixed(3));
             this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(2, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.5));
         }
+        if (this.simulationMode === "lite") {
+            this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.35).toFixed(3));
+            this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(1, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.35));
+        }
         return this.expertTuning;
+    }
+
+    _expertCrowdNormalPlan(game) {
+        if (this.difficulty !== "expert") return false;
+        if (!game || !game.players || game.players.length < 4) return false;
+        const current = game.currentPlayer ? game.currentPlayer() : null;
+        if (!current) return false;
+        const remaining = this._remainingEnabledLandmarks(current, game);
+        const stableIncome = this._estimateStableIncome(game, current);
+        return remaining.length > 1 || stableIncome < 10;
+    }
+
+    _expertCrowdDisruptionBonus(game, targetIndex, amount) {
+        if (!game || this.difficulty !== "expert") return 0;
+        if (this._expertCrowdNormalPlan(game)) return 0;
+        return this._crowdLeaderBonus(game, targetIndex, amount);
+    }
+
+    _expertCrowdCleaningWeight(game, cardName, amount) {
+        if (!game || this.difficulty !== "expert") return 0;
+        if (this._expertCrowdNormalPlan(game)) return this._crowdCleaningBonus(game, cardName, amount * 0.3);
+        return this._crowdCleaningBonus(game, cardName, amount);
     }
 
     // ===== サイコロ判断 =====
 
     _cardActivationValue(card, game, owner, roller, dice) {
+        const capped = (value) => this._strongSoftCapValue(value);
         const ownerIndex = game.players.indexOf(owner);
         const rollerIndex = game.players.indexOf(roller);
         const isCurrentTurn = ownerIndex === rollerIndex;
@@ -192,17 +223,17 @@ class CPU {
         const livingCards = owner.cards.filter(c => !owner.isDormant(c));
 
         if (card.color === "blue") {
-            if (card.effect === CARD_EFFECTS.HARBOR) return owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
-            if (card.effect === CARD_EFFECTS.TUNA) return owner.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0;
-            return card.income;
+            if (card.effect === CARD_EFFECTS.HARBOR) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
+            if (card.effect === CARD_EFFECTS.TUNA) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0);
+            return capped(card.income);
         }
 
         if (card.color === "red") {
             if (isCurrentTurn) return 0;
-            if (card.effect === CARD_EFFECTS.HARBOR_RED) return roller.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0;
-            if (card.effect === CARD_EFFECTS.FRENCHR) return roller.landmarks && roller.builtLandmarkCount() >= 2 ? card.income : 0;
-            if (card.effect === CARD_EFFECTS.MEMBERBAR) return roller.landmarks && roller.builtLandmarkCount() >= 3 ? Math.max(roller.coins, 4) : 0;
-            return card.income + (roller.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0);
+            if (card.effect === CARD_EFFECTS.HARBOR_RED) return capped(roller.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
+            if (card.effect === CARD_EFFECTS.FRENCHR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 2 ? card.income : 0);
+            if (card.effect === CARD_EFFECTS.MEMBERBAR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 3 ? Math.max(roller.coins, 4) : 0);
+            return capped(card.income + (roller.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0));
         }
 
         if (!isCurrentTurn) return 0;
@@ -216,22 +247,22 @@ class CPU {
             case CARD_EFFECTS.DRINKFACTORY:
             case CARD_EFFECTS.WINERY:
             case CARD_EFFECTS.FEWLANDMARK:
-                return GameManager.calcCardIncome(card, owner, game);
+                return capped(GameManager.calcCardIncome(card, owner, game));
             case CARD_EFFECTS.STADIUM:
-                return opponents.length * card.income;
+                return capped(opponents.length * card.income);
             case CARD_EFFECTS.TV:
-                return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0));
+                return capped(Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0)));
             case CARD_EFFECTS.PUBLISHER:
-                return opponents.reduce((sum, p) =>
-                    sum + p.cards.filter(c => (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP) && !p.isDormant(c)).length, 0);
+                return capped(opponents.reduce((sum, p) =>
+                    sum + p.cards.filter(c => (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP) && !p.isDormant(c)).length, 0));
             case CARD_EFFECTS.TAXOFFICE:
-                return opponents.filter(p => p.coins >= 10).length * 5;
+                return capped(opponents.filter(p => p.coins >= 10).length * 5);
             case CARD_EFFECTS.LOAN:
                 return (dice === 5 || dice === 6) ? -2 : 0;
             case CARD_EFFECTS.BUSINESS:
-                return 4;
+                return capped(4);
             case CARD_EFFECTS.CLEANING:
-                return game.players.reduce((sum, p) => sum + p.getMinorCards().filter(c => !p.isDormant(c)).length, 0) * 0.4;
+                return capped(game.players.reduce((sum, p) => sum + p.getMinorCards().filter(c => !p.isDormant(c)).length, 0) * 0.4);
             case CARD_EFFECTS.MOVER:
                 return 4;
             case CARD_EFFECTS.RENOVATION:
@@ -325,6 +356,11 @@ class CPU {
     }
 
     _shouldUseExpertChoiceLookahead(game, focusIndex) {
+        if (this.simulationMode === "lite") {
+            const player = game.players[focusIndex];
+            const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+            return remainingLandmarks <= 1 && game.phase === GAME_PHASES.BUILD;
+        }
         if (this.simulationMode !== "fast") return true;
         const player = game.players[focusIndex];
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
@@ -348,6 +384,13 @@ class CPU {
         const clone = this._cloneGame(game);
         applyChoice(clone);
         return this._scoreExpertChoiceState(clone, focusIndex);
+    }
+
+    _scoreStrongPendingChoice(game, applyChoice) {
+        const focusIndex = game.currentPlayerIndex;
+        const clone = this._cloneGame(game);
+        applyChoice(clone);
+        return this._scoreStrongChoiceState(clone, focusIndex);
     }
 
     _crowdLeaderBonus(game, targetIndex, weight = 1) {
@@ -435,7 +478,7 @@ class CPU {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
-            if (game.players.length >= 4) {
+            if (this._expertCrowdNormalPlan(game)) {
                 const oneScore = this._expectedDiceScore(game, false);
                 const twoScore = this._expectedDiceScore(game, true);
                 return twoScore > oneScore + 0.8;
@@ -459,7 +502,8 @@ class CPU {
             if (game.players.length >= 4) {
                 const oneScore = this._expectedDiceScore(game, false);
                 const twoScore = this._expectedDiceScore(game, true);
-                return twoScore > oneScore + 0.8;
+                const threshold = this._strongCrowdOneDieOpponents(game) >= 2 ? 1.5 : 0.8;
+                return twoScore > oneScore + threshold;
             }
             const focusIndex = game.currentPlayerIndex;
             const oneScore = this._expectedStrongChoiceValue(
@@ -489,7 +533,7 @@ class CPU {
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
-            if (game.players.length >= 4) {
+            if (this._expertCrowdNormalPlan(game)) {
                 const currentScore = this._estimateRollScore(game, dice);
                 const usingTwoDice = game.lastDice2 > 0;
                 const rerollScore = this._expectedDiceScore(game, usingTwoDice);
@@ -516,6 +560,9 @@ class CPU {
                 const currentScore = this._estimateRollScore(game, dice);
                 const usingTwoDice = game.lastDice2 > 0;
                 const rerollScore = this._expectedDiceScore(game, usingTwoDice);
+                if (!usingTwoDice && dice <= 6 && this._strongCrowdOneDieOpponents(game) >= 2) {
+                    return rerollScore > currentScore + 2.2;
+                }
                 return rerollScore > currentScore + 1.2;
             }
             const focusIndex = game.currentPlayerIndex;
@@ -545,10 +592,10 @@ class CPU {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
-            if (game.players.length >= 4) {
+            if (this._expertCrowdNormalPlan(game)) {
                 const keepScore = this._estimateRollScore(game, game.lastDiceResult);
                 const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
-                return bonusScore > keepScore + 0.3;
+                return bonusScore > keepScore + 0.5;
             }
             const focusIndex = game.currentPlayerIndex;
             const outcomes = [{ weight: 1, tunaDice: game.pendingTunaDice || [game.lastDice1 || 1, game.lastDice2 || 1] }];
@@ -570,7 +617,8 @@ class CPU {
             if (game.players.length >= 4) {
                 const keepScore = this._estimateRollScore(game, game.lastDiceResult);
                 const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
-                return bonusScore > keepScore + 0.3;
+                const threshold = this._strongCrowdOneDieOpponents(game) >= 2 && game.lastDiceResult <= 6 ? 0.8 : 0.3;
+                return bonusScore > keepScore + threshold;
             }
             const focusIndex = game.currentPlayerIndex;
             const outcomes = [{ weight: 1, tunaDice: game.pendingTunaDice || [game.lastDice1 || 1, game.lastDice2 || 1] }];
@@ -605,7 +653,7 @@ class CPU {
                 const target = game.players[i];
                 if (!target || target.coins <= 0) continue;
                 const score = this._scoreExpertPendingChoice(game, clone => clone.resolveTV(i)) +
-                    this._crowdLeaderBonus(game, i, 12);
+                    this._expertCrowdDisruptionBonus(game, i, 12);
                 if (score > bestScore) {
                     bestScore = score;
                     targetIndex = i;
@@ -615,13 +663,17 @@ class CPU {
         }
         let bestScore = -Infinity;
         let targetIndex = -1;
+        const attackScale = this._strongCrowdAttackScale(game);
+        const disruptionReady = this._strongCrowdDisruptionReady(game, game.currentPlayer());
         for (let i = 0; i < game.players.length; i++) {
             if (i === ci) continue;
             const opponent = game.players[i];
             const steal = Math.min(5, opponent.coins);
-            const score = steal * 2.2 +
-                opponent.builtLandmarkCount() * 2.5 +
-                this._coinsTowardsNextLandmark(opponent) * 0.25;
+            const score = (this.difficulty === "strong" && game.players.length >= 4)
+                ? (disruptionReady ? this._scoreStrongPendingChoice(game, clone => clone.resolveTV(i)) + steal * 0.4 : steal * 0.5)
+                : steal * 2.2 +
+                    opponent.builtLandmarkCount() * 2.5 * attackScale +
+                    this._coinsTowardsNextLandmark(opponent) * 0.25 * attackScale;
             if (score > bestScore) {
                 bestScore = score;
                 targetIndex = i;
@@ -638,6 +690,8 @@ class CPU {
         if (myCards.length === 0) return null;
 
         let bestMove = null;
+        const attackScale = this._strongCrowdAttackScale(game);
+        const disruptionReady = this._strongCrowdDisruptionReady(game, current);
         for (const myCard of myCards) {
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
@@ -652,15 +706,21 @@ class CPU {
                     if (this.difficulty === "expert") {
                         score = this._scoreExpertPendingChoice(game, clone =>
                             clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
-                        ) + this._crowdLeaderBonus(game, i, 10);
+                        ) + this._expertCrowdDisruptionBonus(game, i, 10);
+                    } else if (this.difficulty === "strong" && game.players.length >= 4) {
+                        score = disruptionReady
+                            ? this._scoreStrongPendingChoice(game, clone =>
+                                clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
+                            )
+                            : this._receivedCardValue(theirCard, game, current) - this._ownedCardValue(myCard, game, current) * 0.9;
                     } else {
                         const myLoss = this._ownedCardValue(myCard, game, current);
                         const gain = this._receivedCardValue(theirCard, game, current);
-                        const denial = this._ownedCardValue(theirCard, game, target) * 0.7;
+                        const denial = this._ownedCardValue(theirCard, game, target) * 0.7 * attackScale;
                         const gift = this._receivedCardValue(myCard, game, target) * 0.45;
                         score = gain + denial - myLoss - gift +
-                            target.builtLandmarkCount() * 0.8 +
-                            (target.coins >= 10 ? 1.5 : 0);
+                            target.builtLandmarkCount() * 0.8 * attackScale +
+                            (target.coins >= 10 ? 1.5 * attackScale : 0);
                     }
                     if (!bestMove || score > bestMove.score) {
                         bestMove = Object.assign({ score }, move);
@@ -685,13 +745,31 @@ class CPU {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         let best = null;
+        const attackScale = this._strongCrowdAttackScale(game);
+        const disruptionReady = this._strongCrowdDisruptionReady(game, current);
         const names = [...new Set(game.players.flatMap(p =>
             p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
         for (const name of names) {
             let score;
             if (this.difficulty === "expert") {
                 score = this._scoreExpertPendingChoice(game, clone => clone.resolveCleaning(name)) +
-                    this._crowdCleaningBonus(game, name, 3);
+                    this._expertCrowdCleaningWeight(game, name, 3);
+            } else if (this.difficulty === "strong" && game.players.length >= 4) {
+                score = disruptionReady
+                    ? this._scoreStrongPendingChoice(game, clone => clone.resolveCleaning(name))
+                    : (() => {
+                        let ownPenalty = 0;
+                        let targetGain = 0;
+                        for (const player of game.players) {
+                            for (const card of player.getMinorCards()) {
+                                if (card.name !== name || player.isDormant(card)) continue;
+                                const value = this._ownedCardValue(card, game, player);
+                                if (player === current) ownPenalty += value;
+                                else targetGain += value;
+                            }
+                        }
+                        return targetGain * 0.35 - ownPenalty * 1.4;
+                    })();
             } else {
                 let ownPenalty = 0;
                 let targetGain = 0;
@@ -705,7 +783,7 @@ class CPU {
                         else targetGain += value;
                     }
                 }
-                score = count + targetGain * 0.7 - ownPenalty * 1.2;
+                score = count * attackScale + targetGain * 0.7 * attackScale - ownPenalty * 1.2;
             }
             if (!best || score > best.score) best = { cardName: name, score };
         }
@@ -716,6 +794,7 @@ class CPU {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
+        const attackScale = this._strongCrowdAttackScale(game);
         let best = null;
         for (const card of current.getMinorCards()) {
             for (let i = 0; i < game.players.length; i++) {
@@ -729,12 +808,16 @@ class CPU {
                 if (this.difficulty === "expert") {
                     score = this._scoreExpertPendingChoice(game, clone =>
                         clone.resolveMover(move.cardIndex, move.targetIndex)
-                    ) - this._crowdLeaderBonus(game, i, 8);
+                    ) - this._expertCrowdDisruptionBonus(game, i, 8);
+                } else if (this.difficulty === "strong" && game.players.length >= 4) {
+                    score = this._scoreStrongPendingChoice(game, clone =>
+                        clone.resolveMover(move.cardIndex, move.targetIndex)
+                    );
                 } else {
                     const myLoss = this._ownedCardValue(card, game, current);
                     const gift = this._receivedCardValue(card, game, target);
-                    score = 4 - myLoss - gift * 0.6 -
-                        target.builtLandmarkCount() * 0.6 +
+                    score = 4 - myLoss - gift * 0.6 * attackScale -
+                        target.builtLandmarkCount() * 0.6 * attackScale +
                         (current.isDormant(card) ? 2.5 : 0);
                 }
                 if (!best || score > best.score) {
@@ -797,7 +880,7 @@ class CPU {
         if (this.difficulty === "normal") return !closeToFinish;
 
         if (this.difficulty === "expert") {
-            if (game.players.length >= 4 && remainingLandmarks.length > 2) return false;
+            if (this._expertCrowdNormalPlan(game)) return !closeToFinish;
             if (urgentLandmark && urgentLandmark.shortfall <= 1 && urgentLandmark.urgency >= 7) return false;
             const focusIndex = game.currentPlayerIndex;
             const skipScore = this._expectedExpertChoiceValue(
@@ -877,17 +960,47 @@ class CPU {
         }
     }
 
-    // ダイス出目の重み（2個振り最大値は出目7が最頻）
-    _diceFreq(diceNums) {
-        const w = {1:1,2:1,3:2,4:3,5:4,6:5,7:6,8:5,9:4,10:3,11:2,12:1,13:1,14:1};
+    // ダイス出目の重み
+    _singleDiceFreq(diceNums) {
+        const w = {1:1,2:1,3:1,4:1,5:1,6:1};
         return diceNums.reduce((s, d) => s + (w[d] || 0), 0);
+    }
+
+    _doubleDiceFreq(diceNums) {
+        const w = {1:0,2:1,3:2,4:3,5:4,6:5,7:6,8:5,9:4,10:3,11:2,12:1,13:0,14:0};
+        return diceNums.reduce((s, d) => s + (w[d] || 0), 0);
+    }
+
+    _diceFreqForRoller(diceNums, roller) {
+        if (!roller || !roller.landmarks || !roller.landmarks[LANDMARK_NAMES.STATION]) {
+            return this._singleDiceFreq(diceNums);
+        }
+        return Math.max(this._singleDiceFreq(diceNums), this._doubleDiceFreq(diceNums));
+    }
+
+    _cardDiceFreq(card, game, player) {
+        if (!card || !game || !player) return this._doubleDiceFreq(card && card.diceNums ? card.diceNums : []);
+        const ci = game.players.indexOf(player);
+        if (card.color === "blue") {
+            return game.players.reduce((sum, p) => sum + this._diceFreqForRoller(card.diceNums, p), 0);
+        }
+        if (card.color === "red") {
+            return game.players.reduce((sum, p, i) =>
+                i === ci ? sum : sum + this._diceFreqForRoller(card.diceNums, p), 0
+            );
+        }
+        return this._diceFreqForRoller(card.diceNums, player);
+    }
+
+    _diceFreq(diceNums) {
+        return this._doubleDiceFreq(diceNums);
     }
 
     // 購入可能カードをスコア順にソート（ダイス確率を加味）
     sortAffordable(cards, game, player) {
         return cards.map(card => ({
             card,
-            score: this.evalCard(card, game, player) * this._diceFreq(card.diceNums) / Math.max(card.cost, 1)
+            score: this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / Math.max(card.cost, 1)
         })).sort((a, b) => b.score - a.score);
     }
 
@@ -915,10 +1028,11 @@ class CPU {
         if (card.color === "green" && this._isEndgameMode(player, game, 2)) adjustment += 0.4;
         if (game.players.length >= 4) {
             if (card.color === "red") adjustment -= 2.1;
-            if (card.color === "purple") adjustment -= 1.8;
+            if (card.color === "purple") adjustment -= 0.7;
             if (card.color === "blue") adjustment += 0.7;
             if (card.color === "green") adjustment += 1.1;
         }
+        adjustment += this._strongPurpleAdjustment(card, game, player);
         return adjustment;
     }
 
@@ -955,9 +1069,172 @@ class CPU {
         return penalty;
     }
 
+    _strongTempoValueBonus(card, game, player) {
+        if (this.difficulty !== "strong" || !game || !player || !card || !card.diceNums || card.diceNums.length === 0) return 0;
+        const lowDice = Math.max(...card.diceNums) <= 6;
+        const highDice = Math.min(...card.diceNums) >= 7;
+        let bonus = 0;
+        const opponents = game.players.filter(p => p !== player);
+        const oneDieOpponents = opponents.filter(p => !p.landmarks[LANDMARK_NAMES.STATION]).length;
+        const selfOneDie = !player.landmarks[LANDMARK_NAMES.STATION];
+
+        if ((card.color === "blue" || card.color === "red") && oneDieOpponents > 0) {
+            if (lowDice) bonus += oneDieOpponents * 0.35;
+            if (highDice) bonus -= oneDieOpponents * 0.35;
+            if (game.players.length >= 4 && highDice && card.color === "red") bonus -= oneDieOpponents * 0.15;
+        }
+
+        if ((card.color === "green" || card.color === "purple") && selfOneDie) {
+            if (lowDice) bonus += 0.9;
+            if (highDice) bonus -= 0.9;
+        }
+        return bonus;
+    }
+
+    _strongCrowdOneDieOpponents(game, player = null) {
+        if (!game || !game.players || game.players.length < 4) return 0;
+        const current = player || game.currentPlayer();
+        return game.players.filter(p => p !== current && !p.landmarks[LANDMARK_NAMES.STATION]).length;
+    }
+
+    _strongCrowdAttackScale(game) {
+        const scale = this._opponentDilutionFactor(game);
+        if (this.difficulty !== "strong" || !game || game.players.length < 4) return scale;
+        return scale * 0.45;
+    }
+
+    _isStrongCrowd(game) {
+        return this.difficulty === "strong" && game && game.players && game.players.length >= 4;
+    }
+
+    _strongPurpleAdjustment(card, game, player) {
+        if (!card || card.color !== "purple") return 0;
+        const stableIncome = this._estimateStableIncome(game, player);
+        let adjustment = 0;
+        if (card.effect === CARD_EFFECTS.STADIUM) adjustment += game.players.length >= 4 ? 3.4 : 1.8;
+        if (card.effect === CARD_EFFECTS.TV) adjustment += game.players.length >= 4 ? 3.2 : 1.6;
+        if (card.effect === CARD_EFFECTS.BUSINESS) adjustment += game.players.length >= 4 ? 2.4 : 1.2;
+        if (card.effect === CARD_EFFECTS.RENOVATION) adjustment -= 1.8;
+        if (card.effect === CARD_EFFECTS.ITSTARTUP) adjustment -= game.players.length >= 4 ? 2.8 : 1.8;
+        if (card.effect === CARD_EFFECTS.LOAN) adjustment -= stableIncome >= 7 ? 0.4 : 1.2;
+        return adjustment;
+    }
+
+    _landmarkCardSynergyBonus(card, game, player) {
+        if (!card || !game || !player) return 0;
+        let bonus = 0;
+        const hasStation = !!player.landmarks[LANDMARK_NAMES.STATION];
+        const hasMall = !!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL];
+        const hasHarbor = !!player.landmarks[LANDMARK_NAMES.HARBOR];
+        const hasTower = !!player.landmarks[LANDMARK_NAMES.RADIO_TOWER];
+        const hasPark = !!player.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
+        const hasAirport = !!player.landmarks[LANDMARK_NAMES.AIRPORT];
+        const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
+        const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
+
+        if (hasStation && highDice) bonus += 0.9;
+        if (!hasStation && highDice) bonus -= 0.6;
+        if (hasMall && (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) bonus += 1.1;
+        if (hasHarbor && [CARD_EFFECTS.HARBOR, CARD_EFFECTS.HARBOR_RED, CARD_EFFECTS.TUNA].includes(card.effect)) bonus += 1.6;
+        if (hasTower && highDice) bonus += 0.5;
+        if (hasPark && highDice) bonus += 0.35;
+        if (hasAirport && card.cost <= 3 && lowDice) bonus -= 0.5;
+        return bonus;
+    }
+
+    _strongPremiumPurpleReady(card, game, player) {
+        if (!card || !game || !player) return true;
+        if (!this._isStrongCrowd(game)) return true;
+        if (![CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect)) return true;
+        const stableIncome = this._estimateStableIncome(game, player);
+        const builtCount = player.builtLandmarkCount();
+        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+        return (stableIncome >= 10 && builtCount >= 2) || builtCount >= 3 || remainingLandmarks <= 2;
+    }
+
+    _strongLandmarkUrgencyBonus(name, current, game) {
+        if (this.difficulty !== "strong" || !current || !game) return 0;
+        const stableIncome = this._estimateStableIncome(game, current);
+        const shopRestaurantCards = current.cards.filter(c =>
+            c && (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP)
+        ).length;
+        const harborCards = current.cards.filter(c =>
+            c && (c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA)
+        ).length;
+        const highVarianceCards = current.cards.filter(card =>
+            card && card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7
+        ).length;
+        const cheapEngineCards = current.cards.filter(card => card && card.cost <= 3).length;
+
+        if (name === LANDMARK_NAMES.STATION) {
+            if (highVarianceCards >= 2) return 2;
+            if (highVarianceCards >= 1) return 1;
+            return 0;
+        }
+        if (name === LANDMARK_NAMES.SHOPPING_MALL) {
+            if (shopRestaurantCards >= 5) return 1;
+            return 0;
+        }
+        if (name === LANDMARK_NAMES.HARBOR) {
+            let bonus = 0;
+            if (current.countCard('マグロ漁船') >= 2) bonus += 2;
+            else if (current.countCard('マグロ漁船') >= 1) bonus += 1;
+            if (harborCards >= 3) bonus += 1;
+            return bonus;
+        }
+        if (name === LANDMARK_NAMES.RADIO_TOWER) {
+            let bonus = current.landmarks[LANDMARK_NAMES.STATION] ? 1 : 0;
+            if (highVarianceCards >= 4) bonus += 2;
+            else if (highVarianceCards >= 2) bonus += 1;
+            return bonus;
+        }
+        if (name === LANDMARK_NAMES.AMUSEMENT_PARK) {
+            if (!current.landmarks[LANDMARK_NAMES.STATION]) return 0;
+            if (highVarianceCards >= 2) return 2;
+            if (highVarianceCards >= 1) return 1;
+            return 0;
+        }
+        if (name === LANDMARK_NAMES.AIRPORT) {
+            let bonus = 0;
+            if (stableIncome >= 8) bonus += 1;
+            if (cheapEngineCards <= 3) bonus += 1;
+            return bonus;
+        }
+        return 0;
+    }
+
+    _strongSoftCapValue(value) {
+        if (this.difficulty !== "strong") return value;
+        const sign = Math.sign(value);
+        const abs = Math.abs(value);
+        if (abs <= 12) return value;
+        if (abs <= 20) return sign * (12 + (abs - 12) * 0.5);
+        if (abs <= 30) return sign * (16 + (abs - 20) * 0.3);
+        return sign * (19 + Math.sqrt(abs - 30));
+    }
+
+    _strongCrowdDisruptionReady(game, player) {
+        if (!this._isStrongCrowd(game) || !player) return true;
+        const stableIncome = this._estimateStableIncome(game, player);
+        const builtCount = player.builtLandmarkCount();
+        return stableIncome >= 10 || builtCount >= 3;
+    }
+
+    _strongCrowdPremiumPurple(card) {
+        return !!card && [CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect);
+    }
+
     _scoreAffordablePurchase(card, game, player, options = {}) {
         const intensity = options.intensity || 1;
-        let score = this.evalCard(card, game, player) * this._diceFreq(card.diceNums) / Math.max(card.cost, 1);
+        const expectedGain = (this.evalCard(card, game, player) + this._strongTempoValueBonus(card, game, player)) *
+            this._cardDiceFreq(card, game, player);
+        let score;
+        if (options.difficulty === "strong") {
+            score = expectedGain - card.cost * 0.7;
+        } else {
+            score = expectedGain / Math.max(card.cost, 1);
+        }
+        score += this._landmarkCardSynergyBonus(card, game, player);
         score -= this._cardSpamPenalty(card, player, intensity);
         score -= this._economyBalancePenalty(card, game, player, intensity);
         if (options.difficulty === "strong") score += this._strongRolePressure(card, game, player);
@@ -965,11 +1242,21 @@ class CPU {
         if (options.difficulty === "strong" && game.players.length >= 4) {
             const stableIncome = this._estimateStableIncome(game, player);
             const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+            const oneDieOpponents = this._strongCrowdOneDieOpponents(game, player);
+            const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
+            const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
+            const premiumPurple = [CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect);
             if (card.color === "blue" || card.color === "green") score += 0.9;
-            if (card.color === "red" || card.color === "purple") score -= 1.1;
+            if (card.color === "red") score -= 1.1;
+            if (card.color === "purple" && !premiumPurple) score -= 1.1;
             if (stableIncome < 8 && (card.color === "blue" || card.color === "green")) score += 1.2;
-            if (stableIncome < 10 && (card.color === "red" || card.color === "purple")) score -= 1.8;
+            if (stableIncome < 10 && card.color === "red") score -= 1.8;
+            if (stableIncome < 10 && card.color === "purple" && !premiumPurple) score -= 1.8;
             if (remainingLandmarks > 2 && card.effect === CARD_EFFECTS.ITSTARTUP) score -= 2.5;
+            if (oneDieOpponents >= 2 && lowDice && (card.color === "blue" || card.color === "green")) score += 1.2;
+            if (oneDieOpponents >= 2 && highDice) score -= 1.4;
+            if (oneDieOpponents >= 2 && highDice && (card.color === "red" || card.color === "purple")) score -= 1.0;
+            if (premiumPurple && !this._strongPremiumPurpleReady(card, game, player)) score -= 3.2;
         }
         return score;
     }
@@ -1013,7 +1300,12 @@ class CPU {
                 urgency: this._landmarkUrgency(name, current, game),
                 priority: priority.indexOf(name),
             }))
-            .sort((a, b) => a.priority - b.priority || b.urgency - a.urgency || a.cost - b.cost);
+            .sort((a, b) => {
+                if (game.players.length >= 4) {
+                    return b.urgency - a.urgency || a.priority - b.priority || a.cost - b.cost;
+                }
+                return a.priority - b.priority || b.urgency - a.urgency || a.cost - b.cost;
+            });
         return remaining[0] || null;
     }
 
@@ -1070,24 +1362,32 @@ class CPU {
         return stableIncome >= 18 || builtCount >= 5 || shortfall > 5;
     }
 
-    _bestCrowdEconomyCard(sorted) {
+    _bestCrowdEconomyCard(sorted, game = null, current = null) {
+        const oneDieOpponents = game && current
+            ? game.players.filter(p => p !== current && !p.landmarks[LANDMARK_NAMES.STATION]).length
+            : 0;
+        if (oneDieOpponents > 0) {
+            const lowDice = sorted.find(entry =>
+                (entry.card.color === "blue" || entry.card.color === "green") &&
+                Math.max(...entry.card.diceNums) <= 6
+            );
+            if (lowDice) return lowDice;
+        }
         return sorted.find(entry => entry.card.color === "blue" || entry.card.color === "green") || null;
     }
 
     _buildStrongCrowd(current, game, shopStock) {
         const bestAffordableLandmark = this._bestAffordableLandmark(current, game);
         if (bestAffordableLandmark && (
-            bestAffordableLandmark.urgency >= 5 ||
-            current.coins >= bestAffordableLandmark.cost + 3 ||
-            current.coins >= 10
+            bestAffordableLandmark.urgency >= 6 ||
+            current.coins >= 12 ||
+            current.coins >= bestAffordableLandmark.cost + 5
         )) {
             this._buyLandmark(bestAffordableLandmark.name, game);
             return true;
         }
 
-        if (this._maybeBuyLandmark(current, game, 1, 5)) return true;
-        if (this._trySynergy(current, game, shopStock)) return true;
-
+        if (this._maybeBuyLandmark(current, game, 1, 6)) return true;
         const affordable = CARDS.filter(card =>
             shopStock[card.name] > 0 &&
             current.coins >= card.cost &&
@@ -1097,19 +1397,17 @@ class CPU {
         const sorted = this._sortAffordableForDifficulty(affordable, game, current, "strong");
         if (sorted.length === 0) return false;
 
-        const best = sorted[0];
-        const crowdEconomyCard = this._bestCrowdEconomyCard(sorted);
+        const crowdEconomyCard = this._bestCrowdEconomyCard(sorted, game, current);
         const stableIncome = this._estimateStableIncome(game, current);
-        const builtCount = current.builtLandmarkCount();
-
-        if (this._shouldHoldForLandmark(current, game, best.score, 3)) return true;
-        if (crowdEconomyCard && (stableIncome < 12 || builtCount < 3 || (best.card.color !== "blue" && best.card.color !== "green"))) {
+        const candidate = crowdEconomyCard || sorted[0];
+        if (this._shouldHoldForLandmark(current, game, candidate.score, 2)) return true;
+        if (stableIncome < 10 && crowdEconomyCard && crowdEconomyCard.score >= 0.7) {
             this._buyCard(crowdEconomyCard.card, game, shopStock);
             return true;
         }
         if (this._maybeBuyLandmark(current, game, 0, 4)) return true;
-        if (best.score >= 0.7) {
-            this._buyCard(best.card, game, shopStock);
+        if (candidate.score >= 0.75) {
+            this._buyCard(candidate.card, game, shopStock);
             return true;
         }
         if (crowdEconomyCard) {
@@ -1161,12 +1459,23 @@ class CPU {
             .map(p => p.builtLandmarkCount()));
         const profile = this._playerCountProfile(game);
         let urgency = 0;
-        if (name === LANDMARK_NAMES.STATION) urgency = builtCount < 2 ? 8 : 5;
-        else if (name === LANDMARK_NAMES.SHOPPING_MALL) urgency = current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
-        else if (name === LANDMARK_NAMES.HARBOR) urgency = current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
-        else if (name === LANDMARK_NAMES.RADIO_TOWER) urgency = builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
+        if (name === LANDMARK_NAMES.STATION) {
+            urgency = builtCount < 2 ? 8 : 5;
+        }
+        else if (name === LANDMARK_NAMES.SHOPPING_MALL) {
+            urgency = current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
+        }
+        else if (name === LANDMARK_NAMES.HARBOR) {
+            urgency = current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
+        }
+        else if (name === LANDMARK_NAMES.RADIO_TOWER) {
+            urgency = builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
+        }
         else if (name === LANDMARK_NAMES.AMUSEMENT_PARK) urgency = current.landmarks[LANDMARK_NAMES.STATION] ? 5 : 2;
-        else if (name === LANDMARK_NAMES.AIRPORT) urgency = builtCount >= 4 ? 6 : 1;
+        else if (name === LANDMARK_NAMES.AIRPORT) {
+            urgency = builtCount >= 4 ? 6 : 1;
+        }
+        urgency += this._strongLandmarkUrgencyBonus(name, current, game);
         if (name === LANDMARK_NAMES.AIRPORT) return Math.round(urgency * profile.airportBias);
         return Math.round(urgency * profile.landmarkBias);
     }
@@ -1180,6 +1489,7 @@ class CPU {
     }
 
     _estimateBusinessValue(game, player) {
+        const attackScale = this._opponentDilutionFactor(game);
         const ci = game.players.indexOf(player);
         const myCards = player.getMinorCards();
         if (myCards.length === 0) return 0;
@@ -1191,7 +1501,7 @@ class CPU {
                 for (const theirCard of target.getMinorCards()) {
                     const score = this._receivedCardValue(theirCard, game, player) -
                         this._ownedCardValue(myCard, game, player) * 0.8 +
-                        this._ownedCardValue(theirCard, game, target) * 0.5;
+                        this._ownedCardValue(theirCard, game, target) * 0.5 * attackScale;
                     if (score > best) best = score;
                 }
             }
@@ -1200,6 +1510,7 @@ class CPU {
     }
 
     _estimateCleaningValue(game, player) {
+        const attackScale = this._opponentDilutionFactor(game);
         let best = 0;
         const names = [...new Set(game.players.flatMap(p => p.getMinorCards().map(c => c.name)))];
         for (const name of names) {
@@ -1209,7 +1520,7 @@ class CPU {
                     if (card.name !== name || owner.isDormant(card)) continue;
                     score += 1;
                     if (owner === player) score -= this._ownedCardValue(card, game, owner);
-                    else score += this._ownedCardValue(card, game, owner) * 0.7;
+                    else score += this._ownedCardValue(card, game, owner) * 0.7 * attackScale;
                 }
             }
             if (score > best) best = score;
@@ -1229,33 +1540,68 @@ class CPU {
     }
 
     _estimateParkValue(game, player) {
+        const attackScale = this._opponentDilutionFactor(game);
         const total = game.players.reduce((sum, p) => sum + p.coins, 0);
-        return total / Math.max(game.players.length, 1) - player.coins;
+        return (total / Math.max(game.players.length, 1) - player.coins) * attackScale;
+    }
+
+    _opponentDilutionFactor(game) {
+        return 1 / Math.max(1, (game && game.players ? game.players.length : 1) - 1);
     }
 
     _receivedCardValue(card, game, player) {
         let baseValue;
         switch (card.effect) {
             case CARD_EFFECTS.BUSINESS:
-                baseValue = 3.5;
+                baseValue = this._strongSoftCapValue(3.5);
                 break;
             case CARD_EFFECTS.CLEANING:
-                baseValue = 3;
+                baseValue = this._strongSoftCapValue(3);
                 break;
             case CARD_EFFECTS.MOVER:
-                baseValue = 2.5;
+                baseValue = this._strongSoftCapValue(2.5);
                 break;
             case CARD_EFFECTS.PARK:
-                baseValue = 1.5;
+                baseValue = this._strongSoftCapValue(1.5);
                 break;
             case CARD_EFFECTS.RENOVATION:
-                baseValue = 2.5;
+                baseValue = this._strongSoftCapValue(2.5);
                 break;
             default:
-                baseValue = this.evalCard(card, game, player);
+                baseValue = this._strongSoftCapValue(this.evalCard(card, game, player));
                 break;
         }
-        return baseValue * this._diceFreq(card.diceNums) + card.cost * 1.4;
+        return baseValue * this._cardDiceFreq(card, game, player) + card.cost * 1.4;
+    }
+
+    _cardDependencyValue(card, player, game) {
+        if (!card || !player || !game) return 0;
+        switch (card.effect) {
+            case CARD_EFFECTS.CHEESE:
+                return player.countCard('牧場') * 1.4;
+            case CARD_EFFECTS.FURNITURE:
+                return (player.countCard('森林') + player.countCard('鉱山')) * 1.2;
+            case CARD_EFFECTS.FLOWER:
+                return player.countCard('花畑') * 1.3;
+            case CARD_EFFECTS.MARKET:
+                return player.countCard('果樹園') * 1.3;
+            case CARD_EFFECTS.FOODWAREHOUSE:
+                return ['パン屋', 'コンビニ', 'フラワーショップ', 'ドラッグストア']
+                    .reduce((sum, name) => sum + player.countCard(name), 0) * 0.9;
+            case CARD_EFFECTS.DRINKFACTORY:
+                return ['カフェ', 'レストラン', 'ファミレス', '会員制バー']
+                    .reduce((sum, name) => sum + player.countCard(name), 0) * 0.9;
+            case CARD_EFFECTS.WINERY:
+                return player.countCard('ぶどう園') * 1.2;
+            case CARD_EFFECTS.HARBOR:
+            case CARD_EFFECTS.TUNA:
+            case CARD_EFFECTS.HARBOR_RED:
+                return player.landmarks[LANDMARK_NAMES.HARBOR] ? 2.2 : 0.6;
+            case CARD_EFFECTS.BUSINESS:
+                return player.getMinorCards().length * 0.35;
+            default:
+                return 0;
+        }
     }
 
     _ownedCardValue(card, game, player) {
@@ -1263,6 +1609,7 @@ class CPU {
         if (player.isDormant(card)) value *= 0.35;
         if (card.color === "red") value += 1.5;
         if (card.color === "purple") value += 2;
+        value += this._cardDependencyValue(card, player, game);
         return value;
     }
 
@@ -1466,7 +1813,8 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         );
         const ranked = this.sortAffordable(affordable, game, current);
-        for (const entry of ranked.slice(0, 6)) {
+        const candidateLimit = this.simulationMode === "lite" ? 3 : 6;
+        for (const entry of ranked.slice(0, candidateLimit)) {
             options.push({ type: 'card', cardName: entry.card.name });
         }
         return options;
@@ -1493,7 +1841,9 @@ class CPU {
             clone.builtThisTurn = false;
         }
         let score = this._evaluatePosition(clone, ci);
-        score += this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer) * tuning.lookaheadWeight;
+        if (this.simulationMode !== "lite") {
+            score += this._simulateLookahead(clone, stock, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer) * tuning.lookaheadWeight;
+        }
         const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
         if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
         if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
@@ -1523,8 +1873,16 @@ class CPU {
         const ranked = this._sortAffordableForDifficulty(affordable, game, current, "strong");
         const targetLandmark = this._strongTargetLandmark(current, game);
         const attackUnlocked = this._strongAttackUnlocked(current, game, targetLandmark);
+        const oneDieOpponents = game.players.filter(p => p !== current && !p.landmarks[LANDMARK_NAMES.STATION]).length;
         for (const entry of ranked) {
-            if (!attackUnlocked && (entry.card.color === "red" || entry.card.color === "purple")) continue;
+            if (game.players.length >= 4 && current.builtLandmarkCount() < 4) {
+                if (entry.card.color === "purple") continue;
+                if (!attackUnlocked && entry.card.color === "red") continue;
+                if (oneDieOpponents >= 2 && Math.min(...entry.card.diceNums) >= 7 &&
+                    (entry.card.color === "blue" || entry.card.color === "green")) continue;
+            } else if (!attackUnlocked && (entry.card.color === "red" || entry.card.color === "purple")) {
+                continue;
+            }
             options.push({ type: 'card', cardName: entry.card.name });
             if (options.length >= 6) break;
         }
@@ -1748,6 +2106,61 @@ class CPU {
 
     // 強いCPU：状況判断型
     buildStrong(game, shopStock) {
+        if (game.players.length >= 4) {
+            const current = game.currentPlayer();
+            if (this._buyWinningLandmark(current, game)) return;
+            if (this._tryEndgameBuild(current, game, shopStock, "strong")) return;
+
+            const bestAffordableLandmark = this._bestAffordableLandmark(current, game);
+            if (bestAffordableLandmark && (
+                bestAffordableLandmark.urgency >= 7 ||
+                current.coins >= 12 ||
+                current.coins >= bestAffordableLandmark.cost + 6
+            )) {
+                this._buyLandmark(bestAffordableLandmark.name, game);
+                return;
+            }
+
+            if (this._trySynergy(current, game, shopStock)) return;
+            if (this._maybeBuyLandmark(current, game, 1, 6)) return;
+
+            const affordable = CARDS.filter(card =>
+                shopStock[card.name] > 0 &&
+                current.coins >= card.cost &&
+                card.cost > 0 &&
+                !(card.color === "purple" && current.countCard(card.name) > 0)
+            );
+            const sorted = this._sortAffordableForDifficulty(affordable, game, current, "strong")
+                .filter(entry => this._strongPremiumPurpleReady(entry.card, game, current) || !this._strongCrowdPremiumPurple(entry.card));
+            const oneDieOpponents = game.players.filter(p =>
+                p !== current && !p.landmarks[LANDMARK_NAMES.STATION]
+            ).length;
+            const lowDiceEconomy = sorted.find(entry =>
+                (entry.card.color === "blue" || entry.card.color === "green") &&
+                Math.max(...entry.card.diceNums) <= 6
+            );
+            const premiumPurple = sorted.find(entry => this._strongCrowdPremiumPurple(entry.card));
+            const bestEconomy = this._bestCrowdEconomyCard(sorted, game, current);
+            const best = (
+                oneDieOpponents >= 2 &&
+                current.builtLandmarkCount() < 4 &&
+                lowDiceEconomy
+            ) || (
+                this._strongPremiumPurpleReady(premiumPurple && premiumPurple.card, game, current) &&
+                premiumPurple &&
+                premiumPurple.score >= ((bestEconomy && bestEconomy.score) || -Infinity) + 1.5
+                    ? premiumPurple
+                    : null
+            ) || bestEconomy || (sorted.length > 0 ? sorted[0] : null);
+            if (best && this._shouldHoldForLandmark(current, game, best.score, 2)) return;
+            if (best && best.score >= 0.9) {
+                this._buyCard(best.card, game, shopStock);
+                return;
+            }
+            if (this._maybeBuyLandmark(current, game, 0, 4)) return;
+            if (best) this._buyCard(best.card, game, shopStock);
+            return;
+        }
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const builtCount = current.builtLandmarkCount();
@@ -1784,6 +2197,10 @@ class CPU {
         const current = game.currentPlayer();
         if (this._buyWinningLandmark(current, game)) return;
         if (this._buyLateGameLandmark(current, game)) return;
+        if (this.simulationMode === "lite" && game.players.length >= 4) {
+            this.buildNormal(game, shopStock);
+            return;
+        }
         if (game.players.length >= 4 && this._remainingEnabledLandmarks(current, game).length > 2) {
             this.buildNormal(game, shopStock);
             return;

@@ -17,6 +17,7 @@ const TEST_GROUPS = {
     sim: [
         'selfplay.test.js',
         'tune-expert.test.js',
+        'train-expert-crowd.test.js',
     ],
 };
 

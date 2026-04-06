@@ -133,6 +133,17 @@ runTest('simulateGame は fast モード指定を結果に保持する', () => {
     assert.strictEqual(result.fast, true);
 });
 
+runTest('simulateGame は lite モード指定を結果に保持する', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'strong', 'strong', 'normal'],
+        seed: 11,
+        maxSteps: 6000,
+        lite: true,
+    });
+
+    assert.strictEqual(result.lite, true);
+});
+
 runTest('simulateGame は maxSteps 到達時に exhausted を返す', () => {
     const result = simulateGame({
         difficulties: ['expert', 'strong'],
@@ -148,6 +159,11 @@ runTest('parseArgs はプレイヤー未指定時に既定 lineup を使う', ()
     const args = parseArgs([]);
     assert.deepStrictEqual(args.players, ['expert', 'strong', 'strong', 'normal']);
     assert.strictEqual(args.comparePresets, null);
+});
+
+runTest('parseArgs は lite フラグを解釈する', () => {
+    const args = parseArgs(['--lite']);
+    assert.strictEqual(args.lite, true);
 });
 
 runTest('printSeries は text/details 形式で明細を出力する', () => {

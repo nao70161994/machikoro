@@ -76,6 +76,7 @@ function profilePlayers(name) {
     if (name === 'duel') return ['expert', 'strong'];
     if (name === 'trio') return ['expert', 'strong', 'strong'];
     if (name === 'crowd') return ['expert', 'strong', 'strong', 'normal'];
+    if (name === 'crowdNormal' || name === 'crowd-normal') return ['expert', 'normal', 'normal', 'normal'];
     return ['expert', 'strong', 'strong', 'normal'];
 }
 

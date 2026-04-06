@@ -75,6 +75,7 @@ runTest('profilePlayers は既知プロファイルの並びを返す', () => {
     assert.deepStrictEqual(profilePlayers('duel'), ['expert', 'strong']);
     assert.deepStrictEqual(profilePlayers('trio'), ['expert', 'strong', 'strong']);
     assert.deepStrictEqual(profilePlayers('crowd'), ['expert', 'strong', 'strong', 'normal']);
+    assert.deepStrictEqual(profilePlayers('crowdNormal'), ['expert', 'normal', 'normal', 'normal']);
 });
 
 runTest('tuneExpert は候補を勝率順に返す', () => {
