@@ -147,6 +147,7 @@ runTest('online integration: ROOM_NOT_FOUND でホストは recreateRoom を送�
         myRoomId: 'ROOM01',
         myOriginalPlayerIndex: 0,
         myPlayerName: 'Alice',
+        reconnectToken: 'token-1',
     });
 
     rt.__test.socketHandlers.appError('ROOM_NOT_FOUND');
@@ -154,6 +155,7 @@ runTest('online integration: ROOM_NOT_FOUND でホストは recreateRoom を送�
     assert.strictEqual(rt.__test.socketEmits.length, 1);
     assert.strictEqual(rt.__test.socketEmits[0].name, 'recreateRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.reconnectToken, 'token-1');
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '♻️ サーバー再起動を検知。ゲームを復元中...');
 });
 

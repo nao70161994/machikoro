@@ -45,10 +45,14 @@ jobs:
           "
 
       - name: キーストア生成（またはSecretから復元）
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
         run: |
-          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "=== Secretからキーストアを復元 ==="
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+            printf "%s" "$ANDROID_KEYSTORE_BASE64" | base64 -d > android.keystore
           else
             echo "=== 新規キーストア生成（初回のみ） ==="
             keytool -genkey -v \
@@ -56,26 +60,25 @@ jobs:
               -alias android \
               -keyalg RSA -keysize 2048 \
               -validity 10000 \
-              -storepass android \
-              -keypass android \
+              -storepass "$KEYSTORE_STORE_PASSWORD" \
+              -keypass "$KEYSTORE_KEY_PASSWORD" \
               -dname "CN=Machikoro,O=Machikoro,C=JP"
           fi
 
-      - name: SHA256フィンガープリント・base64出力
+      - name: SHA256フィンガープリント出力
+        env:
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
         run: |
           echo "=== SHA256フィンガープリント（assetlinks.json用） ==="
           keytool -list -v \
             -keystore android.keystore \
             -alias android \
-            -storepass android \
+            -storepass "$KEYSTORE_STORE_PASSWORD" \
             | grep "SHA256:"
-          echo "=== キーストアbase64（初回のみSecretに登録） ==="
-          base64 -w 0 android.keystore
-          echo ""
 
       - name: twa-manifest.json 作成
         run: |
-          cat > twa-manifest.json << 'EOF'
+          cat > twa-manifest.json << 'EOF_MANIFEST'
           {
             "packageId": "com.machikoro.game",
             "host": "machikoro-9jv2.onrender.com",
@@ -93,9 +96,7 @@ jobs:
             "appVersionCode": 1,
             "signingKey": {
               "path": "android.keystore",
-              "alias": "android",
-              "keypassword": "android",
-              "storePassword": "android"
+              "alias": "android"
             },
             "generatorApp": "bubblewrap-cli",
             "webManifestUrl": "https://machikoro-9jv2.onrender.com/manifest.json",
@@ -109,7 +110,7 @@ jobs:
             "metaQuest": { "enabled": false },
             "splashScreenFadeOutDuration": 300
           }
-          EOF
+          EOF_MANIFEST
 
       - name: SDK tools ディレクトリ作成・ライセンス事前承認
         run: |
@@ -117,6 +118,9 @@ jobs:
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: APK ビルド
+        env:
+          BUBBLEWRAP_SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          BUBBLEWRAP_SIGNING_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
         run: |
           which expect || sudo apt-get install -y expect
           expect << 'EXPECTEOF'
@@ -125,8 +129,6 @@ jobs:
           spawn bubblewrap build --skipPwaValidation
           expect {
             -re {\(Y/n\)} { send "Y\r"; exp_continue }
-            "Key Store:"  { send "android\r"; exp_continue }
-            "Key:"        { send "android\r"; exp_continue }
             eof           { }
           }
           lassign [wait] pid spawnid os_error_flag value

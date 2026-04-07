@@ -76,6 +76,10 @@ function generateReconnectToken() {
     return crypto.randomBytes(16).toString('hex');
 }
 
+function hashReconnectToken(token) {
+    return token ? crypto.createHash('sha256').update(String(token)).digest('hex') : '';
+}
+
 // 開始済みルームのGC（2時間アクティビティなしで削除）
 const roomGcInterval = setInterval(() => {
     const TTL = 2 * 60 * 60 * 1000;
@@ -237,6 +241,10 @@ io.on('connection', (socket) => {
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
+        if (!getExpectedReconnectTokenHash(room, playerIndex, playerName)) {
+            emitAppError(socket, 'INVALID_TOKEN');
+            return;
+        }
 
         const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
         if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }
@@ -256,38 +264,8 @@ io.on('connection', (socket) => {
     });
 
     // サーバー再起動後にホストがルームを復元する
-    socket.on('recreateRoom', ({ roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName }) => {
-        if (!roomId || !gameStartPayload) { emitAppError(socket, '復元データが不完全です'); return; }
-        if (rooms[roomId]) {
-            // ルームが既に存在する場合は通常の再接続へ誘導
-            emitAppError(socket, 'ROOM_NOT_FOUND'); // 再度rejoinRoomを試みさせる
-            return;
-        }
-        const playerNames = gameStartPayload.playerNames || [];
-        if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
-            emitAppError(socket, '復元データが不完全です'); return;
-        }
-        rooms[roomId] = {
-            players: [{ id: socket.id, index: playerIndex, name: playerName, reconnectToken: '' }],
-            playerSettings: gameStartPayload.playerSettings || [],
-            maxPlayers: playerNames.length,
-            started: true,
-            restored: true,
-            hostPlayerIndex: playerIndex,
-            enabledCards: gameStartPayload.enabledCards || [],
-            enabledLandmarks: gameStartPayload.enabledLandmarks || [],
-            cpuSpeed: gameStartPayload.cpuSpeed || 1500,
-            gameStartPayload,
-            stateSnapshot: stateSnapshot || null,
-            actionLog: actionLog || [],
-            lastUndoState: null,
-            lastTouchedAt: Date.now(),
-        };
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = playerIndex;
-        socket.emit('rejoinData', { gameStartPayload, stateSnapshot: null, actionLog: actionLog || [], playerIndex });
-        console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+    socket.on('recreateRoom', (payload) => {
+        handleRecreateRoom(socket, payload);
     });
 
     socket.on('disconnect', () => {
@@ -329,24 +307,99 @@ io.on('connection', (socket) => {
 });
 
 function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socketId) {
-    let player = room.players.find(p =>
-        p.index === playerIndex &&
-        p.name === playerName &&
-        p.reconnectToken === reconnectToken
-    );
-    if (!player && room.restored) {
-        const names = room.gameStartPayload?.playerNames || [];
-        if (Number.isInteger(playerIndex) && names[playerIndex] === playerName) {
-            player = room.players.find(p => p.index === playerIndex && p.name === playerName);
-            if (!player) {
-                player = { id: socketId, index: playerIndex, name: playerName, reconnectToken: '' };
-                room.players.push(player);
-            }
-        }
+    const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
+    if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) return null;
+
+    let player = room.players.find(p => p.index === playerIndex && p.name === playerName);
+    if (!player) {
+        player = {
+            id: socketId,
+            index: playerIndex,
+            name: playerName,
+            reconnectToken: '',
+            reconnectTokenHash: expectedReconnectTokenHash,
+        };
+        room.players.push(player);
+    } else if (!player.reconnectTokenHash) {
+        player.reconnectTokenHash = expectedReconnectTokenHash;
     }
-    if (!player) return null;
     player.id = socketId;
     return player;
+}
+
+function getExpectedReconnectTokenHash(room, playerIndex, playerName) {
+    const player = room.players.find(p => p.index === playerIndex && p.name === playerName);
+    if (player?.reconnectTokenHash) return player.reconnectTokenHash;
+    if (player?.reconnectToken) return hashReconnectToken(player.reconnectToken);
+
+    const names = room.gameStartPayload?.playerNames || [];
+    const reconnectTokenHashes = room.gameStartPayload?.reconnectTokenHashes;
+    if (!Number.isInteger(playerIndex) || names[playerIndex] !== playerName || !Array.isArray(reconnectTokenHashes)) {
+        return '';
+    }
+    return reconnectTokenHashes[playerIndex] || '';
+}
+
+function handleRecreateRoom(socket, { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken }) {
+    if (!roomId || !gameStartPayload || !reconnectToken) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
+    if (rooms[roomId]) {
+        emitAppError(socket, 'ROOM_NOT_FOUND');
+        return;
+    }
+    const playerNames = gameStartPayload.playerNames || [];
+    if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
+    const expectedReconnectTokenHash = getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName);
+    if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
+        emitAppError(socket, 'INVALID_TOKEN');
+        return;
+    }
+    const reconnectTokenHashes = Array.isArray(gameStartPayload.reconnectTokenHashes) ? gameStartPayload.reconnectTokenHashes : [];
+    const restoredPlayers = playerNames
+        .map((name, index) => {
+            const setting = gameStartPayload.playerSettings?.[index];
+            const reconnectTokenHash = reconnectTokenHashes[index];
+            if (setting?.type === 'cpu' || !reconnectTokenHash) return null;
+            return {
+                id: index === playerIndex ? socket.id : null,
+                index,
+                name,
+                reconnectToken: '',
+                reconnectTokenHash,
+            };
+        })
+        .filter(Boolean);
+    rooms[roomId] = {
+        players: restoredPlayers,
+        playerSettings: gameStartPayload.playerSettings || [],
+        maxPlayers: playerNames.length,
+        started: true,
+        restored: true,
+        hostPlayerIndex: playerIndex,
+        enabledCards: gameStartPayload.enabledCards || [],
+        enabledLandmarks: gameStartPayload.enabledLandmarks || [],
+        cpuSpeed: gameStartPayload.cpuSpeed || 1500,
+        gameStartPayload,
+        stateSnapshot: stateSnapshot || null,
+        actionLog: Array.isArray(actionLog) ? actionLog : [],
+        lastUndoState: null,
+        lastTouchedAt: Date.now(),
+    };
+    socket.join(roomId);
+    socket.roomId = roomId;
+    socket.playerIndex = playerIndex;
+    socket.emit('rejoinData', {
+        gameStartPayload,
+        stateSnapshot: stateSnapshot || null,
+        actionLog: Array.isArray(actionLog) ? actionLog : [],
+        playerIndex,
+    });
+    console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
 }
 
 function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
@@ -634,6 +687,44 @@ function validateRenovationPayload(game, data) {
     return current.landmarks[data.landmarkName] === true;
 }
 
+function isValidDieValue(value) {
+    return Number.isInteger(value) && value >= 1 && value <= 6;
+}
+
+function validateTunaDiceFromData(data) {
+    if (!isPlainObject(data) || !Object.prototype.hasOwnProperty.call(data, 'tunaDice') || data.tunaDice == null) {
+        return true;
+    }
+    return Array.isArray(data.tunaDice) && data.tunaDice.every(isValidDieValue);
+}
+
+function validateRollDicePayload(data) {
+    if (!isPlainObject(data) || !isValidDieValue(data.forceDice)) return false;
+    return validateTunaDiceFromData(data);
+}
+
+function validateSelectDicePayload(data) {
+    if (!isPlainObject(data)) return false;
+    if (typeof data.useTwo !== 'boolean') return false;
+    if (data.diceCount !== 1 && data.diceCount !== 2) return false;
+    if (!isValidDieValue(data.d1)) return false;
+    if (data.diceCount === 2) {
+        if (!isValidDieValue(data.d2)) return false;
+    } else if (Object.prototype.hasOwnProperty.call(data, 'd2') && data.d2 != null && !isValidDieValue(data.d2)) {
+        return false;
+    }
+    return validateTunaDiceFromData(data);
+}
+
+function validateRerollDicePayload(data) {
+    if (!isPlainObject(data) || !isValidDieValue(data.forceDice)) return false;
+    return validateTunaDiceFromData(data);
+}
+
+function validateResolveHarborPayload(data) {
+    return isPlainObject(data) && typeof data.useBonus === 'boolean';
+}
+
 function validateGameAction(room, socket, action, data) {
     const mirror = createRoomMirror(room);
     if (!mirror) return { ok: false };
@@ -689,6 +780,34 @@ function validateGameAction(room, socket, action, data) {
     if (action === 'resolveRenovation') {
         return {
             ok: validateRenovationPayload(game, data),
+            mirror,
+        };
+    }
+
+    if (action === 'rollDice') {
+        return {
+            ok: validateRollDicePayload(data),
+            mirror,
+        };
+    }
+
+    if (action === 'selectDice') {
+        return {
+            ok: validateSelectDicePayload(data),
+            mirror,
+        };
+    }
+
+    if (action === 'rerollDice') {
+        return {
+            ok: validateRerollDicePayload(data),
+            mirror,
+        };
+    }
+
+    if (action === 'resolveHarbor') {
+        return {
+            ok: validateResolveHarborPayload(data),
             mirror,
         };
     }
@@ -804,7 +923,11 @@ function checkGameStart(io, roomId) {
             playerSettings: room.playerSettings,
             cpuSpeed: room.cpuSpeed,
             playerOrder,
-            versions
+            versions,
+            reconnectTokenHashes: playerNames.map((_, index) => {
+                const player = room.players.find(p => p.index === index);
+                return player?.reconnectToken ? hashReconnectToken(player.reconnectToken) : '';
+            })
         };
         rooms[roomId].gameStartPayload = gameStartPayload;
         rooms[roomId].stateSnapshot = null;
@@ -838,6 +961,7 @@ module.exports = {
     sanitizeName,
     buildPlayerList,
     resolveRejoinPlayer,
+    handleRecreateRoom,
     getRemainingConnectedPlayers,
     serializeMirrorState,
     restoreMirrorState,
@@ -850,6 +974,10 @@ module.exports = {
     validateCleaningPayload,
     validateMoverPayload,
     validateRenovationPayload,
+    validateRollDicePayload,
+    validateSelectDicePayload,
+    validateRerollDicePayload,
+    validateResolveHarborPayload,
     validateGameAction,
     getAllowedActions,
     checkGameStart,

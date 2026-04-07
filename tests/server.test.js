@@ -6,6 +6,7 @@ const {
     loadGameRuntime,
     sanitizeName,
     resolveRejoinPlayer,
+    handleRecreateRoom,
     getRemainingConnectedPlayers,
     serializeMirrorState,
     restoreMirrorState,
@@ -16,6 +17,10 @@ const {
     validateCleaningPayload,
     validateMoverPayload,
     validateRenovationPayload,
+    validateRollDicePayload,
+    validateSelectDicePayload,
+    validateRerollDicePayload,
+    validateResolveHarborPayload,
     makeUndoStateFromMirror,
     applyActionToMirror,
     restoreUndoMirror,
@@ -355,6 +360,33 @@ runTest('validateGameAction は gameStartPayload がない場合に拒否する'
     assert.strictEqual(result.ok, false);
 });
 
+runTest('validateRollDicePayload は不正な出目を拒否する', () => {
+    assert.strictEqual(validateRollDicePayload({ forceDice: 1, tunaDice: [1, 6] }), true);
+    assert.strictEqual(validateRollDicePayload({ forceDice: 0 }), false);
+    assert.strictEqual(validateRollDicePayload({ forceDice: 7 }), false);
+    assert.strictEqual(validateRollDicePayload({ forceDice: 2, tunaDice: [1, 7] }), false);
+});
+
+runTest('validateSelectDicePayload は型と出目範囲を検証する', () => {
+    assert.strictEqual(validateSelectDicePayload({ useTwo: false, diceCount: 1, d1: 3, tunaDice: [2] }), true);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: true, diceCount: 2, d1: 4, d2: 5 }), true);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: 'yes', diceCount: 2, d1: 4, d2: 5 }), false);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: true, diceCount: 3, d1: 4, d2: 5 }), false);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: true, diceCount: 2, d1: 4, d2: 7 }), false);
+});
+
+runTest('validateRerollDicePayload は不正な出目を拒否する', () => {
+    assert.strictEqual(validateRerollDicePayload({ forceDice: 6, tunaDice: [1, 1] }), true);
+    assert.strictEqual(validateRerollDicePayload({ forceDice: -1 }), false);
+    assert.strictEqual(validateRerollDicePayload({ forceDice: 5, tunaDice: [0] }), false);
+});
+
+runTest('validateResolveHarborPayload は boolean のみ許可する', () => {
+    assert.strictEqual(validateResolveHarborPayload({ useBonus: true }), true);
+    assert.strictEqual(validateResolveHarborPayload({ useBonus: false }), true);
+    assert.strictEqual(validateResolveHarborPayload({ useBonus: 'true' }), false);
+});
+
 runTest('validateGameAction はCPUターン中にホストのアクションを許可し非ホストを拒否する', () => {
     const room = makeRoom();
     // p0のターン（CPUに設定）
@@ -371,30 +403,124 @@ runTest('validateGameAction はCPUターン中にホストのアクションを�
     assert.strictEqual(deny.ok, false);
 });
 
-runTest('resolveRejoinPlayer は復元済みルームで既存プレイヤーを再利用し重複追加しない', () => {
+runTest('resolveRejoinPlayer は復元済みルームでも正しいトークン一致時のみ既存プレイヤーを再利用する', () => {
     const room = {
         restored: true,
-        players: [{ id: null, index: 0, name: 'Alice', reconnectToken: '' }],
-        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+        players: [{ id: null, index: 0, name: 'Alice', reconnectTokenHash: 'token-hash' }],
+        gameStartPayload: { playerNames: ['Alice', 'Bob'], reconnectTokenHashes: ['token-hash', 'other-hash'] },
     };
 
-    const player = resolveRejoinPlayer(room, 0, 'Alice', 'ignored-token', 'socket-1');
-    assert.ok(player);
-    assert.strictEqual(room.players.length, 1);
-    assert.strictEqual(room.players[0].id, 'socket-1');
+    const originalCreateHash = require('crypto').createHash;
+    require('crypto').createHash = () => ({ update: () => ({ digest: () => 'token-hash' }) });
+    try {
+        const player = resolveRejoinPlayer(room, 0, 'Alice', 'valid-token', 'socket-1');
+        assert.ok(player);
+        assert.strictEqual(room.players.length, 1);
+        assert.strictEqual(room.players[0].id, 'socket-1');
+    } finally {
+        require('crypto').createHash = originalCreateHash;
+    }
 });
 
-runTest('resolveRejoinPlayer は復元済みルームで未登録プレイヤーだけを追加する', () => {
+runTest('resolveRejoinPlayer は復元済みルームでトークン不一致なら未登録プレイヤーを追加しない', () => {
     const room = {
         restored: true,
-        players: [{ id: null, index: 0, name: 'Alice', reconnectToken: '' }],
-        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+        players: [{ id: null, index: 0, name: 'Alice', reconnectTokenHash: 'token-hash' }],
+        gameStartPayload: { playerNames: ['Alice', 'Bob'], reconnectTokenHashes: ['token-hash', 'bob-hash'] },
     };
 
-    const player = resolveRejoinPlayer(room, 1, 'Bob', 'ignored-token', 'socket-2');
-    assert.ok(player);
-    assert.strictEqual(room.players.length, 2);
-    assert.strictEqual(room.players[1].name, 'Bob');
+    const player = resolveRejoinPlayer(room, 1, 'Bob', 'invalid-token', 'socket-2');
+    assert.strictEqual(player, null);
+    assert.strictEqual(room.players.length, 1);
+});
+runTest('handleRecreateRoom は正しい reconnectToken を要求し不正なら appError を返す', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    const reconnectToken = 'token-host';
+    const payload = {
+        roomId: 'REST01',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+        },
+        stateSnapshot: { players: [], currentPlayerIndex: 1, shopStock: {} },
+        actionLog: [{ action: 'nextTurn', data: {} }],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'forged-token',
+    };
+    try {
+        handleRecreateRoom(socket, payload);
+        assert.deepStrictEqual(joined, []);
+        assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: 'INVALID_TOKEN' }]);
+        assert.strictEqual(__rooms.REST01, undefined);
+    } finally {
+        delete __rooms.REST01;
+    }
+});
+
+runTest('handleRecreateRoom は compacted snapshot を rejoinData にそのまま返す', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    const reconnectToken = 'token-host';
+    const stateSnapshot = { players: [{ name: 'Alice' }], currentPlayerIndex: 1, shopStock: { '麦畑': 5 } };
+    const actionLog = [{ action: 'nextTurn', data: {} }];
+    const payload = {
+        roomId: 'REST02',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+        },
+        stateSnapshot,
+        actionLog,
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    };
+    try {
+        handleRecreateRoom(socket, payload);
+        assert.deepStrictEqual(joined, ['REST02']);
+        assert.strictEqual(__rooms.REST02.stateSnapshot, stateSnapshot);
+        assert.deepStrictEqual(emitted, [{
+            name: 'rejoinData',
+            payload: {
+                gameStartPayload: payload.gameStartPayload,
+                stateSnapshot,
+                actionLog,
+                playerIndex: 0,
+            },
+        }]);
+    } finally {
+        delete __rooms.REST02;
+    }
 });
 
 runTest('getRemainingConnectedPlayers は切断済み・幽霊プレイヤーをホスト候補から除外する', () => {

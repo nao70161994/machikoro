@@ -457,6 +457,7 @@ function _tryRestoreRoom() {
             actionLog,
             playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,
+            reconnectToken,
         });
     } catch(e) {
         document.getElementById("onlineStatus").textContent = '❌ 復元に失敗しました';
