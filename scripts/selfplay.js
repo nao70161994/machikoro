@@ -48,6 +48,7 @@ function createPlayers(runtime, difficulties, options = {}) {
             profileStats: options.profileStats,
             expertPreset: options.expertPreset,
             expertTuning: options.expertTuning,
+            expertBehaviorFlags: options.expertBehaviorFlags,
             expertProfilePresets: options.expertProfilePresets,
             expertProfileTunings: options.expertProfileTunings,
         });
@@ -227,6 +228,7 @@ function simulateGame(options = {}) {
         expertPreset: options.expertPreset || 'default',
         expertPurpose: options.expertPurpose || 'training',
         expertTuning: options.expertTuning || null,
+        expertBehaviorFlags: options.expertBehaviorFlags || null,
         expertProfilePresets: options.expertProfilePresets || null,
         expertProfileTunings: options.expertProfileTunings || null,
         fast: !!options.fast,
@@ -260,6 +262,7 @@ function runSeries(options = {}) {
             profileStats: options.profileStats,
             expertPreset: options.expertPreset,
             expertTuning: options.expertTuning,
+            expertBehaviorFlags: options.expertBehaviorFlags,
             expertProfilePresets: options.expertProfilePresets,
             expertProfileTunings: options.expertProfileTunings,
             fast: options.fast,
@@ -277,6 +280,7 @@ function runSeries(options = {}) {
             exhausted: result.exhausted,
             expertPreset: result.expertPreset,
             expertTuning: result.expertTuning,
+            expertBehaviorFlags: result.expertBehaviorFlags,
             finalState: result.finalState,
         });
         if (result.winner >= 0) {
@@ -315,6 +319,7 @@ function parseArgs(argv) {
     let format = 'text';
     let details = false;
     let expertPreset = 'default';
+    let expertFlags = null;
     let comparePresets = null;
     let ladder = false;
     let fast = false;
@@ -332,6 +337,7 @@ function parseArgs(argv) {
         else if (arg === '--fast') fast = true;
         else if (arg === '--lite') lite = true;
         else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
+        else if (arg === '--expert-flags') expertFlags = JSON.parse(argv[++i] || '{}');
         else if (arg === '--compare-presets') comparePresets = (argv[++i] || 'default').split(',').filter(Boolean);
         else players.push(arg);
     }
@@ -346,6 +352,7 @@ function parseArgs(argv) {
         lite,
         ladder,
         expertPreset,
+        expertBehaviorFlags: expertFlags,
         comparePresets,
         players: players.length > 0 ? players : ['expert', 'strong', 'strong', 'normal'],
     };

@@ -116,7 +116,10 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 - `expert` は `expertPreset` + `expertProfileTunings` で人数別 tuning を持つ
 - 2人戦 (`duel`) と 4人戦 (`crowd`) は別調整前提
-- 4人戦の `expert` は現在調整途中で、序中盤は `normal` 寄りの crowd-normal 方針を使う
+- 4人戦の `expert` は `crowd` 専用の調整を持つ。現在の採用済み強化は以下の3点
+  - `crowdBuildLookahead`: 4人戦序中盤でも `expert` の build 評価を使う
+  - `futureLandmarkHold`: 次ランドマーク直前では高コスト建設を強く抑制する
+  - `lookaheadLeaderStrongOnly`: 4人戦 lookahead では最脅威の相手だけを `strong`、残りを `normal` として近似する
 - `simulationMode` は `"full"` / `"fast"` / `"lite"` に加えて、実戦用の軽量 `"realtime"` を持つ
 - `expertPurpose: "training" | "live"` で学習用と実戦用を分離している。通常対戦は `live`、self-play / tuning は `training`
 - `"lite"` は self-play 専用のさらに軽い mode で、4人戦比較・学習用
@@ -124,6 +127,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 - `lookahead` は未決着時に単なる静的評価ではなく「自分と最短相手の `winDistance` 差」を返す
 - `lookahead` の深さは局面依存で、終盤ほど深く、4人戦序盤ほど浅くする
 - `TV` / `Business` / `Cleaning` の pending 選択は、通常の盤面評価に加えて相手の進行圧や `winDistance` を使った専用補正を持つ
+- `expertBehaviorFlags` により検証中の分岐を個別に ON/OFF できる。既定 `on` にする場合は `CPU` コンストラクタのデフォルトへ昇格する
 
 **重要**: `_buyCard()` と `_buyLandmark()` はオンライン対戦中（`isOnlineGame === true`）に `sendAction()` を呼ぶ。これにより非ホスト側にCPUの建設アクションが伝わる。`typeof isOnlineGame !== 'undefined'` ガードによりテスト環境では呼ばれない。
 
@@ -184,7 +188,10 @@ npm test    # tests/run-all.js → gamemanager.test.js + server.test.js + cpu.te
 npm run selfplay -- --games 10 --lite expert normal normal normal
 npm run tune-expert -- --games 8 --profiles duel,crowdNormal --top 3
 npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --profile crowdNormal
+node scripts/eval-expert-variants.js --fast
 ```
+
+`scripts/eval-expert-variants.js` は `expertBehaviorFlags` の比較用。既定では `expert vs normal,normal,normal` を `25 + 25` シードで回す。`--variant <name>` で単独比較できる。
 
 Node.js 組み込み `assert` モジュールのみ使用。現在 **93テスト**（gamemanager.test.js: 41, server.test.js: 27, cpu.test.js: 15, online.test.js: 10）。
 

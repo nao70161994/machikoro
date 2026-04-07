@@ -109,6 +109,9 @@ runTest('simulateGame は expert 指定なしでも default を既定プリセ�
     const cpu = new runtime.CPU('expert');
     assert.strictEqual(cpu.expertPreset, 'default');
     assert.strictEqual(cpu.expertPurpose, 'training');
+    assert.strictEqual(cpu.expertBehaviorFlags.crowdBuildLookahead, true);
+    assert.strictEqual(cpu.expertBehaviorFlags.futureLandmarkHold, true);
+    assert.strictEqual(cpu.expertBehaviorFlags.lookaheadLeaderStrongOnly, true);
 });
 
 runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
@@ -122,6 +125,23 @@ runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
     });
 
     assert.strictEqual(result.expertProfileTunings.crowd.lookaheadWeight, 0.42);
+});
+
+runTest('simulateGame は expert behavior flags を受け渡せる', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'normal', 'normal', 'normal'],
+        seed: 12,
+        maxSteps: 6000,
+        expertBehaviorFlags: {
+            premiumPurpleGate: true,
+            endgameBuildFocus: true,
+            diceCloserDiscipline: true,
+        },
+    });
+
+    assert.strictEqual(result.expertBehaviorFlags.premiumPurpleGate, true);
+    assert.strictEqual(result.expertBehaviorFlags.endgameBuildFocus, true);
+    assert.strictEqual(result.expertBehaviorFlags.diceCloserDiscipline, true);
 });
 
 runTest('simulateGame は fast モード指定を結果に保持する', () => {
@@ -166,6 +186,11 @@ runTest('parseArgs はプレイヤー未指定時に既定 lineup を使う', ()
 runTest('parseArgs は lite フラグを解釈する', () => {
     const args = parseArgs(['--lite']);
     assert.strictEqual(args.lite, true);
+});
+
+runTest('parseArgs は expert behavior flags を解釈する', () => {
+    const args = parseArgs(['--expert-flags', '{"crowdBuildLookahead":true}']);
+    assert.strictEqual(args.expertBehaviorFlags.crowdBuildLookahead, true);
 });
 
 runTest('printSeries は text/details 形式で明細を出力する', () => {
