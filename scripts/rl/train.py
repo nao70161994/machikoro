@@ -8,6 +8,7 @@
 # 学習済みモデルは models/rl_model/ に保存される。
 
 import argparse
+import copy
 import os
 import sys
 import random
@@ -18,10 +19,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)
 ))))
 
-from scripts.rl.game_env import MachikoroEnv, NUM_ACTIONS
+from scripts.rl.game_env import MachikoroEnv, NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE
 from scripts.rl.encode import encode_state, action_mask
 from scripts.rl.agent import RLAgent
 from scripts.rl.network import SchemaVersionError
+from scripts.rl.cards import NUM_CARDS
 
 
 MODEL_DIR = os.path.join(
@@ -31,13 +33,74 @@ MODEL_DIR = os.path.join(
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 
-def play_vs_random(agent: RLAgent, epsilon: float = 0.1) -> dict:
+
+def _select_action(net, state, mask, epsilon):
+    """BC フェーズを factored head で処理し、(action, value) を返す"""
+    valid = np.where(mask > 0)[0]
+    bc_available = bool(mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].any())
+
+    if bc_available:
+        bc_give_p, bc_take_p, value = net.forward_bc(state)
+        if epsilon > 0 and random.random() < epsilon:
+            return int(random.choice(valid)), value
+        bc_joint  = mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].reshape(NUM_CARDS, NUM_CARDS)
+        give_mask = (bc_joint.sum(axis=1) > 0).astype(np.float32)
+        take_mask = (bc_joint.sum(axis=0) > 0).astype(np.float32)
+        give_p = bc_give_p * give_mask; give_p /= (give_p.sum() + 1e-9)
+        take_p = bc_take_p * take_mask; take_p /= (take_p.sum() + 1e-9)
+        give_idx = int(np.random.choice(NUM_CARDS, p=give_p))
+        take_idx = int(np.random.choice(NUM_CARDS, p=take_p))
+        action = ACT_BC_BASE + give_idx * NUM_CARDS + take_idx
+        if mask[action] == 0:
+            action = int(random.choice(valid))
+        return action, value
+    else:
+        policy, value = net.forward(state)
+        if epsilon > 0 and random.random() < epsilon:
+            return int(random.choice(valid)), value
+        masked_p = policy * mask
+        s = masked_p.sum()
+        if s < 1e-9:
+            return int(random.choice(valid)), value
+        masked_p = masked_p / s
+        return int(np.random.choice(NUM_ACTIONS, p=masked_p)), value
+
+
+def _greedy_action(net, state, mask):
+    """greedy 評価用（BC も factored head を使う）"""
+    valid = np.where(mask > 0)[0]
+    bc_available = bool(mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].any())
+
+    if bc_available:
+        bc_give_p, bc_take_p, _ = net.forward_bc(state)
+        bc_joint  = mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].reshape(NUM_CARDS, NUM_CARDS)
+        give_mask = (bc_joint.sum(axis=1) > 0).astype(np.float32)
+        take_mask = (bc_joint.sum(axis=0) > 0).astype(np.float32)
+        give_p = bc_give_p * give_mask; give_p /= (give_p.sum() + 1e-9)
+        take_p = bc_take_p * take_mask; take_p /= (take_p.sum() + 1e-9)
+        give_idx = int(np.argmax(give_p))
+        take_idx = int(np.argmax(take_p))
+        action = ACT_BC_BASE + give_idx * NUM_CARDS + take_idx
+        if mask[action] == 0:
+            return int(random.choice(valid))
+        return action
+    else:
+        policy, _ = net.forward(state)
+        masked = policy * mask
+        s = masked.sum()
+        if s < 1e-9:
+            return int(random.choice(valid))
+        return int(np.argmax(masked / s))
+
+
+def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
+                   opp_agent: RLAgent = None) -> dict:
     """
-    エージェント(P0) vs ランダム(P1) で 1 ゲームを収集。
+    エージェント(P0) vs 相手(P1) で 1 ゲームを収集。
     P0 のステップのみをエージェントバッファに積む。
 
-    自己対戦では「両者が同時に強くなる」ため vs_random の改善が見えにくい。
-    ランダム固定の相手に対して学習することで明確な進捗が得られる。
+    opp_agent=None  → ランダム対戦（P1 はランダム行動）
+    opp_agent=agent → 過去モデルとの対戦（P1 は greedy）
 
     中間報酬: ランドマーク建設 +0.2
     終端報酬: 勝利 +1.0 / 敗北 -1.0
@@ -61,18 +124,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1) -> dict:
             mask  = action_mask(env)
             valid = np.where(mask > 0)[0]
 
-            policy, value = agent.net.forward(state)
-
-            if epsilon > 0 and random.random() < epsilon:
-                action = int(random.choice(valid))
-            else:
-                masked_p = policy * mask
-                s = masked_p.sum()
-                if s < 1e-9:
-                    action = int(random.choice(valid))
-                else:
-                    masked_p = masked_p / s
-                    action = int(np.random.choice(NUM_ACTIONS, p=masked_p))
+            action, value = _select_action(agent.net, state, mask, epsilon)
 
             lm_before = env.players[0].built_lm_count()
             env.step(action)
@@ -85,9 +137,14 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1) -> dict:
             ep_rewards.append(0.2 * (lm_after - lm_before))
 
         else:
-            # ── ランダムのターン ──
-            valid = env.valid_actions()
-            env.step(random.choice(valid))
+            # ── 相手のターン ──
+            if opp_agent is not None:
+                opp_state = encode_state(env)
+                opp_mask  = action_mask(env)
+                opp_action = _greedy_action(opp_agent.net, opp_state, opp_mask)
+                env.step(opp_action)
+            else:
+                env.step(random.choice(env.valid_actions()))
 
     if not ep_states:
         return {}
@@ -131,18 +188,10 @@ def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
         for _ in range(3000):
             if env.done:
                 break
-            ci = env.current
-            if ci == 0:
-                state = encode_state(env)
-                mask  = action_mask(env)
-                policy, _ = agent.net.forward(state)
-                masked = policy * mask
-                s = masked.sum()
-                if s < 1e-9:
-                    action = int(random.choice(env.valid_actions()))
-                else:
-                    masked = masked / s
-                    action = int(np.argmax(masked))
+            if env.current == 0:
+                state  = encode_state(env)
+                mask   = action_mask(env)
+                action = _greedy_action(agent.net, state, mask)
             else:
                 action = int(random.choice(env.valid_actions()))
             env.step(action)
@@ -157,7 +206,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--games",      type=int,   default=10000, help="学習ゲーム数")
     parser.add_argument("--eval-every", type=int,   default=1000,  help="評価間隔")
-    parser.add_argument("--hidden",     type=int,   default=128,   help="隠れ層ニューロン数")
+    parser.add_argument("--hidden",     type=int,   default=256,   help="隠れ層ニューロン数")
     parser.add_argument("--lr",         type=float, default=3e-4,  help="学習率")
     parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
     parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
@@ -193,11 +242,28 @@ def main():
 
     BATCH = 8   # MC リターンはブートストラップ非依存のため大きいバッチでも安定
 
+    # 対戦相手プール（過去モデルのスナップショット）
+    pool_agents = []
+    POOL_UPDATE_EVERY = 5000
+    MAX_POOL_SIZE = 5
+
     for game_i in range(1, args.games + 1):
         # ε を線形減衰
         epsilon = max(0.02, args.epsilon * (1 - game_i / args.games))
 
-        info = play_vs_random(agent, epsilon=epsilon)
+        # 一定ゲームごとに現在モデルをプールにコピー
+        if game_i % POOL_UPDATE_EVERY == 0:
+            snap = RLAgent(hidden=args.hidden, lr=args.lr)
+            snap.net = copy.deepcopy(agent.net)
+            pool_agents.append(snap)
+            if len(pool_agents) > MAX_POOL_SIZE:
+                pool_agents.pop(0)
+            print(f"  [pool] snapshot #{len(pool_agents)}/{MAX_POOL_SIZE} added at game {game_i}")
+
+        # 相手選択: 70% ランダム / 30% 過去モデル（プールが空の間は 100% ランダム）
+        opp = random.choice(pool_agents) if pool_agents and random.random() < 0.3 else None
+
+        info = play_vs_random(agent, epsilon=epsilon, opp_agent=opp)
         if info.get("winner") == 0:
             agent_wins += 1
 

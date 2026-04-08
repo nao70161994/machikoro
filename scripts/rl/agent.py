@@ -3,7 +3,8 @@
 import numpy as np
 from .network import PolicyValueNet
 from .encode import encode_state, action_mask, STATE_DIM
-from .game_env import NUM_ACTIONS
+from .game_env import NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE
+from .cards import NUM_CARDS
 
 
 class RLAgent:
@@ -112,7 +113,7 @@ class RLAgent:
             else:
                 g = rewards[t] + self.gamma * g
             G_mc[t] = g
-        G = np.clip(G_mc, -1.5, 1.5)
+        G = np.clip(G_mc, -1.0, 1.0)   # tanh 出力 [-1,1] に合わせてクリップ
 
         # advantage を正規化（分散低減）
         adv_mean = advantages.mean()
@@ -129,35 +130,72 @@ class RLAgent:
             adv    = float(adv_norm[t])
             g_t    = float(G[t])
 
-            n_valid = int(mask.sum())
+            n_valid  = int(mask.sum())
+            is_bc    = (ACT_BC_BASE <= action < ACT_BC_BASE + ACT_BC_SIZE)
 
-            policy, value = self.net.forward(state)
-            masked = policy * mask
-            s = masked.sum()
-            masked = masked / (s + 1e-9)
+            if is_bc and n_valid > 1:
+                # ── ビジネスセンター: factored head で学習 ──
+                bc_give_p, bc_take_p, value = self.net.forward_bc(state)
 
-            # 強制行動（有効手が1つだけ）は方策勾配から除外
-            # 例: PHASE_ROLL は常に ACT_ROLL1 の一択でノイズになる
-            if n_valid > 1:
-                # 方策勾配: (masked_policy - one_hot) * advantage
-                d_logit = masked.copy()
-                d_logit[action] -= 1.0
-                d_logit *= adv
-                # 無効行動には勾配を流さない
-                d_logit *= mask
-                # エントロピー正則化
-                d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef * mask
-                d_policy  = d_logit + d_entropy
-                total_pl += float(-np.log(masked[action] + 1e-9) * adv)
+                # joint mask から per-axis mask を導出
+                bc_joint  = mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].reshape(NUM_CARDS, NUM_CARDS)
+                give_mask = (bc_joint.sum(axis=1) > 0).astype(np.float32)
+                take_mask = (bc_joint.sum(axis=0) > 0).astype(np.float32)
+
+                give_idx = (action - ACT_BC_BASE) // NUM_CARDS
+                take_idx = (action - ACT_BC_BASE) % NUM_CARDS
+
+                bc_give_m = bc_give_p * give_mask
+                bc_give_m /= (bc_give_m.sum() + 1e-9)
+                bc_take_m = bc_take_p * take_mask
+                bc_take_m /= (bc_take_m.sum() + 1e-9)
+
+                d_give = bc_give_m.copy()
+                d_give[give_idx] -= 1.0
+                d_give *= adv
+                d_give *= give_mask
+                d_give += (np.log(bc_give_m + 1e-9) + 1.0) * self.entropy_coef * give_mask
+
+                d_take = bc_take_m.copy()
+                d_take[take_idx] -= 1.0
+                d_take *= adv
+                d_take *= take_mask
+                d_take += (np.log(bc_take_m + 1e-9) + 1.0) * self.entropy_coef * take_mask
+
+                d_value = (value - g_t) * (1.0 - value ** 2)
+                self.net.backward_bc(d_give, d_take, d_value)
+
+                total_pl += float(
+                    -np.log(bc_give_m[give_idx] + 1e-9) * adv
+                    - np.log(bc_take_m[take_idx] + 1e-9) * adv
+                )
+                total_vl += float((value - g_t) ** 2)
+
             else:
-                # 強制行動: 方策更新なし（価値関数の学習のみ）
-                d_policy = np.zeros_like(policy)
+                # ── 通常行動 ──
+                policy, value = self.net.forward(state)
+                masked = policy * mask
+                s = masked.sum()
+                masked = masked / (s + 1e-9)
 
-            # 価値損失 (MSE through tanh) は常に更新
-            d_value = (value - g_t) * (1.0 - value ** 2)
+                # 強制行動（有効手が1つだけ）は方策勾配から除外
+                if n_valid > 1:
+                    # 方策勾配: (masked_policy - one_hot) * advantage
+                    d_logit = masked.copy()
+                    d_logit[action] -= 1.0
+                    d_logit *= adv
+                    d_logit *= mask   # 無効行動には勾配を流さない
+                    d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef * mask
+                    d_policy  = d_logit + d_entropy
+                    total_pl += float(-np.log(masked[action] + 1e-9) * adv)
+                else:
+                    # 強制行動: 方策更新なし（価値関数の学習のみ）
+                    d_policy = np.zeros_like(policy)
 
-            self.net.backward(d_policy, d_value)
-            total_vl += float((value - g_t) ** 2)
+                # 価値損失 (MSE through tanh) は常に更新
+                d_value = (value - g_t) * (1.0 - value ** 2)
+                self.net.backward(d_policy, d_value)
+                total_vl += float((value - g_t) ** 2)
 
         stats = {
             "policy_loss": total_pl / T,

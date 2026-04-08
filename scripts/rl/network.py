@@ -2,8 +2,9 @@
 
 import numpy as np
 
+from .cards import NUM_CARDS
 
-CHECKPOINT_SCHEMA_VERSION = 2
+CHECKPOINT_SCHEMA_VERSION = 3
 
 
 class SchemaVersionError(ValueError):
@@ -80,6 +81,9 @@ class PolicyValueNet:
     出力:
       policy: (num_actions,) の確率分布（softmax 後）
       value:  スカラー（-1〜1、勝率の推定）
+
+    ビジネスセンターフェーズでは bc_give_head / bc_take_head による
+    factored 表現を使う（汎化改善）。
     """
 
     def __init__(self, state_dim: int, num_actions: int,
@@ -92,15 +96,17 @@ class PolicyValueNet:
         self.policy_head = Layer(hidden, num_actions, activation=False, lr=lr)
         # 価値ヘッド（活性化なし → tanh は外で）
         self.value_head  = Layer(hidden, 1,           activation=False, lr=lr)
+        # ビジネスセンター専用 factored ヘッド
+        # 渡すカード (38) と受け取るカード (38) を独立して選択
+        self.bc_give_head = Layer(hidden, NUM_CARDS, activation=False, lr=lr)
+        self.bc_take_head = Layer(hidden, NUM_CARDS, activation=False, lr=lr)
 
         self._h = None      # 共有層の出力（backward 用）
 
     def forward(self, state: np.ndarray):
         """
-        state: shape (state_dim,)
+        通常フェーズ用 forward。
         returns: (policy_probs, value)
-          policy_probs: (num_actions,) ndarray, 合計 1
-          value: float
         """
         h = state
         for layer in self.shared:
@@ -115,48 +121,67 @@ class PolicyValueNet:
 
         return policy, value
 
+    def forward_bc(self, state: np.ndarray):
+        """
+        ビジネスセンターフェーズ用 forward。
+        returns: (bc_give_probs, bc_take_probs, value)
+          bc_give_probs: (NUM_CARDS,) — 渡すカードの確率分布
+          bc_take_probs: (NUM_CARDS,) — 受け取るカードの確率分布
+          value: float
+        """
+        h = state
+        for layer in self.shared:
+            h = layer.forward(h)
+        self._h = h
+
+        bc_give_p = softmax(self.bc_give_head.forward(h))
+        bc_take_p = softmax(self.bc_take_head.forward(h))
+
+        v_raw = self.value_head.forward(h)
+        value = float(np.tanh(v_raw[0]))
+
+        return bc_give_p, bc_take_p, value
+
     def backward(self, d_policy: np.ndarray, d_value: float):
-        """
-        d_policy: (num_actions,) — 方策ヘッドへの勾配
-        d_value:  スカラー       — 価値ヘッドへの勾配（tanh の外から）
-        """
-        # 価値ヘッド
+        """通常フェーズ用 backward"""
         dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
-
-        # 方策ヘッド
         dh_p = self.policy_head.backward(d_policy)
-
-        # 共有層（両ヘッドの勾配を合算）
         dh = dh_p + dh_v
         for layer in reversed(self.shared):
             dh = layer.backward(dh)
+
+    def backward_bc(self, d_give: np.ndarray, d_take: np.ndarray, d_value: float):
+        """ビジネスセンターフェーズ用 backward"""
+        dh_v    = self.value_head.backward(np.array([d_value], dtype=np.float32))
+        dh_give = self.bc_give_head.backward(d_give)
+        dh_take = self.bc_take_head.backward(d_take)
+        dh = dh_give + dh_take + dh_v
+        for layer in reversed(self.shared):
+            dh = layer.backward(dh)
+
+    def _layer_specs(self):
+        """保存・読み込み対象レイヤーのリスト"""
+        specs = []
+        for i, layer in enumerate(self.shared):
+            specs.append((f"shared_{i}", layer))
+        specs.append(("policy", self.policy_head))
+        specs.append(("value",  self.value_head))
+        specs.append(("bc_give", self.bc_give_head))
+        specs.append(("bc_take", self.bc_take_head))
+        return specs
 
     def save(self, path: str):
         import os
         os.makedirs(os.path.dirname(path), exist_ok=True)
         params = {"schema_version": np.array(CHECKPOINT_SCHEMA_VERSION, dtype=np.int64)}
-        for i, layer in enumerate(self.shared):
-            params[f"shared_{i}_W"] = layer.W
-            params[f"shared_{i}_b"] = layer.b
-            params[f"shared_{i}_mW"] = layer.mW
-            params[f"shared_{i}_vW"] = layer.vW
-            params[f"shared_{i}_mb"] = layer.mb
-            params[f"shared_{i}_vb"] = layer.vb
-            params[f"shared_{i}_t"] = np.array(layer.t, dtype=np.int64)
-        params["policy_W"] = self.policy_head.W
-        params["policy_b"] = self.policy_head.b
-        params["policy_mW"] = self.policy_head.mW
-        params["policy_vW"] = self.policy_head.vW
-        params["policy_mb"] = self.policy_head.mb
-        params["policy_vb"] = self.policy_head.vb
-        params["policy_t"] = np.array(self.policy_head.t, dtype=np.int64)
-        params["value_W"]  = self.value_head.W
-        params["value_b"]  = self.value_head.b
-        params["value_mW"] = self.value_head.mW
-        params["value_vW"] = self.value_head.vW
-        params["value_mb"] = self.value_head.mb
-        params["value_vb"] = self.value_head.vb
-        params["value_t"] = np.array(self.value_head.t, dtype=np.int64)
+        for prefix, layer in self._layer_specs():
+            params[f"{prefix}_W"]  = layer.W
+            params[f"{prefix}_b"]  = layer.b
+            params[f"{prefix}_mW"] = layer.mW
+            params[f"{prefix}_vW"] = layer.vW
+            params[f"{prefix}_mb"] = layer.mb
+            params[f"{prefix}_vb"] = layer.vb
+            params[f"{prefix}_t"]  = np.array(layer.t, dtype=np.int64)
         checkpoint_path = path + ".npz"
         tmp_path = path + ".tmp.npz"
         np.savez(tmp_path, **params)
@@ -165,7 +190,7 @@ class PolicyValueNet:
     def load(self, path: str):
         checkpoint_path = path + ".npz"
 
-        def validate_shape(key: str, actual, expected):
+        def validate_shape(key, actual, expected):
             if actual.shape != expected.shape:
                 raise ValueError(
                     f"checkpoint shape mismatch for {key}: "
@@ -179,35 +204,24 @@ class PolicyValueNet:
                     raise SchemaVersionError(
                         "非互換なチェックポイントです。models/rl_model/model.npz を削除して再実行してください。"
                     )
-                layer_specs = []
-                for i, layer in enumerate(self.shared):
-                    layer_specs.append((
-                        f"shared_{i}",
-                        layer,
-                        data[f"shared_{i}_W"],
-                        data[f"shared_{i}_b"],
-                    ))
-                layer_specs.extend([
-                    ("policy", self.policy_head, data["policy_W"], data["policy_b"]),
-                    ("value", self.value_head, data["value_W"], data["value_b"]),
-                ])
+                specs = self._layer_specs()
 
-                for prefix, layer, W, b in layer_specs:
-                    validate_shape(f"{prefix}_W", W, layer.W)
-                    validate_shape(f"{prefix}_b", b, layer.b)
+                # shape チェック
+                for prefix, layer in specs:
+                    validate_shape(f"{prefix}_W", data[f"{prefix}_W"], layer.W)
+                    validate_shape(f"{prefix}_b", data[f"{prefix}_b"], layer.b)
 
-                adam_keys = []
-                for prefix, _, _, _ in layer_specs:
-                    adam_keys.extend([
-                        f"{prefix}_mW", f"{prefix}_vW",
-                        f"{prefix}_mb", f"{prefix}_vb", f"{prefix}_t",
-                    ])
-                has_full_adam_state = all(key in data.files for key in adam_keys)
+                # Adam 状態が揃っているか確認
+                adam_keys = [
+                    f"{p}_{k}" for p, _ in specs
+                    for k in ("mW", "vW", "mb", "vb", "t")
+                ]
+                has_adam = all(k in data.files for k in adam_keys)
 
-                for prefix, layer, W, b in layer_specs:
-                    layer.W = W
-                    layer.b = b
-                    if has_full_adam_state:
+                for prefix, layer in specs:
+                    layer.W = data[f"{prefix}_W"]
+                    layer.b = data[f"{prefix}_b"]
+                    if has_adam:
                         validate_shape(f"{prefix}_mW", data[f"{prefix}_mW"], layer.mW)
                         validate_shape(f"{prefix}_vW", data[f"{prefix}_vW"], layer.vW)
                         validate_shape(f"{prefix}_mb", data[f"{prefix}_mb"], layer.mb)
@@ -216,6 +230,6 @@ class PolicyValueNet:
                         layer.vW = data[f"{prefix}_vW"]
                         layer.mb = data[f"{prefix}_mb"]
                         layer.vb = data[f"{prefix}_vb"]
-                        layer.t = int(data[f"{prefix}_t"])
+                        layer.t  = int(data[f"{prefix}_t"])
         except (SchemaVersionError, ValueError, KeyError, OSError):
             raise
