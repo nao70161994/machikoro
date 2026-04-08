@@ -206,6 +206,54 @@ def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
     return wins / n_games
 
 
+def eval_vs_heuristic(agent: RLAgent, level: str, n_games: int = 50) -> float:
+    """エージェント対ヒューリスティック CPU の勝率を評価"""
+    from .heuristic import heuristic_action
+    wins = 0
+    for _ in range(n_games):
+        env = MachikoroEnv()
+        agent_player = random.randint(0, 1)
+        for _ in range(3000):
+            if env.done:
+                break
+            if env.current == agent_player:
+                state  = encode_state(env)
+                mask   = action_mask(env)
+                action = _greedy_action(agent.net, state, mask)
+            else:
+                action = heuristic_action(env, level)
+            env.step(action)
+        if env.winner == agent_player:
+            wins += 1
+    return wins / n_games
+
+
+def eval_vs_pool(agent: RLAgent, pool_agents: list, n_games: int = 50) -> float:
+    """エージェント対プール内スナップショットの勝率を評価"""
+    if not pool_agents:
+        return float('nan')
+    wins = 0
+    for _ in range(n_games):
+        opp = random.choice(pool_agents)
+        env = MachikoroEnv()
+        agent_player = random.randint(0, 1)
+        for _ in range(3000):
+            if env.done:
+                break
+            if env.current == agent_player:
+                state  = encode_state(env)
+                mask   = action_mask(env)
+                action = _greedy_action(agent.net, state, mask)
+            else:
+                opp_state  = encode_state(env)
+                opp_mask   = action_mask(env)
+                action     = _greedy_action(opp.net, opp_state, opp_mask)
+            env.step(action)
+        if env.winner == agent_player:
+            wins += 1
+    return wins / n_games
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--games",      type=int,   default=10000, help="学習ゲーム数")
@@ -280,20 +328,29 @@ def main():
                 total_adv += stats.get("mean_adv",    0)
 
         if game_i % args.eval_every == 0:
-            win_rate = eval_vs_random(agent, 200)
+            wr_rnd    = eval_vs_random(agent, 200)
+            wr_weak   = eval_vs_heuristic(agent, 'weak',   50)
+            wr_normal = eval_vs_heuristic(agent, 'normal', 50)
+            wr_strong = eval_vs_heuristic(agent, 'strong', 50)
+            wr_expert = eval_vs_heuristic(agent, 'expert', 50)
+            wr_pool   = eval_vs_pool(agent, pool_agents,   50)
+
             denom    = max(train_calls, 1)
             avg_pl   = total_pl  / denom
             avg_vl   = total_vl  / denom
             avg_adv  = total_adv / denom
             train_wr = agent_wins / args.eval_every
 
+            pool_str = f"{wr_pool:.0%}" if wr_pool == wr_pool else "  n/a"
             print(f"[{game_i:6d}] "
-                  f"vs_random={win_rate:.1%}  "
-                  f"train_wr={train_wr:.1%}  "
-                  f"policy_loss={avg_pl:.4f}  "
-                  f"value_loss={avg_vl:.4f}  "
-                  f"mean_adv={avg_adv:.4f}  "
-                  f"eps={epsilon:.3f}")
+                  f"rnd={wr_rnd:.0%}  "
+                  f"weak={wr_weak:.0%}  "
+                  f"nrm={wr_normal:.0%}  "
+                  f"str={wr_strong:.0%}  "
+                  f"exp={wr_expert:.0%}  "
+                  f"pool={pool_str}  "
+                  f"train={train_wr:.0%}  "
+                  f"pl={avg_pl:.3f}  vl={avg_vl:.3f}  adv={avg_adv:.3f}  eps={epsilon:.3f}")
 
             # リセット
             total_pl = total_vl = total_adv = 0.0
@@ -307,8 +364,16 @@ def main():
         agent.save(model_path)
 
     print(f"\n学習完了。モデル保存先: {model_path}.npz")
-    final_wr = eval_vs_random(agent, 500)
-    print(f"最終 vs ランダム勝率: {final_wr:.1%}")
+    final_rnd    = eval_vs_random(agent, 500)
+    final_weak   = eval_vs_heuristic(agent, 'weak',   100)
+    final_normal = eval_vs_heuristic(agent, 'normal', 100)
+    final_strong = eval_vs_heuristic(agent, 'strong', 100)
+    final_expert = eval_vs_heuristic(agent, 'expert', 100)
+    final_pool   = eval_vs_pool(agent, pool_agents, 100)
+    pool_str = f"{final_pool:.1%}" if final_pool == final_pool else "n/a"
+    print(f"最終勝率: rnd={final_rnd:.1%}  weak={final_weak:.1%}  "
+          f"normal={final_normal:.1%}  strong={final_strong:.1%}  "
+          f"expert={final_expert:.1%}  pool={pool_str}")
 
 
 if __name__ == "__main__":
