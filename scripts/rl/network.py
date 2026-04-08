@@ -3,6 +3,13 @@
 import numpy as np
 
 
+CHECKPOINT_SCHEMA_VERSION = 2
+
+
+class SchemaVersionError(ValueError):
+    pass
+
+
 def relu(x):
     return np.maximum(0.0, x)
 
@@ -127,22 +134,88 @@ class PolicyValueNet:
     def save(self, path: str):
         import os
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        params = {}
+        params = {"schema_version": np.array(CHECKPOINT_SCHEMA_VERSION, dtype=np.int64)}
         for i, layer in enumerate(self.shared):
             params[f"shared_{i}_W"] = layer.W
             params[f"shared_{i}_b"] = layer.b
+            params[f"shared_{i}_mW"] = layer.mW
+            params[f"shared_{i}_vW"] = layer.vW
+            params[f"shared_{i}_mb"] = layer.mb
+            params[f"shared_{i}_vb"] = layer.vb
+            params[f"shared_{i}_t"] = np.array(layer.t, dtype=np.int64)
         params["policy_W"] = self.policy_head.W
         params["policy_b"] = self.policy_head.b
+        params["policy_mW"] = self.policy_head.mW
+        params["policy_vW"] = self.policy_head.vW
+        params["policy_mb"] = self.policy_head.mb
+        params["policy_vb"] = self.policy_head.vb
+        params["policy_t"] = np.array(self.policy_head.t, dtype=np.int64)
         params["value_W"]  = self.value_head.W
         params["value_b"]  = self.value_head.b
-        np.savez(path, **params)
+        params["value_mW"] = self.value_head.mW
+        params["value_vW"] = self.value_head.vW
+        params["value_mb"] = self.value_head.mb
+        params["value_vb"] = self.value_head.vb
+        params["value_t"] = np.array(self.value_head.t, dtype=np.int64)
+        checkpoint_path = path + ".npz"
+        tmp_path = path + ".tmp.npz"
+        np.savez(tmp_path, **params)
+        os.replace(tmp_path, checkpoint_path)
 
     def load(self, path: str):
-        data = np.load(path + ".npz")
-        for i, layer in enumerate(self.shared):
-            layer.W = data[f"shared_{i}_W"]
-            layer.b = data[f"shared_{i}_b"]
-        self.policy_head.W = data["policy_W"]
-        self.policy_head.b = data["policy_b"]
-        self.value_head.W  = data["value_W"]
-        self.value_head.b  = data["value_b"]
+        checkpoint_path = path + ".npz"
+
+        def validate_shape(key: str, actual, expected):
+            if actual.shape != expected.shape:
+                raise ValueError(
+                    f"checkpoint shape mismatch for {key}: "
+                    f"expected {expected.shape}, got {actual.shape}"
+                )
+
+        try:
+            with np.load(checkpoint_path) as data:
+                schema_version = data.get("schema_version")
+                if schema_version is None or int(schema_version) != CHECKPOINT_SCHEMA_VERSION:
+                    raise SchemaVersionError(
+                        "非互換なチェックポイントです。models/rl_model/model.npz を削除して再実行してください。"
+                    )
+                layer_specs = []
+                for i, layer in enumerate(self.shared):
+                    layer_specs.append((
+                        f"shared_{i}",
+                        layer,
+                        data[f"shared_{i}_W"],
+                        data[f"shared_{i}_b"],
+                    ))
+                layer_specs.extend([
+                    ("policy", self.policy_head, data["policy_W"], data["policy_b"]),
+                    ("value", self.value_head, data["value_W"], data["value_b"]),
+                ])
+
+                for prefix, layer, W, b in layer_specs:
+                    validate_shape(f"{prefix}_W", W, layer.W)
+                    validate_shape(f"{prefix}_b", b, layer.b)
+
+                adam_keys = []
+                for prefix, _, _, _ in layer_specs:
+                    adam_keys.extend([
+                        f"{prefix}_mW", f"{prefix}_vW",
+                        f"{prefix}_mb", f"{prefix}_vb", f"{prefix}_t",
+                    ])
+                has_full_adam_state = all(key in data.files for key in adam_keys)
+
+                for prefix, layer, W, b in layer_specs:
+                    layer.W = W
+                    layer.b = b
+                    if has_full_adam_state:
+                        validate_shape(f"{prefix}_mW", data[f"{prefix}_mW"], layer.mW)
+                        validate_shape(f"{prefix}_vW", data[f"{prefix}_vW"], layer.vW)
+                        validate_shape(f"{prefix}_mb", data[f"{prefix}_mb"], layer.mb)
+                        validate_shape(f"{prefix}_vb", data[f"{prefix}_vb"], layer.vb)
+                        layer.mW = data[f"{prefix}_mW"]
+                        layer.vW = data[f"{prefix}_vW"]
+                        layer.mb = data[f"{prefix}_mb"]
+                        layer.vb = data[f"{prefix}_vb"]
+                        layer.t = int(data[f"{prefix}_t"])
+        except (SchemaVersionError, ValueError, KeyError, OSError):
+            raise

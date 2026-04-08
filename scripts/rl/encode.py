@@ -22,6 +22,7 @@ STATE_DIM = (
     + 1         # last_d1 / 6
     + 1         # last_d2 / 6
     + 5         # pending counts (tv, biz, clean, mover, reno)
+    + 1         # pending_it flag
     + 1         # self_it_venture_coins / 10
     + 1         # turn_count / 200
 )
@@ -71,6 +72,7 @@ def encode_state(env: MachikoroEnv) -> np.ndarray:
     vec.append(float(env.pending_clean))
     vec.append(float(env.pending_mover))
     vec.append(float(env.pending_reno))
+    vec.append(float(env.pending_it))
 
     # IT ベンチャー積立
     vec.append(min(me.it_venture_coins / 10.0, 1.0))
@@ -83,7 +85,8 @@ def encode_state(env: MachikoroEnv) -> np.ndarray:
 
 def action_mask(env: MachikoroEnv) -> np.ndarray:
     """
-    有効な行動を 1、無効を 0 にした shape (NUM_ACTIONS,) の bool 配列。
+    有効な行動を 1、無効を 0 にした shape (NUM_ACTIONS,) の配列。
+    BUSINESS は give/take の組み合わせ action、MOVER は休業中カードも含む。
     """
     mask = np.zeros(NUM_ACTIONS, dtype=np.float32)
     for a in env.valid_actions():

@@ -11,6 +11,7 @@ import argparse
 import os
 import sys
 import random
+from datetime import datetime
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
@@ -20,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
 from scripts.rl.game_env import MachikoroEnv, NUM_ACTIONS
 from scripts.rl.encode import encode_state, action_mask
 from scripts.rl.agent import RLAgent
+from scripts.rl.network import SchemaVersionError
 
 
 MODEL_DIR = os.path.join(
@@ -93,6 +95,8 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1) -> dict:
     # 終端報酬
     if env.winner == 0:
         ep_rewards[-1] += 1.0
+    elif env.winner is None:
+        ep_rewards[-1] -= 1.0
     else:
         ep_rewards[-1] -= 1.0
 
@@ -138,16 +142,13 @@ def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
                     action = int(random.choice(env.valid_actions()))
                 else:
                     masked = masked / s
-                    action = int(np.random.choice(NUM_ACTIONS, p=masked))
+                    action = int(np.argmax(masked))
             else:
                 action = int(random.choice(env.valid_actions()))
             env.step(action)
 
         if env.winner == 0:
             wins += 1
-        elif env.winner is None:
-            if env.players[0].coins >= env.players[1].coins:
-                wins += 1
 
     return wins / n_games
 
@@ -165,9 +166,21 @@ def main():
     agent = RLAgent(hidden=args.hidden, lr=args.lr)
 
     model_path = os.path.join(MODEL_DIR, "model")
-    if args.load and os.path.exists(model_path + ".npz"):
-        agent.load(model_path)
-        print(f"モデル読み込み: {model_path}.npz")
+    checkpoint_path = model_path + ".npz"
+    if args.load and os.path.exists(checkpoint_path):
+        try:
+            agent.load(model_path)
+            print(f"モデル読み込み: {checkpoint_path}")
+        except (SchemaVersionError, ValueError, KeyError, OSError) as exc:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = checkpoint_path + f".bak_{timestamp}"
+            os.replace(checkpoint_path, backup_path)
+            print(
+                f"エラー: チェックポイントを読み込めません: {exc}\n"
+                f"バックアップへ退避しました: {backup_path}"
+            )
+            sys.exit(1)
+            sys.exit(1)
 
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}")
 
@@ -181,7 +194,7 @@ def main():
     train_calls = 0
     agent_wins  = 0  # 学習ゲームでのエージェント勝利数
 
-    BATCH = 2   # 2 ゲームまとめてから 1 回学習（off-policy 乖離を抑える）
+    BATCH = 8   # MC リターンはブートストラップ非依存のため大きいバッチでも安定
 
     for game_i in range(1, args.games + 1):
         # ε を線形減衰
@@ -220,6 +233,11 @@ def main():
             train_calls = agent_wins = 0
 
             agent.save(model_path)
+
+    # 末尾の未学習データをフラッシュ
+    if len(agent.rewards) > 0:
+        agent.train()
+        agent.save(model_path)
 
     print(f"\n学習完了。モデル保存先: {model_path}.npz")
     final_wr = eval_vs_random(agent, 500)

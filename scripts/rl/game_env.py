@@ -39,22 +39,25 @@ ACT_IT_SAVE     = 6
 ACT_IT_SKIP     = 7
 # テレビ局（2人戦: 相手1人）
 ACT_TV_TARGET   = 8
-# ビジネスセンター：相手から奪うカード (9〜9+NUM_CARDS-1)
+# ビジネスセンター：自分が渡すカード × 相手から受け取るカード
+# 2人戦なので相手プレイヤー選択は不要。
 ACT_BC_BASE     = 9
+ACT_BC_SIZE     = NUM_CARDS * NUM_CARDS
 # 清掃業：休業させるカード
-ACT_CLEAN_BASE  = ACT_BC_BASE    + NUM_CARDS   # 47
+ACT_CLEAN_BASE  = ACT_BC_BASE    + ACT_BC_SIZE
 # 引越し屋：相手に渡すカード
-ACT_MOVER_BASE  = ACT_CLEAN_BASE + NUM_CARDS   # 85
+# 本番ルールに合わせて休業中カードも候補に含める。
+ACT_MOVER_BASE  = ACT_CLEAN_BASE + NUM_CARDS
 # 改装屋：解体するランドマーク
-ACT_RENO_BASE   = ACT_MOVER_BASE + NUM_CARDS   # 123
+ACT_RENO_BASE   = ACT_MOVER_BASE + NUM_CARDS
 # 建設：カード
-ACT_BUY_CARD_BASE = ACT_RENO_BASE + NUM_LANDMARKS  # 129
+ACT_BUY_CARD_BASE = ACT_RENO_BASE + NUM_LANDMARKS
 # 建設：ランドマーク
-ACT_BUY_LM_BASE   = ACT_BUY_CARD_BASE + NUM_CARDS  # 167
+ACT_BUY_LM_BASE   = ACT_BUY_CARD_BASE + NUM_CARDS
 # パス
-ACT_PASS          = ACT_BUY_LM_BASE + NUM_LANDMARKS # 173
+ACT_PASS          = ACT_BUY_LM_BASE + NUM_LANDMARKS
 
-NUM_ACTIONS = ACT_PASS + 1  # 174
+NUM_ACTIONS = ACT_PASS + 1
 
 
 # ---------- プレイヤー状態 ----------
@@ -124,6 +127,8 @@ class MachikoroEnv:
         p = self.players[self.current]
 
         if self.phase == PHASE_ROLL:
+            if p.landmarks[LM_STATION]:
+                return [ACT_ROLL1, ACT_ROLL2]
             return [ACT_ROLL1]
 
         if self.phase == PHASE_SELECT_DICE:
@@ -143,9 +148,15 @@ class MachikoroEnv:
             if self.pending_tv > 0:
                 return [ACT_TV_TARGET]
             if self.pending_biz > 0:
-                acts = [ACT_BC_BASE + ci
-                        for ci, n in enumerate(CARD_NAMES)
-                        if opp.active(n) > 0 and CARD_DEF[n].color != "purple"]
+                acts = []
+                # 本番ルールに合わせて、交換対象は休業していない施設に限定する。
+                for give_ci, give_name in enumerate(CARD_NAMES):
+                    if p.active(give_name) <= 0 or CARD_DEF[give_name].color == "purple":
+                        continue
+                    for take_ci, take_name in enumerate(CARD_NAMES):
+                        if opp.active(take_name) <= 0 or CARD_DEF[take_name].color == "purple":
+                            continue
+                        acts.append(ACT_BC_BASE + give_ci * NUM_CARDS + take_ci)
                 return acts if acts else [ACT_PASS]
             if self.pending_clean > 0:
                 seen = set()
@@ -204,6 +215,8 @@ class MachikoroEnv:
 
         # --- サイコロ ---
         if self.phase in (PHASE_ROLL, PHASE_SELECT_DICE):
+            if self.phase == PHASE_ROLL and p.landmarks[LM_STATION]:
+                self.phase = PHASE_SELECT_DICE
             use_two = (action == ACT_ROLL2)
             if use_two:
                 d1, d2 = self._roll(), self._roll()
@@ -247,16 +260,20 @@ class MachikoroEnv:
 
         # --- Pending: ビジネスセンター ---
         elif self.phase == PHASE_PENDING and self.pending_biz > 0:
-            take_ci = action - ACT_BC_BASE
-            if 0 <= take_ci < NUM_CARDS:
+            combo = action - ACT_BC_BASE
+            if 0 <= combo < ACT_BC_SIZE:
+                give_ci = combo // NUM_CARDS
+                take_ci = combo % NUM_CARDS
+                give_name = CARD_NAMES[give_ci]
                 take_name = CARD_NAMES[take_ci]
-                if opp.active(take_name) > 0 and CARD_DEF[take_name].color != "purple":
-                    give_name = self._cheapest_minor(p)
-                    if give_name:
-                        p.cards[take_name]  += 1
-                        opp.cards[take_name] -= 1
-                        opp.cards[give_name] += 1
-                        p.cards[give_name]   -= 1
+                if (p.active(give_name) > 0 and opp.active(take_name) > 0 and
+                        CARD_DEF[give_name].color != "purple" and
+                        CARD_DEF[take_name].color != "purple"):
+                    # 本番ルールに合わせて、ビジネスセンターは休業中カードを交換しない。
+                    p.cards[give_name] -= 1
+                    opp.cards[take_name] -= 1
+                    p.cards[take_name] += 1
+                    opp.cards[give_name] += 1
             self.pending_biz -= 1
             self._check_pending()
 
@@ -277,12 +294,12 @@ class MachikoroEnv:
 
         # --- Pending: 引越し屋 ---
         elif self.phase == PHASE_PENDING and self.pending_mover > 0:
+            # 引越し屋は active カードのみ対象（アクション空間の制約による設計上の簡略化）
             ci = action - ACT_MOVER_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]
                 if p.active(name) > 0 and CARD_DEF[name].color != "purple":
-                    p.cards[name]  -= 1
-                    opp.cards[name] += 1
+                    self._transfer_one_card(p, opp, name)
                     p.coins += 4
             self.pending_mover -= 1
             self._check_pending()
@@ -600,7 +617,10 @@ class MachikoroEnv:
         if self.turn_count >= self.max_turns:
             self.done   = True
             coins = [pl.coins for pl in self.players]
-            self.winner = coins.index(max(coins))
+            if coins[0] == coins[1]:
+                self.winner = None
+            else:
+                self.winner = coins.index(max(coins))
 
     def _reset_turn(self):
         self.phase         = PHASE_ROLL
@@ -615,11 +635,13 @@ class MachikoroEnv:
         self.pending_it    = False
         self.last_dice = self.last_d1 = self.last_d2 = 0
 
-    def _cheapest_minor(self, p: PlayerState):
-        cands = [(CARD_DEF[n].cost, n)
-                 for n in CARD_NAMES
-                 if p.active(n) > 0 and CARD_DEF[n].color != "purple"]
-        return min(cands)[1] if cands else None
+    def _transfer_one_card(self, src: PlayerState, dst: PlayerState, name: str) -> bool:
+        """アクティブなカード1枚を移動する。休業中カードは対象にしない。"""
+        if src.active(name) <= 0:
+            return False
+        src.cards[name] -= 1
+        dst.cards[name] += 1
+        return False
 
     def clone(self) -> "MachikoroEnv":
         env = object.__new__(MachikoroEnv)

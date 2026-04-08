@@ -102,8 +102,17 @@ class RLAgent:
             gae = delta[t] + self.gamma * self.lam * (1 - dones[t]) * gae
             advantages[t] = gae
 
-        # 価値ターゲット = advantage + V(s)
-        G = np.clip(advantages + values, -2.0, 2.0)
+        # 価値ターゲット = 純 MC リターン（バイアスなし）
+        # ブートストラップ依存の G = advantages + values はターゲットが動き続ける問題がある
+        G_mc = np.zeros(T, dtype=np.float32)
+        g = 0.0
+        for t in reversed(range(T)):
+            if dones[t]:
+                g = rewards[t]
+            else:
+                g = rewards[t] + self.gamma * g
+            G_mc[t] = g
+        G = np.clip(G_mc, -1.5, 1.5)
 
         # advantage を正規化（分散低減）
         adv_mean = advantages.mean()
@@ -130,12 +139,14 @@ class RLAgent:
             # 強制行動（有効手が1つだけ）は方策勾配から除外
             # 例: PHASE_ROLL は常に ACT_ROLL1 の一択でノイズになる
             if n_valid > 1:
-                # 方策勾配: (pi - one_hot) * advantage
-                d_logit = policy.copy()
+                # 方策勾配: (masked_policy - one_hot) * advantage
+                d_logit = masked.copy()
                 d_logit[action] -= 1.0
                 d_logit *= adv
+                # 無効行動には勾配を流さない
+                d_logit *= mask
                 # エントロピー正則化
-                d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef
+                d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef * mask
                 d_policy  = d_logit + d_entropy
                 total_pl += float(-np.log(masked[action] + 1e-9) * adv)
             else:
