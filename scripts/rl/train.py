@@ -181,7 +181,7 @@ def main():
     train_calls = 0
     agent_wins  = 0  # 学習ゲームでのエージェント勝利数
 
-    BATCH = 8   # 8 ゲームまとめてから 1 回学習
+    BATCH = 2   # 2 ゲームまとめてから 1 回学習（off-policy 乖離を抑える）
 
     for game_i in range(1, args.games + 1):
         # ε を線形減衰

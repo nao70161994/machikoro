@@ -120,26 +120,32 @@ class RLAgent:
             adv    = float(adv_norm[t])
             g_t    = float(G[t])
 
+            n_valid = int(mask.sum())
+
             policy, value = self.net.forward(state)
             masked = policy * mask
             s = masked.sum()
             masked = masked / (s + 1e-9)
 
-            # 方策勾配: (pi - one_hot) * advantage
-            d_logit = policy.copy()
-            d_logit[action] -= 1.0
-            d_logit *= adv
+            # 強制行動（有効手が1つだけ）は方策勾配から除外
+            # 例: PHASE_ROLL は常に ACT_ROLL1 の一択でノイズになる
+            if n_valid > 1:
+                # 方策勾配: (pi - one_hot) * advantage
+                d_logit = policy.copy()
+                d_logit[action] -= 1.0
+                d_logit *= adv
+                # エントロピー正則化
+                d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef
+                d_policy  = d_logit + d_entropy
+                total_pl += float(-np.log(masked[action] + 1e-9) * adv)
+            else:
+                # 強制行動: 方策更新なし（価値関数の学習のみ）
+                d_policy = np.zeros_like(policy)
 
-            # エントロピー正則化
-            d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef
-            d_policy  = d_logit + d_entropy
-
-            # 価値損失 (MSE through tanh)
+            # 価値損失 (MSE through tanh) は常に更新
             d_value = (value - g_t) * (1.0 - value ** 2)
 
             self.net.backward(d_policy, d_value)
-
-            total_pl += float(-np.log(masked[action] + 1e-9) * adv)
             total_vl += float((value - g_t) ** 2)
 
         stats = {
