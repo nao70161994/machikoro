@@ -294,7 +294,8 @@ class MachikoroEnv:
 
         # --- Pending: 引越し屋 ---
         elif self.phase == PHASE_PENDING and self.pending_mover > 0:
-            # 引越し屋は active カードのみ対象（アクション空間の制約による設計上の簡略化）
+            # 引越し屋: active カードのみ対象
+            # NUM_ACTIONS の拡張なしに dormant カードを区別できないため active に限定している
             ci = action - ACT_MOVER_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]

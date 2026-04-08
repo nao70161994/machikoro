@@ -172,14 +172,11 @@ def main():
             agent.load(model_path)
             print(f"モデル読み込み: {checkpoint_path}")
         except (SchemaVersionError, ValueError, KeyError, OSError) as exc:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = checkpoint_path + f".bak_{timestamp}"
-            os.replace(checkpoint_path, backup_path)
             print(
                 f"エラー: チェックポイントを読み込めません: {exc}\n"
-                f"バックアップへ退避しました: {backup_path}"
+                f"モデルファイルはそのまま保持されています: {checkpoint_path}\n"
+                f"新規学習を開始するには手動で削除してください: rm {checkpoint_path}"
             )
-            sys.exit(1)
             sys.exit(1)
 
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}")
