@@ -14,3 +14,11 @@ node_modules/
 dist/
 build/
 out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 学習済みモデル（サイズが大きいため除外）
+models/rl_model/*.npz
