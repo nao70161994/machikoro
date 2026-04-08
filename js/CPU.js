@@ -169,6 +169,17 @@ class CPU {
             duel: {
                 lowValueSpamPenalty: 5.1,
             },
+            trio: {
+                coinWeight: 1.16,
+                turnWeight: 3.28,
+                stableIncomeWeight: 2.15,
+                redPressureWeight: 0.72,
+                leaderThreatWeight: 0.82,
+                landmarkActionBonus: 21,
+                lateLandmarkActionBonus: 16,
+                lookaheadWeight: 0.52,
+                lowValueSpamPenalty: 5.6,
+            },
             crowd: {
                 coinWeight: 1.22,
                 turnWeight: 3.35,

@@ -78,7 +78,7 @@ ACT_PASS          = 1579
 ```
 
 ビジネスセンターは joint 1444 次元でなく、渡す/受け取る を独立した 38 次元で学習する
-**factored head** を使う。組み合わせ構造を活かしてサンプル効率を改善する。
+**factored head** を使う。組み合わせ構造を活かして、学習効率を改善する。
 
 ---
 
@@ -92,7 +92,7 @@ ACT_PASS          = 1579
 | 30% | 過去モデルスナップショット（opponent pool） |
 
 opponent pool: 5000 ゲームごとに現在モデルを deepcopy して最大 5 個保持。
-初期は pool が空のため 100% vs ランダムから始まり、徐々に過去モデルが混入する。
+初期は pool が空なので 100% vs ランダムから始まり、徐々に過去モデルが混ざる。
 
 **エージェント席はゲームごとにランダム化**（先手/後手を均等に経験）。
 
@@ -106,7 +106,7 @@ A_t = δ_t + (γλ) · δ_{t+1} + (γλ)² · δ_{t+2} + ...   # GAE（λ=0.95�
 G_t^MC = r_t + γ·r_{t+1} + γ²·r_{t+2} + ...           # MC リターン（価値ターゲット）
 ```
 
-- **方策ヘッド**: GAE advantage を使用（全ステップに信号を伝播）
+- **方策ヘッド**: GAE advantage を使用（全ステップに信号を伝える）
 - **価値ヘッド**: 純 MC リターンを使用（ブートストラップ非依存で安定）
 
 ### 更新式
@@ -137,7 +137,7 @@ Adam（lr=3e-4）でパラメータを更新。
 
 ### 方策勾配の action mask 対応
 
-行動選択・勾配計算ともに masked_policy（有効行動のみ正規化）を使用。
+行動選択・勾配計算の両方で masked_policy（有効行動のみ正規化）を使う。
 無効行動への勾配漏れを防ぐ。強制行動（有効手が1つのみ）は価値学習のみ行い、
 方策勾配の対象から除外する。
 
@@ -153,6 +153,25 @@ python3 -m scripts.rl.train --games 30000 --eval-every 1000
 # 継続学習（既存モデルを読み込む）
 python3 -m scripts.rl.train --games 30000 --eval-every 1000 --load
 
+# baseline 用ラッパースクリプト（Termux での実行向け）
+sh scripts/rl/run-baseline.sh
+
+# JS側 CPU との定期評価と metrics CSV 出力も有効化
+python3 -m scripts.rl.train \
+  --games 30000 \
+  --eval-every 1000 \
+  --js-eval-games 20 \
+  --js-eval-opponents strong,expert \
+  --metrics-csv models/rl_model/train_metrics.csv \
+  --best-checkpoint models/rl_model/best_model \
+  --summary-output models/rl_model/summary.json \
+  --summary-run-index-csv models/rl_model/run_index.csv \
+  --summary-config-index-csv models/rl_model/config_index.csv \
+  --summary-format json \
+  --summary-baseline-run baseline \
+  --summary-weights strong=1,expert=2 \
+  --run-label baseline
+
 # オプション一覧
 python3 -m scripts.rl.train \
   --games 30000       # 総ゲーム数
@@ -161,6 +180,17 @@ python3 -m scripts.rl.train \
   --lr 3e-4           # 学習率
   --epsilon 0.20      # 初期探索率（線形減衰 → 0.02 まで）
   --load              # 既存モデルを読み込んで継続学習
+  --js-eval-games 20  # JS側 CPU 相手の定期評価ゲーム数
+  --js-eval-opponents strong,expert  # JS評価対象 difficulty
+  --metrics-csv models/rl_model/train_metrics.csv  # 評価結果CSV
+  --best-checkpoint models/rl_model/best_model  # 学習中の best checkpoint 退避先
+  --summary-output models/rl_model/summary.json  # 学習終了時の集計出力
+  --summary-run-index-csv models/rl_model/run_index.csv  # 学習終了時の run index CSV
+  --summary-config-index-csv models/rl_model/config_index.csv  # 学習終了時の config index CSV
+  --summary-format json  # 集計出力形式（text/json）
+  --summary-baseline-run baseline  # 集計時の baseline run
+  --summary-weights strong=1,expert=2  # 集計時の重み
+  --run-label baseline  # CSV 比較用ラベル（未指定なら自動生成）
 ```
 
 > **注意**: `--hidden` の値が保存済みモデルと異なる場合は読み込みエラーになる。
@@ -169,7 +199,7 @@ python3 -m scripts.rl.train \
 ### 学習ログの見方
 
 ```
-[  1000] rnd=56%  weak=72%  nrm=48%  str=40%  exp=35%  pool=n/a  train=54%  pl=0.210  vl=0.063  adv=0.047  eps=0.193
+[  1000] rnd=56%  weak=72%  nrm=48%  str=40%  exp=35%  pool=n/a  train=54%  pl=0.210  vl=0.063  adv=0.047  eps=0.193  js=strong=60%(f70%/s50%/d10%)/1@17.4 expert=35%(f40%/s30%/d5%)/0@21.2
 ```
 
 | 指標 | 正常な範囲 | 意味 |
@@ -184,6 +214,43 @@ python3 -m scripts.rl.train \
 | `vl` | 0.05〜0.1 → 低下 | 価値関数の精度 |
 | `adv` | 0 前後に収束 | 正規化前の平均優位性（価値関数のバイアス） |
 | `pl` | 0.1〜0.3 | 方策損失（0 に張り付く = 学習停止の兆候） |
+| `js=...` | 比較用 | JS 側 `strong/expert` などに対する RL 勝率。`f/s/d` は RL 先手勝率 / 後手勝率 / 引き分け率、`/@` は `exhausted` 件数 / 平均ターン |
+
+### JS CPU との比較評価
+
+学習済みモデルを browser 用 JSON に export して、JS 実装の `weak/normal/strong/expert` と 2 人戦で比較できる。
+
+```bash
+npm run export-rl-model
+npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 --opponents strong,expert
+```
+
+### metrics CSV の集計
+
+複数 run を同じ `train_metrics.csv` に積んだあとで、best checkpoint と run 単位の上位候補を比較できる。
+
+```bash
+npm run summarize-rl-metrics -- \
+  --csv models/rl_model/train_metrics.csv \
+  --opponents strong,expert \
+  --weights strong=1,expert=2 \
+  --baseline-run baseline \
+  --output models/rl_model/summary.txt \
+  --run-index-csv models/rl_model/run_index.csv \
+  --config-index-csv models/rl_model/config_index.csv \
+  --draw-penalty 0.5 \
+  --exhausted-penalty 0.02
+```
+
+`--run-label baseline` を付けると、特定 run のみで絞り込める。
+`--baseline-run baseline` を付けると、各 run の best checkpoint について baseline 比の `score` 差分と相手別勝率差分も表示する。
+`--output ...` を付けると、表示内容を同じ形式のままファイルへ保存できる。`--format json` と組み合わせれば機械処理用の集計ファイルにも使える。
+`--run-index-csv ...` と `--config-index-csv ...` を付けると、run 全体順位と設定全体順位を CSV で別保存できる。
+`--run-label` を省略した場合は `YYYYMMDD-HHMMSS-h256-lr0.0003-ev1000-js20` のような形式で自動生成され、学習開始ログと CSV の両方に残る。
+`train.py` 側でも `--summary-output` を付ければ、学習終了時に同じ summarize 処理を自動実行できる。`--summary-run-index-csv` と `--summary-config-index-csv` も併用すれば、run/config 順位 CSV までまとめて自動生成される。
+`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。例えば `sh scripts/rl/run-baseline.sh --games 10000` でゲーム数だけ上書きできる。
+`--best-checkpoint` を付けると、各評価時点で最良だったモデルを `.npz` と `.browser.json`、さらに参照用の `.meta.json` で別保存する。判定は JS 評価があればその重み付き score、無ければ `expert/strong/normal/rnd` の重み付き代替スコアを使う。`--summary-output` も併用していれば、学習終了後に `meta.json` へ `bestRuns` / `bestConfigs` の抜粋に加えて、この run 自身に対応する `summaryRunContext` も追記される。`summaryRunContext` には `runIndexEntry` として run 全体順位、`configIndexEntry` として設定全体順位、`combinedTop` に入っていればその順位と entry も入る。`meta.json` には `artifacts` として `checkpointPath` / `browserCheckpointPath` / `metaPath` / `summaryPath` / `runIndexCsvPath` / `configIndexCsvPath` もまとまって入る。
+集計結果には run 別だけでなく `hidden/lr` ごとの best config も含まれる。
 
 ---
 

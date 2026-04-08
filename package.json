@@ -10,8 +10,12 @@
     "test:coverage": "node scripts/test-coverage.js",
     "selfplay": "node scripts/selfplay.js",
     "profile:expert": "node scripts/profile-expert.js",
+    "eval-rl-vs-js": "node scripts/eval-rl-vs-js.js",
+    "summarize-rl-metrics": "node scripts/summarize-rl-metrics.js",
+    "train-rl:baseline": "sh scripts/rl/run-baseline.sh",
     "tune-expert": "node scripts/tune-expert.js",
-    "train-expert-crowd": "node scripts/train-expert-crowd.js"
+    "train-expert-crowd": "node scripts/train-expert-crowd.js",
+    "export-rl-model": "python3 -m scripts.rl.export_model"
   },
   "keywords": [],
   "author": "",

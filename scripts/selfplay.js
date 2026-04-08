@@ -10,12 +10,12 @@ function loadRuntime() {
         Math: Object.create(Math),
     };
     vm.createContext(context);
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/CPU.js']) {
+    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/CPU.js', 'js/RLCPU.js']) {
         const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.CPU = CPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
+        'this.CPU = CPU; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
         context
     );
     return context;
@@ -41,6 +41,12 @@ function createShopStock(cards) {
 
 function createPlayers(runtime, difficulties, options = {}) {
     return difficulties.map(difficulty => {
+        if (difficulty === 'rl') {
+            if (!options.rlModelData) {
+                throw new Error('rlModelData is required when using rl difficulty');
+            }
+            return new runtime.RLCPU(options.rlModelData);
+        }
         if (difficulty !== 'expert') return new runtime.CPU(difficulty);
         return new runtime.CPU(difficulty, {
             expertPurpose: options.expertPurpose || 'training',
@@ -231,6 +237,11 @@ function simulateGame(options = {}) {
         expertBehaviorFlags: options.expertBehaviorFlags || null,
         expertProfilePresets: options.expertProfilePresets || null,
         expertProfileTunings: options.expertProfileTunings || null,
+        rlModel: options.rlModelData ? {
+            stateDim: options.rlModelData.stateDim,
+            hiddenSize: options.rlModelData.hiddenSize,
+            numActions: options.rlModelData.numActions,
+        } : null,
         fast: !!options.fast,
         lite: !!options.lite,
         finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
@@ -265,6 +276,7 @@ function runSeries(options = {}) {
             expertBehaviorFlags: options.expertBehaviorFlags,
             expertProfilePresets: options.expertProfilePresets,
             expertProfileTunings: options.expertProfileTunings,
+            rlModelData: options.rlModelData,
             fast: options.fast,
             lite: options.lite,
         });

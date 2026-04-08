@@ -27,6 +27,7 @@ node server.js
 - サーバー再起動後のルーム復元
 - Service Worker による PWA 配布
 - Android / TWA ビルドワークフロー
+- `expert` の自己対戦 tuning と、別系統の RL 学習基盤
 
 ## テスト
 
@@ -153,6 +154,41 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 - 既定 `expert` の `crowd` tuning も、妨害寄りではなく安定収入とランドマーク進行を重視する方向に更新済みです。
 - 4 人戦でも終盤は `winDistance` と pending 妨害評価を使って、先行相手への干渉を少し強めています。
 
+## RL 学習
+
+`expert` とは別に、`scripts/rl` 配下で 2 人戦ベースの RL 学習系を管理しています。現状は学習・評価基盤が中心で、既存 `expert` を置き換えるのではなく、新しい CPU として段階的に導入する前提です。
+
+主な流れ:
+
+1. `scripts/rl/train.py` で学習
+2. `scripts/eval-rl-vs-js.js` で JS 側 `weak/normal/strong/expert` と比較
+3. `scripts/summarize-rl-metrics.js` で `train_metrics.csv` を集計
+4. `js/RLCPU.js` で export 済みモデルを新 CPU として読む準備を進めています
+
+baseline 学習の開始:
+
+```bash
+sh scripts/rl/run-baseline.sh
+```
+
+`npm` 経由でも実行できます。
+
+```bash
+npm run train-rl:baseline
+```
+
+baseline 学習で生成される主な成果物:
+
+- `models/rl_model/train_metrics.csv`
+- `models/rl_model/summary.json`
+- `models/rl_model/run_index.csv`
+- `models/rl_model/config_index.csv`
+- `models/rl_model/best_model.npz`
+- `models/rl_model/best_model.browser.json`
+- `models/rl_model/best_model.meta.json`
+
+詳しい学習方式、評価指標、集計オプションは [scripts/rl/README.md](./scripts/rl/README.md) を参照してください。
+
 ## プロジェクト構成
 
 主要ファイル:
@@ -175,12 +211,23 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 - `js/main.js`: 起動、入力、CPU 進行、タイトル/ゲーム画面制御
 - `js/stats.js`: ローカル統計表示
 - `js/appShell.js`: クラッシュ表示、オフライン表示、PWA インストールバナー、初期ビュー初期化
+- `js/RLCPU.js`: export 済み RL モデルを読む新 CPU 用ランタイム（導入準備中）
 
 自己対戦 / tuning スクリプト:
 
 - `scripts/selfplay.js`: CPU 自己対戦、プリセット比較、`--fast` / `--lite` 軽量モード
 - `scripts/tune-expert.js`: `expert` の近傍探索、人数別プロファイル比較
 - `scripts/train-expert-crowd.js`: `expert vs normal,normal,normal` 専用の crowd tuning 探索
+
+RL スクリプト / モデル:
+
+- `scripts/rl/train.py`: RL 学習ループ
+- `scripts/rl/run-baseline.sh`: baseline 学習ラッパー
+- `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
+- `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
+- `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
+- `scripts/rl/README.md`: RL 系の詳細ドキュメント
+- `models/rl_model/`: 学習済みモデルと metrics 出力先
 
 テスト:
 
@@ -190,6 +237,13 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 - `tests/online.test.js`
 - `tests/main.test.js`
 - `tests/run-all.js`
+
+RL / 学習系テスト:
+
+- `tests/rlcpu.test.js`
+- `tests/rl-train.test.js`
+- `tests/eval-rl-vs-js.test.js`
+- `tests/summarize-rl-metrics.test.js`
 
 ## オンライン復元の要点
 

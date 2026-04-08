@@ -67,7 +67,24 @@ function mutateCrowdTuning(base, rng) {
     return tuning;
 }
 
+function mutateTrioTuning(base, rng) {
+    const tuning = Object.assign({}, base);
+    tuning.stableIncomeWeight = mutateValue(base.stableIncomeWeight || 2.15, rng, 1.3, 3.3, 0.22);
+    tuning.redPressureWeight = mutateValue(base.redPressureWeight || 0.72, rng, 0.3, 1.3, 0.28);
+    tuning.leaderThreatWeight = mutateValue(base.leaderThreatWeight || 0.82, rng, 0.3, 1.4, 0.28);
+    tuning.landmarkActionBonus = mutateValue(base.landmarkActionBonus || 21, rng, 14, 30, 0.2);
+    tuning.lateLandmarkActionBonus = mutateValue(base.lateLandmarkActionBonus || 16, rng, 10, 24, 0.2);
+    tuning.lookaheadWeight = mutateValue(base.lookaheadWeight || 0.52, rng, 0.2, 0.75, 0.24);
+    if (rng() < 0.5) tuning.coinWeight = mutateValue(base.coinWeight || 1.16, rng, 0.9, 1.6, 0.18);
+    if (rng() < 0.5) tuning.turnWeight = mutateValue(base.turnWeight || 3.28, rng, 2.4, 4.4, 0.16);
+    if (rng() < 0.5) tuning.lowValueSpamPenalty = mutateValue(base.lowValueSpamPenalty || 5.6, rng, 3, 9, 0.22);
+    return tuning;
+}
+
 function tuningForProfile(base, profile, rng) {
+    if (profile === 'trio') {
+        return mutateTrioTuning(base, rng);
+    }
     if (profile === 'crowd' || profile === 'crowdNormal' || profile === 'crowd-normal') {
         return mutateCrowdTuning(base, rng);
     }
@@ -170,6 +187,7 @@ module.exports = {
     parseArgs,
     baseProfileTuning,
     mutateCrowdTuning,
+    mutateTrioTuning,
     evaluateTuning,
     trainExpertCrowd,
 };

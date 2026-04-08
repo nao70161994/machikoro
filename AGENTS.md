@@ -1,159 +1,183 @@
-# Repository Guidelines
+# リポジトリガイドライン
 
-## Project Overview
+## プロジェクト概要
 
-This repository is a vanilla JavaScript Machi Koro web app for local and online play.
+このリポジトリは、バニラ JavaScript で実装された街コロの Web アプリです。ローカル対戦とオンライン対戦の両方に対応しています。
 
-- Client game rules run in the browser.
-- `server.js` manages rooms, validation, reconnect, and action relay for online games.
-- The app is also maintained as a PWA, and recent work includes Service Worker update flow and Android/TWA packaging.
+- クライアント側のゲームルールはブラウザで動きます。
+- `server.js` はオンライン対戦のルーム管理、検証、再接続、アクション中継を担います。
+- このアプリは PWA としても保守されており、最近は Service Worker 更新フローや Android/TWA パッケージングも含みます。
 
-When changing behavior, keep local play, online sync, reconnect restore, saved-state handling, and PWA update behavior aligned.
+挙動を変えるときは、ローカル対戦、オンライン同期、再接続復元、保存状態、PWA 更新挙動の整合性を保ってください。
 
-## Project Structure & Ownership
+## 構成と責務
 
-Top-level files:
+トップレベルの主なファイル:
 
-- `index.html`: app shell and script load order.
-- `style.css`: all visual styling.
-- `manifest.json`: PWA manifest.
-- `sw.js`: Service Worker update and cache behavior.
-- `server.js`: Express + Socket.IO server, room lifecycle, validation, reconnect, restore.
-- `package.json`: runtime/test scripts.
-- `.github/workflows/build-apk.yml`: Android/TWA build workflow.
-- `TESTPLAN.md`: manual regression checklist for high-risk gameplay and online flows.
+- `index.html`: アプリ本体と script 読み込み順。
+- `style.css`: すべての見た目。
+- `manifest.json`: PWA マニフェスト。
+- `sw.js`: Service Worker の更新とキャッシュ挙動。
+- `server.js`: Express + Socket.IO サーバー、ルーム管理、検証、再接続、復元。
+- `package.json`: 実行・テスト用 script。
+- `.github/workflows/build-apk.yml`: Android/TWA ビルド workflow。
+- `TESTPLAN.md`: 高リスクなゲームプレイ / オンライン変更向けの手動回帰チェックリスト。
+- `scripts/rl/README.md`: RL 学習・評価フローと artifact の説明。
 
-Client modules:
+クライアントモジュール:
 
-- `js/Card.js`: card catalog, effect/category constants, card helpers.
-- `js/Player.js`: player state, landmark definitions, win checks.
-- `js/GameManager.js`: source of truth for rules, phases, pending effects, logs.
-- `js/CPU.js`: CPU evaluation and action selection.
-- `js/online.js`: Socket.IO client flow, action application, online session bootstrap, restart recovery.
-- `js/ui.js`: rendering, modals, logs, build menu, filters, tutorial UI.
-- `js/storage.js`: local save/resume, reconnect persistence, settings storage.
-- `js/main.js`: bootstrapping, event handlers, CPU scheduling, title/game flow orchestration.
-- `js/audio.js`: sound helpers.
-- `js/confetti.js`: confetti animation helpers.
-- `js/stats.js`: gameplay stats helpers/UI support.
-- `js/appShell.js`: crash UI, offline notice, PWA install banner, shell-level view initialization.
+- `js/Card.js`: カード定義、効果 / 分類定数、カード補助。
+- `js/Player.js`: プレイヤー状態、ランドマーク定義、勝利判定。
+- `js/GameManager.js`: ルール、フェーズ、pending 効果、ログの正本。
+- `js/CPU.js`: CPU 評価と行動選択。
+- `js/online.js`: Socket.IO クライアントフロー、アクション適用、オンライン開始、再起動復元。
+- `js/ui.js`: 描画、モーダル、ログ、建設メニュー、フィルタ、チュートリアル UI。
+- `js/storage.js`: ローカル save / resume、再接続永続化、設定保存。
+- `js/main.js`: 起動処理、イベントハンドラ、CPU スケジューリング、タイトル / ゲーム進行。
+- `js/audio.js`: 音声補助。
+- `js/confetti.js`: 紙吹雪アニメーション補助。
+- `js/stats.js`: 統計補助と UI 支援。
+- `js/appShell.js`: クラッシュ UI、オフライン表示、PWA インストールバナー、シェル初期化。
+- `js/RLCPU.js`: 新しい experimental CPU 向けの export 済み RL モデルランタイム。
 
-Tests:
+RL / 学習系スクリプト:
 
-- `tests/run-all.js`: test entrypoint used by `npm test`.
-- `tests/gamemanager.test.js`: rules and phase regression tests.
-- `tests/server.test.js`: server validation and room behavior tests.
-- `tests/cpu.test.js`: CPU decision logic tests.
-- `tests/online.test.js`: online client flow tests.
-- `tests/main.test.js`: main bootstrap / flow regression tests.
-- `tests/selfplay.test.js`: self-play script regression tests.
-- `tests/tune-expert.test.js`: expert tuning script regression tests.
-- `tests/train-expert-crowd.test.js`: 4-player `expert vs normal,normal,normal` tuning helper tests.
+- `scripts/rl/train.py`: Python 側の RL 学習ループ。
+- `scripts/rl/run-baseline.sh`: Termux でも打ちやすい baseline 学習ラッパー。
+- `scripts/rl/export_model.py`: `.npz` checkpoint をブラウザで読める形式へ export。
+- `scripts/eval-rl-vs-js.js`: RL checkpoint を JS CPU 群と比較。
+- `scripts/summarize-rl-metrics.js`: `train_metrics.csv` を集計して順位 artifact を生成。
+- `models/rl_model/`: 学習出力、summary、export 済み checkpoint の保存先。
 
-Default ownership rules:
+テスト:
 
-- Rule changes belong in `js/GameManager.js`.
-- Card definitions, effect constants, and descriptions belong in `js/Card.js`.
-- CPU tuning belongs in `js/CPU.js`.
-- UI and modal behavior belong in `js/ui.js`.
-- Save/reconnect persistence belongs in `js/storage.js`.
-- Online client flow belongs in `js/online.js` and `js/main.js`.
-- Server-side validation, room lifecycle, reconnect, and restore belong in `server.js`.
+- `tests/run-all.js`: `npm test` から呼ばれる test entrypoint。
+- `tests/gamemanager.test.js`: ルールとフェーズ遷移の回帰テスト。
+- `tests/server.test.js`: サーバー検証とルーム挙動のテスト。
+- `tests/cpu.test.js`: CPU 判断ロジックのテスト。
+- `tests/online.test.js`: オンラインクライアントフローのテスト。
+- `tests/main.test.js`: main の bootstrap / フロー回帰テスト。
+- `tests/selfplay.test.js`: self-play script の回帰テスト。
+- `tests/tune-expert.test.js`: expert tuning script の回帰テスト。
+- `tests/train-expert-crowd.test.js`: 4人戦 `expert vs normal,normal,normal` tuning 補助のテスト。
+- `tests/rlcpu.test.js`: RL CPU ランタイムの回帰テスト。
+- `tests/rl-train.test.js`: RL 学習補助処理の回帰テスト。
+- `tests/eval-rl-vs-js.test.js`: RL-vs-JS 評価の回帰テスト。
+- `tests/summarize-rl-metrics.test.js`: RL metrics 集計の回帰テスト。
 
-## Architecture Notes
+基本的な責務分担:
 
-Critical invariants:
+- ルール変更は `js/GameManager.js`。
+- カード定義、効果定数、説明文は `js/Card.js`。
+- CPU tuning は `js/CPU.js`。
+- RL CPU ランタイムと export 済みモデルの統合は `js/RLCPU.js`。
+- UI とモーダル挙動は `js/ui.js`。
+- save / reconnect の永続化は `js/storage.js`。
+- オンラインクライアントフローは `js/online.js` と `js/main.js`。
+- サーバー側の検証、ルーム管理、再接続、復元は `server.js`。
+- RL 学習 / 評価フローは `scripts/rl/*.py`, `scripts/*.js`, `models/rl_model/`。
 
-- `GameManager` is the source of truth for gameplay rules.
-- Online play is deterministic: the host generates authoritative actions and all clients replay them.
-- The server does not own full game state; it validates actions and relays/rebuilds room state from session metadata and action logs.
-- Long-running online rooms may compact old actions into a server-side `stateSnapshot`; the client may also compact `onlineActionLog` into `onlineStateSnapshot`. Reconnect logic must handle both snapshot restore and tail action replay.
-- Reconnect and post-restart room recovery are first-class features, not edge cases.
+## アーキテクチャメモ
 
-Important gameplay/runtime details from the current implementation:
+重要な不変条件:
 
-- Script load order matters. Preserve the dependency order defined in `index.html`.
-- Use existing frozen constants such as `CARD_EFFECTS`, `CARD_CATEGORIES`, `LANDMARK_NAMES`, `GAME_PHASES`, and `LOG_TYPES` instead of string literals.
-- Log entries are structured objects, not free-form strings.
-- Player order can be shuffled for online play, so validations must use the server's mapped player order rather than assuming UI index equals socket player index.
-- CPU turns are host-driven online. Changes to CPU action timing must be checked for duplicate sends and stalled turns.
-- `expert` CPU has profile-specific tuning. Current work treats 4-player `expert` as a separate balancing problem from 2-player `expert`.
-- `scripts/selfplay.js` supports `--fast` and `--lite` for cheaper `expert` evaluation. `--lite` is intended for repeated self-play/tuning loops, especially in 4-player crowd scenarios.
-- `scripts/tune-expert.js` supports `crowdNormal` / `crowd-normal` to compare `expert` directly against `normal,normal,normal`.
-- `scripts/train-expert-crowd.js` is the current lightweight tuning helper for `expert vs normal,normal,normal`.
-- App-level Socket.IO failures use the dedicated `appError` event; avoid overloading transport-level `error`.
-- Service Worker/version mismatch behavior is part of the product. If you touch cached assets, startup flow, or online game screens, consider update-banner and reload behavior.
+- `GameManager` はゲームルールの唯一の正です。
+- オンライン対戦は決定論的で、ホストが正しいアクションを生成し、全クライアントがそれを再生します。
+- サーバーは完全なゲーム状態を持たず、セッション情報と action log を元に検証・中継・再構築します。
+- 長時間のオンライン対戦では、サーバー側 `stateSnapshot` とクライアント側 `onlineStateSnapshot` の両方で古い action を圧縮することがあります。再接続ロジックは snapshot 復元と残り action replay の両方を扱う必要があります。
+- 再接続とサーバー再起動後の復元は例外対応ではなく、中核機能です。
 
-When adding a new card or effect, update all relevant layers:
+現在の実装で重要なゲームプレイ / 実行時の前提:
 
-- `js/Card.js`: effect constant, description, and card data.
-- `js/GameManager.js`: rule execution.
-- `js/CPU.js`: evaluation/decision logic if needed.
-- `js/ui.js`: available card sets or presentation where applicable.
-- Tests covering the affected rule path.
+- script 読み込み順は重要です。`index.html` で定義された依存順を維持してください。
+- 文字列リテラルではなく、`CARD_EFFECTS`, `CARD_CATEGORIES`, `LANDMARK_NAMES`, `GAME_PHASES`, `LOG_TYPES` など既存の frozen 定数を使ってください。
+- ログエントリは自由文字列ではなく構造化オブジェクトです。
+- オンライン対戦ではプレイヤー順がシャッフルされることがあるため、検証時は UI 上の index ではなくサーバー側の対応順を使う必要があります。
+- オンラインでの CPU 手番はホスト主導です。CPU のタイミングを変えるときは、重複送信や停止が起きないか確認してください。
+- `expert` CPU は人数別の tuning を持ちます。現在は 4人戦 `expert` を 2人戦 `expert` と別問題として扱っています。
+- `scripts/selfplay.js` は `--fast` と `--lite` を持ち、軽量な `expert` 評価に使えます。`--lite` は特に 4人戦 crowd シナリオで self-play / tuning を繰り返す用途向けです。
+- `scripts/tune-expert.js` は `crowdNormal` / `crowd-normal` を受け付け、`expert` を `normal,normal,normal` と直接比較できます。
+- `scripts/train-expert-crowd.js` は現在の軽量 tuning 補助で、`expert vs normal,normal,normal` を前提にしています。
+- RL 学習は現在 `expert` とは別ラインで、置き換えではなく新 CPU として導入する前提です。
+- RL の baseline 学習は、Termux での長いコマンド折り返し事故を避けるため `sh scripts/rl/run-baseline.sh` を使ってください。
+- RL checkpoint の品質は `vs_random` だけでなく、`scripts/eval-rl-vs-js.js` と summary artifact を主に見て判断してください。
+- アプリレベルの Socket.IO 失敗通知には専用の `appError` event を使ってください。transport レベルの `error` に混ぜないでください。
+- Service Worker / version mismatch の挙動は製品仕様の一部です。キャッシュ資産、起動フロー、オンライン画面を触る場合は、update banner と reload 挙動も考慮してください。
 
-## Build, Test, and Development Commands
+新しいカードや効果を追加するときは、関連する層をすべて更新してください:
 
-- `npm install`: install dependencies.
-- `node server.js`: start the app locally at `http://localhost:3000`.
-- `npm test`: run the full Node test suite via `tests/run-all.js`.
-- `node --check server.js`: syntax-check the server.
-- `node --check js/<file>.js`: syntax-check an edited client file.
+- `js/Card.js`: 効果定数、説明文、カードデータ。
+- `js/GameManager.js`: ルール実行。
+- `js/CPU.js`: 必要なら評価 / 判断ロジック。
+- `js/ui.js`: 必要なら利用可能カードセットや表示。
+- 影響するルール経路のテスト。
 
-Expected verification:
+## ビルド・テスト・開発コマンド
 
-- If you edit one or more client files, run `node --check` on each edited `js/*.js` file.
-- If you change rules, online flow, server validation, or shared gameplay behavior, run `npm test`.
-- If you change CPU/self-play/tuning behavior, run the relevant targeted tests (`tests/cpu.test.js`, `tests/selfplay.test.js`, `tests/tune-expert.test.js`, `tests/train-expert-crowd.test.js`) in addition to `npm test` when practical.
-- If you change online/reconnect behavior, manually verify room create/join, reconnect, host migration or restart recovery, CPU turns, and undo sync.
-- If you change PWA/update behavior, manually verify Service Worker update prompts and reload behavior.
+- `npm install`: 依存関係をインストール。
+- `node server.js`: ローカルでアプリを起動 (`http://localhost:3000`)。
+- `npm test`: `tests/run-all.js` 経由で全 Node テストを実行。
+- `npm run train-rl:baseline`: RL baseline 学習を開始。
+- `npm run eval-rl-vs-js -- --model <path>`: export 済み RL checkpoint を JS CPU 群と比較。
+- `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`: RL run を集計。
+- `node --check server.js`: サーバーの構文確認。
+- `node --check js/<file>.js`: 編集したクライアントファイルの構文確認。
 
-## Coding Style & Editing Conventions
+期待される確認:
 
-- Use 4-space indentation in JS, HTML, CSS, and workflow YAML.
-- Follow the existing browser-global/CommonJS style. Do not introduce a bundler, framework, or module-system rewrite casually.
-- Use `camelCase` for functions and variables.
-- Preserve existing Japanese card names, labels, and game terms.
-- Match surrounding style exactly; there is no formatter or linter configured.
-- Prefer extending existing constants and helper tables instead of adding new stringly-typed branches.
-- Keep DOM-facing confirmation flows on the custom modal path; do not reintroduce native `confirm()`.
+- クライアントファイルを 1 つ以上編集したら、編集した各 `js/*.js` に対して `node --check` を実行してください。
+- ルール、オンラインフロー、サーバー検証、共有ゲーム挙動を変更したら `npm test` を実行してください。
+- CPU / self-play / tuning を変更したら、可能な範囲で関連する targeted test (`tests/cpu.test.js`, `tests/selfplay.test.js`, `tests/tune-expert.test.js`, `tests/train-expert-crowd.test.js`) も実行してください。
+- RL 学習 / 評価 / ランタイムを変更したら、可能な範囲で関連する targeted test (`tests/rlcpu.test.js`, `tests/rl-train.test.js`, `tests/eval-rl-vs-js.test.js`, `tests/summarize-rl-metrics.test.js`) も実行してください。
+- オンライン / 再接続を変更したら、部屋作成 / 参加、再接続、ホスト移譲または再起動復元、CPU 手番、Undo 同期を手動確認してください。
+- PWA / 更新挙動を変更したら、Service Worker の更新プロンプトと reload 挙動を手動確認してください。
 
-## Testing Guidance
+## コーディング規約と編集方針
 
-- Add or update regression tests in the most relevant file under `tests/`.
-- Prefer targeted assertions around rules, validation, replay safety, and edge-case state transitions.
-- UI-only animation/presentation changes may need manual verification instead of Node tests.
-- Use `TESTPLAN.md` for high-risk manual scenarios, especially around pending actions, online CPU flow, reconnect, undo, and invalid target handling.
+- JS、HTML、CSS、workflow YAML は 4 スペースインデントを使ってください。
+- 既存の browser-global / CommonJS スタイルに従ってください。bundler、framework、module-system の大きな書き換えは安易に入れないでください。
+- 関数名と変数名は `camelCase` を使ってください。
+- 既存の日本語カード名、ラベル、ゲーム用語は維持してください。
+- 周囲の書き方に厳密に合わせてください。formatter や linter はありません。
+- 新しい stringly-typed 分岐を足すより、既存の定数や helper table を拡張する方を優先してください。
+- DOM 側の確認フローは custom modal を使ってください。native `confirm()` を戻さないでください。
 
-## Commit & Pull Request Guidelines
+## テスト方針
 
-Recent history shows a clear convention:
+- 回帰テストは `tests/` 配下の最も適切なファイルへ追加・更新してください。
+- ルール、検証、replay 安全性、境界状態遷移を狙った targeted assertion を優先してください。
+- UI だけのアニメーション / 表示変更は、Node テストより手動確認の方が適切な場合があります。
+- 高リスクな手動確認、特に pending action、オンライン CPU フロー、再接続、Undo、無効 target まわりは `TESTPLAN.md` を使ってください。
 
-- Use a prefix such as `feat:`, `fix:`, `docs:`, or `debug:`.
-- Write the subject in concise Japanese.
-- Keep the subject focused on the behavioral change, often with a short parenthetical when it clarifies the failure mode.
+## コミットと Pull Request の方針
 
-Examples from recent history:
+最近の履歴では、次の規約がはっきりしています:
+
+- `feat:`, `fix:`, `docs:`, `debug:` のような prefix を使う。
+- 件名は簡潔な日本語で書く。
+- 件名は挙動の変化に絞り、必要なら短い括弧書きで失敗モードを補足する。
+
+最近のコミット例:
 
 - `feat: サーバー再起動後にオンラインゲームへ復帰できる機能を追加`
 - `fix: シャッフル後の人間プレイヤーアクションがサーバーで拒否されるバグを修正`
 - `fix: タイトル画面中のSW更新を自動適用（ゲーム中は手動バナー）`
 - `docs: CLAUDE.mdを最新状態に更新`
 
-Prefer small, behavior-focused commits. Separate gameplay, online/server, PWA, and CI/APK changes unless they are tightly coupled.
+コミットは小さく、挙動単位で分けるのを優先してください。強く結びついていない限り、ゲームプレイ、オンライン / サーバー、PWA、CI / APK の変更は分離してください。
 
-PRs should include:
+PR には次を含めてください:
 
-- What behavior changed.
-- Which files/modules were touched.
-- Automated checks run.
-- Manual verification performed, especially for online/PWA changes.
-- Screenshots or recordings for visible UI changes.
+- 何の挙動が変わったか。
+- どのファイル / モジュールを触ったか。
+- 実行した自動確認。
+- 実施した手動確認。特にオンライン / PWA 変更時。
+- 見た目の変更がある場合は screenshot または recording。
 
-## Environment Notes
+## 環境メモ
 
-This repository is often worked on from Android + Termux. Avoid assumptions that only hold on a full desktop shell environment.
+このリポジトリは Android + Termux から作業されることが多いです。デスクトップ前提でしか成り立たない仮定は避けてください。
 
-- Some tooling notes in `CLAUDE.md` are specific to Termux and `termux-chroot`.
-- Keep commands simple and portable where possible.
-- If you add workflow or build steps, prefer reproducible non-interactive commands.
+- `CLAUDE.md` には Termux / `termux-chroot` 固有の補足があります。
+- コマンドは、可能な限り単純で移植しやすいものを使ってください。
+- workflow や build 手順を追加する場合は、再現可能で非対話的なコマンドを優先してください。

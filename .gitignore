@@ -22,3 +22,5 @@ __pycache__/
 
 # 学習済みモデル（サイズが大きいため除外）
 models/rl_model/*.npz
+models/rl_model/*.json
+js/rlModelData.js

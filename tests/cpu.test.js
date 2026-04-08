@@ -189,10 +189,16 @@ runTest('expert tuning は人数別設定で自動切替される', () => {
 runTest('expert は既定で人数別 profile tuning を持つ', () => {
     const cpu = new CPU("expert");
     const duel = new GameManager(2);
+    const trio = new GameManager(3);
     const crowd = new GameManager(4);
 
     cpu._syncExpertTuningForGame(duel);
     assert.strictEqual(cpu.expertTuning.lowValueSpamPenalty, 5.1);
+
+    cpu._syncExpertTuningForGame(trio);
+    assert.strictEqual(cpu.expertTuning.stableIncomeWeight, 2.15);
+    assert.strictEqual(cpu.expertTuning.redPressureWeight, 0.72);
+    assert.strictEqual(cpu.expertTuning.lookaheadWeight, 0.52);
 
     cpu._syncExpertTuningForGame(crowd);
     assert.strictEqual(cpu.expertTuning.landmarkActionBonus, 18);
