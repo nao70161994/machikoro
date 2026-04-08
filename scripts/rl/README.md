@@ -77,7 +77,17 @@ ACT_PASS           = 173
 
 ---
 
-## 学習アルゴリズム（GAE Actor-Critic）
+## 学習アルゴリズム（GAE Actor-Critic + vs ランダム訓練）
+
+### なぜ vs ランダム訓練か
+
+自己対戦では両プレイヤーが同時に強くなるため「相対的な優位性」がゼロに近づき、
+vs_random 勝率の改善が見えにくい。
+
+ランダム固定の相手に対して学習することで：
+- **固定ターゲット**：相手が変わらないので進捗が明確に見える
+- **清潔なシグナル**：「ランダムに勝てる手」という明確な学習目標
+- **train_wr** が上昇すれば学習が進んでいる証拠
 
 ### なぜ GAE か
 
@@ -147,20 +157,21 @@ python3 -m scripts.rl.train \
 ### 学習ログの見方
 
 ```
-[  1000] vs_random=56.0%  self_play_wr=51.2%  policy_loss=0.45  value_loss=0.23  mean_adv=0.012  eps=0.145
+[  1000] vs_random=56.0%  train_wr=54.0%  policy_loss=0.45  value_loss=0.23  mean_adv=0.012  eps=0.195
 ```
 
 | 指標 | 正常な範囲 | 意味 |
 |------|-----------|------|
-| `vs_random` | 50% → 60%+ | ランダム対戦勝率（学習の主指標） |
-| `self_play_wr` | 50% 前後 | 自己対戦での P0 勝率 |
-| `value_loss` | 0.1〜0.5 → 低下 | 価値関数の精度（低すぎると advantage ≈ 0） |
-| `mean_adv` | 0 前後 | 正規化前の平均優位性（偏りの検出用） |
+| `vs_random` | 50% → 60%+ | 評価用 200 ゲーム勝率（主指標、±7% のノイズあり） |
+| `train_wr` | 50% → 上昇 | 学習ゲームでのエージェント勝率（ノイズ少ない） |
+| `value_loss` | 0.05〜0.3 → 低下 | 価値関数の精度 |
+| `mean_adv` | 0 前後 | 正規化前の平均優位性（＝ value の平均バイアス） |
 | `policy_loss` | 変動する | 方策損失（定数のまま = 学習停止の兆候） |
 
 **要注意サイン：**
 - `value_loss < 0.01` かつ `vs_random ≈ 50%` → advantage がゼロに崩壊（TD アルゴリズムに戻っている可能性）
-- `policy_loss` が定数 → 方策勾配がゼロ（学習停止）
+- `policy_loss` と `train_wr` が定数 → 方策勾配がゼロ（学習停止）
+- `mean_adv = -0.18` 程度の偏りは正常（value の正バイアス。正規化後は影響なし）
 
 ---
 
@@ -216,10 +227,11 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 | フェーズ | アルゴリズム | 結果 |
 |---------|------------|------|
-| 初期 | REINFORCE (MC) | 符号バグ → vs_random=0% |
-| 符号修正後 | REINFORCE | 高分散 → 50% で停滞（25000 ゲーム） |
-| TD(0) 移行 | Actor-Critic (TD) | advantage ≈ 0 → 学習停止（value_loss=0.006） |
-| 現在 | GAE (λ=0.95) | 全ステップに信号伝播、学習進行中 |
+| 初期 | REINFORCE (MC) + 自己対戦 | 符号バグ → vs_random=0% |
+| 符号修正後 | REINFORCE + 自己対戦 | 高分散 → 50% で停滞（25000 ゲーム） |
+| TD(0) 移行 | Actor-Critic (TD) + 自己対戦 | advantage ≈ 0 → 学習停止（value_loss=0.006） |
+| GAE 移行 | GAE (λ=0.95) + 自己対戦 | 全ステップに信号伝播するも vs_random ノイズ大 |
+| 現在 | GAE (λ=0.95) + vs ランダム訓練 | 固定ターゲットで清潔なシグナル、学習進行中 |
 
 ### TD(0) が失敗した理由
 

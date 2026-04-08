@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# train.py - 自己対戦による学習ループ
+# train.py - ランダム対戦による学習ループ（GAE Actor-Critic）
 #
 # 使い方:
 #   python -m scripts.rl.train
-#   python -m scripts.rl.train --games 5000 --eval-every 500
+#   python -m scripts.rl.train --games 30000 --eval-every 1000
 #
 # 学習済みモデルは models/rl_model/ に保存される。
 
@@ -13,12 +13,12 @@ import sys
 import random
 import numpy as np
 
-# パス調整（プロジェクトルートから実行する想定）
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)
 ))))
 
-from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.game_env import MachikoroEnv, NUM_ACTIONS
+from scripts.rl.encode import encode_state, action_mask
 from scripts.rl.agent import RLAgent
 
 
@@ -29,143 +29,124 @@ MODEL_DIR = os.path.join(
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 
-def play_self_play_game(agent: RLAgent, epsilon: float = 0.1) -> dict:
+def play_vs_random(agent: RLAgent, epsilon: float = 0.1) -> dict:
     """
-    TD(0) 用の自己対戦ゲーム収集。
-    各ステップで (state, action, reward, next_state, done) を記録する。
-    中間報酬: ランドマーク建設 +0.2
-    終端報酬: 勝者 +1.0 / 敗者 -1.0
-    """
-    from scripts.rl.encode import encode_state, action_mask
-    from scripts.rl.game_env import NUM_ACTIONS
+    エージェント(P0) vs ランダム(P1) で 1 ゲームを収集。
+    P0 のステップのみをエージェントバッファに積む。
 
+    自己対戦では「両者が同時に強くなる」ため vs_random の改善が見えにくい。
+    ランダム固定の相手に対して学習することで明確な進捗が得られる。
+
+    中間報酬: ランドマーク建設 +0.2
+    終端報酬: 勝利 +1.0 / 敗北 -1.0
+    """
     env = MachikoroEnv()
 
-    # (player_idx, state, action, mask, log_prob, value, reward, next_env_clone, done)
-    steps = []
+    ep_states  = []
+    ep_actions = []
+    ep_masks   = []
+    ep_values  = []
+    ep_rewards = []
 
     max_steps = 3000
     for _ in range(max_steps):
         if env.done:
             break
 
-        ci = env.current
-        lm_before = env.players[ci].built_lm_count()
-
-        state = encode_state(env)
-        mask  = action_mask(env)
-        valid = np.where(mask > 0)[0]
-
-        policy, value = agent.net.forward(state)
-        if epsilon > 0 and random.random() < epsilon:
-            action = int(random.choice(valid))
-        else:
-            masked = policy * mask
-            s = masked.sum()
-            if s < 1e-9:
-                action = int(random.choice(valid))
-            else:
-                masked = masked / s
-                action = int(np.random.choice(NUM_ACTIONS, p=masked))
-
-        masked_p = policy * mask
-        s = masked_p.sum()
-        masked_p = masked_p / (s + 1e-9)
-        log_prob = float(np.log(masked_p[action] + 1e-9))
-
-        env.step(action)
-
-        lm_after = env.players[ci].built_lm_count()
-        step_reward = 0.2 * (lm_after - lm_before)
-
-        # next_state の価値を今のネットワークで計算（TD ターゲット用）
-        if env.done:
-            v_next = 0.0
-        else:
-            next_state = encode_state(env)
-            _, v_next  = agent.net.forward(next_state)
-            v_next = float(v_next)
-
-        steps.append((ci, state, action, mask, log_prob, float(value),
-                       step_reward, v_next, env.done))
-
-    # 終端報酬を決定
-    if env.winner is not None:
-        winner = env.winner
-    else:
-        coins  = [env.players[i].coins for i in range(2)]
-        winner = int(np.argmax(coins))
-
-    # プレイヤーごとにエージェントバッファへ積む
-    player_steps = {0: [], 1: []}
-    for record in steps:
-        player_steps[record[0]].append(record[1:])
-
-    for pi in range(2):
-        ps = player_steps[pi]
-        if not ps:
-            continue
-        terminal_reward = 1.0 if pi == winner else -1.0
-        for i, (state, action, mask, log_prob, value, step_r, v_next, done) in enumerate(ps):
-            is_last = (i == len(ps) - 1)
-            reward  = step_r + (terminal_reward if is_last else 0.0)
-            # 終端ステップは v_next=0、最後のステップも done 扱い
-            effective_done = done or is_last
-
-            agent.states.append(state)
-            agent.actions.append(action)
-            agent.masks.append(mask)
-            agent.log_probs.append(log_prob)
-            agent.values.append(value)
-            agent.rewards.append(reward)
-            agent.next_values.append(0.0 if effective_done else v_next)
-            agent.dones.append(effective_done)
-
-    return {
-        "winner": winner,
-        "turns":  env.turn_count,
-        "coins":  [env.players[i].coins for i in range(2)],
-    }
-
-
-def eval_vs_random(agent: RLAgent, n_games: int = 100) -> float:
-    """エージェント（P0）対ランダム（P1）の勝率を評価"""
-    from scripts.rl.encode import encode_state, action_mask
-    from scripts.rl.game_env import NUM_ACTIONS
-    import random as rnd
-
-    wins = 0
-    for _ in range(n_games):
-        env = MachikoroEnv()
-        for _ in range(2000):
-            if env.done:
-                break
-            ci = env.current
+        if env.current == 0:
+            # ── エージェントのターン ──
             state = encode_state(env)
             mask  = action_mask(env)
             valid = np.where(mask > 0)[0]
 
+            policy, value = agent.net.forward(state)
+
+            if epsilon > 0 and random.random() < epsilon:
+                action = int(random.choice(valid))
+            else:
+                masked_p = policy * mask
+                s = masked_p.sum()
+                if s < 1e-9:
+                    action = int(random.choice(valid))
+                else:
+                    masked_p = masked_p / s
+                    action = int(np.random.choice(NUM_ACTIONS, p=masked_p))
+
+            lm_before = env.players[0].built_lm_count()
+            env.step(action)
+            lm_after = env.players[0].built_lm_count()
+
+            ep_states.append(state)
+            ep_actions.append(action)
+            ep_masks.append(mask)
+            ep_values.append(float(value))
+            ep_rewards.append(0.2 * (lm_after - lm_before))
+
+        else:
+            # ── ランダムのターン ──
+            valid = env.valid_actions()
+            env.step(random.choice(valid))
+
+    if not ep_states:
+        return {}
+
+    # 終端報酬
+    if env.winner == 0:
+        ep_rewards[-1] += 1.0
+    else:
+        ep_rewards[-1] -= 1.0
+
+    # next_value を計算（GAE 用）
+    # ep_values[i+1] は次にエージェントが行動する局面の価値（収集時に計算済み）
+    # ランダムプレイヤーのターンを挟んでいるが、エージェント視点では「次のステップ」
+    T = len(ep_states)
+    next_values = ep_values[1:] + [0.0]  # 最終ステップは v_next=0
+    dones = [False] * (T - 1) + [True]
+
+    # バッファに積む
+    for i in range(T):
+        agent.states.append(ep_states[i])
+        agent.actions.append(ep_actions[i])
+        agent.masks.append(ep_masks[i])
+        agent.values.append(ep_values[i])
+        agent.rewards.append(ep_rewards[i])
+        agent.next_values.append(next_values[i])
+        agent.dones.append(dones[i])
+
+    return {
+        "winner": env.winner,
+        "turns":  env.turn_count,
+    }
+
+
+def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
+    """エージェント（P0、greedy）対ランダム（P1）の勝率を評価"""
+    wins = 0
+    for _ in range(n_games):
+        env = MachikoroEnv()
+        for _ in range(3000):
+            if env.done:
+                break
+            ci = env.current
             if ci == 0:
-                # エージェント（方策に従う）
+                state = encode_state(env)
+                mask  = action_mask(env)
                 policy, _ = agent.net.forward(state)
                 masked = policy * mask
                 s = masked.sum()
                 if s < 1e-9:
-                    action = int(rnd.choice(valid))
+                    action = int(random.choice(env.valid_actions()))
                 else:
                     masked = masked / s
                     action = int(np.random.choice(NUM_ACTIONS, p=masked))
             else:
-                # ランダム
-                action = int(rnd.choice(valid))
-
+                action = int(random.choice(env.valid_actions()))
             env.step(action)
 
         if env.winner == 0:
             wins += 1
         elif env.winner is None:
-            coins = [env.players[i].coins for i in range(2)]
-            if coins[0] > coins[1]:
+            if env.players[0].coins >= env.players[1].coins:
                 wins += 1
 
     return wins / n_games
@@ -173,12 +154,12 @@ def eval_vs_random(agent: RLAgent, n_games: int = 100) -> float:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--games",      type=int, default=10000, help="学習ゲーム数")
-    parser.add_argument("--eval-every", type=int, default=1000,  help="評価間隔")
-    parser.add_argument("--hidden",     type=int, default=128,   help="隠れ層ニューロン数")
-    parser.add_argument("--lr",         type=float, default=3e-4, help="学習率")
-    parser.add_argument("--epsilon",    type=float, default=0.15, help="ε-greedy 探索率")
-    parser.add_argument("--load",       action="store_true",      help="既存モデルを読み込む")
+    parser.add_argument("--games",      type=int,   default=10000, help="学習ゲーム数")
+    parser.add_argument("--eval-every", type=int,   default=1000,  help="評価間隔")
+    parser.add_argument("--hidden",     type=int,   default=128,   help="隠れ層ニューロン数")
+    parser.add_argument("--lr",         type=float, default=3e-4,  help="学習率")
+    parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
+    parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
     args = parser.parse_args()
 
     agent = RLAgent(hidden=args.hidden, lr=args.lr)
@@ -190,55 +171,54 @@ def main():
 
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}")
 
-    # 初期評価
     win_rate = eval_vs_random(agent, 200)
     print(f"[初期] vs ランダム勝率: {win_rate:.1%}")
 
-    total_stats = {"policy_loss": 0.0, "value_loss": 0.0}
-    win_history = []
-
-    BATCH = 8   # 8ゲーム分まとめてから学習（G の正規化が複数ゲーム跨ぎになる）
+    # 累積統計
+    total_pl  = 0.0
+    total_vl  = 0.0
+    total_adv = 0.0
     train_calls = 0
+    agent_wins  = 0  # 学習ゲームでのエージェント勝利数
+
+    BATCH = 8   # 8 ゲームまとめてから 1 回学習
 
     for game_i in range(1, args.games + 1):
-        # ε を線形減衰（学習後半は方策を信頼）
+        # ε を線形減衰
         epsilon = max(0.02, args.epsilon * (1 - game_i / args.games))
 
-        info = play_self_play_game(agent, epsilon=epsilon)
-        win_history.append(info["winner"])
+        info = play_vs_random(agent, epsilon=epsilon)
+        if info.get("winner") == 0:
+            agent_wins += 1
 
-        # BATCH ゲーム分溜まったら学習（複数ゲームの G をまとめて正規化）
-        stats = {}
         if game_i % BATCH == 0:
             stats = agent.train()
             train_calls += 1
-        if stats:
-            total_stats["policy_loss"] += stats.get("policy_loss", 0)
-            total_stats["value_loss"]  += stats.get("value_loss", 0)
-            total_stats["mean_adv"]    = total_stats.get("mean_adv", 0) + stats.get("mean_adv", 0)
+            if stats:
+                total_pl  += stats.get("policy_loss", 0)
+                total_vl  += stats.get("value_loss",  0)
+                total_adv += stats.get("mean_adv",    0)
 
-        # 評価・ログ出力
         if game_i % args.eval_every == 0:
             win_rate = eval_vs_random(agent, 200)
-            denom = max(train_calls, 1)
-            avg_pl = total_stats["policy_loss"] / denom
-            avg_vl = total_stats["value_loss"]  / denom
-            p0_wins = win_history[-args.eval_every:].count(0)
-            self_play_wr = p0_wins / args.eval_every
+            denom    = max(train_calls, 1)
+            avg_pl   = total_pl  / denom
+            avg_vl   = total_vl  / denom
+            avg_adv  = total_adv / denom
+            train_wr = agent_wins / args.eval_every
 
-            avg_adv = total_stats.get("mean_adv", 0) / denom
             print(f"[{game_i:6d}] "
                   f"vs_random={win_rate:.1%}  "
-                  f"self_play_wr={self_play_wr:.1%}  "
+                  f"train_wr={train_wr:.1%}  "
                   f"policy_loss={avg_pl:.4f}  "
                   f"value_loss={avg_vl:.4f}  "
                   f"mean_adv={avg_adv:.4f}  "
                   f"eps={epsilon:.3f}")
 
-            total_stats = {"policy_loss": 0.0, "value_loss": 0.0, "mean_adv": 0.0}
-            train_calls = 0
+            # リセット
+            total_pl = total_vl = total_adv = 0.0
+            train_calls = agent_wins = 0
 
-            # モデル保存
             agent.save(model_path)
 
     print(f"\n学習完了。モデル保存先: {model_path}.npz")
