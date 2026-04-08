@@ -123,6 +123,17 @@ class RLAgent:
         total_pl = 0.0
         total_vl = 0.0
 
+        def entropy_logit_grad(probs: np.ndarray, valid_mask: np.ndarray) -> np.ndarray:
+            grad = np.zeros_like(probs)
+            valid = valid_mask > 0
+            if not np.any(valid):
+                return grad
+            p = probs[valid]
+            log_p = np.log(p + 1e-9)
+            mean_term = float(np.sum(p * (log_p + 1.0)))
+            grad[valid] = p * ((log_p + 1.0) - mean_term)
+            return grad
+
         for t in range(T):
             state  = self.states[t]
             action = self.actions[t]
@@ -154,13 +165,13 @@ class RLAgent:
                 d_give[give_idx] -= 1.0
                 d_give *= adv
                 d_give *= give_mask
-                d_give += (np.log(bc_give_m + 1e-9) + 1.0) * self.entropy_coef * give_mask
+                d_give += self.entropy_coef * entropy_logit_grad(bc_give_m, give_mask)
 
                 d_take = bc_take_m.copy()
                 d_take[take_idx] -= 1.0
                 d_take *= adv
                 d_take *= take_mask
-                d_take += (np.log(bc_take_m + 1e-9) + 1.0) * self.entropy_coef * take_mask
+                d_take += self.entropy_coef * entropy_logit_grad(bc_take_m, take_mask)
 
                 d_value = (value - g_t) * (1.0 - value ** 2)
                 self.net.backward_bc(d_give, d_take, d_value)
@@ -185,7 +196,7 @@ class RLAgent:
                     d_logit[action] -= 1.0
                     d_logit *= adv
                     d_logit *= mask   # 無効行動には勾配を流さない
-                    d_entropy = (np.log(masked + 1e-9) + 1.0) * self.entropy_coef * mask
+                    d_entropy = self.entropy_coef * entropy_logit_grad(masked, mask)
                     d_policy  = d_logit + d_entropy
                     total_pl += float(-np.log(masked[action] + 1e-9) * adv)
                 else:

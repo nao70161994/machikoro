@@ -96,8 +96,9 @@ def _greedy_action(net, state, mask):
 def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
                    opp_agent: RLAgent = None) -> dict:
     """
-    エージェント(P0) vs 相手(P1) で 1 ゲームを収集。
-    P0 のステップのみをエージェントバッファに積む。
+    エージェント vs 相手 で 1 ゲームを収集。
+    エージェント席はゲームごとにランダム化し、その席のステップのみを
+    エージェントバッファに積む。
 
     opp_agent=None  → ランダム対戦（P1 はランダム行動）
     opp_agent=agent → 過去モデルとの対戦（P1 は greedy）
@@ -106,6 +107,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     終端報酬: 勝利 +1.0 / 敗北 -1.0
     """
     env = MachikoroEnv()
+    agent_player = random.randint(0, 1)
 
     ep_states  = []
     ep_actions = []
@@ -118,7 +120,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
         if env.done:
             break
 
-        if env.current == 0:
+        if env.current == agent_player:
             # ── エージェントのターン ──
             state = encode_state(env)
             mask  = action_mask(env)
@@ -126,9 +128,9 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
 
             action, value = _select_action(agent.net, state, mask, epsilon)
 
-            lm_before = env.players[0].built_lm_count()
+            lm_before = env.players[agent_player].built_lm_count()
             env.step(action)
-            lm_after = env.players[0].built_lm_count()
+            lm_after = env.players[agent_player].built_lm_count()
 
             ep_states.append(state)
             ep_actions.append(action)
@@ -150,7 +152,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
         return {}
 
     # 終端報酬
-    if env.winner == 0:
+    if env.winner == agent_player:
         ep_rewards[-1] += 1.0
     elif env.winner is None:
         ep_rewards[-1] -= 1.0
@@ -176,19 +178,21 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
 
     return {
         "winner": env.winner,
+        "agent_player": agent_player,
         "turns":  env.turn_count,
     }
 
 
 def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
-    """エージェント（P0、greedy）対ランダム（P1）の勝率を評価"""
+    """エージェント対ランダムの勝率を評価（席はゲームごとにランダム）"""
     wins = 0
     for _ in range(n_games):
         env = MachikoroEnv()
+        agent_player = random.randint(0, 1)
         for _ in range(3000):
             if env.done:
                 break
-            if env.current == 0:
+            if env.current == agent_player:
                 state  = encode_state(env)
                 mask   = action_mask(env)
                 action = _greedy_action(agent.net, state, mask)
@@ -196,7 +200,7 @@ def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
                 action = int(random.choice(env.valid_actions()))
             env.step(action)
 
-        if env.winner == 0:
+        if env.winner == agent_player:
             wins += 1
 
     return wins / n_games
@@ -264,7 +268,7 @@ def main():
         opp = random.choice(pool_agents) if pool_agents and random.random() < 0.3 else None
 
         info = play_vs_random(agent, epsilon=epsilon, opp_agent=opp)
-        if info.get("winner") == 0:
+        if info.get("winner") == info.get("agent_player"):
             agent_wins += 1
 
         if game_i % BATCH == 0:
