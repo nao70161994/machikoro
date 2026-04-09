@@ -119,7 +119,7 @@ def _greedy_action(net, state, mask):
 
 
 def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
-                   opp_agent: RLAgent = None) -> dict:
+                   opp_agent: RLAgent = None, max_steps: int = 3000) -> dict:
     """
     エージェント vs 相手 で 1 ゲームを収集。
     エージェント席はゲームごとにランダム化し、その席のステップのみを
@@ -140,7 +140,6 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     ep_values  = []
     ep_rewards = []
 
-    max_steps = 3000
     for _ in range(max_steps):
         if env.done:
             break
@@ -208,13 +207,15 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     }
 
 
-def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
+def eval_vs_random(agent: RLAgent, n_games: int = 200, max_steps: int = 3000) -> float:
     """エージェント対ランダムの勝率を評価（席はゲームごとにランダム）"""
+    if n_games <= 0:
+        return float('nan')
     wins = 0
     for _ in range(n_games):
         env = MachikoroEnv()
         agent_player = random.randint(0, 1)
-        for _ in range(3000):
+        for _ in range(max_steps):
             if env.done:
                 break
             if env.current == agent_player:
@@ -231,14 +232,16 @@ def eval_vs_random(agent: RLAgent, n_games: int = 200) -> float:
     return wins / n_games
 
 
-def eval_vs_heuristic(agent: RLAgent, level: str, n_games: int = 50) -> float:
+def eval_vs_heuristic(agent: RLAgent, level: str, n_games: int = 50, max_steps: int = 3000) -> float:
     """エージェント対ヒューリスティック CPU の勝率を評価"""
+    if n_games <= 0:
+        return float('nan')
     from .heuristic import heuristic_action
     wins = 0
     for _ in range(n_games):
         env = MachikoroEnv()
         agent_player = random.randint(0, 1)
-        for _ in range(3000):
+        for _ in range(max_steps):
             if env.done:
                 break
             if env.current == agent_player:
@@ -253,16 +256,16 @@ def eval_vs_heuristic(agent: RLAgent, level: str, n_games: int = 50) -> float:
     return wins / n_games
 
 
-def eval_vs_pool(agent: RLAgent, pool_agents: list, n_games: int = 50) -> float:
+def eval_vs_pool(agent: RLAgent, pool_agents: list, n_games: int = 50, max_steps: int = 3000) -> float:
     """エージェント対プール内スナップショットの勝率を評価"""
-    if not pool_agents:
+    if n_games <= 0 or not pool_agents:
         return float('nan')
     wins = 0
     for _ in range(n_games):
         opp = random.choice(pool_agents)
         env = MachikoroEnv()
         agent_player = random.randint(0, 1)
-        for _ in range(3000):
+        for _ in range(max_steps):
             if env.done:
                 break
             if env.current == agent_player:
@@ -685,6 +688,8 @@ def main():
     parser.add_argument("--final-eval-heuristic-games", type=int, default=100, help="学習終了時のヒューリスティック評価ゲーム数")
     parser.add_argument("--final-eval-pool-games", type=int, default=100, help="学習終了時の opponent pool 評価ゲーム数")
     parser.add_argument("--progress-every", type=int, default=0, help="軽量な進捗表示を出すゲーム間隔（0で無効）")
+    parser.add_argument("--max-steps", type=int, default=3000, help="学習ゲーム1試合あたりの最大 step 数")
+    parser.add_argument("--eval-max-steps", type=int, default=3000, help="評価ゲーム1試合あたりの最大 step 数")
     parser.add_argument("--metrics-csv", default="", help="評価指標を追記する CSV パス")
     parser.add_argument("--run-label", default="", help="metrics CSV に残す run ラベル")
     parser.add_argument("--summary-output", default="", help="metrics CSV 集計の出力パス")
@@ -718,8 +723,11 @@ def main():
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
 
-    win_rate = eval_vs_random(agent, args.initial_eval_games)
-    print(f"[初期] vs ランダム勝率: {win_rate:.1%}")
+    if args.initial_eval_games > 0:
+        win_rate = eval_vs_random(agent, args.initial_eval_games, max_steps=args.eval_max_steps)
+        print(f"[初期] vs ランダム勝率: {win_rate:.1%}")
+    else:
+        print("[初期] vs ランダム評価をスキップ")
 
     # 累積統計
     total_pl  = 0.0
@@ -752,7 +760,7 @@ def main():
         # 相手選択: 70% ランダム / 30% 過去モデル（プールが空の間は 100% ランダム）
         opp = random.choice(pool_agents) if pool_agents and random.random() < 0.3 else None
 
-        info = play_vs_random(agent, epsilon=epsilon, opp_agent=opp)
+        info = play_vs_random(agent, epsilon=epsilon, opp_agent=opp, max_steps=args.max_steps)
         if info.get("winner") == info.get("agent_player"):
             agent_wins += 1
 
@@ -769,12 +777,12 @@ def main():
             print(f"[進捗 {game_i:6d}/{args.games}] train={recent_train_wr:.0%} eps={epsilon:.3f}")
 
         if game_i % args.eval_every == 0:
-            wr_rnd    = eval_vs_random(agent, args.eval_random_games)
-            wr_weak   = eval_vs_heuristic(agent, 'weak',   args.eval_heuristic_games)
-            wr_normal = eval_vs_heuristic(agent, 'normal', args.eval_heuristic_games)
-            wr_strong = eval_vs_heuristic(agent, 'strong', args.eval_heuristic_games)
-            wr_expert = eval_vs_heuristic(agent, 'expert', args.eval_heuristic_games)
-            wr_pool   = eval_vs_pool(agent, pool_agents,   args.eval_pool_games)
+            wr_rnd    = eval_vs_random(agent, args.eval_random_games, max_steps=args.eval_max_steps)
+            wr_weak   = eval_vs_heuristic(agent, 'weak',   args.eval_heuristic_games, max_steps=args.eval_max_steps)
+            wr_normal = eval_vs_heuristic(agent, 'normal', args.eval_heuristic_games, max_steps=args.eval_max_steps)
+            wr_strong = eval_vs_heuristic(agent, 'strong', args.eval_heuristic_games, max_steps=args.eval_max_steps)
+            wr_expert = eval_vs_heuristic(agent, 'expert', args.eval_heuristic_games, max_steps=args.eval_max_steps)
+            wr_pool   = eval_vs_pool(agent, pool_agents,   args.eval_pool_games, max_steps=args.eval_max_steps)
 
             denom    = max(train_calls, 1)
             avg_pl   = total_pl  / denom
@@ -801,7 +809,7 @@ def main():
             agent.save(model_path)
             if args.js_eval_games > 0 and js_eval_opponents:
                 try:
-                    js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_every * 10)
+                    js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps)
                     print(f"         {_format_js_eval_summary(js_entries)}")
                 except (subprocess.CalledProcessError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
                     print(f"         js-eval-error={exc}")
@@ -860,19 +868,19 @@ def main():
         agent.save(model_path)
 
     print(f"\n学習完了。モデル保存先: {model_path}.npz")
-    final_rnd    = eval_vs_random(agent, args.final_eval_random_games)
-    final_weak   = eval_vs_heuristic(agent, 'weak',   args.final_eval_heuristic_games)
-    final_normal = eval_vs_heuristic(agent, 'normal', args.final_eval_heuristic_games)
-    final_strong = eval_vs_heuristic(agent, 'strong', args.final_eval_heuristic_games)
-    final_expert = eval_vs_heuristic(agent, 'expert', args.final_eval_heuristic_games)
-    final_pool   = eval_vs_pool(agent, pool_agents, args.final_eval_pool_games)
+    final_rnd    = eval_vs_random(agent, args.final_eval_random_games, max_steps=args.eval_max_steps)
+    final_weak   = eval_vs_heuristic(agent, 'weak',   args.final_eval_heuristic_games, max_steps=args.eval_max_steps)
+    final_normal = eval_vs_heuristic(agent, 'normal', args.final_eval_heuristic_games, max_steps=args.eval_max_steps)
+    final_strong = eval_vs_heuristic(agent, 'strong', args.final_eval_heuristic_games, max_steps=args.eval_max_steps)
+    final_expert = eval_vs_heuristic(agent, 'expert', args.final_eval_heuristic_games, max_steps=args.eval_max_steps)
+    final_pool   = eval_vs_pool(agent, pool_agents, args.final_eval_pool_games, max_steps=args.eval_max_steps)
     pool_str = f"{final_pool:.1%}" if final_pool == final_pool else "n/a"
     print(f"最終勝率: rnd={final_rnd:.1%}  weak={final_weak:.1%}  "
           f"normal={final_normal:.1%}  strong={final_strong:.1%}  "
           f"expert={final_expert:.1%}  pool={pool_str}")
     if args.js_eval_games > 0 and js_eval_opponents:
         try:
-            js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=5000)
+            js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps)
             print(f"JS評価: {_format_js_eval_summary(js_entries)}")
         except (subprocess.CalledProcessError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             print(f"JS評価失敗: {exc}")

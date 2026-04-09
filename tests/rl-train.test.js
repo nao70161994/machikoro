@@ -48,6 +48,21 @@ print(float(result.sum()))
     assert.ok(Math.abs(total - 1) < 1e-12);
 });
 
+runTest('rl train: 評価ゲーム数0なら評価関数は n/a を返せる', () => {
+    const output = runPython(`
+from scripts.rl.train import eval_vs_random, eval_vs_heuristic, eval_vs_pool
+from scripts.rl.agent import RLAgent
+agent = RLAgent(hidden=16, lr=0.001)
+print(eval_vs_random(agent, 0))
+print(eval_vs_heuristic(agent, 'weak', 0))
+print(eval_vs_pool(agent, [], 0))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'nan');
+    assert.strictEqual(lines[1], 'nan');
+    assert.strictEqual(lines[2], 'nan');
+});
+
 runTest('rl train: JS評価サマリ文字列を組み立てる', () => {
     const output = runPython(`
 from scripts.rl.train import _format_js_eval_summary
@@ -131,6 +146,21 @@ print(json.dumps(command))
     assert.ok(command.includes('models/rl_model/run_index.csv'));
     assert.ok(command.includes('--config-index-csv'));
     assert.ok(command.includes('models/rl_model/config_index.csv'));
+});
+
+runTest('rl train: max_steps 指定を評価関数へ渡せる', () => {
+    const output = runPython(`
+from scripts.rl.train import eval_vs_random, eval_vs_heuristic, eval_vs_pool
+from scripts.rl.agent import RLAgent
+agent = RLAgent(hidden=16, lr=0.001)
+print(eval_vs_random(agent, 0, max_steps=123))
+print(eval_vs_heuristic(agent, 'weak', 0, max_steps=123))
+print(eval_vs_pool(agent, [], 0, max_steps=123))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'nan');
+    assert.strictEqual(lines[1], 'nan');
+    assert.strictEqual(lines[2], 'nan');
 });
 
 runTest('rl train: JS評価から checkpoint score を計算する', () => {

@@ -177,17 +177,19 @@ sh scripts/rl/run-baseline.sh
 npm run train-rl:baseline
 ```
 
-この baseline ラッパーは、Termux でも回しやすいように `--games 10000`、`--eval-every 2000`、`--js-eval-games 2`、`--js-eval-opponents strong` と軽量な進捗表示を既定にしています。
+この baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、`--js-eval-opponents strong`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
 
 baseline 学習で生成される主な成果物:
 
-- `models/rl_model/train_metrics.csv`
-- `models/rl_model/summary.json`
-- `models/rl_model/run_index.csv`
-- `models/rl_model/config_index.csv`
-- `models/rl_model/best_model.npz`
-- `models/rl_model/best_model.browser.json`
-- `models/rl_model/best_model.meta.json`
+- `models/rl_model/runs/baseline/train_metrics.csv`
+- `models/rl_model/runs/baseline/summary.json`
+- `models/rl_model/runs/baseline/run_index.csv`
+- `models/rl_model/runs/baseline/config_index.csv`
+- `models/rl_model/runs/baseline/best_model.npz`
+- `models/rl_model/runs/baseline/best_model.browser.json`
+- `models/rl_model/runs/baseline/best_model.meta.json`
+
+`run-baseline.sh` は既定で `models/rl_model/runs/<run-label>/` に出力するため、`--run-label eps030` のように別ラベルを付ければ 2 本まで安全に並列実行できます。
 
 詳しい学習方式、評価指標、集計オプションは [scripts/rl/README.md](./scripts/rl/README.md) を参照してください。
 
