@@ -661,6 +661,12 @@ def eval_vs_js_cpu(model_path, opponents, games=10, max_steps=5000):
     return json.loads(result.stdout)
 
 
+def _safe_ratio(value, total):
+    if total <= 0:
+        return 0.0
+    return value / total
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--games",      type=int,   default=10000, help="学習ゲーム数")
@@ -671,6 +677,14 @@ def main():
     parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
     parser.add_argument("--js-eval-games", type=int, default=0,    help="JS CPU 相手の評価ゲーム数（0で無効）")
     parser.add_argument("--js-eval-opponents", default="strong,expert", help="JS CPU 評価対象 difficulty のCSV")
+    parser.add_argument("--initial-eval-games", type=int, default=200, help="学習開始前の vs ランダム評価ゲーム数")
+    parser.add_argument("--eval-random-games", type=int, default=200, help="定期評価での vs ランダム評価ゲーム数")
+    parser.add_argument("--eval-heuristic-games", type=int, default=50, help="定期評価でのヒューリスティック評価ゲーム数")
+    parser.add_argument("--eval-pool-games", type=int, default=50, help="定期評価での opponent pool 評価ゲーム数")
+    parser.add_argument("--final-eval-random-games", type=int, default=500, help="学習終了時の vs ランダム評価ゲーム数")
+    parser.add_argument("--final-eval-heuristic-games", type=int, default=100, help="学習終了時のヒューリスティック評価ゲーム数")
+    parser.add_argument("--final-eval-pool-games", type=int, default=100, help="学習終了時の opponent pool 評価ゲーム数")
+    parser.add_argument("--progress-every", type=int, default=0, help="軽量な進捗表示を出すゲーム間隔（0で無効）")
     parser.add_argument("--metrics-csv", default="", help="評価指標を追記する CSV パス")
     parser.add_argument("--run-label", default="", help="metrics CSV に残す run ラベル")
     parser.add_argument("--summary-output", default="", help="metrics CSV 集計の出力パス")
@@ -704,7 +718,7 @@ def main():
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
 
-    win_rate = eval_vs_random(agent, 200)
+    win_rate = eval_vs_random(agent, args.initial_eval_games)
     print(f"[初期] vs ランダム勝率: {win_rate:.1%}")
 
     # 累積統計
@@ -750,13 +764,17 @@ def main():
                 total_vl  += stats.get("value_loss",  0)
                 total_adv += stats.get("mean_adv",    0)
 
+        if args.progress_every > 0 and game_i % args.progress_every == 0 and game_i % args.eval_every != 0:
+            recent_train_wr = _safe_ratio(agent_wins, game_i % args.eval_every if args.eval_every > 0 else game_i)
+            print(f"[進捗 {game_i:6d}/{args.games}] train={recent_train_wr:.0%} eps={epsilon:.3f}")
+
         if game_i % args.eval_every == 0:
-            wr_rnd    = eval_vs_random(agent, 200)
-            wr_weak   = eval_vs_heuristic(agent, 'weak',   50)
-            wr_normal = eval_vs_heuristic(agent, 'normal', 50)
-            wr_strong = eval_vs_heuristic(agent, 'strong', 50)
-            wr_expert = eval_vs_heuristic(agent, 'expert', 50)
-            wr_pool   = eval_vs_pool(agent, pool_agents,   50)
+            wr_rnd    = eval_vs_random(agent, args.eval_random_games)
+            wr_weak   = eval_vs_heuristic(agent, 'weak',   args.eval_heuristic_games)
+            wr_normal = eval_vs_heuristic(agent, 'normal', args.eval_heuristic_games)
+            wr_strong = eval_vs_heuristic(agent, 'strong', args.eval_heuristic_games)
+            wr_expert = eval_vs_heuristic(agent, 'expert', args.eval_heuristic_games)
+            wr_pool   = eval_vs_pool(agent, pool_agents,   args.eval_pool_games)
 
             denom    = max(train_calls, 1)
             avg_pl   = total_pl  / denom
@@ -842,12 +860,12 @@ def main():
         agent.save(model_path)
 
     print(f"\n学習完了。モデル保存先: {model_path}.npz")
-    final_rnd    = eval_vs_random(agent, 500)
-    final_weak   = eval_vs_heuristic(agent, 'weak',   100)
-    final_normal = eval_vs_heuristic(agent, 'normal', 100)
-    final_strong = eval_vs_heuristic(agent, 'strong', 100)
-    final_expert = eval_vs_heuristic(agent, 'expert', 100)
-    final_pool   = eval_vs_pool(agent, pool_agents, 100)
+    final_rnd    = eval_vs_random(agent, args.final_eval_random_games)
+    final_weak   = eval_vs_heuristic(agent, 'weak',   args.final_eval_heuristic_games)
+    final_normal = eval_vs_heuristic(agent, 'normal', args.final_eval_heuristic_games)
+    final_strong = eval_vs_heuristic(agent, 'strong', args.final_eval_heuristic_games)
+    final_expert = eval_vs_heuristic(agent, 'expert', args.final_eval_heuristic_games)
+    final_pool   = eval_vs_pool(agent, pool_agents, args.final_eval_pool_games)
     pool_str = f"{final_pool:.1%}" if final_pool == final_pool else "n/a"
     print(f"最終勝率: rnd={final_rnd:.1%}  weak={final_weak:.1%}  "
           f"normal={final_normal:.1%}  strong={final_strong:.1%}  "

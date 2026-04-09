@@ -14,7 +14,7 @@
 
 - このリポジトリは Android + Termux から編集されることが多いです。
 - 長いシェルコマンドは端末の折り返しで壊れやすいので、使える場合は既存のラッパースクリプトを優先してください。
-- RL の baseline 学習は、フルコマンドを打ち直さず `sh scripts/rl/run-baseline.sh` を使ってください。
+- RL の baseline 学習は、フルコマンドを打ち直さず `sh scripts/rl/run-baseline.sh` を使ってください。既定値は Termux 向けに軽量化され、進捗表示も有効です。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
 ## 次に読む文書

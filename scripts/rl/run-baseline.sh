@@ -8,10 +8,18 @@ cd "$ROOT_DIR"
 OUT_DIR="models/rl_model"
 
 exec python3 -m scripts.rl.train \
-    --games 30000 \
-    --eval-every 1000 \
-    --js-eval-games 20 \
-    --js-eval-opponents strong,expert \
+    --games 10000 \
+    --eval-every 2000 \
+    --js-eval-games 2 \
+    --js-eval-opponents strong \
+    --initial-eval-games 50 \
+    --eval-random-games 50 \
+    --eval-heuristic-games 12 \
+    --eval-pool-games 12 \
+    --final-eval-random-games 100 \
+    --final-eval-heuristic-games 24 \
+    --final-eval-pool-games 24 \
+    --progress-every 200 \
     --metrics-csv "$OUT_DIR/train_metrics.csv" \
     --best-checkpoint "$OUT_DIR/best_model" \
     --summary-output "$OUT_DIR/summary.json" \
@@ -19,6 +27,6 @@ exec python3 -m scripts.rl.train \
     --summary-config-index-csv "$OUT_DIR/config_index.csv" \
     --summary-format json \
     --summary-baseline-run baseline \
-    --summary-weights strong=1,expert=2 \
+    --summary-weights strong=1 \
     --run-label baseline \
     "$@"

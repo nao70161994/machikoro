@@ -177,6 +177,8 @@ sh scripts/rl/run-baseline.sh
 npm run train-rl:baseline
 ```
 
+この baseline ラッパーは、Termux でも回しやすいように `--games 10000`、`--eval-every 2000`、`--js-eval-games 2`、`--js-eval-opponents strong` と軽量な進捗表示を既定にしています。
+
 baseline 学習で生成される主な成果物:
 
 - `models/rl_model/train_metrics.csv`

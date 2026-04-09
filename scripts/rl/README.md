@@ -156,12 +156,23 @@ python3 -m scripts.rl.train --games 30000 --eval-every 1000 --load
 # baseline 用ラッパースクリプト（Termux での実行向け）
 sh scripts/rl/run-baseline.sh
 
+# baseline の既定値を保ったままゲーム数だけ短くする
+sh scripts/rl/run-baseline.sh --games 5000
+
 # JS側 CPU との定期評価と metrics CSV 出力も有効化
 python3 -m scripts.rl.train \
-  --games 30000 \
-  --eval-every 1000 \
-  --js-eval-games 20 \
-  --js-eval-opponents strong,expert \
+  --games 10000 \
+  --eval-every 2000 \
+  --js-eval-games 2 \
+  --js-eval-opponents strong \
+  --initial-eval-games 50 \
+  --eval-random-games 50 \
+  --eval-heuristic-games 12 \
+  --eval-pool-games 12 \
+  --final-eval-random-games 100 \
+  --final-eval-heuristic-games 24 \
+  --final-eval-pool-games 24 \
+  --progress-every 200 \
   --metrics-csv models/rl_model/train_metrics.csv \
   --best-checkpoint models/rl_model/best_model \
   --summary-output models/rl_model/summary.json \
@@ -169,19 +180,27 @@ python3 -m scripts.rl.train \
   --summary-config-index-csv models/rl_model/config_index.csv \
   --summary-format json \
   --summary-baseline-run baseline \
-  --summary-weights strong=1,expert=2 \
+  --summary-weights strong=1 \
   --run-label baseline
 
 # オプション一覧
 python3 -m scripts.rl.train \
-  --games 30000       # 総ゲーム数
-  --eval-every 1000   # 評価間隔
+  --games 10000       # 総ゲーム数
+  --eval-every 2000   # 評価間隔
   --hidden 256        # 隠れ層サイズ（デフォルト: 256）
   --lr 3e-4           # 学習率
   --epsilon 0.20      # 初期探索率（線形減衰 → 0.02 まで）
   --load              # 既存モデルを読み込んで継続学習
-  --js-eval-games 20  # JS側 CPU 相手の定期評価ゲーム数
-  --js-eval-opponents strong,expert  # JS評価対象 difficulty
+  --js-eval-games 2  # JS側 CPU 相手の定期評価ゲーム数
+  --js-eval-opponents strong  # JS評価対象 difficulty
+  --initial-eval-games 50  # 学習開始前の vs ランダム評価ゲーム数
+  --eval-random-games 50  # 定期評価での vs ランダム評価ゲーム数
+  --eval-heuristic-games 12  # 定期評価での weak/normal/strong/expert 評価ゲーム数
+  --eval-pool-games 12  # 定期評価での opponent pool 評価ゲーム数
+  --final-eval-random-games 100  # 学習終了時の vs ランダム評価ゲーム数
+  --final-eval-heuristic-games 24  # 学習終了時の weak/normal/strong/expert 評価ゲーム数
+  --final-eval-pool-games 24  # 学習終了時の opponent pool 評価ゲーム数
+  --progress-every 200  # 軽量な進捗表示の間隔
   --metrics-csv models/rl_model/train_metrics.csv  # 評価結果CSV
   --best-checkpoint models/rl_model/best_model  # 学習中の best checkpoint 退避先
   --summary-output models/rl_model/summary.json  # 学習終了時の集計出力
@@ -189,12 +208,14 @@ python3 -m scripts.rl.train \
   --summary-config-index-csv models/rl_model/config_index.csv  # 学習終了時の config index CSV
   --summary-format json  # 集計出力形式（text/json）
   --summary-baseline-run baseline  # 集計時の baseline run
-  --summary-weights strong=1,expert=2  # 集計時の重み
+  --summary-weights strong=1  # 集計時の重み
   --run-label baseline  # CSV 比較用ラベル（未指定なら自動生成）
 ```
 
 > **注意**: `--hidden` の値が保存済みモデルと異なる場合は読み込みエラーになる。
 > 必ず保存時と同じ値を指定すること。
+
+> **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず回し切れて進捗が見えることを優先して `10000 / 2000 / 2 / strong` と軽量評価回数にしている。
 
 ### 学習ログの見方
 
@@ -218,7 +239,7 @@ python3 -m scripts.rl.train \
 
 ### JS CPU との比較評価
 
-学習済みモデルを browser 用 JSON に export して、JS 実装の `weak/normal/strong/expert` と 2 人戦で比較できる。
+学習済みモデルを browser 用 JSON に export して、JS 実装の `weak/normal/strong/expert` と 2 人戦で比較できる。現在の baseline では、まず `strong` を主指標として見る前提にしている。
 
 ```bash
 npm run export-rl-model
@@ -248,7 +269,7 @@ npm run summarize-rl-metrics -- \
 `--run-index-csv ...` と `--config-index-csv ...` を付けると、run 全体順位と設定全体順位を CSV で別保存できる。
 `--run-label` を省略した場合は `YYYYMMDD-HHMMSS-h256-lr0.0003-ev1000-js20` のような形式で自動生成され、学習開始ログと CSV の両方に残る。
 `train.py` 側でも `--summary-output` を付ければ、学習終了時に同じ summarize 処理を自動実行できる。`--summary-run-index-csv` と `--summary-config-index-csv` も併用すれば、run/config 順位 CSV までまとめて自動生成される。
-`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。例えば `sh scripts/rl/run-baseline.sh --games 10000` でゲーム数だけ上書きできる。
+`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。既定値は `--games 10000 --eval-every 2000 --js-eval-games 2 --js-eval-opponents strong` に加えて、初期評価・定期評価・最終評価のゲーム数も軽量化し、`--progress-every 200` で進捗表示を出す。例えば `sh scripts/rl/run-baseline.sh --games 5000` でゲーム数だけ上書きできる。
 `--best-checkpoint` を付けると、各評価時点で最良だったモデルを `.npz` と `.browser.json`、さらに参照用の `.meta.json` で別保存する。判定は JS 評価があればその重み付き score、無ければ `expert/strong/normal/rnd` の重み付き代替スコアを使う。`--summary-output` も併用していれば、学習終了後に `meta.json` へ `bestRuns` / `bestConfigs` の抜粋に加えて、この run 自身に対応する `summaryRunContext` も追記される。`summaryRunContext` には `runIndexEntry` として run 全体順位、`configIndexEntry` として設定全体順位、`combinedTop` に入っていればその順位と entry も入る。`meta.json` には `artifacts` として `checkpointPath` / `browserCheckpointPath` / `metaPath` / `summaryPath` / `runIndexCsvPath` / `configIndexCsvPath` もまとまって入る。
 集計結果には run 別だけでなく `hidden/lr` ごとの best config も含まれる。
 
