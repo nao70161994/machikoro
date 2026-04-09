@@ -31,6 +31,32 @@ print(float(result.sum()))
     assert.ok(Math.abs(total - 1) < 1e-12);
 });
 
+runTest('rl train: 学習相手の重み指定を解析できる', () => {
+    const output = runPython(`
+import json
+from scripts.rl.train import _parse_training_opponents
+print(json.dumps(_parse_training_opponents("random=0.5,strong=0.3,pool=0.2,invalid=1"), ensure_ascii=False))
+`);
+    const entries = JSON.parse(output);
+    assert.deepStrictEqual(entries, [
+        { kind: 'random', weight: 0.5 },
+        { kind: 'strong', weight: 0.3 },
+        { kind: 'pool', weight: 0.2 },
+    ]);
+});
+
+runTest('rl train: pool が空なら学習相手選択は random へフォールバックする', () => {
+    const output = runPython(`
+import json
+import random
+from scripts.rl.train import _choose_training_opponent
+random.seed(1)
+print(json.dumps(_choose_training_opponent([{"kind":"pool","weight":1.0}], []), ensure_ascii=False))
+`);
+    const entry = JSON.parse(output);
+    assert.deepStrictEqual(entry, { kind: 'random' });
+});
+
 runTest('rl train: masked probs はゼロ和でも有効手に一様分布を返す', () => {
     const output = runPython(`
 import numpy as np

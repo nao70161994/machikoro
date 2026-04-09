@@ -19,6 +19,14 @@ runTest('rollDice後にフェーズが適切に遷移する', () => {
     assert.strictEqual(stationGame.phase, 'build');
 });
 
+runTest('1個振りの rollDice は lastDice1 に出目を保持する', () => {
+    const game = new GameManager(2);
+    game.rollDice(4);
+    assert.strictEqual(game.lastDiceResult, 4);
+    assert.strictEqual(game.lastDice1, 4);
+    assert.strictEqual(game.lastDice2, 0);
+});
+
 runTest('rollRandomDieはwindow.cryptoがあればそれを優先する', () => {
     runtime.window = {
         crypto: {
@@ -68,10 +76,16 @@ runTest('nextTurnでpendingRenovationがリセットされる', () => {
     const game = new GameManager(2);
     game.phase = 'build';
     game.pendingRenovation = 2;
+    game.lastDiceResult = 5;
+    game.lastDice1 = 2;
+    game.lastDice2 = 3;
     game.nextTurn();
     assert.strictEqual(game.pendingRenovation, 0);
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.strictEqual(game.phase, 'roll');
+    assert.strictEqual(game.lastDiceResult, 0);
+    assert.strictEqual(game.lastDice1, 0);
+    assert.strictEqual(game.lastDice2, 0);
 });
 
 runTest('引越し屋とビジネスセンターがカード単位で休業状態を引き継ぐ', () => {

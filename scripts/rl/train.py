@@ -207,6 +207,68 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     }
 
 
+def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_steps: int = 3000) -> dict:
+    env = MachikoroEnv()
+    agent_player = random.randint(0, 1)
+
+    ep_states = []
+    ep_actions = []
+    ep_masks = []
+    ep_values = []
+    ep_rewards = []
+
+    for _ in range(max_steps):
+        if env.done:
+            break
+
+        if env.current == agent_player:
+            state = encode_state(env)
+            mask = action_mask(env)
+            action, value = _select_action(agent.net, state, mask, epsilon)
+
+            lm_before = env.players[agent_player].built_lm_count()
+            env.step(action)
+            lm_after = env.players[agent_player].built_lm_count()
+
+            ep_states.append(state)
+            ep_actions.append(action)
+            ep_masks.append(mask)
+            ep_values.append(float(value))
+            ep_rewards.append(0.2 * (lm_after - lm_before))
+        else:
+            env.step(_opponent_action(env, opponent))
+
+    if not ep_states:
+        return {}
+
+    if env.winner == agent_player:
+        ep_rewards[-1] += 1.0
+    elif env.winner is None:
+        ep_rewards[-1] -= 1.0
+    else:
+        ep_rewards[-1] -= 1.0
+
+    T = len(ep_states)
+    next_values = ep_values[1:] + [0.0]
+    dones = [False] * (T - 1) + [True]
+
+    for i in range(T):
+        agent.states.append(ep_states[i])
+        agent.actions.append(ep_actions[i])
+        agent.masks.append(ep_masks[i])
+        agent.values.append(ep_values[i])
+        agent.rewards.append(ep_rewards[i])
+        agent.next_values.append(next_values[i])
+        agent.dones.append(dones[i])
+
+    return {
+        "winner": env.winner,
+        "agent_player": agent_player,
+        "turns": env.turn_count,
+        "opponent": (opponent or {}).get("kind", "random"),
+    }
+
+
 def eval_vs_random(agent: RLAgent, n_games: int = 200, max_steps: int = 3000) -> float:
     """エージェント対ランダムの勝率を評価（席はゲームごとにランダム）"""
     if n_games <= 0:
@@ -284,6 +346,67 @@ def eval_vs_pool(agent: RLAgent, pool_agents: list, n_games: int = 50, max_steps
 
 def _parse_csv_list(value):
     return [item for item in (value or '').split(',') if item]
+
+
+def _parse_training_opponents(value):
+    entries = []
+    for part in (value or "").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        kind, sep, weight_text = part.partition("=")
+        kind = kind.strip()
+        if kind not in ("random", "pool", "weak", "normal", "strong", "expert"):
+            continue
+        if sep:
+            try:
+                weight = float(weight_text)
+            except (TypeError, ValueError):
+                continue
+        else:
+            weight = 1.0
+        if weight <= 0:
+            continue
+        entries.append({"kind": kind, "weight": weight})
+    return entries
+
+
+def _choose_training_opponent(entries, pool_agents):
+    candidates = []
+    for entry in entries or []:
+        if entry.get("kind") == "pool" and not pool_agents:
+            continue
+        candidates.append(entry)
+    if not candidates:
+        return {"kind": "random"}
+    total = sum(max(0.0, entry.get("weight", 0.0)) for entry in candidates)
+    if total <= 0:
+        return {"kind": "random"}
+    pick = random.random() * total
+    acc = 0.0
+    for entry in candidates:
+        acc += max(0.0, entry.get("weight", 0.0))
+        if pick <= acc:
+            if entry["kind"] == "pool":
+                return {"kind": "pool", "agent": random.choice(pool_agents)}
+            return {"kind": entry["kind"]}
+    last = candidates[-1]
+    if last["kind"] == "pool":
+        return {"kind": "pool", "agent": random.choice(pool_agents)}
+    return {"kind": last["kind"]}
+
+
+def _opponent_action(env, opponent):
+    kind = (opponent or {}).get("kind", "random")
+    if kind == "pool":
+        opp_agent = opponent.get("agent")
+        opp_state = encode_state(env)
+        opp_mask = action_mask(env)
+        return _greedy_action(opp_agent.net, opp_state, opp_mask)
+    if kind == "random":
+        return int(random.choice(env.valid_actions()))
+    from .heuristic import heuristic_action
+    return int(heuristic_action(env, kind))
 
 
 def _sanitize_run_label_part(value):
@@ -677,6 +800,7 @@ def main():
     parser.add_argument("--hidden",     type=int,   default=256,   help="隠れ層ニューロン数")
     parser.add_argument("--lr",         type=float, default=3e-4,  help="学習率")
     parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
+    parser.add_argument("--train-opponents", default="random=0.7,pool=0.3", help="学習時に混ぜる相手の重み指定 random/pool/weak/normal/strong/expert")
     parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
     parser.add_argument("--js-eval-games", type=int, default=0,    help="JS CPU 相手の評価ゲーム数（0で無効）")
     parser.add_argument("--js-eval-opponents", default="strong,expert", help="JS CPU 評価対象 difficulty のCSV")
@@ -722,6 +846,7 @@ def main():
 
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
+    train_opponents = _parse_training_opponents(args.train_opponents)
 
     if args.initial_eval_games > 0:
         win_rate = eval_vs_random(agent, args.initial_eval_games, max_steps=args.eval_max_steps)
@@ -757,10 +882,8 @@ def main():
                 pool_agents.pop(0)
             print(f"  [pool] snapshot #{len(pool_agents)}/{MAX_POOL_SIZE} added at game {game_i}")
 
-        # 相手選択: 70% ランダム / 30% 過去モデル（プールが空の間は 100% ランダム）
-        opp = random.choice(pool_agents) if pool_agents and random.random() < 0.3 else None
-
-        info = play_vs_random(agent, epsilon=epsilon, opp_agent=opp, max_steps=args.max_steps)
+        opponent = _choose_training_opponent(train_opponents, pool_agents)
+        info = play_training_game(agent, epsilon=epsilon, opponent=opponent, max_steps=args.max_steps)
         if info.get("winner") == info.get("agent_player"):
             agent_wins += 1
 

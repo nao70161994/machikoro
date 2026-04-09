@@ -53,8 +53,9 @@ exec python3 -m scripts.rl.train \
     --games 1000 \
     --eval-every 500 \
     --hidden 128 \
+    --train-opponents random=0.5,normal=0.25,strong=0.15,pool=0.1 \
     --js-eval-games 1 \
-    --js-eval-opponents strong \
+    --js-eval-opponents weak,normal,strong \
     --initial-eval-games 0 \
     --eval-random-games 10 \
     --eval-heuristic-games 4 \
@@ -72,6 +73,6 @@ exec python3 -m scripts.rl.train \
     --summary-config-index-csv "$OUT_DIR/config_index.csv" \
     --summary-format json \
     --summary-baseline-run "$RUN_LABEL" \
-    --summary-weights strong=1 \
+    --summary-weights weak=1,normal=2,strong=3 \
     --run-label "$RUN_LABEL" \
     "$@"

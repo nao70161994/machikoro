@@ -89,7 +89,7 @@ class GameManager {
             this.addLog(LOG_TYPES.DICE, `🚉 駅：1個か2個か選んでください`);
         } else {
             const d1 = forceDice !== null ? forceDice : rollRandomDie();
-            this.lastDice1 = 0;
+            this.lastDice1 = d1;
             this.lastDice2 = 0;
             this.lastDiceResult = d1;
             this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
@@ -617,6 +617,9 @@ class GameManager {
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.turnCount++;
         this.phase = GAME_PHASES.ROLL;
+        this.lastDiceResult = 0;
+        this.lastDice1 = 0;
+        this.lastDice2 = 0;
         this.log = [];
         this.builtThisTurn = false;
         this.usedReroll = false;
