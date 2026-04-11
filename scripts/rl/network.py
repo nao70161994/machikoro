@@ -103,10 +103,10 @@ class PolicyValueNet:
 
         self._h = None      # 共有層の出力（backward 用）
 
-    def forward(self, state: np.ndarray):
+    def forward_details(self, state: np.ndarray):
         """
         通常フェーズ用 forward。
-        returns: (policy_probs, value)
+        returns: (policy_probs, value, logits)
         """
         h = state
         for layer in self.shared:
@@ -119,12 +119,16 @@ class PolicyValueNet:
         v_raw = self.value_head.forward(h)
         value = float(np.tanh(v_raw[0]))
 
+        return policy, value, logits
+
+    def forward(self, state: np.ndarray):
+        policy, value, _ = self.forward_details(state)
         return policy, value
 
-    def forward_bc(self, state: np.ndarray):
+    def forward_bc_details(self, state: np.ndarray):
         """
         ビジネスセンターフェーズ用 forward。
-        returns: (bc_give_probs, bc_take_probs, value)
+        returns: (bc_give_probs, bc_take_probs, value, bc_give_logits, bc_take_logits)
           bc_give_probs: (NUM_CARDS,) — 渡すカードの確率分布
           bc_take_probs: (NUM_CARDS,) — 受け取るカードの確率分布
           value: float
@@ -134,12 +138,18 @@ class PolicyValueNet:
             h = layer.forward(h)
         self._h = h
 
-        bc_give_p = softmax(self.bc_give_head.forward(h))
-        bc_take_p = softmax(self.bc_take_head.forward(h))
+        bc_give_logits = self.bc_give_head.forward(h)
+        bc_take_logits = self.bc_take_head.forward(h)
+        bc_give_p = softmax(bc_give_logits)
+        bc_take_p = softmax(bc_take_logits)
 
         v_raw = self.value_head.forward(h)
         value = float(np.tanh(v_raw[0]))
 
+        return bc_give_p, bc_take_p, value, bc_give_logits, bc_take_logits
+
+    def forward_bc(self, state: np.ndarray):
+        bc_give_p, bc_take_p, value, _, _ = self.forward_bc_details(state)
         return bc_give_p, bc_take_p, value
 
     def backward(self, d_policy: np.ndarray, d_value: float):

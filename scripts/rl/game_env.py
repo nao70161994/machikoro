@@ -104,6 +104,7 @@ class MachikoroEnv:
 
     def reset(self):
         self.players = [PlayerState(), PlayerState()]
+        self.shop_stock = {name: 6 for name in CARD_NAMES}
         self.current = 0
         self.phase = PHASE_ROLL
         self.last_dice = 0
@@ -128,7 +129,7 @@ class MachikoroEnv:
 
         if self.phase == PHASE_ROLL:
             if p.landmarks[LM_STATION]:
-                return [ACT_ROLL1, ACT_ROLL2]
+                return [ACT_ROLL1]
             return [ACT_ROLL1]
 
         if self.phase == PHASE_SELECT_DICE:
@@ -190,6 +191,8 @@ class MachikoroEnv:
             if not self.built_this_turn:
                 for ci, n in enumerate(CARD_NAMES):
                     cd = CARD_DEF[n]
+                    if self.shop_stock.get(n, 0) <= 0:
+                        continue
                     if p.coins < cd.cost:
                         continue
                     if cd.color == "purple" and p.cards[n] > 0:
@@ -214,9 +217,18 @@ class MachikoroEnv:
         opp = self.players[oi]
 
         # --- サイコロ ---
-        if self.phase in (PHASE_ROLL, PHASE_SELECT_DICE):
-            if self.phase == PHASE_ROLL and p.landmarks[LM_STATION]:
+        if self.phase == PHASE_ROLL:
+            if p.landmarks[LM_STATION]:
                 self.phase = PHASE_SELECT_DICE
+                return self.done, self.winner
+            use_two = False
+            d1 = self._roll()
+            self.last_d1, self.last_d2 = d1, 0
+            self.last_dice = d1
+            self.had_ap_at_roll = p.landmarks[LM_AMUSEMENT]
+            self._after_roll()
+
+        elif self.phase == PHASE_SELECT_DICE:
             use_two = (action == ACT_ROLL2)
             if use_two:
                 d1, d2 = self._roll(), self._roll()
@@ -233,16 +245,19 @@ class MachikoroEnv:
         elif self.phase == PHASE_REROLL:
             if action == ACT_REROLL:
                 self.used_reroll = True
-                use_two = (self.last_d2 > 0)
-                if use_two:
-                    d1, d2 = self._roll(), self._roll()
-                    self.last_d1, self.last_d2 = d1, d2
-                    self.last_dice = d1 + d2
+                self.last_dice = 0
+                self.last_d1 = 0
+                self.last_d2 = 0
+                if p.landmarks[LM_STATION]:
+                    self._roll()
+                    self.phase = PHASE_SELECT_DICE
                 else:
                     d1 = self._roll()
                     self.last_d1, self.last_d2 = d1, 0
                     self.last_dice = d1
-            self._apply_harbor_or_income()
+                    self._apply_harbor_or_income()
+            else:
+                self._apply_harbor_or_income()
 
         # --- 港 ---
         elif self.phase == PHASE_HARBOR:
@@ -331,15 +346,18 @@ class MachikoroEnv:
 
         # --- 建設 ---
         elif self.phase == PHASE_BUILD:
+            built_winning_landmark = False
             if action != ACT_PASS:
                 if ACT_BUY_CARD_BASE <= action < ACT_BUY_CARD_BASE + NUM_CARDS:
                     ci   = action - ACT_BUY_CARD_BASE
                     name = CARD_NAMES[ci]
                     cd   = CARD_DEF[name]
-                    if (p.coins >= cd.cost and
+                    if (self.shop_stock.get(name, 0) > 0 and
+                            p.coins >= cd.cost and
                             not (cd.color == "purple" and p.cards[name] > 0)):
                         p.coins -= cd.cost
                         p.cards[name] += 1
+                        self.shop_stock[name] -= 1
                         if cd.effect == LOAN:
                             p.coins += 5  # 貸金業建設ボーナス
                         self.built_this_turn = True
@@ -353,14 +371,14 @@ class MachikoroEnv:
                         p.coins -= cost
                         p.landmarks[name] = True
                         self.built_this_turn = True
+                        if p.has_won(self.enabled_lm):
+                            built_winning_landmark = True
 
-            # 勝利確認
-            if p.has_won(self.enabled_lm):
-                self.done   = True
-                self.winner = self.current
-                return self.done, self.winner
-
+            winner_index = self.current if built_winning_landmark else None
             self._next_turn()
+            if built_winning_landmark:
+                self.done = True
+                self.winner = winner_index
 
         return self.done, self.winner
 
@@ -487,7 +505,7 @@ class MachikoroEnv:
             if cd.effect == RENOVATION:
                 built = [n for n in LANDMARK_ORDER if p.landmarks[n]]
                 if built:
-                    self.pending_reno += 1
+                    self.pending_reno += count
                 continue
 
             if cd.effect == MOVER:
@@ -498,13 +516,16 @@ class MachikoroEnv:
                 continue  # ダイスによるペナルティは下で処理
 
             if cd.effect == WINERY:
-                # 休業中のワイナリーを先に復活
-                if p.dormant.get(name, 0) > 0:
-                    p.dormant[name] -= 1
-                earn = p.active("ブドウ園") * cd.income
-                if earn > 0:
-                    p.coins += earn
-                    p.dormant[name] = p.dormant.get(name, 0) + 1  # 休業
+                # JS 本体はカード単位でワイナリーを順に処理し、
+                # 各カードごとに「休業中1枚を復活 -> 発動 -> このカードを休業」
+                # の挙動になる。集約表現では、発動可能なワイナリーが1枚でもあれば
+                # 総枚数ぶん発動し、最終的に少なくとも1枚は休業に残る形で近似する。
+                if p.active(name) > 0:
+                    activations = p.cards.get(name, 0)
+                    earn = p.active("ブドウ園") * cd.income * activations
+                    if earn > 0:
+                        p.coins += earn
+                        p.dormant[name] = max(p.dormant.get(name, 0), 1)
                 continue
 
             earn = self._calc_green(cd, p, count)
@@ -649,4 +670,5 @@ class MachikoroEnv:
         env.__dict__.update({k: v for k, v in self.__dict__.items()
                               if k not in ("players",)})
         env.players = [pl.clone() for pl in self.players]
+        env.shop_stock = dict(self.shop_stock)
         return env

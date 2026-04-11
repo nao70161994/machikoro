@@ -49,7 +49,7 @@ mkdir -p "$OUT_DIR"
 
 echo "出力先: $OUT_DIR"
 
-exec python3 -m scripts.rl.train \
+exec env PYTHONUNBUFFERED=1 python3 -m scripts.rl.train \
     --games 1000 \
     --eval-every 500 \
     --hidden 128 \

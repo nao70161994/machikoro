@@ -73,6 +73,20 @@ function summarizeEvaluationEntry(entry) {
             if (match.winnerDifficulty === 'rl') rlSecondWins++;
         }
     }
+    const buildStats = Array.isArray(entry.result.buildStats) ? entry.result.buildStats : [];
+    const rlBuildStats = buildStats.length > 0 ? buildStats[0] : null;
+    const topCards = rlBuildStats
+        ? Object.entries(rlBuildStats.cards || {})
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
+            .slice(0, 5)
+            .map(([name, count]) => ({ name, count }))
+        : [];
+    const topLandmarks = rlBuildStats
+        ? Object.entries(rlBuildStats.landmarks || {})
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
+            .slice(0, 5)
+            .map(([name, count]) => ({ name, count }))
+        : [];
     return {
         opponent: entry.opponent,
         games,
@@ -87,6 +101,13 @@ function summarizeEvaluationEntry(entry) {
             first: rlFirstGames > 0 ? rlFirstWins / rlFirstGames : 0,
             second: rlSecondGames > 0 ? rlSecondWins / rlSecondGames : 0,
         },
+        rlBuildStats: rlBuildStats ? {
+            total: rlBuildStats.total || 0,
+            pass: rlBuildStats.pass || 0,
+            passRate: (rlBuildStats.total || 0) > 0 ? (rlBuildStats.pass || 0) / rlBuildStats.total : 0,
+            topCards,
+            topLandmarks,
+        } : null,
         modelInfo: entry.modelInfo || null,
     };
 }
@@ -104,6 +125,14 @@ function printEvaluation(entries, options = {}) {
             `seat(first=${(summary.rlSeatWinRates.first * 100).toFixed(1)}%,second=${(summary.rlSeatWinRates.second * 100).toFixed(1)}%) ` +
             `avgTurns=${summary.averageTurns.toFixed(1)} exhausted=${summary.exhausted}`
         );
+        if (summary.rlBuildStats) {
+            const topCards = summary.rlBuildStats.topCards.map(entry => `${entry.name}x${entry.count}`).join(', ') || 'none';
+            const topLandmarks = summary.rlBuildStats.topLandmarks.map(entry => `${entry.name}x${entry.count}`).join(', ') || 'none';
+            console.log(
+                `  rl-build: total=${summary.rlBuildStats.total} pass=${summary.rlBuildStats.pass}` +
+                `(${(summary.rlBuildStats.passRate * 100).toFixed(1)}%) cards=[${topCards}] landmarks=[${topLandmarks}]`
+            );
+        }
     }
 }
 

@@ -590,6 +590,7 @@ class GameManager {
         const itCard = current.cards.find(c => c.effect === CARD_EFFECTS.ITSTARTUP && !current.isDormant(c));
         if (itCard) {
             this.pendingIT = true;
+            this.phase = GAME_PHASES.PENDING;
             this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー：1コイン積立しますか？（現在${current.itVentureCoins}コイン積立中）`);
             return;
         }

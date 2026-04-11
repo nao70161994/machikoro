@@ -78,6 +78,8 @@ def _serialize_env_setup(env):
         "pendingMover": env.pending_mover,
         "pendingRenovation": env.pending_reno,
         "pendingIT": env.pending_it,
+        "usedReroll": env.used_reroll,
+        "shopStock": {name: int(env.shop_stock[name]) for name in CARD_NAMES if env.shop_stock.get(name, 0) != 6},
         "players": [
             {
                 "coins": player.coins,

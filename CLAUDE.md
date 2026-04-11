@@ -15,6 +15,7 @@
 - このリポジトリは Android + Termux から編集されることが多いです。
 - 長いシェルコマンドは端末の折り返しで壊れやすいので、使える場合は既存のラッパースクリプトを優先してください。
 - RL の baseline 学習は、フルコマンドを打ち直さず `sh scripts/rl/run-baseline.sh` を使ってください。既定値は Termux 向けにかなり軽量化され、初期評価スキップ、`max_steps` 制限、進捗表示も有効です。出力は `run-label` ごとの別ディレクトリへ分かれます。
+- 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使ってください。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、best checkpoint 復元が有効です。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
 ## 次に読む文書
@@ -49,6 +50,7 @@
 - 全自動テスト: `npm test`
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`
+- 模倣なし RL カリキュラム学習: `sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label <label>`
 - RL と JS CPU の比較: `npm run eval-rl-vs-js -- --model <path>`
 - RL metrics 集計: `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`
 
@@ -64,3 +66,4 @@
 - RL は現在 `expert` とは別ラインです。
 - 製品方針としては、`expert` を直接置き換えるのではなく、新しい CPU として導入する前提です。
 - checkpoint の品質判断は `vs_random` だけでなく、JS CPU 評価と summary artefact を主に見てください。
+- `normal/strong/expert` 相手の学習は Python heuristic ではなく JS `CPU.js` oracle を優先してください。詳細な報酬設計、相手比率、`js=...` ログの読み方は [scripts/rl/README.md](./scripts/rl/README.md) を参照してください。

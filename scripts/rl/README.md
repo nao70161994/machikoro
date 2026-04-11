@@ -15,8 +15,12 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `encode.py` | 局面ベクトル化・行動マスク生成 |
 | `network.py` | numpy 製 MLP（Layer + PolicyValueNet） |
 | `agent.py` | GAE Actor-Critic エージェント |
-| `train.py` | 学習ループ（vs ランダム + opponent pool） |
+| `train.py` | 学習ループ（JS oracle / self / pool / 報酬設計 / metrics 出力） |
 | `heuristic.py` | 評価用ヒューリスティックエージェント（4段階） |
+| `js_cpu_action_oracle.js` | JS 側 `CPU.js` を Node から呼ぶ行動 oracle |
+| `js_cpu_oracle.py` | Python 学習ループから JS CPU oracle を使うための subprocess wrapper |
+| `run-js-oracle-baseline.sh` | JS oracle CPU を使う baseline ラッパー |
+| `run-js-oracle-terminal-shaped.sh` | 模倣なし、終局報酬調整、自己対戦込みの現行RL実験ラッパー |
 
 ---
 
@@ -86,13 +90,20 @@ ACT_PASS          = 1579
 
 ### 対戦相手構成
 
-| 割合 | 相手 |
-|------|------|
-| 70% | ランダムエージェント |
-| 30% | 過去モデルスナップショット（opponent pool） |
+`train.py` の `--train-opponents` は `random/self/pool/weak/normal/strong/expert` の重み指定を受け付ける。
 
-opponent pool: 5000 ゲームごとに現在モデルを deepcopy して最大 5 個保持。
-初期は pool が空なので 100% vs ランダムから始まり、徐々に過去モデルが混ざる。
+| 相手 | 内容 |
+|------|------|
+| `random` | Python 環境の合法手ランダム |
+| `weak` | 弱い固定CPU |
+| `normal` / `strong` / `expert` | 既定では Python heuristic。`--cpu-opponent-impl js-oracle` で JS `CPU.js` 実装を使う |
+| `self` | 現在モデルの greedy 方策を相手として使う片側自己対戦 |
+| `pool` | 過去モデル snapshot の greedy 方策を相手として使う |
+
+`self` は両側学習ではない。学習バッファに入るのはエージェント席の行動だけで、相手席の self 行動は環境を進めるために使う。
+
+opponent pool は `--pool-update-every` ごとに現在モデルを deepcopy し、`--pool-max-size` 個まで保持する。
+短い実験では既定の `5000` だと pool が効かないため、現行カリキュラムでは `250` を使う。
 
 **エージェント席はゲームごとにランダム化**（先手/後手を均等に経験）。
 
@@ -127,13 +138,39 @@ Adam（lr=3e-4）でパラメータを更新。
 
 ### 報酬設計
 
+`train.py` は中間報酬と終局報酬を別々に設定できる。
+
+中間報酬:
+
 ```
-勝利:              +1.0  (終端)
-敗北 or 引き分け:  -1.0  (終端)
-ランドマーク建設:  +0.2  (各建設時)
+reward =
+  reward_coin         * 自分のコイン増加
+- reward_opp_coin     * 相手のコイン増加
++ reward_asset        * 自分の盤面資産増加
+- reward_opp_asset    * 相手の盤面資産増加
++ reward_landmark     * 自分のランドマーク建設数増加
+- reward_opp_landmark * 相手のランドマーク建設数増加
 ```
 
-引き分け（タイムアウト時）は敗北と同等に扱う。
+盤面資産は `カード購入額合計 + 建設済みランドマーク額合計`。手元コインは含めない。
+手元コインは `reward_coin` / `terminal_coin_diff` で別評価する。
+
+改装屋で自分のランドマークを破壊した場合、破壊収入による正の `coin/asset` 中間報酬は無効化する。
+これは安いランドマークを破壊して再建設する報酬ループを避けるため。
+
+終局報酬:
+
+```
+terminal =
+  勝敗報酬
++ terminal_landmark_diff       * 建設済みランドマーク数差
++ terminal_landmark_value_diff * 建設済みランドマーク総コスト差
++ terminal_asset_diff          * 盤面資産差
++ terminal_coin_diff           * 手元コイン差
+```
+
+`terminal_asset_diff` と `terminal_coin_diff` の差分は `--terminal-diff-clip` でクリップできる。
+現行の terminal-shaped 実験では中間報酬をすべて0にし、終局時だけ勝敗・ランドマーク総コスト差・盤面資産差・手元コイン差で調整する。
 
 ### 方策勾配の action mask 対応
 
@@ -155,6 +192,16 @@ python3 -m scripts.rl.train --games 30000 --eval-every 1000 --load
 
 # baseline 用ラッパースクリプト（Termux での実行向け）
 sh scripts/rl/run-baseline.sh
+
+# JS側 CPU oracle を学習相手に使う baseline
+sh scripts/rl/run-js-oracle-baseline.sh --run-label js-oracle-baseline
+
+# 現行の模倣なしRL実験: 中間報酬なし、終局報酬調整、self/pool込み
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-curriculum
+
+# hidden サイズ比較
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128 --hidden 128
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h256 --hidden 256
 
 # baseline の既定値を保ったままゲーム数だけ短くする
 sh scripts/rl/run-baseline.sh --games 5000
@@ -197,7 +244,12 @@ python3 -m scripts.rl.train \
   --hidden 128        # 隠れ層サイズ（軽量 baseline の既定値）
   --lr 3e-4           # 学習率
   --epsilon 0.20      # 初期探索率（線形減衰 → 0.02 まで）
-  --load              # 既存モデルを読み込んで継続学習
+  --load              # models/rl_model/model.npz を読み込んで継続学習
+  --cpu-opponent-impl js-oracle  # normal/strong/expert 相手に JS CPU oracle を使う
+  --train-opponents random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1  # 学習相手比率
+  --pool-update-every 250  # pool snapshot 追加間隔
+  --pool-max-size 4  # pool snapshot 保持数
+  --restore-best-at-end  # 学習終了時に best checkpoint を通常モデルへ復元
   --js-eval-games 1  # JS側 CPU 相手の定期評価ゲーム数
   --js-eval-opponents strong  # JS評価対象 difficulty
   --initial-eval-games 0  # 学習開始前の vs ランダム評価をスキップ
@@ -224,6 +276,8 @@ python3 -m scripts.rl.train \
 > **注意**: `--hidden` の値が保存済みモデルと異なる場合は読み込みエラーになる。
 > 必ず保存時と同じ値を指定すること。
 
+> **注意**: `--load` が読むのは run 別 best ではなく `models/rl_model/model.npz`。特定 run の best から再開したい場合は、その `.npz` を `models/rl_model/model.npz` へ手動コピーしてから、同じ `--hidden` で `--load` する。
+
 > **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず短時間で動作確認できて進捗が見えることを優先して `1000 / 500 / 1 / strong`、さらに初期評価スキップ、軽量評価回数、`max_steps=1200` にしている。
 
 ### 学習ログの見方
@@ -244,16 +298,35 @@ python3 -m scripts.rl.train \
 | `vl` | 0.05〜0.1 → 低下 | 価値関数の精度 |
 | `adv` | 0 前後に収束 | 正規化前の平均優位性（価値関数のバイアス） |
 | `pl` | 0.1〜0.3 | 方策損失（0 に張り付く = 学習停止の兆候） |
-| `js=...` | 比較用 | JS 側 `strong/expert` などに対する RL 勝率。`f/s/d` は RL 先手勝率 / 後手勝率 / 引き分け率、`/@` は `exhausted` 件数 / 平均ターン |
+| `js=...` | 比較用 | JS 側 `weak/normal/strong/expert` などに対する RL 勝率。`f/s/d` は RL 先手勝率 / 後手勝率 / 引き分け率、`/@` は `exhausted` 件数 / 平均ターン |
+
+例:
+
+```
+js=weak=25%(f50%/s0%/d0%)/0@122.5 normal=0%(f0%/s0%/d0%)/0@72.0 strong=25%(f0%/s50%/d0%)/0@68.5
+```
+
+- `weak=25%`: `weak` 相手の総合勝率。`--js-eval-games 4` なら4戦1勝。
+- `f50%`: RL が先手のときの勝率。
+- `s0%`: RL が後手のときの勝率。
+- `d0%`: 引き分け率。
+- `/0`: `exhausted` 件数。
+- `@122.5`: 平均ターン数。
+
+`--js-eval-games 4` は1勝で25%動くため、best 判定や傾向確認用の軽量評価と考える。実力確認は `scripts/eval-rl-vs-js.js --games 20` 以上で再評価する。
 
 ### JS CPU との比較評価
 
-学習済みモデルを browser 用 JSON に export して、JS 実装の `weak/normal/strong/expert` と 2 人戦で比較できる。現在の baseline では、まず `strong` を主指標として見る前提にしている。
+学習済みモデルを browser 用 JSON に export して、JS 実装の `weak/normal/strong/expert` と 2 人戦で比較できる。
+現行の模倣なしRL実験では、まず `weak` に安定して勝てるかを見てから `normal` / `strong` へ進める。
 
 ```bash
 npm run export-rl-model
-npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 --opponents strong,expert
+npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 --opponents weak,normal,strong
 ```
+
+`--cpu-opponent-impl js-oracle` は、Python 学習環境の `normal/strong/expert` 相手に JS 側 `CPU.js` を oracle として使う。
+これは Python heuristic と JS CPU のズレを避けるための現行推奨設定。
 
 ### metrics CSV の集計
 
@@ -281,6 +354,23 @@ npm run summarize-rl-metrics -- \
 `scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。既定値は `--games 1000 --eval-every 500 --hidden 128 --js-eval-games 1 --js-eval-opponents strong` に加えて、初期評価はスキップし、定期評価・最終評価のゲーム数もかなり軽くしている。さらに `--max-steps 1200 --eval-max-steps 1200` で1試合の長さも抑え、`--progress-every 50` で進捗表示を出す。出力先は既定で `models/rl_model/runs/<run-label>/` になり、`--run-label` を変えれば衝突せず並列に回せる。例えば `sh scripts/rl/run-baseline.sh --games 5000` でゲーム数だけ上書きできる。
 `--best-checkpoint` を付けると、各評価時点で最良だったモデルを `.npz` と `.browser.json`、さらに参照用の `.meta.json` で別保存する。判定は JS 評価があればその重み付き score、無ければ `expert/strong/normal/rnd` の重み付き代替スコアを使う。`--summary-output` も併用していれば、学習終了後に `meta.json` へ `bestRuns` / `bestConfigs` の抜粋に加えて、この run 自身に対応する `summaryRunContext` も追記される。`summaryRunContext` には `runIndexEntry` として run 全体順位、`configIndexEntry` として設定全体順位、`combinedTop` に入っていればその順位と entry も入る。`meta.json` には `artifacts` として `checkpointPath` / `browserCheckpointPath` / `metaPath` / `summaryPath` / `runIndexCsvPath` / `configIndexCsvPath` もまとまって入る。
 集計結果には run 別だけでなく `hidden/lr` ごとの best config も含まれる。
+
+### 現行の実験方針（2026-04）
+
+- RL は `expert` 置き換えではなく、新CPUとして導入する前提。
+- Python heuristic と JS `CPU.js` のズレが大きかったため、学習相手の `normal/strong/expert` は `--cpu-opponent-impl js-oracle` で JS oracle を使う。
+- 模倣学習は `strong` 風の方策を早く作れるが、模倣なしRLの学習可能性を検証するため、`run-js-oracle-terminal-shaped.sh` では `--imitation-games 0` と `--imitation-refresh-games 0` にしている。
+- 現行カリキュラムは `random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1`。`strong` は学習相手から一旦外し、評価対象としてだけ残す。
+- `self` は現在モデルを相手にする片側自己対戦。両側の行動を同時に学習する方式ではない。
+- `pool` は過去モデル snapshot との対戦。短期実験でも効くよう `--pool-update-every 250 --pool-max-size 4` を使う。
+- `--restore-best-at-end` で、学習終了時に途中 best checkpoint を `models/rl_model/model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
+- `hidden=128` と `hidden=256` は比較対象。`hidden=256` は表現力が高いが Termux では遅くなる。
+
+これまでの観察:
+
+- `strong` 模倣ありの best は一時的に `weak 80% / normal 65% / strong 25%` 程度まで到達した。
+- 模倣なしで行動直後のコイン/資産中間報酬を入れる方式は、報酬ハックや方策崩れが疑われ、安定しなかった。
+- 終局時だけ勝敗・ランドマーク建設済コスト差・盤面資産差・手元コイン差を加える方式へ移行中。
 
 ---
 

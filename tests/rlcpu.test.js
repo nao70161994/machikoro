@@ -7,8 +7,18 @@ function loadRLRuntime() {
     const context = { console, Math: Object.create(Math) };
     vm.createContext(context);
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/RLCPU.js']);
-    vm.runInContext('this.RLCPU = RLCPU; this.GameManager = GameManager; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES; this.createCardByName = createCardByName;', context);
+    vm.runInContext('this.RLCPU = RLCPU; this.GameManager = GameManager; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES; this.createCardByName = createCardByName; this.CARDS = CARDS;', context);
     return context;
+}
+
+function createDefaultShopStock(context) {
+    const stock = {};
+    for (const card of context.CARDS) {
+        stock[card.name] = 6;
+    }
+    stock['麦畑'] -= 2;
+    stock['パン屋'] -= 2;
+    return stock;
 }
 
 function buildTestModel() {
@@ -180,6 +190,12 @@ function loadPythonTraceFixture(scenario) {
 function buildGameFromFixtureSetup(context, setup) {
     const { GameManager, createCardByName } = context;
     const game = new GameManager(2);
+    game.__shopStock = createDefaultShopStock(context);
+    if (setup.shopStock) {
+        for (const [name, count] of Object.entries(setup.shopStock)) {
+            game.__shopStock[name] = count;
+        }
+    }
     game.currentPlayerIndex = setup.current;
     game.phase = setup.phase;
     game.lastDiceResult = setup.lastDice;
@@ -222,6 +238,7 @@ function buildGameFromFixtureSetup(context, setup) {
 
 function serializeGameSetup(game, context) {
     const landmarkOrder = ['駅', 'ショッピングモール', '遊園地', '電波塔', '港', '空港'];
+    const shopStock = game.__shopStock ? Object.assign({}, game.__shopStock) : createDefaultShopStock(context);
     return {
         current: game.currentPlayerIndex,
         phase: game.phase,
@@ -235,6 +252,7 @@ function serializeGameSetup(game, context) {
         pendingMover: game.pendingMover,
         pendingRenovation: game.pendingRenovation,
         pendingIT: game.pendingIT,
+        shopStock: Object.fromEntries(Object.entries(shopStock).filter(([, count]) => count !== 6)),
         players: game.players.map(player => {
             const cards = {};
             const dormant = {};
@@ -293,7 +311,11 @@ function applyRlActionToGame(context, game, action) {
         return;
     }
     if (action >= RLCPU.ACTIONS.BUY_CARD_BASE && action < RLCPU.ACTIONS.BUY_CARD_BASE + CARDS.length) {
-        game.buildCard(CARDS[action - RLCPU.ACTIONS.BUY_CARD_BASE]);
+        const card = CARDS[action - RLCPU.ACTIONS.BUY_CARD_BASE];
+        game.buildCard(card);
+        if (game.__shopStock && Number.isFinite(game.__shopStock[card.name])) {
+            game.__shopStock[card.name] = Math.max(0, game.__shopStock[card.name] - 1);
+        }
         game.nextTurn();
         return;
     }
@@ -422,6 +444,33 @@ runTest('RLCPU: actionMask は駅あり selectDice で2個振りを許可する'
     const mask = cpu.actionMask(game);
     assert.strictEqual(mask[RLCPU.ACTIONS.ROLL1], 1);
     assert.strictEqual(mask[RLCPU.ACTIONS.ROLL2], 1);
+});
+
+runTest('RLCPU: actionMask は駅あり roll でもまず1個振りのみ許可する', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, LANDMARK_NAMES, GAME_PHASES } = context;
+    const cpu = new RLCPU(buildParityModel(context));
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.ROLL,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 0,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        players: [
+            { coins: 3, cards: { '麦畑': 1, 'パン屋': 1 }, dormant: {}, landmarks: { [LANDMARK_NAMES.STATION]: true }, itVentureCoins: 0 },
+            { coins: 3, cards: { '麦畑': 1, 'パン屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+    const mask = cpu.actionMask(game);
+    assert.strictEqual(mask[RLCPU.ACTIONS.ROLL1], 1);
+    assert.strictEqual(mask[RLCPU.ACTIONS.ROLL2], 0);
 });
 
 runTest('RLCPU: 初期局面の encodeGameState は Python 側 encode_state と一致する', () => {

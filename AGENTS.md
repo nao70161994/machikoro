@@ -100,6 +100,8 @@ RL / 学習系スクリプト:
 - `scripts/train-expert-crowd.js` は現在の軽量 tuning 補助で、`expert vs normal,normal,normal` を前提にしています。
 - RL 学習は現在 `expert` とは別ラインで、置き換えではなく新 CPU として導入する前提です。
 - RL の baseline 学習は、Termux での長いコマンド折り返し事故を避けるため `sh scripts/rl/run-baseline.sh` を使ってください。既定値は `1000 / 500 / 1 / strong` に加えて `hidden=128`、初期評価スキップ、`max_steps=1200`、進捗表示を含む軽量 sanity run 向けです。出力先は `run-label` ごとに分かれるので、別ラベルなら並列実行しても衝突しません。
+- 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使います。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、`restore-best-at-end` が有効です。詳しい報酬設計と相手比率は `scripts/rl/README.md` を確認してください。
+- RL 学習相手の `normal/strong/expert` は、Python heuristic ではなく JS `CPU.js` oracle を使う設定を優先してください。Python heuristic は JS CPU とズレることがあるため、現在は主に比較・fallback 用です。
 - RL checkpoint の品質は `vs_random` だけでなく、`scripts/eval-rl-vs-js.js` と summary artifact を主に見て判断してください。
 - アプリレベルの Socket.IO 失敗通知には専用の `appError` event を使ってください。transport レベルの `error` に混ぜないでください。
 - Service Worker / version mismatch の挙動は製品仕様の一部です。キャッシュ資産、起動フロー、オンライン画面を触る場合は、update banner と reload 挙動も考慮してください。

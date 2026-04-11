@@ -35,12 +35,13 @@ runTest('rl train: 学習相手の重み指定を解析できる', () => {
     const output = runPython(`
 import json
 from scripts.rl.train import _parse_training_opponents
-print(json.dumps(_parse_training_opponents("random=0.5,strong=0.3,pool=0.2,invalid=1"), ensure_ascii=False))
+print(json.dumps(_parse_training_opponents("random=0.5,strong=0.3,self=0.1,pool=0.2,invalid=1"), ensure_ascii=False))
 `);
     const entries = JSON.parse(output);
     assert.deepStrictEqual(entries, [
         { kind: 'random', weight: 0.5 },
         { kind: 'strong', weight: 0.3 },
+        { kind: 'self', weight: 0.1 },
         { kind: 'pool', weight: 0.2 },
     ]);
 });
@@ -55,6 +56,214 @@ print(json.dumps(_choose_training_opponent([{"kind":"pool","weight":1.0}], []), 
 `);
     const entry = JSON.parse(output);
     assert.deepStrictEqual(entry, { kind: 'random' });
+});
+
+runTest('rl train: self 相手には現在 agent を渡せる', () => {
+    const output = runPython(`
+import json
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import _choose_training_opponent
+agent = RLAgent(hidden=16, lr=0.001)
+entry = _choose_training_opponent([{"kind":"self","weight":1.0}], [], current_agent=agent)
+print(entry["kind"])
+print(entry["agent"] is agent)
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'self');
+    assert.strictEqual(lines[1], 'True');
+});
+
+runTest('rl train: build stats を集計して整形できる', () => {
+    const output = runPython(`
+import json
+from scripts.rl.train import _empty_build_stats, _record_build_action, _finalize_build_stats, _format_build_stats
+from scripts.rl.game_env import ACT_PASS, ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE
+stats = _empty_build_stats()
+_record_build_action(stats, ACT_PASS)
+_record_build_action(stats, ACT_BUY_CARD_BASE)
+_record_build_action(stats, ACT_BUY_CARD_BASE)
+_record_build_action(stats, ACT_BUY_LM_BASE)
+finalized = _finalize_build_stats(stats)
+print(json.dumps(finalized, ensure_ascii=False))
+print(_format_build_stats("rnd", finalized))
+`);
+    const lines = output.split('\n');
+    const stats = JSON.parse(lines[0]);
+    assert.strictEqual(stats.total, 4);
+    assert.strictEqual(stats.pass, 1);
+    assert.strictEqual(stats.passRate, 0.25);
+    assert.strictEqual(stats.topCards[0].count, 2);
+    assert.ok(lines[1].includes('rnd=pass25%'));
+});
+
+runTest('rl train: 評価 stats は相手側 build 集計も返せる', () => {
+    const output = runPython(`
+import json
+from scripts.rl.train import eval_vs_random
+from scripts.rl.agent import RLAgent
+agent = RLAgent(hidden=16, lr=0.001)
+result = eval_vs_random(agent, 0, return_stats=True)
+print(json.dumps(sorted(result.keys()), ensure_ascii=False))
+`);
+    const keys = JSON.parse(output);
+    assert.deepStrictEqual(keys, ['buildStats', 'opponentBuildStats', 'winRate']);
+});
+
+runTest('rl train: コインと資産の中間報酬を計算できる', () => {
+    const output = runPython(`
+import copy
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.train import _compute_shaped_reward
+before = MachikoroEnv()
+after = copy.deepcopy(before)
+after.players[0].coins += 3
+after.players[1].coins -= 2
+after.players[0].cards["鉱山"] += 1
+config = {
+    "coin": 0.01,
+    "opp_coin": 0.008,
+    "asset": 0.005,
+    "opp_asset": 0.004,
+    "landmark": 0.2,
+    "opp_landmark": 0.15,
+    "clip": 0.3,
+}
+print(round(_compute_shaped_reward(before, after, 0, config), 6))
+`);
+    assert.strictEqual(output, '0.076');
+});
+
+runTest('rl train: 中間報酬は指定値でクリップできる', () => {
+    const output = runPython(`
+import copy
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.train import _compute_shaped_reward
+before = MachikoroEnv()
+after = copy.deepcopy(before)
+after.players[0].coins += 100
+print(_compute_shaped_reward(before, after, 0, {
+    "coin": 0.01,
+    "opp_coin": 0.0,
+    "asset": 0.0,
+    "opp_asset": 0.0,
+    "landmark": 0.0,
+    "opp_landmark": 0.0,
+    "clip": 0.3,
+}))
+`);
+    assert.strictEqual(output, '0.3');
+});
+
+runTest('rl train: 改装屋のランドマーク破壊収入は正の中間報酬にしない', () => {
+    const output = runPython(`
+import copy
+from scripts.rl.game_env import MachikoroEnv, ACT_RENO_BASE
+from scripts.rl.cards import LANDMARK_ORDER
+from scripts.rl.train import _compute_shaped_reward
+before = MachikoroEnv()
+before.players[0].landmarks["港"] = True
+before.players[0].coins = 0
+after = copy.deepcopy(before)
+after.players[0].landmarks["港"] = False
+after.players[0].coins = 8
+config = {
+    "coin": 0.01,
+    "opp_coin": 0.0,
+    "asset": 0.005,
+    "opp_asset": 0.0,
+    "landmark": 0.2,
+    "opp_landmark": 0.0,
+    "clip": 0.3,
+}
+action = ACT_RENO_BASE + LANDMARK_ORDER.index("港")
+print(round(_compute_shaped_reward(before, after, 0, config, action=action), 6))
+`);
+    assert.strictEqual(output, '-0.21');
+});
+
+runTest('rl train: 終局報酬にランドマーク差と資産差を加算できる', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.train import _compute_terminal_reward
+env = MachikoroEnv()
+env.winner = 0
+env.players[0].coins = 20
+env.players[1].coins = 0
+env.players[0].landmarks["駅"] = True
+env.players[0].landmarks["港"] = True
+print(round(_compute_terminal_reward(env, 0, {
+    "win": 1.0,
+    "loss": -1.0,
+    "draw": -0.2,
+    "landmark_diff": 0.1,
+    "asset_diff": 0.005,
+    "coin_diff": 0.002,
+    "diff_clip": 30,
+}), 6))
+`);
+    assert.strictEqual(output, '1.27');
+});
+
+runTest('rl train: 終局報酬にランドマーク建設済コスト差を加算できる', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.train import _compute_terminal_reward
+env = MachikoroEnv()
+env.winner = 0
+env.players[0].landmarks["空港"] = True
+env.players[1].landmarks["港"] = True
+print(round(_compute_terminal_reward(env, 0, {
+    "win": 1.0,
+    "loss": -1.0,
+    "draw": -0.2,
+    "landmark_diff": 0.0,
+    "landmark_value_diff": 0.008,
+    "asset_diff": 0.0,
+    "coin_diff": 0.0,
+    "diff_clip": 30,
+}), 6))
+`);
+    assert.strictEqual(output, '1.224');
+});
+
+runTest('rl train: 模倣学習 step は教師行動で通常 policy を更新する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import encode_state, action_mask
+from scripts.rl.game_env import MachikoroEnv, PHASE_BUILD, ACT_BUY_LM_BASE
+from scripts.rl.train import _train_imitation_step
+agent = RLAgent(hidden=16, lr=0.001)
+env = MachikoroEnv()
+env.phase = PHASE_BUILD
+env.players[env.current].coins = 4
+state = encode_state(env)
+mask = action_mask(env)
+result = _train_imitation_step(agent, state, mask, ACT_BUY_LM_BASE)
+print(json.dumps(result))
+`);
+    const result = JSON.parse(output);
+    assert.strictEqual(result.trained, true);
+    assert.ok(result.loss > 0);
+});
+
+runTest('rl train: 模倣事前学習は教師行動サンプルを収集できる', () => {
+    const output = runPython(`
+import json
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import run_imitation_pretraining
+random.seed(1)
+np.random.seed(1)
+agent = RLAgent(hidden=16, lr=0.001)
+stats = run_imitation_pretraining(agent, games=1, opponents=["weak"], max_steps=5)
+print(json.dumps(stats))
+`);
+    const stats = JSON.parse(output);
+    assert.ok(stats.examples > 0);
+    assert.ok(stats.trained >= 0);
+    assert.strictEqual(stats.opponents, 'weak');
 });
 
 runTest('rl train: masked probs はゼロ和でも有効手に一様分布を返す', () => {

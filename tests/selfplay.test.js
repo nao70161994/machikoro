@@ -48,6 +48,8 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.strictEqual(result.matchLog[0].expertPreset, 'economy');
     assert.strictEqual(result.matchLog[0].finalState.length, 2);
     assert.ok(Array.isArray(result.matchLog[0].finalState[0].topCards));
+    assert.strictEqual(result.buildStats.length, 2);
+    assert.ok(typeof result.buildStats[0].total === 'number');
 });
 
 runTest('runDifficultyLadder は難易度差確認向けの対戦セットを返す', () => {

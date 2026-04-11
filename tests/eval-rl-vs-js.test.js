@@ -117,6 +117,10 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
                 { lineup: ['rl', 'expert'], winnerDifficulty: 'expert' },
                 { lineup: ['expert', 'rl'], winnerDifficulty: 'rl' },
             ],
+            buildStats: [
+                { total: 5, pass: 2, cards: { '麦畑': 2, '森林': 1 }, landmarks: { '駅': 1 } },
+                { total: 4, pass: 1, cards: { 'パン屋': 2 }, landmarks: {} },
+            ],
         },
     });
     assert.strictEqual(summary.opponent, 'expert');
@@ -127,6 +131,11 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
     assert.strictEqual(summary.drawRate, 0.1);
     assert.strictEqual(summary.rlSeatWinRates.first, 0.5);
     assert.strictEqual(summary.rlSeatWinRates.second, 1);
+    assert.strictEqual(summary.rlBuildStats.total, 5);
+    assert.strictEqual(summary.rlBuildStats.pass, 2);
+    assert.strictEqual(summary.rlBuildStats.passRate, 0.4);
+    assert.strictEqual(summary.rlBuildStats.topCards[0].name, '麦畑');
+    assert.strictEqual(summary.rlBuildStats.topLandmarks[0].name, '駅');
 });
 
 runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
@@ -148,12 +157,18 @@ runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
                     { lineup: ['rl', 'strong'], winnerDifficulty: 'rl' },
                     { lineup: ['strong', 'rl'], winnerDifficulty: 'rl' },
                 ],
+                buildStats: [
+                    { total: 4, pass: 1, cards: { '麦畑': 2 }, landmarks: { '駅': 1 } },
+                    { total: 4, pass: 2, cards: {}, landmarks: {} },
+                ],
             },
         }], { format: 'text' });
     } finally {
         console.log = realLog;
     }
-    assert.strictEqual(lines.length, 1);
+    assert.strictEqual(lines.length, 2);
     assert.ok(lines[0].includes('rl vs strong'));
     assert.ok(lines[0].includes('seat(first=100.0%,second=50.0%)'));
+    assert.ok(lines[1].includes('rl-build: total=4 pass=1'));
+    assert.ok(lines[1].includes('麦畑x2'));
 });

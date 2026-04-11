@@ -175,9 +175,31 @@ class RLCPU {
         return masked;
     }
 
+    _argmaxMaskedLogits(logits, mask) {
+        let bestAction = -1;
+        let bestScore = -Infinity;
+        for (let i = 0; i < logits.length; i++) {
+            if (!(mask[i] > 0)) continue;
+            if (bestAction < 0 || logits[i] > bestScore) {
+                bestAction = i;
+                bestScore = logits[i];
+            }
+        }
+        return bestAction;
+    }
+
     chooseAction(state, mask) {
-        const { policy, value } = this.forward(state);
+        const hidden = this._sharedForward(state);
+        const policyLogits = this._matVec(this.model.layers.policyHead, hidden);
+        const policy = this._softmax(policyLogits);
+        const valueRaw = this._matVec(this.model.layers.valueHead, hidden);
+        const value = this._tanh(valueRaw[0]);
         const masked = this.maskPolicy(policy, mask);
+        const total = masked.reduce((sum, score) => sum + score, 0);
+        if (total <= 0) {
+            const fallbackAction = this._argmaxMaskedLogits(policyLogits, mask);
+            return { action: fallbackAction, confidence: fallbackAction >= 0 ? 1 : 0, value };
+        }
         let bestAction = -1;
         let bestScore = -1;
         for (let i = 0; i < masked.length; i++) {
@@ -191,7 +213,13 @@ class RLCPU {
 
     chooseBusinessAction(state, mask) {
         const actionConstants = RLCPU.ACTIONS;
-        const { give, take, value } = this.forwardBusiness(state);
+        const hidden = this._sharedForward(state);
+        const giveLogits = this._matVec(this.model.layers.businessGiveHead, hidden);
+        const takeLogits = this._matVec(this.model.layers.businessTakeHead, hidden);
+        const give = this._softmax(giveLogits);
+        const take = this._softmax(takeLogits);
+        const valueRaw = this._matVec(this.model.layers.valueHead, hidden);
+        const value = this._tanh(valueRaw[0]);
         const jointMask = mask.slice(actionConstants.BC_BASE, actionConstants.BC_BASE + actionConstants.BC_SIZE);
         const giveMask = new Array(this.numCards).fill(0);
         const takeMask = new Array(this.numCards).fill(0);
@@ -206,6 +234,12 @@ class RLCPU {
         }
         const maskedGive = this.maskPolicy(give, giveMask);
         const maskedTake = this.maskPolicy(take, takeMask);
+        const giveTotal = maskedGive.reduce((sum, score) => sum + score, 0);
+        const takeTotal = maskedTake.reduce((sum, score) => sum + score, 0);
+        if (giveTotal <= 0 || takeTotal <= 0) {
+            const fallbackAction = this._argmaxMaskedLogits(mask.map((enabled, index) => enabled > 0 ? (giveLogits[Math.floor((index - actionConstants.BC_BASE) / this.numCards)] + takeLogits[(index - actionConstants.BC_BASE) % this.numCards]) : -Infinity), mask);
+            return { action: fallbackAction, confidence: fallbackAction >= 0 ? 1 : 0, value };
+        }
         let bestAction = -1;
         let bestScore = -1;
         for (let giveIndex = 0; giveIndex < this.numCards; giveIndex++) {
@@ -286,7 +320,6 @@ class RLCPU {
 
         if (game.phase === GAME_PHASES.ROLL) {
             mask[actionConstants.ROLL1] = 1;
-            if (current.landmarks[LANDMARK_NAMES.STATION]) mask[actionConstants.ROLL2] = 1;
             return mask;
         }
 

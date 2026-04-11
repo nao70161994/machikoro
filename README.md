@@ -171,13 +171,20 @@ baseline 学習の開始:
 sh scripts/rl/run-baseline.sh
 ```
 
+現行の模倣なしRLカリキュラム実験:
+
+```bash
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-curriculum
+```
+
 `npm` 経由でも実行できます。
 
 ```bash
 npm run train-rl:baseline
 ```
 
-この baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、`--js-eval-opponents strong`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
+baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
+`run-js-oracle-terminal-shaped.sh` は JS CPU oracle、終局報酬調整、`self` / `pool` を含む模倣なしRL実験用です。
 
 baseline 学習で生成される主な成果物:
 
@@ -227,6 +234,7 @@ RL スクリプト / モデル:
 
 - `scripts/rl/train.py`: RL 学習ループ
 - `scripts/rl/run-baseline.sh`: baseline 学習ラッパー
+- `scripts/rl/run-js-oracle-terminal-shaped.sh`: JS oracle + 終局報酬調整 + self/pool カリキュラム学習ラッパー
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計

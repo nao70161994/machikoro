@@ -385,6 +385,7 @@ runTest('ITベンチャーのnextTurnでpendingITが設定されresolveIT後に�
     game.nextTurn();
 
     assert.strictEqual(game.pendingIT, true);
+    assert.strictEqual(game.phase, 'pending');
     assert.strictEqual(game.currentPlayerIndex, 0); // まだターン変わっていない
 
     game.resolveIT(false);

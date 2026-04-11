@@ -29,7 +29,11 @@ function createRng(seed) {
     };
 }
 
-function randomDie(rng) {
+function randomDie(rng, rollQueue = null) {
+    if (Array.isArray(rollQueue) && rollQueue.length > 0) {
+        const value = rollQueue.shift();
+        if (Number.isFinite(value)) return value;
+    }
     return Math.floor(rng() * 6) + 1;
 }
 
@@ -59,6 +63,112 @@ function createPlayers(runtime, difficulties, options = {}) {
             expertProfileTunings: options.expertProfileTunings,
         });
     });
+}
+
+function createMaskHelper(runtime) {
+    return {
+        _currentAndOpponent: runtime.RLCPU.prototype._currentAndOpponent,
+        _cardCounts: runtime.RLCPU.prototype._cardCounts,
+        _dormantCounts: runtime.RLCPU.prototype._dormantCounts,
+    };
+}
+
+function actionToLabel(runtime, action) {
+    const actions = runtime.RLCPU.ACTIONS;
+    if (action === actions.ROLL1) return 'ROLL1';
+    if (action === actions.ROLL2) return 'ROLL2';
+    if (action === actions.KEEP) return 'KEEP';
+    if (action === actions.REROLL) return 'REROLL';
+    if (action === actions.HARBOR_YES) return 'HARBOR_YES';
+    if (action === actions.HARBOR_NO) return 'HARBOR_NO';
+    if (action === actions.IT_SAVE) return 'IT_SAVE';
+    if (action === actions.IT_SKIP) return 'IT_SKIP';
+    if (action === actions.TV_TARGET) return 'TV_TARGET';
+    if (action >= actions.BC_BASE && action < actions.BC_BASE + actions.BC_SIZE) {
+        const combo = action - actions.BC_BASE;
+        const giveIndex = Math.floor(combo / runtime.CARDS.length);
+        const takeIndex = combo % runtime.CARDS.length;
+        return `BUSINESS:${runtime.CARDS[giveIndex].name}->${runtime.CARDS[takeIndex].name}`;
+    }
+    if (action >= actions.CLEAN_BASE && action < actions.CLEAN_BASE + runtime.CARDS.length) {
+        return `CLEAN:${runtime.CARDS[action - actions.CLEAN_BASE].name}`;
+    }
+    if (action >= actions.MOVER_BASE && action < actions.MOVER_BASE + runtime.CARDS.length) {
+        return `MOVER:${runtime.CARDS[action - actions.MOVER_BASE].name}`;
+    }
+    if (action >= actions.RENO_BASE && action < actions.RENO_BASE + runtime.RLCPU.LANDMARK_ORDER.length) {
+        return `RENO:${runtime.RLCPU.LANDMARK_ORDER[action - actions.RENO_BASE]}`;
+    }
+    if (action >= actions.BUY_CARD_BASE && action < actions.BUY_CARD_BASE + runtime.CARDS.length) {
+        return `BUY_CARD:${runtime.CARDS[action - actions.BUY_CARD_BASE].name}`;
+    }
+    if (action >= actions.BUY_LM_BASE && action < actions.BUY_LM_BASE + runtime.RLCPU.LANDMARK_ORDER.length) {
+        return `BUY_LM:${runtime.RLCPU.LANDMARK_ORDER[action - actions.BUY_LM_BASE]}`;
+    }
+    if (action === actions.PASS) return 'PASS';
+    return `ACTION:${action}`;
+}
+
+function listLegalActions(runtime, game, shopStock) {
+    const helper = createMaskHelper(runtime);
+    const mask = runtime.RLCPU.prototype.actionMask.call(helper, game, shopStock);
+    const legalActions = [];
+    for (let i = 0; i < mask.length; i++) {
+        if (mask[i] > 0) {
+            legalActions.push({ action: i, label: actionToLabel(runtime, i) });
+        }
+    }
+    return legalActions;
+}
+
+function summarizeTraceState(game, shopStock) {
+    return {
+        currentPlayerIndex: game.currentPlayerIndex,
+        phase: game.phase,
+        turnCount: game.turnCount,
+        lastDiceResult: game.lastDiceResult || 0,
+        lastDice1: game.lastDice1 || 0,
+        lastDice2: game.lastDice2 || 0,
+        pendingTV: game.pendingTV || 0,
+        pendingBusiness: game.pendingBusiness || 0,
+        pendingCleaning: game.pendingCleaning || 0,
+        pendingMover: game.pendingMover || 0,
+        pendingRenovation: game.pendingRenovation || 0,
+        pendingIT: !!game.pendingIT,
+        usedReroll: !!game.usedReroll,
+        builtThisTurn: !!game.builtThisTurn,
+        shopStock: shopStock ? Object.fromEntries(Object.entries(shopStock).filter(([, count]) => count !== 6)) : {},
+        players: game.players.map(player => ({
+            coins: player.coins,
+            itVentureCoins: player.itVentureCoins || 0,
+            landmarks: Object.fromEntries(Object.entries(player.landmarks).filter(([, built]) => built).map(([name]) => [name, true])),
+            cards: player.cards.reduce((counts, card) => {
+                counts[card.name] = (counts[card.name] || 0) + 1;
+                return counts;
+            }, {}),
+            dormantCards: player.dormantCards.reduce((counts, card) => {
+                counts[card.name] = (counts[card.name] || 0) + 1;
+                return counts;
+            }, {}),
+        })),
+    };
+}
+
+function pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries) {
+    if (!Array.isArray(traceEntries)) return;
+    const entry = {
+        actorIndex: game.currentPlayerIndex,
+        actorDifficulty: cpu && cpu.difficulty ? cpu.difficulty : (cpu instanceof runtime.RLCPU ? 'rl' : 'cpu'),
+        before: summarizeTraceState(game, shopStock),
+        legalActions: listLegalActions(runtime, game, shopStock),
+        chosenAction: actionInfo ? {
+            action: Number.isFinite(actionInfo.action) ? actionInfo.action : null,
+            label: actionInfo.label || (Number.isFinite(actionInfo.action) ? actionToLabel(runtime, actionInfo.action) : 'UNKNOWN'),
+        } : null,
+        rollsUsed: [],
+        rollCursor: 0,
+    };
+    traceEntries.push(entry);
 }
 
 function fallbackBusiness(game) {
@@ -122,66 +232,262 @@ function fallbackRenovation(game) {
     game._checkPending();
 }
 
-function playCpuStep(runtime, game, cpu, shopStock, rng) {
-    const tunaDice = [randomDie(rng), randomDie(rng)];
-    switch (game.phase) {
-        case runtime.GAME_PHASES.ROLL:
-            game.rollDice(randomDie(rng), tunaDice);
-            return;
-        case runtime.GAME_PHASES.SELECT_DICE: {
-            const useTwo = cpu.chooseDiceCount(game);
-            game.selectDiceCount(useTwo, randomDie(rng), randomDie(rng), tunaDice);
-            return;
-        }
-        case runtime.GAME_PHASES.REROLL_CONFIRM:
-            if (cpu.chooseReroll(game)) game.rerollDice(randomDie(rng), tunaDice);
-            else game.skipReroll();
-            return;
-        case runtime.GAME_PHASES.HARBOR_CHOICE:
-            game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
-            return;
-        case runtime.GAME_PHASES.PENDING:
-            if (game.pendingTV > 0) {
-                game.resolveTV(cpu.chooseTVTarget(game));
-                return;
-            }
-            if (game.pendingBusiness > 0) {
-                const move = cpu.chooseBusinessMove(game);
-                if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
-                else fallbackBusiness(game);
-                return;
-            }
-            if (game.pendingCleaning > 0) {
-                const cardName = cpu.chooseCleaningTarget(game);
-                if (cardName) game.resolveCleaning(cardName);
-                else fallbackCleaning(game);
-                return;
-            }
-            if (game.pendingMover > 0) {
-                const move = cpu.chooseMoverMove(game);
-                if (move) game.resolveMover(move.cardIndex, move.targetIndex);
-                else fallbackMover(game);
-                return;
-            }
-            if (game.pendingRenovation > 0) {
-                const landmarkName = cpu.chooseRenovationTarget(game);
-                if (landmarkName) game.resolveRenovation(landmarkName);
-                else fallbackRenovation(game);
-                return;
-            }
-            game.phase = runtime.GAME_PHASES.BUILD;
-            return;
-        case runtime.GAME_PHASES.BUILD:
-            if (game.pendingIT) {
-                game.resolveIT(cpu.chooseITSave(game));
-                return;
-            }
-            cpu.build(game, shopStock);
-            if (!game.pendingIT && game.phase === runtime.GAME_PHASES.BUILD) game.nextTurn();
-            return;
-        default:
-            return;
+function snapshotBuildState(game) {
+    const player = game.currentPlayer();
+    const cardCounts = {};
+    for (const card of player.cards) {
+        cardCounts[card.name] = (cardCounts[card.name] || 0) + 1;
     }
+    const builtLandmarks = {};
+    for (const [name, built] of Object.entries(player.landmarks)) {
+        builtLandmarks[name] = !!built;
+    }
+    return {
+        cards: cardCounts,
+        landmarks: builtLandmarks,
+    };
+}
+
+function detectBuildOutcome(beforeState, afterState) {
+    for (const [name, count] of Object.entries(afterState.cards)) {
+        const beforeCount = beforeState.cards[name] || 0;
+        if (count > beforeCount) {
+            return { type: 'card', name };
+        }
+    }
+    for (const [name, built] of Object.entries(afterState.landmarks)) {
+        if (built && !beforeState.landmarks[name]) {
+            return { type: 'landmark', name };
+        }
+    }
+    return { type: 'pass', name: null };
+}
+
+function recordBuildStat(game, cpu, options, outcome) {
+    if (!options || !options.buildStats) return;
+    const key = game.currentPlayerIndex;
+    const stats = options.buildStats[key];
+    if (!stats) return;
+    stats.total++;
+    if (outcome.type === 'pass') {
+        stats.pass++;
+        return;
+    }
+    if (outcome.type === 'card') {
+        stats.cards[outcome.name] = (stats.cards[outcome.name] || 0) + 1;
+        return;
+    }
+    if (outcome.type === 'landmark') {
+        stats.landmarks[outcome.name] = (stats.landmarks[outcome.name] || 0) + 1;
+    }
+}
+
+function playCpuStep(runtime, game, cpu, shopStock, rng) {
+    const options = runtime.__selfplayOptions;
+    const rollQueue = options && options.rollQueue;
+    const tunaDice = [randomDie(rng), randomDie(rng)];
+    const traceEntries = options && options.traceEntries;
+    const rollStart = Array.isArray(rollQueue) ? rollQueue.length : null;
+    try {
+        switch (game.phase) {
+            case runtime.GAME_PHASES.ROLL:
+                pushTraceEntry(runtime, game, shopStock, cpu, {
+                    action: runtime.RLCPU.ACTIONS.ROLL1,
+                    label: 'ROLL1',
+                }, traceEntries);
+                if (game.currentPlayer().landmarks['駅']) {
+                    game.rollDice(null, tunaDice);
+                } else {
+                    game.rollDice(randomDie(rng, rollQueue), tunaDice);
+                }
+                if (Array.isArray(traceEntries)) {
+                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                }
+                return;
+            case runtime.GAME_PHASES.SELECT_DICE: {
+                const useTwo = cpu.chooseDiceCount(game);
+                pushTraceEntry(runtime, game, shopStock, cpu, {
+                    action: useTwo ? runtime.RLCPU.ACTIONS.ROLL2 : runtime.RLCPU.ACTIONS.ROLL1,
+                    label: useTwo ? 'ROLL2' : 'ROLL1',
+                }, traceEntries);
+                if (useTwo) {
+                    game.selectDiceCount(true, randomDie(rng, rollQueue), randomDie(rng, rollQueue), tunaDice);
+                } else {
+                    game.selectDiceCount(false, randomDie(rng, rollQueue), null, tunaDice);
+                }
+                if (Array.isArray(traceEntries)) {
+                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                }
+                return;
+            }
+            case runtime.GAME_PHASES.REROLL_CONFIRM:
+                if (cpu.chooseReroll(game)) {
+                    pushTraceEntry(runtime, game, shopStock, cpu, {
+                        action: runtime.RLCPU.ACTIONS.REROLL,
+                        label: 'REROLL',
+                    }, traceEntries);
+                    game.rerollDice(randomDie(rng, rollQueue), tunaDice);
+                } else {
+                    pushTraceEntry(runtime, game, shopStock, cpu, {
+                        action: runtime.RLCPU.ACTIONS.KEEP,
+                        label: 'KEEP',
+                    }, traceEntries);
+                    game.skipReroll();
+                }
+                if (Array.isArray(traceEntries)) {
+                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                }
+                return;
+            case runtime.GAME_PHASES.HARBOR_CHOICE:
+                {
+                    const useHarbor = cpu.chooseHarbor(game);
+                    pushTraceEntry(runtime, game, shopStock, cpu, {
+                        action: useHarbor ? runtime.RLCPU.ACTIONS.HARBOR_YES : runtime.RLCPU.ACTIONS.HARBOR_NO,
+                        label: useHarbor ? 'HARBOR_YES' : 'HARBOR_NO',
+                    }, traceEntries);
+                    game.resolveHarbor(useHarbor, tunaDice);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                }
+                return;
+            case runtime.GAME_PHASES.PENDING:
+                if (game.pendingTV > 0) {
+                    const targetIndex = cpu.chooseTVTarget(game);
+                    pushTraceEntry(runtime, game, shopStock, cpu, {
+                        action: runtime.RLCPU.ACTIONS.TV_TARGET,
+                        label: `TV_TARGET:p${targetIndex + 1}`,
+                    }, traceEntries);
+                    game.resolveTV(targetIndex);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    return;
+                }
+                if (game.pendingBusiness > 0) {
+                    const move = cpu.chooseBusinessMove(game);
+                    const current = game.currentPlayer();
+                    const target = move ? game.players[move.targetIndex] : null;
+                    const giveCard = move ? current.cards[move.myCard] : null;
+                    const takeCard = move && target ? target.cards[move.theirCard] : null;
+                    const giveIndex = giveCard ? runtime.CARDS.findIndex(card => card.name === giveCard.name) : -1;
+                    const takeIndex = takeCard ? runtime.CARDS.findIndex(card => card.name === takeCard.name) : -1;
+                    const businessAction = giveIndex >= 0 && takeIndex >= 0
+                        ? runtime.RLCPU.ACTIONS.BC_BASE + giveIndex * runtime.CARDS.length + takeIndex
+                        : null;
+                    pushTraceEntry(runtime, game, shopStock, cpu, move ? {
+                        action: businessAction,
+                        label: businessAction == null ? `BUSINESS:${move.myCard}->${move.theirCard}@p${move.targetIndex + 1}` : actionToLabel(runtime, businessAction),
+                    } : {
+                        action: runtime.RLCPU.ACTIONS.PASS,
+                        label: 'PASS',
+                    }, traceEntries);
+                    if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
+                    else fallbackBusiness(game);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    return;
+                }
+                if (game.pendingCleaning > 0) {
+                    const cardName = cpu.chooseCleaningTarget(game);
+                    pushTraceEntry(runtime, game, shopStock, cpu, cardName ? {
+                        action: null,
+                        label: `CLEAN:${cardName}`,
+                    } : {
+                        action: runtime.RLCPU.ACTIONS.PASS,
+                        label: 'PASS',
+                    }, traceEntries);
+                    if (cardName) game.resolveCleaning(cardName);
+                    else fallbackCleaning(game);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    return;
+                }
+                if (game.pendingMover > 0) {
+                    const move = cpu.chooseMoverMove(game);
+                    pushTraceEntry(runtime, game, shopStock, cpu, move ? {
+                        action: null,
+                        label: `MOVER:${move.cardIndex}@p${move.targetIndex + 1}`,
+                    } : {
+                        action: runtime.RLCPU.ACTIONS.PASS,
+                        label: 'PASS',
+                    }, traceEntries);
+                    if (move) game.resolveMover(move.cardIndex, move.targetIndex);
+                    else fallbackMover(game);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    return;
+                }
+                if (game.pendingRenovation > 0) {
+                    const landmarkName = cpu.chooseRenovationTarget(game);
+                    pushTraceEntry(runtime, game, shopStock, cpu, landmarkName ? {
+                        action: null,
+                        label: `RENO:${landmarkName}`,
+                    } : {
+                        action: runtime.RLCPU.ACTIONS.PASS,
+                        label: 'PASS',
+                    }, traceEntries);
+                    if (landmarkName) game.resolveRenovation(landmarkName);
+                    else fallbackRenovation(game);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    return;
+                }
+                if (game.pendingIT) {
+                    const save = cpu.chooseITSave(game);
+                    pushTraceEntry(runtime, game, shopStock, cpu, {
+                        action: save ? runtime.RLCPU.ACTIONS.IT_SAVE : runtime.RLCPU.ACTIONS.IT_SKIP,
+                        label: save ? 'IT_SAVE' : 'IT_SKIP',
+                    }, traceEntries);
+                    game.resolveIT(save);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    return;
+                }
+                game.phase = runtime.GAME_PHASES.BUILD;
+                return;
+            case runtime.GAME_PHASES.BUILD:
+                const beforeBuild = snapshotBuildState(game);
+                const beforeTrace = Array.isArray(traceEntries) ? traceEntries.length : 0;
+                if (Array.isArray(traceEntries)) {
+                    let actionInfo = { action: null, label: 'UNKNOWN' };
+                    if (cpu instanceof runtime.RLCPU) {
+                        const choice = cpu._chooseForGame(game, shopStock);
+                        actionInfo = {
+                            action: choice.action,
+                            label: actionToLabel(runtime, choice.action),
+                        };
+                    }
+                    pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries);
+                }
+                cpu.build(game, shopStock);
+                const afterBuild = snapshotBuildState(game);
+                const outcome = detectBuildOutcome(beforeBuild, afterBuild);
+                recordBuildStat(game, cpu, runtime.__selfplayOptions, outcome);
+                if (Array.isArray(traceEntries) && traceEntries.length > beforeTrace) {
+                    if (!traceEntries[traceEntries.length - 1].chosenAction || traceEntries[traceEntries.length - 1].chosenAction.label === 'UNKNOWN') {
+                        traceEntries[traceEntries.length - 1].chosenAction = {
+                            action: outcome.type === 'pass' ? runtime.RLCPU.ACTIONS.PASS : null,
+                            label: outcome.type === 'card' ? `BUY_CARD:${outcome.name}` :
+                                (outcome.type === 'landmark' ? `BUY_LM:${outcome.name}` : 'PASS'),
+                        };
+                    }
+                }
+                if (game.phase === runtime.GAME_PHASES.BUILD) game.nextTurn();
+                if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                return;
+            default:
+                return;
+        }
+    } finally {
+        finalizeTraceRollUsage(options, rollStart);
+    }
+}
+
+function finalizeTraceRollUsage(options, rollStart) {
+    const traceEntries = options && options.traceEntries;
+    const rollQueue = options && options.rollQueue;
+    const requestedRolls = options && options.requestedRolls;
+    if (!Array.isArray(traceEntries) || traceEntries.length <= 0 || !Array.isArray(rollQueue) || !Array.isArray(requestedRolls) || rollStart == null) {
+        return;
+    }
+    const usedCount = Math.max(0, rollStart - rollQueue.length);
+    const cursor = options.rollCursor || 0;
+    const used = requestedRolls.slice(cursor, cursor + usedCount);
+    options.rollCursor = cursor + usedCount;
+    traceEntries[traceEntries.length - 1].rollsUsed = used;
+    traceEntries[traceEntries.length - 1].rollCursor = cursor;
 }
 
 function summarizePlayer(player, enabledLandmarks) {
@@ -215,6 +521,7 @@ function simulateGame(options = {}) {
     const cpuPlayers = createPlayers(runtime, difficulties, options);
     const rng = createRng(options.seed || 1);
     runtime.Math.random = rng;
+    runtime.__selfplayOptions = options;
     game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
     let safety = 0;
     const maxSteps = options.maxSteps || 5000;
@@ -245,6 +552,13 @@ function simulateGame(options = {}) {
         fast: !!options.fast,
         lite: !!options.lite,
         finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
+        traceEntries: Array.isArray(options.traceEntries) ? options.traceEntries.slice() : null,
+        buildStats: options.buildStats ? options.buildStats.map(stats => ({
+            total: stats.total,
+            pass: stats.pass,
+            cards: Object.assign({}, stats.cards),
+            landmarks: Object.assign({}, stats.landmarks),
+        })) : null,
     };
 }
 
@@ -261,6 +575,12 @@ function runSeries(options = {}) {
     let exhausted = 0;
     let turns = 0;
     const matchLog = [];
+    const buildStats = players.map(() => ({
+        total: 0,
+        pass: 0,
+        cards: {},
+        landmarks: {},
+    }));
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
@@ -279,6 +599,7 @@ function runSeries(options = {}) {
             rlModelData: options.rlModelData,
             fast: options.fast,
             lite: options.lite,
+            buildStats,
         });
         turns += result.turns;
         if (result.exhausted) exhausted++;
@@ -309,6 +630,7 @@ function runSeries(options = {}) {
         exhausted,
         averageTurns: games > 0 ? turns / games : 0,
         matchLog,
+        buildStats,
     };
 }
 
@@ -443,6 +765,13 @@ if (require.main === module) {
 
 module.exports = {
     loadRuntime,
+    createRng,
+    createShopStock,
+    createPlayers,
+    actionToLabel,
+    listLegalActions,
+    summarizeTraceState,
+    playCpuStep,
     simulateGame,
     runSeries,
     runDifficultyLadder,
