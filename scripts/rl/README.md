@@ -203,6 +203,10 @@ sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-curri
 sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128 --hidden 128
 sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h256 --hidden 256
 
+# 現時点の有力条件
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-lr1e4 --hidden 128 --lr 0.0001
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-long --hidden 128 --games 3000
+
 # baseline の既定値を保ったままゲーム数だけ短くする
 sh scripts/rl/run-baseline.sh --games 5000
 
@@ -364,13 +368,46 @@ npm run summarize-rl-metrics -- \
 - `self` は現在モデルを相手にする片側自己対戦。両側の行動を同時に学習する方式ではない。
 - `pool` は過去モデル snapshot との対戦。短期実験でも効くよう `--pool-update-every 250 --pool-max-size 4` を使う。
 - `--restore-best-at-end` で、学習終了時に途中 best checkpoint を `models/rl_model/model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
-- `hidden=128` と `hidden=256` は比較対象。`hidden=256` は表現力が高いが Termux では遅くなる。
+- `hidden=128` と `hidden=256` は比較対象。ただし現在の報酬・探索設定では `hidden=256` が pass 方策へ崩れやすく、優先候補は `hidden=128`。
+- 学習済みモデル本体は git 管理しない。採用候補・評価結果・構築傾向は `models/rl_model/registry.json` に記録する。
 
 これまでの観察:
 
 - `strong` 模倣ありの best は一時的に `weak 80% / normal 65% / strong 25%` 程度まで到達した。
 - 模倣なしで行動直後のコイン/資産中間報酬を入れる方式は、報酬ハックや方策崩れが疑われ、安定しなかった。
 - 終局時だけ勝敗・ランドマーク建設済コスト差・盤面資産差・手元コイン差を加える方式へ移行中。
+- 20戦 JS 評価では `terminal-shaped-h128-lr1e4` が `weak 90% / normal 60% / strong 35%` で現時点の最有力候補。
+- `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うため、複数モデル採用候補として残す。
+- `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。JS 評価も弱く、現時点では rejected 扱い。
+- モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
+
+### モデル台帳
+
+`models/rl_model/registry.json` は採用候補モデルの軽量台帳。
+モデル本体 `.npz` / `.browser.json` や `runs/` はサイズ・生成物扱いのため git 管理しない。
+
+台帳に記録する主な情報:
+
+- `id`: run / モデル識別子。
+- `status`: `candidate` / `archive` / `rejected`。
+- `path`: ローカルの browser 用モデルJSONへの相対パス。
+- `training`: wrapper、games、hidden、lr、報酬プロファイルなど。
+- `style`: 構築傾向のラベルと主要カード/ランドマーク。
+- `evals`: 20戦 JS 評価など、採用判断に使う評価結果。
+
+現時点の候補:
+
+| id | status | JS 20戦評価 | 構築傾向 |
+|----|--------|-------------|----------|
+| `terminal-shaped-h128-lr1e4` | candidate | weak 90% / normal 60% / strong 35% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り |
+| `terminal-shaped-h128-long` | candidate | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り |
+| `terminal-shaped-curriculum-h128` | archive | weak 75% / normal 35% / strong 5% | 寿司屋・牧場・チーズ工場寄り |
+| `terminal-shaped-curriculum-h256` | rejected | JS 評価 0% 傾向 | pass 崩壊 |
+| `terminal-shaped-curriculum-h256-lr1e4` | rejected | JS 評価 0% 傾向 | 高 pass 率 |
+
+昇格判断は 4戦の checkpoint 評価ではなく、最低20戦の JS 評価を使う。
+現行の候補基準は `weak >= 70%`、`normal >= 50%`、`strong >= 10%`。
+`strong` 対応済みとみなす目安は `weak >= 75%`、`normal >= 60%`、`strong >= 30%`。
 
 ---
 

@@ -1,0 +1,262 @@
+{
+    "schemaVersion": 1,
+    "updatedAt": "2026-04-12",
+    "primaryMetric": "jsWinRateVsWeakNormalStrong",
+    "notes": [
+        "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
+        "Prefer 20-game JS evaluations for promotion decisions. 4-game checkpoint evaluations are noisy.",
+        "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful."
+    ],
+    "promotionCriteria": {
+        "candidate": {
+            "weakMin": 0.7,
+            "normalMin": 0.5,
+            "strongMin": 0.1
+        },
+        "strongReady": {
+            "weakMin": 0.75,
+            "normalMin": 0.6,
+            "strongMin": 0.3
+        }
+    },
+    "models": [
+        {
+            "id": "terminal-shaped-h128-lr1e4",
+            "status": "candidate",
+            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "bread-farm-fishing",
+                "topCardsVsStrong": [
+                    "sushi_bar",
+                    "bakery",
+                    "tuna_boat",
+                    "forest",
+                    "convenience_store"
+                ],
+                "topLandmarksVsStrong": [
+                    "station",
+                    "harbor",
+                    "shopping_mall",
+                    "amusement_park",
+                    "radio_tower"
+                ],
+                "summary": "Low-pass build that performed best against strong in the current 20-game comparison."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 18,
+                            "losses": 2,
+                            "draws": 0,
+                            "winRate": 0.9,
+                            "firstSeatWinRate": 0.9,
+                            "secondSeatWinRate": 0.9,
+                            "avgTurns": 57.4
+                        },
+                        "normal": {
+                            "wins": 12,
+                            "losses": 8,
+                            "draws": 0,
+                            "winRate": 0.6,
+                            "firstSeatWinRate": 0.5,
+                            "secondSeatWinRate": 0.7,
+                            "avgTurns": 68.0
+                        },
+                        "strong": {
+                            "wins": 7,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.35,
+                            "firstSeatWinRate": 0.2,
+                            "secondSeatWinRate": 0.5,
+                            "avgTurns": 62.0
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-h128-long",
+            "status": "candidate",
+            "path": "models/rl_model/runs/terminal-shaped-h128-long/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-long",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 3000,
+                "hidden": 128,
+                "lr": 0.0003,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "shop-loan-fishing",
+                "topCardsVsStrong": [
+                    "loan_office",
+                    "general_store",
+                    "pizza_shop",
+                    "tuna_boat",
+                    "winery"
+                ],
+                "topLandmarksVsStrong": [
+                    "harbor",
+                    "station",
+                    "shopping_mall",
+                    "radio_tower",
+                    "amusement_park"
+                ],
+                "summary": "Different build tendency from lr1e4. Better normal result, weaker strong result in 20-game comparison."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 18,
+                            "losses": 2,
+                            "draws": 0,
+                            "winRate": 0.9,
+                            "firstSeatWinRate": 0.8,
+                            "secondSeatWinRate": 1.0,
+                            "avgTurns": 67.5
+                        },
+                        "normal": {
+                            "wins": 14,
+                            "losses": 6,
+                            "draws": 0,
+                            "winRate": 0.7,
+                            "firstSeatWinRate": 0.7,
+                            "secondSeatWinRate": 0.7,
+                            "avgTurns": 59.6
+                        },
+                        "strong": {
+                            "wins": 3,
+                            "losses": 17,
+                            "draws": 0,
+                            "winRate": 0.15,
+                            "firstSeatWinRate": 0.2,
+                            "secondSeatWinRate": 0.1,
+                            "avgTurns": 54.3
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-curriculum-h128",
+            "status": "archive",
+            "path": "models/rl_model/runs/terminal-shaped-curriculum-h128/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h128",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0003,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "sushi-farm-cheese",
+                "summary": "Useful historical baseline, but weaker than later h128 candidates against strong."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 15,
+                            "losses": 5,
+                            "draws": 0,
+                            "winRate": 0.75,
+                            "firstSeatWinRate": 0.9,
+                            "secondSeatWinRate": 0.6,
+                            "avgTurns": 69.3
+                        },
+                        "normal": {
+                            "wins": 7,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.35,
+                            "firstSeatWinRate": 0.5,
+                            "secondSeatWinRate": 0.2,
+                            "avgTurns": 70.0
+                        },
+                        "strong": {
+                            "wins": 1,
+                            "losses": 19,
+                            "draws": 0,
+                            "winRate": 0.05,
+                            "firstSeatWinRate": 0.1,
+                            "secondSeatWinRate": 0.0,
+                            "avgTurns": 57.8
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-curriculum-h256",
+            "status": "rejected",
+            "path": "models/rl_model/runs/terminal-shaped-curriculum-h256/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h256",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 256,
+                "lr": 0.0003,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "pass-collapse",
+                "summary": "Rejected because build pass rate collapsed and JS evaluation stayed at 0%."
+            },
+            "evals": []
+        },
+        {
+            "id": "terminal-shaped-curriculum-h256-lr1e4",
+            "status": "rejected",
+            "path": "models/rl_model/runs/terminal-shaped-curriculum-h256-lr1e4/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h256-lr1e4",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 256,
+                "lr": 0.0001,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "high-pass-weak",
+                "summary": "Lower lr reduced the complete collapse but still produced high pass rates and 0% JS final evaluation."
+            },
+            "evals": []
+        }
+    ]
+}

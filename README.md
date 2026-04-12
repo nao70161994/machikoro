@@ -163,7 +163,8 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 1. `scripts/rl/train.py` で学習
 2. `scripts/eval-rl-vs-js.js` で JS 側 `weak/normal/strong/expert` と比較
 3. `scripts/summarize-rl-metrics.js` で `train_metrics.csv` を集計
-4. `js/RLCPU.js` で export 済みモデルを新 CPU として読む準備を進めています
+4. `models/rl_model/registry.json` に採用候補モデルの評価・構築傾向を記録
+5. `js/RLCPU.js` で export 済みモデルを新 CPU として読む準備を進めています
 
 baseline 学習の開始:
 
@@ -185,6 +186,8 @@ npm run train-rl:baseline
 
 baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
 `run-js-oracle-terminal-shaped.sh` は JS CPU oracle、終局報酬調整、`self` / `pool` を含む模倣なしRL実験用です。
+2026-04時点では `hidden=128, lr=0.0001` の `terminal-shaped-h128-lr1e4` が有力候補で、20戦JS評価は `weak 90% / normal 60% / strong 35%` です。
+`hidden=256` 系は pass 方策へ崩れやすく、現時点では優先しません。
 
 baseline 学習で生成される主な成果物:
 
@@ -239,6 +242,7 @@ RL スクリプト / モデル:
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
+- `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）
 - `models/rl_model/`: 学習済みモデルと metrics 出力先
 
 テスト:
