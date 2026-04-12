@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-04-12",
+    "updatedAt": "2026-04-13",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -212,6 +212,269 @@
                             "secondSeatWinRate": 0.0,
                             "avgTurns": 57.8
                         }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "strong-select-seed21",
+            "status": "candidate",
+            "path": "models/rl_model/runs/strong-select-seed21/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/strong-select-seed21",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "seed": 21,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "trainOpponents": "random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1",
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "field-vineyard-normal-stable",
+                "topCardsVsStrong": [
+                    "vineyard",
+                    "wheat_field",
+                    "mine",
+                    "loan_office",
+                    "winery"
+                ],
+                "topLandmarksVsStrong": [
+                    "harbor",
+                    "station",
+                    "shopping_mall",
+                    "amusement_park",
+                    "radio_tower"
+                ],
+                "summary": "Normal-stable candidate selected with stronger JS checkpoint weighting. Pass rate is higher than lr1e4, but 20-game normal result is strong."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-13",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 17,
+                            "losses": 3,
+                            "draws": 0,
+                            "winRate": 0.85,
+                            "firstSeatWinRate": 1.0,
+                            "secondSeatWinRate": 0.7,
+                            "avgTurns": 67.3
+                        },
+                        "normal": {
+                            "wins": 15,
+                            "losses": 5,
+                            "draws": 0,
+                            "winRate": 0.75,
+                            "firstSeatWinRate": 0.8,
+                            "secondSeatWinRate": 0.7,
+                            "avgTurns": 69.0
+                        },
+                        "strong": {
+                            "wins": 2,
+                            "losses": 18,
+                            "draws": 0,
+                            "winRate": 0.1,
+                            "firstSeatWinRate": 0.0,
+                            "secondSeatWinRate": 0.2,
+                            "avgTurns": 59.2
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-h128-lr1e4-long",
+            "status": "archive",
+            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-long/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-long",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 3000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "farm-cheese-weak-specialist",
+                "summary": "Distinct farm/cheese build. Archived because 20-game normal result fell below candidate threshold."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 19,
+                            "losses": 1,
+                            "draws": 0,
+                            "winRate": 0.95,
+                            "firstSeatWinRate": 1.0,
+                            "secondSeatWinRate": 0.9,
+                            "avgTurns": 62.6
+                        },
+                        "normal": {
+                            "wins": 7,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.35,
+                            "firstSeatWinRate": 0.3,
+                            "secondSeatWinRate": 0.4,
+                            "avgTurns": 58.3
+                        },
+                        "strong": {
+                            "wins": 4,
+                            "losses": 16,
+                            "draws": 0,
+                            "winRate": 0.2,
+                            "firstSeatWinRate": 0.4,
+                            "secondSeatWinRate": 0.0,
+                            "avgTurns": 54.9
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-h128-lr1e4-seed2",
+            "status": "archive",
+            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed2/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed2",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "seed": 2,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "wheat-bread-sushi",
+                "summary": "Seed reproducibility check. Archived because strong did not reproduce."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js-checkpoint",
+                    "gamesPerOpponent": 4,
+                    "opponents": {
+                        "weak": {"winRate": 0.75},
+                        "normal": {"winRate": 0.5},
+                        "strong": {"winRate": 0.0}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-h128-lr1e4-seed3",
+            "status": "archive",
+            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed3/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed3",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "seed": 3,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "wheat-bread-farm",
+                "summary": "Seed reproducibility check. Archived because strong did not reproduce."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js-checkpoint",
+                    "gamesPerOpponent": 4,
+                    "opponents": {
+                        "weak": {"winRate": 0.75},
+                        "normal": {"winRate": 0.5},
+                        "strong": {"winRate": 0.0}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-h128-lr1e4-strong005",
+            "status": "rejected",
+            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong005/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong005",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "seed": 11,
+                "cpuOpponentImpl": "js-oracle",
+                "trainOpponents": "random=0.3,weak=0.4,normal=0.05,strong=0.05,self=0.1,pool=0.1",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "strong-mix-005",
+                "summary": "Rejected because adding strong=0.05 to training did not improve strong win rate."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js-checkpoint",
+                    "gamesPerOpponent": 4,
+                    "opponents": {
+                        "weak": {"winRate": 1.0},
+                        "normal": {"winRate": 0.25},
+                        "strong": {"winRate": 0.0}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "terminal-shaped-h128-lr1e4-strong010",
+            "status": "rejected",
+            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong010/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong010",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+                "games": 1000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "seed": 11,
+                "cpuOpponentImpl": "js-oracle",
+                "trainOpponents": "random=0.3,weak=0.3,normal=0.1,strong=0.1,self=0.1,pool=0.1",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "strong-mix-010",
+                "summary": "Rejected because adding strong=0.10 to training did not improve strong win rate."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-12",
+                    "type": "js-checkpoint",
+                    "gamesPerOpponent": 4,
+                    "opponents": {
+                        "weak": {"winRate": 1.0},
+                        "normal": {"winRate": 0.5},
+                        "strong": {"winRate": 0.0}
                     }
                 }
             ]

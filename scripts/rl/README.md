@@ -21,6 +21,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `js_cpu_oracle.py` | Python 学習ループから JS CPU oracle を使うための subprocess wrapper |
 | `run-js-oracle-baseline.sh` | JS oracle CPU を使う baseline ラッパー |
 | `run-js-oracle-terminal-shaped.sh` | 模倣なし、終局報酬調整、自己対戦込みの現行RL実験ラッパー |
+| `run-js-oracle-strong-select.sh` | `hidden=128/lr=0.0001` を固定し、strong重視のJS評価でbest checkpointを選ぶ実験ラッパー |
 
 ---
 
@@ -207,6 +208,17 @@ sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h256 
 sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-lr1e4 --hidden 128 --lr 0.0001
 sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-long --hidden 128 --games 3000
 
+# seed違いの再現性確認
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-lr1e4-seed2 --hidden 128 --lr 0.0001 --seed 2
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-lr1e4-seed3 --hidden 128 --lr 0.0001 --seed 3
+
+# strongを少量混ぜる実験（現時点では改善せず、記録用）
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-lr1e4-strong005 --hidden 128 --lr 0.0001 --seed 11 --train-opponents random=0.3,weak=0.4,normal=0.05,strong=0.05,self=0.1,pool=0.1
+sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-lr1e4-strong010 --hidden 128 --lr 0.0001 --seed 11 --train-opponents random=0.3,weak=0.3,normal=0.1,strong=0.1,self=0.1,pool=0.1
+
+# strongを学習相手に混ぜず、checkpoint選抜でstrongを重く見る実験
+sh scripts/rl/run-js-oracle-strong-select.sh --run-label strong-select-seed21 --seed 21
+
 # baseline の既定値を保ったままゲーム数だけ短くする
 sh scripts/rl/run-baseline.sh --games 5000
 
@@ -247,6 +259,7 @@ python3 -m scripts.rl.train \
   --eval-every 500   # 評価間隔
   --hidden 128        # 隠れ層サイズ（軽量 baseline の既定値）
   --lr 3e-4           # 学習率
+  --seed 11           # Python random / numpy のseed（再現実験用）
   --epsilon 0.20      # 初期探索率（線形減衰 → 0.02 まで）
   --load              # models/rl_model/model.npz を読み込んで継続学習
   --cpu-opponent-impl js-oracle  # normal/strong/expert 相手に JS CPU oracle を使う
@@ -379,6 +392,9 @@ npm run summarize-rl-metrics -- \
 - 20戦 JS 評価では `terminal-shaped-h128-lr1e4` が `weak 90% / normal 60% / strong 35%` で現時点の最有力候補。
 - `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うため、複数モデル採用候補として残す。
 - `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。JS 評価も弱く、現時点では rejected 扱い。
+- `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
+- `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
+- `terminal-shaped-h128-lr1e4` が strong に勝つ試合は、パン屋を厚く積み、マグロ漁船/コンビニ/寿司屋を絡めて全ランドマーク到達まで走る傾向がある。20戦中の strong 勝利7試合では平均60.0ターン、最終ランドマーク平均6.0個。
 - モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
 
 ### モデル台帳

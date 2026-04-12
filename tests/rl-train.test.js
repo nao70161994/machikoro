@@ -526,11 +526,13 @@ rows = _build_metrics_rows(
             {"lineup": ["strong", "rl"], "winnerDifficulty": "rl"}
         ]
     }}],
-    metadata={"run_label": "baseline", "hidden": 256, "lr": 0.0003, "eval_every": 1000, "js_eval_games": 20, "js_eval_opponents": "strong,expert"}
+    metadata={"run_label": "baseline", "seed": 11, "hidden": 256, "lr": 0.0003, "eval_every": 1000, "js_eval_games": 20, "js_eval_opponents": "strong,expert"}
 )
 print(len(rows))
 print(rows[0]["run_label"])
+print(rows[0]["seed"])
 print(rows[0]["js_opponent"])
+print(rows[1]["seed"])
 print(rows[1]["js_opponent"])
 print(rows[1]["js_win_rate"])
 print(rows[1]["js_first_rate"])
@@ -541,11 +543,13 @@ print(rows[1]["js_avg_turns"])
     const lines = output.split('\n');
     assert.strictEqual(lines[0], '2');
     assert.strictEqual(lines[1], 'baseline');
-    assert.strictEqual(lines[2], '');
-    assert.strictEqual(lines[3], 'strong');
-    assert.strictEqual(lines[4], '0.6');
-    assert.strictEqual(lines[5], '1.0');
-    assert.strictEqual(lines[6], '0.5');
-    assert.strictEqual(lines[7], '0.1');
-    assert.strictEqual(lines[8], '17.4');
+    assert.strictEqual(lines[2], '11');
+    assert.strictEqual(lines[3], '');
+    assert.strictEqual(lines[4], '11');
+    assert.strictEqual(lines[5], 'strong');
+    assert.strictEqual(lines[6], '0.6');
+    assert.strictEqual(lines[7], '1.0');
+    assert.strictEqual(lines[8], '0.5');
+    assert.strictEqual(lines[9], '0.1');
+    assert.strictEqual(lines[10], '17.4');
 });

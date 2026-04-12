@@ -997,6 +997,7 @@ def _build_metrics_rows(game_i, epsilon, wr_rnd, wr_weak, wr_normal, wr_strong, 
     base = {
         "game": game_i,
         "run_label": metadata.get("run_label", ""),
+        "seed": metadata.get("seed"),
         "hidden": metadata.get("hidden"),
         "lr": metadata.get("lr"),
         "eval_every": metadata.get("eval_every"),
@@ -1063,7 +1064,7 @@ def _append_metrics_csv(csv_path, rows):
     if not csv_path or not rows:
         return
     fieldnames = [
-        "game", "run_label", "hidden", "lr", "eval_every", "js_eval_games", "js_eval_opponents",
+        "game", "run_label", "seed", "hidden", "lr", "eval_every", "js_eval_games", "js_eval_opponents",
         "cpu_opponent_impl",
         "epsilon", "rnd", "weak", "normal", "strong", "expert", "pool", "train",
         "policy_loss", "value_loss", "mean_adv",
@@ -1126,6 +1127,7 @@ def main():
     parser.add_argument("--eval-every", type=int,   default=1000,  help="評価間隔")
     parser.add_argument("--hidden",     type=int,   default=256,   help="隠れ層ニューロン数")
     parser.add_argument("--lr",         type=float, default=3e-4,  help="学習率")
+    parser.add_argument("--seed",       type=int,   default=None,  help="Python random / numpy の乱数seed（未指定なら固定しない）")
     parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
     parser.add_argument("--train-opponents", default="random=0.7,pool=0.3", help="学習時に混ぜる相手の重み指定 random/self/pool/weak/normal/strong/expert")
     parser.add_argument("--cpu-opponent-impl", choices=("python", "js-oracle"), default="python", help="weak以外のCPU相手の実装 python/js-oracle")
@@ -1185,6 +1187,9 @@ def main():
         os.environ["MACHIKORO_RL_JS_CPU_ORACLE"] = "1"
     else:
         os.environ.pop("MACHIKORO_RL_JS_CPU_ORACLE", None)
+    if args.seed is not None:
+        random.seed(args.seed)
+        np.random.seed(args.seed)
 
     agent = RLAgent(hidden=args.hidden, lr=args.lr)
 
@@ -1203,7 +1208,8 @@ def main():
             sys.exit(1)
 
     oracle_text = f", cpu_opponent_impl={args.cpu_opponent_impl}"
-    print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}{oracle_text}")
+    seed_text = f", seed={args.seed}" if args.seed is not None else ""
+    print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}{oracle_text}{seed_text}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
     train_opponents = _parse_training_opponents(args.train_opponents)
     reward_config = {
@@ -1362,6 +1368,7 @@ def main():
                     game_i, epsilon, wr_rnd, wr_weak, wr_normal, wr_strong, wr_expert, wr_pool, train_wr, avg_pl, avg_vl, avg_adv, js_entries,
                     metadata={
                         "run_label": args.run_label,
+                        "seed": args.seed,
                         "hidden": args.hidden,
                         "lr": args.lr,
                         "eval_every": args.eval_every,
@@ -1397,6 +1404,7 @@ def main():
                             "runLabel": args.run_label,
                             "game": game_i,
                             "score": eval_score,
+                            "seed": args.seed,
                             **artifact_paths,
                             "rnd": wr_rnd,
                             "normal": wr_normal,
