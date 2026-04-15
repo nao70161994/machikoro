@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-04-13",
+    "updatedAt": "2026-04-15",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -285,6 +285,236 @@
                             "secondSeatWinRate": 0.2,
                             "avgTurns": 59.2
                         }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr3e5-5000-seed62",
+            "status": "candidate",
+            "path": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00003,
+                "seed": 62,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "bread-warehouse-sushi-strong",
+                "topCardsVsStrong": [
+                    "bakery",
+                    "food_warehouse",
+                    "sushi_bar",
+                    "loan_office",
+                    "winery"
+                ],
+                "topLandmarksVsStrong": [
+                    "harbor",
+                    "station",
+                    "shopping_mall",
+                    "radio_tower",
+                    "amusement_park"
+                ],
+                "summary": "First successful h256 self-play-both candidate. Best current strong result in 20-game evaluation."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-14",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 18,
+                            "losses": 2,
+                            "draws": 0,
+                            "winRate": 0.9,
+                            "firstSeatWinRate": 1.0,
+                            "secondSeatWinRate": 0.8,
+                            "avgTurns": 55.5,
+                            "passRate": 0.06
+                        },
+                        "normal": {
+                            "wins": 13,
+                            "losses": 7,
+                            "draws": 0,
+                            "winRate": 0.65,
+                            "firstSeatWinRate": 0.8,
+                            "secondSeatWinRate": 0.5,
+                            "avgTurns": 51.6,
+                            "passRate": 0.092
+                        },
+                        "strong": {
+                            "wins": 9,
+                            "losses": 11,
+                            "draws": 0,
+                            "winRate": 0.45,
+                            "firstSeatWinRate": 0.5,
+                            "secondSeatWinRate": 0.4,
+                            "avgTurns": 47.0,
+                            "passRate": 0.044
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
+            "status": "candidate",
+            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00002,
+                "seed": 66,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-rewardcap",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "terminalLandmarkValueDiff": 0.004,
+                "terminalAssetDiff": 0.002,
+                "terminalCoinDiff": 0.001,
+                "terminalDiffClip": 20,
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "bread-warehouse-pizza-stable",
+                "topCardsVsStrong": [
+                    "bakery",
+                    "food_warehouse",
+                    "winery",
+                    "loan_office",
+                    "pizza_shop"
+                ],
+                "topLandmarksVsStrong": [
+                    "harbor",
+                    "station",
+                    "shopping_mall",
+                    "amusement_park",
+                    "radio_tower"
+                ],
+                "summary": "Reward-capped h256 self-play-both candidate. Strong result is lower than seed62 but normal and pass-rate stability are better."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-15",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {
+                            "wins": 19,
+                            "losses": 1,
+                            "draws": 0,
+                            "winRate": 0.95,
+                            "firstSeatWinRate": 1.0,
+                            "secondSeatWinRate": 0.9,
+                            "avgTurns": 47.6,
+                            "passRate": 0.0
+                        },
+                        "normal": {
+                            "wins": 14,
+                            "losses": 6,
+                            "draws": 0,
+                            "winRate": 0.7,
+                            "firstSeatWinRate": 0.6,
+                            "secondSeatWinRate": 0.8,
+                            "avgTurns": 49.8,
+                            "passRate": 0.031
+                        },
+                        "strong": {
+                            "wins": 7,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.35,
+                            "firstSeatWinRate": 0.5,
+                            "secondSeatWinRate": 0.2,
+                            "avgTurns": 49.6,
+                            "passRate": 0.006
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr2e5-5000-seed65",
+            "status": "archive",
+            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed65/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed65",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00002,
+                "seed": 65,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "sushi-warehouse-bread",
+                "summary": "Archive comparison for lr=2e-5 without rewardcap. Candidate metrics are acceptable but rewardcap has better normal and pass stability."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-15",
+                    "type": "js",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {"wins": 19, "losses": 1, "draws": 0, "winRate": 0.95, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.9, "avgTurns": 46.8, "passRate": 0.01},
+                        "normal": {"wins": 12, "losses": 8, "draws": 0, "winRate": 0.6, "firstSeatWinRate": 0.7, "secondSeatWinRate": 0.5, "avgTurns": 54.0, "passRate": 0.066},
+                        "strong": {"wins": 7, "losses": 13, "draws": 0, "winRate": 0.35, "firstSeatWinRate": 0.4, "secondSeatWinRate": 0.3, "avgTurns": 51.8, "passRate": 0.169}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-5000-seed51",
+            "status": "rejected",
+            "path": "models/rl_model/runs/self-only-both-5000-seed51/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-5000-seed51",
+            "training": {
+                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+                "games": 5000,
+                "hidden": 128,
+                "lr": 0.0001,
+                "seed": 51,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "self-play-internal-overfit",
+                "summary": "Rejected because pool/self metrics were high but external JS evaluation collapsed."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-14",
+                    "type": "js-checkpoint",
+                    "gamesPerOpponent": 8,
+                    "opponents": {
+                        "weak": {"winRate": 0.12},
+                        "normal": {"winRate": 0.0},
+                        "strong": {"winRate": 0.0}
                     }
                 }
             ]

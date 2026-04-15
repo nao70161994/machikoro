@@ -73,6 +73,35 @@ print(entry["agent"] is agent)
     assert.strictEqual(lines[1], 'True');
 });
 
+runTest('rl train: self 両側学習は両席の行動をバッファに積む', () => {
+    const output = runPython(`
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import play_training_game
+
+random.seed(3)
+np.random.seed(3)
+agent = RLAgent(hidden=8, lr=0.0001)
+info = play_training_game(
+    agent,
+    epsilon=0.0,
+    opponent={"kind": "self", "agent": agent},
+    max_steps=12,
+    self_learn_both_sides=True,
+)
+print(info.get("self_both_sides"))
+print(info.get("recorded_steps"))
+print(len(agent.rewards))
+print(len(agent.states) == len(agent.actions) == len(agent.masks) == len(agent.values) == len(agent.rewards))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'True');
+    assert.strictEqual(lines[1], lines[2]);
+    assert.strictEqual(lines[3], 'True');
+    assert.ok(Number(lines[2]) > 0);
+});
+
 runTest('rl train: build stats を集計して整形できる', () => {
     const output = runPython(`
 import json

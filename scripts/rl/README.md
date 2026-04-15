@@ -22,6 +22,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-js-oracle-baseline.sh` | JS oracle CPU を使う baseline ラッパー |
 | `run-js-oracle-terminal-shaped.sh` | 模倣なし、終局報酬調整、自己対戦込みの現行RL実験ラッパー |
 | `run-js-oracle-strong-select.sh` | `hidden=128/lr=0.0001` を固定し、strong重視のJS評価でbest checkpointを選ぶ実験ラッパー |
+| `run-js-oracle-self-both.sh` | self 対戦時だけ両席の行動を学習対象にする実験ラッパー |
 
 ---
 
@@ -98,10 +99,11 @@ ACT_PASS          = 1579
 | `random` | Python 環境の合法手ランダム |
 | `weak` | 弱い固定CPU |
 | `normal` / `strong` / `expert` | 既定では Python heuristic。`--cpu-opponent-impl js-oracle` で JS `CPU.js` 実装を使う |
-| `self` | 現在モデルの greedy 方策を相手として使う片側自己対戦 |
+| `self` | 現在モデルの greedy 方策を相手として使う自己対戦。`--self-learn-both-sides` で両席学習に切り替え |
 | `pool` | 過去モデル snapshot の greedy 方策を相手として使う |
 
-`self` は両側学習ではない。学習バッファに入るのはエージェント席の行動だけで、相手席の self 行動は環境を進めるために使う。
+既定の `self` は片側学習。学習バッファに入るのはエージェント席の行動だけで、相手席の self 行動は環境を進めるために使う。
+`--self-learn-both-sides` を付けた場合は `opponent=self` のゲームだけ両席の行動を同じモデルの学習対象にする。
 
 opponent pool は `--pool-update-every` ごとに現在モデルを deepcopy し、`--pool-max-size` 個まで保持する。
 短い実験では既定の `5000` だと pool が効かないため、現行カリキュラムでは `250` を使う。
@@ -219,6 +221,9 @@ sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label terminal-shaped-h128-
 # strongを学習相手に混ぜず、checkpoint選抜でstrongを重く見る実験
 sh scripts/rl/run-js-oracle-strong-select.sh --run-label strong-select-seed21 --seed 21
 
+# self 対戦時に両席を学習する実験
+sh scripts/rl/run-js-oracle-self-both.sh --run-label self-both-seed41 --seed 41
+
 # baseline の既定値を保ったままゲーム数だけ短くする
 sh scripts/rl/run-baseline.sh --games 5000
 
@@ -264,6 +269,7 @@ python3 -m scripts.rl.train \
   --load              # models/rl_model/model.npz を読み込んで継続学習
   --cpu-opponent-impl js-oracle  # normal/strong/expert 相手に JS CPU oracle を使う
   --train-opponents random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1  # 学習相手比率
+  --self-learn-both-sides  # opponent=self のゲームだけ両席の行動を学習対象にする
   --pool-update-every 250  # pool snapshot 追加間隔
   --pool-max-size 4  # pool snapshot 保持数
   --restore-best-at-end  # 学習終了時に best checkpoint を通常モデルへ復元
@@ -378,10 +384,10 @@ npm run summarize-rl-metrics -- \
 - Python heuristic と JS `CPU.js` のズレが大きかったため、学習相手の `normal/strong/expert` は `--cpu-opponent-impl js-oracle` で JS oracle を使う。
 - 模倣学習は `strong` 風の方策を早く作れるが、模倣なしRLの学習可能性を検証するため、`run-js-oracle-terminal-shaped.sh` では `--imitation-games 0` と `--imitation-refresh-games 0` にしている。
 - 現行カリキュラムは `random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1`。`strong` は学習相手から一旦外し、評価対象としてだけ残す。
-- `self` は現在モデルを相手にする片側自己対戦。両側の行動を同時に学習する方式ではない。
+- `self` は既定では現在モデルを相手にする片側自己対戦。`--self-learn-both-sides` で `opponent=self` のゲームだけ両席を学習対象にできる。
 - `pool` は過去モデル snapshot との対戦。短期実験でも効くよう `--pool-update-every 250 --pool-max-size 4` を使う。
 - `--restore-best-at-end` で、学習終了時に途中 best checkpoint を `models/rl_model/model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
-- `hidden=128` と `hidden=256` は比較対象。ただし現在の報酬・探索設定では `hidden=256` が pass 方策へ崩れやすく、優先候補は `hidden=128`。
+- `hidden=128` と `hidden=256` は比較対象。従来の混合相手では `hidden=256` が pass 方策へ崩れやすかったが、`lr=2e-5〜3e-5`、完全自己対戦、両側学習では有力候補が出ている。
 - 学習済みモデル本体は git 管理しない。採用候補・評価結果・構築傾向は `models/rl_model/registry.json` に記録する。
 
 これまでの観察:
@@ -395,6 +401,10 @@ npm run summarize-rl-metrics -- \
 - `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
 - `terminal-shaped-h128-lr1e4` が strong に勝つ試合は、パン屋を厚く積み、マグロ漁船/コンビニ/寿司屋を絡めて全ランドマーク到達まで走る傾向がある。20戦中の strong 勝利7試合では平均60.0ターン、最終ランドマーク平均6.0個。
+- 完全自己対戦のみでも、両側学習なし/高めlrでは外部JS評価が崩れることがある。`self-only-both-5000-seed51` は `pool=100%` でも JS `weak 12% / normal 0% / strong 0%` で rejected。
+- `hidden=256 + lr=3e-5 + self=1 + --self-learn-both-sides + 5000 games` は `weak 90% / normal 65% / strong 45%` を出し、現時点の strong 重視トップ候補。
+- `hidden=256 + lr=2e-5 + rewardcap` は `weak 95% / normal 70% / strong 35%`。strong はやや下がるが pass率が低く、安定型候補。
+- 補助終局報酬は強すぎると自己対戦内だけの資産/建設パターンを強化する可能性がある。rewardcap 実験では `terminal_landmark_value_diff=0.004`、`terminal_asset_diff=0.002`、`terminal_coin_diff=0.001`、`terminal_diff_clip=20` を使用。
 - モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
 
 ### モデル台帳
@@ -415,7 +425,10 @@ npm run summarize-rl-metrics -- \
 
 | id | status | JS 20戦評価 | 構築傾向 |
 |----|--------|-------------|----------|
+| `self-only-both-h256-lr3e5-5000-seed62` | candidate | weak 90% / normal 65% / strong 45% | パン屋・食品倉庫・寿司屋寄り |
+| `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | candidate | weak 95% / normal 70% / strong 35% | パン屋・食品倉庫・ピザ屋寄り、低pass |
 | `terminal-shaped-h128-lr1e4` | candidate | weak 90% / normal 60% / strong 35% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り |
+| `strong-select-seed21` | candidate | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り |
 | `terminal-shaped-h128-long` | candidate | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り |
 | `terminal-shaped-curriculum-h128` | archive | weak 75% / normal 35% / strong 5% | 寿司屋・牧場・チーズ工場寄り |
 | `terminal-shaped-curriculum-h256` | rejected | JS 評価 0% 傾向 | pass 崩壊 |

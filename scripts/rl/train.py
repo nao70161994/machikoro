@@ -356,12 +356,80 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     }
 
 
+def _append_episode_to_agent(agent: RLAgent, ep_states, ep_actions, ep_masks, ep_values, ep_rewards):
+    if not ep_states:
+        return
+    T = len(ep_states)
+    next_values = ep_values[1:] + [0.0]
+    dones = [False] * (T - 1) + [True]
+
+    for i in range(T):
+        agent.states.append(ep_states[i])
+        agent.actions.append(ep_actions[i])
+        agent.masks.append(ep_masks[i])
+        agent.values.append(ep_values[i])
+        agent.rewards.append(ep_rewards[i])
+        agent.next_values.append(next_values[i])
+        agent.dones.append(dones[i])
+
+
 def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_steps: int = 3000,
-                       reward_config=None, terminal_config=None) -> dict:
+                       reward_config=None, terminal_config=None, self_learn_both_sides: bool = False) -> dict:
     env = MachikoroEnv()
     agent_player = random.randint(0, 1)
     reward_config = reward_config or _reward_shaping_defaults()
     terminal_config = terminal_config or _terminal_reward_defaults()
+    both_sides = bool(self_learn_both_sides and (opponent or {}).get("kind") == "self")
+
+    if both_sides:
+        episodes = [
+            {"states": [], "actions": [], "masks": [], "values": [], "rewards": []},
+            {"states": [], "actions": [], "masks": [], "values": [], "rewards": []},
+        ]
+        for _ in range(max_steps):
+            if env.done:
+                break
+
+            player = env.current
+            state = encode_state(env)
+            mask = action_mask(env)
+            action, value = _select_action(agent.net, state, mask, epsilon)
+
+            before_env = copy.deepcopy(env)
+            env.step(action)
+
+            episodes[player]["states"].append(state)
+            episodes[player]["actions"].append(action)
+            episodes[player]["masks"].append(mask)
+            episodes[player]["values"].append(float(value))
+            episodes[player]["rewards"].append(_compute_shaped_reward(before_env, env, player, reward_config, action=action))
+
+        recorded_steps = 0
+        for player, episode in enumerate(episodes):
+            if not episode["states"]:
+                continue
+            episode["rewards"][-1] += _compute_terminal_reward(env, player, terminal_config)
+            recorded_steps += len(episode["states"])
+            _append_episode_to_agent(
+                agent,
+                episode["states"],
+                episode["actions"],
+                episode["masks"],
+                episode["values"],
+                episode["rewards"],
+            )
+
+        if recorded_steps == 0:
+            return {}
+
+        return {
+            "winner": env.winner,
+            "agent_player": agent_player,
+            "turns": env.turn_count,
+            "opponent": "self",
+            "self_both_sides": True,
+            "recorded_steps": recorded_steps,
+        }
 
     ep_states = []
     ep_actions = []
@@ -394,18 +462,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
 
     ep_rewards[-1] += _compute_terminal_reward(env, agent_player, terminal_config)
 
-    T = len(ep_states)
-    next_values = ep_values[1:] + [0.0]
-    dones = [False] * (T - 1) + [True]
-
-    for i in range(T):
-        agent.states.append(ep_states[i])
-        agent.actions.append(ep_actions[i])
-        agent.masks.append(ep_masks[i])
-        agent.values.append(ep_values[i])
-        agent.rewards.append(ep_rewards[i])
-        agent.next_values.append(next_values[i])
-        agent.dones.append(dones[i])
+    _append_episode_to_agent(agent, ep_states, ep_actions, ep_masks, ep_values, ep_rewards)
 
     return {
         "winner": env.winner,
@@ -1130,6 +1187,7 @@ def main():
     parser.add_argument("--seed",       type=int,   default=None,  help="Python random / numpy の乱数seed（未指定なら固定しない）")
     parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
     parser.add_argument("--train-opponents", default="random=0.7,pool=0.3", help="学習時に混ぜる相手の重み指定 random/self/pool/weak/normal/strong/expert")
+    parser.add_argument("--self-learn-both-sides", action="store_true", help="opponent=self の学習ゲームで両席の行動を学習対象にする")
     parser.add_argument("--cpu-opponent-impl", choices=("python", "js-oracle"), default="python", help="weak以外のCPU相手の実装 python/js-oracle")
     parser.add_argument("--js-cpu-oracle", action="store_true", help="互換エイリアス: --cpu-opponent-impl js-oracle")
     parser.add_argument("--imitation-games", type=int, default=0, help="RL前にCPU教師行動で模倣学習するゲーム数（0で無効）")
@@ -1282,6 +1340,7 @@ def main():
             max_steps=args.max_steps,
             reward_config=reward_config,
             terminal_config=terminal_config,
+            self_learn_both_sides=args.self_learn_both_sides,
         )
         if info.get("winner") == info.get("agent_player"):
             agent_wins += 1
