@@ -23,6 +23,8 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-js-oracle-terminal-shaped.sh` | 模倣なし、終局報酬調整、自己対戦込みの現行RL実験ラッパー |
 | `run-js-oracle-strong-select.sh` | `hidden=128/lr=0.0001` を固定し、strong重視のJS評価でbest checkpointを選ぶ実験ラッパー |
 | `run-js-oracle-self-both.sh` | self 対戦時だけ両席の行動を学習対象にする実験ラッパー |
+| `run-self-only-h256-lr2e5-5000.sh` | `hidden=256/lr=0.00002/5000 games/self=1/両側学習/reward cap` の短縮プリセット |
+| `eval-run.sh` | `run-label` から `best_model.browser.json` を評価する短縮ラッパー |
 
 ---
 
@@ -223,6 +225,14 @@ sh scripts/rl/run-js-oracle-strong-select.sh --run-label strong-select-seed21 --
 
 # self 対戦時に両席を学習する実験
 sh scripts/rl/run-js-oracle-self-both.sh --run-label self-both-seed41 --seed 41
+
+# h256/lr=2e-5/5000/self=1/両側学習/reward cap の短縮プリセット
+sh scripts/rl/run-self-only-h256-lr2e5-5000.sh --run-label self-only-both-h256-lr2e5-5000-seed67-rewardcap --seed 67
+sh scripts/rl/run-self-only-h256-lr2e5-5000.sh --run-label self-only-both-h256-lr2e5-5000-seed68-rewardcap --seed 68
+
+# run-label から best checkpoint を外部評価する短縮ラッパー
+sh scripts/rl/eval-run.sh self-only-both-h256-lr2e5-5000-seed67-rewardcap
+sh scripts/rl/eval-run.sh self-only-both-h256-lr2e5-5000-seed68-rewardcap
 
 # baseline の既定値を保ったままゲーム数だけ短くする
 sh scripts/rl/run-baseline.sh --games 5000
