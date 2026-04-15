@@ -901,6 +901,25 @@ def _copy_checkpoint(src_model_path, dst_model_path):
         dst_fh.write(src_fh.read())
 
 
+def _ranked_checkpoint_path(base_checkpoint_path, rank):
+    if rank <= 1:
+        return base_checkpoint_path
+    return f"{base_checkpoint_path}.top{rank}"
+
+
+def _candidate_checkpoint_path(base_checkpoint_path, game):
+    return f"{base_checkpoint_path}.candidate-{game}"
+
+
+def _update_top_checkpoints(candidates, candidate, top_k):
+    if top_k <= 0:
+        return []
+    updated = [dict(entry) for entry in candidates]
+    updated.append(dict(candidate))
+    updated.sort(key=lambda entry: entry.get("score", float("-inf")), reverse=True)
+    return updated[:top_k]
+
+
 def _best_checkpoint_browser_path(best_checkpoint_path):
     return best_checkpoint_path + ".browser.json"
 
@@ -1236,6 +1255,7 @@ def main():
     parser.add_argument("--summary-run-index-csv", default="", help="metrics 集計時に run index を書き出す CSV パス")
     parser.add_argument("--summary-config-index-csv", default="", help="metrics 集計時に config index を書き出す CSV パス")
     parser.add_argument("--best-checkpoint", default="", help="best checkpoint の退避先（.npz 拡張子なし）")
+    parser.add_argument("--best-checkpoint-top-k", type=int, default=1, help="保存する best checkpoint 候補数。2以上で .top2/.top3... も保存")
     parser.add_argument("--restore-best-at-end", action="store_true", help="学習終了時に best checkpoint を通常モデルへ復元する")
     args = parser.parse_args()
     args.run_label = _make_run_label(args)
@@ -1318,6 +1338,7 @@ def main():
     # 対戦相手プール（過去モデルのスナップショット）
     pool_agents = []
     best_eval_score = None
+    top_checkpoints = []
 
     for game_i in range(1, args.games + 1):
         # ε を線形減衰
@@ -1446,34 +1467,95 @@ def main():
                 )
                 if eval_score is None:
                     eval_score = _fallback_checkpoint_score(wr_rnd, wr_normal, wr_strong, wr_expert)
-                if best_eval_score is None or eval_score > best_eval_score:
-                    best_eval_score = eval_score
-                    _copy_checkpoint(model_path, args.best_checkpoint)
-                    browser_checkpoint_path = _best_checkpoint_browser_path(args.best_checkpoint)
-                    artifact_paths = _best_checkpoint_artifact_paths(
-                        args.best_checkpoint,
-                        args.summary_output,
-                        args.summary_run_index_csv,
-                        args.summary_config_index_csv,
-                    )
-                    _export_browser_checkpoint(args.best_checkpoint, browser_checkpoint_path)
-                    _write_best_checkpoint_metadata(
-                        args.best_checkpoint + ".meta.json",
-                        {
-                            "runLabel": args.run_label,
-                            "game": game_i,
-                            "score": eval_score,
-                            "seed": args.seed,
-                            **artifact_paths,
-                            "rnd": wr_rnd,
-                            "normal": wr_normal,
-                            "strong": wr_strong,
-                            "expert": wr_expert,
-                            "cpuOpponentImpl": args.cpu_opponent_impl,
-                            "jsSummary": js_entries,
-                        },
-                    )
+                candidate_path = _candidate_checkpoint_path(args.best_checkpoint, game_i)
+                checkpoint_candidate = {
+                    "game": game_i,
+                    "score": eval_score,
+                    "path": candidate_path,
+                    "seed": args.seed,
+                    "rnd": wr_rnd,
+                    "normal": wr_normal,
+                    "strong": wr_strong,
+                    "expert": wr_expert,
+                    "jsSummary": js_entries,
+                }
+                top_checkpoints = _update_top_checkpoints(
+                    top_checkpoints,
+                    checkpoint_candidate,
+                    max(1, args.best_checkpoint_top_k),
+                )
+                saved_rank = next(
+                    (
+                        rank for rank, entry in enumerate(top_checkpoints, start=1)
+                        if entry.get("game") == game_i and entry.get("score") == eval_score
+                    ),
+                    None,
+                )
+                if saved_rank == 1:
+                    _copy_checkpoint(model_path, candidate_path)
+                    for rank, entry in enumerate(top_checkpoints, start=1):
+                        checkpoint_path = _ranked_checkpoint_path(args.best_checkpoint, rank)
+                        _copy_checkpoint(entry["path"], checkpoint_path)
+                        _export_browser_checkpoint(checkpoint_path, _best_checkpoint_browser_path(checkpoint_path))
+                        artifact_paths = _best_checkpoint_artifact_paths(
+                            checkpoint_path,
+                            args.summary_output,
+                            args.summary_run_index_csv,
+                            args.summary_config_index_csv,
+                        )
+                        _write_best_checkpoint_metadata(
+                            checkpoint_path + ".meta.json",
+                            {
+                                "runLabel": args.run_label,
+                                "game": entry["game"],
+                                "score": entry["score"],
+                                "rank": rank,
+                                "seed": entry.get("seed"),
+                                **artifact_paths,
+                                "sourceCheckpointPath": entry["path"] + ".npz",
+                                "rnd": entry.get("rnd"),
+                                "normal": entry.get("normal"),
+                                "strong": entry.get("strong"),
+                                "expert": entry.get("expert"),
+                                "cpuOpponentImpl": args.cpu_opponent_impl,
+                                "jsSummary": entry.get("jsSummary", []),
+                            },
+                        )
+                    best_eval_score = top_checkpoints[0]["score"]
                     print(f"best checkpoint更新: {args.best_checkpoint}.npz (score={eval_score:.4f})")
+                elif saved_rank is not None:
+                    _copy_checkpoint(model_path, candidate_path)
+                    for rank, entry in enumerate(top_checkpoints, start=1):
+                        checkpoint_path = _ranked_checkpoint_path(args.best_checkpoint, rank)
+                        _copy_checkpoint(entry["path"], checkpoint_path)
+                        _export_browser_checkpoint(checkpoint_path, _best_checkpoint_browser_path(checkpoint_path))
+                        artifact_paths = _best_checkpoint_artifact_paths(
+                            checkpoint_path,
+                            args.summary_output,
+                            args.summary_run_index_csv,
+                            args.summary_config_index_csv,
+                        )
+                        _write_best_checkpoint_metadata(
+                            checkpoint_path + ".meta.json",
+                            {
+                                "runLabel": args.run_label,
+                                "game": entry["game"],
+                                "score": entry["score"],
+                                "rank": rank,
+                                "seed": entry.get("seed"),
+                                **artifact_paths,
+                                "sourceCheckpointPath": entry["path"] + ".npz",
+                                "rnd": entry.get("rnd"),
+                                "normal": entry.get("normal"),
+                                "strong": entry.get("strong"),
+                                "expert": entry.get("expert"),
+                                "cpuOpponentImpl": args.cpu_opponent_impl,
+                                "jsSummary": entry.get("jsSummary", []),
+                            },
+                        )
+                    best_eval_score = top_checkpoints[0]["score"]
+                    checkpoint_path = _ranked_checkpoint_path(args.best_checkpoint, saved_rank)
+                    print(f"best checkpoint候補#{saved_rank}更新: {checkpoint_path}.npz (score={eval_score:.4f})")
 
     # 末尾の未学習データをフラッシュ
     if len(agent.rewards) > 0:

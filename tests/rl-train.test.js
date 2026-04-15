@@ -450,8 +450,10 @@ print(_fallback_checkpoint_score(0.55, 0.5, 0.4, 0.3))
 runTest('rl train: best checkpoint browser path を組み立てる', () => {
     const output = runPython(`
 import json
-from scripts.rl.train import _best_checkpoint_browser_path, _best_checkpoint_artifact_paths
+from scripts.rl.train import _best_checkpoint_browser_path, _best_checkpoint_artifact_paths, _ranked_checkpoint_path
 print(_best_checkpoint_browser_path("models/rl_model/best_model"))
+print(_ranked_checkpoint_path("models/rl_model/best_model", 1))
+print(_ranked_checkpoint_path("models/rl_model/best_model", 3))
 print(json.dumps(_best_checkpoint_artifact_paths(
     "models/rl_model/best_model",
     "models/rl_model/summary.json",
@@ -461,13 +463,31 @@ print(json.dumps(_best_checkpoint_artifact_paths(
 `);
     const lines = output.split('\n');
     assert.strictEqual(lines[0], 'models/rl_model/best_model.browser.json');
-    const paths = JSON.parse(lines[1]);
+    assert.strictEqual(lines[1], 'models/rl_model/best_model');
+    assert.strictEqual(lines[2], 'models/rl_model/best_model.top3');
+    const paths = JSON.parse(lines[3]);
     assert.strictEqual(paths.checkpointPath, 'models/rl_model/best_model.npz');
     assert.strictEqual(paths.browserCheckpointPath, 'models/rl_model/best_model.browser.json');
     assert.strictEqual(paths.metaPath, 'models/rl_model/best_model.meta.json');
     assert.strictEqual(paths.summaryPath, 'models/rl_model/summary.json');
     assert.strictEqual(paths.runIndexCsvPath, 'models/rl_model/run_index.csv');
     assert.strictEqual(paths.configIndexCsvPath, 'models/rl_model/config_index.csv');
+});
+
+runTest('rl train: top-k checkpoint 候補をスコア順に保持する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.train import _update_top_checkpoints
+candidates = [
+    {"game": 100, "score": 0.2},
+    {"game": 200, "score": 0.5},
+]
+result = _update_top_checkpoints(candidates, {"game": 300, "score": 0.4}, 2)
+print(json.dumps(result))
+`);
+    const result = JSON.parse(output);
+    assert.deepStrictEqual(result.map((entry) => entry.game), [200, 300]);
+    assert.deepStrictEqual(result.map((entry) => entry.score), [0.5, 0.4]);
 });
 
 runTest('rl train: summary excerpt は bestRuns と bestConfigs を抜粋する', () => {

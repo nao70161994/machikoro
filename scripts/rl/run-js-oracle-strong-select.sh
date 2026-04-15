@@ -9,4 +9,5 @@ exec sh scripts/rl/run-js-oracle-terminal-shaped.sh \
     --js-eval-games 8 \
     --js-eval-opponents weak,normal,strong \
     --summary-weights weak=1,normal=2,strong=5 \
+    --best-checkpoint-top-k 3 \
     "$@"
