@@ -412,7 +412,7 @@ function renderPlayers() {
     const html = game.players.map((p, idx) => {
         const isActive = idx === game.currentPlayerIndex;
         const isCPU = cpuPlayers[idx] !== null;
-        const cpuLabel = isCPU ? `🤖${cpuPlayers[idx].difficulty === 'weak' ? '弱' : cpuPlayers[idx].difficulty === 'normal' ? '普' : cpuPlayers[idx].difficulty === 'strong' ? '強' : 'AI'}` : '👤';
+        const cpuLabel = isCPU ? `🤖${cpuPlayers[idx].difficulty === 'weak' ? '弱' : cpuPlayers[idx].difficulty === 'normal' ? '普' : cpuPlayers[idx].difficulty === 'strong' ? '強' : cpuPlayers[idx].difficulty === 'rl' ? '学' : 'AI'}` : '👤';
         const landmarks = Object.entries(p.landmarks)
             .filter(([name]) => enabledLandmarks.has(name))
             .map(([name, built]) => `<span class="landmark-badge ${built ? 'built' : ''}">${getLandmarkEmoji(name)} ${name}</span>`)

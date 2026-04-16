@@ -45,7 +45,21 @@ function getLocalCpuLabel(difficulty) {
     if (difficulty === 'weak') return 'CPU（弱）';
     if (difficulty === 'normal') return 'CPU（普通）';
     if (difficulty === 'strong') return 'CPU（強）';
+    if (difficulty === 'rl') return 'AI（学習）';
     return 'AI（最強）';
+}
+
+function createCpuPlayer(difficulty, options = {}) {
+    if (difficulty === 'rl') {
+        try {
+            return RLModelPortfolio.createRandomCpu();
+        } catch (error) {
+            console.error(error);
+            alert("学習AIモデルを読み込めませんでした。AI（最強）で代替します。");
+            return new CPU('expert', options);
+        }
+    }
+    return new CPU(difficulty, options);
 }
 
 function formatCpuSpeedLabel(value) {
@@ -81,6 +95,7 @@ function renderPlayerSettings() {
                     <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                     <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
                     <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
+                    <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
                 </select>
             </div>
             ${s.type === "human" ? `
@@ -130,9 +145,6 @@ function startGame() {
     resetStatsRecorded();
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
-    cpuPlayers = playerSettings.map(s =>
-        s.type === "cpu" ? new CPU(s.difficulty, { expertPurpose: "live" }) : null
-    );
     init(selectedCount);
 }
 
@@ -186,7 +198,7 @@ function init(playerCount) {
             : normalizeLocalPlayerName(setting.name, originalIndex);
         shuffledCpuPlayers.push(
             setting.type === "cpu"
-                ? new CPU(setting.difficulty, { expertPurpose: "live" })
+                ? createCpuPlayer(setting.difficulty, { expertPurpose: "live" })
                 : null
         );
     }

@@ -103,6 +103,7 @@ function getCpuStatsLabel(cpu) {
     if (cpu.difficulty === 'weak') return 'CPU（弱）';
     if (cpu.difficulty === 'normal') return 'CPU（普通）';
     if (cpu.difficulty === 'strong') return 'CPU（強）';
+    if (cpu.difficulty === 'rl') return cpu.modelLabel || 'AI（学習）';
     return 'AI（最強）';
 }
 

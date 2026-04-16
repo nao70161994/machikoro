@@ -3,6 +3,13 @@ let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 
+function createOnlineCpuPlayer(difficulty, options = {}) {
+    if (typeof createCpuPlayer === "function") {
+        return createCpuPlayer(difficulty, options);
+    }
+    return new CPU(difficulty, options);
+}
+
 function changeOnlineCount(delta) {
     onlineSelectedCount = Math.min(10, Math.max(2, onlineSelectedCount + delta));
     document.getElementById("onlinePlayerCount").textContent = onlineSelectedCount;
@@ -23,6 +30,7 @@ function renderOnlinePlayerSettings() {
                 <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                 <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
                 <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
+                <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
             </select>
         </div>
     `).join("");
@@ -351,7 +359,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     if (ps && ps.length > 0) {
         cpuPlayers = order.map(originalIndex => {
             const s = ps[originalIndex];
-            return s && s.type === "cpu" ? new CPU(s.difficulty, { expertPurpose: "live" }) : null;
+            return s && s.type === "cpu" ? createOnlineCpuPlayer(s.difficulty, { expertPurpose: "live" }) : null;
         });
     } else {
         cpuPlayers = game.players.map(() => null);
