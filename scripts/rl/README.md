@@ -418,6 +418,7 @@ npm run summarize-rl-metrics -- \
 - 完全自己対戦のみでも、両側学習なし/高めlrでは外部JS評価が崩れることがある。`self-only-both-5000-seed51` は `pool=100%` でも JS `weak 12% / normal 0% / strong 0%` で rejected。
 - `hidden=256 + lr=3e-5 + self=1 + --self-learn-both-sides + 5000 games` は `weak 90% / normal 65% / strong 45%` を出し、現時点の strong 重視トップ候補。
 - `hidden=256 + lr=2e-5 + rewardcap` は `weak 95% / normal 70% / strong 35%`。strong はやや下がるが pass率が低く、安定型候補。
+- `seed71 rewardcap` の top3 checkpoint は 50戦 JS 評価で `weak 100% / normal 92% / strong 78%`。現時点の最強候補だが、単一採用ではなく戦略バリエーション用に別系統候補も残す。
 - 補助終局報酬は強すぎると自己対戦内だけの資産/建設パターンを強化する可能性がある。rewardcap 実験では `terminal_landmark_value_diff=0.004`、`terminal_asset_diff=0.002`、`terminal_coin_diff=0.001`、`terminal_diff_clip=20` を使用。
 - モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
 
@@ -434,11 +435,19 @@ npm run summarize-rl-metrics -- \
 - `training`: wrapper、games、hidden、lr、報酬プロファイルなど。
 - `style`: 構築傾向のラベルと主要カード/ランドマーク。
 - `evals`: 20戦 JS 評価など、採用判断に使う評価結果。
+- `portfolioPolicy`: 勝率だけでなく、席差・pass率・平均ターン・構築傾向を含めた採用方針。
+
+勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
+逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。
 
 現時点の候補:
 
-| id | status | JS 20戦評価 | 構築傾向 |
+| id | status | JS評価 | 構築傾向 |
 |----|--------|-------------|----------|
+| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | candidate | 50戦 weak 100% / normal 92% / strong 78% | ブドウ園・牧場・ワイナリー寄り、現時点トップ |
+| `self-only-both-h256-lr2e5-5000-seed71-rewardcap` | candidate | 50戦 weak 96% / normal 94% / strong 68% | ブドウ園・牧場・バーガー寄り |
+| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 50戦 weak 98% / normal 96% / strong 32% | 寿司屋・食品倉庫・牧場寄り |
+| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 50戦 weak 94% / normal 60% / strong 34% | バーガー・食品倉庫・麦畑寄り |
 | `self-only-both-h256-lr3e5-5000-seed62` | candidate | weak 90% / normal 65% / strong 45% | パン屋・食品倉庫・寿司屋寄り |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | candidate | weak 95% / normal 70% / strong 35% | パン屋・食品倉庫・ピザ屋寄り、低pass |
 | `terminal-shaped-h128-lr1e4` | candidate | weak 90% / normal 60% / strong 35% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り |

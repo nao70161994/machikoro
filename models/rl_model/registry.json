@@ -19,6 +19,43 @@
             "strongMin": 0.3
         }
     },
+    "portfolioPolicy": {
+        "goal": "Keep several RL CPU models with distinct build tendencies, not only the single highest win-rate model.",
+        "selectionAxes": [
+            "50-game JS win rates against weak/normal/strong",
+            "seat balance",
+            "pass rate",
+            "average turns",
+            "top card and landmark build tendencies"
+        ],
+        "recommendedActiveModels": [
+            {
+                "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+                "role": "top-strength",
+                "style": "vineyard-farm-winery",
+                "reason": "Best current 50-game weak/normal/strong result, especially strong."
+            },
+            {
+                "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+                "role": "sushi-warehouse-variant",
+                "style": "sushi-warehouse-farm",
+                "reason": "Very high weak/normal result with a different card mix from seed71."
+            },
+            {
+                "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+                "role": "burger-warehouse-variant",
+                "style": "burger-warehouse-wheat",
+                "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines."
+            },
+            {
+                "id": "terminal-shaped-h128-lr1e4",
+                "role": "legacy-h128-variant",
+                "style": "bread-farm-fishing",
+                "reason": "Older h128 strategy with distinct build tendency; useful for variety even if weaker."
+            }
+        ],
+        "archiveGuidance": "Archive candidates only when both strength and strategy overlap with a better model. Keep weaker models if they provide clearly different build behavior."
+    },
     "models": [
         {
             "id": "terminal-shaped-h128-lr1e4",
