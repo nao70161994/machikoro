@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-04-15",
+    "updatedAt": "2026-04-17",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -443,6 +443,182 @@
                             "avgTurns": 49.6,
                             "passRate": 0.006
                         }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+            "status": "candidate",
+            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap/best_model.top3.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+            "training": {
+                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00002,
+                "seed": 71,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-rewardcap",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "terminalLandmarkValueDiff": 0.004,
+                "terminalAssetDiff": 0.002,
+                "terminalCoinDiff": 0.001,
+                "terminalDiffClip": 20,
+                "checkpointSelection": "top3 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "vineyard-farm-winery-strong",
+                "topCardsVsStrong": [
+                    "ranch",
+                    "vineyard",
+                    "winery",
+                    "bakery",
+                    "loan_office"
+                ],
+                "topLandmarksVsStrong": [
+                    "harbor",
+                    "station",
+                    "shopping_mall",
+                    "amusement_park",
+                    "radio_tower"
+                ],
+                "summary": "Current top candidate. 50-game JS evaluation keeps very high weak/normal rates and reaches the best strong result so far."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-17",
+                    "type": "js",
+                    "checkpointRank": 3,
+                    "gamesPerOpponent": 50,
+                    "opponents": {
+                        "weak": {"wins": 50, "losses": 0, "draws": 0, "winRate": 1.0, "firstSeatWinRate": 1.0, "secondSeatWinRate": 1.0, "avgTurns": 52.9, "passRate": 0.004},
+                        "normal": {"wins": 46, "losses": 4, "draws": 0, "winRate": 0.92, "firstSeatWinRate": 0.92, "secondSeatWinRate": 0.92, "avgTurns": 57.3, "passRate": 0.041},
+                        "strong": {"wins": 39, "losses": 11, "draws": 0, "winRate": 0.78, "firstSeatWinRate": 0.72, "secondSeatWinRate": 0.84, "avgTurns": 51.3, "passRate": 0.018}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+            "status": "candidate",
+            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+            "training": {
+                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00002,
+                "seed": 71,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-rewardcap",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "terminalLandmarkValueDiff": 0.004,
+                "terminalAssetDiff": 0.002,
+                "terminalCoinDiff": 0.001,
+                "terminalDiffClip": 20,
+                "checkpointSelection": "rank1 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "vineyard-farm-burger",
+                "summary": "Rank1 checkpoint for seed71. Strong result is excellent, but top3 was better in the 50-game audit."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-17",
+                    "type": "js",
+                    "checkpointRank": 1,
+                    "gamesPerOpponent": 50,
+                    "opponents": {
+                        "weak": {"wins": 48, "losses": 2, "draws": 0, "winRate": 0.96, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.96, "avgTurns": 58.4, "passRate": 0.001},
+                        "normal": {"wins": 47, "losses": 3, "draws": 0, "winRate": 0.94, "firstSeatWinRate": 0.92, "secondSeatWinRate": 0.96, "avgTurns": 59.0, "passRate": 0.013},
+                        "strong": {"wins": 34, "losses": 16, "draws": 0, "winRate": 0.68, "firstSeatWinRate": 0.76, "secondSeatWinRate": 0.6, "avgTurns": 55.4, "passRate": 0.0}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+            "status": "candidate",
+            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+            "training": {
+                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00002,
+                "seed": 69,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-rewardcap",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "terminalLandmarkValueDiff": 0.004,
+                "terminalAssetDiff": 0.002,
+                "terminalCoinDiff": 0.001,
+                "terminalDiffClip": 20,
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "burger-warehouse-wheat",
+                "summary": "Stable rewardcap candidate from 50-game audit. Superseded by seed71 top3 but still useful as a different build style."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-16",
+                    "type": "js",
+                    "gamesPerOpponent": 50,
+                    "opponents": {
+                        "weak": {"wins": 47, "losses": 3, "draws": 0, "winRate": 0.94, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.92, "avgTurns": 65.4, "passRate": 0.0},
+                        "normal": {"wins": 30, "losses": 20, "draws": 0, "winRate": 0.6, "firstSeatWinRate": 0.44, "secondSeatWinRate": 0.76, "avgTurns": 62.0, "passRate": 0.011},
+                        "strong": {"wins": 17, "losses": 33, "draws": 0, "winRate": 0.34, "firstSeatWinRate": 0.32, "secondSeatWinRate": 0.36, "avgTurns": 59.2, "passRate": 0.0}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+            "status": "candidate",
+            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+            "training": {
+                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+                "games": 5000,
+                "hidden": 256,
+                "lr": 0.00002,
+                "seed": 70,
+                "cpuOpponentImpl": "js-oracle",
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-rewardcap",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "terminalLandmarkValueDiff": 0.004,
+                "terminalAssetDiff": 0.002,
+                "terminalCoinDiff": 0.001,
+                "terminalDiffClip": 20,
+                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "sushi-warehouse-farm",
+                "summary": "Very strong weak/normal result in 50-game audit, but strong is below seed71."
+            },
+            "evals": [
+                {
+                    "date": "2026-04-17",
+                    "type": "js",
+                    "gamesPerOpponent": 50,
+                    "opponents": {
+                        "weak": {"wins": 49, "losses": 1, "draws": 0, "winRate": 0.98, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.96, "avgTurns": 54.7, "passRate": 0.003},
+                        "normal": {"wins": 48, "losses": 2, "draws": 0, "winRate": 0.96, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.96, "avgTurns": 55.7, "passRate": 0.035},
+                        "strong": {"wins": 16, "losses": 34, "draws": 0, "winRate": 0.32, "firstSeatWinRate": 0.52, "secondSeatWinRate": 0.12, "avgTurns": 54.5, "passRate": 0.009}
                     }
                 }
             ]
