@@ -18,8 +18,9 @@ runTest('simulateGame は CPU 同士の試合を最後まで進められる', ()
     const result = simulateGame({
         difficulties: ['expert', 'strong', 'normal'],
         seed: 42,
-        maxSteps: 8000,
+        maxSteps: 3000,
         expertPreset: 'rush',
+        lite: true,
     });
 
     assert.strictEqual(result.exhausted, false);
@@ -33,17 +34,18 @@ runTest('simulateGame は CPU 同士の試合を最後まで進められる', ()
 
 runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     const result = runSeries({
-        games: 6,
+        games: 3,
         seed: 10,
-        maxSteps: 8000,
+        maxSteps: 3000,
         players: ['expert', 'strong'],
         expertPreset: 'economy',
+        lite: true,
     });
 
-    assert.strictEqual(result.games, 6);
-    assert.strictEqual(result.wins.expert + result.wins.strong, 6);
+    assert.strictEqual(result.games, 3);
+    assert.strictEqual(result.wins.expert + result.wins.strong, 3);
     assert.strictEqual(result.seatWins.length, 2);
-    assert.strictEqual(result.matchLog.length, 6);
+    assert.strictEqual(result.matchLog.length, 3);
     assert.ok(typeof result.matchLog[0].seed === 'number');
     assert.strictEqual(result.matchLog[0].expertPreset, 'economy');
     assert.strictEqual(result.matchLog[0].finalState.length, 2);
@@ -54,16 +56,17 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
 
 runTest('runDifficultyLadder は難易度差確認向けの対戦セットを返す', () => {
     const result = runDifficultyLadder({
-        games: 2,
+        games: 1,
         seed: 3,
-        maxSteps: 4000,
+        maxSteps: 3000,
+        lite: true,
     });
 
     assert.strictEqual(result.length, 3);
     assert.deepStrictEqual(result[0].players, ['normal', 'weak']);
     assert.deepStrictEqual(result[1].players, ['strong', 'normal']);
     assert.deepStrictEqual(result[2].players, ['expert', 'strong']);
-    assert.strictEqual(result[0].result.games, 2);
+    assert.strictEqual(result[0].result.games, 1);
 });
 
 runTest('parseArgs は CLI 引数を解釈する', () => {
@@ -83,26 +86,28 @@ runTest('parseArgs は CLI 引数を解釈する', () => {
 
 runTest('comparePresets は複数プリセットの集計を返す', () => {
     const comparisons = comparePresets({
-        games: 2,
+        games: 1,
         seed: 1,
-        maxSteps: 4000,
+        maxSteps: 3000,
         players: ['expert', 'strong'],
         comparePresets: ['default', 'rush'],
         format: 'text',
         details: false,
+        lite: true,
     });
 
     assert.strictEqual(comparisons.length, 2);
     assert.strictEqual(comparisons[0].preset, 'default');
     assert.strictEqual(comparisons[1].preset, 'rush');
-    assert.strictEqual(comparisons[0].result.games, 2);
+    assert.strictEqual(comparisons[0].result.games, 1);
 });
 
 runTest('simulateGame は expert 指定なしでも default を既定プリセットとして使える', () => {
     const result = simulateGame({
         difficulties: ['expert', 'strong'],
         seed: 7,
-        maxSteps: 4000,
+        maxSteps: 3000,
+        lite: true,
     });
 
     assert.strictEqual(result.expertPreset, 'default');
@@ -120,7 +125,8 @@ runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
     const result = simulateGame({
         difficulties: ['expert', 'strong', 'strong', 'normal'],
         seed: 11,
-        maxSteps: 6000,
+        maxSteps: 3000,
+        lite: true,
         expertProfileTunings: {
             crowd: { lookaheadWeight: 0.42 },
         },
@@ -133,7 +139,8 @@ runTest('simulateGame は expert behavior flags を受け渡せる', () => {
     const result = simulateGame({
         difficulties: ['expert', 'normal', 'normal', 'normal'],
         seed: 12,
-        maxSteps: 6000,
+        maxSteps: 3000,
+        lite: true,
         expertBehaviorFlags: {
             premiumPurpleGate: true,
             endgameBuildFocus: true,

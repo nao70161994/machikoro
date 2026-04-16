@@ -16,8 +16,6 @@ function createDefaultShopStock(context) {
     for (const card of context.CARDS) {
         stock[card.name] = 6;
     }
-    stock['麦畑'] -= 2;
-    stock['パン屋'] -= 2;
     return stock;
 }
 
@@ -208,6 +206,7 @@ function buildGameFromFixtureSetup(context, setup) {
     game.pendingMover = setup.pendingMover;
     game.pendingRenovation = setup.pendingRenovation;
     game.pendingIT = setup.pendingIT;
+    game.usedReroll = !!setup.usedReroll;
 
     for (let i = 0; i < setup.players.length; i++) {
         const player = game.players[i];
@@ -252,6 +251,7 @@ function serializeGameSetup(game, context) {
         pendingMover: game.pendingMover,
         pendingRenovation: game.pendingRenovation,
         pendingIT: game.pendingIT,
+        usedReroll: !!game.usedReroll,
         shopStock: Object.fromEntries(Object.entries(shopStock).filter(([, count]) => count !== 6)),
         players: game.players.map(player => {
             const cards = {};
