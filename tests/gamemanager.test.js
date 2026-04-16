@@ -151,6 +151,63 @@ runTest('ワイナリーは発動したカードだけ休業する', () => {
     assert.strictEqual(game.currentPlayer().isDormant(wineryB), true);
 });
 
+runTest('休業中の高級フレンチは相手が5を出すと休業解除だけ行う', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const opponent = game.players[1];
+    const french = createCardByName('高級フレンチ');
+    current.cards = [];
+    current.dormantCards = [];
+    current.landmarks['港'] = true;
+    current.landmarks['ショッピングモール'] = true;
+    current.coins = 10;
+    opponent.cards = [french];
+    opponent.dormantCards = [];
+    opponent.coins = 0;
+    opponent.makeDormant(french);
+
+    game.rollDice(5);
+
+    assert.strictEqual(opponent.isDormant(french), false);
+    assert.strictEqual(current.coins, 10);
+    assert.strictEqual(opponent.coins, 0);
+});
+
+runTest('休業中の高級フレンチ所持中に購入した高級フレンチは個別に発動する', () => {
+    const game = new GameManager(2);
+    const current = game.players[0];
+    const opponent = game.players[1];
+    const dormantFrench = createCardByName('高級フレンチ');
+    opponent.cards = [dormantFrench];
+    opponent.dormantCards = [];
+    opponent.coins = 10;
+    opponent.makeDormant(dormantFrench);
+
+    game.currentPlayerIndex = 1;
+    game.phase = 'build';
+    assert.strictEqual(game.buildCard(createCardByName('高級フレンチ')), true);
+    const boughtFrench = opponent.cards[1];
+    assert.strictEqual(opponent.isDormant(dormantFrench), true);
+    assert.strictEqual(opponent.isDormant(boughtFrench), false);
+
+    game.currentPlayerIndex = 0;
+    game.phase = 'roll';
+    game.builtThisTurn = false;
+    current.cards = [];
+    current.dormantCards = [];
+    current.landmarks['港'] = true;
+    current.landmarks['ショッピングモール'] = true;
+    current.coins = 10;
+    opponent.coins = 0;
+
+    game.rollDice(5);
+
+    assert.strictEqual(opponent.isDormant(dormantFrench), false);
+    assert.strictEqual(opponent.isDormant(boughtFrench), false);
+    assert.strictEqual(current.coins, 5);
+    assert.strictEqual(opponent.coins, 5);
+});
+
 runTest('遊園地はサイコロを振った時点で所持していないと発動しない', () => {
     const game = new GameManager(2);
     game.phase = 'build';

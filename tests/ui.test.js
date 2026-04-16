@@ -198,6 +198,51 @@ runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示
     assert.ok(elements.pendingMenu.innerHTML.includes('Bob'));
 });
 
+runTest('renderPlayers は所持カードを色順と出目順で表示する', () => {
+    const { context, elements } = loadUiRuntime();
+    const cards = [
+        context.createCardByName('高級フレンチ'),
+        context.createCardByName('麦畑'),
+        context.createCardByName('パン屋'),
+        context.createCardByName('森林'),
+        context.createCardByName('カフェ'),
+    ];
+    const player = {
+        name: 'Alice',
+        coins: 3,
+        cards,
+        dormantCards: [],
+        itVentureCoins: 0,
+        landmarks: { 駅: false, ショッピングモール: false, 遊園地: false, 電波塔: false, 港: false, 空港: false },
+        isDormant(card) { return this.dormantCards.includes(card); },
+    };
+    context.game = {
+        currentPlayerIndex: 0,
+        players: [player],
+    };
+    context.cpuPlayers = [null];
+
+    context.renderPlayers();
+
+    const html = elements.players.innerHTML;
+    assert.ok(html.indexOf('麦畑×1') < html.indexOf('森林×1'));
+    assert.ok(html.indexOf('森林×1') < html.indexOf('パン屋×1'));
+    assert.ok(html.indexOf('パン屋×1') < html.indexOf('カフェ×1'));
+    assert.ok(html.indexOf('カフェ×1') < html.indexOf('高級フレンチ×1'));
+});
+
+runTest('renderCardSelectModal はカード選択を表示順でソートする', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.renderCardSelectModal();
+
+    const basic = elements.cardListBasic.innerHTML;
+    assert.ok(basic.indexOf('麦畑') < basic.indexOf('牧場'));
+    assert.ok(basic.indexOf('牧場') < basic.indexOf('森林'));
+    assert.ok(basic.indexOf('リンゴ園') < basic.indexOf('パン屋'));
+    assert.ok(basic.indexOf('ファミレス') < basic.indexOf('スタジアム'));
+});
+
 if (process.exitCode) {
     throw new Error('uiテストで失敗が発生しました');
 }

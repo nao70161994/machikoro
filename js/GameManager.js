@@ -207,6 +207,17 @@ class GameManager {
         }
     }
 
+    _reviveDormantCardsForDice(player, dice, shouldRevive) {
+        const revived = new Set();
+        for (const card of [...player.dormantCards]) {
+            if (!card.diceNums.includes(dice) || !shouldRevive(card)) continue;
+            player.revive(card);
+            revived.add(card);
+            this.addLog(LOG_TYPES.SPECIAL, `💤 ${player.name}の${card.name}が休業解除`);
+        }
+        return revived;
+    }
+
     processIncome(tunaDice = null) {
         const dice = this.lastDiceResult;
         const current = this.currentPlayer();
@@ -235,7 +246,9 @@ class GameManager {
         for (let i = 0; i < this.players.length; i++) {
             if (i === ci) continue;
             const other = this.players[i];
+            const revivedCards = this._reviveDormantCardsForDice(other, dice, card => card.color === "red");
             for (const card of other.cards) {
+                if (revivedCards.has(card)) continue;
                 if (other.isDormant(card)) continue;
                 if (card.color !== "red" || !card.diceNums.includes(dice)) continue;
                 if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks[LANDMARK_NAMES.HARBOR]) continue;
@@ -273,7 +286,9 @@ class GameManager {
 
     _processBlue(dice, tunaDice) {
         for (const p of this.players) {
+            const revivedCards = this._reviveDormantCardsForDice(p, dice, card => card.color === "blue");
             for (const card of p.cards) {
+                if (revivedCards.has(card)) continue;
                 if (p.isDormant(card)) continue;
                 if (card.color !== "blue" || !card.diceNums.includes(dice)) continue;
 
@@ -304,7 +319,9 @@ class GameManager {
     }
 
     _processGreen(current, dice) {
+        const revivedCards = this._reviveDormantCardsForDice(current, dice, card => card.color === "green");
         for (const card of current.cards) {
+            if (revivedCards.has(card)) continue;
             if (current.isDormant(card)) continue;
             if (card.color !== "green" || !card.diceNums.includes(dice)) continue;
 
@@ -358,7 +375,9 @@ class GameManager {
     }
 
     _processPurple(current, ci, dice) {
+        const revivedCards = this._reviveDormantCardsForDice(current, dice, card => card.color === "purple");
         for (const card of current.cards) {
+            if (revivedCards.has(card)) continue;
             if (current.isDormant(card)) continue;
             if (card.color !== "purple" || !card.diceNums.includes(dice)) continue;
 

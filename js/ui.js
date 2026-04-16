@@ -424,8 +424,8 @@ function renderPlayers() {
             if (p.isDormant(c)) cards[c.name].dormant++;
         }
         const colorDot = { blue: "#3b82f6", green: "#22c55e", red: "#ef4444", purple: "#a855f7" };
-        const cardHtml = Object.entries(cards).map(([name, info]) => {
-            const dormantText = info.dormant > 0 ? `💤` : '';
+        const cardHtml = Object.entries(cards).sort(([a], [b]) => compareCardNamesForDisplay(a, b)).map(([name, info]) => {
+            const dormantText = info.dormant > 0 ? `（休${info.dormant}）` : '';
             return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" onclick="showCardDetail('${name}')">${name}×${info.count}${dormantText}</span>`;
         }).join("");
         const itCoins = p.itVentureCoins > 0 ? `<span class="it-badge">💻${p.itVentureCoins}</span>` : "";
@@ -457,12 +457,7 @@ function renderBuildMenu() {
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
     const canBuild = game.phase === GAME_PHASES.BUILD && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
-    const COLOR_ORDER = { blue: 0, green: 1, red: 2, purple: 3 };
-    const sortedCards = [...CARDS].sort((a, b) => {
-        const cd = (COLOR_ORDER[a.color] ?? 9) - (COLOR_ORDER[b.color] ?? 9);
-        if (cd !== 0) return cd;
-        return Math.min(...a.diceNums) - Math.min(...b.diceNums);
-    });
+    const sortedCards = [...CARDS].sort(compareCardsForDisplay);
     const filterDefs = [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫']];
     const filterBtnsHtml = filterDefs.map(([c, label]) =>
         `<button class="card-filter-btn${cardFilter === c ? ' active' : ''}" onclick="setCardFilter('${c}')">${label}</button>`
@@ -552,6 +547,27 @@ let prevPlayerIndex = -1;
 let announcerTimer = null;
 let cardFilter = '';
 
+const CARD_COLOR_ORDER = Object.freeze({ blue: 0, green: 1, red: 2, purple: 3 });
+
+function compareCardsForDisplay(a, b) {
+    const colorDiff = (CARD_COLOR_ORDER[a.color] ?? 9) - (CARD_COLOR_ORDER[b.color] ?? 9);
+    if (colorDiff !== 0) return colorDiff;
+    const diceDiff = Math.min(...a.diceNums) - Math.min(...b.diceNums);
+    if (diceDiff !== 0) return diceDiff;
+    const costDiff = a.cost - b.cost;
+    if (costDiff !== 0) return costDiff;
+    return a.name.localeCompare(b.name, 'ja');
+}
+
+function compareCardNamesForDisplay(a, b) {
+    const cardA = CARDS.find(card => card.name === a);
+    const cardB = CARDS.find(card => card.name === b);
+    if (cardA && cardB) return compareCardsForDisplay(cardA, cardB);
+    if (cardA) return -1;
+    if (cardB) return 1;
+    return a.localeCompare(b, 'ja');
+}
+
 function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; cardFilter = ''; }
 
 function showCardSelect() {
@@ -566,7 +582,7 @@ function closeCardSelect() {
 function renderCardSelectModal() {
     for (const [set, cards] of Object.entries(CARD_SETS)) {
         const el = document.getElementById(`cardList${set.charAt(0).toUpperCase() + set.slice(1)}`);
-        el.innerHTML = cards.map(name => {
+        el.innerHTML = [...cards].sort(compareCardNamesForDisplay).map(name => {
             const on = enabledCards.has(name);
             return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" onclick="toggleCard('${name}')" id="cardToggle_${name}">${name}</button>`;
         }).join("");
