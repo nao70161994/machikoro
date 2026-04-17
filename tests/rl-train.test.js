@@ -170,6 +170,25 @@ print(json.dumps(sorted(result.keys()), ensure_ascii=False))
     assert.deepStrictEqual(keys, ['buildStats', 'opponentBuildStats', 'winRate']);
 });
 
+runTest('rl train: 4人用モデルでも2人評価は4人用状態次元で実行できる', () => {
+    const output = runPython(`
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM_4P
+from scripts.rl.train import eval_vs_random
+random.seed(5)
+np.random.seed(5)
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=STATE_DIM_4P)
+result = eval_vs_random(agent, 1, max_steps=5, return_stats=True)
+print(agent.state_dim)
+print(sorted(result.keys()))
+`);
+    const lines = output.split('\n');
+    assert.ok(Number(lines[0]) > 145);
+    assert.ok(lines[1].includes('winRate'));
+});
+
 runTest('rl train: コインと資産の中間報酬を計算できる', () => {
     const output = runPython(`
 import copy

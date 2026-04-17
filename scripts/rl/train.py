@@ -25,7 +25,7 @@ from scripts.rl.game_env import (
     MachikoroEnv, NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE,
     ACT_RENO_BASE, ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE, ACT_PASS,
 )
-from scripts.rl.encode import encode_state, action_mask, state_dim_for_player_count
+from scripts.rl.encode import encode_state, encode_state_v2, action_mask, state_dim_for_player_count, STATE_DIM_4P
 from scripts.rl.agent import RLAgent
 from scripts.rl.network import SchemaVersionError
 from scripts.rl.cards import NUM_CARDS, CARD_NAMES, CARD_DEF, LANDMARK_ORDER, LANDMARK_COSTS
@@ -37,6 +37,12 @@ MODEL_DIR = os.path.join(
     "models", "rl_model"
 )
 os.makedirs(MODEL_DIR, exist_ok=True)
+
+
+def _encode_for_agent(env: MachikoroEnv, agent: RLAgent) -> np.ndarray:
+    if getattr(agent, "state_dim", state_dim_for_player_count(len(env.players))) == STATE_DIM_4P:
+        return encode_state_v2(env)
+    return encode_state(env)
 
 
 def _normalize_masked_probs(probs, mask):
@@ -306,7 +312,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
 
         if env.current == agent_player:
             # ── エージェントのターン ──
-            state = encode_state(env)
+            state = _encode_for_agent(env, agent)
             mask  = action_mask(env)
             valid = np.where(mask > 0)[0]
 
@@ -325,7 +331,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
         else:
             # ── 相手のターン ──
             if opp_agent is not None:
-                opp_state = encode_state(env)
+                opp_state = _encode_for_agent(env, opp_agent)
                 opp_mask  = action_mask(env)
                 opp_action = _greedy_action(opp_agent.net, opp_state, opp_mask)
                 env.step(opp_action)
@@ -403,7 +409,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
                 break
 
             player = env.current
-            state = encode_state(env)
+            state = _encode_for_agent(env, agent)
             mask = action_mask(env)
             action, value = _select_action(agent.net, state, mask, epsilon)
 
@@ -454,7 +460,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             break
 
         if env.current == agent_player:
-            state = encode_state(env)
+            state = _encode_for_agent(env, agent)
             mask = action_mask(env)
             action, value = _select_action(agent.net, state, mask, epsilon)
 
@@ -542,7 +548,7 @@ def run_imitation_pretraining(agent: RLAgent, games: int, opponents, max_steps: 
         for _ in range(max_steps):
             if env.done:
                 break
-            state = encode_state(env)
+            state = _encode_for_agent(env, agent)
             mask = action_mask(env)
             teacher = int(heuristic_action(env, player_levels[env.current]))
             if teacher not in np.where(mask > 0)[0]:
@@ -621,13 +627,13 @@ def eval_vs_pool(agent: RLAgent, pool_agents: list, n_games: int = 50, max_steps
             if env.done:
                 break
             if env.current == agent_player:
-                state = encode_state(env)
+                state = _encode_for_agent(env, agent)
                 mask = action_mask(env)
                 action = _greedy_action(agent.net, state, mask)
                 if env.phase == "build":
                     _record_build_action(build_stats, action)
             else:
-                opp_state = encode_state(env)
+                opp_state = _encode_for_agent(env, opp)
                 opp_mask = action_mask(env)
                 action = _greedy_action(opp.net, opp_state, opp_mask)
                 if env.phase == "build":
@@ -705,7 +711,7 @@ def _opponent_action(env, opponent):
     kind = (opponent or {}).get("kind", "random")
     if kind in ("pool", "self"):
         opp_agent = opponent.get("agent")
-        opp_state = encode_state(env)
+        opp_state = _encode_for_agent(env, opp_agent)
         opp_mask = action_mask(env)
         return _greedy_action(opp_agent.net, opp_state, opp_mask)
     if kind == "random":
@@ -781,7 +787,7 @@ def _eval_against_opponent(agent: RLAgent, opponent_selector, n_games: int = 50,
             if env.done:
                 break
             if env.current == agent_player:
-                state = encode_state(env)
+                state = _encode_for_agent(env, agent)
                 mask = action_mask(env)
                 action = _greedy_action(agent.net, state, mask)
                 if action is not None and env.phase == "build":
