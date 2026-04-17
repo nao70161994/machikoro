@@ -46,6 +46,19 @@ print(json.dumps(_parse_training_opponents("random=0.5,strong=0.3,self=0.1,pool=
     ]);
 });
 
+runTest('rl train: JS評価lineup指定を解析できる', () => {
+    const output = runPython(`
+import json
+from scripts.rl.train import _parse_js_eval_lineups
+print(json.dumps(_parse_js_eval_lineups("rl,weak,normal,strong;rl,normal,normal,strong;weak,normal"), ensure_ascii=False))
+`);
+    const entries = JSON.parse(output);
+    assert.deepStrictEqual(entries, [
+        ['rl', 'weak', 'normal', 'strong'],
+        ['rl', 'normal', 'normal', 'strong'],
+    ]);
+});
+
 runTest('rl train: pool が空なら学習相手選択は random へフォールバックする', () => {
     const output = runPython(`
 import json
@@ -488,6 +501,17 @@ entries = [
 print(_score_js_entries(entries, weights_text="strong=1,expert=2", draw_penalty=0.5, exhausted_penalty=0.02))
 `);
     assert.ok(Math.abs(Number(output) - 0.44333333333333336) < 1e-12);
+});
+
+runTest('rl train: 4人JS評価から checkpoint score を計算できる', () => {
+    const output = runPython(`
+from scripts.rl.train import _score_js_entries
+entries = [
+    {"opponent": "rl+weak+normal+strong", "lineup": ["rl", "weak", "normal", "strong"], "result": {"games": 4, "wins": {"rl": 2, "weak": 1, "normal": 1, "strong": 0}, "exhausted": 0}},
+]
+print(round(_score_js_entries(entries, weights_text="rl+weak+normal+strong=2"), 6))
+`);
+    assert.strictEqual(output, '0.5');
 });
 
 runTest('rl train: fallback checkpoint score は expert を重く見る', () => {

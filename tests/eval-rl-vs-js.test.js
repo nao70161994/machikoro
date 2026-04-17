@@ -68,13 +68,17 @@ function buildRlModel() {
 }
 
 runTest('parseArgs は RL vs JS 評価 CLI 引数を解釈する', () => {
-    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--opponents', 'strong,expert']);
+    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
     assert.strictEqual(args.modelPath, 'tmp/model.json');
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.format, 'json');
     assert.deepStrictEqual(args.opponents, ['strong', 'expert']);
+    assert.deepStrictEqual(args.lineups, [
+        ['rl', 'weak', 'normal', 'strong'],
+        ['rl', 'normal', 'normal', 'strong'],
+    ]);
 });
 
 runTest('loadModel は export 済み JSON を読み込む', () => {
@@ -100,6 +104,20 @@ runTest('evaluateRlVsJs は opponent ごとの 2人戦結果を返す', () => {
     assert.strictEqual(result[1].opponent, 'normal');
     assert.deepStrictEqual(result[1].result.players, ['rl', 'normal']);
     assert.strictEqual(result[0].modelInfo.stateDim, 145);
+});
+
+runTest('evaluateRlVsJs は4人lineup評価を返す', () => {
+    const result = evaluateRlVsJs({
+        games: 1,
+        seed: 1,
+        maxSteps: 200,
+        lineups: [['rl', 'weak', 'normal', 'strong']],
+        rlModelData: buildRlModel(),
+    });
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].opponent, 'rl+weak+normal+strong');
+    assert.deepStrictEqual(result[0].lineup, ['rl', 'weak', 'normal', 'strong']);
+    assert.deepStrictEqual(result[0].result.players, ['rl', 'weak', 'normal', 'strong']);
 });
 
 runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
@@ -171,4 +189,40 @@ runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
     assert.ok(lines[0].includes('seat(first=100.0%,second=50.0%)'));
     assert.ok(lines[1].includes('rl-build: total=4 pass=1'));
     assert.ok(lines[1].includes('麦畑x2'));
+});
+
+runTest('printEvaluation は4人lineupの席別指標を出力する', () => {
+    const lines = [];
+    const realLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+        printEvaluation([{
+            opponent: 'rl+weak+normal+strong',
+            lineup: ['rl', 'weak', 'normal', 'strong'],
+            modelInfo: { stateDim: 353, hiddenSize: 256, numActions: 1580, schemaVersion: 3 },
+            result: {
+                games: 4,
+                players: ['rl', 'weak', 'normal', 'strong'],
+                wins: { rl: 2, weak: 1, normal: 1, strong: 0 },
+                averageTurns: 20,
+                exhausted: 0,
+                matchLog: [
+                    { lineup: ['rl', 'weak', 'normal', 'strong'], winnerDifficulty: 'rl' },
+                    { lineup: ['weak', 'normal', 'strong', 'rl'], winnerDifficulty: 'weak' },
+                    { lineup: ['normal', 'strong', 'rl', 'weak'], winnerDifficulty: 'rl' },
+                    { lineup: ['strong', 'rl', 'weak', 'normal'], winnerDifficulty: 'normal' },
+                ],
+                buildStats: [
+                    { total: 4, pass: 0, cards: {}, landmarks: {} },
+                    { total: 4, pass: 0, cards: {}, landmarks: {} },
+                    { total: 4, pass: 0, cards: {}, landmarks: {} },
+                    { total: 4, pass: 0, cards: {}, landmarks: {} },
+                ],
+            },
+        }], { format: 'text' });
+    } finally {
+        console.log = realLog;
+    }
+    assert.ok(lines[0].includes('rl vs rl+weak+normal+strong'));
+    assert.ok(lines[0].includes('seat(0=100.0%,1=0.0%,2=100.0%,3=0.0%)'));
 });

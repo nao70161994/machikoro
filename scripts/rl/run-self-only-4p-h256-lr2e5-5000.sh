@@ -10,6 +10,8 @@ exec sh scripts/rl/run-js-oracle-strong-select.sh \
     --player-count 4 \
     --train-opponents self=1 \
     --self-learn-both-sides \
+    --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal" \
+    --summary-weights "rl+weak+normal+strong=3,rl+normal+normal+strong=4,rl+weak+weak+normal=1" \
     --terminal-landmark-value-diff 0.004 \
     --terminal-asset-diff 0.002 \
     --terminal-coin-diff 0.001 \

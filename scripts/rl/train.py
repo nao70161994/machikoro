@@ -655,6 +655,15 @@ def _parse_csv_list(value):
     return [item for item in (value or '').split(',') if item]
 
 
+def _parse_js_eval_lineups(value):
+    lineups = []
+    for part in (value or "").split(";"):
+        lineup = [item.strip() for item in part.split(",") if item.strip()]
+        if len(lineup) >= 2 and "rl" in lineup:
+            lineups.append(lineup)
+    return lineups
+
+
 def _parse_training_opponents(value):
     entries = []
     for part in (value or "").split(","):
@@ -887,7 +896,8 @@ def _score_js_entries(js_entries, weights_text="", draw_penalty=0.25, exhausted_
         games = result.get("games", 0) or 0
         wins = result.get("wins", {}) or {}
         rl_wins = wins.get("rl", 0)
-        opp_wins = wins.get(opponent, 0)
+        lineup = entry.get("lineup") or result.get("players") or ["rl", opponent]
+        opp_wins = sum(wins.get(player, 0) for player in set(lineup) if player != "rl")
         draws = max(0, games - rl_wins - opp_wins)
         draw_rate = (draws / games) if games > 0 else 0.0
         win_rate = (rl_wins / games) if games > 0 else 0.0
@@ -1053,7 +1063,8 @@ def _format_js_eval_summary(entries):
         wins = result.get("wins", {})
         rl_wins = wins.get("rl", 0)
         rate = (rl_wins / games) if games > 0 else 0.0
-        opponent_wins = wins.get(summary["opponent"], 0)
+        lineup = entry.get("lineup") or result.get("players") or ["rl", summary["opponent"]]
+        opponent_wins = sum(wins.get(player, 0) for player in set(lineup) if player != "rl")
         draws = max(0, games - rl_wins - opponent_wins)
         draw_rate = (draws / games) if games > 0 else 0.0
         exhausted = result.get("exhausted", 0)
@@ -1061,12 +1072,18 @@ def _format_js_eval_summary(entries):
         match_log = result.get("matchLog", []) or []
         rl_first_games = rl_first_wins = 0
         rl_second_games = rl_second_wins = 0
+        seat_games = {}
+        seat_wins = {}
         for match in match_log:
             lineup = match.get("lineup", []) or []
             try:
                 rl_seat = lineup.index("rl")
-            except AttributeError:
+            except (AttributeError, ValueError):
                 rl_seat = -1
+            if rl_seat >= 0:
+                seat_games[rl_seat] = seat_games.get(rl_seat, 0) + 1
+                if match.get("winnerDifficulty") == "rl":
+                    seat_wins[rl_seat] = seat_wins.get(rl_seat, 0) + 1
             if rl_seat == 0:
                 rl_first_games += 1
                 if match.get("winnerDifficulty") == "rl":
@@ -1077,9 +1094,16 @@ def _format_js_eval_summary(entries):
                     rl_second_wins += 1
         first_rate = (rl_first_wins / rl_first_games) if rl_first_games > 0 else 0.0
         second_rate = (rl_second_wins / rl_second_games) if rl_second_games > 0 else 0.0
+        seat_text = f"f{first_rate:.0%}/s{second_rate:.0%}"
+        if len(lineup) > 2:
+            seat_text = ",".join(
+                f"p{index}={(seat_wins.get(index, 0) / seat_games[index]):.0%}"
+                for index in sorted(seat_games)
+                if seat_games[index] > 0
+            ) or seat_text
         parts.append(
             f"{summary['opponent']}={rate:.0%}"
-            f"(f{first_rate:.0%}/s{second_rate:.0%}/d{draw_rate:.0%})"
+            f"({seat_text}/d{draw_rate:.0%})"
             f"/{exhausted}"
             f"@{avg_turns:.1f}"
         )
@@ -1124,7 +1148,8 @@ def _build_metrics_rows(game_i, epsilon, wr_rnd, wr_weak, wr_normal, wr_strong, 
         wins = result.get("wins", {})
         rl_wins = wins.get("rl", 0)
         opponent = entry.get("opponent", "")
-        opponent_wins = wins.get(opponent, 0)
+        lineup = entry.get("lineup") or result.get("players") or ["rl", opponent]
+        opponent_wins = sum(wins.get(player, 0) for player in set(lineup) if player != "rl")
         draws = max(0, games - rl_wins - opponent_wins)
         match_log = result.get("matchLog", []) or []
         rl_first_games = rl_first_wins = 0
@@ -1185,8 +1210,9 @@ def _append_metrics_csv(csv_path, rows):
             fh.write(",".join(values) + "\n")
 
 
-def eval_vs_js_cpu(model_path, opponents, games=10, max_steps=5000):
-    if games <= 0 or not opponents:
+def eval_vs_js_cpu(model_path, opponents, games=10, max_steps=5000, lineups=None):
+    lineups = lineups or []
+    if games <= 0 or (not opponents and not lineups):
         return []
     browser_path = os.path.join(MODEL_DIR, "model.browser.json")
     export_checkpoint(model_path + ".npz", browser_path, fmt="json")
@@ -1197,8 +1223,11 @@ def eval_vs_js_cpu(model_path, opponents, games=10, max_steps=5000):
         "--games", str(games),
         "--max-steps", str(max_steps),
         "--format", "json",
-        "--opponents", ",".join(opponents),
     ]
+    if lineups:
+        command.extend(["--lineups", ";".join(",".join(lineup) for lineup in lineups)])
+    else:
+        command.extend(["--opponents", ",".join(opponents)])
     result = subprocess.run(
         command,
         cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -1236,6 +1265,7 @@ def main():
     parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
     parser.add_argument("--js-eval-games", type=int, default=0,    help="JS CPU 相手の評価ゲーム数（0で無効）")
     parser.add_argument("--js-eval-opponents", default="strong,expert", help="JS CPU 評価対象 difficulty のCSV")
+    parser.add_argument("--js-eval-lineups", default="", help="JS評価のlineup指定。例: rl,weak,normal,strong;rl,normal,normal,strong")
     parser.add_argument("--initial-eval-games", type=int, default=200, help="学習開始前の vs ランダム評価ゲーム数")
     parser.add_argument("--eval-random-games", type=int, default=200, help="定期評価での vs ランダム評価ゲーム数")
     parser.add_argument("--eval-heuristic-games", type=int, default=50, help="定期評価でのヒューリスティック評価ゲーム数")
@@ -1311,6 +1341,8 @@ def main():
     player_count_text = f", players={args.player_count}, state_dim={state_dim}"
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}{oracle_text}{seed_text}{player_count_text}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
+    js_eval_lineups = _parse_js_eval_lineups(args.js_eval_lineups)
+    js_eval_label = args.js_eval_lineups if js_eval_lineups else ",".join(js_eval_opponents)
     train_opponents = _parse_training_opponents(args.train_opponents)
     reward_config = {
         "coin": args.reward_coin,
@@ -1460,9 +1492,9 @@ def main():
             train_calls = agent_wins = 0
 
             agent.save(model_path)
-            if args.js_eval_games > 0 and js_eval_opponents:
+            if args.js_eval_games > 0 and (js_eval_opponents or js_eval_lineups):
                 try:
-                    js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps)
+                    js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps, lineups=js_eval_lineups)
                     print(f"         {_format_js_eval_summary(js_entries)}")
                 except (subprocess.CalledProcessError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
                     print(f"         js-eval-error={exc}")
@@ -1476,7 +1508,7 @@ def main():
                         "lr": args.lr,
                         "eval_every": args.eval_every,
                         "js_eval_games": args.js_eval_games,
-                        "js_eval_opponents": ",".join(js_eval_opponents),
+                        "js_eval_opponents": js_eval_label,
                         "cpu_opponent_impl": args.cpu_opponent_impl,
                     },
                 )
@@ -1617,9 +1649,9 @@ def main():
         f"{_format_build_stats('weak', final_eval_weak['opponentBuildStats'])} "
         f"{_format_build_stats('nrm', final_eval_normal['opponentBuildStats'])}"
     )
-    if args.js_eval_games > 0 and js_eval_opponents:
+    if args.js_eval_games > 0 and (js_eval_opponents or js_eval_lineups):
         try:
-            js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps)
+            js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps, lineups=js_eval_lineups)
             print(f"JS評価: {_format_js_eval_summary(js_entries)}")
         except (subprocess.CalledProcessError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             print(f"JS評価失敗: {exc}")
@@ -1630,7 +1662,7 @@ def main():
                 args.summary_output,
                 options={
                     "format": args.summary_format,
-                    "opponents": js_eval_opponents,
+                    "opponents": [lineup.join("+") for lineup in js_eval_lineups] if js_eval_lineups else js_eval_opponents,
                     "weights": args.summary_weights,
                     "baseline_run": args.summary_baseline_run,
                     "draw_penalty": args.summary_draw_penalty,

@@ -317,7 +317,8 @@ python3 -m scripts.rl.train \
   --pool-max-size 4  # pool snapshot 保持数
   --restore-best-at-end  # 学習終了時に best checkpoint を通常モデルへ復元
   --js-eval-games 1  # JS側 CPU 相手の定期評価ゲーム数
-  --js-eval-opponents strong  # JS評価対象 difficulty
+  --js-eval-opponents strong  # JS評価対象 difficulty（2人評価）
+  --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong"  # 4人評価を使う場合
   --initial-eval-games 0  # 学習開始前の vs ランダム評価をスキップ
   --eval-random-games 10  # 定期評価での vs ランダム評価ゲーム数
   --eval-heuristic-games 4  # 定期評価での weak/normal/strong/expert 評価ゲーム数
@@ -364,7 +365,7 @@ python3 -m scripts.rl.train \
 | `vl` | 0.05〜0.1 → 低下 | 価値関数の精度 |
 | `adv` | 0 前後に収束 | 正規化前の平均優位性（価値関数のバイアス） |
 | `pl` | 0.1〜0.3 | 方策損失（0 に張り付く = 学習停止の兆候） |
-| `js=...` | 比較用 | JS 側 `weak/normal/strong/expert` などに対する RL 勝率。`f/s/d` は RL 先手勝率 / 後手勝率 / 引き分け率、`/@` は `exhausted` 件数 / 平均ターン |
+| `js=...` | 比較用 | JS 側 `weak/normal/strong/expert`、または `--js-eval-lineups` の4人 lineup に対する RL 勝率。`f/s/d` は RL 先手勝率 / 後手勝率 / 引き分け率、`/@` は `exhausted` 件数 / 平均ターン |
 
 例:
 
@@ -380,6 +381,8 @@ js=weak=25%(f50%/s0%/d0%)/0@122.5 normal=0%(f0%/s0%/d0%)/0@72.0 strong=25%(f0%/s
 - `@122.5`: 平均ターン数。
 
 `--js-eval-games 4` は1勝で25%動くため、best 判定や傾向確認用の軽量評価と考える。実力確認は `scripts/eval-rl-vs-js.js --games 20` 以上で再評価する。
+
+4人用モデルでは2人評価だけだと目的からズレるため、`--js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong"` のように4人 lineup を指定する。4人自己対戦プリセットは既定で4人JS評価を使い、best checkpoint の算定もその lineup 勝率を優先する。
 
 ### JS CPU との比較評価
 

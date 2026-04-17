@@ -10,6 +10,7 @@ function parseArgs(argv) {
     let maxSteps = 5000;
     let format = 'text';
     let opponents = ['weak', 'normal', 'strong', 'expert'];
+    let lineups = [];
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -19,9 +20,15 @@ function parseArgs(argv) {
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--opponents') opponents = (argv[++i] || 'weak,normal,strong,expert').split(',').filter(Boolean);
+        else if (arg === '--lineups') {
+            lineups = (argv[++i] || '')
+                .split(';')
+                .map(part => part.split(',').map(item => item.trim()).filter(Boolean))
+                .filter(lineup => lineup.includes('rl') && lineup.length >= 2);
+        }
     }
 
-    return { modelPath, games, seed, maxSteps, format, opponents };
+    return { modelPath, games, seed, maxSteps, format, opponents, lineups };
 }
 
 function loadModel(modelPath) {
@@ -32,9 +39,12 @@ function loadModel(modelPath) {
 function evaluateRlVsJs(options = {}) {
     const modelPath = options.modelPath || path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
     const rlModelData = options.rlModelData || loadModel(modelPath);
-    const opponents = (options.opponents || ['weak', 'normal', 'strong', 'expert']).slice();
-    return opponents.map((opponent, index) => ({
-        opponent,
+    const lineups = Array.isArray(options.lineups) && options.lineups.length > 0
+        ? options.lineups.map(lineup => lineup.slice())
+        : (options.opponents || ['weak', 'normal', 'strong', 'expert']).map(opponent => ['rl', opponent]);
+    return lineups.map((lineup, index) => ({
+        opponent: lineup.length === 2 ? lineup.find(player => player !== 'rl') : lineup.join('+'),
+        lineup,
         modelInfo: {
             stateDim: rlModelData.stateDim,
             hiddenSize: rlModelData.hiddenSize,
@@ -45,26 +55,43 @@ function evaluateRlVsJs(options = {}) {
             games: options.games || 20,
             seed: (options.seed || 1) + index * (options.games || 20),
             maxSteps: options.maxSteps || 5000,
-            players: ['rl', opponent],
+            players: lineup,
             rlModelData,
         }),
     }));
+}
+
+function nonRlWins(entry) {
+    const wins = entry.result.wins || {};
+    const players = entry.lineup || entry.result.players || ['rl', entry.opponent];
+    const nonRlPlayers = new Set(players.filter(player => player !== 'rl'));
+    let total = 0;
+    for (const player of nonRlPlayers) {
+        total += wins[player] || 0;
+    }
+    return total;
 }
 
 function summarizeEvaluationEntry(entry) {
     const wins = entry.result.wins || {};
     const games = entry.result.games || 0;
     const rlWins = wins.rl || 0;
-    const opponentWins = wins[entry.opponent] || 0;
+    const opponentWins = nonRlWins(entry);
     const draws = Math.max(0, games - rlWins - opponentWins);
     const matchLog = Array.isArray(entry.result.matchLog) ? entry.result.matchLog : [];
     let rlFirstGames = 0;
     let rlFirstWins = 0;
     let rlSecondGames = 0;
     let rlSecondWins = 0;
+    const seatGames = [];
+    const seatWins = [];
     for (const match of matchLog) {
         const lineup = Array.isArray(match.lineup) ? match.lineup : [];
         const rlSeat = lineup.indexOf('rl');
+        if (rlSeat >= 0) {
+            seatGames[rlSeat] = (seatGames[rlSeat] || 0) + 1;
+            if (match.winnerDifficulty === 'rl') seatWins[rlSeat] = (seatWins[rlSeat] || 0) + 1;
+        }
         if (rlSeat === 0) {
             rlFirstGames++;
             if (match.winnerDifficulty === 'rl') rlFirstWins++;
@@ -101,6 +128,7 @@ function summarizeEvaluationEntry(entry) {
             first: rlFirstGames > 0 ? rlFirstWins / rlFirstGames : 0,
             second: rlSecondGames > 0 ? rlSecondWins / rlSecondGames : 0,
         },
+        rlSeatWinRatesByIndex: seatGames.map((games, index) => games > 0 ? (seatWins[index] || 0) / games : 0),
         rlBuildStats: rlBuildStats ? {
             total: rlBuildStats.total || 0,
             pass: rlBuildStats.pass || 0,
@@ -109,6 +137,7 @@ function summarizeEvaluationEntry(entry) {
             topLandmarks,
         } : null,
         modelInfo: entry.modelInfo || null,
+        lineup: entry.lineup || entry.result.players || null,
     };
 }
 
@@ -119,10 +148,14 @@ function printEvaluation(entries, options = {}) {
     }
     for (const entry of entries) {
         const summary = summarizeEvaluationEntry(entry);
+        const lineup = summary.lineup || [];
+        const seatText = lineup.length > 2
+            ? `seat(${summary.rlSeatWinRatesByIndex.map((rate, index) => `${index}=${(rate * 100).toFixed(1)}%`).join(',')})`
+            : `seat(first=${(summary.rlSeatWinRates.first * 100).toFixed(1)}%,second=${(summary.rlSeatWinRates.second * 100).toFixed(1)}%)`;
         console.log(
             `rl vs ${summary.opponent}: rl=${summary.rlWins} ${summary.opponent}=${summary.opponentWins} ` +
             `draws=${summary.draws} winRate=${(summary.rlWinRate * 100).toFixed(1)}% ` +
-            `seat(first=${(summary.rlSeatWinRates.first * 100).toFixed(1)}%,second=${(summary.rlSeatWinRates.second * 100).toFixed(1)}%) ` +
+            `${seatText} ` +
             `avgTurns=${summary.averageTurns.toFixed(1)} exhausted=${summary.exhausted}`
         );
         if (summary.rlBuildStats) {
