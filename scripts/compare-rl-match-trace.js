@@ -9,6 +9,7 @@ function parseArgs(argv) {
     let pythonModel = '';
     let jsModel = '';
     let opponent = 'strong';
+    let lineup = [];
     let seed = 1;
     let maxSteps = 200;
     let rlSeat = 'first';
@@ -20,6 +21,7 @@ function parseArgs(argv) {
         if (arg === '--python-model') pythonModel = argv[++i] || pythonModel;
         else if (arg === '--js-model') jsModel = argv[++i] || jsModel;
         else if (arg === '--opponent') opponent = argv[++i] || opponent;
+        else if (arg === '--lineup') lineup = (argv[++i] || '').split(',').map(item => item.trim()).filter(Boolean);
         else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '200', 10);
         else if (arg === '--rl-seat') rlSeat = argv[++i] || rlSeat;
@@ -28,7 +30,7 @@ function parseArgs(argv) {
         else if (arg === '--js-cpu-oracle') cpuOpponentImpl = 'js-oracle';
     }
 
-    return { pythonModel, jsModel, opponent, seed, maxSteps, rlSeat, rolls, cpuOpponentImpl };
+    return { pythonModel, jsModel, opponent, lineup, seed, maxSteps, rlSeat, rolls, cpuOpponentImpl };
 }
 
 function buildDeterministicRolls(seed, maxSteps) {
@@ -51,6 +53,9 @@ function runPythonTrace(options) {
         '--max-steps', String(options.maxSteps),
         '--rl-seat', options.rlSeat,
     ];
+    if (options.lineup && options.lineup.length > 0) {
+        args.push('--lineup', options.lineup.join(','));
+    }
     if (options.rolls && options.rolls.length > 0) {
         args.push('--rolls', options.rolls.join(','));
     }
@@ -153,6 +158,7 @@ function compareMatchTrace(options) {
     const jsTrace = exportJsMatchTrace({
         modelPath: resolvedOptions.jsModel,
         opponent: resolvedOptions.opponent,
+        lineup: resolvedOptions.lineup,
         seed: resolvedOptions.seed,
         maxSteps: resolvedOptions.maxSteps,
         rlSeat: resolvedOptions.rlSeat,

@@ -15,6 +15,7 @@ runTest('compare rl match trace: parseArgs は CLI 引数を解釈する', () =>
         '--python-model', 'a/best_model',
         '--js-model', 'a/best_model.browser.json',
         '--opponent', 'normal',
+        '--lineup', 'rl,weak,normal,strong',
         '--seed', '7',
         '--max-steps', '120',
         '--rl-seat', 'second',
@@ -24,6 +25,7 @@ runTest('compare rl match trace: parseArgs は CLI 引数を解釈する', () =>
     assert.strictEqual(args.pythonModel, 'a/best_model');
     assert.strictEqual(args.jsModel, 'a/best_model.browser.json');
     assert.strictEqual(args.opponent, 'normal');
+    assert.deepStrictEqual(args.lineup, ['rl', 'weak', 'normal', 'strong']);
     assert.strictEqual(args.seed, 7);
     assert.strictEqual(args.maxSteps, 120);
     assert.strictEqual(args.rlSeat, 'second');

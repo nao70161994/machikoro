@@ -11,6 +11,7 @@
     "selfplay": "node scripts/selfplay.js",
     "profile:expert": "node scripts/profile-expert.js",
     "eval-rl-vs-js": "node scripts/eval-rl-vs-js.js",
+    "compare-rl-match-trace": "node scripts/compare-rl-match-trace.js",
     "summarize-rl-metrics": "node scripts/summarize-rl-metrics.js",
     "train-rl:baseline": "sh scripts/rl/run-baseline.sh",
     "train-rl:lr1e4-ms1500": "sh scripts/rl/run-lr1e4-ms1500.sh",

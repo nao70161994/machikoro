@@ -17,6 +17,7 @@
 - RL の baseline 学習は、フルコマンドを打ち直さず `sh scripts/rl/run-baseline.sh` を使ってください。既定値は Termux 向けにかなり軽量化され、初期評価スキップ、`max_steps` 制限、進捗表示も有効です。出力は `run-label` ごとの別ディレクトリへ分かれます。
 - 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使ってください。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、best checkpoint 復元が有効です。
 - 4人用 RL 実験は `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` を使ってください。`--player-count 4` により `STATE_DIM = 353` の多人数用状態表現を使います。4人用モデルの主評価は `--js-eval-lineups` の4人JS評価です。既存2人モデルは `STATE_DIM = 145` のままです。
+- 4人用 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` で Python/JS の固定 trace 比較を行ってください。
 - RL 候補モデルは `models/rl_model/registry.json` を参照・更新してください。モデル本体や `runs/` は生成物扱いで、台帳だけを git 管理します。2026-04時点では `hidden=128, lr=0.0001` 系が有力で、`hidden=256` 系は pass 崩壊傾向があります。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 

@@ -5,6 +5,7 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     buildPlayers,
+    resolvePlayers,
     exportJsMatchTrace,
 } = require(path.join(__dirname, '..', 'scripts', 'export-rl-match-trace.js'));
 
@@ -64,9 +65,10 @@ function buildRlModel() {
 }
 
 runTest('rl match trace: parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--model', 'tmp/model.json', '--opponent', 'normal', '--seed', '7', '--max-steps', '600', '--rl-seat', 'second', '--rolls', '1,6,3']);
+    const args = parseArgs(['--model', 'tmp/model.json', '--opponent', 'normal', '--lineup', 'rl,weak,normal,strong', '--seed', '7', '--max-steps', '600', '--rl-seat', 'second', '--rolls', '1,6,3']);
     assert.strictEqual(args.modelPath, 'tmp/model.json');
     assert.strictEqual(args.opponent, 'normal');
+    assert.deepStrictEqual(args.lineup, ['rl', 'weak', 'normal', 'strong']);
     assert.strictEqual(args.seed, 7);
     assert.strictEqual(args.maxSteps, 600);
     assert.strictEqual(args.rlSeat, 'second');
@@ -76,6 +78,7 @@ runTest('rl match trace: parseArgs は CLI 引数を解釈する', () => {
 runTest('rl match trace: buildPlayers は席に応じて lineup を返す', () => {
     assert.deepStrictEqual(buildPlayers('strong', 'first'), ['rl', 'strong']);
     assert.deepStrictEqual(buildPlayers('strong', 'second'), ['strong', 'rl']);
+    assert.deepStrictEqual(resolvePlayers({ lineup: ['rl', 'weak', 'normal', 'strong'] }), ['rl', 'weak', 'normal', 'strong']);
 });
 
 runTest('rl match trace: exportJsMatchTrace は単発 trace を返す', () => {
@@ -96,4 +99,20 @@ runTest('rl match trace: exportJsMatchTrace は単発 trace を返す', () => {
     assert.ok(result.trace[0].before);
     assert.ok(result.trace[0].after);
     assert.ok(Array.isArray(result.trace[0].rollsUsed));
+});
+
+runTest('rl match trace: exportJsMatchTrace は4人lineup trace を返す', () => {
+    const result = exportJsMatchTrace({
+        rlModelData: buildRlModel(),
+        lineup: ['rl', 'weak', 'normal', 'strong'],
+        seed: 1,
+        maxSteps: 20,
+        rolls: [1, 6, 3, 5],
+    });
+    assert.strictEqual(result.source, 'js');
+    assert.deepStrictEqual(result.players, ['rl', 'weak', 'normal', 'strong']);
+    assert.strictEqual(result.opponent, 'rl+weak+normal+strong');
+    assert.ok(Array.isArray(result.trace));
+    assert.ok(result.trace.length > 0);
+    assert.strictEqual(result.finalState.length, 4);
 });

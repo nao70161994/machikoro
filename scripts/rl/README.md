@@ -384,6 +384,22 @@ js=weak=25%(f50%/s0%/d0%)/0@122.5 normal=0%(f0%/s0%/d0%)/0@72.0 strong=25%(f0%/s
 
 4人用モデルでは2人評価だけだと目的からズレるため、`--js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong"` のように4人 lineup を指定する。4人自己対戦プリセットは既定で4人JS評価を使い、best checkpoint の算定もその lineup 勝率を優先する。
 
+### 4人 trace 比較
+
+4人用モデルは Python 学習環境と JS 実戦環境のズレが致命的になりやすい。固定ダイス列で同じ lineup を走らせ、最初の差分を検出する。
+
+```bash
+npm run compare-rl-match-trace -- \
+  --python-model models/rl_model/model \
+  --js-model models/rl_model/model.browser.json \
+  --lineup rl,normal,normal,strong \
+  --max-steps 30 \
+  --seed 7 \
+  --js-cpu-oracle
+```
+
+`trace matched: steps=30` なら、その範囲では状態・合法手・選択手・ロール消費が一致している。`--lineup` は `rl,weak,normal,strong` などに差し替えられる。
+
 ### JS CPU との比較評価
 
 学習済みモデルを browser 用 JSON に export して、JS 実装の `weak/normal/strong/expert` と 2 人戦で比較できる。

@@ -10,7 +10,7 @@ import numpy as np
 
 from .agent import RLAgent
 from .cards import CARD_NAMES, LANDMARK_ORDER, NUM_CARDS
-from .encode import action_mask, encode_state
+from .encode import STATE_DIM_4P, action_mask, encode_state, encode_state_v2
 from .export_debug_fixture import _serialize_env_setup
 from .game_env import (
     ACT_BC_BASE,
@@ -44,6 +44,18 @@ def _infer_hidden_size(model_path):
     checkpoint_path = _normalize_model_path(model_path) + ".npz"
     with np.load(checkpoint_path) as data:
         return int(data["shared_0_b"].shape[0])
+
+
+def _infer_state_dim(model_path):
+    checkpoint_path = _normalize_model_path(model_path) + ".npz"
+    with np.load(checkpoint_path) as data:
+        return int(data["shared_0_W"].shape[0])
+
+
+def _encode_for_agent(env, agent):
+    if getattr(agent, "state_dim", 145) == STATE_DIM_4P:
+        return encode_state_v2(env)
+    return encode_state(env)
 
 
 def _action_label(action):
@@ -89,7 +101,7 @@ def _legal_actions(env):
     return [{"action": int(action), "label": _action_label(int(action))} for action in env.valid_actions()]
 
 
-def _trace_entry(env, actor_difficulty, action, include_state, roll_cursor=0):
+def _trace_entry(env, actor_difficulty, action, include_state, roll_cursor=0, agent=None):
     entry = {
         "actorIndex": env.current,
         "actorDifficulty": actor_difficulty,
@@ -103,21 +115,28 @@ def _trace_entry(env, actor_difficulty, action, include_state, roll_cursor=0):
         "rollCursor": int(roll_cursor),
     }
     if include_state:
-        entry["state"] = encode_state(env).astype(float).tolist()
+        entry["state"] = _encode_for_agent(env, agent).astype(float).tolist()
         entry["mask"] = action_mask(env).astype(int).tolist()
     return entry
 
 
-def export_match_trace(model_path, opponent="strong", seed=1, max_steps=5000, rl_seat="first", rolls=None):
+def _build_lineup(opponent, rl_seat, lineup=None):
+    if lineup and len(lineup) >= 2 and "rl" in lineup:
+        return list(lineup)
+    return [opponent, "rl"] if rl_seat == "second" else ["rl", opponent]
+
+
+def export_match_trace(model_path, opponent="strong", seed=1, max_steps=5000, rl_seat="first", rolls=None, lineup=None):
     random.seed(seed)
     np.random.seed(seed)
 
     hidden_size = _infer_hidden_size(model_path)
-    agent = RLAgent(hidden=hidden_size, lr=0.001)
+    state_dim = _infer_state_dim(model_path)
+    agent = RLAgent(hidden=hidden_size, lr=0.001, state_dim=state_dim)
     agent.load(_normalize_model_path(model_path))
 
-    env = MachikoroEnv()
-    rl_index = 1 if rl_seat == "second" else 0
+    players = _build_lineup(opponent, rl_seat, lineup=lineup)
+    env = MachikoroEnv(player_count=len(players))
     roll_queue = list(rolls or [])
     if roll_queue:
         def _roll():
@@ -131,14 +150,15 @@ def export_match_trace(model_path, opponent="strong", seed=1, max_steps=5000, rl
     for _ in range(max_steps):
         if env.done:
             break
-        if env.current == rl_index:
-            state = encode_state(env)
+        actor_difficulty = players[env.current]
+        if actor_difficulty == "rl":
+            state = _encode_for_agent(env, agent)
             mask = action_mask(env)
             action = _greedy_action(agent.net, state, mask)
-            entry = _trace_entry(env, "rl", action, include_state=True, roll_cursor=roll_cursor)
+            entry = _trace_entry(env, "rl", action, include_state=True, roll_cursor=roll_cursor, agent=agent)
         else:
-            action = int(heuristic_action(env, opponent))
-            entry = _trace_entry(env, opponent, action, include_state=False, roll_cursor=roll_cursor)
+            action = int(heuristic_action(env, actor_difficulty))
+            entry = _trace_entry(env, actor_difficulty, action, include_state=False, roll_cursor=roll_cursor)
         roll_start = len(roll_queue) if roll_queue is not None else None
         env.step(action)
         if roll_start is not None:
@@ -148,10 +168,9 @@ def export_match_trace(model_path, opponent="strong", seed=1, max_steps=5000, rl
         entry["after"] = _serialize_env_setup(env)
         trace.append(entry)
 
-    players = [opponent, "rl"] if rl_seat == "second" else ["rl", opponent]
     return {
         "source": "python",
-        "opponent": opponent,
+        "opponent": opponent if len(players) == 2 else "+".join(players),
         "seed": seed,
         "maxSteps": max_steps,
         "rlSeat": rl_seat,
@@ -170,6 +189,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Export one Python-side RL match trace as JSON.")
     parser.add_argument("--model", required=True, help="checkpoint path with or without .npz")
     parser.add_argument("--opponent", default="strong", choices=("weak", "normal", "strong", "expert"))
+    parser.add_argument("--lineup", default="", help="comma-separated lineup including rl, e.g. rl,weak,normal,strong")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=5000)
     parser.add_argument("--rl-seat", default="first", choices=("first", "second"))
@@ -187,6 +207,7 @@ def main(argv=None):
             max_steps=args.max_steps,
             rl_seat=args.rl_seat,
             rolls=[int(value) for value in args.rolls.split(",") if value],
+            lineup=[value.strip() for value in args.lineup.split(",") if value.strip()],
         ),
         ensure_ascii=False,
     ))

@@ -102,6 +102,7 @@ RL / 学習系スクリプト:
 - RL の baseline 学習は、Termux での長いコマンド折り返し事故を避けるため `sh scripts/rl/run-baseline.sh` を使ってください。既定値は `1000 / 500 / 1 / strong` に加えて `hidden=128`、初期評価スキップ、`max_steps=1200`、進捗表示を含む軽量 sanity run 向けです。出力先は `run-label` ごとに分かれるので、別ラベルなら並列実行しても衝突しません。
 - 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使います。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、`restore-best-at-end` が有効です。詳しい報酬設計と相手比率は `scripts/rl/README.md` を確認してください。
 - 3人以上の RL 学習は `--player-count 3|4` で多人数用状態表現 (`STATE_DIM = 353`) を使います。現行の4人自己対戦プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` です。4人用モデルの主評価は `--js-eval-lineups` の4人JS評価を使い、2人評価だけを主指標にしないでください。既存2人モデル (`STATE_DIM = 145`) との互換性は維持してください。
+- 4人用 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` のような固定 trace 比較で Python/JS のズレを確認してください。
 - RL 学習相手の `normal/strong/expert` は、Python heuristic ではなく JS `CPU.js` oracle を使う設定を優先してください。Python heuristic は JS CPU とズレることがあるため、現在は主に比較・fallback 用です。
 - RL 候補モデルは `models/rl_model/registry.json` に記録します。モデル本体・`runs/`・metrics は生成物扱いで原則コミットしません。現時点では `hidden=128, lr=0.0001` 系が有力で、`hidden=256` 系は pass 崩壊傾向があるため優先しません。
 - RL checkpoint の品質は `vs_random` だけでなく、`scripts/eval-rl-vs-js.js` と summary artifact を主に見て判断してください。
