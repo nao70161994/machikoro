@@ -27,4 +27,6 @@ models/rl_model/*.csv
 models/rl_model/archive/
 models/rl_model/runs/
 !models/rl_model/registry.json
+!models/rl_model/portfolio/
+!models/rl_model/portfolio/*.browser.json
 js/rlModelData.js

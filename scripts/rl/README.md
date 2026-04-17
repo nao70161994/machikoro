@@ -426,6 +426,8 @@ npm run summarize-rl-metrics -- \
 
 `models/rl_model/registry.json` は採用候補モデルの軽量台帳。
 モデル本体 `.npz` / `.browser.json` や `runs/` はサイズ・生成物扱いのため git 管理しない。
+例外として、実ゲームで使うポートフォリオ用の軽量配布セットだけは `models/rl_model/portfolio/*.browser.json` として git 管理する。
+`AI（学習・ランダム）` はこの portfolio 配下のモデルからランダム選択する。
 
 台帳に記録する主な情報:
 

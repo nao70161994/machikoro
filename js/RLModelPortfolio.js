@@ -2,25 +2,25 @@ const RL_MODEL_PORTFOLIO = Object.freeze([
     {
         id: "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
         label: "RL（農業・ワイナリー）",
-        path: "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap/best_model.top3.browser.json",
+        path: "models/rl_model/portfolio/seed71-top3.browser.json",
         weight: 3,
     },
     {
         id: "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
         label: "RL（寿司・倉庫）",
-        path: "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap/best_model.browser.json",
+        path: "models/rl_model/portfolio/seed70.browser.json",
         weight: 1,
     },
     {
         id: "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
         label: "RL（バーガー・倉庫）",
-        path: "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap/best_model.browser.json",
+        path: "models/rl_model/portfolio/seed69.browser.json",
         weight: 1,
     },
     {
         id: "terminal-shaped-h128-lr1e4",
         label: "RL（パン・漁船）",
-        path: "models/rl_model/runs/terminal-shaped-h128-lr1e4/best_model.browser.json",
+        path: "models/rl_model/portfolio/h128-lr1e4.browser.json",
         weight: 1,
     },
 ]);
