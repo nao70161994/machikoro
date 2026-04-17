@@ -476,6 +476,26 @@ print(json.dumps(command))
     assert.ok(command.includes('models/rl_model/config_index.csv'));
 });
 
+runTest('rl train: metrics summary command は4人lineup名を opponent として渡せる', () => {
+    const output = runPython(`
+import json
+from scripts.rl.train import _build_metrics_summary_command
+command = _build_metrics_summary_command(
+    "m.csv",
+    "s.json",
+    options={
+        "format": "json",
+        "opponents": ["rl+weak+normal+strong", "rl+normal+normal+strong"],
+    },
+)
+print(json.dumps(command))
+`);
+    const command = JSON.parse(output);
+    const index = command.indexOf('--opponents');
+    assert.ok(index >= 0);
+    assert.strictEqual(command[index + 1], 'rl+weak+normal+strong,rl+normal+normal+strong');
+});
+
 runTest('rl train: max_steps 指定を評価関数へ渡せる', () => {
     const output = runPython(`
 from scripts.rl.train import eval_vs_random, eval_vs_heuristic, eval_vs_pool

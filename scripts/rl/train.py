@@ -1662,7 +1662,7 @@ def main():
                 args.summary_output,
                 options={
                     "format": args.summary_format,
-                    "opponents": [lineup.join("+") for lineup in js_eval_lineups] if js_eval_lineups else js_eval_opponents,
+                    "opponents": ["+".join(lineup) for lineup in js_eval_lineups] if js_eval_lineups else js_eval_opponents,
                     "weights": args.summary_weights,
                     "baseline_run": args.summary_baseline_run,
                     "draw_penalty": args.summary_draw_penalty,
