@@ -402,6 +402,22 @@ runTest('RLCPU: encodeGameState は 2人戦初期局面を 145 次元へ変換�
     assert.strictEqual(state[state.length - 1], 0);
 });
 
+runTest('RLCPU: encodeGameState は4人戦を最脅威の相手との2人表現へ射影する', () => {
+    const { RLCPU, GameManager, LANDMARK_NAMES } = loadRLRuntime();
+    const cpu = new RLCPU(buildParityModel({ RLCPU }));
+    const game = new GameManager(4);
+    game.currentPlayerIndex = 0;
+    game.players[1].coins = 4;
+    game.players[2].coins = 12;
+    game.players[3].coins = 1;
+    game.players[3].landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    const state = cpu.encodeGameState(game);
+    assert.strictEqual(state.length, 145);
+    assert.strictEqual(state[0], 3 / 50);
+    assert.strictEqual(state[1], 1 / 50);
+    assert.strictEqual(cpu.chooseTVTarget(game), 3);
+});
+
 runTest('RLCPU: actionMask は初期 roll で1個振りのみ許可する', () => {
     const { RLCPU, GameManager } = loadRLRuntime();
     const model = buildTestModel();

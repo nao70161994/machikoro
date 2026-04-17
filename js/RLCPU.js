@@ -257,12 +257,38 @@ class RLCPU {
     }
 
     _currentAndOpponent(game) {
-        if (!game || !game.players || game.players.length !== 2) {
-            throw new Error("RLCPU currently supports 2-player games only");
+        if (!game || !game.players || game.players.length < 2) {
+            throw new Error("RLCPU requires at least 2 players");
         }
         const current = game.currentPlayer();
-        const opponent = game.players[1 - game.currentPlayerIndex];
-        return { current, opponent };
+        const opponentIndex = this._selectOpponentIndex(game);
+        const opponent = game.players[opponentIndex];
+        return { current, opponent, opponentIndex };
+    }
+
+    _selectOpponentIndex(game) {
+        let bestIndex = -1;
+        let bestScore = -Infinity;
+        for (let index = 0; index < game.players.length; index++) {
+            if (index === game.currentPlayerIndex) continue;
+            const score = this._playerThreatScore(game.players[index]);
+            if (bestIndex < 0 || score > bestScore) {
+                bestIndex = index;
+                bestScore = score;
+            }
+        }
+        return bestIndex >= 0 ? bestIndex : 0;
+    }
+
+    _playerThreatScore(player) {
+        let score = player.coins || 0;
+        for (const name of RLCPU.LANDMARK_ORDER) {
+            if (player.landmarks[name]) score += Player.landmarkCost(name) * 2;
+        }
+        for (const card of player.cards) {
+            if (!player.isDormant(card)) score += card.cost || 0;
+        }
+        return score;
     }
 
     _cardCounts(player, activeOnly = true) {
@@ -440,7 +466,7 @@ class RLCPU {
     }
 
     chooseTVTarget(game) {
-        return 1 - game.currentPlayerIndex;
+        return this._currentAndOpponent(game).opponentIndex;
     }
 
     chooseBusinessMove(game) {
@@ -451,7 +477,7 @@ class RLCPU {
         const takeIndex = combo % CARDS.length;
         return {
             myCard: CARDS[giveIndex].name,
-            targetIndex: 1 - game.currentPlayerIndex,
+            targetIndex: this._currentAndOpponent(game).opponentIndex,
             theirCard: CARDS[takeIndex].name,
         };
     }
@@ -467,7 +493,7 @@ class RLCPU {
         if (action < RLCPU.ACTIONS.MOVER_BASE || action >= RLCPU.ACTIONS.MOVER_BASE + CARDS.length) return null;
         return {
             cardIndex: CARDS[action - RLCPU.ACTIONS.MOVER_BASE].name,
-            targetIndex: 1 - game.currentPlayerIndex,
+            targetIndex: this._currentAndOpponent(game).opponentIndex,
         };
     }
 

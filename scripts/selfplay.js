@@ -68,6 +68,8 @@ function createPlayers(runtime, difficulties, options = {}) {
 function createMaskHelper(runtime) {
     return {
         _currentAndOpponent: runtime.RLCPU.prototype._currentAndOpponent,
+        _selectOpponentIndex: runtime.RLCPU.prototype._selectOpponentIndex,
+        _playerThreatScore: runtime.RLCPU.prototype._playerThreatScore,
         _cardCounts: runtime.RLCPU.prototype._cardCounts,
         _dormantCounts: runtime.RLCPU.prototype._dormantCounts,
     };
