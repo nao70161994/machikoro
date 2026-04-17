@@ -300,6 +300,54 @@ class RLCPU {
         return counts;
     }
 
+    _appendPlayerFeatures(vector, player) {
+        vector.push(Math.min(player.coins / 50, 1));
+        for (const name of RLCPU.LANDMARK_ORDER) vector.push(player.landmarks[name] ? 1 : 0);
+        const active = this._cardCounts(player, true);
+        const dormant = this._dormantCounts(player);
+        for (const card of CARDS) vector.push(Math.min((active[card.name] || 0) / 5, 1));
+        for (const card of CARDS) vector.push(Math.min((dormant[card.name] || 0) / 5, 1));
+        vector.push(Math.min((player.itVentureCoins || 0) / 10, 1));
+    }
+
+    _sortedOpponents(game) {
+        return game.players
+            .map((player, index) => ({ player, index, score: this._playerThreatScore(player) }))
+            .filter(entry => entry.index !== game.currentPlayerIndex)
+            .sort((a, b) => b.score - a.score);
+    }
+
+    encodeGameStateV2(game) {
+        const current = game.currentPlayer();
+        const vector = [];
+        this._appendPlayerFeatures(vector, current);
+        const opponents = this._sortedOpponents(game);
+        const playerFeatureDim = 1 + RLCPU.LANDMARK_ORDER.length + CARDS.length + CARDS.length + 1;
+        for (let slot = 0; slot < 3; slot++) {
+            if (slot < opponents.length) {
+                this._appendPlayerFeatures(vector, opponents[slot].player);
+            } else {
+                for (let i = 0; i < playerFeatureDim; i++) vector.push(0);
+            }
+        }
+        for (const phase of RLCPU.PHASE_ORDER) vector.push(game.phase === phase ? 1 : 0);
+        vector.push((game.lastDiceResult || 0) / 14);
+        vector.push((game.lastDice1 || 0) / 6);
+        vector.push((game.lastDice2 || 0) / 6);
+        vector.push(Number(game.pendingTV || 0));
+        vector.push(Number(game.pendingBusiness || 0));
+        vector.push(Number(game.pendingCleaning || 0));
+        vector.push(Number(game.pendingMover || 0));
+        vector.push(Number(game.pendingRenovation || 0));
+        vector.push(game.pendingIT ? 1 : 0);
+        vector.push(Math.min((game.turnCount || 0) / 200, 1));
+        vector.push(Math.max(0, Math.min(((game.players.length || 2) - 2) / 2, 1)));
+        if (vector.length !== this.stateDim) {
+            throw new Error(`RLCPU encode length mismatch: expected ${this.stateDim}, got ${vector.length}`);
+        }
+        return vector;
+    }
+
     _dormantCounts(player) {
         const counts = Object.fromEntries(CARDS.map(card => [card.name, 0]));
         for (const card of player.dormantCards) {
@@ -309,6 +357,9 @@ class RLCPU {
     }
 
     encodeGameState(game) {
+        if (this.stateDim !== 145) {
+            return this.encodeGameStateV2(game);
+        }
         const { current, opponent } = this._currentAndOpponent(game);
         const vector = [];
         vector.push(Math.min(current.coins / 50, 1));

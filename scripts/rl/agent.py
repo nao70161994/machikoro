@@ -16,8 +16,9 @@ class RLAgent:
 
     def __init__(self, hidden: int = 256, lr: float = 3e-4,
                  entropy_coef: float = 0.05, gamma: float = 0.99,
-                 lam: float = 0.95):
-        self.net = PolicyValueNet(STATE_DIM, NUM_ACTIONS, hidden=hidden, lr=lr)
+                 lam: float = 0.95, state_dim: int = STATE_DIM):
+        self.state_dim = state_dim
+        self.net = PolicyValueNet(state_dim, NUM_ACTIONS, hidden=hidden, lr=lr)
         self.gamma = gamma
         self.lam   = lam
         self.entropy_coef = entropy_coef

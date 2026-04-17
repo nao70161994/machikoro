@@ -11,7 +11,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | ファイル | 役割 |
 |---------|------|
 | `cards.py` | カード・ランドマーク定義（基本 + プラス + シャープ、計 38 枚） |
-| `game_env.py` | 2 人対戦ゲームエンジン（全フェーズ・全カード効果実装） |
+| `game_env.py` | 学習用ゲームエンジン（2〜4人、全フェーズ・全カード効果実装） |
 | `encode.py` | 局面ベクトル化・行動マスク生成 |
 | `network.py` | numpy 製 MLP（Layer + PolicyValueNet） |
 | `agent.py` | GAE Actor-Critic エージェント |
@@ -24,6 +24,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-js-oracle-strong-select.sh` | `hidden=128/lr=0.0001` を固定し、strong重視のJS評価でbest checkpoint上位3件を選ぶ実験ラッパー |
 | `run-js-oracle-self-both.sh` | self 対戦時だけ両席の行動を学習対象にする実験ラッパー |
 | `run-self-only-h256-lr2e5-5000.sh` | `hidden=256/lr=0.00002/5000 games/self=1/両側学習/reward cap` の短縮プリセット |
+| `run-self-only-4p-h256-lr2e5-5000.sh` | `--player-count 4` の4人専用自己対戦プリセット |
 | `eval-run.sh` | `run-label` から `best_model.browser.json` を評価する短縮ラッパー |
 
 ---
@@ -51,6 +52,34 @@ turn_count / 200            1
 ───────────────────────────
 合計                      145
 ```
+
+### 多人数用状態空間（4人モデル、STATE_DIM = 353）
+
+`--player-count 3` または `--player-count 4` を指定すると、既存2人モデルとは別の多人数用状態表現を使う。既存の2人モデル互換性を保つため、デフォルトは `STATE_DIM = 145` のまま。
+
+多人数用は最大4人固定長で、`自分 + 脅威度順の相手3枠` を並べる。3人戦では相手枠1つをゼロ埋めする。
+
+```
+自分/相手1枠あたり:
+  coins / 50               1
+  ランドマーク binary       6
+  activeカード枚数 / 5     38
+  dormantカード枚数 / 5    38
+  IT積立 / 10              1
+  小計                    84
+
+4枠ぶん                  336
+フェーズ one-hot           6
+last_dice, d1, d2          3
+pending counts             5
+pending_it                 1
+turn_count / 200           1
+player_count正規化         1
+───────────────────────────
+合計                      353
+```
+
+現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、Python/JS ともに「脅威度が最大の相手」へ自動選択する。対象選択 head は未実装なので、4人専用モデルの次段階で追加する。
 
 ### 行動空間（NUM_ACTIONS = 1580）
 

@@ -102,6 +102,38 @@ print(len(agent.states) == len(agent.actions) == len(agent.masks) == len(agent.v
     assert.ok(Number(lines[2]) > 0);
 });
 
+runTest('rl train: 4人自己対戦は4人用状態次元で全席を学習対象にできる', () => {
+    const output = runPython(`
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import state_dim_for_player_count
+from scripts.rl.train import play_training_game
+
+random.seed(4)
+np.random.seed(4)
+state_dim = state_dim_for_player_count(4)
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=state_dim)
+info = play_training_game(
+    agent,
+    epsilon=0.0,
+    opponent={"kind": "self", "agent": agent},
+    max_steps=16,
+    self_learn_both_sides=True,
+    player_count=4,
+)
+print(state_dim)
+print(info.get("self_both_sides"))
+print(info.get("recorded_steps"))
+print(len(agent.states[0]) if agent.states else 0)
+`);
+    const lines = output.split('\n');
+    assert.ok(Number(lines[0]) > 145);
+    assert.strictEqual(lines[1], 'True');
+    assert.strictEqual(lines[2], '16');
+    assert.strictEqual(Number(lines[3]), Number(lines[0]));
+});
+
 runTest('rl train: build stats を集計して整形できる', () => {
     const output = runPython(`
 import json

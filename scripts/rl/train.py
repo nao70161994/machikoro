@@ -25,7 +25,7 @@ from scripts.rl.game_env import (
     MachikoroEnv, NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE,
     ACT_RENO_BASE, ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE, ACT_PASS,
 )
-from scripts.rl.encode import encode_state, action_mask
+from scripts.rl.encode import encode_state, action_mask, state_dim_for_player_count
 from scripts.rl.agent import RLAgent
 from scripts.rl.network import SchemaVersionError
 from scripts.rl.cards import NUM_CARDS, CARD_NAMES, CARD_DEF, LANDMARK_ORDER, LANDMARK_COSTS
@@ -132,18 +132,25 @@ def _terminal_reward_defaults() -> dict:
 
 
 def _compute_shaped_reward(env_before, env_after, agent_player: int, config: dict, action=None) -> float:
-    opponent = 1 - agent_player
     before_me = env_before.players[agent_player]
     after_me = env_after.players[agent_player]
-    before_opp = env_before.players[opponent]
-    after_opp = env_after.players[opponent]
+    opponents = [i for i in range(len(env_after.players)) if i != agent_player]
 
     my_coin_delta = after_me.coins - before_me.coins
-    opp_coin_delta = after_opp.coins - before_opp.coins
+    opp_coin_delta = sum(
+        env_after.players[i].coins - env_before.players[i].coins
+        for i in opponents
+    )
     my_asset_delta = _player_asset_value(after_me) - _player_asset_value(before_me)
-    opp_asset_delta = _player_asset_value(after_opp) - _player_asset_value(before_opp)
+    opp_asset_delta = sum(
+        _player_asset_value(env_after.players[i]) - _player_asset_value(env_before.players[i])
+        for i in opponents
+    )
     my_landmark_delta = after_me.built_lm_count() - before_me.built_lm_count()
-    opp_landmark_delta = after_opp.built_lm_count() - before_opp.built_lm_count()
+    opp_landmark_delta = sum(
+        env_after.players[i].built_lm_count() - env_before.players[i].built_lm_count()
+        for i in opponents
+    )
 
     is_renovation_destroy = (
         action is not None
@@ -170,7 +177,6 @@ def _compute_shaped_reward(env_before, env_after, agent_player: int, config: dic
 
 
 def _compute_terminal_reward(env, agent_player: int, config: dict) -> float:
-    opponent = 1 - agent_player
     if env.winner == agent_player:
         reward = config.get("win", 1.0)
     elif env.winner is None:
@@ -179,13 +185,18 @@ def _compute_terminal_reward(env, agent_player: int, config: dict) -> float:
         reward = config.get("loss", -1.0)
 
     me = env.players[agent_player]
-    opp = env.players[opponent]
+    opponents = [player for index, player in enumerate(env.players) if index != agent_player]
+    best_opp = max(opponents, key=lambda player: (
+        _landmark_asset_value(player),
+        _player_asset_value(player),
+        player.coins,
+    ))
     diff_clip = config.get("diff_clip", 0.0)
 
-    landmark_diff = me.built_lm_count() - opp.built_lm_count()
-    landmark_value_diff = _landmark_asset_value(me) - _landmark_asset_value(opp)
-    asset_diff = _player_asset_value(me) - _player_asset_value(opp)
-    coin_diff = me.coins - opp.coins
+    landmark_diff = me.built_lm_count() - best_opp.built_lm_count()
+    landmark_value_diff = _landmark_asset_value(me) - _landmark_asset_value(best_opp)
+    asset_diff = _player_asset_value(me) - _player_asset_value(best_opp)
+    coin_diff = me.coins - best_opp.coins
     if diff_clip and diff_clip > 0:
         asset_diff = float(np.clip(asset_diff, -diff_clip, diff_clip))
         coin_diff = float(np.clip(coin_diff, -diff_clip, diff_clip))
@@ -374,17 +385,18 @@ def _append_episode_to_agent(agent: RLAgent, ep_states, ep_actions, ep_masks, ep
 
 
 def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_steps: int = 3000,
-                       reward_config=None, terminal_config=None, self_learn_both_sides: bool = False) -> dict:
-    env = MachikoroEnv()
-    agent_player = random.randint(0, 1)
+                       reward_config=None, terminal_config=None, self_learn_both_sides: bool = False,
+                       player_count: int = 2) -> dict:
+    env = MachikoroEnv(player_count=player_count)
+    agent_player = random.randrange(len(env.players))
     reward_config = reward_config or _reward_shaping_defaults()
     terminal_config = terminal_config or _terminal_reward_defaults()
     both_sides = bool(self_learn_both_sides and (opponent or {}).get("kind") == "self")
 
     if both_sides:
         episodes = [
-            {"states": [], "actions": [], "masks": [], "values": [], "rewards": []},
-            {"states": [], "actions": [], "masks": [], "values": [], "rewards": []},
+            {"states": [], "actions": [], "masks": [], "values": [], "rewards": []}
+            for _ in env.players
         ]
         for _ in range(max_steps):
             if env.done:
@@ -1206,6 +1218,7 @@ def main():
     parser.add_argument("--seed",       type=int,   default=None,  help="Python random / numpy の乱数seed（未指定なら固定しない）")
     parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
     parser.add_argument("--train-opponents", default="random=0.7,pool=0.3", help="学習時に混ぜる相手の重み指定 random/self/pool/weak/normal/strong/expert")
+    parser.add_argument("--player-count", type=int, default=2, help="Python学習環境のプレイヤー人数（2〜4、3人以上は新しい多人数用状態表現）")
     parser.add_argument("--self-learn-both-sides", action="store_true", help="opponent=self の学習ゲームで両席の行動を学習対象にする")
     parser.add_argument("--cpu-opponent-impl", choices=("python", "js-oracle"), default="python", help="weak以外のCPU相手の実装 python/js-oracle")
     parser.add_argument("--js-cpu-oracle", action="store_true", help="互換エイリアス: --cpu-opponent-impl js-oracle")
@@ -1269,7 +1282,9 @@ def main():
         random.seed(args.seed)
         np.random.seed(args.seed)
 
-    agent = RLAgent(hidden=args.hidden, lr=args.lr)
+    args.player_count = max(2, min(args.player_count, 4))
+    state_dim = state_dim_for_player_count(args.player_count)
+    agent = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim)
 
     model_path = os.path.join(MODEL_DIR, "model")
     checkpoint_path = model_path + ".npz"
@@ -1287,7 +1302,8 @@ def main():
 
     oracle_text = f", cpu_opponent_impl={args.cpu_opponent_impl}"
     seed_text = f", seed={args.seed}" if args.seed is not None else ""
-    print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}{oracle_text}{seed_text}")
+    player_count_text = f", players={args.player_count}, state_dim={state_dim}"
+    print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}{oracle_text}{seed_text}{player_count_text}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
     train_opponents = _parse_training_opponents(args.train_opponents)
     reward_config = {
@@ -1346,7 +1362,7 @@ def main():
 
         # 一定ゲームごとに現在モデルをプールにコピー
         if args.pool_update_every > 0 and game_i % args.pool_update_every == 0:
-            snap = RLAgent(hidden=args.hidden, lr=args.lr)
+            snap = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim)
             snap.net = copy.deepcopy(agent.net)
             pool_agents.append(snap)
             if len(pool_agents) > args.pool_max_size:
@@ -1362,6 +1378,7 @@ def main():
             reward_config=reward_config,
             terminal_config=terminal_config,
             self_learn_both_sides=args.self_learn_both_sides,
+            player_count=args.player_count,
         )
         if info.get("winner") == info.get("agent_player"):
             agent_wins += 1

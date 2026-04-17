@@ -97,13 +97,14 @@ class PlayerState:
 
 # ---------- ゲーム環境 ----------
 class MachikoroEnv:
-    def __init__(self, enabled_lm: list = None, max_turns: int = 400):
+    def __init__(self, enabled_lm: list = None, max_turns: int = 400, player_count: int = 2):
         self.enabled_lm = enabled_lm or LANDMARK_ORDER[:]
         self.max_turns = max_turns
+        self.player_count = max(2, min(int(player_count or 2), 4))
         self.reset()
 
     def reset(self):
-        self.players = [PlayerState(), PlayerState()]
+        self.players = [PlayerState() for _ in range(self.player_count)]
         self.shop_stock = {name: 6 for name in CARD_NAMES}
         self.current = 0
         self.phase = PHASE_ROLL
@@ -145,7 +146,7 @@ class MachikoroEnv:
             return [ACT_HARBOR_YES, ACT_HARBOR_NO]
 
         if self.phase == PHASE_PENDING:
-            opp = self.players[1 - self.current]
+            opp = self.players[self._target_opponent_index()]
             if self.pending_tv > 0:
                 return [ACT_TV_TARGET]
             if self.pending_biz > 0:
@@ -213,7 +214,7 @@ class MachikoroEnv:
             return True, self.winner
 
         p   = self.players[self.current]
-        oi  = 1 - self.current
+        oi  = self._target_opponent_index()
         opp = self.players[oi]
 
         # --- サイコロ ---
@@ -404,14 +405,12 @@ class MachikoroEnv:
     def _process_income(self):
         dice = self.last_dice
         ci   = self.current
-        oi   = 1 - ci
         p    = self.players[ci]
-        opp  = self.players[oi]
 
-        self._proc_red(p, ci, opp, oi, dice)
+        self._proc_red(p, ci, dice)
         self._proc_blue(dice)
         self._proc_green(p, ci, dice)
-        self._proc_purple(p, ci, opp, oi, dice)
+        self._proc_purple(p, ci, dice)
 
         # 役所：コイン0なら+1
         if p.coins == 0:
@@ -424,46 +423,49 @@ class MachikoroEnv:
             self.phase = PHASE_BUILD
 
     # ---- 赤カード ----
-    def _proc_red(self, cur, ci, opp, oi, dice):
+    def _proc_red(self, cur, ci, dice):
         for name in CARD_NAMES:
             cd = CARD_DEF[name]
             if cd.color != "red" or dice not in cd.dice_nums:
                 continue
-            count = opp.active(name)
-            if count == 0:
-                continue
-
-            if cd.effect == HARBOR_RED:
-                if not opp.landmarks[LM_HARBOR]:
+            for oi, opp in enumerate(self.players):
+                if oi == ci:
                     continue
-                amount = cd.income
-                if opp.landmarks[LM_MALL]:
-                    amount += 1
-                steal = min(amount * count, cur.coins)
-                cur.coins -= steal
-                opp.coins += steal
-
-            elif cd.effect == FRENCHR:
-                if cur.built_lm_count() < 2:
+                count = opp.active(name)
+                if count == 0:
                     continue
-                steal = min(cd.income * count, cur.coins)
-                cur.coins -= steal
-                opp.coins += steal
 
-            elif cd.effect == MEMBERBAR:
-                if cur.built_lm_count() < 3:
-                    continue
-                steal = cur.coins
-                cur.coins = 0
-                opp.coins += steal
+                if cd.effect == HARBOR_RED:
+                    if not opp.landmarks[LM_HARBOR]:
+                        continue
+                    amount = cd.income
+                    if opp.landmarks[LM_MALL]:
+                        amount += 1
+                    steal = min(amount * count, cur.coins)
+                    cur.coins -= steal
+                    opp.coins += steal
 
-            else:  # NORMAL
-                amount = cd.income
-                if opp.landmarks[LM_MALL] and cd.category in (RESTAURANT, SHOP):
-                    amount += 1
-                steal = min(amount * count, cur.coins)
-                cur.coins -= steal
-                opp.coins += steal
+                elif cd.effect == FRENCHR:
+                    if cur.built_lm_count() < 2:
+                        continue
+                    steal = min(cd.income * count, cur.coins)
+                    cur.coins -= steal
+                    opp.coins += steal
+
+                elif cd.effect == MEMBERBAR:
+                    if cur.built_lm_count() < 3:
+                        continue
+                    steal = cur.coins
+                    cur.coins = 0
+                    opp.coins += steal
+
+                else:  # NORMAL
+                    amount = cd.income
+                    if opp.landmarks[LM_MALL] and cd.category in (RESTAURANT, SHOP):
+                        amount += 1
+                    steal = min(amount * count, cur.coins)
+                    cur.coins -= steal
+                    opp.coins += steal
 
     # ---- 青カード ----
     def _proc_blue(self, dice):
@@ -562,7 +564,7 @@ class MachikoroEnv:
         return amount * count
 
     # ---- 紫カード ----
-    def _proc_purple(self, p, ci, opp, oi, dice):
+    def _proc_purple(self, p, ci, dice):
         for name in CARD_NAMES:
             cd = CARD_DEF[name]
             if cd.color != "purple" or dice not in cd.dice_nums:
@@ -571,9 +573,14 @@ class MachikoroEnv:
                 continue
 
             if cd.effect == STADIUM:
-                steal = min(cd.income, opp.coins)
-                opp.coins -= steal
-                p.coins += steal
+                total = 0
+                for oi, opp in enumerate(self.players):
+                    if oi == ci:
+                        continue
+                    steal = min(cd.income, opp.coins)
+                    opp.coins -= steal
+                    total += steal
+                p.coins += total
 
             elif cd.effect == TV:
                 self.pending_tv += 1
@@ -582,24 +589,39 @@ class MachikoroEnv:
                 self.pending_biz += 1
 
             elif cd.effect == PUBLISHER:
-                cnt = opp.total_active_by_cat(RESTAURANT, SHOP)
-                steal = min(cnt, opp.coins)
-                opp.coins -= steal
-                p.coins += steal
+                total = 0
+                for oi, opp in enumerate(self.players):
+                    if oi == ci:
+                        continue
+                    cnt = opp.total_active_by_cat(RESTAURANT, SHOP)
+                    steal = min(cnt, opp.coins)
+                    opp.coins -= steal
+                    total += steal
+                p.coins += total
 
             elif cd.effect == TAXOFFICE:
-                if opp.coins >= 10:
-                    steal = opp.coins // 2
-                    opp.coins -= steal
-                    p.coins += steal
+                total = 0
+                for oi, opp in enumerate(self.players):
+                    if oi == ci:
+                        continue
+                    if opp.coins >= 10:
+                        steal = opp.coins // 2
+                        opp.coins -= steal
+                        total += steal
+                p.coins += total
 
             elif cd.effect == CLEANING:
                 self.pending_clean += 1
 
             elif cd.effect == ITSTARTUP:
-                steal = min(p.it_venture_coins, opp.coins)
-                opp.coins -= steal
-                p.coins += steal
+                total = 0
+                for oi, opp in enumerate(self.players):
+                    if oi == ci:
+                        continue
+                    steal = min(p.it_venture_coins, opp.coins)
+                    opp.coins -= steal
+                    total += steal
+                p.coins += total
 
             elif cd.effect == PARK:
                 total = sum(pl.coins for pl in self.players)
@@ -633,13 +655,13 @@ class MachikoroEnv:
                 self.last_d1 > 0 and self.last_d1 == self.last_d2):
             self._reset_turn()
             return
-        self.current = 1 - self.current
+        self.current = (self.current + 1) % len(self.players)
         self.turn_count += 1
         self._reset_turn()
         if self.turn_count >= self.max_turns:
             self.done   = True
             coins = [pl.coins for pl in self.players]
-            if coins[0] == coins[1]:
+            if coins.count(max(coins)) > 1:
                 self.winner = None
             else:
                 self.winner = coins.index(max(coins))
@@ -664,6 +686,24 @@ class MachikoroEnv:
         src.cards[name] -= 1
         dst.cards[name] += 1
         return False
+
+    def _player_threat_score(self, player: PlayerState) -> float:
+        score = float(player.coins)
+        score += sum(LANDMARK_COSTS[n] * 2 for n in LANDMARK_ORDER if player.landmarks[n])
+        score += sum(player.active(n) * CARD_DEF[n].cost for n in CARD_NAMES)
+        return score
+
+    def _target_opponent_index(self) -> int:
+        best_index = None
+        best_score = None
+        for index, player in enumerate(self.players):
+            if index == self.current:
+                continue
+            score = self._player_threat_score(player)
+            if best_index is None or score > best_score:
+                best_index = index
+                best_score = score
+        return best_index if best_index is not None else 0
 
     def clone(self) -> "MachikoroEnv":
         env = object.__new__(MachikoroEnv)

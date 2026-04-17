@@ -16,6 +16,7 @@
 - 長いシェルコマンドは端末の折り返しで壊れやすいので、使える場合は既存のラッパースクリプトを優先してください。
 - RL の baseline 学習は、フルコマンドを打ち直さず `sh scripts/rl/run-baseline.sh` を使ってください。既定値は Termux 向けにかなり軽量化され、初期評価スキップ、`max_steps` 制限、進捗表示も有効です。出力は `run-label` ごとの別ディレクトリへ分かれます。
 - 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使ってください。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、best checkpoint 復元が有効です。
+- 4人用 RL 実験は `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` を使ってください。`--player-count 4` により `STATE_DIM = 353` の多人数用状態表現を使います。既存2人モデルは `STATE_DIM = 145` のままです。
 - RL 候補モデルは `models/rl_model/registry.json` を参照・更新してください。モデル本体や `runs/` は生成物扱いで、台帳だけを git 管理します。2026-04時点では `hidden=128, lr=0.0001` 系が有力で、`hidden=256` 系は pass 崩壊傾向があります。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
@@ -52,6 +53,7 @@
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`
 - 模倣なし RL カリキュラム学習: `sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label <label>`
+- 4人用 RL 自己対戦: `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh --run-label <label>`
 - RL と JS CPU の比較: `npm run eval-rl-vs-js -- --model <path>`
 - RL metrics 集計: `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`
 
