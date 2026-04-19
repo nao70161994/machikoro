@@ -476,6 +476,7 @@ npm run summarize-rl-metrics -- \
 モデル本体 `.npz` / `.browser.json` や `runs/` はサイズ・生成物扱いのため git 管理しない。
 例外として、実ゲームで使うポートフォリオ用の軽量配布セットだけは `models/rl_model/portfolio/*.browser.json` として git 管理する。
 `AI（学習・ランダム）` はこの portfolio 配下のモデルからランダム選択する。
+`js/RLModelPortfolio.js` は人数別に候補を絞り込む。現時点では2人戦は既存の2人向け候補、3〜4人戦は採用済みの `self-only-4p-h256-lr1e5-5000-seed102` を使う。採用モデルと配布ファイルの整合性は `tests/rl-model-portfolio.test.js` で検査する。
 
 台帳に記録する主な情報:
 

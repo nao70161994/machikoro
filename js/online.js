@@ -359,7 +359,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     if (ps && ps.length > 0) {
         cpuPlayers = order.map(originalIndex => {
             const s = ps[originalIndex];
-            return s && s.type === "cpu" ? createOnlineCpuPlayer(s.difficulty, { expertPurpose: "live" }) : null;
+            return s && s.type === "cpu" ? createOnlineCpuPlayer(s.difficulty, { expertPurpose: "live", playerCount: count }) : null;
         });
     } else {
         cpuPlayers = game.players.map(() => null);

@@ -52,7 +52,7 @@ function getLocalCpuLabel(difficulty) {
 function createCpuPlayer(difficulty, options = {}) {
     if (difficulty === 'rl') {
         try {
-            return RLModelPortfolio.createRandomCpu();
+            return RLModelPortfolio.createRandomCpu(options);
         } catch (error) {
             console.error(error);
             alert("学習AIモデルを読み込めませんでした。AI（最強）で代替します。");
@@ -198,7 +198,7 @@ function init(playerCount) {
             : normalizeLocalPlayerName(setting.name, originalIndex);
         shuffledCpuPlayers.push(
             setting.type === "cpu"
-                ? createCpuPlayer(setting.difficulty, { expertPurpose: "live" })
+                ? createCpuPlayer(setting.difficulty, { expertPurpose: "live", playerCount })
                 : null
         );
     }
