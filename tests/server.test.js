@@ -3,8 +3,10 @@ const {
     APP_ERROR_EVENT,
     emitAppError,
     resolveBuildHash,
+    injectServiceWorkerBuildHash,
     loadGameRuntime,
     sanitizeName,
+    normalizePlayerSettings,
     resolveRejoinPlayer,
     handleRecreateRoom,
     getRemainingConnectedPlayers,
@@ -136,6 +138,33 @@ runTest('sanitizeName がHTMLタグ・特殊文字を除去し20文字に制限�
     assert.strictEqual(sanitizeName('<>&"\'`'), '');
 });
 
+runTest('normalizePlayerSettings は5人以上のrl CPUをexpertへ正規化する', () => {
+    const settings = normalizePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'cpu', difficulty: 'weak' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'human', difficulty: 'normal' },
+    ], 5);
+
+    assert.deepStrictEqual(settings, [
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'expert' },
+        { type: 'cpu', difficulty: 'weak' },
+        { type: 'cpu', difficulty: 'expert' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+});
+
+runTest('normalizePlayerSettings は4人以下ならrl CPUを維持する', () => {
+    const settings = normalizePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+    ], 4);
+
+    assert.strictEqual(settings[1].difficulty, 'rl');
+});
+
 runTest('emitAppError は appError イベントでメッセージを送る', () => {
     const emitted = [];
     emitAppError({ emit(name, payload) { emitted.push({ name, payload }); } }, 'bad');
@@ -148,6 +177,14 @@ runTest('resolveBuildHash は環境変数 BUILD_HASH を優先する', () => {
     assert.strictEqual(resolveBuildHash(), 'from-env');
     if (before === undefined) delete process.env.BUILD_HASH;
     else process.env.BUILD_HASH = before;
+});
+
+runTest('injectServiceWorkerBuildHash は現在のcache versionをビルドハッシュへ置換する', () => {
+    const content = "const CACHE_NAME = 'machikoro-v3';";
+    assert.strictEqual(
+        injectServiceWorkerBuildHash(content, 'abc123'),
+        "const CACHE_NAME = 'machikoro-abc123';"
+    );
 });
 
 // ===== validateGameAction =====
@@ -615,6 +652,17 @@ runTest('buildPlayerList は CPU と待機中プレイヤーを設定に応じ�
         ],
     };
     assert.deepStrictEqual(buildPlayerList(room), ['Alice', 'CPU（普）', '待機中...']);
+});
+
+runTest('buildPlayerList は rl と expert のCPU表示を区別する', () => {
+    const room = {
+        playerSettings: [
+            { type: 'cpu', difficulty: 'rl' },
+            { type: 'cpu', difficulty: 'expert' },
+        ],
+        players: [],
+    };
+    assert.deepStrictEqual(buildPlayerList(room), ['CPU（学）', 'CPU（最強）']);
 });
 
 runTest('buildPlayerList は設定がないルームで参加者名をそのまま返す', () => {

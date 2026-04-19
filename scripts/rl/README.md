@@ -26,6 +26,8 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-self-only-h256-lr2e5-5000.sh` | `hidden=256/lr=0.00002/5000 games/self=1/両側学習/reward cap` の短縮プリセット |
 | `run-self-only-4p-h256-lr2e5-5000.sh` | `--player-count 4` の4人専用自己対戦プリセット |
 | `eval-run.sh` | `run-label` から `best_model.browser.json` を評価する短縮ラッパー |
+| `eval-run-3p.sh` | 3人 lineup (`rl,normal,strong` など) を評価する短縮ラッパー |
+| `eval-run-4p.sh` | 4人 lineup (`rl,normal,normal,strong` など) を評価する短縮ラッパー |
 
 ---
 

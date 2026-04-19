@@ -82,9 +82,13 @@ function renderPlayerSettings() {
     }
     playerSettings = playerSettings.slice(0, selectedCount).map((setting, index) => ({
         type: setting.type === "cpu" ? "cpu" : "human",
-        difficulty: setting.difficulty || "normal",
+        difficulty: selectedCount > 4 && setting.difficulty === "rl" ? "expert" : setting.difficulty || "normal",
         name: normalizeLocalPlayerName(setting.name, index),
     }));
+    const rlDisabled = selectedCount > 4 ? "disabled" : "";
+    const rlNotice = selectedCount > 4
+        ? '<div class="player-setting-note">AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。</div>'
+        : '';
     const html = playerSettings.map((s, i) => `
         <div class="player-setting">
             <div class="player-setting-row">
@@ -95,7 +99,7 @@ function renderPlayerSettings() {
                     <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                     <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
                     <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
-                    <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
+                    <option value="rl" ${rlDisabled} ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
                 </select>
             </div>
             ${s.type === "human" ? `
@@ -109,7 +113,7 @@ function renderPlayerSettings() {
                 >
             ` : `<div class="player-setting-cpu-label">${getLocalCpuLabel(s.difficulty)}として統計を記録</div>`}
         </div>
-    `).join("");
+    `).join("") + rlNotice;
     document.getElementById("playerSettings").innerHTML = html;
 }
 

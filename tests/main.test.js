@@ -199,6 +199,24 @@ runTest('main renderPlayerSettings は AI（最強）オプションを表示す
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
 });
 
+runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にする', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(5);
+    rt.__test.setPlayerSettings([
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.renderPlayerSettings();
+
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="rl" disabled'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert" selected'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（学習）は現在2〜4人戦のみ対応です'));
+});
+
 runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', () => {
     const rt = loadMainRuntime();
 

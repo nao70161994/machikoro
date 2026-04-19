@@ -47,7 +47,11 @@ const RLModelPortfolio = (() => {
             if (model.maxPlayers && count > model.maxPlayers) return false;
             return true;
         });
-        return models.length > 0 ? models : RL_MODEL_PORTFOLIO;
+        return models;
+    }
+
+    function supportsPlayerCount(playerCount) {
+        return eligibleModels(playerCount).length > 0;
     }
 
     function selectRandomModel(playerCount) {
@@ -92,5 +96,6 @@ const RLModelPortfolio = (() => {
         createRandomCpu,
         eligibleModels,
         selectRandomModel,
+        supportsPlayerCount,
     };
 })();

@@ -22,6 +22,10 @@ function resolveBuildHash() {
     }
 }
 
+function injectServiceWorkerBuildHash(content, buildHash) {
+    return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
+}
+
 const BUILD_HASH = require.main === module ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
 if (require.main === module) {
     console.log(`Build hash: ${BUILD_HASH}`);
@@ -29,7 +33,7 @@ if (require.main === module) {
 
 // sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
-const swContent = swTemplate.replace("'machikoro-v1'", `'machikoro-${BUILD_HASH}'`);
+const swContent = injectServiceWorkerBuildHash(swTemplate, BUILD_HASH);
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
     relation: ['delegate_permission/common.handle_all_urls'],
@@ -69,6 +73,25 @@ function sanitizeName(name) {
     return String(name || '').trim().slice(0, 20).replace(/[<>&"'`]/g, '');
 }
 
+function cpuDifficultyLabel(difficulty) {
+    if (difficulty === 'weak') return '弱';
+    if (difficulty === 'normal') return '普';
+    if (difficulty === 'strong') return '強';
+    if (difficulty === 'rl') return '学';
+    return '最強';
+}
+
+function normalizePlayerSettings(playerSettings, playerCount) {
+    if (!Array.isArray(playerSettings)) return [];
+    return playerSettings.slice(0, playerCount).map((setting) => {
+        if (!setting || setting.type !== 'cpu') return { type: 'human', difficulty: 'normal' };
+        const difficulty = playerCount > 4 && setting.difficulty === 'rl'
+            ? 'expert'
+            : (setting.difficulty || 'normal');
+        return { type: 'cpu', difficulty };
+    });
+}
+
 function generateReconnectToken() {
     if (typeof crypto.randomUUID === 'function') {
         return crypto.randomUUID();
@@ -102,6 +125,7 @@ io.on('connection', (socket) => {
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
+        playerSettings = normalizePlayerSettings(playerSettings, playerCount);
         let roomId;
         do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); } while (rooms[roomId]);
         const reconnectToken = generateReconnectToken();
@@ -129,7 +153,7 @@ io.on('connection', (socket) => {
             players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
             hostPlayerIndex: hostIndex,
             maxPlayers: playerCount,
-            playerSettings: playerSettings || [],
+            playerSettings,
             cpuSpeed: cpuSpeed || 1500,
             started: false,
         };
@@ -350,6 +374,7 @@ function handleRecreateRoom(socket, { roomId, gameStartPayload, stateSnapshot, a
         return;
     }
     const playerNames = gameStartPayload.playerNames || [];
+    gameStartPayload.playerSettings = normalizePlayerSettings(gameStartPayload.playerSettings, playerNames.length);
     if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
         emitAppError(socket, '復元データが不完全です');
         return;
@@ -376,7 +401,7 @@ function handleRecreateRoom(socket, { roomId, gameStartPayload, stateSnapshot, a
         .filter(Boolean);
     rooms[roomId] = {
         players: restoredPlayers,
-        playerSettings: gameStartPayload.playerSettings || [],
+        playerSettings: gameStartPayload.playerSettings,
         maxPlayers: playerNames.length,
         started: true,
         restored: true,
@@ -456,7 +481,7 @@ function buildPlayerList(room) {
     }
     return room.playerSettings.map((s, i) => {
         if (s.type === "cpu") {
-            const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
+            const diffLabel = cpuDifficultyLabel(s.difficulty);
             return `CPU（${diffLabel}）`;
         }
         const p = room.players.find(p => p.index === i);
@@ -896,7 +921,7 @@ function checkGameStart(io, roomId) {
             ? room.playerSettings.map((s, i) => {
                 if (s.type === "cpu") {
                     cpuCount++;
-                    const diffLabel = s.difficulty === 'weak' ? '弱' : s.difficulty === 'normal' ? '普' : '強';
+                    const diffLabel = cpuDifficultyLabel(s.difficulty);
                     return `CPU${cpuCount}（${diffLabel}）`;
                 }
                 const p = room.players.find(p => p.index === i);
@@ -958,7 +983,10 @@ module.exports = {
     APP_ERROR_EVENT,
     emitAppError,
     resolveBuildHash,
+    injectServiceWorkerBuildHash,
     sanitizeName,
+    cpuDifficultyLabel,
+    normalizePlayerSettings,
     buildPlayerList,
     resolveRejoinPlayer,
     handleRecreateRoom,

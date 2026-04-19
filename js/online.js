@@ -20,7 +20,14 @@ function renderOnlinePlayerSettings() {
     while (onlinePlayerSettings.length < onlineSelectedCount) {
         onlinePlayerSettings.push({ type: "human", difficulty: "normal" });
     }
-    onlinePlayerSettings = onlinePlayerSettings.slice(0, onlineSelectedCount);
+    onlinePlayerSettings = onlinePlayerSettings.slice(0, onlineSelectedCount).map((setting) => ({
+        type: setting.type === "cpu" ? "cpu" : "human",
+        difficulty: onlineSelectedCount > 4 && setting.difficulty === "rl" ? "expert" : setting.difficulty || "normal",
+    }));
+    const rlDisabled = onlineSelectedCount > 4 ? "disabled" : "";
+    const rlNotice = onlineSelectedCount > 4
+        ? '<div class="player-setting-note">AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。</div>'
+        : '';
     const html = onlinePlayerSettings.map((s, i) => `
         <div class="player-setting">
             <span class="player-setting-name">プレイヤー${i + 1}</span>
@@ -30,10 +37,10 @@ function renderOnlinePlayerSettings() {
                 <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                 <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
                 <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
-                <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
+                <option value="rl" ${rlDisabled} ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
             </select>
         </div>
-    `).join("");
+    `).join("") + rlNotice;
     document.getElementById("onlinePlayerSettings").innerHTML = html;
 }
 

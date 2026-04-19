@@ -45,6 +45,13 @@ runTest('RL model portfolio: 3人戦と4人戦では採用済み4人モデルを
     }
 });
 
+runTest('RL model portfolio: 5人以上は未評価のため候補なしにする', () => {
+    const { RLModelPortfolio } = loadPortfolio();
+    assert.deepStrictEqual(RLModelPortfolio.eligibleModels(5).length, 0);
+    assert.strictEqual(RLModelPortfolio.selectRandomModel(5), null);
+    assert.strictEqual(RLModelPortfolio.supportsPlayerCount(5), false);
+});
+
 runTest('RL model portfolio: adopted モデルは portfolio に存在し配布JSONも読める', () => {
     const { RL_MODEL_PORTFOLIO } = loadPortfolio();
     const registry = JSON.parse(fs.readFileSync(repoPath('models/rl_model/registry.json'), 'utf8'));
