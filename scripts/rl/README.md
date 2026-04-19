@@ -538,7 +538,7 @@ npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/e
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 50戦 weak 94% / normal 60% / strong 34% | バーガー・食品倉庫・麦畑寄り |
 | `self-only-both-h256-lr3e5-5000-seed62` | candidate | weak 90% / normal 65% / strong 45% | パン屋・食品倉庫・寿司屋寄り |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | candidate | weak 95% / normal 70% / strong 35% | パン屋・食品倉庫・ピザ屋寄り、低pass |
-| `self-only-4p-h256-lr1e5-5000-seed102` | adopted | 4人50戦: weak+normal+strong 74% / normal+normal+strong 74%、3人50戦: normal+strong 74% | 3〜4人用。ブドウ園・牧場・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed102` | adopted | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 3〜4人用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | candidate | weak 90% / normal 60% / strong 35% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り |
 | `strong-select-seed21` | candidate | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り |
 | `terminal-shaped-h128-long` | candidate | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り |

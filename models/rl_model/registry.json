@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-04-19",
+    "updatedAt": "2026-04-20",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -33,7 +33,7 @@
                 "id": "self-only-4p-h256-lr1e5-5000-seed102",
                 "role": "adopted-3p-4p",
                 "style": "vineyard-farm-pizza",
-                "reason": "Adopted for 3-player and 4-player RL CPU. 50-game lineup evaluation stayed strong against normal/strong mixed tables."
+                "reason": "Adopted for 3-player and 4-player RL CPU. 100-game lineup evaluation stayed stable against normal/strong mixed tables."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
@@ -991,9 +991,89 @@
             },
             "style": {
                 "label": "4p-vineyard-farm-pizza",
-                "summary": "4人自己対戦のみ。4人lineup 20戦で rl+normal+normal+strong に70%、席差も小さめ。2人評価ではstrongにも高勝率だが、主用途は4人用。"
+                "summary": "4人自己対戦のみ。4人100戦lineupで rl+weak+normal+strong 73%、rl+normal+normal+strong 72%。3人100戦lineupでも normal+strong / weak+strong に73%。主用途は3〜4人用。"
             },
             "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js-lineup",
+                    "gamesPerLineup": 100,
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 73,
+                            "losses": 27,
+                            "draws": 0,
+                            "winRate": 0.73,
+                            "seatWinRates": [0.8, 0.6, 0.68, 0.84],
+                            "avgTurns": 84.69,
+                            "passRate": 0.008,
+                            "topCards": ["ブドウ園", "牧場", "改装屋", "青果市場", "ピザ屋"],
+                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 72,
+                            "losses": 28,
+                            "draws": 0,
+                            "winRate": 0.72,
+                            "seatWinRates": [0.68, 0.76, 0.6, 0.84],
+                            "avgTurns": 85.75,
+                            "passRate": 0.018,
+                            "topCards": ["ブドウ園", "サンマ漁船", "牧場", "改装屋", "ピザ屋"],
+                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 83,
+                            "losses": 17,
+                            "draws": 0,
+                            "winRate": 0.83,
+                            "seatWinRates": [0.92, 0.72, 0.92, 0.76],
+                            "avgTurns": 87.25,
+                            "passRate": 0.009,
+                            "topCards": ["ブドウ園", "牧場", "改装屋", "ピザ屋", "麦畑"],
+                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-20",
+                    "type": "js-lineup-3p",
+                    "gamesPerLineup": 100,
+                    "lineups": {
+                        "rl+normal+strong": {
+                            "wins": 73,
+                            "losses": 27,
+                            "draws": 0,
+                            "winRate": 0.73,
+                            "seatWinRates": [0.735, 0.697, 0.758],
+                            "avgTurns": 74.55,
+                            "passRate": 0.014,
+                            "topCards": ["牧場", "ブドウ園", "改装屋", "ピザ屋", "麦畑"],
+                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
+                        },
+                        "rl+weak+normal": {
+                            "wins": 93,
+                            "losses": 7,
+                            "draws": 0,
+                            "winRate": 0.93,
+                            "seatWinRates": [0.912, 0.939, 0.939],
+                            "avgTurns": 76.85,
+                            "passRate": 0.015,
+                            "topCards": ["牧場", "ブドウ園", "改装屋", "麦畑", "ピザ屋"],
+                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
+                        },
+                        "rl+weak+strong": {
+                            "wins": 73,
+                            "losses": 27,
+                            "draws": 0,
+                            "winRate": 0.73,
+                            "seatWinRates": [0.794, 0.697, 0.697],
+                            "avgTurns": 69.39,
+                            "passRate": 0,
+                            "topCards": ["ブドウ園", "牧場", "貸金業", "麦畑", "サンマ漁船"],
+                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
+                        }
+                    }
+                },
                 {
                     "date": "2026-04-20",
                     "type": "js-lineup",
