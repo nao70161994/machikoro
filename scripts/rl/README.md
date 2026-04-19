@@ -28,6 +28,8 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `eval-run.sh` | `run-label` から `best_model.browser.json` を評価する短縮ラッパー |
 | `eval-run-3p.sh` | 3人 lineup (`rl,normal,strong` など) を評価する短縮ラッパー |
 | `eval-run-4p.sh` | 4人 lineup (`rl,normal,normal,strong` など) を評価する短縮ラッパー |
+| `../eval-rl-models.js` | 複数の registry model / run-label をまとめてJS評価し、ランキングJSON/CSVを出力 |
+| `../validate-rl-registry.js` | `models/rl_model/registry.json` のID重複・推奨モデル参照を検証 |
 
 ---
 
@@ -415,6 +417,32 @@ npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 -
 `--cpu-opponent-impl js-oracle` は、Python 学習環境の `normal/strong/expert` 相手に JS 側 `CPU.js` を oracle として使う。
 これは Python heuristic と JS CPU のズレを避けるための現行推奨設定。
 
+### 複数モデルの一括評価
+
+台帳に載っている推奨モデルや、複数の `run-label` を同じ条件で評価してランキングできる。
+結果は人間向け text に加えて、後で台帳へ転記しやすい JSON / CSV として保存できる。
+
+```bash
+# registry の recommendedActiveModels を 2人戦 weak/normal/strong で一括評価
+npm run eval-rl-models -- --games 50 --csv models/rl_model/eval-summary.csv
+
+# run-label を直接指定して比較
+npm run eval-rl-models -- \
+  --run-labels self-only-both-h256-lr2e5-5000-seed67-rewardcap,self-only-both-h256-lr2e5-5000-seed68-rewardcap \
+  --games 50 \
+  --output models/rl_model/eval-summary.json \
+  --csv models/rl_model/eval-summary.csv
+
+# 4人 lineup 評価
+npm run eval-rl-models -- \
+  --models self-only-4p-h256-lr1e5-5000-seed102 \
+  --games 50 \
+  --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal"
+```
+
+スコアは `weak=1, normal=2, strong=3, expert=2` の重み付き平均。4人 lineup では各 lineup を同重みで平均する。
+`run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
+
 ### metrics CSV の集計
 
 複数 run を同じ `train_metrics.csv` に積んだあとで、best checkpoint と run 単位の上位候補を比較できる。
@@ -489,6 +517,13 @@ npm run summarize-rl-metrics -- \
 - `style`: 構築傾向のラベルと主要カード/ランドマーク。
 - `evals`: 20戦 JS 評価など、採用判断に使う評価結果。
 - `portfolioPolicy`: 勝率だけでなく、席差・pass率・平均ターン・構築傾向を含めた採用方針。
+
+台帳を更新するときは、最低限次を確認する:
+
+```bash
+npm run validate-rl-registry
+npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/eval-summary.csv
+```
 
 勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
 逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。

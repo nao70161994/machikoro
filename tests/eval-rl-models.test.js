@@ -1,0 +1,123 @@
+const assert = require('assert');
+const { runTest } = require('./helpers/test-utils');
+
+const {
+    parseArgs,
+    parseLineups,
+    browserPathForRunLabel,
+    resolveModelSpecs,
+    scoreSummaries,
+    evaluateModelSpecs,
+    renderCsv,
+} = require('../scripts/eval-rl-models.js');
+
+function entry(opponent, winRate, passRate = 0) {
+    const games = 10;
+    const rlWins = Math.round(games * winRate);
+    return {
+        opponent,
+        lineup: opponent.includes('+') ? opponent.split('+') : ['rl', opponent],
+        modelInfo: { stateDim: 145, hiddenSize: 128, numActions: 1580, schemaVersion: 3 },
+        result: {
+            games,
+            wins: { rl: rlWins, [opponent]: games - rlWins },
+            averageTurns: 50,
+            exhausted: 0,
+            matchLog: Array.from({ length: games }, (_, index) => ({
+                lineup: ['rl', opponent],
+                winnerDifficulty: index < rlWins ? 'rl' : opponent,
+            })),
+            buildStats: [
+                { total: 100, pass: Math.round(100 * passRate), cards: { 'パン屋': 10 }, landmarks: { '駅': 4 } },
+                { total: 100, pass: 0, cards: {}, landmarks: {} },
+            ],
+        },
+    };
+}
+
+runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
+    const args = parseArgs([
+        '--models', 'a,b',
+        '--run-labels', 'run1,run2',
+        '--games', '30',
+        '--seed', '7',
+        '--rank', '3',
+        '--lineups', 'rl,weak,normal;rl,normal,strong',
+        '--csv', 'out.csv',
+    ]);
+    assert.deepStrictEqual(args.models, ['a', 'b']);
+    assert.deepStrictEqual(args.runLabels, ['run1', 'run2']);
+    assert.strictEqual(args.games, 30);
+    assert.strictEqual(args.seed, 7);
+    assert.strictEqual(args.rank, 3);
+    assert.deepStrictEqual(args.lineups, [['rl', 'weak', 'normal'], ['rl', 'normal', 'strong']]);
+    assert.strictEqual(args.csv, 'out.csv');
+});
+
+runTest('eval-rl-models は run-label から rank 別モデルパスを作る', () => {
+    assert.strictEqual(
+        browserPathForRunLabel('abc', 1),
+        'models/rl_model/runs/abc/best_model.browser.json'
+    );
+    assert.strictEqual(
+        browserPathForRunLabel('abc', 3),
+        'models/rl_model/runs/abc/best_model.top3.browser.json'
+    );
+});
+
+runTest('eval-rl-models は registry id と run-label を評価対象へ解決する', () => {
+    const specs = resolveModelSpecs(
+        { models: ['m1'], runLabels: ['run1'], rank: 2 },
+        { models: [{ id: 'm1', status: 'candidate', path: 'p1.json', style: { label: 'style1' } }] }
+    );
+    assert.deepStrictEqual(specs.map(spec => spec.id), ['m1', 'run1-top2']);
+    assert.strictEqual(specs[0].label, 'style1');
+    assert.strictEqual(specs[1].path, 'models/rl_model/runs/run1/best_model.top2.browser.json');
+});
+
+runTest('eval-rl-models scoreSummaries は strong を重く見る', () => {
+    const score = scoreSummaries([
+        { opponent: 'weak', rlWinRate: 1 },
+        { opponent: 'normal', rlWinRate: 0.5 },
+        { opponent: 'strong', rlWinRate: 0 },
+    ]);
+    assert.strictEqual(score, (1 + 1 + 0) / 6);
+});
+
+runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
+    const specs = [
+        { id: 'low', label: 'low', path: 'low.json', source: 'test', status: '' },
+        { id: 'high', label: 'high', path: 'high.json', source: 'test', status: '' },
+    ];
+    const results = evaluateModelSpecs(specs, { games: 10, seed: 1, maxSteps: 100, opponents: ['weak', 'normal', 'strong'], lineups: [] }, ({ modelPath }) => {
+        if (modelPath === 'high.json') return [entry('weak', 1), entry('normal', 1), entry('strong', 0.5)];
+        return [entry('weak', 1), entry('normal', 0), entry('strong', 0)];
+    });
+    assert.deepStrictEqual(results.map(result => result.id), ['high', 'low']);
+    assert.strictEqual(results[0].summaries.length, 3);
+});
+
+runTest('eval-rl-models renderCsv は集計行を出力する', () => {
+    const csv = renderCsv([
+        {
+            id: 'm1',
+            score: 0.5,
+            summaries: [
+                {
+                    opponent: 'weak',
+                    games: 10,
+                    rlWinRate: 0.8,
+                    averageTurns: 50,
+                    rlBuildStats: {
+                        passRate: 0.1,
+                        topCards: [{ name: 'パン屋', count: 10 }],
+                        topLandmarks: [{ name: '駅', count: 4 }],
+                    },
+                },
+            ],
+        },
+    ]);
+    assert.ok(csv.includes('rank,id,score'));
+    assert.ok(csv.includes('m1'));
+    assert.ok(csv.includes('パン屋x10'));
+});

@@ -15,11 +15,13 @@ const TEST_GROUPS = {
         'integration.test.js',
         'rlcpu.test.js',
         'rl-model-portfolio.test.js',
+        'validate-rl-registry.test.js',
         'rl-train.test.js',
         'rl-match-trace.test.js',
         'compare-rl-match-trace.test.js',
         'js-cpu-oracle.test.js',
         'eval-rl-vs-js.test.js',
+        'eval-rl-models.test.js',
         'summarize-rl-metrics.test.js',
     ],
     sim: [

@@ -46,6 +46,8 @@ RL / 学習系スクリプト:
 - `scripts/rl/run-baseline.sh`: Termux でも打ちやすい baseline 学習ラッパー。
 - `scripts/rl/export_model.py`: `.npz` checkpoint をブラウザで読める形式へ export。
 - `scripts/eval-rl-vs-js.js`: RL checkpoint を JS CPU 群と比較。
+- `scripts/eval-rl-models.js`: 複数の RL モデルを同条件で評価してランキング JSON / CSV を生成。
+- `scripts/validate-rl-registry.js`: `models/rl_model/registry.json` の整合性検証。
 - `scripts/summarize-rl-metrics.js`: `train_metrics.csv` を集計して順位 artifact を生成。
 - `models/rl_model/`: 学習出力、summary、export 済み checkpoint の保存先。
 
@@ -63,6 +65,8 @@ RL / 学習系スクリプト:
 - `tests/rlcpu.test.js`: RL CPU ランタイムの回帰テスト。
 - `tests/rl-train.test.js`: RL 学習補助処理の回帰テスト。
 - `tests/eval-rl-vs-js.test.js`: RL-vs-JS 評価の回帰テスト。
+- `tests/eval-rl-models.test.js`: 複数 RL モデル評価集計の回帰テスト。
+- `tests/validate-rl-registry.test.js`: RL モデル台帳検証の回帰テスト。
 - `tests/summarize-rl-metrics.test.js`: RL metrics 集計の回帰テスト。
 
 基本的な責務分担:
@@ -124,6 +128,8 @@ RL / 学習系スクリプト:
 - `npm test`: `tests/run-all.js` 経由で全 Node テストを実行。
 - `npm run train-rl:baseline`: RL baseline 学習を開始。
 - `npm run eval-rl-vs-js -- --model <path>`: export 済み RL checkpoint を JS CPU 群と比較。
+- `npm run eval-rl-models -- --models <id> --games 50`: registry 上の RL モデルを一括評価・ランキング。
+- `npm run validate-rl-registry`: RL モデル台帳の重複や推奨モデル参照を検証。
 - `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`: RL run を集計。
 - `node --check server.js`: サーバーの構文確認。
 - `node --check js/<file>.js`: 編集したクライアントファイルの構文確認。
@@ -133,7 +139,7 @@ RL / 学習系スクリプト:
 - クライアントファイルを 1 つ以上編集したら、編集した各 `js/*.js` に対して `node --check` を実行してください。
 - ルール、オンラインフロー、サーバー検証、共有ゲーム挙動を変更したら `npm test` を実行してください。
 - CPU / self-play / tuning を変更したら、可能な範囲で関連する targeted test (`tests/cpu.test.js`, `tests/selfplay.test.js`, `tests/tune-expert.test.js`, `tests/train-expert-crowd.test.js`) も実行してください。
-- RL 学習 / 評価 / ランタイムを変更したら、可能な範囲で関連する targeted test (`tests/rlcpu.test.js`, `tests/rl-train.test.js`, `tests/eval-rl-vs-js.test.js`, `tests/summarize-rl-metrics.test.js`) も実行してください。
+- RL 学習 / 評価 / ランタイムを変更したら、可能な範囲で関連する targeted test (`tests/rlcpu.test.js`, `tests/rl-train.test.js`, `tests/eval-rl-vs-js.test.js`, `tests/eval-rl-models.test.js`, `tests/validate-rl-registry.test.js`, `tests/summarize-rl-metrics.test.js`) も実行してください。
 - オンライン / 再接続を変更したら、部屋作成 / 参加、再接続、ホスト移譲または再起動復元、CPU 手番、Undo 同期を手動確認してください。
 - PWA / 更新挙動を変更したら、Service Worker の更新プロンプトと reload 挙動を手動確認してください。
 
