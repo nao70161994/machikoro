@@ -1,5 +1,11 @@
 const RL_MODEL_PORTFOLIO = Object.freeze([
     {
+        id: "self-only-4p-h256-lr1e5-5000-seed102",
+        label: "RL（4人・牧場）",
+        path: "models/rl_model/portfolio/seed102-4p.browser.json",
+        weight: 3,
+    },
+    {
         id: "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
         label: "RL（農業・ワイナリー）",
         path: "models/rl_model/portfolio/seed71-top3.browser.json",

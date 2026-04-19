@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-04-17",
+    "updatedAt": "2026-04-19",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -29,6 +29,12 @@
             "top card and landmark build tendencies"
         ],
         "recommendedActiveModels": [
+            {
+                "id": "self-only-4p-h256-lr1e5-5000-seed102",
+                "role": "adopted-3p-4p",
+                "style": "vineyard-farm-pizza",
+                "reason": "Adopted for 3-player and 4-player RL CPU. 50-game lineup evaluation stayed strong against normal/strong mixed tables."
+            },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
                 "role": "top-strength",
@@ -963,6 +969,202 @@
                 "summary": "Lower lr reduced the complete collapse but still produced high pass rates and 0% JS final evaluation."
             },
             "evals": []
+        },
+        {
+            "id": "self-only-4p-h256-lr1e5-5000-seed102",
+            "status": "adopted",
+            "path": "models/rl_model/portfolio/seed102-4p.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed102",
+            "training": {
+                "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
+                "games": 5000,
+                "players": 4,
+                "hidden": 256,
+                "lr": 0.00001,
+                "seed": 102,
+                "cpuOpponentImpl": "js-oracle",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-capped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "4p-vineyard-farm-pizza",
+                "summary": "4人自己対戦のみ。4人lineup 20戦で rl+normal+normal+strong に70%、席差も小さめ。2人評価ではstrongにも高勝率だが、主用途は4人用。"
+            },
+            "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js-lineup",
+                    "gamesPerLineup": 50,
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 37,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.74,
+                            "seatWinRates": [0.692, 0.583, 0.833, 0.846],
+                            "avgTurns": 84.2
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 37,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.74,
+                            "seatWinRates": [0.692, 0.75, 0.667, 0.846],
+                            "avgTurns": 88.0
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 46,
+                            "losses": 4,
+                            "draws": 0,
+                            "winRate": 0.92,
+                            "seatWinRates": [0.846, 0.917, 1.0, 0.923],
+                            "avgTurns": 90.0
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-20",
+                    "type": "js-lineup-3p",
+                    "gamesPerLineup": 50,
+                    "lineups": {
+                        "rl+normal+strong": {
+                            "wins": 37,
+                            "losses": 13,
+                            "draws": 0,
+                            "winRate": 0.74,
+                            "seatWinRates": [0.706, 0.75, 0.765],
+                            "avgTurns": 74.7
+                        },
+                        "rl+weak+normal": {
+                            "wins": 46,
+                            "losses": 4,
+                            "draws": 0,
+                            "winRate": 0.92,
+                            "seatWinRates": [0.882, 0.938, 0.941],
+                            "avgTurns": 79.3
+                        },
+                        "rl+weak+strong": {
+                            "wins": 38,
+                            "losses": 12,
+                            "draws": 0,
+                            "winRate": 0.76,
+                            "seatWinRates": [0.706, 0.813, 0.765],
+                            "avgTurns": 71.1
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-19",
+                    "type": "js-lineup",
+                    "gamesPerLineup": 20,
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 15,
+                            "losses": 5,
+                            "draws": 0,
+                            "winRate": 0.75,
+                            "seatWinRates": [0.8, 0.6, 1.0, 0.6],
+                            "avgTurns": 87.4
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 14,
+                            "losses": 6,
+                            "draws": 0,
+                            "winRate": 0.7,
+                            "seatWinRates": [0.8, 0.8, 0.6, 0.6],
+                            "avgTurns": 84.9
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 18,
+                            "losses": 2,
+                            "draws": 0,
+                            "winRate": 0.9,
+                            "seatWinRates": [1.0, 0.8, 0.8, 1.0],
+                            "avgTurns": 92.0
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-19",
+                    "type": "js-2p-reference",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {"winRate": 1.0},
+                        "normal": {"winRate": 0.8},
+                        "strong": {"winRate": 0.95}
+                    }
+                }
+            ]
+        },
+        {
+            "id": "self-only-4p-h256-lr1e5-5000-seed103",
+            "status": "candidate-4p",
+            "path": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103/best_model.browser.json",
+            "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103",
+            "training": {
+                "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
+                "games": 5000,
+                "players": 4,
+                "hidden": 256,
+                "lr": 0.00001,
+                "seed": 103,
+                "cpuOpponentImpl": "js-oracle",
+                "trainOpponents": "self=1",
+                "selfLearnBothSides": true,
+                "imitation": false,
+                "rewardProfile": "terminal-shaped-capped",
+                "restoreBestAtEnd": true
+            },
+            "style": {
+                "label": "4p-wheat-vineyard-pizza",
+                "summary": "seed102に近い4人自己対戦候補。4人lineup 20戦では弱めlineupに強く、normal+normal+strongにも70%。2人評価のstrongは低いので4人専用候補として扱う。"
+            },
+            "evals": [
+                {
+                    "date": "2026-04-19",
+                    "type": "js-lineup",
+                    "gamesPerLineup": 20,
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 15,
+                            "losses": 5,
+                            "draws": 0,
+                            "winRate": 0.75,
+                            "seatWinRates": [0.8, 0.8, 0.6, 0.8],
+                            "avgTurns": 89.7
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 14,
+                            "losses": 6,
+                            "draws": 0,
+                            "winRate": 0.7,
+                            "seatWinRates": [0.8, 0.4, 1.0, 0.6],
+                            "avgTurns": 87.8
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 17,
+                            "losses": 3,
+                            "draws": 0,
+                            "winRate": 0.85,
+                            "seatWinRates": [0.8, 0.8, 0.8, 1.0],
+                            "avgTurns": 93.3
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-19",
+                    "type": "js-2p-reference",
+                    "gamesPerOpponent": 20,
+                    "opponents": {
+                        "weak": {"winRate": 0.95},
+                        "normal": {"winRate": 0.55},
+                        "strong": {"winRate": 0.1}
+                    }
+                }
+            ]
         }
     ]
 }

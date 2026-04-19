@@ -459,7 +459,7 @@ npm run summarize-rl-metrics -- \
 - 終局時だけ勝敗・ランドマーク建設済コスト差・盤面資産差・手元コイン差を加える方式へ移行中。
 - 20戦 JS 評価では `terminal-shaped-h128-lr1e4` が `weak 90% / normal 60% / strong 35%` で現時点の最有力候補。
 - `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うため、複数モデル採用候補として残す。
-- `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。JS 評価も弱く、現時点では rejected 扱い。
+- 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、3〜4人用には `self-only-4p-h256-lr1e5-5000-seed102` を採用している。
 - `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
 - `terminal-shaped-h128-lr1e4` が strong に勝つ試合は、パン屋を厚く積み、マグロ漁船/コンビニ/寿司屋を絡めて全ランドマーク到達まで走る傾向がある。20戦中の strong 勝利7試合では平均60.0ターン、最終ランドマーク平均6.0個。
@@ -500,6 +500,7 @@ npm run summarize-rl-metrics -- \
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 50戦 weak 94% / normal 60% / strong 34% | バーガー・食品倉庫・麦畑寄り |
 | `self-only-both-h256-lr3e5-5000-seed62` | candidate | weak 90% / normal 65% / strong 45% | パン屋・食品倉庫・寿司屋寄り |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | candidate | weak 95% / normal 70% / strong 35% | パン屋・食品倉庫・ピザ屋寄り、低pass |
+| `self-only-4p-h256-lr1e5-5000-seed102` | adopted | 4人50戦: weak+normal+strong 74% / normal+normal+strong 74%、3人50戦: normal+strong 74% | 3〜4人用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | candidate | weak 90% / normal 60% / strong 35% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り |
 | `strong-select-seed21` | candidate | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り |
 | `terminal-shaped-h128-long` | candidate | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り |

@@ -1400,12 +1400,14 @@ def main():
 
         # 一定ゲームごとに現在モデルをプールにコピー
         if args.pool_update_every > 0 and game_i % args.pool_update_every == 0:
+            pool_was_full = len(pool_agents) >= args.pool_max_size
             snap = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim)
             snap.net = copy.deepcopy(agent.net)
             pool_agents.append(snap)
             if len(pool_agents) > args.pool_max_size:
                 pool_agents.pop(0)
-            print(f"  [pool] snapshot #{len(pool_agents)}/{args.pool_max_size} added at game {game_i}")
+            pool_action = "rotated" if pool_was_full else "added"
+            print(f"  [pool] snapshot {pool_action} #{len(pool_agents)}/{args.pool_max_size} at game {game_i}")
 
         opponent = _choose_training_opponent(train_opponents, pool_agents, current_agent=agent)
         info = play_training_game(

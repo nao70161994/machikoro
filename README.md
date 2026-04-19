@@ -187,7 +187,7 @@ npm run train-rl:baseline
 baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
 `run-js-oracle-terminal-shaped.sh` は JS CPU oracle、終局報酬調整、`self` / `pool` を含む模倣なしRL実験用です。
 2026-04時点では `hidden=128, lr=0.0001` の `terminal-shaped-h128-lr1e4` が有力候補で、20戦JS評価は `weak 90% / normal 60% / strong 35%` です。
-`hidden=256` 系は pass 方策へ崩れやすく、現時点では優先しません。
+初期の `hidden=256` 系は pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-04時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed102` を採用しています。
 
 baseline 学習で生成される主な成果物:
 
