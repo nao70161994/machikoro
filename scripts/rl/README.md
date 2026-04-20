@@ -465,6 +465,16 @@ npm run eval-rl-models -- \
 `run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
 CSV には `businessTotal` / `businessSkipRate` / `businessGive` / `businessTake` / `businessExchanges` も含める。
 
+採用済み多人数モデルの安定性確認は、3人・4人をまとめて評価する短縮ラッパーを使う。
+
+```bash
+sh scripts/rl/eval-adopted-stability.sh
+```
+
+引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定は `200` 戦、`self-only-4p-h256-lr1e5-5000-seed102`、`models/rl_model/eval-adopted-stability-{3p,4p}.json/csv`。
+
+2026-04-20の `seed102` 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
+
 ### metrics CSV の集計
 
 複数 run を同じ `train_metrics.csv` に積んだあとで、best checkpoint と run 単位の上位候補を比較できる。

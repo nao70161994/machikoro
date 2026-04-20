@@ -997,6 +997,86 @@
             "evals": [
                 {
                     "date": "2026-04-20",
+                    "type": "js-lineup-stability",
+                    "gamesPerLineup": 200,
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 140,
+                            "losses": 60,
+                            "draws": 0,
+                            "winRate": 0.7,
+                            "seatWinRates": [0.72, 0.64, 0.66, 0.78],
+                            "avgTurns": 83.63,
+                            "passRate": 0.009,
+                            "businessTotal": 0,
+                            "businessSkipRate": 0
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 135,
+                            "losses": 65,
+                            "draws": 0,
+                            "winRate": 0.675,
+                            "seatWinRates": [0.8, 0.74, 0.64, 0.52],
+                            "avgTurns": 87.405,
+                            "passRate": 0.016,
+                            "businessTotal": 0,
+                            "businessSkipRate": 0
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 183,
+                            "losses": 17,
+                            "draws": 0,
+                            "winRate": 0.915,
+                            "seatWinRates": [1.0, 0.94, 0.9, 0.82],
+                            "avgTurns": 88.325,
+                            "passRate": 0.007,
+                            "businessTotal": 0,
+                            "businessSkipRate": 0
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-20",
+                    "type": "js-lineup-3p-stability",
+                    "gamesPerLineup": 200,
+                    "lineups": {
+                        "rl+normal+strong": {
+                            "wins": 145,
+                            "losses": 55,
+                            "draws": 0,
+                            "winRate": 0.725,
+                            "seatWinRates": [0.716, 0.727, 0.731],
+                            "avgTurns": 74.195,
+                            "passRate": 0.011,
+                            "businessTotal": 9,
+                            "businessSkipRate": 0
+                        },
+                        "rl+weak+normal": {
+                            "wins": 176,
+                            "losses": 24,
+                            "draws": 0,
+                            "winRate": 0.88,
+                            "seatWinRates": [0.866, 0.879, 0.896],
+                            "avgTurns": 78.475,
+                            "passRate": 0.012,
+                            "businessTotal": 10,
+                            "businessSkipRate": 0
+                        },
+                        "rl+weak+strong": {
+                            "wins": 153,
+                            "losses": 47,
+                            "draws": 0,
+                            "winRate": 0.765,
+                            "seatWinRates": [0.821, 0.727, 0.746],
+                            "avgTurns": 69.805,
+                            "passRate": 0.002,
+                            "businessTotal": 4,
+                            "businessSkipRate": 0
+                        }
+                    }
+                },
+                {
+                    "date": "2026-04-20",
                     "type": "js-lineup",
                     "gamesPerLineup": 100,
                     "lineups": {
