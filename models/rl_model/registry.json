@@ -4,10 +4,35 @@
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
-        "Prefer 20-game JS evaluations for promotion decisions. 4-game checkpoint evaluations are noisy.",
+        "Promotion decisions should use post-training JS evaluations, not training-time top-k scores. 20-game checks are smoke tests only.",
         "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful.",
         "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker."
     ],
+    "evaluationPolicy": {
+        "smokeGamesPerOpponent": 20,
+        "minimumAdoptionGamesPerOpponent": 50,
+        "primaryAdoptionGamesPerOpponent": 100,
+        "preferredPrimaryGamesPerOpponent": 300,
+        "topKPostEval": {
+            "requiredRanks": [
+                1,
+                2,
+                3
+            ],
+            "command": "sh scripts/rl/eval-run-topk.sh <run-label> 100",
+            "reason": "Training-time checkpoint score is noisy; best/top2/top3 must be re-evaluated under the same JS conditions before promotion."
+        }
+    },
+    "diversityPolicy": {
+        "goal": "Keep active RL models with different build signatures instead of several near-duplicates.",
+        "representativeStyleKey": "style.label",
+        "manualReviewWhenSameStyle": true,
+        "preferArchiveWhen": [
+            "A candidate has the same style label as a stronger active model.",
+            "The candidate is weaker on normal and strong and has no distinct top-card signature.",
+            "The candidate has high pass rate without compensating win-rate or style value."
+        ]
+    },
     "promotionCriteria": {
         "candidate": {
             "weakMin": 0.7,

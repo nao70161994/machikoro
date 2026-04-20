@@ -465,6 +465,7 @@ npm run eval-rl-models -- \
 ```
 
 スコアは `weak=1, normal=2, strong=3, expert=2` の重み付き平均。4人 lineup では各 lineup を同重みで平均する。
+20戦評価は smoke test として扱い、active 採用は最低50戦、主採用は100戦以上、可能なら300戦で確認する。
 `run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
 同じ `run-label` の best/top2/top3 をまとめて比較する場合は `--run-ranks 1,2,3` を使う。
 CSV / Markdown にはモデルごとの構築シグネチャも出るため、勝率だけでなく戦略の重複も見やすい。
@@ -626,6 +627,7 @@ npm run render-rl-registry-evals -- \
 勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
 逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。
 学習中の top-k と後評価はズレる前提で扱う。採用判断は学習中 score ではなく、`eval-run-topk.sh` などで best/top2/top3 を同条件・十分なゲーム数で再評価した結果を優先する。
+`npm run validate-rl-registry` は、active model の評価ゲーム数不足や recommended model の style 重複を警告する。警告は即エラーではないが、採用判断前に理由を `registry.json` の `reason` / `style.summary` に残す。
 
 現時点の候補:
 

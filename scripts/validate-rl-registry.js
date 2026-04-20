@@ -5,12 +5,39 @@ function loadRegistry(registryPath) {
     return JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 }
 
+function latestEval(model) {
+    const evals = Array.isArray(model.evals) ? model.evals : [];
+    if (evals.length === 0) return null;
+    return evals
+        .slice()
+        .sort((a, b) => (
+            String(b.date || '').localeCompare(String(a.date || '')) ||
+            ((b.gamesPerOpponent || 0) - (a.gamesPerOpponent || 0))
+        ))[0];
+}
+
+function bestEvalGames(model) {
+    const evals = Array.isArray(model.evals) ? model.evals : [];
+    return evals.reduce((best, entry) => Math.max(best, entry.gamesPerOpponent || entry.gamesPerLineup || 0), 0);
+}
+
+function modelStyleKey(model) {
+    const style = model.style || {};
+    if (style.diversityKey) return String(style.diversityKey);
+    if (style.label) return String(style.label);
+    const cards = style.topCardsVsStrong || style.topCards || [];
+    return Array.isArray(cards) ? cards.slice(0, 3).join('/') : '';
+}
+
 function validateRegistry(registry, options = {}) {
     const errors = [];
     const warnings = [];
     const models = Array.isArray(registry.models) ? registry.models : [];
     const ids = new Set();
     const repoRoot = options.repoRoot || path.join(__dirname, '..');
+    const evaluationPolicy = registry.evaluationPolicy || {};
+    const minimumGames = evaluationPolicy.minimumAdoptionGamesPerOpponent || 0;
+    const primaryMinimumGames = evaluationPolicy.primaryAdoptionGamesPerOpponent || 0;
 
     for (const model of models) {
         if (!model || !model.id) {
@@ -25,15 +52,35 @@ function validateRegistry(registry, options = {}) {
         }
         if (!Array.isArray(model.evals) || model.evals.length === 0) {
             warnings.push(`${model.id}: evals が未記録です`);
+        } else if ((model.status === 'adopted' || model.status === 'candidate') && minimumGames > 0 && bestEvalGames(model) < minimumGames) {
+            warnings.push(`${model.id}: adopted/candidate の評価ゲーム数が少なすぎます (${bestEvalGames(model)} < ${minimumGames})`);
+        }
+        if ((model.status === 'adopted' || model.status === 'candidate') && (!model.style || !model.style.label)) {
+            warnings.push(`${model.id}: active model に style.label がありません`);
         }
     }
 
     const recommended = (((registry.portfolioPolicy || {}).recommendedActiveModels) || []);
+    const recommendedStyleKeys = new Map();
     for (const entry of recommended) {
         if (!entry || !entry.id) {
             errors.push('recommendedActiveModels に id のない項目があります');
         } else if (!ids.has(entry.id)) {
             errors.push(`recommendedActiveModels が未登録 model id を参照しています: ${entry.id}`);
+        } else {
+            const model = models.find(model => model.id === entry.id);
+            const games = model ? bestEvalGames(model) : 0;
+            if (entry.role && String(entry.role).includes('main') && primaryMinimumGames > 0 && games < primaryMinimumGames) {
+                warnings.push(`${entry.id}: main 採用には評価ゲーム数が少なすぎます (${games} < ${primaryMinimumGames})`);
+            }
+            const key = model ? modelStyleKey(model) : '';
+            if (key) {
+                if (recommendedStyleKeys.has(key)) {
+                    warnings.push(`${entry.id}: recommendedActiveModels の style が ${recommendedStyleKeys.get(key)} と重複しています (${key})`);
+                } else {
+                    recommendedStyleKeys.set(key, entry.id);
+                }
+            }
         }
     }
 
@@ -62,6 +109,9 @@ if (require.main === module) {
 
 module.exports = {
     loadRegistry,
+    latestEval,
+    bestEvalGames,
+    modelStyleKey,
     validateRegistry,
     printValidation,
 };
