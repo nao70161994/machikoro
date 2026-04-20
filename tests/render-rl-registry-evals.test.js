@@ -5,12 +5,21 @@ const {
     parseArgs,
     parseCheckpointRank,
     renderRegistryEvals,
+    mergeRegistryEvals,
 } = require('../scripts/render-rl-registry-evals.js');
 
 runTest('render-rl-registry-evals parseArgs は主要CLI引数を解釈する', () => {
-    const args = parseArgs(['--input', 'eval.json', '--output', 'out.json', '--date', '2026-04-20']);
+    const args = parseArgs([
+        '--input', 'eval.json',
+        '--output', 'out.json',
+        '--registry', 'registry.json',
+        '--update-registry',
+        '--date', '2026-04-20',
+    ]);
     assert.strictEqual(args.input, 'eval.json');
     assert.strictEqual(args.output, 'out.json');
+    assert.strictEqual(args.registry, 'registry.json');
+    assert.strictEqual(args.updateRegistry, true);
     assert.strictEqual(args.date, '2026-04-20');
 });
 
@@ -49,4 +58,38 @@ runTest('render-rl-registry-evals は eval-rl-models 結果を registry 追記�
     assert.strictEqual(rendered[0].eval.opponents.weak.avgTurns, 51.235);
     assert.strictEqual(rendered[0].eval.opponents.weak.passRate, 0.012346);
     assert.strictEqual(rendered[0].eval.opponents.weak.businessTotal, 2);
+});
+
+runTest('render-rl-registry-evals は registry eval を重複なしで追記する', () => {
+    const registry = {
+        models: [
+            { id: 'model-top2', evals: [] },
+        ],
+    };
+    const rendered = [
+        {
+            id: 'model-top2',
+            score: 0.5,
+            eval: {
+                date: '2026-04-20',
+                type: 'js',
+                gamesPerOpponent: 20,
+                checkpointRank: 2,
+                opponents: { weak: { wins: 15 } },
+            },
+        },
+    ];
+    const first = mergeRegistryEvals(registry, rendered);
+    const second = mergeRegistryEvals(first.registry, rendered);
+    assert.strictEqual(first.stats.appended, 1);
+    assert.strictEqual(second.stats.appended, 0);
+    assert.strictEqual(second.stats.skippedDuplicates, 1);
+    assert.strictEqual(second.registry.models[0].evals.length, 1);
+    assert.strictEqual(second.registry.models[0].lastEvalScore, 0.5);
+});
+
+runTest('render-rl-registry-evals は存在しない model id を拒否する', () => {
+    assert.throws(() => {
+        mergeRegistryEvals({ models: [] }, [{ id: 'missing', eval: { opponents: {} } }]);
+    }, /model id/);
 });

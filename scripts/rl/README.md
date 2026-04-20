@@ -271,6 +271,9 @@ sh scripts/rl/eval-run.sh self-only-both-h256-lr2e5-5000-seed68-rewardcap
 sh scripts/rl/eval-run.sh self-only-both-h256-lr2e5-5000-seed67-rewardcap 20 weak,normal,strong 2
 sh scripts/rl/eval-run.sh self-only-both-h256-lr2e5-5000-seed67-rewardcap 20 weak,normal,strong 3
 
+# best/top2/top3 を同条件でまとめて後評価する場合
+sh scripts/rl/eval-run-topk.sh self-only-both-h256-lr2e5-5000-seed67-rewardcap 100
+
 # baseline の既定値を保ったままゲーム数だけ短くする
 sh scripts/rl/run-baseline.sh --games 5000
 
@@ -463,7 +466,25 @@ npm run eval-rl-models -- \
 
 スコアは `weak=1, normal=2, strong=3, expert=2` の重み付き平均。4人 lineup では各 lineup を同重みで平均する。
 `run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
+同じ `run-label` の best/top2/top3 をまとめて比較する場合は `--run-ranks 1,2,3` を使う。
+CSV / Markdown にはモデルごとの構築シグネチャも出るため、勝率だけでなく戦略の重複も見やすい。
 CSV には `businessTotal` / `businessSkipRate` / `businessGive` / `businessTake` / `businessExchanges` も含める。
+
+```bash
+npm run eval-rl-models -- \
+  --run-labels self-only-both-h256-lr2e5-5000-seed71-rewardcap \
+  --run-ranks 1,2,3 \
+  --games 100 \
+  --output models/rl_model/eval-seed71-topk.json \
+  --csv models/rl_model/eval-seed71-topk.csv \
+  --markdown models/rl_model/eval-seed71-topk.md
+```
+
+短縮ラッパーも使える。
+
+```bash
+sh scripts/rl/eval-run-topk.sh self-only-both-h256-lr2e5-5000-seed71-rewardcap 100
+```
 
 採用済み多人数モデルの安定性確認は、3人・4人をまとめて評価する短縮ラッパーを使う。
 
@@ -590,8 +611,21 @@ npm run render-rl-registry-evals -- \
   --date 2026-04-20
 ```
 
+内容を確認したあと、registry へ重複なしで反映する場合は `--update-registry` を付ける。
+存在しない model id はエラーにするため、誤った評価JSONを黙って混ぜない。
+
+```bash
+npm run render-rl-registry-evals -- \
+  --input models/rl_model/eval-summary.json \
+  --registry models/rl_model/registry.json \
+  --update-registry \
+  --output models/rl_model/eval-summary.registry-update.json \
+  --date 2026-04-20
+```
+
 勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
 逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。
+学習中の top-k と後評価はズレる前提で扱う。採用判断は学習中 score ではなく、`eval-run-topk.sh` などで best/top2/top3 を同条件・十分なゲーム数で再評価した結果を優先する。
 
 現時点の候補:
 

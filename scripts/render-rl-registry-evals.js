@@ -4,15 +4,20 @@ function parseArgs(argv) {
     const args = {
         input: '',
         output: '',
+        registry: '',
+        updateRegistry: false,
         date: new Date().toISOString().slice(0, 10),
     };
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--input') args.input = argv[++i] || '';
         else if (arg === '--output') args.output = argv[++i] || '';
+        else if (arg === '--registry') args.registry = argv[++i] || '';
+        else if (arg === '--update-registry') args.updateRegistry = true;
         else if (arg === '--date') args.date = argv[++i] || args.date;
     }
     if (!args.input) throw new Error('--input is required');
+    if (args.updateRegistry && !args.registry) throw new Error('--registry is required with --update-registry');
     return args;
 }
 
@@ -77,6 +82,50 @@ function renderRegistryEvals(results, date) {
     return results.map(result => resultToRegistryEval(result, date));
 }
 
+function sameOpponentKeys(a, b) {
+    const aKeys = Object.keys(a || {}).sort();
+    const bKeys = Object.keys(b || {}).sort();
+    return aKeys.length === bKeys.length && aKeys.every((key, index) => key === bKeys[index]);
+}
+
+function isSameEval(a, b) {
+    return a
+        && b
+        && a.date === b.date
+        && a.type === b.type
+        && a.gamesPerOpponent === b.gamesPerOpponent
+        && (a.checkpointRank || null) === (b.checkpointRank || null)
+        && sameOpponentKeys(a.opponents, b.opponents);
+}
+
+function mergeRegistryEvals(registry, renderedEvals) {
+    const models = Array.isArray(registry.models) ? registry.models : [];
+    const byId = new Map(models.map(model => [model.id, model]));
+    const stats = {
+        appended: 0,
+        skippedDuplicates: 0,
+        updatedScores: 0,
+    };
+
+    for (const rendered of renderedEvals) {
+        const model = byId.get(rendered.id);
+        if (!model) throw new Error(`registry に model id がありません: ${rendered.id}`);
+        if (!Array.isArray(model.evals)) model.evals = [];
+        if (model.evals.some(existing => isSameEval(existing, rendered.eval))) {
+            stats.skippedDuplicates += 1;
+            continue;
+        }
+        model.evals.push(rendered.eval);
+        stats.appended += 1;
+        if (Number.isFinite(rendered.score)) {
+            model.lastEvalScore = rendered.score;
+            stats.updatedScores += 1;
+        }
+    }
+
+    return { registry, stats };
+}
+
 function writeOutput(value, output) {
     const text = JSON.stringify(value, null, 2) + '\n';
     if (output) fs.writeFileSync(output, text, 'utf8');
@@ -86,7 +135,16 @@ function writeOutput(value, output) {
 if (require.main === module) {
     const args = parseArgs(process.argv.slice(2));
     const results = JSON.parse(fs.readFileSync(args.input, 'utf8'));
-    writeOutput(renderRegistryEvals(results, args.date), args.output);
+    const rendered = renderRegistryEvals(results, args.date);
+    if (args.updateRegistry) {
+        const registry = JSON.parse(fs.readFileSync(args.registry, 'utf8'));
+        const { registry: updatedRegistry, stats } = mergeRegistryEvals(registry, rendered);
+        writeOutput(updatedRegistry, args.registry);
+        if (args.output) writeOutput({ stats, entries: rendered }, args.output);
+        else process.stderr.write(`registry更新: appended=${stats.appended} skipped=${stats.skippedDuplicates}\n`);
+    } else {
+        writeOutput(rendered, args.output);
+    }
 }
 
 module.exports = {
@@ -95,4 +153,6 @@ module.exports = {
     summaryToOpponentEval,
     resultToRegistryEval,
     renderRegistryEvals,
+    isSameEval,
+    mergeRegistryEvals,
 };

@@ -4,9 +4,11 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     parseLineups,
+    parseNumberList,
     browserPathForRunLabel,
     resolveModelSpecs,
     scoreSummaries,
+    buildSignature,
     evaluateModelSpecs,
     renderCsv,
     renderMarkdown,
@@ -43,6 +45,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
         '--games', '30',
         '--seed', '7',
         '--rank', '3',
+        '--run-ranks', '1,2,3',
         '--lineups', 'rl,weak,normal;rl,normal,strong',
         '--csv', 'out.csv',
         '--markdown', 'out.md',
@@ -52,9 +55,15 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 7);
     assert.strictEqual(args.rank, 3);
+    assert.deepStrictEqual(args.runRanks, [1, 2, 3]);
     assert.deepStrictEqual(args.lineups, [['rl', 'weak', 'normal'], ['rl', 'normal', 'strong']]);
     assert.strictEqual(args.csv, 'out.csv');
     assert.strictEqual(args.markdown, 'out.md');
+});
+
+runTest('eval-rl-models parseNumberList は rank 配列を解釈する', () => {
+    assert.deepStrictEqual(parseNumberList('1,2,3'), [1, 2, 3]);
+    assert.deepStrictEqual(parseNumberList('1,x,0,4'), [1, 4]);
 });
 
 runTest('eval-rl-models は run-label から rank 別モデルパスを作る', () => {
@@ -70,12 +79,21 @@ runTest('eval-rl-models は run-label から rank 別モデルパスを作る', 
 
 runTest('eval-rl-models は registry id と run-label を評価対象へ解決する', () => {
     const specs = resolveModelSpecs(
-        { models: ['m1'], runLabels: ['run1'], rank: 2 },
+        { models: ['m1'], runLabels: ['run1'], rank: 2, runRanks: [] },
         { models: [{ id: 'm1', status: 'candidate', path: 'p1.json', style: { label: 'style1' } }] }
     );
     assert.deepStrictEqual(specs.map(spec => spec.id), ['m1', 'run1-top2']);
     assert.strictEqual(specs[0].label, 'style1');
     assert.strictEqual(specs[1].path, 'models/rl_model/runs/run1/best_model.top2.browser.json');
+});
+
+runTest('eval-rl-models は run-label の top-k を一括展開する', () => {
+    const specs = resolveModelSpecs(
+        { models: [], runLabels: ['run1'], rank: 1, runRanks: [1, 2, 3] },
+        { models: [] }
+    );
+    assert.deepStrictEqual(specs.map(spec => spec.id), ['run1', 'run1-top2', 'run1-top3']);
+    assert.strictEqual(specs[2].path, 'models/rl_model/runs/run1/best_model.top3.browser.json');
 });
 
 runTest('eval-rl-models scoreSummaries は strong を重く見る', () => {
@@ -85,6 +103,25 @@ runTest('eval-rl-models scoreSummaries は strong を重く見る', () => {
         { opponent: 'strong', rlWinRate: 0 },
     ]);
     assert.strictEqual(score, (1 + 1 + 0) / 6);
+});
+
+runTest('eval-rl-models buildSignature は相手別の構築傾向を集約する', () => {
+    const signature = buildSignature([
+        {
+            rlBuildStats: {
+                topCards: [{ name: 'パン屋', count: 10 }, { name: '麦畑', count: 3 }],
+                topLandmarks: [{ name: '駅', count: 2 }],
+            },
+        },
+        {
+            rlBuildStats: {
+                topCards: [{ name: 'パン屋', count: 5 }, { name: '寿司屋', count: 8 }],
+                topLandmarks: [{ name: '港', count: 4 }],
+            },
+        },
+    ]);
+    assert.strictEqual(signature.cardKey, 'パン屋/寿司屋/麦畑');
+    assert.strictEqual(signature.landmarkKey, '港/駅');
 });
 
 runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
@@ -98,6 +135,7 @@ runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
     });
     assert.deepStrictEqual(results.map(result => result.id), ['high', 'low']);
     assert.strictEqual(results[0].summaries.length, 3);
+    assert.strictEqual(results[0].buildSignature.cardKey, 'パン屋');
 });
 
 runTest('eval-rl-models renderCsv は集計行を出力する', () => {
@@ -128,6 +166,7 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
         },
     ]);
     assert.ok(csv.includes('rank,id,score'));
+    assert.ok(csv.includes('buildSignatureCards'));
     assert.ok(csv.includes('m1'));
     assert.ok(csv.includes('パン屋x10'));
     assert.ok(csv.includes('businessTotal'));
@@ -155,7 +194,7 @@ runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力�
             ],
         },
     ]);
-    assert.ok(markdown.includes('| rank | id | score | opponents | pass | avgTurns |'));
+    assert.ok(markdown.includes('| rank | id | score | style | opponents | pass | avgTurns |'));
     assert.ok(markdown.includes('`m1`'));
     assert.ok(markdown.includes('weak 80.0%'));
     assert.ok(markdown.includes('strong 20.0%'));

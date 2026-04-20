@@ -11,6 +11,12 @@ function parseList(value) {
     return String(value || '').split(',').map(item => item.trim()).filter(Boolean);
 }
 
+function parseNumberList(value) {
+    return parseList(value)
+        .map(item => parseInt(item, 10))
+        .filter(value => Number.isInteger(value) && value >= 1);
+}
+
 function parseLineups(value) {
     return String(value || '')
         .split(';')
@@ -27,6 +33,7 @@ function parseArgs(argv) {
         seed: 1,
         maxSteps: 5000,
         rank: 1,
+        runRanks: [],
         opponents: ['weak', 'normal', 'strong'],
         lineups: [],
         format: 'text',
@@ -44,6 +51,7 @@ function parseArgs(argv) {
         else if (arg === '--seed') args.seed = parseInt(argv[++i] || String(args.seed), 10);
         else if (arg === '--max-steps') args.maxSteps = parseInt(argv[++i] || String(args.maxSteps), 10);
         else if (arg === '--rank') args.rank = parseInt(argv[++i] || String(args.rank), 10);
+        else if (arg === '--run-ranks') args.runRanks = parseNumberList(argv[++i]);
         else if (arg === '--opponents') args.opponents = parseList(argv[++i]);
         else if (arg === '--lineups') args.lineups = parseLineups(argv[++i]);
         else if (arg === '--format') args.format = argv[++i] || args.format;
@@ -86,14 +94,17 @@ function resolveModelSpecs(args, registry) {
         });
     }
 
+    const runRanks = args.runRanks && args.runRanks.length > 0 ? args.runRanks : [args.rank];
     for (const runLabel of args.runLabels) {
-        specs.push({
-            id: args.rank === 1 ? runLabel : `${runLabel}-top${args.rank}`,
-            label: runLabel,
-            path: browserPathForRunLabel(runLabel, args.rank),
-            source: 'run',
-            status: '',
-        });
+        for (const rank of runRanks) {
+            specs.push({
+                id: rank === 1 ? runLabel : `${runLabel}-top${rank}`,
+                label: rank === 1 ? runLabel : `${runLabel} top${rank}`,
+                path: browserPathForRunLabel(runLabel, rank),
+                source: 'run',
+                status: '',
+            });
+        }
     }
 
     return specs;
@@ -111,6 +122,33 @@ function scoreSummaries(summaries) {
     return weightSum > 0 ? weightedTotal / weightSum : 0;
 }
 
+function collectBuildCounts(summaries, key) {
+    const counts = new Map();
+    for (const summary of summaries) {
+        const entries = summary.rlBuildStats && Array.isArray(summary.rlBuildStats[key])
+            ? summary.rlBuildStats[key]
+            : [];
+        for (const entry of entries) {
+            if (!entry || !entry.name) continue;
+            counts.set(entry.name, (counts.get(entry.name) || 0) + (entry.count || 0));
+        }
+    }
+    return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([name, count]) => ({ name, count }));
+}
+
+function buildSignature(summaries) {
+    const cards = collectBuildCounts(summaries, 'topCards').slice(0, 5);
+    const landmarks = collectBuildCounts(summaries, 'topLandmarks').slice(0, 5);
+    return {
+        cards,
+        landmarks,
+        cardKey: cards.map(entry => entry.name).join('/'),
+        landmarkKey: landmarks.map(entry => entry.name).join('/'),
+    };
+}
+
 function summarizeModel(spec, entries) {
     const summaries = entries.map(summarizeEvaluationEntry);
     return {
@@ -120,6 +158,7 @@ function summarizeModel(spec, entries) {
         status: spec.status,
         path: spec.path,
         score: scoreSummaries(summaries),
+        buildSignature: buildSignature(summaries),
         summaries,
     };
 }
@@ -139,6 +178,9 @@ function renderText(results) {
     const lines = [];
     for (const [index, result] of results.entries()) {
         lines.push(`${index + 1}. ${result.id} score=${(result.score * 100).toFixed(1)}%`);
+        if (result.buildSignature && result.buildSignature.cardKey) {
+            lines.push(`   style=${result.buildSignature.cardKey}`);
+        }
         for (const summary of result.summaries) {
             lines.push(
                 `   ${summary.opponent}: win=${(summary.rlWinRate * 100).toFixed(1)}% ` +
@@ -157,8 +199,14 @@ function renderText(results) {
 }
 
 function renderCsv(results) {
-    const rows = ['rank,id,score,opponent,games,winRate,avgTurns,passRate,businessTotal,businessSkipRate,businessGive,businessTake,businessExchanges,topCards,topLandmarks'];
+    const rows = ['rank,id,score,buildSignatureCards,buildSignatureLandmarks,opponent,games,winRate,avgTurns,passRate,businessTotal,businessSkipRate,businessGive,businessTake,businessExchanges,topCards,topLandmarks'];
     for (const [index, result] of results.entries()) {
+        const signatureCards = result.buildSignature
+            ? result.buildSignature.cards.map(entry => `${entry.name}x${entry.count}`).join('|')
+            : '';
+        const signatureLandmarks = result.buildSignature
+            ? result.buildSignature.landmarks.map(entry => `${entry.name}x${entry.count}`).join('|')
+            : '';
         for (const summary of result.summaries) {
             const build = summary.rlBuildStats;
             const business = summary.rlBusinessStats;
@@ -171,6 +219,8 @@ function renderCsv(results) {
                 index + 1,
                 result.id,
                 result.score.toFixed(6),
+                `"${signatureCards.replace(/"/g, '""')}"`,
+                `"${signatureLandmarks.replace(/"/g, '""')}"`,
                 summary.opponent,
                 summary.games,
                 summary.rlWinRate.toFixed(6),
@@ -195,10 +245,13 @@ function formatPercent(value) {
 
 function renderMarkdown(results) {
     const lines = [
-        '| rank | id | score | opponents | pass | avgTurns |',
-        '|---:|---|---:|---|---|---|',
+        '| rank | id | score | style | opponents | pass | avgTurns |',
+        '|---:|---|---:|---|---|---|---|',
     ];
     for (const [index, result] of results.entries()) {
+        const style = result.buildSignature && result.buildSignature.cardKey
+            ? result.buildSignature.cardKey
+            : '';
         const opponents = result.summaries.map(summary => (
             `${summary.opponent} ${formatPercent(summary.rlWinRate)}`
         )).join('<br>');
@@ -213,6 +266,7 @@ function renderMarkdown(results) {
             index + 1,
             `\`${result.id}\``,
             formatPercent(result.score),
+            style,
             opponents,
             pass,
             avgTurns,
@@ -239,10 +293,12 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     parseLineups,
+    parseNumberList,
     defaultRegistryModelIds,
     browserPathForRunLabel,
     resolveModelSpecs,
     scoreSummaries,
+    buildSignature,
     summarizeModel,
     evaluateModelSpecs,
     renderText,
