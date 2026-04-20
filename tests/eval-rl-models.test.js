@@ -113,6 +113,13 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
                         topCards: [{ name: 'パン屋', count: 10 }],
                         topLandmarks: [{ name: '駅', count: 4 }],
                     },
+                    rlBusinessStats: {
+                        total: 2,
+                        skipRate: 0,
+                        topGiveCards: [{ name: '麦畑', count: 2 }],
+                        topTakeCards: [{ name: 'パン屋', count: 2 }],
+                        topExchanges: [{ name: '麦畑->パン屋', count: 2 }],
+                    },
                 },
             ],
         },
@@ -120,4 +127,6 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
     assert.ok(csv.includes('rank,id,score'));
     assert.ok(csv.includes('m1'));
     assert.ok(csv.includes('パン屋x10'));
+    assert.ok(csv.includes('businessTotal'));
+    assert.ok(csv.includes('麦畑->パン屋x2'));
 });

@@ -143,16 +143,26 @@ function renderText(results) {
                 `games=${summary.games} avgTurns=${summary.averageTurns.toFixed(1)} pass=` +
                 `${summary.rlBuildStats ? (summary.rlBuildStats.passRate * 100).toFixed(1) : 'n/a'}%`
             );
+            if (summary.rlBusinessStats && summary.rlBusinessStats.total > 0) {
+                lines.push(
+                    `      business=${summary.rlBusinessStats.total} skip=` +
+                    `${(summary.rlBusinessStats.skipRate * 100).toFixed(1)}%`
+                );
+            }
         }
     }
     return lines.join('\n');
 }
 
 function renderCsv(results) {
-    const rows = ['rank,id,score,opponent,games,winRate,avgTurns,passRate,topCards,topLandmarks'];
+    const rows = ['rank,id,score,opponent,games,winRate,avgTurns,passRate,businessTotal,businessSkipRate,businessGive,businessTake,businessExchanges,topCards,topLandmarks'];
     for (const [index, result] of results.entries()) {
         for (const summary of result.summaries) {
             const build = summary.rlBuildStats;
+            const business = summary.rlBusinessStats;
+            const businessGive = business ? business.topGiveCards.map(entry => `${entry.name}x${entry.count}`).join('|') : '';
+            const businessTake = business ? business.topTakeCards.map(entry => `${entry.name}x${entry.count}`).join('|') : '';
+            const businessExchanges = business ? business.topExchanges.map(entry => `${entry.name}x${entry.count}`).join('|') : '';
             const topCards = build ? build.topCards.map(entry => `${entry.name}x${entry.count}`).join('|') : '';
             const topLandmarks = build ? build.topLandmarks.map(entry => `${entry.name}x${entry.count}`).join('|') : '';
             rows.push([
@@ -164,6 +174,11 @@ function renderCsv(results) {
                 summary.rlWinRate.toFixed(6),
                 summary.averageTurns.toFixed(3),
                 build ? build.passRate.toFixed(6) : '',
+                business ? business.total : '',
+                business ? business.skipRate.toFixed(6) : '',
+                `"${businessGive.replace(/"/g, '""')}"`,
+                `"${businessTake.replace(/"/g, '""')}"`,
+                `"${businessExchanges.replace(/"/g, '""')}"`,
                 `"${topCards.replace(/"/g, '""')}"`,
                 `"${topLandmarks.replace(/"/g, '""')}"`,
             ].join(','));

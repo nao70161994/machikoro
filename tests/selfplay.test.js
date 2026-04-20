@@ -8,6 +8,8 @@ const {
     runSeries,
     runDifficultyLadder,
     comparePresets,
+    createBusinessStatsBucket,
+    recordBusinessStat,
     parseArgs,
     printSeries,
     printPresetComparison,
@@ -52,6 +54,32 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.ok(Array.isArray(result.matchLog[0].finalState[0].topCards));
     assert.strictEqual(result.buildStats.length, 2);
     assert.ok(typeof result.buildStats[0].total === 'number');
+    assert.ok(result.businessStats);
+});
+
+runTest('recordBusinessStat はdifficulty別に交換内容を集計する', () => {
+    const options = {
+        businessStats: {},
+        cpuPlayers: [{ difficulty: 'rl' }, { difficulty: 'normal' }],
+    };
+    const game = { currentPlayerIndex: 0 };
+    recordBusinessStat(
+        game,
+        { difficulty: 'rl' },
+        options,
+        { targetIndex: 1 },
+        { name: '麦畑' },
+        { name: 'パン屋' }
+    );
+    assert.strictEqual(options.businessStats.rl.total, 1);
+    assert.strictEqual(options.businessStats.rl.targets.normal, 1);
+    assert.strictEqual(options.businessStats.rl.giveCards['麦畑'], 1);
+    assert.strictEqual(options.businessStats.rl.takeCards['パン屋'], 1);
+    assert.strictEqual(options.businessStats.rl.exchanges['麦畑->パン屋'], 1);
+
+    const empty = createBusinessStatsBucket();
+    assert.strictEqual(empty.total, 0);
+    assert.deepStrictEqual(empty.exchanges, {});
 });
 
 runTest('runDifficultyLadder は難易度差確認向けの対戦セットを返す', () => {

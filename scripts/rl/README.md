@@ -417,6 +417,9 @@ npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 -
 `--cpu-opponent-impl js-oracle` は、Python 学習環境の `normal/strong/expert` 相手に JS 側 `CPU.js` を oracle として使う。
 これは Python heuristic と JS CPU のズレを避けるための現行推奨設定。
 
+評価結果には `rl-business` も出力する。これは RL 席がビジネスセンターを発動した回数、skip率、交換相手 difficulty、渡したカード、取ったカード、交換ペアの上位を表す。
+BC ヘッド改善前の診断では、まずこの値で「そもそもBCを使っているか」「交換が偏っているか」「多人数で誰を狙っているか」を見る。
+
 ### 複数モデルの一括評価
 
 台帳に載っている推奨モデルや、複数の `run-label` を同じ条件で評価してランキングできる。
@@ -442,6 +445,7 @@ npm run eval-rl-models -- \
 
 スコアは `weak=1, normal=2, strong=3, expert=2` の重み付き平均。4人 lineup では各 lineup を同重みで平均する。
 `run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
+CSV には `businessTotal` / `businessSkipRate` / `businessGive` / `businessTake` / `businessExchanges` も含める。
 
 ### metrics CSV の集計
 

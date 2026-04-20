@@ -284,6 +284,55 @@ function recordBuildStat(game, cpu, options, outcome) {
     }
 }
 
+function createBusinessStatsBucket() {
+    return {
+        total: 0,
+        skipped: 0,
+        targets: {},
+        giveCards: {},
+        takeCards: {},
+        exchanges: {},
+    };
+}
+
+function cloneBusinessStats(stats) {
+    const result = {};
+    for (const [key, value] of Object.entries(stats || {})) {
+        result[key] = {
+            total: value.total || 0,
+            skipped: value.skipped || 0,
+            targets: Object.assign({}, value.targets),
+            giveCards: Object.assign({}, value.giveCards),
+            takeCards: Object.assign({}, value.takeCards),
+            exchanges: Object.assign({}, value.exchanges),
+        };
+    }
+    return result;
+}
+
+function incrementCount(map, key) {
+    if (!key) return;
+    map[key] = (map[key] || 0) + 1;
+}
+
+function recordBusinessStat(game, cpu, options, move, giveCard, takeCard) {
+    if (!options || !options.businessStats) return;
+    const actorDifficulty = cpu && cpu.difficulty ? cpu.difficulty : 'rl';
+    const stats = options.businessStats[actorDifficulty] || createBusinessStatsBucket();
+    options.businessStats[actorDifficulty] = stats;
+    stats.total++;
+    if (!move || !giveCard || !takeCard) {
+        stats.skipped++;
+        return;
+    }
+    const targetCpu = Array.isArray(options.cpuPlayers) ? options.cpuPlayers[move.targetIndex] : null;
+    const targetDifficulty = targetCpu && targetCpu.difficulty ? targetCpu.difficulty : 'rl';
+    incrementCount(stats.targets, targetDifficulty);
+    incrementCount(stats.giveCards, giveCard.name);
+    incrementCount(stats.takeCards, takeCard.name);
+    incrementCount(stats.exchanges, `${giveCard.name}->${takeCard.name}`);
+}
+
 function playCpuStep(runtime, game, cpu, shopStock, rng) {
     const options = runtime.__selfplayOptions;
     const rollQueue = options && options.rollQueue;
@@ -380,6 +429,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         action: runtime.RLCPU.ACTIONS.PASS,
                         label: 'PASS',
                     }, traceEntries);
+                    recordBusinessStat(game, cpu, runtime.__selfplayOptions, move, giveCard, takeCard);
                     if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
                     else fallbackBusiness(game);
                     if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
@@ -521,6 +571,7 @@ function simulateGame(options = {}) {
     const game = new runtime.GameManager(difficulties.length);
     const shopStock = createShopStock(runtime.CARDS);
     const cpuPlayers = createPlayers(runtime, difficulties, options);
+    options.cpuPlayers = cpuPlayers;
     const rng = createRng(options.seed || 1);
     runtime.Math.random = rng;
     runtime.__selfplayOptions = options;
@@ -561,6 +612,7 @@ function simulateGame(options = {}) {
             cards: Object.assign({}, stats.cards),
             landmarks: Object.assign({}, stats.landmarks),
         })) : null,
+        businessStats: options.businessStats ? cloneBusinessStats(options.businessStats) : null,
     };
 }
 
@@ -583,6 +635,7 @@ function runSeries(options = {}) {
         cards: {},
         landmarks: {},
     }));
+    const businessStats = {};
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
@@ -602,6 +655,7 @@ function runSeries(options = {}) {
             fast: options.fast,
             lite: options.lite,
             buildStats,
+            businessStats,
         });
         turns += result.turns;
         if (result.exhausted) exhausted++;
@@ -633,6 +687,7 @@ function runSeries(options = {}) {
         averageTurns: games > 0 ? turns / games : 0,
         matchLog,
         buildStats,
+        businessStats: cloneBusinessStats(businessStats),
     };
 }
 
@@ -778,6 +833,9 @@ module.exports = {
     runSeries,
     runDifficultyLadder,
     comparePresets,
+    createBusinessStatsBucket,
+    cloneBusinessStats,
+    recordBusinessStat,
     parseArgs,
     printSeries,
     printPresetComparison,

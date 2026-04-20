@@ -139,6 +139,16 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
                 { total: 5, pass: 2, cards: { '麦畑': 2, '森林': 1 }, landmarks: { '駅': 1 } },
                 { total: 4, pass: 1, cards: { 'パン屋': 2 }, landmarks: {} },
             ],
+            businessStats: {
+                rl: {
+                    total: 2,
+                    skipped: 1,
+                    targets: { expert: 1 },
+                    giveCards: { '麦畑': 1 },
+                    takeCards: { 'パン屋': 1 },
+                    exchanges: { '麦畑->パン屋': 1 },
+                },
+            },
         },
     });
     assert.strictEqual(summary.opponent, 'expert');
@@ -154,6 +164,9 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
     assert.strictEqual(summary.rlBuildStats.passRate, 0.4);
     assert.strictEqual(summary.rlBuildStats.topCards[0].name, '麦畑');
     assert.strictEqual(summary.rlBuildStats.topLandmarks[0].name, '駅');
+    assert.strictEqual(summary.rlBusinessStats.total, 2);
+    assert.strictEqual(summary.rlBusinessStats.skipRate, 0.5);
+    assert.strictEqual(summary.rlBusinessStats.topExchanges[0].name, '麦畑->パン屋');
 });
 
 runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
@@ -179,16 +192,28 @@ runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
                     { total: 4, pass: 1, cards: { '麦畑': 2 }, landmarks: { '駅': 1 } },
                     { total: 4, pass: 2, cards: {}, landmarks: {} },
                 ],
+                businessStats: {
+                    rl: {
+                        total: 1,
+                        skipped: 0,
+                        targets: { strong: 1 },
+                        giveCards: { '麦畑': 1 },
+                        takeCards: { 'パン屋': 1 },
+                        exchanges: { '麦畑->パン屋': 1 },
+                    },
+                },
             },
         }], { format: 'text' });
     } finally {
         console.log = realLog;
     }
-    assert.strictEqual(lines.length, 2);
+    assert.strictEqual(lines.length, 3);
     assert.ok(lines[0].includes('rl vs strong'));
     assert.ok(lines[0].includes('seat(first=100.0%,second=50.0%)'));
     assert.ok(lines[1].includes('rl-build: total=4 pass=1'));
     assert.ok(lines[1].includes('麦畑x2'));
+    assert.ok(lines[2].includes('rl-business: total=1'));
+    assert.ok(lines[2].includes('麦畑->パン屋x1'));
 });
 
 runTest('printEvaluation は4人lineupの席別指標を出力する', () => {

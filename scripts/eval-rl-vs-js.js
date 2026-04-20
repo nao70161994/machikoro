@@ -102,6 +102,8 @@ function summarizeEvaluationEntry(entry) {
     }
     const buildStats = Array.isArray(entry.result.buildStats) ? entry.result.buildStats : [];
     const rlBuildStats = buildStats.length > 0 ? buildStats[0] : null;
+    const businessStats = entry.result.businessStats || {};
+    const rlBusinessStats = businessStats.rl || null;
     const topCards = rlBuildStats
         ? Object.entries(rlBuildStats.cards || {})
             .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
@@ -136,6 +138,24 @@ function summarizeEvaluationEntry(entry) {
             topCards,
             topLandmarks,
         } : null,
+        rlBusinessStats: rlBusinessStats ? {
+            total: rlBusinessStats.total || 0,
+            skipped: rlBusinessStats.skipped || 0,
+            skipRate: (rlBusinessStats.total || 0) > 0 ? (rlBusinessStats.skipped || 0) / rlBusinessStats.total : 0,
+            targets: Object.assign({}, rlBusinessStats.targets),
+            topGiveCards: Object.entries(rlBusinessStats.giveCards || {})
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
+                .slice(0, 5)
+                .map(([name, count]) => ({ name, count })),
+            topTakeCards: Object.entries(rlBusinessStats.takeCards || {})
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
+                .slice(0, 5)
+                .map(([name, count]) => ({ name, count })),
+            topExchanges: Object.entries(rlBusinessStats.exchanges || {})
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
+                .slice(0, 5)
+                .map(([name, count]) => ({ name, count })),
+        } : null,
         modelInfo: entry.modelInfo || null,
         lineup: entry.lineup || entry.result.players || null,
     };
@@ -164,6 +184,20 @@ function printEvaluation(entries, options = {}) {
             console.log(
                 `  rl-build: total=${summary.rlBuildStats.total} pass=${summary.rlBuildStats.pass}` +
                 `(${(summary.rlBuildStats.passRate * 100).toFixed(1)}%) cards=[${topCards}] landmarks=[${topLandmarks}]`
+            );
+        }
+        if (summary.rlBusinessStats && summary.rlBusinessStats.total > 0) {
+            const give = summary.rlBusinessStats.topGiveCards.map(entry => `${entry.name}x${entry.count}`).join(', ') || 'none';
+            const take = summary.rlBusinessStats.topTakeCards.map(entry => `${entry.name}x${entry.count}`).join(', ') || 'none';
+            const exchanges = summary.rlBusinessStats.topExchanges.map(entry => `${entry.name}x${entry.count}`).join(', ') || 'none';
+            const targets = Object.entries(summary.rlBusinessStats.targets)
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .map(([name, count]) => `${name}x${count}`)
+                .join(', ') || 'none';
+            console.log(
+                `  rl-business: total=${summary.rlBusinessStats.total} skipped=${summary.rlBusinessStats.skipped}` +
+                `(${(summary.rlBusinessStats.skipRate * 100).toFixed(1)}%) targets=[${targets}] ` +
+                `give=[${give}] take=[${take}] exchanges=[${exchanges}]`
             );
         }
     }
