@@ -12,6 +12,7 @@
     "profile:expert": "node scripts/profile-expert.js",
     "eval-rl-vs-js": "node scripts/eval-rl-vs-js.js",
     "eval-rl-models": "node scripts/eval-rl-models.js",
+    "eval-rl-business-scenario": "node scripts/eval-rl-business-scenario.js",
     "validate-rl-registry": "node scripts/validate-rl-registry.js",
     "compare-rl-match-trace": "node scripts/compare-rl-match-trace.js",
     "summarize-rl-metrics": "node scripts/summarize-rl-metrics.js",

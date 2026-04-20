@@ -22,6 +22,7 @@ const TEST_GROUPS = {
         'js-cpu-oracle.test.js',
         'eval-rl-vs-js.test.js',
         'eval-rl-models.test.js',
+        'eval-rl-business-scenario.test.js',
         'summarize-rl-metrics.test.js',
     ],
     sim: [

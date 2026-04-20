@@ -430,6 +430,14 @@ sh scripts/rl/eval-bc-adopted.sh
 引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定では `self-only-4p-h256-lr1e5-5000-seed102` を4人3lineupで50戦評価し、`models/rl_model/eval-bc-adopted.json/csv` に出力する。
 修正後の再評価では、採用済み `seed102` は4人50戦×3lineupでBC発動1回、skip 0.0%。交換内容は `パン屋->サンマ漁船`、対象は `strong` だった。現行モデルはBCをほぼ使わないため、BC factored head の弱さは採用ブロッカーではない。BCを強化するなら、まずBCを使う学習条件・報酬・カード購入誘導を作り、その後に target head / pair補正を検討する。
 
+BCの選択品質だけを直接見る場合は、固定局面診断を使う。これは通常対戦を回さず、`pendingBusiness=1` の状態を作ってRLに「誰へ、何を渡し、何を取るか」だけを選ばせる。
+
+```bash
+sh scripts/rl/eval-bc-scenario.sh
+```
+
+既定では採用済み `seed102` を4人用の2局面で診断する。2026-04-20時点の結果は、`highValueThreat` で `パン屋->サンマ漁船`、`avoidGivingEngine` で `パン屋->マグロ漁船`。どちらも最脅威の `p3` を対象にしており、固定局面では明らかな破綻は見えていない。
+
 ### 複数モデルの一括評価
 
 台帳に載っている推奨モデルや、複数の `run-label` を同じ条件で評価してランキングできる。
