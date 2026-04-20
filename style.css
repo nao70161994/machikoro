@@ -315,6 +315,13 @@ body {
     font-size: 12px;
 }
 
+.player-setting-note {
+    margin-top: 8px;
+    color: #a7a9be;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 .toggle-setting {
     display: flex;
     align-items: center;

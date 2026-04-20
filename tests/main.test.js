@@ -205,6 +205,28 @@ runTest('main renderPlayerSettings は AI（最強）オプションを表示す
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
 });
 
+runTest('main renderPlayerSettings は学習AIの選択方針を説明する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([{ type: 'cpu', difficulty: 'rl' }, { type: 'human', difficulty: 'normal' }]);
+
+    rt.renderPlayerSettings();
+
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('2人用の複数モデルからランダム'));
+
+    rt.__test.setSelectedCount(4);
+    rt.__test.setPlayerSettings([
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.renderPlayerSettings();
+
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('3〜4人用の学習モデルからランダム'));
+});
+
 runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にする', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(5);

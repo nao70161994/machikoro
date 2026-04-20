@@ -630,6 +630,12 @@ npm run render-rl-registry-evals -- \
 学習中の top-k と後評価はズレる前提で扱う。採用判断は学習中 score ではなく、`eval-run-topk.sh` などで best/top2/top3 を同条件・十分なゲーム数で再評価した結果を優先する。
 `npm run validate-rl-registry` は、active model の評価ゲーム数不足や recommended model の style 重複を警告する。警告は即エラーではないが、採用判断前に理由を `registry.json` の `reason` / `style.summary` に残す。
 `npm run report-rl-registry` は status 別件数、警告、各モデルの最新評価数と style を一覧する。候補棚卸しや archive 判断前の確認に使う。
+履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
+
+```bash
+npm run report-rl-registry -- --format markdown --output models/rl_model/registry-report.md
+npm run report-rl-registry -- --format json --output models/rl_model/registry-report.json
+```
 
 現時点の候補:
 

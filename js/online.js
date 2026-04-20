@@ -16,6 +16,19 @@ function changeOnlineCount(delta) {
     renderOnlinePlayerSettings();
 }
 
+function getOnlineRlCpuSettingNote(playerCount) {
+    if (typeof getRlCpuSettingNote === "function") {
+        return getRlCpuSettingNote(playerCount);
+    }
+    if (playerCount > 4) {
+        return "AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。";
+    }
+    if (playerCount >= 3) {
+        return "AI（学習・ランダム）は3〜4人用の学習モデルからランダムに選びます。";
+    }
+    return "AI（学習・ランダム）は2人用の複数モデルからランダムに選びます。";
+}
+
 function renderOnlinePlayerSettings() {
     while (onlinePlayerSettings.length < onlineSelectedCount) {
         onlinePlayerSettings.push({ type: "human", difficulty: "normal" });
@@ -25,9 +38,7 @@ function renderOnlinePlayerSettings() {
         difficulty: onlineSelectedCount > 4 && setting.difficulty === "rl" ? "expert" : setting.difficulty || "normal",
     }));
     const rlDisabled = onlineSelectedCount > 4 ? "disabled" : "";
-    const rlNotice = onlineSelectedCount > 4
-        ? '<div class="player-setting-note">AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。</div>'
-        : '';
+    const rlNotice = `<div class="player-setting-note">${getOnlineRlCpuSettingNote(onlineSelectedCount)}</div>`;
     const html = onlinePlayerSettings.map((s, i) => `
         <div class="player-setting">
             <span class="player-setting-name">プレイヤー${i + 1}</span>

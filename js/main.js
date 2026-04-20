@@ -49,6 +49,16 @@ function getLocalCpuLabel(difficulty) {
     return 'AI（最強）';
 }
 
+function getRlCpuSettingNote(playerCount) {
+    if (playerCount > 4) {
+        return 'AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。';
+    }
+    if (playerCount >= 3) {
+        return 'AI（学習・ランダム）は3〜4人用の学習モデルからランダムに選びます。';
+    }
+    return 'AI（学習・ランダム）は2人用の複数モデルからランダムに選びます。';
+}
+
 function createCpuPlayer(difficulty, options = {}) {
     if (difficulty === 'rl') {
         try {
@@ -86,9 +96,7 @@ function renderPlayerSettings() {
         name: normalizeLocalPlayerName(setting.name, index),
     }));
     const rlDisabled = selectedCount > 4 ? "disabled" : "";
-    const rlNotice = selectedCount > 4
-        ? '<div class="player-setting-note">AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。</div>'
-        : '';
+    const rlNotice = `<div class="player-setting-note">${getRlCpuSettingNote(selectedCount)}</div>`;
     const html = playerSettings.map((s, i) => `
         <div class="player-setting">
             <div class="player-setting-row">

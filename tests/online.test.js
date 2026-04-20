@@ -4,12 +4,14 @@ const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/t
 
 function loadOnlineRuntime() {
     const { storage, localStorage } = createStorage();
+    const elements = {};
     const context = {
         console,
         localStorage,
         document: {
-            getElementById() {
-                return { style: {}, textContent: '', innerHTML: '' };
+            getElementById(id) {
+                if (!elements[id]) elements[id] = { style: {}, textContent: '', innerHTML: '' };
+                return elements[id];
             },
         },
     };
@@ -75,6 +77,9 @@ function loadOnlineRuntime() {
         this.getSocketDisconnected = () => socketDisconnected;
         this.applyAction = applyAction;
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
+        this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
+        this.setOnlineSelectedCount = (value) => { onlineSelectedCount = value; };
+        this.setOnlinePlayerSettings = (value) => { onlinePlayerSettings = value; };
         this._saveActionLog = _saveActionLog;
         this._readOnlineActionLog = _readOnlineActionLog;
         this.buildOnlineSnapshot = buildOnlineSnapshot;
@@ -90,6 +95,7 @@ function loadOnlineRuntime() {
         this.getOnlineState = () => ({ socket, isReconnectingOnline, isRoomHost });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
+    context.elements = elements;
 
     return context;
 }
@@ -104,6 +110,30 @@ function makeGame(count = 2) {
     for (const card of CARDS) rt.getShopStock()[card.name] = 6;
     return g;
 }
+
+runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', () => {
+    const localRt = loadOnlineRuntime();
+    localRt.setOnlineSelectedCount(2);
+    localRt.setOnlinePlayerSettings([{ type: 'cpu', difficulty: 'rl' }, { type: 'human', difficulty: 'normal' }]);
+
+    localRt.renderOnlinePlayerSettings();
+
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('2人用の複数モデルからランダム'));
+
+    localRt.setOnlineSelectedCount(5);
+    localRt.setOnlinePlayerSettings([
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    localRt.renderOnlinePlayerSettings();
+
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('value="rl" disabled'));
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('AI（学習）は現在2〜4人戦のみ対応です'));
+});
 
 // ===== applyAction =====
 
