@@ -21,12 +21,23 @@ function bestEvalGames(model) {
     return evals.reduce((best, entry) => Math.max(best, entry.gamesPerOpponent || entry.gamesPerLineup || 0), 0);
 }
 
+function modelTopCards(model) {
+    const style = model.style || {};
+    const cards = style.topCardsVsStrong || style.topCards || [];
+    return Array.isArray(cards) ? cards.filter(Boolean).map(String) : [];
+}
+
 function modelStyleKey(model) {
     const style = model.style || {};
     if (style.diversityKey) return String(style.diversityKey);
     if (style.label) return String(style.label);
-    const cards = style.topCardsVsStrong || style.topCards || [];
-    return Array.isArray(cards) ? cards.slice(0, 3).join('/') : '';
+    return modelTopCards(model).slice(0, 3).join('/');
+}
+
+function topCardOverlap(a, b, limit = 5) {
+    const aCards = new Set(modelTopCards(a).slice(0, limit));
+    const bCards = modelTopCards(b).slice(0, limit);
+    return bCards.filter(card => aCards.has(card)).length;
 }
 
 function validateRegistry(registry, options = {}) {
@@ -38,6 +49,8 @@ function validateRegistry(registry, options = {}) {
     const evaluationPolicy = registry.evaluationPolicy || {};
     const minimumGames = evaluationPolicy.minimumAdoptionGamesPerOpponent || 0;
     const primaryMinimumGames = evaluationPolicy.primaryAdoptionGamesPerOpponent || 0;
+    const diversityPolicy = registry.diversityPolicy || {};
+    const topCardOverlapWarning = diversityPolicy.topCardOverlapWarning || 0;
 
     for (const model of models) {
         if (!model || !model.id) {
@@ -51,7 +64,9 @@ function validateRegistry(registry, options = {}) {
             warnings.push(`${model.id}: path が存在しません: ${model.path}`);
         }
         if (!Array.isArray(model.evals) || model.evals.length === 0) {
-            warnings.push(`${model.id}: evals が未記録です`);
+            if (model.status !== 'rejected' || !(model.style && model.style.summary)) {
+                warnings.push(`${model.id}: evals が未記録です`);
+            }
         } else if ((model.status === 'adopted' || model.status === 'candidate') && minimumGames > 0 && bestEvalGames(model) < minimumGames) {
             warnings.push(`${model.id}: adopted/candidate の評価ゲーム数が少なすぎます (${bestEvalGames(model)} < ${minimumGames})`);
         }
@@ -87,6 +102,17 @@ function validateRegistry(registry, options = {}) {
     const activeStatuses = new Set(['adopted', 'candidate']);
     const activeCount = models.filter(model => activeStatuses.has(model.status)).length;
     if (activeCount === 0) warnings.push('adopted/candidate モデルがありません');
+    if (topCardOverlapWarning > 0) {
+        const activeModels = models.filter(model => activeStatuses.has(model.status));
+        for (let i = 0; i < activeModels.length; i++) {
+            for (let j = i + 1; j < activeModels.length; j++) {
+                const overlap = topCardOverlap(activeModels[i], activeModels[j]);
+                if (overlap >= topCardOverlapWarning) {
+                    warnings.push(`${activeModels[i].id} と ${activeModels[j].id}: topCards が ${overlap}/5 重複しています`);
+                }
+            }
+        }
+    }
 
     return { ok: errors.length === 0, errors, warnings };
 }
@@ -111,7 +137,9 @@ module.exports = {
     loadRegistry,
     latestEval,
     bestEvalGames,
+    modelTopCards,
     modelStyleKey,
+    topCardOverlap,
     validateRegistry,
     printValidation,
 };

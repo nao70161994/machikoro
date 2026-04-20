@@ -15,6 +15,7 @@
     "eval-rl-business-scenario": "node scripts/eval-rl-business-scenario.js",
     "render-rl-registry-evals": "node scripts/render-rl-registry-evals.js",
     "validate-rl-registry": "node scripts/validate-rl-registry.js",
+    "report-rl-registry": "node scripts/report-rl-registry.js",
     "compare-rl-match-trace": "node scripts/compare-rl-match-trace.js",
     "summarize-rl-metrics": "node scripts/summarize-rl-metrics.js",
     "train-rl:baseline": "sh scripts/rl/run-baseline.sh",

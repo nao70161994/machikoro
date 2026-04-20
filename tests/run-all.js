@@ -16,6 +16,7 @@ const TEST_GROUPS = {
         'rlcpu.test.js',
         'rl-model-portfolio.test.js',
         'validate-rl-registry.test.js',
+        'report-rl-registry.test.js',
         'rl-train.test.js',
         'rl-match-trace.test.js',
         'compare-rl-match-trace.test.js',

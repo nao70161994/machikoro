@@ -27,6 +27,7 @@
         "goal": "Keep active RL models with different build signatures instead of several near-duplicates.",
         "representativeStyleKey": "style.label",
         "manualReviewWhenSameStyle": true,
+        "topCardOverlapWarning": 4,
         "preferArchiveWhen": [
             "A candidate has the same style label as a stronger active model.",
             "The candidate is weaker on normal and strong and has no distinct top-card signature.",
