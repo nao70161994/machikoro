@@ -485,6 +485,8 @@ sh scripts/rl/eval-2p-candidates.sh
 
 2026-04-20の2人用候補100戦比較では、`seed71-top3` が `weak 100% / normal 96% / strong 76%` で明確に最上位。`seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%` で、構築傾向の違う補助候補として残す。`terminal-shaped-h128-lr1e4` は `weak 99% / normal 53% / strong 39%` で、normal が弱いため active portfolio から外して archive 扱いにした。
 
+`seed71-top3` は追加の300戦評価でも `weak 99.3% / normal 93.3% / strong 63.3%`。100戦評価より strong は下がったが、他の active 2人候補より明確に高いため主採用を維持する。
+
 ### metrics CSV の集計
 
 複数 run を同じ `train_metrics.csv` に積んだあとで、best checkpoint と run 単位の上位候補を比較できる。
@@ -529,7 +531,7 @@ npm run summarize-rl-metrics -- \
 - `strong` 模倣ありの best は一時的に `weak 80% / normal 65% / strong 25%` 程度まで到達した。
 - 模倣なしで行動直後のコイン/資産中間報酬を入れる方式は、報酬ハックや方策崩れが疑われ、安定しなかった。
 - 終局時だけ勝敗・ランドマーク建設済コスト差・盤面資産差・手元コイン差を加える方式へ移行中。
-- 2人用モデルは100戦 JS 評価で `seed71-top3` が `weak 100% / normal 96% / strong 76%` となり、現時点の主採用モデル。
+- 2人用モデルは300戦 JS 評価で `seed71-top3` が `weak 99.3% / normal 93.3% / strong 63.3%` となり、現時点の主採用モデル。
 - `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。どちらも `seed71-top3` より弱いが構築傾向が違うため、戦略バリエーション用に active portfolio へ低重みで残す。
 - `terminal-shaped-h128-lr1e4` は100戦評価で `weak 99% / normal 53% / strong 39%`。normal が不安定なので active portfolio から外し、archive 扱いにした。
 - `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、現時点では配布 portfolio には入れない。
@@ -579,6 +581,15 @@ npm run eval-rl-models -- \
   --markdown models/rl_model/eval-summary.md
 ```
 
+評価JSONから `registry.json` の `evals` に貼る候補を作る場合は次を使う。
+
+```bash
+npm run render-rl-registry-evals -- \
+  --input models/rl_model/eval-summary.json \
+  --output models/rl_model/eval-summary.registry-evals.json \
+  --date 2026-04-20
+```
+
 勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
 逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。
 
@@ -586,7 +597,7 @@ npm run eval-rl-models -- \
 
 | id | status | JS評価 | 構築傾向 |
 |----|--------|-------------|----------|
-| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | adopted | 100戦 weak 100% / normal 96% / strong 76% | ブドウ園・牧場・ワイナリー寄り、2人用主採用 |
+| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | adopted | 300戦 weak 99.3% / normal 93.3% / strong 63.3% | ブドウ園・牧場・ワイナリー寄り、2人用主採用 |
 | `self-only-both-h256-lr2e5-5000-seed71-rewardcap` | candidate | 50戦 weak 96% / normal 94% / strong 68% | ブドウ園・牧場・バーガー寄り |
 | `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 100戦 weak 100% / normal 77% / strong 33% | 寿司屋・食品倉庫・牧場寄り、補助採用 |
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |

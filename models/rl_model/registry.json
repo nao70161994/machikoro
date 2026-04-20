@@ -40,7 +40,7 @@
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
                 "role": "adopted-2p-main",
                 "style": "vineyard-farm-winery",
-                "reason": "Adopted as the main 2-player RL CPU. 100-game comparison reached weak 100%, normal 96%, strong 76%."
+                "reason": "Adopted as the main 2-player RL CPU. 300-game comparison reached weak 99.3%, normal 93.3%, strong 63.3%."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
@@ -534,9 +534,20 @@
                     "amusement_park",
                     "radio_tower"
                 ],
-                "summary": "Adopted 2-player main model. 100-game JS evaluation keeps very high weak/normal rates and reaches the best strong result among active 2-player candidates."
+                "summary": "Adopted 2-player main model. 300-game JS evaluation keeps very high weak/normal rates and strong remains clearly above other active 2-player candidates."
             },
             "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js",
+                    "checkpointRank": 3,
+                    "gamesPerOpponent": 300,
+                    "opponents": {
+                        "weak": {"wins": 298, "losses": 2, "draws": 0, "winRate": 0.993333, "firstSeatWinRate": 0.993333, "secondSeatWinRate": 0.993333, "avgTurns": 53.303, "passRate": 0.014201},
+                        "normal": {"wins": 280, "losses": 20, "draws": 0, "winRate": 0.933333, "firstSeatWinRate": 0.946667, "secondSeatWinRate": 0.92, "avgTurns": 53.437, "passRate": 0.036359},
+                        "strong": {"wins": 190, "losses": 110, "draws": 0, "winRate": 0.633333, "firstSeatWinRate": 0.68, "secondSeatWinRate": 0.586667, "avgTurns": 53.187, "passRate": 0.021352}
+                    }
+                },
                 {
                     "date": "2026-04-20",
                     "type": "js",
