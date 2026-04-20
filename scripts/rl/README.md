@@ -420,6 +420,9 @@ npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 -
 評価結果には `rl-business` も出力する。これは RL 席がビジネスセンターを発動した回数、skip率、交換相手 difficulty、渡したカード、取ったカード、交換ペアの上位を表す。
 BC ヘッド改善前の診断では、まずこの値で「そもそもBCを使っているか」「交換が偏っているか」「多人数で誰を狙っているか」を見る。
 
+2026-04-20時点のBC診断では、採用済み `seed102` は4人50戦×3lineupでBC発動1回のみ、しかもskip。代表的な2人候補 `seed71-top3` / `seed69` / `h128-lr1e4` は50戦×3opponentでBC発動0回。
+したがって現行モデルはBC依存ではなく、BC factored head の弱さは採用ブロッカーではない。BCを強化するなら、まずBCを使う学習条件・報酬・カード購入誘導を作り、その後に target head / pair補正を検討する。
+
 ### 複数モデルの一括評価
 
 台帳に載っている推奨モデルや、複数の `run-label` を同じ条件で評価してランキングできる。
