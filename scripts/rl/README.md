@@ -475,6 +475,16 @@ sh scripts/rl/eval-adopted-stability.sh
 
 2026-04-20の `seed102` 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
 
+2人用候補の横並び評価は次を使う。
+
+```bash
+sh scripts/rl/eval-2p-candidates.sh
+```
+
+既定では `seed71-top3` / `seed70` / `seed69` / `h128-lr1e4` を `weak,normal,strong` 各100戦で比較し、`models/rl_model/eval-2p-candidates.json/csv` に出力する。
+
+2026-04-20の2人用候補100戦比較では、`seed71-top3` が `weak 100% / normal 96% / strong 76%` で明確に最上位。`seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%` で、構築傾向の違う補助候補として残す。`terminal-shaped-h128-lr1e4` は `weak 99% / normal 53% / strong 39%` で、normal が弱いため active portfolio から外して archive 扱いにした。
+
 ### metrics CSV の集計
 
 複数 run を同じ `train_metrics.csv` に積んだあとで、best checkpoint と run 単位の上位候補を比較できる。
@@ -519,8 +529,10 @@ npm run summarize-rl-metrics -- \
 - `strong` 模倣ありの best は一時的に `weak 80% / normal 65% / strong 25%` 程度まで到達した。
 - 模倣なしで行動直後のコイン/資産中間報酬を入れる方式は、報酬ハックや方策崩れが疑われ、安定しなかった。
 - 終局時だけ勝敗・ランドマーク建設済コスト差・盤面資産差・手元コイン差を加える方式へ移行中。
-- 20戦 JS 評価では `terminal-shaped-h128-lr1e4` が `weak 90% / normal 60% / strong 35%` で現時点の最有力候補。
-- `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うため、複数モデル採用候補として残す。
+- 2人用モデルは100戦 JS 評価で `seed71-top3` が `weak 100% / normal 96% / strong 76%` となり、現時点の主採用モデル。
+- `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。どちらも `seed71-top3` より弱いが構築傾向が違うため、戦略バリエーション用に active portfolio へ低重みで残す。
+- `terminal-shaped-h128-lr1e4` は100戦評価で `weak 99% / normal 53% / strong 39%`。normal が不安定なので active portfolio から外し、archive 扱いにした。
+- `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、現時点では配布 portfolio には入れない。
 - 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、3〜4人用には `self-only-4p-h256-lr1e5-5000-seed102` を採用している。
 - `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
@@ -528,7 +540,7 @@ npm run summarize-rl-metrics -- \
 - 完全自己対戦のみでも、両側学習なし/高めlrでは外部JS評価が崩れることがある。`self-only-both-5000-seed51` は `pool=100%` でも JS `weak 12% / normal 0% / strong 0%` で rejected。
 - `hidden=256 + lr=3e-5 + self=1 + --self-learn-both-sides + 5000 games` は `weak 90% / normal 65% / strong 45%` を出し、現時点の strong 重視トップ候補。
 - `hidden=256 + lr=2e-5 + rewardcap` は `weak 95% / normal 70% / strong 35%`。strong はやや下がるが pass率が低く、安定型候補。
-- `seed71 rewardcap` の top3 checkpoint は 50戦 JS 評価で `weak 100% / normal 92% / strong 78%`。現時点の最強候補だが、単一採用ではなく戦略バリエーション用に別系統候補も残す。
+- `seed71 rewardcap` の top3 checkpoint は50戦 JS 評価で `weak 100% / normal 92% / strong 78%`、100戦 JS 評価で `weak 100% / normal 96% / strong 76%`。現時点の最強候補だが、単一採用ではなく戦略バリエーション用に別系統候補も残す。
 - 補助終局報酬は強すぎると自己対戦内だけの資産/建設パターンを強化する可能性がある。rewardcap 実験では `terminal_landmark_value_diff=0.004`、`terminal_asset_diff=0.002`、`terminal_coin_diff=0.001`、`terminal_diff_clip=20` を使用。
 - モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
 
@@ -564,14 +576,14 @@ npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/e
 
 | id | status | JS評価 | 構築傾向 |
 |----|--------|-------------|----------|
-| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | candidate | 50戦 weak 100% / normal 92% / strong 78% | ブドウ園・牧場・ワイナリー寄り、現時点トップ |
+| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | adopted | 100戦 weak 100% / normal 96% / strong 76% | ブドウ園・牧場・ワイナリー寄り、2人用主採用 |
 | `self-only-both-h256-lr2e5-5000-seed71-rewardcap` | candidate | 50戦 weak 96% / normal 94% / strong 68% | ブドウ園・牧場・バーガー寄り |
-| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 50戦 weak 98% / normal 96% / strong 32% | 寿司屋・食品倉庫・牧場寄り |
-| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 50戦 weak 94% / normal 60% / strong 34% | バーガー・食品倉庫・麦畑寄り |
+| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 100戦 weak 100% / normal 77% / strong 33% | 寿司屋・食品倉庫・牧場寄り、補助採用 |
+| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | candidate | weak 90% / normal 65% / strong 45% | パン屋・食品倉庫・寿司屋寄り |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | candidate | weak 95% / normal 70% / strong 35% | パン屋・食品倉庫・ピザ屋寄り、低pass |
 | `self-only-4p-h256-lr1e5-5000-seed102` | adopted | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 3〜4人用。ブドウ園・牧場・ピザ屋寄り |
-| `terminal-shaped-h128-lr1e4` | candidate | weak 90% / normal 60% / strong 35% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り |
+| `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | candidate | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り |
 | `terminal-shaped-h128-long` | candidate | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り |
 | `terminal-shaped-curriculum-h128` | archive | weak 75% / normal 35% / strong 5% | 寿司屋・牧場・チーズ工場寄り |

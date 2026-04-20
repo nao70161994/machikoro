@@ -38,9 +38,9 @@
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-                "role": "top-strength",
+                "role": "adopted-2p-main",
                 "style": "vineyard-farm-winery",
-                "reason": "Best current 50-game weak/normal/strong result, especially strong."
+                "reason": "Adopted as the main 2-player RL CPU. 100-game comparison reached weak 100%, normal 96%, strong 76%."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
@@ -53,12 +53,6 @@
                 "role": "burger-warehouse-variant",
                 "style": "burger-warehouse-wheat",
                 "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines."
-            },
-            {
-                "id": "terminal-shaped-h128-lr1e4",
-                "role": "legacy-h128-variant",
-                "style": "bread-farm-fishing",
-                "reason": "Older h128 strategy with distinct build tendency; useful for variety even if weaker."
             }
         ],
         "archiveGuidance": "Archive candidates only when both strength and strategy overlap with a better model. Keep weaker models if they provide clearly different build behavior."
@@ -66,7 +60,7 @@
     "models": [
         {
             "id": "terminal-shaped-h128-lr1e4",
-            "status": "candidate",
+            "status": "archive",
             "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4/best_model.browser.json",
             "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4",
             "training": {
@@ -95,9 +89,19 @@
                     "amusement_park",
                     "radio_tower"
                 ],
-                "summary": "Low-pass build that performed best against strong in the current 20-game comparison."
+                "summary": "Older h128 fishing build. Archived from active 2-player portfolio after the 2026-04-20 100-game audit because normal dropped to 53% and stronger h256 variants provide better strength with enough style variety."
             },
             "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js",
+                    "gamesPerOpponent": 100,
+                    "opponents": {
+                        "weak": {"wins": 99, "losses": 1, "draws": 0, "winRate": 0.99, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.98, "avgTurns": 61.26, "passRate": 0.0},
+                        "normal": {"wins": 53, "losses": 47, "draws": 0, "winRate": 0.53, "firstSeatWinRate": 0.58, "secondSeatWinRate": 0.48, "avgTurns": 64.19, "passRate": 0.012},
+                        "strong": {"wins": 39, "losses": 61, "draws": 0, "winRate": 0.39, "firstSeatWinRate": 0.36, "secondSeatWinRate": 0.42, "avgTurns": 61.16, "passRate": 0.001}
+                    }
+                },
                 {
                     "date": "2026-04-12",
                     "type": "js",
@@ -493,8 +497,8 @@
         },
         {
             "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-            "status": "candidate",
-            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap/best_model.top3.browser.json",
+            "status": "adopted",
+            "path": "models/rl_model/portfolio/seed71-top3.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
             "training": {
                 "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
@@ -530,9 +534,20 @@
                     "amusement_park",
                     "radio_tower"
                 ],
-                "summary": "Current top candidate. 50-game JS evaluation keeps very high weak/normal rates and reaches the best strong result so far."
+                "summary": "Adopted 2-player main model. 100-game JS evaluation keeps very high weak/normal rates and reaches the best strong result among active 2-player candidates."
             },
             "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js",
+                    "checkpointRank": 3,
+                    "gamesPerOpponent": 100,
+                    "opponents": {
+                        "weak": {"wins": 100, "losses": 0, "draws": 0, "winRate": 1.0, "firstSeatWinRate": 1.0, "secondSeatWinRate": 1.0, "avgTurns": 52.94, "passRate": 0.011},
+                        "normal": {"wins": 96, "losses": 4, "draws": 0, "winRate": 0.96, "firstSeatWinRate": 0.94, "secondSeatWinRate": 0.98, "avgTurns": 53.12, "passRate": 0.032},
+                        "strong": {"wins": 76, "losses": 24, "draws": 0, "winRate": 0.76, "firstSeatWinRate": 0.72, "secondSeatWinRate": 0.8, "avgTurns": 51.51, "passRate": 0.015}
+                    }
+                },
                 {
                     "date": "2026-04-17",
                     "type": "js",
@@ -612,9 +627,19 @@
             },
             "style": {
                 "label": "burger-warehouse-wheat",
-                "summary": "Stable rewardcap candidate from 50-game audit. Superseded by seed71 top3 but still useful as a different build style."
+                "summary": "2-player diversity candidate. 100-game audit is clearly weaker than seed71 top3 but keeps a distinct burger/warehouse/wheat build with low pass rate."
             },
             "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js",
+                    "gamesPerOpponent": 100,
+                    "opponents": {
+                        "weak": {"wins": 93, "losses": 7, "draws": 0, "winRate": 0.93, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.9, "avgTurns": 62.34, "passRate": 0.0},
+                        "normal": {"wins": 75, "losses": 25, "draws": 0, "winRate": 0.75, "firstSeatWinRate": 0.8, "secondSeatWinRate": 0.7, "avgTurns": 60.55, "passRate": 0.018},
+                        "strong": {"wins": 40, "losses": 60, "draws": 0, "winRate": 0.4, "firstSeatWinRate": 0.42, "secondSeatWinRate": 0.38, "avgTurns": 58.22, "passRate": 0.0}
+                    }
+                },
                 {
                     "date": "2026-04-16",
                     "type": "js",
@@ -652,9 +677,19 @@
             },
             "style": {
                 "label": "sushi-warehouse-farm",
-                "summary": "Very strong weak/normal result in 50-game audit, but strong is below seed71."
+                "summary": "2-player diversity candidate. 100-game audit keeps high weak/normal rates with a sushi/warehouse/farm build, but strong is well below seed71 top3."
             },
             "evals": [
+                {
+                    "date": "2026-04-20",
+                    "type": "js",
+                    "gamesPerOpponent": 100,
+                    "opponents": {
+                        "weak": {"wins": 100, "losses": 0, "draws": 0, "winRate": 1.0, "firstSeatWinRate": 1.0, "secondSeatWinRate": 1.0, "avgTurns": 54.71, "passRate": 0.008},
+                        "normal": {"wins": 77, "losses": 23, "draws": 0, "winRate": 0.77, "firstSeatWinRate": 0.82, "secondSeatWinRate": 0.72, "avgTurns": 53.78, "passRate": 0.023},
+                        "strong": {"wins": 33, "losses": 67, "draws": 0, "winRate": 0.33, "firstSeatWinRate": 0.38, "secondSeatWinRate": 0.28, "avgTurns": 56.25, "passRate": 0.017}
+                    }
+                },
                 {
                     "date": "2026-04-17",
                     "type": "js",
