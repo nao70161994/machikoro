@@ -420,8 +420,15 @@ npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 -
 評価結果には `rl-business` も出力する。これは RL 席がビジネスセンターを発動した回数、skip率、交換相手 difficulty、渡したカード、取ったカード、交換ペアの上位を表す。
 BC ヘッド改善前の診断では、まずこの値で「そもそもBCを使っているか」「交換が偏っているか」「多人数で誰を狙っているか」を見る。
 
-2026-04-20時点のBC診断では、採用済み `seed102` は4人50戦×3lineupでBC発動1回のみ、しかもskip。代表的な2人候補 `seed71-top3` / `seed69` / `h128-lr1e4` は50戦×3opponentでBC発動0回。
-したがって現行モデルはBC依存ではなく、BC factored head の弱さは採用ブロッカーではない。BCを強化するなら、まずBCを使う学習条件・報酬・カード購入誘導を作り、その後に target head / pair補正を検討する。
+2026-04-20にBC統計のカード名参照バグを修正した。修正前の `skipped` は、RL がカード名で返した交換を集計側が配列 index と誤解していたため、実交換を skip と誤記録している可能性がある。
+採用済み4人モデルのBC診断は、次の短縮コマンドで取り直す。
+
+```bash
+sh scripts/rl/eval-bc-adopted.sh
+```
+
+引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定では `self-only-4p-h256-lr1e5-5000-seed102` を4人3lineupで50戦評価し、`models/rl_model/eval-bc-adopted.json/csv` に出力する。
+修正後の再評価では、採用済み `seed102` は4人50戦×3lineupでBC発動1回、skip 0.0%。交換内容は `パン屋->サンマ漁船`、対象は `strong` だった。現行モデルはBCをほぼ使わないため、BC factored head の弱さは採用ブロッカーではない。BCを強化するなら、まずBCを使う学習条件・報酬・カード購入誘導を作り、その後に target head / pair補正を検討する。
 
 ### 複数モデルの一括評価
 

@@ -6,7 +6,7 @@
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
         "Prefer 20-game JS evaluations for promotion decisions. 4-game checkpoint evaluations are noisy.",
         "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful.",
-        "Business center diagnostic on 2026-04-20: seed102 4p used BC only once across 150 evaluated games and skipped it; representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker."
+        "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker."
     ],
     "promotionCriteria": {
         "candidate": {
