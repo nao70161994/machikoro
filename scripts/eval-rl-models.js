@@ -32,6 +32,7 @@ function parseArgs(argv) {
         format: 'text',
         output: '',
         csv: '',
+        markdown: '',
     };
 
     for (let i = 0; i < argv.length; i++) {
@@ -48,6 +49,7 @@ function parseArgs(argv) {
         else if (arg === '--format') args.format = argv[++i] || args.format;
         else if (arg === '--output') args.output = argv[++i] || '';
         else if (arg === '--csv') args.csv = argv[++i] || '';
+        else if (arg === '--markdown') args.markdown = argv[++i] || '';
     }
     return args;
 }
@@ -187,9 +189,42 @@ function renderCsv(results) {
     return rows.join('\n') + '\n';
 }
 
+function formatPercent(value) {
+    return `${(value * 100).toFixed(1)}%`;
+}
+
+function renderMarkdown(results) {
+    const lines = [
+        '| rank | id | score | opponents | pass | avgTurns |',
+        '|---:|---|---:|---|---|---|',
+    ];
+    for (const [index, result] of results.entries()) {
+        const opponents = result.summaries.map(summary => (
+            `${summary.opponent} ${formatPercent(summary.rlWinRate)}`
+        )).join('<br>');
+        const pass = result.summaries.map(summary => (
+            `${summary.opponent} ` +
+            `${summary.rlBuildStats ? formatPercent(summary.rlBuildStats.passRate) : 'n/a'}`
+        )).join('<br>');
+        const avgTurns = result.summaries.map(summary => (
+            `${summary.opponent} ${summary.averageTurns.toFixed(1)}`
+        )).join('<br>');
+        lines.push([
+            index + 1,
+            `\`${result.id}\``,
+            formatPercent(result.score),
+            opponents,
+            pass,
+            avgTurns,
+        ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
+    }
+    return lines.join('\n') + '\n';
+}
+
 function writeOutputs(results, args) {
     if (args.output) fs.writeFileSync(args.output, JSON.stringify(results, null, 2), 'utf8');
     if (args.csv) fs.writeFileSync(args.csv, renderCsv(results), 'utf8');
+    if (args.markdown) fs.writeFileSync(args.markdown, renderMarkdown(results), 'utf8');
 }
 
 if (require.main === module) {
@@ -212,5 +247,6 @@ module.exports = {
     evaluateModelSpecs,
     renderText,
     renderCsv,
+    renderMarkdown,
     writeOutputs,
 };

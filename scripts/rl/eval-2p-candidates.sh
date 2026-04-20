@@ -11,4 +11,5 @@ exec npm run eval-rl-models -- \
     --games "$GAMES" \
     --opponents weak,normal,strong \
     --output "${OUT_PREFIX}.json" \
-    --csv "${OUT_PREFIX}.csv"
+    --csv "${OUT_PREFIX}.csv" \
+    --markdown "${OUT_PREFIX}.md"

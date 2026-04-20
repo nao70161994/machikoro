@@ -481,7 +481,7 @@ sh scripts/rl/eval-adopted-stability.sh
 sh scripts/rl/eval-2p-candidates.sh
 ```
 
-既定では `seed71-top3` / `seed70` / `seed69` / `h128-lr1e4` を `weak,normal,strong` 各100戦で比較し、`models/rl_model/eval-2p-candidates.json/csv` に出力する。
+既定では `seed71-top3` / `seed70` / `seed69` / `h128-lr1e4` を `weak,normal,strong` 各100戦で比較し、`models/rl_model/eval-2p-candidates.json/csv/md` に出力する。`.md` はドキュメントや issue にそのまま貼るための順位表。
 
 2026-04-20の2人用候補100戦比較では、`seed71-top3` が `weak 100% / normal 96% / strong 76%` で明確に最上位。`seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%` で、構築傾向の違う補助候補として残す。`terminal-shaped-h128-lr1e4` は `weak 99% / normal 53% / strong 39%` で、normal が弱いため active portfolio から外して archive 扱いにした。
 
@@ -567,6 +567,16 @@ npm run summarize-rl-metrics -- \
 ```bash
 npm run validate-rl-registry
 npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/eval-summary.csv
+```
+
+貼り付け用の Markdown 順位表も同時に出す場合は `--markdown` を使う。
+
+```bash
+npm run eval-rl-models -- \
+  --models <model-id> \
+  --games 100 \
+  --csv models/rl_model/eval-summary.csv \
+  --markdown models/rl_model/eval-summary.md
 ```
 
 勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。

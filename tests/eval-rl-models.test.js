@@ -9,6 +9,7 @@ const {
     scoreSummaries,
     evaluateModelSpecs,
     renderCsv,
+    renderMarkdown,
 } = require('../scripts/eval-rl-models.js');
 
 function entry(opponent, winRate, passRate = 0) {
@@ -44,6 +45,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
         '--rank', '3',
         '--lineups', 'rl,weak,normal;rl,normal,strong',
         '--csv', 'out.csv',
+        '--markdown', 'out.md',
     ]);
     assert.deepStrictEqual(args.models, ['a', 'b']);
     assert.deepStrictEqual(args.runLabels, ['run1', 'run2']);
@@ -52,6 +54,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     assert.strictEqual(args.rank, 3);
     assert.deepStrictEqual(args.lineups, [['rl', 'weak', 'normal'], ['rl', 'normal', 'strong']]);
     assert.strictEqual(args.csv, 'out.csv');
+    assert.strictEqual(args.markdown, 'out.md');
 });
 
 runTest('eval-rl-models は run-label から rank 別モデルパスを作る', () => {
@@ -129,4 +132,32 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
     assert.ok(csv.includes('パン屋x10'));
     assert.ok(csv.includes('businessTotal'));
     assert.ok(csv.includes('麦畑->パン屋x2'));
+});
+
+runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力する', () => {
+    const markdown = renderMarkdown([
+        {
+            id: 'm1',
+            score: 0.5,
+            summaries: [
+                {
+                    opponent: 'weak',
+                    rlWinRate: 0.8,
+                    averageTurns: 50.25,
+                    rlBuildStats: { passRate: 0.1 },
+                },
+                {
+                    opponent: 'strong',
+                    rlWinRate: 0.2,
+                    averageTurns: 60,
+                    rlBuildStats: { passRate: 0 },
+                },
+            ],
+        },
+    ]);
+    assert.ok(markdown.includes('| rank | id | score | opponents | pass | avgTurns |'));
+    assert.ok(markdown.includes('`m1`'));
+    assert.ok(markdown.includes('weak 80.0%'));
+    assert.ok(markdown.includes('strong 20.0%'));
+    assert.ok(markdown.includes('weak 10.0%'));
 });
