@@ -93,6 +93,34 @@ runTest('createScenarioGame はBC pending局面を作る', () => {
     assert.ok(game.players[1].cards.some(card => card.name === '鉱山'));
 });
 
+runTest('createScenarioGame は休業カード指定を反映する', () => {
+    const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
+    const runtime = loadRuntime();
+    const game = createScenarioGame(runtime, 'dormantGive', 4);
+    const ownFoodWarehouse = game.players[0].cards.find(card => card.name === '食品倉庫');
+    const targetSaury = game.players[3].cards.find(card => card.name === 'サンマ漁船');
+    assert.strictEqual(game.players[0].isDormant(ownFoodWarehouse), true);
+    assert.strictEqual(game.players[3].isDormant(targetSaury), true);
+});
+
+runTest('evaluateBusinessScenarios は4人用の既定シナリオだけを評価する', () => {
+    const results = evaluateBusinessScenarios([
+        {
+            id: 'dummy',
+            label: 'dummy',
+            path: '',
+            modelData: buildRlModel(),
+        },
+    ], {
+        playerCount: 4,
+        scenarios: [],
+    });
+    const names = results[0].scenarios.map(scenario => scenario.scenario);
+    assert.ok(names.includes('highValueThreat'));
+    assert.ok(names.includes('protectEngine'));
+    assert.strictEqual(names.includes('twoPlayerBasic'), false);
+});
+
 runTest('evaluateBusinessScenarios はBC選択結果を返す', () => {
     const results = evaluateBusinessScenarios([
         {

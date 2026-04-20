@@ -109,6 +109,85 @@ const SCENARIOS = {
             },
         ],
     },
+    offLeaderPrize: {
+        description: '最脅威ではない相手の最高価値カードより、リーダー妨害を優先するかを見る局面',
+        players: [
+            {
+                coins: 6,
+                cards: ['ビジネスセンター', '麦畑', 'パン屋', 'カフェ'],
+                landmarks: ['駅'],
+            },
+            {
+                coins: 5,
+                cards: ['鉱山', 'マグロ漁船', '食品倉庫'],
+                landmarks: [],
+            },
+            {
+                coins: 8,
+                cards: ['改装屋', 'ピザ屋', 'バーガーショップ'],
+                landmarks: ['駅'],
+            },
+            {
+                coins: 24,
+                cards: ['サンマ漁船', '寿司屋', '貸金業'],
+                landmarks: ['駅', '港', 'ショッピングモール', '遊園地'],
+            },
+        ],
+    },
+    protectEngine: {
+        description: '高価値カードを持つ自分が、それを渡さず低価値カードを出せるかを見る局面',
+        players: [
+            {
+                coins: 5,
+                cards: ['ビジネスセンター', '食品倉庫', 'パン屋', '麦畑'],
+                landmarks: ['駅'],
+            },
+            {
+                coins: 3,
+                cards: ['牧場', 'カフェ', 'パン屋'],
+                landmarks: [],
+            },
+            {
+                coins: 7,
+                cards: ['バーガーショップ', 'ピザ屋', '寿司屋'],
+                landmarks: ['駅'],
+            },
+            {
+                coins: 16,
+                cards: ['サンマ漁船', '改装屋', '貸金業'],
+                landmarks: ['駅', '港'],
+            },
+        ],
+    },
+    dormantGive: {
+        description: '休業中カードを渡す候補にしてしまわないかを見る局面',
+        dormant: [
+            { player: 0, card: '食品倉庫' },
+            { player: 3, card: 'サンマ漁船' },
+        ],
+        players: [
+            {
+                coins: 5,
+                cards: ['ビジネスセンター', '食品倉庫', 'パン屋', '麦畑'],
+                landmarks: ['駅'],
+            },
+            {
+                coins: 3,
+                cards: ['牧場', 'カフェ', 'パン屋'],
+                landmarks: [],
+            },
+            {
+                coins: 8,
+                cards: ['改装屋', 'ピザ屋', 'バーガーショップ'],
+                landmarks: ['駅'],
+            },
+            {
+                coins: 18,
+                cards: ['サンマ漁船', '鉱山', '貸金業'],
+                landmarks: ['駅', '港'],
+            },
+        ],
+    },
     twoPlayerBasic: {
         description: '2人モデル向けの基本BC局面',
         players: [
@@ -160,6 +239,12 @@ function createScenarioGame(runtime, scenarioName, playerCount) {
         player.coins = spec.coins || 0;
         setCards(runtime, player, spec.cards);
         setLandmarks(player, spec.landmarks || []);
+    }
+    for (const dormant of scenario.dormant || []) {
+        const player = game.players[dormant.player];
+        if (!player) continue;
+        const card = player.cards.find(card => card.name === dormant.card);
+        if (card) player.makeDormant(card);
     }
     return game;
 }
