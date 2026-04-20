@@ -9,6 +9,7 @@ const {
     runDifficultyLadder,
     comparePresets,
     createBusinessStatsBucket,
+    resolveBusinessMoveCards,
     recordBusinessStat,
     parseArgs,
     printSeries,
@@ -80,6 +81,26 @@ runTest('recordBusinessStat はdifficulty別に交換内容を集計する', () 
     const empty = createBusinessStatsBucket();
     assert.strictEqual(empty.total, 0);
     assert.deepStrictEqual(empty.exchanges, {});
+});
+
+runTest('resolveBusinessMoveCards はRLのカード名参照を解決する', () => {
+    const game = {
+        currentPlayerIndex: 0,
+        players: [
+            { cards: [{ name: '麦畑' }, { name: 'パン屋' }] },
+            { cards: [{ name: '牧場' }, { name: '森林' }] },
+        ],
+        currentPlayer() {
+            return this.players[this.currentPlayerIndex];
+        },
+    };
+    const result = resolveBusinessMoveCards(game, {
+        myCard: 'パン屋',
+        targetIndex: 1,
+        theirCard: '森林',
+    });
+    assert.strictEqual(result.giveCard.name, 'パン屋');
+    assert.strictEqual(result.takeCard.name, '森林');
 });
 
 runTest('runDifficultyLadder は難易度差確認向けの対戦セットを返す', () => {

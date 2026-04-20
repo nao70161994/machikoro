@@ -193,6 +193,21 @@ function fallbackBusiness(game) {
     game._checkPending();
 }
 
+function resolveBusinessMoveCards(game, move) {
+    if (!game || !move) return { giveCard: null, takeCard: null };
+    const current = game.currentPlayer();
+    const target = game.players[move.targetIndex];
+    const resolveCard = (player, ref) => {
+        if (!player || ref == null) return null;
+        if (Number.isInteger(ref)) return player.cards[ref] || null;
+        return player.cards.find(card => card.name === ref) || null;
+    };
+    return {
+        giveCard: resolveCard(current, move.myCard),
+        takeCard: resolveCard(target, move.theirCard),
+    };
+}
+
 function fallbackCleaning(game) {
     for (const player of game.players) {
         const card = player.getMinorCards().find(entry => !player.isDormant(entry));
@@ -413,10 +428,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 }
                 if (game.pendingBusiness > 0) {
                     const move = cpu.chooseBusinessMove(game);
-                    const current = game.currentPlayer();
-                    const target = move ? game.players[move.targetIndex] : null;
-                    const giveCard = move ? current.cards[move.myCard] : null;
-                    const takeCard = move && target ? target.cards[move.theirCard] : null;
+                    const { giveCard, takeCard } = resolveBusinessMoveCards(game, move);
                     const giveIndex = giveCard ? runtime.CARDS.findIndex(card => card.name === giveCard.name) : -1;
                     const takeIndex = takeCard ? runtime.CARDS.findIndex(card => card.name === takeCard.name) : -1;
                     const businessAction = giveIndex >= 0 && takeIndex >= 0
@@ -835,6 +847,7 @@ module.exports = {
     comparePresets,
     createBusinessStatsBucket,
     cloneBusinessStats,
+    resolveBusinessMoveCards,
     recordBusinessStat,
     parseArgs,
     printSeries,
