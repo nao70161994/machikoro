@@ -139,8 +139,12 @@ function loadMainRuntime() {
         CARDS: [
             { name: '麦畑', cost: 1, color: 'blue' },
             { name: '鉱山', cost: 6, color: 'green' },
+            { name: 'スタジアム', cost: 6, color: 'purple' },
         ],
         SHOP_STOCK: {},
+        getInitialCardStock(card, playerCount) {
+            return card.color === 'purple' ? playerCount : 6;
+        },
         drawCitySkyline() { counters.drawCitySkyline++; },
         resumeGame() { counters.resumeGame++; },
     };
@@ -161,8 +165,10 @@ function loadMainRuntime() {
             setSelectedCount: (value) => { selectedCount = value; },
             getSelectedCount: () => selectedCount,
             setPlayerSettings: (value) => { playerSettings = value; },
+            setEnabledCards: (value) => { enabledCards = value; },
             setGame: (value) => { game = value; },
             getGame: () => game,
+            getShopStock: () => SHOP_STOCK,
             setCpuPlayers: (value) => { cpuPlayers = value; },
             setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
             getAutoSkipPending: () => autoSkipPending,
@@ -297,13 +303,15 @@ runTest('main init は固定乱数でプレイヤー順シャッフル後も名�
         { type: 'cpu', difficulty: 'strong', name: 'ignored' },
         { type: 'human', difficulty: 'normal', name: '太郎' },
     ]);
-    rt.enabledCards = new Set(['麦畑', '鉱山']);
+    rt.__test.setEnabledCards(new Set(['麦畑', '鉱山', 'スタジアム']));
     rt.enabledLandmarks = new Set(['駅', '空港']);
 
     rt.init(3);
 
     const names = rt.__test.getGame().players.map(player => player.name);
     assert.deepStrictEqual(names, ['CPU（強）', '花子', '太郎']);
+    assert.strictEqual(rt.__test.getShopStock()['麦畑'], 6);
+    assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 3);
 });
 
 runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {

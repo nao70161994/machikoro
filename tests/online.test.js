@@ -195,13 +195,14 @@ runTest('initOnlineGame: playerOrderシャッフルでも正しい名前が設�
     assert.strictEqual(g.players[1].name, 'Alice');
 });
 
-runTest('initOnlineGame: enabledCardsに含まれるカードのみSHOP_STOCKが6になる', () => {
-    rt.setEnabledCards(new Set(['麦畑']));
+runTest('initOnlineGame: enabledCardsに含まれるカードのみSHOP_STOCKを初期化する', () => {
+    rt.setEnabledCards(new Set(['麦畑', 'スタジアム']));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
-    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    rt.initOnlineGame(['Alice', 'Bob', 'Carol'], null, [0, 1, 2]);
     const stock = rt.getShopStock();
     assert.strictEqual(stock['麦畑'], 6);
     assert.strictEqual(stock['パン屋'], 0);
+    assert.strictEqual(stock['スタジアム'], 3);
 });
 
 runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映される', () => {

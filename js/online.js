@@ -352,7 +352,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     game = new GameManager(count);
     game.enabledLandmarks = new Set(enabledLandmarks.size > 0 ? enabledLandmarks : Player.landmarkNames());
     for (const card of CARDS) {
-        SHOP_STOCK[card.name] = enabledCards.has(card.name) ? 6 : 0;
+        SHOP_STOCK[card.name] = enabledCards.has(card.name) ? getInitialCardStock(card, count) : 0;
     }
 
     // playerOrderに従ってプレイヤー名とCPU設定を設定

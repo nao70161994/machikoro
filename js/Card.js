@@ -10,6 +10,16 @@ class Card {
     }
 }
 
+const DEFAULT_SHOP_STOCK = 6;
+
+function getInitialCardStock(card, playerCount) {
+    if (!card) return 0;
+    if (card.color === "purple") {
+        return Math.max(0, Math.floor(Number(playerCount) || 0));
+    }
+    return DEFAULT_SHOP_STOCK;
+}
+
 const CARD_EFFECTS = Object.freeze({
     NORMAL:        "normal",
     CHEESE:        "cheese",

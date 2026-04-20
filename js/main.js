@@ -182,7 +182,7 @@ function init(playerCount) {
     if (enabledLandmarks.size === 0) enabledLandmarks = new Set(Player.landmarkNames());
     game.enabledLandmarks = new Set(enabledLandmarks);
     for (const card of CARDS) {
-        SHOP_STOCK[card.name] = enabledCards.has(card.name) ? 6 : 0;
+        SHOP_STOCK[card.name] = enabledCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0;
     }
 
     // ターン順をランダムにシャッフル

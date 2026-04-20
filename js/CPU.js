@@ -510,9 +510,9 @@ class CPU {
         ];
     }
 
-    _simulationShopStock() {
+    _simulationShopStock(playerCount = 2) {
         const stock = {};
-        for (const card of CARDS) stock[card.name] = 6;
+        for (const card of CARDS) stock[card.name] = getInitialCardStock(card, playerCount);
         return stock;
     }
 
@@ -537,7 +537,7 @@ class CPU {
                 score += this._profileMeasure("expert.choiceLookahead", () =>
                     this._simulateLookahead(
                         game,
-                        this._simulationShopStock(),
+                        this._simulationShopStock(game.players.length),
                         focusIndex,
                         this._expertLookaheadSteps(game, focusIndex, game.players.length * 2)
                     )
