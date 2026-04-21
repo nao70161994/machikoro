@@ -120,6 +120,7 @@ class MachikoroEnv:
         self.pending_mover = 0
         self.pending_reno  = 0
         self.pending_it    = False
+        self.pending_target_index = None
         self.turn_count    = 0
         self.done   = False
         self.winner = None
@@ -146,7 +147,7 @@ class MachikoroEnv:
             return [ACT_HARBOR_YES, ACT_HARBOR_NO]
 
         if self.phase == PHASE_PENDING:
-            opp = self.players[self._target_opponent_index()]
+            opp = self.players[self._pending_target_index()]
             if self.pending_tv > 0:
                 return [ACT_TV_TARGET]
             if self.pending_biz > 0:
@@ -214,7 +215,7 @@ class MachikoroEnv:
             return True, self.winner
 
         p   = self.players[self.current]
-        oi  = self._target_opponent_index()
+        oi  = self._pending_target_index()
         opp = self.players[oi]
 
         # --- サイコロ ---
@@ -635,6 +636,7 @@ class MachikoroEnv:
         if (self.pending_tv <= 0 and self.pending_biz <= 0 and
                 self.pending_clean <= 0 and self.pending_mover <= 0 and
                 self.pending_reno <= 0):
+            self.pending_target_index = None
             self.phase = PHASE_BUILD
 
     def _next_turn(self):
@@ -677,6 +679,7 @@ class MachikoroEnv:
         self.pending_mover = 0
         self.pending_reno  = 0
         self.pending_it    = False
+        self.pending_target_index = None
         self.last_dice = self.last_d1 = self.last_d2 = 0
 
     def _transfer_one_card(self, src: PlayerState, dst: PlayerState, name: str) -> bool:
@@ -704,6 +707,35 @@ class MachikoroEnv:
                 best_index = index
                 best_score = score
         return best_index if best_index is not None else 0
+
+    def _target_opponent_slots(self) -> list[int]:
+        slots = []
+        for index, player in enumerate(self.players):
+            if index == self.current:
+                continue
+            slots.append((self._player_threat_score(player), index))
+        slots.sort(key=lambda item: item[0], reverse=True)
+        return [index for _, index in slots]
+
+    def _pending_target_index(self) -> int:
+        target_index = self.pending_target_index
+        if target_index is None:
+            return self._target_opponent_index()
+        if not (0 <= int(target_index) < len(self.players)):
+            return self._target_opponent_index()
+        if int(target_index) == self.current:
+            return self._target_opponent_index()
+        return int(target_index)
+
+    def set_pending_target_index(self, target_index: int | None):
+        self.pending_target_index = None if target_index is None else int(target_index)
+
+    def set_pending_target_slot(self, slot_index: int):
+        slots = self._target_opponent_slots()
+        if 0 <= int(slot_index) < len(slots):
+            self.pending_target_index = slots[int(slot_index)]
+        else:
+            self.pending_target_index = None
 
     def clone(self) -> "MachikoroEnv":
         env = object.__new__(MachikoroEnv)

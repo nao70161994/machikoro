@@ -45,6 +45,74 @@ def _encode_for_agent(env: MachikoroEnv, agent: RLAgent) -> np.ndarray:
     return encode_state(env)
 
 
+def _pending_target_kind(env: MachikoroEnv):
+    if env.phase != "pending" or len(env.players) <= 2:
+        return None
+    if env.pending_tv > 0:
+        return "tv"
+    if env.pending_biz > 0:
+        return "bc"
+    if env.pending_mover > 0:
+        return "mover"
+    return None
+
+
+def _target_slot_mask(env: MachikoroEnv, target_slots: int, kind: str) -> np.ndarray:
+    mask = np.zeros(int(target_slots or 0), dtype=np.float32)
+    slots = env._target_opponent_slots()
+    for slot_index, player_index in enumerate(slots[:len(mask)]):
+        player = env.players[player_index]
+        if kind == "tv":
+            if player.coins > 0:
+                mask[slot_index] = 1.0
+        elif kind == "bc":
+            for name in CARD_NAMES:
+                if CARD_DEF[name].color == "purple":
+                    continue
+                if player.active(name) > 0:
+                    mask[slot_index] = 1.0
+                    break
+        elif kind == "mover":
+            mask[slot_index] = 1.0
+    return mask
+
+
+def _apply_pending_target_choice(env: MachikoroEnv, net, state: np.ndarray, epsilon: float = 0.0, greedy: bool = False):
+    env.set_pending_target_index(None)
+    kind = _pending_target_kind(env)
+    if kind is None:
+        return
+    target_slots = int(getattr(net, "target_slots", 0) or 0)
+    if target_slots <= 0:
+        return
+    target_head = {
+        "tv": getattr(net, "tv_target_head", None),
+        "bc": getattr(net, "bc_target_head", None),
+        "mover": getattr(net, "mover_target_head", None),
+    }.get(kind)
+    if target_head is None:
+        return
+    target_mask = _target_slot_mask(env, target_slots, kind)
+    valid = np.where(target_mask > 0)[0]
+    if len(valid) == 0:
+        return
+    try:
+        target_probs, _, target_logits = net.forward_target_details(state, kind)
+    except (AttributeError, ValueError):
+        return
+    if not greedy and epsilon > 0 and random.random() < epsilon:
+        env.set_pending_target_slot(int(random.choice(valid)))
+        return
+    masked = _normalize_masked_probs(target_probs, target_mask)
+    if greedy:
+        slot_index = _argmax_masked_logits(target_logits, target_mask) if masked.sum() <= 1e-12 else int(np.argmax(masked))
+    else:
+        slot_index = _sample_masked_logits(target_logits, target_mask) if masked.sum() <= 1e-12 else int(np.random.choice(len(masked), p=masked))
+    if slot_index is None:
+        return
+    env.set_pending_target_slot(int(slot_index))
+
+
 def _normalize_masked_probs(probs, mask):
     masked = np.asarray(probs, dtype=np.float64) * np.asarray(mask, dtype=np.float64)
     total = masked.sum()
@@ -313,6 +381,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
         if env.current == agent_player:
             # ── エージェントのターン ──
             state = _encode_for_agent(env, agent)
+            _apply_pending_target_choice(env, agent.net, state, epsilon=epsilon, greedy=False)
             mask  = action_mask(env)
             valid = np.where(mask > 0)[0]
 
@@ -332,6 +401,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
             # ── 相手のターン ──
             if opp_agent is not None:
                 opp_state = _encode_for_agent(env, opp_agent)
+                _apply_pending_target_choice(env, opp_agent.net, opp_state, epsilon=0.0, greedy=True)
                 opp_mask  = action_mask(env)
                 opp_action = _greedy_action(opp_agent.net, opp_state, opp_mask)
                 env.step(opp_action)
@@ -410,6 +480,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
 
             player = env.current
             state = _encode_for_agent(env, agent)
+            _apply_pending_target_choice(env, agent.net, state, epsilon=epsilon, greedy=False)
             mask = action_mask(env)
             action, value = _select_action(agent.net, state, mask, epsilon)
 
@@ -461,6 +532,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
 
         if env.current == agent_player:
             state = _encode_for_agent(env, agent)
+            _apply_pending_target_choice(env, agent.net, state, epsilon=epsilon, greedy=False)
             mask = action_mask(env)
             action, value = _select_action(agent.net, state, mask, epsilon)
 
@@ -549,6 +621,7 @@ def run_imitation_pretraining(agent: RLAgent, games: int, opponents, max_steps: 
             if env.done:
                 break
             state = _encode_for_agent(env, agent)
+            _apply_pending_target_choice(env, agent.net, state, epsilon=0.0, greedy=True)
             mask = action_mask(env)
             teacher = int(heuristic_action(env, player_levels[env.current]))
             if teacher not in np.where(mask > 0)[0]:
@@ -628,12 +701,14 @@ def eval_vs_pool(agent: RLAgent, pool_agents: list, n_games: int = 50, max_steps
                 break
             if env.current == agent_player:
                 state = _encode_for_agent(env, agent)
+                _apply_pending_target_choice(env, agent.net, state, epsilon=0.0, greedy=True)
                 mask = action_mask(env)
                 action = _greedy_action(agent.net, state, mask)
                 if env.phase == "build":
                     _record_build_action(build_stats, action)
             else:
                 opp_state = _encode_for_agent(env, opp)
+                _apply_pending_target_choice(env, opp.net, opp_state, epsilon=0.0, greedy=True)
                 opp_mask = action_mask(env)
                 action = _greedy_action(opp.net, opp_state, opp_mask)
                 if env.phase == "build":
@@ -721,6 +796,7 @@ def _opponent_action(env, opponent):
     if kind in ("pool", "self"):
         opp_agent = opponent.get("agent")
         opp_state = _encode_for_agent(env, opp_agent)
+        _apply_pending_target_choice(env, opp_agent.net, opp_state, epsilon=0.0, greedy=True)
         opp_mask = action_mask(env)
         return _greedy_action(opp_agent.net, opp_state, opp_mask)
     if kind == "random":
@@ -797,6 +873,7 @@ def _eval_against_opponent(agent: RLAgent, opponent_selector, n_games: int = 50,
                 break
             if env.current == agent_player:
                 state = _encode_for_agent(env, agent)
+                _apply_pending_target_choice(env, agent.net, state, epsilon=0.0, greedy=True)
                 mask = action_mask(env)
                 action = _greedy_action(agent.net, state, mask)
                 if action is not None and env.phase == "build":

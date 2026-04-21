@@ -1,18 +1,19 @@
 # 多人数戦 Target Head 設計メモ
 
-最終更新: 2026-04-21
+最終更新: 2026-04-22
 
 ## 現在の実装状況
 
 - 実装済み
   - Python checkpoint / browser export は optional target head を保持できる
+  - Python env は pending target を明示的に差し替えられる
+  - Python 推論側は optional target head があれば TV / BC / Mover の対象選択に使う
   - JS `RLCPU` は optional target head があれば TV / BC / Mover の対象選択に使える
   - head が無い既存モデルは現行 heuristic へ fallback する
 - 未実装
   - 学習ループで target head を更新する処理
-  - Python 推論側で target head を使う処理
   - target head ありモデルの学習プリセット
-  - Python/JS parity fixture の target head ケース
+  - Python/JS parity fixture の target head 学習ケース
 
 ## 目的
 
@@ -198,9 +199,14 @@ pending ごとに target mask を持つ。
 1. `network.py` / `RLCPU.js` に target head 読み込みを追加
 2. Python env に slot 変換 helper を追加
 3. Python train/inference に target head 選択を追加
+   - 完了
 4. JS `RLCPU.js` に target head 選択を追加
+   - 完了
 5. parity fixture / tests を追加
+   - 推論・mask 切替の回帰は追加済み
+   - 学習更新まで含む parity は未着手
 6. 多人数用 model だけ target head あり export を許可
+   - export 受け皿は完了
 7. 2人戦 model は target head なしでも継続運用
 
 ## 先に必要なテスト

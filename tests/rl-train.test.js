@@ -219,6 +219,84 @@ print(sorted(k for k in bundle["layers"].keys() if "TargetHead" in k))
     assert.strictEqual(exported.numTargetSlots, 3);
 });
 
+runTest('rl train: pending target choice は TV target head で相手を切り替えられる', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.network import PolicyValueNet
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING
+from scripts.rl.train import _apply_pending_target_choice, _encode_for_agent
+
+env = MachikoroEnv(player_count=4)
+env.current = 0
+env.phase = PHASE_PENDING
+env.pending_tv = 1
+env.players[1].coins = 20
+env.players[2].coins = 9
+env.players[2].landmarks["駅"] = True
+env.players[2].landmarks["港"] = True
+env.players[3].coins = 1
+
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=353)
+agent.net = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=3)
+agent.net.tv_target_head.W[:] = 0
+agent.net.tv_target_head.b[:] = np.array([-2.0, 5.0, -3.0], dtype=np.float32)
+
+state = _encode_for_agent(env, agent)
+_apply_pending_target_choice(env, agent.net, state, epsilon=0.0, greedy=True)
+print(env._target_opponent_slots())
+print(env.pending_target_index)
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(JSON.parse(lines[0]), [2, 1, 3]);
+    assert.strictEqual(lines[1], '1');
+});
+
+runTest('rl train: pending target choice は BC target head に合わせて合法手 mask を切り替える', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.network import PolicyValueNet
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_BC_BASE
+from scripts.rl.cards import CARD_INDEX, NUM_CARDS
+from scripts.rl.encode import action_mask
+from scripts.rl.train import _apply_pending_target_choice, _encode_for_agent
+
+env = MachikoroEnv(player_count=4)
+env.current = 0
+env.phase = PHASE_PENDING
+env.pending_biz = 1
+env.players[0].cards["麦畑"] += 1
+env.players[1].coins = 20
+env.players[1].cards["鉱山"] += 1
+env.players[2].coins = 12
+env.players[2].landmarks["駅"] = True
+env.players[2].cards["パン屋"] += 1
+env.players[3].coins = 1
+
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=353)
+agent.net = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=3)
+agent.net.bc_target_head.W[:] = 0
+agent.net.bc_target_head.b[:] = np.array([-3.0, 4.0, -2.0], dtype=np.float32)
+
+state = _encode_for_agent(env, agent)
+_apply_pending_target_choice(env, agent.net, state, epsilon=0.0, greedy=True)
+mask = action_mask(env)
+give_idx = CARD_INDEX["麦畑"]
+take_bread = ACT_BC_BASE + give_idx * NUM_CARDS + CARD_INDEX["パン屋"]
+take_mine = ACT_BC_BASE + give_idx * NUM_CARDS + CARD_INDEX["鉱山"]
+print(env._target_opponent_slots())
+print(env.pending_target_index)
+print(int(mask[take_bread]))
+print(int(mask[take_mine]))
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(JSON.parse(lines[0]), [1, 2, 3]);
+    assert.strictEqual(lines[1], '2');
+    assert.strictEqual(lines[2], '1');
+    assert.strictEqual(lines[3], '0');
+});
+
 runTest('rl train: build stats を集計して整形できる', () => {
     const output = runPython(`
 import json
