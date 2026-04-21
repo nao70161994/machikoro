@@ -6,6 +6,7 @@ const { buildRegistryReport, renderText: renderReportText, renderMarkdown: rende
 const { buildAudit, renderText: renderAuditText, renderMarkdown: renderAuditMarkdown } = require('./audit-rl-portfolio.js');
 const { buildNextActions, renderText: renderPlanText, renderMarkdown: renderPlanMarkdown } = require('./plan-rl-next-actions.js');
 const { buildAdoptionReview, renderText: renderReviewText, renderMarkdown: renderReviewMarkdown } = require('./review-rl-adoptions.js');
+const { buildDiversityReport, renderText: renderDiversityText, renderMarkdown: renderDiversityMarkdown } = require('./report-rl-diversity.js');
 
 function parseArgs(argv) {
     const args = {
@@ -38,6 +39,7 @@ function buildArtifacts(registry) {
         audit,
         plan,
         review,
+        diversity: buildDiversityReport(registry),
     };
 }
 
@@ -58,6 +60,9 @@ function writeArtifacts(artifacts, outputDir) {
         ['adoption-review.txt', renderReviewText(artifacts.review)],
         ['adoption-review.md', renderReviewMarkdown(artifacts.review)],
         ['adoption-review.json', JSON.stringify(artifacts.review, null, 2) + '\n'],
+        ['diversity-report.txt', renderDiversityText(artifacts.diversity)],
+        ['diversity-report.md', renderDiversityMarkdown(artifacts.diversity)],
+        ['diversity-report.json', JSON.stringify(artifacts.diversity, null, 2) + '\n'],
     ];
 
     for (const [name, content] of mapping) {

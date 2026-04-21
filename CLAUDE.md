@@ -26,6 +26,7 @@
 - 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
 - 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。
 - `eval-rl-models` の JSON を registry へ追記してレポートまで更新したいときは `npm run update-rl-registry-from-eval -- --input <json>` を使ってください。
+- 多様性の重複候補と比較ペアを見たいときは `npm run report-rl-diversity` を使ってください。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
 ## 次に読む文書
@@ -70,6 +71,7 @@
 - RL 2人戦採用候補レビュー: `npm run review-rl-adoptions`
 - RL 台帳系レポート一括更新: `npm run refresh-rl-ops-reports`
 - RL 評価JSONの台帳反映: `npm run update-rl-registry-from-eval -- --input <json>`
+- RL 多様性レポート: `npm run report-rl-diversity`
 - RL metrics 集計: `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`
 
 ## 編集時の基本

@@ -232,6 +232,7 @@ npm run plan-rl-next-actions
 npm run review-rl-adoptions
 npm run refresh-rl-ops-reports
 npm run update-rl-registry-from-eval -- --input models/rl_model/eval-summary.json
+npm run report-rl-diversity
 ```
 
 棚卸し結果を履歴として残す場合:
@@ -289,6 +290,7 @@ RL スクリプト / モデル:
 - `scripts/review-rl-adoptions.js`: 2人戦候補を weighted score で並べ、現採用モデルと比較すべき challenger を抽出
 - `scripts/refresh-rl-ops-reports.js`: registry レポート、portfolio 監査、次アクション、採用候補レビューをまとめて `models/rl_model/reports/` に書き出す
 - `scripts/update-rl-registry-from-eval.js`: `eval-rl-models` の JSON を registry に追記し、そのままレポート群も更新
+- `scripts/report-rl-diversity.js`: candidate / adopted モデルを style と topCards 重複で整理し、比較すべきペアを出力
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）

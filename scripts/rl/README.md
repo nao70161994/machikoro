@@ -646,6 +646,7 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 `npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 `npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
 `npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review を更新する。評価後の標準フローとして使える。
+`npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
 
 ```bash
