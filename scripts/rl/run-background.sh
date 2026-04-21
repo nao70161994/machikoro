@@ -1,0 +1,42 @@
+#!/bin/sh
+
+set -eu
+
+if [ "$#" -lt 2 ]; then
+    echo "usage: sh scripts/rl/run-background.sh <job-name> <command...>" >&2
+    exit 1
+fi
+
+JOB_NAME="$1"
+shift
+
+STAMP="$(date +%Y%m%d-%H%M%S)"
+LOG_DIR="models/rl_model/logs"
+PID_DIR="models/rl_model/pids"
+LOG_PATH="${LOG_DIR}/${STAMP}-${JOB_NAME}.log"
+PID_PATH="${PID_DIR}/${JOB_NAME}.pid"
+
+mkdir -p "${LOG_DIR}" "${PID_DIR}"
+
+setsid -f "$@" >"${LOG_PATH}" 2>&1 </dev/null
+
+PID=""
+for _ in 1 2 3 4 5; do
+    PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
+    if [ -n "${PID}" ]; then
+        break
+    fi
+    sleep 1
+done
+
+if [ -z "${PID}" ]; then
+    echo "failed to detect pid for ${JOB_NAME}" >&2
+    exit 1
+fi
+
+echo "${PID}" > "${PID_PATH}"
+
+echo "job=${JOB_NAME}"
+echo "pid=${PID}"
+echo "log=${LOG_PATH}"
+echo "pidfile=${PID_PATH}"
