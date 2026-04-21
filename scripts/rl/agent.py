@@ -130,6 +130,11 @@ class RLAgent:
 
         total_pl = 0.0
         total_vl = 0.0
+        target_pending_steps = 0
+        target_update_steps = 0
+        tv_target_updates = 0
+        bc_target_updates = 0
+        mover_target_updates = 0
 
         def entropy_logit_grad(probs: np.ndarray, valid_mask: np.ndarray) -> np.ndarray:
             grad = np.zeros_like(probs)
@@ -149,6 +154,8 @@ class RLAgent:
             target_kind = self.target_kinds[t] if t < len(self.target_kinds) else None
             target_slot = self.target_slots[t] if t < len(self.target_slots) else None
             target_mask = self.target_masks[t] if t < len(self.target_masks) else None
+            if target_kind in ("tv", "bc", "mover"):
+                target_pending_steps += 1
             adv    = float(adv_norm[t])
             g_t    = float(G[t])
 
@@ -194,6 +201,8 @@ class RLAgent:
                     and int(np.sum(target_mask)) > 0
                 )
                 if has_target:
+                    target_update_steps += 1
+                    bc_target_updates += 1
                     target_probs, _, _ = self.net.forward_target_details(state, "bc")
                     masked_target = target_probs * target_mask
                     masked_target /= (masked_target.sum() + 1e-9)
@@ -245,6 +254,11 @@ class RLAgent:
                     and int(np.sum(target_mask)) > 0
                 )
                 if has_target:
+                    target_update_steps += 1
+                    if target_kind == "tv":
+                        tv_target_updates += 1
+                    elif target_kind == "mover":
+                        mover_target_updates += 1
                     target_probs, _, _ = self.net.forward_target_details(state, target_kind)
                     masked_target = target_probs * target_mask
                     masked_target /= (masked_target.sum() + 1e-9)
@@ -264,6 +278,11 @@ class RLAgent:
             "value_loss":  total_vl / T,
             "mean_G":      float(G.mean()),
             "mean_adv":    float(adv_mean),   # 正規化前の平均優位性
+            "target_pending_rate": float(target_pending_steps / T),
+            "target_update_rate": float(target_update_steps / T),
+            "tv_target_rate": float(tv_target_updates / T),
+            "bc_target_rate": float(bc_target_updates / T),
+            "mover_target_rate": float(mover_target_updates / T),
         }
         self._reset_buf()
         return stats

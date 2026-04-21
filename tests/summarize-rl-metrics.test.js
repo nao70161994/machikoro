@@ -58,10 +58,10 @@ runTest('loadMetrics は CSV をオブジェクト配列へ読む', () => {
 
 runTest('summarizeMetrics は opponent 別ベストと総合上位を返す', () => {
     const rows = [
-        { game: '1000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.5', train: '0.52', js_opponent: 'strong', js_win_rate: '0.6', js_first_rate: '0.7', js_second_rate: '0.5', js_draw_rate: '0.1', js_exhausted: '1', js_avg_turns: '17.4' },
-        { game: '1000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.5', train: '0.52', js_opponent: 'expert', js_win_rate: '0.3', js_first_rate: '0.2', js_second_rate: '0.4', js_draw_rate: '0.1', js_exhausted: '0', js_avg_turns: '22.1' },
-        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', js_opponent: 'strong', js_win_rate: '0.7', js_first_rate: '0.8', js_second_rate: '0.6', js_draw_rate: '0.0', js_exhausted: '0', js_avg_turns: '16.2' },
-        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', js_opponent: 'expert', js_win_rate: '0.45', js_first_rate: '0.5', js_second_rate: '0.4', js_draw_rate: '0.05', js_exhausted: '0', js_avg_turns: '20.0' },
+        { game: '1000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.5', train: '0.52', target_pending_rate: '0.08', target_update_rate: '0.08', tv_target_rate: '0.03', bc_target_rate: '0.04', mover_target_rate: '0.01', js_opponent: 'strong', js_win_rate: '0.6', js_first_rate: '0.7', js_second_rate: '0.5', js_draw_rate: '0.1', js_exhausted: '1', js_avg_turns: '17.4' },
+        { game: '1000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.5', train: '0.52', target_pending_rate: '0.08', target_update_rate: '0.08', tv_target_rate: '0.03', bc_target_rate: '0.04', mover_target_rate: '0.01', js_opponent: 'expert', js_win_rate: '0.3', js_first_rate: '0.2', js_second_rate: '0.4', js_draw_rate: '0.1', js_exhausted: '0', js_avg_turns: '22.1' },
+        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', target_pending_rate: '0.12', target_update_rate: '0.11', tv_target_rate: '0.05', bc_target_rate: '0.04', mover_target_rate: '0.02', js_opponent: 'strong', js_win_rate: '0.7', js_first_rate: '0.8', js_second_rate: '0.6', js_draw_rate: '0.0', js_exhausted: '0', js_avg_turns: '16.2' },
+        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', target_pending_rate: '0.12', target_update_rate: '0.11', tv_target_rate: '0.05', bc_target_rate: '0.04', mover_target_rate: '0.02', js_opponent: 'expert', js_win_rate: '0.45', js_first_rate: '0.5', js_second_rate: '0.4', js_draw_rate: '0.05', js_exhausted: '0', js_avg_turns: '20.0' },
     ];
     const summary = summarizeMetrics(rows, { opponents: ['strong', 'expert'] });
     assert.strictEqual(summary.bestByOpponent.strong.game, 2000);
@@ -70,6 +70,8 @@ runTest('summarizeMetrics は opponent 別ベストと総合上位を返す', ()
     assert.strictEqual(summary.bestRuns[0].game, 2000);
     assert.strictEqual(summary.combinedTop[0].game, 2000);
     assert.strictEqual(summary.combinedTop[0].runLabel, 'baseline');
+    assert.strictEqual(summary.bestRuns[0].targetPendingRate, 0.12);
+    assert.strictEqual(summary.bestRuns[0].bcTargetRate, 0.04);
 });
 
 runTest('summarizeMetrics は重み付けで総合順位を変えられる', () => {
@@ -160,11 +162,16 @@ runTest('printSummary は text 形式で要約を出力する', () => {
                     jsDrawRate: 0,
                     jsExhausted: 0,
                     jsAvgTurns: 16.2,
+                    targetPendingRate: 0.12,
+                    targetUpdateRate: 0.11,
+                    tvTargetRate: 0.05,
+                    bcTargetRate: 0.04,
+                    moverTargetRate: 0.02,
                 },
             },
-            bestRuns: [{ runLabel: 'baseline', game: 2000, score: 0.7, scoreDelta: 0, opponentDeltas: { strong: 0 }, rnd: 0.55, train: 0.6 }],
-            bestConfigs: [{ configKey: 'hidden=256 lr=0.0003', runLabel: 'baseline', game: 2000, score: 0.7, rnd: 0.55, train: 0.6 }],
-            combinedTop: [{ game: 2000, score: 0.7, rnd: 0.55, train: 0.6 }],
+            bestRuns: [{ runLabel: 'baseline', game: 2000, score: 0.7, scoreDelta: 0, opponentDeltas: { strong: 0 }, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02 }],
+            bestConfigs: [{ configKey: 'hidden=256 lr=0.0003', runLabel: 'baseline', game: 2000, score: 0.7, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02 }],
+            combinedTop: [{ game: 2000, score: 0.7, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02 }],
         }, { format: 'text' });
     } finally {
         console.log = realLog;
@@ -173,6 +180,7 @@ runTest('printSummary は text 形式で要約を出力する', () => {
     assert.ok(output.includes('rows=4'));
     assert.ok(output.includes('baselineRun=baseline'));
     assert.ok(output.includes('best strong'));
+    assert.ok(output.includes('target('));
     assert.ok(output.includes('delta=+0.000'));
     assert.ok(output.includes('config hidden=256 lr=0.0003'));
     assert.ok(output.includes('top game=2000'));

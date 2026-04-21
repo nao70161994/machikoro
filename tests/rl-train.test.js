@@ -339,10 +339,12 @@ stats = agent.train()
 after = agent.net.tv_target_head.b
 print(np.any(np.abs(after - before) > 1e-12))
 print("policy_loss" in stats and "value_loss" in stats)
+print(stats["target_pending_rate"] > 0 and stats["target_update_rate"] > 0 and stats["tv_target_rate"] > 0)
 `);
     const lines = output.split('\n');
     assert.strictEqual(lines[0], 'True');
     assert.strictEqual(lines[1], 'True');
+    assert.strictEqual(lines[2], 'True');
 });
 
 runTest('rl train: train は BC target head を give/take と同時に更新できる', () => {
@@ -378,10 +380,12 @@ stats = agent.train()
 after = agent.net.bc_target_head.b
 print(np.any(np.abs(after - before) > 1e-12))
 print("policy_loss" in stats and "value_loss" in stats)
+print(stats["target_pending_rate"] > 0 and stats["target_update_rate"] > 0 and stats["bc_target_rate"] > 0)
 `);
     const lines = output.split('\n');
     assert.strictEqual(lines[0], 'True');
     assert.strictEqual(lines[1], 'True');
+    assert.strictEqual(lines[2], 'True');
 });
 
 runTest('rl train: build stats を集計して整形できる', () => {

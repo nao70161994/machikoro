@@ -357,7 +357,7 @@ python3 -m scripts.rl.train \
 ### 学習ログの見方
 
 ```
-[  1000] rnd=56%  weak=72%  nrm=48%  str=40%  exp=35%  pool=n/a  train=54%  pl=0.210  vl=0.063  adv=0.047  eps=0.193  js=strong=60%(f70%/s50%/d10%)/1@17.4 expert=35%(f40%/s30%/d5%)/0@21.2
+[  1000] rnd=56%  weak=72%  nrm=48%  str=40%  exp=35%  pool=n/a  train=54%  pl=0.210  vl=0.063  adv=0.047  tgt=12%/11%(tv=5% bc=4% mv=2%)  eps=0.193  js=strong=60%(f70%/s50%/d10%)/1@17.4 expert=35%(f40%/s30%/d5%)/0@21.2
 ```
 
 | 指標 | 正常な範囲 | 意味 |
@@ -372,6 +372,7 @@ python3 -m scripts.rl.train \
 | `vl` | 0.05〜0.1 → 低下 | 価値関数の精度 |
 | `adv` | 0 前後に収束 | 正規化前の平均優位性（価値関数のバイアス） |
 | `pl` | 0.1〜0.3 | 方策損失（0 に張り付く = 学習停止の兆候） |
+| `tgt` | 多人数戦で 0% 以外 | `pending target 発生率 / 実更新率`。括弧内は `tv / bc / mover` の target head 更新率 |
 | `js=...` | 比較用 | JS 側 `weak/normal/strong/expert`、または `--js-eval-lineups` の4人 lineup に対する RL 勝率。`f/s/d` は RL 先手勝率 / 後手勝率 / 引き分け率、`/@` は `exhausted` 件数 / 平均ターン |
 
 例:

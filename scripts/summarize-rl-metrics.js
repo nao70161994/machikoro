@@ -119,6 +119,11 @@ function summarizeMetrics(rows, options = {}) {
             jsAvgTurns: toNumber(row.js_avg_turns) || 0,
             rnd: toNumber(row.rnd),
             train: toNumber(row.train),
+            targetPendingRate: toNumber(row.target_pending_rate),
+            targetUpdateRate: toNumber(row.target_update_rate),
+            tvTargetRate: toNumber(row.tv_target_rate),
+            bcTargetRate: toNumber(row.bc_target_rate),
+            moverTargetRate: toNumber(row.mover_target_rate),
         }));
 
     const byOpponent = Object.fromEntries(opponents.map(opponent => [opponent, []]));
@@ -150,6 +155,11 @@ function summarizeMetrics(rows, options = {}) {
             opponents: {},
             rnd: row.rnd,
             train: row.train,
+            targetPendingRate: row.targetPendingRate,
+            targetUpdateRate: row.targetUpdateRate,
+            tvTargetRate: row.tvTargetRate,
+            bcTargetRate: row.bcTargetRate,
+            moverTargetRate: row.moverTargetRate,
         };
         entry.opponents[row.jsOpponent] = row;
         grouped.set(row.game, entry);
@@ -177,6 +187,11 @@ function summarizeMetrics(rows, options = {}) {
             jsEvalOpponents: entry.jsEvalOpponents,
             rnd: entry.rnd,
             train: entry.train,
+            targetPendingRate: entry.targetPendingRate,
+            targetUpdateRate: entry.targetUpdateRate,
+            tvTargetRate: entry.tvTargetRate,
+            bcTargetRate: entry.bcTargetRate,
+            moverTargetRate: entry.moverTargetRate,
         };
     }).sort((a, b) =>
         b.score - a.score ||
@@ -207,6 +222,11 @@ function summarizeMetrics(rows, options = {}) {
             jsEvalOpponents: entry.jsEvalOpponents,
             rnd: entry.rnd,
             train: entry.train,
+            targetPendingRate: entry.targetPendingRate,
+            targetUpdateRate: entry.targetUpdateRate,
+            tvTargetRate: entry.tvTargetRate,
+            bcTargetRate: entry.bcTargetRate,
+            moverTargetRate: entry.moverTargetRate,
         }))
         .sort((a, b) =>
             b.score - a.score ||
@@ -240,6 +260,11 @@ function summarizeMetrics(rows, options = {}) {
                 score: run.score,
                 rnd: run.rnd,
                 train: run.train,
+                targetPendingRate: run.targetPendingRate,
+                targetUpdateRate: run.targetUpdateRate,
+                tvTargetRate: run.tvTargetRate,
+                bcTargetRate: run.bcTargetRate,
+                moverTargetRate: run.moverTargetRate,
             });
         }
     }
@@ -302,6 +327,18 @@ function renderSummary(summary, options = {}) {
         return JSON.stringify(summary, null, 2);
     }
     const lines = [];
+    const formatTargetRates = (entry) => {
+        if (!entry) return '';
+        const pending = Number.isFinite(entry.targetPendingRate) ? `${(entry.targetPendingRate * 100).toFixed(1)}%` : null;
+        const update = Number.isFinite(entry.targetUpdateRate) ? `${(entry.targetUpdateRate * 100).toFixed(1)}%` : null;
+        const tv = Number.isFinite(entry.tvTargetRate) ? `${(entry.tvTargetRate * 100).toFixed(1)}%` : null;
+        const bc = Number.isFinite(entry.bcTargetRate) ? `${(entry.bcTargetRate * 100).toFixed(1)}%` : null;
+        const mv = Number.isFinite(entry.moverTargetRate) ? `${(entry.moverTargetRate * 100).toFixed(1)}%` : null;
+        if (pending == null && update == null && tv == null && bc == null && mv == null) {
+            return '';
+        }
+        return ` target(p=${pending ?? 'n/a'} u=${update ?? 'n/a'} tv=${tv ?? 'n/a'} bc=${bc ?? 'n/a'} mv=${mv ?? 'n/a'})`;
+    };
     lines.push(
         `rows=${summary.totalRows} jsRows=${summary.jsRows} opponents=${summary.opponents.join(',')} ` +
         `drawPenalty=${summary.drawPenalty} exhaustedPenalty=${summary.exhaustedPenalty}` +
@@ -317,7 +354,8 @@ function renderSummary(summary, options = {}) {
         lines.push(
             `best ${opponent}: game=${best.game} winRate=${(best.jsWinRate * 100).toFixed(1)}% ` +
             `seat(first=${(best.jsFirstRate * 100).toFixed(1)}%,second=${(best.jsSecondRate * 100).toFixed(1)}%) ` +
-            `draw=${(best.jsDrawRate * 100).toFixed(1)}% exhausted=${best.jsExhausted} avgTurns=${best.jsAvgTurns.toFixed(1)}`
+            `draw=${(best.jsDrawRate * 100).toFixed(1)}% exhausted=${best.jsExhausted} avgTurns=${best.jsAvgTurns.toFixed(1)}` +
+            `${formatTargetRates(best)}`
         );
     }
     for (const run of (summary.bestRuns || []).slice(0, 5)) {
@@ -336,7 +374,7 @@ function renderSummary(summary, options = {}) {
             `${run.hidden != null ? `hidden=${run.hidden} ` : ''}` +
             `${run.lr != null ? `lr=${run.lr} ` : ''}` +
             `rnd=${run.rnd == null ? 'n/a' : (run.rnd * 100).toFixed(1) + '%'} ` +
-            `train=${run.train == null ? 'n/a' : (run.train * 100).toFixed(1) + '%'}` +
+            `train=${run.train == null ? 'n/a' : (run.train * 100).toFixed(1) + '%'}${formatTargetRates(run)}` +
             `${deltas ? ` ${deltas}` : ''}`
         );
     }
@@ -344,7 +382,7 @@ function renderSummary(summary, options = {}) {
         lines.push(
             `config ${config.configKey}: run=${config.runLabel} game=${config.game} score=${config.score.toFixed(3)} ` +
             `rnd=${config.rnd == null ? 'n/a' : (config.rnd * 100).toFixed(1) + '%'} ` +
-            `train=${config.train == null ? 'n/a' : (config.train * 100).toFixed(1) + '%'}`
+            `train=${config.train == null ? 'n/a' : (config.train * 100).toFixed(1) + '%'}${formatTargetRates(config)}`
         );
     }
     for (const entry of summary.combinedTop) {
@@ -354,7 +392,7 @@ function renderSummary(summary, options = {}) {
             `${entry.hidden != null ? `hidden=${entry.hidden} ` : ''}` +
             `${entry.lr != null ? `lr=${entry.lr} ` : ''}` +
             `rnd=${entry.rnd == null ? 'n/a' : (entry.rnd * 100).toFixed(1) + '%'} ` +
-            `train=${entry.train == null ? 'n/a' : (entry.train * 100).toFixed(1) + '%'}`
+            `train=${entry.train == null ? 'n/a' : (entry.train * 100).toFixed(1) + '%'}${formatTargetRates(entry)}`
         );
     }
     return lines.join('\n');

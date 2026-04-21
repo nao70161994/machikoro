@@ -1246,7 +1246,10 @@ def _format_js_eval_summary(entries):
     return "js=" + " ".join(parts)
 
 
-def _build_metrics_rows(game_i, epsilon, wr_rnd, wr_weak, wr_normal, wr_strong, wr_expert, wr_pool, train_wr, avg_pl, avg_vl, avg_adv, js_entries, metadata=None):
+def _build_metrics_rows(
+    game_i, epsilon, wr_rnd, wr_weak, wr_normal, wr_strong, wr_expert, wr_pool,
+    train_wr, avg_pl, avg_vl, avg_adv, js_entries, metadata=None
+):
     metadata = metadata or {}
     base = {
         "game": game_i,
@@ -1269,6 +1272,11 @@ def _build_metrics_rows(game_i, epsilon, wr_rnd, wr_weak, wr_normal, wr_strong, 
         "policy_loss": avg_pl,
         "value_loss": avg_vl,
         "mean_adv": avg_adv,
+        "target_pending_rate": metadata.get("target_pending_rate"),
+        "target_update_rate": metadata.get("target_update_rate"),
+        "tv_target_rate": metadata.get("tv_target_rate"),
+        "bc_target_rate": metadata.get("bc_target_rate"),
+        "mover_target_rate": metadata.get("mover_target_rate"),
         "js_opponent": "",
         "js_win_rate": None,
         "js_first_rate": None,
@@ -1323,6 +1331,7 @@ def _append_metrics_csv(csv_path, rows):
         "cpu_opponent_impl",
         "epsilon", "rnd", "weak", "normal", "strong", "expert", "pool", "train",
         "policy_loss", "value_loss", "mean_adv",
+        "target_pending_rate", "target_update_rate", "tv_target_rate", "bc_target_rate", "mover_target_rate",
         "js_opponent", "js_win_rate", "js_first_rate", "js_second_rate", "js_draw_rate", "js_exhausted", "js_avg_turns",
     ]
     directory = os.path.dirname(csv_path)
@@ -1521,6 +1530,11 @@ def main():
     total_pl  = 0.0
     total_vl  = 0.0
     total_adv = 0.0
+    total_target_pending = 0.0
+    total_target_update = 0.0
+    total_tv_target = 0.0
+    total_bc_target = 0.0
+    total_mover_target = 0.0
     train_calls = 0
     agent_wins  = 0  # 学習ゲームでのエージェント勝利数
 
@@ -1567,6 +1581,11 @@ def main():
                 total_pl  += stats.get("policy_loss", 0)
                 total_vl  += stats.get("value_loss",  0)
                 total_adv += stats.get("mean_adv",    0)
+                total_target_pending += stats.get("target_pending_rate", 0)
+                total_target_update += stats.get("target_update_rate", 0)
+                total_tv_target += stats.get("tv_target_rate", 0)
+                total_bc_target += stats.get("bc_target_rate", 0)
+                total_mover_target += stats.get("mover_target_rate", 0)
 
         if (
             args.imitation_refresh_games > 0
@@ -1600,6 +1619,11 @@ def main():
             avg_pl   = total_pl  / denom
             avg_vl   = total_vl  / denom
             avg_adv  = total_adv / denom
+            avg_target_pending = total_target_pending / denom
+            avg_target_update = total_target_update / denom
+            avg_tv_target = total_tv_target / denom
+            avg_bc_target = total_bc_target / denom
+            avg_mover_target = total_mover_target / denom
             train_wr = agent_wins / args.eval_every
 
             pool_str = f"{wr_pool:.0%}" if wr_pool == wr_pool else "  n/a"
@@ -1612,7 +1636,10 @@ def main():
                   f"exp={wr_expert:.0%}  "
                   f"pool={pool_str}  "
                   f"train={train_wr:.0%}  "
-                  f"pl={avg_pl:.3f}  vl={avg_vl:.3f}  adv={avg_adv:.3f}  eps={epsilon:.3f}")
+                  f"pl={avg_pl:.3f}  vl={avg_vl:.3f}  adv={avg_adv:.3f}  "
+                  f"tgt={avg_target_pending:.0%}/{avg_target_update:.0%}"
+                  f"(tv={avg_tv_target:.0%} bc={avg_bc_target:.0%} mv={avg_mover_target:.0%})  "
+                  f"eps={epsilon:.3f}")
             print(
                 f"         build(eval) "
                 f"{_format_build_stats('rnd', eval_rnd['buildStats'])} "
@@ -1628,6 +1655,8 @@ def main():
 
             # リセット
             total_pl = total_vl = total_adv = 0.0
+            total_target_pending = total_target_update = 0.0
+            total_tv_target = total_bc_target = total_mover_target = 0.0
             train_calls = agent_wins = 0
 
             agent.save(model_path)
@@ -1649,6 +1678,11 @@ def main():
                         "js_eval_games": args.js_eval_games,
                         "js_eval_opponents": js_eval_label,
                         "cpu_opponent_impl": args.cpu_opponent_impl,
+                        "target_pending_rate": avg_target_pending,
+                        "target_update_rate": avg_target_update,
+                        "tv_target_rate": avg_tv_target,
+                        "bc_target_rate": avg_bc_target,
+                        "mover_target_rate": avg_mover_target,
                     },
                 )
                 _append_metrics_csv(args.metrics_csv, rows)
