@@ -156,7 +156,7 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 
 ## RL 学習
 
-`expert` とは別に、`scripts/rl` 配下で 2 人戦ベースの RL 学習系を管理しています。現状は学習・評価基盤が中心で、既存 `expert` を置き換えるのではなく、新しい CPU として段階的に導入する前提です。
+`expert` とは別に、`scripts/rl` 配下で RL 学習系を管理しています。現状は 2 人戦と 3〜4 人戦の学習・評価基盤が中心で、既存 `expert` を置き換えるのではなく、新しい CPU として段階的に導入する前提です。
 
 主な流れ:
 
@@ -164,7 +164,8 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 2. `scripts/eval-rl-vs-js.js` で JS 側 `weak/normal/strong/expert` と比較
 3. `scripts/summarize-rl-metrics.js` で `train_metrics.csv` を集計
 4. `models/rl_model/registry.json` に採用候補モデルの評価・構築傾向を記録
-5. `js/RLCPU.js` で export 済みモデルを新 CPU として読む準備を進めています
+5. `models/rl_model/portfolio/` に採用済み browser JSON を配置
+6. `js/RLCPU.js` / `js/RLModelPortfolio.js` で人数別にモデルを切り替えて読み込みます
 
 baseline 学習の開始:
 
@@ -189,6 +190,18 @@ baseline ラッパーは、Termux でもまず動作確認できるように `--
 2026-04時点では `hidden=128, lr=0.0001` の `terminal-shaped-h128-lr1e4` が有力候補で、20戦JS評価は `weak 90% / normal 60% / strong 35%` です。
 初期の `hidden=256` 系は pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-04時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed102` を採用しています。
 
+実ゲームでの `AI（学習・ランダム）` は、人数に応じて portfolio からランダム選択します。
+
+- 2人戦: 採用済み 2人用モデル群からランダム
+- 3〜4人戦: 採用済み 3〜4人用モデルからランダム
+- 5人以上: 未対応のため `AI（最強）` を使ってください
+
+2026-04時点の採用済みモデル:
+
+- 2人用主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
+- 2人用補助候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
+- 3〜4人用採用: `self-only-4p-h256-lr1e5-5000-seed102`
+
 baseline 学習で生成される主な成果物:
 
 - `models/rl_model/runs/baseline/train_metrics.csv`
@@ -200,6 +213,27 @@ baseline 学習で生成される主な成果物:
 - `models/rl_model/runs/baseline/best_model.meta.json`
 
 `run-baseline.sh` は既定で `models/rl_model/runs/<run-label>/` に出力するため、`--run-label eps030` のように別ラベルを付ければ 2 本まで安全に並列実行できます。
+
+評価短縮コマンド:
+
+```bash
+sh scripts/rl/eval-run.sh <run-label>
+sh scripts/rl/eval-run-3p.sh 100 self-only-4p-h256-lr1e5-5000-seed102
+sh scripts/rl/eval-run-4p.sh 100 self-only-4p-h256-lr1e5-5000-seed102
+```
+
+台帳運用の基本:
+
+```bash
+npm run validate-rl-registry
+npm run report-rl-registry
+```
+
+棚卸し結果を履歴として残す場合:
+
+```bash
+npm run report-rl-registry -- --format markdown --output models/rl_model/registry-report.md
+```
 
 詳しい学習方式、評価指標、集計オプションは [scripts/rl/README.md](./scripts/rl/README.md) を参照してください。
 
@@ -238,11 +272,17 @@ RL スクリプト / モデル:
 - `scripts/rl/train.py`: RL 学習ループ
 - `scripts/rl/run-baseline.sh`: baseline 学習ラッパー
 - `scripts/rl/run-js-oracle-terminal-shaped.sh`: JS oracle + 終局報酬調整 + self/pool カリキュラム学習ラッパー
+- `scripts/rl/eval-run.sh`: `run-label` から 2人戦の `best_model.browser.json` を評価
+- `scripts/rl/eval-run-3p.sh`: 採用済み 3人 lineup を短縮評価
+- `scripts/rl/eval-run-4p.sh`: 採用済み 4人 lineup を短縮評価
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
+- `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
+- `scripts/report-rl-registry.js`: registry の棚卸しレポート出力
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）
+- `models/rl_model/portfolio/`: 実ゲームで使う配布用 browser JSON
 - `models/rl_model/`: 学習済みモデルと metrics 出力先
 
 テスト:

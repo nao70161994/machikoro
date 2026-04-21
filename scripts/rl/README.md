@@ -576,6 +576,14 @@ npm run summarize-rl-metrics -- \
 `AI（学習・ランダム）` はこの portfolio 配下のモデルからランダム選択する。
 `js/RLModelPortfolio.js` は人数別に候補を絞り込む。現時点では2人戦は既存の2人向け候補、3〜4人戦は採用済みの `self-only-4p-h256-lr1e5-5000-seed102` を使う。採用モデルと配布ファイルの整合性は `tests/rl-model-portfolio.test.js` で検査する。
 
+UI 上の説明文もこの挙動に合わせている。ローカル/オンラインのプレイヤー設定では、2人戦は「2人用の複数モデルからランダム」、3〜4人戦は「3〜4人用の学習モデルからランダム」と表示する。5人以上では `AI（学習）` を無効化し、`AI（最強）` を案内する。
+
+現時点の実運用:
+
+- 2人戦主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
+- 2人戦の補助多様性候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
+- 3〜4人戦採用: `self-only-4p-h256-lr1e5-5000-seed102`
+
 台帳に記録する主な情報:
 
 - `id`: run / モデル識別子。
@@ -630,6 +638,7 @@ npm run render-rl-registry-evals -- \
 学習中の top-k と後評価はズレる前提で扱う。採用判断は学習中 score ではなく、`eval-run-topk.sh` などで best/top2/top3 を同条件・十分なゲーム数で再評価した結果を優先する。
 `npm run validate-rl-registry` は、active model の評価ゲーム数不足や recommended model の style 重複を警告する。警告は即エラーではないが、採用判断前に理由を `registry.json` の `reason` / `style.summary` に残す。
 `npm run report-rl-registry` は status 別件数、警告、各モデルの最新評価数と style を一覧する。候補棚卸しや archive 判断前の確認に使う。
+text 出力に加えて markdown/json と `actions` セクションを持ち、警告から再評価・多様性見直し・eval 追記の候補作業を拾える。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
 
 ```bash
