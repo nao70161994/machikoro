@@ -18,6 +18,8 @@ const TEST_GROUPS = {
         'validate-rl-registry.test.js',
         'report-rl-registry.test.js',
         'audit-rl-portfolio.test.js',
+        'plan-rl-next-actions.test.js',
+        'review-rl-adoptions.test.js',
         'rl-train.test.js',
         'rl-match-trace.test.js',
         'compare-rl-match-trace.test.js',

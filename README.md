@@ -228,6 +228,8 @@ sh scripts/rl/eval-run-4p.sh 100 self-only-4p-h256-lr1e5-5000-seed102
 npm run validate-rl-registry
 npm run report-rl-registry
 npm run audit-rl-portfolio
+npm run plan-rl-next-actions
+npm run review-rl-adoptions
 ```
 
 棚卸し結果を履歴として残す場合:
@@ -281,6 +283,8 @@ RL スクリプト / モデル:
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
 - `scripts/report-rl-registry.js`: registry の棚卸しレポート出力
 - `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人評価カバレッジ監査
+- `scripts/plan-rl-next-actions.js`: 台帳と監査から次にやる評価・見直し作業を優先順位付きで抽出
+- `scripts/review-rl-adoptions.js`: 2人戦候補を weighted score で並べ、現採用モデルと比較すべき challenger を抽出
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）

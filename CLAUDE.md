@@ -22,6 +22,8 @@
 - `AI（深層学習・ランダム）` は人数別に portfolio からランダム選択します。2人戦は2人用候補、3〜4人戦は多人数候補、5人以上は未対応で `CPU（最強）` を使います。
 - 台帳更新後は `npm run validate-rl-registry` と `npm run report-rl-registry` を実行してください。履歴を残すときは `--format markdown --output ...` を使います。
 - 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人の不足がすぐ見えます。
+- 次にやるべき再評価・多様性見直しを機械的に出したいときは `npm run plan-rl-next-actions` を使ってください。
+- 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
 ## 次に読む文書
@@ -62,6 +64,8 @@
 - 3人/4人の採用済みモデル評価: `sh scripts/rl/eval-run-3p.sh 100 <model-id>`, `sh scripts/rl/eval-run-4p.sh 100 <model-id>`
 - RL 台帳の検証/棚卸し: `npm run validate-rl-registry`, `npm run report-rl-registry`
 - RL 採用モデルの評価監査: `npm run audit-rl-portfolio`
+- RL 次アクション抽出: `npm run plan-rl-next-actions`
+- RL 2人戦採用候補レビュー: `npm run review-rl-adoptions`
 - RL metrics 集計: `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`
 
 ## 編集時の基本

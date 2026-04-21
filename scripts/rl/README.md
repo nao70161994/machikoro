@@ -600,6 +600,7 @@ UI 上の説明文もこの挙動に合わせている。ローカル/オンラ�
 npm run validate-rl-registry
 npm run report-rl-registry
 npm run audit-rl-portfolio
+npm run plan-rl-next-actions
 npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/eval-summary.csv
 ```
 
@@ -641,6 +642,8 @@ npm run render-rl-registry-evals -- \
 `npm run report-rl-registry` は status 別件数、警告、各モデルの最新評価数と style を一覧する。候補棚卸しや archive 判断前の確認に使う。
 text 出力に加えて markdown/json と `actions` セクションを持ち、警告から再評価・多様性見直し・eval 追記の候補作業を拾える。
 `npm run audit-rl-portfolio` は `recommendedActiveModels` だけに絞って、2人JS評価、3人lineup評価、4人lineup評価、portfolio 配布整合を監査する。
+`npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
+`npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
 
 ```bash
