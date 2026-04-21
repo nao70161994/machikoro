@@ -87,7 +87,7 @@ class PolicyValueNet:
     """
 
     def __init__(self, state_dim: int, num_actions: int,
-                 hidden: int = 256, lr: float = 3e-4):
+                 hidden: int = 256, lr: float = 3e-4, target_slots: int = 0):
         self.shared = [
             Layer(state_dim, hidden, activation=True,  lr=lr),
             Layer(hidden,    hidden, activation=True,  lr=lr),
@@ -100,6 +100,14 @@ class PolicyValueNet:
         # 渡すカード (38) と受け取るカード (38) を独立して選択
         self.bc_give_head = Layer(hidden, NUM_CARDS, activation=False, lr=lr)
         self.bc_take_head = Layer(hidden, NUM_CARDS, activation=False, lr=lr)
+        self.target_slots = int(target_slots or 0)
+        self.tv_target_head = None
+        self.bc_target_head = None
+        self.mover_target_head = None
+        if self.target_slots > 0:
+            self.tv_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
+            self.bc_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
+            self.mover_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
 
         self._h = None      # 共有層の出力（backward 用）
 
@@ -152,6 +160,33 @@ class PolicyValueNet:
         bc_give_p, bc_take_p, value, _, _ = self.forward_bc_details(state)
         return bc_give_p, bc_take_p, value
 
+    def forward_target_details(self, state: np.ndarray, kind: str):
+        """
+        多人数戦 target head 用 forward。
+        kind: "tv" | "bc" | "mover"
+        returns: (target_probs, value, target_logits)
+        """
+        head = {
+            "tv": self.tv_target_head,
+            "bc": self.bc_target_head,
+            "mover": self.mover_target_head,
+        }.get(kind)
+        if head is None:
+            raise ValueError(f"target head unavailable: {kind}")
+
+        h = state
+        for layer in self.shared:
+            h = layer.forward(h)
+        self._h = h
+
+        target_logits = head.forward(h)
+        target_probs = softmax(target_logits)
+
+        v_raw = self.value_head.forward(h)
+        value = float(np.tanh(v_raw[0]))
+
+        return target_probs, value, target_logits
+
     def backward(self, d_policy: np.ndarray, d_value: float):
         """通常フェーズ用 backward"""
         dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
@@ -178,6 +213,12 @@ class PolicyValueNet:
         specs.append(("value",  self.value_head))
         specs.append(("bc_give", self.bc_give_head))
         specs.append(("bc_take", self.bc_take_head))
+        if self.tv_target_head is not None:
+            specs.append(("tv_target", self.tv_target_head))
+        if self.bc_target_head is not None:
+            specs.append(("bc_target", self.bc_target_head))
+        if self.mover_target_head is not None:
+            specs.append(("mover_target", self.mover_target_head))
         return specs
 
     def save(self, path: str):
@@ -214,6 +255,17 @@ class PolicyValueNet:
                     raise SchemaVersionError(
                         "非互換なチェックポイントです。models/rl_model/model.npz を削除して再実行してください。"
                     )
+                self.target_slots = int(data["tv_target_b"].shape[0]) if "tv_target_b" in data.files else 0
+                if self.target_slots <= 0:
+                    self.tv_target_head = None
+                    self.bc_target_head = None
+                    self.mover_target_head = None
+                if self.target_slots > 0 and self.tv_target_head is None:
+                    hidden = self.shared[-1].W.shape[1]
+                    lr = self.policy_head.lr
+                    self.tv_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
+                    self.bc_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
+                    self.mover_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
                 specs = self._layer_specs()
 
                 # shape チェック

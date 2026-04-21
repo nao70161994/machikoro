@@ -2,6 +2,18 @@
 
 最終更新: 2026-04-21
 
+## 現在の実装状況
+
+- 実装済み
+  - Python checkpoint / browser export は optional target head を保持できる
+  - JS `RLCPU` は optional target head があれば TV / BC / Mover の対象選択に使える
+  - head が無い既存モデルは現行 heuristic へ fallback する
+- 未実装
+  - 学習ループで target head を更新する処理
+  - Python 推論側で target head を使う処理
+  - target head ありモデルの学習プリセット
+  - Python/JS parity fixture の target head ケース
+
 ## 目的
 
 3人戦 / 4人戦の RL で、以下の「相手選択」を heuristic から policy に移す。

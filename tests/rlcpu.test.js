@@ -123,6 +123,24 @@ function buildParityModelWithStateDim(context, stateDim) {
     };
 }
 
+function buildTargetHeadModel(context, stateDim, targetBiases = {}) {
+    const model = buildParityModelWithStateDim(context, stateDim);
+    model.numTargetSlots = 3;
+    model.layers.tvTargetHead = {
+        weights: Array.from({ length: model.hiddenSize }, () => [0, 0, 0]),
+        bias: targetBiases.tv || [0, 0, 0],
+    };
+    model.layers.businessTargetHead = {
+        weights: Array.from({ length: model.hiddenSize }, () => [0, 0, 0]),
+        bias: targetBiases.business || [0, 0, 0],
+    };
+    model.layers.moverTargetHead = {
+        weights: Array.from({ length: model.hiddenSize }, () => [0, 0, 0]),
+        bias: targetBiases.mover || [0, 0, 0],
+    };
+    return model;
+}
+
 function loadPythonFixture(scenario) {
     const result = spawnSync('python3', ['-m', 'scripts.rl.export_debug_fixture', '--scenario', scenario], {
         cwd: process.cwd(),
@@ -733,6 +751,64 @@ runTest('RLCPU: 4人戦の対象選択は脅威度最大の相手へ固定され
     const businessMove = cpu.chooseBusinessMove(game);
     assert.ok(businessMove);
     assert.strictEqual(businessMove.targetIndex, 2);
+
+    game.pendingBusiness = false;
+    game.pendingMover = 1;
+    const moverMove = cpu.chooseMoverMove(game);
+    assert.ok(moverMove);
+    assert.strictEqual(moverMove.targetIndex, 2);
+});
+
+runTest('RLCPU: target head があれば4人戦の対象選択に使う', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, createCardByName, GAME_PHASES, CARDS } = context;
+    const game = new GameManager(4);
+    game.__shopStock = createDefaultShopStock(context);
+    game.phase = GAME_PHASES.PENDING;
+    game.currentPlayerIndex = 0;
+    game.pendingTV = 1;
+
+    const current = game.currentPlayer();
+    current.cards = [
+        createCardByName('テレビ局'),
+        createCardByName('ビジネスセンター'),
+        createCardByName('引越し屋'),
+        createCardByName('パン屋'),
+    ];
+    current.dormantCards = [];
+
+    game.players[1].coins = 20;
+    game.players[1].cards = [createCardByName('森林')];
+    game.players[1].dormantCards = [];
+
+    game.players[2].coins = 6;
+    game.players[2].cards = [createCardByName('カフェ')];
+    game.players[2].dormantCards = [];
+
+    game.players[3].coins = 4;
+    game.players[3].cards = [createCardByName('麦畑')];
+    game.players[3].dormantCards = [];
+
+    const model = buildTargetHeadModel(context, 353, {
+        tv: [0, 5, 0],
+        business: [0, 5, 0],
+        mover: [0, 5, 0],
+    });
+    const bakeryIndex = CARDS.findIndex(card => card.name === 'パン屋');
+    const cafeIndex = CARDS.findIndex(card => card.name === 'カフェ');
+    model.layers.businessGiveHead.bias[bakeryIndex] = 5;
+    model.layers.businessTakeHead.bias[cafeIndex] = 5;
+
+    const cpu = new RLCPU(model);
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
+
+    game.pendingTV = 0;
+    game.pendingBusiness = true;
+    const businessMove = cpu.chooseBusinessMove(game);
+    assert.ok(businessMove);
+    assert.strictEqual(businessMove.targetIndex, 2);
+    assert.strictEqual(businessMove.myCard, 'パン屋');
+    assert.strictEqual(businessMove.theirCard, 'カフェ');
 
     game.pendingBusiness = false;
     game.pendingMover = 1;

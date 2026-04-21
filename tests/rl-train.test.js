@@ -1,6 +1,8 @@
 const assert = require('assert');
 const { spawnSync } = require('child_process');
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 const { runTest } = require('./helpers/test-utils');
 
 function runPython(code) {
@@ -193,6 +195,28 @@ coins = [
 print(json.dumps(coins, ensure_ascii=False))
 `);
     assert.deepStrictEqual(JSON.parse(output), [1, 15, 12]);
+});
+
+runTest('rl train: target head 付き checkpoint を export できる', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-target-head-'));
+    const ckptBase = path.join(tmpDir, 'model');
+    const exportPath = path.join(tmpDir, 'model.browser.json');
+    const output = runPython(`
+import json
+from scripts.rl.network import PolicyValueNet
+from scripts.rl.export_model import export_checkpoint
+
+net = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=3)
+net.save(r"${ckptBase}")
+bundle = export_checkpoint(r"${ckptBase}.npz", r"${exportPath}")
+print(bundle["numTargetSlots"])
+print(sorted(k for k in bundle["layers"].keys() if "TargetHead" in k))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '3');
+    assert.deepStrictEqual(JSON.parse(lines[1].replace(/'/g, '"')), ['businessTargetHead', 'moverTargetHead', 'tvTargetHead']);
+    const exported = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
+    assert.strictEqual(exported.numTargetSlots, 3);
 });
 
 runTest('rl train: build stats を集計して整形できる', () => {

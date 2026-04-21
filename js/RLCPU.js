@@ -8,6 +8,7 @@ class RLCPU {
         this.numActions = modelData.numActions;
         this.hiddenSize = modelData.hiddenSize;
         this.numCards = modelData.numCards;
+        this.numTargetSlots = modelData.numTargetSlots || 0;
         this._validateModel();
     }
 
@@ -74,6 +75,9 @@ class RLCPU {
         this._validateLayer(this.model.layers.valueHead, this.hiddenSize, 1, "valueHead");
         this._validateLayer(this.model.layers.businessGiveHead, this.hiddenSize, this.numCards, "businessGiveHead");
         this._validateLayer(this.model.layers.businessTakeHead, this.hiddenSize, this.numCards, "businessTakeHead");
+        this._validateOptionalTargetLayer(this.model.layers.tvTargetHead, "tvTargetHead");
+        this._validateOptionalTargetLayer(this.model.layers.businessTargetHead, "businessTargetHead");
+        this._validateOptionalTargetLayer(this.model.layers.moverTargetHead, "moverTargetHead");
     }
 
     _validateLayer(layer, input, output, label) {
@@ -91,6 +95,11 @@ class RLCPU {
                 throw new Error(`RLCPU layer shape mismatch: ${label}`);
             }
         }
+    }
+
+    _validateOptionalTargetLayer(layer, label) {
+        if (!layer) return;
+        this._validateLayer(layer, this.hiddenSize, this.numTargetSlots, label);
     }
 
     _matVec(layer, input) {
@@ -158,6 +167,20 @@ class RLCPU {
         };
     }
 
+    forwardTarget(state, kind) {
+        const layer = this._targetLayerForKind(kind);
+        if (!layer) {
+            throw new Error(`RLCPU target head unavailable: ${kind}`);
+        }
+        const hidden = this._sharedForward(state);
+        const targetLogits = this._matVec(layer, hidden);
+        const valueRaw = this._matVec(this.model.layers.valueHead, hidden);
+        return {
+            target: this._softmax(targetLogits),
+            value: this._tanh(valueRaw[0]),
+        };
+    }
+
     maskPolicy(policy, mask) {
         if (!Array.isArray(policy) || !Array.isArray(mask) || policy.length !== mask.length) {
             throw new Error("RLCPU maskPolicy requires same-length arrays");
@@ -186,6 +209,13 @@ class RLCPU {
             }
         }
         return bestAction;
+    }
+
+    _targetLayerForKind(kind) {
+        if (kind === 'tv') return this.model.layers.tvTargetHead || null;
+        if (kind === 'business') return this.model.layers.businessTargetHead || null;
+        if (kind === 'mover') return this.model.layers.moverTargetHead || null;
+        return null;
     }
 
     chooseAction(state, mask) {
@@ -264,6 +294,92 @@ class RLCPU {
         const opponentIndex = this._selectOpponentIndex(game);
         const opponent = game.players[opponentIndex];
         return { current, opponent, opponentIndex };
+    }
+
+    _targetSlotsForGame(game) {
+        const slots = [];
+        for (let index = 0; index < game.players.length; index++) {
+            if (index === game.currentPlayerIndex) continue;
+            slots.push({
+                playerIndex: index,
+                player: game.players[index],
+                score: this._playerThreatScore(game.players[index]),
+            });
+        }
+        slots.sort((a, b) => b.score - a.score);
+        return slots;
+    }
+
+    _targetMask(game, kind) {
+        const slots = this._targetSlotsForGame(game);
+        const mask = new Array(this.numTargetSlots).fill(0);
+        for (let slotIndex = 0; slotIndex < Math.min(slots.length, this.numTargetSlots); slotIndex++) {
+            const player = slots[slotIndex].player;
+            if (kind === 'tv') {
+                if ((player.coins || 0) > 0) mask[slotIndex] = 1;
+                continue;
+            }
+            if (kind === 'business') {
+                if (player.getMinorCards().length > 0) mask[slotIndex] = 1;
+                continue;
+            }
+            if (kind === 'mover') {
+                mask[slotIndex] = 1;
+            }
+        }
+        return { mask, slots };
+    }
+
+    _businessActionMaskForTarget(game, targetIndex) {
+        const mask = new Array(RLCPU.NUM_ACTIONS).fill(0);
+        const current = game.currentPlayer();
+        const target = game.players[targetIndex];
+        if (!current || !target) {
+            mask[RLCPU.ACTIONS.PASS] = 1;
+            return mask;
+        }
+        const myCounts = this._cardCounts(current, true);
+        const theirCounts = this._cardCounts(target, true);
+        for (let giveIndex = 0; giveIndex < CARDS.length; giveIndex++) {
+            const giveCard = CARDS[giveIndex];
+            if ((myCounts[giveCard.name] || 0) <= 0 || giveCard.color === "purple") continue;
+            for (let takeIndex = 0; takeIndex < CARDS.length; takeIndex++) {
+                const takeCard = CARDS[takeIndex];
+                if ((theirCounts[takeCard.name] || 0) <= 0 || takeCard.color === "purple") continue;
+                mask[RLCPU.ACTIONS.BC_BASE + giveIndex * CARDS.length + takeIndex] = 1;
+            }
+        }
+        if (!mask.some(Boolean)) {
+            mask[RLCPU.ACTIONS.PASS] = 1;
+        }
+        return mask;
+    }
+
+    _selectTargetIndex(game, kind) {
+        const layer = this._targetLayerForKind(kind);
+        if (!layer || this.numTargetSlots <= 0) {
+            return this._selectOpponentIndex(game);
+        }
+        const { mask, slots } = this._targetMask(game, kind);
+        if (!mask.some(Boolean)) {
+            return this._selectOpponentIndex(game);
+        }
+        const state = this.encodeGameState(game);
+        const hidden = this._sharedForward(state);
+        const logits = this._matVec(layer, hidden);
+        const probs = this.maskPolicy(this._softmax(logits), mask);
+        let bestSlot = -1;
+        let bestScore = -1;
+        for (let slotIndex = 0; slotIndex < probs.length; slotIndex++) {
+            if (probs[slotIndex] > bestScore) {
+                bestScore = probs[slotIndex];
+                bestSlot = slotIndex;
+            }
+        }
+        if (bestSlot < 0 || !slots[bestSlot]) {
+            return this._selectOpponentIndex(game);
+        }
+        return slots[bestSlot].playerIndex;
     }
 
     _selectOpponentIndex(game) {
@@ -517,18 +633,25 @@ class RLCPU {
     }
 
     chooseTVTarget(game) {
-        return this._currentAndOpponent(game).opponentIndex;
+        return this._selectTargetIndex(game, 'tv');
     }
 
     chooseBusinessMove(game) {
-        const { action } = this._chooseForGame(game);
+        let targetIndex = this._currentAndOpponent(game).opponentIndex;
+        let action;
+        if (this._targetLayerForKind('business') && this.numTargetSlots > 0) {
+            targetIndex = this._selectTargetIndex(game, 'business');
+            action = this.chooseBusinessAction(this.encodeGameState(game), this._businessActionMaskForTarget(game, targetIndex)).action;
+        } else {
+            action = this._chooseForGame(game).action;
+        }
         if (action < RLCPU.ACTIONS.BC_BASE || action >= RLCPU.ACTIONS.BC_BASE + RLCPU.ACTIONS.BC_SIZE) return null;
         const combo = action - RLCPU.ACTIONS.BC_BASE;
         const giveIndex = Math.floor(combo / CARDS.length);
         const takeIndex = combo % CARDS.length;
         return {
             myCard: CARDS[giveIndex].name,
-            targetIndex: this._currentAndOpponent(game).opponentIndex,
+            targetIndex,
             theirCard: CARDS[takeIndex].name,
         };
     }
@@ -544,7 +667,7 @@ class RLCPU {
         if (action < RLCPU.ACTIONS.MOVER_BASE || action >= RLCPU.ACTIONS.MOVER_BASE + CARDS.length) return null;
         return {
             cardIndex: CARDS[action - RLCPU.ACTIONS.MOVER_BASE].name,
-            targetIndex: this._currentAndOpponent(game).opponentIndex,
+            targetIndex: this._selectTargetIndex(game, 'mover'),
         };
     }
 

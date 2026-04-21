@@ -83,7 +83,7 @@ player_count正規化         1
 合計                      353
 ```
 
-現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、Python/JS ともに「脅威度が最大の相手」へ自動選択する。対象選択 head は未実装なので、4人専用モデルの次段階で追加する。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
+現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、Python/JS ともに「脅威度が最大の相手」へ自動選択する。対象選択 head は未実装なので、4人専用モデルの次段階で追加する。checkpoint / browser export / `js/RLCPU.js` には optional target head の受け皿を追加済みで、head が無い既存モデルは現状 heuristic に fallback する。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
 
 ### 行動空間（NUM_ACTIONS = 1580）
 

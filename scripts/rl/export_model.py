@@ -39,6 +39,14 @@ def _load_layer(data, prefix):
     }
 
 
+def _load_optional_layer(data, prefix):
+    weight_key = f"{prefix}_W"
+    bias_key = f"{prefix}_b"
+    if weight_key not in data or bias_key not in data:
+        return None
+    return _load_layer(data, prefix)
+
+
 def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DATA"):
     with np.load(input_path) as data:
         schema_version = int(data.get("schema_version", -1))
@@ -53,6 +61,9 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         value = _load_layer(data, "value")
         bc_give = _load_layer(data, "bc_give")
         bc_take = _load_layer(data, "bc_take")
+        tv_target = _load_optional_layer(data, "tv_target")
+        bc_target = _load_optional_layer(data, "bc_target")
+        mover_target = _load_optional_layer(data, "mover_target")
 
     bundle = {
         "formatVersion": 1,
@@ -62,6 +73,7 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         "hiddenSize": shared0["shape"]["output"],
         "numActions": policy["shape"]["output"],
         "numCards": NUM_CARDS,
+        "numTargetSlots": int(tv_target["shape"]["output"]) if tv_target else 0,
         "layers": {
             "shared": [shared0, shared1],
             "policyHead": policy,
@@ -70,6 +82,12 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
             "businessTakeHead": bc_take,
         },
     }
+    if tv_target:
+        bundle["layers"]["tvTargetHead"] = tv_target
+    if bc_target:
+        bundle["layers"]["businessTargetHead"] = bc_target
+    if mover_target:
+        bundle["layers"]["moverTargetHead"] = mover_target
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     if fmt == "js":
