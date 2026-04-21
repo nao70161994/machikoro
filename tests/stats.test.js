@@ -133,7 +133,7 @@ runTest('renderStats はCPU別フィルタを表示する', () => {
     const game = makeGame();
     rt.recordGameStats(game.players[0], game, [{ difficulty: 'expert' }, null]);
     rt.renderStats();
-    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('AI（最強）')"));
+    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('CPU（最強）')"));
 });
 
 runTest('recordGameStats は reset なしで二重記録しない', () => {

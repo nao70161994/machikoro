@@ -194,14 +194,14 @@ runTest('main changeCount は人数を2..10にクランプして表示を更新�
     assert.strictEqual(rt.__test.elements.playerCount.textContent, 10);
 });
 
-runTest('main renderPlayerSettings は AI（最強）オプションを表示する', () => {
+runTest('main renderPlayerSettings は CPU（最強）オプションを表示する', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(2);
     rt.__test.setPlayerSettings([{ type: 'cpu', difficulty: 'expert' }, { type: 'human', difficulty: 'normal' }]);
 
     rt.renderPlayerSettings();
 
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（最強）'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（最強）'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
 });
 
@@ -224,7 +224,7 @@ runTest('main renderPlayerSettings は学習AIの選択方針を説明する', (
 
     rt.renderPlayerSettings();
 
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('3〜4人用の学習モデルからランダム'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('3〜4人用の深層学習モデルからランダム'));
 });
 
 runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にする', () => {
@@ -242,7 +242,7 @@ runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にす
 
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="rl" disabled'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert" selected'));
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（学習）は現在2〜4人戦のみ対応です'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（深層学習）は現在2〜4人戦のみ対応です'));
 });
 
 runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', () => {

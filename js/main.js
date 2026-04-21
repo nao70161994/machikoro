@@ -45,18 +45,18 @@ function getLocalCpuLabel(difficulty) {
     if (difficulty === 'weak') return 'CPU（弱）';
     if (difficulty === 'normal') return 'CPU（普通）';
     if (difficulty === 'strong') return 'CPU（強）';
-    if (difficulty === 'rl') return 'AI（学習）';
-    return 'AI（最強）';
+    if (difficulty === 'rl') return 'AI（深層学習）';
+    return 'CPU（最強）';
 }
 
 function getRlCpuSettingNote(playerCount) {
     if (playerCount > 4) {
-        return 'AI（学習）は現在2〜4人戦のみ対応です。5人以上ではAI（最強）を使ってください。';
+        return 'AI（深層学習）は現在2〜4人戦のみ対応です。5人以上ではCPU（最強）を使ってください。';
     }
     if (playerCount >= 3) {
-        return 'AI（学習・ランダム）は3〜4人用の学習モデルからランダムに選びます。';
+        return 'AI（深層学習・ランダム）は3〜4人用の深層学習モデルからランダムに選びます。';
     }
-    return 'AI（学習・ランダム）は2人用の複数モデルからランダムに選びます。';
+    return 'AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。';
 }
 
 function createCpuPlayer(difficulty, options = {}) {
@@ -65,7 +65,7 @@ function createCpuPlayer(difficulty, options = {}) {
             return RLModelPortfolio.createRandomCpu(options);
         } catch (error) {
             console.error(error);
-            alert("学習AIモデルを読み込めませんでした。AI（最強）で代替します。");
+            alert("深層学習AIモデルを読み込めませんでした。CPU（最強）で代替します。");
             return new CPU('expert', options);
         }
     }
@@ -106,8 +106,8 @@ function renderPlayerSettings() {
                     <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
                     <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                     <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
-                    <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>AI（最強）</option>
-                    <option value="rl" ${rlDisabled} ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（学習・ランダム）</option>
+                    <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>CPU（最強）</option>
+                    <option value="rl" ${rlDisabled} ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
                 </select>
             </div>
             ${s.type === "human" ? `
