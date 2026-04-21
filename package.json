@@ -14,6 +14,7 @@
     "eval-rl-models": "node scripts/eval-rl-models.js",
     "eval-rl-business-scenario": "node scripts/eval-rl-business-scenario.js",
     "render-rl-registry-evals": "node scripts/render-rl-registry-evals.js",
+    "update-rl-registry-from-eval": "node scripts/update-rl-registry-from-eval.js",
     "validate-rl-registry": "node scripts/validate-rl-registry.js",
     "report-rl-registry": "node scripts/report-rl-registry.js",
     "audit-rl-portfolio": "node scripts/audit-rl-portfolio.js",

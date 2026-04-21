@@ -28,6 +28,7 @@ const TEST_GROUPS = {
         'eval-rl-vs-js.test.js',
         'eval-rl-models.test.js',
         'render-rl-registry-evals.test.js',
+        'update-rl-registry-from-eval.test.js',
         'eval-rl-business-scenario.test.js',
         'summarize-rl-metrics.test.js',
     ],
