@@ -40,6 +40,50 @@ function topCardOverlap(a, b, limit = 5) {
     return bCards.filter(card => aCards.has(card)).length;
 }
 
+function modelEvalsByType(model, type) {
+    const evals = Array.isArray(model && model.evals) ? model.evals : [];
+    return evals.filter(entry => entry && entry.type === type);
+}
+
+function bestEvalByType(model, type) {
+    return modelEvalsByType(model, type)
+        .slice()
+        .sort((a, b) => (
+            ((b.gamesPerOpponent || b.gamesPerLineup || 0) - (a.gamesPerOpponent || a.gamesPerLineup || 0)) ||
+            String(b.date || '').localeCompare(String(a.date || ''))
+        ))[0] || null;
+}
+
+function modelPathIsPortfolio(model) {
+    return typeof (model && model.path) === 'string'
+        && model.path.startsWith('models/rl_model/portfolio/');
+}
+
+function hasOpponentCoverage(evalEntry, requiredOpponents) {
+    const opponents = evalEntry && evalEntry.opponents ? evalEntry.opponents : {};
+    return requiredOpponents.every(name => Object.prototype.hasOwnProperty.call(opponents, name));
+}
+
+function hasLineupCoverage(evalEntry, minimumLineups = 1) {
+    const lineups = evalEntry && evalEntry.lineups ? evalEntry.lineups : {};
+    return Object.keys(lineups).length >= minimumLineups;
+}
+
+function summarizeEvalCoverage(model) {
+    const jsEval = bestEvalByType(model, 'js');
+    const lineup4pEval = bestEvalByType(model, 'js-lineup-stability') || bestEvalByType(model, 'js-lineup');
+    const lineup3pEval = bestEvalByType(model, 'js-lineup-3p-stability') || bestEvalByType(model, 'js-lineup-3p');
+    return {
+        portfolioPath: modelPathIsPortfolio(model),
+        best2pGames: jsEval ? (jsEval.gamesPerOpponent || 0) : 0,
+        has2pOpponents: hasOpponentCoverage(jsEval, ['weak', 'normal', 'strong']),
+        best4pGames: lineup4pEval ? (lineup4pEval.gamesPerLineup || 0) : 0,
+        has4pLineups: hasLineupCoverage(lineup4pEval, 1),
+        best3pGames: lineup3pEval ? (lineup3pEval.gamesPerLineup || 0) : 0,
+        has3pLineups: hasLineupCoverage(lineup3pEval, 1),
+    };
+}
+
 function validateRegistry(registry, options = {}) {
     const errors = [];
     const warnings = [];
@@ -85,8 +129,26 @@ function validateRegistry(registry, options = {}) {
         } else {
             const model = models.find(model => model.id === entry.id);
             const games = model ? bestEvalGames(model) : 0;
+            const coverage = model ? summarizeEvalCoverage(model) : null;
             if (entry.role && String(entry.role).includes('main') && primaryMinimumGames > 0 && games < primaryMinimumGames) {
                 warnings.push(`${entry.id}: main 採用には評価ゲーム数が少なすぎます (${games} < ${primaryMinimumGames})`);
+            }
+            if (entry.role && String(entry.role).includes('adopted') && model && model.status !== 'adopted') {
+                warnings.push(`${entry.id}: recommended adopted role なのに model.status=${model.status || 'unknown'} です`);
+            }
+            if (entry.role && String(entry.role).includes('adopted') && coverage && !coverage.portfolioPath) {
+                warnings.push(`${entry.id}: recommended adopted role なのに portfolio 配下の配布モデルを参照していません`);
+            }
+            if (entry.role && String(entry.role).includes('2p') && coverage && !coverage.has2pOpponents) {
+                warnings.push(`${entry.id}: 2人用採用候補なのに weak/normal/strong の2人JS評価が不足しています`);
+            }
+            if (entry.role && String(entry.role).includes('3p-4p') && coverage) {
+                if (!coverage.has3pLineups) {
+                    warnings.push(`${entry.id}: 3〜4人用採用候補なのに 3人 lineup 評価が不足しています`);
+                }
+                if (!coverage.has4pLineups) {
+                    warnings.push(`${entry.id}: 3〜4人用採用候補なのに 4人 lineup 評価が不足しています`);
+                }
             }
             const key = model ? modelStyleKey(model) : '';
             if (key) {
@@ -140,6 +202,12 @@ module.exports = {
     modelTopCards,
     modelStyleKey,
     topCardOverlap,
+    modelEvalsByType,
+    bestEvalByType,
+    modelPathIsPortfolio,
+    hasOpponentCoverage,
+    hasLineupCoverage,
+    summarizeEvalCoverage,
     validateRegistry,
     printValidation,
 };

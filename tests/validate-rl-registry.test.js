@@ -7,6 +7,7 @@ const {
     modelTopCards,
     modelStyleKey,
     topCardOverlap,
+    summarizeEvalCoverage,
 } = require('../scripts/validate-rl-registry.js');
 
 runTest('validateRegistry は推奨モデルが台帳に存在することを検証する', () => {
@@ -101,6 +102,44 @@ runTest('validateRegistry helper は評価数と style key を返す', () => {
         { style: { topCardsVsStrong: ['a', 'b', 'c'] } },
         { style: { topCardsVsStrong: ['b', 'c', 'd'] } }
     ), 2);
+});
+
+runTest('validateRegistry helper は 2p/3p/4p の評価カバレッジを要約する', () => {
+    const coverage = summarizeEvalCoverage({
+        path: 'models/rl_model/portfolio/m1.browser.json',
+        evals: [
+            { type: 'js', gamesPerOpponent: 100, opponents: { weak: {}, normal: {}, strong: {} } },
+            { type: 'js-lineup-stability', gamesPerLineup: 80, lineups: { 'rl+weak+normal+strong': {} } },
+            { type: 'js-lineup-3p-stability', gamesPerLineup: 60, lineups: { 'rl+normal+strong': {} } },
+        ],
+    });
+    assert.strictEqual(coverage.portfolioPath, true);
+    assert.strictEqual(coverage.best2pGames, 100);
+    assert.strictEqual(coverage.has2pOpponents, true);
+    assert.strictEqual(coverage.best4pGames, 80);
+    assert.strictEqual(coverage.has4pLineups, true);
+    assert.strictEqual(coverage.best3pGames, 60);
+    assert.strictEqual(coverage.has3pLineups, true);
+});
+
+runTest('validateRegistry は recommended role に必要な評価カバレッジ不足を警告する', () => {
+    const result = validateRegistry({
+        models: [
+            { id: 'm2p', status: 'adopted', path: 'a.json', style: { label: 'style-a' }, evals: [] },
+            { id: 'm4p', status: 'adopted', path: 'models/rl_model/portfolio/m4p.browser.json', style: { label: 'style-b' }, evals: [] },
+        ],
+        portfolioPolicy: {
+            recommendedActiveModels: [
+                { id: 'm2p', role: 'adopted-2p-main' },
+                { id: 'm4p', role: 'adopted-3p-4p' },
+            ],
+        },
+    });
+    assert.strictEqual(result.ok, true);
+    assert.ok(result.warnings.some(warning => warning.includes('2人用採用候補')));
+    assert.ok(result.warnings.some(warning => warning.includes('3人 lineup 評価が不足')));
+    assert.ok(result.warnings.some(warning => warning.includes('4人 lineup 評価が不足')));
+    assert.ok(result.warnings.some(warning => warning.includes('portfolio 配下')));
 });
 
 runTest('validateRegistry は現行registryを通せる', () => {

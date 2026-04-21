@@ -7,6 +7,7 @@ const {
     bestEvalGames,
     latestEval,
     modelStyleKey,
+    summarizeEvalCoverage,
 } = require('./validate-rl-registry.js');
 
 function parseArgs(argv) {
@@ -51,8 +52,19 @@ function buildRegistryReport(registry) {
             style: modelStyleKey(model),
             bestEvalGames: bestEvalGames(model),
             latestEval: modelEvalLabel(model),
+            coverage: summarizeEvalCoverage(model),
         })),
     };
+    report.recommended = ((((registry.portfolioPolicy || {}).recommendedActiveModels) || []).map(entry => {
+        const model = models.find(item => item.id === entry.id);
+        return {
+            id: entry.id,
+            role: entry.role || '',
+            style: model ? modelStyleKey(model) : '',
+            status: model ? (model.status || '') : 'missing',
+            coverage: model ? summarizeEvalCoverage(model) : null,
+        };
+    }));
     report.actions = recommendedActions(report);
     return report;
 }
@@ -88,6 +100,18 @@ function renderText(report) {
         lines.push('actions:');
         for (const action of report.actions) lines.push(`- ${action.type}: ${action.warning}`);
     }
+    if (report.recommended && report.recommended.length > 0) {
+        lines.push('recommended:');
+        for (const entry of report.recommended) {
+            const coverage = entry.coverage || {};
+            lines.push(
+                `- ${entry.id} [${entry.role}] status=${entry.status || 'n/a'} ` +
+                `2p=${coverage.has2pOpponents ? coverage.best2pGames : 'missing'} ` +
+                `3p=${coverage.has3pLineups ? coverage.best3pGames : 'missing'} ` +
+                `4p=${coverage.has4pLineups ? coverage.best4pGames : 'missing'}`
+            );
+        }
+    }
     lines.push('models:');
     for (const model of report.models) {
         lines.push(`- ${model.id} [${model.status}] eval=${model.latestEval} style=${model.style || 'n/a'}`);
@@ -113,6 +137,24 @@ function renderMarkdown(report) {
     if (report.errors.length > 0) {
         lines.push('', '## Errors');
         for (const error of report.errors) lines.push(`- ${error}`);
+    }
+    if (report.recommended && report.recommended.length > 0) {
+        lines.push(
+            '',
+            '## Recommended',
+            '',
+            '| id | role | status | 2p | 3p | 4p |',
+            '|---|---|---|---:|---:|---:|'
+        );
+        for (const entry of report.recommended) {
+            const coverage = entry.coverage || {};
+            lines.push(
+                `| \`${entry.id}\` | ${entry.role} | ${entry.status || 'n/a'} | ` +
+                `${coverage.has2pOpponents ? coverage.best2pGames : 'missing'} | ` +
+                `${coverage.has3pLineups ? coverage.best3pGames : 'missing'} | ` +
+                `${coverage.has4pLineups ? coverage.best4pGames : 'missing'} |`
+            );
+        }
     }
     lines.push(
         '',
