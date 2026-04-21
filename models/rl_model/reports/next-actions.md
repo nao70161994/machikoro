@@ -1,0 +1,12 @@
+# RL Next Actions
+
+- updatedAt: 2026-04-20
+- counts: reevaluate:4, review-diversity:1
+
+| priority | type | target | message | command |
+|---:|---|---|---|---|
+| 2 | reevaluate | self-only-both-h256-lr2e5-5000-seed66-rewardcap | self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50) | sh scripts/rl/eval-run.sh self-only-both-h256-lr2e5-5000-seed66-rewardcap 50 weak,normal,strong |
+| 2 | reevaluate | self-only-both-h256-lr3e5-5000-seed62 | self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50) | sh scripts/rl/eval-run.sh self-only-both-h256-lr3e5-5000-seed62 50 weak,normal,strong |
+| 2 | reevaluate | strong-select-seed21 | strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50) | sh scripts/rl/eval-run.sh strong-select-seed21 50 weak,normal,strong |
+| 2 | reevaluate | terminal-shaped-h128-long | terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50) | sh scripts/rl/eval-run.sh terminal-shaped-h128-long 50 weak,normal,strong |
+| 3 | review-diversity | self-only-both-h256-lr3e5-5000-seed62/self-only-both-h256-lr2e5-5000-seed66-rewardcap | self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています | npm run eval-rl-models -- --models self-only-both-h256-lr3e5-5000-seed62,self-only-both-h256-lr2e5-5000-seed66-rewardcap --games 100 --markdown models/rl_model/self-only-both-h256-lr3e5-5000-seed62-self-only-both-h256-lr2e5-5000-seed66-rewardcap.md |

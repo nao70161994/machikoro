@@ -1,0 +1,19 @@
+RL adoption review updatedAt=2026-04-20
+minimumGames=50
+currentMain=self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3
+candidates:
+- self-only-both-h256-lr2e5-5000-seed71-rewardcap score=0.813333 games=50 weak=0.96 normal=0.94 strong=0.68 pass=0 style=vineyard-farm-burger
+- self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 score=0.793333 games=300 weak=0.993333 normal=0.933333 strong=0.633333 pass=0.0214 style=vineyard-farm-winery-strong [recommended]
+- self-only-both-h256-lr2e5-5000-seed69-rewardcap score=0.605 games=100 weak=0.93 normal=0.75 strong=0.4 pass=0 style=burger-warehouse-wheat [recommended]
+- self-only-both-h256-lr3e5-5000-seed62 score=0.591667 games=20 weak=0.9 normal=0.65 strong=0.45 pass=0.044 style=bread-warehouse-sushi-strong
+- self-only-both-h256-lr2e5-5000-seed70-rewardcap score=0.588333 games=100 weak=1 normal=0.77 strong=0.33 pass=0.017 style=sushi-warehouse-farm [recommended]
+- self-only-both-h256-lr2e5-5000-seed66-rewardcap score=0.566667 games=20 weak=0.95 normal=0.7 strong=0.35 pass=0.006 style=bread-warehouse-pizza-stable
+- terminal-shaped-h128-lr1e4 score=0.536667 games=100 weak=0.99 normal=0.53 strong=0.39 pass=0.001 style=bread-farm-fishing
+- self-only-both-h256-lr2e5-5000-seed65 score=0.533333 games=20 weak=0.95 normal=0.6 strong=0.35 pass=0.169 style=sushi-warehouse-bread
+- terminal-shaped-h128-long score=0.458333 games=20 weak=0.9 normal=0.7 strong=0.15 pass=n/a style=shop-loan-fishing
+- strong-select-seed21 score=0.441667 games=20 weak=0.85 normal=0.75 strong=0.1 pass=n/a style=field-vineyard-normal-stable
+- terminal-shaped-h128-lr1e4-long score=0.375 games=20 weak=0.95 normal=0.35 strong=0.2 pass=n/a style=farm-cheese-weak-specialist
+- terminal-shaped-curriculum-h128 score=0.266667 games=20 weak=0.75 normal=0.35 strong=0.05 pass=n/a style=sushi-farm-cheese
+actions:
+- compare-main-vs-challenger: self-only-both-h256-lr2e5-5000-seed71-rewardcap が current main self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 を weighted score で上回っています (+0.02)
+  cmd: npm run eval-rl-models -- --models self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3,self-only-both-h256-lr2e5-5000-seed71-rewardcap --games 100 --markdown models/rl_model/self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3-self-only-both-h256-lr2e5-5000-seed71-rewardcap.md

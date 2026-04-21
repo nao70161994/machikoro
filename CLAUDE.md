@@ -24,6 +24,7 @@
 - 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人の不足がすぐ見えます。
 - 次にやるべき再評価・多様性見直しを機械的に出したいときは `npm run plan-rl-next-actions` を使ってください。
 - 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
+- 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
 ## 次に読む文書
@@ -66,6 +67,7 @@
 - RL 採用モデルの評価監査: `npm run audit-rl-portfolio`
 - RL 次アクション抽出: `npm run plan-rl-next-actions`
 - RL 2人戦採用候補レビュー: `npm run review-rl-adoptions`
+- RL 台帳系レポート一括更新: `npm run refresh-rl-ops-reports`
 - RL metrics 集計: `npm run summarize-rl-metrics -- --csv models/rl_model/train_metrics.csv`
 
 ## 編集時の基本

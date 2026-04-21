@@ -1,0 +1,69 @@
+{
+  "updatedAt": "2026-04-20",
+  "warnings": [
+    "terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
+    "strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
+    "self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
+    "self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
+    "self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています"
+  ],
+  "errors": [],
+  "recommended": [
+    {
+      "id": "self-only-4p-h256-lr1e5-5000-seed102",
+      "role": "adopted-3p-4p",
+      "reason": "Adopted for 3-player and 4-player RL CPU. 100-game lineup evaluation stayed stable against normal/strong mixed tables.",
+      "status": "adopted",
+      "style": "4p-vineyard-farm-pizza",
+      "portfolioPath": true,
+      "best2pGames": 0,
+      "has2pOpponents": false,
+      "best3pGames": 200,
+      "has3pLineups": true,
+      "best4pGames": 200,
+      "has4pLineups": true
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+      "role": "adopted-2p-main",
+      "reason": "Adopted as the main 2-player RL CPU. 300-game comparison reached weak 99.3%, normal 93.3%, strong 63.3%.",
+      "status": "adopted",
+      "style": "vineyard-farm-winery-strong",
+      "portfolioPath": true,
+      "best2pGames": 300,
+      "has2pOpponents": true,
+      "best3pGames": 0,
+      "has3pLineups": false,
+      "best4pGames": 0,
+      "has4pLineups": false
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+      "role": "sushi-warehouse-variant",
+      "reason": "Very high weak/normal result with a different card mix from seed71.",
+      "status": "candidate",
+      "style": "sushi-warehouse-farm",
+      "portfolioPath": false,
+      "best2pGames": 100,
+      "has2pOpponents": true,
+      "best3pGames": 0,
+      "has3pLineups": false,
+      "best4pGames": 0,
+      "has4pLineups": false
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+      "role": "burger-warehouse-variant",
+      "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines.",
+      "status": "candidate",
+      "style": "burger-warehouse-wheat",
+      "portfolioPath": false,
+      "best2pGames": 100,
+      "has2pOpponents": true,
+      "best3pGames": 0,
+      "has3pLineups": false,
+      "best4pGames": 0,
+      "has4pLineups": false
+    }
+  ]
+}

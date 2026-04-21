@@ -20,6 +20,7 @@ const TEST_GROUPS = {
         'audit-rl-portfolio.test.js',
         'plan-rl-next-actions.test.js',
         'review-rl-adoptions.test.js',
+        'refresh-rl-ops-reports.test.js',
         'rl-train.test.js',
         'rl-match-trace.test.js',
         'compare-rl-match-trace.test.js',
