@@ -147,6 +147,54 @@ print(len(agent.states[0]) if agent.states else 0)
     assert.strictEqual(Number(lines[3]), Number(lines[0]));
 });
 
+runTest('rl train: 4人戦の target opponent は脅威度最大の相手を選ぶ', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+
+env = MachikoroEnv(player_count=4)
+env.current = 0
+env.players[1].coins = 12
+env.players[1].cards["麦畑"] += 1
+env.players[2].coins = 1
+env.players[2].cards["鉱山"] += 2
+env.players[2].landmarks["駅"] = True
+env.players[2].landmarks["空港"] = True
+env.players[3].coins = 15
+env.players[3].cards["パン屋"] += 1
+print(env._target_opponent_index())
+`);
+    assert.strictEqual(output, '2');
+});
+
+runTest('rl train: 4人戦 state encoding の相手枠は脅威度順で並ぶ', () => {
+    const output = runPython(`
+import json
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.encode import encode_state_v2, PLAYER_FEATURE_DIM_V2
+
+env = MachikoroEnv(player_count=4)
+env.current = 0
+env.players[1].coins = 12
+env.players[1].cards["麦畑"] += 1
+env.players[2].coins = 1
+env.players[2].cards["鉱山"] += 2
+env.players[2].landmarks["駅"] = True
+env.players[2].landmarks["空港"] = True
+env.players[3].coins = 15
+env.players[3].cards["パン屋"] += 1
+
+vec = encode_state_v2(env)
+base = PLAYER_FEATURE_DIM_V2
+coins = [
+    round(float(vec[base + 0]) * 50),
+    round(float(vec[base * 2 + 0]) * 50),
+    round(float(vec[base * 3 + 0]) * 50),
+]
+print(json.dumps(coins, ensure_ascii=False))
+`);
+    assert.deepStrictEqual(JSON.parse(output), [1, 15, 12]);
+});
+
 runTest('rl train: build stats を集計して整形できる', () => {
     const output = runPython(`
 import json

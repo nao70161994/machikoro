@@ -76,16 +76,20 @@ function buildTestModel() {
 }
 
 function buildParityModel(context) {
+    return buildParityModelWithStateDim(context, 145);
+}
+
+function buildParityModelWithStateDim(context, stateDim) {
     const { RLCPU } = context;
     return {
-        stateDim: 145,
+        stateDim,
         hiddenSize: 2,
         numActions: RLCPU.NUM_ACTIONS,
         numCards: 38,
         layers: {
             shared: [
                 {
-                    weights: Array.from({ length: 145 }, () => [0, 0]),
+                    weights: Array.from({ length: stateDim }, () => [0, 0]),
                     bias: [0, 0],
                 },
                 {
@@ -693,3 +697,46 @@ for (const [scenario, forcedDice] of [['wheat_then_pass', 1], ['tv_then_pass', 6
         assert.deepStrictEqual(actualTrace, expectedTrace);
     });
 }
+
+runTest('RLCPU: 4人戦の対象選択は脅威度最大の相手へ固定される', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, createCardByName, GAME_PHASES } = context;
+    const game = new GameManager(4);
+    game.__shopStock = createDefaultShopStock(context);
+    game.phase = GAME_PHASES.PENDING;
+    game.currentPlayerIndex = 0;
+    game.pendingTV = 1;
+
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('テレビ局'), createCardByName('ビジネスセンター'), createCardByName('引越し屋')];
+    current.dormantCards = [];
+
+    game.players[1].coins = 10;
+    game.players[1].cards = [createCardByName('麦畑')];
+    game.players[1].dormantCards = [];
+
+    game.players[2].coins = 2;
+    game.players[2].cards = [createCardByName('鉱山'), createCardByName('鉱山')];
+    game.players[2].dormantCards = [];
+    game.players[2].landmarks['駅'] = true;
+    game.players[2].landmarks['空港'] = true;
+
+    game.players[3].coins = 14;
+    game.players[3].cards = [createCardByName('パン屋')];
+    game.players[3].dormantCards = [];
+
+    const cpu = new RLCPU(buildParityModelWithStateDim(context, 353));
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
+
+    game.pendingTV = 0;
+    game.pendingBusiness = true;
+    const businessMove = cpu.chooseBusinessMove(game);
+    assert.ok(businessMove);
+    assert.strictEqual(businessMove.targetIndex, 2);
+
+    game.pendingBusiness = false;
+    game.pendingMover = 1;
+    const moverMove = cpu.chooseMoverMove(game);
+    assert.ok(moverMove);
+    assert.strictEqual(moverMove.targetIndex, 2);
+});

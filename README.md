@@ -290,6 +290,7 @@ RL スクリプト / モデル:
 - `scripts/review-rl-adoptions.js`: 2人戦候補を weighted score で並べ、現採用モデルと比較すべき challenger を抽出
 - `scripts/refresh-rl-ops-reports.js`: registry レポート、portfolio 監査、次アクション、採用候補レビューをまとめて `models/rl_model/reports/` に書き出す
 - `scripts/update-rl-registry-from-eval.js`: `eval-rl-models` の JSON を registry に追記し、そのままレポート群も更新
+- `scripts/rl/TARGET_HEAD_DESIGN.md`: 多人数戦のテレビ局 / ビジネスセンター / 引越し屋 target head の現状棚卸しと導入方針
 - `scripts/report-rl-diversity.js`: candidate / adopted モデルを style と topCards 重複で整理し、比較すべきペアを出力
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント

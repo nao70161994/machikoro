@@ -27,6 +27,7 @@
 - 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。
 - `eval-rl-models` の JSON を registry へ追記してレポートまで更新したいときは `npm run update-rl-registry-from-eval -- --input <json>` を使ってください。
 - 多様性の重複候補と比較ペアを見たいときは `npm run report-rl-diversity` を使ってください。
+- 多人数戦 target head の現状棚卸しと導入方針は `scripts/rl/TARGET_HEAD_DESIGN.md` を参照してください。
 - `termux-chroot` が有効でない場合、一部のシェル挙動は通常の Linux デスクトップと異なることがあります。
 
 ## 次に読む文書
@@ -34,6 +35,7 @@
 - リポジトリ全体のルールと責務分担: [AGENTS.md](./AGENTS.md)
 - 人間向けの全体概要と主要コマンド: [README.md](./README.md)
 - RL 学習・評価・artifact の流れ: [scripts/rl/README.md](./scripts/rl/README.md)
+- 多人数戦 target head の設計メモ: [scripts/rl/TARGET_HEAD_DESIGN.md](./scripts/rl/TARGET_HEAD_DESIGN.md)
 - 高リスク変更時の手動確認項目: [TESTPLAN.md](./TESTPLAN.md)
 
 ## 重要な不変条件
