@@ -197,6 +197,22 @@ print(json.dumps(coins, ensure_ascii=False))
     assert.deepStrictEqual(JSON.parse(output), [1, 15, 12]);
 });
 
+runTest('rl train: 4人用 RLAgent は target slots を保持できる', () => {
+    const output = runPython(`
+from scripts.rl.agent import RLAgent
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=353, target_slots=3)
+print(agent.net.target_slots)
+print(agent.net.tv_target_head is not None)
+print(agent.net.bc_target_head is not None)
+print(agent.net.mover_target_head is not None)
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '3');
+    assert.strictEqual(lines[1], 'True');
+    assert.strictEqual(lines[2], 'True');
+    assert.strictEqual(lines[3], 'True');
+});
+
 runTest('rl train: target head 付き checkpoint を export できる', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-target-head-'));
     const ckptBase = path.join(tmpDir, 'model');
@@ -295,6 +311,77 @@ print(int(mask[take_mine]))
     assert.strictEqual(lines[1], '2');
     assert.strictEqual(lines[2], '1');
     assert.strictEqual(lines[3], '0');
+});
+
+runTest('rl train: train は TV target head を更新できる', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.agent import RLAgent
+
+agent = RLAgent(hidden=8, lr=0.001, state_dim=353, target_slots=3)
+before = agent.net.tv_target_head.b.copy()
+state = np.zeros(353, dtype=np.float32)
+mask = np.zeros(1580, dtype=np.float32)
+mask[0] = 1.0
+mask[1] = 1.0
+for action, reward, slot in ((0, 1.0, 1), (1, -1.0, 2)):
+    agent.states.append(state.copy())
+    agent.actions.append(action)
+    agent.masks.append(mask.copy())
+    agent.target_kinds.append("tv")
+    agent.target_slots.append(slot)
+    agent.target_masks.append(np.array([1.0, 1.0, 1.0], dtype=np.float32))
+    agent.values.append(0.0)
+    agent.rewards.append(reward)
+    agent.next_values.append(0.0)
+    agent.dones.append(True)
+stats = agent.train()
+after = agent.net.tv_target_head.b
+print(np.any(np.abs(after - before) > 1e-12))
+print("policy_loss" in stats and "value_loss" in stats)
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'True');
+    assert.strictEqual(lines[1], 'True');
+});
+
+runTest('rl train: train は BC target head を give/take と同時に更新できる', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.game_env import ACT_BC_BASE
+from scripts.rl.cards import NUM_CARDS
+
+agent = RLAgent(hidden=8, lr=0.001, state_dim=353, target_slots=3)
+before = agent.net.bc_target_head.b.copy()
+state = np.zeros(353, dtype=np.float32)
+mask = np.zeros(1580, dtype=np.float32)
+action = ACT_BC_BASE + 0 * NUM_CARDS + 1
+mask[action] = 1.0
+mask[ACT_BC_BASE + 0 * NUM_CARDS + 2] = 1.0
+mask[ACT_BC_BASE + 2 * NUM_CARDS + 1] = 1.0
+for chosen_action, reward, slot in (
+    (action, 1.0, 2),
+    (ACT_BC_BASE + 2 * NUM_CARDS + 1, -1.0, 1),
+):
+    agent.states.append(state.copy())
+    agent.actions.append(chosen_action)
+    agent.masks.append(mask.copy())
+    agent.target_kinds.append("bc")
+    agent.target_slots.append(slot)
+    agent.target_masks.append(np.array([1.0, 1.0, 1.0], dtype=np.float32))
+    agent.values.append(0.0)
+    agent.rewards.append(reward)
+    agent.next_values.append(0.0)
+    agent.dones.append(True)
+stats = agent.train()
+after = agent.net.bc_target_head.b
+print(np.any(np.abs(after - before) > 1e-12))
+print("policy_loss" in stats and "value_loss" in stats)
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'True');
+    assert.strictEqual(lines[1], 'True');
 });
 
 runTest('rl train: build stats を集計して整形できる', () => {

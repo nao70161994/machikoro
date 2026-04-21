@@ -113,6 +113,22 @@ def _apply_pending_target_choice(env: MachikoroEnv, net, state: np.ndarray, epsi
     env.set_pending_target_slot(int(slot_index))
 
 
+def _capture_pending_target(env: MachikoroEnv, net):
+    kind = _pending_target_kind(env)
+    target_slots = int(getattr(net, "target_slots", 0) or 0)
+    if kind is None or target_slots <= 0:
+        return None, None, np.zeros(target_slots, dtype=np.float32)
+    target_mask = _target_slot_mask(env, target_slots, kind)
+    if env.pending_target_index is None:
+        return kind, None, target_mask
+    slots = env._target_opponent_slots()
+    try:
+        slot_index = slots.index(env.pending_target_index)
+    except ValueError:
+        slot_index = None
+    return kind, slot_index, target_mask
+
+
 def _normalize_masked_probs(probs, mask):
     masked = np.asarray(probs, dtype=np.float64) * np.asarray(mask, dtype=np.float64)
     total = masked.sum()
@@ -371,6 +387,9 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     ep_states  = []
     ep_actions = []
     ep_masks   = []
+    ep_target_kinds = []
+    ep_target_slots = []
+    ep_target_masks = []
     ep_values  = []
     ep_rewards = []
 
@@ -382,6 +401,7 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
             # ── エージェントのターン ──
             state = _encode_for_agent(env, agent)
             _apply_pending_target_choice(env, agent.net, state, epsilon=epsilon, greedy=False)
+            target_kind, target_slot, target_mask = _capture_pending_target(env, agent.net)
             mask  = action_mask(env)
             valid = np.where(mask > 0)[0]
 
@@ -394,6 +414,9 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
             ep_states.append(state)
             ep_actions.append(action)
             ep_masks.append(mask)
+            ep_target_kinds.append(target_kind)
+            ep_target_slots.append(target_slot)
+            ep_target_masks.append(target_mask)
             ep_values.append(float(value))
             ep_rewards.append(0.2 * (lm_after - lm_before))
 
@@ -431,6 +454,9 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
         agent.states.append(ep_states[i])
         agent.actions.append(ep_actions[i])
         agent.masks.append(ep_masks[i])
+        agent.target_kinds.append(ep_target_kinds[i])
+        agent.target_slots.append(ep_target_slots[i])
+        agent.target_masks.append(ep_target_masks[i])
         agent.values.append(ep_values[i])
         agent.rewards.append(ep_rewards[i])
         agent.next_values.append(next_values[i])
@@ -443,17 +469,28 @@ def play_vs_random(agent: RLAgent, epsilon: float = 0.1,
     }
 
 
-def _append_episode_to_agent(agent: RLAgent, ep_states, ep_actions, ep_masks, ep_values, ep_rewards):
+def _append_episode_to_agent(agent: RLAgent, ep_states, ep_actions, ep_masks, ep_values, ep_rewards,
+                             ep_target_kinds=None, ep_target_slots=None, ep_target_masks=None):
     if not ep_states:
         return
     T = len(ep_states)
     next_values = ep_values[1:] + [0.0]
     dones = [False] * (T - 1) + [True]
+    if ep_target_kinds is None:
+        ep_target_kinds = [None] * T
+    if ep_target_slots is None:
+        ep_target_slots = [None] * T
+    if ep_target_masks is None:
+        zero_mask = np.zeros(int(getattr(agent.net, "target_slots", 0) or 0), dtype=np.float32)
+        ep_target_masks = [zero_mask.copy() for _ in range(T)]
 
     for i in range(T):
         agent.states.append(ep_states[i])
         agent.actions.append(ep_actions[i])
         agent.masks.append(ep_masks[i])
+        agent.target_kinds.append(ep_target_kinds[i])
+        agent.target_slots.append(ep_target_slots[i])
+        agent.target_masks.append(ep_target_masks[i])
         agent.values.append(ep_values[i])
         agent.rewards.append(ep_rewards[i])
         agent.next_values.append(next_values[i])
@@ -471,7 +508,11 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
 
     if both_sides:
         episodes = [
-            {"states": [], "actions": [], "masks": [], "values": [], "rewards": []}
+            {
+                "states": [], "actions": [], "masks": [],
+                "target_kinds": [], "target_slots": [], "target_masks": [],
+                "values": [], "rewards": []
+            }
             for _ in env.players
         ]
         for _ in range(max_steps):
@@ -481,6 +522,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             player = env.current
             state = _encode_for_agent(env, agent)
             _apply_pending_target_choice(env, agent.net, state, epsilon=epsilon, greedy=False)
+            target_kind, target_slot, target_mask = _capture_pending_target(env, agent.net)
             mask = action_mask(env)
             action, value = _select_action(agent.net, state, mask, epsilon)
 
@@ -490,6 +532,9 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             episodes[player]["states"].append(state)
             episodes[player]["actions"].append(action)
             episodes[player]["masks"].append(mask)
+            episodes[player]["target_kinds"].append(target_kind)
+            episodes[player]["target_slots"].append(target_slot)
+            episodes[player]["target_masks"].append(target_mask)
             episodes[player]["values"].append(float(value))
             episodes[player]["rewards"].append(_compute_shaped_reward(before_env, env, player, reward_config, action=action))
 
@@ -506,6 +551,9 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
                 episode["masks"],
                 episode["values"],
                 episode["rewards"],
+                episode["target_kinds"],
+                episode["target_slots"],
+                episode["target_masks"],
             )
 
         if recorded_steps == 0:
@@ -523,6 +571,9 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
     ep_states = []
     ep_actions = []
     ep_masks = []
+    ep_target_kinds = []
+    ep_target_slots = []
+    ep_target_masks = []
     ep_values = []
     ep_rewards = []
 
@@ -533,6 +584,7 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
         if env.current == agent_player:
             state = _encode_for_agent(env, agent)
             _apply_pending_target_choice(env, agent.net, state, epsilon=epsilon, greedy=False)
+            target_kind, target_slot, target_mask = _capture_pending_target(env, agent.net)
             mask = action_mask(env)
             action, value = _select_action(agent.net, state, mask, epsilon)
 
@@ -542,6 +594,9 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             ep_states.append(state)
             ep_actions.append(action)
             ep_masks.append(mask)
+            ep_target_kinds.append(target_kind)
+            ep_target_slots.append(target_slot)
+            ep_target_masks.append(target_mask)
             ep_values.append(float(value))
             ep_rewards.append(_compute_shaped_reward(before_env, env, agent_player, reward_config, action=action))
         else:
@@ -552,7 +607,11 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
 
     ep_rewards[-1] += _compute_terminal_reward(env, agent_player, terminal_config)
 
-    _append_episode_to_agent(agent, ep_states, ep_actions, ep_masks, ep_values, ep_rewards)
+    _append_episode_to_agent(
+        agent,
+        ep_states, ep_actions, ep_masks, ep_values, ep_rewards,
+        ep_target_kinds, ep_target_slots, ep_target_masks,
+    )
 
     return {
         "winner": env.winner,
@@ -1397,7 +1456,8 @@ def main():
 
     args.player_count = max(2, min(args.player_count, 4))
     state_dim = state_dim_for_player_count(args.player_count)
-    agent = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim)
+    target_slots = max(0, args.player_count - 1) if args.player_count > 2 else 0
+    agent = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim, target_slots=target_slots)
 
     model_path = os.path.join(MODEL_DIR, "model")
     checkpoint_path = model_path + ".npz"
@@ -1478,7 +1538,7 @@ def main():
         # 一定ゲームごとに現在モデルをプールにコピー
         if args.pool_update_every > 0 and game_i % args.pool_update_every == 0:
             pool_was_full = len(pool_agents) >= args.pool_max_size
-            snap = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim)
+            snap = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim, target_slots=target_slots)
             snap.net = copy.deepcopy(agent.net)
             pool_agents.append(snap)
             if len(pool_agents) > args.pool_max_size:

@@ -187,11 +187,30 @@ class PolicyValueNet:
 
         return target_probs, value, target_logits
 
+    def _target_head_for_kind(self, kind: str):
+        return {
+            "tv": self.tv_target_head,
+            "bc": self.bc_target_head,
+            "mover": self.mover_target_head,
+        }.get(kind)
+
     def backward(self, d_policy: np.ndarray, d_value: float):
         """通常フェーズ用 backward"""
         dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
         dh_p = self.policy_head.backward(d_policy)
         dh = dh_p + dh_v
+        for layer in reversed(self.shared):
+            dh = layer.backward(dh)
+
+    def backward_with_target(self, kind: str, d_policy: np.ndarray, d_target: np.ndarray, d_value: float):
+        """通常行動 + target head 用 backward"""
+        target_head = self._target_head_for_kind(kind)
+        if target_head is None:
+            return self.backward(d_policy, d_value)
+        dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
+        dh_p = self.policy_head.backward(d_policy)
+        dh_t = target_head.backward(d_target)
+        dh = dh_p + dh_t + dh_v
         for layer in reversed(self.shared):
             dh = layer.backward(dh)
 
@@ -201,6 +220,19 @@ class PolicyValueNet:
         dh_give = self.bc_give_head.backward(d_give)
         dh_take = self.bc_take_head.backward(d_take)
         dh = dh_give + dh_take + dh_v
+        for layer in reversed(self.shared):
+            dh = layer.backward(dh)
+
+    def backward_bc_target(self, kind: str, d_target: np.ndarray, d_give: np.ndarray, d_take: np.ndarray, d_value: float):
+        """ビジネスセンター + target head 用 backward"""
+        target_head = self._target_head_for_kind(kind)
+        if target_head is None:
+            return self.backward_bc(d_give, d_take, d_value)
+        dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
+        dh_t = target_head.backward(d_target)
+        dh_give = self.bc_give_head.backward(d_give)
+        dh_take = self.bc_take_head.backward(d_take)
+        dh = dh_t + dh_give + dh_take + dh_v
         for layer in reversed(self.shared):
             dh = layer.backward(dh)
 

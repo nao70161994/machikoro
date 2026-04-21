@@ -8,10 +8,10 @@
   - Python checkpoint / browser export は optional target head を保持できる
   - Python env は pending target を明示的に差し替えられる
   - Python 推論側は optional target head があれば TV / BC / Mover の対象選択に使う
+  - Python 学習ループは optional target head の選択結果をバッファへ保持し、TV / BC / Mover の target head を更新できる
   - JS `RLCPU` は optional target head があれば TV / BC / Mover の対象選択に使える
   - head が無い既存モデルは現行 heuristic へ fallback する
 - 未実装
-  - 学習ループで target head を更新する処理
   - target head ありモデルの学習プリセット
   - Python/JS parity fixture の target head 学習ケース
 

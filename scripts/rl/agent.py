@@ -16,9 +16,10 @@ class RLAgent:
 
     def __init__(self, hidden: int = 256, lr: float = 3e-4,
                  entropy_coef: float = 0.05, gamma: float = 0.99,
-                 lam: float = 0.95, state_dim: int = STATE_DIM):
+                 lam: float = 0.95, state_dim: int = STATE_DIM,
+                 target_slots: int = 0):
         self.state_dim = state_dim
-        self.net = PolicyValueNet(state_dim, NUM_ACTIONS, hidden=hidden, lr=lr)
+        self.net = PolicyValueNet(state_dim, NUM_ACTIONS, hidden=hidden, lr=lr, target_slots=target_slots)
         self.gamma = gamma
         self.lam   = lam
         self.entropy_coef = entropy_coef
@@ -28,6 +29,9 @@ class RLAgent:
         self.states      = []
         self.actions     = []
         self.masks       = []
+        self.target_kinds = []
+        self.target_slots = []
+        self.target_masks = []
         self.log_probs   = []
         self.values      = []   # V(s_t)
         self.rewards     = []
@@ -62,6 +66,9 @@ class RLAgent:
         self.states.append(state)
         self.actions.append(action)
         self.masks.append(mask)
+        self.target_kinds.append(None)
+        self.target_slots.append(None)
+        self.target_masks.append(np.zeros(int(getattr(self.net, "target_slots", 0) or 0), dtype=np.float32))
         self.log_probs.append(log_prob)
         self.values.append(float(value))
 
@@ -139,6 +146,9 @@ class RLAgent:
             state  = self.states[t]
             action = self.actions[t]
             mask   = self.masks[t]
+            target_kind = self.target_kinds[t] if t < len(self.target_kinds) else None
+            target_slot = self.target_slots[t] if t < len(self.target_slots) else None
+            target_mask = self.target_masks[t] if t < len(self.target_masks) else None
             adv    = float(adv_norm[t])
             g_t    = float(G[t])
 
@@ -175,7 +185,27 @@ class RLAgent:
                 d_take += self.entropy_coef * entropy_logit_grad(bc_take_m, take_mask)
 
                 d_value = (value - g_t) * (1.0 - value ** 2)
-                self.net.backward_bc(d_give, d_take, d_value)
+                has_target = (
+                    target_kind == "bc"
+                    and target_slot is not None
+                    and target_mask is not None
+                    and len(target_mask) > 0
+                    and getattr(self.net, "bc_target_head", None) is not None
+                    and int(np.sum(target_mask)) > 0
+                )
+                if has_target:
+                    target_probs, _, _ = self.net.forward_target_details(state, "bc")
+                    masked_target = target_probs * target_mask
+                    masked_target /= (masked_target.sum() + 1e-9)
+                    d_target = masked_target.copy()
+                    d_target[int(target_slot)] -= 1.0
+                    d_target *= adv
+                    d_target *= target_mask
+                    d_target += self.entropy_coef * entropy_logit_grad(masked_target, target_mask)
+                    self.net.backward_bc_target("bc", d_target, d_give, d_take, d_value)
+                    total_pl += float(-np.log(masked_target[int(target_slot)] + 1e-9) * adv)
+                else:
+                    self.net.backward_bc(d_give, d_take, d_value)
 
                 total_pl += float(
                     -np.log(bc_give_m[give_idx] + 1e-9) * adv
@@ -206,7 +236,27 @@ class RLAgent:
 
                 # 価値損失 (MSE through tanh) は常に更新
                 d_value = (value - g_t) * (1.0 - value ** 2)
-                self.net.backward(d_policy, d_value)
+                has_target = (
+                    target_kind in ("tv", "mover")
+                    and target_slot is not None
+                    and target_mask is not None
+                    and len(target_mask) > 0
+                    and getattr(self.net, f"{target_kind}_target_head", None) is not None
+                    and int(np.sum(target_mask)) > 0
+                )
+                if has_target:
+                    target_probs, _, _ = self.net.forward_target_details(state, target_kind)
+                    masked_target = target_probs * target_mask
+                    masked_target /= (masked_target.sum() + 1e-9)
+                    d_target = masked_target.copy()
+                    d_target[int(target_slot)] -= 1.0
+                    d_target *= adv
+                    d_target *= target_mask
+                    d_target += self.entropy_coef * entropy_logit_grad(masked_target, target_mask)
+                    self.net.backward_with_target(target_kind, d_policy, d_target, d_value)
+                    total_pl += float(-np.log(masked_target[int(target_slot)] + 1e-9) * adv)
+                else:
+                    self.net.backward(d_policy, d_value)
                 total_vl += float((value - g_t) ** 2)
 
         stats = {
