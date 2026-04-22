@@ -798,8 +798,8 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 
 | 項目 | 詳細 |
 |------|------|
-| 引越し屋（Mover） | active カードのみ対象。dormant カードを区別するには NUM_ACTIONS の拡張が必要 |
-| ビジネスセンター | active カードのみ交換対象 |
+| 引越し屋（Mover） | 休業中カードも対象に含める。同名カードに active/dormant が混在する場合は dormant を優先して移動する |
+| ビジネスセンター | 休業中カードも交換対象に含める。同名カードに active/dormant が混在する場合は dormant を優先して交換する |
 | プレイヤー数 | 2〜4人戦に対応。5人以上は未対応 |
 
 ---

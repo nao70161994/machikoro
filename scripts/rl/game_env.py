@@ -152,12 +152,12 @@ class MachikoroEnv:
                 return [ACT_TV_TARGET]
             if self.pending_biz > 0:
                 acts = []
-                # 本番ルールに合わせて、交換対象は休業していない施設に限定する。
+                # 本番ルールに合わせて、交換対象は休業中を含む施設全体から選ぶ。
                 for give_ci, give_name in enumerate(CARD_NAMES):
-                    if p.active(give_name) <= 0 or CARD_DEF[give_name].color == "purple":
+                    if p.cards[give_name] <= 0 or CARD_DEF[give_name].color == "purple":
                         continue
                     for take_ci, take_name in enumerate(CARD_NAMES):
-                        if opp.active(take_name) <= 0 or CARD_DEF[take_name].color == "purple":
+                        if opp.cards[take_name] <= 0 or CARD_DEF[take_name].color == "purple":
                             continue
                         acts.append(ACT_BC_BASE + give_ci * NUM_CARDS + take_ci)
                 return acts if acts else [ACT_PASS]
@@ -175,7 +175,7 @@ class MachikoroEnv:
             if self.pending_mover > 0:
                 acts = [ACT_MOVER_BASE + ci
                         for ci, n in enumerate(CARD_NAMES)
-                        if p.active(n) > 0 and CARD_DEF[n].color != "purple"]
+                        if p.cards[n] > 0 and CARD_DEF[n].color != "purple"]
                 return acts if acts else [ACT_PASS]
             if self.pending_reno > 0:
                 acts = [ACT_RENO_BASE + li
@@ -283,14 +283,13 @@ class MachikoroEnv:
                 take_ci = combo % NUM_CARDS
                 give_name = CARD_NAMES[give_ci]
                 take_name = CARD_NAMES[take_ci]
-                if (p.active(give_name) > 0 and opp.active(take_name) > 0 and
+                if (p.cards[give_name] > 0 and opp.cards[take_name] > 0 and
                         CARD_DEF[give_name].color != "purple" and
                         CARD_DEF[take_name].color != "purple"):
-                    # 本番ルールに合わせて、ビジネスセンターは休業中カードを交換しない。
-                    p.cards[give_name] -= 1
-                    opp.cards[take_name] -= 1
-                    p.cards[take_name] += 1
-                    opp.cards[give_name] += 1
+                    give_dormant = self._remove_one_card(p, give_name)
+                    take_dormant = self._remove_one_card(opp, take_name)
+                    self._add_one_card(p, take_name, take_dormant)
+                    self._add_one_card(opp, give_name, give_dormant)
             self.pending_biz -= 1
             self._check_pending()
 
@@ -311,12 +310,10 @@ class MachikoroEnv:
 
         # --- Pending: 引越し屋 ---
         elif self.phase == PHASE_PENDING and self.pending_mover > 0:
-            # 引越し屋: active カードのみ対象
-            # NUM_ACTIONS の拡張なしに dormant カードを区別できないため active に限定している
             ci = action - ACT_MOVER_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]
-                if p.active(name) > 0 and CARD_DEF[name].color != "purple":
+                if p.cards[name] > 0 and CARD_DEF[name].color != "purple":
                     self._transfer_one_card(p, opp, name)
                     p.coins += 4
             self.pending_mover -= 1
@@ -682,13 +679,27 @@ class MachikoroEnv:
         self.pending_target_index = None
         self.last_dice = self.last_d1 = self.last_d2 = 0
 
-    def _transfer_one_card(self, src: PlayerState, dst: PlayerState, name: str) -> bool:
-        """アクティブなカード1枚を移動する。休業中カードは対象にしない。"""
-        if src.active(name) <= 0:
+    def _remove_one_card(self, player: PlayerState, name: str) -> bool:
+        if player.cards[name] <= 0:
             return False
-        src.cards[name] -= 1
-        dst.cards[name] += 1
-        return False
+        was_dormant = player.dormant.get(name, 0) > 0
+        player.cards[name] -= 1
+        if was_dormant:
+            player.dormant[name] = max(0, player.dormant.get(name, 0) - 1)
+        return was_dormant
+
+    def _add_one_card(self, player: PlayerState, name: str, dormant: bool = False):
+        player.cards[name] += 1
+        if dormant:
+            player.dormant[name] = player.dormant.get(name, 0) + 1
+
+    def _transfer_one_card(self, src: PlayerState, dst: PlayerState, name: str) -> bool:
+        """カード1枚を移動する。同名に休業中カードがあればそれを優先して動かす。"""
+        if src.cards[name] <= 0:
+            return False
+        was_dormant = self._remove_one_card(src, name)
+        self._add_one_card(dst, name, was_dormant)
+        return True
 
     def _player_threat_score(self, player: PlayerState) -> float:
         score = float(player.coins)

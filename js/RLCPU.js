@@ -338,8 +338,8 @@ class RLCPU {
             mask[RLCPU.ACTIONS.PASS] = 1;
             return mask;
         }
-        const myCounts = this._cardCounts(current, true);
-        const theirCounts = this._cardCounts(target, true);
+        const myCounts = this._cardCounts(current, false);
+        const theirCounts = this._cardCounts(target, false);
         for (let giveIndex = 0; giveIndex < CARDS.length; giveIndex++) {
             const giveCard = CARDS[giveIndex];
             if ((myCounts[giveCard.name] || 0) <= 0 || giveCard.color === "purple") continue;
@@ -540,8 +540,8 @@ class RLCPU {
                 return mask;
             }
             if (game.pendingBusiness > 0) {
-                const myCounts = this._cardCounts(current, true);
-                const theirCounts = this._cardCounts(opponent, true);
+                const myCounts = this._cardCounts(current, false);
+                const theirCounts = this._cardCounts(opponent, false);
                 for (let giveIndex = 0; giveIndex < CARDS.length; giveIndex++) {
                     const giveCard = CARDS[giveIndex];
                     if ((myCounts[giveCard.name] || 0) <= 0 || giveCard.color === "purple") continue;
@@ -564,7 +564,7 @@ class RLCPU {
                 return mask;
             }
             if (game.pendingMover > 0) {
-                const myCounts = this._cardCounts(current, true);
+                const myCounts = this._cardCounts(current, false);
                 for (let cardIndex = 0; cardIndex < CARDS.length; cardIndex++) {
                     const card = CARDS[cardIndex];
                     if ((myCounts[card.name] || 0) <= 0 || card.color === "purple") continue;

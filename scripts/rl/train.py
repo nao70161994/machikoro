@@ -69,7 +69,7 @@ def _target_slot_mask(env: MachikoroEnv, target_slots: int, kind: str) -> np.nda
             for name in CARD_NAMES:
                 if CARD_DEF[name].color == "purple":
                     continue
-                if player.active(name) > 0:
+                if player.cards.get(name, 0) > 0:
                     mask[slot_index] = 1.0
                     break
         elif kind == "mover":

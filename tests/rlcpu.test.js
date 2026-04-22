@@ -209,7 +209,7 @@ function loadPythonTraceFixture(scenario) {
 
 function buildGameFromFixtureSetup(context, setup) {
     const { GameManager, createCardByName } = context;
-    const game = new GameManager(2);
+    const game = new GameManager(setup.players.length);
     game.__shopStock = createDefaultShopStock(context);
     if (setup.shopStock) {
         for (const [name, count] of Object.entries(setup.shopStock)) {
@@ -815,4 +815,63 @@ runTest('RLCPU: target head があれば4人戦の対象選択に使う', () => 
     const moverMove = cpu.chooseMoverMove(game);
     assert.ok(moverMove);
     assert.strictEqual(moverMove.targetIndex, 2);
+});
+
+runTest('RLCPU: pending business は休業中カードだけでも合法手になる', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GAME_PHASES } = context;
+    const cpu = new RLCPU(buildTargetHeadModel(context, 353));
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.PENDING,
+        pendingTV: 0,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 12,
+        players: [
+            { coins: 3, cards: { 'パン屋': 1 }, dormant: { 'パン屋': 1 }, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: { '寿司屋': 1 }, dormant: { '寿司屋': 1 }, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+    const giveIndex = context.CARDS.findIndex(card => card.name === 'パン屋');
+    const takeIndex = context.CARDS.findIndex(card => card.name === '寿司屋');
+    const action = RLCPU.ACTIONS.BC_BASE + giveIndex * context.CARDS.length + takeIndex;
+    assert.strictEqual(cpu.actionMask(game)[action], 1);
+});
+
+runTest('RLCPU: pending mover は休業中カードだけでも合法手になる', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GAME_PHASES } = context;
+    const cpu = new RLCPU(buildTargetHeadModel(context, 353));
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.PENDING,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 1,
+        pendingRenovation: 0,
+        pendingIT: false,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 12,
+        players: [
+            { coins: 3, cards: { 'パン屋': 1 }, dormant: { 'パン屋': 1 }, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: { '麦畑': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: { '麦畑': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: { '麦畑': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+    const cardIndex = context.CARDS.findIndex(card => card.name === 'パン屋');
+    const action = RLCPU.ACTIONS.MOVER_BASE + cardIndex;
+    assert.strictEqual(cpu.actionMask(game)[action], 1);
 });

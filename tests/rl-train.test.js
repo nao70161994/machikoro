@@ -313,6 +313,68 @@ print(int(mask[take_mine]))
     assert.strictEqual(lines[3], '0');
 });
 
+runTest('rl train: pending business は休業中カードだけでも合法手になる', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_BC_BASE
+from scripts.rl.cards import CARD_INDEX, NUM_CARDS
+from scripts.rl.encode import action_mask
+
+env = MachikoroEnv(player_count=4)
+env.current = 0
+env.phase = PHASE_PENDING
+env.pending_biz = 1
+env.set_pending_target_index(1)
+env.players[0].cards["パン屋"] = 1
+env.players[0].dormant["パン屋"] = 1
+env.players[1].cards["寿司屋"] = 1
+env.players[1].dormant["寿司屋"] = 1
+mask = action_mask(env)
+action = ACT_BC_BASE + CARD_INDEX["パン屋"] * NUM_CARDS + CARD_INDEX["寿司屋"]
+print(int(mask[action]))
+env.step(action)
+print(env.players[0].cards["寿司屋"])
+print(env.players[0].dormant["寿司屋"])
+print(env.players[1].cards["パン屋"])
+print(env.players[1].dormant["パン屋"])
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '1');
+    assert.strictEqual(lines[1], '1');
+    assert.strictEqual(lines[2], '1');
+    assert.strictEqual(lines[3], '2');
+    assert.strictEqual(lines[4], '1');
+});
+
+runTest('rl train: pending mover は休業中カードだけでも合法手になり休業状態ごと移動する', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_MOVER_BASE
+from scripts.rl.cards import CARD_INDEX
+from scripts.rl.encode import action_mask
+
+env = MachikoroEnv(player_count=4)
+env.current = 0
+env.phase = PHASE_PENDING
+env.pending_mover = 1
+env.set_pending_target_index(2)
+env.players[0].cards["パン屋"] = 1
+env.players[0].dormant["パン屋"] = 1
+mask = action_mask(env)
+action = ACT_MOVER_BASE + CARD_INDEX["パン屋"]
+print(int(mask[action]))
+env.step(action)
+print(env.players[0].cards["パン屋"])
+print(env.players[0].dormant["パン屋"])
+print(env.players[2].cards["パン屋"])
+print(env.players[2].dormant["パン屋"])
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '1');
+    assert.strictEqual(lines[1], '0');
+    assert.strictEqual(lines[2], '0');
+    assert.strictEqual(lines[3], '2');
+    assert.strictEqual(lines[4], '1');
+});
+
 runTest('rl train: train は TV target head を更新できる', () => {
     const output = runPython(`
 import numpy as np
