@@ -21,6 +21,7 @@
     "plan-rl-next-actions": "node scripts/plan-rl-next-actions.js",
     "review-rl-adoptions": "node scripts/review-rl-adoptions.js",
     "review-rl-multiplayer-topk": "node scripts/review-rl-multiplayer-topk.js",
+    "review-rl-multiplayer-experiment-set": "node scripts/review-rl-multiplayer-experiment-set.js",
     "refresh-rl-ops-reports": "node scripts/refresh-rl-ops-reports.js",
     "report-rl-diversity": "node scripts/report-rl-diversity.js",
     "compare-rl-match-trace": "node scripts/compare-rl-match-trace.js",

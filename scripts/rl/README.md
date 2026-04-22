@@ -37,12 +37,14 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `bg-wait.sh` | バックグラウンド学習ジョブの完走待ち。完了後に summary を表示 |
 | `bg-finalize.sh` | 完走待ち + summary 表示 + `refresh-rl-ops-reports` を一発で実行 |
 | `bg-finalize-top10-multiplayer.sh` | 完走待ち + report 更新 + top10 多人数後評価まで一発で実行 |
+| `bg-finalize-experiment-set-top10-multiplayer.sh` | 複数 job の完走待ち + top10 多人数後評価 + run 間比較レポートを一発で実行 |
 | `eval-run.sh` | `run-label` / `registry model id` / 直接 path から 2人評価する短縮ラッパー |
 | `eval-run-3p.sh` | `run-label` / `registry model id` / 直接 path から 3人 lineup を評価する短縮ラッパー |
 | `eval-run-4p.sh` | `run-label` / `registry model id` / 直接 path から 4人 lineup を評価する短縮ラッパー |
 | `eval-run-multiplayer.sh` | 3人/4人の標準 lineup 評価をまとめて実行する短縮ラッパー |
 | `eval-run-top10-multiplayer.sh` | `run-label` の top10 checkpoint を 3人/4人複数 lineup で後評価し、review まで出力する |
 | `../review-rl-multiplayer-topk.js` | top-k 多人数後評価 JSON を 3人/4人総合点+多様性で並べる |
+| `../review-rl-multiplayer-experiment-set.js` | 複数 run の top10 review JSON を、run 間の総合点+多様性で比較する |
 | `../eval-rl-models.js` | 複数の registry model / run-label をまとめてJS評価し、ランキングJSON/CSVを出力 |
 | `../validate-rl-registry.js` | `models/rl_model/registry.json` のID重複・推奨モデル参照を検証 |
 
@@ -608,6 +610,11 @@ sh scripts/rl/bg-summary.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-wait.sh self-only-4p-h256-lr2e5-1000-seed104 15
 sh scripts/rl/bg-finalize.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-finalize-top10-multiplayer.sh self-only-4p-h256-lr2e5-5000-seed103-targethead-rerun 15 50
+
+# 比較実験セットの完走待ち + top10後評価 + run比較
+sh scripts/rl/bg-finalize-experiment-set-top10-multiplayer.sh lr-compare-4p \
+  self-only-4p-h256-lr2e5-5000-seed103-targethead-rerun \
+  self-only-4p-h256-lr1e4-5000-seed105-targethead
 sh scripts/rl/bg-rerun.sh self-only-4p-h256-lr2e5-5000-seed103-targethead
 sh scripts/rl/bg-rerun.sh old-job-name old-job-name-rerun -- \
   sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh --run-label old-job-name-rerun --seed 105
@@ -631,6 +638,7 @@ sh scripts/rl/bg-experiment-set.sh \
 - `bg-wait.sh`: 完走まで待機し、終わったら `bg-summary.sh` を表示する
 - `bg-finalize.sh`: `bg-wait.sh` または `bg-summary.sh` を呼んだ後で `npm run refresh-rl-ops-reports` まで流す
 - `bg-finalize-top10-multiplayer.sh`: `bg-finalize.sh` の後で `eval-run-top10-multiplayer.sh` まで続けて実行する
+- `bg-finalize-experiment-set-top10-multiplayer.sh`: 複数 job を順に `bg-finalize-top10-multiplayer.sh` へ流し、最後に run 間比較レポートまで生成する
 - `bg-rerun.sh`: 停止済みジョブの `.cmd` を読み、同じ command を新しい job 名で再起動する。古い job で `.cmd` が無い場合は `-- <command...>` で明示できる
 - `bg-prune.sh`: `state!=running` かつ `summary_state=missing` の stale job だけ掃除する。完走済み job と実行中 job は消さない
 
@@ -701,6 +709,8 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 `npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
 `npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style、target 診断で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 3人/4人戦の自己対戦安定化では、`sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` を標準後評価フローにする。内部では top10 checkpoint を `rl,normal,strong` / `rl,weak,normal` / `rl,weak,strong` と `rl,weak,normal,strong` / `rl,normal,normal,strong` / `rl,weak,weak,normal` で各50戦評価し、続けて `review-rl-multiplayer-topk` の text/markdown/json を出す。review は 3人平均50% + 4人平均50% を総合点とし、近い総合点では多様性を優先して見る前提。
+
+複数 run を比較するときは、各 run の top10 review JSON を `review-rl-multiplayer-experiment-set` へ渡す。`bg-finalize-experiment-set-top10-multiplayer.sh` はこの運用をまとめたもので、完走待ちから run 間比較レポートまでを一発で生成する。
 `npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
 `npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review を更新する。評価後の標準フローとして使える。
 `npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。

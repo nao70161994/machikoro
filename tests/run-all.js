@@ -23,6 +23,7 @@ const TEST_GROUPS = {
         'refresh-rl-ops-reports.test.js',
         'report-rl-diversity.test.js',
         'review-rl-multiplayer-topk.test.js',
+        'review-rl-multiplayer-experiment-set.test.js',
         'rl-train.test.js',
         'rl-match-trace.test.js',
         'compare-rl-match-trace.test.js',

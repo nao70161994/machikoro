@@ -288,6 +288,7 @@ RL スクリプト / モデル:
 - `scripts/rl/bg-watch-summary.sh`, `scripts/rl/bg-experiment-set.sh`: 実行中/比較中ジョブの要約表示
 - `scripts/rl/bg-prune.sh`: 停止済みで `summary.json` を持たない stale job の pid/status/cmd を掃除
 - `scripts/rl/bg-finalize-top10-multiplayer.sh`: 完走待ち後に top10 多人数後評価まで一発で実行
+- `scripts/rl/bg-finalize-experiment-set-top10-multiplayer.sh`: 複数の学習 run を完走待ちし、top10 多人数後評価と run 間比較レポートまで一発で実行
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
@@ -300,6 +301,7 @@ RL スクリプト / モデル:
 - `scripts/rl/TARGET_HEAD_DESIGN.md`: 多人数戦のテレビ局 / ビジネスセンター / 引越し屋 target head の現状棚卸しと導入方針
 - `scripts/report-rl-diversity.js`: candidate / adopted モデルを style と topCards 重複で整理し、比較すべきペアを出力
 - `scripts/review-rl-multiplayer-topk.js`: top-k 多人数後評価 JSON を 3人/4人総合点+多様性で並べる
+- `scripts/review-rl-multiplayer-experiment-set.js`: 複数 run の top10 review JSON を、run 間の総合点+多様性で比較する
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）
