@@ -589,6 +589,7 @@ sh scripts/rl/bg-status.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-tail.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-stop.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-list.sh
+sh scripts/rl/bg-summary.sh self-only-4p-h256-lr2e5-1000-seed104
 ```
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
@@ -596,6 +597,7 @@ sh scripts/rl/bg-list.sh
 - `bg-tail.sh`: 最新ログの末尾を表示する
 - `bg-stop.sh`: PID を解決して停止する
 - `bg-list.sh`: 追跡中ジョブを一覧表示する
+- `bg-summary.sh`: 完走済み run の `summary.json` から best run / config / top score を抜き出す
 
 現時点の実運用:
 

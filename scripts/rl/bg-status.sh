@@ -11,6 +11,8 @@ JOB_NAME="$1"
 PID_PATH="models/rl_model/pids/${JOB_NAME}.pid"
 STATUS_PATH="models/rl_model/pids/${JOB_NAME}.status"
 CMD_PATH="models/rl_model/pids/${JOB_NAME}.cmd"
+LOG_PATH="$(ls -1t models/rl_model/logs/*-"${JOB_NAME}".log 2>/dev/null | head -n 1)"
+SUMMARY_PATH="models/rl_model/runs/${JOB_NAME}/summary.json"
 
 PID=""
 if [ -f "${PID_PATH}" ]; then
@@ -40,4 +42,10 @@ if [ -f "${STATUS_PATH}" ]; then
 fi
 if [ -f "${CMD_PATH}" ]; then
     echo "cmd=$(cat "${CMD_PATH}")"
+fi
+if [ -n "${LOG_PATH}" ]; then
+    echo "log=${LOG_PATH}"
+fi
+if [ -f "${SUMMARY_PATH}" ]; then
+    echo "summary=${SUMMARY_PATH}"
 fi
