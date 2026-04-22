@@ -39,6 +39,21 @@ MODEL_DIR = os.path.join(
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 
+def _ensure_parent_dir(path):
+    directory = os.path.dirname(path)
+    if not directory or directory == os.path.sep:
+        return
+    cwd = os.path.abspath(os.getcwd())
+    abs_directory = os.path.abspath(directory)
+    try:
+        inside_cwd = os.path.commonpath([cwd, abs_directory]) == cwd
+    except ValueError:
+        inside_cwd = False
+    target_directory = os.path.relpath(abs_directory, cwd) if inside_cwd else directory
+    if target_directory and target_directory != "." and not os.path.isdir(target_directory):
+        os.makedirs(target_directory, exist_ok=True)
+
+
 def _encode_for_agent(env: MachikoroEnv, agent: RLAgent) -> np.ndarray:
     if getattr(agent, "state_dim", state_dim_for_player_count(len(env.players))) == STATE_DIM_4P:
         return encode_state_v2(env)
@@ -1058,9 +1073,7 @@ def _fallback_checkpoint_score(wr_rnd, wr_normal, wr_strong, wr_expert):
 def _copy_checkpoint(src_model_path, dst_model_path):
     src = src_model_path + ".npz"
     dst = dst_model_path + ".npz"
-    directory = os.path.dirname(dst)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
+    _ensure_parent_dir(dst)
     with open(src, "rb") as src_fh, open(dst, "wb") as dst_fh:
         dst_fh.write(src_fh.read())
 
@@ -1100,16 +1113,12 @@ def _best_checkpoint_artifact_paths(best_checkpoint_path, summary_path=None, run
 
 
 def _export_browser_checkpoint(src_model_path, dst_browser_path):
-    directory = os.path.dirname(dst_browser_path)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
+    _ensure_parent_dir(dst_browser_path)
     export_checkpoint(src_model_path + ".npz", dst_browser_path, fmt="json")
 
 
 def _write_best_checkpoint_metadata(meta_path, payload):
-    directory = os.path.dirname(meta_path)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
+    _ensure_parent_dir(meta_path)
     with open(meta_path, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False, indent=2)
         fh.write("\n")

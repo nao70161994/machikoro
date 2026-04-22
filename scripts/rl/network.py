@@ -1,5 +1,7 @@
 # network.py - numpy のみで実装した方策＋価値ネットワーク（MLP）
 
+import os
+
 import numpy as np
 
 from .cards import NUM_CARDS
@@ -9,6 +11,21 @@ CHECKPOINT_SCHEMA_VERSION = 3
 
 class SchemaVersionError(ValueError):
     pass
+
+
+def _ensure_parent_dir(path: str):
+    directory = os.path.dirname(path)
+    if not directory or directory == os.path.sep:
+        return
+    cwd = os.path.abspath(os.getcwd())
+    abs_directory = os.path.abspath(directory)
+    try:
+        inside_cwd = os.path.commonpath([cwd, abs_directory]) == cwd
+    except ValueError:
+        inside_cwd = False
+    target_directory = os.path.relpath(abs_directory, cwd) if inside_cwd else directory
+    if target_directory and target_directory != "." and not os.path.isdir(target_directory):
+        os.makedirs(target_directory, exist_ok=True)
 
 
 def relu(x):
@@ -254,10 +271,7 @@ class PolicyValueNet:
         return specs
 
     def save(self, path: str):
-        import os
-        directory = os.path.dirname(path)
-        if directory and directory != os.path.sep and not os.path.isdir(directory):
-            os.makedirs(directory, exist_ok=True)
+        _ensure_parent_dir(path)
         params = {"schema_version": np.array(CHECKPOINT_SCHEMA_VERSION, dtype=np.int64)}
         for prefix, layer in self._layer_specs():
             params[f"{prefix}_W"]  = layer.W

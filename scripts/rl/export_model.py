@@ -21,6 +21,21 @@ DEFAULT_INPUT = os.path.join(MODEL_DIR, "model.npz")
 DEFAULT_OUTPUT = os.path.join(MODEL_DIR, "model.browser.json")
 
 
+def _ensure_parent_dir(path):
+    directory = os.path.dirname(path)
+    if not directory or directory == os.path.sep:
+        return
+    cwd = os.path.abspath(os.getcwd())
+    abs_directory = os.path.abspath(directory)
+    try:
+        inside_cwd = os.path.commonpath([cwd, abs_directory]) == cwd
+    except ValueError:
+        inside_cwd = False
+    target_directory = os.path.relpath(abs_directory, cwd) if inside_cwd else directory
+    if target_directory and target_directory != "." and not os.path.isdir(target_directory):
+        os.makedirs(target_directory, exist_ok=True)
+
+
 def _load_layer(data, prefix):
     weight_key = f"{prefix}_W"
     bias_key = f"{prefix}_b"
@@ -89,9 +104,7 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
     if mover_target:
         bundle["layers"]["moverTargetHead"] = mover_target
 
-    output_dir = os.path.dirname(output_path)
-    if output_dir and output_dir != os.path.sep and not os.path.isdir(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
+    _ensure_parent_dir(output_path)
     if fmt == "js":
         body = f"globalThis.{var_name} = {json.dumps(bundle, ensure_ascii=False, separators=(',', ':'))};\n"
     else:

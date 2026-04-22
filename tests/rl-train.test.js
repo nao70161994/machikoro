@@ -235,6 +235,31 @@ print(sorted(k for k in bundle["layers"].keys() if "TargetHead" in k))
     assert.strictEqual(exported.numTargetSlots, 3);
 });
 
+runTest('rl train: checkpoint 保存と export は cwd 配下の絶対 path でも動く', () => {
+    const repoRoot = path.join(__dirname, '..');
+    const baseDir = path.join(repoRoot, 'models', 'rl_model', 'tmp-abs-save');
+    fs.rmSync(baseDir, { recursive: true, force: true });
+    const ckptBase = path.join(baseDir, 'model');
+    const exportPath = path.join(baseDir, 'model.browser.json');
+    const output = runPython(`
+import os
+from scripts.rl.network import PolicyValueNet
+from scripts.rl.export_model import export_checkpoint
+
+base = os.path.abspath(r"${ckptBase}")
+export_path = os.path.abspath(r"${exportPath}")
+net = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=3)
+net.save(base)
+export_checkpoint(base + ".npz", export_path)
+print(os.path.exists(base + ".npz"))
+print(os.path.exists(export_path))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'True');
+    assert.strictEqual(lines[1], 'True');
+    fs.rmSync(baseDir, { recursive: true, force: true });
+});
+
 runTest('rl train: pending target choice は TV target head で相手を切り替えられる', () => {
     const output = runPython(`
 import numpy as np
