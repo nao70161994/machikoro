@@ -31,4 +31,5 @@ models/rl_model/pids/
 !models/rl_model/registry.json
 !models/rl_model/portfolio/
 !models/rl_model/portfolio/*.browser.json
+models/cpu_top_tier_search/
 js/rlModelData.js
