@@ -132,7 +132,8 @@ runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', 
     localRt.renderOnlinePlayerSettings();
 
     assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('value="rl" disabled'));
-    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('AI（深層学習）は現在2〜4人戦のみ対応です'));
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('AI（深層学習）は別系統の学習CPUで、現在2〜4人戦のみ対応です'));
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('安定したルールベースのCPU（最強）'));
 });
 
 // ===== applyAction =====

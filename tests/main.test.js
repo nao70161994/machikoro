@@ -242,7 +242,8 @@ runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にす
 
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="rl" disabled'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert" selected'));
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（深層学習）は現在2〜4人戦のみ対応です'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（深層学習）は別系統の学習CPUで、現在2〜4人戦のみ対応です'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('安定したルールベースのCPU（最強）'));
 });
 
 runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', () => {
