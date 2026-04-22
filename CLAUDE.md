@@ -64,6 +64,7 @@
 ## よく使う確認コマンド
 
 - 全自動テスト: `npm test`
+- `CPU（最強）` と `CPU（強）` の基準比較: `sh scripts/eval-cpu-top-tier.sh 50` または `npm run eval-expert-vs-strong -- --games 50`
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`
 - 模倣なし RL カリキュラム学習: `sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label <label>`

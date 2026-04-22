@@ -60,6 +60,18 @@ CPU の自己対戦:
 npm run selfplay -- --games 20 expert strong strong normal
 ```
 
+`CPU（最強）` と `CPU（強）` の基準比較:
+
+```bash
+sh scripts/eval-cpu-top-tier.sh 50
+```
+
+```bash
+npm run eval-expert-vs-strong -- --games 50 --format markdown
+```
+
+既定では `duel / trio / crowd / allStrong4` の 4 プロファイルで `CPU（最強）` 側の勝率を測ります。重み付き総合値は `1 / 2 / 3 / 4` で、人数が多く `strong` 比率が高い条件を強く見ます。
+
 `expert` の評価プリセット比較:
 
 ```bash

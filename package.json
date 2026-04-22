@@ -10,6 +10,7 @@
     "test:coverage": "node scripts/test-coverage.js",
     "selfplay": "node scripts/selfplay.js",
     "profile:expert": "node scripts/profile-expert.js",
+    "eval-expert-vs-strong": "node scripts/eval-expert-vs-strong.js",
     "eval-rl-vs-js": "node scripts/eval-rl-vs-js.js",
     "eval-rl-models": "node scripts/eval-rl-models.js",
     "eval-rl-business-scenario": "node scripts/eval-rl-business-scenario.js",

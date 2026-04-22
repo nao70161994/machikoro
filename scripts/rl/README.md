@@ -583,6 +583,20 @@ npm run summarize-rl-metrics -- \
 - `hidden=256 + lr=3e-5 + self=1 + --self-learn-both-sides + 5000 games` は `weak 90% / normal 65% / strong 45%` を出し、現時点の strong 重視トップ候補。
 - `hidden=256 + lr=2e-5 + rewardcap` は `weak 95% / normal 70% / strong 35%`。strong はやや下がるが pass率が低く、安定型候補。
 - `seed71 rewardcap` の top3 checkpoint は50戦 JS 評価で `weak 100% / normal 92% / strong 78%`、100戦 JS 評価で `weak 100% / normal 96% / strong 76%`。現時点の最強候補だが、単一採用ではなく戦略バリエーション用に別系統候補も残す。
+
+ルールベースの `CPU（最強）` を `CPU（強）` より明確に上位へ保つための基準比較は次を使う。
+
+```bash
+sh scripts/eval-cpu-top-tier.sh 50
+```
+
+詳細な保存用出力が必要なら次を使う。
+
+```bash
+npm run eval-expert-vs-strong -- --games 50 --format markdown
+```
+
+既定プロファイルは `duel / trio / crowd / allStrong4`。重み付き総合値は `1 / 2 / 3 / 4` で、人数が多く `strong` 比率が高い条件をより重く見る。
 - 補助終局報酬は強すぎると自己対戦内だけの資産/建設パターンを強化する可能性がある。rewardcap 実験では `terminal_landmark_value_diff=0.004`、`terminal_asset_diff=0.002`、`terminal_coin_diff=0.001`、`terminal_diff_clip=20` を使用。
 - モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
 
