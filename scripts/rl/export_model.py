@@ -89,7 +89,9 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
     if mover_target:
         bundle["layers"]["moverTargetHead"] = mover_target
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_dir = os.path.dirname(output_path)
+    if output_dir and output_dir != os.path.sep and not os.path.isdir(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
     if fmt == "js":
         body = f"globalThis.{var_name} = {json.dumps(bundle, ensure_ascii=False, separators=(',', ':'))};\n"
     else:

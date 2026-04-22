@@ -20,6 +20,12 @@ CMD_PATH="${PID_DIR}/${JOB_NAME}.cmd"
 
 mkdir -p "${LOG_DIR}" "${PID_DIR}"
 
+ROOT_DIR="$(pwd)"
+LOG_PATH="${ROOT_DIR}/${LOG_PATH}"
+PID_PATH="${ROOT_DIR}/${PID_PATH}"
+STATUS_PATH="${ROOT_DIR}/${STATUS_PATH}"
+CMD_PATH="${ROOT_DIR}/${CMD_PATH}"
+
 printf '%s\n' "$*" > "${CMD_PATH}"
 rm -f "${STATUS_PATH}"
 

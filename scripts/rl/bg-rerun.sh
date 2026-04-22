@@ -37,6 +37,9 @@ if [ -z "${CMD}" ]; then
     exit 1
 fi
 
+CMD="$(printf '%s\n' "${CMD}" | sed "s/--run-label ${JOB_NAME}/--run-label ${NEW_JOB_NAME}/g")"
+CMD="$(printf '%s\n' "${CMD}" | sed "s/--summary-baseline-run ${JOB_NAME}/--summary-baseline-run ${NEW_JOB_NAME}/g")"
+
 echo "source_job=${JOB_NAME}"
 echo "new_job=${NEW_JOB_NAME}"
 echo "cmd=${CMD}"

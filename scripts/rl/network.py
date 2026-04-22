@@ -255,7 +255,9 @@ class PolicyValueNet:
 
     def save(self, path: str):
         import os
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        directory = os.path.dirname(path)
+        if directory and directory != os.path.sep and not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
         params = {"schema_version": np.array(CHECKPOINT_SCHEMA_VERSION, dtype=np.int64)}
         for prefix, layer in self._layer_specs():
             params[f"{prefix}_W"]  = layer.W
