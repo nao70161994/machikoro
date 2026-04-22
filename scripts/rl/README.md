@@ -25,7 +25,13 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-js-oracle-self-both.sh` | self 対戦時だけ両席の行動を学習対象にする実験ラッパー |
 | `run-self-only-h256-lr2e5-5000.sh` | `hidden=256/lr=0.00002/5000 games/self=1/両側学習/reward cap` の短縮プリセット |
 | `run-self-only-4p-h256-lr2e5-5000.sh` | `--player-count 4` の4人専用自己対戦プリセット |
+| `bg-list.sh` | 追跡中のバックグラウンド学習ジョブを一覧表示する |
+| `bg-status.sh` | ジョブの `running/stopped/done` と summary 有無を確認する |
+| `bg-tail.sh` | ジョブの最新ログを tail する |
+| `bg-stop.sh` | 実行中ジョブを停止する |
+| `bg-summary.sh` | 完走済み run の `summary.json` から best run / config / top score を表示する |
 | `bg-rerun.sh` | 途中停止したバックグラウンド学習ジョブを、保存済み command から再起動する |
+| `bg-prune.sh` | 停止済みで summary を持たない stale job の pid/status/cmd を掃除する |
 | `bg-wait.sh` | バックグラウンド学習ジョブの完走待ち。完了後に summary を表示 |
 | `bg-finalize.sh` | 完走待ち + summary 表示 + `refresh-rl-ops-reports` を一発で実行 |
 | `eval-run.sh` | `run-label` / `registry model id` / 直接 path から 2人評価する短縮ラッパー |
@@ -599,10 +605,13 @@ sh scripts/rl/bg-finalize.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-rerun.sh self-only-4p-h256-lr2e5-5000-seed103-targethead
 sh scripts/rl/bg-rerun.sh old-job-name old-job-name-rerun -- \
   sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh --run-label old-job-name-rerun --seed 105
+sh scripts/rl/bg-prune.sh self-only-4p-h256-lr2e5-5000-seed103-targethead
+sh scripts/rl/bg-prune.sh --stale-all
 ```
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
+- `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
 - `bg-tail.sh`: 最新ログの末尾を表示する
 - `bg-stop.sh`: PID を解決して停止する
 - `bg-list.sh`: 追跡中ジョブを一覧表示する
@@ -610,6 +619,7 @@ sh scripts/rl/bg-rerun.sh old-job-name old-job-name-rerun -- \
 - `bg-wait.sh`: 完走まで待機し、終わったら `bg-summary.sh` を表示する
 - `bg-finalize.sh`: `bg-wait.sh` または `bg-summary.sh` を呼んだ後で `npm run refresh-rl-ops-reports` まで流す
 - `bg-rerun.sh`: 停止済みジョブの `.cmd` を読み、同じ command を新しい job 名で再起動する。古い job で `.cmd` が無い場合は `-- <command...>` で明示できる
+- `bg-prune.sh`: `state!=running` かつ `summary_state=missing` の stale job だけ掃除する。完走済み job と実行中 job は消さない
 
 現時点の実運用:
 

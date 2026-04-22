@@ -19,7 +19,18 @@ if [ -f "${PID_PATH}" ]; then
     PID="$(cat "${PID_PATH}")"
 fi
 
-ACTIVE_PID="$(ps -ef | grep "python3 -m scripts.rl.train" | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
+ACTIVE_PID="$(ps -ef | awk -v job="${JOB_NAME}" '
+    index($0, "python3 -m scripts.rl.train") > 0 {
+        for (i = 1; i <= NF; i += 1) {
+            if ($i == "--run-label" && (i + 1) <= NF && $(i + 1) == job) {
+                pid = $2;
+            }
+        }
+    }
+    END {
+        print pid;
+    }
+')"
 
 STATE="stopped"
 if [ -n "${ACTIVE_PID}" ]; then
