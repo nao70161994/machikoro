@@ -72,6 +72,18 @@ npm run eval-expert-vs-strong -- --games 50 --format markdown
 
 既定では `duel / trio / crowd / allStrong4` の 4 プロファイルで `CPU（最強）` 側の勝率を測ります。重み付き総合値は `1 / 2 / 3 / 4` で、人数が多く `strong` 比率が高い条件を強く見ます。
 
+`CPU（最強）` の tuning 候補をこの基準で粗く探索する場合:
+
+```bash
+sh scripts/search-cpu-top-tier.sh 8 5
+```
+
+```bash
+npm run search-expert-top-tier -- --games 8 --top 5 --format markdown
+```
+
+これは `tune-expert` の候補群を `duel / trio / crowd / allStrong4` で再採点し、`weightedWinRate` と `minWinRate` で上位候補を絞るための入口です。
+
 `expert` の評価プリセット比較:
 
 ```bash

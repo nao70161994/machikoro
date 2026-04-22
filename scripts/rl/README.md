@@ -597,6 +597,18 @@ npm run eval-expert-vs-strong -- --games 50 --format markdown
 ```
 
 既定プロファイルは `duel / trio / crowd / allStrong4`。重み付き総合値は `1 / 2 / 3 / 4` で、人数が多く `strong` 比率が高い条件をより重く見る。
+
+候補 tuning の粗探索は次を使う。
+
+```bash
+sh scripts/search-cpu-top-tier.sh 8 5
+```
+
+```bash
+npm run search-expert-top-tier -- --games 8 --top 5 --format markdown
+```
+
+これは `tune-expert` の候補群を同じ top-tier benchmark で再採点し、`weightedWinRate` と `minWinRate` で上位を出す。まずここで候補を絞り、その後に `eval-expert-vs-strong` のゲーム数を増やして確認する。
 - 補助終局報酬は強すぎると自己対戦内だけの資産/建設パターンを強化する可能性がある。rewardcap 実験では `terminal_landmark_value_diff=0.004`、`terminal_asset_diff=0.002`、`terminal_coin_diff=0.001`、`terminal_diff_clip=20` を使用。
 - モデルごとに構築傾向が異なるため、最終的には単一モデルでなく複数 RL CPU、または試合開始時に候補モデルから選ぶ CPU を検討する。
 
