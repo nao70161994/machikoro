@@ -23,7 +23,7 @@ mkdir -p "${LOG_DIR}" "${PID_DIR}"
 printf '%s\n' "$*" > "${CMD_PATH}"
 rm -f "${STATUS_PATH}"
 
-setsid -f sh -lc '
+STATUS_PATH="${STATUS_PATH}" setsid -f sh -lc '
 "$@"
 STATUS=$?
 printf "%s\n" "${STATUS}" > "$STATUS_PATH"

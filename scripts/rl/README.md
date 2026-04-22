@@ -579,6 +579,22 @@ npm run summarize-rl-metrics -- \
 
 UI 上の説明文もこの挙動に合わせている。ローカル/オンラインのプレイヤー設定では、2人戦は「2人用の複数モデルからランダム」、3〜4人戦は「3〜4人用の深層学習モデルからランダム」と表示する。5人以上では `AI（深層学習）` を無効化し、`CPU（最強）` を案内する。
 
+バックグラウンドで学習を回すときは、次の補助スクリプトを使う。
+
+```sh
+sh scripts/rl/run-background.sh self-only-4p-h256-lr2e5-1000-seed104 \
+  sh scripts/rl/run-self-only-4p-h256-lr2e5-1000.sh --run-label self-only-4p-h256-lr2e5-1000-seed104 --seed 104
+
+sh scripts/rl/bg-status.sh self-only-4p-h256-lr2e5-1000-seed104
+sh scripts/rl/bg-tail.sh self-only-4p-h256-lr2e5-1000-seed104
+sh scripts/rl/bg-stop.sh self-only-4p-h256-lr2e5-1000-seed104
+```
+
+- `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
+- `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
+- `bg-tail.sh`: 最新ログの末尾を表示する
+- `bg-stop.sh`: PID を解決して停止する
+
 現時点の実運用:
 
 - 2人戦主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
