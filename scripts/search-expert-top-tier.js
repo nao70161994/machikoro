@@ -14,6 +14,7 @@ function parseArgs(argv) {
     let lite = true;
     let fast = false;
     let profiles = DEFAULT_PROFILES.slice();
+    let progress = true;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -31,9 +32,10 @@ function parseArgs(argv) {
         else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         }
+        else if (arg === '--quiet') progress = false;
     }
 
-    return { games, seed, maxSteps, basePreset, top, format, lite, fast, profiles };
+    return { games, seed, maxSteps, basePreset, top, format, lite, fast, profiles, progress };
 }
 
 function summarizeProfileResults(results) {
@@ -97,7 +99,13 @@ function rankCandidates(entries) {
 function searchTopTier(options = {}) {
     const runtime = loadRuntime();
     const candidates = buildCandidateTunings(runtime, options.basePreset || 'default');
-    const ranked = rankCandidates(candidates.map((candidate, index) => evaluateCandidate(candidate, options, index)));
+    const evaluated = candidates.map((candidate, index) => {
+        if (options.progress) {
+            console.error(`[search ${index + 1}/${candidates.length}] ${candidate.name}`);
+        }
+        return evaluateCandidate(candidate, options, index);
+    });
+    const ranked = rankCandidates(evaluated);
     return {
         options,
         totalCandidates: candidates.length,
