@@ -25,6 +25,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-js-oracle-self-both.sh` | self 対戦時だけ両席の行動を学習対象にする実験ラッパー |
 | `run-self-only-h256-lr2e5-5000.sh` | `hidden=256/lr=0.00002/5000 games/self=1/両側学習/reward cap` の短縮プリセット |
 | `run-self-only-4p-h256-lr2e5-5000.sh` | `--player-count 4` の4人専用自己対戦プリセット |
+| `bg-wait.sh` | バックグラウンド学習ジョブの完走待ち。完了後に summary を表示 |
 | `eval-run.sh` | `run-label` から `best_model.browser.json` を評価する短縮ラッパー |
 | `eval-run-3p.sh` | 3人 lineup (`rl,normal,strong` など) を評価する短縮ラッパー |
 | `eval-run-4p.sh` | 4人 lineup (`rl,normal,normal,strong` など) を評価する短縮ラッパー |
@@ -590,6 +591,7 @@ sh scripts/rl/bg-tail.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-stop.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-list.sh
 sh scripts/rl/bg-summary.sh self-only-4p-h256-lr2e5-1000-seed104
+sh scripts/rl/bg-wait.sh self-only-4p-h256-lr2e5-1000-seed104 15
 ```
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
@@ -598,6 +600,7 @@ sh scripts/rl/bg-summary.sh self-only-4p-h256-lr2e5-1000-seed104
 - `bg-stop.sh`: PID を解決して停止する
 - `bg-list.sh`: 追跡中ジョブを一覧表示する
 - `bg-summary.sh`: 完走済み run の `summary.json` から best run / config / top score を抜き出す
+- `bg-wait.sh`: 完走まで待機し、終わったら `bg-summary.sh` を表示する
 
 現時点の実運用:
 
@@ -754,7 +757,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 |------|------|
 | 引越し屋（Mover） | active カードのみ対象。dormant カードを区別するには NUM_ACTIONS の拡張が必要 |
 | ビジネスセンター | active カードのみ交換対象 |
-| プレイヤー数 | 2人戦のみ対応 |
+| プレイヤー数 | 2〜4人戦に対応。5人以上は未対応 |
 
 ---
 

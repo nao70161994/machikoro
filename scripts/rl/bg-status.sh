@@ -19,10 +19,7 @@ if [ -f "${PID_PATH}" ]; then
     PID="$(cat "${PID_PATH}")"
 fi
 
-ACTIVE_PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} /python3 -m scripts\.rl\.train/ {pid=$2} END {print pid}')"
-if [ -z "${ACTIVE_PID}" ]; then
-    ACTIVE_PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
-fi
+ACTIVE_PID="$(ps -ef | grep "python3 -m scripts.rl.train" | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
 
 STATE="stopped"
 if [ -n "${ACTIVE_PID}" ]; then
@@ -30,6 +27,8 @@ if [ -n "${ACTIVE_PID}" ]; then
     PID="${ACTIVE_PID}"
 elif [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
     STATE="running"
+elif [ -f "${SUMMARY_PATH}" ]; then
+    STATE="done"
 fi
 
 echo "job=${JOB_NAME}"
@@ -48,4 +47,7 @@ if [ -n "${LOG_PATH}" ]; then
 fi
 if [ -f "${SUMMARY_PATH}" ]; then
     echo "summary=${SUMMARY_PATH}"
+    echo "summary_state=present"
+else
+    echo "summary_state=missing"
 fi

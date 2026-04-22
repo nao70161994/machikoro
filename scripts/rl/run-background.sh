@@ -32,10 +32,7 @@ exit "${STATUS}"
 
 PID=""
 for _ in 1 2 3 4 5; do
-    PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} /python3 -m scripts\.rl\.train/ {pid=$2} END {print pid}')"
-    if [ -z "${PID}" ]; then
-        PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
-    fi
+    PID="$(ps -ef | grep "python3 -m scripts.rl.train" | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
     if [ -n "${PID}" ]; then
         break
     fi
