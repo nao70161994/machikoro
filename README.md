@@ -283,6 +283,7 @@ RL スクリプト / モデル:
 - `scripts/rl/eval-run-3p.sh`: 採用済み 3人 lineup を短縮評価
 - `scripts/rl/eval-run-4p.sh`: 採用済み 4人 lineup を短縮評価
 - `scripts/rl/eval-run-multiplayer.sh`: 採用済み 3人/4人 lineup をまとめて評価
+- `scripts/rl/eval-run-top10-multiplayer.sh`: `run-label` の top10 checkpoint を 3人/4人複数 lineup で後評価
 - `scripts/rl/bg-list.sh`, `scripts/rl/bg-status.sh`, `scripts/rl/bg-tail.sh`, `scripts/rl/bg-finalize.sh`: バックグラウンド学習の監視補助
 - `scripts/rl/bg-prune.sh`: 停止済みで `summary.json` を持たない stale job の pid/status/cmd を掃除
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
@@ -296,6 +297,7 @@ RL スクリプト / モデル:
 - `scripts/update-rl-registry-from-eval.js`: `eval-rl-models` の JSON を registry に追記し、そのままレポート群も更新
 - `scripts/rl/TARGET_HEAD_DESIGN.md`: 多人数戦のテレビ局 / ビジネスセンター / 引越し屋 target head の現状棚卸しと導入方針
 - `scripts/report-rl-diversity.js`: candidate / adopted モデルを style と topCards 重複で整理し、比較すべきペアを出力
+- `scripts/review-rl-multiplayer-topk.js`: top-k 多人数後評価 JSON を 3人/4人総合点+多様性で並べる
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）

@@ -24,6 +24,7 @@
 - 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人の不足に加えて target head 診断も見えます。
 - 次にやるべき再評価・多様性見直しを機械的に出したいときは `npm run plan-rl-next-actions` を使ってください。
 - 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
+- 3人/4人戦の自己対戦安定化では `sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` で top10 checkpoint を複数 lineup 後評価し、`npm run review-rl-multiplayer-topk -- --input <json>` で総合点+多様性を確認してください。
 - 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。
 - `eval-rl-models` の JSON を registry へ追記してレポートまで更新したいときは `npm run update-rl-registry-from-eval -- --input <json>` を使ってください。
 - バックグラウンド学習の stale job 整理は `sh scripts/rl/bg-prune.sh <job|--stale-all>` を使ってください。
