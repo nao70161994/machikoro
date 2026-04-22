@@ -285,7 +285,9 @@ RL スクリプト / モデル:
 - `scripts/rl/eval-run-multiplayer.sh`: 採用済み 3人/4人 lineup をまとめて評価
 - `scripts/rl/eval-run-top10-multiplayer.sh`: `run-label` の top10 checkpoint を 3人/4人複数 lineup で後評価
 - `scripts/rl/bg-list.sh`, `scripts/rl/bg-status.sh`, `scripts/rl/bg-tail.sh`, `scripts/rl/bg-finalize.sh`: バックグラウンド学習の監視補助
+- `scripts/rl/bg-watch-summary.sh`, `scripts/rl/bg-experiment-set.sh`: 実行中/比較中ジョブの要約表示
 - `scripts/rl/bg-prune.sh`: 停止済みで `summary.json` を持たない stale job の pid/status/cmd を掃除
+- `scripts/rl/bg-finalize-top10-multiplayer.sh`: 完走待ち後に top10 多人数後評価まで一発で実行
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
