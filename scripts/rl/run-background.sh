@@ -15,14 +15,27 @@ LOG_DIR="models/rl_model/logs"
 PID_DIR="models/rl_model/pids"
 LOG_PATH="${LOG_DIR}/${STAMP}-${JOB_NAME}.log"
 PID_PATH="${PID_DIR}/${JOB_NAME}.pid"
+STATUS_PATH="${PID_DIR}/${JOB_NAME}.status"
+CMD_PATH="${PID_DIR}/${JOB_NAME}.cmd"
 
 mkdir -p "${LOG_DIR}" "${PID_DIR}"
 
-setsid -f "$@" >"${LOG_PATH}" 2>&1 </dev/null
+printf '%s\n' "$*" > "${CMD_PATH}"
+rm -f "${STATUS_PATH}"
+
+setsid -f sh -lc '
+"$@"
+STATUS=$?
+printf "%s\n" "${STATUS}" > "$STATUS_PATH"
+exit "${STATUS}"
+' sh "$@" >"${LOG_PATH}" 2>&1 </dev/null
 
 PID=""
 for _ in 1 2 3 4 5; do
-    PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
+    PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} /python3 -m scripts\.rl\.train/ {pid=$2} END {print pid}')"
+    if [ -z "${PID}" ]; then
+        PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
+    fi
     if [ -n "${PID}" ]; then
         break
     fi
@@ -40,3 +53,4 @@ echo "job=${JOB_NAME}"
 echo "pid=${PID}"
 echo "log=${LOG_PATH}"
 echo "pidfile=${PID_PATH}"
+echo "statusfile=${STATUS_PATH}"
