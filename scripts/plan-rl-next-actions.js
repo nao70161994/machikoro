@@ -20,9 +20,10 @@ function parseArgs(argv) {
 function actionPriority(action) {
     if (!action) return 99;
     if (action.type === 'coverage-gap') return 1;
-    if (action.type === 'reevaluate') return 2;
-    if (action.type === 'review-diversity') return 3;
-    if (action.type === 'record-eval-or-rejection') return 4;
+    if (action.type === 'target-head-review') return 2;
+    if (action.type === 'reevaluate') return 3;
+    if (action.type === 'review-diversity') return 4;
+    if (action.type === 'record-eval-or-rejection') return 5;
     return 9;
 }
 
@@ -68,6 +69,20 @@ function buildCoverageActions(audit) {
                 message: `${item.id}: 3〜4人用採用モデルなのに 4人 lineup 評価が不足しています`,
                 suggestedCommand: `sh scripts/rl/eval-run-4p.sh 100 ${item.id}`,
             });
+        }
+        if (item.role.includes('3p-4p') && item.targetDiagnostics && Number.isFinite(item.targetDiagnostics.pendingRate)) {
+            const pendingRate = item.targetDiagnostics.pendingRate;
+            const updateRate = Number.isFinite(item.targetDiagnostics.updateRate) ? item.targetDiagnostics.updateRate : 0;
+            if (pendingRate >= 0.005 && updateRate <= 0) {
+                actions.push({
+                    type: 'target-head-review',
+                    priority: 2,
+                    id: item.id,
+                    role: item.role,
+                    message: `${item.id}: 多人数 target head の pending は出ていますが更新率が 0% です`,
+                    suggestedCommand: `sh scripts/rl/eval-run-multiplayer.sh ${item.id} 100`,
+                });
+            }
         }
     }
     return actions;

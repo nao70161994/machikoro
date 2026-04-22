@@ -20,8 +20,9 @@ runTest('plan-rl-next-actions parseArgs は主要CLI引数を解釈する', () =
 
 runTest('plan-rl-next-actions actionPriority は coverage-gap を最優先にする', () => {
     assert.strictEqual(actionPriority({ type: 'coverage-gap' }), 1);
-    assert.strictEqual(actionPriority({ type: 'reevaluate' }), 2);
-    assert.strictEqual(actionPriority({ type: 'review-diversity' }), 3);
+    assert.strictEqual(actionPriority({ type: 'target-head-review' }), 2);
+    assert.strictEqual(actionPriority({ type: 'reevaluate' }), 3);
+    assert.strictEqual(actionPriority({ type: 'review-diversity' }), 4);
 });
 
 runTest('plan-rl-next-actions dedupeActions は同一内容をまとめる', () => {
@@ -46,12 +47,14 @@ runTest('plan-rl-next-actions buildCoverageActions は採用モデルの不足�
                 role: 'adopted-3p-4p',
                 has3pLineups: false,
                 has4pLineups: true,
+                targetDiagnostics: { pendingRate: 0.01, updateRate: 0 },
             },
         ],
     });
-    assert.strictEqual(actions.length, 2);
+    assert.strictEqual(actions.length, 3);
     assert.ok(actions[0].suggestedCommand.includes('eval-run.sh'));
     assert.ok(actions[1].suggestedCommand.includes('eval-run-3p.sh'));
+    assert.ok(actions[2].suggestedCommand.includes('eval-run-multiplayer.sh'));
 });
 
 runTest('plan-rl-next-actions buildWarningActions は reevaluate/diversity にコマンドを付ける', () => {

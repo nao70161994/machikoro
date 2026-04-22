@@ -3,19 +3,15 @@
 set -eu
 
 if [ "$#" -lt 1 ]; then
-    echo "usage: sh scripts/rl/eval-run-3p.sh RUN_LABEL [GAMES] [RANK]" >&2
+    echo "usage: sh scripts/rl/eval-run-3p.sh <run-label|model-id|model-path> [GAMES] [RANK]" >&2
     exit 2
 fi
 
-RUN_LABEL="$1"
+TARGET="$1"
 GAMES="${2:-50}"
 RANK="${3:-1}"
 
-if [ "$RANK" = "1" ]; then
-    MODEL="models/rl_model/runs/${RUN_LABEL}/best_model.browser.json"
-else
-    MODEL="models/rl_model/runs/${RUN_LABEL}/best_model.top${RANK}.browser.json"
-fi
+MODEL="$(node scripts/resolve-rl-model-path.js --rank "$RANK" "$TARGET")"
 
 LINEUPS="rl,normal,strong;rl,weak,normal;rl,weak,strong"
 

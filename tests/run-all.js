@@ -26,6 +26,7 @@ const TEST_GROUPS = {
         'rl-match-trace.test.js',
         'compare-rl-match-trace.test.js',
         'js-cpu-oracle.test.js',
+        'resolve-rl-model-path.test.js',
         'eval-rl-vs-js.test.js',
         'eval-rl-models.test.js',
         'render-rl-registry-evals.test.js',

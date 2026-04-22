@@ -66,7 +66,7 @@
 - 模倣なし RL カリキュラム学習: `sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label <label>`
 - 4人用 RL 自己対戦: `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh --run-label <label>`
 - RL と JS CPU の比較: `npm run eval-rl-vs-js -- --model <path>`
-- 3人/4人の採用済みモデル評価: `sh scripts/rl/eval-run-3p.sh 100 <model-id>`, `sh scripts/rl/eval-run-4p.sh 100 <model-id>`
+- 3人/4人の採用済みモデル評価: `sh scripts/rl/eval-run-3p.sh <model-id> 100`, `sh scripts/rl/eval-run-4p.sh <model-id> 100`, `sh scripts/rl/eval-run-multiplayer.sh <model-id> 100`
 - RL 台帳の検証/棚卸し: `npm run validate-rl-registry`, `npm run report-rl-registry`
 - RL 採用モデルの評価監査: `npm run audit-rl-portfolio`
 - RL 次アクション抽出: `npm run plan-rl-next-actions`

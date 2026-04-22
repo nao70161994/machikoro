@@ -28,9 +28,10 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `bg-rerun.sh` | 途中停止したバックグラウンド学習ジョブを、保存済み command から再起動する |
 | `bg-wait.sh` | バックグラウンド学習ジョブの完走待ち。完了後に summary を表示 |
 | `bg-finalize.sh` | 完走待ち + summary 表示 + `refresh-rl-ops-reports` を一発で実行 |
-| `eval-run.sh` | `run-label` から `best_model.browser.json` を評価する短縮ラッパー |
-| `eval-run-3p.sh` | 3人 lineup (`rl,normal,strong` など) を評価する短縮ラッパー |
-| `eval-run-4p.sh` | 4人 lineup (`rl,normal,normal,strong` など) を評価する短縮ラッパー |
+| `eval-run.sh` | `run-label` / `registry model id` / 直接 path から 2人評価する短縮ラッパー |
+| `eval-run-3p.sh` | `run-label` / `registry model id` / 直接 path から 3人 lineup を評価する短縮ラッパー |
+| `eval-run-4p.sh` | `run-label` / `registry model id` / 直接 path から 4人 lineup を評価する短縮ラッパー |
+| `eval-run-multiplayer.sh` | 3人/4人の標準 lineup 評価をまとめて実行する短縮ラッパー |
 | `../eval-rl-models.js` | 複数の registry model / run-label をまとめてJS評価し、ランキングJSON/CSVを出力 |
 | `../validate-rl-registry.js` | `models/rl_model/registry.json` のID重複・推奨モデル参照を検証 |
 
@@ -675,7 +676,7 @@ npm run render-rl-registry-evals -- \
 text 出力に加えて markdown/json と `actions` セクションを持ち、警告から再評価・多様性見直し・eval 追記の候補作業を拾える。
 `npm run audit-rl-portfolio` は `recommendedActiveModels` だけに絞って、2人JS評価、3人lineup評価、4人lineup評価、portfolio 配布整合、target head 診断を監査する。
 `npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
-`npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
+`npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style、target 診断で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 `npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
 `npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review を更新する。評価後の標準フローとして使える。
 `npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。

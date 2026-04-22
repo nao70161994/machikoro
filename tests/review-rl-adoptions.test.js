@@ -1,4 +1,7 @@
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
 const {
@@ -41,9 +44,16 @@ runTest('review-rl-adoptions weighted2pScore は weak/normal/strong の重み付
 });
 
 runTest('review-rl-adoptions buildCandidateEntry は主要指標を抽出する', () => {
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-review-'));
+    const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'm1-run');
+    fs.mkdirSync(runDir, { recursive: true });
+    fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
+        bestRuns: [{ targetPendingRate: 0.08, targetUpdateRate: 0.07, tvTargetRate: 0.03, bcTargetRate: 0.02, moverTargetRate: 0.01 }],
+    }), 'utf8');
     const entry = buildCandidateEntry({
         id: 'm1',
         status: 'candidate',
+        sourceRun: 'models/rl_model/runs/m1-run',
         style: { label: 'alpha' },
         evals: [
             {
@@ -56,11 +66,12 @@ runTest('review-rl-adoptions buildCandidateEntry は主要指標を抽出する'
                 },
             },
         ],
-    }, new Set(['m1']));
+    }, new Set(['m1']), { repoRoot });
     assert.strictEqual(entry.recommended, true);
     assert.strictEqual(entry.evalGames, 50);
     assert.strictEqual(entry.passRate, 0.03);
     assert.strictEqual(entry.score, 0.566667);
+    assert.strictEqual(entry.targetDiagnostics.pendingRate, 0.08);
 });
 
 runTest('review-rl-adoptions buildAdoptionReview は main と challenger を比較する', () => {
@@ -120,7 +131,18 @@ runTest('review-rl-adoptions renderText/renderMarkdown は候補一覧を出力�
         minimumGames: 50,
         currentMain: 'main',
         candidates: [
-            { id: 'main', score: 0.5, evalGames: 50, weak: 0.9, normal: 0.6, strong: 0.2, passRate: 0.03, style: 'style-a', recommended: true },
+            {
+                id: 'main',
+                score: 0.5,
+                evalGames: 50,
+                weak: 0.9,
+                normal: 0.6,
+                strong: 0.2,
+                passRate: 0.03,
+                style: 'style-a',
+                targetDiagnostics: { pendingRate: 0.08, updateRate: 0.07, tvRate: 0.03, bcRate: 0.02, moverRate: 0.01 },
+                recommended: true,
+            },
         ],
         actions: [
             { type: 'reevaluate-main', message: 'needs more games', command: 'sh scripts/rl/eval-run.sh main 50 weak,normal,strong' },
@@ -130,6 +152,8 @@ runTest('review-rl-adoptions renderText/renderMarkdown は候補一覧を出力�
     const markdown = renderMarkdown(review);
     assert.ok(text.includes('currentMain=main'));
     assert.ok(text.includes('reevaluate-main'));
+    assert.ok(text.includes('target=p=8.0%'));
     assert.ok(markdown.includes('# RL Adoption Review'));
     assert.ok(markdown.includes('`main`'));
+    assert.ok(markdown.includes('| id | score | games | weak | normal | strong | pass | style | target | recommended |'));
 });

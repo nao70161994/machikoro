@@ -218,8 +218,9 @@ baseline 学習で生成される主な成果物:
 
 ```bash
 sh scripts/rl/eval-run.sh <run-label>
-sh scripts/rl/eval-run-3p.sh 100 self-only-4p-h256-lr1e5-5000-seed102
-sh scripts/rl/eval-run-4p.sh 100 self-only-4p-h256-lr1e5-5000-seed102
+sh scripts/rl/eval-run-3p.sh self-only-4p-h256-lr1e5-5000-seed102 100
+sh scripts/rl/eval-run-4p.sh self-only-4p-h256-lr1e5-5000-seed102 100
+sh scripts/rl/eval-run-multiplayer.sh self-only-4p-h256-lr1e5-5000-seed102 100
 ```
 
 台帳運用の基本:
@@ -281,6 +282,7 @@ RL スクリプト / モデル:
 - `scripts/rl/eval-run.sh`: `run-label` から 2人戦の `best_model.browser.json` を評価
 - `scripts/rl/eval-run-3p.sh`: 採用済み 3人 lineup を短縮評価
 - `scripts/rl/eval-run-4p.sh`: 採用済み 4人 lineup を短縮評価
+- `scripts/rl/eval-run-multiplayer.sh`: 採用済み 3人/4人 lineup をまとめて評価
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング

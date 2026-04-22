@@ -6,6 +6,7 @@ const {
     latestEval,
     modelStyleKey,
     summarizeEvalCoverage,
+    summarizeTargetDiagnostics,
 } = require('./validate-rl-registry.js');
 
 function parseArgs(argv) {
@@ -65,15 +66,17 @@ function passRate(evalEntry) {
     return null;
 }
 
-function buildCandidateEntry(model, recommendedIds) {
+function buildCandidateEntry(model, recommendedIds, options = {}) {
     const evalEntry = latest2pEval(model);
     const coverage = summarizeEvalCoverage(model);
+    const targetDiagnostics = summarizeTargetDiagnostics(model, options);
     return {
         id: model.id,
         status: model.status || '',
         style: modelStyleKey(model),
         recommended: recommendedIds.has(model.id),
         coverage,
+        targetDiagnostics,
         evalGames: evalEntry ? (evalEntry.gamesPerOpponent || 0) : 0,
         weak: evalEntry ? opponentRate(evalEntry, 'weak') : null,
         normal: evalEntry ? opponentRate(evalEntry, 'normal') : null,
@@ -81,6 +84,13 @@ function buildCandidateEntry(model, recommendedIds) {
         score: evalEntry ? weighted2pScore(evalEntry) : null,
         passRate: evalEntry ? passRate(evalEntry) : null,
     };
+}
+
+function formatTargetDiagnostics(diagnostics) {
+    if (!diagnostics) return 'n/a';
+    const formatRate = (value) => Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '-';
+    return `p=${formatRate(diagnostics.pendingRate)} u=${formatRate(diagnostics.updateRate)} `
+        + `(tv=${formatRate(diagnostics.tvRate)} bc=${formatRate(diagnostics.bcRate)} mv=${formatRate(diagnostics.moverRate)})`;
 }
 
 function compareEntries(left, right) {
@@ -173,7 +183,8 @@ function renderText(review) {
             `- ${entry.id} score=${entry.score == null ? 'n/a' : entry.score} games=${entry.evalGames} ` +
             `weak=${entry.weak == null ? 'n/a' : entry.weak} normal=${entry.normal == null ? 'n/a' : entry.normal} ` +
             `strong=${entry.strong == null ? 'n/a' : entry.strong} pass=${entry.passRate == null ? 'n/a' : entry.passRate} ` +
-            `style=${entry.style || 'n/a'}${entry.recommended ? ' [recommended]' : ''}`
+            `style=${entry.style || 'n/a'} target=${formatTargetDiagnostics(entry.targetDiagnostics)}` +
+            `${entry.recommended ? ' [recommended]' : ''}`
         );
     }
     if (review.actions.length > 0) {
@@ -196,15 +207,15 @@ function renderMarkdown(review) {
         '',
         '## Candidates',
         '',
-        '| id | score | games | weak | normal | strong | pass | style | recommended |',
-        '|---|---:|---:|---:|---:|---:|---:|---|---|',
+        '| id | score | games | weak | normal | strong | pass | style | target | recommended |',
+        '|---|---:|---:|---:|---:|---:|---:|---|---|---|',
     ];
     for (const entry of review.candidates) {
         lines.push(
             `| \`${entry.id}\` | ${entry.score == null ? 'n/a' : entry.score} | ${entry.evalGames} | ` +
             `${entry.weak == null ? 'n/a' : entry.weak} | ${entry.normal == null ? 'n/a' : entry.normal} | ` +
             `${entry.strong == null ? 'n/a' : entry.strong} | ${entry.passRate == null ? 'n/a' : entry.passRate} | ` +
-            `${entry.style || 'n/a'} | ${entry.recommended ? 'yes' : ''} |`
+            `${entry.style || 'n/a'} | ${formatTargetDiagnostics(entry.targetDiagnostics)} | ${entry.recommended ? 'yes' : ''} |`
         );
     }
     if (review.actions.length > 0) {
@@ -232,6 +243,7 @@ module.exports = {
     parseArgs,
     latest2pEval,
     weighted2pScore,
+    formatTargetDiagnostics,
     buildCandidateEntry,
     buildAdoptionReview,
     renderText,
