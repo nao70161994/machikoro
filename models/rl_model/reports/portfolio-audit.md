@@ -11,9 +11,9 @@
 
 ## Recommended Models
 
-| id | role | status | style | portfolio | 2p | 3p | 4p |
-|---|---|---|---|---|---:|---:|---:|
-| `self-only-4p-h256-lr1e5-5000-seed102` | adopted-3p-4p | adopted | 4p-vineyard-farm-pizza | yes | missing | 200 | 200 |
-| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | adopted-2p-main | adopted | vineyard-farm-winery-strong | yes | 300 | missing | missing |
-| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | sushi-warehouse-variant | candidate | sushi-warehouse-farm | no | 100 | missing | missing |
-| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | burger-warehouse-variant | candidate | burger-warehouse-wheat | no | 100 | missing | missing |
+| id | role | status | style | portfolio | 2p | 3p | 4p | target |
+|---|---|---|---|---|---:|---:|---:|---|
+| `self-only-4p-h256-lr1e5-5000-seed102` | adopted-3p-4p | adopted | 4p-vineyard-farm-pizza | yes | missing | 200 | 200 | n/a |
+| `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | adopted-2p-main | adopted | vineyard-farm-winery-strong | yes | 300 | missing | missing | n/a |
+| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | sushi-warehouse-variant | candidate | sushi-warehouse-farm | no | 100 | missing | missing | n/a |
+| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | burger-warehouse-variant | candidate | burger-warehouse-wheat | no | 100 | missing | missing | n/a |

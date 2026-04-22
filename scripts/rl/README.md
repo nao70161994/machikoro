@@ -83,7 +83,7 @@ player_count正規化         1
 合計                      353
 ```
 
-現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、Python/JS ともに「脅威度が最大の相手」へ自動選択する。対象選択 head は未実装なので、4人専用モデルの次段階で追加する。checkpoint / browser export / `js/RLCPU.js` には optional target head の受け皿を追加済みで、head が無い既存モデルは現状 heuristic に fallback する。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
+現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、`tv_target` / `bc_target` / `mover_target` の optional target head があればその出力を使い、head が無い既存モデルは Python/JS ともに「脅威度が最大の相手」heuristic に fallback する。target head の checkpoint / browser export / `js/RLCPU.js` / Python 推論 / 学習更新は実装済みで、学習ログでは `tgt=` として pending 発生率と更新率を確認できる。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
 
 ### 行動空間（NUM_ACTIONS = 1580）
 
@@ -660,9 +660,9 @@ npm run render-rl-registry-evals -- \
 逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。
 学習中の top-k と後評価はズレる前提で扱う。採用判断は学習中 score ではなく、`eval-run-topk.sh` などで best/top2/top3 を同条件・十分なゲーム数で再評価した結果を優先する。
 `npm run validate-rl-registry` は、active model の評価ゲーム数不足や recommended model の style 重複を警告する。警告は即エラーではないが、採用判断前に理由を `registry.json` の `reason` / `style.summary` に残す。
-`npm run report-rl-registry` は status 別件数、警告、各モデルの最新評価数と style を一覧する。候補棚卸しや archive 判断前の確認に使う。
+`npm run report-rl-registry` は status 別件数、警告、各モデルの最新評価数、style、target head 診断を一覧する。候補棚卸しや archive 判断前の確認に使う。
 text 出力に加えて markdown/json と `actions` セクションを持ち、警告から再評価・多様性見直し・eval 追記の候補作業を拾える。
-`npm run audit-rl-portfolio` は `recommendedActiveModels` だけに絞って、2人JS評価、3人lineup評価、4人lineup評価、portfolio 配布整合を監査する。
+`npm run audit-rl-portfolio` は `recommendedActiveModels` だけに絞って、2人JS評価、3人lineup評価、4人lineup評価、portfolio 配布整合、target head 診断を監査する。
 `npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
 `npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 `npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。

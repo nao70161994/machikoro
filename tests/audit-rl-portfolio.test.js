@@ -1,4 +1,7 @@
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
 const {
@@ -15,6 +18,12 @@ runTest('audit-rl-portfolio parseArgs は主要CLI引数を解釈する', () => 
 });
 
 runTest('audit-rl-portfolio は recommended model の評価カバレッジを集計する', () => {
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-audit-'));
+    const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'm4p-run');
+    fs.mkdirSync(runDir, { recursive: true });
+    fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
+        bestRuns: [{ targetPendingRate: 0.08, targetUpdateRate: 0.07, tvTargetRate: 0.03, bcTargetRate: 0.02, moverTargetRate: 0.01 }],
+    }), 'utf8');
     const audit = buildAudit({
         updatedAt: '2026-04-21',
         models: [
@@ -35,6 +44,7 @@ runTest('audit-rl-portfolio は recommended model の評価カバレッジを集
                 id: 'm4p',
                 status: 'adopted',
                 path: 'models/rl_model/portfolio/m4p.browser.json',
+                sourceRun: 'models/rl_model/runs/m4p-run',
                 style: { label: 'style-4p' },
                 evals: [
                     {
@@ -56,11 +66,12 @@ runTest('audit-rl-portfolio は recommended model の評価カバレッジを集
                 { id: 'm4p', role: 'adopted-3p-4p' },
             ],
         },
-    });
+    }, { repoRoot });
     assert.strictEqual(audit.recommended.length, 2);
     assert.strictEqual(audit.recommended[0].has2pOpponents, true);
     assert.strictEqual(audit.recommended[1].has3pLineups, true);
     assert.strictEqual(audit.recommended[1].has4pLineups, true);
+    assert.strictEqual(audit.recommended[1].targetDiagnostics.pendingRate, 0.08);
 });
 
 runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を出力する', () => {
@@ -81,6 +92,7 @@ runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を�
                 has3pLineups: false,
                 best4pGames: 0,
                 has4pLineups: false,
+                targetDiagnostics: { pendingRate: 0.08, updateRate: 0.07, tvRate: 0.03, bcRate: 0.02, moverRate: 0.01 },
             },
         ],
     };
@@ -88,6 +100,8 @@ runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を�
     const markdown = renderMarkdown(audit);
     assert.ok(text.includes('recommended:'));
     assert.ok(text.includes('m1 [adopted-2p-main]'));
+    assert.ok(text.includes('target=p=8.0%'));
     assert.ok(markdown.includes('# RL Portfolio Audit'));
-    assert.ok(markdown.includes('| id | role | status | style | portfolio | 2p | 3p | 4p |'));
+    assert.ok(markdown.includes('| id | role | status | style | portfolio | 2p | 3p | 4p | target |'));
+    assert.ok(markdown.includes('p=8.0%'));
 });

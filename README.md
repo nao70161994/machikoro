@@ -284,8 +284,8 @@ RL スクリプト / モデル:
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
-- `scripts/report-rl-registry.js`: registry の棚卸しレポート出力
-- `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人評価カバレッジ監査
+- `scripts/report-rl-registry.js`: registry の棚卸しレポート出力。評価カバレッジに加えて target head 診断も一覧します。
+- `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人評価カバレッジ監査。target head 診断も含みます。
 - `scripts/plan-rl-next-actions.js`: 台帳と監査から次にやる評価・見直し作業を優先順位付きで抽出
 - `scripts/review-rl-adoptions.js`: 2人戦候補を weighted score で並べ、現採用モデルと比較すべき challenger を抽出
 - `scripts/refresh-rl-ops-reports.js`: registry レポート、portfolio 監査、次アクション、採用候補レビューをまとめて `models/rl_model/reports/` に書き出す

@@ -5,6 +5,7 @@ const {
     validateRegistry,
     summarizeEvalCoverage,
     modelStyleKey,
+    summarizeTargetDiagnostics,
 } = require('./validate-rl-registry.js');
 
 function parseArgs(argv) {
@@ -20,12 +21,20 @@ function parseArgs(argv) {
     return args;
 }
 
-function buildAudit(registry) {
+function formatTargetDiagnostics(diagnostics) {
+    if (!diagnostics) return 'n/a';
+    const formatRate = (value) => Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '-';
+    return `p=${formatRate(diagnostics.pendingRate)} u=${formatRate(diagnostics.updateRate)} `
+        + `(tv=${formatRate(diagnostics.tvRate)} bc=${formatRate(diagnostics.bcRate)} mv=${formatRate(diagnostics.moverRate)})`;
+}
+
+function buildAudit(registry, options = {}) {
     const validation = validateRegistry(registry);
     const models = Array.isArray(registry.models) ? registry.models : [];
     const recommended = (((registry.portfolioPolicy || {}).recommendedActiveModels) || []).map(entry => {
         const model = models.find(item => item.id === entry.id);
         const coverage = model ? summarizeEvalCoverage(model) : null;
+        const targetDiagnostics = model ? summarizeTargetDiagnostics(model, options) : null;
         return {
             id: entry.id,
             role: entry.role || '',
@@ -39,6 +48,7 @@ function buildAudit(registry) {
             has3pLineups: coverage ? coverage.has3pLineups : false,
             best4pGames: coverage ? coverage.best4pGames : 0,
             has4pLineups: coverage ? coverage.has4pLineups : false,
+            targetDiagnostics,
         };
     });
     return {
@@ -68,7 +78,8 @@ function renderText(audit) {
             `portfolio=${item.portfolioPath ? 'yes' : 'no'} ` +
             `2p=${item.has2pOpponents ? item.best2pGames : 'missing'} ` +
             `3p=${item.has3pLineups ? item.best3pGames : 'missing'} ` +
-            `4p=${item.has4pLineups ? item.best4pGames : 'missing'}`
+            `4p=${item.has4pLineups ? item.best4pGames : 'missing'} ` +
+            `target=${formatTargetDiagnostics(item.targetDiagnostics)}`
         );
     }
     return lines.join('\n') + '\n';
@@ -92,8 +103,8 @@ function renderMarkdown(audit) {
         '',
         '## Recommended Models',
         '',
-        '| id | role | status | style | portfolio | 2p | 3p | 4p |',
-        '|---|---|---|---|---|---:|---:|---:|'
+        '| id | role | status | style | portfolio | 2p | 3p | 4p | target |',
+        '|---|---|---|---|---|---:|---:|---:|---|'
     );
     for (const item of audit.recommended) {
         lines.push(
@@ -101,7 +112,8 @@ function renderMarkdown(audit) {
             `${item.portfolioPath ? 'yes' : 'no'} | ` +
             `${item.has2pOpponents ? item.best2pGames : 'missing'} | ` +
             `${item.has3pLineups ? item.best3pGames : 'missing'} | ` +
-            `${item.has4pLineups ? item.best4pGames : 'missing'} |`
+            `${item.has4pLineups ? item.best4pGames : 'missing'} | ` +
+            `${formatTargetDiagnostics(item.targetDiagnostics)} |`
         );
     }
     return lines.join('\n') + '\n';
@@ -119,6 +131,7 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     buildAudit,
+    formatTargetDiagnostics,
     renderText,
     renderMarkdown,
 };

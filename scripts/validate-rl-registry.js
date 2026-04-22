@@ -84,6 +84,47 @@ function summarizeEvalCoverage(model) {
     };
 }
 
+function resolveModelSummaryPath(model, options = {}) {
+    const repoRoot = options.repoRoot || path.join(__dirname, '..');
+    if (model && typeof model.sourceRun === 'string' && model.sourceRun) {
+        return path.join(repoRoot, model.sourceRun, 'summary.json');
+    }
+    if (model && typeof model.path === 'string' && model.path.includes('/runs/')) {
+        return path.join(repoRoot, path.dirname(model.path), 'summary.json');
+    }
+    return '';
+}
+
+function loadModelSummary(model, options = {}) {
+    const summaryPath = resolveModelSummaryPath(model, options);
+    if (!summaryPath || !fs.existsSync(summaryPath)) return null;
+    try {
+        return JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+    } catch (_error) {
+        return null;
+    }
+}
+
+function summarizeTargetDiagnostics(model, options = {}) {
+    const summary = loadModelSummary(model, options);
+    if (!summary) return null;
+    const entry = (Array.isArray(summary.bestRuns) && summary.bestRuns[0])
+        || summary.baselineRunEntry
+        || (Array.isArray(summary.combinedTop) && summary.combinedTop[0])
+        || null;
+    if (!entry) return null;
+    const diagnostics = {
+        pendingRate: Number.isFinite(entry.targetPendingRate) ? entry.targetPendingRate : null,
+        updateRate: Number.isFinite(entry.targetUpdateRate) ? entry.targetUpdateRate : null,
+        tvRate: Number.isFinite(entry.tvTargetRate) ? entry.tvTargetRate : null,
+        bcRate: Number.isFinite(entry.bcTargetRate) ? entry.bcTargetRate : null,
+        moverRate: Number.isFinite(entry.moverTargetRate) ? entry.moverTargetRate : null,
+    };
+    if (!Object.values(diagnostics).some(value => value !== null)) return null;
+    diagnostics.summaryPath = resolveModelSummaryPath(model, options);
+    return diagnostics;
+}
+
 function validateRegistry(registry, options = {}) {
     const errors = [];
     const warnings = [];
@@ -208,6 +249,9 @@ module.exports = {
     hasOpponentCoverage,
     hasLineupCoverage,
     summarizeEvalCoverage,
+    resolveModelSummaryPath,
+    loadModelSummary,
+    summarizeTargetDiagnostics,
     validateRegistry,
     printValidation,
 };

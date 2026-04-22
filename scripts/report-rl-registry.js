@@ -8,6 +8,7 @@ const {
     latestEval,
     modelStyleKey,
     summarizeEvalCoverage,
+    summarizeTargetDiagnostics,
 } = require('./validate-rl-registry.js');
 
 function parseArgs(argv) {
@@ -33,7 +34,14 @@ function modelEvalLabel(model) {
     return 'eval-recorded';
 }
 
-function buildRegistryReport(registry) {
+function formatTargetDiagnostics(diagnostics) {
+    if (!diagnostics) return 'n/a';
+    const formatRate = (value) => Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '-';
+    return `p=${formatRate(diagnostics.pendingRate)} u=${formatRate(diagnostics.updateRate)} `
+        + `(tv=${formatRate(diagnostics.tvRate)} bc=${formatRate(diagnostics.bcRate)} mv=${formatRate(diagnostics.moverRate)})`;
+}
+
+function buildRegistryReport(registry, options = {}) {
     const models = Array.isArray(registry.models) ? registry.models : [];
     const validation = validateRegistry(registry);
     const statusCounts = {};
@@ -53,6 +61,7 @@ function buildRegistryReport(registry) {
             bestEvalGames: bestEvalGames(model),
             latestEval: modelEvalLabel(model),
             coverage: summarizeEvalCoverage(model),
+            targetDiagnostics: summarizeTargetDiagnostics(model, options),
         })),
     };
     report.recommended = ((((registry.portfolioPolicy || {}).recommendedActiveModels) || []).map(entry => {
@@ -63,6 +72,7 @@ function buildRegistryReport(registry) {
             style: model ? modelStyleKey(model) : '',
             status: model ? (model.status || '') : 'missing',
             coverage: model ? summarizeEvalCoverage(model) : null,
+            targetDiagnostics: model ? summarizeTargetDiagnostics(model, options) : null,
         };
     }));
     report.actions = recommendedActions(report);
@@ -108,13 +118,17 @@ function renderText(report) {
                 `- ${entry.id} [${entry.role}] status=${entry.status || 'n/a'} ` +
                 `2p=${coverage.has2pOpponents ? coverage.best2pGames : 'missing'} ` +
                 `3p=${coverage.has3pLineups ? coverage.best3pGames : 'missing'} ` +
-                `4p=${coverage.has4pLineups ? coverage.best4pGames : 'missing'}`
+                `4p=${coverage.has4pLineups ? coverage.best4pGames : 'missing'} ` +
+                `target=${formatTargetDiagnostics(entry.targetDiagnostics)}`
             );
         }
     }
     lines.push('models:');
     for (const model of report.models) {
-        lines.push(`- ${model.id} [${model.status}] eval=${model.latestEval} style=${model.style || 'n/a'}`);
+        lines.push(
+            `- ${model.id} [${model.status}] eval=${model.latestEval} style=${model.style || 'n/a'} `
+            + `target=${formatTargetDiagnostics(model.targetDiagnostics)}`
+        );
     }
     return lines.join('\n') + '\n';
 }
@@ -143,8 +157,8 @@ function renderMarkdown(report) {
             '',
             '## Recommended',
             '',
-            '| id | role | status | 2p | 3p | 4p |',
-            '|---|---|---|---:|---:|---:|'
+            '| id | role | status | 2p | 3p | 4p | target |',
+            '|---|---|---|---:|---:|---:|---|'
         );
         for (const entry of report.recommended) {
             const coverage = entry.coverage || {};
@@ -152,7 +166,8 @@ function renderMarkdown(report) {
                 `| \`${entry.id}\` | ${entry.role} | ${entry.status || 'n/a'} | ` +
                 `${coverage.has2pOpponents ? coverage.best2pGames : 'missing'} | ` +
                 `${coverage.has3pLineups ? coverage.best3pGames : 'missing'} | ` +
-                `${coverage.has4pLineups ? coverage.best4pGames : 'missing'} |`
+                `${coverage.has4pLineups ? coverage.best4pGames : 'missing'} | ` +
+                `${formatTargetDiagnostics(entry.targetDiagnostics)} |`
             );
         }
     }
@@ -160,11 +175,14 @@ function renderMarkdown(report) {
         '',
         '## Models',
         '',
-        '| id | status | eval | style |',
-        '|---|---|---|---|'
+        '| id | status | eval | style | target |',
+        '|---|---|---|---|---|'
     );
     for (const model of report.models) {
-        lines.push(`| \`${model.id}\` | ${model.status} | ${model.latestEval} | ${model.style || 'n/a'} |`);
+        lines.push(
+            `| \`${model.id}\` | ${model.status} | ${model.latestEval} | ${model.style || 'n/a'} | `
+            + `${formatTargetDiagnostics(model.targetDiagnostics)} |`
+        );
     }
     return lines.join('\n') + '\n';
 }
@@ -184,6 +202,7 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     modelEvalLabel,
+    formatTargetDiagnostics,
     buildRegistryReport,
     recommendedActions,
     renderText,

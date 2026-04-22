@@ -20,8 +20,8 @@
 - 4人用 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` で Python/JS の固定 trace 比較を行ってください。
 - RL 候補モデルは `models/rl_model/registry.json` を参照・更新してください。モデル本体や `runs/` は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-04時点では 2人用主採用が `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`、3〜4人用採用が `self-only-4p-h256-lr1e5-5000-seed102` です。
 - `AI（深層学習・ランダム）` は人数別に portfolio からランダム選択します。2人戦は2人用候補、3〜4人戦は多人数候補、5人以上は未対応で `CPU（最強）` を使います。
-- 台帳更新後は `npm run validate-rl-registry` と `npm run report-rl-registry` を実行してください。履歴を残すときは `--format markdown --output ...` を使います。
-- 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人の不足がすぐ見えます。
+- 台帳更新後は `npm run validate-rl-registry` と `npm run report-rl-registry` を実行してください。履歴を残すときは `--format markdown --output ...` を使います。report には target head 診断も出ます。
+- 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人の不足に加えて target head 診断も見えます。
 - 次にやるべき再評価・多様性見直しを機械的に出したいときは `npm run plan-rl-next-actions` を使ってください。
 - 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
 - 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。

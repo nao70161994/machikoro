@@ -30,7 +30,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-long",
@@ -46,7 +47,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-curriculum-h128",
@@ -62,7 +64,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "strong-select-seed21",
@@ -78,7 +81,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr3e5-5000-seed62",
@@ -94,7 +98,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
@@ -110,7 +115,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
@@ -126,7 +132,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap",
@@ -142,7 +149,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
@@ -158,7 +166,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
@@ -174,7 +183,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed65",
@@ -190,7 +200,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-5000-seed51",
@@ -206,7 +217,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-lr1e4-long",
@@ -222,7 +234,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-lr1e4-seed2",
@@ -238,7 +251,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-lr1e4-seed3",
@@ -254,7 +268,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-lr1e4-strong005",
@@ -270,7 +285,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-lr1e4-strong010",
@@ -286,7 +302,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-curriculum-h256",
@@ -302,7 +319,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-curriculum-h256-lr1e4",
@@ -318,7 +336,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-4p-h256-lr1e5-5000-seed102",
@@ -334,7 +353,8 @@
         "has4pLineups": true,
         "best3pGames": 200,
         "has3pLineups": true
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-4p-h256-lr1e5-5000-seed103",
@@ -350,7 +370,8 @@
         "has4pLineups": true,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     }
   ],
   "recommended": [
@@ -367,7 +388,8 @@
         "has4pLineups": true,
         "best3pGames": 200,
         "has3pLineups": true
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
@@ -382,7 +404,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
@@ -397,7 +420,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
@@ -412,7 +436,8 @@
         "has4pLineups": false,
         "best3pGames": 0,
         "has3pLineups": false
-      }
+      },
+      "targetDiagnostics": null
     }
   ],
   "actions": [
