@@ -16,7 +16,7 @@ if [ -f "${PID_PATH}" ]; then
     PID="$(cat "${PID_PATH}")"
 fi
 if [ -z "${PID}" ] || ! kill -0 "${PID}" 2>/dev/null; then
-    PID="$(ps -ef | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
+    PID="$(ps -ef | grep "python3 -m scripts.rl.train" | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
 fi
 if [ -z "${PID}" ]; then
     echo "pid not found for ${JOB_NAME}" >&2
