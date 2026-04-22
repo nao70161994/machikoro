@@ -588,12 +588,14 @@ sh scripts/rl/run-background.sh self-only-4p-h256-lr2e5-1000-seed104 \
 sh scripts/rl/bg-status.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-tail.sh self-only-4p-h256-lr2e5-1000-seed104
 sh scripts/rl/bg-stop.sh self-only-4p-h256-lr2e5-1000-seed104
+sh scripts/rl/bg-list.sh
 ```
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-tail.sh`: 最新ログの末尾を表示する
 - `bg-stop.sh`: PID を解決して停止する
+- `bg-list.sh`: 追跡中ジョブを一覧表示する
 
 現時点の実運用:
 
