@@ -425,6 +425,43 @@ runTest('_estimateStableIncome は青・緑カードの安定収入を見積も�
     assert.ok(stableIncome >= 2);
 });
 
+runTest('expert roll cap: 既に十分な出目への追加投資は減点される', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.HARBOR]);
+    current.cards = [
+        createCardByName('パン屋'),
+        createCardByName('パン屋'),
+        createCardByName('パン屋'),
+    ];
+    current.dormantCards = [];
+
+    const sameDicePenalty = cpu._scoreExpertRollCapPenalty(createCardByName('パン屋'), game, current);
+    const otherDicePenalty = cpu._scoreExpertRollCapPenalty(createCardByName('麦畑'), game, current);
+
+    assert.ok(sameDicePenalty > 0);
+    assert.strictEqual(otherDicePenalty, 0);
+});
+
+runTest('expert roll cap: 同出目の過剰投資カードは別出目カードより評価が下がる', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.HARBOR]);
+    current.cards = [
+        createCardByName('パン屋'),
+        createCardByName('パン屋'),
+        createCardByName('パン屋'),
+    ];
+    current.dormantCards = [];
+
+    const bakeryScore = cpu._scoreExpertCardCandidate(createCardByName('パン屋'), game, current);
+    const ranchScore = cpu._scoreExpertCardCandidate(createCardByName('麦畑'), game, current);
+
+    assert.ok(ranchScore > bakeryScore);
+});
+
 runTest('_estimateWinDistance は同じ建設数でも資金と収入が厚い方を近く見る', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(2);

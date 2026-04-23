@@ -1213,6 +1213,50 @@ class CPU {
         }
     }
 
+    _expertRollIncomeCap(player, game) {
+        if (!player || !game || !game.enabledLandmarks) return Infinity;
+        const remainingCosts = [...game.enabledLandmarks]
+            .filter(name => !player.landmarks[name])
+            .map(name => Player.landmarkCost(name));
+        if (remainingCosts.length === 0) return Infinity;
+        return Math.max(...remainingCosts);
+    }
+
+    _estimateOwnRollIncome(game, player, dice, candidateCard = null) {
+        if (!game || !player) return 0;
+        let total = 0;
+        const cards = candidateCard ? player.cards.concat([candidateCard]) : player.cards;
+        for (const card of cards) {
+            if (!card || !card.diceNums || !card.diceNums.includes(dice)) continue;
+            if (!candidateCard && player.isDormant(card)) continue;
+            const value = this._cardActivationValue(card, game, player, player, dice);
+            if (value > 0) total += value;
+        }
+        return total;
+    }
+
+    _scoreExpertRollCapPenalty(card, game, player) {
+        if (this.difficulty !== "expert" || !card || !game || !player || !card.diceNums || card.diceNums.length === 0) return 0;
+        const cap = this._expertRollIncomeCap(player, game);
+        if (!Number.isFinite(cap) || cap <= 0) return 0;
+        let penalty = 0;
+        for (const dice of card.diceNums) {
+            const before = this._estimateOwnRollIncome(game, player, dice);
+            const after = this._estimateOwnRollIncome(game, player, dice, card);
+            const added = Math.max(0, after - before);
+            if (added <= 0) continue;
+            if (before >= cap) {
+                penalty += added * 2.4;
+                continue;
+            }
+            const overflow = Math.max(0, after - cap);
+            if (overflow > 0) {
+                penalty += overflow * 1.8;
+            }
+        }
+        return penalty;
+    }
+
     // ダイス出目の重み
     _singleDiceFreq(diceNums) {
         const w = {1:1,2:1,3:1,4:1,5:1,6:1};
@@ -1259,6 +1303,7 @@ class CPU {
 
     _scoreExpertCardCandidate(card, game, player) {
         let score = this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / Math.max(card.cost, 1);
+        score -= this._scoreExpertRollCapPenalty(card, game, player);
         if (this.difficulty !== "expert" || !game || !player || game.players.length < 4) return score;
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
         const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
