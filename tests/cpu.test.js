@@ -167,6 +167,28 @@ runTest('chooseDiceCount: expert は先読み評価で選択を返す', () => {
     assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean');
 });
 
+runTest('chooseDiceCount: expert v2 simple は期待値で2個振りを選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('サンマ漁船')];
+    current.dormantCards = [];
+
+    assert.strictEqual(cpu.chooseDiceCount(game), true);
+});
+
+runTest('chooseDiceCount: expert v2 simple は期待値で1個振りを選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('パン屋'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+
+    assert.strictEqual(cpu.chooseDiceCount(game), false);
+});
+
 runTest('expert tuning は人数別設定で自動切替される', () => {
     const cpu = new CPU("expert", {
         expertProfileTunings: {

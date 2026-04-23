@@ -687,6 +687,11 @@ class CPU {
     chooseDiceCount(game) {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
+        if (this._isExpertV2Simple()) {
+            const oneScore = this._expectedDiceScore(game, false);
+            const twoScore = this._expectedDiceScore(game, true);
+            return twoScore >= oneScore;
+        }
         if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
             if (this._expertCrowdNormalPlan(game)) {
                 const oneScore = this._expectedDiceScore(game, false);
