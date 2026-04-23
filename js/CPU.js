@@ -2147,33 +2147,27 @@ class CPU {
         return true;
     }
 
-    _v2SimpleTargetLandmark(current, game) {
-        const priority = [
-            LANDMARK_NAMES.STATION,
-            LANDMARK_NAMES.SHOPPING_MALL,
-            LANDMARK_NAMES.HARBOR,
-            LANDMARK_NAMES.RADIO_TOWER,
-            LANDMARK_NAMES.AMUSEMENT_PARK,
-            LANDMARK_NAMES.AIRPORT,
-        ];
-        for (const name of priority) {
-            if ((!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]) {
-                return name;
-            }
-        }
-        return null;
-    }
-
     _buildExpertV2Simple(current, game, shopStock) {
-        const targetLandmark = this._v2SimpleTargetLandmark(current, game);
-        if (targetLandmark) {
-            const targetCost = Player.landmarkCost(targetLandmark);
-            if (current.coins >= targetCost) {
-                this._buyLandmark(targetLandmark, game);
-                return true;
-            }
+        const affordableLandmarks = Player.landmarkNames()
+            .filter(name =>
+                (!game.enabledLandmarks || game.enabledLandmarks.has(name)) &&
+                !current.landmarks[name] &&
+                current.coins >= Player.landmarkCost(name)
+            );
+        if (affordableLandmarks.length > 0) {
+            const name = affordableLandmarks[Math.floor(Math.random() * affordableLandmarks.length)];
+            this._buyLandmark(name, game);
+            return true;
         }
-        return false;
+
+        const affordableCards = CARDS.filter(card =>
+            shopStock[card.name] > 0 &&
+            current.coins >= card.cost &&
+            !(card.color === "purple" && current.countCard(card.name) > 0)
+        );
+        if (affordableCards.length === 0) return false;
+        this._buyCard(affordableCards[Math.floor(Math.random() * affordableCards.length)], game, shopStock);
+        return true;
     }
 
     _buyLateGameLandmark(current, game) {
