@@ -7,6 +7,7 @@ const {
     parseArgs,
     profilePlayers,
     profileWeight,
+    resolveExpertTuning,
     summarize,
     toMarkdown,
     toText,
@@ -23,13 +24,14 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
 });
 
 runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--expert-preset', 'rush', '--profiles', 'duel,crowd']);
+    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--expert-preset', 'rush', '--tuning-candidate', 'rush:skipPenaltyx1.25', '--profiles', 'duel,crowd']);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.lite, false);
     assert.strictEqual(args.expertPreset, 'rush');
+    assert.strictEqual(args.tuningCandidate, 'rush:skipPenaltyx1.25');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -57,8 +59,17 @@ runTest('eval-expert-vs-strong summarize は重み付き勝率と最低勝率を
     assert.strictEqual(summary.minWinRate, 0.5);
 });
 
+runTest('eval-expert-vs-strong resolveExpertTuning は候補 tuning を返す', () => {
+    const tuning = resolveExpertTuning({
+        expertPreset: 'default',
+        tuningCandidate: 'default:skipPenaltyx1.25',
+    });
+    assert.ok(tuning);
+    assert.strictEqual(typeof tuning.skipPenalty, 'number');
+});
+
 runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
-    const options = { games: 50, seed: 1, lite: true, fast: false, expertPreset: 'default' };
+    const options = { games: 50, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: 'default:skipPenaltyx1.25' };
     const entries = [
         {
             profile: 'duel',
@@ -76,8 +87,10 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     const text = toText(entries, summary, options);
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
+    assert.ok(text.includes('tuningCandidate=default:skipPenaltyx1.25'));
     assert.ok(text.includes('duel: 35/50'));
     assert.ok(text.includes('seatWins=20,15'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
+    assert.ok(md.includes('- tuningCandidate: default:skipPenaltyx1.25'));
     assert.ok(md.includes('| duel | expert,strong | 1 | 70.0% | 20,15 | 42.3 | 1 |'));
 });

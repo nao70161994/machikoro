@@ -1,6 +1,7 @@
 const path = require('path');
 
-const { runSeries } = require(path.join(__dirname, 'selfplay.js'));
+const { loadRuntime, runSeries } = require(path.join(__dirname, 'selfplay.js'));
+const { buildCandidateTunings } = require(path.join(__dirname, 'tune-expert.js'));
 
 const DEFAULT_PROFILES = ['duel', 'trio', 'crowd', 'allStrong4'];
 
@@ -12,6 +13,7 @@ function parseArgs(argv) {
     let lite = true;
     let fast = false;
     let expertPreset = 'default';
+    let tuningCandidate = '';
     let profiles = DEFAULT_PROFILES.slice();
 
     for (let i = 0; i < argv.length; i++) {
@@ -26,12 +28,24 @@ function parseArgs(argv) {
             fast = true;
         }
         else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
+        else if (arg === '--tuning-candidate') tuningCandidate = argv[++i] || '';
         else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, expertPreset, profiles };
+    return { games, seed, maxSteps, format, lite, fast, expertPreset, tuningCandidate, profiles };
+}
+
+function resolveExpertTuning(options = {}) {
+    if (!options.tuningCandidate) return null;
+    const runtime = loadRuntime();
+    const candidates = buildCandidateTunings(runtime, options.expertPreset || 'default');
+    const matched = candidates.find(candidate => candidate.name === options.tuningCandidate);
+    if (!matched) {
+        throw new Error(`unknown tuning candidate: ${options.tuningCandidate}`);
+    }
+    return matched.tuning;
 }
 
 function profilePlayers(name) {
@@ -52,6 +66,7 @@ function profileWeight(name) {
 
 function evaluateProfile(name, options) {
     const players = profilePlayers(name);
+    const expertTuning = options.expertTuning || resolveExpertTuning(options);
     const result = runSeries({
         games: options.games,
         seed: options.seed,
@@ -60,6 +75,7 @@ function evaluateProfile(name, options) {
         lite: options.lite,
         fast: options.fast,
         expertPreset: options.expertPreset,
+        expertTuning,
         expertPurpose: 'live',
     });
     const expertWins = result.wins.expert || 0;
@@ -93,7 +109,8 @@ function summarize(entries) {
 
 function toText(entries, summary, options) {
     const lines = [
-        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} expertPreset=${options.expertPreset}`,
+        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} expertPreset=${options.expertPreset}` +
+        `${options.tuningCandidate ? ` tuningCandidate=${options.tuningCandidate}` : ''}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     for (const entry of entries) {
@@ -114,6 +131,7 @@ function toMarkdown(entries, summary, options) {
         `- seed: ${options.seed}`,
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `- expertPreset: ${options.expertPreset}`,
+        `- tuningCandidate: ${options.tuningCandidate || 'none'}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         '',
@@ -153,6 +171,7 @@ module.exports = {
     parseArgs,
     profilePlayers,
     profileWeight,
+    resolveExpertTuning,
     summarize,
     toMarkdown,
     toText,
