@@ -1110,7 +1110,7 @@ class CPU {
         return best ? best.name : null;
     }
 
-    chooseITSave(game) {
+    chooseITInvest(game) {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         if (current.coins < 1) return false;
@@ -2829,7 +2829,7 @@ class CPU {
                 return;
             case GAME_PHASES.BUILD:
                 if (game.pendingIT) {
-                    game.resolveIT(cpu.chooseITSave(game));
+                    game.resolveIT(cpu.chooseITInvest(game));
                     return;
                 }
                 cpu.build(game, shopStock);

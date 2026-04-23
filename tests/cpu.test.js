@@ -1160,17 +1160,17 @@ runTest('chooseRenovationTarget: expert は価値の高いランドマークを�
     assert.strictEqual(target, LANDMARK_NAMES.SHOPPING_MALL);
 });
 
-runTest('chooseITSave: expert は4人戦序盤では normal 寄りに積立できる', () => {
+runTest('chooseITInvest: expert は4人戦序盤では normal 寄りに積立できる', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(4);
     const current = game.currentPlayer();
     current.coins = 3;
     current.landmarks[LANDMARK_NAMES.STATION] = true;
 
-    assert.strictEqual(cpu.chooseITSave(game), true);
+    assert.strictEqual(cpu.chooseITInvest(game), true);
 });
 
-runTest('chooseITSave: expert は重要ランドマーク直前なら積立を見送る', () => {
+runTest('chooseITInvest: expert は重要ランドマーク直前なら積立を見送る', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -1182,10 +1182,10 @@ runTest('chooseITSave: expert は重要ランドマーク直前なら積立を�
         createCardByName('カフェ')
     ];
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITInvest(game), false);
 });
 
-runTest('chooseITSave: expert は残り3ランドマークでも勝ち筋ランドマークが近ければ積立しない', () => {
+runTest('chooseITInvest: expert は残り3ランドマークでも勝ち筋ランドマークが近ければ積立しない', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -1202,10 +1202,10 @@ runTest('chooseITSave: expert は残り3ランドマークでも勝ち筋ラン�
     current.coins = Player.landmarkCost(LANDMARK_NAMES.HARBOR) - 1;
     current.itVentureCoins = 1;
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITInvest(game), false);
 });
 
-runTest('chooseITSave: expert は残り4ランドマークでも勝ち筋が近ければ積立しない', () => {
+runTest('chooseITInvest: expert は残り4ランドマークでも勝ち筋が近ければ積立しない', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -1223,10 +1223,10 @@ runTest('chooseITSave: expert は残り4ランドマークでも勝ち筋が近�
     current.coins = Player.landmarkCost(LANDMARK_NAMES.HARBOR) - 1;
     current.itVentureCoins = 2;
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITInvest(game), false);
 });
 
-runTest('chooseITSave: normal は終盤の空港レースでは積立しない', () => {
+runTest('chooseITInvest: normal は終盤の空港レースでは積立しない', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -1238,10 +1238,10 @@ runTest('chooseITSave: normal は終盤の空港レースでは積立しない',
     current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
     current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITInvest(game), false);
 });
 
-runTest('chooseITSave: strong は積立過多なら空港だけ残っていても見送る', () => {
+runTest('chooseITInvest: strong は積立過多なら空港だけ残っていても見送る', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -1254,10 +1254,10 @@ runTest('chooseITSave: strong は積立過多なら空港だけ残っていて�
     current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
     current.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITInvest(game), false);
 });
 
-runTest('chooseITSave: expert は先読み評価で積立可否を返す', () => {
+runTest('chooseITInvest: expert は先読み評価で積立可否を返す', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(3);
     const current = game.currentPlayer();
@@ -1266,7 +1266,7 @@ runTest('chooseITSave: expert は先読み評価で積立可否を返す', () =>
     current.cards = [createCardByName('ITベンチャー')];
     current.dormantCards = [];
 
-    assert.strictEqual(typeof cpu.chooseITSave(game), 'boolean');
+    assert.strictEqual(typeof cpu.chooseITInvest(game), 'boolean');
 });
 
 runTest('_shouldHoldForLandmark: 重要ランドマーク直前なら貯金を優先する', () => {
@@ -1943,14 +1943,14 @@ runTest('buildExpert: expert v2 simple はランドマークが買えないと�
     }
 });
 
-runTest('chooseITSave: expert v2 simple は常に積立する', () => {
+runTest('chooseITInvest: expert v2 simple は常に積立する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(4);
     const current = game.currentPlayer();
     game.enabledLandmarks = new Set(Player.landmarkNames());
     current.coins = 3;
 
-    assert.strictEqual(cpu.chooseITSave(game), true);
+    assert.strictEqual(cpu.chooseITInvest(game), true);
 });
 
 if (process.exitCode) {

@@ -149,7 +149,7 @@ function actionForPending(cpu, game) {
         return actions.RENO_BASE + landmarkOrder.indexOf(name);
     }
     if (game.pendingIT) {
-        return cpu.chooseITSave(game) ? actions.IT_SAVE : actions.IT_SKIP;
+        return cpu.chooseITInvest(game) ? actions.IT_SAVE : actions.IT_SKIP;
     }
     return actions.PASS;
 }

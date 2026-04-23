@@ -339,7 +339,7 @@ const CPU_PHASE_HANDLERS = [
         name: "resolveIT",
         run(cpu) {
             if (!game.pendingIT) return;
-            const doSave = cpu.chooseITSave(game);
+            const doSave = cpu.chooseITInvest(game);
             cpuDo('resolveIT', { doSave }, () => game.resolveIT(doSave));
         },
     },

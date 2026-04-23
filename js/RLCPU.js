@@ -677,7 +677,7 @@ class RLCPU {
         return RLCPU.LANDMARK_ORDER[action - RLCPU.ACTIONS.RENO_BASE];
     }
 
-    chooseITSave(game) {
+    chooseITInvest(game) {
         return this._chooseForGame(game).action === RLCPU.ACTIONS.IT_SAVE;
     }
 

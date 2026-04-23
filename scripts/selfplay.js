@@ -490,7 +490,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     return;
                 }
                 if (game.pendingIT) {
-                    const save = cpu.chooseITSave(game);
+                    const save = cpu.chooseITInvest(game);
                     pushTraceEntry(runtime, game, shopStock, cpu, {
                         action: save ? runtime.RLCPU.ACTIONS.IT_SAVE : runtime.RLCPU.ACTIONS.IT_SKIP,
                         label: save ? 'IT_SAVE' : 'IT_SKIP',
