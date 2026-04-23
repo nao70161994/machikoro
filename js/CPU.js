@@ -1737,6 +1737,76 @@ class CPU {
         return sorted.find(entry => entry.card.color === "blue" || entry.card.color === "green") || null;
     }
 
+    _scoreExpertCrowdAffordable(card, game, current) {
+        let score = this._scoreExpertCardCandidate(card, game, current);
+        score -= this._scoreExpertCardPenalty(card.name, current, game);
+        const remainingLandmarks = this._remainingEnabledLandmarks(current, game).length;
+        const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
+        const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
+        if (lowDice && (card.color === "blue" || card.color === "green")) score += 2.4;
+        if (card.name === "パン屋" || card.name === "コンビニ") score += 2.1;
+        if (card.name === "麦畑" || card.name === "牧場") score += 1.4;
+        if (remainingLandmarks > 2 && highDice) score -= 2.6;
+        if (remainingLandmarks > 2 && ["食品倉庫", "改装屋", "ピザ屋", "バーガーショップ", "寿司屋", "ブドウ園"].includes(card.name)) {
+            score -= 4.5;
+        }
+        return score;
+    }
+
+    _buildExpertCrowd(current, game, shopStock) {
+        const remainingLandmarks = this._remainingEnabledLandmarks(current, game);
+        const builtCount = current.builtLandmarkCount();
+        const bannedCrowdCards = remainingLandmarks.length > 2
+            ? new Set(["食品倉庫", "改装屋", "ピザ屋", "バーガーショップ", "寿司屋", "ブドウ園"])
+            : null;
+        if (this._shouldExpertForceLandmarkPlan(current, game) && this._maybeBuyLandmark(current, game, 0, 6)) return true;
+        if (builtCount >= 2 && this._maybeBuyLandmark(current, game, 0, 6)) return true;
+        if (this._maybeBuyLandmark(current, game, 1, 7)) return true;
+
+        const affordable = CARDS.filter(card =>
+            shopStock[card.name] > 0 &&
+            current.coins >= card.cost &&
+            card.cost > 0 &&
+            !(card.color === "purple" && current.countCard(card.name) > 0)
+        );
+        if (affordable.length === 0) return false;
+
+        const sorted = affordable
+            .map(card => ({ card, score: this._scoreExpertCrowdAffordable(card, game, current) }))
+            .sort((a, b) => b.score - a.score);
+        const candidatePool = bannedCrowdCards
+            ? sorted.filter(entry => !bannedCrowdCards.has(entry.card.name))
+            : sorted;
+
+        const stableIncome = this._estimateStableIncome(game, current);
+        const oneDieOpponents = game.players.filter(p =>
+            p !== current && !p.landmarks[LANDMARK_NAMES.STATION]
+        ).length;
+        const lowDiceEconomy = candidatePool.find(entry =>
+            (entry.card.color === "blue" || entry.card.color === "green") &&
+            Math.max(...entry.card.diceNums) <= 6
+        );
+        const candidate = (
+            oneDieOpponents >= 2 &&
+            builtCount < 4 &&
+            lowDiceEconomy
+        ) || this._bestCrowdEconomyCard(candidatePool, game, current) || candidatePool[0] || sorted[0];
+
+        if (!candidate) return false;
+        if (builtCount >= 2 && this._shouldHoldForLandmark(current, game, candidate.score, 1)) return true;
+        if (remainingLandmarks.length <= 3 && this._maybeBuyLandmark(current, game, 0, 4)) return true;
+        if (stableIncome < 12 && lowDiceEconomy && lowDiceEconomy.score >= candidate.score - 1.2) {
+            this._buyCard(lowDiceEconomy.card, game, shopStock);
+            return true;
+        }
+        if (candidate.score >= 0.5) {
+            this._buyCard(candidate.card, game, shopStock);
+            return true;
+        }
+        if (this._maybeBuyLandmark(current, game, 0, 3)) return true;
+        return false;
+    }
+
     _buildStrongCrowd(current, game, shopStock) {
         const bestAffordableLandmark = this._bestAffordableLandmark(current, game);
         if (bestAffordableLandmark && (
@@ -2862,12 +2932,7 @@ class CPU {
             this.buildNormal(game, shopStock);
             return;
         }
-        if (
-            game.players.length >= 4 &&
-            this._remainingEnabledLandmarks(current, game).length > 2 &&
-            !this._expertFlagEnabled("crowdBuildLookahead")
-        ) {
-            this.buildNormal(game, shopStock);
+        if (game.players.length >= 4 && this._buildExpertCrowd(current, game, shopStock)) {
             return;
         }
 

@@ -1779,6 +1779,56 @@ runTest('buildExpert: lite 4人戦では buildNormal ベースで進める', () 
     assert.strictEqual(game.builtThisTurn, true);
 });
 
+runTest('buildExpert: 4人戦expertは食品倉庫より低ダイス経済を優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['食品倉庫'] = 1;
+    stock['パン屋'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    current.coins = 2;
+    current.cards = [
+        createCardByName('カフェ'),
+        createCardByName('ピザ屋'),
+        createCardByName('ファミレス'),
+        createCardByName('コンビニ'),
+    ];
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.countCard('パン屋'), 1);
+    assert.strictEqual(current.countCard('食品倉庫'), 0);
+});
+
+runTest('buildExpert: 4人戦expertは中盤以降に港をカードより優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.HARBOR);
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.cards = [
+        createCardByName('食品倉庫'),
+        createCardByName('ピザ屋'),
+        createCardByName('バーガーショップ'),
+        createCardByName('寿司屋'),
+    ];
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }
