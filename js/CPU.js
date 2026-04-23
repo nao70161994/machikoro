@@ -691,13 +691,13 @@ class CPU {
     }
 
     chooseDiceCount(game) {
-        this._syncExpertTuningForGame(game);
-        if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this._isExpertV2Simple()) {
             const oneScore = this._expectedDiceScore(game, false);
             const twoScore = this._expectedDiceScore(game, true);
             return twoScore >= oneScore;
         }
+        this._syncExpertTuningForGame(game);
+        if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
             if (this._expertCrowdNormalPlan(game)) {
                 const oneScore = this._expectedDiceScore(game, false);
@@ -758,10 +758,10 @@ class CPU {
     }
 
     chooseReroll(game) {
+        if (this._isExpertV2Simple()) return Math.random() < 0.5;
         this._syncExpertTuningForGame(game);
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;
-        if (this._isExpertV2Simple()) return Math.random() < 0.5;
         if (this.difficulty === "expert") {
             if (this._expertCrowdNormalPlan(game)) {
                 const currentScore = this._estimateRollScore(game, dice);
@@ -827,9 +827,9 @@ class CPU {
     }
 
     chooseHarbor(game) {
+        if (this._isExpertV2Simple()) return Math.random() < 0.5;
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
-        if (this._isExpertV2Simple()) return Math.random() < 0.5;
         if (this.difficulty === "expert") {
             if (this._expertCrowdNormalPlan(game)) {
                 const keepScore = this._estimateRollScore(game, game.lastDiceResult);
@@ -882,7 +882,6 @@ class CPU {
     }
 
     chooseTVTarget(game) {
-        this._syncExpertTuningForGame(game);
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
             const candidates = game.players
@@ -891,6 +890,7 @@ class CPU {
                 .map(entry => entry.index);
             return this._randomChoice(candidates);
         }
+        this._syncExpertTuningForGame(game);
         if (this.difficulty === "expert") {
             const disruptionScale = this._expertDisruptionScale(game, ci);
             let bestScore = -Infinity;
@@ -936,7 +936,6 @@ class CPU {
     }
 
     chooseBusinessMove(game) {
-        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const myCards = current.getMinorCards();
@@ -958,6 +957,7 @@ class CPU {
             }
             return this._randomChoice(moves);
         }
+        this._syncExpertTuningForGame(game);
 
         let bestMove = null;
         const attackScale = this._strongCrowdAttackScale(game);
@@ -1020,7 +1020,6 @@ class CPU {
     }
 
     chooseCleaningTarget(game) {
-        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         if (this._isExpertV2Simple()) {
             const names = [...new Set(game.players.flatMap(player =>
@@ -1028,6 +1027,7 @@ class CPU {
             ))];
             return this._randomChoice(names);
         }
+        this._syncExpertTuningForGame(game);
         let best = null;
         const attackScale = this._strongCrowdAttackScale(game);
         const disruptionReady = this._strongCrowdDisruptionReady(game, current);
@@ -1090,7 +1090,6 @@ class CPU {
     }
 
     chooseMoverMove(game) {
-        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
@@ -1106,6 +1105,7 @@ class CPU {
             }
             return this._randomChoice(moves);
         }
+        this._syncExpertTuningForGame(game);
         const attackScale = this._strongCrowdAttackScale(game);
         let best = null;
         for (const card of current.getMinorCards()) {
@@ -1141,7 +1141,6 @@ class CPU {
     }
 
     chooseRenovationTarget(game) {
-        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         if (this._isExpertV2Simple()) {
             const names = Object.entries(current.landmarks)
@@ -1149,6 +1148,7 @@ class CPU {
                 .map(([name]) => name);
             return this._randomChoice(names);
         }
+        this._syncExpertTuningForGame(game);
         if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
             let bestScore = -Infinity;
             let bestName = null;
@@ -1173,11 +1173,11 @@ class CPU {
     }
 
     chooseITInvest(game) {
-        this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
+        if (this._isExpertV2Simple()) return true;
+        this._syncExpertTuningForGame(game);
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;
-        if (this._isExpertV2Simple()) return true;
 
         const remainingLandmarks = Player.landmarkNames()
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
@@ -3094,6 +3094,7 @@ class CPU {
             this._buildExpertV2Simple(current, game, shopStock);
             return;
         }
+        this._syncExpertTuningForGame(game);
         if (this._buyWinningLandmark(current, game)) return;
         if (this._buyLateGameLandmark(current, game)) return;
         if (this._shouldExpertForceLandmarkPlan(current, game) && this._maybeBuyLandmark(current, game, 0, 7)) return;
