@@ -1115,7 +1115,7 @@ class CPU {
         const current = game.currentPlayer();
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;
-        if (this._isExpertV2Simple()) return false;
+        if (this._isExpertV2Simple()) return true;
 
         const remainingLandmarks = Player.landmarkNames()
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
@@ -2172,22 +2172,6 @@ class CPU {
                 this._buyLandmark(targetLandmark, game);
                 return true;
             }
-            if (targetCost - current.coins <= 2) return true;
-        }
-
-        const preferredCards = [
-            "麦畑",
-            "パン屋",
-            "牧場",
-            "コンビニ",
-        ];
-        for (const name of preferredCards) {
-            if (!shopStock[name] || shopStock[name] <= 0) continue;
-            const card = this._cardByName(name);
-            if (!card || current.coins < card.cost) continue;
-            if (card.color === "purple" && current.countCard(card.name) > 0) continue;
-            this._buyCard(card, game, shopStock);
-            return true;
         }
         return false;
     }

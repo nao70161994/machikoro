@@ -1910,33 +1910,32 @@ runTest('buildExpert: expert v2 simple は買える最優先ランドマーク�
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], true);
 });
 
-runTest('buildExpert: expert v2 simple は次ランドマーク直前ならカードを買わない', () => {
+runTest('buildExpert: expert v2 simple はランドマークが買えないと何もしない', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
     const stock = {};
-    for (const card of CARDS) stock[card.name] = 0;
-    stock['パン屋'] = 1;
+    for (const card of CARDS) stock[card.name] = 6;
 
     game.phase = runtime.GAME_PHASES.BUILD;
     game.enabledLandmarks = new Set(Player.landmarkNames());
     current.coins = Player.landmarkCost(LANDMARK_NAMES.STATION) - 1;
-    const beforeBakery = current.countCard('パン屋');
+    const beforeCards = current.cards.length;
 
     cpu.buildExpert(game, stock);
 
-    assert.strictEqual(current.countCard('パン屋'), beforeBakery);
+    assert.strictEqual(current.cards.length, beforeCards);
     assert.strictEqual(game.builtThisTurn, false);
 });
 
-runTest('chooseITSave: expert v2 simple は積立しない', () => {
+runTest('chooseITSave: expert v2 simple は常に積立する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(4);
     const current = game.currentPlayer();
     game.enabledLandmarks = new Set(Player.landmarkNames());
     current.coins = 3;
 
-    assert.strictEqual(cpu.chooseITSave(game), false);
+    assert.strictEqual(cpu.chooseITSave(game), true);
 });
 
 if (process.exitCode) {
