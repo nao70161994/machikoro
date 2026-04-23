@@ -1131,6 +1131,8 @@ class CPU {
 
         if (this.difficulty === "expert") {
             if (this._expertCrowdNormalPlan(game)) return !closeToFinish;
+            if (this._shouldExpertForceLandmarkPlan(current, game)) return false;
+            if (remainingLandmarks.length <= 3 && urgentLandmark && urgentLandmark.shortfall <= 4) return false;
             if (urgentLandmark && urgentLandmark.shortfall <= 1 && urgentLandmark.urgency >= 7) return false;
             const focusIndex = game.currentPlayerIndex;
             const skipScore = this._expectedExpertChoiceValue(
@@ -1993,6 +1995,24 @@ class CPU {
         return true;
     }
 
+    _shouldExpertForceLandmarkPlan(current, game) {
+        if (this.difficulty !== "expert") return false;
+        const remaining = this._remainingEnabledLandmarks(current, game);
+        if (remaining.length === 0 || remaining.length > 3) return false;
+        const bestLandmark = this._bestAffordableLandmark(current, game);
+        const urgentLandmark = remaining
+            .map(name => ({
+                name,
+                shortfall: Player.landmarkCost(name) - current.coins,
+                urgency: this._landmarkUrgency(name, current, game),
+            }))
+            .sort((a, b) => b.urgency - a.urgency || a.shortfall - b.shortfall)[0];
+        if (bestLandmark && bestLandmark.urgency >= 7) return true;
+        if (urgentLandmark && urgentLandmark.urgency >= 7 && urgentLandmark.shortfall <= 2) return true;
+        if (current.builtLandmarkCount() >= 3 && urgentLandmark && urgentLandmark.shortfall <= 4) return true;
+        return false;
+    }
+
     _cloneGame(game) {
         return this._profileMeasure("expert.cloneGame", () => {
             const clone = new GameManager(game.players.length);
@@ -2375,6 +2395,20 @@ class CPU {
         if (action.type === "landmark") score += 10;
         if (action.type === "card" && distanceGain < 0.3) score -= remainingBefore <= 1 ? 14 : 8;
         if (action.type === "skip" && !afterPlayer.landmarks[LANDMARK_NAMES.AIRPORT]) score -= remainingBefore <= 1 ? 10 : 4;
+        if (remainingBefore <= 3) {
+            const urgentAfter = this._bestAffordableLandmark(afterPlayer, clone);
+            if (action.type === "card") {
+                score -= 6;
+                if (urgentAfter && urgentAfter.urgency >= 7) score -= 10;
+                if (!afterPlayer.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 4;
+                if (!afterPlayer.landmarks[LANDMARK_NAMES.RADIO_TOWER]) score -= 4;
+            }
+            if (action.type === "skip") {
+                score -= 8;
+                if (!afterPlayer.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 6;
+                if (!afterPlayer.landmarks[LANDMARK_NAMES.RADIO_TOWER]) score -= 4;
+            }
+        }
         if (remainingBefore <= 1) {
             score += Math.max(0, afterPlayer.coins - beforePlayer.coins) * 1.5;
         }
@@ -2779,6 +2813,7 @@ class CPU {
         const current = game.currentPlayer();
         if (this._buyWinningLandmark(current, game)) return;
         if (this._buyLateGameLandmark(current, game)) return;
+        if (this._shouldExpertForceLandmarkPlan(current, game) && this._maybeBuyLandmark(current, game, 0, 7)) return;
         if (current.builtLandmarkCount() >= 2 && this._maybeBuyLandmark(current, game, 0, 8)) return;
         if (this.simulationMode === "realtime" && game.players.length >= 4) {
             this.buildNormal(game, shopStock);
@@ -2803,14 +2838,19 @@ class CPU {
         };
         let best = null;
         let bestNonSkip = null;
+        let bestLandmark = null;
         for (const action of options) {
             const score = this._scoreExpertBuildOption(game, shopStock, action, buildContext);
             const scored = Object.assign({ score }, action);
             if (!best || score > best.score) best = scored;
             if (action.type !== 'skip' && (!bestNonSkip || score > bestNonSkip.score)) bestNonSkip = scored;
+            if (action.type === 'landmark' && (!bestLandmark || score > bestLandmark.score)) bestLandmark = scored;
         }
 
         if (!best) return;
+        if (this._shouldExpertForceLandmarkPlan(current, game) && bestLandmark && bestLandmark.score >= best.score - 8) {
+            best = bestLandmark;
+        }
         if (best.type === 'skip') {
             if (current.landmarks[LANDMARK_NAMES.AIRPORT]) return;
             if (!bestNonSkip) return;

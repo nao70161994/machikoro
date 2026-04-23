@@ -1148,6 +1148,26 @@ runTest('chooseITSave: expert は重要ランドマーク直前なら積立を�
     assert.strictEqual(cpu.chooseITSave(game), false);
 });
 
+runTest('chooseITSave: expert は残り3ランドマークでも勝ち筋ランドマークが近ければ積立しない', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.STATION,
+        LANDMARK_NAMES.SHOPPING_MALL,
+        LANDMARK_NAMES.RADIO_TOWER,
+        LANDMARK_NAMES.HARBOR,
+        LANDMARK_NAMES.AIRPORT,
+    ]);
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.HARBOR) - 1;
+    current.itVentureCoins = 1;
+
+    assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
 runTest('chooseITSave: normal は終盤の空港レースでは積立しない', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
@@ -1690,6 +1710,37 @@ runTest('buildExpert: 終盤は空港や電波塔をカードより優先する'
     cpu.buildExpert(game, stock);
 
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.RADIO_TOWER], true);
+});
+
+runTest('buildExpert: 残り3ランドマークでは高評価カードより港を優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.STATION,
+        LANDMARK_NAMES.SHOPPING_MALL,
+        LANDMARK_NAMES.RADIO_TOWER,
+        LANDMARK_NAMES.HARBOR,
+        LANDMARK_NAMES.AIRPORT,
+    ]);
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.HARBOR);
+    current.cards = [
+        createCardByName('サンマ漁船'),
+        createCardByName('ピザ屋'),
+        createCardByName('バーガーショップ'),
+        createCardByName('ブドウ園'),
+    ];
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
 });
 
 runTest('buildExpert: lite 4人戦では buildNormal ベースで進める', () => {
