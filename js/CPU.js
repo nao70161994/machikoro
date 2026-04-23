@@ -1693,6 +1693,7 @@ class CPU {
         if (ranked.length === 0) return false;
         const bestLandmark = this._bestAffordableLandmark(current, game);
         if (bestLandmark && current.coins + (difficulty === "strong" ? 3 : 2) >= bestLandmark.cost) return false;
+        if (difficulty === "expert" && this._shouldExpertStopBuyingCards(current, game, ranked[0].card)) return false;
         if (ranked[0].score >= 0.8) {
             this._buyCard(ranked[0].card, game, shopStock);
             return true;
@@ -2011,6 +2012,17 @@ class CPU {
         if (urgentLandmark && urgentLandmark.urgency >= 7 && urgentLandmark.shortfall <= 2) return true;
         if (current.builtLandmarkCount() >= 3 && urgentLandmark && urgentLandmark.shortfall <= 4) return true;
         return false;
+    }
+
+    _shouldExpertStopBuyingCards(current, game, card = null) {
+        if (this.difficulty !== "expert") return false;
+        if (!this._shouldExpertForceLandmarkPlan(current, game)) return false;
+        const remaining = this._remainingEnabledLandmarks(current, game).length;
+        const bestLandmark = this._bestAffordableLandmark(current, game);
+        if (bestLandmark && bestLandmark.urgency >= 7) return true;
+        if (remaining <= 2) return true;
+        if (card && card.cost >= 3) return true;
+        return current.builtLandmarkCount() >= 3;
     }
 
     _cloneGame(game) {
@@ -2369,6 +2381,9 @@ class CPU {
             }
             if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
             if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
+            if (action.type === 'card' && this._shouldExpertStopBuyingCards(current, clone, this._cardByName(action.cardName))) {
+                score -= 18;
+            }
             if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
             if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
             if (action.type === 'skip' && affordableBuildCount > 0 && !current.landmarks[LANDMARK_NAMES.AIRPORT]) {
@@ -2848,11 +2863,13 @@ class CPU {
         }
 
         if (!best) return;
-        if (this._shouldExpertForceLandmarkPlan(current, game) && bestLandmark && bestLandmark.score >= best.score - 8) {
+        const forceLandmarkPlan = this._shouldExpertForceLandmarkPlan(current, game);
+        if (forceLandmarkPlan && bestLandmark && bestLandmark.score >= best.score - 8) {
             best = bestLandmark;
         }
         if (best.type === 'skip') {
             if (current.landmarks[LANDMARK_NAMES.AIRPORT]) return;
+            if (forceLandmarkPlan) return;
             if (!bestNonSkip) return;
             best = bestNonSkip;
         }
