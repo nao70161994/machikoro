@@ -1815,10 +1815,15 @@ class CPU {
         }
         else if (name === LANDMARK_NAMES.RADIO_TOWER) {
             urgency = builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
+            if (this.difficulty === "expert" && (builtCount >= 2 || opponentMaxBuilt >= 3)) urgency += 2;
         }
         else if (name === LANDMARK_NAMES.AMUSEMENT_PARK) urgency = current.landmarks[LANDMARK_NAMES.STATION] ? 5 : 2;
         else if (name === LANDMARK_NAMES.AIRPORT) {
             urgency = builtCount >= 4 ? 6 : 1;
+            if (this.difficulty === "expert") {
+                if (builtCount >= 3) urgency += 3;
+                else if (builtCount >= 2 && this._estimateStableIncome(game, current) >= 8) urgency += 2;
+            }
         }
         urgency += this._strongLandmarkUrgencyBonus(name, current, game);
         if (name === LANDMARK_NAMES.AIRPORT) return Math.round(urgency * profile.airportBias);
@@ -1975,12 +1980,15 @@ class CPU {
     _buyLateGameLandmark(current, game) {
         const remaining = Player.landmarkNames()
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
-        if (remaining.length === 0 || remaining.length > 2) return false;
+        if (remaining.length === 0) return false;
+        if (this.difficulty !== "expert" && remaining.length > 2) return false;
+        if (this.difficulty === "expert" && remaining.length > 3) return false;
         const affordable = remaining
             .map(name => ({ name, cost: Player.landmarkCost(name), urgency: this._landmarkUrgency(name, current, game) }))
             .filter(entry => current.coins >= entry.cost)
             .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost);
         if (affordable.length === 0) return false;
+        if (this.difficulty === "expert" && remaining.length === 3 && affordable[0].urgency < 8) return false;
         this._buyLandmark(affordable[0].name, game);
         return true;
     }
@@ -2771,6 +2779,7 @@ class CPU {
         const current = game.currentPlayer();
         if (this._buyWinningLandmark(current, game)) return;
         if (this._buyLateGameLandmark(current, game)) return;
+        if (current.builtLandmarkCount() >= 2 && this._maybeBuyLandmark(current, game, 0, 8)) return;
         if (this.simulationMode === "realtime" && game.players.length >= 4) {
             this.buildNormal(game, shopStock);
             return;

@@ -1667,6 +1667,31 @@ runTest('buildExpert: 空港がなければ skip より建設候補を優先す�
     assert.strictEqual(game.builtThisTurn, true);
 });
 
+runTest('buildExpert: 終盤は空港や電波塔をカードより優先する', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.STATION,
+        LANDMARK_NAMES.SHOPPING_MALL,
+        LANDMARK_NAMES.RADIO_TOWER,
+        LANDMARK_NAMES.HARBOR,
+        LANDMARK_NAMES.AIRPORT,
+    ]);
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.RADIO_TOWER);
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.RADIO_TOWER], true);
+});
+
 runTest('buildExpert: lite 4人戦では buildNormal ベースで進める', () => {
     const cpu = new CPU("expert", { simulationMode: "lite" });
     const game = new GameManager(4);

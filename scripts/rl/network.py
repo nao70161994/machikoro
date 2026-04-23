@@ -17,15 +17,10 @@ def _ensure_parent_dir(path: str):
     directory = os.path.dirname(path)
     if not directory or directory == os.path.sep:
         return
-    cwd = os.path.abspath(os.getcwd())
     abs_directory = os.path.abspath(directory)
-    try:
-        inside_cwd = os.path.commonpath([cwd, abs_directory]) == cwd
-    except ValueError:
-        inside_cwd = False
-    target_directory = os.path.relpath(abs_directory, cwd) if inside_cwd else directory
-    if target_directory and target_directory != "." and not os.path.isdir(target_directory):
-        os.makedirs(target_directory, exist_ok=True)
+    if os.path.isdir(abs_directory):
+        return
+    os.makedirs(abs_directory, exist_ok=True)
 
 
 def relu(x):
