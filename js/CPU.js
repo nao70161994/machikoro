@@ -2177,20 +2177,15 @@ class CPU {
 
         const preferredCards = [
             "麦畑",
-            "牧場",
             "パン屋",
+            "牧場",
             "コンビニ",
-            "雑貨屋",
-            "花畑",
-            "チーズ工場",
-            "家具工場",
         ];
         for (const name of preferredCards) {
             if (!shopStock[name] || shopStock[name] <= 0) continue;
             const card = this._cardByName(name);
             if (!card || current.coins < card.cost) continue;
             if (card.color === "purple" && current.countCard(card.name) > 0) continue;
-            if (current.countCard(card.name) >= 3 && name !== "麦畑" && name !== "パン屋") continue;
             this._buyCard(card, game, shopStock);
             return true;
         }
