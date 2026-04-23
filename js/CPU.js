@@ -1290,6 +1290,12 @@ class CPU {
             if (card.name === "ピザ屋" || card.name === "バーガーショップ") score -= 2.1;
             if (card.name === "ブドウ園") score -= 1.8;
         }
+        if (game.players.length >= 4 && remainingLandmarks <= 4) {
+            if (card.name === "食品倉庫") score -= 3.5;
+            if (card.name === "改装屋") score -= 3.2;
+            if (card.name === "ピザ屋" || card.name === "バーガーショップ") score -= 2.6;
+            if (card.name === "寿司屋") score -= 1.4;
+        }
 
         return score;
     }
@@ -2252,6 +2258,12 @@ class CPU {
             if (cardName === "食品倉庫") return 10 + copies * 3;
             if (cardName === "ピザ屋" || cardName === "バーガーショップ") return 7 + copies * 2.5;
             if (cardName === "ブドウ園") return 6 + copies * 2;
+        }
+        if (game.players.length >= 4 && remainingLandmarks <= 4) {
+            if (cardName === "食品倉庫") return 16 + copies * 4;
+            if (cardName === "改装屋") return 14 + copies * 4;
+            if (cardName === "ピザ屋" || cardName === "バーガーショップ") return 10 + copies * 3;
+            if (cardName === "寿司屋") return 6 + copies * 2;
         }
         if (cardName === "雑貨屋") return remainingLandmarks <= 2 && copies >= 3 ? 8 + copies * 2 : 0;
         return 0;
