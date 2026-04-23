@@ -1133,6 +1133,7 @@ class CPU {
             if (this._expertCrowdNormalPlan(game)) return !closeToFinish;
             if (this._shouldExpertForceLandmarkPlan(current, game)) return false;
             if (remainingLandmarks.length <= 3 && urgentLandmark && urgentLandmark.shortfall <= 4) return false;
+            if (remainingLandmarks.length <= 4 && current.builtLandmarkCount() >= 2 && urgentLandmark && urgentLandmark.shortfall <= 6) return false;
             if (urgentLandmark && urgentLandmark.shortfall <= 1 && urgentLandmark.urgency >= 7) return false;
             const focusIndex = game.currentPlayerIndex;
             const skipScore = this._expectedExpertChoiceValue(
@@ -1148,7 +1149,7 @@ class CPU {
                 clone => clone.resolveIT(true)
             );
             const baselineSave = game.players.length >= 3 || current.itVentureCoins >= 1 || current.coins >= 8;
-            if (baselineSave && saveScore >= skipScore - 5) return true;
+            if (baselineSave && saveScore >= skipScore - 2) return true;
             return saveScore >= skipScore;
         }
 
@@ -1282,6 +1283,12 @@ class CPU {
             if (card.name === "スタジアム" || card.name === "テレビ局" || card.name === "税務署" || card.name === "出版社") {
                 score -= 3.2;
             }
+        }
+
+        if (remainingLandmarks <= 4) {
+            if (card.name === "食品倉庫") score -= 2.8;
+            if (card.name === "ピザ屋" || card.name === "バーガーショップ") score -= 2.1;
+            if (card.name === "ブドウ園") score -= 1.8;
         }
 
         return score;
@@ -2240,6 +2247,11 @@ class CPU {
         if (cardName === "貸金業") {
             if (remainingLandmarks <= 3 && copies >= 2) return 12 + copies * 4;
             return copies >= 3 ? 8 + copies * 3 : 0;
+        }
+        if (remainingLandmarks <= 4) {
+            if (cardName === "食品倉庫") return 10 + copies * 3;
+            if (cardName === "ピザ屋" || cardName === "バーガーショップ") return 7 + copies * 2.5;
+            if (cardName === "ブドウ園") return 6 + copies * 2;
         }
         if (cardName === "雑貨屋") return remainingLandmarks <= 2 && copies >= 3 ? 8 + copies * 2 : 0;
         return 0;

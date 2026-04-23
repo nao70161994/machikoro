@@ -1168,6 +1168,27 @@ runTest('chooseITSave: expert は残り3ランドマークでも勝ち筋ラン�
     assert.strictEqual(cpu.chooseITSave(game), false);
 });
 
+runTest('chooseITSave: expert は残り4ランドマークでも勝ち筋が近ければ積立しない', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.STATION,
+        LANDMARK_NAMES.SHOPPING_MALL,
+        LANDMARK_NAMES.RADIO_TOWER,
+        LANDMARK_NAMES.AMUSEMENT_PARK,
+        LANDMARK_NAMES.HARBOR,
+        LANDMARK_NAMES.AIRPORT,
+    ]);
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.HARBOR) - 1;
+    current.itVentureCoins = 2;
+
+    assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
 runTest('chooseITSave: normal は終盤の空港レースでは積立しない', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
