@@ -78,6 +78,12 @@ class CPU {
         entry.count = (entry.count || 0) + amount;
     }
 
+    _randomChoice(items) {
+        if (!Array.isArray(items) || items.length === 0) return null;
+        const index = Math.floor(Math.random() * items.length);
+        return items[index];
+    }
+
     getProfileSummary() {
         if (!this.profileStats) return [];
         return Object.entries(this.profileStats)
@@ -755,6 +761,7 @@ class CPU {
         this._syncExpertTuningForGame(game);
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;
+        if (this._isExpertV2Simple()) return Math.random() < 0.5;
         if (this.difficulty === "expert") {
             if (this._expertCrowdNormalPlan(game)) {
                 const currentScore = this._estimateRollScore(game, dice);
@@ -822,6 +829,7 @@ class CPU {
     chooseHarbor(game) {
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
+        if (this._isExpertV2Simple()) return Math.random() < 0.5;
         if (this.difficulty === "expert") {
             if (this._expertCrowdNormalPlan(game)) {
                 const keepScore = this._estimateRollScore(game, game.lastDiceResult);
@@ -876,6 +884,13 @@ class CPU {
     chooseTVTarget(game) {
         this._syncExpertTuningForGame(game);
         const ci = game.currentPlayerIndex;
+        if (this._isExpertV2Simple()) {
+            const candidates = game.players
+                .map((player, index) => ({ player, index }))
+                .filter(entry => entry.index !== ci && entry.player && entry.player.coins > 0)
+                .map(entry => entry.index);
+            return this._randomChoice(candidates);
+        }
         if (this.difficulty === "expert") {
             const disruptionScale = this._expertDisruptionScale(game, ci);
             let bestScore = -Infinity;
@@ -926,6 +941,23 @@ class CPU {
         const ci = game.currentPlayerIndex;
         const myCards = current.getMinorCards();
         if (myCards.length === 0) return null;
+        if (this._isExpertV2Simple()) {
+            const moves = [];
+            for (const myCard of myCards) {
+                for (let i = 0; i < game.players.length; i++) {
+                    if (i === ci) continue;
+                    const target = game.players[i];
+                    for (const theirCard of target.getMinorCards()) {
+                        moves.push({
+                            myCard: current.cards.indexOf(myCard),
+                            targetIndex: i,
+                            theirCard: target.cards.indexOf(theirCard),
+                        });
+                    }
+                }
+            }
+            return this._randomChoice(moves);
+        }
 
         let bestMove = null;
         const attackScale = this._strongCrowdAttackScale(game);
@@ -990,6 +1022,12 @@ class CPU {
     chooseCleaningTarget(game) {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
+        if (this._isExpertV2Simple()) {
+            const names = [...new Set(game.players.flatMap(player =>
+                player.getMinorCards().filter(card => !player.isDormant(card)).map(card => card.name)
+            ))];
+            return this._randomChoice(names);
+        }
         let best = null;
         const attackScale = this._strongCrowdAttackScale(game);
         const disruptionReady = this._strongCrowdDisruptionReady(game, current);
@@ -1055,6 +1093,19 @@ class CPU {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
+        if (this._isExpertV2Simple()) {
+            const moves = [];
+            for (const card of current.getMinorCards()) {
+                for (let i = 0; i < game.players.length; i++) {
+                    if (i === ci) continue;
+                    moves.push({
+                        cardIndex: current.cards.indexOf(card),
+                        targetIndex: i,
+                    });
+                }
+            }
+            return this._randomChoice(moves);
+        }
         const attackScale = this._strongCrowdAttackScale(game);
         let best = null;
         for (const card of current.getMinorCards()) {
@@ -1092,6 +1143,12 @@ class CPU {
     chooseRenovationTarget(game) {
         this._syncExpertTuningForGame(game);
         const current = game.currentPlayer();
+        if (this._isExpertV2Simple()) {
+            const names = Object.entries(current.landmarks)
+                .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
+                .map(([name]) => name);
+            return this._randomChoice(names);
+        }
         if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
             let bestScore = -Infinity;
             let bestName = null;

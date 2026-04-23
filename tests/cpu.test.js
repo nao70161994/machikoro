@@ -189,6 +189,53 @@ runTest('chooseDiceCount: expert v2 simple は期待値で1個振りを選ぶ', 
     assert.strictEqual(cpu.chooseDiceCount(game), false);
 });
 
+runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const originalRandom = Math.random;
+    Math.random = () => 0.2;
+    try {
+        assert.strictEqual(cpu.chooseReroll(game), true);
+    } finally {
+        Math.random = originalRandom;
+    }
+});
+
+runTest('chooseTVTarget: expert v2 simple は合法対象からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(3);
+    game.players[1].coins = 0;
+    game.players[2].coins = 5;
+    const originalRandom = Math.random;
+    Math.random = () => 0.0;
+    try {
+        assert.strictEqual(cpu.chooseTVTarget(game), 2);
+    } finally {
+        Math.random = originalRandom;
+    }
+});
+
+runTest('chooseBusinessMove: expert v2 simple は合法手からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('牧場')];
+    target.dormantCards = [];
+    const originalRandom = Math.random;
+    Math.random = () => 0.0;
+    try {
+        const move = cpu.chooseBusinessMove(game);
+        assert.strictEqual(move.myCard, 0);
+        assert.strictEqual(move.targetIndex, 1);
+        assert.strictEqual(move.theirCard, 0);
+    } finally {
+        Math.random = originalRandom;
+    }
+});
+
 runTest('expert tuning は人数別設定で自動切替される', () => {
     const cpu = new CPU("expert", {
         expertProfileTunings: {
