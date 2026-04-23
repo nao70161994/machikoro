@@ -663,7 +663,7 @@ class CPU {
             landmarkPressure -
             winDistance * 1.2 -
             this._estimateRedPressure(game, focusIndex) * 0.08 -
-            this._duplicateRenovationPenalty(player, "strong");
+            this._duplicateRenovationPenalty(player, "strong", game);
     }
 
     _expectedStrongChoiceValue(game, focusIndex, outcomes, applyOutcome) {
@@ -1354,14 +1354,46 @@ class CPU {
         return penalty;
     }
 
-    _duplicateRenovationPenalty(player, difficulty = this.difficulty) {
+    _duplicateRenovationPenalty(player, difficulty = this.difficulty, game = null) {
         if (!player) return 0;
         const copies = player.countCard("改装屋");
         const extraCopies = Math.max(0, copies - 1);
         if (extraCopies <= 0) return 0;
-        if (difficulty === "expert") return extraCopies * 14 + Math.max(0, extraCopies - 1) * 6;
-        if (difficulty === "strong") return extraCopies * 8 + Math.max(0, extraCopies - 1) * 3;
-        return extraCopies * 4;
+        let penalty = 0;
+        if (difficulty === "expert") penalty = extraCopies * 14 + Math.max(0, extraCopies - 1) * 6;
+        else if (difficulty === "strong") penalty = extraCopies * 8 + Math.max(0, extraCopies - 1) * 3;
+        else penalty = extraCopies * 4;
+        if (!game || !player.landmarks) return penalty;
+
+        const builtValues = Object.entries(player.landmarks)
+            .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
+            .map(([name]) => ({
+                name,
+                value: this._builtLandmarkValue(name, player, game),
+            }))
+            .sort((a, b) => b.value - a.value);
+        if (builtValues.length === 0) return penalty;
+
+        const exposedValue = builtValues
+            .slice(0, Math.min(extraCopies, builtValues.length))
+            .reduce((sum, entry) => sum + entry.value, 0);
+        const premiumExposure = builtValues
+            .filter(entry => [
+                LANDMARK_NAMES.SHOPPING_MALL,
+                LANDMARK_NAMES.HARBOR,
+                LANDMARK_NAMES.RADIO_TOWER,
+                LANDMARK_NAMES.AIRPORT,
+            ].includes(entry.name))
+            .length;
+
+        if (difficulty === "expert") {
+            penalty += exposedValue * 0.9 + premiumExposure * 5 * extraCopies;
+        } else if (difficulty === "strong") {
+            penalty += exposedValue * 0.45 + premiumExposure * 2.5 * extraCopies;
+        } else {
+            penalty += exposedValue * 0.2 + premiumExposure * extraCopies;
+        }
+        return penalty;
     }
 
     _strongRolePressure(card, game, player) {
@@ -1632,7 +1664,7 @@ class CPU {
         if (card.effect === CARD_EFFECTS.RENOVATION && options.difficulty === "strong") {
             const owned = player.countCard("改装屋");
             if (owned >= 1) {
-                score -= this._duplicateRenovationPenalty({ countCard: () => owned + 1 }, "strong");
+                score -= this._duplicateRenovationPenalty({ countCard: () => owned + 1 }, "strong", game);
             }
         }
         if (options.difficulty === "strong") score += this._strongRolePressure(card, game, player);
@@ -2340,7 +2372,7 @@ class CPU {
         if (lowValueSpam > tuning.lowValueSpamThreshold) {
             score -= (lowValueSpam - tuning.lowValueSpamThreshold) * tuning.lowValueSpamPenalty;
         }
-        score -= this._duplicateRenovationPenalty(player, "expert");
+        score -= this._duplicateRenovationPenalty(player, "expert", game);
         if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
         let maxOpponentThreat = 0;
         for (let i = 0; i < game.players.length; i++) {

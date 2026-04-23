@@ -1418,6 +1418,34 @@ runTest('buildExpert: 改装屋2枚目以降の所持は局面評価で強くマ
     assert.ok(twoRenovationScore < baseScore);
 });
 
+runTest('duplicateRenovationPenalty: 高価なランドマーク露出があるほど重くなる', () => {
+    const cpu = new CPU("expert");
+    const safeGame = new GameManager(2);
+    const riskyGame = new GameManager(2);
+    const safe = safeGame.currentPlayer();
+    const risky = riskyGame.currentPlayer();
+    safeGame.enabledLandmarks = new Set(Player.landmarkNames());
+    riskyGame.enabledLandmarks = new Set(Player.landmarkNames());
+    cpu._syncExpertTuningForGame(safeGame);
+    cpu._syncExpertTuningForGame(riskyGame);
+
+    safe.addCard(createCardByName('改装屋'));
+    safe.addCard(createCardByName('改装屋'));
+    risky.addCard(createCardByName('改装屋'));
+    risky.addCard(createCardByName('改装屋'));
+
+    safe.landmarks[LANDMARK_NAMES.STATION] = true;
+    risky.landmarks[LANDMARK_NAMES.STATION] = true;
+    risky.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    risky.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    risky.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    risky.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+
+    const safePenalty = cpu._duplicateRenovationPenalty(safe, 'expert', safeGame);
+    const riskyPenalty = cpu._duplicateRenovationPenalty(risky, 'expert', riskyGame);
+    assert.ok(riskyPenalty > safePenalty + 20);
+});
+
 runTest('buildExpert: 建てられるランドマークがある高コイン時はカードよりランドマークを優先する', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);
