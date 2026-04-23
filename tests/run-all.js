@@ -30,6 +30,7 @@ const TEST_GROUPS = {
         'js-cpu-oracle.test.js',
         'resolve-rl-model-path.test.js',
     'eval-expert-vs-strong.test.js',
+    'eval-expert-vs-weak.test.js',
     'diagnose-expert-losses.test.js',
     'search-expert-top-tier.test.js',
         'eval-rl-vs-js.test.js',
