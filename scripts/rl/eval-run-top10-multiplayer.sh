@@ -4,11 +4,12 @@ set -eu
 RUN_LABEL="${1:?run label required}"
 GAMES="${2:-50}"
 OUT_PREFIX="${3:-models/rl_model/eval-${RUN_LABEL}-top10-multiplayer}"
+RUN_RANKS="${4:-1,2,3,4,5,6,7,8,9,10}"
 LINEUPS="rl,normal,strong;rl,weak,normal;rl,weak,strong;rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal"
 
 npm run eval-rl-models -- \
     --run-labels "$RUN_LABEL" \
-    --run-ranks 1,2,3,4,5,6,7,8,9,10 \
+    --run-ranks "$RUN_RANKS" \
     --games "$GAMES" \
     --lineups "$LINEUPS" \
     --output "${OUT_PREFIX}.json" \

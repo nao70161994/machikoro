@@ -11,6 +11,7 @@ function parseArgs(argv) {
     let basePreset = 'default';
     let top = 5;
     let format = 'text';
+    let output = '';
     let lite = true;
     let fast = false;
     let profiles = DEFAULT_PROFILES.slice();
@@ -24,6 +25,7 @@ function parseArgs(argv) {
         else if (arg === '--base-preset') basePreset = argv[++i] || 'default';
         else if (arg === '--top') top = parseInt(argv[++i] || '5', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
+        else if (arg === '--output') output = argv[++i] || '';
         else if (arg === '--full') lite = false;
         else if (arg === '--fast') {
             lite = false;
@@ -35,7 +37,7 @@ function parseArgs(argv) {
         else if (arg === '--quiet') progress = false;
     }
 
-    return { games, seed, maxSteps, basePreset, top, format, lite, fast, profiles, progress };
+    return { games, seed, maxSteps, basePreset, top, format, output, lite, fast, profiles, progress };
 }
 
 function summarizeProfileResults(results) {
@@ -150,9 +152,25 @@ function renderMarkdown(result) {
     return lines.join('\n');
 }
 
+function writeOutput(result, options) {
+    if (!options.output) return;
+    let content = '';
+    if (options.format === 'json') {
+        content = JSON.stringify(result, null, 2) + '\n';
+    }
+    else if (options.format === 'markdown' || options.format === 'md') {
+        content = renderMarkdown(result) + '\n';
+    }
+    else {
+        content = renderText(result) + '\n';
+    }
+    require('fs').writeFileSync(options.output, content, 'utf8');
+}
+
 function main() {
     const options = parseArgs(process.argv.slice(2));
     const result = searchTopTier(options);
+    writeOutput(result, options);
     if (options.format === 'json') {
         console.log(JSON.stringify(result, null, 2));
         return;
@@ -176,4 +194,5 @@ module.exports = {
     renderText,
     searchTopTier,
     summarizeProfileResults,
+    writeOutput,
 };

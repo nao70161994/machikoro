@@ -8,6 +8,7 @@ const {
     renderMarkdown,
     renderText,
     summarizeProfileResults,
+    writeOutput,
 } = require(path.join(__dirname, '..', 'scripts', 'search-expert-top-tier.js'));
 
 runTest('search-expert-top-tier parseArgs は既定値を返す', () => {
@@ -21,12 +22,13 @@ runTest('search-expert-top-tier parseArgs は既定値を返す', () => {
 });
 
 runTest('search-expert-top-tier parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '12', '--seed', '9', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--full', '--profiles', 'duel,crowd']);
+    const args = parseArgs(['--games', '12', '--seed', '9', '--base-preset', 'rush', '--top', '3', '--format', 'json', '--output', 'out.json', '--full', '--profiles', 'duel,crowd']);
     assert.strictEqual(args.games, 12);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.basePreset, 'rush');
     assert.strictEqual(args.top, 3);
     assert.strictEqual(args.format, 'json');
+    assert.strictEqual(args.output, 'out.json');
     assert.strictEqual(args.lite, false);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
@@ -75,4 +77,30 @@ runTest('search-expert-top-tier formatter は主要値を含む', () => {
     assert.ok(text.includes('duel: 75.0% (6/8)'));
     assert.ok(md.includes('| candidate | weighted | min | avgTurns | exhausted |'));
     assert.ok(md.includes('| default:base | 65.0% | 50.0% | 52.4 | 1 |'));
+});
+
+runTest('search-expert-top-tier writeOutput は format に応じて保存する', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const result = {
+        options: { basePreset: 'default', games: 8, top: 1, lite: true, fast: false, profiles: ['duel'] },
+        totalCandidates: 1,
+        top: [
+            {
+                name: 'default:base',
+                weightedWinRate: 0.5,
+                minWinRate: 0.5,
+                averageTurns: 50,
+                exhausted: 0,
+                profiles: [{ profile: 'duel', winRate: 0.5, expertWins: 4, games: 8 }],
+            },
+        ],
+    };
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'search-top-tier-'));
+    const textPath = path.join(dir, 'out.txt');
+    const jsonPath = path.join(dir, 'out.json');
+    writeOutput(result, { format: 'text', output: textPath });
+    writeOutput(result, { format: 'json', output: jsonPath });
+    assert.ok(fs.readFileSync(textPath, 'utf8').includes('default:base: weighted=50.0%'));
+    assert.ok(fs.readFileSync(jsonPath, 'utf8').includes('"totalCandidates": 1'));
 });

@@ -76,6 +76,8 @@ npm run eval-expert-vs-strong -- --games 50 --format markdown
 
 ```bash
 sh scripts/search-cpu-top-tier.sh 8 5
+# 保存先を明示する場合
+sh scripts/search-cpu-top-tier.sh 8 5 models/cpu_top_tier_search/search-g8-top5
 ```
 
 ```bash
@@ -307,7 +309,7 @@ RL スクリプト / モデル:
 - `scripts/rl/eval-run-3p.sh`: 採用済み 3人 lineup を短縮評価
 - `scripts/rl/eval-run-4p.sh`: 採用済み 4人 lineup を短縮評価
 - `scripts/rl/eval-run-multiplayer.sh`: 採用済み 3人/4人 lineup をまとめて評価
-- `scripts/rl/eval-run-top10-multiplayer.sh`: `run-label` の top10 checkpoint を 3人/4人複数 lineup で後評価
+- `scripts/rl/eval-run-top10-multiplayer.sh`: `run-label` の top checkpoint 群を 3人/4人複数 lineup で後評価。第4引数で `run-ranks` を絞れます
 - `scripts/rl/bg-list.sh`, `scripts/rl/bg-status.sh`, `scripts/rl/bg-tail.sh`, `scripts/rl/bg-finalize.sh`: バックグラウンド学習の監視補助
 - `scripts/rl/bg-watch-summary.sh`, `scripts/rl/bg-experiment-set.sh`: 実行中/比較中ジョブの要約表示
 - `scripts/rl/bg-prune.sh`: 停止済みで `summary.json` を持たない stale job の pid/status/cmd を掃除

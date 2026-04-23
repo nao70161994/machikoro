@@ -24,7 +24,7 @@
 - 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人の不足に加えて target head 診断も見えます。
 - 次にやるべき再評価・多様性見直しを機械的に出したいときは `npm run plan-rl-next-actions` を使ってください。
 - 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
-- 3人/4人戦の自己対戦安定化では `sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` で top10 checkpoint を複数 lineup 後評価し、`npm run review-rl-multiplayer-topk -- --input <json>` で総合点+多様性を確認してください。
+- 3人/4人戦の自己対戦安定化では `sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` で top checkpoint 群を複数 lineup 後評価し、必要なら第4引数で `run-ranks` を `1,2,3` のように絞ってください。`npm run review-rl-multiplayer-topk -- --input <json>` で総合点+多様性を確認してください。
 - バックグラウンド運用では `sh scripts/rl/bg-watch-summary.sh <job>` で進捗要約、`sh scripts/rl/bg-experiment-set.sh <job>...` で比較セット確認、`sh scripts/rl/bg-finalize-top10-multiplayer.sh <job> 15 50` で完走後の多人数後評価まで一発で進められます。複数 run をまとめる場合は `sh scripts/rl/bg-finalize-experiment-set-top10-multiplayer.sh <set-name> <job>...` を使ってください。
 - 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。
 - `eval-rl-models` の JSON を registry へ追記してレポートまで更新したいときは `npm run update-rl-registry-from-eval -- --input <json>` を使ってください。
@@ -65,7 +65,7 @@
 
 - 全自動テスト: `npm test`
 - `CPU（最強）` と `CPU（強）` の基準比較: `sh scripts/eval-cpu-top-tier.sh 50` または `npm run eval-expert-vs-strong -- --games 50`
-- `CPU（最強）` の tuning 候補探索: `sh scripts/search-cpu-top-tier.sh 8 5` または `npm run search-expert-top-tier -- --games 8 --top 5`
+- `CPU（最強）` の tuning 候補探索: `sh scripts/search-cpu-top-tier.sh 8 5` または `npm run search-expert-top-tier -- --games 8 --top 5`。wrapper は `models/cpu_top_tier_search/` に `.txt/.md/.json` を保存します。
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`
 - 模倣なし RL カリキュラム学習: `sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label <label>`
