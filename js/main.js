@@ -60,16 +60,20 @@ function getRlCpuSettingNote(playerCount) {
 }
 
 function createCpuPlayer(difficulty, options = {}) {
+    const resolvedOptions = Object.assign({}, options);
+    if (difficulty === 'expert' && resolvedOptions.expertPurpose === "live" && !resolvedOptions.expertPreset) {
+        resolvedOptions.expertPreset = "v2simple";
+    }
     if (difficulty === 'rl') {
         try {
-            return RLModelPortfolio.createRandomCpu(options);
+            return RLModelPortfolio.createRandomCpu(resolvedOptions);
         } catch (error) {
             console.error(error);
             alert("深層学習AIモデルを読み込めませんでした。CPU（最強）で代替します。");
-            return new CPU('expert', options);
+            return new CPU('expert', resolvedOptions);
         }
     }
-    return new CPU(difficulty, options);
+    return new CPU(difficulty, resolvedOptions);
 }
 
 function formatCpuSpeedLabel(value) {

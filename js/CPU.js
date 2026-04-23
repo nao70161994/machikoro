@@ -38,6 +38,10 @@ class CPU {
         return this.difficulty === "expert" && this.expertPurpose === "live";
     }
 
+    _isExpertV2Simple() {
+        return this.difficulty === "expert" && this.activeExpertPreset === "v2simple";
+    }
+
     static _nowMs() {
         if (typeof performance !== "undefined" && performance && typeof performance.now === "function") {
             return performance.now();
@@ -155,6 +159,8 @@ class CPU {
                 loseLookaheadPenalty: 2800,
                 lookaheadWeight: 0.65,
                 lateGameLookaheadStepsPerPlayer: 7,
+            },
+            v2simple: {
             },
         };
     }
@@ -1109,6 +1115,7 @@ class CPU {
         const current = game.currentPlayer();
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;
+        if (this._isExpertV2Simple()) return false;
 
         const remainingLandmarks = Player.landmarkNames()
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
@@ -2140,6 +2147,56 @@ class CPU {
         return true;
     }
 
+    _v2SimpleTargetLandmark(current, game) {
+        const priority = [
+            LANDMARK_NAMES.STATION,
+            LANDMARK_NAMES.SHOPPING_MALL,
+            LANDMARK_NAMES.HARBOR,
+            LANDMARK_NAMES.RADIO_TOWER,
+            LANDMARK_NAMES.AMUSEMENT_PARK,
+            LANDMARK_NAMES.AIRPORT,
+        ];
+        for (const name of priority) {
+            if ((!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]) {
+                return name;
+            }
+        }
+        return null;
+    }
+
+    _buildExpertV2Simple(current, game, shopStock) {
+        const targetLandmark = this._v2SimpleTargetLandmark(current, game);
+        if (targetLandmark) {
+            const targetCost = Player.landmarkCost(targetLandmark);
+            if (current.coins >= targetCost) {
+                this._buyLandmark(targetLandmark, game);
+                return true;
+            }
+            if (targetCost - current.coins <= 2) return true;
+        }
+
+        const preferredCards = [
+            "麦畑",
+            "牧場",
+            "パン屋",
+            "コンビニ",
+            "雑貨屋",
+            "花畑",
+            "チーズ工場",
+            "家具工場",
+        ];
+        for (const name of preferredCards) {
+            if (!shopStock[name] || shopStock[name] <= 0) continue;
+            const card = this._cardByName(name);
+            if (!card || current.coins < card.cost) continue;
+            if (card.color === "purple" && current.countCard(card.name) > 0) continue;
+            if (current.countCard(card.name) >= 3 && name !== "麦畑" && name !== "パン屋") continue;
+            this._buyCard(card, game, shopStock);
+            return true;
+        }
+        return false;
+    }
+
     _buyLateGameLandmark(current, game) {
         const remaining = Player.landmarkNames()
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
@@ -2997,6 +3054,11 @@ class CPU {
 
     buildExpert(game, shopStock) {
         const current = game.currentPlayer();
+        if (this._isExpertV2Simple()) {
+            if (this._buyWinningLandmark(current, game)) return;
+            this._buildExpertV2Simple(current, game, shopStock);
+            return;
+        }
         if (this._buyWinningLandmark(current, game)) return;
         if (this._buyLateGameLandmark(current, game)) return;
         if (this._shouldExpertForceLandmarkPlan(current, game) && this._maybeBuyLandmark(current, game, 0, 7)) return;

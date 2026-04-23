@@ -1894,6 +1894,51 @@ runTest('buildExpert: 4人戦expertは中盤以降に港をカードより優先
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
 });
 
+runTest('buildExpert: expert v2 simple は買える最優先ランドマークを建てる', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 6;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.STATION);
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], true);
+});
+
+runTest('buildExpert: expert v2 simple は次ランドマーク直前ならカードを買わない', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['パン屋'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.STATION) - 1;
+    const beforeBakery = current.countCard('パン屋');
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.countCard('パン屋'), beforeBakery);
+    assert.strictEqual(game.builtThisTurn, false);
+});
+
+runTest('chooseITSave: expert v2 simple は積立しない', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.coins = 3;
+
+    assert.strictEqual(cpu.chooseITSave(game), false);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }
