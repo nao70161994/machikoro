@@ -12,6 +12,7 @@ function parseArgs(argv) {
     let format = 'text';
     let lite = true;
     let fast = false;
+    let profile = false;
     let profiles = DEFAULT_PROFILES.slice();
 
     for (let i = 0; i < argv.length; i++) {
@@ -24,12 +25,14 @@ function parseArgs(argv) {
         else if (arg === '--fast') {
             lite = false;
             fast = true;
+        } else if (arg === '--profile') {
+            profile = true;
         } else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profiles };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles };
 }
 
 function profilePlayers(name) {
@@ -215,6 +218,23 @@ function getFastSeriesEvaluator(runtime) {
             const seatWins = players.map(() => 0);
             let exhausted = 0;
             let turns = 0;
+            const profile = {
+                totalMs: 0,
+                rollMs: 0,
+                selectDiceMs: 0,
+                rerollMs: 0,
+                harborMs: 0,
+                pendingMs: 0,
+                buildMs: 0,
+                pendingTVMs: 0,
+                pendingBusinessMs: 0,
+                pendingCleaningMs: 0,
+                pendingMoverMs: 0,
+                pendingRenovationMs: 0,
+                pendingITMs: 0,
+                pendingPhaseAdvanceMs: 0,
+                steps: 0,
+            };
 
             for (let i = 0; i < games; i++) {
                 const lineup = rotatePlayers(players, i % players.length);
@@ -228,7 +248,33 @@ function getFastSeriesEvaluator(runtime) {
                 const maxSteps = config.maxSteps || 5000;
 
                 while (!game.checkWinner() && safety < maxSteps) {
+                    const phaseBefore = game.phase;
+                    const pendingKind = game.pendingTV > 0 ? 'tv'
+                        : game.pendingBusiness > 0 ? 'business'
+                        : game.pendingCleaning > 0 ? 'cleaning'
+                        : game.pendingMover > 0 ? 'mover'
+                        : game.pendingRenovation > 0 ? 'renovation'
+                        : game.pendingIT ? 'it'
+                        : 'advance';
+                    const started = Date.now();
                     playStep(game, cpuPlayers, shopStock, rng);
+                    const elapsed = Date.now() - started;
+                    profile.totalMs += elapsed;
+                    profile.steps++;
+                    if (phaseBefore === GAME_PHASES.ROLL) profile.rollMs += elapsed;
+                    else if (phaseBefore === GAME_PHASES.SELECT_DICE) profile.selectDiceMs += elapsed;
+                    else if (phaseBefore === GAME_PHASES.REROLL_CONFIRM) profile.rerollMs += elapsed;
+                    else if (phaseBefore === GAME_PHASES.HARBOR_CHOICE) profile.harborMs += elapsed;
+                    else if (phaseBefore === GAME_PHASES.PENDING) {
+                        profile.pendingMs += elapsed;
+                        if (pendingKind === 'tv') profile.pendingTVMs += elapsed;
+                        else if (pendingKind === 'business') profile.pendingBusinessMs += elapsed;
+                        else if (pendingKind === 'cleaning') profile.pendingCleaningMs += elapsed;
+                        else if (pendingKind === 'mover') profile.pendingMoverMs += elapsed;
+                        else if (pendingKind === 'renovation') profile.pendingRenovationMs += elapsed;
+                        else if (pendingKind === 'it') profile.pendingITMs += elapsed;
+                        else profile.pendingPhaseAdvanceMs += elapsed;
+                    } else if (phaseBefore === GAME_PHASES.BUILD) profile.buildMs += elapsed;
                     safety++;
                 }
 
@@ -248,6 +294,30 @@ function getFastSeriesEvaluator(runtime) {
                 seatWins,
                 exhausted,
                 averageTurns: games > 0 ? turns / games : 0,
+                profile: config.profile ? {
+                    totalMs: profile.totalMs,
+                    avgMsPerGame: games > 0 ? profile.totalMs / games : 0,
+                    avgMsPerTurn: turns > 0 ? profile.totalMs / turns : 0,
+                    avgMsPerStep: profile.steps > 0 ? profile.totalMs / profile.steps : 0,
+                    steps: profile.steps,
+                    byPhase: {
+                        rollMs: profile.rollMs,
+                        selectDiceMs: profile.selectDiceMs,
+                        rerollMs: profile.rerollMs,
+                        harborMs: profile.harborMs,
+                        pendingMs: profile.pendingMs,
+                        buildMs: profile.buildMs,
+                    },
+                    pendingBreakdown: {
+                        tvMs: profile.pendingTVMs,
+                        businessMs: profile.pendingBusinessMs,
+                        cleaningMs: profile.pendingCleaningMs,
+                        moverMs: profile.pendingMoverMs,
+                        renovationMs: profile.pendingRenovationMs,
+                        itMs: profile.pendingITMs,
+                        phaseAdvanceMs: profile.pendingPhaseAdvanceMs,
+                    },
+                } : null,
             };
         };
     `, runtime);
@@ -265,6 +335,7 @@ function evaluateProfile(name, options) {
         players,
         lite: options.lite,
         fast: options.fast,
+        profile: options.profile,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -278,6 +349,7 @@ function evaluateProfile(name, options) {
         averageTurns: result.averageTurns,
         exhausted: result.exhausted,
         seatWins: result.seatWins.slice(),
+        perf: result.profile || null,
     };
 }
 
@@ -291,6 +363,7 @@ function summarize(entries) {
         weightedWinRate,
         minWinRate,
         profiles: entries.length,
+        totalProfileMs: entries.reduce((sum, entry) => sum + ((entry.perf && entry.perf.totalMs) || 0), 0),
     };
 }
 
@@ -299,12 +372,32 @@ function toText(entries, summary, options) {
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
+    if (options.profile) {
+        lines.push(`totalProfileMs=${summary.totalProfileMs.toFixed(1)}ms`);
+    }
     for (const entry of entries) {
         lines.push(
             `${entry.profile}: ${entry.expertWins}/${entry.games} (${(entry.winRate * 100).toFixed(1)}%) ` +
             `avgTurns=${entry.averageTurns.toFixed(1)} exhausted=${entry.exhausted} ` +
             `seatWins=${entry.seatWins.join(',')} players=${entry.players.join(',')}`
         );
+        if (options.profile && entry.perf) {
+            lines.push(
+                `  perf: total=${entry.perf.totalMs.toFixed(1)}ms game=${entry.perf.avgMsPerGame.toFixed(1)}ms ` +
+                `turn=${entry.perf.avgMsPerTurn.toFixed(3)}ms step=${entry.perf.avgMsPerStep.toFixed(3)}ms`
+            );
+            lines.push(
+                `  phase: roll=${entry.perf.byPhase.rollMs.toFixed(1)} selectDice=${entry.perf.byPhase.selectDiceMs.toFixed(1)} ` +
+                `reroll=${entry.perf.byPhase.rerollMs.toFixed(1)} harbor=${entry.perf.byPhase.harborMs.toFixed(1)} ` +
+                `pending=${entry.perf.byPhase.pendingMs.toFixed(1)} build=${entry.perf.byPhase.buildMs.toFixed(1)}`
+            );
+            lines.push(
+                `  pending: tv=${entry.perf.pendingBreakdown.tvMs.toFixed(1)} business=${entry.perf.pendingBreakdown.businessMs.toFixed(1)} ` +
+                `cleaning=${entry.perf.pendingBreakdown.cleaningMs.toFixed(1)} mover=${entry.perf.pendingBreakdown.moverMs.toFixed(1)} ` +
+                `renovation=${entry.perf.pendingBreakdown.renovationMs.toFixed(1)} it=${entry.perf.pendingBreakdown.itMs.toFixed(1)} ` +
+                `advance=${entry.perf.pendingBreakdown.phaseAdvanceMs.toFixed(1)}`
+            );
+        }
     }
     return lines.join('\n');
 }
@@ -318,6 +411,7 @@ function toMarkdown(entries, summary, options) {
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
+        ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),
         '',
         '| profile | players | weight | winRate | seatWins | avgTurns | exhausted |',
         '| --- | --- | ---: | ---: | --- | ---: | ---: |',

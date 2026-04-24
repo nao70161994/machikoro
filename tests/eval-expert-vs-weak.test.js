@@ -23,12 +23,13 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
 });
 
 runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profiles', 'duel,crowd']);
+    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profile', '--profiles', 'duel,crowd']);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.lite, false);
+    assert.strictEqual(args.profile, true);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -46,16 +47,17 @@ runTest('eval-expert-vs-weak profileWeight は重みを返す', () => {
 
 runTest('eval-expert-vs-weak summarize は重み付き勝率と最低勝率を返す', () => {
     const summary = summarize([
-        { profile: 'duel', weight: 1, winRate: 0.8 },
-        { profile: 'crowd', weight: 3, winRate: 0.5 },
+        { profile: 'duel', weight: 1, winRate: 0.8, perf: { totalMs: 10 } },
+        { profile: 'crowd', weight: 3, winRate: 0.5, perf: { totalMs: 30 } },
     ]);
     assert.strictEqual(summary.profiles, 2);
     assert.ok(Math.abs(summary.weightedWinRate - 0.575) < 1e-9);
     assert.strictEqual(summary.minWinRate, 0.5);
+    assert.strictEqual(summary.totalProfileMs, 40);
 });
 
 runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
-    const options = { games: 50, seed: 1, lite: true, fast: false };
+    const options = { games: 50, seed: 1, lite: true, fast: false, profile: true };
     const entries = [
         {
             profile: 'crowd',
@@ -67,14 +69,25 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
             averageTurns: 42.3,
             exhausted: 1,
             seatWins: [20, 8, 4, 3],
+            perf: {
+                totalMs: 1234,
+                avgMsPerGame: 24.68,
+                avgMsPerTurn: 0.5,
+                avgMsPerStep: 0.3,
+                byPhase: { rollMs: 10, selectDiceMs: 20, rerollMs: 30, harborMs: 40, pendingMs: 50, buildMs: 60 },
+                pendingBreakdown: { tvMs: 1, businessMs: 2, cleaningMs: 3, moverMs: 4, renovationMs: 5, itMs: 6, phaseAdvanceMs: 7 },
+            },
         },
     ];
     const summary = summarize(entries);
     const text = toText(entries, summary, options);
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
+    assert.ok(text.includes('totalProfileMs=1234.0ms'));
+    assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('crowd: 35/50'));
     assert.ok(text.includes('players=expert,weak,weak,weak'));
+    assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
