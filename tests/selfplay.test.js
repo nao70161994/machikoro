@@ -65,6 +65,7 @@ runTest('runSeries は軽量収集モードで重いログを省略できる', (
         maxSteps: 2000,
         players: ['expert', 'weak'],
         lite: true,
+        includeRL: false,
         collectMatchLog: false,
         collectBuildStats: false,
         collectBusinessStats: false,
@@ -78,6 +79,13 @@ runTest('runSeries は軽量収集モードで重いログを省略できる', (
     assert.deepStrictEqual(result.buildStats, []);
     assert.deepStrictEqual(result.businessStats, {});
     assert.ok(result.averageTurns > 0);
+});
+
+runTest('loadRuntime は RLCPU を省略して読み込める', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    assert.ok(runtime.CPU);
+    assert.ok(runtime.GameManager);
+    assert.strictEqual(runtime.RLCPU, undefined);
 });
 
 runTest('recordBusinessStat はdifficulty別に交換内容を集計する', () => {

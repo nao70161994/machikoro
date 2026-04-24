@@ -55,6 +55,7 @@ function evaluateProfile(name, options) {
         lite: options.lite,
         fast: options.fast,
         expertPurpose: 'live',
+        includeRL: false,
         collectMatchLog: false,
         collectBuildStats: false,
         collectBusinessStats: false,

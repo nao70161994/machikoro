@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-function loadRuntime() {
+function loadRuntime(options = {}) {
     const context = {
         console,
         setTimeout,
@@ -10,14 +10,23 @@ function loadRuntime() {
         Math: Object.create(Math),
     };
     vm.createContext(context);
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/CPU.js', 'js/RLCPU.js']) {
+    const runtimeFiles = ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/CPU.js'];
+    if (options.includeRL !== false) runtimeFiles.push('js/RLCPU.js');
+    for (const file of runtimeFiles) {
         const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
         vm.runInContext(source, context, { filename: file });
     }
-    vm.runInContext(
-        'this.CPU = CPU; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
-        context
-    );
+    if (options.includeRL !== false) {
+        vm.runInContext(
+            'this.CPU = CPU; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
+            context
+        );
+    } else {
+        vm.runInContext(
+            'this.CPU = CPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
+            context
+        );
+    }
     return context;
 }
 
@@ -46,7 +55,7 @@ function createShopStock(cards) {
 function createPlayers(runtime, difficulties, options = {}) {
     return difficulties.map(difficulty => {
         if (difficulty === 'rl') {
-            if (!options.rlModelData) {
+            if (!options.rlModelData || !runtime.RLCPU) {
                 throw new Error('rlModelData is required when using rl difficulty');
             }
             return new runtime.RLCPU(options.rlModelData);
@@ -350,6 +359,7 @@ function recordBusinessStat(game, cpu, options, move, giveCard, takeCard) {
 
 function playCpuStep(runtime, game, cpu, shopStock, rng) {
     const options = runtime.__selfplayOptions;
+    const actions = runtime.RLCPU ? runtime.RLCPU.ACTIONS : {};
     const rollQueue = options && options.rollQueue;
     const tunaDice = [randomDie(rng), randomDie(rng)];
     const traceEntries = options && options.traceEntries;
@@ -358,7 +368,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
         switch (game.phase) {
             case runtime.GAME_PHASES.ROLL:
                 pushTraceEntry(runtime, game, shopStock, cpu, {
-                    action: runtime.RLCPU.ACTIONS.ROLL1,
+                    action: actions.ROLL1 ?? null,
                     label: 'ROLL1',
                 }, traceEntries);
                 if (game.currentPlayer().landmarks['駅']) {
@@ -373,7 +383,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
             case runtime.GAME_PHASES.SELECT_DICE: {
                 const useTwo = cpu.chooseDiceCount(game);
                 pushTraceEntry(runtime, game, shopStock, cpu, {
-                    action: useTwo ? runtime.RLCPU.ACTIONS.ROLL2 : runtime.RLCPU.ACTIONS.ROLL1,
+                    action: useTwo ? (actions.ROLL2 ?? null) : (actions.ROLL1 ?? null),
                     label: useTwo ? 'ROLL2' : 'ROLL1',
                 }, traceEntries);
                 if (useTwo) {
@@ -389,13 +399,13 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
             case runtime.GAME_PHASES.REROLL_CONFIRM:
                 if (cpu.chooseReroll(game)) {
                     pushTraceEntry(runtime, game, shopStock, cpu, {
-                        action: runtime.RLCPU.ACTIONS.REROLL,
+                        action: actions.REROLL ?? null,
                         label: 'REROLL',
                     }, traceEntries);
                     game.rerollDice(randomDie(rng, rollQueue), tunaDice);
                 } else {
                     pushTraceEntry(runtime, game, shopStock, cpu, {
-                        action: runtime.RLCPU.ACTIONS.KEEP,
+                        action: actions.KEEP ?? null,
                         label: 'KEEP',
                     }, traceEntries);
                     game.skipReroll();
@@ -408,7 +418,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 {
                     const useHarbor = cpu.chooseHarbor(game);
                     pushTraceEntry(runtime, game, shopStock, cpu, {
-                        action: useHarbor ? runtime.RLCPU.ACTIONS.HARBOR_YES : runtime.RLCPU.ACTIONS.HARBOR_NO,
+                        action: useHarbor ? (actions.HARBOR_YES ?? null) : (actions.HARBOR_NO ?? null),
                         label: useHarbor ? 'HARBOR_YES' : 'HARBOR_NO',
                     }, traceEntries);
                     game.resolveHarbor(useHarbor, tunaDice);
@@ -419,7 +429,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 if (game.pendingTV > 0) {
                     const targetIndex = cpu.chooseTVTarget(game);
                     pushTraceEntry(runtime, game, shopStock, cpu, {
-                        action: runtime.RLCPU.ACTIONS.TV_TARGET,
+                        action: actions.TV_TARGET ?? null,
                         label: `TV_TARGET:p${targetIndex + 1}`,
                     }, traceEntries);
                     game.resolveTV(targetIndex);
@@ -432,13 +442,13 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     const giveIndex = giveCard ? runtime.CARDS.findIndex(card => card.name === giveCard.name) : -1;
                     const takeIndex = takeCard ? runtime.CARDS.findIndex(card => card.name === takeCard.name) : -1;
                     const businessAction = giveIndex >= 0 && takeIndex >= 0
-                        ? runtime.RLCPU.ACTIONS.BC_BASE + giveIndex * runtime.CARDS.length + takeIndex
+                        ? (actions.BC_BASE != null ? actions.BC_BASE + giveIndex * runtime.CARDS.length + takeIndex : null)
                         : null;
                     pushTraceEntry(runtime, game, shopStock, cpu, move ? {
                         action: businessAction,
                         label: businessAction == null ? `BUSINESS:${move.myCard}->${move.theirCard}@p${move.targetIndex + 1}` : actionToLabel(runtime, businessAction),
                     } : {
-                        action: runtime.RLCPU.ACTIONS.PASS,
+                        action: actions.PASS ?? null,
                         label: 'PASS',
                     }, traceEntries);
                     recordBusinessStat(game, cpu, runtime.__selfplayOptions, move, giveCard, takeCard);
@@ -453,7 +463,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         action: null,
                         label: `CLEAN:${cardName}`,
                     } : {
-                        action: runtime.RLCPU.ACTIONS.PASS,
+                        action: actions.PASS ?? null,
                         label: 'PASS',
                     }, traceEntries);
                     if (cardName) game.resolveCleaning(cardName);
@@ -467,7 +477,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         action: null,
                         label: `MOVER:${move.cardIndex}@p${move.targetIndex + 1}`,
                     } : {
-                        action: runtime.RLCPU.ACTIONS.PASS,
+                        action: actions.PASS ?? null,
                         label: 'PASS',
                     }, traceEntries);
                     if (move) game.resolveMover(move.cardIndex, move.targetIndex);
@@ -481,7 +491,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         action: null,
                         label: `RENO:${landmarkName}`,
                     } : {
-                        action: runtime.RLCPU.ACTIONS.PASS,
+                        action: actions.PASS ?? null,
                         label: 'PASS',
                     }, traceEntries);
                     if (landmarkName) game.resolveRenovation(landmarkName);
@@ -492,7 +502,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 if (game.pendingIT) {
                     const save = cpu.chooseITInvest(game);
                     pushTraceEntry(runtime, game, shopStock, cpu, {
-                        action: save ? runtime.RLCPU.ACTIONS.IT_SAVE : runtime.RLCPU.ACTIONS.IT_SKIP,
+                        action: save ? (actions.IT_SAVE ?? null) : (actions.IT_SKIP ?? null),
                         label: save ? 'IT_SAVE' : 'IT_SKIP',
                     }, traceEntries);
                     game.resolveIT(save);
@@ -506,7 +516,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 const beforeTrace = Array.isArray(traceEntries) ? traceEntries.length : 0;
                 if (Array.isArray(traceEntries)) {
                     let actionInfo = { action: null, label: 'UNKNOWN' };
-                    if (cpu instanceof runtime.RLCPU) {
+                    if (runtime.RLCPU && cpu instanceof runtime.RLCPU) {
                         const choice = cpu._chooseForGame(game, shopStock);
                         actionInfo = {
                             action: choice.action,
@@ -522,7 +532,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 if (Array.isArray(traceEntries) && traceEntries.length > beforeTrace) {
                     if (!traceEntries[traceEntries.length - 1].chosenAction || traceEntries[traceEntries.length - 1].chosenAction.label === 'UNKNOWN') {
                         traceEntries[traceEntries.length - 1].chosenAction = {
-                            action: outcome.type === 'pass' ? runtime.RLCPU.ACTIONS.PASS : null,
+                            action: outcome.type === 'pass' ? (actions.PASS ?? null) : null,
                             label: outcome.type === 'card' ? `BUY_CARD:${outcome.name}` :
                                 (outcome.type === 'landmark' ? `BUY_LM:${outcome.name}` : 'PASS'),
                         };
@@ -640,7 +650,7 @@ function rotatePlayers(players, offset) {
 function runSeries(options = {}) {
     const games = options.games || 20;
     const players = options.players || ['expert', 'strong'];
-    const runtime = loadRuntime();
+    const runtime = loadRuntime({ includeRL: options.includeRL });
     const collectMatchLog = options.collectMatchLog !== false;
     const collectBuildStats = options.collectBuildStats !== false;
     const collectBusinessStats = options.collectBusinessStats !== false;
