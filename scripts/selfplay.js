@@ -258,6 +258,76 @@ function fallbackRenovation(game) {
     game._checkPending();
 }
 
+function playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue = null) {
+    const tunaDice = [randomDie(rng, rollQueue), randomDie(rng, rollQueue)];
+    switch (game.phase) {
+        case runtime.GAME_PHASES.ROLL:
+            if (game.currentPlayer().landmarks['駅']) {
+                game.rollDice(null, tunaDice);
+            } else {
+                game.rollDice(randomDie(rng, rollQueue), tunaDice);
+            }
+            return;
+        case runtime.GAME_PHASES.SELECT_DICE: {
+            const useTwo = cpu.chooseDiceCount(game);
+            if (useTwo) {
+                game.selectDiceCount(true, randomDie(rng, rollQueue), randomDie(rng, rollQueue), tunaDice);
+            } else {
+                game.selectDiceCount(false, randomDie(rng, rollQueue), null, tunaDice);
+            }
+            return;
+        }
+        case runtime.GAME_PHASES.REROLL_CONFIRM:
+            if (cpu.chooseReroll(game)) game.rerollDice(randomDie(rng, rollQueue), tunaDice);
+            else game.skipReroll();
+            return;
+        case runtime.GAME_PHASES.HARBOR_CHOICE:
+            game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
+            return;
+        case runtime.GAME_PHASES.PENDING:
+            if (game.pendingTV > 0) {
+                game.resolveTV(cpu.chooseTVTarget(game));
+                return;
+            }
+            if (game.pendingBusiness > 0) {
+                const move = cpu.chooseBusinessMove(game);
+                if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
+                else fallbackBusiness(game);
+                return;
+            }
+            if (game.pendingCleaning > 0) {
+                const cardName = cpu.chooseCleaningTarget(game);
+                if (cardName) game.resolveCleaning(cardName);
+                else fallbackCleaning(game);
+                return;
+            }
+            if (game.pendingMover > 0) {
+                const move = cpu.chooseMoverMove(game);
+                if (move) game.resolveMover(move.cardIndex, move.targetIndex);
+                else fallbackMover(game);
+                return;
+            }
+            if (game.pendingRenovation > 0) {
+                const landmarkName = cpu.chooseRenovationTarget(game);
+                if (landmarkName) game.resolveRenovation(landmarkName);
+                else fallbackRenovation(game);
+                return;
+            }
+            if (game.pendingIT) {
+                game.resolveIT(cpu.chooseITInvest(game));
+                return;
+            }
+            game.phase = runtime.GAME_PHASES.BUILD;
+            return;
+        case runtime.GAME_PHASES.BUILD:
+            cpu.build(game, shopStock);
+            if (game.phase === runtime.GAME_PHASES.BUILD) game.nextTurn();
+            return;
+        default:
+            return;
+    }
+}
+
 function snapshotBuildState(game) {
     const player = game.currentPlayer();
     const cardCounts = {};
@@ -643,6 +713,42 @@ function simulateGame(options = {}) {
     return result;
 }
 
+function simulateGameLightweight(options = {}) {
+    const runtime = options.runtime || loadRuntime({ includeRL: false });
+    const difficulties = options.difficulties || ['expert', 'weak'];
+    const game = new runtime.GameManager(difficulties.length);
+    const shopStock = createShopStock(runtime.CARDS);
+    const cpuPlayers = createPlayers(runtime, difficulties, options);
+    const rng = createRng(options.seed || 1);
+    runtime.Math.random = rng;
+    game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+    let safety = 0;
+    const maxSteps = options.maxSteps || 5000;
+    const rollQueue = options.rollQueue;
+
+    while (!game.checkWinner() && safety < maxSteps) {
+        const cpu = cpuPlayers[game.currentPlayerIndex];
+        playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue);
+        safety++;
+    }
+
+    return {
+        winner: game.checkWinner() ? game.players.indexOf(game.checkWinner()) : -1,
+        turns: game.turnCount,
+        exhausted: safety >= maxSteps,
+        difficulties: difficulties.slice(),
+        seed: options.seed || 1,
+        expertPreset: options.expertPreset || 'default',
+        expertPurpose: options.expertPurpose || 'training',
+        fast: !!options.fast,
+        lite: !!options.lite,
+        finalState: null,
+        traceEntries: null,
+        buildStats: null,
+        businessStats: null,
+    };
+}
+
 function rotatePlayers(players, offset) {
     return players.map((_, index) => players[(index + offset) % players.length]);
 }
@@ -671,7 +777,8 @@ function runSeries(options = {}) {
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
         const seed = (options.seed || 1) + i;
-        const result = simulateGame({
+        const simulator = options.lightweightCpuOnly ? simulateGameLightweight : simulateGame;
+        const result = simulator({
             runtime,
             difficulties: lineup,
             seed,
@@ -864,6 +971,7 @@ module.exports = {
     summarizeTraceState,
     playCpuStep,
     simulateGame,
+    simulateGameLightweight,
     runSeries,
     runDifficultyLadder,
     comparePresets,

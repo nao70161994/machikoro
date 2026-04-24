@@ -5,6 +5,7 @@ const { runTest } = require('./helpers/test-utils');
 const {
     loadRuntime,
     simulateGame,
+    simulateGameLightweight,
     runSeries,
     runDifficultyLadder,
     comparePresets,
@@ -33,6 +34,22 @@ runTest('simulateGame は CPU 同士の試合を最後まで進められる', ()
     assert.strictEqual(result.finalState.length, 3);
     assert.ok(typeof result.finalState[0].coins === 'number');
     assert.ok(Array.isArray(result.finalState[0].builtLandmarks));
+});
+
+runTest('simulateGameLightweight は軽量経路で試合を最後まで進められる', () => {
+    const result = simulateGameLightweight({
+        difficulties: ['expert', 'weak'],
+        seed: 21,
+        maxSteps: 3000,
+        expertPurpose: 'live',
+        includeRL: false,
+        lite: true,
+    });
+
+    assert.strictEqual(result.exhausted, false);
+    assert.ok(result.winner >= 0);
+    assert.ok(result.turns > 0);
+    assert.strictEqual(result.finalState, null);
 });
 
 runTest('runSeries は難易度ごとの勝利数を集計する', () => {
@@ -78,6 +95,28 @@ runTest('runSeries は軽量収集モードで重いログを省略できる', (
     assert.deepStrictEqual(result.matchLog, []);
     assert.deepStrictEqual(result.buildStats, []);
     assert.deepStrictEqual(result.businessStats, {});
+    assert.ok(result.averageTurns > 0);
+});
+
+runTest('runSeries は lightweightCpuOnly で軽量対局経路を使える', () => {
+    const result = runSeries({
+        games: 2,
+        seed: 6,
+        maxSteps: 2000,
+        players: ['expert', 'weak'],
+        lite: true,
+        includeRL: false,
+        lightweightCpuOnly: true,
+        collectMatchLog: false,
+        collectBuildStats: false,
+        collectBusinessStats: false,
+        includeFinalState: false,
+        expertPurpose: 'live',
+    });
+
+    assert.strictEqual(result.games, 2);
+    assert.strictEqual(result.wins.expert + result.wins.weak, 2);
+    assert.deepStrictEqual(result.matchLog, []);
     assert.ok(result.averageTurns > 0);
 });
 
