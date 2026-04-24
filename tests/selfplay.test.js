@@ -58,6 +58,28 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.ok(result.businessStats);
 });
 
+runTest('runSeries は軽量収集モードで重いログを省略できる', () => {
+    const result = runSeries({
+        games: 2,
+        seed: 4,
+        maxSteps: 2000,
+        players: ['expert', 'weak'],
+        lite: true,
+        collectMatchLog: false,
+        collectBuildStats: false,
+        collectBusinessStats: false,
+        includeFinalState: false,
+    });
+
+    assert.strictEqual(result.games, 2);
+    assert.strictEqual(result.wins.expert + result.wins.weak, 2);
+    assert.strictEqual(result.seatWins.length, 2);
+    assert.deepStrictEqual(result.matchLog, []);
+    assert.deepStrictEqual(result.buildStats, []);
+    assert.deepStrictEqual(result.businessStats, {});
+    assert.ok(result.averageTurns > 0);
+});
+
 runTest('recordBusinessStat はdifficulty別に交換内容を集計する', () => {
     const options = {
         businessStats: {},

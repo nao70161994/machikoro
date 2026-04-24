@@ -55,6 +55,10 @@ function evaluateProfile(name, options) {
         lite: options.lite,
         fast: options.fast,
         expertPurpose: 'live',
+        collectMatchLog: false,
+        collectBuildStats: false,
+        collectBusinessStats: false,
+        includeFinalState: false,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;

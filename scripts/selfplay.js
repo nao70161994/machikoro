@@ -597,7 +597,7 @@ function simulateGame(options = {}) {
         safety++;
     }
 
-    return {
+    const result = {
         winner: game.checkWinner() ? game.currentPlayerIndex === game.players.indexOf(game.checkWinner()) ? game.players.indexOf(game.checkWinner()) : game.players.indexOf(game.checkWinner()) : -1,
         turns: game.turnCount,
         exhausted: safety >= maxSteps,
@@ -616,16 +616,21 @@ function simulateGame(options = {}) {
         } : null,
         fast: !!options.fast,
         lite: !!options.lite,
-        finalState: game.players.map(player => summarizePlayer(player, game.enabledLandmarks)),
-        traceEntries: Array.isArray(options.traceEntries) ? options.traceEntries.slice() : null,
-        buildStats: options.buildStats ? options.buildStats.map(stats => ({
-            total: stats.total,
-            pass: stats.pass,
-            cards: Object.assign({}, stats.cards),
-            landmarks: Object.assign({}, stats.landmarks),
-        })) : null,
-        businessStats: options.businessStats ? cloneBusinessStats(options.businessStats) : null,
     };
+    if (options.includeFinalState !== false) {
+        result.finalState = game.players.map(player => summarizePlayer(player, game.enabledLandmarks));
+    } else {
+        result.finalState = null;
+    }
+    result.traceEntries = Array.isArray(options.traceEntries) ? options.traceEntries.slice() : null;
+    result.buildStats = options.buildStats ? options.buildStats.map(stats => ({
+        total: stats.total,
+        pass: stats.pass,
+        cards: Object.assign({}, stats.cards),
+        landmarks: Object.assign({}, stats.landmarks),
+    })) : null;
+    result.businessStats = options.businessStats ? cloneBusinessStats(options.businessStats) : null;
+    return result;
 }
 
 function rotatePlayers(players, offset) {
@@ -636,18 +641,22 @@ function runSeries(options = {}) {
     const games = options.games || 20;
     const players = options.players || ['expert', 'strong'];
     const runtime = loadRuntime();
+    const collectMatchLog = options.collectMatchLog !== false;
+    const collectBuildStats = options.collectBuildStats !== false;
+    const collectBusinessStats = options.collectBusinessStats !== false;
+    const includeFinalState = options.includeFinalState !== false;
     const wins = Object.fromEntries(players.map(player => [player, 0]));
     const seatWins = players.map(() => 0);
     let exhausted = 0;
     let turns = 0;
-    const matchLog = [];
-    const buildStats = players.map(() => ({
+    const matchLog = collectMatchLog ? [] : null;
+    const buildStats = collectBuildStats ? players.map(() => ({
         total: 0,
         pass: 0,
         cards: {},
         landmarks: {},
-    }));
-    const businessStats = {};
+    })) : null;
+    const businessStats = collectBusinessStats ? {} : null;
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
@@ -666,24 +675,27 @@ function runSeries(options = {}) {
             rlModelData: options.rlModelData,
             fast: options.fast,
             lite: options.lite,
+            includeFinalState,
             buildStats,
             businessStats,
         });
         turns += result.turns;
         if (result.exhausted) exhausted++;
-        matchLog.push({
-            game: i + 1,
-            seed,
-            lineup,
-            winnerIndex: result.winner,
-            winnerDifficulty: result.winner >= 0 ? lineup[result.winner] : null,
-            turns: result.turns,
-            exhausted: result.exhausted,
-            expertPreset: result.expertPreset,
-            expertTuning: result.expertTuning,
-            expertBehaviorFlags: result.expertBehaviorFlags,
-            finalState: result.finalState,
-        });
+        if (collectMatchLog) {
+            matchLog.push({
+                game: i + 1,
+                seed,
+                lineup,
+                winnerIndex: result.winner,
+                winnerDifficulty: result.winner >= 0 ? lineup[result.winner] : null,
+                turns: result.turns,
+                exhausted: result.exhausted,
+                expertPreset: result.expertPreset,
+                expertTuning: result.expertTuning,
+                expertBehaviorFlags: result.expertBehaviorFlags,
+                finalState: result.finalState,
+            });
+        }
         if (result.winner >= 0) {
             wins[lineup[result.winner]]++;
             seatWins[result.winner]++;
@@ -697,9 +709,9 @@ function runSeries(options = {}) {
         seatWins,
         exhausted,
         averageTurns: games > 0 ? turns / games : 0,
-        matchLog,
-        buildStats,
-        businessStats: cloneBusinessStats(businessStats),
+        matchLog: matchLog || [],
+        buildStats: buildStats || [],
+        businessStats: collectBusinessStats ? cloneBusinessStats(businessStats) : {},
     };
 }
 
