@@ -28,6 +28,8 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.businessMode, 'random');
     assert.strictEqual(args.cleaningMode, 'random');
     assert.strictEqual(args.harborMode, 'simple');
+    assert.strictEqual(args.moverMode, 'random');
+    assert.strictEqual(args.renovationMode, 'random');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -48,6 +50,8 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
         '--business-mode', 'random',
         '--cleaning-mode', 'random',
         '--harbor-mode', 'random',
+        '--mover-mode', 'simple',
+        '--renovation-mode', 'simple',
     ]);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
@@ -63,6 +67,8 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.businessMode, 'random');
     assert.strictEqual(args.cleaningMode, 'random');
     assert.strictEqual(args.harborMode, 'random');
+    assert.strictEqual(args.moverMode, 'simple');
+    assert.strictEqual(args.renovationMode, 'simple');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -104,6 +110,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         businessMode: 'random',
         cleaningMode: 'random',
         harborMode: 'simple',
+        moverMode: 'random',
+        renovationMode: 'random',
     };
     const entries = [
         {
@@ -160,6 +168,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('businessMode=random'));
     assert.ok(text.includes('cleaningMode=random'));
     assert.ok(text.includes('harborMode=simple'));
+    assert.ok(text.includes('moverMode=random'));
+    assert.ok(text.includes('renovationMode=random'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -175,6 +185,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- businessMode: random'));
     assert.ok(md.includes('- cleaningMode: random'));
     assert.ok(md.includes('- harborMode: simple'));
+    assert.ok(md.includes('- moverMode: random'));
+    assert.ok(md.includes('- renovationMode: random'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -190,6 +202,8 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertBusinessMode: config.businessMode || 'random'"));
     assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'random'"));
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
+    assert.ok(source.includes("expertMoverMode: config.moverMode || 'random'"));
+    assert.ok(source.includes("expertRenovationMode: config.renovationMode || 'random'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("diceMode: options.diceMode"));
     assert.ok(source.includes("rerollMode: options.rerollMode"));
@@ -198,4 +212,6 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("businessMode: options.businessMode"));
     assert.ok(source.includes("cleaningMode: options.cleaningMode"));
     assert.ok(source.includes("harborMode: options.harborMode"));
+    assert.ok(source.includes("moverMode: options.moverMode"));
+    assert.ok(source.includes("renovationMode: options.renovationMode"));
 });

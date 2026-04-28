@@ -22,6 +22,8 @@ class CPU {
         this.expertBusinessMode = options.expertBusinessMode || "simple";
         this.expertCleaningMode = options.expertCleaningMode || "simple";
         this.expertHarborMode = options.expertHarborMode || "simple";
+        this.expertMoverMode = options.expertMoverMode || "random";
+        this.expertRenovationMode = options.expertRenovationMode || "random";
         this.expertTraceStats = options.expertTraceStats || null;
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
@@ -1323,17 +1325,34 @@ class CPU {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
-            const moves = [];
+            if (this.expertMoverMode === "random") {
+                const moves = [];
+                for (const card of current.getMinorCards()) {
+                    for (let i = 0; i < game.players.length; i++) {
+                        if (i === ci) continue;
+                        moves.push({
+                            cardIndex: current.cards.indexOf(card),
+                            targetIndex: i,
+                        });
+                    }
+                }
+                return this._randomChoice(moves);
+            }
+            let best = null;
             for (const card of current.getMinorCards()) {
+                const cardIndex = current.cards.indexOf(card);
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === ci) continue;
-                    moves.push({
-                        cardIndex: current.cards.indexOf(card),
-                        targetIndex: i,
-                    });
+                    const target = game.players[i];
+                    const score = (current.isDormant(card) ? 2.5 : 0) -
+                        this._ownedCardValue(card, game, current) -
+                        this._receivedCardValue(card, game, target) * 0.6;
+                    if (!best || score > best.score) {
+                        best = { cardIndex, targetIndex: i, score };
+                    }
                 }
             }
-            return this._randomChoice(moves);
+            return best ? { cardIndex: best.cardIndex, targetIndex: best.targetIndex } : null;
         }
         this._syncExpertTuningForGame(game);
         const attackScale = this._strongCrowdAttackScale(game);
@@ -1376,7 +1395,13 @@ class CPU {
             const names = Object.entries(current.landmarks)
                 .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
                 .map(([name]) => name);
-            return this._randomChoice(names);
+            if (this.expertRenovationMode === "random") return this._randomChoice(names);
+            let best = null;
+            for (const name of names) {
+                const score = this._builtLandmarkValue(name, current, game);
+                if (!best || score < best.score) best = { name, score };
+            }
+            return best ? best.name : null;
         }
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {

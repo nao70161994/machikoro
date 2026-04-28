@@ -22,6 +22,8 @@ function parseArgs(argv) {
     let businessMode = 'random';
     let cleaningMode = 'random';
     let harborMode = 'simple';
+    let moverMode = 'random';
+    let renovationMode = 'random';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -53,10 +55,14 @@ function parseArgs(argv) {
             cleaningMode = argv[++i] || 'simple';
         } else if (arg === '--harbor-mode') {
             harborMode = argv[++i] || 'simple';
+        } else if (arg === '--mover-mode') {
+            moverMode = argv[++i] || 'random';
+        } else if (arg === '--renovation-mode') {
+            renovationMode = argv[++i] || 'random';
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode };
 }
 
 function profilePlayers(name) {
@@ -111,6 +117,8 @@ function getFastSeriesEvaluator(runtime) {
                         expertBusinessMode: config.businessMode || 'random',
                         expertCleaningMode: config.cleaningMode || 'random',
                         expertHarborMode: config.harborMode || 'simple',
+                        expertMoverMode: config.moverMode || 'random',
+                        expertRenovationMode: config.renovationMode || 'random',
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
@@ -499,6 +507,8 @@ function evaluateProfile(name, options) {
         businessMode: options.businessMode,
         cleaningMode: options.cleaningMode,
         harborMode: options.harborMode,
+        moverMode: options.moverMode,
+        renovationMode: options.renovationMode,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -534,7 +544,8 @@ function toText(entries, summary, options) {
     const lines = [
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
             `buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
-            `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode}`,
+            `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} ` +
+            `moverMode=${options.moverMode} renovationMode=${options.renovationMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -594,6 +605,8 @@ function toMarkdown(entries, summary, options) {
         `- businessMode: ${options.businessMode}`,
         `- cleaningMode: ${options.cleaningMode}`,
         `- harborMode: ${options.harborMode}`,
+        `- moverMode: ${options.moverMode}`,
+        `- renovationMode: ${options.renovationMode}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),

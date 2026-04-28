@@ -214,24 +214,24 @@ runTest('chooseDiceCount: expert v2 simple は random mode なら駅ありでラ
     const game = new GameManager(2);
     const current = game.currentPlayer();
     current.landmarks[LANDMARK_NAMES.STATION] = true;
-    const originalRandom = Math.random;
-    Math.random = () => 0.2;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.2;
     try {
         assert.strictEqual(cpu.chooseDiceCount(game), true);
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 });
 
 runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
-    const originalRandom = Math.random;
-    Math.random = () => 0.2;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.2;
     try {
         assert.strictEqual(cpu.chooseReroll(game), true);
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 });
 
@@ -261,12 +261,12 @@ runTest('chooseTVTarget: expert v2 simple は random mode なら合法対象か�
     const game = new GameManager(3);
     game.players[1].coins = 3;
     game.players[2].coins = 5;
-    const originalRandom = Math.random;
-    Math.random = () => 0.99;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.99;
     try {
         assert.strictEqual(cpu.chooseTVTarget(game), 2);
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 });
 
@@ -294,15 +294,15 @@ runTest('chooseBusinessMove: expert v2 simple は random mode なら合法手か
     current.dormantCards = [];
     target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
     target.dormantCards = [];
-    const originalRandom = Math.random;
-    Math.random = () => 0.99;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.99;
     try {
         const move = cpu.chooseBusinessMove(game);
         assert.strictEqual(move.myCard, 1);
         assert.strictEqual(move.targetIndex, 1);
         assert.strictEqual(move.theirCard, 1);
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 });
 
@@ -552,12 +552,12 @@ runTest('chooseHarbor: expert v2 simple は+2後の結果価値を比較する',
 runTest('chooseHarbor: expert v2 simple は random mode ならランダムで選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple", expertHarborMode: "random" });
     const game = new GameManager(2);
-    const originalRandom = Math.random;
-    Math.random = () => 0.2;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.2;
     try {
         assert.strictEqual(cpu.chooseHarbor(game), true);
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 });
 
@@ -1192,12 +1192,12 @@ runTest('chooseCleaningTarget: expert v2 simple は random mode なら候補か�
     game.players[1].dormantCards = [];
     game.players[2].cards = [createCardByName('カフェ'), createCardByName('パン屋')];
     game.players[2].dormantCards = [];
-    const originalRandom = Math.random;
-    Math.random = () => 0.99;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.99;
     try {
         assert.strictEqual(cpu.chooseCleaningTarget(game), 'パン屋');
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 });
 
@@ -1304,6 +1304,37 @@ runTest('chooseMoverMove: expert は多人数戦でリーダーへ渡しにく�
     assert.notStrictEqual(move.targetIndex, 1);
 });
 
+runTest('chooseMoverMove: expert v2 simple は random mode なら合法手からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertMoverMode: "random" });
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('パン屋'), createCardByName('牧場')];
+    current.dormantCards = [current.cards[1]];
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.99;
+    try {
+        const move = cpu.chooseMoverMove(game);
+        assert.strictEqual(move.cardIndex, 1);
+        assert.strictEqual(move.targetIndex, 2);
+    } finally {
+        runtime.Math.random = originalRandom;
+    }
+});
+
+runTest('chooseMoverMove: expert v2 simple は simple mode なら損の小さい移動を選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertMoverMode: "simple" });
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('コンビニ'), createCardByName('牧場')];
+    current.dormantCards = [current.cards[1]];
+    game.players[1].cards = [createCardByName('パン屋')];
+    game.players[1].dormantCards = [];
+    game.players[2].cards = [createCardByName('コンビニ')];
+    game.players[2].dormantCards = [];
+    const move = cpu.chooseMoverMove(game);
+    assert.strictEqual(move.cardIndex, 1);
+});
+
 runTest('expert fast mode は lookahead を軽くする', () => {
     const cpu = new CPU("expert", { simulationMode: "fast" });
     const game = new GameManager(4);
@@ -1350,6 +1381,31 @@ runTest('chooseRenovationTarget: expert は価値の高いランドマークを�
 
     const target = cpu.chooseRenovationTarget(game);
     assert.strictEqual(target, LANDMARK_NAMES.SHOPPING_MALL);
+});
+
+runTest('chooseRenovationTarget: expert v2 simple は random mode なら建設済みからランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertRenovationMode: "random" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.99;
+    try {
+        assert.strictEqual(cpu.chooseRenovationTarget(game), LANDMARK_NAMES.HARBOR);
+    } finally {
+        runtime.Math.random = originalRandom;
+    }
+});
+
+runTest('chooseRenovationTarget: expert v2 simple は simple mode なら価値の低いランドマークを選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertRenovationMode: "simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    const target = cpu.chooseRenovationTarget(game);
+    assert.strictEqual(target, LANDMARK_NAMES.HARBOR);
 });
 
 runTest('chooseITInvest: expert は4人戦序盤では normal 寄りに積立できる', () => {
@@ -2102,12 +2158,12 @@ runTest('buildExpert: expert v2 simple は買えるランドマークの中か�
     current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場'), createCardByName('チーズ工場')];
     current.dormantCards = [];
 
-    const originalRandom = Math.random;
-    Math.random = () => 0.99;
+    const originalRandom = runtime.Math.random;
+    runtime.Math.random = () => 0.99;
     try {
         cpu.buildExpert(game, stock);
     } finally {
-        Math.random = originalRandom;
+        runtime.Math.random = originalRandom;
     }
 
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], false);
