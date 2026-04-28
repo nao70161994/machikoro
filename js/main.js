@@ -63,6 +63,8 @@ function createCpuPlayer(difficulty, options = {}) {
     const resolvedOptions = Object.assign({}, options);
     if (difficulty === 'expert' && resolvedOptions.expertPurpose === "live" && !resolvedOptions.expertPreset) {
         resolvedOptions.expertPreset = "v2simple";
+        if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "ev";
+        if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
         if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "random";
         if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
         if (!resolvedOptions.expertTvMode) resolvedOptions.expertTvMode = "simple";

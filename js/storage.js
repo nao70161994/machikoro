@@ -134,6 +134,8 @@ function resumeGame() {
             ? new CPU(s.difficulty, {
                 expertPurpose: "live",
                 expertPreset: s.difficulty === "expert" ? "v2simple" : undefined,
+                expertDiceMode: s.difficulty === "expert" ? "ev" : undefined,
+                expertRerollMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertBuildMode: s.difficulty === "expert" ? "random" : undefined,
                 expertInvestMode: s.difficulty === "expert" ? "always" : undefined,
                 expertTvMode: s.difficulty === "expert" ? "simple" : undefined,
