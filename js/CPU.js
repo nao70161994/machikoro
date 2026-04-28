@@ -111,6 +111,93 @@ class CPU {
         return true;
     }
 
+    _minorCardIndexes(player) {
+        const indexes = [];
+        for (let i = 0; i < player.cards.length; i++) {
+            const card = player.cards[i];
+            if (!card || card.category === "大施設") continue;
+            indexes.push(i);
+        }
+        return indexes;
+    }
+
+    _chooseRandomBusinessMove(game) {
+        const current = game.currentPlayer();
+        const myIndexes = this._minorCardIndexes(current);
+        if (myIndexes.length === 0) return null;
+        const targetIndexes = game.players
+            .map((player, index) => ({ player, index }))
+            .filter(entry => entry.index !== game.currentPlayerIndex && this._minorCardIndexes(entry.player).length > 0);
+        if (targetIndexes.length === 0) return null;
+        const myCard = this._randomChoice(myIndexes);
+        const targetEntry = this._randomChoice(targetIndexes);
+        const theirCard = this._randomChoice(this._minorCardIndexes(targetEntry.player));
+        if (myCard == null || !targetEntry || theirCard == null) return null;
+        return {
+            myCard,
+            targetIndex: targetEntry.index,
+            theirCard,
+        };
+    }
+
+    _businessOwnCandidateIndexes(game, current, limit) {
+        const indexes = this._minorCardIndexes(current);
+        if (indexes.length <= limit) return indexes;
+        return indexes
+            .map(index => ({
+                index,
+                score: this._ownedCardValue(current.cards[index], game, current),
+            }))
+            .sort((a, b) => a.score - b.score || a.index - b.index)
+            .slice(0, limit)
+            .map(entry => entry.index);
+    }
+
+    _businessTargetCandidateIndexes(game, current, target, limit, attackScale) {
+        const indexes = this._minorCardIndexes(target);
+        if (indexes.length <= limit) return indexes;
+        return indexes
+            .map(index => {
+                const card = target.cards[index];
+                return {
+                    index,
+                    score: this._receivedCardValue(card, game, current) +
+                        this._ownedCardValue(card, game, target) * 0.7 * attackScale,
+                };
+            })
+            .sort((a, b) => b.score - a.score || a.index - b.index)
+            .slice(0, limit)
+            .map(entry => entry.index);
+    }
+
+    _forEachBusinessMoveCandidate(game, candidateTargets, callback) {
+        const current = game.currentPlayer();
+        const attackScale = this._strongCrowdAttackScale(game);
+        const ownLimit = this.difficulty === "expert" ? 3 : 2;
+        const targetLimit = this.difficulty === "expert" ? 4 : 3;
+        const myIndexes = this._businessOwnCandidateIndexes(game, current, ownLimit);
+        for (const myIndex of myIndexes) {
+            const myCard = current.cards[myIndex];
+            for (const targetIndex of candidateTargets) {
+                const target = game.players[targetIndex];
+                const theirIndexes = this._businessTargetCandidateIndexes(game, current, target, targetLimit, attackScale);
+                for (const theirIndex of theirIndexes) {
+                    const theirCard = target.cards[theirIndex];
+                    const result = callback({
+                        myCard,
+                        myIndex,
+                        target,
+                        targetIndex,
+                        theirCard,
+                        theirIndex,
+                    });
+                    if (result === false) return false;
+                }
+            }
+        }
+        return true;
+    }
+
     getProfileSummary() {
         if (!this.profileStats) return [];
         return Object.entries(this.profileStats)
@@ -968,19 +1055,7 @@ class CPU {
         const myCards = current.getMinorCards();
         if (myCards.length === 0) return null;
         if (this._isExpertV2Simple()) {
-            let chosenMove = null;
-            let seen = 0;
-            this._forEachBusinessMove(game, ({ myIndex, targetIndex, theirIndex }) => {
-                seen++;
-                if (Math.floor(Math.random() * seen) === 0) {
-                    chosenMove = {
-                        myCard: myIndex,
-                        targetIndex,
-                        theirCard: theirIndex,
-                    };
-                }
-            });
-            return chosenMove;
+            return this._chooseRandomBusinessMove(game);
         }
         this._syncExpertTuningForGame(game);
 
@@ -988,9 +1063,8 @@ class CPU {
         const attackScale = this._strongCrowdAttackScale(game);
         const disruptionReady = this._strongCrowdDisruptionReady(game, current);
         const disruptionScale = this._expertDisruptionScale(game, ci);
-        const candidateTargets = new Set(this._expertCandidateTargetIndexes(game, ci));
-        this._forEachBusinessMove(game, ({ myCard, myIndex, target, targetIndex, theirCard, theirIndex }) => {
-            if (!candidateTargets.has(targetIndex)) return;
+        const candidateTargets = this._expertCandidateTargetIndexes(game, ci);
+        this._forEachBusinessMoveCandidate(game, candidateTargets, ({ myCard, myIndex, target, targetIndex, theirCard, theirIndex }) => {
             const move = {
                 myCard: myIndex,
                 targetIndex,
