@@ -2424,13 +2424,27 @@ class CPU {
             !(card.color === "purple" && current.countCard(card.name) > 0)
         ).map(card => ({ type: 'card', card }));
 
-        const options = affordableLandmarks.concat(affordableCards);
+        if (affordableLandmarks.length > 0) {
+            this._traceV2Simple('buildLandmarkOptionCalls');
+            this._traceV2Simple('buildOptionTotal', affordableLandmarks.length);
+            if (affordableLandmarks.length > 1) this._traceV2Simple('buildMultiOptionCalls');
+            const choice = this._randomChoice(affordableLandmarks);
+            if (!choice) {
+                this._traceV2Simple('buildNoop');
+                return false;
+            }
+            this._traceV2SimpleBuildOption('buildLandmarkRandomChoice', choice);
+            this._traceV2Simple('buildLandmarkChoices');
+            this._buyLandmark(choice.name, game);
+            return true;
+        }
+
+        const options = affordableCards;
         this._traceV2Simple('buildOptionTotal', options.length);
         if (options.length === 0) {
             this._traceV2Simple('buildNoop');
             return false;
         }
-        if (affordableLandmarks.length > 0) this._traceV2Simple('buildLandmarkOptionCalls');
         if (affordableCards.length > 0) this._traceV2Simple('buildCardOptionCalls');
         if (options.length > 1) this._traceV2Simple('buildMultiOptionCalls');
 
