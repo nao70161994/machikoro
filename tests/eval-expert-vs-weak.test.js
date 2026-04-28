@@ -1,5 +1,6 @@
 const assert = require('assert');
 const path = require('path');
+const fs = require('fs');
 const { runTest } = require('./helpers/test-utils');
 
 const {
@@ -114,4 +115,9 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
+});
+
+runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-weak.js'), 'utf8');
+    assert.ok(source.includes("expertPreset: 'v2simple'"));
 });

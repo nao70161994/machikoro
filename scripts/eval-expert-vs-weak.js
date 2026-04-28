@@ -78,6 +78,7 @@ function getFastSeriesEvaluator(runtime) {
                 if (difficulty === 'expert') {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
+                        expertPreset: 'v2simple',
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
                 }
