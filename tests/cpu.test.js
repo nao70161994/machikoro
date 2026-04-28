@@ -209,25 +209,19 @@ runTest('chooseTVTarget: expert v2 simple はコイン最多相手を選ぶ', ()
     assert.strictEqual(cpu.chooseTVTarget(game), 2);
 });
 
-runTest('chooseBusinessMove: expert v2 simple は合法手からランダムに選ぶ', () => {
+runTest('chooseBusinessMove: expert v2 simple は一番いらない自分カードと一番欲しい相手カードを選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
     const target = game.players[1];
-    current.cards = [createCardByName('パン屋')];
+    current.cards = [createCardByName('パン屋'), createCardByName('麦畑')];
     current.dormantCards = [];
-    target.cards = [createCardByName('牧場')];
+    target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
     target.dormantCards = [];
-    const originalRandom = Math.random;
-    Math.random = () => 0.0;
-    try {
-        const move = cpu.chooseBusinessMove(game);
-        assert.strictEqual(move.myCard, 0);
-        assert.strictEqual(move.targetIndex, 1);
-        assert.strictEqual(move.theirCard, 0);
-    } finally {
-        Math.random = originalRandom;
-    }
+    const move = cpu.chooseBusinessMove(game);
+    assert.strictEqual(move.myCard, 0);
+    assert.strictEqual(move.targetIndex, 1);
+    assert.strictEqual(move.theirCard, 1);
 });
 
 runTest('expert tuning は人数別設定で自動切替される', () => {

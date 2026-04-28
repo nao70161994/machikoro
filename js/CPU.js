@@ -140,6 +140,42 @@ class CPU {
         };
     }
 
+    _chooseSimpleBusinessMove(game) {
+        const current = game.currentPlayer();
+        const myIndexes = this._minorCardIndexes(current);
+        if (myIndexes.length === 0) return null;
+
+        let myCard = myIndexes[0];
+        let myLoss = this._ownedCardValue(current.cards[myCard], game, current);
+        for (const index of myIndexes) {
+            const loss = this._ownedCardValue(current.cards[index], game, current);
+            if (loss < myLoss) {
+                myLoss = loss;
+                myCard = index;
+            }
+        }
+
+        let bestMove = null;
+        let bestScore = -Infinity;
+        for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
+            if (targetIndex === game.currentPlayerIndex) continue;
+            const target = game.players[targetIndex];
+            const theirIndexes = this._minorCardIndexes(target);
+            for (const theirCard of theirIndexes) {
+                const gain = this._receivedCardValue(target.cards[theirCard], game, current);
+                if (gain > bestScore) {
+                    bestScore = gain;
+                    bestMove = {
+                        myCard,
+                        targetIndex,
+                        theirCard,
+                    };
+                }
+            }
+        }
+        return bestMove;
+    }
+
     _businessOwnCandidateIndexes(game, current, limit) {
         const indexes = this._minorCardIndexes(current);
         if (indexes.length <= limit) return indexes;
@@ -1062,7 +1098,7 @@ class CPU {
         const myCards = current.getMinorCards();
         if (myCards.length === 0) return null;
         if (this._isExpertV2Simple()) {
-            return this._chooseRandomBusinessMove(game);
+            return this._chooseSimpleBusinessMove(game);
         }
         this._syncExpertTuningForGame(game);
 
