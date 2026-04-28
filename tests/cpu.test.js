@@ -209,6 +209,20 @@ runTest('chooseDiceCount: expert v2 simple は港込みの高出目期待値を�
     assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean');
 });
 
+runTest('chooseDiceCount: expert v2 simple は random mode なら駅ありでランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertDiceMode: "random" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    const originalRandom = Math.random;
+    Math.random = () => 0.2;
+    try {
+        assert.strictEqual(cpu.chooseDiceCount(game), true);
+    } finally {
+        Math.random = originalRandom;
+    }
+});
+
 runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);

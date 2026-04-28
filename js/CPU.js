@@ -14,6 +14,7 @@ class CPU {
             difficulty === "expert" && this.expertPurpose === "live" ? "realtime" : "full"
         );
         this.expertPreset = options.expertPreset || "default";
+        this.expertDiceMode = options.expertDiceMode || "ev";
         this.expertBuildMode = options.expertBuildMode || "ev";
         this.expertInvestMode = options.expertInvestMode || "always";
         this.expertTvMode = options.expertTvMode || "simple";
@@ -885,6 +886,9 @@ class CPU {
 
     chooseDiceCount(game) {
         if (this._isExpertV2Simple()) {
+            const current = game.currentPlayer();
+            if (!current.landmarks[LANDMARK_NAMES.STATION]) return false;
+            if (this.expertDiceMode === "random") return Math.random() < 0.5;
             const oneScore = this._expectedDiceScoreWithHarbor(game, false);
             const twoScore = this._expectedDiceScoreWithHarbor(game, true);
             return twoScore >= oneScore;

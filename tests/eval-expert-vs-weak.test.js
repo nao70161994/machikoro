@@ -21,6 +21,7 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
     assert.strictEqual(args.buildMode, 'random');
+    assert.strictEqual(args.diceMode, 'ev');
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
     assert.strictEqual(args.businessMode, 'random');
@@ -39,6 +40,7 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
         '--profile',
         '--profiles', 'duel,crowd',
         '--build-mode', 'random',
+        '--dice-mode', 'random',
         '--it-mode', 'never',
         '--tv-mode', 'random',
         '--business-mode', 'random',
@@ -52,6 +54,7 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.lite, false);
     assert.strictEqual(args.profile, true);
     assert.strictEqual(args.buildMode, 'random');
+    assert.strictEqual(args.diceMode, 'random');
     assert.strictEqual(args.itMode, 'never');
     assert.strictEqual(args.tvMode, 'random');
     assert.strictEqual(args.businessMode, 'random');
@@ -91,6 +94,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         fast: false,
         profile: true,
         buildMode: 'random',
+        diceMode: 'ev',
         itMode: 'always',
         tvMode: 'simple',
         businessMode: 'random',
@@ -145,6 +149,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
     assert.ok(text.includes('buildMode=random'));
+    assert.ok(text.includes('diceMode=ev'));
     assert.ok(text.includes('itMode=always'));
     assert.ok(text.includes('tvMode=simple'));
     assert.ok(text.includes('businessMode=random'));
@@ -158,6 +163,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('players=expert,weak,weak,weak'));
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
     assert.ok(md.includes('- buildMode: random'));
+    assert.ok(md.includes('- diceMode: ev'));
     assert.ok(md.includes('- itMode: always'));
     assert.ok(md.includes('- tvMode: simple'));
     assert.ok(md.includes('- businessMode: random'));
@@ -170,6 +176,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
 runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-weak.js'), 'utf8');
     assert.ok(source.includes("expertPreset: 'v2simple'"));
+    assert.ok(source.includes("expertDiceMode: config.diceMode || 'ev'"));
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'random'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
     assert.ok(source.includes("expertTvMode: config.tvMode || 'simple'"));
@@ -177,6 +184,7 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'random'"));
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
+    assert.ok(source.includes("diceMode: options.diceMode"));
     assert.ok(source.includes("itMode: options.itMode"));
     assert.ok(source.includes("tvMode: options.tvMode"));
     assert.ok(source.includes("businessMode: options.businessMode"));

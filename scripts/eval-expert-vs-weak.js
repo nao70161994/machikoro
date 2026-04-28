@@ -15,6 +15,7 @@ function parseArgs(argv) {
     let profile = false;
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'random';
+    let diceMode = 'ev';
     let itMode = 'always';
     let tvMode = 'simple';
     let businessMode = 'random';
@@ -37,6 +38,8 @@ function parseArgs(argv) {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         } else if (arg === '--build-mode') {
             buildMode = argv[++i] || 'random';
+        } else if (arg === '--dice-mode') {
+            diceMode = argv[++i] || 'ev';
         } else if (arg === '--it-mode') {
             itMode = argv[++i] || 'always';
         } else if (arg === '--tv-mode') {
@@ -50,7 +53,7 @@ function parseArgs(argv) {
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, itMode, tvMode, businessMode, cleaningMode, harborMode };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, itMode, tvMode, businessMode, cleaningMode, harborMode };
 }
 
 function profilePlayers(name) {
@@ -97,6 +100,7 @@ function getFastSeriesEvaluator(runtime) {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
                         expertPreset: 'v2simple',
+                        expertDiceMode: config.diceMode || 'ev',
                         expertBuildMode: config.buildMode || 'random',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
@@ -484,6 +488,7 @@ function evaluateProfile(name, options) {
         fast: options.fast,
         profile: options.profile,
         buildMode: options.buildMode,
+        diceMode: options.diceMode,
         itMode: options.itMode,
         tvMode: options.tvMode,
         businessMode: options.businessMode,
@@ -523,7 +528,7 @@ function summarize(entries) {
 function toText(entries, summary, options) {
     const lines = [
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
-            `buildMode=${options.buildMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
+            `buildMode=${options.buildMode} diceMode=${options.diceMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
             `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
@@ -577,6 +582,7 @@ function toMarkdown(entries, summary, options) {
         `- seed: ${options.seed}`,
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `- buildMode: ${options.buildMode}`,
+        `- diceMode: ${options.diceMode}`,
         `- itMode: ${options.itMode}`,
         `- tvMode: ${options.tvMode}`,
         `- businessMode: ${options.businessMode}`,
