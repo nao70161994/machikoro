@@ -16,14 +16,14 @@ function parseArgs(argv) {
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'random';
     let diceMode = 'ev';
-    let rerollMode = 'random';
+    let rerollMode = 'simple';
     let itMode = 'always';
     let tvMode = 'simple';
     let businessMode = 'random';
     let cleaningMode = 'random';
     let harborMode = 'simple';
     let moverMode = 'random';
-    let renovationMode = 'random';
+    let renovationMode = 'simple';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -110,7 +110,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertPurpose: 'live',
                         expertPreset: 'v2simple',
                         expertDiceMode: config.diceMode || 'ev',
-                        expertRerollMode: config.rerollMode || 'random',
+                        expertRerollMode: config.rerollMode || 'simple',
                         expertBuildMode: config.buildMode || 'random',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
@@ -118,7 +118,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertCleaningMode: config.cleaningMode || 'random',
                         expertHarborMode: config.harborMode || 'simple',
                         expertMoverMode: config.moverMode || 'random',
-                        expertRenovationMode: config.renovationMode || 'random',
+                        expertRenovationMode: config.renovationMode || 'simple',
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
