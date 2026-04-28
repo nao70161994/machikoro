@@ -677,8 +677,9 @@ function simulateGame(options = {}) {
         safety++;
     }
 
+    const winnerPlayer = game.checkWinner();
     const result = {
-        winner: game.checkWinner() ? game.currentPlayerIndex === game.players.indexOf(game.checkWinner()) ? game.players.indexOf(game.checkWinner()) : game.players.indexOf(game.checkWinner()) : -1,
+        winner: winnerPlayer ? game.players.indexOf(winnerPlayer) : -1,
         turns: game.turnCount,
         exhausted: safety >= maxSteps,
         difficulties: difficulties.slice(),

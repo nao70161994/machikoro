@@ -51,6 +51,9 @@ function profileWeight(name) {
 
 function getFastSeriesEvaluator(runtime) {
     if (typeof runtime.__evalExpertVsWeakFast === 'function') return runtime.__evalExpertVsWeakFast;
+    // NOTE: 以下の playStep / fallback* は scripts/selfplay.js の同名関数とほぼ同一です。
+    // vm 境界跨ぎを避けるためにあえて context 内に注入しています。
+    // ルール変更時は scripts/selfplay.js 側と両方更新してください。
     vm.runInContext(`
         this.__evalExpertVsWeakFast = function(config) {
             function createRng(seed) {

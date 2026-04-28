@@ -84,6 +84,33 @@ class CPU {
         return items[index];
     }
 
+    _forEachBusinessMove(game, callback) {
+        const current = game.currentPlayer();
+        const ci = game.currentPlayerIndex;
+        for (let myIndex = 0; myIndex < current.cards.length; myIndex++) {
+            const myCard = current.cards[myIndex];
+            if (!myCard || myCard.category === "大施設") continue;
+            for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
+                if (targetIndex === ci) continue;
+                const target = game.players[targetIndex];
+                for (let theirIndex = 0; theirIndex < target.cards.length; theirIndex++) {
+                    const theirCard = target.cards[theirIndex];
+                    if (!theirCard || theirCard.category === "大施設") continue;
+                    const result = callback({
+                        myCard,
+                        myIndex,
+                        target,
+                        targetIndex,
+                        theirCard,
+                        theirIndex,
+                    });
+                    if (result === false) return false;
+                }
+            }
+        }
+        return true;
+    }
+
     getProfileSummary() {
         if (!this.profileStats) return [];
         return Object.entries(this.profileStats)
@@ -941,21 +968,19 @@ class CPU {
         const myCards = current.getMinorCards();
         if (myCards.length === 0) return null;
         if (this._isExpertV2Simple()) {
-            const moves = [];
-            for (const myCard of myCards) {
-                for (let i = 0; i < game.players.length; i++) {
-                    if (i === ci) continue;
-                    const target = game.players[i];
-                    for (const theirCard of target.getMinorCards()) {
-                        moves.push({
-                            myCard: current.cards.indexOf(myCard),
-                            targetIndex: i,
-                            theirCard: target.cards.indexOf(theirCard),
-                        });
-                    }
+            let chosenMove = null;
+            let seen = 0;
+            this._forEachBusinessMove(game, ({ myIndex, targetIndex, theirIndex }) => {
+                seen++;
+                if (Math.floor(Math.random() * seen) === 0) {
+                    chosenMove = {
+                        myCard: myIndex,
+                        targetIndex,
+                        theirCard: theirIndex,
+                    };
                 }
-            }
-            return this._randomChoice(moves);
+            });
+            return chosenMove;
         }
         this._syncExpertTuningForGame(game);
 
@@ -963,49 +988,46 @@ class CPU {
         const attackScale = this._strongCrowdAttackScale(game);
         const disruptionReady = this._strongCrowdDisruptionReady(game, current);
         const disruptionScale = this._expertDisruptionScale(game, ci);
-        for (const myCard of myCards) {
-            for (const i of this._expertCandidateTargetIndexes(game, ci)) {
-                const target = game.players[i];
-                for (const theirCard of target.getMinorCards()) {
-                    const move = {
-                        myCard: current.cards.indexOf(myCard),
-                        targetIndex: i,
-                        theirCard: target.cards.indexOf(theirCard),
-                    };
-                    let score;
-                    if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
-                        const targetDistance = this._estimateWinDistance(target, game);
-                        const racePressure = Math.max(0, 18 - targetDistance);
-                        const denialValue = this._ownedCardValue(theirCard, game, target);
-                        const giftValue = this._receivedCardValue(myCard, game, target);
-                        score = this._scoreExpertPendingChoice(game, clone =>
-                            clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
-                        ) +
-                            this._expertCrowdDisruptionBonus(game, i, 10 * disruptionScale) +
-                            denialValue * 0.45 * disruptionScale +
-                            racePressure * 0.75 * disruptionScale -
-                            giftValue * 0.2;
-                    } else if (this.difficulty === "strong" && game.players.length >= 4) {
-                        score = disruptionReady
-                            ? this._scoreStrongPendingChoice(game, clone =>
-                                clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
-                            )
-                            : this._receivedCardValue(theirCard, game, current) - this._ownedCardValue(myCard, game, current) * 0.9;
-                    } else {
-                        const myLoss = this._ownedCardValue(myCard, game, current);
-                        const gain = this._receivedCardValue(theirCard, game, current);
-                        const denial = this._ownedCardValue(theirCard, game, target) * 0.7 * attackScale;
-                        const gift = this._receivedCardValue(myCard, game, target) * 0.45;
-                        score = gain + denial - myLoss - gift +
-                            target.builtLandmarkCount() * 0.8 * attackScale +
-                            (target.coins >= 10 ? 1.5 * attackScale : 0);
-                    }
-                    if (!bestMove || score > bestMove.score) {
-                        bestMove = Object.assign({ score }, move);
-                    }
-                }
+        const candidateTargets = new Set(this._expertCandidateTargetIndexes(game, ci));
+        this._forEachBusinessMove(game, ({ myCard, myIndex, target, targetIndex, theirCard, theirIndex }) => {
+            if (!candidateTargets.has(targetIndex)) return;
+            const move = {
+                myCard: myIndex,
+                targetIndex,
+                theirCard: theirIndex,
+            };
+            let score;
+            if (this.difficulty === "expert" && !this._expertCrowdNormalPlan(game)) {
+                const targetDistance = this._estimateWinDistance(target, game);
+                const racePressure = Math.max(0, 18 - targetDistance);
+                const denialValue = this._ownedCardValue(theirCard, game, target);
+                const giftValue = this._receivedCardValue(myCard, game, target);
+                score = this._scoreExpertPendingChoice(game, clone =>
+                    clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
+                ) +
+                    this._expertCrowdDisruptionBonus(game, targetIndex, 10 * disruptionScale) +
+                    denialValue * 0.45 * disruptionScale +
+                    racePressure * 0.75 * disruptionScale -
+                    giftValue * 0.2;
+            } else if (this.difficulty === "strong" && game.players.length >= 4) {
+                score = disruptionReady
+                    ? this._scoreStrongPendingChoice(game, clone =>
+                        clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
+                    )
+                    : this._receivedCardValue(theirCard, game, current) - this._ownedCardValue(myCard, game, current) * 0.9;
+            } else {
+                const myLoss = this._ownedCardValue(myCard, game, current);
+                const gain = this._receivedCardValue(theirCard, game, current);
+                const denial = this._ownedCardValue(theirCard, game, target) * 0.7 * attackScale;
+                const gift = this._receivedCardValue(myCard, game, target) * 0.45;
+                score = gain + denial - myLoss - gift +
+                    target.builtLandmarkCount() * 0.8 * attackScale +
+                    (target.coins >= 10 ? 1.5 * attackScale : 0);
             }
-        }
+            if (!bestMove || score > bestMove.score) {
+                bestMove = Object.assign({ score }, move);
+            }
+        });
         return bestMove;
     }
 
