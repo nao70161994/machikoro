@@ -14,6 +14,7 @@ function parseArgs(argv) {
     let fast = false;
     let profile = false;
     let profiles = DEFAULT_PROFILES.slice();
+    let buildMode = 'ev';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -29,10 +30,12 @@ function parseArgs(argv) {
             profile = true;
         } else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
+        } else if (arg === '--build-mode') {
+            buildMode = argv[++i] || 'ev';
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode };
 }
 
 function profilePlayers(name) {
@@ -79,6 +82,7 @@ function getFastSeriesEvaluator(runtime) {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
                         expertPreset: 'v2simple',
+                        expertBuildMode: config.buildMode || 'ev',
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
                 }
@@ -489,7 +493,7 @@ function summarize(entries) {
 
 function toText(entries, summary, options) {
     const lines = [
-        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
+        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} buildMode=${options.buildMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -541,6 +545,7 @@ function toMarkdown(entries, summary, options) {
         `- games: ${options.games}`,
         `- seed: ${options.seed}`,
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
+        `- buildMode: ${options.buildMode}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),

@@ -2013,6 +2013,34 @@ runTest('buildExpert: expert v2 simple は期待値が最大のランドマー�
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], false);
 });
 
+runTest('buildExpert: expert v2 simple は random mode だと選択候補からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertBuildMode: "random" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['麦畑'] = 1;
+    stock['チーズ工場'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set();
+    current.coins = 5;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場')];
+    current.dormantCards = [];
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    try {
+        cpu.buildExpert(game, stock);
+    } finally {
+        Math.random = originalRandom;
+    }
+
+    assert.strictEqual(current.countCard('チーズ工場'), 1);
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
 runTest('buildExpert: expert v2 simple はランドマークが買えないと期待値が高いカードを選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);

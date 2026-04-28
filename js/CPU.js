@@ -14,6 +14,7 @@ class CPU {
             difficulty === "expert" && this.expertPurpose === "live" ? "realtime" : "full"
         );
         this.expertPreset = options.expertPreset || "default";
+        this.expertBuildMode = options.expertBuildMode || "ev";
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
         this.expertProfileTunings = Object.assign(
@@ -2401,6 +2402,17 @@ class CPU {
 
         const options = affordableLandmarks.concat(affordableCards);
         if (options.length === 0) return false;
+
+        if (this.expertBuildMode === "random") {
+            const choice = this._randomChoice(options);
+            if (!choice) return false;
+            if (choice.type === 'landmark') {
+                this._buyLandmark(choice.name, game);
+                return true;
+            }
+            this._buyCard(choice.card, game, shopStock);
+            return true;
+        }
 
         let bestOption = null;
         let bestScore = -Infinity;
