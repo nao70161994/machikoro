@@ -236,6 +236,20 @@ function getFastSeriesEvaluator(runtime) {
                 pendingRenovationMs: 0,
                 pendingITMs: 0,
                 pendingPhaseAdvanceMs: 0,
+                pendingTVCount: 0,
+                pendingBusinessCount: 0,
+                pendingCleaningCount: 0,
+                pendingMoverCount: 0,
+                pendingRenovationCount: 0,
+                pendingITCount: 0,
+                pendingPhaseAdvanceCount: 0,
+                pendingTVMaxMs: 0,
+                pendingBusinessMaxMs: 0,
+                pendingCleaningMaxMs: 0,
+                pendingMoverMaxMs: 0,
+                pendingRenovationMaxMs: 0,
+                pendingITMaxMs: 0,
+                pendingPhaseAdvanceMaxMs: 0,
                 steps: 0,
             };
 
@@ -270,13 +284,35 @@ function getFastSeriesEvaluator(runtime) {
                     else if (phaseBefore === GAME_PHASES.HARBOR_CHOICE) profile.harborMs += elapsed;
                     else if (phaseBefore === GAME_PHASES.PENDING) {
                         profile.pendingMs += elapsed;
-                        if (pendingKind === 'tv') profile.pendingTVMs += elapsed;
-                        else if (pendingKind === 'business') profile.pendingBusinessMs += elapsed;
-                        else if (pendingKind === 'cleaning') profile.pendingCleaningMs += elapsed;
-                        else if (pendingKind === 'mover') profile.pendingMoverMs += elapsed;
-                        else if (pendingKind === 'renovation') profile.pendingRenovationMs += elapsed;
-                        else if (pendingKind === 'it') profile.pendingITMs += elapsed;
-                        else profile.pendingPhaseAdvanceMs += elapsed;
+                        if (pendingKind === 'tv') {
+                            profile.pendingTVMs += elapsed;
+                            profile.pendingTVCount++;
+                            profile.pendingTVMaxMs = Math.max(profile.pendingTVMaxMs, elapsed);
+                        } else if (pendingKind === 'business') {
+                            profile.pendingBusinessMs += elapsed;
+                            profile.pendingBusinessCount++;
+                            profile.pendingBusinessMaxMs = Math.max(profile.pendingBusinessMaxMs, elapsed);
+                        } else if (pendingKind === 'cleaning') {
+                            profile.pendingCleaningMs += elapsed;
+                            profile.pendingCleaningCount++;
+                            profile.pendingCleaningMaxMs = Math.max(profile.pendingCleaningMaxMs, elapsed);
+                        } else if (pendingKind === 'mover') {
+                            profile.pendingMoverMs += elapsed;
+                            profile.pendingMoverCount++;
+                            profile.pendingMoverMaxMs = Math.max(profile.pendingMoverMaxMs, elapsed);
+                        } else if (pendingKind === 'renovation') {
+                            profile.pendingRenovationMs += elapsed;
+                            profile.pendingRenovationCount++;
+                            profile.pendingRenovationMaxMs = Math.max(profile.pendingRenovationMaxMs, elapsed);
+                        } else if (pendingKind === 'it') {
+                            profile.pendingITMs += elapsed;
+                            profile.pendingITCount++;
+                            profile.pendingITMaxMs = Math.max(profile.pendingITMaxMs, elapsed);
+                        } else {
+                            profile.pendingPhaseAdvanceMs += elapsed;
+                            profile.pendingPhaseAdvanceCount++;
+                            profile.pendingPhaseAdvanceMaxMs = Math.max(profile.pendingPhaseAdvanceMaxMs, elapsed);
+                        }
                     } else if (phaseBefore === GAME_PHASES.BUILD) profile.buildMs += elapsed;
                     safety++;
                 }
@@ -319,6 +355,43 @@ function getFastSeriesEvaluator(runtime) {
                         renovationMs: profile.pendingRenovationMs,
                         itMs: profile.pendingITMs,
                         phaseAdvanceMs: profile.pendingPhaseAdvanceMs,
+                    },
+                    pendingStats: {
+                        tv: {
+                            count: profile.pendingTVCount,
+                            avgMs: profile.pendingTVCount > 0 ? profile.pendingTVMs / profile.pendingTVCount : 0,
+                            maxMs: profile.pendingTVMaxMs,
+                        },
+                        business: {
+                            count: profile.pendingBusinessCount,
+                            avgMs: profile.pendingBusinessCount > 0 ? profile.pendingBusinessMs / profile.pendingBusinessCount : 0,
+                            maxMs: profile.pendingBusinessMaxMs,
+                        },
+                        cleaning: {
+                            count: profile.pendingCleaningCount,
+                            avgMs: profile.pendingCleaningCount > 0 ? profile.pendingCleaningMs / profile.pendingCleaningCount : 0,
+                            maxMs: profile.pendingCleaningMaxMs,
+                        },
+                        mover: {
+                            count: profile.pendingMoverCount,
+                            avgMs: profile.pendingMoverCount > 0 ? profile.pendingMoverMs / profile.pendingMoverCount : 0,
+                            maxMs: profile.pendingMoverMaxMs,
+                        },
+                        renovation: {
+                            count: profile.pendingRenovationCount,
+                            avgMs: profile.pendingRenovationCount > 0 ? profile.pendingRenovationMs / profile.pendingRenovationCount : 0,
+                            maxMs: profile.pendingRenovationMaxMs,
+                        },
+                        it: {
+                            count: profile.pendingITCount,
+                            avgMs: profile.pendingITCount > 0 ? profile.pendingITMs / profile.pendingITCount : 0,
+                            maxMs: profile.pendingITMaxMs,
+                        },
+                        phaseAdvance: {
+                            count: profile.pendingPhaseAdvanceCount,
+                            avgMs: profile.pendingPhaseAdvanceCount > 0 ? profile.pendingPhaseAdvanceMs / profile.pendingPhaseAdvanceCount : 0,
+                            maxMs: profile.pendingPhaseAdvanceMaxMs,
+                        },
                     },
                 } : null,
             };
@@ -399,6 +472,10 @@ function toText(entries, summary, options) {
                 `cleaning=${entry.perf.pendingBreakdown.cleaningMs.toFixed(1)} mover=${entry.perf.pendingBreakdown.moverMs.toFixed(1)} ` +
                 `renovation=${entry.perf.pendingBreakdown.renovationMs.toFixed(1)} it=${entry.perf.pendingBreakdown.itMs.toFixed(1)} ` +
                 `advance=${entry.perf.pendingBreakdown.phaseAdvanceMs.toFixed(1)}`
+            );
+            lines.push(
+                `  pendingStats: business count=${entry.perf.pendingStats.business.count} avg=${entry.perf.pendingStats.business.avgMs.toFixed(3)}ms ` +
+                `max=${entry.perf.pendingStats.business.maxMs.toFixed(1)}ms`
             );
         }
     }

@@ -76,6 +76,15 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
                 avgMsPerStep: 0.3,
                 byPhase: { rollMs: 10, selectDiceMs: 20, rerollMs: 30, harborMs: 40, pendingMs: 50, buildMs: 60 },
                 pendingBreakdown: { tvMs: 1, businessMs: 2, cleaningMs: 3, moverMs: 4, renovationMs: 5, itMs: 6, phaseAdvanceMs: 7 },
+                pendingStats: {
+                    tv: { count: 1, avgMs: 1, maxMs: 1 },
+                    business: { count: 2, avgMs: 4.5, maxMs: 8 },
+                    cleaning: { count: 1, avgMs: 3, maxMs: 3 },
+                    mover: { count: 1, avgMs: 4, maxMs: 4 },
+                    renovation: { count: 1, avgMs: 5, maxMs: 5 },
+                    it: { count: 1, avgMs: 6, maxMs: 6 },
+                    phaseAdvance: { count: 1, avgMs: 7, maxMs: 7 },
+                },
             },
         },
     ];
@@ -85,6 +94,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('weightedWinRate=70.0%'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
+    assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
     assert.ok(text.includes('crowd: 35/50'));
     assert.ok(text.includes('players=expert,weak,weak,weak'));
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
