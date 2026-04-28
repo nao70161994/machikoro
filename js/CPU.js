@@ -646,6 +646,26 @@ class CPU {
         return totalWeight > 0 ? totalScore / totalWeight : 0;
     }
 
+    _expectedDiceScoreWithHarbor(game, useTwo) {
+        const current = game.currentPlayer();
+        const canUseHarbor = useTwo && current.landmarks[LANDMARK_NAMES.HARBOR];
+        const weights = useTwo
+            ? { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 }
+            : { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1 };
+        let totalWeight = 0;
+        let totalScore = 0;
+        for (const [diceText, weight] of Object.entries(weights)) {
+            const dice = parseInt(diceText, 10);
+            let score = this._estimateRollScore(game, dice);
+            if (canUseHarbor && dice >= 10) {
+                score = Math.max(score, this._estimateRollScore(game, dice + 2));
+            }
+            totalWeight += weight;
+            totalScore += score * weight;
+        }
+        return totalWeight > 0 ? totalScore / totalWeight : 0;
+    }
+
     _diceOutcomeWeights(useTwo) {
         if (!useTwo) {
             return [
@@ -842,8 +862,8 @@ class CPU {
 
     chooseDiceCount(game) {
         if (this._isExpertV2Simple()) {
-            const oneScore = this._expectedDiceScore(game, false);
-            const twoScore = this._expectedDiceScore(game, true);
+            const oneScore = this._expectedDiceScoreWithHarbor(game, false);
+            const twoScore = this._expectedDiceScoreWithHarbor(game, true);
             return twoScore >= oneScore;
         }
         this._syncExpertTuningForGame(game);

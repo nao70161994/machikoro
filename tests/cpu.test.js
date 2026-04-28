@@ -189,6 +189,26 @@ runTest('chooseDiceCount: expert v2 simple は期待値で1個振りを選ぶ', 
     assert.strictEqual(cpu.chooseDiceCount(game), false);
 });
 
+runTest('chooseDiceCount: expert v2 simple は港込みの高出目期待値を使う', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.cards = [
+        createCardByName('食品倉庫'),
+        createCardByName('パン屋'),
+        createCardByName('コンビニ'),
+        createCardByName('コンビニ'),
+    ];
+    current.dormantCards = [];
+
+    const plainTwo = cpu._expectedDiceScore(game, true);
+    const harborTwo = cpu._expectedDiceScoreWithHarbor(game, true);
+    assert.ok(harborTwo > plainTwo);
+    assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean');
+});
+
 runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
