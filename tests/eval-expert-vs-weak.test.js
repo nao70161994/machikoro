@@ -78,7 +78,20 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
                 pendingBreakdown: { tvMs: 1, businessMs: 2, cleaningMs: 3, moverMs: 4, renovationMs: 5, itMs: 6, phaseAdvanceMs: 7 },
                 pendingStats: {
                     tv: { count: 1, avgMs: 1, maxMs: 1 },
-                    business: { count: 2, avgMs: 4.5, maxMs: 8 },
+                    business: {
+                        count: 2,
+                        avgMs: 4.5,
+                        maxMs: 8,
+                        chooseMs: 5,
+                        resolveMs: 4,
+                        avgChooseMs: 2.5,
+                        avgResolveMs: 2,
+                        maxChooseMs: 4,
+                        maxResolveMs: 3,
+                        totalCandidatePairs: 11,
+                        avgCandidatePairs: 5.5,
+                        maxCandidatePairs: 7,
+                    },
                     cleaning: { count: 1, avgMs: 3, maxMs: 3 },
                     mover: { count: 1, avgMs: 4, maxMs: 4 },
                     renovation: { count: 1, avgMs: 5, maxMs: 5 },
@@ -95,6 +108,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
+    assert.ok(text.includes('businessSplit: chooseAvg=2.500ms resolveAvg=2.000ms chooseMax=4.0ms resolveMax=3.0ms pairsAvg=5.5 pairsMax=7'));
     assert.ok(text.includes('crowd: 35/50'));
     assert.ok(text.includes('players=expert,weak,weak,weak'));
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));

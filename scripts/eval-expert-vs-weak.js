@@ -104,6 +104,23 @@ function getFastSeriesEvaluator(runtime) {
                 game._checkPending();
             }
 
+            function countBusinessCandidatePairs(game) {
+                const current = game.currentPlayer();
+                let count = 0;
+                for (let myIndex = 0; myIndex < current.cards.length; myIndex++) {
+                    if (current.cards[myIndex].category === '大施設') continue;
+                    for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
+                        if (targetIndex === game.currentPlayerIndex) continue;
+                        const target = game.players[targetIndex];
+                        for (let theirIndex = 0; theirIndex < target.cards.length; theirIndex++) {
+                            if (target.cards[theirIndex].category === '大施設') continue;
+                            count++;
+                        }
+                    }
+                }
+                return count;
+            }
+
             function fallbackCleaning(game) {
                 for (const player of game.players) {
                     const card = player.getMinorCards().find(entry => !player.isDormant(entry));
@@ -172,9 +189,20 @@ function getFastSeriesEvaluator(runtime) {
                             return;
                         }
                         if (game.pendingBusiness > 0) {
+                            const candidatePairs = countBusinessCandidatePairs(game);
+                            profile.pendingBusinessCandidatePairs += candidatePairs;
+                            profile.pendingBusinessCandidatePairsMax = Math.max(profile.pendingBusinessCandidatePairsMax, candidatePairs);
+                            const chooseStarted = Date.now();
                             const move = cpu.chooseBusinessMove(game);
+                            const chooseElapsed = Date.now() - chooseStarted;
+                            profile.pendingBusinessChooseMs += chooseElapsed;
+                            profile.pendingBusinessChooseMaxMs = Math.max(profile.pendingBusinessChooseMaxMs, chooseElapsed);
+                            const resolveStarted = Date.now();
                             if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
                             else fallbackBusiness(game);
+                            const resolveElapsed = Date.now() - resolveStarted;
+                            profile.pendingBusinessResolveMs += resolveElapsed;
+                            profile.pendingBusinessResolveMaxMs = Math.max(profile.pendingBusinessResolveMaxMs, resolveElapsed);
                             return;
                         }
                         if (game.pendingCleaning > 0) {
@@ -236,6 +264,8 @@ function getFastSeriesEvaluator(runtime) {
                 pendingRenovationMs: 0,
                 pendingITMs: 0,
                 pendingPhaseAdvanceMs: 0,
+                pendingBusinessChooseMs: 0,
+                pendingBusinessResolveMs: 0,
                 pendingTVCount: 0,
                 pendingBusinessCount: 0,
                 pendingCleaningCount: 0,
@@ -243,6 +273,7 @@ function getFastSeriesEvaluator(runtime) {
                 pendingRenovationCount: 0,
                 pendingITCount: 0,
                 pendingPhaseAdvanceCount: 0,
+                pendingBusinessCandidatePairs: 0,
                 pendingTVMaxMs: 0,
                 pendingBusinessMaxMs: 0,
                 pendingCleaningMaxMs: 0,
@@ -250,6 +281,9 @@ function getFastSeriesEvaluator(runtime) {
                 pendingRenovationMaxMs: 0,
                 pendingITMaxMs: 0,
                 pendingPhaseAdvanceMaxMs: 0,
+                pendingBusinessChooseMaxMs: 0,
+                pendingBusinessResolveMaxMs: 0,
+                pendingBusinessCandidatePairsMax: 0,
                 steps: 0,
             };
 
@@ -366,6 +400,15 @@ function getFastSeriesEvaluator(runtime) {
                             count: profile.pendingBusinessCount,
                             avgMs: profile.pendingBusinessCount > 0 ? profile.pendingBusinessMs / profile.pendingBusinessCount : 0,
                             maxMs: profile.pendingBusinessMaxMs,
+                            chooseMs: profile.pendingBusinessChooseMs,
+                            resolveMs: profile.pendingBusinessResolveMs,
+                            avgChooseMs: profile.pendingBusinessCount > 0 ? profile.pendingBusinessChooseMs / profile.pendingBusinessCount : 0,
+                            avgResolveMs: profile.pendingBusinessCount > 0 ? profile.pendingBusinessResolveMs / profile.pendingBusinessCount : 0,
+                            maxChooseMs: profile.pendingBusinessChooseMaxMs,
+                            maxResolveMs: profile.pendingBusinessResolveMaxMs,
+                            totalCandidatePairs: profile.pendingBusinessCandidatePairs,
+                            avgCandidatePairs: profile.pendingBusinessCount > 0 ? profile.pendingBusinessCandidatePairs / profile.pendingBusinessCount : 0,
+                            maxCandidatePairs: profile.pendingBusinessCandidatePairsMax,
                         },
                         cleaning: {
                             count: profile.pendingCleaningCount,
@@ -476,6 +519,14 @@ function toText(entries, summary, options) {
             lines.push(
                 `  pendingStats: business count=${entry.perf.pendingStats.business.count} avg=${entry.perf.pendingStats.business.avgMs.toFixed(3)}ms ` +
                 `max=${entry.perf.pendingStats.business.maxMs.toFixed(1)}ms`
+            );
+            lines.push(
+                `  businessSplit: chooseAvg=${entry.perf.pendingStats.business.avgChooseMs.toFixed(3)}ms ` +
+                `resolveAvg=${entry.perf.pendingStats.business.avgResolveMs.toFixed(3)}ms ` +
+                `chooseMax=${entry.perf.pendingStats.business.maxChooseMs.toFixed(1)}ms ` +
+                `resolveMax=${entry.perf.pendingStats.business.maxResolveMs.toFixed(1)}ms ` +
+                `pairsAvg=${entry.perf.pendingStats.business.avgCandidatePairs.toFixed(1)} ` +
+                `pairsMax=${entry.perf.pendingStats.business.maxCandidatePairs}`
             );
         }
     }
