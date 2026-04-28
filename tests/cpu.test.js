@@ -2073,6 +2073,16 @@ runTest('chooseITInvest: expert v2 simple は常に積立する', () => {
     assert.strictEqual(cpu.chooseITInvest(game), true);
 });
 
+runTest('chooseITInvest: expert v2 simple は never mode なら積立しない', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertInvestMode: "never" });
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    game.enabledLandmarks = new Set(Player.landmarkNames());
+    current.coins = 3;
+
+    assert.strictEqual(cpu.chooseITInvest(game), false);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }

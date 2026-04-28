@@ -21,11 +21,12 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
     assert.strictEqual(args.buildMode, 'ev');
+    assert.strictEqual(args.itMode, 'always');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
 runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profile', '--profiles', 'duel,crowd', '--build-mode', 'random']);
+    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profile', '--profiles', 'duel,crowd', '--build-mode', 'random', '--it-mode', 'never']);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -33,6 +34,7 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.lite, false);
     assert.strictEqual(args.profile, true);
     assert.strictEqual(args.buildMode, 'random');
+    assert.strictEqual(args.itMode, 'never');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -60,7 +62,7 @@ runTest('eval-expert-vs-weak summarize は重み付き勝率と最低勝率を�
 });
 
 runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
-    const options = { games: 50, seed: 1, lite: true, fast: false, profile: true, buildMode: 'ev' };
+    const options = { games: 50, seed: 1, lite: true, fast: false, profile: true, buildMode: 'ev', itMode: 'always' };
     const entries = [
         {
             profile: 'crowd',
@@ -109,6 +111,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
     assert.ok(text.includes('buildMode=ev'));
+    assert.ok(text.includes('itMode=always'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -117,6 +120,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('players=expert,weak,weak,weak'));
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
     assert.ok(md.includes('- buildMode: ev'));
+    assert.ok(md.includes('- itMode: always'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -125,4 +129,5 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-weak.js'), 'utf8');
     assert.ok(source.includes("expertPreset: 'v2simple'"));
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
+    assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
 });

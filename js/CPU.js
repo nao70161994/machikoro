@@ -15,6 +15,7 @@ class CPU {
         );
         this.expertPreset = options.expertPreset || "default";
         this.expertBuildMode = options.expertBuildMode || "ev";
+        this.expertInvestMode = options.expertInvestMode || "always";
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
         this.expertProfileTunings = Object.assign(
@@ -1350,7 +1351,7 @@ class CPU {
 
     chooseITInvest(game) {
         const current = game.currentPlayer();
-        if (this._isExpertV2Simple()) return true;
+        if (this._isExpertV2Simple()) return this.expertInvestMode !== "never";
         this._syncExpertTuningForGame(game);
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;

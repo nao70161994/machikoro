@@ -15,6 +15,7 @@ function parseArgs(argv) {
     let profile = false;
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'ev';
+    let itMode = 'always';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -32,10 +33,12 @@ function parseArgs(argv) {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         } else if (arg === '--build-mode') {
             buildMode = argv[++i] || 'ev';
+        } else if (arg === '--it-mode') {
+            itMode = argv[++i] || 'always';
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, itMode };
 }
 
 function profilePlayers(name) {
@@ -83,6 +86,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertPurpose: 'live',
                         expertPreset: 'v2simple',
                         expertBuildMode: config.buildMode || 'ev',
+                        expertInvestMode: config.itMode || 'always',
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
                 }
@@ -493,7 +497,7 @@ function summarize(entries) {
 
 function toText(entries, summary, options) {
     const lines = [
-        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} buildMode=${options.buildMode}`,
+        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} buildMode=${options.buildMode} itMode=${options.itMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -546,6 +550,7 @@ function toMarkdown(entries, summary, options) {
         `- seed: ${options.seed}`,
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `- buildMode: ${options.buildMode}`,
+        `- itMode: ${options.itMode}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),
