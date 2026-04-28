@@ -63,6 +63,12 @@ function createCpuPlayer(difficulty, options = {}) {
     const resolvedOptions = Object.assign({}, options);
     if (difficulty === 'expert' && resolvedOptions.expertPurpose === "live" && !resolvedOptions.expertPreset) {
         resolvedOptions.expertPreset = "v2simple";
+        if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "random";
+        if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
+        if (!resolvedOptions.expertTvMode) resolvedOptions.expertTvMode = "simple";
+        if (!resolvedOptions.expertBusinessMode) resolvedOptions.expertBusinessMode = "random";
+        if (!resolvedOptions.expertCleaningMode) resolvedOptions.expertCleaningMode = "random";
+        if (!resolvedOptions.expertHarborMode) resolvedOptions.expertHarborMode = "simple";
     }
     if (difficulty === 'rl') {
         try {

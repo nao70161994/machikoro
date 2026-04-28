@@ -134,6 +134,12 @@ function resumeGame() {
             ? new CPU(s.difficulty, {
                 expertPurpose: "live",
                 expertPreset: s.difficulty === "expert" ? "v2simple" : undefined,
+                expertBuildMode: s.difficulty === "expert" ? "random" : undefined,
+                expertInvestMode: s.difficulty === "expert" ? "always" : undefined,
+                expertTvMode: s.difficulty === "expert" ? "simple" : undefined,
+                expertBusinessMode: s.difficulty === "expert" ? "random" : undefined,
+                expertCleaningMode: s.difficulty === "expert" ? "random" : undefined,
+                expertHarborMode: s.difficulty === "expert" ? "simple" : undefined,
             })
             : null
         );

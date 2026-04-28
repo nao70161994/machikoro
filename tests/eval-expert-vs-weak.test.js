@@ -20,11 +20,11 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.maxSteps, 5000);
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
-    assert.strictEqual(args.buildMode, 'ev');
+    assert.strictEqual(args.buildMode, 'random');
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
-    assert.strictEqual(args.businessMode, 'simple');
-    assert.strictEqual(args.cleaningMode, 'simple');
+    assert.strictEqual(args.businessMode, 'random');
+    assert.strictEqual(args.cleaningMode, 'random');
     assert.strictEqual(args.harborMode, 'simple');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
@@ -90,11 +90,11 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         lite: true,
         fast: false,
         profile: true,
-        buildMode: 'ev',
+        buildMode: 'random',
         itMode: 'always',
         tvMode: 'simple',
-        businessMode: 'simple',
-        cleaningMode: 'simple',
+        businessMode: 'random',
+        cleaningMode: 'random',
         harborMode: 'simple',
     };
     const entries = [
@@ -144,11 +144,11 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     const text = toText(entries, summary, options);
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
-    assert.ok(text.includes('buildMode=ev'));
+    assert.ok(text.includes('buildMode=random'));
     assert.ok(text.includes('itMode=always'));
     assert.ok(text.includes('tvMode=simple'));
-    assert.ok(text.includes('businessMode=simple'));
-    assert.ok(text.includes('cleaningMode=simple'));
+    assert.ok(text.includes('businessMode=random'));
+    assert.ok(text.includes('cleaningMode=random'));
     assert.ok(text.includes('harborMode=simple'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
@@ -157,11 +157,11 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('crowd: 35/50'));
     assert.ok(text.includes('players=expert,weak,weak,weak'));
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
-    assert.ok(md.includes('- buildMode: ev'));
+    assert.ok(md.includes('- buildMode: random'));
     assert.ok(md.includes('- itMode: always'));
     assert.ok(md.includes('- tvMode: simple'));
-    assert.ok(md.includes('- businessMode: simple'));
-    assert.ok(md.includes('- cleaningMode: simple'));
+    assert.ok(md.includes('- businessMode: random'));
+    assert.ok(md.includes('- cleaningMode: random'));
     assert.ok(md.includes('- harborMode: simple'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
@@ -170,11 +170,11 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
 runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-weak.js'), 'utf8');
     assert.ok(source.includes("expertPreset: 'v2simple'"));
-    assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
+    assert.ok(source.includes("expertBuildMode: config.buildMode || 'random'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
     assert.ok(source.includes("expertTvMode: config.tvMode || 'simple'"));
-    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'simple'"));
-    assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'simple'"));
+    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'random'"));
+    assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'random'"));
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("itMode: options.itMode"));

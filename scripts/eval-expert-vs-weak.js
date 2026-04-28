@@ -14,11 +14,11 @@ function parseArgs(argv) {
     let fast = false;
     let profile = false;
     let profiles = DEFAULT_PROFILES.slice();
-    let buildMode = 'ev';
+    let buildMode = 'random';
     let itMode = 'always';
     let tvMode = 'simple';
-    let businessMode = 'simple';
-    let cleaningMode = 'simple';
+    let businessMode = 'random';
+    let cleaningMode = 'random';
     let harborMode = 'simple';
 
     for (let i = 0; i < argv.length; i++) {
@@ -36,7 +36,7 @@ function parseArgs(argv) {
         } else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         } else if (arg === '--build-mode') {
-            buildMode = argv[++i] || 'ev';
+            buildMode = argv[++i] || 'random';
         } else if (arg === '--it-mode') {
             itMode = argv[++i] || 'always';
         } else if (arg === '--tv-mode') {
@@ -97,11 +97,11 @@ function getFastSeriesEvaluator(runtime) {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
                         expertPreset: 'v2simple',
-                        expertBuildMode: config.buildMode || 'ev',
+                        expertBuildMode: config.buildMode || 'random',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
-                        expertBusinessMode: config.businessMode || 'simple',
-                        expertCleaningMode: config.cleaningMode || 'simple',
+                        expertBusinessMode: config.businessMode || 'random',
+                        expertCleaningMode: config.cleaningMode || 'random',
                         expertHarborMode: config.harborMode || 'simple',
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
