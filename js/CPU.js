@@ -998,11 +998,18 @@ class CPU {
     chooseTVTarget(game) {
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
-            const candidates = game.players
-                .map((player, index) => ({ player, index }))
-                .filter(entry => entry.index !== ci && entry.player && entry.player.coins > 0)
-                .map(entry => entry.index);
-            return this._randomChoice(candidates);
+            let bestIndex = -1;
+            let bestCoins = -1;
+            for (let i = 0; i < game.players.length; i++) {
+                if (i === ci) continue;
+                const player = game.players[i];
+                if (!player || player.coins <= 0) continue;
+                if (player.coins > bestCoins) {
+                    bestCoins = player.coins;
+                    bestIndex = i;
+                }
+            }
+            return bestIndex;
         }
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "expert") {

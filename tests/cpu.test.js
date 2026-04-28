@@ -201,18 +201,12 @@ runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     }
 });
 
-runTest('chooseTVTarget: expert v2 simple は合法対象からランダムに選ぶ', () => {
+runTest('chooseTVTarget: expert v2 simple はコイン最多相手を選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(3);
-    game.players[1].coins = 0;
+    game.players[1].coins = 3;
     game.players[2].coins = 5;
-    const originalRandom = Math.random;
-    Math.random = () => 0.0;
-    try {
-        assert.strictEqual(cpu.chooseTVTarget(game), 2);
-    } finally {
-        Math.random = originalRandom;
-    }
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
 });
 
 runTest('chooseBusinessMove: expert v2 simple は合法手からランダムに選ぶ', () => {
