@@ -15,6 +15,7 @@ class CPU {
         );
         this.expertPreset = options.expertPreset || "default";
         this.expertDiceMode = options.expertDiceMode || "ev";
+        this.expertRerollMode = options.expertRerollMode || "random";
         this.expertBuildMode = options.expertBuildMode || "ev";
         this.expertInvestMode = options.expertInvestMode || "always";
         this.expertTvMode = options.expertTvMode || "simple";
@@ -955,7 +956,19 @@ class CPU {
     }
 
     chooseReroll(game) {
-        if (this._isExpertV2Simple()) return Math.random() < 0.5;
+        if (this._isExpertV2Simple()) {
+            if (this.expertRerollMode === "random") return Math.random() < 0.5;
+            const dice = game.lastDiceResult;
+            const usingTwoDice = game.lastDice2 > 0;
+            const keepScore = (currentDice => {
+                if (game.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] && currentDice >= 10) {
+                    return Math.max(this._estimateRollScore(game, currentDice), this._estimateRollScore(game, currentDice + 2));
+                }
+                return this._estimateRollScore(game, currentDice);
+            })(dice);
+            const rerollScore = this._expectedDiceScoreWithHarbor(game, usingTwoDice);
+            return rerollScore > keepScore;
+        }
         this._syncExpertTuningForGame(game);
         const dice = game.lastDiceResult;
         if (this.difficulty === "weak") return Math.random() < 0.5;

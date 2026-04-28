@@ -235,6 +235,19 @@ runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     }
 });
 
+runTest('chooseReroll: expert v2 simple は simple mode なら期待値比較で判定する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertRerollMode: "simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    game.lastDice1 = 1;
+    game.lastDice2 = 0;
+    game.lastDiceResult = 1;
+    current.cards = [createCardByName('パン屋'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+    assert.strictEqual(cpu.chooseReroll(game), true);
+});
+
 runTest('chooseTVTarget: expert v2 simple はコイン最多相手を選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(3);
@@ -2082,7 +2095,10 @@ runTest('buildExpert: expert v2 simple は買えるランドマークの中か�
 
     game.phase = runtime.GAME_PHASES.BUILD;
     game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION, LANDMARK_NAMES.HARBOR]);
-    current.coins = Player.landmarkCost(LANDMARK_NAMES.STATION);
+    current.coins = Math.max(
+        Player.landmarkCost(LANDMARK_NAMES.STATION),
+        Player.landmarkCost(LANDMARK_NAMES.HARBOR)
+    );
     current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場'), createCardByName('チーズ工場')];
     current.dormantCards = [];
 
