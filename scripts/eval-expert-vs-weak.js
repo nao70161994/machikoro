@@ -467,6 +467,8 @@ function evaluateProfile(name, options) {
         lite: options.lite,
         fast: options.fast,
         profile: options.profile,
+        buildMode: options.buildMode,
+        itMode: options.itMode,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;

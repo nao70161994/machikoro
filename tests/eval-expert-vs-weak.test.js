@@ -130,4 +130,6 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertPreset: 'v2simple'"));
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
+    assert.ok(source.includes("buildMode: options.buildMode"));
+    assert.ok(source.includes("itMode: options.itMode"));
 });

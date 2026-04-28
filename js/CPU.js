@@ -86,6 +86,17 @@ class CPU {
         this.expertTraceStats[key] = (this.expertTraceStats[key] || 0) + amount;
     }
 
+    _traceV2SimpleBuildOption(prefix, option) {
+        if (!option) return;
+        if (option.type === 'landmark') {
+            this._traceV2Simple(`${prefix}:landmark:${option.name}`);
+            return;
+        }
+        if (option.type === 'card' && option.card) {
+            this._traceV2Simple(`${prefix}:card:${option.card.name}`);
+        }
+    }
+
     _randomChoice(items) {
         if (!Array.isArray(items) || items.length === 0) return null;
         const index = Math.floor(Math.random() * items.length);
@@ -2438,6 +2449,8 @@ class CPU {
                     bestOption = option;
                 }
             }
+            this._traceV2SimpleBuildOption('buildRandomChoice', choice);
+            this._traceV2SimpleBuildOption('buildRandomEvBest', bestOption);
             if (!this._sameExpertV2SimpleBuildOption(choice, bestOption)) {
                 this._traceV2Simple('buildRandomDiffFromEv');
             }
@@ -2462,6 +2475,7 @@ class CPU {
         }
 
         if (!bestOption) return false;
+        this._traceV2SimpleBuildOption('buildEvChoice', bestOption);
         if (bestOption.type === 'landmark') {
             this._traceV2Simple('buildLandmarkChoices');
             this._buyLandmark(bestOption.name, game);
