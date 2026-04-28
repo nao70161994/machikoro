@@ -19,7 +19,7 @@ function parseArgs(argv) {
     let rerollMode = 'simple';
     let itMode = 'always';
     let tvMode = 'simple';
-    let businessMode = 'random';
+    let businessMode = 'simple';
     let cleaningMode = 'simple';
     let harborMode = 'simple';
     let moverMode = 'simple';
@@ -114,7 +114,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertBuildMode: config.buildMode || 'random',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
-                        expertBusinessMode: config.businessMode || 'random',
+                        expertBusinessMode: config.businessMode || 'simple',
                         expertCleaningMode: config.cleaningMode || 'simple',
                         expertHarborMode: config.harborMode || 'simple',
                         expertMoverMode: config.moverMode || 'simple',

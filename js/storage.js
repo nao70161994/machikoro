@@ -139,7 +139,7 @@ function resumeGame() {
                 expertBuildMode: s.difficulty === "expert" ? "random" : undefined,
                 expertInvestMode: s.difficulty === "expert" ? "always" : undefined,
                 expertTvMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertBusinessMode: s.difficulty === "expert" ? "random" : undefined,
+                expertBusinessMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertCleaningMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertHarborMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertMoverMode: s.difficulty === "expert" ? "simple" : undefined,
