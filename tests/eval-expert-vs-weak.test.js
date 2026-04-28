@@ -22,11 +22,29 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.lite, true);
     assert.strictEqual(args.buildMode, 'ev');
     assert.strictEqual(args.itMode, 'always');
+    assert.strictEqual(args.tvMode, 'simple');
+    assert.strictEqual(args.businessMode, 'simple');
+    assert.strictEqual(args.cleaningMode, 'simple');
+    assert.strictEqual(args.harborMode, 'simple');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
 runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profile', '--profiles', 'duel,crowd', '--build-mode', 'random', '--it-mode', 'never']);
+    const args = parseArgs([
+        '--games', '30',
+        '--seed', '9',
+        '--max-steps', '7000',
+        '--format', 'json',
+        '--full',
+        '--profile',
+        '--profiles', 'duel,crowd',
+        '--build-mode', 'random',
+        '--it-mode', 'never',
+        '--tv-mode', 'random',
+        '--business-mode', 'random',
+        '--cleaning-mode', 'random',
+        '--harbor-mode', 'random',
+    ]);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -35,6 +53,10 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.profile, true);
     assert.strictEqual(args.buildMode, 'random');
     assert.strictEqual(args.itMode, 'never');
+    assert.strictEqual(args.tvMode, 'random');
+    assert.strictEqual(args.businessMode, 'random');
+    assert.strictEqual(args.cleaningMode, 'random');
+    assert.strictEqual(args.harborMode, 'random');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -62,7 +84,19 @@ runTest('eval-expert-vs-weak summarize は重み付き勝率と最低勝率を�
 });
 
 runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
-    const options = { games: 50, seed: 1, lite: true, fast: false, profile: true, buildMode: 'ev', itMode: 'always' };
+    const options = {
+        games: 50,
+        seed: 1,
+        lite: true,
+        fast: false,
+        profile: true,
+        buildMode: 'ev',
+        itMode: 'always',
+        tvMode: 'simple',
+        businessMode: 'simple',
+        cleaningMode: 'simple',
+        harborMode: 'simple',
+    };
     const entries = [
         {
             profile: 'crowd',
@@ -112,6 +146,10 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('weightedWinRate=70.0%'));
     assert.ok(text.includes('buildMode=ev'));
     assert.ok(text.includes('itMode=always'));
+    assert.ok(text.includes('tvMode=simple'));
+    assert.ok(text.includes('businessMode=simple'));
+    assert.ok(text.includes('cleaningMode=simple'));
+    assert.ok(text.includes('harborMode=simple'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -121,6 +159,10 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
     assert.ok(md.includes('- buildMode: ev'));
     assert.ok(md.includes('- itMode: always'));
+    assert.ok(md.includes('- tvMode: simple'));
+    assert.ok(md.includes('- businessMode: simple'));
+    assert.ok(md.includes('- cleaningMode: simple'));
+    assert.ok(md.includes('- harborMode: simple'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -130,6 +172,14 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertPreset: 'v2simple'"));
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
+    assert.ok(source.includes("expertTvMode: config.tvMode || 'simple'"));
+    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'simple'"));
+    assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'simple'"));
+    assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("itMode: options.itMode"));
+    assert.ok(source.includes("tvMode: options.tvMode"));
+    assert.ok(source.includes("businessMode: options.businessMode"));
+    assert.ok(source.includes("cleaningMode: options.cleaningMode"));
+    assert.ok(source.includes("harborMode: options.harborMode"));
 });

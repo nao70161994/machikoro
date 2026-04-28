@@ -229,6 +229,20 @@ runTest('chooseTVTarget: expert v2 simple はコイン最多相手を選ぶ', ()
     assert.strictEqual(cpu.chooseTVTarget(game), 2);
 });
 
+runTest('chooseTVTarget: expert v2 simple は random mode なら合法対象からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertTvMode: "random" });
+    const game = new GameManager(3);
+    game.players[1].coins = 3;
+    game.players[2].coins = 5;
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    try {
+        assert.strictEqual(cpu.chooseTVTarget(game), 2);
+    } finally {
+        Math.random = originalRandom;
+    }
+});
+
 runTest('chooseBusinessMove: expert v2 simple は一番いらない自分カードと一番欲しい相手カードを選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
@@ -242,6 +256,27 @@ runTest('chooseBusinessMove: expert v2 simple は一番いらない自分カー�
     assert.strictEqual(move.myCard, 0);
     assert.strictEqual(move.targetIndex, 1);
     assert.strictEqual(move.theirCard, 1);
+});
+
+runTest('chooseBusinessMove: expert v2 simple は random mode なら合法手からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertBusinessMode: "random" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('麦畑')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
+    target.dormantCards = [];
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    try {
+        const move = cpu.chooseBusinessMove(game);
+        assert.strictEqual(move.myCard, 1);
+        assert.strictEqual(move.targetIndex, 1);
+        assert.strictEqual(move.theirCard, 1);
+    } finally {
+        Math.random = originalRandom;
+    }
 });
 
 runTest('expert tuning は人数別設定で自動切替される', () => {
@@ -485,6 +520,18 @@ runTest('chooseHarbor: expert v2 simple は+2後の結果価値を比較する',
     current.dormantCards = [];
     current.landmarks[LANDMARK_NAMES.HARBOR] = true;
     assert.strictEqual(cpu.chooseHarbor(game), true);
+});
+
+runTest('chooseHarbor: expert v2 simple は random mode ならランダムで選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertHarborMode: "random" });
+    const game = new GameManager(2);
+    const originalRandom = Math.random;
+    Math.random = () => 0.2;
+    try {
+        assert.strictEqual(cpu.chooseHarbor(game), true);
+    } finally {
+        Math.random = originalRandom;
+    }
 });
 
 runTest('_countReachableLandmarks は今の所持金で建てられる残りランドマーク数を返す', () => {
@@ -1107,6 +1154,24 @@ runTest('chooseCleaningTarget: expert v2 simple は場で一番多いカード�
     game.players[2].cards = [createCardByName('カフェ'), createCardByName('パン屋')];
     game.players[2].dormantCards = [];
     assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+});
+
+runTest('chooseCleaningTarget: expert v2 simple は random mode なら候補からランダムに選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertCleaningMode: "random" });
+    const game = new GameManager(3);
+    game.currentPlayer().cards = [createCardByName('カフェ')];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('牧場')];
+    game.players[1].dormantCards = [];
+    game.players[2].cards = [createCardByName('カフェ'), createCardByName('パン屋')];
+    game.players[2].dormantCards = [];
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    try {
+        assert.strictEqual(cpu.chooseCleaningTarget(game), 'パン屋');
+    } finally {
+        Math.random = originalRandom;
+    }
 });
 
 runTest('chooseCleaningTarget: expert は盤面評価で休業対象を選ぶ', () => {

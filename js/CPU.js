@@ -16,6 +16,10 @@ class CPU {
         this.expertPreset = options.expertPreset || "default";
         this.expertBuildMode = options.expertBuildMode || "ev";
         this.expertInvestMode = options.expertInvestMode || "always";
+        this.expertTvMode = options.expertTvMode || "simple";
+        this.expertBusinessMode = options.expertBusinessMode || "simple";
+        this.expertCleaningMode = options.expertCleaningMode || "simple";
+        this.expertHarborMode = options.expertHarborMode || "simple";
         this.expertTraceStats = options.expertTraceStats || null;
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
@@ -1017,6 +1021,7 @@ class CPU {
 
     chooseHarbor(game) {
         if (this._isExpertV2Simple()) {
+            if (this.expertHarborMode === "random") return Math.random() < 0.5;
             const keepScore = this._estimateRollScore(game, game.lastDiceResult);
             const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
             return bonusScore >= keepScore;
@@ -1077,6 +1082,16 @@ class CPU {
     chooseTVTarget(game) {
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
+            if (this.expertTvMode === "random") {
+                const targets = [];
+                for (let i = 0; i < game.players.length; i++) {
+                    if (i === ci) continue;
+                    const player = game.players[i];
+                    if (!player || player.coins <= 0) continue;
+                    targets.push(i);
+                }
+                return this._randomChoice(targets) ?? -1;
+            }
             let bestIndex = -1;
             let bestCoins = -1;
             for (let i = 0; i < game.players.length; i++) {
@@ -1141,6 +1156,7 @@ class CPU {
         const myCards = current.getMinorCards();
         if (myCards.length === 0) return null;
         if (this._isExpertV2Simple()) {
+            if (this.expertBusinessMode === "random") return this._chooseRandomBusinessMove(game);
             return this._chooseSimpleBusinessMove(game);
         }
         this._syncExpertTuningForGame(game);
@@ -1210,6 +1226,9 @@ class CPU {
                     if (player.isDormant(card)) continue;
                     counts.set(card.name, (counts.get(card.name) || 0) + 1);
                 }
+            }
+            if (this.expertCleaningMode === "random") {
+                return this._randomChoice(Array.from(counts.keys())) || null;
             }
             let bestName = null;
             let bestCount = -1;

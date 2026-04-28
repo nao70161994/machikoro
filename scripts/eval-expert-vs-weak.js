@@ -16,6 +16,10 @@ function parseArgs(argv) {
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'ev';
     let itMode = 'always';
+    let tvMode = 'simple';
+    let businessMode = 'simple';
+    let cleaningMode = 'simple';
+    let harborMode = 'simple';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -35,10 +39,18 @@ function parseArgs(argv) {
             buildMode = argv[++i] || 'ev';
         } else if (arg === '--it-mode') {
             itMode = argv[++i] || 'always';
+        } else if (arg === '--tv-mode') {
+            tvMode = argv[++i] || 'simple';
+        } else if (arg === '--business-mode') {
+            businessMode = argv[++i] || 'simple';
+        } else if (arg === '--cleaning-mode') {
+            cleaningMode = argv[++i] || 'simple';
+        } else if (arg === '--harbor-mode') {
+            harborMode = argv[++i] || 'simple';
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, itMode };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, itMode, tvMode, businessMode, cleaningMode, harborMode };
 }
 
 function profilePlayers(name) {
@@ -87,6 +99,10 @@ function getFastSeriesEvaluator(runtime) {
                         expertPreset: 'v2simple',
                         expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
+                        expertTvMode: config.tvMode || 'simple',
+                        expertBusinessMode: config.businessMode || 'simple',
+                        expertCleaningMode: config.cleaningMode || 'simple',
+                        expertHarborMode: config.harborMode || 'simple',
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
@@ -469,6 +485,10 @@ function evaluateProfile(name, options) {
         profile: options.profile,
         buildMode: options.buildMode,
         itMode: options.itMode,
+        tvMode: options.tvMode,
+        businessMode: options.businessMode,
+        cleaningMode: options.cleaningMode,
+        harborMode: options.harborMode,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -502,7 +522,9 @@ function summarize(entries) {
 
 function toText(entries, summary, options) {
     const lines = [
-        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} buildMode=${options.buildMode} itMode=${options.itMode}`,
+        `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
+            `buildMode=${options.buildMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
+            `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -556,6 +578,10 @@ function toMarkdown(entries, summary, options) {
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `- buildMode: ${options.buildMode}`,
         `- itMode: ${options.itMode}`,
+        `- tvMode: ${options.tvMode}`,
+        `- businessMode: ${options.businessMode}`,
+        `- cleaningMode: ${options.cleaningMode}`,
+        `- harborMode: ${options.harborMode}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),
