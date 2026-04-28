@@ -2390,21 +2390,52 @@ class CPU {
                 (!game.enabledLandmarks || game.enabledLandmarks.has(name)) &&
                 !current.landmarks[name] &&
                 current.coins >= Player.landmarkCost(name)
-            );
-        if (affordableLandmarks.length > 0) {
-            const name = affordableLandmarks[Math.floor(Math.random() * affordableLandmarks.length)];
-            this._buyLandmark(name, game);
-            return true;
-        }
+            )
+            .map(name => ({ type: 'landmark', name }));
 
         const affordableCards = CARDS.filter(card =>
             shopStock[card.name] > 0 &&
             current.coins >= card.cost &&
             !(card.color === "purple" && current.countCard(card.name) > 0)
-        );
-        if (affordableCards.length === 0) return false;
-        this._buyCard(affordableCards[Math.floor(Math.random() * affordableCards.length)], game, shopStock);
+        ).map(card => ({ type: 'card', card }));
+
+        const options = affordableLandmarks.concat(affordableCards);
+        if (options.length === 0) return false;
+
+        let bestOption = null;
+        let bestScore = -Infinity;
+        for (const option of options) {
+            const score = this._scoreExpertV2SimpleBuildOption(game, option);
+            if (score > bestScore) {
+                bestScore = score;
+                bestOption = option;
+            }
+        }
+
+        if (!bestOption) return false;
+        if (bestOption.type === 'landmark') {
+            this._buyLandmark(bestOption.name, game);
+            return true;
+        }
+        this._buyCard(bestOption.card, game, shopStock);
         return true;
+    }
+
+    _scoreExpertV2SimpleBuildOption(game, option) {
+        const clone = this._cloneGame(game);
+        const current = clone.currentPlayer();
+        if (option.type === 'landmark') {
+            current.coins -= Player.landmarkCost(option.name);
+            current.landmarks[option.name] = true;
+        } else {
+            current.coins -= option.card.cost;
+            current.cards.push(this._cardByName(option.card.name));
+        }
+        const oneScore = this._expectedDiceScoreWithHarbor(clone, false);
+        const twoScore = current.landmarks[LANDMARK_NAMES.STATION]
+            ? this._expectedDiceScoreWithHarbor(clone, true)
+            : -Infinity;
+        return Math.max(oneScore, twoScore);
     }
 
     _buyLateGameLandmark(current, game) {
