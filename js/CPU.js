@@ -16,6 +16,7 @@ class CPU {
         this.expertPreset = options.expertPreset || "default";
         this.expertBuildMode = options.expertBuildMode || "ev";
         this.expertInvestMode = options.expertInvestMode || "always";
+        this.expertTraceStats = options.expertTraceStats || null;
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
         this.expertProfileTunings = Object.assign(
@@ -78,6 +79,11 @@ class CPU {
         if (!this.profileStats) return;
         const entry = this.profileStats[label] || (this.profileStats[label] = { count: 0 });
         entry.count = (entry.count || 0) + amount;
+    }
+
+    _traceV2Simple(key, amount = 1) {
+        if (!this.expertTraceStats || !this._isExpertV2Simple()) return;
+        this.expertTraceStats[key] = (this.expertTraceStats[key] || 0) + amount;
     }
 
     _randomChoice(items) {
@@ -1351,7 +1357,12 @@ class CPU {
 
     chooseITInvest(game) {
         const current = game.currentPlayer();
-        if (this._isExpertV2Simple()) return this.expertInvestMode !== "never";
+        if (this._isExpertV2Simple()) {
+            this._traceV2Simple('itDecisions');
+            const invest = this.expertInvestMode !== "never";
+            this._traceV2Simple(invest ? 'itTrue' : 'itFalse');
+            return invest;
+        }
         this._syncExpertTuningForGame(game);
         if (current.coins < 1) return false;
         if (this.difficulty === "weak") return false;
@@ -2387,6 +2398,7 @@ class CPU {
     }
 
     _buildExpertV2Simple(current, game, shopStock) {
+        this._traceV2Simple('buildCalls');
         const affordableLandmarks = Player.landmarkNames()
             .filter(name =>
                 (!game.enabledLandmarks || game.enabledLandmarks.has(name)) &&
@@ -2402,15 +2414,39 @@ class CPU {
         ).map(card => ({ type: 'card', card }));
 
         const options = affordableLandmarks.concat(affordableCards);
-        if (options.length === 0) return false;
+        this._traceV2Simple('buildOptionTotal', options.length);
+        if (options.length === 0) {
+            this._traceV2Simple('buildNoop');
+            return false;
+        }
+        if (affordableLandmarks.length > 0) this._traceV2Simple('buildLandmarkOptionCalls');
+        if (affordableCards.length > 0) this._traceV2Simple('buildCardOptionCalls');
+        if (options.length > 1) this._traceV2Simple('buildMultiOptionCalls');
 
         if (this.expertBuildMode === "random") {
             const choice = this._randomChoice(options);
             if (!choice) return false;
+            const choiceIndex = options.indexOf(choice);
+            this._traceV2Simple('buildRandomChoiceIndexTotal', choiceIndex);
+            if (choiceIndex === 0) this._traceV2Simple('buildRandomChoiceFirst');
+            let bestOption = null;
+            let bestScore = -Infinity;
+            for (const option of options) {
+                const score = this._scoreExpertV2SimpleBuildOption(game, option);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestOption = option;
+                }
+            }
+            if (!this._sameExpertV2SimpleBuildOption(choice, bestOption)) {
+                this._traceV2Simple('buildRandomDiffFromEv');
+            }
             if (choice.type === 'landmark') {
+                this._traceV2Simple('buildLandmarkChoices');
                 this._buyLandmark(choice.name, game);
                 return true;
             }
+            this._traceV2Simple('buildCardChoices');
             this._buyCard(choice.card, game, shopStock);
             return true;
         }
@@ -2427,11 +2463,19 @@ class CPU {
 
         if (!bestOption) return false;
         if (bestOption.type === 'landmark') {
+            this._traceV2Simple('buildLandmarkChoices');
             this._buyLandmark(bestOption.name, game);
             return true;
         }
+        this._traceV2Simple('buildCardChoices');
         this._buyCard(bestOption.card, game, shopStock);
         return true;
+    }
+
+    _sameExpertV2SimpleBuildOption(a, b) {
+        if (!a || !b || a.type !== b.type) return false;
+        if (a.type === 'landmark') return a.name === b.name;
+        return a.card && b.card && a.card.name === b.card.name;
     }
 
     _scoreExpertV2SimpleBuildOption(game, option) {

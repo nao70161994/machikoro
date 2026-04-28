@@ -80,13 +80,14 @@ function getFastSeriesEvaluator(runtime) {
                 return stock;
             }
 
-            function createCpu(difficulty) {
+            function createCpu(difficulty, traceStats) {
                 if (difficulty === 'expert') {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
                         expertPreset: 'v2simple',
                         expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
+                        expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
                 }
@@ -295,12 +296,13 @@ function getFastSeriesEvaluator(runtime) {
                 pendingBusinessCandidatePairsMax: 0,
                 steps: 0,
             };
+            const v2simpleStats = {};
 
             for (let i = 0; i < games; i++) {
                 const lineup = rotatePlayers(players, i % players.length);
                 const game = new GameManager(lineup.length);
                 const shopStock = createShopStock();
-                const cpuPlayers = lineup.map(createCpu);
+                const cpuPlayers = lineup.map(difficulty => createCpu(difficulty, difficulty === 'expert' ? v2simpleStats : null));
                 const rng = createRng((config.seed || 1) + i);
                 Math.random = rng;
                 game.enabledLandmarks = new Set(Player.landmarkNames());
@@ -445,6 +447,7 @@ function getFastSeriesEvaluator(runtime) {
                             maxMs: profile.pendingPhaseAdvanceMaxMs,
                         },
                     },
+                    v2simpleStats,
                 } : null,
             };
         };

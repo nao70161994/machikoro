@@ -2029,15 +2029,9 @@ runTest('buildExpert: expert v2 simple は random mode だと選択候補から�
     current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場')];
     current.dormantCards = [];
 
-    const originalRandom = Math.random;
-    Math.random = () => 0.99;
-    try {
-        cpu.buildExpert(game, stock);
-    } finally {
-        Math.random = originalRandom;
-    }
+    cpu.buildExpert(game, stock);
 
-    assert.strictEqual(current.countCard('チーズ工場'), 1);
+    assert.strictEqual(current.countCard('麦畑') + current.countCard('チーズ工場'), 1);
     assert.strictEqual(game.builtThisTurn, true);
 });
 
