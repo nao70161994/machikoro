@@ -1161,10 +1161,22 @@ class CPU {
     chooseCleaningTarget(game) {
         const current = game.currentPlayer();
         if (this._isExpertV2Simple()) {
-            const names = [...new Set(game.players.flatMap(player =>
-                player.getMinorCards().filter(card => !player.isDormant(card)).map(card => card.name)
-            ))];
-            return this._randomChoice(names);
+            const counts = new Map();
+            for (const player of game.players) {
+                for (const card of player.getMinorCards()) {
+                    if (player.isDormant(card)) continue;
+                    counts.set(card.name, (counts.get(card.name) || 0) + 1);
+                }
+            }
+            let bestName = null;
+            let bestCount = -1;
+            for (const [name, count] of counts.entries()) {
+                if (count > bestCount) {
+                    bestCount = count;
+                    bestName = name;
+                }
+            }
+            return bestName;
         }
         this._syncExpertTuningForGame(game);
         let best = null;
