@@ -456,6 +456,17 @@ runTest('chooseHarbor: expert は先読み評価で港ボーナス可否を返�
     assert.strictEqual(typeof cpu.chooseHarbor(game), 'boolean');
 });
 
+runTest('chooseHarbor: expert v2 simple は+2後の結果価値を比較する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.lastDiceResult = 5;
+    current.cards = [createCardByName('マグロ漁船')];
+    current.dormantCards = [];
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    assert.strictEqual(cpu.chooseHarbor(game), true);
+});
+
 runTest('_countReachableLandmarks は今の所持金で建てられる残りランドマーク数を返す', () => {
     const cpu = new CPU("expert");
     const game = new GameManager(2);

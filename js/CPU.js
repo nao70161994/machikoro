@@ -977,7 +977,11 @@ class CPU {
     }
 
     chooseHarbor(game) {
-        if (this._isExpertV2Simple()) return Math.random() < 0.5;
+        if (this._isExpertV2Simple()) {
+            const keepScore = this._estimateRollScore(game, game.lastDiceResult);
+            const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
+            return bonusScore >= keepScore;
+        }
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "weak") return Math.random() < 0.5;
         if (this.difficulty === "expert") {
