@@ -28,7 +28,7 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.businessMode, 'random');
     assert.strictEqual(args.cleaningMode, 'random');
     assert.strictEqual(args.harborMode, 'simple');
-    assert.strictEqual(args.moverMode, 'random');
+    assert.strictEqual(args.moverMode, 'simple');
     assert.strictEqual(args.renovationMode, 'simple');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
@@ -110,7 +110,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         businessMode: 'random',
         cleaningMode: 'random',
         harborMode: 'simple',
-        moverMode: 'random',
+        moverMode: 'simple',
         renovationMode: 'simple',
     };
     const entries = [
@@ -168,7 +168,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('businessMode=random'));
     assert.ok(text.includes('cleaningMode=random'));
     assert.ok(text.includes('harborMode=simple'));
-    assert.ok(text.includes('moverMode=random'));
+    assert.ok(text.includes('moverMode=simple'));
     assert.ok(text.includes('renovationMode=simple'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
@@ -185,7 +185,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- businessMode: random'));
     assert.ok(md.includes('- cleaningMode: random'));
     assert.ok(md.includes('- harborMode: simple'));
-    assert.ok(md.includes('- moverMode: random'));
+    assert.ok(md.includes('- moverMode: simple'));
     assert.ok(md.includes('- renovationMode: simple'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
@@ -202,7 +202,7 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertBusinessMode: config.businessMode || 'random'"));
     assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'random'"));
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
-    assert.ok(source.includes("expertMoverMode: config.moverMode || 'random'"));
+    assert.ok(source.includes("expertMoverMode: config.moverMode || 'simple'"));
     assert.ok(source.includes("expertRenovationMode: config.renovationMode || 'simple'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("diceMode: options.diceMode"));

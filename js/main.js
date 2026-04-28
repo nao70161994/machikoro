@@ -71,7 +71,7 @@ function createCpuPlayer(difficulty, options = {}) {
         if (!resolvedOptions.expertBusinessMode) resolvedOptions.expertBusinessMode = "random";
         if (!resolvedOptions.expertCleaningMode) resolvedOptions.expertCleaningMode = "random";
         if (!resolvedOptions.expertHarborMode) resolvedOptions.expertHarborMode = "simple";
-        if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "random";
+        if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "simple";
         if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
     }
     if (difficulty === 'rl') {

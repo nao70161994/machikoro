@@ -142,7 +142,7 @@ function resumeGame() {
                 expertBusinessMode: s.difficulty === "expert" ? "random" : undefined,
                 expertCleaningMode: s.difficulty === "expert" ? "random" : undefined,
                 expertHarborMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertMoverMode: s.difficulty === "expert" ? "random" : undefined,
+                expertMoverMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertRenovationMode: s.difficulty === "expert" ? "simple" : undefined,
             })
             : null

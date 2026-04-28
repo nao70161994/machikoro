@@ -22,7 +22,7 @@ function parseArgs(argv) {
     let businessMode = 'random';
     let cleaningMode = 'random';
     let harborMode = 'simple';
-    let moverMode = 'random';
+    let moverMode = 'simple';
     let renovationMode = 'simple';
 
     for (let i = 0; i < argv.length; i++) {
@@ -117,7 +117,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertBusinessMode: config.businessMode || 'random',
                         expertCleaningMode: config.cleaningMode || 'random',
                         expertHarborMode: config.harborMode || 'simple',
-                        expertMoverMode: config.moverMode || 'random',
+                        expertMoverMode: config.moverMode || 'simple',
                         expertRenovationMode: config.renovationMode || 'simple',
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
