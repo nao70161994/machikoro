@@ -141,6 +141,7 @@ class CPU {
             winDistances: Object.create(null),
             redPressures: Object.create(null),
             opponentThreats: Object.create(null),
+            purchasePlanValues: Object.create(null),
         }));
     }
 
@@ -928,6 +929,19 @@ class CPU {
     }
 
     _estimatePurchasePlanValue(player, game, difficulty = this.difficulty) {
+        const playerIndex = game && game.players ? game.players.indexOf(player) : -1;
+        const cacheKey = playerIndex >= 0 ? `${difficulty}:${playerIndex}` : null;
+        if (cacheKey) {
+            const cache = this._stateEvaluationCache(game);
+            if (cacheKey in cache.purchasePlanValues) return cache.purchasePlanValues[cacheKey];
+            const value = this._estimatePurchasePlanValueUncached(player, game, difficulty);
+            cache.purchasePlanValues[cacheKey] = value;
+            return value;
+        }
+        return this._estimatePurchasePlanValueUncached(player, game, difficulty);
+    }
+
+    _estimatePurchasePlanValueUncached(player, game, difficulty = this.difficulty) {
         const bestLandmark = this._bestAffordableLandmark(player, game);
         const affordable = CARDS.filter(card =>
             player.coins >= card.cost &&
@@ -943,29 +957,48 @@ class CPU {
     }
 
     _scoreStrongChoiceState(game, focusIndex) {
-        const player = game.players[focusIndex];
-        const landmarkPressure = this._isEndgameMode(player, game, 2) ? 6 : 0;
-        const winDistance = this._estimateWinDistance(player, game);
-        return this._estimatePurchasePlanValue(player, game, "strong") +
-            this._estimatePlayerTurnValue(game, focusIndex) * 0.35 +
-            player.coins * 0.18 +
-            player.builtLandmarkCount() * 2.8 +
-            landmarkPressure -
-            winDistance * 1.2 -
-            this._estimateRedPressure(game, focusIndex) * 0.08 -
-            this._duplicateRenovationPenalty(player, "strong", game);
+        return this._profileMeasure("strong.choiceState", () => {
+            const player = game.players[focusIndex];
+            const landmarkPressure = this._isEndgameMode(player, game, 2) ? 6 : 0;
+            const purchasePlanValue = this._profileMeasure(
+                "strong.choiceState.purchasePlan",
+                () => this._estimatePurchasePlanValue(player, game, "strong")
+            );
+            const turnValue = this._profileMeasure(
+                "strong.choiceState.turnValue",
+                () => this._estimatePlayerTurnValue(game, focusIndex)
+            );
+            const winDistance = this._profileMeasure(
+                "strong.choiceState.winDistance",
+                () => this._estimateWinDistance(player, game)
+            );
+            const redPressure = this._profileMeasure(
+                "strong.choiceState.redPressure",
+                () => this._estimateRedPressure(game, focusIndex)
+            );
+            return purchasePlanValue +
+                turnValue * 0.35 +
+                player.coins * 0.18 +
+                player.builtLandmarkCount() * 2.8 +
+                landmarkPressure -
+                winDistance * 1.2 -
+                redPressure * 0.08 -
+                this._duplicateRenovationPenalty(player, "strong", game);
+        });
     }
 
     _expectedStrongChoiceValue(game, focusIndex, outcomes, applyOutcome) {
-        let totalWeight = 0;
-        let totalScore = 0;
-        for (const outcome of outcomes) {
-            const clone = this._cloneGame(game);
-            applyOutcome(clone, outcome);
-            totalWeight += outcome.weight;
-            totalScore += this._scoreStrongChoiceState(clone, focusIndex) * outcome.weight;
-        }
-        return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+        return this._profileMeasure("strong.expectedChoiceValue", () => {
+            let totalWeight = 0;
+            let totalScore = 0;
+            for (const outcome of outcomes) {
+                const clone = this._cloneGame(game);
+                applyOutcome(clone, outcome);
+                totalWeight += outcome.weight;
+                totalScore += this._scoreStrongChoiceState(clone, focusIndex) * outcome.weight;
+            }
+            return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+        });
     }
 
     _strongLiteUseHeuristicChoices() {
@@ -1030,17 +1063,21 @@ class CPU {
                 return twoScore > oneScore + threshold;
             }
             const focusIndex = game.currentPlayerIndex;
-            const oneScore = this._expectedStrongChoiceValue(
-                game,
-                focusIndex,
-                this._diceOutcomeWeights(false),
-                (clone, outcome) => clone.selectDiceCount(false, outcome.dice1, null, [outcome.dice1, outcome.dice1])
+            const oneScore = this._profileMeasure("strong.chooseDiceCount.oneScore", () =>
+                this._expectedStrongChoiceValue(
+                    game,
+                    focusIndex,
+                    this._diceOutcomeWeights(false),
+                    (clone, outcome) => clone.selectDiceCount(false, outcome.dice1, null, [outcome.dice1, outcome.dice1])
+                )
             );
-            const twoScore = this._expectedStrongChoiceValue(
-                game,
-                focusIndex,
-                this._diceOutcomeWeights(true),
-                (clone, outcome) => clone.selectDiceCount(true, outcome.dice1, outcome.dice2, [outcome.dice1, outcome.dice2])
+            const twoScore = this._profileMeasure("strong.chooseDiceCount.twoScore", () =>
+                this._expectedStrongChoiceValue(
+                    game,
+                    focusIndex,
+                    this._diceOutcomeWeights(true),
+                    (clone, outcome) => clone.selectDiceCount(true, outcome.dice1, outcome.dice2, [outcome.dice1, outcome.dice2])
+                )
             );
             return twoScore >= oneScore;
         }
@@ -1126,17 +1163,21 @@ class CPU {
             }
             const focusIndex = game.currentPlayerIndex;
             const usingTwoDice = game.lastDice2 > 0;
-            const keepScore = this._expectedStrongChoiceValue(
-                game,
-                focusIndex,
-                [{ weight: 1, dice1: game.lastDice1 || game.lastDiceResult, dice2: game.lastDice2 || 0 }],
-                (clone) => clone.skipReroll()
+            const keepScore = this._profileMeasure("strong.chooseReroll.keepScore", () =>
+                this._expectedStrongChoiceValue(
+                    game,
+                    focusIndex,
+                    [{ weight: 1, dice1: game.lastDice1 || game.lastDiceResult, dice2: game.lastDice2 || 0 }],
+                    (clone) => clone.skipReroll()
+                )
             );
-            const rerollScore = this._expectedStrongChoiceValue(
-                game,
-                focusIndex,
-                this._diceOutcomeWeights(usingTwoDice),
-                (clone, outcome) => clone.rerollDice(outcome.total, [outcome.dice1, outcome.dice2 || outcome.dice1])
+            const rerollScore = this._profileMeasure("strong.chooseReroll.rerollScore", () =>
+                this._expectedStrongChoiceValue(
+                    game,
+                    focusIndex,
+                    this._diceOutcomeWeights(usingTwoDice),
+                    (clone, outcome) => clone.rerollDice(outcome.total, [outcome.dice1, outcome.dice2 || outcome.dice1])
+                )
             );
             return rerollScore > keepScore + 0.2;
         }

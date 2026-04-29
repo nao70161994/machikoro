@@ -517,6 +517,28 @@ runTest('state cache: strong は同一盤面の winDistance 再計算を避け�
     assert.strictEqual(calls, 1);
 });
 
+runTest('state cache: strong は同一盤面の purchasePlan 再計算を避ける', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 8;
+    current.cards = [createCardByName('パン屋'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+
+    let calls = 0;
+    const original = cpu._estimatePurchasePlanValueUncached.bind(cpu);
+    cpu._estimatePurchasePlanValueUncached = (player, subject, difficulty) => {
+        calls++;
+        return original(player, subject, difficulty);
+    };
+
+    const first = cpu._estimatePurchasePlanValue(current, game, "strong");
+    const second = cpu._estimatePurchasePlanValue(current, game, "strong");
+
+    assert.strictEqual(first, second);
+    assert.strictEqual(calls, 1);
+});
+
 runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
