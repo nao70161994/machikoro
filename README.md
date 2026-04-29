@@ -60,6 +60,26 @@ CPU の自己対戦:
 npm run selfplay -- --games 20 expert strong strong normal
 ```
 
+現行の live `CPU（最強）` は `expertPreset: "v2simple"` を使います。2026-04 時点の既定設定は次です。
+
+- `build=ev`
+- `dice=ev`
+- `reroll=simple`
+- `it=always`
+- `tv=simple`
+- `business=simple`
+- `cleaning=simple`
+- `harbor=simple`
+- `mover=simple`
+- `renovation=simple`
+
+この設定での直近評価:
+
+- `weak` 相手: weighted `92.0%`
+- `normal` 相手: weighted `53.67%`
+
+`strong` 比較の速度改善も入っています。本物 `strong` 同士の `duel 1戦` は、直近の最適化で `12.364秒 -> 5.706秒` まで短縮しています。
+
 `CPU（最強）` と `CPU（強）` の基準比較:
 
 ```bash
