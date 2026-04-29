@@ -103,17 +103,45 @@ class CPU {
         return `${game.currentPlayerIndex}|${game.phase}|${enabled}|${players}`;
     }
 
-    _rollEvaluationCache(game) {
+    _signatureCache(cacheKey, game, factory) {
         const signature = this._rollEvaluationSignature(game);
-        if (!this._cachedRollEvaluation || this._cachedRollEvaluation.signature !== signature) {
-            this._cachedRollEvaluation = {
+        let store = this[cacheKey];
+        if (!store) {
+            store = new Map();
+            this[cacheKey] = store;
+        }
+        let entry = store.get(signature);
+        if (!entry) {
+            entry = factory(signature);
+            store.set(signature, entry);
+            if (store.size > 16) {
+                const oldestKey = store.keys().next().value;
+                if (oldestKey !== undefined) store.delete(oldestKey);
+            }
+        }
+        return entry;
+    }
+
+    _rollEvaluationCache(game) {
+        return this._signatureCache("_cachedRollEvaluation", game, signature => ({
                 signature,
                 rollScores: Object.create(null),
                 expectedDiceScores: Object.create(null),
                 expectedDiceScoresWithHarbor: Object.create(null),
-            };
-        }
-        return this._cachedRollEvaluation;
+            })
+        );
+    }
+
+    _stateEvaluationCache(game) {
+        return this._signatureCache("_cachedStateEvaluation", game, signature => ({
+            signature,
+            playerTurnValues: Object.create(null),
+            stableIncomes: Object.create(null),
+            progressIncomes: Object.create(null),
+            winDistances: Object.create(null),
+            redPressures: Object.create(null),
+            opponentThreats: Object.create(null),
+        }));
     }
 
     _estimateRollScoreCached(game, dice) {
@@ -2958,6 +2986,8 @@ class CPU {
     }
 
     _estimatePlayerTurnValue(game, playerIndex) {
+        const cache = this._stateEvaluationCache(game);
+        if (playerIndex in cache.playerTurnValues) return cache.playerTurnValues[playerIndex];
         const original = game.currentPlayerIndex;
         game.currentPlayerIndex = playerIndex;
         const useTwo = game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION];
@@ -2966,7 +2996,9 @@ class CPU {
             useTwo ? this._expectedDiceScore(game, true) : -Infinity
         );
         game.currentPlayerIndex = original;
-        return Number.isFinite(value) ? value : 0;
+        const normalized = Number.isFinite(value) ? value : 0;
+        cache.playerTurnValues[playerIndex] = normalized;
+        return normalized;
     }
 
     _countReachableLandmarks(player, enabledLandmarks) {
@@ -2976,6 +3008,28 @@ class CPU {
     }
 
     _estimateStableIncome(game, player) {
+        const playerIndex = game && game.players ? game.players.indexOf(player) : -1;
+        if (playerIndex >= 0) {
+            const cache = this._stateEvaluationCache(game);
+            if (playerIndex in cache.stableIncomes) return cache.stableIncomes[playerIndex];
+            let total = 0;
+            for (const card of player.cards) {
+                if (player.isDormant(card)) continue;
+                if (card.color !== "blue" && card.color !== "green") continue;
+                if ([
+                    CARD_EFFECTS.LOAN,
+                    CARD_EFFECTS.RENOVATION,
+                    CARD_EFFECTS.ITSTARTUP,
+                    CARD_EFFECTS.PARK,
+                    CARD_EFFECTS.BUSINESS,
+                    CARD_EFFECTS.CLEANING,
+                    CARD_EFFECTS.MOVER,
+                ].includes(card.effect)) continue;
+                total += this._ownedCardValue(card, game, player);
+            }
+            cache.stableIncomes[playerIndex] = total;
+            return total;
+        }
         let total = 0;
         for (const card of player.cards) {
             if (player.isDormant(card)) continue;
@@ -2996,6 +3050,28 @@ class CPU {
 
     _estimateProgressIncome(game, player) {
         if (!game || !player) return 0;
+        const playerIndex = game.players ? game.players.indexOf(player) : -1;
+        if (playerIndex >= 0) {
+            const cache = this._stateEvaluationCache(game);
+            if (playerIndex in cache.progressIncomes) return cache.progressIncomes[playerIndex];
+            let total = 0;
+            for (const card of player.cards) {
+                if (!card || player.isDormant(card)) continue;
+                if (card.color !== "blue" && card.color !== "green") continue;
+                if ([
+                    CARD_EFFECTS.LOAN,
+                    CARD_EFFECTS.RENOVATION,
+                    CARD_EFFECTS.ITSTARTUP,
+                    CARD_EFFECTS.PARK,
+                    CARD_EFFECTS.BUSINESS,
+                    CARD_EFFECTS.CLEANING,
+                    CARD_EFFECTS.MOVER,
+                ].includes(card.effect)) continue;
+                total += this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6;
+            }
+            cache.progressIncomes[playerIndex] = total;
+            return total;
+        }
         let total = 0;
         for (const card of player.cards) {
             if (!card || player.isDormant(card)) continue;
@@ -3016,6 +3092,19 @@ class CPU {
 
     _estimateWinDistance(player, game) {
         if (!player || !game || !game.enabledLandmarks) return Infinity;
+        const playerIndex = game.players ? game.players.indexOf(player) : -1;
+        if (playerIndex >= 0) {
+            const cache = this._stateEvaluationCache(game);
+            if (playerIndex in cache.winDistances) return cache.winDistances[playerIndex];
+            const value = this._estimateWinDistanceUncached(player, game, playerIndex);
+            cache.winDistances[playerIndex] = value;
+            return value;
+        }
+        return this._estimateWinDistanceUncached(player, game, playerIndex);
+    }
+
+    _estimateWinDistanceUncached(player, game, playerIndex = -1) {
+        if (!player || !game || !game.enabledLandmarks) return Infinity;
         const remaining = [...game.enabledLandmarks]
             .filter(name => !player.landmarks[name])
             .map(name => ({
@@ -3024,7 +3113,6 @@ class CPU {
                 urgency: this._landmarkUrgency(name, player, game),
             }));
         if (remaining.length === 0) return 0;
-        const playerIndex = game.players.indexOf(player);
         const turnValue = playerIndex >= 0 ? this._estimatePlayerTurnValue(game, playerIndex) : 0;
         const reachable = remaining.filter(entry => player.coins >= entry.cost).length;
         const totalRemainingCost = remaining.reduce((sum, entry) => sum + entry.cost, 0);
@@ -3054,6 +3142,8 @@ class CPU {
     }
 
     _estimateRedPressure(game, playerIndex) {
+        const cache = this._stateEvaluationCache(game);
+        if (playerIndex in cache.redPressures) return cache.redPressures[playerIndex];
         let pressure = 0;
         for (let i = 0; i < game.players.length; i++) {
             if (i === playerIndex) continue;
@@ -3063,13 +3153,26 @@ class CPU {
                 pressure += this._ownedCardValue(card, game, opponent);
             }
         }
+        cache.redPressures[playerIndex] = pressure;
         return pressure;
     }
 
     _estimateOpponentThreat(opponent, game) {
+        const opponentIndex = game.players ? game.players.indexOf(opponent) : -1;
+        if (opponentIndex >= 0) {
+            const cache = this._stateEvaluationCache(game);
+            if (opponentIndex in cache.opponentThreats) return cache.opponentThreats[opponentIndex];
+            const value = this._estimateOpponentThreatUncached(opponent, game, opponentIndex);
+            cache.opponentThreats[opponentIndex] = value;
+            return value;
+        }
+        return this._estimateOpponentThreatUncached(opponent, game, opponentIndex);
+    }
+
+    _estimateOpponentThreatUncached(opponent, game, opponentIndex = -1) {
         const enabledLandmarks = [...game.enabledLandmarks];
         const progress = enabledLandmarks.filter(name => opponent.landmarks[name]).length;
-        const turnValue = this._estimatePlayerTurnValue(game, game.players.indexOf(opponent));
+        const turnValue = this._estimatePlayerTurnValue(game, opponentIndex);
         const reachable = this._countReachableLandmarks(opponent, enabledLandmarks);
         const winDistance = this._estimateWinDistance(opponent, game);
         return opponent.coins * 0.4 +

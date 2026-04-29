@@ -495,6 +495,28 @@ runTest('roll EV cache: chooseDiceCount 後の chooseReroll は同一盤面の�
     assert.strictEqual(afterReroll, afterDice);
 });
 
+runTest('state cache: strong は同一盤面の winDistance 再計算を避ける', () => {
+    const cpu = new CPU("strong");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('パン屋'), createCardByName('コンビニ')];
+    current.dormantCards = [];
+
+    let calls = 0;
+    const original = cpu._estimateWinDistanceUncached.bind(cpu);
+    cpu._estimateWinDistanceUncached = (player, subject, playerIndex) => {
+        calls++;
+        return original(player, subject, playerIndex);
+    };
+
+    const first = cpu._estimateWinDistance(current, game);
+    const second = cpu._estimateWinDistance(current, game);
+
+    assert.strictEqual(first, second);
+    assert.strictEqual(calls, 1);
+});
+
 runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
