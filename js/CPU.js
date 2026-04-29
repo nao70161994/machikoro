@@ -167,8 +167,9 @@ class CPU {
         };
     }
 
-    _chooseSimpleBusinessMove(game) {
-        const current = game.currentPlayer();
+    _chooseSimpleBusinessMove(game, actor = game.currentPlayer()) {
+        const current = actor;
+        const currentIndex = game.players.indexOf(current);
         const myIndexes = this._minorCardIndexes(current);
         if (myIndexes.length === 0) return null;
 
@@ -185,7 +186,7 @@ class CPU {
         let bestMove = null;
         let bestScore = -Infinity;
         for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
-            if (targetIndex === game.currentPlayerIndex) continue;
+            if (targetIndex === currentIndex) continue;
             const target = game.players[targetIndex];
             const theirIndexes = this._minorCardIndexes(target);
             for (const theirCard of theirIndexes) {
@@ -585,6 +586,10 @@ class CPU {
         const isCurrentTurn = ownerIndex === rollerIndex;
         const opponents = game.players.filter((_, i) => i !== ownerIndex);
         const livingCards = owner.cards.filter(c => !owner.isDormant(c));
+        const copyOrdinal = owner.cards
+            .slice(0, owner.cards.indexOf(card) + 1)
+            .filter(candidate => candidate.name === card.name)
+            .length || 1;
 
         if (card.color === "blue") {
             if (card.effect === CARD_EFFECTS.HARBOR) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
@@ -613,28 +618,27 @@ class CPU {
             case CARD_EFFECTS.FEWLANDMARK:
                 return capped(GameManager.calcCardIncome(card, owner, game));
             case CARD_EFFECTS.STADIUM:
-                return capped(opponents.length * card.income);
+                return capped(opponents.length * card.income + (opponents.length > 0 ? card.income : 0));
             case CARD_EFFECTS.TV:
-                return capped(Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0)));
+                return capped(this._estimateTvValue(game, owner));
             case CARD_EFFECTS.PUBLISHER:
-                return capped(opponents.reduce((sum, p) =>
-                    sum + p.cards.filter(c => (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP) && !p.isDormant(c)).length, 0));
+                return capped(this._estimatePublisherValue(game, owner));
             case CARD_EFFECTS.TAXOFFICE:
-                return capped(opponents.filter(p => p.coins >= 10).length * 5);
+                return capped(this._estimateTaxOfficeValue(game, owner));
             case CARD_EFFECTS.LOAN:
                 return (dice === 5 || dice === 6) ? -2 : 0;
             case CARD_EFFECTS.BUSINESS:
-                return capped(4);
+                return capped(this._estimateBusinessValue(game, owner));
             case CARD_EFFECTS.CLEANING:
-                return capped(game.players.reduce((sum, p) => sum + p.getMinorCards().filter(c => !p.isDormant(c)).length, 0) * 0.4);
+                return capped(this._estimateCleaningValue(game, owner));
             case CARD_EFFECTS.MOVER:
-                return 4;
+                return capped(this._estimateMoverValue(game, owner));
             case CARD_EFFECTS.RENOVATION:
-                return owner.builtLandmarkCount() ? 3 : 0;
+                return capped(this._estimateRenovationValue(game, owner, copyOrdinal));
             case CARD_EFFECTS.ITSTARTUP:
-                return opponents.length * Math.max(owner.itVentureCoins, 1);
+                return capped(this._estimateItStartupValue(game, owner));
             case CARD_EFFECTS.PARK:
-                return 2;
+                return capped(this._estimateParkValue(game, owner));
             default: {
                 let amount = card.income;
                 if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
@@ -1505,26 +1509,28 @@ class CPU {
             case CARD_EFFECTS.CORNFIELD:
                 return GameManager.calcCardIncome(card, player, game) * profile.greenFactor;
             case CARD_EFFECTS.STADIUM:
-                return opponents.length * card.income * profile.massAttackFactor;
+                return (opponents.length * card.income + (opponents.length > 0 ? card.income : 0)) * profile.massAttackFactor;
             case CARD_EFFECTS.TV:
-                return Math.min(card.income, Math.max(...opponents.map(p => p.coins), 0)) * profile.purpleFactor;
+                return this._estimateTvValue(game, player) * profile.purpleFactor;
             case CARD_EFFECTS.PUBLISHER:
-                return opponents.reduce((s, p) =>
-                    s + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length, 0) * profile.massAttackFactor;
+                return this._estimatePublisherValue(game, player) * profile.massAttackFactor;
             case CARD_EFFECTS.TAXOFFICE:
-                return opponents.filter(p => p.coins >= 10).length * 5 * profile.massAttackFactor;
+                return this._estimateTaxOfficeValue(game, player) * profile.massAttackFactor;
             case CARD_EFFECTS.HARBOR:
                 return (player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : card.income * 0.4) * profile.blueFactor;
             case CARD_EFFECTS.HARBOR_RED:
                 return (player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0) * profile.redFactor;
             case CARD_EFFECTS.TUNA:
                 return (player.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0) * profile.blueFactor;
+            case CARD_EFFECTS.FRENCHR:
+            case CARD_EFFECTS.MEMBERBAR:
+                return this._estimateConditionalRedValue(card, game, player) * profile.redFactor;
             case CARD_EFFECTS.LOAN:
                 return (player.coins <= 4 ? 3.5 : 1.2) * profile.greenFactor;
             case CARD_EFFECTS.ITSTARTUP:
-                return opponents.length * Math.max(2, player.itVentureCoins + 1) * profile.massAttackFactor;
+                return this._estimateItStartupValue(game, player, true) * profile.massAttackFactor;
             case CARD_EFFECTS.RENOVATION:
-                return (player.builtLandmarkCount() > 0 ? 3.5 : 0) * profile.greenFactor;
+                return this._estimateRenovationValue(game, player, player.countCard("改装屋") + 1) * profile.greenFactor;
             case CARD_EFFECTS.CLEANING:
                 return this._estimateCleaningValue(game, player) * profile.massAttackFactor;
             case CARD_EFFECTS.MOVER:
@@ -1532,7 +1538,7 @@ class CPU {
             case CARD_EFFECTS.BUSINESS:
                 return this._estimateBusinessValue(game, player) * (game.players.length <= 2 ? 1.15 : 1);
             case CARD_EFFECTS.PARK:
-                return this._estimateParkValue(game, player) * profile.massAttackFactor;
+                return 0;
             default:
                 if (card.color === "blue") return card.income * profile.blueFactor;
                 if (card.color === "red") return card.income * profile.redFactor;
@@ -2330,61 +2336,186 @@ class CPU {
         return Math.max(0, player.coins - Math.min(...remainingCosts));
     }
 
-    _estimateBusinessValue(game, player) {
-        const attackScale = this._opponentDilutionFactor(game);
-        const ci = game.players.indexOf(player);
-        const myCards = player.getMinorCards();
-        if (myCards.length === 0) return 0;
-        let best = 0;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === ci) continue;
-            const target = game.players[i];
-            for (const myCard of myCards) {
-                for (const theirCard of target.getMinorCards()) {
-                    const score = this._receivedCardValue(theirCard, game, player) -
-                        this._ownedCardValue(myCard, game, player) * 0.8 +
-                        this._ownedCardValue(theirCard, game, target) * 0.5 * attackScale;
-                    if (score > best) best = score;
-                }
-            }
-        }
-        return best;
-    }
-
     _estimateCleaningValue(game, player) {
-        const attackScale = this._opponentDilutionFactor(game);
+        const opponentCount = Math.max(1, game.players.length - 1);
         let best = 0;
         const names = [...new Set(game.players.flatMap(p => p.getMinorCards().map(c => c.name)))];
         for (const name of names) {
-            let score = 0;
+            let selfPenalty = 0;
+            let opponentDamage = 0;
             for (const owner of game.players) {
                 for (const card of owner.getMinorCards()) {
                     if (card.name !== name || owner.isDormant(card)) continue;
-                    score += 1;
-                    if (owner === player) score -= this._ownedCardValue(card, game, owner);
-                    else score += this._ownedCardValue(card, game, owner) * 0.7 * attackScale;
+                    const dormantWeight = 0.8;
+                    if (owner === player) selfPenalty += this._ownedCardValue(card, game, owner) * dormantWeight;
+                    else opponentDamage += this._ownedCardValue(card, game, owner) * dormantWeight;
                 }
             }
+            const score = opponentDamage / opponentCount - selfPenalty;
             if (score > best) best = score;
         }
         return best;
     }
 
     _estimateMoverValue(game, player) {
+        const opponentCount = Math.max(1, game.players.length - 1);
         const myCards = player.getMinorCards();
         if (myCards.length === 0) return 0;
         let best = -Infinity;
         for (const card of myCards) {
-            const score = 4 - this._ownedCardValue(card, game, player) + (player.isDormant(card) ? 2 : 0);
+            const myLoss = this._ownedCardValue(card, game, player);
+            const opponentGain = this._receivedCardValue(card, game, player) * (player.isDormant(card) ? 0.5 : 1);
+            const score = 4 - myLoss - opponentGain / opponentCount;
             if (score > best) best = score;
         }
         return Math.max(best, 0);
     }
 
+    _estimateTvTargetValue(game, player, targetIndex) {
+        if (!game || !player || targetIndex < 0 || targetIndex >= game.players.length) return 0;
+        const opponentCount = Math.max(1, game.players.length - 1);
+        const target = game.players[targetIndex];
+        if (!target || target === player || target.coins <= 0) return 0;
+        const steal = Math.min(5, target.coins);
+        const denial = this._tvLandmarkDenialValue(target, steal, game);
+        const damage = steal + denial;
+        const leaderBonus = game.players.length >= 4
+            ? this._crowdLeaderBonus(game, targetIndex, Math.min(3, steal))
+            : 0;
+        return steal + damage / opponentCount + leaderBonus;
+    }
+
+    _estimateTvValue(game, player) {
+        let best = 0;
+        for (let index = 0; index < game.players.length; index++) {
+            best = Math.max(best, this._estimateTvTargetValue(game, player, index));
+        }
+        return best;
+    }
+
+    _estimateBusinessValue(game, player) {
+        const move = this._chooseSimpleBusinessMove(game, player);
+        if (!move) return 0;
+        const target = game.players[move.targetIndex];
+        if (!player || !target) return 0;
+        const myCard = player.cards[move.myCard];
+        const theirCard = target.cards[move.theirCard];
+        if (!myCard || !theirCard) return 0;
+        const opponentCount = Math.max(1, game.players.length - 1);
+        const gain = this._receivedCardValue(theirCard, game, player);
+        const myLoss = this._ownedCardValue(myCard, game, player);
+        const denial = this._ownedCardValue(theirCard, game, target);
+        const gift = this._receivedCardValue(myCard, game, target);
+        const selfGain = gain - myLoss;
+        const opponentSwing = denial - gift;
+        return Math.max(0, selfGain + opponentSwing / opponentCount);
+    }
+
+    _estimatePublisherValue(game, player) {
+        const opponentCount = Math.max(1, game.players.length - 1);
+        let total = 0;
+        for (const target of game.players) {
+            if (!target || target === player || target.coins <= 0) continue;
+            const activeHits = target.cards.filter(card =>
+                !target.isDormant(card) &&
+                (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)
+            );
+            total += Math.min(activeHits.length, target.coins);
+        }
+        return total + total / opponentCount;
+    }
+
+    _estimateTaxOfficeValue(game, player) {
+        const opponentCount = Math.max(1, game.players.length - 1);
+        let selfGain = 0;
+        let opponentDamage = 0;
+        for (const target of game.players) {
+            if (!target || target === player || target.coins < 10) continue;
+            const steal = Math.floor(target.coins / 2);
+            selfGain += steal;
+            opponentDamage += steal + this._tvLandmarkDenialValue(target, steal, game) * 0.6;
+        }
+        return selfGain + opponentDamage / opponentCount;
+    }
+
+    _estimateItStartupValue(game, player, options = {}) {
+        if (typeof options === "boolean") {
+            options = { assumeInvest: options };
+        }
+        const assumeInvest = !!options.assumeInvest;
+        const opponentCount = Math.max(1, game.players.length - 1);
+        const ventureCoins = Math.max(0, player.itVentureCoins) + (assumeInvest ? 1 : 0);
+        if (ventureCoins <= 0) return 0;
+        const totalAt = (coins) => {
+            let total = 0;
+            for (const target of game.players) {
+                if (!target || target === player || target.coins <= 0) continue;
+                total += Math.min(coins, target.coins);
+            }
+            return total;
+        };
+        const total = totalAt(ventureCoins);
+        let value = total + total / opponentCount;
+        if (assumeInvest) {
+            const futureInvestSteps = Math.min(2, Math.max(0, player.coins));
+            let previousTotal = total;
+            for (let step = 1; step <= futureInvestSteps; step++) {
+                const nextTotal = totalAt(ventureCoins + step);
+                const marginal = nextTotal - previousTotal;
+                if (marginal > 0) {
+                    value += (marginal + marginal / opponentCount) * Math.pow(0.5, step);
+                }
+                previousTotal = nextTotal;
+            }
+        }
+        return value;
+    }
+
+    _estimateConditionalRedValue(card, game, player) {
+        if (!card || !game || !player) return 0;
+        let total = 0;
+        for (const target of game.players) {
+            if (!target || target === player) continue;
+            if (card.effect === CARD_EFFECTS.FRENCHR) {
+                if (target.builtLandmarkCount() >= 2) total += card.income;
+                continue;
+            }
+            if (card.effect === CARD_EFFECTS.MEMBERBAR) {
+                if (target.builtLandmarkCount() >= 3) total += Math.max(target.coins, 4);
+                continue;
+            }
+        }
+        return total;
+    }
+
+    _estimateRenovationValue(game, player, copyOrdinal = 1) {
+        const builtValues = Object.entries(player.landmarks)
+            .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
+            .map(([name]) => ({
+                name,
+                value: this._builtLandmarkValue(name, player, game),
+            }))
+            .sort((a, b) => a.value - b.value);
+        if (builtValues.length === 0) return 0;
+
+        const ordinalIndex = Math.max(0, copyOrdinal - 1);
+        const targetIndex = Math.min(ordinalIndex, builtValues.length - 1);
+        const targetValue = builtValues[targetIndex].value;
+        let score = 8 - targetValue;
+
+        if (ordinalIndex >= builtValues.length) {
+            score -= (ordinalIndex - builtValues.length + 1) * 4;
+        }
+        return score;
+    }
+
     _estimateParkValue(game, player) {
-        const attackScale = this._opponentDilutionFactor(game);
-        const total = game.players.reduce((sum, p) => sum + p.coins, 0);
-        return (total / Math.max(game.players.length, 1) - player.coins) * attackScale;
+        return 0;
+    }
+
+    _estimateLoanBurdenValue(player, copyOrdinal = 1) {
+        const ordinal = Math.max(1, copyOrdinal);
+        return -2.5 * ordinal;
     }
 
     _opponentDilutionFactor(game) {
@@ -2392,6 +2523,14 @@ class CPU {
     }
 
     _receivedCardValue(card, game, player) {
+        if (card.effect === CARD_EFFECTS.LOAN) {
+            const nextCopyOrdinal = player.countCard("貸金業") + 1;
+            return this._estimateLoanBurdenValue(player, nextCopyOrdinal);
+        }
+        if (card.effect === CARD_EFFECTS.RENOVATION) {
+            const nextCopyOrdinal = player.countCard("改装屋") + 1;
+            return this._estimateRenovationValue(game, player, nextCopyOrdinal);
+        }
         let baseValue;
         switch (card.effect) {
             case CARD_EFFECTS.BUSINESS:
@@ -2405,9 +2544,6 @@ class CPU {
                 break;
             case CARD_EFFECTS.PARK:
                 baseValue = this._strongSoftCapValue(1.5);
-                break;
-            case CARD_EFFECTS.RENOVATION:
-                baseValue = this._strongSoftCapValue(2.5);
                 break;
             default:
                 baseValue = this._strongSoftCapValue(this.evalCard(card, game, player));
@@ -2447,6 +2583,18 @@ class CPU {
     }
 
     _ownedCardValue(card, game, player) {
+        if (card.effect === CARD_EFFECTS.LOAN) {
+            const ownedCopyOrdinal = Math.max(1, player.countCard("貸金業"));
+            let value = this._estimateLoanBurdenValue(player, ownedCopyOrdinal);
+            if (player.isDormant(card)) value *= 0.35;
+            return value;
+        }
+        if (card.effect === CARD_EFFECTS.RENOVATION) {
+            const ownedCopyOrdinal = Math.max(1, player.countCard("改装屋"));
+            let value = this._estimateRenovationValue(game, player, ownedCopyOrdinal);
+            if (player.isDormant(card)) value *= 0.35;
+            return value;
+        }
         let value = this._receivedCardValue(card, game, player);
         if (player.isDormant(card)) value *= 0.35;
         if (card.color === "red") value += 1.5;

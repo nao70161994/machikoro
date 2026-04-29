@@ -24,34 +24,278 @@ runTest('evalCard: NORMALカードはincome値をそのまま返す', () => {
     assert.strictEqual(cpu.evalCard(mine, game, player), 5);
 });
 
-runTest('evalCard: STADIUMは対戦相手数 × incomeを返す', () => {
+runTest('evalCard: STADIUMは収入に全体妨害価値を上乗せする', () => {
     const cpu = new CPU("normal");
     const game2p = new GameManager(2);
     const player2 = game2p.currentPlayer();
     const stadium = createCardByName('スタジアム'); // income 2
-    // 2人ゲームなので相手は1人
-    assert.strictEqual(cpu.evalCard(stadium, game2p, player2), 2);
+    assert.strictEqual(cpu.evalCard(stadium, game2p, player2), 4);
 
     const game4p = new GameManager(4);
     const player4 = game4p.currentPlayer();
-    // 4人ゲームでも対戦相手数に応じた価値は維持する
-    assert.ok(cpu.evalCard(stadium, game4p, player4) >= 5);
+    assert.ok(cpu.evalCard(stadium, game4p, player4) > 7);
 });
 
-runTest('evalCard: TVは相手の最大コインと上限incomeの小さい方を返す', () => {
+runTest('evalCard: TVは奪う収入と単体妨害価値を合算する', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
     const current = game.currentPlayer();
     const opponent = game.players[1];
     opponent.coins = 3;
     const tv = createCardByName('テレビ局'); // income 5
-    assert.strictEqual(cpu.evalCard(tv, game, current), 3);
+    assert.strictEqual(cpu.evalCard(tv, game, current), 6);
 
     opponent.coins = 10;
-    assert.strictEqual(cpu.evalCard(tv, game, current), 5); // incomeの上限5
+    assert.strictEqual(cpu.evalCard(tv, game, current), 10);
 
     opponent.coins = 0;
     assert.strictEqual(cpu.evalCard(tv, game, current), 0);
+});
+
+runTest('TV評価: expert はランドマーク阻止価値を見積もる', () => {
+    const cpu = new CPU("expert", { expertBehaviorFlags: { tvLandmarkDenial: true } });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const opponent = game.players[1];
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION]);
+    opponent.coins = Player.landmarkCost(LANDMARK_NAMES.STATION);
+
+    assert.ok(cpu._tvLandmarkDenialValue(opponent, Math.min(5, opponent.coins), game) > 0);
+    assert.ok(cpu._estimateTvValue(game, current) > 5);
+});
+
+runTest('evalCard: BUSINESSは交換価値があれば正の値を返す', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('麦畑')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
+    target.dormantCards = [];
+    const business = createCardByName('ビジネスセンター');
+
+    assert.ok(cpu.evalCard(business, game, current) > 0);
+});
+
+runTest('evalCard: CLEANINGは相手の強いactiveカードが多いほど上がる', () => {
+    const cpu = new CPU("normal");
+    const fewGame = new GameManager(3);
+    const manyGame = new GameManager(3);
+    const fewCurrent = fewGame.currentPlayer();
+    const manyCurrent = manyGame.currentPlayer();
+    const cleaning = createCardByName('清掃業');
+
+    fewGame.players[1].cards = [createCardByName('カフェ')];
+    fewGame.players[1].dormantCards = [];
+    fewGame.players[2].cards = [createCardByName('パン屋')];
+    fewGame.players[2].dormantCards = [];
+
+    manyGame.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    manyGame.players[1].dormantCards = [];
+    manyGame.players[2].cards = [createCardByName('パン屋'), createCardByName('パン屋')];
+    manyGame.players[2].dormantCards = [];
+
+    assert.ok(cpu.evalCard(cleaning, manyGame, manyCurrent) > cpu.evalCard(cleaning, fewGame, fewCurrent));
+});
+
+runTest('evalCard: CLEANINGは自分の主力も巻き込むと下がる', () => {
+    const cpu = new CPU("normal");
+    const safeGame = new GameManager(3);
+    const riskyGame = new GameManager(3);
+    const safeCurrent = safeGame.currentPlayer();
+    const riskyCurrent = riskyGame.currentPlayer();
+    const cleaning = createCardByName('清掃業');
+
+    safeGame.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    safeGame.players[1].dormantCards = [];
+    safeGame.players[2].cards = [createCardByName('パン屋')];
+    safeGame.players[2].dormantCards = [];
+
+    riskyCurrent.cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    riskyCurrent.dormantCards = [];
+    riskyGame.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    riskyGame.players[1].dormantCards = [];
+    riskyGame.players[2].cards = [createCardByName('パン屋')];
+    riskyGame.players[2].dormantCards = [];
+
+    assert.ok(cpu.evalCard(cleaning, safeGame, safeCurrent) > cpu.evalCard(cleaning, riskyGame, riskyCurrent));
+});
+
+runTest('evalCard: PUBLISHERは収入と全体妨害価値を合算する', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    target.coins = 5;
+    target.cards = [createCardByName('カフェ'), createCardByName('コンビニ'), createCardByName('麦畑')];
+    target.dormantCards = [];
+    const publisher = createCardByName('出版社');
+
+    assert.strictEqual(cpu.evalCard(publisher, game, current), 4);
+});
+
+runTest('evalCard: PUBLISHERは相手のactive restaurant/shop枚数が多いほど上がる', () => {
+    const cpu = new CPU("normal");
+    const fewGame = new GameManager(2);
+    const manyGame = new GameManager(2);
+    const fewCurrent = fewGame.currentPlayer();
+    const manyCurrent = manyGame.currentPlayer();
+    const fewTarget = fewGame.players[1];
+    const manyTarget = manyGame.players[1];
+    const publisher = createCardByName('出版社');
+
+    fewTarget.coins = 5;
+    fewTarget.cards = [createCardByName('カフェ')];
+    fewTarget.dormantCards = [];
+
+    manyTarget.coins = 5;
+    manyTarget.cards = [createCardByName('カフェ'), createCardByName('コンビニ'), createCardByName('パン屋')];
+    manyTarget.dormantCards = [];
+
+    assert.ok(cpu.evalCard(publisher, manyGame, manyCurrent) > cpu.evalCard(publisher, fewGame, fewCurrent));
+});
+
+runTest('evalCard: TAXOFFICEは10コイン以上の相手だけを対象にする', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    game.players[1].coins = 9;
+    game.players[2].coins = 10;
+    const tax = createCardByName('税務署');
+
+    assert.ok(cpu.evalCard(tax, game, current) > 8.1);
+});
+
+runTest('evalCard: ITSTARTUPは積立額と相手所持コインのminで見る', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.itVentureCoins = 3;
+    game.players[1].coins = 1;
+    game.players[2].coins = 5;
+    const it = createCardByName('ITベンチャー');
+
+    assert.ok(Math.abs(cpu.evalCard(it, game, current) - 8.91) < 1e-9);
+});
+
+runTest('evalCard: ITSTARTUPは追加積立余地が大きいほど購入価値が上がる', () => {
+    const cpu = new CPU("normal");
+    const lowBudget = new GameManager(3);
+    const highBudget = new GameManager(3);
+    const lowPlayer = lowBudget.currentPlayer();
+    const highPlayer = highBudget.currentPlayer();
+    const it = createCardByName('ITベンチャー');
+    lowPlayer.coins = 0;
+    highPlayer.coins = 3;
+    lowBudget.players[1].coins = 4;
+    lowBudget.players[2].coins = 4;
+    highBudget.players[1].coins = 4;
+    highBudget.players[2].coins = 4;
+
+    assert.ok(cpu.evalCard(it, highBudget, highPlayer) > cpu.evalCard(it, lowBudget, lowPlayer));
+});
+
+runTest('evalCard: RENOVATIONは建設済みランドマークがなければ0になる', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const renovation = createCardByName('改装屋');
+
+    assert.strictEqual(cpu.evalCard(renovation, game, current), 0);
+});
+
+runTest('evalCard: RENOVATIONは複数所持で追加1枚の限界価値を下げる', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const renovation = createCardByName('改装屋');
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+
+    const first = cpu.evalCard(renovation, game, current);
+    current.addCard(createCardByName('改装屋'));
+    const second = cpu.evalCard(renovation, game, current);
+
+    assert.ok(second < first);
+});
+
+runTest('改装屋 received/owned: 複数所持で相手に押し付ける価値が負になりうる', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    const renovation = createCardByName('改装屋');
+
+    target.addCard(createCardByName('改装屋'));
+    target.addCard(createCardByName('改装屋'));
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    target.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    target.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    target.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    target.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+
+    assert.ok(cpu._receivedCardValue(renovation, game, target) < 0);
+    assert.ok(cpu._ownedCardValue(renovation, game, target) < cpu._receivedCardValue(renovation, game, target) + 10);
+    assert.ok(current.countCard('改装屋') === 0);
+});
+
+runTest('貸金業 received/owned: 受け取り価値は負で、枚数に比例して悪化する', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const target = game.players[1];
+    const loan = createCardByName('貸金業');
+
+    const firstReceived = cpu._receivedCardValue(loan, game, target);
+    target.addCard(createCardByName('貸金業'));
+    const secondReceived = cpu._receivedCardValue(loan, game, target);
+    const owned = cpu._ownedCardValue(loan, game, target);
+
+    assert.ok(firstReceived < 0);
+    assert.ok(secondReceived < firstReceived);
+    assert.ok(owned < 0);
+});
+
+runTest('evalCard: PARKはいったん0として扱う', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.coins = 1;
+    game.players[1].coins = 10;
+    game.players[2].coins = 20;
+    const park = createCardByName('公園');
+
+    assert.strictEqual(cpu.evalCard(park, game, current), 0);
+});
+
+runTest('条件付き赤評価: 高級フレンチは相手が条件達成で上がる', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    const french = createCardByName('高級フレンチ');
+
+    assert.strictEqual(cpu._estimateConditionalRedValue(french, game, current), 0);
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    assert.strictEqual(cpu._estimateConditionalRedValue(french, game, current), 5);
+});
+
+runTest('条件付き赤評価: 会員制BARは相手が条件達成で上がる', () => {
+    const cpu = new CPU("normal");
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    const memberBar = createCardByName('会員制BAR');
+
+    target.coins = 6;
+    assert.strictEqual(cpu._estimateConditionalRedValue(memberBar, game, current), 0);
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    target.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    assert.strictEqual(cpu._estimateConditionalRedValue(memberBar, game, current), 6);
 });
 
 runTest('evalCard: HARBORは港ランドマーク所持でfullスコア、未所持で0.4倍', () => {
@@ -248,7 +492,7 @@ runTest('chooseReroll: expert v2 simple は simple mode なら期待値比較で
     assert.strictEqual(cpu.chooseReroll(game), true);
 });
 
-runTest('chooseTVTarget: expert v2 simple はコイン最多相手を選ぶ', () => {
+runTest('chooseTVTarget: expert v2 simple はTV価値が高い相手を選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(3);
     game.players[1].coins = 3;
@@ -283,6 +527,20 @@ runTest('chooseBusinessMove: expert v2 simple は一番いらない自分カー�
     assert.strictEqual(move.myCard, 0);
     assert.strictEqual(move.targetIndex, 1);
     assert.strictEqual(move.theirCard, 1);
+});
+
+runTest('chooseBusinessMove: expert v2 simple は貸金業を押し付けカードとして優先して渡す', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('貸金業')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
+    target.dormantCards = [];
+
+    const move = cpu.chooseBusinessMove(game);
+    assert.strictEqual(move.myCard, 1);
 });
 
 runTest('chooseBusinessMove: expert v2 simple は random mode なら合法手からランダムに選ぶ', () => {
@@ -1333,6 +1591,44 @@ runTest('chooseMoverMove: expert v2 simple は simple mode なら損の小さい
     game.players[2].dormantCards = [];
     const move = cpu.chooseMoverMove(game);
     assert.strictEqual(move.cardIndex, 1);
+});
+
+runTest('chooseMoverMove: expert v2 simple は貸金業を押し付けカードとして優先して渡す', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertMoverMode: "simple" });
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('パン屋'), createCardByName('貸金業')];
+    current.dormantCards = [];
+    game.players[1].cards = [createCardByName('牧場')];
+    game.players[1].dormantCards = [];
+    game.players[2].cards = [createCardByName('コンビニ')];
+    game.players[2].dormantCards = [];
+
+    const move = cpu.chooseMoverMove(game);
+    assert.strictEqual(move.cardIndex, 1);
+});
+
+runTest('chooseMoverMove: expert v2 simple は相手に重い改装屋を押し付けられるなら優先する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertMoverMode: "simple" });
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('改装屋')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('改装屋'), createCardByName('改装屋'), createCardByName('牧場')];
+    target.dormantCards = [];
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    target.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    target.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    target.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK] = true;
+    target.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    game.players[2].cards = [createCardByName('コンビニ')];
+    game.players[2].dormantCards = [];
+
+    const move = cpu.chooseMoverMove(game);
+    assert.strictEqual(move.cardIndex, 1);
+    assert.strictEqual(move.targetIndex, 1);
 });
 
 runTest('expert fast mode は lookahead を軽くする', () => {
