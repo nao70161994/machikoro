@@ -467,6 +467,34 @@ runTest('chooseDiceCount: expert v2 simple は random mode なら駅ありでラ
     }
 });
 
+runTest('roll EV cache: chooseDiceCount 後の chooseReroll は同一盤面の再計算を避ける', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.cards = [createCardByName('サンマ漁船'), createCardByName('マグロ漁船')];
+    current.dormantCards = [];
+    game.lastDice1 = 6;
+    game.lastDice2 = 5;
+    game.lastDiceResult = 11;
+
+    let calls = 0;
+    const original = cpu._estimateRollScore.bind(cpu);
+    cpu._estimateRollScore = (subject, dice) => {
+        calls++;
+        return original(subject, dice);
+    };
+
+    cpu.chooseDiceCount(game);
+    const afterDice = calls;
+    cpu.chooseReroll(game);
+    const afterReroll = calls;
+
+    assert.ok(afterDice > 0);
+    assert.strictEqual(afterReroll, afterDice);
+});
+
 runTest('chooseReroll: expert v2 simple はランダムで判定する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);

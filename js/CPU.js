@@ -93,6 +93,37 @@ class CPU {
         return this._profileMeasure(`${this.difficulty}.${label}`, fn);
     }
 
+    _rollEvaluationSignature(game) {
+        const enabled = game && game.enabledLandmarks ? [...game.enabledLandmarks].sort().join(',') : '';
+        const players = game.players.map(player => {
+            const landmarks = Player.landmarkNames().map(name => player.landmarks[name] ? '1' : '0').join('');
+            const cards = player.cards.map((card, index) => `${card.name}:${player.isDormant(card) ? 1 : 0}:${index}`).join('|');
+            return `${player.coins}/${player.itVentureCoins}/${landmarks}/${cards}`;
+        }).join('||');
+        return `${game.currentPlayerIndex}|${game.phase}|${enabled}|${players}`;
+    }
+
+    _rollEvaluationCache(game) {
+        const signature = this._rollEvaluationSignature(game);
+        if (!this._cachedRollEvaluation || this._cachedRollEvaluation.signature !== signature) {
+            this._cachedRollEvaluation = {
+                signature,
+                rollScores: Object.create(null),
+                expectedDiceScores: Object.create(null),
+                expectedDiceScoresWithHarbor: Object.create(null),
+            };
+        }
+        return this._cachedRollEvaluation;
+    }
+
+    _estimateRollScoreCached(game, dice) {
+        const cache = this._rollEvaluationCache(game);
+        if (!(dice in cache.rollScores)) {
+            cache.rollScores[dice] = this._estimateRollScore(game, dice);
+        }
+        return cache.rollScores[dice];
+    }
+
     _traceV2Simple(key, amount = 1) {
         if (!this.expertTraceStats || !this._isExpertV2Simple()) return;
         this.expertTraceStats[key] = (this.expertTraceStats[key] || 0) + amount;
@@ -668,6 +699,11 @@ class CPU {
     }
 
     _expectedDiceScore(game, useTwo) {
+        const cache = this._rollEvaluationCache(game);
+        const cacheKey = useTwo ? 'two' : 'one';
+        if (cacheKey in cache.expectedDiceScores) {
+            return cache.expectedDiceScores[cacheKey];
+        }
         const weights = useTwo
             ? { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 }
             : { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1 };
@@ -676,12 +712,19 @@ class CPU {
         for (const [diceText, weight] of Object.entries(weights)) {
             const dice = parseInt(diceText, 10);
             totalWeight += weight;
-            totalScore += this._estimateRollScore(game, dice) * weight;
+            totalScore += this._estimateRollScoreCached(game, dice) * weight;
         }
-        return totalWeight > 0 ? totalScore / totalWeight : 0;
+        const score = totalWeight > 0 ? totalScore / totalWeight : 0;
+        cache.expectedDiceScores[cacheKey] = score;
+        return score;
     }
 
     _expectedDiceScoreWithHarbor(game, useTwo) {
+        const cache = this._rollEvaluationCache(game);
+        const cacheKey = useTwo ? 'two' : 'one';
+        if (cacheKey in cache.expectedDiceScoresWithHarbor) {
+            return cache.expectedDiceScoresWithHarbor[cacheKey];
+        }
         const current = game.currentPlayer();
         const canUseHarbor = useTwo && current.landmarks[LANDMARK_NAMES.HARBOR];
         const weights = useTwo
@@ -691,14 +734,16 @@ class CPU {
         let totalScore = 0;
         for (const [diceText, weight] of Object.entries(weights)) {
             const dice = parseInt(diceText, 10);
-            let score = this._estimateRollScore(game, dice);
+            let score = this._estimateRollScoreCached(game, dice);
             if (canUseHarbor && dice >= 10) {
-                score = Math.max(score, this._estimateRollScore(game, dice + 2));
+                score = Math.max(score, this._estimateRollScoreCached(game, dice + 2));
             }
             totalWeight += weight;
             totalScore += score * weight;
         }
-        return totalWeight > 0 ? totalScore / totalWeight : 0;
+        const score = totalWeight > 0 ? totalScore / totalWeight : 0;
+        cache.expectedDiceScoresWithHarbor[cacheKey] = score;
+        return score;
     }
 
     _diceOutcomeWeights(useTwo) {
