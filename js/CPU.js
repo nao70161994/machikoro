@@ -89,6 +89,10 @@ class CPU {
         entry.count = (entry.count || 0) + amount;
     }
 
+    _profileDecision(label, fn) {
+        return this._profileMeasure(`${this.difficulty}.${label}`, fn);
+    }
+
     _traceV2Simple(key, amount = 1) {
         if (!this.expertTraceStats || !this._isExpertV2Simple()) return;
         this.expertTraceStats[key] = (this.expertTraceStats[key] || 0) + amount;
@@ -892,6 +896,7 @@ class CPU {
     }
 
     chooseDiceCount(game) {
+        return this._profileDecision("chooseDiceCount", () => {
         if (this._isExpertV2Simple()) {
             const current = game.currentPlayer();
             if (!current.landmarks[LANDMARK_NAMES.STATION]) return false;
@@ -959,9 +964,11 @@ class CPU {
             return twoScore > oneScore + 0.8;
         }
         return twoScore >= oneScore;
+        });
     }
 
     chooseReroll(game) {
+        return this._profileDecision("chooseReroll", () => {
         if (this._isExpertV2Simple()) {
             if (this.expertRerollMode === "random") return Math.random() < 0.5;
             const dice = game.lastDiceResult;
@@ -1040,9 +1047,11 @@ class CPU {
         const rerollScore = this._expectedDiceScore(game, usingTwoDice);
         if (this.difficulty === "normal") return rerollScore > currentScore + 1.2;
         return rerollScore > currentScore + 0.3;
+        });
     }
 
     chooseHarbor(game) {
+        return this._profileDecision("chooseHarbor", () => {
         if (this._isExpertV2Simple()) {
             if (this.expertHarborMode === "random") return Math.random() < 0.5;
             const keepScore = this._estimateRollScore(game, game.lastDiceResult);
@@ -1100,9 +1109,11 @@ class CPU {
         const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
         if (this.difficulty === "normal") return bonusScore > keepScore + 0.5;
         return bonusScore >= keepScore;
+        });
     }
 
     chooseTVTarget(game) {
+        return this._profileDecision("chooseTVTarget", () => {
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
             if (this.expertTvMode === "random") {
@@ -1171,9 +1182,11 @@ class CPU {
             }
         }
         return targetIndex;
+        });
     }
 
     chooseBusinessMove(game) {
+        return this._profileDecision("chooseBusinessMove", () => {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         const myCards = current.getMinorCards();
@@ -1228,6 +1241,7 @@ class CPU {
             }
         });
         return bestMove;
+        });
     }
 
     resolveBusiness(game) {
@@ -1241,6 +1255,7 @@ class CPU {
     }
 
     chooseCleaningTarget(game) {
+        return this._profileDecision("chooseCleaningTarget", () => {
         const current = game.currentPlayer();
         if (this._isExpertV2Simple()) {
             const counts = new Map();
@@ -1323,9 +1338,11 @@ class CPU {
             if (!best || score > best.score) best = { cardName: name, score };
         }
         return best ? best.cardName : null;
+        });
     }
 
     chooseMoverMove(game) {
+        return this._profileDecision("chooseMoverMove", () => {
         const current = game.currentPlayer();
         const ci = game.currentPlayerIndex;
         if (this._isExpertV2Simple()) {
@@ -1391,9 +1408,11 @@ class CPU {
             }
         }
         return best;
+        });
     }
 
     chooseRenovationTarget(game) {
+        return this._profileDecision("chooseRenovationTarget", () => {
         const current = game.currentPlayer();
         if (this._isExpertV2Simple()) {
             const names = Object.entries(current.landmarks)
@@ -1429,6 +1448,7 @@ class CPU {
             if (!best || score < best.score) best = { name, score };
         }
         return best ? best.name : null;
+        });
     }
 
     chooseITInvest(game) {
@@ -3542,6 +3562,7 @@ class CPU {
 
     // 強いCPU：状況判断型
     buildStrong(game, shopStock) {
+        return this._profileDecision("build", () => {
         if (game.players.length >= 4) {
             const current = game.currentPlayer();
             if (this._buyWinningLandmark(current, game)) return;
@@ -3629,6 +3650,7 @@ class CPU {
         }
         const card = this._cardByName(best.cardName);
         if (card) this._buyCard(card, game, shopStock);
+        });
     }
 
     buildExpert(game, shopStock) {

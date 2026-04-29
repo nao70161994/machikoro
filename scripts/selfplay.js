@@ -60,7 +60,11 @@ function createPlayers(runtime, difficulties, options = {}) {
             }
             return new runtime.RLCPU(options.rlModelData);
         }
-        if (difficulty !== 'expert') return new runtime.CPU(difficulty);
+        if (difficulty !== 'expert') {
+            return new runtime.CPU(difficulty, {
+                profileStats: options.profileStats,
+            });
+        }
         return new runtime.CPU(difficulty, {
             expertPurpose: options.expertPurpose || 'training',
             simulationMode: options.lite ? 'lite' : (options.fast ? 'fast' : 'full'),
