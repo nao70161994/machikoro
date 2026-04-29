@@ -174,9 +174,9 @@ class CPU {
         if (myIndexes.length === 0) return null;
 
         let myCard = myIndexes[0];
-        let myLoss = this._ownedCardValue(current.cards[myCard], game, current);
+        let myLoss = this._exchangeOwnedCardValue(current.cards[myCard], game, current);
         for (const index of myIndexes) {
-            const loss = this._ownedCardValue(current.cards[index], game, current);
+            const loss = this._exchangeOwnedCardValue(current.cards[index], game, current);
             if (loss < myLoss) {
                 myLoss = loss;
                 myCard = index;
@@ -190,7 +190,7 @@ class CPU {
             const target = game.players[targetIndex];
             const theirIndexes = this._minorCardIndexes(target);
             for (const theirCard of theirIndexes) {
-                const gain = this._receivedCardValue(target.cards[theirCard], game, current);
+                const gain = this._exchangeReceivedCardValue(target.cards[theirCard], game, current);
                 if (gain > bestScore) {
                     bestScore = gain;
                     bestMove = {
@@ -2379,10 +2379,7 @@ class CPU {
         const steal = Math.min(5, target.coins);
         const denial = this._tvLandmarkDenialValue(target, steal, game);
         const damage = steal + denial;
-        const leaderBonus = game.players.length >= 4
-            ? this._crowdLeaderBonus(game, targetIndex, Math.min(3, steal))
-            : 0;
-        return steal + damage / opponentCount + leaderBonus;
+        return steal + damage / opponentCount;
     }
 
     _estimateTvValue(game, player) {
@@ -2402,10 +2399,10 @@ class CPU {
         const theirCard = target.cards[move.theirCard];
         if (!myCard || !theirCard) return 0;
         const opponentCount = Math.max(1, game.players.length - 1);
-        const gain = this._receivedCardValue(theirCard, game, player);
-        const myLoss = this._ownedCardValue(myCard, game, player);
-        const denial = this._ownedCardValue(theirCard, game, target);
-        const gift = this._receivedCardValue(myCard, game, target);
+        const gain = this._exchangeReceivedCardValue(theirCard, game, player);
+        const myLoss = this._exchangeOwnedCardValue(myCard, game, player);
+        const denial = this._exchangeOwnedCardValue(theirCard, game, target);
+        const gift = this._exchangeReceivedCardValue(myCard, game, target);
         const selfGain = gain - myLoss;
         const opponentSwing = denial - gift;
         return Math.max(0, selfGain + opponentSwing / opponentCount);
@@ -2518,6 +2515,36 @@ class CPU {
         return -2.5 * ordinal;
     }
 
+    _exchangeReceivedCardValue(card, game, player) {
+        if (card.effect === CARD_EFFECTS.LOAN) {
+            const nextCopyOrdinal = player.countCard("貸金業") + 1;
+            return this._estimateLoanBurdenValue(player, nextCopyOrdinal);
+        }
+        if (card.effect === CARD_EFFECTS.RENOVATION) {
+            const nextCopyOrdinal = player.countCard("改装屋") + 1;
+            return this._estimateRenovationValue(game, player, nextCopyOrdinal);
+        }
+        let baseValue;
+        if (card.color === "blue" || card.color === "green") {
+            baseValue = GameManager.calcCardIncome(card, player, game);
+        }
+        else if (card.color === "red") {
+            baseValue = card.income;
+        }
+        else {
+            baseValue = card.income || card.cost || 0;
+        }
+        return this._strongSoftCapValue(baseValue) * this._cardDiceFreq(card, game, player) + card.cost * 1.4;
+    }
+
+    _exchangeOwnedCardValue(card, game, player) {
+        let value = this._exchangeReceivedCardValue(card, game, player);
+        if (player.isDormant(card)) value *= 0.35;
+        if (card.color === "red") value += 1.5;
+        value += this._cardDependencyValue(card, player, game);
+        return value;
+    }
+
     _opponentDilutionFactor(game) {
         return 1 / Math.max(1, (game && game.players ? game.players.length : 1) - 1);
     }
@@ -2546,7 +2573,15 @@ class CPU {
                 baseValue = this._strongSoftCapValue(1.5);
                 break;
             default:
-                baseValue = this._strongSoftCapValue(this.evalCard(card, game, player));
+                if (card.color === "blue" || card.color === "green") {
+                    baseValue = this._strongSoftCapValue(GameManager.calcCardIncome(card, player, game));
+                    break;
+                }
+                if (card.color === "red") {
+                    baseValue = this._strongSoftCapValue(card.income);
+                    break;
+                }
+                baseValue = this._strongSoftCapValue(card.income || card.cost || 0);
                 break;
         }
         return baseValue * this._cardDiceFreq(card, game, player) + card.cost * 1.4;
@@ -2838,6 +2873,15 @@ class CPU {
         for (const card of player.cards) {
             if (player.isDormant(card)) continue;
             if (card.color !== "blue" && card.color !== "green") continue;
+            if ([
+                CARD_EFFECTS.LOAN,
+                CARD_EFFECTS.RENOVATION,
+                CARD_EFFECTS.ITSTARTUP,
+                CARD_EFFECTS.PARK,
+                CARD_EFFECTS.BUSINESS,
+                CARD_EFFECTS.CLEANING,
+                CARD_EFFECTS.MOVER,
+            ].includes(card.effect)) continue;
             total += this._ownedCardValue(card, game, player);
         }
         return total;
