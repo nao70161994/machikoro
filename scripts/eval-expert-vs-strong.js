@@ -15,6 +15,16 @@ function parseArgs(argv) {
     let expertPreset = 'default';
     let tuningCandidate = '';
     let profiles = DEFAULT_PROFILES.slice();
+    let buildMode = 'ev';
+    let diceMode = 'ev';
+    let rerollMode = 'simple';
+    let itMode = 'always';
+    let tvMode = 'simple';
+    let businessMode = 'simple';
+    let cleaningMode = 'simple';
+    let harborMode = 'simple';
+    let moverMode = 'simple';
+    let renovationMode = 'simple';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -29,12 +39,42 @@ function parseArgs(argv) {
         }
         else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
         else if (arg === '--tuning-candidate') tuningCandidate = argv[++i] || '';
+        else if (arg === '--build-mode') buildMode = argv[++i] || 'ev';
+        else if (arg === '--dice-mode') diceMode = argv[++i] || 'ev';
+        else if (arg === '--reroll-mode') rerollMode = argv[++i] || 'simple';
+        else if (arg === '--it-mode') itMode = argv[++i] || 'always';
+        else if (arg === '--tv-mode') tvMode = argv[++i] || 'simple';
+        else if (arg === '--business-mode') businessMode = argv[++i] || 'simple';
+        else if (arg === '--cleaning-mode') cleaningMode = argv[++i] || 'simple';
+        else if (arg === '--harbor-mode') harborMode = argv[++i] || 'simple';
+        else if (arg === '--mover-mode') moverMode = argv[++i] || 'simple';
+        else if (arg === '--renovation-mode') renovationMode = argv[++i] || 'simple';
         else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, expertPreset, tuningCandidate, profiles };
+    return {
+        games,
+        seed,
+        maxSteps,
+        format,
+        lite,
+        fast,
+        expertPreset,
+        tuningCandidate,
+        profiles,
+        buildMode,
+        diceMode,
+        rerollMode,
+        itMode,
+        tvMode,
+        businessMode,
+        cleaningMode,
+        harborMode,
+        moverMode,
+        renovationMode,
+    };
 }
 
 function resolveExpertTuning(options = {}) {
@@ -77,6 +117,16 @@ function evaluateProfile(name, options) {
         expertPreset: options.expertPreset,
         expertTuning,
         expertPurpose: 'live',
+        expertBuildMode: options.buildMode || 'ev',
+        expertDiceMode: options.diceMode || 'ev',
+        expertRerollMode: options.rerollMode || 'simple',
+        expertInvestMode: options.itMode || 'always',
+        expertTvMode: options.tvMode || 'simple',
+        expertBusinessMode: options.businessMode || 'simple',
+        expertCleaningMode: options.cleaningMode || 'simple',
+        expertHarborMode: options.harborMode || 'simple',
+        expertMoverMode: options.moverMode || 'simple',
+        expertRenovationMode: options.renovationMode || 'simple',
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -110,6 +160,8 @@ function summarize(entries) {
 function toText(entries, summary, options) {
     const lines = [
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} expertPreset=${options.expertPreset}` +
+        ` buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} itMode=${options.itMode} tvMode=${options.tvMode}` +
+        ` businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} moverMode=${options.moverMode} renovationMode=${options.renovationMode}` +
         `${options.tuningCandidate ? ` tuningCandidate=${options.tuningCandidate}` : ''}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
@@ -131,6 +183,16 @@ function toMarkdown(entries, summary, options) {
         `- seed: ${options.seed}`,
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
         `- expertPreset: ${options.expertPreset}`,
+        `- buildMode: ${options.buildMode}`,
+        `- diceMode: ${options.diceMode}`,
+        `- rerollMode: ${options.rerollMode}`,
+        `- itMode: ${options.itMode}`,
+        `- tvMode: ${options.tvMode}`,
+        `- businessMode: ${options.businessMode}`,
+        `- cleaningMode: ${options.cleaningMode}`,
+        `- harborMode: ${options.harborMode}`,
+        `- moverMode: ${options.moverMode}`,
+        `- renovationMode: ${options.renovationMode}`,
         `- tuningCandidate: ${options.tuningCandidate || 'none'}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,

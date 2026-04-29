@@ -20,11 +20,40 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
     assert.strictEqual(args.maxSteps, 5000);
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
+    assert.strictEqual(args.buildMode, 'ev');
+    assert.strictEqual(args.diceMode, 'ev');
+    assert.strictEqual(args.rerollMode, 'simple');
+    assert.strictEqual(args.itMode, 'always');
+    assert.strictEqual(args.tvMode, 'simple');
+    assert.strictEqual(args.businessMode, 'simple');
+    assert.strictEqual(args.cleaningMode, 'simple');
+    assert.strictEqual(args.harborMode, 'simple');
+    assert.strictEqual(args.moverMode, 'simple');
+    assert.strictEqual(args.renovationMode, 'simple');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
 runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '30', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--expert-preset', 'rush', '--tuning-candidate', 'rush:skipPenaltyx1.25', '--profiles', 'duel,crowd']);
+    const args = parseArgs([
+        '--games', '30',
+        '--seed', '9',
+        '--max-steps', '7000',
+        '--format', 'json',
+        '--full',
+        '--expert-preset', 'rush',
+        '--tuning-candidate', 'rush:skipPenaltyx1.25',
+        '--build-mode', 'random',
+        '--dice-mode', 'random',
+        '--reroll-mode', 'random',
+        '--it-mode', 'never',
+        '--tv-mode', 'random',
+        '--business-mode', 'random',
+        '--cleaning-mode', 'random',
+        '--harbor-mode', 'random',
+        '--mover-mode', 'random',
+        '--renovation-mode', 'random',
+        '--profiles', 'duel,crowd',
+    ]);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
@@ -32,6 +61,16 @@ runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.lite, false);
     assert.strictEqual(args.expertPreset, 'rush');
     assert.strictEqual(args.tuningCandidate, 'rush:skipPenaltyx1.25');
+    assert.strictEqual(args.buildMode, 'random');
+    assert.strictEqual(args.diceMode, 'random');
+    assert.strictEqual(args.rerollMode, 'random');
+    assert.strictEqual(args.itMode, 'never');
+    assert.strictEqual(args.tvMode, 'random');
+    assert.strictEqual(args.businessMode, 'random');
+    assert.strictEqual(args.cleaningMode, 'random');
+    assert.strictEqual(args.harborMode, 'random');
+    assert.strictEqual(args.moverMode, 'random');
+    assert.strictEqual(args.renovationMode, 'random');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -69,7 +108,24 @@ runTest('eval-expert-vs-strong resolveExpertTuning は候補 tuning を返す', 
 });
 
 runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
-    const options = { games: 50, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: 'default:skipPenaltyx1.25' };
+    const options = {
+        games: 50,
+        seed: 1,
+        lite: true,
+        fast: false,
+        expertPreset: 'default',
+        tuningCandidate: 'default:skipPenaltyx1.25',
+        buildMode: 'ev',
+        diceMode: 'ev',
+        rerollMode: 'simple',
+        itMode: 'always',
+        tvMode: 'simple',
+        businessMode: 'simple',
+        cleaningMode: 'simple',
+        harborMode: 'simple',
+        moverMode: 'simple',
+        renovationMode: 'simple',
+    };
     const entries = [
         {
             profile: 'duel',
@@ -87,10 +143,16 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     const text = toText(entries, summary, options);
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
+    assert.ok(text.includes('buildMode=ev'));
+    assert.ok(text.includes('diceMode=ev'));
+    assert.ok(text.includes('rerollMode=simple'));
     assert.ok(text.includes('tuningCandidate=default:skipPenaltyx1.25'));
     assert.ok(text.includes('duel: 35/50'));
     assert.ok(text.includes('seatWins=20,15'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
+    assert.ok(md.includes('- buildMode: ev'));
+    assert.ok(md.includes('- diceMode: ev'));
+    assert.ok(md.includes('- rerollMode: simple'));
     assert.ok(md.includes('- tuningCandidate: default:skipPenaltyx1.25'));
     assert.ok(md.includes('| duel | expert,strong | 1 | 70.0% | 20,15 | 42.3 | 1 |'));
 });
