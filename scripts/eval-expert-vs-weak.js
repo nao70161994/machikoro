@@ -14,7 +14,7 @@ function parseArgs(argv) {
     let fast = false;
     let profile = false;
     let profiles = DEFAULT_PROFILES.slice();
-    let buildMode = 'random';
+    let buildMode = 'ev';
     let diceMode = 'ev';
     let rerollMode = 'simple';
     let itMode = 'always';
@@ -40,7 +40,7 @@ function parseArgs(argv) {
         } else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         } else if (arg === '--build-mode') {
-            buildMode = argv[++i] || 'random';
+            buildMode = argv[++i] || 'ev';
         } else if (arg === '--dice-mode') {
             diceMode = argv[++i] || 'ev';
         } else if (arg === '--reroll-mode') {
@@ -111,7 +111,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertPreset: 'v2simple',
                         expertDiceMode: config.diceMode || 'ev',
                         expertRerollMode: config.rerollMode || 'simple',
-                        expertBuildMode: config.buildMode || 'random',
+                        expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
                         expertBusinessMode: config.businessMode || 'simple',

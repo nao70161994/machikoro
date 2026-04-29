@@ -19,7 +19,7 @@ runTest('eval-expert-vs-normal parseArgs は既定値を返す', () => {
     assert.strictEqual(args.maxSteps, 5000);
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
-    assert.strictEqual(args.buildMode, 'random');
+    assert.strictEqual(args.buildMode, 'ev');
     assert.strictEqual(args.diceMode, 'ev');
     assert.strictEqual(args.rerollMode, 'simple');
     assert.strictEqual(args.itMode, 'always');
@@ -101,7 +101,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
         lite: true,
         fast: false,
         profile: true,
-        buildMode: 'random',
+        buildMode: 'ev',
         diceMode: 'ev',
         rerollMode: 'simple',
         itMode: 'always',
@@ -159,7 +159,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     const text = toText(entries, summary, options);
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
-    assert.ok(text.includes('buildMode=random'));
+    assert.ok(text.includes('buildMode=ev'));
     assert.ok(text.includes('diceMode=ev'));
     assert.ok(text.includes('rerollMode=simple'));
     assert.ok(text.includes('itMode=always'));
@@ -176,7 +176,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(text.includes('crowd: 35/50'));
     assert.ok(text.includes('players=expert,normal,normal,normal'));
     assert.ok(md.includes('- totalProfileMs: 1234.0ms'));
-    assert.ok(md.includes('- buildMode: random'));
+    assert.ok(md.includes('- buildMode: ev'));
     assert.ok(md.includes('- diceMode: ev'));
     assert.ok(md.includes('- rerollMode: simple'));
     assert.ok(md.includes('- itMode: always'));
@@ -195,7 +195,7 @@ runTest('eval-expert-vs-normal は live expert に v2simple preset を渡す', (
     assert.ok(source.includes("expertPreset: 'v2simple'"));
     assert.ok(source.includes("expertDiceMode: config.diceMode || 'ev'"));
     assert.ok(source.includes("expertRerollMode: config.rerollMode || 'simple'"));
-    assert.ok(source.includes("expertBuildMode: config.buildMode || 'random'"));
+    assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
     assert.ok(source.includes("expertTvMode: config.tvMode || 'simple'"));
     assert.ok(source.includes("expertBusinessMode: config.businessMode || 'simple'"));
