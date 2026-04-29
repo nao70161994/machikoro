@@ -895,6 +895,10 @@ class CPU {
         return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
     }
 
+    _strongLiteUseHeuristicChoices() {
+        return this.difficulty === "strong" && this.simulationMode === "lite";
+    }
+
     chooseDiceCount(game) {
         return this._profileDecision("chooseDiceCount", () => {
         if (this._isExpertV2Simple()) {
@@ -937,6 +941,15 @@ class CPU {
             return twoScore >= oneScore;
         }
         if (this.difficulty === "strong") {
+            if (this._strongLiteUseHeuristicChoices()) {
+                const oneScore = this._expectedDiceScoreWithHarbor(game, false);
+                const twoScore = this._expectedDiceScoreWithHarbor(game, true);
+                if (game.players.length >= 4) {
+                    const threshold = this._strongCrowdOneDieOpponents(game) >= 2 ? 1.5 : 0.8;
+                    return twoScore > oneScore + threshold;
+                }
+                return twoScore >= oneScore;
+            }
             if (game.players.length >= 4) {
                 const oneScore = this._expectedDiceScore(game, false);
                 const twoScore = this._expectedDiceScore(game, true);
@@ -1017,6 +1030,18 @@ class CPU {
             return rerollScore > keepScore;
         }
         if (this.difficulty === "strong") {
+            if (this._strongLiteUseHeuristicChoices()) {
+                const currentScore = this._estimateRollScore(game, dice);
+                const usingTwoDice = game.lastDice2 > 0;
+                const rerollScore = this._expectedDiceScoreWithHarbor(game, usingTwoDice);
+                if (game.players.length >= 4) {
+                    if (!usingTwoDice && dice <= 6 && this._strongCrowdOneDieOpponents(game) >= 2) {
+                        return rerollScore > currentScore + 2.2;
+                    }
+                    return rerollScore > currentScore + 1.2;
+                }
+                return rerollScore > currentScore + 0.2;
+            }
             if (game.players.length >= 4) {
                 const currentScore = this._estimateRollScore(game, dice);
                 const usingTwoDice = game.lastDice2 > 0;
@@ -1083,6 +1108,15 @@ class CPU {
             return bonusScore >= keepScore;
         }
         if (this.difficulty === "strong") {
+            if (this._strongLiteUseHeuristicChoices()) {
+                const keepScore = this._estimateRollScore(game, game.lastDiceResult);
+                const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
+                if (game.players.length >= 4) {
+                    const threshold = this._strongCrowdOneDieOpponents(game) >= 2 && game.lastDiceResult <= 6 ? 0.8 : 0.3;
+                    return bonusScore > keepScore + threshold;
+                }
+                return bonusScore >= keepScore;
+            }
             if (game.players.length >= 4) {
                 const keepScore = this._estimateRollScore(game, game.lastDiceResult);
                 const bonusScore = this._estimateRollScore(game, game.lastDiceResult + 2);
@@ -1222,11 +1256,19 @@ class CPU {
                     racePressure * 0.75 * disruptionScale -
                     giftValue * 0.2;
             } else if (this.difficulty === "strong" && game.players.length >= 4) {
-                score = disruptionReady
-                    ? this._scoreStrongPendingChoice(game, clone =>
-                        clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
-                    )
-                    : this._receivedCardValue(theirCard, game, current) - this._ownedCardValue(myCard, game, current) * 0.9;
+                if (this._strongLiteUseHeuristicChoices()) {
+                    score = this._receivedCardValue(theirCard, game, current) -
+                        this._ownedCardValue(myCard, game, current) * 0.9 +
+                        target.builtLandmarkCount() * 0.6 * attackScale +
+                        (target.coins >= 10 ? 1.2 * attackScale : 0) -
+                        this._receivedCardValue(myCard, game, target) * 0.25;
+                } else {
+                    score = disruptionReady
+                        ? this._scoreStrongPendingChoice(game, clone =>
+                            clone.resolveBusiness(move.myCard, move.targetIndex, move.theirCard)
+                        )
+                        : this._receivedCardValue(theirCard, game, current) - this._ownedCardValue(myCard, game, current) * 0.9;
+                }
             } else {
                 const myLoss = this._ownedCardValue(myCard, game, current);
                 const gain = this._receivedCardValue(theirCard, game, current);
