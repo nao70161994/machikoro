@@ -77,8 +77,13 @@ npm run selfplay -- --games 20 expert strong strong normal
 
 - `weak` 相手: weighted `92.0%`
 - `normal` 相手: weighted `53.67%`
+- `strong` 相手: weighted `33.2%`
+  - `duel 64%`
+  - `trio 50%`
+  - `crowd 32%`
+  - `allStrong4 18%`
 
-`strong` 比較の速度改善も入っています。本物 `strong` 同士の `duel 1戦` は、直近の最適化で `12.364秒 -> 5.706秒` まで短縮しています。
+`strong` 比較の速度改善も入っています。本物 `strong` 同士の `duel 1戦` は、直近の最適化で `12.364秒 -> 4.792秒` まで短縮しています。ここから先の最適化案は複数試しましたが、悪化が多かったため、現時点ではここを打ち止めにしています。
 
 `CPU（最強）` と `CPU（強）` の基準比較:
 
