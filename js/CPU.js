@@ -136,6 +136,7 @@ class CPU {
         return this._signatureCache("_cachedStateEvaluation", game, signature => ({
             signature,
             playerTurnValues: Object.create(null),
+            playerTurnScorePairs: Object.create(null),
             stableIncomes: Object.create(null),
             progressIncomes: Object.create(null),
             winDistances: Object.create(null),
@@ -3029,17 +3030,44 @@ class CPU {
     _estimatePlayerTurnValue(game, playerIndex) {
         const cache = this._stateEvaluationCache(game);
         if (playerIndex in cache.playerTurnValues) return cache.playerTurnValues[playerIndex];
-        const original = game.currentPlayerIndex;
-        game.currentPlayerIndex = playerIndex;
-        const useTwo = game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION];
-        const value = Math.max(
-            this._expectedDiceScore(game, false),
-            useTwo ? this._expectedDiceScore(game, true) : -Infinity
-        );
-        game.currentPlayerIndex = original;
+        const scores = this._estimatePlayerTurnScorePair(game, playerIndex);
+        const value = Math.max(scores.one, scores.two);
         const normalized = Number.isFinite(value) ? value : 0;
         cache.playerTurnValues[playerIndex] = normalized;
         return normalized;
+    }
+
+    _estimatePlayerTurnScorePair(game, playerIndex) {
+        const cache = this._stateEvaluationCache(game);
+        if (playerIndex in cache.playerTurnScorePairs) return cache.playerTurnScorePairs[playerIndex];
+        const original = game.currentPlayerIndex;
+        game.currentPlayerIndex = playerIndex;
+        const rollCache = this._rollEvaluationCache(game);
+        const getRollScore = dice => {
+            if (!(dice in rollCache.rollScores)) {
+                rollCache.rollScores[dice] = this._estimateRollScore(game, dice);
+            }
+            return rollCache.rollScores[dice];
+        };
+        let oneTotal = 0;
+        for (let dice = 1; dice <= 6; dice++) oneTotal += getRollScore(dice);
+        const one = oneTotal / 6;
+        let two = -Infinity;
+        if (game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION]) {
+            const weights = { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 };
+            let totalWeight = 0;
+            let totalScore = 0;
+            for (const [diceText, weight] of Object.entries(weights)) {
+                const dice = parseInt(diceText, 10);
+                totalWeight += weight;
+                totalScore += getRollScore(dice) * weight;
+            }
+            two = totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+        }
+        game.currentPlayerIndex = original;
+        const scores = { one, two };
+        cache.playerTurnScorePairs[playerIndex] = scores;
+        return scores;
     }
 
     _countReachableLandmarks(player, enabledLandmarks) {
