@@ -155,6 +155,7 @@ function loadIntegrationRuntime(options = {}) {
             context.__tmpOnlineState = value;
             vm.runInContext(`
                 if (typeof __tmpOnlineState.socket !== 'undefined') socket = __tmpOnlineState.socket;
+                if (typeof __tmpOnlineState.isOnlineGame !== 'undefined') isOnlineGame = __tmpOnlineState.isOnlineGame;
                 if (typeof __tmpOnlineState.isReconnectingOnline !== 'undefined') isReconnectingOnline = __tmpOnlineState.isReconnectingOnline;
                 if (typeof __tmpOnlineState.isRoomHost !== 'undefined') isRoomHost = __tmpOnlineState.isRoomHost;
                 if (typeof __tmpOnlineState.myRoomId !== 'undefined') myRoomId = __tmpOnlineState.myRoomId;
@@ -166,7 +167,7 @@ function loadIntegrationRuntime(options = {}) {
             delete context.__tmpOnlineState;
         },
         getOnlineState() {
-            return vm.runInContext('({ socket, isReconnectingOnline, isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
+            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
         },
     };
     return context;

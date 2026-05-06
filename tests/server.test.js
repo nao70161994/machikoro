@@ -562,6 +562,7 @@ runTest('handleRecreateRoom は compacted snapshot を rejoinData にそのま�
                 stateSnapshot,
                 actionLog,
                 playerIndex: 0,
+                hostPlayerIndex: 0,
             },
         }]);
     } finally {

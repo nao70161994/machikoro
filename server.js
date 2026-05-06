@@ -294,6 +294,7 @@ io.on('connection', (socket) => {
             stateSnapshot: room.stateSnapshot || null,
             actionLog: room.actionLog || [],
             playerIndex,
+            hostPlayerIndex: room.hostPlayerIndex,
         });
         io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
         console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
@@ -435,6 +436,7 @@ function handleRecreateRoom(socket, { roomId, gameStartPayload, stateSnapshot, a
         stateSnapshot: stateSnapshot || null,
         actionLog: Array.isArray(actionLog) ? actionLog : [],
         playerIndex,
+        hostPlayerIndex: playerIndex,
     });
     console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
 }

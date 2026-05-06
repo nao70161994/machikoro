@@ -61,6 +61,61 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     assert.strictEqual(game.currentPlayerIndex, 1);
 });
 
+runTest('online integration: socket再接続時はrejoinRoomで最新状態を取り直す', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isOnlineGame: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-1',
+    });
+
+    rt.__test.socketHandlers.connect();
+
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.playerIndex, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.reconnectToken, 'token-1');
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
+});
+
+runTest('online integration: rejoinData は現在のホスト状態で保存セッションを更新する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-1',
+    });
+
+    rt.__test.socketHandlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: rt.CARDS.map(card => card.name),
+            enabledLandmarks: rt.Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 1,
+    });
+
+    const session = JSON.parse(rt.localStorage.getItem('onlineSession'));
+    assert.strictEqual(rt.__test.getOnlineState().isRoomHost, false);
+    assert.strictEqual(session.isRoomHost, false);
+});
+
 runTest('online integration: reconnectOnline は壊れたセッションを破棄して警告する', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineSession', '{broken');

@@ -225,7 +225,7 @@ function initSocket() {
         scheduleCPU();
     });
 
-    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, playerIndex }) => {
+    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, playerIndex, hostPlayerIndex }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         isOnlineGame = true;
         isReconnectingOnline = false;
@@ -234,6 +234,10 @@ function initSocket() {
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
+        if (Number.isInteger(hostPlayerIndex)) {
+            isRoomHost = myOriginalPlayerIndex === hostPlayerIndex;
+        }
+        saveOnlineSession();
         cpuScheduleToken++;
 
         document.getElementById("titleScreen").style.display = "none";
@@ -291,6 +295,15 @@ function initSocket() {
     socket.on('connect', () => {
         const el = document.getElementById("onlineStatus");
         if (el && el.textContent.startsWith('⏳')) el.textContent = '';
+        if (isOnlineGame && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
+            isReconnectingOnline = true;
+            socket.emit('rejoinRoom', {
+                roomId: myRoomId,
+                playerIndex: myOriginalPlayerIndex,
+                playerName: myPlayerName,
+                reconnectToken,
+            });
+        }
     });
 
     socket.on('connect_error', () => {
