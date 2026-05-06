@@ -31,6 +31,7 @@ runTest('eval-expert-vs-normal parseArgs は既定値を返す', () => {
     assert.strictEqual(args.renovationMode, 'simple');
     assert.strictEqual(args.incomeCapMode, 'none');
     assert.strictEqual(args.comboMode, 'core');
+    assert.strictEqual(args.comboWeight, 0.35);
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -55,6 +56,7 @@ runTest('eval-expert-vs-normal parseArgs は CLI 引数を解釈する', () => {
         '--renovation-mode', 'simple',
         '--income-cap-mode', 'soft30',
         '--combo-mode', 'unlock',
+        '--combo-weight', '0.5',
     ]);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
@@ -74,6 +76,7 @@ runTest('eval-expert-vs-normal parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.renovationMode, 'simple');
     assert.strictEqual(args.incomeCapMode, 'soft30');
     assert.strictEqual(args.comboMode, 'unlock');
+    assert.strictEqual(args.comboWeight, 0.5);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -119,6 +122,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
         renovationMode: 'simple',
         incomeCapMode: 'none',
         comboMode: 'core',
+        comboWeight: 0.35,
     };
     const entries = [
         {
@@ -179,6 +183,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(text.includes('renovationMode=simple'));
     assert.ok(text.includes('incomeCapMode=none'));
     assert.ok(text.includes('comboMode=core'));
+    assert.ok(text.includes('comboWeight=0.35'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -198,6 +203,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(md.includes('- renovationMode: simple'));
     assert.ok(md.includes('- incomeCapMode: none'));
     assert.ok(md.includes('- comboMode: core'));
+    assert.ok(md.includes('- comboWeight: 0.35'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,normal,normal,normal | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -217,6 +223,7 @@ runTest('eval-expert-vs-normal は live expert に v2simple preset を渡す', (
     assert.ok(source.includes("expertRenovationMode: config.renovationMode || 'simple'"));
     assert.ok(source.includes("expertIncomeCapMode: config.incomeCapMode || 'none'"));
     assert.ok(source.includes("expertComboMode: config.comboMode || 'core'"));
+    assert.ok(source.includes("expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("diceMode: options.diceMode"));
     assert.ok(source.includes("rerollMode: options.rerollMode"));

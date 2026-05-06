@@ -26,6 +26,7 @@ function parseArgs(argv) {
     let renovationMode = 'simple';
     let incomeCapMode = 'none';
     let comboMode = 'core';
+    let comboWeight = 0.35;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -65,10 +66,12 @@ function parseArgs(argv) {
             incomeCapMode = argv[++i] || 'none';
         } else if (arg === '--combo-mode') {
             comboMode = argv[++i] || 'none';
+        } else if (arg === '--combo-weight') {
+            comboWeight = parseFloat(argv[++i] || '0.35');
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode, incomeCapMode, comboMode };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode, incomeCapMode, comboMode, comboWeight };
 }
 
 function profilePlayers(name) {
@@ -127,6 +130,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertRenovationMode: config.renovationMode || 'simple',
                         expertIncomeCapMode: config.incomeCapMode || 'none',
                         expertComboMode: config.comboMode || 'core',
+                        expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35,
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
@@ -519,6 +523,7 @@ function evaluateProfile(name, options) {
         renovationMode: options.renovationMode,
         incomeCapMode: options.incomeCapMode,
         comboMode: options.comboMode,
+        comboWeight: options.comboWeight,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -555,7 +560,7 @@ function toText(entries, summary, options) {
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
             `buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
             `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} ` +
-            `moverMode=${options.moverMode} renovationMode=${options.renovationMode} incomeCapMode=${options.incomeCapMode} comboMode=${options.comboMode}`,
+            `moverMode=${options.moverMode} renovationMode=${options.renovationMode} incomeCapMode=${options.incomeCapMode} comboMode=${options.comboMode} comboWeight=${options.comboWeight}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -619,6 +624,7 @@ function toMarkdown(entries, summary, options) {
         `- renovationMode: ${options.renovationMode}`,
         `- incomeCapMode: ${options.incomeCapMode}`,
         `- comboMode: ${options.comboMode}`,
+        `- comboWeight: ${options.comboWeight}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),

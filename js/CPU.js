@@ -26,6 +26,7 @@ class CPU {
         this.expertRenovationMode = options.expertRenovationMode || "random";
         this.expertIncomeCapMode = options.expertIncomeCapMode || "none";
         this.expertComboMode = options.expertComboMode || "none";
+        this.expertComboWeight = Number.isFinite(options.expertComboWeight) ? options.expertComboWeight : 0.35;
         this.expertTraceStats = options.expertTraceStats || null;
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
@@ -3145,7 +3146,7 @@ class CPU {
             const marginalIncome = this._expertV2SimpleMarginalComboIncome(card, payoff);
             if (marginalIncome <= 0) continue;
             const activationRate = this._cardDiceFreq(payoff, game, current) / 36;
-            bonus += marginalIncome * activationRate * 0.35;
+            bonus += marginalIncome * activationRate * this.expertComboWeight;
         }
         return Math.min(bonus, 3);
     }
