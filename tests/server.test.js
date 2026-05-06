@@ -9,6 +9,7 @@ const {
     normalizePlayerSettings,
     generateRoomId,
     resolveRejoinPlayer,
+    handleSocketDisconnect,
     handleRecreateRoom,
     getRemainingConnectedPlayers,
     serializeMirrorState,
@@ -584,6 +585,37 @@ runTest('getRemainingConnectedPlayers は切断済み・幽霊プレイヤーを
 
     const remaining = getRemainingConnectedPlayers(room, sockets, 'socket-host');
     assert.deepStrictEqual(remaining.map(p => p.index), [2]);
+});
+
+runTest('handleSocketDisconnect は古いsocketの遅延disconnectで再接続済みplayerを消さない', () => {
+    __rooms.RACE01 = {
+        started: true,
+        hostPlayerIndex: 0,
+        players: [
+            { id: 'socket-new', index: 0, name: 'Alice' },
+            { id: 'socket-bob', index: 1, name: 'Bob' },
+        ],
+    };
+    const emitted = [];
+    const io = {
+        sockets: { sockets: new Map([['socket-new', {}], ['socket-bob', {}]]) },
+        to(roomId) {
+            return {
+                emit(name, payload) {
+                    emitted.push({ roomId, name, payload });
+                },
+            };
+        },
+    };
+    try {
+        handleSocketDisconnect(io, { id: 'socket-old', roomId: 'RACE01', playerIndex: 0 });
+
+        assert.strictEqual(__rooms.RACE01.players[0].id, 'socket-new');
+        assert.strictEqual(__rooms.RACE01.hostPlayerIndex, 0);
+        assert.deepStrictEqual(emitted, []);
+    } finally {
+        delete __rooms.RACE01;
+    }
 });
 
 runTest('compactRoomActionLog は長いログを stateSnapshot に圧縮してミラー状態を維持する', () => {

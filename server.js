@@ -306,42 +306,47 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        try {
-            const roomId = socket.roomId;
-            if (roomId && rooms[roomId]) {
-                const room = rooms[roomId];
-                if (!room.started) {
-                    room.players = room.players.filter(p => p.id !== socket.id);
-                    if (room.players.length === 0) {
-                        delete rooms[roomId];
-                    } else {
-                        const playerList = buildPlayerList(room);
-                        io.to(roomId).emit('playerList', playerList);
-                    }
-                } else {
-                    const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
-                    if (disconnectedPlayer) disconnectedPlayer.id = null;
-                    io.to(roomId).emit('playerDisconnected', {
-                        playerIndex: socket.playerIndex,
-                        playerName: disconnectedPlayer?.name || `プレイヤー${socket.playerIndex + 1}`,
-                    });
-                    // ホストが切断した場合、残存プレイヤーの中から新ホストを選出
-                    if (socket.playerIndex === room.hostPlayerIndex) {
-                        const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
-                        if (remaining.length > 0) {
-                            room.hostPlayerIndex = remaining[0].index;
-                            io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
-                            console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
-                        }
-                    }
-                }
-                console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
-            }
-        } catch (e) {
-            console.error('disconnect handler error:', e);
-        }
+        handleSocketDisconnect(io, socket);
     });
 });
+
+function handleSocketDisconnect(io, socket) {
+    try {
+        const roomId = socket.roomId;
+        if (roomId && rooms[roomId]) {
+            const room = rooms[roomId];
+            if (!room.started) {
+                room.players = room.players.filter(p => p.id !== socket.id);
+                if (room.players.length === 0) {
+                    delete rooms[roomId];
+                } else {
+                    const playerList = buildPlayerList(room);
+                    io.to(roomId).emit('playerList', playerList);
+                }
+            } else {
+                const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
+                if (!disconnectedPlayer || disconnectedPlayer.id !== socket.id) return;
+                disconnectedPlayer.id = null;
+                io.to(roomId).emit('playerDisconnected', {
+                    playerIndex: socket.playerIndex,
+                    playerName: disconnectedPlayer.name || `プレイヤー${socket.playerIndex + 1}`,
+                });
+                // ホストが切断した場合、残存プレイヤーの中から新ホストを選出
+                if (socket.playerIndex === room.hostPlayerIndex) {
+                    const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
+                    if (remaining.length > 0) {
+                        room.hostPlayerIndex = remaining[0].index;
+                        io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
+                        console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+                    }
+                }
+            }
+            console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
+        }
+    } catch (e) {
+        console.error('disconnect handler error:', e);
+    }
+}
 
 function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socketId) {
     const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
@@ -1004,6 +1009,7 @@ module.exports = {
     generateRoomId,
     buildPlayerList,
     resolveRejoinPlayer,
+    handleSocketDisconnect,
     handleRecreateRoom,
     getRemainingConnectedPlayers,
     serializeMirrorState,

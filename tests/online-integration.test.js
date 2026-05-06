@@ -35,9 +35,12 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
         enabledCards: rt.CARDS.map(card => card.name),
         enabledLandmarks: rt.Player.landmarkNames(),
         versions: ['x'],
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
     });
     rt.__test.socketHandlers.gameAction({ action: 'buildCard', data: { cardName: '麦畑' }, playerIndex: 0 });
     const snapshot = rt.buildOnlineSnapshot();
+    const gameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.deepStrictEqual(gameStart.reconnectTokenHashes, ['hash-a', 'hash-b']);
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload: {
@@ -114,6 +117,46 @@ runTest('online integration: rejoinData は現在のホスト状態で保存セ�
     const session = JSON.parse(rt.localStorage.getItem('onlineSession'));
     assert.strictEqual(rt.__test.getOnlineState().isRoomHost, false);
     assert.strictEqual(session.isRoomHost, false);
+});
+
+runTest('online integration: rejoinData は復元用snapshotとactionLogを保存し直す', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'stale', data: {} }]));
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-1',
+    });
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+    };
+    const stateSnapshot = {
+        players: [],
+        currentPlayerIndex: 0,
+        shopStock: {},
+    };
+    const actionLog = [{ action: 'nextTurn', data: {} }];
+
+    rt.__test.socketHandlers.rejoinData({
+        gameStartPayload,
+        stateSnapshot,
+        actionLog,
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineGameStart')).playerNames, ['Alice', 'Bob']);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineStateSnapshot')), stateSnapshot);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineActionLog')), actionLog);
 });
 
 runTest('online integration: reconnectOnline は壊れたセッションを破棄して警告する', () => {

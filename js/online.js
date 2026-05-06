@@ -194,14 +194,14 @@ function initSocket() {
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
-    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions }) => {
+    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes }) => {
         isOnlineGame = true;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         // ゲーム開始データとアクションログをlocalStorageに保存（サーバー再起動後の復元用）
         try {
-            localStorage.setItem('onlineGameStart', JSON.stringify({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions }));
+            localStorage.setItem('onlineGameStart', JSON.stringify({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes }));
             localStorage.removeItem('onlineStateSnapshot');
             localStorage.setItem('onlineActionLog', JSON.stringify([]));
         } catch(e) {}
@@ -237,6 +237,15 @@ function initSocket() {
         if (Number.isInteger(hostPlayerIndex)) {
             isRoomHost = myOriginalPlayerIndex === hostPlayerIndex;
         }
+        try {
+            localStorage.setItem('onlineGameStart', JSON.stringify(gameStartPayload));
+            if (stateSnapshot) {
+                localStorage.setItem('onlineStateSnapshot', JSON.stringify(stateSnapshot));
+            } else {
+                localStorage.removeItem('onlineStateSnapshot');
+            }
+            localStorage.setItem('onlineActionLog', JSON.stringify(Array.isArray(actionLog) ? actionLog : []));
+        } catch(e) {}
         saveOnlineSession();
         cpuScheduleToken++;
 
