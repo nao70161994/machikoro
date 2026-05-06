@@ -73,19 +73,20 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `mover=simple`
 - `renovation=simple`
 - `combo=core`
+- `buildTempo=0.05`
 - `incomeCap=none`
 
 この設定での直近評価:
 
 - `weak` 相手: weighted `93.17%`
-- `normal` 相手: weighted `62.75%`
-- `strong` 相手: weighted `39.2%`
+- `normal` 相手: weighted `66.2%`
+- `strong` 相手: weighted `40.4%`
   - `duel 69%`
   - `trio 62%`
-  - `crowd 33%`
-  - `allStrong4 25%`
+  - `crowd 35%`
+  - `allStrong4 27%`
 
-`combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
+`combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。`buildTempo=0.05` は購入後の残金を薄く評価して、次ランドマークへのテンポを残しやすくします。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
 
 `strong` 比較の速度改善も入っています。本物 `strong` 同士の `duel 1戦` は、直近の最適化で `12.364秒 -> 4.792秒` まで短縮しています。ここから先の最適化案は複数試しましたが、悪化が多かったため、現時点ではここを打ち止めにしています。
 

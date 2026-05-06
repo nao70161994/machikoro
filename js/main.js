@@ -74,6 +74,7 @@ function createCpuPlayer(difficulty, options = {}) {
         if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "simple";
         if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
         if (!resolvedOptions.expertComboMode) resolvedOptions.expertComboMode = "core";
+        if (!Number.isFinite(resolvedOptions.expertBuildTempoWeight)) resolvedOptions.expertBuildTempoWeight = 0.05;
     }
     if (difficulty === 'rl') {
         try {

@@ -145,6 +145,7 @@ function resumeGame() {
                 expertMoverMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertRenovationMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertComboMode: s.difficulty === "expert" ? "core" : undefined,
+                expertBuildTempoWeight: s.difficulty === "expert" ? 0.05 : undefined,
             })
             : null
         );

@@ -381,6 +381,17 @@ runTest('buildEV combo core: 汎用農園市場と飲食店コンボは対象外
     assert.strictEqual(cafe.comboUnlockBonus, 0);
 });
 
+runTest('buildEV tempo bonus: 購入後の残金を薄く加点できる', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple', expertBuildTempoWeight: 0.1 });
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    player.coins = 3;
+    const wheat = createCardByName('麦畑');
+    const breakdown = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: wheat });
+    assert.ok(breakdown.tempoBonus > 0);
+    assert.strictEqual(breakdown.total, breakdown.baseEv + breakdown.comboUnlockBonus + breakdown.tempoBonus);
+});
+
 // ===== chooseDiceCount =====
 
 runTest('chooseDiceCount: strong は有利局面で妥当な真偽値を返す', () => {

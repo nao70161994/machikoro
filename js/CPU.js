@@ -27,6 +27,7 @@ class CPU {
         this.expertIncomeCapMode = options.expertIncomeCapMode || "none";
         this.expertComboMode = options.expertComboMode || "none";
         this.expertComboWeight = Number.isFinite(options.expertComboWeight) ? options.expertComboWeight : 0.35;
+        this.expertBuildTempoWeight = Number.isFinite(options.expertBuildTempoWeight) ? options.expertBuildTempoWeight : 0;
         this.expertTraceStats = options.expertTraceStats || null;
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
@@ -181,6 +182,7 @@ class CPU {
         this._traceV2Simple(`${prefix}:considered`);
         this._traceV2Simple(`${prefix}:baseEvTotal`, breakdown.baseEv || 0);
         this._traceV2Simple(`${prefix}:comboUnlockBonusTotal`, breakdown.comboUnlockBonus || 0);
+        this._traceV2Simple(`${prefix}:tempoBonusTotal`, breakdown.tempoBonus || 0);
         this._traceV2Simple(`${prefix}:scoreTotal`, breakdown.total || 0);
         if (chosen) this._traceV2Simple(`${prefix}:chosen`);
     }
@@ -3122,11 +3124,25 @@ class CPU {
             : -Infinity;
         const baseEv = Math.max(oneScore, twoScore);
         const comboUnlockBonus = this._expertV2SimpleComboUnlockBonus(game, option, shopStock);
+        const tempoBonus = this._expertV2SimpleBuildTempoBonus(clone);
         return {
             baseEv,
             comboUnlockBonus,
-            total: baseEv + comboUnlockBonus,
+            tempoBonus,
+            total: baseEv + comboUnlockBonus + tempoBonus,
         };
+    }
+
+    _expertV2SimpleBuildTempoBonus(game) {
+        if (!this._isExpertV2Simple() || this.expertBuildTempoWeight <= 0) return 0;
+        const current = game.currentPlayer();
+        const names = game.enabledLandmarks ? [...game.enabledLandmarks] : Player.landmarkNames();
+        const remainingCosts = names
+            .filter(name => !current.landmarks[name])
+            .map(name => Player.landmarkCost(name))
+            .filter(cost => Number.isFinite(cost) && cost > 0);
+        if (remainingCosts.length === 0) return 0;
+        return Math.min(current.coins, Math.min(...remainingCosts)) * this.expertBuildTempoWeight;
     }
 
     _expertV2SimpleComboUnlockBonus(game, option, shopStock = null) {

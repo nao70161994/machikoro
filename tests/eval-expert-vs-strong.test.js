@@ -33,6 +33,7 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
     assert.strictEqual(args.incomeCapMode, 'none');
     assert.strictEqual(args.comboMode, 'core');
     assert.strictEqual(args.comboWeight, 0.35);
+    assert.strictEqual(args.buildTempoWeight, 0.05);
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -58,6 +59,7 @@ runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
         '--income-cap-mode', 'hard40',
         '--combo-mode', 'unlock',
         '--combo-weight', '0.5',
+        '--build-tempo-weight', '0.1',
         '--profiles', 'duel,crowd',
     ]);
     assert.strictEqual(args.games, 30);
@@ -80,6 +82,7 @@ runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.incomeCapMode, 'hard40');
     assert.strictEqual(args.comboMode, 'unlock');
     assert.strictEqual(args.comboWeight, 0.5);
+    assert.strictEqual(args.buildTempoWeight, 0.1);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -137,6 +140,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
         incomeCapMode: 'none',
         comboMode: 'core',
         comboWeight: 0.35,
+        buildTempoWeight: 0.05,
     };
     const entries = [
         {
@@ -161,6 +165,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     assert.ok(text.includes('incomeCapMode=none'));
     assert.ok(text.includes('comboMode=core'));
     assert.ok(text.includes('comboWeight=0.35'));
+    assert.ok(text.includes('buildTempoWeight=0.05'));
     assert.ok(text.includes('tuningCandidate=default:skipPenaltyx1.25'));
     assert.ok(text.includes('duel: 35/50'));
     assert.ok(text.includes('seatWins=20,15'));
@@ -171,6 +176,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     assert.ok(md.includes('- incomeCapMode: none'));
     assert.ok(md.includes('- comboMode: core'));
     assert.ok(md.includes('- comboWeight: 0.35'));
+    assert.ok(md.includes('- buildTempoWeight: 0.05'));
     assert.ok(md.includes('- tuningCandidate: default:skipPenaltyx1.25'));
     assert.ok(md.includes('| duel | expert,strong | 1 | 70.0% | 20,15 | 42.3 | 1 |'));
 });
