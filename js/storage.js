@@ -136,7 +136,7 @@ function resumeGame() {
                 expertPreset: s.difficulty === "expert" ? "v2simple" : undefined,
                 expertDiceMode: s.difficulty === "expert" ? "ev" : undefined,
                 expertRerollMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertBuildMode: s.difficulty === "expert" ? "random" : undefined,
+                expertBuildMode: s.difficulty === "expert" ? "ev" : undefined,
                 expertInvestMode: s.difficulty === "expert" ? "always" : undefined,
                 expertTvMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertBusinessMode: s.difficulty === "expert" ? "simple" : undefined,
@@ -144,6 +144,7 @@ function resumeGame() {
                 expertHarborMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertMoverMode: s.difficulty === "expert" ? "simple" : undefined,
                 expertRenovationMode: s.difficulty === "expert" ? "simple" : undefined,
+                expertComboMode: s.difficulty === "expert" ? "core" : undefined,
             })
             : null
         );

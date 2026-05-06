@@ -338,6 +338,49 @@ runTest('evalCard: CHEESEはcalcCardIncomeで牧場枚数×incomeを返す', () 
     assert.strictEqual(cpu.evalCard(cheese, game, player), 0);
 });
 
+runTest('estimateRollScore: 自分の正の収入部分だけ30でcapし、妨害価値は残す', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple', expertIncomeCapMode: 'hard30' });
+    const game = new GameManager(4);
+    const player = game.currentPlayer();
+    const stadium = createCardByName('スタジアム');
+    player.cards = new Array(10).fill(null).map(() => createCardByName('スタジアム'));
+    player.dormantCards = [];
+    const score = cpu._estimateRollScore(game, stadium.diceNums[0]);
+    assert.strictEqual(score, 50);
+});
+
+runTest('buildEV comboUnlockBonus: 将来の未所持コンボ先だけ薄く加点する', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple', expertComboMode: 'unlock' });
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    player.landmarks[LANDMARK_NAMES.STATION] = true;
+    const ranch = createCardByName('牧場');
+    const shopStock = Object.fromEntries(CARDS.map(card => [card.name, 6]));
+
+    const before = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: ranch }, shopStock);
+    assert.ok(before.comboUnlockBonus > 0);
+
+    player.cards.push(createCardByName('チーズ工場'));
+    const after = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: ranch }, shopStock);
+    assert.strictEqual(after.comboUnlockBonus, 0);
+});
+
+runTest('buildEV combo core: 汎用農園市場と飲食店コンボは対象外にする', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple', expertComboMode: 'core' });
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    player.landmarks[LANDMARK_NAMES.STATION] = true;
+    const shopStock = Object.fromEntries(CARDS.map(card => [card.name, 6]));
+
+    const ranch = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: createCardByName('牧場') }, shopStock);
+    const wheat = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: createCardByName('麦畑') }, shopStock);
+    const cafe = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: createCardByName('カフェ') }, shopStock);
+
+    assert.ok(ranch.comboUnlockBonus > 0);
+    assert.strictEqual(wheat.comboUnlockBonus, 0);
+    assert.strictEqual(cafe.comboUnlockBonus, 0);
+});
+
 // ===== chooseDiceCount =====
 
 runTest('chooseDiceCount: strong は有利局面で妥当な真偽値を返す', () => {

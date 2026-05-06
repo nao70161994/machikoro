@@ -65,7 +65,7 @@ function createCpuPlayer(difficulty, options = {}) {
         resolvedOptions.expertPreset = "v2simple";
         if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "ev";
         if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
-        if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "random";
+        if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "ev";
         if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
         if (!resolvedOptions.expertTvMode) resolvedOptions.expertTvMode = "simple";
         if (!resolvedOptions.expertBusinessMode) resolvedOptions.expertBusinessMode = "simple";
@@ -73,6 +73,7 @@ function createCpuPlayer(difficulty, options = {}) {
         if (!resolvedOptions.expertHarborMode) resolvedOptions.expertHarborMode = "simple";
         if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "simple";
         if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
+        if (!resolvedOptions.expertComboMode) resolvedOptions.expertComboMode = "core";
     }
     if (difficulty === 'rl') {
         try {

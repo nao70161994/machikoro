@@ -24,6 +24,8 @@ class CPU {
         this.expertHarborMode = options.expertHarborMode || "simple";
         this.expertMoverMode = options.expertMoverMode || "random";
         this.expertRenovationMode = options.expertRenovationMode || "random";
+        this.expertIncomeCapMode = options.expertIncomeCapMode || "none";
+        this.expertComboMode = options.expertComboMode || "none";
         this.expertTraceStats = options.expertTraceStats || null;
         this.profileStats = options.profileStats || null;
         this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
@@ -168,6 +170,18 @@ class CPU {
         if (option.type === 'card' && option.card) {
             this._traceV2Simple(`${prefix}:card:${option.card.name}`);
         }
+    }
+
+    _traceV2SimpleBuildBreakdown(option, breakdown, chosen = false) {
+        if (!this.expertTraceStats || !this._isExpertV2Simple() || !option || !breakdown) return;
+        const name = option.type === 'card' && option.card ? option.card.name : option.name;
+        if (!name) return;
+        const prefix = `buildBreakdown:${option.type}:${name}`;
+        this._traceV2Simple(`${prefix}:considered`);
+        this._traceV2Simple(`${prefix}:baseEvTotal`, breakdown.baseEv || 0);
+        this._traceV2Simple(`${prefix}:comboUnlockBonusTotal`, breakdown.comboUnlockBonus || 0);
+        this._traceV2Simple(`${prefix}:scoreTotal`, breakdown.total || 0);
+        if (chosen) this._traceV2Simple(`${prefix}:chosen`);
     }
 
     _randomChoice(items) {
@@ -714,18 +728,168 @@ class CPU {
     }
 
     _estimateRollScore(game, dice) {
-        let score = 0;
+        let selfPositiveIncome = 0;
+        let selfOtherValue = 0;
+        let opponentValue = 0;
         const current = game.currentPlayer();
         for (const player of game.players) {
             for (const card of player.cards) {
                 if (player.isDormant(card)) continue;
                 if (!card.diceNums.includes(dice)) continue;
                 const value = this._cardActivationValue(card, game, player, current, dice);
-                if (player === current) score += value;
-                else score -= value * (card.color === "blue" ? 0.7 : 1);
+                if (player === current) {
+                    const incomeValue = Math.max(0, this._cardSelfIncomeValue(card, game, player, current, dice));
+                    selfPositiveIncome += incomeValue;
+                    selfOtherValue += value - incomeValue;
+                } else {
+                    opponentValue += value * (card.color === "blue" ? 0.7 : 1);
+                }
             }
         }
-        return score;
+        return this._expertV2CappedPositiveIncome(game, current, selfPositiveIncome) + selfOtherValue - opponentValue;
+    }
+
+    _expertV2CappedPositiveIncome(game, player, value) {
+        if (!this._isExpertV2Simple()) return value;
+        const softCap = (cap, rate) => value <= cap ? value : cap + (value - cap) * rate;
+        const remainingLandmarkCost = () => {
+            if (!game || !player || !player.landmarks) return 0;
+            const names = game.enabledLandmarks ? [...game.enabledLandmarks] : Player.landmarkNames();
+            return names
+                .filter(name => !player.landmarks[name])
+                .reduce((sum, name) => sum + Player.landmarkCost(name), 0);
+        };
+        const remainingLandmarkNeed = () => Math.max(0, remainingLandmarkCost() - (player && Number.isFinite(player.coins) ? player.coins : 0));
+        const maxRemainingLandmarkCost = () => {
+            if (!game || !player || !player.landmarks) return 0;
+            const names = game.enabledLandmarks ? [...game.enabledLandmarks] : Player.landmarkNames();
+            return names
+                .filter(name => !player.landmarks[name])
+                .reduce((max, name) => Math.max(max, Player.landmarkCost(name)), 0);
+        };
+        const maxRemainingLandmarkNeed = () => Math.max(0, maxRemainingLandmarkCost() - (player && Number.isFinite(player.coins) ? player.coins : 0));
+        switch (this.expertIncomeCapMode) {
+            case "hard30":
+                return Math.min(value, 30);
+            case "hard40":
+                return Math.min(value, 40);
+            case "hard50":
+                return Math.min(value, 50);
+            case "soft30":
+                return value <= 30 ? value : 30 + (value - 30) * 0.5;
+            case "soft40":
+                return value <= 40 ? value : 40 + (value - 40) * 0.5;
+            case "soft50":
+                return value <= 50 ? value : 50 + (value - 50) * 0.5;
+            case "landmarkTotalHard":
+                return Math.min(value, remainingLandmarkCost());
+            case "landmarkTotalSoft25":
+                return softCap(remainingLandmarkCost(), 0.25);
+            case "landmarkTotalSoft50":
+                return softCap(remainingLandmarkCost(), 0.5);
+            case "landmarkNeedHard":
+                return Math.min(value, remainingLandmarkNeed());
+            case "landmarkNeedSoft25":
+                return softCap(remainingLandmarkNeed(), 0.25);
+            case "landmarkNeedSoft50":
+                return softCap(remainingLandmarkNeed(), 0.5);
+            case "landmarkMaxHard":
+                return Math.min(value, maxRemainingLandmarkCost());
+            case "landmarkMaxSoft25":
+                return softCap(maxRemainingLandmarkCost(), 0.25);
+            case "landmarkMaxSoft50":
+                return softCap(maxRemainingLandmarkCost(), 0.5);
+            case "landmarkMaxNeedHard":
+                return Math.min(value, maxRemainingLandmarkNeed());
+            case "landmarkMaxNeedSoft25":
+                return softCap(maxRemainingLandmarkNeed(), 0.25);
+            case "landmarkMaxNeedSoft50":
+                return softCap(maxRemainingLandmarkNeed(), 0.5);
+            case "none":
+            default:
+                return value;
+        }
+    }
+
+    _cardSelfIncomeValue(card, game, owner, roller, dice) {
+        const capped = (value) => value;
+        const ownerIndex = game.players.indexOf(owner);
+        const rollerIndex = game.players.indexOf(roller);
+        const isCurrentTurn = ownerIndex === rollerIndex;
+        const opponents = game.players.filter((_, i) => i !== ownerIndex);
+
+        if (!isCurrentTurn) return 0;
+
+        if (card.color === "blue") {
+            if (card.effect === CARD_EFFECTS.HARBOR) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
+            if (card.effect === CARD_EFFECTS.TUNA) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0);
+            return capped(card.income);
+        }
+
+        if (card.color === "red") return 0;
+
+        switch (card.effect) {
+            case CARD_EFFECTS.CHEESE:
+            case CARD_EFFECTS.FURNITURE:
+            case CARD_EFFECTS.FLOWER:
+            case CARD_EFFECTS.MARKET:
+            case CARD_EFFECTS.FOODWAREHOUSE:
+            case CARD_EFFECTS.DRINKFACTORY:
+            case CARD_EFFECTS.WINERY:
+            case CARD_EFFECTS.FEWLANDMARK:
+                return capped(GameManager.calcCardIncome(card, owner, game));
+            case CARD_EFFECTS.STADIUM:
+                return capped(opponents.length * card.income);
+            case CARD_EFFECTS.TV: {
+                let bestSteal = 0;
+                for (const target of opponents) {
+                    bestSteal = Math.max(bestSteal, Math.min(5, target.coins));
+                }
+                return capped(bestSteal);
+            }
+            case CARD_EFFECTS.PUBLISHER: {
+                let total = 0;
+                for (const target of opponents) {
+                    if (!target || target.coins <= 0) continue;
+                    const activeHits = target.cards.filter(candidate =>
+                        !target.isDormant(candidate) &&
+                        (candidate.category === CARD_CATEGORIES.RESTAURANT || candidate.category === CARD_CATEGORIES.SHOP)
+                    );
+                    total += Math.min(activeHits.length, target.coins);
+                }
+                return capped(total);
+            }
+            case CARD_EFFECTS.TAXOFFICE: {
+                let total = 0;
+                for (const target of opponents) {
+                    if (!target || target.coins < 10) continue;
+                    total += Math.floor(target.coins / 2);
+                }
+                return capped(total);
+            }
+            case CARD_EFFECTS.ITSTARTUP: {
+                const ventureCoins = Math.max(0, owner.itVentureCoins);
+                if (ventureCoins <= 0) return 0;
+                let total = 0;
+                for (const target of opponents) {
+                    if (!target || target.coins <= 0) continue;
+                    total += Math.min(ventureCoins, target.coins);
+                }
+                return capped(total);
+            }
+            case CARD_EFFECTS.BUSINESS:
+            case CARD_EFFECTS.CLEANING:
+            case CARD_EFFECTS.MOVER:
+            case CARD_EFFECTS.RENOVATION:
+            case CARD_EFFECTS.PARK:
+                return 0;
+            default: {
+                let amount = card.income;
+                if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
+                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
+                return capped(amount);
+            }
+        }
     }
 
     _expectedDiceScore(game, useTwo) {
@@ -2878,7 +3042,7 @@ class CPU {
             let bestOption = null;
             let bestScore = -Infinity;
             for (const option of options) {
-                const score = this._scoreExpertV2SimpleBuildOption(game, option);
+                const score = this._scoreExpertV2SimpleBuildOption(game, option, shopStock);
                 if (score > bestScore) {
                     bestScore = score;
                     bestOption = option;
@@ -2901,8 +3065,11 @@ class CPU {
 
         let bestOption = null;
         let bestScore = -Infinity;
+        const scoredOptions = [];
         for (const option of options) {
-            const score = this._scoreExpertV2SimpleBuildOption(game, option);
+            const breakdown = this._scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock);
+            const score = breakdown.total;
+            scoredOptions.push({ option, breakdown });
             if (score > bestScore) {
                 bestScore = score;
                 bestOption = option;
@@ -2910,6 +3077,13 @@ class CPU {
         }
 
         if (!bestOption) return false;
+        for (const entry of scoredOptions) {
+            this._traceV2SimpleBuildBreakdown(
+                entry.option,
+                entry.breakdown,
+                this._sameExpertV2SimpleBuildOption(entry.option, bestOption)
+            );
+        }
         this._traceV2SimpleBuildOption('buildEvChoice', bestOption);
         if (bestOption.type === 'landmark') {
             this._traceV2Simple('buildLandmarkChoices');
@@ -2927,7 +3101,11 @@ class CPU {
         return a.card && b.card && a.card.name === b.card.name;
     }
 
-    _scoreExpertV2SimpleBuildOption(game, option) {
+    _scoreExpertV2SimpleBuildOption(game, option, shopStock = null) {
+        return this._scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock).total;
+    }
+
+    _scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock = null) {
         const clone = this._cloneGame(game);
         const current = clone.currentPlayer();
         if (option.type === 'landmark') {
@@ -2941,7 +3119,72 @@ class CPU {
         const twoScore = current.landmarks[LANDMARK_NAMES.STATION]
             ? this._expectedDiceScoreWithHarbor(clone, true)
             : -Infinity;
-        return Math.max(oneScore, twoScore);
+        const baseEv = Math.max(oneScore, twoScore);
+        const comboUnlockBonus = this._expertV2SimpleComboUnlockBonus(game, option, shopStock);
+        return {
+            baseEv,
+            comboUnlockBonus,
+            total: baseEv + comboUnlockBonus,
+        };
+    }
+
+    _expertV2SimpleComboUnlockBonus(game, option, shopStock = null) {
+        if (!this._isExpertV2Simple() || (this.expertComboMode !== "unlock" && this.expertComboMode !== "core")) return 0;
+        if (!option || option.type !== 'card' || !option.card) return 0;
+        const current = game.currentPlayer();
+        const card = option.card;
+        const futurePayoffs = this._expertV2SimpleFuturePayoffCards(card, this.expertComboMode);
+        if (futurePayoffs.length === 0) return 0;
+
+        let bonus = 0;
+        for (const payoffName of futurePayoffs) {
+            if (current.countCard(payoffName) > 0) continue;
+            if (shopStock && shopStock[payoffName] <= 0) continue;
+            const payoff = this._cardByName(payoffName);
+            if (!payoff) continue;
+            const marginalIncome = this._expertV2SimpleMarginalComboIncome(card, payoff);
+            if (marginalIncome <= 0) continue;
+            const activationRate = this._cardDiceFreq(payoff, game, current) / 36;
+            bonus += marginalIncome * activationRate * 0.35;
+        }
+        return Math.min(bonus, 3);
+    }
+
+    _expertV2SimpleFuturePayoffCards(card, mode = "unlock") {
+        if (!card) return [];
+        const payoffs = [];
+        if (card.category === CARD_CATEGORIES.LIVESTOCK) payoffs.push("チーズ工場");
+        if (card.name === "森林" || card.name === "鉱山") payoffs.push("家具工場");
+        if (card.name === "花畑") payoffs.push("フラワーショップ");
+        if (card.name === "ブドウ園") payoffs.push("ワイナリー");
+        if (mode === "core") return payoffs;
+        if (card.category === CARD_CATEGORIES.FARM) payoffs.push("青果市場");
+        if (card.category === CARD_CATEGORIES.RESTAURANT) {
+            payoffs.push("食品倉庫");
+            payoffs.push("ドリンク工場");
+        }
+        return payoffs;
+    }
+
+    _expertV2SimpleMarginalComboIncome(enabler, payoff) {
+        if (!enabler || !payoff) return 0;
+        switch (payoff.effect) {
+            case CARD_EFFECTS.CHEESE:
+                return enabler.category === CARD_CATEGORIES.LIVESTOCK ? payoff.income : 0;
+            case CARD_EFFECTS.FURNITURE:
+                return (enabler.name === "森林" || enabler.name === "鉱山") ? payoff.income : 0;
+            case CARD_EFFECTS.MARKET:
+                return enabler.category === CARD_CATEGORIES.FARM ? payoff.income : 0;
+            case CARD_EFFECTS.FLOWER:
+                return enabler.name === "花畑" ? payoff.income : 0;
+            case CARD_EFFECTS.WINERY:
+                return enabler.name === "ブドウ園" ? payoff.income : 0;
+            case CARD_EFFECTS.FOODWAREHOUSE:
+            case CARD_EFFECTS.DRINKFACTORY:
+                return enabler.category === CARD_CATEGORIES.RESTAURANT ? payoff.income : 0;
+            default:
+                return 0;
+        }
     }
 
     _buyLateGameLandmark(current, game) {

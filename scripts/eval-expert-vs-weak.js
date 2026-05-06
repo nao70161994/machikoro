@@ -24,6 +24,8 @@ function parseArgs(argv) {
     let harborMode = 'simple';
     let moverMode = 'simple';
     let renovationMode = 'simple';
+    let incomeCapMode = 'none';
+    let comboMode = 'core';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -59,10 +61,14 @@ function parseArgs(argv) {
             moverMode = argv[++i] || 'random';
         } else if (arg === '--renovation-mode') {
             renovationMode = argv[++i] || 'random';
+        } else if (arg === '--income-cap-mode') {
+            incomeCapMode = argv[++i] || 'none';
+        } else if (arg === '--combo-mode') {
+            comboMode = argv[++i] || 'none';
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode };
+    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode, incomeCapMode, comboMode };
 }
 
 function profilePlayers(name) {
@@ -119,6 +125,8 @@ function getFastSeriesEvaluator(runtime) {
                         expertHarborMode: config.harborMode || 'simple',
                         expertMoverMode: config.moverMode || 'simple',
                         expertRenovationMode: config.renovationMode || 'simple',
+                        expertIncomeCapMode: config.incomeCapMode || 'none',
+                        expertComboMode: config.comboMode || 'core',
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
@@ -509,6 +517,8 @@ function evaluateProfile(name, options) {
         harborMode: options.harborMode,
         moverMode: options.moverMode,
         renovationMode: options.renovationMode,
+        incomeCapMode: options.incomeCapMode,
+        comboMode: options.comboMode,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -545,7 +555,7 @@ function toText(entries, summary, options) {
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
             `buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
             `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} ` +
-            `moverMode=${options.moverMode} renovationMode=${options.renovationMode}`,
+            `moverMode=${options.moverMode} renovationMode=${options.renovationMode} incomeCapMode=${options.incomeCapMode} comboMode=${options.comboMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -607,6 +617,8 @@ function toMarkdown(entries, summary, options) {
         `- harborMode: ${options.harborMode}`,
         `- moverMode: ${options.moverMode}`,
         `- renovationMode: ${options.renovationMode}`,
+        `- incomeCapMode: ${options.incomeCapMode}`,
+        `- comboMode: ${options.comboMode}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),

@@ -30,6 +30,8 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
     assert.strictEqual(args.harborMode, 'simple');
     assert.strictEqual(args.moverMode, 'simple');
     assert.strictEqual(args.renovationMode, 'simple');
+    assert.strictEqual(args.incomeCapMode, 'none');
+    assert.strictEqual(args.comboMode, 'core');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -52,6 +54,8 @@ runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
         '--harbor-mode', 'random',
         '--mover-mode', 'random',
         '--renovation-mode', 'random',
+        '--income-cap-mode', 'hard40',
+        '--combo-mode', 'unlock',
         '--profiles', 'duel,crowd',
     ]);
     assert.strictEqual(args.games, 30);
@@ -71,6 +75,8 @@ runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.harborMode, 'random');
     assert.strictEqual(args.moverMode, 'random');
     assert.strictEqual(args.renovationMode, 'random');
+    assert.strictEqual(args.incomeCapMode, 'hard40');
+    assert.strictEqual(args.comboMode, 'unlock');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -100,11 +106,11 @@ runTest('eval-expert-vs-strong summarize は重み付き勝率と最低勝率を
 
 runTest('eval-expert-vs-strong resolveExpertTuning は候補 tuning を返す', () => {
     const tuning = resolveExpertTuning({
-        expertPreset: 'default',
-        tuningCandidate: 'default:skipPenaltyx1.25',
+        expertPreset: 'v2simple',
+        tuningCandidate: 'v2simple:coinWeightx1.1',
     });
     assert.ok(tuning);
-    assert.strictEqual(typeof tuning.skipPenalty, 'number');
+    assert.strictEqual(typeof tuning.coinWeight, 'number');
 });
 
 runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
@@ -113,7 +119,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
         seed: 1,
         lite: true,
         fast: false,
-        expertPreset: 'default',
+        expertPreset: 'v2simple',
         tuningCandidate: 'default:skipPenaltyx1.25',
         buildMode: 'ev',
         diceMode: 'ev',
@@ -125,6 +131,8 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
         harborMode: 'simple',
         moverMode: 'simple',
         renovationMode: 'simple',
+        incomeCapMode: 'none',
+        comboMode: 'core',
     };
     const entries = [
         {
@@ -146,6 +154,8 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     assert.ok(text.includes('buildMode=ev'));
     assert.ok(text.includes('diceMode=ev'));
     assert.ok(text.includes('rerollMode=simple'));
+    assert.ok(text.includes('incomeCapMode=none'));
+    assert.ok(text.includes('comboMode=core'));
     assert.ok(text.includes('tuningCandidate=default:skipPenaltyx1.25'));
     assert.ok(text.includes('duel: 35/50'));
     assert.ok(text.includes('seatWins=20,15'));
@@ -153,6 +163,8 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     assert.ok(md.includes('- buildMode: ev'));
     assert.ok(md.includes('- diceMode: ev'));
     assert.ok(md.includes('- rerollMode: simple'));
+    assert.ok(md.includes('- incomeCapMode: none'));
+    assert.ok(md.includes('- comboMode: core'));
     assert.ok(md.includes('- tuningCandidate: default:skipPenaltyx1.25'));
     assert.ok(md.includes('| duel | expert,strong | 1 | 70.0% | 20,15 | 42.3 | 1 |'));
 });

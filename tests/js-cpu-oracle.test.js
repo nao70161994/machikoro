@@ -61,7 +61,7 @@ function basePlayers() {
         ],
         shopStock: {},
     });
-    assert.strictEqual(result.label, 'ROLL2');
+    assert.strictEqual(result.label, 'ROLL1');
 }
 
 console.log('js-cpu-oracle tests passed');

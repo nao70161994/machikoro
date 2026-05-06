@@ -30,6 +30,8 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.harborMode, 'simple');
     assert.strictEqual(args.moverMode, 'simple');
     assert.strictEqual(args.renovationMode, 'simple');
+    assert.strictEqual(args.incomeCapMode, 'none');
+    assert.strictEqual(args.comboMode, 'core');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -52,6 +54,8 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
         '--harbor-mode', 'random',
         '--mover-mode', 'simple',
         '--renovation-mode', 'simple',
+        '--income-cap-mode', 'soft30',
+        '--combo-mode', 'unlock',
     ]);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
@@ -69,6 +73,8 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.harborMode, 'random');
     assert.strictEqual(args.moverMode, 'simple');
     assert.strictEqual(args.renovationMode, 'simple');
+    assert.strictEqual(args.incomeCapMode, 'soft30');
+    assert.strictEqual(args.comboMode, 'unlock');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -112,6 +118,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         harborMode: 'simple',
         moverMode: 'simple',
         renovationMode: 'simple',
+        incomeCapMode: 'none',
+        comboMode: 'core',
     };
     const entries = [
         {
@@ -170,6 +178,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('harborMode=simple'));
     assert.ok(text.includes('moverMode=simple'));
     assert.ok(text.includes('renovationMode=simple'));
+    assert.ok(text.includes('incomeCapMode=none'));
+    assert.ok(text.includes('comboMode=core'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -187,6 +197,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- harborMode: simple'));
     assert.ok(md.includes('- moverMode: simple'));
     assert.ok(md.includes('- renovationMode: simple'));
+    assert.ok(md.includes('- incomeCapMode: none'));
+    assert.ok(md.includes('- comboMode: core'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -204,6 +216,8 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
     assert.ok(source.includes("expertMoverMode: config.moverMode || 'simple'"));
     assert.ok(source.includes("expertRenovationMode: config.renovationMode || 'simple'"));
+    assert.ok(source.includes("expertIncomeCapMode: config.incomeCapMode || 'none'"));
+    assert.ok(source.includes("expertComboMode: config.comboMode || 'core'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("diceMode: options.diceMode"));
     assert.ok(source.includes("rerollMode: options.rerollMode"));
@@ -214,4 +228,5 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("harborMode: options.harborMode"));
     assert.ok(source.includes("moverMode: options.moverMode"));
     assert.ok(source.includes("renovationMode: options.renovationMode"));
+    assert.ok(source.includes("incomeCapMode: options.incomeCapMode"));
 });

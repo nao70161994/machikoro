@@ -60,7 +60,7 @@ CPU の自己対戦:
 npm run selfplay -- --games 20 expert strong strong normal
 ```
 
-現行の live `CPU（最強）` は `expertPreset: "v2simple"` を使います。2026-04 時点の既定設定は次です。
+現行の live `CPU（最強）` は `expertPreset: "v2simple"` を使います。2026-05 時点の既定設定は次です。
 
 - `build=ev`
 - `dice=ev`
@@ -72,16 +72,20 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `harbor=simple`
 - `mover=simple`
 - `renovation=simple`
+- `combo=core`
+- `incomeCap=none`
 
 この設定での直近評価:
 
-- `weak` 相手: weighted `92.0%`
-- `normal` 相手: weighted `53.67%`
-- `strong` 相手: weighted `33.2%`
-  - `duel 64%`
-  - `trio 50%`
-  - `crowd 32%`
-  - `allStrong4 18%`
+- `weak` 相手: weighted `93.17%`
+- `normal` 相手: weighted `62.75%`
+- `strong` 相手: weighted `39.2%`
+  - `duel 69%`
+  - `trio 62%`
+  - `crowd 33%`
+  - `allStrong4 25%`
+
+`combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
 
 `strong` 比較の速度改善も入っています。本物 `strong` 同士の `duel 1戦` は、直近の最適化で `12.364秒 -> 4.792秒` まで短縮しています。ここから先の最適化案は複数試しましたが、悪化が多かったため、現時点ではここを打ち止めにしています。
 
