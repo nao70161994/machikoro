@@ -7,6 +7,7 @@ const {
     loadGameRuntime,
     sanitizeName,
     normalizePlayerSettings,
+    generateRoomId,
     resolveRejoinPlayer,
     handleRecreateRoom,
     getRemainingConnectedPlayers,
@@ -68,6 +69,14 @@ function makeGame() {
         createCardByName: runtime.createCardByName,
     };
 }
+
+runTest('generateRoomId は紛らわしい文字を含まない6文字IDを生成する', () => {
+    for (let i = 0; i < 200; i++) {
+        const roomId = generateRoomId();
+        assert.match(roomId, /^[2-9A-HJ-NP-Z]{6}$/);
+        assert(!/[01IO]/.test(roomId));
+    }
+});
 
 runTest('server validateBusinessPayload はカードindex指定を許可する', () => {
     const { GameManager, createCardByName } = makeGame();

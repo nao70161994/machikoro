@@ -407,11 +407,19 @@ body {
     min-height: 20px;
 }
 
+#roomIdInput {
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    font-variant-numeric: slashed-zero;
+    letter-spacing: 2px;
+}
+
 .room-id-display {
     font-size: 32px;
     font-weight: bold;
     color: #f0c040;
     text-align: center;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    font-variant-numeric: slashed-zero;
     letter-spacing: 8px;
     padding: 12px;
     background: #2a2a4a;

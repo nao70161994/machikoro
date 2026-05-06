@@ -99,6 +99,19 @@ function generateReconnectToken() {
     return crypto.randomBytes(16).toString('hex');
 }
 
+const ROOM_ID_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+function generateRoomId(existingRooms = rooms) {
+    let roomId;
+    do {
+        roomId = '';
+        for (let i = 0; i < 6; i++) {
+            roomId += ROOM_ID_ALPHABET[Math.floor(Math.random() * ROOM_ID_ALPHABET.length)];
+        }
+    } while (existingRooms[roomId]);
+    return roomId;
+}
+
 function hashReconnectToken(token) {
     return token ? crypto.createHash('sha256').update(String(token)).digest('hex') : '';
 }
@@ -126,8 +139,7 @@ io.on('connection', (socket) => {
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
         playerSettings = normalizePlayerSettings(playerSettings, playerCount);
-        let roomId;
-        do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); } while (rooms[roomId]);
+        const roomId = generateRoomId();
         const reconnectToken = generateReconnectToken();
         const allLandmarks = gameRuntime.Player.landmarkNames();
         const validLandmarks = new Set(allLandmarks);
@@ -987,6 +999,7 @@ module.exports = {
     sanitizeName,
     cpuDifficultyLabel,
     normalizePlayerSettings,
+    generateRoomId,
     buildPlayerList,
     resolveRejoinPlayer,
     handleRecreateRoom,
