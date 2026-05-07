@@ -453,8 +453,8 @@ BC ヘッド改善前の診断では、まずこの値で「そもそもBCを使
 sh scripts/rl/eval-bc-adopted.sh
 ```
 
-引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定では `self-only-4p-h256-lr1e5-5000-seed102` を4人3lineupで50戦評価し、`models/rl_model/eval-bc-adopted.json/csv` に出力する。
-修正後の再評価では、採用済み `seed102` は4人50戦×3lineupでBC発動1回、skip 0.0%。交換内容は `パン屋->サンマ漁船`、対象は `strong` だった。現行モデルはBCをほぼ使わないため、BC factored head の弱さは採用ブロッカーではない。BCを強化するなら、まずBCを使う学習条件・報酬・カード購入誘導を作り、その後に target head / pair補正を検討する。
+引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定では `self-only-4p-h256-lr1e5-5000-seed103` を4人3lineupで50戦評価し、`models/rl_model/eval-bc-adopted.json/csv` に出力する。
+旧採用 `seed102` の修正後再評価では、4人50戦×3lineupでBC発動1回、skip 0.0%。交換内容は `パン屋->サンマ漁船`、対象は `strong` だった。現行モデル群はBCをほぼ使わないため、BC factored head の弱さは採用ブロッカーではない。BCを強化するなら、まずBCを使う学習条件・報酬・カード購入誘導を作り、その後に target head / pair補正を検討する。
 
 BCの選択品質だけを直接見る場合は、固定局面診断を使う。これは通常対戦を回さず、`pendingBusiness=1` の状態を作ってRLに「誰へ、何を渡し、何を取るか」だけを選ばせる。
 
@@ -462,7 +462,7 @@ BCの選択品質だけを直接見る場合は、固定局面診断を使う。
 sh scripts/rl/eval-bc-scenario.sh
 ```
 
-既定では採用済み `seed102` を4人用の固定局面で診断する。2026-04-20時点の結果は、全局面で最脅威の `p3` を対象にし、`highValueThreat` / `offLeaderPrize` / `protectEngine` では `パン屋->サンマ漁船`、`avoidGivingEngine` では `パン屋->マグロ漁船`、`dormantGive` では休業中カードを避けて `パン屋->鉱山` を選んだ。固定局面では明らかな破綻は見えていない。
+既定では採用済み `seed103` を4人用の固定局面で診断する。旧採用 `seed102` の2026-04-20時点の結果は、全局面で最脅威の `p3` を対象にし、`highValueThreat` / `offLeaderPrize` / `protectEngine` では `パン屋->サンマ漁船`、`avoidGivingEngine` では `パン屋->マグロ漁船`、`dormantGive` では休業中カードを避けて `パン屋->鉱山` を選んだ。固定局面では明らかな破綻は見えていない。
 
 ### 複数モデルの一括評価
 
@@ -482,7 +482,7 @@ npm run eval-rl-models -- \
 
 # 4人 lineup 評価
 npm run eval-rl-models -- \
-  --models self-only-4p-h256-lr1e5-5000-seed102 \
+  --models self-only-4p-h256-lr1e5-5000-seed103 \
   --games 50 \
   --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal"
 ```
@@ -516,9 +516,9 @@ sh scripts/rl/eval-run-topk.sh self-only-both-h256-lr2e5-5000-seed71-rewardcap 1
 sh scripts/rl/eval-adopted-stability.sh
 ```
 
-引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定は `200` 戦、`self-only-4p-h256-lr1e5-5000-seed102`、`models/rl_model/eval-adopted-stability-{3p,4p}.json/csv`。
+引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定は `200` 戦、`self-only-4p-h256-lr1e5-5000-seed103`、`models/rl_model/eval-adopted-stability-{3p,4p}.json/csv`。
 
-2026-04-20の `seed102` 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
+旧採用 `seed102` の2026-04-20 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
 
 2人用候補の横並び評価は次を使う。
 
@@ -580,7 +580,7 @@ npm run summarize-rl-metrics -- \
 - `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。どちらも `seed71-top3` より弱いが構築傾向が違うため、戦略バリエーション用に active portfolio へ低重みで残す。
 - `terminal-shaped-h128-lr1e4` は100戦評価で `weak 99% / normal 53% / strong 39%`。normal が不安定なので active portfolio から外し、archive 扱いにした。
 - `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、strong 性能が低く現時点の候補価値も薄いため archive 扱いにした。
-- 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、3〜4人用には `self-only-4p-h256-lr1e5-5000-seed102` を採用している。
+- 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、3〜4人用には `self-only-4p-h256-lr1e5-5000-seed103` を採用している。
 - `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
 - `terminal-shaped-h128-lr1e4` が strong に勝つ試合は、パン屋を厚く積み、マグロ漁船/コンビニ/寿司屋を絡めて全ランドマーク到達まで走る傾向がある。20戦中の strong 勝利7試合では平均60.0ターン、最終ランドマーク平均6.0個。
@@ -625,7 +625,7 @@ npm run search-expert-top-tier -- --games 8 --top 5 --format markdown
 モデル本体 `.npz` / `.browser.json` や `runs/` はサイズ・生成物扱いのため git 管理しない。
 例外として、実ゲームで使うポートフォリオ用の軽量配布セットだけは `models/rl_model/portfolio/*.browser.json` として git 管理する。
 `CPU（最強）` は安定したルールベースの基準CPU、`AI（深層学習・ランダム）` はこの portfolio 配下から人数別モデルをランダム選択する別系統の学習CPUとして扱う。
-`js/RLModelPortfolio.js` は人数別に候補を絞り込む。現時点では2人戦は既存の2人向け候補、3〜4人戦は採用済みの `self-only-4p-h256-lr1e5-5000-seed102` を使う。採用モデルと配布ファイルの整合性は `tests/rl-model-portfolio.test.js` で検査する。
+`js/RLModelPortfolio.js` は人数別に候補を絞り込む。現時点では2人戦は既存の2人向け候補、3〜4人戦は採用済みの `self-only-4p-h256-lr1e5-5000-seed103` を使う。採用モデルと配布ファイルの整合性は `tests/rl-model-portfolio.test.js` で検査する。
 
 UI 上の説明文もこの挙動に合わせている。ローカル/オンラインのプレイヤー設定では、2人戦は「2人用の複数モデルからランダム」、3〜4人戦は「3〜4人用の深層学習モデルからランダム」と表示し、あわせて `CPU（最強）` が安定したルールベースの基準CPUであることを示す。5人以上では `AI（深層学習）` を無効化し、`CPU（最強）` を案内する。
 
@@ -679,7 +679,7 @@ sh scripts/rl/bg-experiment-set.sh \
 
 - 2人戦主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
 - 2人戦の補助多様性候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
-- 3〜4人戦採用: `self-only-4p-h256-lr1e5-5000-seed102`
+- 3〜4人戦採用: `self-only-4p-h256-lr1e5-5000-seed103`
 
 台帳に記録する主な情報:
 
@@ -767,7 +767,8 @@ npm run report-rl-registry -- --format json --output models/rl_model/registry-re
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed102` | adopted | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 3〜4人用。ブドウ園・牧場・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 4人100戦: weak+normal+strong 57% / normal+normal+strong 47% / weak+weak+normal 81%、3人50戦: normal+strong 72% / weak+strong 72% | 3〜4人用。麦畑・ブドウ園・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |
 | `terminal-shaped-h128-long` | archive | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り。strong 性能が低く除外 |

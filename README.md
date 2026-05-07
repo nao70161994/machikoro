@@ -253,7 +253,7 @@ npm run train-rl:baseline
 baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
 `run-js-oracle-terminal-shaped.sh` は JS CPU oracle、終局報酬調整、`self` / `pool` を含む模倣なしRL実験用です。
 2026-04時点では `hidden=128, lr=0.0001` の `terminal-shaped-h128-lr1e4` が有力候補で、20戦JS評価は `weak 90% / normal 60% / strong 35%` です。
-初期の `hidden=256` 系は pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-04時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed102` を採用しています。
+初期の `hidden=256` 系は pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。
 
 実ゲームでは、`CPU（最強）` と `AI（深層学習・ランダム）` を別系統として扱います。`CPU（最強）` は安定したルールベースの基準CPU、`AI（深層学習・ランダム）` は portfolio から人数別モデルを選ぶ学習CPUです。
 
@@ -261,11 +261,11 @@ baseline ラッパーは、Termux でもまず動作確認できるように `--
 - 3〜4人戦: 採用済み 3〜4人用モデルからランダム
 - 5人以上: 未対応のため、安定したルールベースの `CPU（最強）` を使ってください
 
-2026-04時点の採用済みモデル:
+2026-05時点の採用済みモデル:
 
 - 2人用主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
 - 2人用補助候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
-- 3〜4人用採用: `self-only-4p-h256-lr1e5-5000-seed102`
+- 3〜4人用採用: `self-only-4p-h256-lr1e5-5000-seed103`
 
 baseline 学習で生成される主な成果物:
 
@@ -283,9 +283,9 @@ baseline 学習で生成される主な成果物:
 
 ```bash
 sh scripts/rl/eval-run.sh <run-label>
-sh scripts/rl/eval-run-3p.sh self-only-4p-h256-lr1e5-5000-seed102 100
-sh scripts/rl/eval-run-4p.sh self-only-4p-h256-lr1e5-5000-seed102 100
-sh scripts/rl/eval-run-multiplayer.sh self-only-4p-h256-lr1e5-5000-seed102 100
+sh scripts/rl/eval-run-3p.sh self-only-4p-h256-lr1e5-5000-seed103 100
+sh scripts/rl/eval-run-4p.sh self-only-4p-h256-lr1e5-5000-seed103 100
+sh scripts/rl/eval-run-multiplayer.sh self-only-4p-h256-lr1e5-5000-seed103 100
 ```
 
 台帳運用の基本:

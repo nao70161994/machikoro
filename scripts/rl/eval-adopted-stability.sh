@@ -3,7 +3,7 @@
 set -eu
 
 GAMES="${1:-200}"
-MODEL_ID="${2:-self-only-4p-h256-lr1e5-5000-seed102}"
+MODEL_ID="${2:-self-only-4p-h256-lr1e5-5000-seed103}"
 OUT_PREFIX="${3:-models/rl_model/eval-adopted-stability}"
 
 LINEUPS_4P="rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal"
