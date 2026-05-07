@@ -767,7 +767,7 @@ npm run report-rl-registry -- --format json --output models/rl_model/registry-re
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 4人100戦: weak+normal+strong 57% / normal+normal+strong 47% / weak+weak+normal 81%、3人50戦: normal+strong 72% / weak+strong 72% | 3〜4人用。麦畑・ブドウ園・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | runtime fallback後4人100戦: weak+normal+strong 57% / normal+normal+strong 51% / weak+weak+normal 78%、3人50戦: normal+strong 72% / weak+strong 72% | 3〜4人用。麦畑・ブドウ園・ピザ屋寄り |
 | `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |

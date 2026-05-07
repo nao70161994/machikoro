@@ -1374,9 +1374,41 @@
             },
             "style": {
                 "label": "4p-wheat-vineyard-pizza",
-                "summary": "4人自己対戦候補から採用。seed102との100戦比較で総合61.7%対54.0%、4人は rl+weak+normal+strong 57%、rl+normal+normal+strong 47%、rl+weak+weak+normal 81%。3人50戦lineupは normal+strong / weak+strong ともに72%。2人評価のstrongは低いので3〜4人用として扱う。"
+                "summary": "4人自己対戦候補から採用。seed102との100戦比較で総合61.7%対54.0%。mover/cleaning runtime fallback 後の4人100戦は rl+weak+normal+strong 57%、rl+normal+normal+strong 51%、rl+weak+weak+normal 78%。3人50戦lineupは normal+strong / weak+strong ともに72%。2人評価のstrongは低いので3〜4人用として扱う。"
             },
             "evals": [
+                {
+                    "date": "2026-05-07",
+                    "type": "js-lineup",
+                    "gamesPerLineup": 100,
+                    "runtimeFallback": "mover-cleaning",
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 57,
+                            "losses": 43,
+                            "draws": 0,
+                            "winRate": 0.57,
+                            "avgTurns": 82.8,
+                            "passRate": 0.008
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 51,
+                            "losses": 49,
+                            "draws": 0,
+                            "winRate": 0.51,
+                            "avgTurns": 85.6,
+                            "passRate": 0.034
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 78,
+                            "losses": 22,
+                            "draws": 0,
+                            "winRate": 0.78,
+                            "avgTurns": 87.0,
+                            "passRate": 0.019
+                        }
+                    }
+                },
                 {
                     "date": "2026-05-07",
                     "type": "js-lineup",
