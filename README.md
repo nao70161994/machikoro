@@ -109,6 +109,7 @@ npm run diagnose-expert-losses -- --games 8 --profiles duel,trio,crowd
 ```
 
 profile ごとに、`winner` の difficulty / seat、`expertMissing`、`winnerBuilt`、`expertCards / winnerCards`、`finalActions` を集計します。
+JSON形式では負けた expert の最後の建設判断に `finalActionDiagnostics` が付きます。`v2simple-card-breakdown` は候補カードの `score` / `breakdown` / `deltaScore` / `nearTie` / `landmarkDelayPreview` / `opponentWinThreats` を確認するための診断専用出力です。通常プレイや selfplay の標準 trace には出しません。
 
 `CPU（最強）` の tuning 候補をこの基準で粗く探索する場合:
 
@@ -356,6 +357,7 @@ RL スクリプト / モデル:
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
+- `scripts/eval-rl-special-scenarios.js`: RL モデルがテレビ局 / ビジネスセンター / 清掃業 / 引越し屋などの固定局面で期待 target を選べるか確認する診断
 - `scripts/report-rl-registry.js`: registry の棚卸しレポート出力。評価カバレッジに加えて target head 診断も一覧します。
 - `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人評価カバレッジ監査。target head 診断も含みます。
 - `scripts/plan-rl-next-actions.js`: 台帳と監査から次にやる評価・見直し作業を優先順位付きで抽出
@@ -370,7 +372,7 @@ RL スクリプト / モデル:
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）
 - `models/rl_model/portfolio/`: 実ゲームで使う配布用 browser JSON
-- `models/rl_model/`: 学習済みモデルと metrics 出力先
+- `models/rl_model/`: 学習済みモデル、評価結果、診断 review の出力先。`*.json` / `*.csv` / `*.md` / `*.review.txt` は原則生成物として git 管理外です
 
 テスト:
 
