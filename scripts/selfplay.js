@@ -311,7 +311,76 @@ function buildLandmarkDelayPreview(context, cardCost) {
     };
 }
 
-function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current, missingLandmarks, affordableLandmarks) {
+function collectOpponentWinThreats(runtime, game) {
+    const enabled = game.enabledLandmarks || new Set(runtime.Player.landmarkNames());
+    const options = runtime.__selfplayOptions || {};
+    const difficulties = Array.isArray(options.difficulties) ? options.difficulties : [];
+    const cpuPlayers = Array.isArray(options.cpuPlayers) ? options.cpuPlayers : [];
+    return game.players
+        .map((player, index) => {
+            if (index === game.currentPlayerIndex) return null;
+            const missingLandmarks = runtime.Player.landmarkNames()
+                .filter(name => enabled.has(name) && !player.landmarks[name]);
+            const remaining = missingLandmarks
+                .map(name => ({ name, cost: runtime.Player.landmarkCost(name) }))
+                .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name, 'ja'));
+            const nearest = remaining[0] || null;
+            const winningLandmark = missingLandmarks.length === 1 ? remaining[0] : null;
+            const canWinNow = !!winningLandmark && player.coins >= winningLandmark.cost;
+            return {
+                playerIndex: index,
+                difficulty: difficulties[index] || (cpuPlayers[index] && cpuPlayers[index].difficulty) || '',
+                coins: player.coins,
+                missingLandmarks,
+                affordableWinningLandmarks: canWinNow ? [{ name: winningLandmark.name, cost: winningLandmark.cost }] : [],
+                canWinNow,
+                nearestWinLandmark: nearest ? nearest.name : null,
+                nearestWinLandmarkCost: nearest ? nearest.cost : null,
+                shortfallToWin: nearest ? Math.max(0, nearest.cost - player.coins) : 0,
+            };
+        })
+        .filter(Boolean);
+}
+
+function countActivePublisherTargets(player) {
+    return player.cards.filter(card =>
+        (card.category === '飲食店' || card.category === '商店') &&
+        !(typeof player.isDormant === 'function' && player.isDormant(card))
+    ).length;
+}
+
+function estimateDisruptionSteal(cardName, threat, game) {
+    const player = game.players[threat.playerIndex];
+    if (!player) return 0;
+    if (cardName === 'テレビ局') return Math.min(5, player.coins);
+    if (cardName === 'スタジアム') return Math.min(2, player.coins);
+    if (cardName === '税務署') return player.coins >= 10 ? Math.floor(player.coins / 2) : 0;
+    if (cardName === '出版社') return Math.min(countActivePublisherTargets(player), player.coins);
+    return 0;
+}
+
+function buildDisruptionPreview(option, opponentWinThreats, game) {
+    const disruptionCards = new Set(['テレビ局', '税務署', 'スタジアム', '出版社', 'ビジネスセンター', '清掃業', '改装屋']);
+    const coinDisruptionCards = new Set(['テレビ局', '税務署', 'スタジアム', '出版社']);
+    if (!option || option.type !== 'card' || !option.card || !disruptionCards.has(option.card.name)) return null;
+    const affectedThreats = [];
+    for (const threat of opponentWinThreats) {
+        if (!threat.canWinNow || !coinDisruptionCards.has(option.card.name)) continue;
+        const steal = estimateDisruptionSteal(option.card.name, threat, game);
+        if (steal > 0 && threat.coins - steal < threat.nearestWinLandmarkCost) {
+            affectedThreats.push(threat.playerIndex);
+        }
+    }
+    return {
+        isDisruptionCard: true,
+        targetableThreatCount: affectedThreats.length,
+        canDelayImmediateWin: affectedThreats.length > 0,
+        affectedThreats,
+        method: coinDisruptionCards.has(option.card.name) ? 'coin-steal-estimate' : 'not-estimated',
+    };
+}
+
+function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current, missingLandmarks, affordableLandmarks, opponentWinThreats) {
     const landmarkDelayContext = buildLandmarkDelayContext(runtime, current, missingLandmarks);
     if (affordableLandmarks.length > 0) {
         return {
@@ -320,6 +389,7 @@ function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current,
             coins: current.coins,
             missingLandmarks,
             affordableLandmarks,
+            opponentWinThreats,
             landmarkDelayContext,
             buildOptions: affordableLandmarks.map(entry => ({
                 type: 'landmark',
@@ -343,7 +413,7 @@ function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current,
             cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock),
             preEv
         );
-        return {
+        const diagnostics = {
             type: 'card',
             name: option.card.name,
             label: `BUY_CARD:${option.card.name}`,
@@ -353,6 +423,9 @@ function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current,
             breakdown,
             landmarkDelayPreview: buildLandmarkDelayPreview(landmarkDelayContext, option.card.cost),
         };
+        const disruptionPreview = buildDisruptionPreview(option, opponentWinThreats, game);
+        if (disruptionPreview) diagnostics.disruptionPreview = disruptionPreview;
+        return diagnostics;
     }).sort(compareBuildDiagnosticsOption);
     return {
         diagnosticSource: 'v2simple-card-breakdown',
@@ -363,6 +436,7 @@ function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current,
         coins: current.coins,
         missingLandmarks,
         affordableLandmarks,
+        opponentWinThreats,
         buildOptions,
     };
 }
@@ -375,8 +449,9 @@ function collectBuildDiagnostics(runtime, game, shopStock, cpu) {
     const affordableLandmarks = missingLandmarks
         .map(name => ({ name, cost: runtime.Player.landmarkCost(name) }))
         .filter(entry => current.coins >= entry.cost);
+    const opponentWinThreats = collectOpponentWinThreats(runtime, game);
     if (typeof cpu._isExpertV2Simple === 'function' && cpu._isExpertV2Simple()) {
-        return collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current, missingLandmarks, affordableLandmarks);
+        return collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current, missingLandmarks, affordableLandmarks, opponentWinThreats);
     }
     if (typeof cpu._listExpertBuildOptions !== 'function' || typeof cpu._scoreExpertBuildOption !== 'function') return null;
     const options = cpu._listExpertBuildOptions(game, shopStock);
@@ -398,6 +473,7 @@ function collectBuildDiagnostics(runtime, game, shopStock, cpu) {
         coins: current.coins,
         missingLandmarks,
         affordableLandmarks,
+        opponentWinThreats,
         buildOptions,
     };
 }

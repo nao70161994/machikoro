@@ -156,6 +156,69 @@ runTest('collectBuildDiagnostics はv2simpleでカード候補をbreakdown付き
     }
 });
 
+runTest('collectBuildDiagnostics は相手の即勝利脅威を診断する', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set([runtime.LANDMARK_NAMES.AIRPORT]);
+    game.currentPlayer().coins = 7;
+    game.players[1].coins = 30;
+    for (const name of runtime.Player.landmarkNames()) {
+        game.players[1].landmarks[name] = name !== runtime.LANDMARK_NAMES.AIRPORT;
+    }
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    assert.strictEqual(diagnostics.diagnosticSource, 'v2simple-card-breakdown');
+    assert.strictEqual(diagnostics.opponentWinThreats.length, 1);
+    const threat = diagnostics.opponentWinThreats[0];
+    assert.strictEqual(threat.playerIndex, 1);
+    assert.strictEqual(threat.canWinNow, true);
+    assert.strictEqual(threat.nearestWinLandmark, runtime.LANDMARK_NAMES.AIRPORT);
+    assert.strictEqual(threat.nearestWinLandmarkCost, 30);
+    assert.strictEqual(threat.shortfallToWin, 0);
+    assert.deepStrictEqual(threat.affordableWinningLandmarks, [{ name: runtime.LANDMARK_NAMES.AIRPORT, cost: 30 }]);
+});
+
+runTest('collectBuildDiagnostics はコイン不足の相手を即勝利脅威にしない', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set([runtime.LANDMARK_NAMES.AIRPORT]);
+    game.currentPlayer().coins = 7;
+    game.players[1].coins = 29;
+    for (const name of runtime.Player.landmarkNames()) {
+        game.players[1].landmarks[name] = name !== runtime.LANDMARK_NAMES.AIRPORT;
+    }
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    const threat = diagnostics.opponentWinThreats[0];
+    assert.strictEqual(threat.canWinNow, false);
+    assert.strictEqual(threat.shortfallToWin, 1);
+    assert.deepStrictEqual(threat.affordableWinningLandmarks, []);
+});
+
+runTest('collectBuildDiagnostics はコイン妨害カードの即勝利遅延を診断する', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set([runtime.LANDMARK_NAMES.AIRPORT]);
+    game.currentPlayer().coins = 7;
+    game.players[1].coins = 30;
+    for (const name of runtime.Player.landmarkNames()) {
+        game.players[1].landmarks[name] = name !== runtime.LANDMARK_NAMES.AIRPORT;
+    }
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    const tv = diagnostics.buildOptions.find(option => option.label === 'BUY_CARD:テレビ局');
+    assert.ok(tv);
+    assert.strictEqual(tv.disruptionPreview.isDisruptionCard, true);
+    assert.strictEqual(tv.disruptionPreview.canDelayImmediateWin, true);
+    assert.strictEqual(tv.disruptionPreview.targetableThreatCount, 1);
+    assert.deepStrictEqual(tv.disruptionPreview.affectedThreats, [1]);
+
+    const renovation = diagnostics.buildOptions.find(option => option.label === 'BUY_CARD:改装屋');
+    assert.ok(renovation);
+    assert.strictEqual(renovation.disruptionPreview.isDisruptionCard, true);
+    assert.strictEqual(renovation.disruptionPreview.canDelayImmediateWin, false);
+});
+
 runTest('collectBuildDiagnostics は非finite scoreをnullへ正規化する', () => {
     const runtime = loadRuntime({ includeRL: false });
     const game = new runtime.GameManager(2);
