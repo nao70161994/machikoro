@@ -111,6 +111,14 @@ npm run diagnose-expert-losses -- --games 8 --profiles duel,trio,crowd
 profile ごとに、`winner` の difficulty / seat、`expertMissing`、`winnerBuilt`、`expertCards / winnerCards`、`finalActions` を集計します。
 JSON形式では負けた expert の最後の建設判断に `finalActionDiagnostics` が付きます。`v2simple-card-breakdown` は候補カードの `score` / `breakdown` / `deltaScore` / `nearTie` / `landmarkDelayPreview` / `opponentWinThreats` を確認するための診断専用出力です。通常プレイや selfplay の標準 trace には出しません。
 
+`v2simple` の分岐頻度だけを見る場合:
+
+```bash
+node scripts/diagnose-expert-v2-branches.js --games 20 --profiles duel,trio,crowd,allStrong4
+```
+
+この診断はサイコロ、リロール、港、テレビ局の僅差分岐に加えて、build EV 内の `loanDuplicateNonBridge` と `cleaningNearBest1` を数えます。`loanDuplicateNonBridge` は貸金業の重複購入がランドマーク到達を橋渡ししていないケース、`cleaningNearBest1` は清掃業が最良候補から1点以内にいるケースです。
+
 `CPU（最強）` の tuning 候補をこの基準で粗く探索する場合:
 
 ```bash
