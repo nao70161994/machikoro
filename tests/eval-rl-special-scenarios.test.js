@@ -91,6 +91,7 @@ runTest('scenarioNamesForPlayerCount は人数に合う既定scenarioだけを�
     assert.deepStrictEqual(twoPlayerNames, ['twoPlayerBusinessBasic']);
     assert.ok(fourPlayerNames.includes('tvLeaderThreat'));
     assert.ok(fourPlayerNames.includes('moverGiveJunk'));
+    assert.ok(fourPlayerNames.includes('moverTargetSafeRecipient'));
     assert.strictEqual(fourPlayerNames.includes('twoPlayerBusinessBasic'), false);
 });
 
@@ -162,6 +163,28 @@ runTest('evaluateSpecialScenarios はTV/BC/cleaning/moverの結果を返す', ()
     assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('business'), 'costDelta'));
     assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('cleaning'), 'cardName'));
     assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('mover'), 'isDormant'));
+});
+
+runTest('evaluateSpecialScenarios は moverTargetSafeRecipient のtarget分離checkを返す', () => {
+    const results = evaluateSpecialScenarios([
+        {
+            id: 'dummy',
+            label: 'dummy',
+            path: '',
+            modelData: buildRlModel(),
+        },
+    ], {
+        playerCount: 4,
+        scenarios: ['moverTargetSafeRecipient'],
+    });
+    const scenario = results[0].scenarios[0];
+    assert.strictEqual(scenario.kind, 'mover');
+    assert.deepStrictEqual(scenario.expected.giveOneOf, ['麦畑']);
+    assert.deepStrictEqual(scenario.expected.targetNotIn, [3]);
+    assert.ok(Object.prototype.hasOwnProperty.call(scenario.checks, 'giveMatches'));
+    assert.ok(Object.prototype.hasOwnProperty.call(scenario.checks, 'targetAvoided'));
+    assert.ok(Number.isInteger(scenario.targetIndex) || scenario.targetIndex === null);
+    assert.strictEqual(typeof scenario.cardName, 'string');
 });
 
 runTest('renderText は各kindのscenarioを出力する', () => {

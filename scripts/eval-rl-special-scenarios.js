@@ -145,6 +145,17 @@ const SCENARIOS = {
             { coins: 24, cards: ['鉱山', 'サンマ漁船'], landmarks: ['駅', '港', 'ショッピングモール'] },
         ],
     },
+    moverTargetSafeRecipient: {
+        kind: 'mover',
+        description: '渡すカードがほぼ低価値1択の状態で、リーダー以外へ渡せるかを見る局面',
+        expected: { giveOneOf: ['麦畑'], targetNotIn: [3] },
+        players: [
+            { coins: 5, cards: ['引越し屋', '麦畑'], landmarks: ['駅'] },
+            { coins: 3, cards: ['パン屋', '牧場'], landmarks: [] },
+            { coins: 6, cards: ['カフェ', 'ピザ屋'], landmarks: ['駅'] },
+            { coins: 24, cards: ['鉱山', 'サンマ漁船', '食品倉庫'], landmarks: ['駅', '港', 'ショッピングモール', '遊園地'] },
+        ],
+    },
     moverDormantPreferred: {
         kind: 'mover',
         description: '休業中カードを引越し屋で渡す候補にできるかを見る局面',
