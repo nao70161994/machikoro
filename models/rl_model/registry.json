@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-04-20",
+    "updatedAt": "2026-05-06",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -166,7 +166,7 @@
         },
         {
             "id": "terminal-shaped-h128-long",
-            "status": "candidate",
+            "status": "archive",
             "path": "models/rl_model/runs/terminal-shaped-h128-long/best_model.browser.json",
             "sourceRun": "models/rl_model/runs/terminal-shaped-h128-long",
             "training": {
@@ -195,7 +195,7 @@
                     "radio_tower",
                     "amusement_park"
                 ],
-                "summary": "Different build tendency from lr1e4. Better normal result, weaker strong result in 20-game comparison."
+                "summary": "Different build tendency from lr1e4. Archived because the 20-game evaluation had low strong performance and current candidate value is limited."
             },
             "evals": [
                 {
@@ -292,7 +292,7 @@
         },
         {
             "id": "strong-select-seed21",
-            "status": "candidate",
+            "status": "archive",
             "path": "models/rl_model/runs/strong-select-seed21/best_model.browser.json",
             "sourceRun": "models/rl_model/runs/strong-select-seed21",
             "training": {
@@ -324,7 +324,7 @@
                     "amusement_park",
                     "radio_tower"
                 ],
-                "summary": "Normal-stable candidate selected with stronger JS checkpoint weighting. Pass rate is higher than lr1e4, but 20-game normal result is strong."
+                "summary": "Normal-stable candidate selected with stronger JS checkpoint weighting. Archived because the 20-game evaluation had low strong performance and current candidate value is limited."
             },
             "evals": [
                 {
@@ -365,7 +365,7 @@
         },
         {
             "id": "self-only-both-h256-lr3e5-5000-seed62",
-            "status": "candidate",
+            "status": "archive",
             "path": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62/best_model.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62",
             "training": {
@@ -398,9 +398,19 @@
                     "radio_tower",
                     "amusement_park"
                 ],
-                "summary": "First successful h256 self-play-both candidate. Best current strong result in 20-game evaluation."
+                "summary": "First successful h256 self-play-both candidate. Archived after a 2026-05-06 100-game reevaluation because seed71-top3 was stronger across weak/normal/strong (seed62 99%/56%/65%, seed71-top3 100%/96%/76%)."
             },
             "evals": [
+                {
+                    "date": "2026-05-06",
+                    "type": "js",
+                    "gamesPerOpponent": 100,
+                    "opponents": {
+                        "weak": {"wins": 99, "losses": 1, "draws": 0, "winRate": 0.99, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.98, "avgTurns": 50.6, "passRate": 0.048},
+                        "normal": {"wins": 56, "losses": 44, "draws": 0, "winRate": 0.56, "firstSeatWinRate": 0.6, "secondSeatWinRate": 0.52, "avgTurns": 45.9, "passRate": 0.103},
+                        "strong": {"wins": 65, "losses": 35, "draws": 0, "winRate": 0.65, "firstSeatWinRate": 0.6, "secondSeatWinRate": 0.7, "avgTurns": 52.4, "passRate": 0.07}
+                    }
+                },
                 {
                     "date": "2026-04-14",
                     "type": "js",
@@ -442,7 +452,7 @@
         },
         {
             "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-            "status": "candidate",
+            "status": "archive",
             "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap/best_model.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap",
             "training": {
@@ -479,9 +489,20 @@
                     "amusement_park",
                     "radio_tower"
                 ],
-                "summary": "Reward-capped h256 self-play-both candidate. Strong result is lower than seed62 but normal and pass-rate stability are better."
+                "summary": "Reward-capped h256 self-play-both candidate. Archived after the 2026-05-06 shared-seeds diagnostic because seed71-top3 was stronger across weak/normal/strong at 100 games (seed66 98%/50%/66%, seed71-top3 99%/54%/75%) without enough distinct portfolio value."
             },
             "evals": [
+                {
+                    "date": "2026-05-06",
+                    "type": "js",
+                    "gamesPerOpponent": 100,
+                    "sharedSeeds": true,
+                    "opponents": {
+                        "weak": {"wins": 98, "losses": 2, "draws": 0, "winRate": 0.98, "firstSeatWinRate": 0.96, "secondSeatWinRate": 1.0, "avgTurns": 46.5, "passRate": 0.0},
+                        "normal": {"wins": 50, "losses": 50, "draws": 0, "winRate": 0.5, "firstSeatWinRate": 0.54, "secondSeatWinRate": 0.46, "avgTurns": 49.0, "passRate": 0.026},
+                        "strong": {"wins": 66, "losses": 34, "draws": 0, "winRate": 0.66, "firstSeatWinRate": 0.74, "secondSeatWinRate": 0.58, "avgTurns": 49.9, "passRate": 0.002}
+                    }
+                },
                 {
                     "date": "2026-04-15",
                     "type": "js",

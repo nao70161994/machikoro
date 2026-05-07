@@ -558,7 +558,7 @@ npm run summarize-rl-metrics -- \
 `--best-checkpoint` を付けると、各評価時点で最良だったモデルを `.npz` と `.browser.json`、さらに参照用の `.meta.json` で別保存する。判定は JS 評価があればその重み付き score、無ければ `expert/strong/normal/rnd` の重み付き代替スコアを使う。`--summary-output` も併用していれば、学習終了後に `meta.json` へ `bestRuns` / `bestConfigs` の抜粋に加えて、この run 自身に対応する `summaryRunContext` も追記される。`summaryRunContext` には `runIndexEntry` として run 全体順位、`configIndexEntry` として設定全体順位、`combinedTop` に入っていればその順位と entry も入る。`meta.json` には `artifacts` として `checkpointPath` / `browserCheckpointPath` / `metaPath` / `summaryPath` / `runIndexCsvPath` / `configIndexCsvPath` もまとまって入る。
 集計結果には run 別だけでなく `hidden/lr` ごとの best config も含まれる。
 
-### 現行の実験方針（2026-04）
+### 現行の実験方針（2026-05）
 
 - RL は `expert` 置き換えではなく、新CPUとして導入する前提。
 - Python heuristic と JS `CPU.js` のズレが大きかったため、学習相手の `normal/strong/expert` は `--cpu-opponent-impl js-oracle` で JS oracle を使う。
@@ -578,7 +578,7 @@ npm run summarize-rl-metrics -- \
 - 2人用モデルは300戦 JS 評価で `seed71-top3` が `weak 99.3% / normal 93.3% / strong 63.3%` となり、現時点の主採用モデル。
 - `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。どちらも `seed71-top3` より弱いが構築傾向が違うため、戦略バリエーション用に active portfolio へ低重みで残す。
 - `terminal-shaped-h128-lr1e4` は100戦評価で `weak 99% / normal 53% / strong 39%`。normal が不安定なので active portfolio から外し、archive 扱いにした。
-- `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、現時点では配布 portfolio には入れない。
+- `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、strong 性能が低く現時点の候補価値も薄いため archive 扱いにした。
 - 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、3〜4人用には `self-only-4p-h256-lr1e5-5000-seed102` を採用している。
 - `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
@@ -731,7 +731,7 @@ npm run render-rl-registry-evals -- \
   --date 2026-04-20
 ```
 
-勝率が低めでも、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
+勝率が採用圏に近く、構築傾向が明確に違うモデルは `archive` ではなく `candidate` として残す。
 逆に勝率が高くても、より強い同系統モデルと戦略が重なる場合は代表だけを active 候補にする。
 学習中の top-k と後評価はズレる前提で扱う。採用判断は学習中 score ではなく、`eval-run-topk.sh` などで best/top2/top3 を同条件・十分なゲーム数で再評価した結果を優先する。
 `npm run validate-rl-registry` は、active model の評価ゲーム数不足や recommended model の style 重複を警告する。警告は即エラーではないが、採用判断前に理由を `registry.json` の `reason` / `style.summary` に残す。
@@ -761,12 +761,12 @@ npm run report-rl-registry -- --format json --output models/rl_model/registry-re
 | `self-only-both-h256-lr2e5-5000-seed71-rewardcap` | candidate | 50戦 weak 96% / normal 94% / strong 68% | ブドウ園・牧場・バーガー寄り |
 | `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 100戦 weak 100% / normal 77% / strong 33% | 寿司屋・食品倉庫・牧場寄り、補助採用 |
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
-| `self-only-both-h256-lr3e5-5000-seed62` | candidate | weak 90% / normal 65% / strong 45% | パン屋・食品倉庫・寿司屋寄り |
-| `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | candidate | weak 95% / normal 70% / strong 35% | パン屋・食品倉庫・ピザ屋寄り、低pass |
+| `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
+| `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
 | `self-only-4p-h256-lr1e5-5000-seed102` | adopted | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 3〜4人用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
-| `strong-select-seed21` | candidate | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り |
-| `terminal-shaped-h128-long` | candidate | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り |
+| `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |
+| `terminal-shaped-h128-long` | archive | weak 90% / normal 70% / strong 15% | 雑貨屋・貸金業・マグロ漁船・引越し屋・ピザ屋寄り。strong 性能が低く除外 |
 | `terminal-shaped-curriculum-h128` | archive | weak 75% / normal 35% / strong 5% | 寿司屋・牧場・チーズ工場寄り |
 | `terminal-shaped-curriculum-h256` | rejected | JS 評価 0% 傾向 | pass 崩壊 |
 | `terminal-shaped-curriculum-h256-lr1e4` | rejected | JS 評価 0% 傾向 | 高 pass 率 |
