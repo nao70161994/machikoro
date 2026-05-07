@@ -25,6 +25,7 @@ models/rl_model/*.npz
 models/rl_model/*.json
 models/rl_model/*.csv
 models/rl_model/*.md
+models/rl_model/*.review.txt
 models/rl_model/archive/
 models/rl_model/runs/
 models/rl_model/pids/
