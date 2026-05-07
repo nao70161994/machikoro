@@ -101,7 +101,7 @@ player_count正規化         1
 合計                      353
 ```
 
-現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、`tv_target` / `bc_target` / `mover_target` の optional target head があればその出力を使い、head が無い既存モデルは Python/JS ともに「脅威度が最大の相手」heuristic に fallback する。target head の checkpoint / browser export / `js/RLCPU.js` / Python 推論 / 学習更新は実装済みで、学習ログでは `tgt=` として pending 発生率と更新率を確認できる。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
+現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、`tv_target` / `bc_target` / `mover_target` の optional target head があればその出力を使う。head が無い既存モデルでは、テレビ局・ビジネスセンターは脅威度最大の相手へ fallback し、引越し屋は渡すカードの価値と相手脅威度から recipient を選ぶ JS runtime fallback を使う。清掃業は action head が選んだカード名を基本にしつつ、相手被害と自分被害の差が明確に大きい場合だけ heuristic の最良カード名へ上書きする。target head の checkpoint / browser export / `js/RLCPU.js` / Python 推論 / 学習更新は実装済みで、学習ログでは `tgt=` として pending 発生率と更新率を確認できる。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
 
 ### 行動空間（NUM_ACTIONS = 1580）
 
@@ -749,7 +749,7 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 `npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review を更新する。評価後の標準フローとして使える。
 `npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
-target head や特殊行動の局面診断だけを確認する場合は `npm run eval-rl-special-scenarios` を使う。`--models` / `--run-labels` / `--player-count` / `--scenarios` で対象を絞り、必要なら `--format json --output models/rl_model/<label>.special-scenarios.json` で保存する。この出力も評価診断artifactなので git 管理しない。
+target head や特殊行動の局面診断だけを確認する場合は `npm run eval-rl-special-scenarios` を使う。`--models` / `--run-labels` / `--player-count` / `--scenarios` で対象を絞り、必要なら `--format json --output models/rl_model/<label>.special-scenarios.json` で保存する。この出力も評価診断artifactなので git 管理しない。mover / cleaning fallback を変更した場合は、最低限 `cleaningOpponentEngine`, `cleaningAvoidSelfDamage`, `moverTargetSafeRecipient`, `moverAvoidHelpingLeader`, `moverDormantPreferred` を確認する。
 adoption review や top-k review の `*.review.md` / `*.review.json` / `*.review.txt` も再生成可能な診断artifactとして扱う。採用判断として残す内容は `registry.json` の `status` / `reason` / `evaluations` / `style` へ要約し、長い review 出力そのものはコミットしない。
 
 ```bash
