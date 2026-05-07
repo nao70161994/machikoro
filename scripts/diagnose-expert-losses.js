@@ -110,6 +110,16 @@ function summarizeLosses(losses) {
     };
 }
 
+function finalActionDiagnosticsFromTrace(expertTrace) {
+    if (!Array.isArray(expertTrace) || expertTrace.length <= 0) return null;
+    for (let i = expertTrace.length - 1; i >= 0; i--) {
+        if (expertTrace[i] && expertTrace[i].buildDiagnostics) {
+            return expertTrace[i].buildDiagnostics;
+        }
+    }
+    return null;
+}
+
 function diagnoseProfile(name, options) {
     const basePlayers = profilePlayers(name);
     const runtime = loadRuntime();
@@ -130,6 +140,7 @@ function diagnoseProfile(name, options) {
             fast: options.fast,
             lite: options.lite,
             traceEntries,
+            includeBuildDiagnostics: true,
         });
         const expertIndex = lineup.indexOf('expert');
         if (result.winner === expertIndex) {
@@ -140,6 +151,7 @@ function diagnoseProfile(name, options) {
         const winnerState = result.finalState[result.winner];
         const expertTrace = traceEntries.filter(entry => entry.actorDifficulty === 'expert');
         const lastExpertAction = expertTrace.length > 0 ? expertTrace[expertTrace.length - 1].chosenAction.label : null;
+        const finalActionDiagnostics = finalActionDiagnosticsFromTrace(expertTrace);
         losses.push({
             game: i + 1,
             seed: (options.seed || 1) + i,
@@ -154,6 +166,7 @@ function diagnoseProfile(name, options) {
             expertTopCards: expertState ? expertState.topCards : [],
             winnerTopCards: winnerState ? winnerState.topCards : [],
             lastExpertAction,
+            finalActionDiagnostics,
         });
     }
 
@@ -220,6 +233,7 @@ module.exports = {
     parseArgs,
     profilePlayers,
     resolveExpertTuning,
+    finalActionDiagnosticsFromTrace,
     summarizeLosses,
     toText,
 };

@@ -4,6 +4,7 @@ const { runTest } = require('./helpers/test-utils');
 
 const {
     DEFAULT_PROFILES,
+    finalActionDiagnosticsFromTrace,
     parseArgs,
     summarizeLosses,
     toText,
@@ -64,6 +65,26 @@ runTest('diagnose-expert-losses summarizeLosses は負け筋を集計する', ()
     assert.strictEqual(summary.expertMissingLandmarks[0].name, '駅');
     assert.strictEqual(summary.winnerTopCards[0].name, '寿司屋');
     assert.strictEqual(summary.finalActions[0].name, 'BUY_CARD:パン屋');
+});
+
+runTest('diagnose-expert-losses finalActionDiagnosticsFromTrace は末尾IT後でも直近build診断を返す', () => {
+    const diagnostics = {
+        diagnosticSource: '_listExpertBuildOptions/_scoreExpertBuildOption',
+        mode: 'generic',
+        coins: 20,
+        missingLandmarks: ['空港'],
+        affordableLandmarks: [{ name: '空港', cost: 30 }],
+        buildOptions: [{ type: 'card', name: '青果市場', label: 'BUY_CARD:青果市場', score: 12 }],
+        chosenBuildAction: { type: 'card', name: '青果市場', label: 'BUY_CARD:青果市場' },
+        buildActionLabel: 'BUY_CARD:青果市場',
+    };
+    const result = finalActionDiagnosticsFromTrace([
+        { chosenAction: { label: 'ROLL1' } },
+        { chosenAction: { label: 'BUY_CARD:青果市場' }, buildDiagnostics: diagnostics },
+        { chosenAction: { label: 'IT_SKIP' } },
+    ]);
+    assert.strictEqual(result, diagnostics);
+    assert.strictEqual(finalActionDiagnosticsFromTrace([]), null);
 });
 
 runTest('diagnose-expert-losses toText は主要な差分を含む', () => {

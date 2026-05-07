@@ -4,8 +4,10 @@ const { runTest } = require('./helpers/test-utils');
 
 const {
     loadRuntime,
+    createShopStock,
     simulateGame,
     simulateGameLightweight,
+    collectBuildDiagnostics,
     runSeries,
     runDifficultyLadder,
     comparePresets,
@@ -50,6 +52,131 @@ runTest('simulateGameLightweight は軽量経路で試合を最後まで進め�
     assert.ok(result.winner >= 0);
     assert.ok(result.turns > 0);
     assert.strictEqual(result.finalState, null);
+});
+
+runTest('simulateGame は includeBuildDiagnostics 指定時だけexpert build診断をtraceへ追加する', () => {
+    const traceEntries = [];
+    simulateGame({
+        difficulties: ['expert', 'weak'],
+        seed: 3,
+        maxSteps: 120,
+        lite: true,
+        traceEntries,
+        includeBuildDiagnostics: true,
+    });
+
+    const buildTrace = traceEntries.find(entry =>
+        entry.actorDifficulty === 'expert' &&
+        entry.chosenAction &&
+        ['BUY_CARD:', 'BUY_LM:', 'PASS'].some(prefix => entry.chosenAction.label.startsWith(prefix)) &&
+        entry.buildDiagnostics
+    );
+    assert.ok(buildTrace);
+    assert.strictEqual(buildTrace.buildDiagnostics.diagnosticSource, '_listExpertBuildOptions/_scoreExpertBuildOption');
+    assert.strictEqual(buildTrace.buildDiagnostics.mode, 'generic');
+    assert.strictEqual(typeof buildTrace.buildDiagnostics.coins, 'number');
+    assert.ok(Array.isArray(buildTrace.buildDiagnostics.affordableLandmarks));
+    assert.ok(Array.isArray(buildTrace.buildDiagnostics.buildOptions));
+    assert.ok(buildTrace.buildDiagnostics.chosenBuildAction);
+    assert.strictEqual(buildTrace.buildDiagnostics.buildActionLabel, buildTrace.buildDiagnostics.chosenBuildAction.label);
+
+    const defaultTraceEntries = [];
+    simulateGame({
+        difficulties: ['expert', 'weak'],
+        seed: 3,
+        maxSteps: 120,
+        lite: true,
+        traceEntries: defaultTraceEntries,
+    });
+    assert.ok(defaultTraceEntries.every(entry => !('buildDiagnostics' in entry)));
+});
+
+runTest('collectBuildDiagnostics はv2simpleで買えるランドマークだけを診断候補にする', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+    game.currentPlayer().coins = 4;
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    assert.strictEqual(diagnostics.diagnosticSource, 'v2simple-landmark-options');
+    assert.strictEqual(diagnostics.mode, 'v2simple');
+    assert.strictEqual(diagnostics.landmarkDelayContext.nearestLandmark, '港');
+    assert.strictEqual(diagnostics.landmarkDelayContext.shortfallBefore, 0);
+    assert.ok(diagnostics.buildOptions.length > 0);
+    assert.ok(diagnostics.buildOptions.every(option => option.type === 'landmark'));
+    assert.ok(diagnostics.buildOptions.every(option => option.score === null));
+});
+
+runTest('collectBuildDiagnostics はv2simpleでランドマーク目前の購入遅延を診断する', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set([runtime.LANDMARK_NAMES.STATION]);
+    game.currentPlayer().coins = 3;
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    const bakery = diagnostics.buildOptions.find(option => option.label === 'BUY_CARD:パン屋');
+    assert.ok(bakery);
+    assert.strictEqual(diagnostics.landmarkDelayContext.nearestLandmark, runtime.LANDMARK_NAMES.STATION);
+    assert.strictEqual(diagnostics.landmarkDelayContext.shortfallBefore, 1);
+    assert.strictEqual(bakery.landmarkDelayPreview.cardCost, 1);
+    assert.strictEqual(bakery.landmarkDelayPreview.shortfallAfter, 2);
+    assert.strictEqual(bakery.landmarkDelayPreview.delayCoins, 1);
+    assert.strictEqual(bakery.landmarkDelayPreview.wouldTrigger, true);
+});
+
+runTest('collectBuildDiagnostics はv2simpleでカード候補をbreakdown付きで診断する', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+    game.currentPlayer().coins = 1;
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    assert.strictEqual(diagnostics.diagnosticSource, 'v2simple-card-breakdown');
+    assert.strictEqual(diagnostics.mode, 'v2simple');
+    assert.strictEqual(diagnostics.affordableLandmarks.length, 0);
+    assert.strictEqual(typeof diagnostics.preEv, 'number');
+    assert.strictEqual(typeof diagnostics.landmarkDelayContext.remainingLandmarks, 'number');
+    assert.strictEqual(diagnostics.nearTie.threshold, 0.25);
+    assert.ok(Array.isArray(diagnostics.nearTie.tiedOptions));
+    assert.ok(diagnostics.buildOptions.length > 0);
+    assert.ok(diagnostics.buildOptions.every(option => option.type === 'card'));
+    assert.ok(diagnostics.buildOptions.every(option => option.breakdown));
+    assert.ok(diagnostics.buildOptions.every(option => option.score === option.breakdown.total));
+    assert.ok(diagnostics.buildOptions.every(option => option.deltaScore === option.breakdown.deltaTotal));
+    assert.ok(diagnostics.buildOptions.every(option => option.landmarkDelayPreview));
+    for (const option of diagnostics.buildOptions) {
+        assert.strictEqual(option.breakdown.preEv, diagnostics.preEv);
+        assert.strictEqual(option.breakdown.postEv, option.breakdown.baseEv);
+        assert.ok(Math.abs(option.breakdown.deltaEv - (option.breakdown.postEv - option.breakdown.preEv)) < 1e-9);
+        assert.ok(Math.abs(option.breakdown.deltaTotal - (option.breakdown.deltaEv + option.breakdown.comboUnlockBonus + option.breakdown.tempoBonus)) < 1e-9);
+        assert.strictEqual(option.landmarkDelayPreview.remainingLandmarks, diagnostics.landmarkDelayContext.remainingLandmarks);
+        assert.strictEqual(option.landmarkDelayPreview.coinsBefore, diagnostics.landmarkDelayContext.coinsBefore);
+        assert.strictEqual(option.landmarkDelayPreview.cardCost, option.cost);
+        assert.strictEqual(option.landmarkDelayPreview.delayCoins, Math.max(0, option.landmarkDelayPreview.shortfallAfter - option.landmarkDelayPreview.shortfallBefore));
+    }
+});
+
+runTest('collectBuildDiagnostics は非finite scoreをnullへ正規化する', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+    game.currentPlayer().coins = 100;
+    const cpu = {
+        difficulty: 'expert',
+        _listExpertBuildOptions() {
+            return [
+                { type: 'card', cardName: 'パン屋' },
+                { type: 'landmark', name: '空港' },
+            ];
+        },
+        _scoreExpertBuildOption(subject, stock, option) {
+            return option.type === 'card' ? Infinity : 3;
+        },
+    };
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+    assert.strictEqual(diagnostics.diagnosticSource, '_listExpertBuildOptions/_scoreExpertBuildOption');
+    assert.strictEqual(diagnostics.buildOptions.find(option => option.label === 'BUY_CARD:パン屋').score, null);
+    assert.strictEqual(diagnostics.buildOptions.find(option => option.label === 'BUY_LM:空港').score, 3);
 });
 
 runTest('runSeries は難易度ごとの勝利数を集計する', () => {
@@ -125,6 +252,7 @@ runTest('loadRuntime は RLCPU を省略して読み込める', () => {
     assert.ok(runtime.CPU);
     assert.ok(runtime.GameManager);
     assert.strictEqual(runtime.RLCPU, undefined);
+    assert.strictEqual(runtime.LANDMARK_NAMES.STATION, '駅');
 });
 
 runTest('recordBusinessStat はdifficulty別に交換内容を集計する', () => {

@@ -18,12 +18,12 @@ function loadRuntime(options = {}) {
     }
     if (options.includeRL !== false) {
         vm.runInContext(
-            'this.CPU = CPU; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
+            'this.CPU = CPU; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
             context
         );
     } else {
         vm.runInContext(
-            'this.CPU = CPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES;',
+            'this.CPU = CPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
             context
         );
     }
@@ -199,6 +199,207 @@ function pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries)
         rollCursor: 0,
     };
     traceEntries.push(entry);
+}
+
+function buildActionLabel(action) {
+    if (!action) return 'UNKNOWN';
+    if (action.type === 'skip') return 'PASS';
+    if (action.type === 'landmark') return `BUY_LM:${action.name}`;
+    if (action.type === 'card') return `BUY_CARD:${action.cardName || (action.card && action.card.name) || 'UNKNOWN'}`;
+    return action.type || 'UNKNOWN';
+}
+
+function buildActionName(action) {
+    if (!action) return null;
+    if (action.type === 'landmark') return action.name || null;
+    if (action.type === 'card') return action.cardName || (action.card && action.card.name) || null;
+    return null;
+}
+
+function normalizeBuildScore(score) {
+    return Number.isFinite(score) ? score : null;
+}
+
+function normalizeBuildBreakdown(breakdown) {
+    if (!breakdown || typeof breakdown !== 'object') return null;
+    return Object.fromEntries(Object.entries(breakdown).map(([key, value]) => [
+        key,
+        Number.isFinite(value) ? value : null,
+    ]));
+}
+
+function compareBuildDiagnosticsOption(a, b) {
+    const aScore = Number.isFinite(a.score) ? a.score : -Infinity;
+    const bScore = Number.isFinite(b.score) ? b.score : -Infinity;
+    if (bScore !== aScore) return bScore > aScore ? 1 : -1;
+    return a.label.localeCompare(b.label, 'ja');
+}
+
+function estimateV2SimpleBuildPreEv(runtime, game, cpu) {
+    if (typeof cpu._expectedDiceScoreWithHarbor !== 'function') return null;
+    const current = game.currentPlayer();
+    const station = runtime.LANDMARK_NAMES && runtime.LANDMARK_NAMES.STATION;
+    const oneScore = cpu._expectedDiceScoreWithHarbor(game, false);
+    const twoScore = station && current.landmarks[station]
+        ? cpu._expectedDiceScoreWithHarbor(game, true)
+        : -Infinity;
+    return Math.max(oneScore, twoScore);
+}
+
+function augmentV2SimpleBuildBreakdown(rawBreakdown, preEv) {
+    if (!rawBreakdown || typeof rawBreakdown !== 'object') return null;
+    const postEv = rawBreakdown.baseEv;
+    const deltaEv = Number.isFinite(postEv) && Number.isFinite(preEv) ? postEv - preEv : null;
+    const comboUnlockBonus = Number.isFinite(rawBreakdown.comboUnlockBonus) ? rawBreakdown.comboUnlockBonus : 0;
+    const tempoBonus = Number.isFinite(rawBreakdown.tempoBonus) ? rawBreakdown.tempoBonus : 0;
+    const deltaTotal = Number.isFinite(deltaEv) ? deltaEv + comboUnlockBonus + tempoBonus : null;
+    return Object.assign(normalizeBuildBreakdown(rawBreakdown), {
+        preEv: normalizeBuildScore(preEv),
+        postEv: normalizeBuildScore(postEv),
+        deltaEv: normalizeBuildScore(deltaEv),
+        deltaTotal: normalizeBuildScore(deltaTotal),
+    });
+}
+
+function buildNearTieDiagnostics(buildOptions, threshold = 0.25) {
+    const topScore = buildOptions.length > 0 ? buildOptions[0].score : null;
+    const tiedOptions = Number.isFinite(topScore)
+        ? buildOptions
+            .filter(option => Number.isFinite(option.score) && Math.abs(option.score - topScore) <= threshold)
+            .map(option => option.label)
+        : [];
+    return {
+        threshold,
+        topScore: normalizeBuildScore(topScore),
+        tiedOptions,
+        isNearTie: tiedOptions.length > 1,
+    };
+}
+
+function buildLandmarkDelayContext(runtime, current, missingLandmarks) {
+    const remaining = missingLandmarks
+        .map(name => ({ name, cost: runtime.Player.landmarkCost(name) }))
+        .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name, 'ja'));
+    const nearest = remaining[0] || null;
+    const shortfallBefore = nearest ? Math.max(0, nearest.cost - current.coins) : 0;
+    return {
+        remainingLandmarks: missingLandmarks.length,
+        nearestLandmark: nearest ? nearest.name : null,
+        nearestLandmarkCost: nearest ? nearest.cost : null,
+        coinsBefore: current.coins,
+        shortfallBefore,
+    };
+}
+
+function buildLandmarkDelayPreview(context, cardCost) {
+    const coinsAfter = context.coinsBefore - cardCost;
+    const shortfallAfter = context.nearestLandmarkCost == null
+        ? 0
+        : Math.max(0, context.nearestLandmarkCost - coinsAfter);
+    const delayCoins = Math.max(0, shortfallAfter - context.shortfallBefore);
+    return {
+        remainingLandmarks: context.remainingLandmarks,
+        nearestLandmark: context.nearestLandmark,
+        nearestLandmarkCost: context.nearestLandmarkCost,
+        coinsBefore: context.coinsBefore,
+        cardCost,
+        shortfallBefore: context.shortfallBefore,
+        coinsAfter,
+        shortfallAfter,
+        delayCoins,
+        wouldTrigger: context.remainingLandmarks <= 3 && context.shortfallBefore > 0 && context.shortfallBefore <= 3 && delayCoins > 0,
+    };
+}
+
+function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current, missingLandmarks, affordableLandmarks) {
+    const landmarkDelayContext = buildLandmarkDelayContext(runtime, current, missingLandmarks);
+    if (affordableLandmarks.length > 0) {
+        return {
+            diagnosticSource: 'v2simple-landmark-options',
+            mode: 'v2simple',
+            coins: current.coins,
+            missingLandmarks,
+            affordableLandmarks,
+            landmarkDelayContext,
+            buildOptions: affordableLandmarks.map(entry => ({
+                type: 'landmark',
+                name: entry.name,
+                label: `BUY_LM:${entry.name}`,
+                cost: entry.cost,
+                score: null,
+            })),
+        };
+    }
+
+    if (typeof cpu._scoreExpertV2SimpleBuildOptionBreakdown !== 'function') return null;
+    const preEv = estimateV2SimpleBuildPreEv(runtime, game, cpu);
+    const affordableCards = runtime.CARDS.filter(card =>
+        shopStock[card.name] > 0 &&
+        current.coins >= card.cost &&
+        !(card.color === 'purple' && current.countCard(card.name) > 0)
+    ).map(card => ({ type: 'card', card }));
+    const buildOptions = affordableCards.map(option => {
+        const breakdown = augmentV2SimpleBuildBreakdown(
+            cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock),
+            preEv
+        );
+        return {
+            type: 'card',
+            name: option.card.name,
+            label: `BUY_CARD:${option.card.name}`,
+            cost: option.card.cost,
+            score: breakdown ? breakdown.total : null,
+            deltaScore: breakdown ? breakdown.deltaTotal : null,
+            breakdown,
+            landmarkDelayPreview: buildLandmarkDelayPreview(landmarkDelayContext, option.card.cost),
+        };
+    }).sort(compareBuildDiagnosticsOption);
+    return {
+        diagnosticSource: 'v2simple-card-breakdown',
+        mode: 'v2simple',
+        preEv: normalizeBuildScore(preEv),
+        landmarkDelayContext,
+        nearTie: buildNearTieDiagnostics(buildOptions),
+        coins: current.coins,
+        missingLandmarks,
+        affordableLandmarks,
+        buildOptions,
+    };
+}
+
+function collectBuildDiagnostics(runtime, game, shopStock, cpu) {
+    if (!cpu || cpu.difficulty !== 'expert') return null;
+    const current = game.currentPlayer();
+    const enabled = game.enabledLandmarks || new Set(runtime.Player.landmarkNames());
+    const missingLandmarks = runtime.Player.landmarkNames().filter(name => enabled.has(name) && !current.landmarks[name]);
+    const affordableLandmarks = missingLandmarks
+        .map(name => ({ name, cost: runtime.Player.landmarkCost(name) }))
+        .filter(entry => current.coins >= entry.cost);
+    if (typeof cpu._isExpertV2Simple === 'function' && cpu._isExpertV2Simple()) {
+        return collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current, missingLandmarks, affordableLandmarks);
+    }
+    if (typeof cpu._listExpertBuildOptions !== 'function' || typeof cpu._scoreExpertBuildOption !== 'function') return null;
+    const options = cpu._listExpertBuildOptions(game, shopStock);
+    const context = {
+        affordableBuildCount: options.filter(option => option.type !== 'skip').length,
+    };
+    const buildOptions = options.map(option => {
+        const score = cpu._scoreExpertBuildOption(game, shopStock, option, context);
+        return {
+            type: option.type,
+            name: buildActionName(option),
+            label: buildActionLabel(option),
+            score: normalizeBuildScore(score),
+        };
+    }).sort(compareBuildDiagnosticsOption);
+    return {
+        diagnosticSource: '_listExpertBuildOptions/_scoreExpertBuildOption',
+        mode: 'generic',
+        coins: current.coins,
+        missingLandmarks,
+        affordableLandmarks,
+        buildOptions,
+    };
 }
 
 function fallbackBusiness(game) {
@@ -613,18 +814,31 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         };
                     }
                     pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries);
+                    if (runtime.__selfplayOptions && runtime.__selfplayOptions.includeBuildDiagnostics) {
+                        const buildDiagnostics = collectBuildDiagnostics(runtime, game, shopStock, cpu);
+                        if (buildDiagnostics) traceEntries[traceEntries.length - 1].buildDiagnostics = buildDiagnostics;
+                    }
                 }
                 cpu.build(game, shopStock);
                 const afterBuild = snapshotBuildState(game);
                 const outcome = detectBuildOutcome(beforeBuild, afterBuild);
                 recordBuildStat(game, cpu, runtime.__selfplayOptions, outcome);
                 if (Array.isArray(traceEntries) && traceEntries.length > beforeTrace) {
+                    const buildTrace = traceEntries[traceEntries.length - 1];
                     if (!traceEntries[traceEntries.length - 1].chosenAction || traceEntries[traceEntries.length - 1].chosenAction.label === 'UNKNOWN') {
-                        traceEntries[traceEntries.length - 1].chosenAction = {
+                        buildTrace.chosenAction = {
                             action: outcome.type === 'pass' ? (actions.PASS ?? null) : null,
                             label: outcome.type === 'card' ? `BUY_CARD:${outcome.name}` :
                                 (outcome.type === 'landmark' ? `BUY_LM:${outcome.name}` : 'PASS'),
                         };
+                    }
+                    if (buildTrace.buildDiagnostics) {
+                        buildTrace.buildDiagnostics.chosenBuildAction = {
+                            type: outcome.type,
+                            name: outcome.name || null,
+                            label: buildTrace.chosenAction ? buildTrace.chosenAction.label : 'UNKNOWN',
+                        };
+                        buildTrace.buildDiagnostics.buildActionLabel = buildTrace.buildDiagnostics.chosenBuildAction.label;
                     }
                 }
                 if (game.phase === runtime.GAME_PHASES.BUILD) game.nextTurn();
@@ -1004,6 +1218,7 @@ module.exports = {
     actionToLabel,
     listLegalActions,
     summarizeTraceState,
+    collectBuildDiagnostics,
     playCpuStep,
     simulateGame,
     simulateGameLightweight,

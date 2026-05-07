@@ -99,6 +99,21 @@ runTest('rl match trace: exportJsMatchTrace は単発 trace を返す', () => {
     assert.ok(result.trace[0].before);
     assert.ok(result.trace[0].after);
     assert.ok(Array.isArray(result.trace[0].rollsUsed));
+    assert.ok(result.trace.every(entry => !('buildDiagnostics' in entry)));
+});
+
+runTest('rl match trace: expert相手でもbuild診断を混入しない', () => {
+    const result = exportJsMatchTrace({
+        rlModelData: buildRlModel(),
+        opponent: 'expert',
+        seed: 1,
+        maxSteps: 20,
+        rlSeat: 'first',
+        rolls: [1, 6, 3, 5],
+    });
+    assert.ok(Array.isArray(result.trace));
+    assert.ok(result.trace.length > 0);
+    assert.ok(result.trace.every(entry => !('buildDiagnostics' in entry)));
 });
 
 runTest('rl match trace: exportJsMatchTrace は4人lineup trace を返す', () => {
@@ -115,4 +130,18 @@ runTest('rl match trace: exportJsMatchTrace は4人lineup trace を返す', () =
     assert.ok(Array.isArray(result.trace));
     assert.ok(result.trace.length > 0);
     assert.strictEqual(result.finalState.length, 4);
+});
+
+runTest('rl match trace: 4人lineupのexpertにもbuild診断を混入しない', () => {
+    const result = exportJsMatchTrace({
+        rlModelData: buildRlModel(),
+        lineup: ['rl', 'expert', 'normal', 'strong'],
+        seed: 1,
+        maxSteps: 20,
+        rolls: [1, 6, 3, 5],
+    });
+    assert.deepStrictEqual(result.players, ['rl', 'expert', 'normal', 'strong']);
+    assert.ok(Array.isArray(result.trace));
+    assert.ok(result.trace.length > 0);
+    assert.ok(result.trace.every(entry => !('buildDiagnostics' in entry)));
 });
