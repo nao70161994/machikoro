@@ -118,6 +118,12 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildLandmarkGatedFarChosen: 2,
             buildLandmarkGatedWouldFlipPenalty05: 1,
             buildLandmarkGatedWouldFlipPenalty1: 2,
+            buildGatedHarborFarChosen: 1,
+            buildGatedHarborWouldFlipPenalty05: 1,
+            buildGatedStationFarChosen: 2,
+            buildGatedStationWouldFlipPenalty05: 1,
+            buildGatedMallFarChosen: 3,
+            buildGatedMallWouldFlipPenalty05: 2,
             buildHighPurpleEarlyChosen: 2,
             buildHighPurpleWouldFlipPenalty1: 1,
             buildHighPurpleWouldFlipPenalty2: 2,
@@ -168,6 +174,9 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildParkWouldFlipBonus05: 1,
                 buildLandmarkGatedFarChosen: 2,
                 buildLandmarkGatedWouldFlipPenalty05: 1,
+                buildGatedHarborFarChosen: 1,
+                buildGatedStationFarChosen: 2,
+                buildGatedMallFarChosen: 3,
                 buildHighPurpleEarlyChosen: 2,
                 buildRedSaturatedLowIncomeChosen: 2,
                 itInvestDecisions: 4,
@@ -212,6 +221,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildLandmarkGatedChosen=3/6'));
     assert.ok(text.includes('buildLandmarkGatedFarChosen=2/6'));
     assert.ok(text.includes('buildLandmarkGatedWouldFlipPenalty05=1/6'));
+    assert.ok(text.includes('gated: harbor=1/6 flip05=1/6 station=2/6 flip05=1/6 mall=3/6 flip05=2/6'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
     assert.ok(text.includes('buildRedSaturatedLowIncomeChosen=2/6'));
@@ -239,6 +249,9 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('parkFlip05=1/6'));
     assert.ok(text.includes('gatedFar=2/6'));
     assert.ok(text.includes('gatedFlip05=1/6'));
+    assert.ok(text.includes('gatedHarbor=1/6'));
+    assert.ok(text.includes('gatedStation=2/6'));
+    assert.ok(text.includes('gatedMall=3/6'));
     assert.ok(text.includes('highPurpleEarly=2/6'));
     assert.ok(text.includes('redSaturated=2/6'));
     assert.ok(text.includes('itDelay=1/4'));
