@@ -84,6 +84,9 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildComboSaturatedWouldFlipHalf: 1,
             buildLoanChosen: 3,
             buildLoanWouldFlipPenalty2: 1,
+            buildLoanDuplicateNonBridgeChosen: 2,
+            buildLoanDuplicateNonBridgeWouldFlipPenalty15: 1,
+            buildLoanDuplicateNonBridgeWouldFlipPenalty2: 1,
         }),
         entries: [{
             profile: 'duel',
@@ -103,6 +106,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildRenovationFirstEarlyChosen: 1,
                 buildComboSaturatedChosen: 2,
                 buildLoanChosen: 3,
+                buildLoanDuplicateNonBridgeChosen: 2,
+                buildLoanDuplicateNonBridgeWouldFlipPenalty15: 1,
             }),
         }],
     };
@@ -115,6 +120,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('renovationFirstEarly=1/6'));
     assert.ok(text.includes('buildComboSaturatedChosen=2/6'));
     assert.ok(text.includes('buildLoanChosen=3/6'));
+    assert.ok(text.includes('buildLoanDuplicateNonBridgeChosen=2/6'));
+    assert.ok(text.includes('buildLoanDuplicateNonBridgeWouldFlipPenalty15=1/6'));
     assert.ok(text.includes('comboSaturated=2/6'));
     assert.ok(text.includes('loan=3/6'));
+    assert.ok(text.includes('loanDuplicateNonBridge=2/6'));
+    assert.ok(text.includes('loanDuplicateNonBridgeFlip15=1/6'));
 });

@@ -64,6 +64,11 @@ function createCounters() {
         buildLoanChosen: 0,
         buildLoanOnlyAffordable: 0,
         buildLoanWouldFlipPenalty2: 0,
+        buildLoanDuplicateChosen: 0,
+        buildLoanBridgeChosen: 0,
+        buildLoanDuplicateNonBridgeChosen: 0,
+        buildLoanDuplicateNonBridgeWouldFlipPenalty15: 0,
+        buildLoanDuplicateNonBridgeWouldFlipPenalty2: 0,
     };
 }
 
@@ -218,6 +223,22 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                             counters.buildLoanChosen++;
                             if (options.length === 1) counters.buildLoanOnlyAffordable++;
                             if (second && second.score >= best.score - 2) counters.buildLoanWouldFlipPenalty2++;
+                            const loanCopies = current.countCard('貸金業');
+                            const remainingCosts = runtime.Player.landmarkNames()
+                                .filter(name =>
+                                    (!game.enabledLandmarks || game.enabledLandmarks.has(name)) &&
+                                    !current.landmarks[name]
+                                )
+                                .map(name => runtime.Player.landmarkCost(name))
+                                .filter(cost => Number.isFinite(cost) && cost > 0);
+                            const bridgesLandmark = remainingCosts.some(cost => current.coins < cost && current.coins + 5 >= cost);
+                            if (loanCopies >= 1) counters.buildLoanDuplicateChosen++;
+                            if (bridgesLandmark) counters.buildLoanBridgeChosen++;
+                            if (loanCopies >= 1 && !bridgesLandmark) {
+                                counters.buildLoanDuplicateNonBridgeChosen++;
+                                if (second && second.score >= best.score - 1.5) counters.buildLoanDuplicateNonBridgeWouldFlipPenalty15++;
+                                if (second && second.score >= best.score - 2) counters.buildLoanDuplicateNonBridgeWouldFlipPenalty2++;
+                            }
                         }
                     }
                 }
@@ -319,7 +340,7 @@ function toText(report) {
     const lines = [
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} margin=${options.margin}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
-        `totals: diceTie=${totals.diceTie}/${totals.diceDecisions} (${rate(totals.diceTie, totals.diceDecisions)}) diceNearTie=${totals.diceNearTie}/${totals.diceDecisions} (${rate(totals.diceNearTie, totals.diceDecisions)}) rerollMarginWindow=${totals.rerollMarginWindow}/${totals.rerollDecisions} (${rate(totals.rerollMarginWindow, totals.rerollDecisions)}) harborLowRollImproves=${totals.harborLowRollImproves}/${totals.harborDecisions} (${rate(totals.harborLowRollImproves, totals.harborDecisions)}) tvStealTie=${totals.tvStealTie}/${totals.tvDecisions} (${rate(totals.tvStealTie, totals.tvDecisions)}) tvBuiltTie=${totals.tvBuiltTie}/${totals.tvDecisions} (${rate(totals.tvBuiltTie, totals.tvDecisions)}) buildRenovationFirstEarlyChosen=${totals.buildRenovationFirstEarlyChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildRenovationFirstEarlyChosen, totals.buildCardEvDecisions)}) buildRenovationFirstEarlyNearBest=${totals.buildRenovationFirstEarlyNearBest}/${totals.buildCardEvDecisions} (${rate(totals.buildRenovationFirstEarlyNearBest, totals.buildCardEvDecisions)}) buildComboSaturatedChosen=${totals.buildComboSaturatedChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildComboSaturatedChosen, totals.buildCardEvDecisions)}) buildComboSaturatedWouldFlipHalf=${totals.buildComboSaturatedWouldFlipHalf}/${totals.buildCardEvDecisions} (${rate(totals.buildComboSaturatedWouldFlipHalf, totals.buildCardEvDecisions)}) buildLoanChosen=${totals.buildLoanChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanChosen, totals.buildCardEvDecisions)}) buildLoanWouldFlipPenalty2=${totals.buildLoanWouldFlipPenalty2}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanWouldFlipPenalty2, totals.buildCardEvDecisions)})`,
+        `totals: diceTie=${totals.diceTie}/${totals.diceDecisions} (${rate(totals.diceTie, totals.diceDecisions)}) diceNearTie=${totals.diceNearTie}/${totals.diceDecisions} (${rate(totals.diceNearTie, totals.diceDecisions)}) rerollMarginWindow=${totals.rerollMarginWindow}/${totals.rerollDecisions} (${rate(totals.rerollMarginWindow, totals.rerollDecisions)}) harborLowRollImproves=${totals.harborLowRollImproves}/${totals.harborDecisions} (${rate(totals.harborLowRollImproves, totals.harborDecisions)}) tvStealTie=${totals.tvStealTie}/${totals.tvDecisions} (${rate(totals.tvStealTie, totals.tvDecisions)}) tvBuiltTie=${totals.tvBuiltTie}/${totals.tvDecisions} (${rate(totals.tvBuiltTie, totals.tvDecisions)}) buildRenovationFirstEarlyChosen=${totals.buildRenovationFirstEarlyChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildRenovationFirstEarlyChosen, totals.buildCardEvDecisions)}) buildRenovationFirstEarlyNearBest=${totals.buildRenovationFirstEarlyNearBest}/${totals.buildCardEvDecisions} (${rate(totals.buildRenovationFirstEarlyNearBest, totals.buildCardEvDecisions)}) buildComboSaturatedChosen=${totals.buildComboSaturatedChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildComboSaturatedChosen, totals.buildCardEvDecisions)}) buildComboSaturatedWouldFlipHalf=${totals.buildComboSaturatedWouldFlipHalf}/${totals.buildCardEvDecisions} (${rate(totals.buildComboSaturatedWouldFlipHalf, totals.buildCardEvDecisions)}) buildLoanChosen=${totals.buildLoanChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanChosen, totals.buildCardEvDecisions)}) buildLoanWouldFlipPenalty2=${totals.buildLoanWouldFlipPenalty2}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanWouldFlipPenalty2, totals.buildCardEvDecisions)}) buildLoanDuplicateNonBridgeChosen=${totals.buildLoanDuplicateNonBridgeChosen}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanDuplicateNonBridgeChosen, totals.buildCardEvDecisions)}) buildLoanDuplicateNonBridgeWouldFlipPenalty15=${totals.buildLoanDuplicateNonBridgeWouldFlipPenalty15}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanDuplicateNonBridgeWouldFlipPenalty15, totals.buildCardEvDecisions)}) buildLoanDuplicateNonBridgeWouldFlipPenalty2=${totals.buildLoanDuplicateNonBridgeWouldFlipPenalty2}/${totals.buildCardEvDecisions} (${rate(totals.buildLoanDuplicateNonBridgeWouldFlipPenalty2, totals.buildCardEvDecisions)})`,
     ];
     for (const entry of entries) {
         const counters = entry.counters;
@@ -328,7 +349,9 @@ function toText(report) {
             `diceTie=${counters.diceTie}/${counters.diceDecisions} rerollMarginWindow=${counters.rerollMarginWindow}/${counters.rerollDecisions} ` +
             `harborLowRollImproves=${counters.harborLowRollImproves}/${counters.harborDecisions} tvStealTie=${counters.tvStealTie}/${counters.tvDecisions} ` +
             `renovationFirstEarly=${counters.buildRenovationFirstEarlyChosen}/${counters.buildCardEvDecisions} ` +
-            `comboSaturated=${counters.buildComboSaturatedChosen}/${counters.buildCardEvDecisions} loan=${counters.buildLoanChosen}/${counters.buildCardEvDecisions}`
+            `comboSaturated=${counters.buildComboSaturatedChosen}/${counters.buildCardEvDecisions} loan=${counters.buildLoanChosen}/${counters.buildCardEvDecisions} ` +
+            `loanDuplicateNonBridge=${counters.buildLoanDuplicateNonBridgeChosen}/${counters.buildCardEvDecisions} ` +
+            `loanDuplicateNonBridgeFlip15=${counters.buildLoanDuplicateNonBridgeWouldFlipPenalty15}/${counters.buildCardEvDecisions}`
         );
     }
     return lines.join('\n');
