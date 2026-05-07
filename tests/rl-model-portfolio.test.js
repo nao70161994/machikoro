@@ -33,7 +33,7 @@ runTest('RL model portfolio: 2人戦では2人用候補だけを選ぶ', () => {
     assert.ok(models.length > 0);
     assert.ok(models.every(model => !model.minPlayers || model.minPlayers <= 2));
     assert.ok(models.every(model => !model.maxPlayers || model.maxPlayers >= 2));
-    assert.ok(models.every(model => model.id !== 'self-only-4p-h256-lr1e5-5000-seed102'));
+    assert.ok(models.every(model => model.id !== 'self-only-4p-h256-lr1e5-5000-seed103'));
 });
 
 runTest('RL model portfolio: 3人戦と4人戦では採用済み4人モデルを選ぶ', () => {
@@ -41,7 +41,7 @@ runTest('RL model portfolio: 3人戦と4人戦では採用済み4人モデルを
     for (const playerCount of [3, 4]) {
         const models = RLModelPortfolio.eligibleModels(playerCount);
         assert.strictEqual(models.length, 1);
-        assert.strictEqual(models[0].id, 'self-only-4p-h256-lr1e5-5000-seed102');
+        assert.strictEqual(models[0].id, 'self-only-4p-h256-lr1e5-5000-seed103');
     }
 });
 

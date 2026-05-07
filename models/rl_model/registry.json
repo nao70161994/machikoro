@@ -57,10 +57,10 @@
         ],
         "recommendedActiveModels": [
             {
-                "id": "self-only-4p-h256-lr1e5-5000-seed102",
+                "id": "self-only-4p-h256-lr1e5-5000-seed103",
                 "role": "adopted-3p-4p",
-                "style": "vineyard-farm-pizza",
-                "reason": "Adopted for 3-player and 4-player RL CPU. 100-game lineup evaluation stayed stable against normal/strong mixed tables."
+                "style": "wheat-vineyard-pizza",
+                "reason": "Adopted for 3-player and 4-player RL CPU. 100-game comparison beat seed102 overall, with 57% on weak+normal+strong, 47% on normal+normal+strong, and 81% on weak+weak+normal."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
@@ -1066,7 +1066,7 @@
         },
         {
             "id": "self-only-4p-h256-lr1e5-5000-seed102",
-            "status": "adopted",
+            "status": "candidate-4p",
             "path": "models/rl_model/portfolio/seed102-4p.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed102",
             "training": {
@@ -1355,8 +1355,8 @@
         },
         {
             "id": "self-only-4p-h256-lr1e5-5000-seed103",
-            "status": "candidate-4p",
-            "path": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103/best_model.browser.json",
+            "status": "adopted",
+            "path": "models/rl_model/portfolio/seed103-4p.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103",
             "training": {
                 "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
@@ -1374,9 +1374,69 @@
             },
             "style": {
                 "label": "4p-wheat-vineyard-pizza",
-                "summary": "seed102に近い4人自己対戦候補。4人lineup 20戦では弱めlineupに強く、normal+normal+strongにも70%。2人評価のstrongは低いので4人専用候補として扱う。"
+                "summary": "4人自己対戦候補から採用。seed102との100戦比較で総合61.7%対54.0%、4人は rl+weak+normal+strong 57%、rl+normal+normal+strong 47%、rl+weak+weak+normal 81%。3人50戦lineupは normal+strong / weak+strong ともに72%。2人評価のstrongは低いので3〜4人用として扱う。"
             },
             "evals": [
+                {
+                    "date": "2026-05-07",
+                    "type": "js-lineup",
+                    "gamesPerLineup": 100,
+                    "baselineModel": "self-only-4p-h256-lr1e5-5000-seed102",
+                    "lineups": {
+                        "rl+weak+normal+strong": {
+                            "wins": 57,
+                            "losses": 43,
+                            "draws": 0,
+                            "winRate": 0.57,
+                            "seatWinRates": [0.52, 0.64, 0.44, 0.68],
+                            "avgTurns": 83.8,
+                            "passRate": 0.016
+                        },
+                        "rl+normal+normal+strong": {
+                            "wins": 47,
+                            "losses": 53,
+                            "draws": 0,
+                            "winRate": 0.47,
+                            "seatWinRates": [0.56, 0.44, 0.52, 0.36],
+                            "avgTurns": 84.51,
+                            "passRate": 0.023
+                        },
+                        "rl+weak+weak+normal": {
+                            "wins": 81,
+                            "losses": 19,
+                            "draws": 0,
+                            "winRate": 0.81,
+                            "seatWinRates": [0.76, 0.76, 0.84, 0.88],
+                            "avgTurns": 87.8,
+                            "passRate": 0.019
+                        }
+                    }
+                },
+                {
+                    "date": "2026-05-07",
+                    "type": "js-lineup-3p",
+                    "gamesPerLineup": 50,
+                    "lineups": {
+                        "rl+normal+strong": {
+                            "wins": 36,
+                            "losses": 14,
+                            "draws": 0,
+                            "winRate": 0.72,
+                            "seatWinRates": [0.706, 0.75, 0.706],
+                            "avgTurns": 79.3,
+                            "passRate": 0.023
+                        },
+                        "rl+weak+strong": {
+                            "wins": 36,
+                            "losses": 14,
+                            "draws": 0,
+                            "winRate": 0.72,
+                            "seatWinRates": [0.706, 0.625, 0.824],
+                            "avgTurns": 78.98,
+                            "passRate": 0.001
+                        }
+                    }
+                },
                 {
                     "date": "2026-04-19",
                     "type": "js-lineup",
