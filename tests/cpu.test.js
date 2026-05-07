@@ -392,6 +392,23 @@ runTest('buildEV tempo bonus: 購入後の残金を薄く加点できる', () =>
     assert.strictEqual(breakdown.total, breakdown.baseEv + breakdown.comboUnlockBonus + breakdown.tempoBonus);
 });
 
+runTest('buildEV renovation risk: expert v2 simple は改装屋2枚目以降を薄く減点する', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple' });
+    const game = new GameManager(2);
+    const renovation = createCardByName('改装屋');
+
+    const first = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: renovation });
+    assert.strictEqual(first.renovationRiskPenalty, 0);
+
+    game.currentPlayer().addCard(createCardByName('改装屋'));
+    const second = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: renovation });
+    assert.ok(second.renovationRiskPenalty > 0);
+    assert.strictEqual(
+        second.total,
+        second.baseEv + second.comboUnlockBonus + second.tempoBonus - second.renovationRiskPenalty
+    );
+});
+
 // ===== chooseDiceCount =====
 
 runTest('chooseDiceCount: strong は有利局面で妥当な真偽値を返す', () => {

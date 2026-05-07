@@ -3140,12 +3140,26 @@ class CPU {
         const baseEv = Math.max(oneScore, twoScore);
         const comboUnlockBonus = this._expertV2SimpleComboUnlockBonus(game, option, shopStock);
         const tempoBonus = this._expertV2SimpleBuildTempoBonus(clone);
+        const renovationRiskPenalty = this._expertV2SimpleRenovationRiskPenalty(game, option);
         return {
             baseEv,
             comboUnlockBonus,
             tempoBonus,
-            total: baseEv + comboUnlockBonus + tempoBonus,
+            renovationRiskPenalty,
+            total: baseEv + comboUnlockBonus + tempoBonus - renovationRiskPenalty,
         };
+    }
+
+    _expertV2SimpleRenovationRiskPenalty(game, option) {
+        if (!this._isExpertV2Simple() || !option || option.type !== 'card' || !option.card) return 0;
+        if (option.card.name !== "改装屋") return 0;
+        const current = game.currentPlayer();
+        const owned = current.countCard("改装屋");
+        if (owned <= 0) return 0;
+        const nextPlayer = Object.create(current);
+        nextPlayer.countCard = name => (name === "改装屋" ? owned + 1 : current.countCard(name));
+        const scaledPenalty = this._duplicateRenovationPenalty(nextPlayer, "strong", game) * 0.2;
+        return Math.min(4, Math.max(1.5, scaledPenalty));
     }
 
     _expertV2SimpleBuildTempoBonus(game) {
