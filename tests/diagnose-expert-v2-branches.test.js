@@ -82,6 +82,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildRenovationFirstEarlyNearBest: 1,
             buildComboSaturatedChosen: 2,
             buildComboSaturatedWouldFlipHalf: 1,
+            buildComboPayoffReadyChosen: 1,
+            buildComboPayoffNotReadyChosen: 2,
+            buildComboPayoffNotReadyWouldFlipPenalty05: 1,
+            buildComboPayoffNotReadyWouldFlipPenalty1: 2,
             buildLoanChosen: 3,
             buildLoanWouldFlipPenalty2: 1,
             buildLoanDuplicateNonBridgeChosen: 2,
@@ -147,6 +151,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildCardEvDecisions: 6,
                 buildRenovationFirstEarlyChosen: 1,
                 buildComboSaturatedChosen: 2,
+                buildComboPayoffNotReadyChosen: 2,
+                buildComboPayoffNotReadyWouldFlipPenalty05: 1,
                 buildLoanChosen: 3,
                 buildLoanDuplicateNonBridgeChosen: 2,
                 buildLoanDuplicateNonBridgeWouldFlipPenalty15: 1,
@@ -179,6 +185,9 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildRenovationFirstEarlyChosen=1/6'));
     assert.ok(text.includes('renovationFirstEarly=1/6'));
     assert.ok(text.includes('buildComboSaturatedChosen=2/6'));
+    assert.ok(text.includes('buildComboPayoffReadyChosen=1/6'));
+    assert.ok(text.includes('buildComboPayoffNotReadyChosen=2/6'));
+    assert.ok(text.includes('buildComboPayoffNotReadyWouldFlipPenalty05=1/6'));
     assert.ok(text.includes('buildLoanChosen=3/6'));
     assert.ok(text.includes('buildLoanDuplicateNonBridgeChosen=2/6'));
     assert.ok(text.includes('buildLoanDuplicateNonBridgeWouldFlipPenalty15=1/6'));
@@ -208,6 +217,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('leaderFlip=2/5'));
     assert.ok(text.includes('harmfulFlip=1/5'));
     assert.ok(text.includes('comboSaturated=2/6'));
+    assert.ok(text.includes('comboPayoffNotReady=2/6'));
+    assert.ok(text.includes('comboPayoffNotReadyFlip05=1/6'));
     assert.ok(text.includes('loan=3/6'));
     assert.ok(text.includes('loanDuplicateNonBridge=2/6'));
     assert.ok(text.includes('loanDuplicateNonBridgeFlip15=1/6'));
