@@ -38,6 +38,7 @@ const TEST_GROUPS = {
         'render-rl-registry-evals.test.js',
         'update-rl-registry-from-eval.test.js',
         'eval-rl-business-scenario.test.js',
+        'eval-rl-special-scenarios.test.js',
         'summarize-rl-metrics.test.js',
     ],
     sim: [
