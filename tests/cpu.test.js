@@ -626,6 +626,27 @@ runTest('chooseTVTarget: expert v2 simple はTV価値が高い相手を選ぶ', 
     assert.strictEqual(cpu.chooseTVTarget(game), 2);
 });
 
+runTest('chooseTVTarget: expert v2 simple は奪取上限が同じなら勝利に近い相手を選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(3);
+    game.players[1].coins = 8;
+    game.players[2].coins = 5;
+    game.players[2].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[2].landmarks[LANDMARK_NAMES.HARBOR] = true;
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
+});
+
+runTest('chooseTVTarget: expert v2 simple は奪取額をランドマーク数より優先する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(3);
+    game.players[1].coins = 4;
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[1].landmarks[LANDMARK_NAMES.HARBOR] = true;
+    game.players[1].landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    game.players[2].coins = 5;
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
+});
+
 runTest('chooseTVTarget: expert v2 simple は random mode なら合法対象からランダムに選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple", expertTvMode: "random" });
     const game = new GameManager(3);

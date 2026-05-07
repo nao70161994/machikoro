@@ -1442,18 +1442,21 @@ class CPU {
                 }
                 return this._randomChoice(targets) ?? -1;
             }
-            let bestIndex = -1;
-            let bestCoins = -1;
+            let best = null;
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
                 const player = game.players[i];
                 if (!player || player.coins <= 0) continue;
-                if (player.coins > bestCoins) {
-                    bestCoins = player.coins;
-                    bestIndex = i;
+                const steal = Math.min(5, player.coins);
+                const built = player.builtLandmarkCount ? player.builtLandmarkCount() : 0;
+                if (!best ||
+                    steal > best.steal ||
+                    (steal === best.steal && built > best.built) ||
+                    (steal === best.steal && built === best.built && player.coins > best.coins)) {
+                    best = { index: i, steal, built, coins: player.coins };
                 }
             }
-            return bestIndex;
+            return best ? best.index : -1;
         }
         this._syncExpertTuningForGame(game);
         if (this.difficulty === "expert") {
