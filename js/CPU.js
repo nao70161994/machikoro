@@ -1589,17 +1589,23 @@ class CPU {
             for (const player of game.players) {
                 for (const card of player.getMinorCards()) {
                     if (player.isDormant(card)) continue;
-                    counts.set(card.name, (counts.get(card.name) || 0) + 1);
+                    const entry = counts.get(card.name) || { self: 0, opponents: 0 };
+                    if (player === current) entry.self++;
+                    else entry.opponents++;
+                    counts.set(card.name, entry);
                 }
             }
             if (this.expertCleaningMode === "random") {
                 return this._randomChoice(Array.from(counts.keys())) || null;
             }
             let bestName = null;
-            let bestCount = -1;
+            let bestScore = -Infinity;
+            let bestOpponentCount = -1;
             for (const [name, count] of counts.entries()) {
-                if (count > bestCount) {
-                    bestCount = count;
+                const score = count.opponents - count.self * 1.2;
+                if (score > bestScore || (score === bestScore && count.opponents > bestOpponentCount)) {
+                    bestScore = score;
+                    bestOpponentCount = count.opponents;
                     bestName = name;
                 }
             }

@@ -1576,16 +1576,16 @@ runTest('chooseCleaningTarget: 自分より相手の被害が大きいカード�
     assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
 });
 
-runTest('chooseCleaningTarget: expert v2 simple は場で一番多いカード名を選ぶ', () => {
+runTest('chooseCleaningTarget: expert v2 simple は自分への被害を差し引いて多いカード名を選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(3);
-    game.currentPlayer().cards = [createCardByName('カフェ')];
+    game.currentPlayer().cards = [createCardByName('カフェ'), createCardByName('カフェ')];
     game.currentPlayer().dormantCards = [];
     game.players[1].cards = [createCardByName('カフェ'), createCardByName('牧場')];
     game.players[1].dormantCards = [];
-    game.players[2].cards = [createCardByName('カフェ'), createCardByName('パン屋')];
+    game.players[2].cards = [createCardByName('カフェ'), createCardByName('パン屋'), createCardByName('パン屋')];
     game.players[2].dormantCards = [];
-    assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+    assert.strictEqual(cpu.chooseCleaningTarget(game), 'パン屋');
 });
 
 runTest('chooseCleaningTarget: expert v2 simple は random mode なら候補からランダムに選ぶ', () => {
