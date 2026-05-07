@@ -68,7 +68,8 @@
 - 全自動テスト: `npm test`
 - `CPU（最強）` と `CPU（強）` の基準比較: `sh scripts/eval-cpu-top-tier.sh 50` または `npm run eval-expert-vs-strong -- --games 50`
 - `CPU（最強）` の負け筋診断: `npm run diagnose-expert-losses -- --games 8 --profiles duel,trio,crowd`
-- `CPU（最強）` v2 の分岐頻度診断: `node scripts/diagnose-expert-v2-branches.js --games 20 --profiles duel,trio,crowd,allStrong4`。`loanDuplicateNonBridge` は貸金業の非bridge重複購入、`cleaningNearBest1` は清掃業が最良候補に近い局面を数えます。
+- `CPU（最強）` v2 の分岐頻度診断: `node scripts/diagnose-expert-v2-branches.js --games 20 --profiles duel,trio,crowd,allStrong4`。`loanDuplicateNonBridge` は貸金業の非bridge重複購入、`cleaningNearBest1` は清掃業が最良候補に近い局面、`buildParkWouldFlipBonus05` は公園の再分配価値で反転し得る局面、`buildComboPayoffNotReadyChosen` は将来コンボ先が遠い状態でコンボ起点を選んだ局面を数えます。`mover` 行では harmful gift の取り逃しや leader 回避候補を確認します。
+- v2simple の直近採用は赤カード相手ターン EV 補正のみです。red payment cap、IT build bonus、貸金業重複 penalty、Cleaning value bonus、Mover leader 回避、PARK bonus、combo payoff not-ready penalty は、発火不足または50戦評価悪化により棄却済みです。
 - `CPU（最強）` の tuning 候補探索: `sh scripts/search-cpu-top-tier.sh 8 5` または `npm run search-expert-top-tier -- --games 8 --top 5`。wrapper は `models/cpu_top_tier_search/` に `.txt/.md/.json` を保存します。
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`

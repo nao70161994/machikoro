@@ -117,7 +117,9 @@ JSON形式では負けた expert の最後の建設判断に `finalActionDiagnos
 node scripts/diagnose-expert-v2-branches.js --games 20 --profiles duel,trio,crowd,allStrong4
 ```
 
-この診断はサイコロ、リロール、港、テレビ局の僅差分岐に加えて、build EV 内の `loanDuplicateNonBridge` と `cleaningNearBest1` を数えます。`loanDuplicateNonBridge` は貸金業の重複購入がランドマーク到達を橋渡ししていないケース、`cleaningNearBest1` は清掃業が最良候補から1点以内にいるケースです。
+この診断はサイコロ、リロール、港、テレビ局の僅差分岐に加えて、build EV 内の `loanDuplicateNonBridge`、`cleaningNearBest1`、`buildParkWouldFlipBonus05`、`buildComboPayoffNotReadyChosen` などを数えます。`loanDuplicateNonBridge` は貸金業の重複購入がランドマーク到達を橋渡ししていないケース、`cleaningNearBest1` は清掃業が最良候補から1点以内にいるケース、`buildComboPayoffNotReadyChosen` は将来コンボ先が遠い状態でコンボ起点を選んだケースです。`mover` 行では引越し屋の対象選択について、harmful gift の取り逃しや leader 回避で反転し得る局面を確認できます。
+
+直近の v2simple 実験では、赤カード相手ターン EV 補正のみ採用しています。`redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` で薄く加点し、strong100 の基準で改善したため残しています。一方で red payment cap、IT build bonus、貸金業重複 penalty、Cleaning value bonus、Mover leader 回避、PARK bonus、combo payoff not-ready penalty は、発火不足または50戦評価悪化により棄却しています。
 
 `CPU（最強）` の tuning 候補をこの基準で粗く探索する場合:
 
