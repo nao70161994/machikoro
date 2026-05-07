@@ -11,6 +11,7 @@ function parseArgs(argv) {
     let format = 'text';
     let opponents = ['weak', 'normal', 'strong', 'expert'];
     let lineups = [];
+    let sharedSeeds = false;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -19,6 +20,7 @@ function parseArgs(argv) {
         else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
         else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
         else if (arg === '--format') format = argv[++i] || 'text';
+        else if (arg === '--shared-seeds' || arg === '--same-seed') sharedSeeds = true;
         else if (arg === '--opponents') opponents = (argv[++i] || 'weak,normal,strong,expert').split(',').filter(Boolean);
         else if (arg === '--lineups') {
             lineups = (argv[++i] || '')
@@ -28,7 +30,7 @@ function parseArgs(argv) {
         }
     }
 
-    return { modelPath, games, seed, maxSteps, format, opponents, lineups };
+    return { modelPath, games, seed, maxSteps, format, opponents, lineups, sharedSeeds };
 }
 
 function loadModel(modelPath) {
@@ -42,6 +44,8 @@ function evaluateRlVsJs(options = {}) {
     const lineups = Array.isArray(options.lineups) && options.lineups.length > 0
         ? options.lineups.map(lineup => lineup.slice())
         : (options.opponents || ['weak', 'normal', 'strong', 'expert']).map(opponent => ['rl', opponent]);
+    const games = options.games || 20;
+    const baseSeed = options.seed || 1;
     return lineups.map((lineup, index) => ({
         opponent: lineup.length === 2 ? lineup.find(player => player !== 'rl') : lineup.join('+'),
         lineup,
@@ -52,8 +56,8 @@ function evaluateRlVsJs(options = {}) {
             schemaVersion: rlModelData.schemaVersion,
         },
         result: runSeries({
-            games: options.games || 20,
-            seed: (options.seed || 1) + index * (options.games || 20),
+            games,
+            seed: options.sharedSeeds ? baseSeed : baseSeed + index * games,
             maxSteps: options.maxSteps || 5000,
             players: lineup,
             rlModelData,

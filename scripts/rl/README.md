@@ -435,6 +435,10 @@ npm run export-rl-model
 npm run eval-rl-vs-js -- --model models/rl_model/model.browser.json --games 20 --opponents weak,normal,strong
 ```
 
+opponent 難易度ごとのブレを切り分けたい場合は `--shared-seeds`（別名 `--same-seed`）を付ける。
+既定では `weak` / `normal` / `strong` ごとに評価 seed 範囲をずらすが、`--shared-seeds` では各 opponent に同じ `seed..seed+games-1` を使う。
+これは difficulty 間や候補モデル間を同じ seed 条件で見直すための診断用で、相手やモデルの選択が分岐した後の乱数消費まで完全に揃えるものではない。採用判断では通常どおり十分なゲーム数で再評価する。
+
 `--cpu-opponent-impl js-oracle` は、Python 学習環境の `normal/strong/expert` 相手に JS 側 `CPU.js` を oracle として使う。
 これは Python heuristic と JS CPU のズレを避けるための現行推奨設定。
 

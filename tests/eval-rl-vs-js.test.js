@@ -68,17 +68,23 @@ function buildRlModel() {
 }
 
 runTest('parseArgs は RL vs JS 評価 CLI 引数を解釈する', () => {
-    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
+    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--shared-seeds', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
     assert.strictEqual(args.modelPath, 'tmp/model.json');
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.format, 'json');
+    assert.strictEqual(args.sharedSeeds, true);
     assert.deepStrictEqual(args.opponents, ['strong', 'expert']);
     assert.deepStrictEqual(args.lineups, [
         ['rl', 'weak', 'normal', 'strong'],
         ['rl', 'normal', 'normal', 'strong'],
     ]);
+});
+
+runTest('parseArgs は --same-seed を sharedSeeds として解釈する', () => {
+    const args = parseArgs(['--same-seed']);
+    assert.strictEqual(args.sharedSeeds, true);
 });
 
 runTest('loadModel は export 済み JSON を読み込む', () => {
@@ -104,6 +110,31 @@ runTest('evaluateRlVsJs は opponent ごとの 2人戦結果を返す', () => {
     assert.strictEqual(result[1].opponent, 'normal');
     assert.deepStrictEqual(result[1].result.players, ['rl', 'normal']);
     assert.strictEqual(result[0].modelInfo.stateDim, 145);
+});
+
+runTest('evaluateRlVsJs は既定で opponent ごとに seed 範囲をずらす', () => {
+    const result = evaluateRlVsJs({
+        games: 2,
+        seed: 11,
+        maxSteps: 1,
+        opponents: ['weak', 'normal'],
+        rlModelData: buildRlModel(),
+    });
+    assert.deepStrictEqual(result[0].result.matchLog.map(match => match.seed), [11, 12]);
+    assert.deepStrictEqual(result[1].result.matchLog.map(match => match.seed), [13, 14]);
+});
+
+runTest('evaluateRlVsJs は sharedSeeds 指定時に同じ seed 範囲で opponent を評価する', () => {
+    const result = evaluateRlVsJs({
+        games: 2,
+        seed: 11,
+        maxSteps: 1,
+        opponents: ['weak', 'normal'],
+        sharedSeeds: true,
+        rlModelData: buildRlModel(),
+    });
+    assert.deepStrictEqual(result[0].result.matchLog.map(match => match.seed), [11, 12]);
+    assert.deepStrictEqual(result[1].result.matchLog.map(match => match.seed), [11, 12]);
 });
 
 runTest('evaluateRlVsJs は4人lineup評価を返す', () => {
