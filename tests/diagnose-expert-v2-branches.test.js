@@ -114,6 +114,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildParkNearBest1: 1,
             buildParkWouldFlipBonus05: 1,
             buildParkWouldFlipBonus1: 2,
+            buildLandmarkGatedChosen: 3,
+            buildLandmarkGatedFarChosen: 2,
+            buildLandmarkGatedWouldFlipPenalty05: 1,
+            buildLandmarkGatedWouldFlipPenalty1: 2,
             buildHighPurpleEarlyChosen: 2,
             buildHighPurpleWouldFlipPenalty1: 1,
             buildHighPurpleWouldFlipPenalty2: 2,
@@ -162,6 +166,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildItWouldFlipAssumeInvest025: 1,
                 buildBusinessWouldFlipBonus05: 1,
                 buildParkWouldFlipBonus05: 1,
+                buildLandmarkGatedFarChosen: 2,
+                buildLandmarkGatedWouldFlipPenalty05: 1,
                 buildHighPurpleEarlyChosen: 2,
                 buildRedSaturatedLowIncomeChosen: 2,
                 itInvestDecisions: 4,
@@ -203,6 +209,9 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildParkCandidate=3/6'));
     assert.ok(text.includes('buildParkPositive=2/6'));
     assert.ok(text.includes('buildParkWouldFlipBonus05=1/6'));
+    assert.ok(text.includes('buildLandmarkGatedChosen=3/6'));
+    assert.ok(text.includes('buildLandmarkGatedFarChosen=2/6'));
+    assert.ok(text.includes('buildLandmarkGatedWouldFlipPenalty05=1/6'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
     assert.ok(text.includes('buildRedSaturatedLowIncomeChosen=2/6'));
@@ -228,6 +237,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('itFlip025=1/6'));
     assert.ok(text.includes('businessFlip05=1/6'));
     assert.ok(text.includes('parkFlip05=1/6'));
+    assert.ok(text.includes('gatedFar=2/6'));
+    assert.ok(text.includes('gatedFlip05=1/6'));
     assert.ok(text.includes('highPurpleEarly=2/6'));
     assert.ok(text.includes('redSaturated=2/6'));
     assert.ok(text.includes('itDelay=1/4'));
