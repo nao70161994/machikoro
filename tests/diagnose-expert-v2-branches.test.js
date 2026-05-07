@@ -44,12 +44,23 @@ runTest('diagnose-expert-v2-branches installBranchDiagnostics は prototype を�
     assert.strictEqual(runtime.CPU.prototype.chooseDiceCount, original);
 });
 
+runTest('diagnose-expert-v2-branches installBranchDiagnostics は build prototype も戻す', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const original = runtime.CPU.prototype._buildExpertV2Simple;
+    const counters = createCounters();
+    const uninstall = installBranchDiagnostics(runtime, counters);
+    assert.notStrictEqual(runtime.CPU.prototype._buildExpertV2Simple, original);
+    uninstall();
+    assert.strictEqual(runtime.CPU.prototype._buildExpertV2Simple, original);
+});
+
 runTest('diagnose-expert-v2-branches runDiagnostics は profile ごとのカウンタを返す', () => {
     const report = runDiagnostics({ games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, profiles: ['duel'], margin: 0.2 });
     assert.strictEqual(report.entries.length, 1);
     assert.strictEqual(report.entries[0].profile, 'duel');
     assert.ok(typeof report.entries[0].counters.diceDecisions === 'number');
     assert.ok(typeof report.totals.rerollMarginWindow === 'number');
+    assert.ok(typeof report.totals.buildRenovationFirstEarlyChosen === 'number');
 });
 
 runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () => {
@@ -66,6 +77,13 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             harborLowRollImproves: 1,
             tvDecisions: 5,
             tvStealTie: 2,
+            buildCardEvDecisions: 6,
+            buildRenovationFirstEarlyChosen: 1,
+            buildRenovationFirstEarlyNearBest: 1,
+            buildComboSaturatedChosen: 2,
+            buildComboSaturatedWouldFlipHalf: 1,
+            buildLoanChosen: 3,
+            buildLoanWouldFlipPenalty2: 1,
         }),
         entries: [{
             profile: 'duel',
@@ -81,6 +99,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 harborLowRollImproves: 1,
                 tvDecisions: 5,
                 tvStealTie: 2,
+                buildCardEvDecisions: 6,
+                buildRenovationFirstEarlyChosen: 1,
+                buildComboSaturatedChosen: 2,
+                buildLoanChosen: 3,
             }),
         }],
     };
@@ -89,4 +111,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('rerollMarginWindow=1/3'));
     assert.ok(text.includes('harborLowRollImproves=1/4'));
     assert.ok(text.includes('tvStealTie=2/5'));
+    assert.ok(text.includes('buildRenovationFirstEarlyChosen=1/6'));
+    assert.ok(text.includes('renovationFirstEarly=1/6'));
+    assert.ok(text.includes('buildComboSaturatedChosen=2/6'));
+    assert.ok(text.includes('buildLoanChosen=3/6'));
+    assert.ok(text.includes('comboSaturated=2/6'));
+    assert.ok(text.includes('loan=3/6'));
 });
