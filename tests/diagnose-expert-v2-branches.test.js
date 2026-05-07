@@ -96,6 +96,9 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildRedWouldFlipWeight025: 1,
             buildRedWouldFlipWeight05: 2,
             buildRedWouldFlipWeight1: 3,
+            buildRedPaymentCappedChosen: 1,
+            buildRedPaymentCapWouldFlip: 1,
+            buildRedPaymentCapLossTotal: 0.5,
         }),
         entries: [{
             profile: 'duel',
@@ -119,6 +122,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildLoanDuplicateNonBridgeWouldFlipPenalty15: 1,
                 buildCleaningNearBest1: 2,
                 buildRedWouldFlipWeight025: 1,
+                buildRedPaymentCapWouldFlip: 1,
             }),
         }],
     };
@@ -137,10 +141,12 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildCleaningNearBest1=2/6'));
     assert.ok(text.includes('buildRedCandidate=5/6'));
     assert.ok(text.includes('buildRedWouldFlipWeight025=1/6'));
+    assert.ok(text.includes('buildRedPaymentCapWouldFlip=1/6'));
     assert.ok(text.includes('comboSaturated=2/6'));
     assert.ok(text.includes('loan=3/6'));
     assert.ok(text.includes('loanDuplicateNonBridge=2/6'));
     assert.ok(text.includes('loanDuplicateNonBridgeFlip15=1/6'));
     assert.ok(text.includes('cleaningNearBest1=2/6'));
     assert.ok(text.includes('redFlip025=1/6'));
+    assert.ok(text.includes('redPaymentCapFlip=1/6'));
 });
