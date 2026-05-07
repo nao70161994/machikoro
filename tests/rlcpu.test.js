@@ -716,7 +716,7 @@ for (const [scenario, forcedDice] of [['wheat_then_pass', 1], ['tv_then_pass', 6
     });
 }
 
-runTest('RLCPU: 4人戦の対象選択は脅威度最大の相手へ固定される', () => {
+runTest('RLCPU: target head がない時はTV/BCを脅威度、moverをカード価値で選ぶ', () => {
     const context = loadRLRuntime();
     const { RLCPU, GameManager, createCardByName, GAME_PHASES } = context;
     const game = new GameManager(4);
@@ -756,7 +756,7 @@ runTest('RLCPU: 4人戦の対象選択は脅威度最大の相手へ固定され
     game.pendingMover = 1;
     const moverMove = cpu.chooseMoverMove(game);
     assert.ok(moverMove);
-    assert.strictEqual(moverMove.targetIndex, 2);
+    assert.strictEqual(moverMove.targetIndex, 1);
 });
 
 runTest('RLCPU: target head があれば4人戦の対象選択に使う', () => {

@@ -382,6 +382,38 @@ class RLCPU {
         return slots[bestSlot].playerIndex;
     }
 
+    _selectMoverTargetIndex(game, cardName) {
+        if (this._targetLayerForKind('mover') && this.numTargetSlots > 0) {
+            return this._selectTargetIndex(game, 'mover');
+        }
+        const card = CARDS.find(candidate => candidate.name === cardName);
+        if (!card) return this._selectOpponentIndex(game);
+        let bestIndex = -1;
+        let bestScore = -Infinity;
+        for (let index = 0; index < game.players.length; index++) {
+            if (index === game.currentPlayerIndex) continue;
+            const player = game.players[index];
+            const receivedValue = this._moverReceivedCardValue(card, player);
+            const threat = this._playerThreatScore(player);
+            const threatTerm = receivedValue < 0 ? threat * 0.02 : -threat * 0.02;
+            const score = -receivedValue + threatTerm;
+            if (bestIndex < 0 || score > bestScore) {
+                bestIndex = index;
+                bestScore = score;
+            }
+        }
+        return bestIndex >= 0 ? bestIndex : this._selectOpponentIndex(game);
+    }
+
+    _moverReceivedCardValue(card, player) {
+        if (!card || !player) return 0;
+        const owned = player.countCard(card.name);
+        if (card.effect === CARD_EFFECTS.LOAN) return -2.5 * (owned + 1);
+        if (card.effect === CARD_EFFECTS.RENOVATION) return 6 - (owned + 1) * 5;
+        if (card.effect === CARD_EFFECTS.PARK) return 0;
+        return (card.cost || 0) * 0.5 + (card.income || 0) + owned * 0.25;
+    }
+
     _selectOpponentIndex(game) {
         let bestIndex = -1;
         let bestScore = -Infinity;
@@ -665,9 +697,10 @@ class RLCPU {
     chooseMoverMove(game) {
         const { action } = this._chooseForGame(game);
         if (action < RLCPU.ACTIONS.MOVER_BASE || action >= RLCPU.ACTIONS.MOVER_BASE + CARDS.length) return null;
+        const cardName = CARDS[action - RLCPU.ACTIONS.MOVER_BASE].name;
         return {
-            cardIndex: CARDS[action - RLCPU.ACTIONS.MOVER_BASE].name,
-            targetIndex: this._selectTargetIndex(game, 'mover'),
+            cardIndex: cardName,
+            targetIndex: this._selectMoverTargetIndex(game, cardName),
         };
     }
 
