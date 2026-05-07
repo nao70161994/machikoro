@@ -434,6 +434,69 @@ print(stats["target_pending_rate"] > 0 and stats["target_update_rate"] > 0 and s
     assert.strictEqual(lines[2], 'True');
 });
 
+runTest('rl train: target oversampling は4人target遷移だけを増やす', () => {
+    const output = runPython(`
+import numpy as np
+import random
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import _oversample_target_transitions
+
+random.seed(4)
+agent = RLAgent(hidden=8, lr=0.001, state_dim=353, target_slots=3)
+state = np.zeros(353, dtype=np.float32)
+mask = np.zeros(1580, dtype=np.float32)
+mask[0] = 1.0
+for index in range(10):
+    agent.states.append(state.copy())
+    agent.actions.append(0)
+    agent.masks.append(mask.copy())
+    agent.target_kinds.append("tv" if index == 0 else None)
+    agent.target_slots.append(1 if index == 0 else None)
+    agent.target_masks.append(np.array([1.0, 1.0, 1.0], dtype=np.float32))
+    agent.values.append(0.0)
+    agent.rewards.append(0.0)
+    agent.next_values.append(0.0)
+    agent.dones.append(index == 9)
+added = _oversample_target_transitions(agent, 0.25)
+target_count = sum(1 for kind in agent.target_kinds if kind == "tv")
+print(added)
+print(len(agent.rewards))
+print(target_count / len(agent.rewards) >= 0.25)
+`);
+    const lines = output.split('\n');
+    assert.ok(Number(lines[0]) > 0);
+    assert.ok(Number(lines[1]) > 10);
+    assert.strictEqual(lines[2], 'True');
+});
+
+runTest('rl train: target oversampling は2人互換モデルではno-op', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import _oversample_target_transitions
+
+agent = RLAgent(hidden=8, lr=0.001, state_dim=145, target_slots=0)
+state = np.zeros(145, dtype=np.float32)
+mask = np.zeros(1580, dtype=np.float32)
+mask[0] = 1.0
+agent.states.append(state.copy())
+agent.actions.append(0)
+agent.masks.append(mask.copy())
+agent.target_kinds.append("tv")
+agent.target_slots.append(0)
+agent.target_masks.append(np.zeros(0, dtype=np.float32))
+agent.values.append(0.0)
+agent.rewards.append(0.0)
+agent.next_values.append(0.0)
+agent.dones.append(True)
+print(_oversample_target_transitions(agent, 0.5))
+print(len(agent.rewards))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '0');
+    assert.strictEqual(lines[1], '1');
+});
+
 runTest('rl train: train は BC target head を give/take と同時に更新できる', () => {
     const output = runPython(`
 import numpy as np

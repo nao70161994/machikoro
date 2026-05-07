@@ -512,6 +512,69 @@ def _append_episode_to_agent(agent: RLAgent, ep_states, ep_actions, ep_masks, ep
         agent.dones.append(dones[i])
 
 
+def _has_trainable_target_transition(agent: RLAgent, index: int) -> bool:
+    if int(getattr(agent.net, "target_slots", 0) or 0) <= 0:
+        return False
+    if index < 0 or index >= len(agent.rewards):
+        return False
+    target_kind = agent.target_kinds[index] if index < len(agent.target_kinds) else None
+    target_slot = agent.target_slots[index] if index < len(agent.target_slots) else None
+    target_mask = agent.target_masks[index] if index < len(agent.target_masks) else None
+    if target_kind not in ("tv", "bc", "mover") or target_slot is None:
+        return False
+    if target_mask is None or len(target_mask) == 0 or int(np.sum(target_mask)) <= 0:
+        return False
+    head_name = "bc_target_head" if target_kind == "bc" else f"{target_kind}_target_head"
+    return getattr(agent.net, head_name, None) is not None
+
+
+def _copy_agent_transition(agent: RLAgent, source_index: int):
+    agent.states.append(np.array(agent.states[source_index], copy=True))
+    agent.actions.append(agent.actions[source_index])
+    agent.masks.append(np.array(agent.masks[source_index], copy=True))
+    agent.target_kinds.append(agent.target_kinds[source_index] if source_index < len(agent.target_kinds) else None)
+    agent.target_slots.append(agent.target_slots[source_index] if source_index < len(agent.target_slots) else None)
+    target_mask = agent.target_masks[source_index] if source_index < len(agent.target_masks) else None
+    if target_mask is None:
+        target_mask = np.zeros(int(getattr(agent.net, "target_slots", 0) or 0), dtype=np.float32)
+    agent.target_masks.append(np.array(target_mask, copy=True))
+    if len(agent.log_probs) == len(agent.rewards):
+        agent.log_probs.append(agent.log_probs[source_index])
+    agent.values.append(agent.values[source_index])
+    agent.rewards.append(agent.rewards[source_index])
+    agent.next_values.append(agent.next_values[source_index])
+    agent.dones.append(agent.dones[source_index])
+
+
+def _oversample_target_transitions(agent: RLAgent, target_ratio: float, max_multiplier: float = 4.0) -> int:
+    """Duplicate target-pending transitions before train() to increase target-head updates.
+
+    Default training passes target_ratio=0. 2p models have target_slots=0, so this is a no-op
+    even when the flag is accidentally enabled.
+    """
+    if target_ratio <= 0 or int(getattr(agent.net, "target_slots", 0) or 0) <= 0:
+        return 0
+    total = len(agent.rewards)
+    if total <= 0:
+        return 0
+    target_indices = [index for index in range(total) if _has_trainable_target_transition(agent, index)]
+    if not target_indices:
+        return 0
+
+    target_ratio = min(max(float(target_ratio), 0.0), 0.95)
+    target_count = len(target_indices)
+    current_ratio = target_count / total
+    if current_ratio >= target_ratio:
+        return 0
+
+    desired_extra = int(np.ceil((target_ratio * total - target_count) / max(1.0 - target_ratio, 1e-9)))
+    max_total = max(total, int(np.ceil(total * max(float(max_multiplier), 1.0))))
+    desired_extra = min(desired_extra, max(0, max_total - total))
+    for _ in range(desired_extra):
+        _copy_agent_transition(agent, random.choice(target_indices))
+    return desired_extra
+
+
 def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_steps: int = 3000,
                        reward_config=None, terminal_config=None, self_learn_both_sides: bool = False,
                        player_count: int = 2) -> dict:
@@ -1409,6 +1472,8 @@ def main():
     parser.add_argument("--train-opponents", default="random=0.7,pool=0.3", help="学習時に混ぜる相手の重み指定 random/self/pool/weak/normal/strong/expert")
     parser.add_argument("--player-count", type=int, default=2, help="Python学習環境のプレイヤー人数（2〜4、3人以上は新しい多人数用状態表現）")
     parser.add_argument("--self-learn-both-sides", action="store_true", help="opponent=self の学習ゲームで両席の行動を学習対象にする")
+    parser.add_argument("--target-oversample-ratio", type=float, default=0.0, help="train()直前にtarget pending遷移を複製して目標比率まで増やす（0で無効）")
+    parser.add_argument("--target-oversample-max-multiplier", type=float, default=4.0, help="target oversampling後の最大buffer倍率")
     parser.add_argument("--cpu-opponent-impl", choices=("python", "js-oracle"), default="python", help="weak以外のCPU相手の実装 python/js-oracle")
     parser.add_argument("--js-cpu-oracle", action="store_true", help="互換エイリアス: --cpu-opponent-impl js-oracle")
     parser.add_argument("--imitation-games", type=int, default=0, help="RL前にCPU教師行動で模倣学習するゲーム数（0で無効）")
@@ -1584,6 +1649,11 @@ def main():
             agent_wins += 1
 
         if game_i % BATCH == 0:
+            _oversample_target_transitions(
+                agent,
+                args.target_oversample_ratio,
+                max_multiplier=args.target_oversample_max_multiplier,
+            )
             stats = agent.train()
             train_calls += 1
             if stats:
