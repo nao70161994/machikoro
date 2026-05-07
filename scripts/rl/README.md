@@ -46,7 +46,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `../review-rl-multiplayer-topk.js` | top-k 多人数後評価 JSON を 3人/4人総合点+多様性で並べる |
 | `../review-rl-multiplayer-experiment-set.js` | 複数 run の top10 review JSON を、run 間の総合点+多様性で比較する |
 | `../eval-rl-models.js` | 複数の registry model / run-label をまとめてJS評価し、ランキングJSON/CSVを出力 |
-| `../eval-rl-special-scenarios.js` | テレビ局 / ビジネスセンター / 清掃業 / 引越し屋などの固定局面で target 選択を診断 |
+| `../eval-rl-special-scenarios.js` | テレビ局 / ビジネスセンター / 清掃業 / 引越し屋 / 改装屋などの固定局面で target / pending action 選択を診断 |
 | `../validate-rl-registry.js` | `models/rl_model/registry.json` のID重複・推奨モデル参照を検証 |
 
 ---
@@ -749,7 +749,7 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 `npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review を更新する。評価後の標準フローとして使える。
 `npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
-target head や特殊行動の局面診断だけを確認する場合は `npm run eval-rl-special-scenarios` を使う。`--models` / `--run-labels` / `--player-count` / `--scenarios` で対象を絞り、必要なら `--format json --output models/rl_model/<label>.special-scenarios.json` で保存する。この出力も評価診断artifactなので git 管理しない。mover / cleaning fallback を変更した場合は、最低限 `cleaningOpponentEngine`, `cleaningAvoidSelfDamage`, `moverTargetSafeRecipient`, `moverAvoidHelpingLeader`, `moverDormantPreferred` を確認する。
+target head や特殊行動の局面診断だけを確認する場合は `npm run eval-rl-special-scenarios` を使う。`--models` / `--run-labels` / `--player-count` / `--scenarios` で対象を絞り、必要なら `--format json --output models/rl_model/<label>.special-scenarios.json` で保存する。この出力も評価診断artifactなので git 管理しない。mover / cleaning fallback を変更した場合は、最低限 `cleaningOpponentEngine`, `cleaningAvoidSelfDamage`, `moverTargetSafeRecipient`, `moverAvoidHelpingLeader`, `moverDormantPreferred` を確認する。改装屋の pending 選択を変更した場合は `renovationAvoidPremiumLandmark` も確認する。
 adoption review や top-k review の `*.review.md` / `*.review.json` / `*.review.txt` も再生成可能な診断artifactとして扱う。採用判断として残す内容は `registry.json` の `status` / `reason` / `evaluations` / `style` へ要約し、長い review 出力そのものはコミットしない。
 
 ```bash

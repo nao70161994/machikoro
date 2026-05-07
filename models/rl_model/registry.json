@@ -60,7 +60,7 @@
                 "id": "self-only-4p-h256-lr1e5-5000-seed103",
                 "role": "adopted-3p-4p",
                 "style": "wheat-vineyard-pizza",
-                "reason": "Adopted for 3-player and 4-player RL CPU. 100-game comparison beat seed102 overall, with 57% on weak+normal+strong, 47% on normal+normal+strong, and 81% on weak+weak+normal."
+                "reason": "Adopted for 3-player and 4-player RL CPU. After mover/cleaning runtime fallback, 100-game lineup evaluation reached 57% on weak+normal+strong, 51% on normal+normal+strong, and 78% on weak+weak+normal."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",

@@ -357,7 +357,7 @@ RL スクリプト / モデル:
 - `scripts/rl/export_model.py`: 学習済み `.npz` の browser 用 export
 - `scripts/eval-rl-vs-js.js`: RL と JS CPU の 2 人戦比較
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
-- `scripts/eval-rl-special-scenarios.js`: RL モデルがテレビ局 / ビジネスセンター / 清掃業 / 引越し屋などの固定局面で期待 target を選べるか確認する診断
+- `scripts/eval-rl-special-scenarios.js`: RL モデルがテレビ局 / ビジネスセンター / 清掃業 / 引越し屋 / 改装屋などの固定局面で期待 target / pending action を選べるか確認する診断
 - `scripts/report-rl-registry.js`: registry の棚卸しレポート出力。評価カバレッジに加えて target head 診断も一覧します。
 - `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人評価カバレッジ監査。target head 診断も含みます。
 - `scripts/plan-rl-next-actions.js`: 台帳と監査から次にやる評価・見直し作業を優先順位付きで抽出
