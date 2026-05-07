@@ -584,8 +584,8 @@ npm run summarize-rl-metrics -- \
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
 - `terminal-shaped-h128-lr1e4` が strong に勝つ試合は、パン屋を厚く積み、マグロ漁船/コンビニ/寿司屋を絡めて全ランドマーク到達まで走る傾向がある。20戦中の strong 勝利7試合では平均60.0ターン、最終ランドマーク平均6.0個。
 - 完全自己対戦のみでも、両側学習なし/高めlrでは外部JS評価が崩れることがある。`self-only-both-5000-seed51` は `pool=100%` でも JS `weak 12% / normal 0% / strong 0%` で rejected。
-- `hidden=256 + lr=3e-5 + self=1 + --self-learn-both-sides + 5000 games` は `weak 90% / normal 65% / strong 45%` を出し、現時点の strong 重視トップ候補。
-- `hidden=256 + lr=2e-5 + rewardcap` は `weak 95% / normal 70% / strong 35%`。strong はやや下がるが pass率が低く、安定型候補。
+- `hidden=256 + lr=3e-5 + self=1 + --self-learn-both-sides + 5000 games` は当初 `weak 90% / normal 65% / strong 45%` を出したが、後評価で `seed71-top3` より normal が大きく弱いため archive 扱いにした。
+- `hidden=256 + lr=2e-5 + rewardcap` は当初 `weak 95% / normal 70% / strong 35%` の安定型候補だったが、shared-seeds 100戦で normal が伸びず archive 扱いにした。
 - `seed71 rewardcap` の top3 checkpoint は50戦 JS 評価で `weak 100% / normal 92% / strong 78%`、100戦 JS 評価で `weak 100% / normal 96% / strong 76%`。現時点の最強候補だが、単一採用ではなく戦略バリエーション用に別系統候補も残す。
 
 ルールベースの `CPU（最強）` を `CPU（強）` より明確に上位へ保つための基準比較は次を使う。
@@ -683,7 +683,7 @@ sh scripts/rl/bg-experiment-set.sh \
 台帳に記録する主な情報:
 
 - `id`: run / モデル識別子。
-- `status`: `candidate` / `archive` / `rejected`。
+- `status`: `adopted` / `candidate` / `candidate-4p` / `archive` / `rejected`。
 - `path`: ローカルの browser 用モデルJSONへの相対パス。
 - `training`: wrapper、games、hidden、lr、報酬プロファイルなど。
 - `style`: 構築傾向のラベルと主要カード/ランドマーク。
@@ -772,8 +772,9 @@ npm run report-rl-registry -- --format json --output models/rl_model/registry-re
 | `terminal-shaped-curriculum-h256` | rejected | JS 評価 0% 傾向 | pass 崩壊 |
 | `terminal-shaped-curriculum-h256-lr1e4` | rejected | JS 評価 0% 傾向 | 高 pass 率 |
 
-昇格判断は 4戦の checkpoint 評価ではなく、最低20戦の JS 評価を使う。
-現行の候補基準は `weak >= 70%`、`normal >= 50%`、`strong >= 10%`。
+仮候補への昇格判断は 4戦の checkpoint 評価ではなく、最低20戦の JS 評価を使う。
+active 採用や主採用の判断では、台帳の `minimumAdoptionGamesPerOpponent` に従って十分なゲーム数で再評価する。
+仮候補の基準は `weak >= 70%`、`normal >= 50%`、`strong >= 10%`。
 `strong` 対応済みとみなす目安は `weak >= 75%`、`normal >= 60%`、`strong >= 30%`。
 
 ---
