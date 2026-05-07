@@ -168,6 +168,17 @@ const SCENARIOS = {
             { coins: 12, cards: ['鉱山', 'サンマ漁船'], landmarks: ['駅', '港'] },
         ],
     },
+    renovationAvoidPremiumLandmark: {
+        kind: 'renovation',
+        description: '改装屋で高価値ランドマークを戻さず低被害のランドマークを選べるかを見る局面',
+        expected: { avoidLandmark: '空港' },
+        players: [
+            { coins: 4, cards: ['改装屋', '麦畑', 'パン屋'], landmarks: ['駅', '港', 'ショッピングモール', '遊園地', '空港'] },
+            { coins: 5, cards: ['牧場', 'パン屋'], landmarks: [] },
+            { coins: 8, cards: ['ピザ屋', 'バーガーショップ'], landmarks: ['駅'] },
+            { coins: 15, cards: ['鉱山', 'サンマ漁船'], landmarks: ['駅', '港'] },
+        ],
+    },
     twoPlayerBusinessBasic: {
         kind: 'business',
         description: '2人モデル向けの基本ビジネスセンター局面',
@@ -199,7 +210,7 @@ function createScenarioGame(runtime, scenarioName, playerCount) {
     game.pendingBusiness = scenario.kind === 'business' ? 1 : 0;
     game.pendingCleaning = scenario.kind === 'cleaning' ? 1 : 0;
     game.pendingMover = scenario.kind === 'mover' ? 1 : 0;
-    game.pendingRenovation = 0;
+    game.pendingRenovation = scenario.kind === 'renovation' ? 1 : 0;
     game.pendingIT = false;
 
     for (let i = 0; i < playerCount; i++) {
@@ -250,6 +261,8 @@ function buildChecks(expected, actual) {
     if (Array.isArray(expected.giveOneOf)) checks.giveMatches = expected.giveOneOf.includes(actual.give || actual.cardName);
     if (Array.isArray(expected.takeOneOf)) checks.takeMatches = expected.takeOneOf.includes(actual.take);
     if (Array.isArray(expected.avoidGive)) checks.avoidGivePassed = !expected.avoidGive.includes(actual.give || actual.cardName);
+    if (Array.isArray(expected.landmarkOneOf)) checks.landmarkMatches = expected.landmarkOneOf.includes(actual.landmarkName);
+    if (expected.avoidLandmark) checks.avoidLandmarkPassed = actual.landmarkName !== expected.avoidLandmark;
     return checks;
 }
 
@@ -325,6 +338,19 @@ function evaluateMoverScenario(runtime, cpu, game, scenario) {
     };
 }
 
+function evaluateRenovationScenario(cpu, game, scenario) {
+    const landmarkName = cpu.chooseRenovationTarget(game);
+    const actual = {
+        skipped: !landmarkName,
+        landmarkName: landmarkName || '',
+    };
+    return {
+        ...actual,
+        expected: scenario.expected || {},
+        checks: buildChecks(scenario.expected || {}, actual),
+    };
+}
+
 function evaluateScenario(runtime, modelData, scenarioName, playerCount) {
     const scenario = SCENARIOS[scenarioName];
     if (!scenario) throw new Error(`unknown scenario: ${scenarioName}`);
@@ -335,6 +361,7 @@ function evaluateScenario(runtime, modelData, scenarioName, playerCount) {
     else if (scenario.kind === 'business') detail = evaluateBusinessScenario(runtime, cpu, game, scenario);
     else if (scenario.kind === 'cleaning') detail = evaluateCleaningScenario(cpu, game, scenario);
     else if (scenario.kind === 'mover') detail = evaluateMoverScenario(runtime, cpu, game, scenario);
+    else if (scenario.kind === 'renovation') detail = evaluateRenovationScenario(cpu, game, scenario);
     else throw new Error(`unknown scenario kind: ${scenario.kind}`);
     return {
         scenario: scenarioName,
@@ -373,6 +400,7 @@ function renderScenarioText(scenario) {
     }
     if (scenario.kind === 'cleaning') return `${scenario.scenario}[cleaning]: card=${scenario.cardName}`;
     if (scenario.kind === 'mover') return `${scenario.scenario}[mover]: target=${scenario.target} card=${scenario.cardName}(${scenario.cardCost}) dormant=${scenario.isDormant ? 'yes' : 'no'}`;
+    if (scenario.kind === 'renovation') return `${scenario.scenario}[renovation]: landmark=${scenario.landmarkName}`;
     return `${scenario.scenario}[${scenario.kind}]: ok`;
 }
 

@@ -92,6 +92,7 @@ runTest('scenarioNamesForPlayerCount は人数に合う既定scenarioだけを�
     assert.ok(fourPlayerNames.includes('tvLeaderThreat'));
     assert.ok(fourPlayerNames.includes('moverGiveJunk'));
     assert.ok(fourPlayerNames.includes('moverTargetSafeRecipient'));
+    assert.ok(fourPlayerNames.includes('renovationAvoidPremiumLandmark'));
     assert.strictEqual(fourPlayerNames.includes('twoPlayerBusinessBasic'), false);
 });
 
@@ -102,13 +103,16 @@ runTest('createScenarioGame はkindごとのpending局面を作る', () => {
     const businessGame = createScenarioGame(runtime, 'bcHighValueThreat', 4);
     const cleaningGame = createScenarioGame(runtime, 'cleaningOpponentEngine', 4);
     const moverGame = createScenarioGame(runtime, 'moverGiveJunk', 4);
+    const renovationGame = createScenarioGame(runtime, 'renovationAvoidPremiumLandmark', 4);
     assert.strictEqual(tvGame.pendingTV, 1);
     assert.strictEqual(businessGame.pendingBusiness, 1);
     assert.strictEqual(cleaningGame.pendingCleaning, 1);
     assert.strictEqual(moverGame.pendingMover, 1);
+    assert.strictEqual(renovationGame.pendingRenovation, 1);
     assert.ok(tvGame.currentPlayer().cards.some(card => card.name === 'テレビ局'));
     assert.ok(cleaningGame.currentPlayer().cards.some(card => card.name === '清掃業'));
     assert.ok(moverGame.currentPlayer().cards.some(card => card.name === '引越し屋'));
+    assert.ok(renovationGame.currentPlayer().cards.some(card => card.name === '改装屋'));
 });
 
 runTest('createScenarioGame は休業カード指定を反映する', () => {
@@ -128,11 +132,14 @@ runTest('buildChecks は期待行動との一致を返す', () => {
         giveOneOf: ['麦畑'],
         takeOneOf: ['鉱山'],
         avoidGive: ['食品倉庫'],
+        landmarkOneOf: ['駅'],
+        avoidLandmark: '空港',
     }, {
         targetIndex: 3,
         cardName: 'カフェ',
         give: '麦畑',
         take: '鉱山',
+        landmarkName: '駅',
     });
     assert.strictEqual(checks.targetMatches, true);
     assert.strictEqual(checks.targetAvoided, true);
@@ -141,9 +148,11 @@ runTest('buildChecks は期待行動との一致を返す', () => {
     assert.strictEqual(checks.giveMatches, true);
     assert.strictEqual(checks.takeMatches, true);
     assert.strictEqual(checks.avoidGivePassed, true);
+    assert.strictEqual(checks.landmarkMatches, true);
+    assert.strictEqual(checks.avoidLandmarkPassed, true);
 });
 
-runTest('evaluateSpecialScenarios はTV/BC/cleaning/moverの結果を返す', () => {
+runTest('evaluateSpecialScenarios はTV/BC/cleaning/mover/renovationの結果を返す', () => {
     const results = evaluateSpecialScenarios([
         {
             id: 'dummy',
@@ -153,7 +162,7 @@ runTest('evaluateSpecialScenarios はTV/BC/cleaning/moverの結果を返す', ()
         },
     ], {
         playerCount: 4,
-        scenarios: ['tvLeaderThreat', 'bcHighValueThreat', 'cleaningOpponentEngine', 'moverGiveJunk'],
+        scenarios: ['tvLeaderThreat', 'bcHighValueThreat', 'cleaningOpponentEngine', 'moverGiveJunk', 'renovationAvoidPremiumLandmark'],
     });
     assert.strictEqual(results.length, 1);
     assert.strictEqual(results[0].modelInfo.stateDim, 145);
@@ -163,6 +172,7 @@ runTest('evaluateSpecialScenarios はTV/BC/cleaning/moverの結果を返す', ()
     assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('business'), 'costDelta'));
     assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('cleaning'), 'cardName'));
     assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('mover'), 'isDormant'));
+    assert.ok(Object.prototype.hasOwnProperty.call(byKind.get('renovation'), 'landmarkName'));
 });
 
 runTest('evaluateSpecialScenarios は moverTargetSafeRecipient のtarget分離checkを返す', () => {
@@ -197,7 +207,7 @@ runTest('renderText は各kindのscenarioを出力する', () => {
         },
     ], {
         playerCount: 4,
-        scenarios: ['tvLeaderThreat', 'bcHighValueThreat', 'cleaningOpponentEngine', 'moverGiveJunk'],
+        scenarios: ['tvLeaderThreat', 'bcHighValueThreat', 'cleaningOpponentEngine', 'moverGiveJunk', 'renovationAvoidPremiumLandmark'],
     });
     const text = renderText(results);
     assert.ok(text.includes('dummy players=4'));
@@ -205,4 +215,5 @@ runTest('renderText は各kindのscenarioを出力する', () => {
     assert.ok(text.includes('bcHighValueThreat[business]'));
     assert.ok(text.includes('cleaningOpponentEngine[cleaning]'));
     assert.ok(text.includes('moverGiveJunk[mover]'));
+    assert.ok(text.includes('renovationAvoidPremiumLandmark[renovation]'));
 });
