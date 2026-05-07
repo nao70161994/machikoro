@@ -817,6 +817,32 @@ runTest('RLCPU: target head があれば4人戦の対象選択に使う', () => 
     assert.strictEqual(moverMove.targetIndex, 2);
 });
 
+runTest('RLCPU: cleaning は明確に悪いカード名ならactive同名枚数fallbackへ切り替える', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, createCardByName, GAME_PHASES, CARDS } = context;
+    const game = new GameManager(4);
+    game.__shopStock = createDefaultShopStock(context);
+    game.phase = GAME_PHASES.PENDING;
+    game.currentPlayerIndex = 0;
+    game.pendingCleaning = 1;
+
+    game.currentPlayer().cards = [createCardByName('清掃業'), createCardByName('麦畑')];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ'), createCardByName('パン屋')];
+    game.players[1].dormantCards = [];
+    game.players[2].cards = [createCardByName('カフェ'), createCardByName('ピザ屋')];
+    game.players[2].dormantCards = [];
+    game.players[3].cards = [createCardByName('サンマ漁船')];
+    game.players[3].dormantCards = [];
+
+    const model = buildParityModelWithStateDim(context, 353);
+    const sanmaIndex = CARDS.findIndex(card => card.name === 'サンマ漁船');
+    model.layers.policyHead.bias[RLCPU.ACTIONS.CLEAN_BASE + sanmaIndex] = 10;
+
+    const cpu = new RLCPU(model);
+    assert.strictEqual(cpu.chooseCleaningTarget(game), 'カフェ');
+});
+
 runTest('RLCPU: pending business は休業中カードだけでも合法手になる', () => {
     const context = loadRLRuntime();
     const { RLCPU, GAME_PHASES } = context;

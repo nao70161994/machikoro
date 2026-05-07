@@ -691,7 +691,49 @@ class RLCPU {
     chooseCleaningTarget(game) {
         const { action } = this._chooseForGame(game);
         if (action < RLCPU.ACTIONS.CLEAN_BASE || action >= RLCPU.ACTIONS.CLEAN_BASE + CARDS.length) return null;
-        return CARDS[action - RLCPU.ACTIONS.CLEAN_BASE].name;
+        const cardName = CARDS[action - RLCPU.ACTIONS.CLEAN_BASE].name;
+        const fallback = this._bestCleaningTargetName(game);
+        if (!fallback) return cardName;
+        const chosenScore = this._cleaningTargetScore(game, cardName);
+        if (fallback.score > chosenScore + 1.5) return fallback.name;
+        return cardName;
+    }
+
+    _bestCleaningTargetName(game) {
+        let best = null;
+        const names = new Set();
+        for (const player of game.players) {
+            for (const card of player.getMinorCards()) {
+                if (!player.isDormant(card)) names.add(card.name);
+            }
+        }
+        for (const name of names) {
+            const score = this._cleaningTargetScore(game, name);
+            if (!best || score > best.score) best = { name, score };
+        }
+        return best;
+    }
+
+    _cleaningTargetScore(game, cardName) {
+        const current = game.currentPlayer();
+        let ownCount = 0;
+        let opponentCount = 0;
+        let ownValue = 0;
+        let opponentValue = 0;
+        for (const player of game.players) {
+            for (const card of player.getMinorCards()) {
+                if (card.name !== cardName || player.isDormant(card)) continue;
+                const value = (card.cost || 0) * 0.5 + (card.income || 0);
+                if (player === current) {
+                    ownCount++;
+                    ownValue += value;
+                } else {
+                    opponentCount++;
+                    opponentValue += value;
+                }
+            }
+        }
+        return opponentCount * 2 + opponentValue * 0.15 - ownCount * 2.4 - ownValue * 0.3;
     }
 
     chooseMoverMove(game) {
