@@ -36,8 +36,6 @@ STATE="stopped"
 if [ -n "${ACTIVE_PID}" ]; then
     STATE="running"
     PID="${ACTIVE_PID}"
-elif [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
-    STATE="running"
 elif [ -f "${SUMMARY_PATH}" ]; then
     STATE="done"
 fi

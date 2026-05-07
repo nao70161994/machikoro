@@ -663,7 +663,7 @@
         {
             "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
             "status": "candidate",
-            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap/best_model.browser.json",
+            "path": "models/rl_model/portfolio/seed69.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap",
             "training": {
                 "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
@@ -713,7 +713,7 @@
         {
             "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
             "status": "candidate",
-            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap/best_model.browser.json",
+            "path": "models/rl_model/portfolio/seed70.browser.json",
             "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap",
             "training": {
                 "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
