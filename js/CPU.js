@@ -3019,12 +3019,18 @@ class CPU {
             this._traceV2Simple('buildLandmarkOptionCalls');
             this._traceV2Simple('buildOptionTotal', affordableLandmarks.length);
             if (affordableLandmarks.length > 1) this._traceV2Simple('buildMultiOptionCalls');
-            const choice = this._randomChoice(affordableLandmarks);
+            const choice = affordableLandmarks
+                .slice()
+                .sort((a, b) => {
+                    const urgencyDiff = this._landmarkUrgency(b.name, current, game) - this._landmarkUrgency(a.name, current, game);
+                    if (urgencyDiff !== 0) return urgencyDiff;
+                    return Player.landmarkCost(a.name) - Player.landmarkCost(b.name);
+                })[0];
             if (!choice) {
                 this._traceV2Simple('buildNoop');
                 return false;
             }
-            this._traceV2SimpleBuildOption('buildLandmarkRandomChoice', choice);
+            this._traceV2SimpleBuildOption('buildLandmarkUrgencyChoice', choice);
             this._traceV2Simple('buildLandmarkChoices');
             this._buyLandmark(choice.name, game);
             return true;

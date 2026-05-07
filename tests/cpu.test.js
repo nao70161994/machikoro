@@ -2585,7 +2585,7 @@ runTest('buildExpert: 4人戦expertは中盤以降に港をカードより優先
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
 });
 
-runTest('buildExpert: expert v2 simple は買えるランドマークの中からランダムに選ぶ', () => {
+runTest('buildExpert: expert v2 simple は買えるランドマークから緊急度の高いものを選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -2601,16 +2601,10 @@ runTest('buildExpert: expert v2 simple は買えるランドマークの中か�
     current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場'), createCardByName('チーズ工場')];
     current.dormantCards = [];
 
-    const originalRandom = runtime.Math.random;
-    runtime.Math.random = () => 0.99;
-    try {
-        cpu.buildExpert(game, stock);
-    } finally {
-        runtime.Math.random = originalRandom;
-    }
+    cpu.buildExpert(game, stock);
 
-    assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], false);
-    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], true);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], false);
 });
 
 runTest('buildExpert: expert v2 simple は random mode だと選択候補からランダムに選ぶ', () => {
