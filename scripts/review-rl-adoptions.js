@@ -107,8 +107,10 @@ function buildAdoptionReview(registry) {
     const recommendedIds = new Set(recommended.map(entry => entry.id));
     const mainRecommended = recommended.find(entry => entry.role === 'adopted-2p-main') || null;
     const minimumGames = (((registry.evaluationPolicy || {}).minimumAdoptionGamesPerOpponent) || 50);
+    const activeStatuses = new Set(['adopted', 'candidate']);
 
     const candidates = models
+        .filter(model => activeStatuses.has(model.status))
         .filter(model => {
             const coverage = summarizeEvalCoverage(model);
             return coverage.has2pOpponents;

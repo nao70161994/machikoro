@@ -125,6 +125,41 @@ runTest('review-rl-adoptions buildAdoptionReview は main と challenger を比�
     assert.ok(review.actions.some(action => action.type === 'compare-main-vs-challenger'));
 });
 
+runTest('review-rl-adoptions buildAdoptionReview は archive/rejected/candidate-4p を候補から除外する', () => {
+    const makeEval = winRate => ({
+        type: 'js',
+        date: '2026-04-21',
+        gamesPerOpponent: 100,
+        opponents: {
+            weak: { winRate },
+            normal: { winRate },
+            strong: { winRate },
+        },
+    });
+    const review = buildAdoptionReview({
+        updatedAt: '2026-04-21',
+        evaluationPolicy: { minimumAdoptionGamesPerOpponent: 50 },
+        portfolioPolicy: {
+            recommendedActiveModels: [
+                { id: 'main', role: 'adopted-2p-main' },
+            ],
+        },
+        models: [
+            { id: 'main', status: 'adopted', style: { label: 'main' }, evals: [makeEval(0.6)] },
+            { id: 'active', status: 'candidate', style: { label: 'active' }, evals: [makeEval(0.7)] },
+            { id: 'archived-strong', status: 'archive', style: { label: 'archived' }, evals: [makeEval(1.0)] },
+            { id: 'rejected-strong', status: 'rejected', style: { label: 'rejected' }, evals: [makeEval(1.0)] },
+            { id: 'candidate-4p-strong', status: 'candidate-4p', style: { label: 'candidate-4p' }, evals: [makeEval(1.0)] },
+        ],
+    });
+    assert.deepStrictEqual(review.candidates.map(entry => entry.id), ['active', 'main']);
+    assert.strictEqual(review.currentMain, 'main');
+    assert.ok(review.actions.some(action => action.type === 'compare-main-vs-challenger' && action.message.includes('active')));
+    assert.ok(!review.actions.some(action => action.message.includes('archived-strong')));
+    assert.ok(!review.actions.some(action => action.message.includes('rejected-strong')));
+    assert.ok(!review.actions.some(action => action.message.includes('candidate-4p-strong')));
+});
+
 runTest('review-rl-adoptions renderText/renderMarkdown は候補一覧を出力する', () => {
     const review = {
         updatedAt: '2026-04-21',
