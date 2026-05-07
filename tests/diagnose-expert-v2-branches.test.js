@@ -116,6 +116,14 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             itInvestCloseToFinishSaves: 2,
             itInvestNearLandmarkSaves: 1,
             itInvestWouldDelayLandmarkSaves: 1,
+            moverDecisions: 5,
+            moverCandidates: 12,
+            moverDiffStrongLike: 2,
+            moverHarmfulGiftAvailable: 3,
+            moverHarmfulGiftMissed: 1,
+            moverDangerTargetChosen: 1,
+            moverLeaderAvoidWouldFlip: 2,
+            moverHarmfulGiftWouldFlip: 1,
         }),
         entries: [{
             profile: 'duel',
@@ -146,6 +154,14 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildRedSaturatedLowIncomeChosen: 2,
                 itInvestDecisions: 4,
                 itInvestWouldDelayLandmarkSaves: 1,
+                moverDecisions: 5,
+                moverCandidates: 12,
+                moverDiffStrongLike: 2,
+                moverHarmfulGiftAvailable: 3,
+                moverHarmfulGiftMissed: 1,
+                moverDangerTargetChosen: 1,
+                moverLeaderAvoidWouldFlip: 2,
+                moverHarmfulGiftWouldFlip: 1,
             }),
         }],
     };
@@ -175,6 +191,13 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildRedSaturatedWouldFlipPenalty05=1/6'));
     assert.ok(text.includes('itInvestSaves=4/4'));
     assert.ok(text.includes('itInvestWouldDelayLandmarkSaves=1/4'));
+    assert.ok(text.includes('mover: decisions=5 candidates=12'));
+    assert.ok(text.includes('diffStrongLike=2/5'));
+    assert.ok(text.includes('harmfulAvailable=3/5'));
+    assert.ok(text.includes('harmfulMissed=1/5'));
+    assert.ok(text.includes('dangerTarget=1/5'));
+    assert.ok(text.includes('leaderFlip=2/5'));
+    assert.ok(text.includes('harmfulFlip=1/5'));
     assert.ok(text.includes('comboSaturated=2/6'));
     assert.ok(text.includes('loan=3/6'));
     assert.ok(text.includes('loanDuplicateNonBridge=2/6'));
