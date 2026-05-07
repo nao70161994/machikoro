@@ -32,6 +32,7 @@ const TEST_GROUPS = {
     'eval-expert-vs-strong.test.js',
     'eval-expert-vs-weak.test.js',
     'diagnose-expert-losses.test.js',
+    'diagnose-expert-v2-branches.test.js',
     'search-expert-top-tier.test.js',
         'eval-rl-vs-js.test.js',
         'eval-rl-models.test.js',
