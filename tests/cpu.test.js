@@ -392,6 +392,23 @@ runTest('buildEV tempo bonus: 購入後の残金を薄く加点できる', () =>
     assert.strictEqual(breakdown.total, breakdown.baseEv + breakdown.comboUnlockBonus + breakdown.tempoBonus);
 });
 
+runTest('buildEV red opponent turn bonus: expert v2 simple は赤カードの相手ターン価値を薄く加点する', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple' });
+    const game = new GameManager(3);
+    const cafe = createCardByName('カフェ');
+    const wheat = createCardByName('麦畑');
+
+    const red = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: cafe });
+    const blue = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: wheat });
+
+    assert.ok(red.redOpponentTurnBonus > 0);
+    assert.strictEqual(blue.redOpponentTurnBonus, 0);
+    assert.strictEqual(
+        red.total,
+        red.baseEv + red.comboUnlockBonus + red.tempoBonus + red.redOpponentTurnBonus - red.renovationRiskPenalty
+    );
+});
+
 runTest('buildEV renovation risk: expert v2 simple は改装屋2枚目以降を薄く減点する', () => {
     const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple' });
     const game = new GameManager(2);

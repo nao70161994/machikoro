@@ -3140,14 +3140,31 @@ class CPU {
         const baseEv = Math.max(oneScore, twoScore);
         const comboUnlockBonus = this._expertV2SimpleComboUnlockBonus(game, option, shopStock);
         const tempoBonus = this._expertV2SimpleBuildTempoBonus(clone);
+        const redOpponentTurnBonus = this._expertV2SimpleRedOpponentTurnBonus(game, option);
         const renovationRiskPenalty = this._expertV2SimpleRenovationRiskPenalty(game, option);
         return {
             baseEv,
             comboUnlockBonus,
             tempoBonus,
+            redOpponentTurnBonus,
             renovationRiskPenalty,
-            total: baseEv + comboUnlockBonus + tempoBonus - renovationRiskPenalty,
+            total: baseEv + comboUnlockBonus + tempoBonus + redOpponentTurnBonus - renovationRiskPenalty,
         };
+    }
+
+    _expertV2SimpleRedOpponentTurnBonus(game, option) {
+        if (!this._isExpertV2Simple() || !option || option.type !== 'card' || !option.card) return 0;
+        const card = option.card;
+        if (card.color !== 'red') return 0;
+        const current = game.currentPlayer();
+        let total = 0;
+        for (const opponent of game.players) {
+            if (opponent === current) continue;
+            const freq = this._diceFreqForRoller(card.diceNums, opponent);
+            if (freq <= 0) continue;
+            total += this._cardActivationValue(card, game, current, opponent, card.diceNums[0]) * freq / 36;
+        }
+        return Math.min(1, Math.max(0, total * 0.25));
     }
 
     _expertV2SimpleRenovationRiskPenalty(game, option) {
