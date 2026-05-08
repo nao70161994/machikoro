@@ -13,6 +13,7 @@ function parseArgs(argv) {
     let lite = true;
     let fast = false;
     let profile = false;
+    let expertPreset = 'v2simple';
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'ev';
     let diceMode = 'ev';
@@ -41,6 +42,8 @@ function parseArgs(argv) {
             fast = true;
         } else if (arg === '--profile') {
             profile = true;
+        } else if (arg === '--expert-preset') {
+            expertPreset = argv[++i] || 'v2simple';
         } else if (arg === '--profiles') {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         } else if (arg === '--build-mode') {
@@ -74,7 +77,7 @@ function parseArgs(argv) {
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode, incomeCapMode, comboMode, comboWeight, buildTempoWeight };
+    return { games, seed, maxSteps, format, lite, fast, profile, expertPreset, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode, incomeCapMode, comboMode, comboWeight, buildTempoWeight };
 }
 
 function profilePlayers(name) {
@@ -120,7 +123,7 @@ function getFastSeriesEvaluator(runtime) {
                 if (difficulty === 'expert') {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
-                        expertPreset: 'v2simple',
+                        expertPreset: config.expertPreset || 'v2simple',
                         expertDiceMode: config.diceMode || 'ev',
                         expertRerollMode: config.rerollMode || 'simple',
                         expertBuildMode: config.buildMode || 'ev',
@@ -515,6 +518,7 @@ function evaluateProfile(name, options) {
         lite: options.lite,
         fast: options.fast,
         profile: options.profile,
+        expertPreset: options.expertPreset,
         buildMode: options.buildMode,
         diceMode: options.diceMode,
         rerollMode: options.rerollMode,
@@ -563,6 +567,7 @@ function summarize(entries) {
 function toText(entries, summary, options) {
     const lines = [
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
+            `expertPreset=${options.expertPreset} ` +
             `buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
             `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} ` +
             `moverMode=${options.moverMode} renovationMode=${options.renovationMode} incomeCapMode=${options.incomeCapMode} comboMode=${options.comboMode} comboWeight=${options.comboWeight} buildTempoWeight=${options.buildTempoWeight}`,
@@ -617,6 +622,7 @@ function toMarkdown(entries, summary, options) {
         `- games: ${options.games}`,
         `- seed: ${options.seed}`,
         `- mode: ${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')}`,
+        `- expertPreset: ${options.expertPreset}`,
         `- buildMode: ${options.buildMode}`,
         `- diceMode: ${options.diceMode}`,
         `- rerollMode: ${options.rerollMode}`,
