@@ -11,6 +11,7 @@ function parseArgs(argv) {
     let lite = true;
     let fast = false;
     let expertPreset = 'v2simple';
+    let businessMode = 'simple';
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -24,10 +25,12 @@ function parseArgs(argv) {
             fast = true;
         } else if (arg === '--expert-preset') {
             expertPreset = argv[++i] || 'v2simple';
+        } else if (arg === '--business-mode') {
+            businessMode = argv[++i] || 'simple';
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, expertPreset };
+    return { games, seed, maxSteps, format, lite, fast, expertPreset, businessMode };
 }
 
 function baseOptions(options, profiles) {
@@ -44,7 +47,7 @@ function baseOptions(options, profiles) {
         rerollMode: 'simple',
         itMode: 'always',
         tvMode: 'simple',
-        businessMode: 'simple',
+        businessMode: options.businessMode || 'simple',
         cleaningMode: 'simple',
         harborMode: 'simple',
         moverMode: 'simple',
@@ -62,6 +65,8 @@ function evaluatePack(options) {
     const normalEntries = normalOptions.profiles.map(profile => normalEval.evaluateProfile(profile, normalOptions));
     const strongEntries = strongOptions.profiles.map(profile => strongEval.evaluateProfile(profile, strongOptions));
     return {
+        cpuFamily: 'v2simple-rule-based',
+        comparisonScope: 'expert-v2-benchmark-pack',
         options,
         normal: {
             options: normalOptions,
@@ -86,7 +91,8 @@ function entryLine(entry) {
 
 function toText(report) {
     const lines = [
-        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset}`,
+        `cpuFamily=${report.cpuFamily || 'v2simple-rule-based'} comparisonScope=${report.comparisonScope || 'expert-v2-benchmark-pack'}`,
+        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} businessMode=${report.options.businessMode || 'simple'}`,
         `normalCrowd=${formatPercent(report.normal.entries[0].winRate)} strongWeighted=${formatPercent(report.strong.summary.weightedWinRate)} strongMin=${formatPercent(report.strong.summary.minWinRate)}`,
         'normal:',
         ...report.normal.entries.map(entryLine),
@@ -100,10 +106,13 @@ function toMarkdown(report) {
     const lines = [
         '# Expert v2 Benchmark Pack',
         '',
+        `- cpuFamily: ${report.cpuFamily || 'v2simple-rule-based'}`,
+        `- comparisonScope: ${report.comparisonScope || 'expert-v2-benchmark-pack'}`,
         `- games: ${report.options.games}`,
         `- seed: ${report.options.seed}`,
         `- mode: ${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')}`,
         `- expertPreset: ${report.options.expertPreset}`,
+        `- businessMode: ${report.options.businessMode || 'simple'}`,
         `- normalCrowd: ${formatPercent(report.normal.entries[0].winRate)}`,
         `- strongWeighted: ${formatPercent(report.strong.summary.weightedWinRate)}`,
         `- strongMin: ${formatPercent(report.strong.summary.minWinRate)}`,
