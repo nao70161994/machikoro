@@ -75,6 +75,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             diceTie: 1,
             diceNearTie: 1,
             diceRaceDecision: 2,
+            diceLateRaceDecision: 1,
+            diceRaceNearGap05: 1,
+            diceLateRaceWouldChooseOther: 1,
+            diceRaceWouldChooseOtherNames: { one: 1 },
             diceSelfNearWinShortfall3: 1,
             diceOpponentNearWinShortfall3: 1,
             diceChosenHigherRedRisk: 1,
@@ -362,6 +366,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('rerollMarginWindow=1/3'));
     assert.ok(text.includes('harborLowRollImproves=1/4'));
     assert.ok(text.includes('rollRace: diceOther=1/2 diceRedRisk=1/2 diceBlueRisk=1/2 selfNear3=1/2 opponentNear3=1/2 rerollKeep=1/3 rerollRedRisk=1/3 rerollBlueRisk=1/3 harborKeep=1/4 harborRedRisk=1/4 harborBlueRisk=1/4'));
+    assert.ok(text.includes('rollRaceDetail: late=1/2 nearGap05=1/2 lateOther=1/2 otherNames=one:1'));
     assert.ok(text.includes('tvStealTie=2/5'));
     assert.ok(text.includes('buildRenovationFirstEarlyChosen=1/6'));
     assert.ok(text.includes('renovationFirstEarly=1/6'));
