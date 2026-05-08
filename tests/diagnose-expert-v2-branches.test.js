@@ -99,6 +99,11 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildCleaningNearBest1: 2,
             buildCleaningWouldFlipBonus05: 1,
             buildCleaningWouldFlipBonus1: 2,
+            cleaningValueAltDecisions: 4,
+            cleaningValueAltDiff: 2,
+            cleaningValueAltAvoidsSelfDamage: 1,
+            cleaningValueAltSimpleNames: { パン屋: 2, カフェ: 1 },
+            cleaningValueAltNames: { カフェ: 2, 牧場: 1 },
             buildRedCandidate: 5,
             buildRedWouldFlipWeight025: 1,
             buildRedWouldFlipWeight05: 2,
@@ -317,6 +322,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildLoanDuplicateNonBridgeWouldFlipPenalty15=1/6'));
     assert.ok(text.includes('buildCleaningCandidate=4/6'));
     assert.ok(text.includes('buildCleaningNearBest1=2/6'));
+    assert.ok(text.includes('cleaningValueAlt: diff=2/4 avoidsSelfDamage=1/4 simpleNames=パン屋:2,カフェ:1 valueNames=カフェ:2,牧場:1'));
     assert.ok(text.includes('buildRedCandidate=5/6'));
     assert.ok(text.includes('buildRedWouldFlipWeight025=1/6'));
     assert.ok(text.includes('buildRedOneDieCandidate=4/6'));
