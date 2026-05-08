@@ -150,8 +150,10 @@ function createCounters() {
         buildFinishOneRemainingWindow: 0,
         buildFinishNear: 0,
         buildFinishDelay: 0,
+        buildFinishStrictDelay: 0,
         buildFinishDisruptionCanDelayImmediateWin: 0,
         buildFinishDelayNoImmediateDisruption: 0,
+        buildFinishStrictDelayNoImmediateDisruption: 0,
         buildFinishNames: {},
         buildHighPurpleCandidate: 0,
         buildHighPurpleChosen: 0,
@@ -324,11 +326,14 @@ function landmarkDelayPreview(runtime, game, current, card) {
     const nearest = remaining.slice().sort((a, b) => a.cost - b.cost)[0];
     const shortfallBefore = nearest.cost - current.coins;
     const shortfallAfter = nearest.cost - Math.max(0, current.coins - card.cost);
+    const delayCoins = Math.max(0, shortfallAfter - shortfallBefore);
     return {
         remainingLandmarks: remaining.length,
         shortfallBefore,
         shortfallAfter,
+        delayCoins,
         wouldTrigger: shortfallBefore > 0 && shortfallAfter > shortfallBefore,
+        strictWouldTrigger: remaining.length <= 3 && shortfallBefore > 0 && shortfallBefore <= 3 && delayCoins > 0,
     };
 }
 
@@ -635,9 +640,13 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                             if (delayPreview.remainingLandmarks === 1) counters.buildFinishOneRemainingWindow++;
                             if (delayPreview.shortfallBefore <= 6) counters.buildFinishNear++;
                             if (delayPreview.wouldTrigger) counters.buildFinishDelay++;
+                            if (delayPreview.strictWouldTrigger) counters.buildFinishStrictDelay++;
                             if (disruptPreview.canDelayImmediateWin) counters.buildFinishDisruptionCanDelayImmediateWin++;
                             if (delayPreview.wouldTrigger && !disruptPreview.canDelayImmediateWin) {
                                 counters.buildFinishDelayNoImmediateDisruption++;
+                            }
+                            if (delayPreview.strictWouldTrigger && !disruptPreview.canDelayImmediateWin) {
+                                counters.buildFinishStrictDelayNoImmediateDisruption++;
                             }
                         }
                     }
@@ -1022,7 +1031,7 @@ function toText(report) {
         `gated: harbor=${totals.buildGatedHarborFarChosen}/${totals.buildCardEvDecisions} flip05=${totals.buildGatedHarborWouldFlipPenalty05}/${totals.buildCardEvDecisions} station=${totals.buildGatedStationFarChosen}/${totals.buildCardEvDecisions} flip05=${totals.buildGatedStationWouldFlipPenalty05}/${totals.buildCardEvDecisions} mall=${totals.buildGatedMallFarChosen}/${totals.buildCardEvDecisions} flip05=${totals.buildGatedMallWouldFlipPenalty05}/${totals.buildCardEvDecisions} mallNames=${topNameCounts(totals.buildGatedMallNames)} mallFlip05Names=${topNameCounts(totals.buildGatedMallFlip05Names)}`,
         `mallSpend: near=${totals.buildGatedMallSpendNearChosen}/${totals.buildCardEvDecisions} delay=${totals.buildGatedMallSpendWouldDelay}/${totals.buildCardEvDecisions} flip05=${totals.buildGatedMallSpendWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildGatedMallSpendNames)} delayNames=${topNameCounts(totals.buildGatedMallSpendDelayNames)}`,
         `mallBasic: chosen=${totals.buildMallBasicChosen}/${totals.buildCardEvDecisions} far=${totals.buildMallBasicFarChosen}/${totals.buildCardEvDecisions} lowIncome=${totals.buildMallBasicLowIncomeChosen}/${totals.buildCardEvDecisions} flip05=${totals.buildMallBasicWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildMallBasicWouldFlipPenalty1}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildMallBasicNames)} lowIncomeNames=${topNameCounts(totals.buildMallBasicLowIncomeNames)}`,
-        `finishMode: window=${totals.buildFinishWindow}/${totals.buildCardEvDecisions} oneRemaining=${totals.buildFinishOneRemainingWindow}/${totals.buildCardEvDecisions} near=${totals.buildFinishNear}/${totals.buildCardEvDecisions} delay=${totals.buildFinishDelay}/${totals.buildCardEvDecisions} disruption=${totals.buildFinishDisruptionCanDelayImmediateWin}/${totals.buildCardEvDecisions} delayNoDisruption=${totals.buildFinishDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildFinishNames)}`,
+        `finishMode: window=${totals.buildFinishWindow}/${totals.buildCardEvDecisions} oneRemaining=${totals.buildFinishOneRemainingWindow}/${totals.buildCardEvDecisions} near=${totals.buildFinishNear}/${totals.buildCardEvDecisions} broadDelay=${totals.buildFinishDelay}/${totals.buildCardEvDecisions} strictDelay=${totals.buildFinishStrictDelay}/${totals.buildCardEvDecisions} potentialDisruption=${totals.buildFinishDisruptionCanDelayImmediateWin}/${totals.buildCardEvDecisions} broadDelayNoDisruption=${totals.buildFinishDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} strictDelayNoDisruption=${totals.buildFinishStrictDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildFinishNames)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `redOneDie: names=${topNameCounts(totals.buildRedOneDieNames)}`,
         `specialSpend: names=${topNameCounts(totals.buildSpecialSpendNames)} delayNames=${topNameCounts(totals.buildSpecialSpendDelayNames)}`,
@@ -1038,7 +1047,7 @@ function toText(report) {
                 `gatedMall=${counters.buildGatedMallFarChosen}/${counters.buildCardEvDecisions} ` +
                 `mallSpendDelay=${counters.buildGatedMallSpendWouldDelay}/${counters.buildCardEvDecisions} ` +
                 `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
-                `finishDelay=${counters.buildFinishDelay}/${counters.buildCardEvDecisions} ` +
+                `finishStrictDelay=${counters.buildFinishStrictDelay}/${counters.buildCardEvDecisions} ` +
                 `businessDelay=${counters.buildBusinessDelayWouldDelay}/${counters.buildCardEvDecisions} ` +
                 `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions}`
             );
@@ -1070,7 +1079,7 @@ function toText(report) {
             `gatedMall=${counters.buildGatedMallFarChosen}/${counters.buildCardEvDecisions} ` +
             `mallSpendDelay=${counters.buildGatedMallSpendWouldDelay}/${counters.buildCardEvDecisions} ` +
             `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
-            `finishDelay=${counters.buildFinishDelay}/${counters.buildCardEvDecisions} ` +
+            `finishStrictDelay=${counters.buildFinishStrictDelay}/${counters.buildCardEvDecisions} ` +
             `highPurpleEarly=${counters.buildHighPurpleEarlyChosen}/${counters.buildCardEvDecisions} ` +
             `redSaturated=${counters.buildRedSaturatedLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
             `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions} ` +
