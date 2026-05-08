@@ -155,6 +155,17 @@ function createCounters() {
         buildFinishDelayNoImmediateDisruption: 0,
         buildFinishStrictDelayNoImmediateDisruption: 0,
         buildFinishNames: {},
+        buildPortfolioGrowthAvailable: 0,
+        buildPortfolioGrowthChosen: 0,
+        buildPortfolioLowGrowthChosen: 0,
+        buildPortfolioBasicOverGrowth: 0,
+        buildPortfolioSpecialOverGrowth: 0,
+        buildPortfolioGrowthNearBest05: 0,
+        buildPortfolioGrowthNearBest1: 0,
+        buildPortfolioGrowthWouldFlipBonus08: 0,
+        buildPortfolioChosenNames: {},
+        buildPortfolioGrowthAvailableNames: {},
+        buildPortfolioGrowthNearNames: {},
         buildHighPurpleCandidate: 0,
         buildHighPurpleChosen: 0,
         buildHighPurpleEarlyChosen: 0,
@@ -206,6 +217,45 @@ function addCounters(target, source) {
 function incrementName(map, name) {
     if (!map || !name) return;
     map[name] = (map[name] || 0) + 1;
+}
+
+const PORTFOLIO_GROWTH_CARDS = new Set([
+    '青果市場',
+    'ブドウ園',
+    'ワイナリー',
+    'コーン畑',
+    'サンマ漁船',
+    '高級フレンチ',
+    '鉱山',
+]);
+
+const PORTFOLIO_BASIC_CARDS = new Set([
+    'パン屋',
+    'コンビニ',
+    'ピザ屋',
+    'バーガーショップ',
+    '食品倉庫',
+]);
+
+const PORTFOLIO_SPECIAL_CARDS = new Set([
+    '税務署',
+    'スタジアム',
+    'テレビ局',
+    '改装屋',
+    '清掃業',
+    'ビジネスセンター',
+]);
+
+function isPortfolioGrowthCard(card) {
+    return !!card && PORTFOLIO_GROWTH_CARDS.has(card.name);
+}
+
+function isPortfolioBasicCard(card) {
+    return !!card && PORTFOLIO_BASIC_CARDS.has(card.name);
+}
+
+function isPortfolioSpecialCard(card) {
+    return !!card && PORTFOLIO_SPECIAL_CARDS.has(card.name);
 }
 
 function rotatePlayers(players, offset) {
@@ -632,6 +682,27 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                         : -Infinity;
                     const currentBaseEv = Math.max(currentOneScore, currentTwoScore);
                     if (best && best.option && best.option.card) {
+                        const growthEntries = scored.filter(entry => isPortfolioGrowthCard(entry.option.card));
+                        const bestGrowth = growthEntries[0] || null;
+                        if (growthEntries.length > 0) {
+                            counters.buildPortfolioGrowthAvailable++;
+                            incrementName(counters.buildPortfolioGrowthAvailableNames, bestGrowth.option.card.name);
+                            if (bestGrowth.score >= best.score - 0.5) {
+                                counters.buildPortfolioGrowthNearBest05++;
+                                incrementName(counters.buildPortfolioGrowthNearNames, bestGrowth.option.card.name);
+                            }
+                            if (bestGrowth.score >= best.score - 1) counters.buildPortfolioGrowthNearBest1++;
+                            if (bestGrowth.score + 0.8 >= best.score) counters.buildPortfolioGrowthWouldFlipBonus08++;
+                        }
+                        if (isPortfolioGrowthCard(best.option.card)) counters.buildPortfolioGrowthChosen++;
+                        if (isPortfolioBasicCard(best.option.card) || isPortfolioSpecialCard(best.option.card)) {
+                            counters.buildPortfolioLowGrowthChosen++;
+                            incrementName(counters.buildPortfolioChosenNames, best.option.card.name);
+                            if (bestGrowth) {
+                                if (isPortfolioBasicCard(best.option.card)) counters.buildPortfolioBasicOverGrowth++;
+                                if (isPortfolioSpecialCard(best.option.card)) counters.buildPortfolioSpecialOverGrowth++;
+                            }
+                        }
                         const delayPreview = landmarkDelayPreview(runtime, game, current, best.option.card);
                         if (delayPreview && delayPreview.remainingLandmarks <= 2) {
                             const disruptPreview = disruptionPreview(runtime, this, game, current, best.option.card);
@@ -1032,6 +1103,8 @@ function toText(report) {
         `mallSpend: near=${totals.buildGatedMallSpendNearChosen}/${totals.buildCardEvDecisions} delay=${totals.buildGatedMallSpendWouldDelay}/${totals.buildCardEvDecisions} flip05=${totals.buildGatedMallSpendWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildGatedMallSpendNames)} delayNames=${topNameCounts(totals.buildGatedMallSpendDelayNames)}`,
         `mallBasic: chosen=${totals.buildMallBasicChosen}/${totals.buildCardEvDecisions} far=${totals.buildMallBasicFarChosen}/${totals.buildCardEvDecisions} lowIncome=${totals.buildMallBasicLowIncomeChosen}/${totals.buildCardEvDecisions} flip05=${totals.buildMallBasicWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildMallBasicWouldFlipPenalty1}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildMallBasicNames)} lowIncomeNames=${topNameCounts(totals.buildMallBasicLowIncomeNames)}`,
         `finishMode: window=${totals.buildFinishWindow}/${totals.buildCardEvDecisions} oneRemaining=${totals.buildFinishOneRemainingWindow}/${totals.buildCardEvDecisions} near=${totals.buildFinishNear}/${totals.buildCardEvDecisions} broadDelay=${totals.buildFinishDelay}/${totals.buildCardEvDecisions} strictDelay=${totals.buildFinishStrictDelay}/${totals.buildCardEvDecisions} potentialDisruption=${totals.buildFinishDisruptionCanDelayImmediateWin}/${totals.buildCardEvDecisions} broadDelayNoDisruption=${totals.buildFinishDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} strictDelayNoDisruption=${totals.buildFinishStrictDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildFinishNames)}`,
+        `portfolioGap: growthAvailable=${totals.buildPortfolioGrowthAvailable}/${totals.buildCardEvDecisions} growthChosen=${totals.buildPortfolioGrowthChosen}/${totals.buildCardEvDecisions} lowGrowthChosen=${totals.buildPortfolioLowGrowthChosen}/${totals.buildCardEvDecisions} basicOverGrowth=${totals.buildPortfolioBasicOverGrowth}/${totals.buildCardEvDecisions} specialOverGrowth=${totals.buildPortfolioSpecialOverGrowth}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioGrowthNearBest05}/${totals.buildCardEvDecisions} near1=${totals.buildPortfolioGrowthNearBest1}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioGrowthWouldFlipBonus08}/${totals.buildCardEvDecisions}`,
+        `portfolioGapNames: chosen=${topNameCounts(totals.buildPortfolioChosenNames)} available=${topNameCounts(totals.buildPortfolioGrowthAvailableNames)} near=${topNameCounts(totals.buildPortfolioGrowthNearNames)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `redOneDie: names=${topNameCounts(totals.buildRedOneDieNames)}`,
         `specialSpend: names=${topNameCounts(totals.buildSpecialSpendNames)} delayNames=${topNameCounts(totals.buildSpecialSpendDelayNames)}`,
@@ -1048,6 +1121,7 @@ function toText(report) {
                 `mallSpendDelay=${counters.buildGatedMallSpendWouldDelay}/${counters.buildCardEvDecisions} ` +
                 `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
                 `finishStrictDelay=${counters.buildFinishStrictDelay}/${counters.buildCardEvDecisions} ` +
+                `portfolioNear05=${counters.buildPortfolioGrowthNearBest05}/${counters.buildCardEvDecisions} ` +
                 `businessDelay=${counters.buildBusinessDelayWouldDelay}/${counters.buildCardEvDecisions} ` +
                 `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions}`
             );
@@ -1080,6 +1154,7 @@ function toText(report) {
             `mallSpendDelay=${counters.buildGatedMallSpendWouldDelay}/${counters.buildCardEvDecisions} ` +
             `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
             `finishStrictDelay=${counters.buildFinishStrictDelay}/${counters.buildCardEvDecisions} ` +
+            `portfolioNear05=${counters.buildPortfolioGrowthNearBest05}/${counters.buildCardEvDecisions} ` +
             `highPurpleEarly=${counters.buildHighPurpleEarlyChosen}/${counters.buildCardEvDecisions} ` +
             `redSaturated=${counters.buildRedSaturatedLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
             `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions} ` +
