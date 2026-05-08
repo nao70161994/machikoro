@@ -177,6 +177,13 @@ function createCounters() {
         buildPortfolioNoCornWouldFlipBonus04: 0,
         buildPortfolioNoCornWouldFlipBonus08: 0,
         buildPortfolioNoCornMissedNearNames: {},
+        buildPortfolioEffectiveAvailable: 0,
+        buildPortfolioEffectiveNearBest05: 0,
+        buildPortfolioEffectiveMissedNearBest05: 0,
+        buildPortfolioEffectiveWouldFlipBonus04: 0,
+        buildPortfolioEffectiveWouldFlipBonus08: 0,
+        buildPortfolioEffectiveAvailableNames: {},
+        buildPortfolioEffectiveMissedNearNames: {},
         buildCornCandidate: 0,
         buildCornChosen: 0,
         buildCornChosenNoMarket: 0,
@@ -281,6 +288,46 @@ function isPortfolioGrowthCard(card) {
 
 function isPortfolioNoCornGrowthCard(card) {
     return !!card && PORTFOLIO_NO_CORN_GROWTH_CARDS.has(card.name);
+}
+
+function activeCardCount(player, predicate) {
+    if (!player || !Array.isArray(player.cards)) return 0;
+    return player.cards.filter(card =>
+        card &&
+        (!player.isDormant || !player.isDormant(card)) &&
+        predicate(card)
+    ).length;
+}
+
+function isPortfolioEffectiveGrowthCard(runtime, game, current, card) {
+    if (!runtime || !game || !current || !card || !isPortfolioNoCornGrowthCard(card)) return false;
+    if (!Array.isArray(game.players) || game.players.length < 4) return false;
+
+    const hasStation = !!(current.landmarks && current.landmarks[runtime.LANDMARK_NAMES.STATION]);
+    const hasHarbor = !!(current.landmarks && current.landmarks[runtime.LANDMARK_NAMES.HARBOR]);
+    const activeFarmCount = activeCardCount(current, candidate => candidate.category === '農園');
+
+    if (card.name === '青果市場') {
+        return hasStation && activeFarmCount > 0;
+    }
+    if (card.name === 'ブドウ園') {
+        return hasStation;
+    }
+    if (card.name === 'ワイナリー') {
+        return hasStation && activeCardCount(current, candidate => candidate.name === 'ブドウ園') > 0;
+    }
+    if (card.name === 'サンマ漁船') {
+        return hasStation && hasHarbor;
+    }
+    if (card.name === '高級フレンチ') {
+        return game.players.some(player =>
+            player !== current &&
+            player &&
+            player.builtLandmarkCount &&
+            player.builtLandmarkCount() >= 2
+        );
+    }
+    return false;
 }
 
 function isPortfolioBasicCard(card) {
@@ -774,6 +821,23 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                             if (noCornMissed && bestNoCornGrowth.score + 0.4 >= best.score) counters.buildPortfolioNoCornWouldFlipBonus04++;
                             if (noCornMissed && bestNoCornGrowth.score + 0.8 >= best.score) counters.buildPortfolioNoCornWouldFlipBonus08++;
                         }
+                        const effectiveGrowthEntries = scored.filter(entry =>
+                            isPortfolioEffectiveGrowthCard(runtime, game, current, entry.option.card)
+                        );
+                        const bestEffectiveGrowth = effectiveGrowthEntries[0] || null;
+                        if (bestEffectiveGrowth) {
+                            counters.buildPortfolioEffectiveAvailable++;
+                            incrementName(counters.buildPortfolioEffectiveAvailableNames, bestEffectiveGrowth.option.card.name);
+                            const effectiveNearBest05 = bestEffectiveGrowth.score >= best.score - 0.5;
+                            const effectiveMissed = !isPortfolioEffectiveGrowthCard(runtime, game, current, best.option.card);
+                            if (effectiveNearBest05) counters.buildPortfolioEffectiveNearBest05++;
+                            if (effectiveMissed && effectiveNearBest05) {
+                                counters.buildPortfolioEffectiveMissedNearBest05++;
+                                incrementName(counters.buildPortfolioEffectiveMissedNearNames, bestEffectiveGrowth.option.card.name);
+                            }
+                            if (effectiveMissed && bestEffectiveGrowth.score + 0.4 >= best.score) counters.buildPortfolioEffectiveWouldFlipBonus04++;
+                            if (effectiveMissed && bestEffectiveGrowth.score + 0.8 >= best.score) counters.buildPortfolioEffectiveWouldFlipBonus08++;
+                        }
                         if (isPortfolioGrowthCard(best.option.card)) counters.buildPortfolioGrowthChosen++;
                         if (isPortfolioBasicCard(best.option.card) || isPortfolioSpecialCard(best.option.card)) {
                             counters.buildPortfolioLowGrowthChosen++;
@@ -1186,6 +1250,7 @@ function toText(report) {
         `portfolioGap: growthAvailable=${totals.buildPortfolioGrowthAvailable}/${totals.buildCardEvDecisions} growthChosen=${totals.buildPortfolioGrowthChosen}/${totals.buildCardEvDecisions} lowGrowthChosen=${totals.buildPortfolioLowGrowthChosen}/${totals.buildCardEvDecisions} basicOverGrowth=${totals.buildPortfolioBasicOverGrowth}/${totals.buildCardEvDecisions} specialOverGrowth=${totals.buildPortfolioSpecialOverGrowth}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioGrowthNearBest05}/${totals.buildCardEvDecisions} near1=${totals.buildPortfolioGrowthNearBest1}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioGrowthWouldFlipBonus08}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioGrowthMissedNearBest05}/${totals.buildCardEvDecisions} basicOverNear05=${totals.buildPortfolioBasicOverNearGrowth05}/${totals.buildCardEvDecisions} specialOverNear05=${totals.buildPortfolioSpecialOverNearGrowth05}/${totals.buildCardEvDecisions} missedFlip08=${totals.buildPortfolioGrowthMissedWouldFlipBonus08}/${totals.buildCardEvDecisions}`,
         `portfolioGapNames: chosen=${topNameCounts(totals.buildPortfolioChosenNames)} available=${topNameCounts(totals.buildPortfolioGrowthAvailableNames)} near=${topNameCounts(totals.buildPortfolioGrowthNearNames)} missedNear=${topNameCounts(totals.buildPortfolioGrowthMissedNearNames)}`,
         `portfolioNoCorn: available=${totals.buildPortfolioNoCornAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioNoCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioNoCornMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioNoCornWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioNoCornWouldFlipBonus08}/${totals.buildCardEvDecisions} missedNearNames=${topNameCounts(totals.buildPortfolioNoCornMissedNearNames)}`,
+        `portfolioEffective: available=${totals.buildPortfolioEffectiveAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioEffectiveNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioEffectiveMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioEffectiveWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioEffectiveWouldFlipBonus08}/${totals.buildCardEvDecisions} availableNames=${topNameCounts(totals.buildPortfolioEffectiveAvailableNames)} missedNearNames=${topNameCounts(totals.buildPortfolioEffectiveMissedNearNames)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `redOneDie: names=${topNameCounts(totals.buildRedOneDieNames)}`,
