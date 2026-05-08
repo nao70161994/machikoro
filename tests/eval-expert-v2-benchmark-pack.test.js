@@ -51,6 +51,10 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は normal/strong の基準�
     assert.strictEqual(report.comparisonScope, 'expert-v2-benchmark-pack');
     assert.strictEqual(report.normal.options.businessMode, 'harmfulGift');
     assert.strictEqual(report.strong.options.businessMode, 'harmfulGift');
+    assert.strictEqual(report.normal.summary.executed, true);
+    assert.strictEqual(report.normal.summary.skipped, false);
+    assert.strictEqual(report.strong.summary.executed, true);
+    assert.strictEqual(report.strong.summary.skipped, false);
     assert.strictEqual(report.normal.entries.length, 1);
     assert.strictEqual(report.normal.entries[0].profile, 'crowd');
     assert.strictEqual(report.strong.entries.length, 4);
@@ -61,9 +65,23 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は normal/strong の基準�
 runTest('eval-expert-v2-benchmark-pack evaluatePack は suite/profiles で絞る', () => {
     const report = evaluatePack({ games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, expertPreset: 'v2simple', businessMode: 'simple', suite: 'strong', profiles: ['crowd'] });
     assert.strictEqual(report.normal.entries.length, 0);
+    assert.strictEqual(report.normal.summary.executed, false);
+    assert.strictEqual(report.normal.summary.skipped, true);
     assert.strictEqual(report.normal.summary.profiles, 0);
     assert.strictEqual(report.strong.entries.length, 1);
+    assert.strictEqual(report.strong.summary.executed, true);
+    assert.strictEqual(report.strong.summary.skipped, false);
     assert.strictEqual(report.strong.entries[0].profile, 'crowd');
+});
+
+runTest('eval-expert-v2-benchmark-pack evaluatePack は未実行 strong suite を skipped にする', () => {
+    const report = evaluatePack({ games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, expertPreset: 'v2simple', businessMode: 'simple', suite: 'normal', profiles: ['crowd'] });
+    assert.strictEqual(report.normal.entries.length, 1);
+    assert.strictEqual(report.normal.summary.executed, true);
+    assert.strictEqual(report.normal.summary.skipped, false);
+    assert.strictEqual(report.strong.entries.length, 0);
+    assert.strictEqual(report.strong.summary.executed, false);
+    assert.strictEqual(report.strong.summary.skipped, true);
 });
 
 runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力する', () => {

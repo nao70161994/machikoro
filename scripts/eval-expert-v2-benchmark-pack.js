@@ -87,12 +87,18 @@ function profilesForSuite(options, suite) {
     return suite === 'normal' ? DEFAULT_NORMAL_PROFILES.slice() : DEFAULT_STRONG_PROFILES.slice();
 }
 
-function emptySummary() {
+function skippedSummary() {
     return {
+        executed: false,
+        skipped: true,
         weightedWinRate: 0,
         minWinRate: 0,
         profiles: 0,
     };
+}
+
+function executedSummary(summary) {
+    return Object.assign({ executed: true, skipped: false }, summary);
 }
 
 function evaluatePack(options) {
@@ -110,12 +116,12 @@ function evaluatePack(options) {
         options,
         normal: {
             options: normalOptions,
-            summary: normalEntries.length > 0 ? normalEval.summarize(normalEntries) : emptySummary(),
+            summary: normalEntries.length > 0 ? executedSummary(normalEval.summarize(normalEntries)) : skippedSummary(),
             entries: normalEntries,
         },
         strong: {
             options: strongOptions,
-            summary: strongEntries.length > 0 ? strongEval.summarize(strongEntries) : emptySummary(),
+            summary: strongEntries.length > 0 ? executedSummary(strongEval.summarize(strongEntries)) : skippedSummary(),
             entries: strongEntries,
         },
     };

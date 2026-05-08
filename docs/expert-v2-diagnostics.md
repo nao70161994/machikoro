@@ -101,6 +101,20 @@ normal crowd は broad 補正の副作用検出用、strong 4 profile は最悪�
 
 `Δ` は candidate から baseline を引いた percentage point です。`allStrong4` は strong profile の `allStrong4` 行、`strongWeighted` と `strongMin` は benchmark pack の summary 行を使います。判定は、20戦では smoke、50戦では100戦へ進めるか、100戦では本体統合できるかだけを書きます。
 
+### `--suite` / `--profiles` の使い方
+
+- 20戦 smoke は時間短縮のために絞ってよいです。まず `--suite strong --profiles crowd,allStrong4` で多人数 strong 系の悪化を見ます。
+- broad 補正や Business Center 系など normal 副作用が疑わしい候補は、追加で `--suite normal --profiles crowd` を20戦だけ見ます。
+- 50戦へ進める候補は、原則 `--suite all` の全 benchmark に戻します。部分profileだけの50戦では採用候補にしません。
+- 100戦の採用判定も必ず全 suite で見ます。`--suite/--profiles` は smoke と原因切り分け用で、本体統合判断には使いません。
+
+```sh
+node scripts/eval-expert-v2-benchmark-pack.js --games 20 --suite strong --profiles crowd,allStrong4
+node scripts/eval-expert-v2-benchmark-pack.js --games 20 --suite normal --profiles crowd
+node scripts/eval-expert-v2-benchmark-pack.js --games 50 --suite all
+node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
+```
+
 ## 方針
 
 現時点では、手書きの v2 build EV 強化は打ち止め寄りです。赤カード相手ターン EV 以外の broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
