@@ -715,6 +715,8 @@ npm run eval-rl-models -- \
 
 参考値として、2026-05-08 に既存4人用モデルだけを同じ3lineupで各10戦評価した。10戦なので採用判断には使わず、`seed110-allstrong` 完走後比較の事前基準として扱う。結果は `models/rl_model/eval-existing-4p-allstrong-small.{json,csv,md}` に保存し、`seed102` が score 63.3%（weak+normal+strong 70% / normal+normal+strong 50% / strong+strong+strong 70%）、`seed103` が score 53.3%（50% / 60% / 50%）。
 
+2026-05-09追記: `seed110-allstrong` は完走後の50戦比較で all lineup 0% となり不採用。registry / portfolio へは反映しない。出力された `eval-seed110-*` artifact は生成物扱いでコミットしない。balanced 条件の短時間確認は `self-only-4p-h256-lr1e5-500-seed111-balanced-sanity` で実行中。
+
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
