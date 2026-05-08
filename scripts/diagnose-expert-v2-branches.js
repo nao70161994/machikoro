@@ -17,6 +17,7 @@ function parseArgs(argv) {
     let fast = false;
     let profiles = DEFAULT_PROFILES.slice();
     let margin = 0.2;
+    let verbose = false;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -32,10 +33,12 @@ function parseArgs(argv) {
             profiles = (argv[++i] || DEFAULT_PROFILES.join(',')).split(',').map(v => v.trim()).filter(Boolean);
         } else if (arg === '--margin') {
             margin = parseFloat(argv[++i] || '0.2');
+        } else if (arg === '--verbose') {
+            verbose = true;
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profiles, margin };
+    return { games, seed, maxSteps, format, lite, fast, profiles, margin, verbose };
 }
 
 function createCounters() {
@@ -958,6 +961,19 @@ function toText(report) {
     ];
     for (const entry of entries) {
         const counters = entry.counters;
+        if (!options.verbose) {
+            lines.push(
+                `${entry.profile}: winRate=${(entry.winRate * 100).toFixed(1)}% avgTurns=${entry.averageTurns.toFixed(1)} exhausted=${entry.exhausted} ` +
+                `renovationFirstEarly=${counters.buildRenovationFirstEarlyChosen}/${counters.buildCardEvDecisions} ` +
+                `redFlip025=${counters.buildRedWouldFlipWeight025}/${counters.buildCardEvDecisions} ` +
+                `gatedMall=${counters.buildGatedMallFarChosen}/${counters.buildCardEvDecisions} ` +
+                `mallSpendDelay=${counters.buildGatedMallSpendWouldDelay}/${counters.buildCardEvDecisions} ` +
+                `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
+                `businessDelay=${counters.buildBusinessDelayWouldDelay}/${counters.buildCardEvDecisions} ` +
+                `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions}`
+            );
+            continue;
+        }
         lines.push(
             `${entry.profile}: winRate=${(entry.winRate * 100).toFixed(1)}% avgTurns=${entry.averageTurns.toFixed(1)} exhausted=${entry.exhausted} ` +
             `diceTie=${counters.diceTie}/${counters.diceDecisions} rerollMarginWindow=${counters.rerollMarginWindow}/${counters.rerollDecisions} ` +
@@ -990,7 +1006,9 @@ function toText(report) {
             `itDelay=${counters.itInvestWouldDelayLandmarkSaves}/${counters.itInvestDecisions}`
         );
     }
-    return lines.join('\n');
+    return lines
+        .filter(line => options.verbose || !line.startsWith('totals:'))
+        .join('\n');
 }
 
 function main() {

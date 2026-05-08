@@ -20,17 +20,19 @@ runTest('diagnose-expert-v2-branches parseArgs は既定値を返す', () => {
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
     assert.strictEqual(args.margin, 0.2);
+    assert.strictEqual(args.verbose, false);
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
 runTest('diagnose-expert-v2-branches parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '7', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profiles', 'duel,crowd', '--margin', '0.5']);
+    const args = parseArgs(['--games', '7', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--full', '--profiles', 'duel,crowd', '--margin', '0.5', '--verbose']);
     assert.strictEqual(args.games, 7);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.lite, false);
     assert.strictEqual(args.margin, 0.5);
+    assert.strictEqual(args.verbose, true);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
@@ -65,7 +67,7 @@ runTest('diagnose-expert-v2-branches runDiagnostics は profile ごとのカウ�
 
 runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () => {
     const report = {
-        options: { games: 1, seed: 1, lite: true, fast: false, margin: 0.2 },
+        options: { games: 1, seed: 1, lite: true, fast: false, margin: 0.2, verbose: true },
         summary: { weightedWinRate: 0.5, minWinRate: 0.5 },
         totals: Object.assign(createCounters(), {
             diceDecisions: 2,
@@ -316,4 +318,34 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('redSaturated=2/6'));
     assert.ok(text.includes('specialSpendDelay=1/6'));
     assert.ok(text.includes('itDelay=1/4'));
+});
+
+runTest('diagnose-expert-v2-branches toText は通常出力で詳細 totals を省略する', () => {
+    const counters = Object.assign(createCounters(), {
+        buildCardEvDecisions: 6,
+        buildRedWouldFlipWeight025: 1,
+        buildGatedMallFarChosen: 2,
+        buildGatedMallSpendWouldDelay: 1,
+        buildMallBasicLowIncomeChosen: 1,
+        buildBusinessDelayWouldDelay: 1,
+        buildSpecialSpendWouldDelayLandmark: 1,
+    });
+    const text = toText({
+        options: { games: 1, seed: 1, lite: true, fast: false, margin: 0.2, verbose: false },
+        summary: { weightedWinRate: 0.5, minWinRate: 0.5 },
+        totals: counters,
+        entries: [{
+            profile: 'duel',
+            winRate: 0.5,
+            averageTurns: 40,
+            exhausted: 0,
+            counters,
+        }],
+    });
+
+    assert.ok(!text.includes('totals:'));
+    assert.ok(text.includes('gated:'));
+    assert.ok(text.includes('mallBasic:'));
+    assert.ok(text.includes('duel: winRate=50.0%'));
+    assert.ok(text.includes('mallBasicLow=1/6'));
 });
