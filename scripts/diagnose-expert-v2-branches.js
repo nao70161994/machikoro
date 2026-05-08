@@ -171,6 +171,16 @@ function createCounters() {
         buildPortfolioGrowthAvailableNames: {},
         buildPortfolioGrowthNearNames: {},
         buildPortfolioGrowthMissedNearNames: {},
+        buildCornCandidate: 0,
+        buildCornChosen: 0,
+        buildCornChosenNoMarket: 0,
+        buildCornChosenNoMarketStock: 0,
+        buildCornChosenLateNoStation: 0,
+        buildCornNearBest05: 0,
+        buildCornMissedNearBest05: 0,
+        buildCornWouldFlipBonus08: 0,
+        buildCornWouldFlipPenalty05: 0,
+        buildCornFlip05Names: {},
         buildHighPurpleCandidate: 0,
         buildHighPurpleChosen: 0,
         buildHighPurpleEarlyChosen: 0,
@@ -687,6 +697,29 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                         : -Infinity;
                     const currentBaseEv = Math.max(currentOneScore, currentTwoScore);
                     if (best && best.option && best.option.card) {
+                        const cornEntry = scored.find(entry => entry.option.card && entry.option.card.name === 'コーン畑');
+                        if (cornEntry) {
+                            counters.buildCornCandidate++;
+                            const cornNearBest05 = cornEntry.score >= best.score - 0.5;
+                            if (cornNearBest05) counters.buildCornNearBest05++;
+                            if (best !== cornEntry && cornNearBest05) counters.buildCornMissedNearBest05++;
+                            if (best !== cornEntry && cornEntry.score + 0.8 >= best.score) counters.buildCornWouldFlipBonus08++;
+                            if (best === cornEntry) {
+                                counters.buildCornChosen++;
+                                const hasMarket = current.countCard('青果市場') > 0;
+                                if (!hasMarket) counters.buildCornChosenNoMarket++;
+                                if (!hasMarket && (!shopStock || shopStock['青果市場'] <= 0)) counters.buildCornChosenNoMarketStock++;
+                                const remainingLandmarks = runtime.Player.landmarkNames()
+                                    .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
+                                if (remainingLandmarks.length <= 3 && !current.landmarks[runtime.LANDMARK_NAMES.STATION]) {
+                                    counters.buildCornChosenLateNoStation++;
+                                }
+                                if (second && second.score >= cornEntry.score - 0.5) {
+                                    counters.buildCornWouldFlipPenalty05++;
+                                    if (second.option && second.option.card) incrementName(counters.buildCornFlip05Names, second.option.card.name);
+                                }
+                            }
+                        }
                         const growthEntries = scored.filter(entry => isPortfolioGrowthCard(entry.option.card));
                         const bestGrowth = growthEntries[0] || null;
                         if (growthEntries.length > 0) {
@@ -1120,6 +1153,7 @@ function toText(report) {
         `finishMode: window=${totals.buildFinishWindow}/${totals.buildCardEvDecisions} oneRemaining=${totals.buildFinishOneRemainingWindow}/${totals.buildCardEvDecisions} near=${totals.buildFinishNear}/${totals.buildCardEvDecisions} broadDelay=${totals.buildFinishDelay}/${totals.buildCardEvDecisions} strictDelay=${totals.buildFinishStrictDelay}/${totals.buildCardEvDecisions} potentialDisruption=${totals.buildFinishDisruptionCanDelayImmediateWin}/${totals.buildCardEvDecisions} broadDelayNoDisruption=${totals.buildFinishDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} strictDelayNoDisruption=${totals.buildFinishStrictDelayNoImmediateDisruption}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildFinishNames)}`,
         `portfolioGap: growthAvailable=${totals.buildPortfolioGrowthAvailable}/${totals.buildCardEvDecisions} growthChosen=${totals.buildPortfolioGrowthChosen}/${totals.buildCardEvDecisions} lowGrowthChosen=${totals.buildPortfolioLowGrowthChosen}/${totals.buildCardEvDecisions} basicOverGrowth=${totals.buildPortfolioBasicOverGrowth}/${totals.buildCardEvDecisions} specialOverGrowth=${totals.buildPortfolioSpecialOverGrowth}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioGrowthNearBest05}/${totals.buildCardEvDecisions} near1=${totals.buildPortfolioGrowthNearBest1}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioGrowthWouldFlipBonus08}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioGrowthMissedNearBest05}/${totals.buildCardEvDecisions} basicOverNear05=${totals.buildPortfolioBasicOverNearGrowth05}/${totals.buildCardEvDecisions} specialOverNear05=${totals.buildPortfolioSpecialOverNearGrowth05}/${totals.buildCardEvDecisions} missedFlip08=${totals.buildPortfolioGrowthMissedWouldFlipBonus08}/${totals.buildCardEvDecisions}`,
         `portfolioGapNames: chosen=${topNameCounts(totals.buildPortfolioChosenNames)} available=${topNameCounts(totals.buildPortfolioGrowthAvailableNames)} near=${topNameCounts(totals.buildPortfolioGrowthNearNames)} missedNear=${topNameCounts(totals.buildPortfolioGrowthMissedNearNames)}`,
+        `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `redOneDie: names=${topNameCounts(totals.buildRedOneDieNames)}`,
         `specialSpend: names=${topNameCounts(totals.buildSpecialSpendNames)} delayNames=${topNameCounts(totals.buildSpecialSpendDelayNames)}`,
