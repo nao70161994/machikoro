@@ -103,12 +103,25 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildRedPaymentCappedChosen: 1,
             buildRedPaymentCapWouldFlip: 1,
             buildRedPaymentCapLossTotal: 0.5,
+            buildRedOneDieCandidate: 4,
+            buildRedOneDieUnderweightedCandidate: 3,
+            buildRedOneDieWouldFlipFreq6: 2,
+            buildRedOneDieChosenUnderweighted: 1,
+            buildRedOneDieNames: { ファミレス: 2, 寿司屋: 1 },
             buildItCandidate: 4,
             buildItWouldFlipAssumeInvest025: 1,
             buildItWouldFlipAssumeInvest05: 2,
             buildBusinessCandidate: 4,
             buildBusinessWouldFlipBonus05: 1,
             buildBusinessWouldFlipBonus1: 2,
+            buildBusinessDelayChosen: 3,
+            buildBusinessDelayWouldDelay: 2,
+            buildBusinessDelayNear: 2,
+            buildBusinessDelayDuplicate: 1,
+            buildBusinessDelayLowExchangeValue: 1,
+            buildBusinessDelaySecondGapLt05: 1,
+            buildBusinessDelayWouldFlipPenalty05: 1,
+            buildBusinessDelayWouldFlipPenalty1: 2,
             buildParkCandidate: 3,
             buildParkPositive: 2,
             buildParkNearBest1: 1,
@@ -132,6 +145,13 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildRedSaturatedLowIncomeChosen: 2,
             buildRedSaturatedWouldFlipPenalty05: 1,
             buildRedSaturatedWouldFlipPenalty1: 2,
+            buildSpecialSpendChosen: 3,
+            buildSpecialSpendNearLandmarkChosen: 2,
+            buildSpecialSpendWouldDelayLandmark: 1,
+            buildSpecialSpendPenalty05: 1,
+            buildSpecialSpendPenalty1: 2,
+            buildSpecialSpendNames: { テレビ局: 2, 貸金業: 1 },
+            buildSpecialSpendDelayNames: { テレビ局: 1 },
             itInvestDecisions: 4,
             itInvestSaves: 4,
             itInvestCloseToFinishSaves: 2,
@@ -170,9 +190,11 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildLoanDuplicateNonBridgeWouldFlipPenalty15: 1,
                 buildCleaningNearBest1: 2,
                 buildRedWouldFlipWeight025: 1,
+                buildRedOneDieWouldFlipFreq6: 2,
                 buildRedPaymentCapWouldFlip: 1,
                 buildItWouldFlipAssumeInvest025: 1,
                 buildBusinessWouldFlipBonus05: 1,
+                buildBusinessDelayWouldDelay: 2,
                 buildParkWouldFlipBonus05: 1,
                 buildLandmarkGatedFarChosen: 2,
                 buildLandmarkGatedWouldFlipPenalty05: 1,
@@ -183,6 +205,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildGatedMallFlip05Names: { コンビニ: 1, パン屋: 1 },
                 buildHighPurpleEarlyChosen: 2,
                 buildRedSaturatedLowIncomeChosen: 2,
+                buildSpecialSpendWouldDelayLandmark: 1,
                 itInvestDecisions: 4,
                 itInvestWouldDelayLandmarkSaves: 1,
                 moverDecisions: 5,
@@ -214,11 +237,17 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildCleaningNearBest1=2/6'));
     assert.ok(text.includes('buildRedCandidate=5/6'));
     assert.ok(text.includes('buildRedWouldFlipWeight025=1/6'));
+    assert.ok(text.includes('buildRedOneDieCandidate=4/6'));
+    assert.ok(text.includes('buildRedOneDieUnderweightedCandidate=3/6'));
+    assert.ok(text.includes('buildRedOneDieWouldFlipFreq6=2/6'));
+    assert.ok(text.includes('buildRedOneDieChosenUnderweighted=1/6'));
+    assert.ok(text.includes('redOneDie: names=ファミレス:2,寿司屋:1'));
     assert.ok(text.includes('buildRedPaymentCapWouldFlip=1/6'));
     assert.ok(text.includes('buildItCandidate=4/6'));
     assert.ok(text.includes('buildItWouldFlipAssumeInvest025=1/6'));
     assert.ok(text.includes('buildBusinessCandidate=4/6'));
     assert.ok(text.includes('buildBusinessWouldFlipBonus05=1/6'));
+    assert.ok(text.includes('businessDelay: chosen=3/6 near=2/6 delay=2/6 duplicate=1/6 lowExchange=1/6 secondGap05=1/6 flip05=1/6 flip1=2/6'));
     assert.ok(text.includes('buildParkCandidate=3/6'));
     assert.ok(text.includes('buildParkPositive=2/6'));
     assert.ok(text.includes('buildParkWouldFlipBonus05=1/6'));
@@ -232,6 +261,11 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
     assert.ok(text.includes('buildRedSaturatedLowIncomeChosen=2/6'));
     assert.ok(text.includes('buildRedSaturatedWouldFlipPenalty05=1/6'));
+    assert.ok(text.includes('buildSpecialSpendChosen=3/6'));
+    assert.ok(text.includes('buildSpecialSpendNearLandmarkChosen=2/6'));
+    assert.ok(text.includes('buildSpecialSpendWouldDelayLandmark=1/6'));
+    assert.ok(text.includes('buildSpecialSpendPenalty05=1/6'));
+    assert.ok(text.includes('specialSpend: names=テレビ局:2,貸金業:1 delayNames=テレビ局:1'));
     assert.ok(text.includes('itInvestSaves=4/4'));
     assert.ok(text.includes('itInvestWouldDelayLandmarkSaves=1/4'));
     assert.ok(text.includes('mover: decisions=5 candidates=12'));
@@ -249,9 +283,11 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('loanDuplicateNonBridgeFlip15=1/6'));
     assert.ok(text.includes('cleaningNearBest1=2/6'));
     assert.ok(text.includes('redFlip025=1/6'));
+    assert.ok(text.includes('redOneDieFlip=2/6'));
     assert.ok(text.includes('redPaymentCapFlip=1/6'));
     assert.ok(text.includes('itFlip025=1/6'));
     assert.ok(text.includes('businessFlip05=1/6'));
+    assert.ok(text.includes('businessDelay=2/6'));
     assert.ok(text.includes('parkFlip05=1/6'));
     assert.ok(text.includes('gatedFar=2/6'));
     assert.ok(text.includes('gatedFlip05=1/6'));
@@ -260,5 +296,6 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('gatedMall=3/6'));
     assert.ok(text.includes('highPurpleEarly=2/6'));
     assert.ok(text.includes('redSaturated=2/6'));
+    assert.ok(text.includes('specialSpendDelay=1/6'));
     assert.ok(text.includes('itDelay=1/4'));
 });
