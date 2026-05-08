@@ -72,6 +72,7 @@
 - v2simple の直近採用は赤カード相手ターン EV 補正のみです。条件付き赤カードはロール発火時の即時評価では相手の所持コインを上限にし、build EV の購入判断では将来価値として評価します。build EV への追加 red payment cap penalty、IT build bonus / ITInvest、Business Center 補正、高額紫早買い、RedSaturated、貸金業重複 penalty、Cleaning value bonus、Mover leader 回避、PARK bonus、combo payoff not-ready penalty は、発火不足または50戦評価悪化により棄却/診断のみです。landmark-gated は `harbor=0` / `station=0` で実質モール依存のみ、カード名別でも基礎カード/赤カードが主因だったため、全体 penalty は入れない方針です。special spend は20戦で `buildSpecialSpendWouldDelayLandmark=52/1404` ですが、`Penalty05=11/1404` と反転候補が少ないため、special 全体ではなく必要ならカード名別に見ます。
 - redOneDie は5戦診断で反転 `0`、businessDelay も5戦 crowd/allStrong4 で `flip05=0` / `flip1=0` だったため、現時点では実装候補に進めません。
 - mallBasic は crowd/allStrong4 10戦で `chosen=74/295`, `lowIncome=10/295`、低EV増分は主に `ピザ屋:9` でした。ただしピザ屋限定 penalty 実験は normal50 が維持、strong50 が weighted `53.0%` / min `44.0%` で基準改善なしだったため棄却済みです。
+- CPU v2simple の build EV 手書き調整は、直近候補の診断/評価で費用対効果が低いため現採用セットで凍結中です。再開条件は、allStrong4/crowd で明確な `WouldFlip` が出る小変更に限ります。
 - `CPU（最強）` の tuning 候補探索: `sh scripts/search-cpu-top-tier.sh 8 5` または `npm run search-expert-top-tier -- --games 8 --top 5`。wrapper は `models/cpu_top_tier_search/` に `.txt/.md/.json` を保存します。
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`
