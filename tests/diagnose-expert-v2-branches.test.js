@@ -179,6 +179,12 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildPortfolioGrowthAvailableNames: { 青果市場: 2, ブドウ園: 1 },
             buildPortfolioGrowthNearNames: { 青果市場: 1, ブドウ園: 1 },
             buildPortfolioGrowthMissedNearNames: { 青果市場: 1, ブドウ園: 1 },
+            buildPortfolioNoCornAvailable: 4,
+            buildPortfolioNoCornNearBest05: 2,
+            buildPortfolioNoCornMissedNearBest05: 1,
+            buildPortfolioNoCornWouldFlipBonus04: 1,
+            buildPortfolioNoCornWouldFlipBonus08: 2,
+            buildPortfolioNoCornMissedNearNames: { 青果市場: 1 },
             buildCornCandidate: 4,
             buildCornChosen: 2,
             buildCornChosenNoMarket: 2,
@@ -259,6 +265,12 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildFinishStrictDelay: 1,
                 buildPortfolioGrowthNearBest05: 2,
                 buildPortfolioGrowthMissedNearBest05: 2,
+                buildPortfolioNoCornAvailable: 4,
+                buildPortfolioNoCornNearBest05: 2,
+                buildPortfolioNoCornMissedNearBest05: 1,
+                buildPortfolioNoCornWouldFlipBonus04: 1,
+                buildPortfolioNoCornWouldFlipBonus08: 2,
+                buildPortfolioNoCornMissedNearNames: { 青果市場: 1 },
                 buildCornCandidate: 4,
                 buildCornChosen: 2,
                 buildCornChosenNoMarket: 2,
@@ -325,6 +337,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('finishMode: window=4/6 oneRemaining=2/6 near=3/6 broadDelay=2/6 strictDelay=1/6 potentialDisruption=1/6 broadDelayNoDisruption=1/6 strictDelayNoDisruption=1/6 names=税務署:2,ピザ屋:1'));
     assert.ok(text.includes('portfolioGap: growthAvailable=4/6 growthChosen=1/6 lowGrowthChosen=3/6 basicOverGrowth=2/6 specialOverGrowth=1/6 near05=2/6 near1=3/6 flip08=3/6 missedNear05=2/6 basicOverNear05=1/6 specialOverNear05=1/6 missedFlip08=2/6'));
     assert.ok(text.includes('portfolioGapNames: chosen=パン屋:2,税務署:1 available=青果市場:2,ブドウ園:1 near=ブドウ園:1,青果市場:1 missedNear=ブドウ園:1,青果市場:1'));
+    assert.ok(text.includes('portfolioNoCorn: available=4/6 near05=2/6 missedNear05=1/6 flip04=1/6 flip08=2/6 missedNearNames=青果市場:1'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
