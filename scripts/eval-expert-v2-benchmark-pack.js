@@ -3,6 +3,16 @@ const path = require('path');
 const strongEval = require(path.join(__dirname, 'eval-expert-vs-strong.js'));
 const normalEval = require(path.join(__dirname, 'eval-expert-vs-normal.js'));
 
+const DEFAULT_NORMAL_PROFILES = ['crowd'];
+const DEFAULT_STRONG_PROFILES = ['duel', 'trio', 'crowd', 'allStrong4'];
+
+function parseList(value) {
+    return String(value || '')
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
 function parseArgs(argv) {
     let games = 50;
     let seed = 1;
@@ -12,6 +22,8 @@ function parseArgs(argv) {
     let fast = false;
     let expertPreset = 'v2simple';
     let businessMode = 'simple';
+    let suite = 'all';
+    let profiles = [];
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -27,10 +39,14 @@ function parseArgs(argv) {
             expertPreset = argv[++i] || 'v2simple';
         } else if (arg === '--business-mode') {
             businessMode = argv[++i] || 'simple';
+        } else if (arg === '--suite') {
+            suite = argv[++i] || 'all';
+        } else if (arg === '--profiles') {
+            profiles = parseList(argv[++i]);
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, expertPreset, businessMode };
+    return { games, seed, maxSteps, format, lite, fast, expertPreset, businessMode, suite, profiles };
 }
 
 function baseOptions(options, profiles) {
@@ -59,23 +75,47 @@ function baseOptions(options, profiles) {
     };
 }
 
+function shouldRunSuite(options, suite) {
+    const selected = options.suite || 'all';
+    return selected === 'all' || selected === suite;
+}
+
+function profilesForSuite(options, suite) {
+    if (Array.isArray(options.profiles) && options.profiles.length > 0) {
+        return options.profiles.slice();
+    }
+    return suite === 'normal' ? DEFAULT_NORMAL_PROFILES.slice() : DEFAULT_STRONG_PROFILES.slice();
+}
+
+function emptySummary() {
+    return {
+        weightedWinRate: 0,
+        minWinRate: 0,
+        profiles: 0,
+    };
+}
+
 function evaluatePack(options) {
-    const normalOptions = baseOptions(options, ['crowd']);
-    const strongOptions = baseOptions(options, ['duel', 'trio', 'crowd', 'allStrong4']);
-    const normalEntries = normalOptions.profiles.map(profile => normalEval.evaluateProfile(profile, normalOptions));
-    const strongEntries = strongOptions.profiles.map(profile => strongEval.evaluateProfile(profile, strongOptions));
+    const normalOptions = baseOptions(options, profilesForSuite(options, 'normal'));
+    const strongOptions = baseOptions(options, profilesForSuite(options, 'strong'));
+    const normalEntries = shouldRunSuite(options, 'normal')
+        ? normalOptions.profiles.map(profile => normalEval.evaluateProfile(profile, normalOptions))
+        : [];
+    const strongEntries = shouldRunSuite(options, 'strong')
+        ? strongOptions.profiles.map(profile => strongEval.evaluateProfile(profile, strongOptions))
+        : [];
     return {
         cpuFamily: 'v2simple-rule-based',
         comparisonScope: 'expert-v2-benchmark-pack',
         options,
         normal: {
             options: normalOptions,
-            summary: normalEval.summarize(normalEntries),
+            summary: normalEntries.length > 0 ? normalEval.summarize(normalEntries) : emptySummary(),
             entries: normalEntries,
         },
         strong: {
             options: strongOptions,
-            summary: strongEval.summarize(strongEntries),
+            summary: strongEntries.length > 0 ? strongEval.summarize(strongEntries) : emptySummary(),
             entries: strongEntries,
         },
     };
@@ -90,19 +130,39 @@ function entryLine(entry) {
 }
 
 function toText(report) {
+    const normalCrowd = report.normal.entries[0]
+        ? formatPercent(report.normal.entries[0].winRate)
+        : 'n/a';
+    const strongWeighted = report.strong.entries.length > 0
+        ? formatPercent(report.strong.summary.weightedWinRate)
+        : 'n/a';
+    const strongMin = report.strong.entries.length > 0
+        ? formatPercent(report.strong.summary.minWinRate)
+        : 'n/a';
     const lines = [
         `cpuFamily=${report.cpuFamily || 'v2simple-rule-based'} comparisonScope=${report.comparisonScope || 'expert-v2-benchmark-pack'}`,
-        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} businessMode=${report.options.businessMode || 'simple'}`,
-        `normalCrowd=${formatPercent(report.normal.entries[0].winRate)} strongWeighted=${formatPercent(report.strong.summary.weightedWinRate)} strongMin=${formatPercent(report.strong.summary.minWinRate)}`,
-        'normal:',
-        ...report.normal.entries.map(entryLine),
-        'strong:',
-        ...report.strong.entries.map(entryLine),
+        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} businessMode=${report.options.businessMode || 'simple'} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
+        `normalCrowd=${normalCrowd} strongWeighted=${strongWeighted} strongMin=${strongMin}`,
     ];
+    if (report.normal.entries.length > 0) {
+        lines.push('normal:', ...report.normal.entries.map(entryLine));
+    }
+    if (report.strong.entries.length > 0) {
+        lines.push('strong:', ...report.strong.entries.map(entryLine));
+    }
     return lines.join('\n');
 }
 
 function toMarkdown(report) {
+    const normalCrowd = report.normal.entries[0]
+        ? formatPercent(report.normal.entries[0].winRate)
+        : 'n/a';
+    const strongWeighted = report.strong.entries.length > 0
+        ? formatPercent(report.strong.summary.weightedWinRate)
+        : 'n/a';
+    const strongMin = report.strong.entries.length > 0
+        ? formatPercent(report.strong.summary.minWinRate)
+        : 'n/a';
     const lines = [
         '# Expert v2 Benchmark Pack',
         '',
@@ -113,9 +173,11 @@ function toMarkdown(report) {
         `- mode: ${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')}`,
         `- expertPreset: ${report.options.expertPreset}`,
         `- businessMode: ${report.options.businessMode || 'simple'}`,
-        `- normalCrowd: ${formatPercent(report.normal.entries[0].winRate)}`,
-        `- strongWeighted: ${formatPercent(report.strong.summary.weightedWinRate)}`,
-        `- strongMin: ${formatPercent(report.strong.summary.minWinRate)}`,
+        `- suite: ${report.options.suite || 'all'}`,
+        `- profiles: ${(report.options.profiles || []).join(',') || 'default'}`,
+        `- normalCrowd: ${normalCrowd}`,
+        `- strongWeighted: ${strongWeighted}`,
+        `- strongMin: ${strongMin}`,
         '',
         '| suite | profile | players | winRate | avgTurns | exhausted |',
         '| --- | --- | --- | ---: | ---: | ---: |',
@@ -150,6 +212,8 @@ if (require.main === module) {
 module.exports = {
     evaluatePack,
     parseArgs,
+    profilesForSuite,
+    shouldRunSuite,
     toMarkdown,
     toText,
 };

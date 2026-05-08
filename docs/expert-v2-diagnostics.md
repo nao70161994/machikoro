@@ -148,6 +148,7 @@ normal crowd は broad 補正の副作用検出用、strong 4 profile は最悪�
 
 ```sh
 node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode simple
+node scripts/eval-expert-v2-benchmark-pack.js --games 20 --suite strong --profiles crowd,allStrong4
 node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4
 node scripts/diagnose-expert-losses.js --games 100 --profiles crowd,allStrong4 --expert-preset v2simple
 npm run eval-expert-vs-strong -- --games 100 --expert-preset v2simple
