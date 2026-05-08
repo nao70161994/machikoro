@@ -206,7 +206,10 @@ function redOpponentTurnValues(cpu, game, owner, card, options = {}) {
         if (opponent === owner) continue;
         const freq = cpu._diceFreqForRoller(card.diceNums, opponent);
         if (freq <= 0) continue;
-        const value = cpu._cardActivationValue(card, game, owner, opponent, card.diceNums[0]);
+        const immediateValue = cpu._cardActivationValue(card, game, owner, opponent, card.diceNums[0]);
+        const value = typeof cpu._expertV2SimpleRedOpponentFutureValue === 'function'
+            ? cpu._expertV2SimpleRedOpponentFutureValue(card, game, owner, opponent)
+            : immediateValue;
         const cappedValue = Math.min(value, opponent.coins);
         total += value * freq / 36;
         cappedTotal += cappedValue * freq / 36;
