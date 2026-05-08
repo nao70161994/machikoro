@@ -211,6 +211,14 @@ function createCounters() {
         buildPortfolioEffectiveWouldFlipBonus08: 0,
         buildPortfolioEffectiveAvailableNames: {},
         buildPortfolioEffectiveMissedNearNames: {},
+        buildBasicDuplicateAvailable: 0,
+        buildBasicDuplicateChosen: 0,
+        buildBasicDuplicateLowLiftChosen: 0,
+        buildBasicDuplicateNearBest05: 0,
+        buildBasicDuplicateWouldFlipPenalty05: 0,
+        buildBasicDuplicateNames: {},
+        buildBasicDuplicateLowLiftNames: {},
+        buildBasicDuplicateFlip05Names: {},
         buildCornCandidate: 0,
         buildCornChosen: 0,
         buildCornChosenNoMarket: 0,
@@ -1103,6 +1111,33 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                                 if (isPortfolioSpecialCard(best.option.card)) counters.buildPortfolioSpecialOverGrowth++;
                             }
                         }
+                        const basicDuplicateEntries = scored.filter(entry =>
+                            entry.option &&
+                            isPortfolioBasicCard(entry.option.card) &&
+                            current.countCard(entry.option.card.name) >= 2
+                        );
+                        const bestBasicDuplicate = basicDuplicateEntries[0] || null;
+                        if (bestBasicDuplicate) {
+                            counters.buildBasicDuplicateAvailable++;
+                            if (bestBasicDuplicate.score >= best.score - 0.5) counters.buildBasicDuplicateNearBest05++;
+                            if (best === bestBasicDuplicate) {
+                                counters.buildBasicDuplicateChosen++;
+                                incrementName(counters.buildBasicDuplicateNames, best.option.card.name);
+                                const deltaEv = best.breakdown && typeof best.breakdown.deltaEv === 'number'
+                                    ? best.breakdown.deltaEv
+                                    : null;
+                                if (deltaEv !== null && deltaEv < 0.2) {
+                                    counters.buildBasicDuplicateLowLiftChosen++;
+                                    incrementName(counters.buildBasicDuplicateLowLiftNames, best.option.card.name);
+                                }
+                                if (second && second.score >= best.score - 0.5) {
+                                    counters.buildBasicDuplicateWouldFlipPenalty05++;
+                                    if (second.option && second.option.card) {
+                                        incrementName(counters.buildBasicDuplicateFlip05Names, second.option.card.name);
+                                    }
+                                }
+                            }
+                        }
                         const delayPreview = landmarkDelayPreview(runtime, game, current, best.option.card);
                         if (delayPreview && delayPreview.remainingLandmarks <= 2) {
                             const disruptPreview = disruptionPreview(runtime, this, game, current, best.option.card);
@@ -1511,6 +1546,7 @@ function toText(report) {
         `portfolioGapNames: chosen=${topNameCounts(totals.buildPortfolioChosenNames)} available=${topNameCounts(totals.buildPortfolioGrowthAvailableNames)} near=${topNameCounts(totals.buildPortfolioGrowthNearNames)} missedNear=${topNameCounts(totals.buildPortfolioGrowthMissedNearNames)}`,
         `portfolioNoCorn: available=${totals.buildPortfolioNoCornAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioNoCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioNoCornMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioNoCornWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioNoCornWouldFlipBonus08}/${totals.buildCardEvDecisions} missedNearNames=${topNameCounts(totals.buildPortfolioNoCornMissedNearNames)}`,
         `portfolioEffective: available=${totals.buildPortfolioEffectiveAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioEffectiveNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioEffectiveMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioEffectiveWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioEffectiveWouldFlipBonus08}/${totals.buildCardEvDecisions} availableNames=${topNameCounts(totals.buildPortfolioEffectiveAvailableNames)} missedNearNames=${topNameCounts(totals.buildPortfolioEffectiveMissedNearNames)}`,
+        `basicDuplicate: available=${totals.buildBasicDuplicateAvailable}/${totals.buildCardEvDecisions} chosen=${totals.buildBasicDuplicateChosen}/${totals.buildCardEvDecisions} lowLift=${totals.buildBasicDuplicateLowLiftChosen}/${totals.buildCardEvDecisions} near05=${totals.buildBasicDuplicateNearBest05}/${totals.buildCardEvDecisions} flip05=${totals.buildBasicDuplicateWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildBasicDuplicateNames)} lowLiftNames=${topNameCounts(totals.buildBasicDuplicateLowLiftNames)} flip05Names=${topNameCounts(totals.buildBasicDuplicateFlip05Names)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
@@ -1530,6 +1566,7 @@ function toText(report) {
                 `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
                 `finishStrictDelay=${counters.buildFinishStrictDelay}/${counters.buildCardEvDecisions} ` +
                 `portfolioMissedNear05=${counters.buildPortfolioGrowthMissedNearBest05}/${counters.buildCardEvDecisions} ` +
+                `basicDuplicateLow=${counters.buildBasicDuplicateLowLiftChosen}/${counters.buildCardEvDecisions} ` +
                 `businessDelay=${counters.buildBusinessDelayWouldDelay}/${counters.buildCardEvDecisions} ` +
                 `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions}`
             );
@@ -1563,6 +1600,7 @@ function toText(report) {
             `mallBasicLow=${counters.buildMallBasicLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
             `finishStrictDelay=${counters.buildFinishStrictDelay}/${counters.buildCardEvDecisions} ` +
             `portfolioMissedNear05=${counters.buildPortfolioGrowthMissedNearBest05}/${counters.buildCardEvDecisions} ` +
+            `basicDuplicateLow=${counters.buildBasicDuplicateLowLiftChosen}/${counters.buildCardEvDecisions} ` +
             `highPurpleEarly=${counters.buildHighPurpleEarlyChosen}/${counters.buildCardEvDecisions} ` +
             `redSaturated=${counters.buildRedSaturatedLowIncomeChosen}/${counters.buildCardEvDecisions} ` +
             `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions} ` +

@@ -219,6 +219,14 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildPortfolioEffectiveWouldFlipBonus08: 2,
             buildPortfolioEffectiveAvailableNames: { 青果市場: 2, ワイナリー: 1 },
             buildPortfolioEffectiveMissedNearNames: { ワイナリー: 1 },
+            buildBasicDuplicateAvailable: 4,
+            buildBasicDuplicateChosen: 3,
+            buildBasicDuplicateLowLiftChosen: 2,
+            buildBasicDuplicateNearBest05: 3,
+            buildBasicDuplicateWouldFlipPenalty05: 1,
+            buildBasicDuplicateNames: { パン屋: 2, コンビニ: 1 },
+            buildBasicDuplicateLowLiftNames: { パン屋: 2 },
+            buildBasicDuplicateFlip05Names: { 青果市場: 1 },
             buildCornCandidate: 4,
             buildCornChosen: 2,
             buildCornChosenNoMarket: 2,
@@ -305,6 +313,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildPortfolioNoCornWouldFlipBonus04: 1,
                 buildPortfolioNoCornWouldFlipBonus08: 2,
                 buildPortfolioNoCornMissedNearNames: { 青果市場: 1 },
+                buildBasicDuplicateLowLiftChosen: 2,
                 buildCornCandidate: 4,
                 buildCornChosen: 2,
                 buildCornChosenNoMarket: 2,
@@ -376,6 +385,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('portfolioGapNames: chosen=パン屋:2,税務署:1 available=青果市場:2,ブドウ園:1 near=ブドウ園:1,青果市場:1 missedNear=ブドウ園:1,青果市場:1'));
     assert.ok(text.includes('portfolioNoCorn: available=4/6 near05=2/6 missedNear05=1/6 flip04=1/6 flip08=2/6 missedNearNames=青果市場:1'));
     assert.ok(text.includes('portfolioEffective: available=3/6 near05=2/6 missedNear05=1/6 flip04=1/6 flip08=2/6 availableNames=青果市場:2,ワイナリー:1 missedNearNames=ワイナリー:1'));
+    assert.ok(text.includes('basicDuplicate: available=4/6 chosen=3/6 lowLift=2/6 near05=3/6 flip05=1/6 names=パン屋:2,コンビニ:1 lowLiftNames=パン屋:2 flip05Names=青果市場:1'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
@@ -418,6 +428,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('mallBasicLow=1/6'));
     assert.ok(text.includes('finishStrictDelay=1/6'));
     assert.ok(text.includes('portfolioMissedNear05=2/6'));
+    assert.ok(text.includes('basicDuplicateLow=2/6'));
     assert.ok(text.includes('highPurpleEarly=2/6'));
     assert.ok(text.includes('redSaturated=2/6'));
     assert.ok(text.includes('specialSpendDelay=1/6'));
