@@ -102,6 +102,98 @@ function isSpecialSpendOption(option) {
         SPECIAL_SPEND_CARD_NAMES.has(option.name);
 }
 
+function buildFinishDelayTags(option) {
+    const preview = option && option.landmarkDelayPreview;
+    if (!preview || !preview.wouldTrigger) return [];
+    const tags = ['landmark-delay'];
+    const hasImmediateDisruption = !!(option.disruptionPreview && option.disruptionPreview.canDelayImmediateWin);
+    if (hasImmediateDisruption) tags.push('can-delay-immediate-win');
+    else tags.push('no-immediate-disruption');
+    if (isSpecialSpendOption(option)) tags.push('special-spend');
+    if (preview.remainingLandmarks === 1) tags.push('remaining-one');
+    if (preview.nearestLandmark === '空港' && typeof preview.shortfallBefore === 'number' && preview.shortfallBefore <= 6) {
+        tags.push('airport-near');
+    }
+    if (typeof preview.shortfallBefore === 'number' && preview.shortfallBefore <= 6) tags.push('shortfall-before-le6');
+    if ((preview.remainingLandmarks === 1 || preview.remainingLandmarks === 2) &&
+        typeof preview.shortfallBefore === 'number' &&
+        preview.shortfallBefore <= 6 &&
+        typeof preview.delayCoins === 'number' &&
+        preview.delayCoins > 0) {
+        tags.push('strict-delay');
+    }
+    return tags;
+}
+
+function findBestNonDelayOption(finalActionDiagnostics, chosen) {
+    if (!finalActionDiagnostics || !Array.isArray(finalActionDiagnostics.buildOptions)) return null;
+    return finalActionDiagnostics.buildOptions.find(option =>
+        option &&
+        option.label !== (chosen && chosen.label) &&
+        !(option.landmarkDelayPreview && option.landmarkDelayPreview.wouldTrigger)
+    ) || null;
+}
+
+function compactBuildOption(option) {
+    if (!option) return null;
+    return {
+        label: option.label || null,
+        type: option.type || null,
+        name: option.name || null,
+        cost: typeof option.cost === 'number' ? option.cost : null,
+        score: typeof option.score === 'number' ? option.score : null,
+        delayCoins: option.landmarkDelayPreview && typeof option.landmarkDelayPreview.delayCoins === 'number'
+            ? option.landmarkDelayPreview.delayCoins
+            : null,
+    };
+}
+
+function collectFinishDelayExamples(losses, limit = 10) {
+    const examples = [];
+    for (const loss of losses) {
+        const diagnostics = loss.finalActionDiagnostics;
+        const chosen = findChosenBuildOption(diagnostics);
+        const preview = chosen && chosen.landmarkDelayPreview;
+        if (!preview || !preview.wouldTrigger) continue;
+        const bestNonDelay = findBestNonDelayOption(diagnostics, chosen);
+        const scoreGapToBestNonDelay = typeof chosen.score === 'number' &&
+            bestNonDelay &&
+            typeof bestNonDelay.score === 'number'
+            ? chosen.score - bestNonDelay.score
+            : null;
+        examples.push({
+            profile: loss.profile || null,
+            game: loss.game || null,
+            seed: loss.seed || null,
+            turns: loss.turns || null,
+            lastExpertAction: loss.lastExpertAction || null,
+            chosen: compactBuildOption(chosen),
+            bestNonDelay: compactBuildOption(bestNonDelay),
+            scoreGapToBestNonDelay,
+            remainingLandmarks: preview.remainingLandmarks,
+            missingLandmarks: diagnostics && Array.isArray(diagnostics.missingLandmarks) ? diagnostics.missingLandmarks.slice(0, 6) : [],
+            nearestLandmark: preview.nearestLandmark || null,
+            shortfallBefore: preview.shortfallBefore,
+            shortfallAfter: preview.shortfallAfter,
+            delayCoins: preview.delayCoins,
+            coinsBefore: preview.coinsBefore,
+            cardCost: preview.cardCost,
+            opponentWinThreats: diagnostics && Array.isArray(diagnostics.opponentWinThreats) ? diagnostics.opponentWinThreats.slice(0, 4) : [],
+            disruptionPreview: chosen.disruptionPreview || null,
+            reasonTags: buildFinishDelayTags(chosen),
+        });
+    }
+    return examples.sort((a, b) => {
+        const aStrict = a.reasonTags.includes('strict-delay') ? 1 : 0;
+        const bStrict = b.reasonTags.includes('strict-delay') ? 1 : 0;
+        if (aStrict !== bStrict) return bStrict - aStrict;
+        const aNoDisruption = a.reasonTags.includes('no-immediate-disruption') ? 1 : 0;
+        const bNoDisruption = b.reasonTags.includes('no-immediate-disruption') ? 1 : 0;
+        if (aNoDisruption !== bNoDisruption) return bNoDisruption - aNoDisruption;
+        return (b.delayCoins || 0) - (a.delayCoins || 0);
+    }).slice(0, limit);
+}
+
 function summarizeFinishDelayActions(losses) {
     const actionNames = {};
     const noImmediateDisruptionActionNames = {};
@@ -242,6 +334,7 @@ function summarizeLosses(losses) {
         winnerTopCards: topEntries(winnerCards),
         finalActions: topEntries(finalActions),
         finishDelayActions: summarizeFinishDelayActions(losses),
+        finishDelayExamples: collectFinishDelayExamples(losses),
     };
 }
 
@@ -288,6 +381,7 @@ function diagnoseProfile(name, options) {
         const lastExpertAction = expertTrace.length > 0 ? expertTrace[expertTrace.length - 1].chosenAction.label : null;
         const finalActionDiagnostics = finalActionDiagnosticsFromTrace(expertTrace);
         losses.push({
+            profile: name,
             game: i + 1,
             seed: (options.seed || 1) + i,
             lineup,
@@ -366,6 +460,15 @@ function toText(entries, options) {
                 `special=${finishDelay.specialSpendDelayNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
                 `specialNoDisruption=${finishDelay.specialSpendNoImmediateDisruptionNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
+            const examples = entry.summary.finishDelayExamples || [];
+            if (examples.length > 0) {
+                lines.push(
+                    `  finishDelayExamples=${examples.slice(0, 3).map(example =>
+                        `g${example.game || '?'}:${example.lastExpertAction || '?'} delay:${example.delayCoins} ` +
+                        `remain:${example.remainingLandmarks} near:${example.nearestLandmark || '?'} tags:${example.reasonTags.join('|')}`
+                    ).join(' ; ')}`
+                );
+            }
         }
     }
     return lines.join('\n');
@@ -393,6 +496,7 @@ module.exports = {
     resolveExpertTuning,
     finalActionDiagnosticsFromTrace,
     findChosenBuildOption,
+    collectFinishDelayExamples,
     summarizeFinishDelayActions,
     summarizeLosses,
     toText,
