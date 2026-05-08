@@ -170,9 +170,14 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildPortfolioGrowthNearBest05: 2,
             buildPortfolioGrowthNearBest1: 3,
             buildPortfolioGrowthWouldFlipBonus08: 3,
+            buildPortfolioGrowthMissedNearBest05: 2,
+            buildPortfolioBasicOverNearGrowth05: 1,
+            buildPortfolioSpecialOverNearGrowth05: 1,
+            buildPortfolioGrowthMissedWouldFlipBonus08: 2,
             buildPortfolioChosenNames: { パン屋: 2, 税務署: 1 },
             buildPortfolioGrowthAvailableNames: { 青果市場: 2, ブドウ園: 1 },
             buildPortfolioGrowthNearNames: { 青果市場: 1, ブドウ園: 1 },
+            buildPortfolioGrowthMissedNearNames: { 青果市場: 1, ブドウ園: 1 },
             buildHighPurpleEarlyChosen: 2,
             buildHighPurpleWouldFlipPenalty1: 1,
             buildHighPurpleWouldFlipPenalty2: 2,
@@ -242,6 +247,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildFinishDelay: 2,
                 buildFinishStrictDelay: 1,
                 buildPortfolioGrowthNearBest05: 2,
+                buildPortfolioGrowthMissedNearBest05: 2,
                 buildHighPurpleEarlyChosen: 2,
                 buildRedSaturatedLowIncomeChosen: 2,
                 buildSpecialSpendWouldDelayLandmark: 1,
@@ -299,8 +305,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('mallSpend: near=2/6 delay=1/6 flip05=1/6 names=コンビニ:1,ピザ屋:1 delayNames=ピザ屋:1'));
     assert.ok(text.includes('mallBasic: chosen=3/6 far=2/6 lowIncome=1/6 flip05=1/6 flip1=2/6 names=コンビニ:2,ピザ屋:1 lowIncomeNames=ピザ屋:1'));
     assert.ok(text.includes('finishMode: window=4/6 oneRemaining=2/6 near=3/6 broadDelay=2/6 strictDelay=1/6 potentialDisruption=1/6 broadDelayNoDisruption=1/6 strictDelayNoDisruption=1/6 names=税務署:2,ピザ屋:1'));
-    assert.ok(text.includes('portfolioGap: growthAvailable=4/6 growthChosen=1/6 lowGrowthChosen=3/6 basicOverGrowth=2/6 specialOverGrowth=1/6 near05=2/6 near1=3/6 flip08=3/6'));
-    assert.ok(text.includes('portfolioGapNames: chosen=パン屋:2,税務署:1 available=青果市場:2,ブドウ園:1 near=ブドウ園:1,青果市場:1'));
+    assert.ok(text.includes('portfolioGap: growthAvailable=4/6 growthChosen=1/6 lowGrowthChosen=3/6 basicOverGrowth=2/6 specialOverGrowth=1/6 near05=2/6 near1=3/6 flip08=3/6 missedNear05=2/6 basicOverNear05=1/6 specialOverNear05=1/6 missedFlip08=2/6'));
+    assert.ok(text.includes('portfolioGapNames: chosen=パン屋:2,税務署:1 available=青果市場:2,ブドウ園:1 near=ブドウ園:1,青果市場:1 missedNear=ブドウ園:1,青果市場:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
     assert.ok(text.includes('buildRedSaturatedLowIncomeChosen=2/6'));
@@ -341,7 +347,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('mallSpendDelay=1/6'));
     assert.ok(text.includes('mallBasicLow=1/6'));
     assert.ok(text.includes('finishStrictDelay=1/6'));
-    assert.ok(text.includes('portfolioNear05=2/6'));
+    assert.ok(text.includes('portfolioMissedNear05=2/6'));
     assert.ok(text.includes('highPurpleEarly=2/6'));
     assert.ok(text.includes('redSaturated=2/6'));
     assert.ok(text.includes('specialSpendDelay=1/6'));
