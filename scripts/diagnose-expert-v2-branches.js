@@ -121,6 +121,14 @@ function createCounters() {
         buildBusinessDelaySecondGapLt05: 0,
         buildBusinessDelayWouldFlipPenalty05: 0,
         buildBusinessDelayWouldFlipPenalty1: 0,
+        businessScoredDecisions: 0,
+        businessScoredDiffers: 0,
+        businessScoredImprovesScore: 0,
+        businessScoredHarmfulGiftAvailable: 0,
+        businessSimpleMissedHarmfulGift: 0,
+        businessScoredTakesHigherValue: 0,
+        businessScoredNames: {},
+        businessSimpleNames: {},
         buildParkCandidate: 0,
         buildParkPositive: 0,
         buildParkChosen: 0,
@@ -524,6 +532,51 @@ function cleaningTargetScores(cpu, game, current) {
     return scores;
 }
 
+function scoreBusinessMove(cpu, game, current, move) {
+    if (!move) return null;
+    const target = game.players[move.targetIndex];
+    if (!target) return null;
+    const myCard = move.myCardObject || current.cards[move.myCard];
+    const theirCard = move.theirCardObject || target.cards[move.theirCard];
+    if (!myCard || !theirCard) return null;
+    const selfGain = cpu._exchangeReceivedCardValue(theirCard, game, current);
+    const selfLoss = cpu._exchangeOwnedCardValue(myCard, game, current);
+    const denial = cpu._exchangeOwnedCardValue(theirCard, game, target);
+    const gift = cpu._exchangeReceivedCardValue(myCard, game, target);
+    const score = selfGain - selfLoss + denial * 0.5 - gift * 0.5;
+    return {
+        myCard: move.myCard,
+        targetIndex: move.targetIndex,
+        theirCard: move.theirCard,
+        myCardObject: myCard,
+        theirCardObject: theirCard,
+        selfGain,
+        selfLoss,
+        denial,
+        gift,
+        score,
+        label: `${myCard.name}->${theirCard.name}`,
+    };
+}
+
+function bestScoredBusinessMove(cpu, game, current) {
+    let best = null;
+    let harmfulGiftAvailable = false;
+    cpu._forEachBusinessMove(game, ({ myCard, myIndex, targetIndex, theirCard, theirIndex }) => {
+        const scored = scoreBusinessMove(cpu, game, current, {
+            myCard: myIndex,
+            targetIndex,
+            theirCard: theirIndex,
+            myCardObject: myCard,
+            theirCardObject: theirCard,
+        });
+        if (!scored) return;
+        if (scored.gift < 0) harmfulGiftAvailable = true;
+        if (!best || scored.score > best.score) best = scored;
+    });
+    return { best, harmfulGiftAvailable };
+}
+
 function bestCleaningTargetBy(scores, key) {
     let bestName = null;
     let bestScore = -Infinity;
@@ -601,6 +654,7 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
         chooseReroll: CPU.prototype.chooseReroll,
         chooseHarbor: CPU.prototype.chooseHarbor,
         chooseTVTarget: CPU.prototype.chooseTVTarget,
+        chooseBusinessMove: CPU.prototype.chooseBusinessMove,
         chooseITInvest: CPU.prototype.chooseITInvest,
         chooseCleaningTarget: CPU.prototype.chooseCleaningTarget,
         chooseMoverMove: CPU.prototype.chooseMoverMove,
@@ -677,6 +731,32 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
             }
         }
         return originals.chooseTVTarget.call(this, game);
+    };
+
+    CPU.prototype.chooseBusinessMove = function chooseBusinessMoveWithDiagnostics(game) {
+        if (this._isExpertV2Simple && this._isExpertV2Simple() && this.expertBusinessMode !== 'random') {
+            const current = game.currentPlayer();
+            const simpleMove = this._chooseSimpleBusinessMove(game);
+            const simple = scoreBusinessMove(this, game, current, simpleMove);
+            const scoredResult = bestScoredBusinessMove(this, game, current);
+            const scored = scoredResult.best;
+            if (simple && scored) {
+                counters.businessScoredDecisions++;
+                incrementName(counters.businessSimpleNames, simple.label);
+                incrementName(counters.businessScoredNames, scored.label);
+                if (scoredResult.harmfulGiftAvailable) counters.businessScoredHarmfulGiftAvailable++;
+                const differs = simple.myCard !== scored.myCard ||
+                    simple.targetIndex !== scored.targetIndex ||
+                    simple.theirCard !== scored.theirCard;
+                if (differs) counters.businessScoredDiffers++;
+                if (scored.score > simple.score + 0.01) counters.businessScoredImprovesScore++;
+                if (scoredResult.harmfulGiftAvailable && scored.gift < 0 && simple.gift >= 0) {
+                    counters.businessSimpleMissedHarmfulGift++;
+                }
+                if (scored.selfGain > simple.selfGain + 0.5) counters.businessScoredTakesHigherValue++;
+            }
+        }
+        return originals.chooseBusinessMove.call(this, game);
     };
 
     CPU.prototype.chooseCleaningTarget = function chooseCleaningTargetWithDiagnostics(game) {
@@ -1219,6 +1299,7 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
         CPU.prototype.chooseReroll = originals.chooseReroll;
         CPU.prototype.chooseHarbor = originals.chooseHarbor;
         CPU.prototype.chooseTVTarget = originals.chooseTVTarget;
+        CPU.prototype.chooseBusinessMove = originals.chooseBusinessMove;
         CPU.prototype.chooseITInvest = originals.chooseITInvest;
         CPU.prototype.chooseCleaningTarget = originals.chooseCleaningTarget;
         CPU.prototype.chooseMoverMove = originals.chooseMoverMove;
@@ -1329,6 +1410,7 @@ function toText(report) {
         `portfolioEffective: available=${totals.buildPortfolioEffectiveAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioEffectiveNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioEffectiveMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioEffectiveWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioEffectiveWouldFlipBonus08}/${totals.buildCardEvDecisions} availableNames=${topNameCounts(totals.buildPortfolioEffectiveAvailableNames)} missedNearNames=${topNameCounts(totals.buildPortfolioEffectiveMissedNearNames)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
+        `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
         `redOneDie: names=${topNameCounts(totals.buildRedOneDieNames)}`,
         `specialSpend: names=${topNameCounts(totals.buildSpecialSpendNames)} delayNames=${topNameCounts(totals.buildSpecialSpendDelayNames)}`,
         `mover: decisions=${totals.moverDecisions} candidates=${totals.moverCandidates} diffStrongLike=${totals.moverDiffStrongLike}/${totals.moverDecisions} harmfulAvailable=${totals.moverHarmfulGiftAvailable}/${totals.moverDecisions} harmfulMissed=${totals.moverHarmfulGiftMissed}/${totals.moverDecisions} dangerTarget=${totals.moverDangerTargetChosen}/${totals.moverDecisions} leaderFlip=${totals.moverLeaderAvoidWouldFlip}/${totals.moverDecisions} harmfulFlip=${totals.moverHarmfulGiftWouldFlip}/${totals.moverDecisions}`,
