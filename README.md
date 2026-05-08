@@ -351,7 +351,7 @@ npm run report-rl-registry -- --format markdown --output models/rl_model/registr
 - `js/main.js`: 起動、入力、CPU 進行、タイトル/ゲーム画面制御
 - `js/stats.js`: ローカル統計表示
 - `js/appShell.js`: クラッシュ表示、オフライン表示、PWA インストールバナー、初期ビュー初期化
-- `js/RLCPU.js`: export 済み RL モデルを読む新 CPU 用ランタイム（導入準備中）
+- `js/RLCPU.js`: export 済み RL モデルを読む `AI（深層学習・ランダム）` 用ランタイム
 
 自己対戦 / tuning スクリプト:
 
