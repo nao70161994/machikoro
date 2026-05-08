@@ -5,7 +5,9 @@ const { runTest } = require('./helpers/test-utils');
 const {
     DEFAULT_PROFILES,
     finalActionDiagnosticsFromTrace,
+    findChosenBuildOption,
     parseArgs,
+    summarizeFinishDelayActions,
     summarizeLosses,
     toText,
 } = require(path.join(__dirname, '..', 'scripts', 'diagnose-expert-losses.js'));
@@ -44,6 +46,7 @@ runTest('diagnose-expert-losses summarizeLosses は負け筋を集計する', ()
             expertTopCards: [{ name: 'パン屋', count: 2 }],
             winnerTopCards: [{ name: '寿司屋', count: 3 }],
             lastExpertAction: 'PASS',
+            finalActionDiagnostics: null,
         },
         {
             winnerDifficulty: 'normal',
@@ -55,6 +58,7 @@ runTest('diagnose-expert-losses summarizeLosses は負け筋を集計する', ()
             expertTopCards: [{ name: 'パン屋', count: 1 }],
             winnerTopCards: [{ name: '寿司屋', count: 1 }],
             lastExpertAction: 'BUY_CARD:パン屋',
+            finalActionDiagnostics: null,
         },
     ]);
     assert.strictEqual(summary.losses, 2);
@@ -65,6 +69,85 @@ runTest('diagnose-expert-losses summarizeLosses は負け筋を集計する', ()
     assert.strictEqual(summary.expertMissingLandmarks[0].name, '駅');
     assert.strictEqual(summary.winnerTopCards[0].name, '寿司屋');
     assert.strictEqual(summary.finalActions[0].name, 'BUY_CARD:パン屋');
+    assert.strictEqual(summary.finishDelayActions.total, 0);
+});
+
+runTest('diagnose-expert-losses summarizeFinishDelayActions は終盤遅延と即勝利妨害を分ける', () => {
+    const delayRenovation = {
+        lastExpertAction: 'BUY_CARD:改装屋',
+        finalActionDiagnostics: {
+            buildActionLabel: 'BUY_CARD:改装屋',
+            buildOptions: [
+                {
+                    label: 'BUY_CARD:改装屋',
+                    landmarkDelayPreview: {
+                        wouldTrigger: true,
+                        nearestLandmark: '空港',
+                        remainingLandmarks: 1,
+                        shortfallBefore: 3,
+                        delayCoins: 4,
+                    },
+                    disruptionPreview: {
+                        canDelayImmediateWin: false,
+                    },
+                },
+            ],
+        },
+    };
+    const delayTaxOffice = {
+        lastExpertAction: 'BUY_CARD:税務署',
+        finalActionDiagnostics: {
+            buildActionLabel: 'BUY_CARD:税務署',
+            buildOptions: [
+                {
+                    label: 'BUY_CARD:税務署',
+                    landmarkDelayPreview: {
+                        wouldTrigger: true,
+                        nearestLandmark: '遊園地',
+                        remainingLandmarks: 2,
+                        shortfallBefore: 9,
+                        delayCoins: 4,
+                    },
+                    disruptionPreview: {
+                        canDelayImmediateWin: true,
+                    },
+                },
+            ],
+        },
+    };
+    const noDelay = {
+        lastExpertAction: 'BUY_CARD:パン屋',
+        finalActionDiagnostics: {
+            buildActionLabel: 'BUY_CARD:パン屋',
+            buildOptions: [
+                {
+                    label: 'BUY_CARD:パン屋',
+                    landmarkDelayPreview: {
+                        wouldTrigger: false,
+                        nearestLandmark: '駅',
+                        remainingLandmarks: 5,
+                        shortfallBefore: 20,
+                        delayCoins: 0,
+                    },
+                },
+            ],
+        },
+    };
+
+    assert.strictEqual(findChosenBuildOption(delayRenovation.finalActionDiagnostics).label, 'BUY_CARD:改装屋');
+    const summary = summarizeFinishDelayActions([delayRenovation, delayTaxOffice, noDelay]);
+    assert.strictEqual(summary.total, 2);
+    assert.strictEqual(summary.noImmediateDisruption, 1);
+    assert.strictEqual(summary.canDelayImmediateWin, 1);
+    assert.strictEqual(summary.shortfallBeforeLe6, 1);
+    assert.strictEqual(summary.airportNear, 1);
+    assert.strictEqual(summary.remainingOne, 1);
+    assert.strictEqual(summary.remainingOneAirportNear, 1);
+    assert.strictEqual(summary.noImmediateDisruptionAirportNear, 1);
+    assert.strictEqual(summary.averageDelayCoins, 4);
+    assert.deepStrictEqual(summary.actionNames.map(item => item.name), ['BUY_CARD:改装屋', 'BUY_CARD:税務署']);
+    assert.strictEqual(summary.nearestLandmarks[0].name, '空港');
+    assert.strictEqual(summary.remainingLandmarks[0].name, '1');
 });
 
 runTest('diagnose-expert-losses finalActionDiagnosticsFromTrace は末尾IT後でも直近build診断を返す', () => {
@@ -103,6 +186,20 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                 expertTopCards: [{ name: 'パン屋', count: 5 }],
                 winnerTopCards: [{ name: '寿司屋', count: 6 }],
                 finalActions: [{ name: 'PASS', count: 2 }],
+                finishDelayActions: {
+                    total: 1,
+                    noImmediateDisruption: 1,
+                    canDelayImmediateWin: 0,
+                    shortfallBeforeLe6: 1,
+                    airportNear: 1,
+                    remainingOne: 1,
+                    remainingOneAirportNear: 1,
+                    noImmediateDisruptionAirportNear: 1,
+                    averageDelayCoins: 3,
+                    actionNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
+                    nearestLandmarks: [{ name: '空港', count: 1 }],
+                    remainingLandmarks: [{ name: '1', count: 1 }],
+                },
             },
         },
     ], { games: 4, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: '' });
@@ -111,4 +208,7 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('expertMissing=駅:3'));
     assert.ok(text.includes('winnerCards=寿司屋:6'));
     assert.ok(text.includes('finalActions=PASS:2'));
+    assert.ok(text.includes('finishDelayActions=total:1'));
+    assert.ok(text.includes('remainingOneAirportNear:1'));
+    assert.ok(text.includes('finishDelayNames=BUY_CARD:改装屋:1'));
 });

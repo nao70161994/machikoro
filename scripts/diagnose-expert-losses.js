@@ -72,6 +72,72 @@ function topEntries(map, limit = 5) {
         .map(([name, count]) => ({ name, count }));
 }
 
+function findChosenBuildOption(finalActionDiagnostics) {
+    if (!finalActionDiagnostics || !Array.isArray(finalActionDiagnostics.buildOptions)) return null;
+    const label = finalActionDiagnostics.buildActionLabel ||
+        (finalActionDiagnostics.chosenBuildAction && finalActionDiagnostics.chosenBuildAction.label);
+    if (!label) return null;
+    return finalActionDiagnostics.buildOptions.find(option => option && option.label === label) || null;
+}
+
+function summarizeFinishDelayActions(losses) {
+    const actionNames = {};
+    const nearestLandmarks = {};
+    const remainingLandmarks = {};
+    let total = 0;
+    let canDelayImmediateWin = 0;
+    let noImmediateDisruption = 0;
+    let shortfallBeforeLe6 = 0;
+    let airportNear = 0;
+    let remainingOne = 0;
+    let remainingOneAirportNear = 0;
+    let noImmediateDisruptionAirportNear = 0;
+    let totalDelayCoins = 0;
+
+    for (const loss of losses) {
+        const chosen = findChosenBuildOption(loss.finalActionDiagnostics);
+        const preview = chosen && chosen.landmarkDelayPreview;
+        if (!preview || !preview.wouldTrigger) continue;
+        total++;
+        const actionLabel = chosen.label || loss.lastExpertAction || 'UNKNOWN';
+        incrementCount(actionNames, actionLabel);
+        incrementCount(nearestLandmarks, preview.nearestLandmark || 'UNKNOWN');
+        incrementCount(remainingLandmarks, String(preview.remainingLandmarks || 'UNKNOWN'));
+        if (chosen.disruptionPreview && chosen.disruptionPreview.canDelayImmediateWin) {
+            canDelayImmediateWin++;
+        } else {
+            noImmediateDisruption++;
+        }
+        if (typeof preview.shortfallBefore === 'number' && preview.shortfallBefore <= 6) shortfallBeforeLe6++;
+        const isAirportNear = preview.nearestLandmark === '空港' &&
+            typeof preview.shortfallBefore === 'number' &&
+            preview.shortfallBefore <= 6;
+        const isRemainingOne = preview.remainingLandmarks === 1;
+        if (isAirportNear) airportNear++;
+        if (isRemainingOne) remainingOne++;
+        if (isAirportNear && isRemainingOne) remainingOneAirportNear++;
+        if (isAirportNear && !(chosen.disruptionPreview && chosen.disruptionPreview.canDelayImmediateWin)) {
+            noImmediateDisruptionAirportNear++;
+        }
+        if (typeof preview.delayCoins === 'number') totalDelayCoins += preview.delayCoins;
+    }
+
+    return {
+        total,
+        canDelayImmediateWin,
+        noImmediateDisruption,
+        shortfallBeforeLe6,
+        airportNear,
+        remainingOne,
+        remainingOneAirportNear,
+        noImmediateDisruptionAirportNear,
+        averageDelayCoins: total > 0 ? totalDelayCoins / total : 0,
+        actionNames: topEntries(actionNames),
+        nearestLandmarks: topEntries(nearestLandmarks),
+        remainingLandmarks: topEntries(remainingLandmarks),
+    };
+}
+
 function summarizeLosses(losses) {
     const winnerDifficulties = {};
     const winnerSeats = {};
@@ -107,6 +173,7 @@ function summarizeLosses(losses) {
         expertTopCards: topEntries(expertCards),
         winnerTopCards: topEntries(winnerCards),
         finalActions: topEntries(finalActions),
+        finishDelayActions: summarizeFinishDelayActions(losses),
     };
 }
 
@@ -209,6 +276,21 @@ function toText(entries, options) {
         lines.push(
             `  finalActions=${entry.summary.finalActions.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
         );
+        const finishDelay = entry.summary.finishDelayActions;
+        if (finishDelay && finishDelay.total > 0) {
+            lines.push(
+                `  finishDelayActions=total:${finishDelay.total} noImmediateDisruption:${finishDelay.noImmediateDisruption} ` +
+                `canDelayImmediateWin:${finishDelay.canDelayImmediateWin} shortfallBefore<=6:${finishDelay.shortfallBeforeLe6} ` +
+                `airportNear:${finishDelay.airportNear} remainingOne:${finishDelay.remainingOne} ` +
+                `remainingOneAirportNear:${finishDelay.remainingOneAirportNear} noImmediateDisruptionAirportNear:${finishDelay.noImmediateDisruptionAirportNear} ` +
+                `avgDelayCoins:${finishDelay.averageDelayCoins.toFixed(2)}`
+            );
+            lines.push(
+                `  finishDelayNames=${finishDelay.actionNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `nearest=${finishDelay.nearestLandmarks.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `remaining=${finishDelay.remainingLandmarks.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+        }
     }
     return lines.join('\n');
 }
@@ -234,6 +316,8 @@ module.exports = {
     profilePlayers,
     resolveExpertTuning,
     finalActionDiagnosticsFromTrace,
+    findChosenBuildOption,
+    summarizeFinishDelayActions,
     summarizeLosses,
     toText,
 };
