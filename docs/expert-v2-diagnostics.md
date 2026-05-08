@@ -76,16 +76,78 @@
 - カード名や条件が2-3個程度に集中していること。
 - パス追加、広いカード禁止、広い終盤 penalty にならないこと。
 
+## v2手書き候補の評価ゲート
+
+20戦は smoke として扱い、採用判断には使いません。`strong crowd,allStrong4` と `normal crowd` を見て、strong weighted が baseline 以上、allStrong4 が `-2pt` 以内、normal crowd が `-2pt` 以内なら50戦へ進めます。allStrong4 または normal crowd が `-4pt` 以上悪化した候補は、この時点で破棄します。
+
+50戦は候補判定です。`strong duel,trio,crowd,allStrong4` と `normal duel,trio,crowd` を見ます。strong weighted が baseline 以上、strong min が `-1pt` 以内、allStrong4 が `-2pt` 以内、normal weighted が `-1pt` 以内なら100戦へ進めます。strong min が `-3pt` 以上、allStrong4 が `-4pt` 以上、normal crowd または normal duel が `-3pt` 以上悪化した候補は破棄します。改善が1profileだけに偏る場合は保留し、条件をさらに狭めます。
+
+100戦で採用判定します。採用条件は、strong weighted が改善、strong min が維持以上、allStrong4 が維持以上、normal weighted が維持以上、normal 各profileに `-2pt` 以上の悪化がないことです。strong は改善するが normal crowd が落ちる候補、または normal は改善するが allStrong4 が落ちる候補は統合しません。改善幅が `+1pt` 未満で profile差が大きい場合は誤差扱いで保留します。
+
+normal crowd は broad 補正の副作用検出用、strong 4 profile は最悪条件と汎用性の確認用です。特に allStrong4 と normal crowd のどちらかを壊す候補は、他profileで改善しても v2simple 本体へ入れません。
+
+### benchmark比較表
+
+`npm run eval-expert-v2-benchmark -- --games <N> --seed <seed> --expert-preset v2simple` の出力を比較するときは、まず次の4指標だけを見ます。既定の `businessMode` は `simple` です。Business Center 系の実験を再開する場合は、実装済みの mode 名を明示し、baseline simple と混ぜて比較しません。
+
+| games | seed | candidate | normalCrowd | Δ | strongWeighted | Δ | strongMin | Δ | allStrong4 | Δ | 判定 |
+| ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 20 | 1 | baseline |  | - |  | - |  | - |  | - | 基準 |
+| 20 | 1 | candidate |  |  |  |  |  |  |  |  | 継続/破棄 |
+| 50 | 1 | baseline |  | - |  | - |  | - |  | - | 基準 |
+| 50 | 1 | candidate |  |  |  |  |  |  |  |  | 100戦へ/破棄 |
+| 100 | 1 | baseline |  | - |  | - |  | - |  | - | 基準 |
+| 100 | 1 | candidate |  |  |  |  |  |  |  |  | 採用/保留/破棄 |
+
+`Δ` は candidate から baseline を引いた percentage point です。`allStrong4` は strong profile の `allStrong4` 行、`strongWeighted` と `strongMin` は benchmark pack の summary 行を使います。判定は、20戦では smoke、50戦では100戦へ進めるか、100戦では本体統合できるかだけを書きます。
+
 ## 方針
 
 現時点では、手書きの v2 build EV 強化は打ち止め寄りです。赤カード相手ターン EV 以外の broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
 
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
+## RL 評価との分離
+
+- v2simple の採用判断は `eval-expert-v2-benchmark-pack` と loss / branch 診断で行います。出力の `cpuFamily` は `v2simple-rule-based` です。
+- RL CPU の採用判断は `eval-rl-models`, `eval-rl-vs-js`, `models/rl_model/registry.json` で行います。v2 benchmark pack の数値を RL registry の eval として転記しません。
+- 比較しやすさのため、短時間 smoke は両系統とも `games=20 seed=1`、候補確認は `games=50 seed=1`、採用判断は `games=100 seed=1` を基本にします。ただし、v2 は `duel/trio/crowd/allStrong4`、RL は registry model / run-label と `rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal` を別々に見るため、score を直接同一表で順位付けしません。
+- v2 と RL の横比較は「どの局面で強いか」の参考に留め、片方の結果だけで他方の採用・棄却を決めません。
+
+## 負け筋ログからの次候補整理
+
+この節は v2simple 専用です。RL CPU の採用や再学習は対象外です。
+
+### 今は採用しない案
+
+- broad portfolio / growth bonus
+  - `portfolioEffective` では missed/flip 候補が見える一方、`portfolioEffectiveByCard` では候補が分散しています。一律 bonus やカード名を広く束ねた bonus は採用しません。
+- finish / special spend guard
+  - `finishStrictDelay` と special spend delay は発火が薄く、勝率改善に結び付く根拠が不足しています。skip / build guard や広い終盤 penalty は採用しません。
+- roll/race guard
+  - `rollRaceDetail` の `lateOther` は出るものの薄く、終盤サイコロ選択を broad に変える根拠には届いていません。
+- Business Center scored exchange の broad 実装
+  - harmful gift や交換価値差分は診断対象として残しますが、scored exchange 全体は strong 側悪化があったため採用しません。
+- Business Center harmful gift 実行モード
+  - 50戦では normal crowd 改善が見えましたが、100戦では baseline simple 比で `strongWeighted -0.2pt`, `strongMin -1pt`, `allStrong4 -2pt` となり、本体統合条件を満たしませんでした。live v2simple には採用せず、診断記録として残します。
+
+### 次に狭く検証する案
+
+1. loss 診断で集中した具体例
+   - `finishDelayExamples` の `reasonTags`, `scoreGapToBestNonDelay`, `opponentWinThreats`, `disruptionPreview` が同じカード/条件に集中する場合だけ、小さい補正候補にします。
+2. Business Center harmful gift の取り逃し
+   - `businessSimpleMissedHarmfulGift` が crowd/allStrong4 の loss で集中する場合だけ、交換全体の scored 化ではなく harmful gift 回避に限定して検証します。
+   - `businessSimpleMissedHarmfulGift*` は残します。ただし、これは `business=simple` が見逃した候補を測る比較用カウンタであり、現行CPUが実際に見逃した回数としては扱いません。
+   - 今後再検証する場合は、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないか、loss 診断や benchmark 悪化時に切り戻す根拠があるかを見る regression / audit 用に使います。
+3. roll/race の終盤例
+   - `lateOther` 単体では薄いため、loss 診断で終盤サイコロ選択が具体的な敗因として重なる場合だけ検証します。
+4. portfolio effective の条件付き補正
+   - 現時点では低優先です。`portfolioEffectiveByCard` や readiness が2-3条件へ集中した場合だけ、broad bonus ではなく条件付きの小補正として再検討します。
+
 ## よく使う診断
 
 ```sh
-node scripts/eval-expert-v2-benchmark-pack.js --games 50
+node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode simple
 node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4
 node scripts/diagnose-expert-losses.js --games 100 --profiles crowd,allStrong4 --expert-preset v2simple
 npm run eval-expert-vs-strong -- --games 100 --expert-preset v2simple

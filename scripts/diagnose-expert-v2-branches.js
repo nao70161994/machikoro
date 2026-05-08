@@ -144,6 +144,8 @@ function createCounters() {
         businessScoredImprovesScore: 0,
         businessScoredHarmfulGiftAvailable: 0,
         businessSimpleMissedHarmfulGift: 0,
+        businessSimpleMissedHarmfulGiftImproves05: 0,
+        businessSimpleMissedHarmfulGiftNames: {},
         businessScoredTakesHigherValue: 0,
         businessScoredNames: {},
         businessSimpleNames: {},
@@ -933,6 +935,8 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                 if (scored.score > simple.score + 0.01) counters.businessScoredImprovesScore++;
                 if (scoredResult.harmfulGiftAvailable && scored.gift < 0 && simple.gift >= 0) {
                     counters.businessSimpleMissedHarmfulGift++;
+                    incrementName(counters.businessSimpleMissedHarmfulGiftNames, scored.label);
+                    if (scored.score > simple.score + 0.5) counters.businessSimpleMissedHarmfulGiftImproves05++;
                 }
                 if (scored.selfGain > simple.selfGain + 0.5) counters.businessScoredTakesHigherValue++;
             }
@@ -1670,7 +1674,7 @@ function toText(report) {
         `basicDuplicate: available=${totals.buildBasicDuplicateAvailable}/${totals.buildCardEvDecisions} chosen=${totals.buildBasicDuplicateChosen}/${totals.buildCardEvDecisions} lowLift=${totals.buildBasicDuplicateLowLiftChosen}/${totals.buildCardEvDecisions} near05=${totals.buildBasicDuplicateNearBest05}/${totals.buildCardEvDecisions} flip05=${totals.buildBasicDuplicateWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildBasicDuplicateNames)} lowLiftNames=${topNameCounts(totals.buildBasicDuplicateLowLiftNames)} flip05Names=${topNameCounts(totals.buildBasicDuplicateFlip05Names)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
-        `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
+        `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} missedHarmfulImprove05=${totals.businessSimpleMissedHarmfulGiftImproves05}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} missedHarmfulNames=${topNameCounts(totals.businessSimpleMissedHarmfulGiftNames)} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
         `redOneDie: names=${topNameCounts(totals.buildRedOneDieNames)}`,
         `specialSpend: names=${topNameCounts(totals.buildSpecialSpendNames)} delayNames=${topNameCounts(totals.buildSpecialSpendDelayNames)}`,
         `mover: decisions=${totals.moverDecisions} candidates=${totals.moverCandidates} diffStrongLike=${totals.moverDiffStrongLike}/${totals.moverDecisions} harmfulAvailable=${totals.moverHarmfulGiftAvailable}/${totals.moverDecisions} harmfulMissed=${totals.moverHarmfulGiftMissed}/${totals.moverDecisions} dangerTarget=${totals.moverDangerTargetChosen}/${totals.moverDecisions} leaderFlip=${totals.moverLeaderAvoidWouldFlip}/${totals.moverDecisions} harmfulFlip=${totals.moverHarmfulGiftWouldFlip}/${totals.moverDecisions}`,
