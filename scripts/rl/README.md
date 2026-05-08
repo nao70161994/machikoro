@@ -51,6 +51,12 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 
 ---
 
+## CPU強化方針
+
+RL CPU は `CPU（最強）` v2simple の置き換えではなく、別系統の `AI（深層学習・ランダム）` として並行強化する。registry / portfolio は RL CPU の採用管理に使い、v2simple の診断・採用判断は `docs/expert-v2-diagnostics.md` に分ける。
+
+v2simple を評価相手や比較基準として使う場合も、RL の採用判断と v2simple の手書き変更判断は混ぜない。RL 候補は既存の採用 RL モデル、JS `weak/normal/strong/expert`、多人数 lineup 評価で判断する。
+
 ## アーキテクチャ
 
 ### 状態空間（STATE_DIM = 145）
