@@ -665,6 +665,55 @@ sh scripts/rl/bg-experiment-set.sh \
   self-only-4p-h256-lr1e4-5000-seed105-targethead
 ```
 
+4人用 RL CPU を `CPU（最強）` とは別系統で強化する場合は、まず短時間 sanity で allStrong4 を JS 評価に含め、見込みがあれば長め background run に進む。
+
+```sh
+# sanity: 既存 1000 preset に allStrong4 評価を追加して短時間確認
+sh scripts/rl/run-self-only-4p-h256-lr2e5-1000.sh \
+  --run-label self-only-4p-h256-lr2e5-1000-seed110-allstrong-sanity \
+  --seed 110 \
+  --js-eval-games 2 \
+  --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
+  --summary-weights "rl+weak+normal+strong=2,rl+normal+normal+strong=3,rl+strong+strong+strong=4"
+
+# long: sanity が悪くなければ detached で 2000 games
+sh scripts/rl/run-background.sh self-only-4p-h256-lr2e5-2000-seed110-allstrong \
+  sh scripts/rl/run-self-only-4p-h256-lr2e5-1000.sh \
+    --run-label self-only-4p-h256-lr2e5-2000-seed110-allstrong \
+    --seed 110 \
+    --games 2000 \
+    --eval-every 500 \
+    --js-eval-games 4 \
+    --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
+    --summary-weights "rl+weak+normal+strong=2,rl+normal+normal+strong=3,rl+strong+strong+strong=4"
+
+# 完走後は top checkpoint を同じ lineup で比較
+npm run eval-rl-models -- \
+  --run-labels self-only-4p-h256-lr2e5-2000-seed110-allstrong \
+  --run-ranks 1,2,3 \
+  --games 50 \
+  --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
+  --output models/rl_model/eval-seed110-allstrong-top3.json \
+  --csv models/rl_model/eval-seed110-allstrong-top3.csv \
+  --markdown models/rl_model/eval-seed110-allstrong-top3.md
+```
+
+既存4人用モデルと比較する場合は、採用済み `self-only-4p-h256-lr1e5-5000-seed103` と候補 `self-only-4p-h256-lr1e5-5000-seed102` を同じ lineup に入れる。`self-only-4p-h256-lr2e5-1000-seed110-allstrong` のような短時間 run は、完走後に run-label と registry model をまとめて評価する。
+
+```sh
+npm run eval-rl-models -- \
+  --models self-only-4p-h256-lr1e5-5000-seed103,self-only-4p-h256-lr1e5-5000-seed102 \
+  --run-labels self-only-4p-h256-lr2e5-1000-seed110-allstrong \
+  --run-ranks 1,2,3 \
+  --games 50 \
+  --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
+  --output models/rl_model/eval-seed110-allstrong-vs-existing.json \
+  --csv models/rl_model/eval-seed110-allstrong-vs-existing.csv \
+  --markdown models/rl_model/eval-seed110-allstrong-vs-existing.md
+```
+
+参考値として、2026-05-08 に既存4人用モデルだけを同じ3lineupで各10戦評価した。10戦なので採用判断には使わず、`seed110-allstrong` 完走後比較の事前基準として扱う。結果は `models/rl_model/eval-existing-4p-allstrong-small.{json,csv,md}` に保存し、`seed102` が score 63.3%（weak+normal+strong 70% / normal+normal+strong 50% / strong+strong+strong 70%）、`seed103` が score 53.3%（50% / 60% / 50%）。
+
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
@@ -694,7 +743,7 @@ sh scripts/rl/bg-experiment-set.sh \
 - `path`: ローカルの browser 用モデルJSONへの相対パス。
 - `training`: wrapper、games、hidden、lr、報酬プロファイルなど。
 - `style`: 構築傾向のラベルと主要カード/ランドマーク。
-- `evals`: 20戦 JS 評価など、採用判断に使う評価結果。
+- `evals`: 20戦 smoke や 50/100戦 JS 評価などの記録。採用判断の主評価は原則50戦以上、主採用は100戦以上を使う。
 - `portfolioPolicy`: 勝率だけでなく、席差・pass率・平均ターン・構築傾向を含めた採用方針。
 
 台帳を更新するときは、最低限次を確認する:
