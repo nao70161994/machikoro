@@ -80,8 +80,35 @@ function findChosenBuildOption(finalActionDiagnostics) {
     return finalActionDiagnostics.buildOptions.find(option => option && option.label === label) || null;
 }
 
+const SPECIAL_SPEND_CARD_NAMES = new Set([
+    '貸金業',
+    '高級フレンチ',
+    '会員制BAR',
+    'スタジアム',
+    'テレビ局',
+    'ビジネスセンター',
+    '出版社',
+    '税務署',
+    '改装屋',
+    '引越し屋',
+    '清掃業',
+    '公園',
+    'ITベンチャー',
+]);
+
+function isSpecialSpendOption(option) {
+    return option &&
+        option.type === 'card' &&
+        SPECIAL_SPEND_CARD_NAMES.has(option.name);
+}
+
 function summarizeFinishDelayActions(losses) {
     const actionNames = {};
+    const noImmediateDisruptionActionNames = {};
+    const shortfallBeforeLe6ActionNames = {};
+    const strictActionNames = {};
+    const specialSpendDelayNames = {};
+    const specialSpendNoImmediateDisruptionNames = {};
     const nearestLandmarks = {};
     const remainingLandmarks = {};
     let total = 0;
@@ -92,6 +119,11 @@ function summarizeFinishDelayActions(losses) {
     let remainingOne = 0;
     let remainingOneAirportNear = 0;
     let noImmediateDisruptionAirportNear = 0;
+    let strictDelay = 0;
+    let strictNoImmediateDisruption = 0;
+    let specialSpendDelay = 0;
+    let specialSpendDelayNoImmediateDisruption = 0;
+    let specialSpendDelayShortfallLe6 = 0;
     let totalDelayCoins = 0;
 
     for (const loss of losses) {
@@ -103,21 +135,47 @@ function summarizeFinishDelayActions(losses) {
         incrementCount(actionNames, actionLabel);
         incrementCount(nearestLandmarks, preview.nearestLandmark || 'UNKNOWN');
         incrementCount(remainingLandmarks, String(preview.remainingLandmarks || 'UNKNOWN'));
-        if (chosen.disruptionPreview && chosen.disruptionPreview.canDelayImmediateWin) {
+        const hasImmediateDisruption = !!(chosen.disruptionPreview && chosen.disruptionPreview.canDelayImmediateWin);
+        if (hasImmediateDisruption) {
             canDelayImmediateWin++;
         } else {
             noImmediateDisruption++;
+            incrementCount(noImmediateDisruptionActionNames, actionLabel);
         }
-        if (typeof preview.shortfallBefore === 'number' && preview.shortfallBefore <= 6) shortfallBeforeLe6++;
+        const isShortfallBeforeLe6 = typeof preview.shortfallBefore === 'number' && preview.shortfallBefore <= 6;
+        if (isShortfallBeforeLe6) {
+            shortfallBeforeLe6++;
+            incrementCount(shortfallBeforeLe6ActionNames, actionLabel);
+        }
         const isAirportNear = preview.nearestLandmark === '空港' &&
             typeof preview.shortfallBefore === 'number' &&
             preview.shortfallBefore <= 6;
         const isRemainingOne = preview.remainingLandmarks === 1;
+        const isStrictDelay = (isRemainingOne || preview.remainingLandmarks === 2) &&
+            typeof preview.shortfallBefore === 'number' &&
+            preview.shortfallBefore <= 6 &&
+            typeof preview.delayCoins === 'number' &&
+            preview.delayCoins > 0;
+        const isSpecialSpend = isSpecialSpendOption(chosen);
         if (isAirportNear) airportNear++;
         if (isRemainingOne) remainingOne++;
         if (isAirportNear && isRemainingOne) remainingOneAirportNear++;
-        if (isAirportNear && !(chosen.disruptionPreview && chosen.disruptionPreview.canDelayImmediateWin)) {
+        if (isAirportNear && !hasImmediateDisruption) {
             noImmediateDisruptionAirportNear++;
+        }
+        if (isStrictDelay) {
+            strictDelay++;
+            incrementCount(strictActionNames, actionLabel);
+            if (!hasImmediateDisruption) strictNoImmediateDisruption++;
+        }
+        if (isSpecialSpend) {
+            specialSpendDelay++;
+            incrementCount(specialSpendDelayNames, actionLabel);
+            if (!hasImmediateDisruption) {
+                specialSpendDelayNoImmediateDisruption++;
+                incrementCount(specialSpendNoImmediateDisruptionNames, actionLabel);
+            }
+            if (isShortfallBeforeLe6) specialSpendDelayShortfallLe6++;
         }
         if (typeof preview.delayCoins === 'number') totalDelayCoins += preview.delayCoins;
     }
@@ -131,8 +189,18 @@ function summarizeFinishDelayActions(losses) {
         remainingOne,
         remainingOneAirportNear,
         noImmediateDisruptionAirportNear,
+        strictDelay,
+        strictNoImmediateDisruption,
+        specialSpendDelay,
+        specialSpendDelayNoImmediateDisruption,
+        specialSpendDelayShortfallLe6,
         averageDelayCoins: total > 0 ? totalDelayCoins / total : 0,
         actionNames: topEntries(actionNames),
+        noImmediateDisruptionActionNames: topEntries(noImmediateDisruptionActionNames),
+        shortfallBeforeLe6ActionNames: topEntries(shortfallBeforeLe6ActionNames),
+        strictActionNames: topEntries(strictActionNames),
+        specialSpendDelayNames: topEntries(specialSpendDelayNames),
+        specialSpendNoImmediateDisruptionNames: topEntries(specialSpendNoImmediateDisruptionNames),
         nearestLandmarks: topEntries(nearestLandmarks),
         remainingLandmarks: topEntries(remainingLandmarks),
     };
@@ -283,12 +351,20 @@ function toText(entries, options) {
                 `canDelayImmediateWin:${finishDelay.canDelayImmediateWin} shortfallBefore<=6:${finishDelay.shortfallBeforeLe6} ` +
                 `airportNear:${finishDelay.airportNear} remainingOne:${finishDelay.remainingOne} ` +
                 `remainingOneAirportNear:${finishDelay.remainingOneAirportNear} noImmediateDisruptionAirportNear:${finishDelay.noImmediateDisruptionAirportNear} ` +
+                `strict:${finishDelay.strictDelay} strictNoDisruption:${finishDelay.strictNoImmediateDisruption} ` +
+                `special:${finishDelay.specialSpendDelay} specialNoDisruption:${finishDelay.specialSpendDelayNoImmediateDisruption} ` +
+                `specialShortfall<=6:${finishDelay.specialSpendDelayShortfallLe6} ` +
                 `avgDelayCoins:${finishDelay.averageDelayCoins.toFixed(2)}`
             );
             lines.push(
                 `  finishDelayNames=${finishDelay.actionNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
                 `nearest=${finishDelay.nearestLandmarks.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
                 `remaining=${finishDelay.remainingLandmarks.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+            lines.push(
+                `  finishDelayStrict=${finishDelay.strictActionNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `special=${finishDelay.specialSpendDelayNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `specialNoDisruption=${finishDelay.specialSpendNoImmediateDisruptionNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
         }
     }

@@ -79,6 +79,8 @@ runTest('diagnose-expert-losses summarizeFinishDelayActions は終盤遅延と�
             buildActionLabel: 'BUY_CARD:改装屋',
             buildOptions: [
                 {
+                    type: 'card',
+                    name: '改装屋',
                     label: 'BUY_CARD:改装屋',
                     landmarkDelayPreview: {
                         wouldTrigger: true,
@@ -100,6 +102,8 @@ runTest('diagnose-expert-losses summarizeFinishDelayActions は終盤遅延と�
             buildActionLabel: 'BUY_CARD:税務署',
             buildOptions: [
                 {
+                    type: 'card',
+                    name: '税務署',
                     label: 'BUY_CARD:税務署',
                     landmarkDelayPreview: {
                         wouldTrigger: true,
@@ -144,8 +148,18 @@ runTest('diagnose-expert-losses summarizeFinishDelayActions は終盤遅延と�
     assert.strictEqual(summary.remainingOne, 1);
     assert.strictEqual(summary.remainingOneAirportNear, 1);
     assert.strictEqual(summary.noImmediateDisruptionAirportNear, 1);
+    assert.strictEqual(summary.strictDelay, 1);
+    assert.strictEqual(summary.strictNoImmediateDisruption, 1);
+    assert.strictEqual(summary.specialSpendDelay, 2);
+    assert.strictEqual(summary.specialSpendDelayNoImmediateDisruption, 1);
+    assert.strictEqual(summary.specialSpendDelayShortfallLe6, 1);
     assert.strictEqual(summary.averageDelayCoins, 4);
     assert.deepStrictEqual(summary.actionNames.map(item => item.name), ['BUY_CARD:改装屋', 'BUY_CARD:税務署']);
+    assert.deepStrictEqual(summary.noImmediateDisruptionActionNames.map(item => item.name), ['BUY_CARD:改装屋']);
+    assert.deepStrictEqual(summary.shortfallBeforeLe6ActionNames.map(item => item.name), ['BUY_CARD:改装屋']);
+    assert.deepStrictEqual(summary.strictActionNames.map(item => item.name), ['BUY_CARD:改装屋']);
+    assert.deepStrictEqual(summary.specialSpendDelayNames.map(item => item.name), ['BUY_CARD:改装屋', 'BUY_CARD:税務署']);
+    assert.deepStrictEqual(summary.specialSpendNoImmediateDisruptionNames.map(item => item.name), ['BUY_CARD:改装屋']);
     assert.strictEqual(summary.nearestLandmarks[0].name, '空港');
     assert.strictEqual(summary.remainingLandmarks[0].name, '1');
 });
@@ -195,8 +209,18 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     remainingOne: 1,
                     remainingOneAirportNear: 1,
                     noImmediateDisruptionAirportNear: 1,
+                    strictDelay: 1,
+                    strictNoImmediateDisruption: 1,
+                    specialSpendDelay: 1,
+                    specialSpendDelayNoImmediateDisruption: 1,
+                    specialSpendDelayShortfallLe6: 1,
                     averageDelayCoins: 3,
                     actionNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
+                    noImmediateDisruptionActionNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
+                    shortfallBeforeLe6ActionNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
+                    strictActionNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
+                    specialSpendDelayNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
+                    specialSpendNoImmediateDisruptionNames: [{ name: 'BUY_CARD:改装屋', count: 1 }],
                     nearestLandmarks: [{ name: '空港', count: 1 }],
                     remainingLandmarks: [{ name: '1', count: 1 }],
                 },
@@ -210,5 +234,8 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('finalActions=PASS:2'));
     assert.ok(text.includes('finishDelayActions=total:1'));
     assert.ok(text.includes('remainingOneAirportNear:1'));
+    assert.ok(text.includes('strictNoDisruption:1'));
+    assert.ok(text.includes('specialNoDisruption:1'));
     assert.ok(text.includes('finishDelayNames=BUY_CARD:改装屋:1'));
+    assert.ok(text.includes('finishDelayStrict=BUY_CARD:改装屋:1'));
 });
