@@ -252,7 +252,12 @@ function augmentV2SimpleBuildBreakdown(rawBreakdown, preEv) {
     const deltaEv = Number.isFinite(postEv) && Number.isFinite(preEv) ? postEv - preEv : null;
     const comboUnlockBonus = Number.isFinite(rawBreakdown.comboUnlockBonus) ? rawBreakdown.comboUnlockBonus : 0;
     const tempoBonus = Number.isFinite(rawBreakdown.tempoBonus) ? rawBreakdown.tempoBonus : 0;
-    const deltaTotal = Number.isFinite(deltaEv) ? deltaEv + comboUnlockBonus + tempoBonus : null;
+    const redOpponentTurnBonus = Number.isFinite(rawBreakdown.redOpponentTurnBonus) ? rawBreakdown.redOpponentTurnBonus : 0;
+    const renovationRiskPenalty = Number.isFinite(rawBreakdown.renovationRiskPenalty) ? rawBreakdown.renovationRiskPenalty : 0;
+    const portfolioBonus = Number.isFinite(rawBreakdown.portfolioBonus) ? rawBreakdown.portfolioBonus : 0;
+    const deltaTotal = Number.isFinite(deltaEv)
+        ? deltaEv + comboUnlockBonus + tempoBonus + redOpponentTurnBonus - renovationRiskPenalty + portfolioBonus
+        : null;
     return Object.assign(normalizeBuildBreakdown(rawBreakdown), {
         preEv: normalizeBuildScore(preEv),
         postEv: normalizeBuildScore(postEv),

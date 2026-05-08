@@ -148,7 +148,13 @@ runTest('collectBuildDiagnostics はv2simpleでカード候補をbreakdown付き
         assert.strictEqual(option.breakdown.preEv, diagnostics.preEv);
         assert.strictEqual(option.breakdown.postEv, option.breakdown.baseEv);
         assert.ok(Math.abs(option.breakdown.deltaEv - (option.breakdown.postEv - option.breakdown.preEv)) < 1e-9);
-        assert.ok(Math.abs(option.breakdown.deltaTotal - (option.breakdown.deltaEv + option.breakdown.comboUnlockBonus + option.breakdown.tempoBonus)) < 1e-9);
+        const expectedDeltaTotal = option.breakdown.deltaEv +
+            option.breakdown.comboUnlockBonus +
+            option.breakdown.tempoBonus +
+            (option.breakdown.redOpponentTurnBonus || 0) -
+            (option.breakdown.renovationRiskPenalty || 0) +
+            (option.breakdown.portfolioBonus || 0);
+        assert.ok(Math.abs(option.breakdown.deltaTotal - expectedDeltaTotal) < 1e-9);
         assert.strictEqual(option.landmarkDelayPreview.remainingLandmarks, diagnostics.landmarkDelayContext.remainingLandmarks);
         assert.strictEqual(option.landmarkDelayPreview.coinsBefore, diagnostics.landmarkDelayContext.coinsBefore);
         assert.strictEqual(option.landmarkDelayPreview.cardCost, option.cost);
