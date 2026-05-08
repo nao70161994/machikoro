@@ -76,9 +76,14 @@
 - カード名や条件が2-3個程度に集中していること。
 - パス追加、広いカード禁止、広い終盤 penalty にならないこと。
 
+## 方針
+
+現時点では、手書きの v2 build EV 強化は打ち止め寄りです。赤カード相手ターン EV 以外の broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
+
 ## よく使う診断
 
 ```sh
+node scripts/eval-expert-v2-benchmark-pack.js --games 50
 node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4
 node scripts/diagnose-expert-losses.js --games 100 --profiles crowd,allStrong4 --expert-preset v2simple
 npm run eval-expert-vs-strong -- --games 100 --expert-preset v2simple

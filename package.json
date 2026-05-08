@@ -11,6 +11,7 @@
     "selfplay": "node scripts/selfplay.js",
     "profile:expert": "node scripts/profile-expert.js",
     "eval-expert-vs-strong": "node scripts/eval-expert-vs-strong.js",
+    "eval-expert-v2-benchmark": "node scripts/eval-expert-v2-benchmark-pack.js",
     "eval-expert-vs-weak": "node scripts/eval-expert-vs-weak.js",
     "diagnose-expert-losses": "node scripts/diagnose-expert-losses.js",
     "search-expert-top-tier": "node scripts/search-expert-top-tier.js",
