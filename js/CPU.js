@@ -682,8 +682,8 @@ class CPU {
         if (card.color === "red") {
             if (isCurrentTurn) return 0;
             if (card.effect === CARD_EFFECTS.HARBOR_RED) return capped(roller.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
-            if (card.effect === CARD_EFFECTS.FRENCHR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 2 ? card.income : 0);
-            if (card.effect === CARD_EFFECTS.MEMBERBAR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 3 ? Math.max(roller.coins, 4) : 0);
+            if (card.effect === CARD_EFFECTS.FRENCHR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 2 ? Math.min(card.income, roller.coins) : 0);
+            if (card.effect === CARD_EFFECTS.MEMBERBAR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 3 ? roller.coins : 0);
             return capped(card.income + (roller.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0));
         }
 
@@ -3162,9 +3162,20 @@ class CPU {
             if (opponent === current) continue;
             const freq = this._diceFreqForRoller(card.diceNums, opponent);
             if (freq <= 0) continue;
-            total += this._cardActivationValue(card, game, current, opponent, card.diceNums[0]) * freq / 36;
+            total += this._expertV2SimpleRedOpponentFutureValue(card, game, current, opponent) * freq / 36;
         }
         return Math.min(1, Math.max(0, total * 0.25));
+    }
+
+    _expertV2SimpleRedOpponentFutureValue(card, game, owner, roller) {
+        if (!card || card.color !== "red") return 0;
+        if (card.effect === CARD_EFFECTS.FRENCHR) {
+            return roller.landmarks && roller.builtLandmarkCount() >= 2 ? this._strongSoftCapValue(card.income) : 0;
+        }
+        if (card.effect === CARD_EFFECTS.MEMBERBAR) {
+            return roller.landmarks && roller.builtLandmarkCount() >= 3 ? this._strongSoftCapValue(Math.max(roller.coins, 4)) : 0;
+        }
+        return this._cardActivationValue(card, game, owner, roller, card.diceNums[0]);
     }
 
     _expertV2SimpleRenovationRiskPenalty(game, option) {
@@ -3348,32 +3359,35 @@ class CPU {
         if (playerIndex in cache.playerTurnScorePairs) return cache.playerTurnScorePairs[playerIndex];
         const original = game.currentPlayerIndex;
         game.currentPlayerIndex = playerIndex;
-        const rollCache = this._rollEvaluationCache(game);
-        const getRollScore = dice => {
-            if (!(dice in rollCache.rollScores)) {
-                rollCache.rollScores[dice] = this._estimateRollScore(game, dice);
+        try {
+            const rollCache = this._rollEvaluationCache(game);
+            const getRollScore = dice => {
+                if (!(dice in rollCache.rollScores)) {
+                    rollCache.rollScores[dice] = this._estimateRollScore(game, dice);
+                }
+                return rollCache.rollScores[dice];
+            };
+            let oneTotal = 0;
+            for (let dice = 1; dice <= 6; dice++) oneTotal += getRollScore(dice);
+            const one = oneTotal / 6;
+            let two = -Infinity;
+            if (game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION]) {
+                const weights = { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 };
+                let totalWeight = 0;
+                let totalScore = 0;
+                for (const [diceText, weight] of Object.entries(weights)) {
+                    const dice = parseInt(diceText, 10);
+                    totalWeight += weight;
+                    totalScore += getRollScore(dice) * weight;
+                }
+                two = totalWeight > 0 ? totalScore / totalWeight : -Infinity;
             }
-            return rollCache.rollScores[dice];
-        };
-        let oneTotal = 0;
-        for (let dice = 1; dice <= 6; dice++) oneTotal += getRollScore(dice);
-        const one = oneTotal / 6;
-        let two = -Infinity;
-        if (game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION]) {
-            const weights = { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 };
-            let totalWeight = 0;
-            let totalScore = 0;
-            for (const [diceText, weight] of Object.entries(weights)) {
-                const dice = parseInt(diceText, 10);
-                totalWeight += weight;
-                totalScore += getRollScore(dice) * weight;
-            }
-            two = totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+            const scores = { one, two };
+            cache.playerTurnScorePairs[playerIndex] = scores;
+            return scores;
+        } finally {
+            game.currentPlayerIndex = original;
         }
-        game.currentPlayerIndex = original;
-        const scores = { one, two };
-        cache.playerTurnScorePairs[playerIndex] = scores;
-        return scores;
     }
 
     _countReachableLandmarks(player, enabledLandmarks) {

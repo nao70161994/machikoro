@@ -280,7 +280,11 @@ runTest('条件付き赤評価: 高級フレンチは相手が条件達成で上
     assert.strictEqual(cpu._estimateConditionalRedValue(french, game, current), 0);
     target.landmarks[LANDMARK_NAMES.STATION] = true;
     target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    target.coins = 6;
     assert.strictEqual(cpu._estimateConditionalRedValue(french, game, current), 5);
+    target.coins = 2;
+    assert.strictEqual(cpu._estimateConditionalRedValue(french, game, current), 5);
+    assert.strictEqual(cpu._cardActivationValue(french, game, current, target, 5), 2);
 });
 
 runTest('条件付き赤評価: 会員制BARは相手が条件達成で上がる', () => {
@@ -296,6 +300,8 @@ runTest('条件付き赤評価: 会員制BARは相手が条件達成で上がる
     target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
     target.landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
     assert.strictEqual(cpu._estimateConditionalRedValue(memberBar, game, current), 6);
+    target.coins = 2;
+    assert.strictEqual(cpu._estimateConditionalRedValue(memberBar, game, current), 4);
 });
 
 runTest('evalCard: HARBORは港ランドマーク所持でfullスコア、未所持で0.4倍', () => {
@@ -407,6 +413,23 @@ runTest('buildEV red opponent turn bonus: expert v2 simple は赤カードの相
         red.total,
         red.baseEv + red.comboUnlockBonus + red.tempoBonus + red.redOpponentTurnBonus - red.renovationRiskPenalty
     );
+});
+
+runTest('buildEV red opponent turn bonus: expert v2 simple は条件付き赤の購入将来価値を使う', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple' });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    target.coins = 1;
+    const french = createCardByName('高級フレンチ');
+    current.cards.push(french);
+
+    assert.strictEqual(cpu._cardActivationValue(french, game, current, target, 5), 1);
+    assert.strictEqual(cpu._expertV2SimpleRedOpponentFutureValue(french, game, current, target), 5);
+    const breakdown = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: french });
+    assert.ok(breakdown.redOpponentTurnBonus > 0.1);
 });
 
 runTest('buildEV renovation risk: expert v2 simple は改装屋2枚目以降を薄く減点する', () => {
