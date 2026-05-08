@@ -58,7 +58,11 @@ function loadStorageRuntime() {
                 this.hadAmusementParkAtRoll = false;
             }
         },
-        CPU: class CPU { constructor(difficulty) { this.difficulty = difficulty; } },
+        CPU: class CPU { constructor(difficulty, options = {}) { this.difficulty = difficulty; this.options = options; } },
+        createCpuPlayer(difficulty, options = {}) {
+            context.createdCpuPlayers.push({ difficulty, options });
+            return { difficulty, options, createdByFactory: true };
+        },
         Player: {
             landmarkNames() { return ['駅', 'ショッピングモール']; },
         },
@@ -102,6 +106,7 @@ function loadStorageRuntime() {
         alert(message) { alerts.push(message); },
         emits: [],
         sentActions: [],
+        createdCpuPlayers: [],
     };
     context.global = context;
     vm.createContext(context);
@@ -120,6 +125,37 @@ function loadStorageRuntime() {
         };
     `, context);
     return context;
+}
+
+function makeSavedGameState(overrides = {}) {
+    return Object.assign({
+        players: [
+            { name: 'P1', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+        ],
+        currentPlayerIndex: 0,
+        phase: 'build',
+        log: [],
+        lastDiceResult: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        builtThisTurn: false,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        usedReroll: false,
+        pendingTunaDice: null,
+        turnCount: 0,
+        hadAmusementParkAtRoll: false,
+        shopStock: {},
+        cpuSettings: [{ difficulty: 'expert' }, { difficulty: 'rl' }],
+        cpuSpeed: 1500,
+        enabledCardsList: ['麦畑'],
+        enabledLandmarksList: ['駅', 'ショッピングモール'],
+    }, overrides);
 }
 
 runTest('storage updateResumeButton はローカルとオンラインの再開表示を切り替える', () => {
@@ -164,6 +200,28 @@ runTest('storage reconnectOnline は壊れたセッションを破棄して aler
     assert.deepStrictEqual(rt.alerts, ['再接続データの読み込みに失敗しました']);
 });
 
+runTest('storage reconnectOnline はCPU復元を行わず再接続だけ送る', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'room-1',
+        playerIndex: 1,
+        playerName: 'P2',
+        reconnectToken: 'token-1',
+        isRoomHost: true,
+    }));
+
+    rt.reconnectOnline();
+
+    assert.deepStrictEqual(rt.createdCpuPlayers, []);
+    assert.strictEqual(rt.switchedTab, 'online');
+    assert.strictEqual(rt.emits.length, 1);
+    assert.strictEqual(rt.emits[0].name, 'rejoinRoom');
+    assert.strictEqual(rt.emits[0].payload.roomId, 'room-1');
+    assert.strictEqual(rt.emits[0].payload.playerIndex, 1);
+    assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
+    assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
+});
+
 runTest('storage resumeGame は壊れた保存データを破棄して alert する', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('savedGame', '{broken');
@@ -173,6 +231,34 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
     assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
     assert.strictEqual(rt.elements.resumeSection.style.display, 'none');
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame はCPU復元で共通ファクトリを使う', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+
+    rt.resumeGame();
+
+    assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.difficulty), ['expert', 'rl']);
+    assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.options.playerCount), [2, 2]);
+    assert.strictEqual(rt.__test.getCpuPlayers()[1].createdByFactory, true);
+});
+
+runTest('storage resumeGame は共通ファクトリ不在でも既存CPUで復元できる', () => {
+    const rt = loadStorageRuntime();
+    rt.createCpuPlayer = undefined;
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState({
+        cpuSettings: [{ difficulty: 'expert' }, null],
+    })));
+
+    rt.resumeGame();
+
+    const restoredCpuPlayers = rt.__test.getCpuPlayers();
+    assert.deepStrictEqual(rt.createdCpuPlayers, []);
+    assert.ok(restoredCpuPlayers[0] instanceof rt.CPU);
+    assert.strictEqual(restoredCpuPlayers[0].difficulty, 'expert');
+    assert.strictEqual(restoredCpuPlayers[0].options.expertPurpose, 'live');
+    assert.strictEqual(restoredCpuPlayers[1], null);
 });
 
 runTest('storage doUndo はローカルで undoState を復元し送信しない', () => {

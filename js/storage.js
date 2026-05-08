@@ -131,22 +131,9 @@ function resumeGame() {
         game.turnCount = state.turnCount || 0;
         game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
         cpuPlayers = state.cpuSettings.map(s => s
-            ? new CPU(s.difficulty, {
-                expertPurpose: "live",
-                expertPreset: s.difficulty === "expert" ? "v2simple" : undefined,
-                expertDiceMode: s.difficulty === "expert" ? "ev" : undefined,
-                expertRerollMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertBuildMode: s.difficulty === "expert" ? "ev" : undefined,
-                expertInvestMode: s.difficulty === "expert" ? "always" : undefined,
-                expertTvMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertBusinessMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertCleaningMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertHarborMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertMoverMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertRenovationMode: s.difficulty === "expert" ? "simple" : undefined,
-                expertComboMode: s.difficulty === "expert" ? "core" : undefined,
-                expertBuildTempoWeight: s.difficulty === "expert" ? 0.05 : undefined,
-            })
+            ? (typeof createCpuPlayer === "function"
+                ? createCpuPlayer(s.difficulty, { expertPurpose: "live", playerCount: state.players.length })
+                : new CPU(s.difficulty, { expertPurpose: "live" }))
             : null
         );
         prevCoins = null;
