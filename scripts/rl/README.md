@@ -687,15 +687,16 @@ sh scripts/rl/run-background.sh self-only-4p-h256-lr2e5-2000-seed110-allstrong \
     --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
     --summary-weights "rl+weak+normal+strong=2,rl+normal+normal+strong=3,rl+strong+strong+strong=4"
 
-# 完走後は top checkpoint を同じ lineup で比較
+# 完走後は実在する top checkpoint を同じ lineup で比較する。
+# 例: run dir に best_model.browser.json と best_model.top2.browser.json だけなら --run-ranks 1,2 を使う。
 npm run eval-rl-models -- \
   --run-labels self-only-4p-h256-lr2e5-2000-seed110-allstrong \
-  --run-ranks 1,2,3 \
+  --run-ranks 1,2 \
   --games 50 \
   --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
-  --output models/rl_model/eval-seed110-allstrong-top3.json \
-  --csv models/rl_model/eval-seed110-allstrong-top3.csv \
-  --markdown models/rl_model/eval-seed110-allstrong-top3.md
+  --output models/rl_model/eval-seed110-allstrong-top.json \
+  --csv models/rl_model/eval-seed110-allstrong-top.csv \
+  --markdown models/rl_model/eval-seed110-allstrong-top.md
 ```
 
 既存4人用モデルと比較する場合は、採用済み `self-only-4p-h256-lr1e5-5000-seed103` と候補 `self-only-4p-h256-lr1e5-5000-seed102` を同じ lineup に入れる。`self-only-4p-h256-lr2e5-1000-seed110-allstrong` のような短時間 run は、完走後に run-label と registry model をまとめて評価する。
@@ -704,7 +705,7 @@ npm run eval-rl-models -- \
 npm run eval-rl-models -- \
   --models self-only-4p-h256-lr1e5-5000-seed103,self-only-4p-h256-lr1e5-5000-seed102 \
   --run-labels self-only-4p-h256-lr2e5-1000-seed110-allstrong \
-  --run-ranks 1,2,3 \
+  --run-ranks 1,2 \
   --games 50 \
   --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
   --output models/rl_model/eval-seed110-allstrong-vs-existing.json \
