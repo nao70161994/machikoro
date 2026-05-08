@@ -194,6 +194,62 @@ function collectFinishDelayExamples(losses, limit = 10) {
     }).slice(0, limit);
 }
 
+function disruptionOptions(finalActionDiagnostics) {
+    if (!finalActionDiagnostics || !Array.isArray(finalActionDiagnostics.buildOptions)) return [];
+    return finalActionDiagnostics.buildOptions.filter(option =>
+        option &&
+        option.disruptionPreview &&
+        option.disruptionPreview.canDelayImmediateWin
+    );
+}
+
+function summarizeMissedImmediateDisruption(losses) {
+    const chosenNames = {};
+    const missedNames = {};
+    const profileNames = {};
+    let total = 0;
+    let gapLe05 = 0;
+    let gapLe1 = 0;
+    let chosenAlsoDisrupts = 0;
+    let opponentThreatPresent = 0;
+
+    for (const loss of losses) {
+        const diagnostics = loss.finalActionDiagnostics;
+        const chosen = findChosenBuildOption(diagnostics);
+        if (!chosen) continue;
+        const missed = disruptionOptions(diagnostics)
+            .filter(option => option.label !== chosen.label)
+            .sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+        if (!missed) continue;
+        total++;
+        const chosenLabel = chosen.label || loss.lastExpertAction || 'UNKNOWN';
+        const missedLabel = missed.label || 'UNKNOWN';
+        incrementCount(chosenNames, chosenLabel);
+        incrementCount(missedNames, missedLabel);
+        incrementCount(profileNames, loss.profile || 'UNKNOWN');
+        if (chosen.disruptionPreview && chosen.disruptionPreview.canDelayImmediateWin) chosenAlsoDisrupts++;
+        if (diagnostics && Array.isArray(diagnostics.opponentWinThreats) && diagnostics.opponentWinThreats.length > 0) {
+            opponentThreatPresent++;
+        }
+        if (typeof chosen.score === 'number' && typeof missed.score === 'number') {
+            const gap = chosen.score - missed.score;
+            if (gap <= 0.5) gapLe05++;
+            if (gap <= 1) gapLe1++;
+        }
+    }
+
+    return {
+        total,
+        gapLe05,
+        gapLe1,
+        chosenAlsoDisrupts,
+        opponentThreatPresent,
+        chosenNames: topEntries(chosenNames),
+        missedNames: topEntries(missedNames),
+        profileNames: topEntries(profileNames),
+    };
+}
+
 function summarizeFinishDelayActions(losses) {
     const actionNames = {};
     const noImmediateDisruptionActionNames = {};
@@ -335,6 +391,7 @@ function summarizeLosses(losses) {
         finalActions: topEntries(finalActions),
         finishDelayActions: summarizeFinishDelayActions(losses),
         finishDelayExamples: collectFinishDelayExamples(losses),
+        missedImmediateDisruption: summarizeMissedImmediateDisruption(losses),
     };
 }
 
@@ -470,6 +527,19 @@ function toText(entries, options) {
                 );
             }
         }
+        const missedDisruption = entry.summary.missedImmediateDisruption;
+        if (missedDisruption && missedDisruption.total > 0) {
+            lines.push(
+                `  missedImmediateDisruption=total:${missedDisruption.total} gap<=0.5:${missedDisruption.gapLe05} ` +
+                `gap<=1:${missedDisruption.gapLe1} chosenAlsoDisrupts:${missedDisruption.chosenAlsoDisrupts} ` +
+                `opponentThreat:${missedDisruption.opponentThreatPresent}`
+            );
+            lines.push(
+                `  missedDisruptionNames=missed:${missedDisruption.missedNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `chosen:${missedDisruption.chosenNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `profiles:${missedDisruption.profileNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+        }
     }
     return lines.join('\n');
 }
@@ -497,6 +567,7 @@ module.exports = {
     finalActionDiagnosticsFromTrace,
     findChosenBuildOption,
     collectFinishDelayExamples,
+    summarizeMissedImmediateDisruption,
     summarizeFinishDelayActions,
     summarizeLosses,
     toText,

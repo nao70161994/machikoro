@@ -10,6 +10,7 @@ const {
     parseArgs,
     summarizeFinishDelayActions,
     summarizeLosses,
+    summarizeMissedImmediateDisruption,
     toText,
 } = require(path.join(__dirname, '..', 'scripts', 'diagnose-expert-losses.js'));
 
@@ -247,6 +248,72 @@ runTest('diagnose-expert-losses collectFinishDelayExamples は終盤遅延の具
     assert.ok(examples[0].reasonTags.includes('no-immediate-disruption'));
 });
 
+runTest('diagnose-expert-losses summarizeMissedImmediateDisruption は即勝利妨害の見送りを集計する', () => {
+    const summary = summarizeMissedImmediateDisruption([
+        {
+            profile: 'allStrong4',
+            lastExpertAction: 'BUY_CARD:パン屋',
+            finalActionDiagnostics: {
+                opponentWinThreats: [{ playerIndex: 2, canWinNow: true }],
+                buildActionLabel: 'BUY_CARD:パン屋',
+                buildOptions: [
+                    {
+                        type: 'card',
+                        name: 'パン屋',
+                        label: 'BUY_CARD:パン屋',
+                        score: 3,
+                    },
+                    {
+                        type: 'card',
+                        name: 'テレビ局',
+                        label: 'BUY_CARD:テレビ局',
+                        score: 2.6,
+                        disruptionPreview: {
+                            canDelayImmediateWin: true,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            profile: 'crowd',
+            lastExpertAction: 'BUY_CARD:税務署',
+            finalActionDiagnostics: {
+                opponentWinThreats: [{ playerIndex: 1, canWinNow: true }],
+                buildActionLabel: 'BUY_CARD:税務署',
+                buildOptions: [
+                    {
+                        type: 'card',
+                        name: '税務署',
+                        label: 'BUY_CARD:税務署',
+                        score: 4,
+                        disruptionPreview: {
+                            canDelayImmediateWin: true,
+                        },
+                    },
+                    {
+                        type: 'card',
+                        name: 'テレビ局',
+                        label: 'BUY_CARD:テレビ局',
+                        score: 3.5,
+                        disruptionPreview: {
+                            canDelayImmediateWin: true,
+                        },
+                    },
+                ],
+            },
+        },
+    ]);
+    assert.strictEqual(summary.total, 2);
+    assert.strictEqual(summary.gapLe05, 2);
+    assert.strictEqual(summary.gapLe1, 2);
+    assert.strictEqual(summary.chosenAlsoDisrupts, 1);
+    assert.strictEqual(summary.opponentThreatPresent, 2);
+    assert.strictEqual(summary.missedNames[0].name, 'BUY_CARD:テレビ局');
+    assert.strictEqual(summary.chosenNames[0].name, 'BUY_CARD:パン屋');
+    assert.strictEqual(summary.profileNames[0].name, 'allStrong4');
+});
+
 runTest('diagnose-expert-losses finalActionDiagnosticsFromTrace は末尾IT後でも直近build診断を返す', () => {
     const diagnostics = {
         diagnosticSource: '_listExpertBuildOptions/_scoreExpertBuildOption',
@@ -317,6 +384,16 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                         reasonTags: ['landmark-delay', 'strict-delay'],
                     },
                 ],
+                missedImmediateDisruption: {
+                    total: 1,
+                    gapLe05: 1,
+                    gapLe1: 1,
+                    chosenAlsoDisrupts: 0,
+                    opponentThreatPresent: 1,
+                    missedNames: [{ name: 'BUY_CARD:テレビ局', count: 1 }],
+                    chosenNames: [{ name: 'BUY_CARD:パン屋', count: 1 }],
+                    profileNames: [{ name: 'duel', count: 1 }],
+                },
             },
         },
     ], { games: 4, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: '' });
@@ -332,4 +409,6 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('finishDelayNames=BUY_CARD:改装屋:1'));
     assert.ok(text.includes('finishDelayStrict=BUY_CARD:改装屋:1'));
     assert.ok(text.includes('finishDelayExamples=g2:BUY_CARD:改装屋'));
+    assert.ok(text.includes('missedImmediateDisruption=total:1'));
+    assert.ok(text.includes('missedDisruptionNames=missed:BUY_CARD:テレビ局:1'));
 });
