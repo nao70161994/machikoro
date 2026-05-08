@@ -144,6 +144,13 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildGatedMallSpendWouldFlipPenalty05: 1,
             buildGatedMallSpendNames: { ピザ屋: 1, コンビニ: 1 },
             buildGatedMallSpendDelayNames: { ピザ屋: 1 },
+            buildMallBasicChosen: 3,
+            buildMallBasicFarChosen: 2,
+            buildMallBasicLowIncomeChosen: 1,
+            buildMallBasicWouldFlipPenalty05: 1,
+            buildMallBasicWouldFlipPenalty1: 2,
+            buildMallBasicNames: { コンビニ: 2, ピザ屋: 1 },
+            buildMallBasicLowIncomeNames: { ピザ屋: 1 },
             buildHighPurpleEarlyChosen: 2,
             buildHighPurpleWouldFlipPenalty1: 1,
             buildHighPurpleWouldFlipPenalty2: 2,
@@ -209,6 +216,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildGatedMallNames: { コンビニ: 2, パン屋: 1 },
                 buildGatedMallFlip05Names: { コンビニ: 1, パン屋: 1 },
                 buildGatedMallSpendWouldDelay: 1,
+                buildMallBasicLowIncomeChosen: 1,
                 buildHighPurpleEarlyChosen: 2,
                 buildRedSaturatedLowIncomeChosen: 2,
                 buildSpecialSpendWouldDelayLandmark: 1,
@@ -264,6 +272,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('mallNames=コンビニ:2,パン屋:1'));
     assert.ok(text.includes('mallFlip05Names=コンビニ:1,パン屋:1'));
     assert.ok(text.includes('mallSpend: near=2/6 delay=1/6 flip05=1/6 names=コンビニ:1,ピザ屋:1 delayNames=ピザ屋:1'));
+    assert.ok(text.includes('mallBasic: chosen=3/6 far=2/6 lowIncome=1/6 flip05=1/6 flip1=2/6 names=コンビニ:2,ピザ屋:1 lowIncomeNames=ピザ屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
     assert.ok(text.includes('buildRedSaturatedLowIncomeChosen=2/6'));
@@ -302,6 +311,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('gatedStation=2/6'));
     assert.ok(text.includes('gatedMall=3/6'));
     assert.ok(text.includes('mallSpendDelay=1/6'));
+    assert.ok(text.includes('mallBasicLow=1/6'));
     assert.ok(text.includes('highPurpleEarly=2/6'));
     assert.ok(text.includes('redSaturated=2/6'));
     assert.ok(text.includes('specialSpendDelay=1/6'));
