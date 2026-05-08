@@ -211,6 +211,12 @@ function createCounters() {
         buildPortfolioEffectiveWouldFlipBonus08: 0,
         buildPortfolioEffectiveAvailableNames: {},
         buildPortfolioEffectiveMissedNearNames: {},
+        buildPortfolioEffectiveByCardAvailableNames: {},
+        buildPortfolioEffectiveByCardChosenNames: {},
+        buildPortfolioEffectiveByCardNearNames: {},
+        buildPortfolioEffectiveByCardMissedNearNames: {},
+        buildPortfolioEffectiveByCardFlip04Names: {},
+        buildPortfolioEffectiveByCardFlip08Names: {},
         buildBasicDuplicateAvailable: 0,
         buildBasicDuplicateChosen: 0,
         buildBasicDuplicateLowLiftChosen: 0,
@@ -1092,6 +1098,17 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                         if (bestEffectiveGrowth) {
                             counters.buildPortfolioEffectiveAvailable++;
                             incrementName(counters.buildPortfolioEffectiveAvailableNames, bestEffectiveGrowth.option.card.name);
+                            for (const entry of effectiveGrowthEntries) {
+                                const name = entry.option.card.name;
+                                const isChosen = best === entry;
+                                const scoreGap = best.score - entry.score;
+                                incrementName(counters.buildPortfolioEffectiveByCardAvailableNames, name);
+                                if (isChosen) incrementName(counters.buildPortfolioEffectiveByCardChosenNames, name);
+                                if (scoreGap <= 0.5) incrementName(counters.buildPortfolioEffectiveByCardNearNames, name);
+                                if (!isChosen && scoreGap <= 0.5) incrementName(counters.buildPortfolioEffectiveByCardMissedNearNames, name);
+                                if (!isChosen && entry.score + 0.4 >= best.score) incrementName(counters.buildPortfolioEffectiveByCardFlip04Names, name);
+                                if (!isChosen && entry.score + 0.8 >= best.score) incrementName(counters.buildPortfolioEffectiveByCardFlip08Names, name);
+                            }
                             const effectiveNearBest05 = bestEffectiveGrowth.score >= best.score - 0.5;
                             const effectiveMissed = !isPortfolioEffectiveGrowthCard(runtime, game, current, best.option.card);
                             if (effectiveNearBest05) counters.buildPortfolioEffectiveNearBest05++;
@@ -1546,6 +1563,7 @@ function toText(report) {
         `portfolioGapNames: chosen=${topNameCounts(totals.buildPortfolioChosenNames)} available=${topNameCounts(totals.buildPortfolioGrowthAvailableNames)} near=${topNameCounts(totals.buildPortfolioGrowthNearNames)} missedNear=${topNameCounts(totals.buildPortfolioGrowthMissedNearNames)}`,
         `portfolioNoCorn: available=${totals.buildPortfolioNoCornAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioNoCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioNoCornMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioNoCornWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioNoCornWouldFlipBonus08}/${totals.buildCardEvDecisions} missedNearNames=${topNameCounts(totals.buildPortfolioNoCornMissedNearNames)}`,
         `portfolioEffective: available=${totals.buildPortfolioEffectiveAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioEffectiveNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioEffectiveMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioEffectiveWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioEffectiveWouldFlipBonus08}/${totals.buildCardEvDecisions} availableNames=${topNameCounts(totals.buildPortfolioEffectiveAvailableNames)} missedNearNames=${topNameCounts(totals.buildPortfolioEffectiveMissedNearNames)}`,
+        `portfolioEffectiveByCard: available=${topNameCounts(totals.buildPortfolioEffectiveByCardAvailableNames)} chosen=${topNameCounts(totals.buildPortfolioEffectiveByCardChosenNames)} near=${topNameCounts(totals.buildPortfolioEffectiveByCardNearNames)} missedNear=${topNameCounts(totals.buildPortfolioEffectiveByCardMissedNearNames)} flip04=${topNameCounts(totals.buildPortfolioEffectiveByCardFlip04Names)} flip08=${topNameCounts(totals.buildPortfolioEffectiveByCardFlip08Names)}`,
         `basicDuplicate: available=${totals.buildBasicDuplicateAvailable}/${totals.buildCardEvDecisions} chosen=${totals.buildBasicDuplicateChosen}/${totals.buildCardEvDecisions} lowLift=${totals.buildBasicDuplicateLowLiftChosen}/${totals.buildCardEvDecisions} near05=${totals.buildBasicDuplicateNearBest05}/${totals.buildCardEvDecisions} flip05=${totals.buildBasicDuplicateWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildBasicDuplicateNames)} lowLiftNames=${topNameCounts(totals.buildBasicDuplicateLowLiftNames)} flip05Names=${topNameCounts(totals.buildBasicDuplicateFlip05Names)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
