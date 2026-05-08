@@ -61,6 +61,12 @@
 - `finishDelayExamples`
   - loss 診断で、終盤 build 遅延の具体例を出力します。
   - `scoreGapToBestNonDelay`, `reasonTags`, `opponentWinThreats`, `disruptionPreview` を見て、狭い実装候補だけを拾います。
+- `missedImmediateDisruption`
+  - 相手の即時勝利を止められる妨害候補を見送っていないかを見る loss 診断です。
+  - 30戦では0件で、妨害不足を broad bonus / guard として実装する根拠は薄い状態です。
+- `portfolioReachShorten`
+  - 成長カード購入で次ランドマーク到達の概算ターンが短くなるかを見る診断です。
+  - 20戦では `available=9`, `missedNear=3`, `flip04=1` と薄く、到達短縮を理由に portfolio 補正へ進む根拠は弱い状態です。
 
 ## 実装へ進む基準
 
