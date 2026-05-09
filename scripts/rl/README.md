@@ -725,6 +725,8 @@ npm run eval-rl-models -- \
 
 2026-05-09追記: `seed114 passpen-imitation` は `seed113` 条件に periodic imitation refresh を追加して購入品質改善を狙ったが、500時点の JS 評価が 25% / 12% / 50% に留まり `seed113` より悪化した。build pass は概ね抑制されたものの勝率改善につながらなかったため未採用。registry / portfolio へは反映しない。`seed114-*` artifact は生成物扱いでコミットしない。
 
+2026-05-09追記: `seed103 fine-tune passpen` は採用済み `seed103` checkpoint から load し、`lr=5e-6`, `games=500`, `build-pass-affordable-penalty=0.02` で微調整した。外部10戦では rank1 が67.5%と強く出たが、外部20戦では51.2%（50% / 40% / 85% / 30%）まで下がり、既存 `seed103` の61.2%（65% / 60% / 80% / 40%）を下回ったため未採用。passは正常だが勝率の安定改善にはならず、registry / portfolio へは反映しない。`seed103-finetune-*` artifact は生成物扱いでコミットしない。
+
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
