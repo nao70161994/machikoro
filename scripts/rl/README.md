@@ -721,6 +721,8 @@ npm run eval-rl-models -- \
 
 2026-05-09追記: `seed112 seed103axis` は外部10戦診断で rank1 が12.5%、top2 が10.0%に留まり、既存 `seed102` / `seed103` の55%基準線を大きく下回った。学習中からpass率の崩れが強く、通常lineupも伸びなかったため不採用。registry / portfolio へは反映しない。`eval-seed112-*` は生成物扱いでコミットしない。
 
+2026-05-09追記: `seed113 build-pass-affordable-penalty=0.02` は build pass 診断で rank1 の購入可能passを0.0%まで抑制できたが、外部10戦 score は50.0%で既存 `seed102` / `seed103` の55.0%を下回り、top2 も12.5%と弱かった。外部20戦では rank1 が53.8%で `seed102` の48.8%は上回ったが `seed103` の61.2%には届かないため未採用。pass抑制ノブとしては有効だが、registry / portfolio へは反映しない。`seed113-*` artifact は生成物扱いでコミットしない。
+
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
