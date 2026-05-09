@@ -36,6 +36,7 @@ const TEST_GROUPS = {
     'search-expert-top-tier.test.js',
         'eval-rl-vs-js.test.js',
         'eval-rl-models.test.js',
+        'diagnose-rl-build-pass.test.js',
         'render-rl-registry-evals.test.js',
         'update-rl-registry-from-eval.test.js',
         'eval-rl-business-scenario.test.js',
