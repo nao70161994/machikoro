@@ -725,6 +725,7 @@ npm run eval-rl-models -- \
 | `seed113 pass penalty 0.02` | 不採用 | 購入可能passは0.0%まで抑制したが、20戦で既存seed103未満 | 未反映 |
 | `seed114 passpen-imitation` | 不採用 | passは概ね抑制、imitation refresh後も500時点JS評価25% / 12% / 50%で悪化 | 未反映 |
 | `seed103 fine-tune passpen` | 不採用 | 10戦は67.5%だが、20戦で51.2%に低下。既存seed103未満 | 未反映 |
+| `seed103 top3 reselection` | 不採用 | 50戦では61.0%だが、100戦で allStrong が34%まで崩れた | 未反映 |
 
 2026-05-09追記: `seed110-allstrong` は完走後の50戦比較で all lineup 0% となり不採用。registry / portfolio へは反映しない。出力された `eval-seed110-*` artifact は生成物扱いでコミットしない。balanced 条件の短時間確認は `self-only-4p-h256-lr1e5-500-seed111-balanced-sanity` で実行中。
 
@@ -737,6 +738,8 @@ npm run eval-rl-models -- \
 2026-05-09追記: `seed114 passpen-imitation` は `seed113` 条件に periodic imitation refresh を追加して購入品質改善を狙ったが、500時点の JS 評価が 25% / 12% / 50% に留まり `seed113` より悪化した。build pass は概ね抑制されたものの勝率改善につながらなかったため未採用。registry / portfolio へは反映しない。`seed114-*` artifact は生成物扱いでコミットしない。
 
 2026-05-09追記: `seed103 fine-tune passpen` は採用済み `seed103` checkpoint から load し、`lr=5e-6`, `games=500`, `build-pass-affordable-penalty=0.02` で微調整した。外部10戦では rank1 が67.5%と強く出たが、外部20戦では51.2%（50% / 40% / 85% / 30%）まで下がり、既存 `seed103` の61.2%（65% / 60% / 80% / 40%）を下回ったため未採用。passは正常だが勝率の安定改善にはならず、registry / portfolio へは反映しない。`seed103-finetune-*` artifact は生成物扱いでコミットしない。
+
+2026-05-09追記: `seed103 top3 reselection` は採用済み `seed103` run の top3 checkpoint を再確認した。外部50戦では61.0%（60% / 60% / 76% / 48%）で top1 の54.5%を上回ったが、外部100戦では60.7%（61% / 68% / 80% / 34%）となり allStrong が採用基準の46%を大きく下回ったため未採用。2人戦用の `seed71-rewardcap-top3` は同じ100戦出力では60.8%（68% / 56% / 73% / 46%）だったが、2人用 stateDim の portfolio モデルなので4人用の差し替え候補にはしない。`eval-seed103-top1-top3-*` artifact は生成物扱いでコミットしない。
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
