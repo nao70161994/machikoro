@@ -719,6 +719,8 @@ npm run eval-rl-models -- \
 
 2026-05-09追記: `seed111 balanced` の10戦診断では、既存 `seed102` / `seed103` が55%、`seed111` rank1 が40%、top2 が5%。短時間診断でも既存候補を上回らず、特に top2 が大きく崩れたため不採用。registry / portfolio へは反映しない。`eval-seed111-*` は生成物扱いでコミットしない。追加の50戦基準線では `seed103` が58%（56% / 56% / 74% / 46%）、`seed102` が57%（68% / 44% / 74% / 42%）で、今後の4lineup候補はこの水準を基準に比較する。
 
+2026-05-09追記: `seed112 seed103axis` は外部10戦診断で rank1 が12.5%、top2 が10.0%に留まり、既存 `seed102` / `seed103` の55%基準線を大きく下回った。学習中からpass率の崩れが強く、通常lineupも伸びなかったため不採用。registry / portfolio へは反映しない。`eval-seed112-*` は生成物扱いでコミットしない。
+
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
