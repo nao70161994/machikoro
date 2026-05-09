@@ -730,6 +730,8 @@ npm run eval-rl-models -- \
 | `seed103 top3 reselection` | 不採用 | 50戦では61.0%だが、100戦で allStrong が34%まで崩れた | 未反映 |
 | `seed116 lr1e-6 fine-tune passpen` | 不採用 | passは低いが、20戦で46.3%。normal+normal+strong と allStrong が崩れた | 未反映 |
 
+2026-05-10補足: `seed103` の top1/top2/top3 を直接20戦で再評価したところ、top1 は 65% / 60% / 80%、top2 は 35% / 60% / 75%、top3 は 55% / 45% / 90%。20戦では top1 が最も安定し、top2/top3 は通常lineupで現行採用を上回る根拠が弱い。過去の top3 100戦 allStrong 崩れとも矛盾しないため、現行 `seed103` 採用を維持し、top2/top3 への差し替えは行わない。
+
 個別実験の詳細ログは `docs/rl-experiments.md` に移す。この README では、標準フロー、現行基準線、registry / portfolio 反映方針、最新サマリ表だけを維持する。
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す

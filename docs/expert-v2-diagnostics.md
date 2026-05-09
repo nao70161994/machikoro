@@ -121,7 +121,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 
 ## 方針
 
-現時点では、手書きの v2 build EV 強化は打ち止め寄りです。赤カード相手ターン EV 以外の broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
+現時点では、手書きの v2 build EV 強化は打ち止め寄りです。採用済みの赤カード相手ターン EV 補正と Business Center harmful gift 限定補正を除き、broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
 
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
@@ -159,6 +159,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
    - 今後再検証する場合は、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないか、loss 診断や benchmark 悪化時に切り戻す根拠があるかを見る regression / audit 用に使います。
    - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装として再検証しました。
    - 限定実装の50戦 smoke は `strong crowd=44.0%`, `allStrong4=48.0%`, `normal crowd=62.0%`。100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%`, `allStrong4=45.0%` だったため採用しました。
+   - 2026-05-10 の50戦診断では `businessDelay delay=45/1530`, `specialSpend delayNames=ビジネスセンター:45` が出た一方、`businessDelay flip05=0`, `flip1=0` でした。軽い special spend / Business delay penalty では反転しないため、追加実装には進みません。
 3. roll/race の終盤例
    - `lateOther` 単体では薄いため、loss 診断で終盤サイコロ選択が具体的な敗因として重なる場合だけ検証します。
 4. portfolio effective の条件付き補正

@@ -779,6 +779,8 @@ runTest('chooseBusinessMove: expert v2 simple は改装屋が有害でない場�
     const simpleMove = cpu._chooseSimpleBusinessMove(game);
     const move = cpu.chooseBusinessMove(game);
     assert.deepStrictEqual(move, simpleMove);
+    assert.strictEqual(current.cards[move.myCard].name, current.cards[simpleMove.myCard].name);
+    assert.strictEqual(target.cards[move.theirCard].name, '鉱山');
 });
 
 runTest('chooseBusinessMove: expert v2 simple は random mode なら合法手からランダムに選ぶ', () => {
