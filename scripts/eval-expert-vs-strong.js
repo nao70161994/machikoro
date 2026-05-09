@@ -120,6 +120,7 @@ function evaluateProfile(name, options) {
     const players = profilePlayers(name);
     const expertTuning = options.expertTuning || resolveExpertTuning(options);
     const result = runSeries({
+        runtime: options.runtime,
         games: options.games,
         seed: options.seed,
         maxSteps: options.maxSteps,
@@ -236,7 +237,9 @@ function toMarkdown(entries, summary, options) {
 
 function main() {
     const options = parseArgs(process.argv.slice(2));
-    const entries = options.profiles.map(profile => evaluateProfile(profile, options));
+    const runtime = loadRuntime({ includeRL: false });
+    const runtimeOptions = Object.assign({}, options, { runtime });
+    const entries = options.profiles.map(profile => evaluateProfile(profile, runtimeOptions));
     const summary = summarize(entries);
     if (options.format === 'json') {
         console.log(JSON.stringify({ options, summary, entries }, null, 2));

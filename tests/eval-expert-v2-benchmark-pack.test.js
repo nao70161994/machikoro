@@ -10,6 +10,7 @@ const {
     toMarkdown,
     toText,
 } = require(path.join(__dirname, '..', 'scripts', 'eval-expert-v2-benchmark-pack.js'));
+const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 runTest('eval-expert-v2-benchmark-pack parseArgs は既定値を返す', () => {
     const args = parseArgs([]);
@@ -72,6 +73,15 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は suite/profiles で絞る
     assert.strictEqual(report.strong.summary.executed, true);
     assert.strictEqual(report.strong.summary.skipped, false);
     assert.strictEqual(report.strong.entries[0].profile, 'crowd');
+});
+
+runTest('eval-expert-v2-benchmark-pack evaluatePack は runtime を report options に出さない', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const report = evaluatePack({ runtime, games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, expertPreset: 'v2simple', businessMode: 'simple', suite: 'strong', profiles: ['duel'] });
+    assert.strictEqual(report.options.runtime, undefined);
+    assert.strictEqual(report.normal.options.runtime, undefined);
+    assert.strictEqual(report.strong.options.runtime, undefined);
+    assert.ok(!JSON.stringify(report).includes('__evalExpertVsNormalFast'));
 });
 
 runTest('eval-expert-v2-benchmark-pack evaluatePack は未実行 strong suite を skipped にする', () => {

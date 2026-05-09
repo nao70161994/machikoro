@@ -979,53 +979,65 @@ function simulateGame(options = {}) {
     const cpuPlayers = createPlayers(runtime, difficulties, options);
     options.cpuPlayers = cpuPlayers;
     const rng = createRng(options.seed || 1);
+    const previousRandom = runtime.Math.random;
+    const hadPreviousSelfplayOptions = Object.prototype.hasOwnProperty.call(runtime, '__selfplayOptions');
+    const previousSelfplayOptions = runtime.__selfplayOptions;
     runtime.Math.random = rng;
     runtime.__selfplayOptions = options;
-    game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
-    let safety = 0;
-    const maxSteps = options.maxSteps || 5000;
+    try {
+        game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+        let safety = 0;
+        const maxSteps = options.maxSteps || 5000;
 
-    while (!game.checkWinner() && safety < maxSteps) {
-        const cpu = cpuPlayers[game.currentPlayerIndex];
-        playCpuStep(runtime, game, cpu, shopStock, rng);
-        safety++;
-    }
+        while (!game.checkWinner() && safety < maxSteps) {
+            const cpu = cpuPlayers[game.currentPlayerIndex];
+            playCpuStep(runtime, game, cpu, shopStock, rng);
+            safety++;
+        }
 
-    const winnerPlayer = game.checkWinner();
-    const result = {
-        winner: winnerPlayer ? game.players.indexOf(winnerPlayer) : -1,
-        turns: game.turnCount,
-        exhausted: safety >= maxSteps,
-        difficulties: difficulties.slice(),
-        seed: options.seed || 1,
-        expertPreset: options.expertPreset || 'default',
-        expertPurpose: options.expertPurpose || 'training',
-        expertTuning: options.expertTuning || null,
-        expertBehaviorFlags: options.expertBehaviorFlags || null,
-        expertProfilePresets: options.expertProfilePresets || null,
-        expertProfileTunings: options.expertProfileTunings || null,
-        rlModel: options.rlModelData ? {
-            stateDim: options.rlModelData.stateDim,
-            hiddenSize: options.rlModelData.hiddenSize,
-            numActions: options.rlModelData.numActions,
-        } : null,
-        fast: !!options.fast,
-        lite: !!options.lite,
-    };
-    if (options.includeFinalState !== false) {
-        result.finalState = game.players.map(player => summarizePlayer(player, game.enabledLandmarks));
-    } else {
-        result.finalState = null;
+        const winnerPlayer = game.checkWinner();
+        const result = {
+            winner: winnerPlayer ? game.players.indexOf(winnerPlayer) : -1,
+            turns: game.turnCount,
+            exhausted: safety >= maxSteps,
+            difficulties: difficulties.slice(),
+            seed: options.seed || 1,
+            expertPreset: options.expertPreset || 'default',
+            expertPurpose: options.expertPurpose || 'training',
+            expertTuning: options.expertTuning || null,
+            expertBehaviorFlags: options.expertBehaviorFlags || null,
+            expertProfilePresets: options.expertProfilePresets || null,
+            expertProfileTunings: options.expertProfileTunings || null,
+            rlModel: options.rlModelData ? {
+                stateDim: options.rlModelData.stateDim,
+                hiddenSize: options.rlModelData.hiddenSize,
+                numActions: options.rlModelData.numActions,
+            } : null,
+            fast: !!options.fast,
+            lite: !!options.lite,
+        };
+        if (options.includeFinalState !== false) {
+            result.finalState = game.players.map(player => summarizePlayer(player, game.enabledLandmarks));
+        } else {
+            result.finalState = null;
+        }
+        result.traceEntries = Array.isArray(options.traceEntries) ? options.traceEntries.slice() : null;
+        result.buildStats = options.buildStats ? options.buildStats.map(stats => ({
+            total: stats.total,
+            pass: stats.pass,
+            cards: Object.assign({}, stats.cards),
+            landmarks: Object.assign({}, stats.landmarks),
+        })) : null;
+        result.businessStats = options.businessStats ? cloneBusinessStats(options.businessStats) : null;
+        return result;
+    } finally {
+        runtime.Math.random = previousRandom;
+        if (hadPreviousSelfplayOptions) {
+            runtime.__selfplayOptions = previousSelfplayOptions;
+        } else {
+            delete runtime.__selfplayOptions;
+        }
     }
-    result.traceEntries = Array.isArray(options.traceEntries) ? options.traceEntries.slice() : null;
-    result.buildStats = options.buildStats ? options.buildStats.map(stats => ({
-        total: stats.total,
-        pass: stats.pass,
-        cards: Object.assign({}, stats.cards),
-        landmarks: Object.assign({}, stats.landmarks),
-    })) : null;
-    result.businessStats = options.businessStats ? cloneBusinessStats(options.businessStats) : null;
-    return result;
 }
 
 function simulateGameLightweight(options = {}) {
@@ -1035,33 +1047,38 @@ function simulateGameLightweight(options = {}) {
     const shopStock = createShopStock(runtime.CARDS);
     const cpuPlayers = createPlayers(runtime, difficulties, options);
     const rng = createRng(options.seed || 1);
+    const previousRandom = runtime.Math.random;
     runtime.Math.random = rng;
-    game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
-    let safety = 0;
-    const maxSteps = options.maxSteps || 5000;
-    const rollQueue = options.rollQueue;
+    try {
+        game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+        let safety = 0;
+        const maxSteps = options.maxSteps || 5000;
+        const rollQueue = options.rollQueue;
 
-    while (!game.checkWinner() && safety < maxSteps) {
-        const cpu = cpuPlayers[game.currentPlayerIndex];
-        playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue);
-        safety++;
+        while (!game.checkWinner() && safety < maxSteps) {
+            const cpu = cpuPlayers[game.currentPlayerIndex];
+            playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue);
+            safety++;
+        }
+
+        return {
+            winner: game.checkWinner() ? game.players.indexOf(game.checkWinner()) : -1,
+            turns: game.turnCount,
+            exhausted: safety >= maxSteps,
+            difficulties: difficulties.slice(),
+            seed: options.seed || 1,
+            expertPreset: options.expertPreset || 'default',
+            expertPurpose: options.expertPurpose || 'training',
+            fast: !!options.fast,
+            lite: !!options.lite,
+            finalState: null,
+            traceEntries: null,
+            buildStats: null,
+            businessStats: null,
+        };
+    } finally {
+        runtime.Math.random = previousRandom;
     }
-
-    return {
-        winner: game.checkWinner() ? game.players.indexOf(game.checkWinner()) : -1,
-        turns: game.turnCount,
-        exhausted: safety >= maxSteps,
-        difficulties: difficulties.slice(),
-        seed: options.seed || 1,
-        expertPreset: options.expertPreset || 'default',
-        expertPurpose: options.expertPurpose || 'training',
-        fast: !!options.fast,
-        lite: !!options.lite,
-        finalState: null,
-        traceEntries: null,
-        buildStats: null,
-        businessStats: null,
-    };
 }
 
 function rotatePlayers(players, offset) {
@@ -1071,7 +1088,7 @@ function rotatePlayers(players, offset) {
 function runSeries(options = {}) {
     const games = options.games || 20;
     const players = options.players || ['expert', 'strong'];
-    const runtime = loadRuntime({ includeRL: options.includeRL });
+    const runtime = options.runtime || loadRuntime({ includeRL: options.includeRL });
     const collectMatchLog = options.collectMatchLog !== false;
     const collectBuildStats = options.collectBuildStats !== false;
     const collectBusinessStats = options.collectBusinessStats !== false;

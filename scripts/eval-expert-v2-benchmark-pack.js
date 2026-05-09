@@ -2,6 +2,7 @@ const path = require('path');
 
 const strongEval = require(path.join(__dirname, 'eval-expert-vs-strong.js'));
 const normalEval = require(path.join(__dirname, 'eval-expert-vs-normal.js'));
+const { loadRuntime } = require(path.join(__dirname, 'selfplay.js'));
 
 const DEFAULT_NORMAL_PROFILES = ['crowd'];
 const DEFAULT_STRONG_PROFILES = ['duel', 'trio', 'crowd', 'allStrong4'];
@@ -102,25 +103,32 @@ function executedSummary(summary) {
 }
 
 function evaluatePack(options) {
-    const normalOptions = baseOptions(options, profilesForSuite(options, 'normal'));
-    const strongOptions = baseOptions(options, profilesForSuite(options, 'strong'));
+    const runtime = options.runtime || loadRuntime({ includeRL: false });
+    const normalOptions = Object.assign(baseOptions(options, profilesForSuite(options, 'normal')), { runtime });
+    const strongOptions = Object.assign(baseOptions(options, profilesForSuite(options, 'strong')), { runtime });
     const normalEntries = shouldRunSuite(options, 'normal')
         ? normalOptions.profiles.map(profile => normalEval.evaluateProfile(profile, normalOptions))
         : [];
     const strongEntries = shouldRunSuite(options, 'strong')
         ? strongOptions.profiles.map(profile => strongEval.evaluateProfile(profile, strongOptions))
         : [];
+    const reportOptions = Object.assign({}, options);
+    const normalReportOptions = Object.assign({}, normalOptions);
+    const strongReportOptions = Object.assign({}, strongOptions);
+    delete reportOptions.runtime;
+    delete normalReportOptions.runtime;
+    delete strongReportOptions.runtime;
     return {
         cpuFamily: 'v2simple-rule-based',
         comparisonScope: 'expert-v2-benchmark-pack',
-        options,
+        options: reportOptions,
         normal: {
-            options: normalOptions,
+            options: normalReportOptions,
             summary: normalEntries.length > 0 ? executedSummary(normalEval.summarize(normalEntries)) : skippedSummary(),
             entries: normalEntries,
         },
         strong: {
-            options: strongOptions,
+            options: strongReportOptions,
             summary: strongEntries.length > 0 ? executedSummary(strongEval.summarize(strongEntries)) : skippedSummary(),
             entries: strongEntries,
         },
