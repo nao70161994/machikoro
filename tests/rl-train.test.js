@@ -638,6 +638,35 @@ print(_compute_shaped_reward(before, after, 0, {
     assert.strictEqual(output, '0.3');
 });
 
+runTest('rl train: 購入可能なbuild passにだけ中間ペナルティを付けられる', () => {
+    const output = runPython(`
+import copy
+from scripts.rl.game_env import MachikoroEnv, PHASE_BUILD, ACT_PASS
+from scripts.rl.train import _compute_shaped_reward
+config = {
+    "coin": 0.0,
+    "opp_coin": 0.0,
+    "asset": 0.0,
+    "opp_asset": 0.0,
+    "landmark": 0.0,
+    "opp_landmark": 0.0,
+    "build_pass_affordable_penalty": 0.02,
+    "clip": 0.3,
+}
+before = MachikoroEnv()
+before.phase = PHASE_BUILD
+after = copy.deepcopy(before)
+print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_PASS), 6))
+before.players[0].coins = 0
+before.built_this_turn = True
+after = copy.deepcopy(before)
+print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_PASS), 6))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '-0.02');
+    assert.strictEqual(lines[1], '0.0');
+});
+
 runTest('rl train: 改装屋のランドマーク破壊収入は正の中間報酬にしない', () => {
     const output = runPython(`
 import copy

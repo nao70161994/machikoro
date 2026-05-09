@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
 from scripts.rl.game_env import (
     MachikoroEnv, NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE,
     ACT_RENO_BASE, ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE, ACT_PASS,
+    PHASE_BUILD,
 )
 from scripts.rl.encode import encode_state, encode_state_v2, action_mask, state_dim_for_player_count, STATE_DIM_4P
 from scripts.rl.agent import RLAgent
@@ -219,6 +220,7 @@ def _reward_shaping_defaults() -> dict:
         "opp_asset": 0.0,
         "landmark": 0.2,
         "opp_landmark": 0.0,
+        "build_pass_affordable_penalty": 0.0,
         "clip": 0.3,
     }
 
@@ -234,6 +236,19 @@ def _terminal_reward_defaults() -> dict:
         "coin_diff": 0.0,
         "diff_clip": 30.0,
     }
+
+
+def _is_affordable_build_pass(env, agent_player: int, action) -> bool:
+    if action != ACT_PASS:
+        return False
+    if env.phase != PHASE_BUILD or env.current != agent_player:
+        return False
+    for valid_action in env.valid_actions():
+        if ACT_BUY_CARD_BASE <= valid_action < ACT_BUY_CARD_BASE + NUM_CARDS:
+            return True
+        if ACT_BUY_LM_BASE <= valid_action < ACT_BUY_LM_BASE + len(LANDMARK_ORDER):
+            return True
+    return False
 
 
 def _compute_shaped_reward(env_before, env_after, agent_player: int, config: dict, action=None) -> float:
@@ -274,6 +289,8 @@ def _compute_shaped_reward(env_before, env_after, agent_player: int, config: dic
     reward -= config.get("opp_asset", 0.0) * opp_asset_delta
     reward += config.get("landmark", 0.0) * my_landmark_delta
     reward -= config.get("opp_landmark", 0.0) * opp_landmark_delta
+    if _is_affordable_build_pass(env_before, agent_player, action):
+        reward -= config.get("build_pass_affordable_penalty", 0.0)
 
     clip = config.get("clip", 0.0)
     if clip and clip > 0:
@@ -1503,6 +1520,7 @@ def main():
     parser.add_argument("--reward-opp-asset", type=float, default=0.0, help="相手の総資産増加に対するペナルティ係数")
     parser.add_argument("--reward-landmark", type=float, default=0.2, help="自分のランドマーク建設に対する中間報酬係数")
     parser.add_argument("--reward-opp-landmark", type=float, default=0.0, help="相手のランドマーク建設に対するペナルティ係数")
+    parser.add_argument("--build-pass-affordable-penalty", type=float, default=0.0, help="購入可能なbuild phaseでpassした時の中間報酬ペナルティ（0で無効）")
     parser.add_argument("--reward-clip", type=float, default=0.3, help="1行動あたりの中間報酬クリップ値（0で無効）")
     parser.add_argument("--terminal-win", type=float, default=1.0, help="終局時の勝利報酬")
     parser.add_argument("--terminal-loss", type=float, default=-1.0, help="終局時の敗北報酬")
@@ -1571,6 +1589,7 @@ def main():
         "opp_asset": args.reward_opp_asset,
         "landmark": args.reward_landmark,
         "opp_landmark": args.reward_opp_landmark,
+        "build_pass_affordable_penalty": args.build_pass_affordable_penalty,
         "clip": args.reward_clip,
     }
     terminal_config = {
