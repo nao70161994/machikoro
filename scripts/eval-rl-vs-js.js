@@ -38,12 +38,24 @@ function loadModel(modelPath) {
     return JSON.parse(body);
 }
 
+function maxLineupPlayers(lineups) {
+    return (lineups || []).reduce((max, lineup) => Math.max(max, Array.isArray(lineup) ? lineup.length : 0), 0);
+}
+
+function assertRlModelLineupCompatible(rlModelData, lineups, label = 'RL model') {
+    const maxPlayers = maxLineupPlayers(lineups);
+    if (maxPlayers >= 3 && rlModelData && rlModelData.stateDim === 145) {
+        throw new Error(`${label} is a 2-player RL model (stateDim=145) and cannot be used for ${maxPlayers}-player lineups`);
+    }
+}
+
 function evaluateRlVsJs(options = {}) {
     const modelPath = options.modelPath || path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
     const rlModelData = options.rlModelData || loadModel(modelPath);
     const lineups = Array.isArray(options.lineups) && options.lineups.length > 0
         ? options.lineups.map(lineup => lineup.slice())
         : (options.opponents || ['weak', 'normal', 'strong', 'expert']).map(opponent => ['rl', opponent]);
+    assertRlModelLineupCompatible(rlModelData, lineups, modelPath);
     const games = options.games || 20;
     const baseSeed = options.seed || 1;
     return lineups.map((lineup, index) => ({
@@ -215,6 +227,7 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     loadModel,
+    assertRlModelLineupCompatible,
     evaluateRlVsJs,
     summarizeEvaluationEntry,
     printEvaluation,

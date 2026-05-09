@@ -9,7 +9,10 @@ const {
     parseLineups,
     resolveModelSpecs,
 } = require('./eval-rl-models.js');
-const { loadModel } = require('./eval-rl-vs-js.js');
+const {
+    assertRlModelLineupCompatible,
+    loadModel,
+} = require('./eval-rl-vs-js.js');
 const { loadRegistry } = require('./validate-rl-registry.js');
 
 function parseList(value) {
@@ -183,6 +186,7 @@ function diagnoseModel(spec, args, runtime) {
             ['rl', 'normal', 'normal', 'strong'],
             ['rl', 'weak', 'weak', 'normal'],
         ];
+    assertRlModelLineupCompatible(rlModelData, lineups, spec.id || spec.path);
     const summaries = [];
     const allBreakdowns = [];
     for (let lineupIndex = 0; lineupIndex < lineups.length; lineupIndex++) {

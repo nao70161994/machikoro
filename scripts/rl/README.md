@@ -416,6 +416,8 @@ js=weak=25%(f50%/s0%/d0%)/0@122.5 normal=0%(f0%/s0%/d0%)/0@72.0 strong=25%(f0%/s
 
 4人用モデルでは2人評価だけだと目的からズレるため、`--js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong"` のように4人 lineup を指定する。4人自己対戦プリセットは既定で4人JS評価を使い、best checkpoint の算定もその lineup 勝率を優先する。
 
+3人以上の lineup 評価では `STATE_DIM = 353` の多人数モデルだけを使う。`STATE_DIM = 145` の2人用モデルを3〜4人 lineup に混ぜると比較対象がずれるため、JS評価 / build pass 診断は2人用モデルを検出した時点でエラーにする。
+
 ### 4人 trace 比較
 
 4人用モデルは Python 学習環境と JS 実戦環境のズレが致命的になりやすい。固定ダイス列で同じ lineup を走らせ、最初の差分を検出する。

@@ -1,8 +1,11 @@
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
 const {
+    diagnoseModel,
     mergeBreakdowns,
     parseArgs,
     renderText,
@@ -31,6 +34,25 @@ runTest('diagnose-rl-build-pass parseArgs は主要CLI引数を解釈する', ()
         ['rl', 'weak', 'normal', 'strong'],
         ['rl', 'normal', 'normal', 'strong'],
     ]);
+});
+
+runTest('diagnose-rl-build-pass は2人用モデルの4人診断を拒否する', () => {
+    const tmpPath = path.join(os.tmpdir(), `machikoro-rl-pass-model-${process.pid}.json`);
+    fs.writeFileSync(tmpPath, JSON.stringify({ stateDim: 145 }), 'utf8');
+    assert.throws(
+        () => diagnoseModel(
+            { id: 'm145', path: tmpPath },
+            {
+                lineups: [['rl', 'weak', 'normal', 'strong']],
+                games: 1,
+                seed: 1,
+                maxSteps: 10,
+            },
+            null
+        ),
+        /2-player RL model/
+    );
+    fs.unlinkSync(tmpPath);
 });
 
 runTest('diagnose-rl-build-pass summarizeTraceBuildPass はpass理由を分解する', () => {

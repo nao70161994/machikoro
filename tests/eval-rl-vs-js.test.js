@@ -7,13 +7,14 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     loadModel,
+    assertRlModelLineupCompatible,
     evaluateRlVsJs,
     summarizeEvaluationEntry,
     printEvaluation,
 } = require(path.join(__dirname, '..', 'scripts', 'eval-rl-vs-js.js'));
 
-function buildRlModel() {
-    const stateDim = 145;
+function buildRlModel(overrides = {}) {
+    const stateDim = overrides.stateDim || 145;
     const hiddenSize = 2;
     const numCards = 38;
     const numActions = 1580;
@@ -96,6 +97,15 @@ runTest('loadModel は export 済み JSON を読み込む', () => {
     fs.unlinkSync(tmpPath);
 });
 
+runTest('assertRlModelLineupCompatible は2人用モデルの3人以上評価を拒否する', () => {
+    assert.throws(
+        () => assertRlModelLineupCompatible(buildRlModel({ stateDim: 145 }), [['rl', 'weak', 'normal']], 'm145'),
+        /2-player RL model/
+    );
+    assert.doesNotThrow(() => assertRlModelLineupCompatible(buildRlModel({ stateDim: 353 }), [['rl', 'weak', 'normal']], 'm353'));
+    assert.doesNotThrow(() => assertRlModelLineupCompatible(buildRlModel({ stateDim: 145 }), [['rl', 'weak']], 'm145'));
+});
+
 runTest('evaluateRlVsJs は opponent ごとの 2人戦結果を返す', () => {
     const result = evaluateRlVsJs({
         games: 1,
@@ -143,7 +153,7 @@ runTest('evaluateRlVsJs は4人lineup評価を返す', () => {
         seed: 1,
         maxSteps: 200,
         lineups: [['rl', 'weak', 'normal', 'strong']],
-        rlModelData: buildRlModel(),
+        rlModelData: buildRlModel({ stateDim: 353 }),
     });
     assert.strictEqual(result.length, 1);
     assert.strictEqual(result[0].opponent, 'rl+weak+normal+strong');
