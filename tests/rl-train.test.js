@@ -641,7 +641,7 @@ print(_compute_shaped_reward(before, after, 0, {
 runTest('rl train: 購入可能なbuild passにだけ中間ペナルティを付けられる', () => {
     const output = runPython(`
 import copy
-from scripts.rl.game_env import MachikoroEnv, PHASE_BUILD, ACT_PASS
+from scripts.rl.game_env import MachikoroEnv, PHASE_BUILD, PHASE_ROLL, ACT_PASS, ACT_ROLL1
 from scripts.rl.train import _compute_shaped_reward
 config = {
     "coin": 0.0,
@@ -661,10 +661,26 @@ before.players[0].coins = 0
 before.built_this_turn = True
 after = copy.deepcopy(before)
 print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_PASS), 6))
+before = MachikoroEnv()
+before.phase = PHASE_BUILD
+after = copy.deepcopy(before)
+print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_ROLL1), 6))
+before = MachikoroEnv()
+before.phase = PHASE_ROLL
+after = copy.deepcopy(before)
+print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_PASS), 6))
+before = MachikoroEnv()
+before.phase = PHASE_BUILD
+before.current = 1
+after = copy.deepcopy(before)
+print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_PASS), 6))
 `);
     const lines = output.split('\n');
     assert.strictEqual(lines[0], '-0.02');
     assert.strictEqual(lines[1], '0.0');
+    assert.strictEqual(lines[2], '0.0');
+    assert.strictEqual(lines[3], '0.0');
+    assert.strictEqual(lines[4], '0.0');
 });
 
 runTest('rl train: 改装屋のランドマーク破壊収入は正の中間報酬にしない', () => {
