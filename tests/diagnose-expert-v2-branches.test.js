@@ -239,6 +239,13 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildPortfolioEffectiveStrongReadyNames: { ワイナリー: 2, 青果市場: 1 },
             buildPortfolioEffectiveStrongReadyMissedNames: { ワイナリー: 1 },
             buildPortfolioEffectiveStrongReadyFlip04Names: { ワイナリー: 1 },
+            buildPortfolioStrongReadyHighValueCandidate: 3,
+            buildPortfolioStrongReadyHighValueNear05: 2,
+            buildPortfolioStrongReadyHighValueMissedNear05: 1,
+            buildPortfolioStrongReadyHighValueFlip025: 1,
+            buildPortfolioStrongReadyHighValueFlip04: 2,
+            buildPortfolioStrongReadyHighValueNames: { ブドウ園: 1, サンマ漁船: 1 },
+            buildPortfolioStrongReadyHighValueMissedNames: { サンマ漁船: 1 },
             buildPortfolioReachShortenAvailable: 4,
             buildPortfolioReachShortenMissedNear: 2,
             buildPortfolioReachShortenFlip04: 1,
@@ -414,6 +421,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('portfolioEffective: available=3/6 near05=2/6 missedNear05=1/6 flip04=1/6 flip08=2/6 availableNames=青果市場:2,ワイナリー:1 missedNearNames=ワイナリー:1'));
     assert.ok(text.includes('portfolioEffectiveByCard: available=青果市場:2,ワイナリー:1 chosen=青果市場:1 near=青果市場:2,ワイナリー:1 missedNear=ワイナリー:1 flip04=ワイナリー:1 flip08=ワイナリー:1,青果市場:1'));
     assert.ok(text.includes('portfolioEffectiveReadiness: strongAvailable=3 strongMissedNear=1 strongFlip04=1 readyMissedNear=2 readyFlip04=2 strongNames=ワイナリー:2,青果市場:1 strongMissedNames=ワイナリー:1 strongFlip04Names=ワイナリー:1'));
+    assert.ok(text.includes('portfolioStrongReadyHighValue: candidate=3/6 near05=2/6 missedNear05=1/6 flip025=1/6 flip04=2/6 names=サンマ漁船:1,ブドウ園:1 missedNames=サンマ漁船:1'));
     assert.ok(text.includes('portfolioReachShorten: available=4 missedNear=2 flip04=1 names=ワイナリー:2,青果市場:2 missedNames=ワイナリー:2 flip04Names=ワイナリー:1'));
     assert.ok(text.includes('basicDuplicate: available=4/6 chosen=3/6 lowLift=2/6 near05=3/6 flip05=1/6 names=パン屋:2,コンビニ:1 lowLiftNames=パン屋:2 flip05Names=青果市場:1'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
