@@ -747,6 +747,40 @@ runTest('chooseBusinessMove: expert v2 simple は貸金業を押し付けカー�
     assert.strictEqual(move.myCard, 1);
 });
 
+runTest('chooseBusinessMove: expert v2 simple は相手に有害な改装屋押し付けも評価する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('改装屋')];
+    current.dormantCards = [];
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.cards = [createCardByName('ブドウ園'), createCardByName('鉱山')];
+    target.dormantCards = [];
+    target.landmarks[LANDMARK_NAMES.STATION] = true;
+    target.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    target.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+
+    const move = cpu.chooseBusinessMove(game);
+    assert.strictEqual(move.myCard, 1);
+    assert.strictEqual(move.targetIndex, 1);
+});
+
+runTest('chooseBusinessMove: expert v2 simple は改装屋が有害でない場合は simple 選択を維持する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('改装屋')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
+    target.dormantCards = [];
+
+    const simpleMove = cpu._chooseSimpleBusinessMove(game);
+    const move = cpu.chooseBusinessMove(game);
+    assert.deepStrictEqual(move, simpleMove);
+});
+
 runTest('chooseBusinessMove: expert v2 simple は random mode なら合法手からランダムに選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple", expertBusinessMode: "random" });
     const game = new GameManager(2);

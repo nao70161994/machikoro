@@ -26,6 +26,10 @@
 - 赤カード相手ターン EV 補正
   - `redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` を build EV に薄く加点します。
   - 条件付き赤カードは、発火時の即時評価では相手の所持コインを上限にし、build EV では将来価値として評価します。
+- Business Center harmful gift 限定補正
+  - 通常は `business=simple` の既定どおり、一番いらない自分カードと一番欲しい相手カードを交換します。
+  - 貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ、交換全体のスコアが既定手を上回れば押し付け候補へ差し替えます。broad scored exchange には戻しません。
+  - 100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%` でした。
 
 ## 却下済み
 
@@ -153,6 +157,8 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
    - `businessSimpleMissedHarmfulGift` が crowd/allStrong4 の loss で集中する場合だけ、交換全体の scored 化ではなく harmful gift 回避に限定して検証します。
    - `businessSimpleMissedHarmfulGift*` は残します。ただし、これは `business=simple` が見逃した候補を測る比較用カウンタであり、現行CPUが実際に見逃した回数としては扱いません。
    - 今後再検証する場合は、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないか、loss 診断や benchmark 悪化時に切り戻す根拠があるかを見る regression / audit 用に使います。
+   - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装として再検証しました。
+   - 限定実装の50戦 smoke は `strong crowd=44.0%`, `allStrong4=48.0%`, `normal crowd=62.0%`。100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%`, `allStrong4=45.0%` だったため採用しました。
 3. roll/race の終盤例
    - `lateOther` 単体では薄いため、loss 診断で終盤サイコロ選択が具体的な敗因として重なる場合だけ検証します。
 4. portfolio effective の条件付き補正

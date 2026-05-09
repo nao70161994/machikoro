@@ -286,6 +286,55 @@ class CPU {
         return bestMove;
     }
 
+    _scoreBusinessExchangeDetails(game, current, move) {
+        if (!move) return null;
+        const target = game.players[move.targetIndex];
+        if (!target) return null;
+        const myCard = move.myCardObject || current.cards[move.myCard];
+        const theirCard = move.theirCardObject || target.cards[move.theirCard];
+        if (!myCard || !theirCard) return null;
+        const selfGain = this._exchangeReceivedCardValue(theirCard, game, current);
+        const selfLoss = this._exchangeOwnedCardValue(myCard, game, current);
+        const denial = this._exchangeOwnedCardValue(theirCard, game, target);
+        const gift = this._exchangeReceivedCardValue(myCard, game, target);
+        const score = selfGain - selfLoss + denial * 0.5 - gift * 0.5;
+        return { selfGain, selfLoss, denial, gift, score };
+    }
+
+    _scoreBusinessExchange(game, current, move) {
+        const details = this._scoreBusinessExchangeDetails(game, current, move);
+        return details ? details.score : null;
+    }
+
+    _chooseHarmfulGiftBusinessMove(game, actor = game.currentPlayer()) {
+        const current = actor;
+        const simpleMove = this._chooseSimpleBusinessMove(game, actor);
+        if (!simpleMove) return null;
+        const simpleScore = this._scoreBusinessExchange(game, current, simpleMove);
+        let bestMove = simpleMove;
+        let bestScore = simpleScore == null ? -Infinity : simpleScore;
+        this._forEachBusinessMove(game, ({ myCard, myIndex, targetIndex, theirCard, theirIndex }) => {
+            if (myCard.effect !== CARD_EFFECTS.LOAN && myCard.effect !== CARD_EFFECTS.RENOVATION) return;
+            const details = this._scoreBusinessExchangeDetails(game, current, {
+                myCard: myIndex,
+                targetIndex,
+                theirCard: theirIndex,
+                myCardObject: myCard,
+                theirCardObject: theirCard,
+            });
+            if (!details || details.gift >= -0.25) return;
+            if (details.score > bestScore) {
+                bestScore = details.score;
+                bestMove = {
+                    myCard: myIndex,
+                    targetIndex,
+                    theirCard: theirIndex,
+                };
+            }
+        });
+        return bestMove;
+    }
+
     _businessOwnCandidateIndexes(game, current, limit) {
         const indexes = this._minorCardIndexes(current);
         if (indexes.length <= limit) return indexes;
@@ -1512,7 +1561,7 @@ class CPU {
         if (myCards.length === 0) return null;
         if (this._isExpertV2Simple()) {
             if (this.expertBusinessMode === "random") return this._chooseRandomBusinessMove(game);
-            return this._chooseSimpleBusinessMove(game);
+            return this._chooseHarmfulGiftBusinessMove(game);
         }
         this._syncExpertTuningForGame(game);
 
