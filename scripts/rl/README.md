@@ -715,6 +715,17 @@ npm run eval-rl-models -- \
 
 参考値として、2026-05-08 に既存4人用モデルだけを同じ3lineupで各10戦評価した。10戦なので採用判断には使わず、`seed110-allstrong` 完走後比較の事前基準として扱う。結果は `models/rl_model/eval-existing-4p-allstrong-small.{json,csv,md}` に保存し、`seed102` が score 63.3%（weak+normal+strong 70% / normal+normal+strong 50% / strong+strong+strong 70%）、`seed103` が score 53.3%（50% / 60% / 50%）。
 
+4人RL実験メモ:
+
+| run | 状態 | 要点 | registry / portfolio |
+| --- | --- | --- | --- |
+| `seed110 allStrong` | 不採用 | 50戦比較で all lineup 0%。allStrong寄せが崩壊 | 未反映 |
+| `seed111 balanced` | 不採用 | 10戦で rank1 40%、top2 5%。既存55%基準未満 | 未反映 |
+| `seed112 seed103axis` | 不採用 | 外部10戦で rank1 12.5%、top2 10.0%。pass崩壊が強い | 未反映 |
+| `seed113 pass penalty 0.02` | 不採用 | 購入可能passは0.0%まで抑制したが、20戦で既存seed103未満 | 未反映 |
+| `seed114 passpen-imitation` | 不採用 | passは概ね抑制、imitation refresh後も500時点JS評価25% / 12% / 50%で悪化 | 未反映 |
+| `seed103 fine-tune passpen` | 不採用 | 10戦は67.5%だが、20戦で51.2%に低下。既存seed103未満 | 未反映 |
+
 2026-05-09追記: `seed110-allstrong` は完走後の50戦比較で all lineup 0% となり不採用。registry / portfolio へは反映しない。出力された `eval-seed110-*` artifact は生成物扱いでコミットしない。balanced 条件の短時間確認は `self-only-4p-h256-lr1e5-500-seed111-balanced-sanity` で実行中。
 
 2026-05-09追記: `seed111 balanced` の10戦診断では、既存 `seed102` / `seed103` が55%、`seed111` rank1 が40%、top2 が5%。短時間診断でも既存候補を上回らず、特に top2 が大きく崩れたため不採用。registry / portfolio へは反映しない。`eval-seed111-*` は生成物扱いでコミットしない。追加の50戦基準線では `seed103` が58%（56% / 56% / 74% / 46%）、`seed102` が57%（68% / 44% / 74% / 42%）で、今後の4lineup候補はこの水準を基準に比較する。
