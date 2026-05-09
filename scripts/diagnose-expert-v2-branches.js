@@ -1727,6 +1727,7 @@ function toText(report) {
                 `portfolioMissedNear05=${counters.buildPortfolioGrowthMissedNearBest05}/${counters.buildCardEvDecisions} ` +
                 `basicDuplicateLow=${counters.buildBasicDuplicateLowLiftChosen}/${counters.buildCardEvDecisions} ` +
                 `businessDelay=${counters.buildBusinessDelayWouldDelay}/${counters.buildCardEvDecisions} ` +
+                `businessMissedHarmful=${counters.businessSimpleMissedHarmfulGift}/${counters.businessScoredDecisions} ` +
                 `specialSpendDelay=${counters.buildSpecialSpendWouldDelayLandmark}/${counters.buildCardEvDecisions}`
             );
             continue;
@@ -1749,6 +1750,7 @@ function toText(report) {
             `itFlip025=${counters.buildItWouldFlipAssumeInvest025}/${counters.buildCardEvDecisions} ` +
             `businessFlip05=${counters.buildBusinessWouldFlipBonus05}/${counters.buildCardEvDecisions} ` +
             `businessDelay=${counters.buildBusinessDelayWouldDelay}/${counters.buildCardEvDecisions} ` +
+            `businessMissedHarmful=${counters.businessSimpleMissedHarmfulGift}/${counters.businessScoredDecisions} ` +
             `parkFlip05=${counters.buildParkWouldFlipBonus05}/${counters.buildCardEvDecisions} ` +
             `gatedFar=${counters.buildLandmarkGatedFarChosen}/${counters.buildCardEvDecisions} ` +
             `gatedFlip05=${counters.buildLandmarkGatedWouldFlipPenalty05}/${counters.buildCardEvDecisions} ` +

@@ -326,6 +326,8 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildItWouldFlipAssumeInvest025: 1,
                 buildBusinessWouldFlipBonus05: 1,
                 buildBusinessDelayWouldDelay: 2,
+                businessScoredDecisions: 5,
+                businessSimpleMissedHarmfulGift: 1,
                 buildParkWouldFlipBonus05: 1,
                 buildLandmarkGatedFarChosen: 2,
                 buildLandmarkGatedWouldFlipPenalty05: 1,
@@ -403,6 +405,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('buildBusinessWouldFlipBonus05=1/6'));
     assert.ok(text.includes('businessDelay: chosen=3/6 near=2/6 delay=2/6 duplicate=1/6 lowExchange=1/6 secondGap05=1/6 flip05=1/6 flip1=2/6'));
     assert.ok(text.includes('businessScored: diff=3/5 improves=2/5 harmfulAvailable=4/5 missedHarmful=1/5 missedHarmfulImprove05=1/5 takesHigher=2/5 missedHarmfulNames=貸金業->チーズ工場:1 simpleNames=貸金業->牧場:2,麦畑->チーズ工場:1 scoredNames=貸金業->チーズ工場:2,改装屋->牧場:1'));
+    assert.ok(text.includes('businessMissedHarmful=1/5'));
     assert.ok(text.includes('buildParkCandidate=3/6'));
     assert.ok(text.includes('buildParkPositive=2/6'));
     assert.ok(text.includes('buildParkWouldFlipBonus05=1/6'));
