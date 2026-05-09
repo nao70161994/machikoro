@@ -17,3 +17,5 @@
 2026-05-09追記: `seed103 fine-tune passpen` は採用済み `seed103` checkpoint から load し、`lr=5e-6`, `games=500`, `build-pass-affordable-penalty=0.02` で微調整した。外部10戦では rank1 が67.5%と強く出たが、外部20戦では51.2%（50% / 40% / 85% / 30%）まで下がり、既存 `seed103` の61.2%（65% / 60% / 80% / 40%）を下回ったため未採用。passは正常だが勝率の安定改善にはならず、registry / portfolio へは反映しない。`seed103-finetune-*` artifact は生成物扱いでコミットしない。
 
 2026-05-09追記: `seed103 top3 reselection` は採用済み `seed103` run の top3 checkpoint を再確認した。外部50戦では61.0%（60% / 60% / 76% / 48%）で top1 の54.5%を上回ったが、外部100戦では60.7%（61% / 68% / 80% / 34%）となり allStrong が採用基準の46%を大きく下回ったため未採用。2人戦用の `seed71-rewardcap-top3` は同じ100戦出力では60.8%（68% / 56% / 73% / 46%）だったが、2人用 stateDim の portfolio モデルなので4人用の差し替え候補にはしない。`eval-seed103-top1-top3-*` artifact は生成物扱いでコミットしない。
+
+2026-05-09追記: `seed116 lr1e-6 fine-tune passpen` は採用済み `seed103` checkpoint から load し、`lr=1e-6`, `games=250`, `build-pass-affordable-penalty=0.02` でさらに保守的に微調整した。内部JS評価は 50% / 50% / 75% で pass も低く制御できたが、外部20戦では46.3%（75% / 25% / 65% / 20%）に留まり、`normal+normal+strong` と allStrong が大きく崩れたため未採用。registry / portfolio へは反映しない。`eval-seed116-*` artifact は生成物扱いでコミットしない。

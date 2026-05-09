@@ -728,6 +728,7 @@ npm run eval-rl-models -- \
 | `seed114 passpen-imitation` | 不採用 | passは概ね抑制、imitation refresh後も500時点JS評価25% / 12% / 50%で悪化 | 未反映 |
 | `seed103 fine-tune passpen` | 不採用 | 10戦は67.5%だが、20戦で51.2%に低下。既存seed103未満 | 未反映 |
 | `seed103 top3 reselection` | 不採用 | 50戦では61.0%だが、100戦で allStrong が34%まで崩れた | 未反映 |
+| `seed116 lr1e-6 fine-tune passpen` | 不採用 | passは低いが、20戦で46.3%。normal+normal+strong と allStrong が崩れた | 未反映 |
 
 個別実験の詳細ログは `docs/rl-experiments.md` に移す。この README では、標準フロー、現行基準線、registry / portfolio 反映方針、最新サマリ表だけを維持する。
 
