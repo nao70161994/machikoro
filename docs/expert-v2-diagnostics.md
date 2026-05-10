@@ -184,5 +184,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode simple
 node scripts/eval-expert-v2-benchmark-pack.js --games 20 --suite strong --profiles crowd,allStrong4
 node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4
 node scripts/diagnose-expert-losses.js --games 100 --profiles crowd,allStrong4 --expert-preset v2simple
+node scripts/diagnose-expert-losses.js --games 50 --profiles allStrong4 --format json > /tmp/v2-allstrong4-losses.json
+node scripts/summarize-expert-losses-json.js /tmp/v2-allstrong4-losses.json
 npm run eval-expert-vs-strong -- --games 100 --expert-preset v2simple
 ```
