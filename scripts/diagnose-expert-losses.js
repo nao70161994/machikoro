@@ -603,6 +603,7 @@ function diagnoseProfile(name, options) {
     const runtime = loadRuntime();
     const expertTuning = options.expertTuning || resolveExpertTuning(options);
     const losses = [];
+    const wins = [];
     let expertWins = 0;
 
     for (let i = 0; i < options.games; i++) {
@@ -621,12 +622,7 @@ function diagnoseProfile(name, options) {
             includeBuildDiagnostics: true,
         });
         const expertIndex = lineup.indexOf('expert');
-        if (result.winner === expertIndex) {
-            expertWins++;
-            continue;
-        }
         const expertState = result.finalState[expertIndex];
-        const winnerState = result.finalState[result.winner];
         const expertTrace = traceEntries.filter(entry => entry.actorDifficulty === 'expert');
         const lastExpertAction = expertTrace.length > 0 ? expertTrace[expertTrace.length - 1].chosenAction.label : null;
         const finalActionDiagnostics = finalActionDiagnosticsFromTrace(expertTrace);
@@ -637,6 +633,21 @@ function diagnoseProfile(name, options) {
                 before: entry.before || null,
                 actorIndex: entry.actorIndex,
             }));
+        if (result.winner === expertIndex) {
+            expertWins++;
+            wins.push({
+                profile: name,
+                game: i + 1,
+                seed: (options.seed || 1) + i,
+                lineup,
+                turns: result.turns,
+                exhausted: result.exhausted,
+                expertTopCards: expertState ? expertState.topCards : [],
+                buildDiagnostics,
+            });
+            continue;
+        }
+        const winnerState = result.finalState[result.winner];
         losses.push({
             profile: name,
             game: i + 1,
@@ -662,7 +673,9 @@ function diagnoseProfile(name, options) {
         games: options.games,
         expertWins,
         expertWinRate: options.games > 0 ? expertWins / options.games : 0,
-        summary: summarizeLosses(losses),
+        summary: Object.assign(summarizeLosses(losses), {
+            winBuildAttribution: summarizeBuildAttribution(wins),
+        }),
         losses,
     };
 }
@@ -769,6 +782,16 @@ function toText(entries, options) {
             lines.push(
                 `  buildAttributionDelay=delay:${buildAttribution.delayNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
                 `special:${buildAttribution.specialDelayNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+        }
+        const winBuildAttribution = entry.summary.winBuildAttribution;
+        if (winBuildAttribution && winBuildAttribution.totalBuilds > 0) {
+            lines.push(
+                `  winBuildAttribution=total:${winBuildAttribution.totalBuilds} ` +
+                `basicDuplicate:${winBuildAttribution.basicDuplicateChosen} ` +
+                `overGrowthNear05:${winBuildAttribution.basicDuplicateOverGrowthNear05} ` +
+                `airportMissing:${winBuildAttribution.basicDuplicateWithAirportMissing} ` +
+                `names:${winBuildAttribution.basicDuplicateNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
         }
     }

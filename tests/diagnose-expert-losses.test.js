@@ -507,6 +507,13 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     airportDelayNames: [{ name: 'ビジネスセンター', count: 1 }],
                     basicDuplicateNames: [{ name: 'パン屋', count: 1 }],
                 },
+                winBuildAttribution: {
+                    totalBuilds: 3,
+                    basicDuplicateChosen: 2,
+                    basicDuplicateOverGrowthNear05: 1,
+                    basicDuplicateWithAirportMissing: 0,
+                    basicDuplicateNames: [{ name: 'コンビニ', count: 2 }],
+                },
             },
         },
     ], { games: 4, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: '' });
@@ -528,4 +535,5 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('buildAttributionAirport=delay:1 affordableSkipped:0 shortfallLe6:1 names:ビジネスセンター:1'));
     assert.ok(text.includes('buildAttributionBasicDuplicate=chosen:1 overGrowthNear05:1 airportMissing:1 names:パン屋:1'));
     assert.ok(text.includes('buildAttributionNames=chosen:BUY_CARD:パン屋:1 portfolioMissed:青果市場:1 missedWinners:青果市場->パン屋:1'));
+    assert.ok(text.includes('winBuildAttribution=total:3 basicDuplicate:2 overGrowthNear05:1 airportMissing:0 names:コンビニ:2'));
 });
