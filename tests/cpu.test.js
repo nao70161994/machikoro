@@ -387,6 +387,16 @@ runTest('buildEV combo core: 汎用農園市場と飲食店コンボは対象外
     assert.strictEqual(cafe.comboUnlockBonus, 0);
 });
 
+runTest('_cardDependencyValue: ワイナリーはブドウ園枚数を参照する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    player.cards = [createCardByName('ブドウ園'), createCardByName('ブドウ園')];
+    player.dormantCards = [];
+
+    assert.strictEqual(cpu._cardDependencyValue(createCardByName('ワイナリー'), player, game), 2.4);
+});
+
 runTest('buildEV tempo bonus: 購入後の残金を薄く加点できる', () => {
     const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple', expertBuildTempoWeight: 0.1 });
     const game = new GameManager(2);

@@ -3007,7 +3007,7 @@ class CPU {
                 return ['カフェ', 'レストラン', 'ファミレス', '会員制バー']
                     .reduce((sum, name) => sum + player.countCard(name), 0) * 0.9;
             case CARD_EFFECTS.WINERY:
-                return player.countCard('ぶどう園') * 1.2;
+                return player.countCard('ブドウ園') * 1.2;
             case CARD_EFFECTS.HARBOR:
             case CARD_EFFECTS.TUNA:
             case CARD_EFFECTS.HARBOR_RED:

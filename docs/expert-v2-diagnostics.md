@@ -134,7 +134,9 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 
 さらに `copy3Plus` と remaining/shortfall 層別を追加しました。20戦では allStrong4 の loss `overGrowthNear05=16` が `remaining=5:9,4:4,3:2,1:1`、`shortfall=<=3:9,>6:7` に分かれ、終盤 `remaining<=2 && shortfall<=6` へ集中していません。3枚目以降も勝ち側に多く出るため、過剰重複そのものや終盤空港shortfall限定 penalty へは進みません。
 
-追加の allStrong4 JSON 診断でも `expertWins=3/50` と負けが濃く、loss側では基本カード重複が多い一方で win側にも同種の重複が出ていました。基本重複を直接悪とみなす broad penalty には進まず、見るなら loss 側だけに偏る `portfolioMissedNear05` / `mallBasicChosen` の比率差に絞ります。
+追加の allStrong4 JSON 診断で一度 `expertWins=3/50` が出ましたが、これは `diagnose-expert-losses.js` の既定 `expertPreset=default` を使っており、v2simple の診断ではありませんでした。v2simple は必ず `--expert-preset v2simple` を明示します。
+
+`--expert-preset v2simple` 付きで取り直した 50戦では、baseline が allStrong4 `24/50 = 48.0%`、crowd `22/50 = 44.0%` でした。loss summary は allStrong4 `18/50 = 36.0%`、crowd `22/50 = 44.0%` で、基本カード重複は loss 固有ではありませんでした。branch 診断では allStrong4 20戦で `buildMallBasicChosen=79/281` が出たため、ショッピングモール未所持かつ遠い状態の `コンビニ/パン屋/ピザ屋` に小減点を試しましたが、0.5 と 0.25 のどちらも crowd は `26/50 = 52.0%` に上がる一方、allStrong4 は `19/50 = 38.0%` へ悪化しました。allStrong4 を壊すため採用しません。
 
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
