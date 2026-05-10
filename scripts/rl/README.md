@@ -747,6 +747,8 @@ npm run eval-rl-models -- \
 | `seed103 fine-tune passpen` | 不採用 | 10戦は67.5%だが、20戦で51.2%に低下。既存seed103未満 | 未反映 |
 | `seed103 top3 reselection` | 不採用 | 50戦では61.0%だが、100戦で allStrong が34%まで崩れた | 未反映 |
 | `seed116 lr1e-6 fine-tune passpen` | 不採用 | passは低いが、20戦で46.3%。normal+normal+strong と allStrong が崩れた | 未反映 |
+| `seed118 seed103 low-lr fine-tune` | 不採用 | 内部3lineupのうち2つが0%。外部20戦前に破綻検出 | 未反映 |
+| `seed103 candidate checkpoint reselection` | 不採用 | candidate-1250も現行bestより通常lineup/allStrongが低い | 未反映 |
 
 `seed103` top checkpoint 再評価の詳細は `docs/rl-experiments.md` に移す。現行は top1採用を維持し、top2/top3への差し替えは行わない。
 
