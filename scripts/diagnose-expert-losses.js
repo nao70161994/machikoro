@@ -414,6 +414,7 @@ function summarizeBuildAttribution(losses) {
     const specialDelayNames = {};
     const airportDelayNames = {};
     const basicDuplicateNames = {};
+    const basicDuplicateCopy3PlusNames = {};
     let totalBuilds = 0;
     let cardBuilds = 0;
     let landmarkBuilds = 0;
@@ -434,6 +435,7 @@ function summarizeBuildAttribution(losses) {
     let basicDuplicateChosen = 0;
     let basicDuplicateOverGrowthNear05 = 0;
     let basicDuplicateWithAirportMissing = 0;
+    let basicDuplicateCopy3Plus = 0;
 
     for (const loss of losses || []) {
         for (const entry of loss.buildDiagnostics || []) {
@@ -449,13 +451,18 @@ function summarizeBuildAttribution(losses) {
 
             const delayPreview = chosen.landmarkDelayPreview;
             const missingAirport = !!(diagnostics.missingLandmarks && diagnostics.missingLandmarks.includes('空港'));
+            const chosenCardCountBefore = cardCountBeforeBuild(normalized.before, normalized.actorIndex, chosen.name);
             const chosenBasicDuplicate = chosen.type === 'card' &&
                 MALL_BASIC_CARD_NAMES.has(chosen.name) &&
-                cardCountBeforeBuild(normalized.before, normalized.actorIndex, chosen.name) > 0;
+                chosenCardCountBefore > 0;
             if (chosenBasicDuplicate) {
                 basicDuplicateChosen++;
                 incrementCount(basicDuplicateNames, chosen.name || chosen.label || 'UNKNOWN');
                 if (missingAirport) basicDuplicateWithAirportMissing++;
+                if (chosenCardCountBefore >= 2) {
+                    basicDuplicateCopy3Plus++;
+                    incrementCount(basicDuplicateCopy3PlusNames, chosen.name || chosen.label || 'UNKNOWN');
+                }
             }
             if (missingAirport &&
                 chosen.type !== 'landmark' &&
@@ -536,6 +543,7 @@ function summarizeBuildAttribution(losses) {
         basicDuplicateChosen,
         basicDuplicateOverGrowthNear05,
         basicDuplicateWithAirportMissing,
+        basicDuplicateCopy3Plus,
         chosenNames: topEntries(chosenNames),
         portfolioMissedNames: topEntries(portfolioMissedNames),
         portfolioMissedWinnerNames: topEntries(portfolioMissedWinnerNames),
@@ -543,6 +551,7 @@ function summarizeBuildAttribution(losses) {
         specialDelayNames: topEntries(specialDelayNames),
         airportDelayNames: topEntries(airportDelayNames),
         basicDuplicateNames: topEntries(basicDuplicateNames),
+        basicDuplicateCopy3PlusNames: topEntries(basicDuplicateCopy3PlusNames),
     };
 }
 
@@ -772,7 +781,12 @@ function toText(entries, options) {
             lines.push(
                 `  buildAttributionBasicDuplicate=chosen:${buildAttribution.basicDuplicateChosen} ` +
                 `overGrowthNear05:${buildAttribution.basicDuplicateOverGrowthNear05} airportMissing:${buildAttribution.basicDuplicateWithAirportMissing} ` +
+                `copy3Plus:${buildAttribution.basicDuplicateCopy3Plus} ` +
                 `names:${buildAttribution.basicDuplicateNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+            lines.push(
+                `  buildAttributionBasicDuplicateCopy3Plus=` +
+                `${buildAttribution.basicDuplicateCopy3PlusNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
             lines.push(
                 `  buildAttributionNames=chosen:${buildAttribution.chosenNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
@@ -791,6 +805,7 @@ function toText(entries, options) {
                 `basicDuplicate:${winBuildAttribution.basicDuplicateChosen} ` +
                 `overGrowthNear05:${winBuildAttribution.basicDuplicateOverGrowthNear05} ` +
                 `airportMissing:${winBuildAttribution.basicDuplicateWithAirportMissing} ` +
+                `copy3Plus:${winBuildAttribution.basicDuplicateCopy3Plus} ` +
                 `names:${winBuildAttribution.basicDuplicateNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
         }
