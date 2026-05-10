@@ -4,7 +4,7 @@
 
 このファイルは RL CPU の個別実験履歴を残すためのメモです。標準フローと現行の採用方針は `scripts/rl/README.md` を参照してください。評価 artifact は生成物扱いでコミットせず、採用判断に必要な要点だけをここか `models/rl_model/registry.json` に要約します。
 
-2026-05-09追記: `seed110-allstrong` は完走後の50戦比較で all lineup 0% となり不採用。registry / portfolio へは反映しない。出力された `eval-seed110-*` artifact は生成物扱いでコミットしない。balanced 条件の短時間確認は `self-only-4p-h256-lr1e5-500-seed111-balanced-sanity` で実行中。
+2026-05-09追記: `seed110-allstrong` は完走後の50戦比較で all lineup 0% となり不採用。registry / portfolio へは反映しない。出力された `eval-seed110-*` artifact は生成物扱いでコミットしない。
 
 2026-05-09追記: `seed111 balanced` の10戦診断では、既存 `seed102` / `seed103` が55%、`seed111` rank1 が40%、top2 が5%。短時間診断でも既存候補を上回らず、特に top2 が大きく崩れたため不採用。registry / portfolio へは反映しない。`eval-seed111-*` は生成物扱いでコミットしない。追加の50戦基準線では `seed103` が58%（56% / 56% / 74% / 46%）、`seed102` が57%（68% / 44% / 74% / 42%）で、今後の4lineup候補はこの水準を基準に比較する。
 

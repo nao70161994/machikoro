@@ -153,20 +153,19 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
   - `rollRaceDetail` の `lateOther` は出るものの薄く、終盤サイコロ選択を broad に変える根拠には届いていません。
 - Business Center scored exchange の broad 実装
   - harmful gift や交換価値差分は診断対象として残しますが、scored exchange 全体は strong 側悪化があったため採用しません。
-- Business Center harmful gift 実行モード
-  - 50戦では normal crowd 改善が見えましたが、100戦では baseline simple 比で `strongWeighted -0.2pt`, `strongMin -1pt`, `allStrong4 -2pt` となり、本体統合条件を満たしませんでした。live v2simple には採用せず、診断記録として残します。
+- Business Center broad delay / spend penalty
+  - harmful gift 限定補正は採用済みですが、Business Center を広く遅延扱いする補正は採用しません。
+  - 2026-05-10 の50戦診断では `businessDelay delay=45/1530`, `specialSpend delayNames=ビジネスセンター:45` が出た一方、`businessDelay flip05=0`, `flip1=0` でした。軽い special spend / Business delay penalty では反転しないため、追加実装には進みません。
 
 ### 次に狭く検証する案
 
 1. loss 診断で集中した具体例
    - `finishDelayExamples` の `reasonTags`, `scoreGapToBestNonDelay`, `opponentWinThreats`, `disruptionPreview` が同じカード/条件に集中する場合だけ、小さい補正候補にします。
-2. Business Center harmful gift の取り逃し
-   - `businessSimpleMissedHarmfulGift` が crowd/allStrong4 の loss で集中する場合だけ、交換全体の scored 化ではなく harmful gift 回避に限定して検証します。
-   - `businessSimpleMissedHarmfulGift*` は残します。ただし、これは `business=simple` が見逃した候補を測る比較用カウンタであり、現行CPUが実際に見逃した回数としては扱いません。
-   - 今後再検証する場合は、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないか、loss 診断や benchmark 悪化時に切り戻す根拠があるかを見る regression / audit 用に使います。
-   - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装として再検証しました。
-   - 限定実装の50戦 smoke は `strong crowd=44.0%`, `allStrong4=48.0%`, `normal crowd=62.0%`。100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%`, `allStrong4=45.0%` だったため採用しました。
-   - 2026-05-10 の50戦診断では `businessDelay delay=45/1530`, `specialSpend delayNames=ビジネスセンター:45` が出た一方、`businessDelay flip05=0`, `flip1=0` でした。軽い special spend / Business delay penalty では反転しないため、追加実装には進みません。
+2. Business Center harmful gift の audit
+   - `businessSimpleMissedHarmfulGift*` は regression / audit 用に残します。これは `business=simple` が見逃した候補を測る比較用カウンタであり、現行CPUが実際に見逃した回数としては扱いません。
+   - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装として採用しました。
+   - 限定実装の50戦 smoke は `strong crowd=44.0%`, `allStrong4=48.0%`, `normal crowd=62.0%`。100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%`, `allStrong4=45.0%` でした。
+   - 今後は追加候補ではなく、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないかを見る audit として扱います。
 3. roll/race の終盤例
    - `lateOther` 単体では薄いため、loss 診断で終盤サイコロ選択が具体的な敗因として重なる場合だけ検証します。
 4. portfolio effective の条件付き補正
