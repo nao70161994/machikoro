@@ -130,6 +130,8 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 
 2026-05-10 の追加診断では、loss-only 50戦で crowd が `expertWinRate=44.0%`、allStrong4 が `expertWinRate=36.0%` でした。build attribution はどちらも `portfolioMissedNear05` と `portfolioVsBasic` が目立ち、空港未購入時の見送りも多い一方、成長カード補正の実装 smoke は悪化しました。現段階では「成長カードを買わせる」より、「どの局面ならコンビニ即時収入を捨ててよいか」をさらに診断する段階です。
 
+その後、loss 診断に `airportDelay` / `basicDuplicate` と勝ち試合側の `winBuildAttribution` を追加しました。50戦 loss-only では basic duplicate が crowd `chosen=186, overGrowthNear05=32`、allStrong4 `chosen=206, overGrowthNear05=26` と多く出ました。20戦の win/loss 比較では、crowd は勝ち側にも `basicDuplicate=60, overGrowthNear05=10` が出るため単純 penalty は危険です。一方 allStrong4 は loss `overGrowthNear05=16` に対して win `overGrowthNear05=2` と差が出たため、今後見るなら allStrong4 寄りの重複基本カード vs 成長候補の僅差局面に絞ります。広い basic duplicate penalty は採用しません。
+
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
 ## RL 評価との分離
