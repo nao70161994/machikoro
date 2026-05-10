@@ -154,6 +154,13 @@ function cardCountBeforeBuild(before, actorIndex, cardName) {
     return player && player.cards ? (player.cards[cardName] || 0) : 0;
 }
 
+function shortfallBucket(value) {
+    if (typeof value !== 'number') return 'unknown';
+    if (value <= 3) return '<=3';
+    if (value <= 6) return '<=6';
+    return '>6';
+}
+
 function buildFinishDelayTags(option) {
     const preview = option && option.landmarkDelayPreview;
     if (!preview || !preview.wouldTrigger) return [];
@@ -415,6 +422,8 @@ function summarizeBuildAttribution(losses) {
     const airportDelayNames = {};
     const basicDuplicateNames = {};
     const basicDuplicateCopy3PlusNames = {};
+    const basicDuplicateOverGrowthRemaining = {};
+    const basicDuplicateOverGrowthShortfall = {};
     let totalBuilds = 0;
     let cardBuilds = 0;
     let landmarkBuilds = 0;
@@ -513,6 +522,13 @@ function summarizeBuildAttribution(losses) {
                     if (chosenBasicDuplicate) {
                         portfolioMissedChosenDuplicate++;
                         basicDuplicateOverGrowthNear05++;
+                        if (chosen.landmarkDelayPreview) {
+                            incrementCount(basicDuplicateOverGrowthRemaining, String(chosen.landmarkDelayPreview.remainingLandmarks || 'unknown'));
+                            incrementCount(basicDuplicateOverGrowthShortfall, shortfallBucket(chosen.landmarkDelayPreview.shortfallBefore));
+                        } else {
+                            incrementCount(basicDuplicateOverGrowthRemaining, 'unknown');
+                            incrementCount(basicDuplicateOverGrowthShortfall, 'unknown');
+                        }
                     }
                 }
                 if (missingAirport) {
@@ -552,6 +568,8 @@ function summarizeBuildAttribution(losses) {
         airportDelayNames: topEntries(airportDelayNames),
         basicDuplicateNames: topEntries(basicDuplicateNames),
         basicDuplicateCopy3PlusNames: topEntries(basicDuplicateCopy3PlusNames),
+        basicDuplicateOverGrowthRemaining: topEntries(basicDuplicateOverGrowthRemaining),
+        basicDuplicateOverGrowthShortfall: topEntries(basicDuplicateOverGrowthShortfall),
     };
 }
 
@@ -789,6 +807,11 @@ function toText(entries, options) {
                 `${buildAttribution.basicDuplicateCopy3PlusNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
             lines.push(
+                `  buildAttributionBasicDuplicateOverGrowth=remaining:` +
+                `${buildAttribution.basicDuplicateOverGrowthRemaining.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `shortfall:${buildAttribution.basicDuplicateOverGrowthShortfall.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+            lines.push(
                 `  buildAttributionNames=chosen:${buildAttribution.chosenNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
                 `portfolioMissed:${buildAttribution.portfolioMissedNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
                 `missedWinners:${buildAttribution.portfolioMissedWinnerNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
@@ -807,6 +830,11 @@ function toText(entries, options) {
                 `airportMissing:${winBuildAttribution.basicDuplicateWithAirportMissing} ` +
                 `copy3Plus:${winBuildAttribution.basicDuplicateCopy3Plus} ` +
                 `names:${winBuildAttribution.basicDuplicateNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+            lines.push(
+                `  winBuildAttributionOverGrowth=remaining:` +
+                `${winBuildAttribution.basicDuplicateOverGrowthRemaining.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +
+                `shortfall:${winBuildAttribution.basicDuplicateOverGrowthShortfall.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
         }
     }

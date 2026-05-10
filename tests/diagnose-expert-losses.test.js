@@ -354,7 +354,11 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
                                 name: 'パン屋',
                                 label: 'BUY_CARD:パン屋',
                                 score: 3,
-                                landmarkDelayPreview: { wouldTrigger: false },
+                                landmarkDelayPreview: {
+                                    wouldTrigger: false,
+                                    remainingLandmarks: 2,
+                                    shortfallBefore: 5,
+                                },
                             },
                             {
                                 type: 'card',
@@ -418,6 +422,8 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
     assert.strictEqual(summary.airportDelayNames[0].name, 'ビジネスセンター');
     assert.strictEqual(summary.basicDuplicateNames[0].name, 'パン屋');
     assert.strictEqual(summary.basicDuplicateCopy3PlusNames[0].name, 'パン屋');
+    assert.strictEqual(summary.basicDuplicateOverGrowthRemaining[0].name, '2');
+    assert.strictEqual(summary.basicDuplicateOverGrowthShortfall[0].name, '<=6');
 });
 
 runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
@@ -510,6 +516,8 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     airportDelayNames: [{ name: 'ビジネスセンター', count: 1 }],
                     basicDuplicateNames: [{ name: 'パン屋', count: 1 }],
                     basicDuplicateCopy3PlusNames: [{ name: 'パン屋', count: 1 }],
+                    basicDuplicateOverGrowthRemaining: [{ name: '2', count: 1 }],
+                    basicDuplicateOverGrowthShortfall: [{ name: '<=6', count: 1 }],
                 },
                 winBuildAttribution: {
                     totalBuilds: 3,
@@ -519,6 +527,8 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     basicDuplicateCopy3Plus: 1,
                     basicDuplicateNames: [{ name: 'コンビニ', count: 2 }],
                     basicDuplicateCopy3PlusNames: [{ name: 'コンビニ', count: 1 }],
+                    basicDuplicateOverGrowthRemaining: [{ name: '1', count: 1 }],
+                    basicDuplicateOverGrowthShortfall: [{ name: '<=3', count: 1 }],
                 },
             },
         },
@@ -541,6 +551,8 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('buildAttributionAirport=delay:1 affordableSkipped:0 shortfallLe6:1 names:ビジネスセンター:1'));
     assert.ok(text.includes('buildAttributionBasicDuplicate=chosen:1 overGrowthNear05:1 airportMissing:1 copy3Plus:1 names:パン屋:1'));
     assert.ok(text.includes('buildAttributionBasicDuplicateCopy3Plus=パン屋:1'));
+    assert.ok(text.includes('buildAttributionBasicDuplicateOverGrowth=remaining:2:1 shortfall:<=6:1'));
     assert.ok(text.includes('buildAttributionNames=chosen:BUY_CARD:パン屋:1 portfolioMissed:青果市場:1 missedWinners:青果市場->パン屋:1'));
     assert.ok(text.includes('winBuildAttribution=total:3 basicDuplicate:2 overGrowthNear05:1 airportMissing:0 copy3Plus:1 names:コンビニ:2'));
+    assert.ok(text.includes('winBuildAttributionOverGrowth=remaining:1:1 shortfall:<=3:1'));
 });
