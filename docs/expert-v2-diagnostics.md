@@ -132,6 +132,8 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 
 その後、loss 診断に `airportDelay` / `basicDuplicate` と勝ち試合側の `winBuildAttribution` を追加しました。50戦 loss-only では basic duplicate が crowd `chosen=186, overGrowthNear05=32`、allStrong4 `chosen=206, overGrowthNear05=26` と多く出ました。20戦の win/loss 比較では、crowd は勝ち側にも `basicDuplicate=60, overGrowthNear05=10` が出るため単純 penalty は危険です。一方 allStrong4 は loss `overGrowthNear05=16` に対して win `overGrowthNear05=2` と差が出たため、今後見るなら allStrong4 寄りの重複基本カード vs 成長候補の僅差局面に絞ります。広い basic duplicate penalty は採用しません。
 
+さらに `copy3Plus` と remaining/shortfall 層別を追加しました。20戦では allStrong4 の loss `overGrowthNear05=16` が `remaining=5:9,4:4,3:2,1:1`、`shortfall=<=3:9,>6:7` に分かれ、終盤 `remaining<=2 && shortfall<=6` へ集中していません。3枚目以降も勝ち側に多く出るため、過剰重複そのものや終盤空港shortfall限定 penalty へは進みません。
+
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
 ## RL 評価との分離
