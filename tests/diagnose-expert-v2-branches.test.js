@@ -274,6 +274,13 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildComboDominantChosen: 2,
             buildComboHalfWouldFlip: 1,
             buildComboDominantNames: { ブドウ園: 2 },
+            buildComboRanchDominantChosen: 2,
+            buildComboRanchDominantCopy0: 1,
+            buildComboRanchDominantCopy1: 1,
+            buildComboRanchDominantCopy2Plus: 0,
+            buildComboRanchDominantGapLe025: 1,
+            buildComboRanchDominantGapLe05: 2,
+            buildComboRanchDominantSecondNames: { コンビニ: 1, 改装屋: 1 },
             buildRedBonusDominantChosen: 1,
             buildRedBonusHalfWouldFlip: 1,
             buildRedBonusDominantNames: { ファミレス: 1 },
@@ -448,6 +455,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('portfolioReachShorten: available=4 missedNear=2 flip04=1 names=ワイナリー:2,青果市場:2 missedNames=ワイナリー:2 flip04Names=ワイナリー:1'));
     assert.ok(text.includes('basicDuplicate: available=4/6 chosen=3/6 lowLift=2/6 near05=3/6 flip05=1/6 names=パン屋:2,コンビニ:1 lowLiftNames=パン屋:2 flip05Names=青果市場:1'));
     assert.ok(text.includes('componentDominance: tempo=1/6 names=コンビニ:1 combo=2/6 half=1/6 names=ブドウ園:2 red=1/6 half=1/6 names=ファミレス:1 renovationPenaltyFlip=1/6 names=パン屋:1'));
+    assert.ok(text.includes('componentRanchCombo: dominant=2/6 copy0=1/2 copy1=1/2 copy2plus=0/2 gap025=1/2 gap05=2/2 secondNames=コンビニ:1,改装屋:1'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));
