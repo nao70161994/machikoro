@@ -538,6 +538,7 @@ node scripts/diagnose-rl-landmark-race.js \
 ```
 
 出力の `avgLossGap` は敗戦時の `winnerBuilt - rlBuilt`、`rem1/rem2` は残りランドマーク1/2個で負けた回数、`missing` は敗戦時にRLが残しがちなランドマーク名。3人以上の lineup では2人用 `STATE_DIM = 145` モデルを拒否する。
+必要なら `--format json --output models/rl_model/<label>.landmark-race.json` で保存するが、この出力も診断artifactなので git 管理しない。
 
 2人用候補の横並び評価は次を使う。
 
