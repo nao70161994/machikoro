@@ -1031,6 +1031,19 @@ print(json.dumps(_best_checkpoint_artifact_paths(
     assert.strictEqual(paths.configIndexCsvPath, 'models/rl_model/config_index.csv');
 });
 
+runTest('rl train: load checkpoint path は npz 拡張子ありなしを扱える', () => {
+    const output = runPython(`
+from scripts.rl.train import _checkpoint_model_base_path, _checkpoint_npz_path
+print(_checkpoint_model_base_path("models/rl_model/runs/run-a/best_model.npz"))
+print(_checkpoint_model_base_path("models/rl_model/runs/run-a/best_model"))
+print(_checkpoint_npz_path("models/rl_model/runs/run-a/best_model"))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'models/rl_model/runs/run-a/best_model');
+    assert.strictEqual(lines[1], 'models/rl_model/runs/run-a/best_model');
+    assert.strictEqual(lines[2], 'models/rl_model/runs/run-a/best_model.npz');
+});
+
 runTest('rl train: top-k checkpoint 候補をスコア順に保持する', () => {
     const output = runPython(`
 import json

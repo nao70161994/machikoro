@@ -343,6 +343,7 @@ python3 -m scripts.rl.train \
   --seed 11           # Python random / numpy のseed（再現実験用）
   --epsilon 0.20      # 初期探索率（線形減衰 → 0.02 まで）
   --load              # models/rl_model/model.npz を読み込んで継続学習
+  --load-checkpoint models/rl_model/runs/<run-label>/best_model  # 指定checkpointから継続学習
   --cpu-opponent-impl js-oracle  # normal/strong/expert 相手に JS CPU oracle を使う
   --train-opponents random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1  # 学習相手比率
   --self-learn-both-sides  # opponent=self のゲームだけ両席の行動を学習対象にする
@@ -376,7 +377,7 @@ python3 -m scripts.rl.train \
 > **注意**: `--hidden` の値が保存済みモデルと異なる場合は読み込みエラーになる。
 > 必ず保存時と同じ値を指定すること。
 
-> **注意**: `--load` が読むのは run 別 best ではなく `models/rl_model/model.npz`。特定 run の best から再開したい場合は、その `.npz` を `models/rl_model/model.npz` へ手動コピーしてから、同じ `--hidden` で `--load` する。
+> **注意**: `--load` が読むのは run 別 best ではなく `models/rl_model/model.npz`。特定 run の best から再開する場合は、共有モデルを手動コピーで差し替えず、同じ `--hidden` / `--player-count` を指定して `--load-checkpoint models/rl_model/runs/<run-label>/best_model` を使う。`.npz` 拡張子は付けても付けなくてもよい。
 
 > **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず短時間で動作確認できて進捗が見えることを優先して `1000 / 500 / 1 / strong`、さらに初期評価スキップ、軽量評価回数、`max_steps=1200` にしている。
 

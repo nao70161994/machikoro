@@ -1167,6 +1167,29 @@ def _copy_checkpoint(src_model_path, dst_model_path):
         dst_fh.write(src_fh.read())
 
 
+def _checkpoint_model_base_path(path):
+    text = str(path or "").strip()
+    if text.endswith(".npz"):
+        text = text[:-4]
+    return text
+
+
+def _checkpoint_npz_path(path):
+    base_path = _checkpoint_model_base_path(path)
+    return base_path + ".npz" if base_path else ""
+
+
+def _load_agent_checkpoint(agent, path, require_exists=False):
+    base_path = _checkpoint_model_base_path(path)
+    checkpoint_path = _checkpoint_npz_path(base_path)
+    if not checkpoint_path or not os.path.exists(checkpoint_path):
+        if require_exists:
+            raise FileNotFoundError(checkpoint_path or str(path or ""))
+        return False, base_path, checkpoint_path
+    agent.load(base_path)
+    return True, base_path, checkpoint_path
+
+
 def _ranked_checkpoint_path(base_checkpoint_path, rank):
     if rank <= 1:
         return base_checkpoint_path
@@ -1508,6 +1531,7 @@ def main():
     parser.add_argument("--imitation-refresh-games", type=int, default=0, help="学習中に周期的に追加する模倣学習ゲーム数（0で無効）")
     parser.add_argument("--imitation-refresh-every", type=int, default=0, help="模倣リフレッシュを実行する学習ゲーム間隔（0で無効）")
     parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
+    parser.add_argument("--load-checkpoint", default="", help="指定checkpointから読み込む（.npz 拡張子あり/なし両対応）")
     parser.add_argument("--js-eval-games", type=int, default=0,    help="JS CPU 相手の評価ゲーム数（0で無効）")
     parser.add_argument("--js-eval-opponents", default="strong,expert", help="JS CPU 評価対象 difficulty のCSV")
     parser.add_argument("--js-eval-lineups", default="", help="JS評価のlineup指定。例: rl,weak,normal,strong;rl,normal,normal,strong")
@@ -1573,10 +1597,21 @@ def main():
 
     model_path = os.path.join(MODEL_DIR, "model")
     checkpoint_path = model_path + ".npz"
-    if args.load and os.path.exists(checkpoint_path):
+    if args.load_checkpoint:
         try:
-            agent.load(model_path)
-            print(f"モデル読み込み: {checkpoint_path}")
+            _, _, loaded_checkpoint_path = _load_agent_checkpoint(agent, args.load_checkpoint, require_exists=True)
+            print(f"モデル読み込み: {loaded_checkpoint_path}")
+        except (SchemaVersionError, ValueError, KeyError, OSError, FileNotFoundError) as exc:
+            print(
+                f"エラー: チェックポイントを読み込めません: {exc}\n"
+                f"指定ファイルはそのまま保持されています: {_checkpoint_npz_path(args.load_checkpoint)}"
+            )
+            sys.exit(1)
+    elif args.load:
+        try:
+            loaded, _, loaded_checkpoint_path = _load_agent_checkpoint(agent, model_path, require_exists=False)
+            if loaded:
+                print(f"モデル読み込み: {loaded_checkpoint_path}")
         except (SchemaVersionError, ValueError, KeyError, OSError) as exc:
             print(
                 f"エラー: チェックポイントを読み込めません: {exc}\n"
