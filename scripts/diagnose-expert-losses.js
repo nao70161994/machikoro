@@ -412,6 +412,8 @@ function summarizeBuildAttribution(losses) {
     const portfolioMissedWinnerNames = {};
     const delayNames = {};
     const specialDelayNames = {};
+    const airportDelayNames = {};
+    const basicDuplicateNames = {};
     let totalBuilds = 0;
     let cardBuilds = 0;
     let landmarkBuilds = 0;
@@ -426,6 +428,12 @@ function summarizeBuildAttribution(losses) {
     let portfolioMissedVsConvenience = 0;
     let portfolioMissedWithAirportMissing = 0;
     let portfolioMissedChosenDuplicate = 0;
+    let airportDelayBuilds = 0;
+    let airportAffordableSkipped = 0;
+    let airportShortfallLe6 = 0;
+    let basicDuplicateChosen = 0;
+    let basicDuplicateOverGrowthNear05 = 0;
+    let basicDuplicateWithAirportMissing = 0;
 
     for (const loss of losses || []) {
         for (const entry of loss.buildDiagnostics || []) {
@@ -440,6 +448,21 @@ function summarizeBuildAttribution(losses) {
             if (diagnostics.nearTie && diagnostics.nearTie.isNearTie) nearTie++;
 
             const delayPreview = chosen.landmarkDelayPreview;
+            const missingAirport = !!(diagnostics.missingLandmarks && diagnostics.missingLandmarks.includes('空港'));
+            const chosenBasicDuplicate = chosen.type === 'card' &&
+                MALL_BASIC_CARD_NAMES.has(chosen.name) &&
+                cardCountBeforeBuild(normalized.before, normalized.actorIndex, chosen.name) > 0;
+            if (chosenBasicDuplicate) {
+                basicDuplicateChosen++;
+                incrementCount(basicDuplicateNames, chosen.name || chosen.label || 'UNKNOWN');
+                if (missingAirport) basicDuplicateWithAirportMissing++;
+            }
+            if (missingAirport &&
+                chosen.type !== 'landmark' &&
+                Array.isArray(diagnostics.buildOptions) &&
+                diagnostics.buildOptions.some(option => option && option.type === 'landmark' && option.name === '空港')) {
+                airportAffordableSkipped++;
+            }
             if (delayPreview && delayPreview.wouldTrigger) {
                 chosenDelay++;
                 incrementCount(delayNames, chosen.label || chosen.name || 'UNKNOWN');
@@ -454,6 +477,13 @@ function summarizeBuildAttribution(losses) {
                     typeof delayPreview.delayCoins === 'number' &&
                     delayPreview.delayCoins > 0) {
                     finishStrictDelay++;
+                }
+                if (missingAirport && delayPreview.nearestLandmark === '空港') {
+                    airportDelayBuilds++;
+                    incrementCount(airportDelayNames, chosen.name || chosen.label || 'UNKNOWN');
+                    if (typeof delayPreview.shortfallBefore === 'number' && delayPreview.shortfallBefore <= 6) {
+                        airportShortfallLe6++;
+                    }
                 }
             }
 
@@ -473,11 +503,12 @@ function summarizeBuildAttribution(losses) {
                 if (chosen.type === 'card' && MALL_BASIC_CARD_NAMES.has(chosen.name)) {
                     portfolioMissedVsBasicNear05++;
                     if (chosen.name === 'コンビニ') portfolioMissedVsConvenience++;
-                    if (cardCountBeforeBuild(normalized.before, normalized.actorIndex, chosen.name) > 0) {
+                    if (chosenBasicDuplicate) {
                         portfolioMissedChosenDuplicate++;
+                        basicDuplicateOverGrowthNear05++;
                     }
                 }
-                if (diagnostics.missingLandmarks && diagnostics.missingLandmarks.includes('空港')) {
+                if (missingAirport) {
                     portfolioMissedWithAirportMissing++;
                 }
             }
@@ -499,11 +530,19 @@ function summarizeBuildAttribution(losses) {
         portfolioMissedVsConvenience,
         portfolioMissedWithAirportMissing,
         portfolioMissedChosenDuplicate,
+        airportDelayBuilds,
+        airportAffordableSkipped,
+        airportShortfallLe6,
+        basicDuplicateChosen,
+        basicDuplicateOverGrowthNear05,
+        basicDuplicateWithAirportMissing,
         chosenNames: topEntries(chosenNames),
         portfolioMissedNames: topEntries(portfolioMissedNames),
         portfolioMissedWinnerNames: topEntries(portfolioMissedWinnerNames),
         delayNames: topEntries(delayNames),
         specialDelayNames: topEntries(specialDelayNames),
+        airportDelayNames: topEntries(airportDelayNames),
+        basicDuplicateNames: topEntries(basicDuplicateNames),
     };
 }
 
@@ -712,6 +751,15 @@ function toText(entries, options) {
                 `mallBasic:${buildAttribution.mallBasicChosen} portfolioMissedNear05:${buildAttribution.portfolioMissedNear05} ` +
                 `portfolioVsBasic:${buildAttribution.portfolioMissedVsBasicNear05} portfolioVsConvenience:${buildAttribution.portfolioMissedVsConvenience} ` +
                 `portfolioAirportMissing:${buildAttribution.portfolioMissedWithAirportMissing} portfolioChosenDuplicate:${buildAttribution.portfolioMissedChosenDuplicate}`
+            );
+            lines.push(
+                `  buildAttributionAirport=delay:${buildAttribution.airportDelayBuilds} affordableSkipped:${buildAttribution.airportAffordableSkipped} ` +
+                `shortfallLe6:${buildAttribution.airportShortfallLe6} names:${buildAttribution.airportDelayNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
+            );
+            lines.push(
+                `  buildAttributionBasicDuplicate=chosen:${buildAttribution.basicDuplicateChosen} ` +
+                `overGrowthNear05:${buildAttribution.basicDuplicateOverGrowthNear05} airportMissing:${buildAttribution.basicDuplicateWithAirportMissing} ` +
+                `names:${buildAttribution.basicDuplicateNames.map(item => `${item.name}:${item.count}`).join(',') || '-'}`
             );
             lines.push(
                 `  buildAttributionNames=chosen:${buildAttribution.chosenNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +

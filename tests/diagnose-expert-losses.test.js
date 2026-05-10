@@ -368,6 +368,7 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
                 },
                 {
                     buildActionLabel: 'BUY_CARD:ビジネスセンター',
+                    missingLandmarks: ['空港'],
                     buildOptions: [
                         {
                             type: 'card',
@@ -377,9 +378,16 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
                             landmarkDelayPreview: {
                                 wouldTrigger: true,
                                 remainingLandmarks: 1,
+                                nearestLandmark: '空港',
                                 shortfallBefore: 4,
                                 delayCoins: 4,
                             },
+                        },
+                        {
+                            type: 'landmark',
+                            name: '空港',
+                            label: 'BUY_LANDMARK:空港',
+                            score: 3,
                         },
                     ],
                 },
@@ -398,8 +406,16 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
     assert.strictEqual(summary.portfolioMissedVsBasicNear05, 1);
     assert.strictEqual(summary.portfolioMissedWithAirportMissing, 1);
     assert.strictEqual(summary.portfolioMissedChosenDuplicate, 1);
+    assert.strictEqual(summary.airportDelayBuilds, 1);
+    assert.strictEqual(summary.airportAffordableSkipped, 1);
+    assert.strictEqual(summary.airportShortfallLe6, 1);
+    assert.strictEqual(summary.basicDuplicateChosen, 1);
+    assert.strictEqual(summary.basicDuplicateOverGrowthNear05, 1);
+    assert.strictEqual(summary.basicDuplicateWithAirportMissing, 1);
     assert.strictEqual(summary.portfolioMissedNames[0].name, '青果市場');
     assert.strictEqual(summary.portfolioMissedWinnerNames[0].name, '青果市場->パン屋');
+    assert.strictEqual(summary.airportDelayNames[0].name, 'ビジネスセンター');
+    assert.strictEqual(summary.basicDuplicateNames[0].name, 'パン屋');
 });
 
 runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
@@ -477,11 +493,19 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     portfolioMissedVsConvenience: 0,
                     portfolioMissedWithAirportMissing: 1,
                     portfolioMissedChosenDuplicate: 1,
+                    airportDelayBuilds: 1,
+                    airportAffordableSkipped: 0,
+                    airportShortfallLe6: 1,
+                    basicDuplicateChosen: 1,
+                    basicDuplicateOverGrowthNear05: 1,
+                    basicDuplicateWithAirportMissing: 1,
                     chosenNames: [{ name: 'BUY_CARD:パン屋', count: 1 }],
                     portfolioMissedNames: [{ name: '青果市場', count: 1 }],
                     portfolioMissedWinnerNames: [{ name: '青果市場->パン屋', count: 1 }],
                     delayNames: [{ name: 'BUY_CARD:ビジネスセンター', count: 1 }],
                     specialDelayNames: [{ name: 'BUY_CARD:ビジネスセンター', count: 1 }],
+                    airportDelayNames: [{ name: 'ビジネスセンター', count: 1 }],
+                    basicDuplicateNames: [{ name: 'パン屋', count: 1 }],
                 },
             },
         },
@@ -501,5 +525,7 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('missedImmediateDisruption=total:1'));
     assert.ok(text.includes('missedDisruptionNames=missed:BUY_CARD:テレビ局:1'));
     assert.ok(text.includes('buildAttribution=total:2 card:2 landmark:0 nearTie:1 chosenDelay:1 finishStrict:1 specialDelay:1 businessDelay:1 mallBasic:1 portfolioMissedNear05:1 portfolioVsBasic:1 portfolioVsConvenience:0 portfolioAirportMissing:1 portfolioChosenDuplicate:1'));
+    assert.ok(text.includes('buildAttributionAirport=delay:1 affordableSkipped:0 shortfallLe6:1 names:ビジネスセンター:1'));
+    assert.ok(text.includes('buildAttributionBasicDuplicate=chosen:1 overGrowthNear05:1 airportMissing:1 names:パン屋:1'));
     assert.ok(text.includes('buildAttributionNames=chosen:BUY_CARD:パン屋:1 portfolioMissed:青果市場:1 missedWinners:青果市場->パン屋:1'));
 });
