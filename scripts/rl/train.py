@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import random
+import time
 from datetime import datetime
 import numpy as np
 
@@ -603,12 +604,32 @@ def _oversample_target_transitions(agent: RLAgent, target_ratio: float, max_mult
 
 def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_steps: int = 3000,
                        reward_config=None, terminal_config=None, self_learn_both_sides: bool = False,
-                       player_count: int = 2) -> dict:
+                       player_count: int = 2, debug_game_label: str = "",
+                       debug_game_interval_seconds: float = 0.0) -> dict:
     env = MachikoroEnv(player_count=player_count)
     agent_player = random.randrange(len(env.players))
     reward_config = reward_config or _reward_shaping_defaults()
     terminal_config = terminal_config or _terminal_reward_defaults()
     both_sides = bool(self_learn_both_sides and (opponent or {}).get("kind") == "self")
+    debug_enabled = debug_game_interval_seconds and debug_game_interval_seconds > 0
+    debug_started_at = time.time() if debug_enabled else 0.0
+    debug_last_at = debug_started_at
+
+    def maybe_print_debug_step(step_index: int):
+        nonlocal debug_last_at
+        if not debug_enabled:
+            return
+        now = time.time()
+        if now - debug_last_at < debug_game_interval_seconds:
+            return
+        debug_last_at = now
+        print(
+            f"[debug-game {debug_game_label}] step={step_index + 1} "
+            f"elapsed={now - debug_started_at:.1f}s turn={getattr(env, 'turn_count', '?')} "
+            f"current={getattr(env, 'current', '?')} phase={getattr(env, 'phase', '?')} "
+            f"buffer={len(getattr(agent, 'rewards', []))}",
+            flush=True,
+        )
 
     if both_sides:
         episodes = [
@@ -619,7 +640,8 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             }
             for _ in env.players
         ]
-        for _ in range(max_steps):
+        for step_i in range(max_steps):
+            maybe_print_debug_step(step_i)
             if env.done:
                 break
 
@@ -681,7 +703,8 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
     ep_values = []
     ep_rewards = []
 
-    for _ in range(max_steps):
+    for step_i in range(max_steps):
+        maybe_print_debug_step(step_i)
         if env.done:
             break
 
@@ -1545,6 +1568,9 @@ def main():
     parser.add_argument("--pool-update-every", type=int, default=5000, help="過去モデルpoolへsnapshotを追加するゲーム間隔（0で無効）")
     parser.add_argument("--pool-max-size", type=int, default=5, help="保持する過去モデルsnapshot数")
     parser.add_argument("--progress-every", type=int, default=0, help="軽量な進捗表示を出すゲーム間隔（0で無効）")
+    parser.add_argument("--debug-game-seconds", type=float, default=0.0, help="指定秒数ごとに学習ゲーム内の軽量debugログを出す（0で無効）")
+    parser.add_argument("--debug-train-batch", action="store_true", help="train() batch の件数と所要時間をdebug表示する")
+    parser.add_argument("--train-batch-size", type=int, default=8, help="何ゲーム分の遷移をまとめて train() するか")
     parser.add_argument("--max-steps", type=int, default=3000, help="学習ゲーム1試合あたりの最大 step 数")
     parser.add_argument("--eval-max-steps", type=int, default=3000, help="評価ゲーム1試合あたりの最大 step 数")
     parser.add_argument("--reward-coin", type=float, default=0.0, help="自分のコイン増加に対する中間報酬係数")
@@ -1679,7 +1705,7 @@ def main():
     train_calls = 0
     agent_wins  = 0  # 学習ゲームでのエージェント勝利数
 
-    BATCH = 8   # MC リターンはブートストラップ非依存のため大きいバッチでも安定
+    batch_size = max(1, args.train_batch_size)
 
     # 対戦相手プール（過去モデルのスナップショット）
     pool_agents = []
@@ -1711,17 +1737,35 @@ def main():
             terminal_config=terminal_config,
             self_learn_both_sides=args.self_learn_both_sides,
             player_count=args.player_count,
+            debug_game_label=f"{game_i}/{args.games}",
+            debug_game_interval_seconds=args.debug_game_seconds,
         )
         if info.get("winner") == info.get("agent_player"):
             agent_wins += 1
 
-        if game_i % BATCH == 0:
+        if game_i % batch_size == 0:
+            train_started_at = time.time()
+            train_buffer_before = len(agent.rewards)
+            if args.debug_train_batch:
+                print(
+                    f"[debug-train-batch-start {game_i}/{args.games}] "
+                    f"bufferBefore={train_buffer_before}",
+                    flush=True,
+                )
             _oversample_target_transitions(
                 agent,
                 args.target_oversample_ratio,
                 max_multiplier=args.target_oversample_max_multiplier,
             )
+            train_buffer_after = len(agent.rewards)
             stats = agent.train()
+            if args.debug_train_batch:
+                print(
+                    f"[debug-train-batch {game_i}/{args.games}] "
+                    f"bufferBefore={train_buffer_before} bufferAfter={train_buffer_after} "
+                    f"elapsed={time.time() - train_started_at:.1f}s",
+                    flush=True,
+                )
             train_calls += 1
             if stats:
                 total_pl  += stats.get("policy_loss", 0)

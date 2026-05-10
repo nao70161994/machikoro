@@ -361,6 +361,9 @@ python3 -m scripts.rl.train \
   --final-eval-heuristic-games 8  # 学習終了時の weak/normal/strong/expert 評価ゲーム数
   --final-eval-pool-games 8  # 学習終了時の opponent pool 評価ゲーム数
   --progress-every 50  # 軽量な進捗表示の間隔
+  --train-batch-size 8  # 何ゲーム分の遷移をまとめて train() するか
+  --debug-train-batch  # train() batch の件数と所要時間を表示する
+  --debug-game-seconds 30  # 長い学習ゲーム中に指定秒数ごとのdebugログを出す
   --max-steps 1200  # 学習ゲーム1試合あたりの最大 step 数
   --eval-max-steps 1200  # 評価ゲーム1試合あたりの最大 step 数
   --metrics-csv models/rl_model/runs/baseline/train_metrics.csv  # 評価結果CSV
@@ -380,6 +383,8 @@ python3 -m scripts.rl.train \
 > **注意**: `--load` が読むのは run 別 best ではなく `models/rl_model/model.npz`。特定 run の best から再開する場合は、共有モデルを手動コピーで差し替えず、同じ `--hidden` / `--player-count` を指定して `--load-checkpoint models/rl_model/runs/<run-label>/best_model` を使う。`.npz` 拡張子は付けても付けなくてもよい。
 
 > **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず短時間で動作確認できて進捗が見えることを優先して `1000 / 500 / 1 / strong`、さらに初期評価スキップ、軽量評価回数、`max_steps=1200` にしている。
+
+> **運用メモ**: 4人自己対戦で `--self-learn-both-sides` を使う場合、1ゲームあたりの遷移数が大きくなり、既定 `--train-batch-size 8` では `train()` が長時間無出力になることがある。速度切り分け時は `--debug-train-batch` と `--debug-game-seconds` を使い、短時間 sanity run では `--train-batch-size 1` で batch stall を避ける。これは学習更新単位を変える実験条件なので、採用評価では run label と docs に明記する。
 
 ### 学習ログの見方
 
