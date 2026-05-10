@@ -18,6 +18,8 @@
 
 2026-05-09追記: `seed103 top3 reselection` は採用済み `seed103` run の top3 checkpoint を再確認した。外部50戦では61.0%（60% / 60% / 76% / 48%）で top1 の54.5%を上回ったが、外部100戦では60.7%（61% / 68% / 80% / 34%）となり allStrong が採用基準の46%を大きく下回ったため未採用。2人戦用の `seed71-rewardcap-top3` は同じ100戦出力では60.8%（68% / 56% / 73% / 46%）だったが、2人用 stateDim の portfolio モデルなので4人用の差し替え候補にはしない。`eval-seed103-top1-top3-*` artifact は生成物扱いでコミットしない。
 
+2026-05-10追記: `seed103` の top1/top2/top3 を直接20戦で再評価したところ、top1 は 65% / 60% / 80%、top2 は 35% / 60% / 75%、top3 は 55% / 45% / 90%。20戦では top1 が最も安定し、top2/top3 は通常lineupで現行採用を上回る根拠が弱い。過去の top3 100戦 allStrong 崩れとも矛盾しないため、現行 `seed103` 採用を維持し、top2/top3 への差し替えは行わない。
+
 2026-05-09追記: `seed116 lr1e-6 fine-tune passpen` は採用済み `seed103` checkpoint から load し、`lr=1e-6`, `games=250`, `build-pass-affordable-penalty=0.02` でさらに保守的に微調整した。内部JS評価は 50% / 50% / 75% で pass も低く制御できたが、外部20戦では46.3%（75% / 25% / 65% / 20%）に留まり、`normal+normal+strong` と allStrong が大きく崩れたため未採用。registry / portfolio へは反映しない。`eval-seed116-*` artifact は生成物扱いでコミットしない。
 
 2026-05-10追記: landmark race 50戦診断では、採用済み `seed103` が58.0%（56% / 56% / 74% / 46%）、旧候補 `seed102` が50.0%（38% / 54% / 66% / 42%）。`seed103` は敗戦時 `avgLossGap=1.87`, `rem1=36`, `rem2=31` で、未達ランドマークは空港が73/84敗に集中した。`seed102` は `avgLossGap=1.95`, `rem1=44`, `rem2=32` で、空港61/100敗に加えてショッピングモール55/100敗も多い。採用判断ではなく報酬設計・checkpoint selection の仮説確認として扱い、現行 `seed103` 採用を維持する。次の仮説は広いpass penaltyではなく、空港/終盤shortfallの小さい reward shaping または selection gate。`*.landmark-race.json` は生成物扱いでコミットしない。

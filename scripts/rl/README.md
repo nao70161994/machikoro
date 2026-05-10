@@ -686,17 +686,17 @@ sh scripts/rl/bg-experiment-set.sh \
 ```sh
 # sanity: 既存 1000 preset に allStrong4 評価を追加して短時間確認
 sh scripts/rl/run-self-only-4p-h256-lr2e5-1000.sh \
-  --run-label self-only-4p-h256-lr2e5-1000-seed110-allstrong-sanity \
-  --seed 110 \
+  --run-label <run-label> \
+  --seed <seed> \
   --js-eval-games 2 \
   --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
   --summary-weights "rl+weak+normal+strong=2,rl+normal+normal+strong=3,rl+strong+strong+strong=4"
 
 # long: sanity が悪くなければ detached で 2000 games
-sh scripts/rl/run-background.sh self-only-4p-h256-lr2e5-2000-seed110-allstrong \
+sh scripts/rl/run-background.sh <run-label> \
   sh scripts/rl/run-self-only-4p-h256-lr2e5-1000.sh \
-    --run-label self-only-4p-h256-lr2e5-2000-seed110-allstrong \
-    --seed 110 \
+    --run-label <run-label> \
+    --seed <seed> \
     --games 2000 \
     --eval-every 500 \
     --js-eval-games 4 \
@@ -706,27 +706,27 @@ sh scripts/rl/run-background.sh self-only-4p-h256-lr2e5-2000-seed110-allstrong \
 # 完走後は実在する top checkpoint を同じ lineup で比較する。
 # 例: run dir に best_model.browser.json と best_model.top2.browser.json だけなら --run-ranks 1,2 を使う。
 npm run eval-rl-models -- \
-  --run-labels self-only-4p-h256-lr2e5-2000-seed110-allstrong \
+  --run-labels <run-label> \
   --run-ranks 1,2 \
   --games 50 \
   --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
-  --output models/rl_model/eval-seed110-allstrong-top.json \
-  --csv models/rl_model/eval-seed110-allstrong-top.csv \
-  --markdown models/rl_model/eval-seed110-allstrong-top.md
+  --output models/rl_model/<run-label>-top.json \
+  --csv models/rl_model/<run-label>-top.csv \
+  --markdown models/rl_model/<run-label>-top.md
 ```
 
-既存4人用モデルと比較する場合は、採用済み `self-only-4p-h256-lr1e5-5000-seed103` と候補 `self-only-4p-h256-lr1e5-5000-seed102` を同じ lineup に入れる。`self-only-4p-h256-lr2e5-1000-seed110-allstrong` のような短時間 run は、完走後に run-label と registry model をまとめて評価する。
+既存4人用モデルと比較する場合は、採用済み `self-only-4p-h256-lr1e5-5000-seed103` と候補 `self-only-4p-h256-lr1e5-5000-seed102` を同じ lineup に入れる。短時間 run は、完走後に run-label と registry model をまとめて評価する。
 
 ```sh
 npm run eval-rl-models -- \
   --models self-only-4p-h256-lr1e5-5000-seed103,self-only-4p-h256-lr1e5-5000-seed102 \
-  --run-labels self-only-4p-h256-lr2e5-1000-seed110-allstrong \
+  --run-labels <run-label> \
   --run-ranks 1,2 \
   --games 50 \
   --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
-  --output models/rl_model/eval-seed110-allstrong-vs-existing.json \
-  --csv models/rl_model/eval-seed110-allstrong-vs-existing.csv \
-  --markdown models/rl_model/eval-seed110-allstrong-vs-existing.md
+  --output models/rl_model/<run-label>-vs-existing.json \
+  --csv models/rl_model/<run-label>-vs-existing.csv \
+  --markdown models/rl_model/<run-label>-vs-existing.md
 ```
 
 参考値として、2026-05-08 に既存4人用モデルだけを同じ3lineupで各10戦評価した。10戦なので採用判断には使わず、`seed110-allstrong` 完走後比較の事前基準として扱う。結果は `models/rl_model/eval-existing-4p-allstrong-small.{json,csv,md}` に保存し、`seed102` が score 63.3%（weak+normal+strong 70% / normal+normal+strong 50% / strong+strong+strong 70%）、`seed103` が score 53.3%（50% / 60% / 50%）。
@@ -744,7 +744,7 @@ npm run eval-rl-models -- \
 | `seed103 top3 reselection` | 不採用 | 50戦では61.0%だが、100戦で allStrong が34%まで崩れた | 未反映 |
 | `seed116 lr1e-6 fine-tune passpen` | 不採用 | passは低いが、20戦で46.3%。normal+normal+strong と allStrong が崩れた | 未反映 |
 
-2026-05-10補足: `seed103` の top1/top2/top3 を直接20戦で再評価したところ、top1 は 65% / 60% / 80%、top2 は 35% / 60% / 75%、top3 は 55% / 45% / 90%。20戦では top1 が最も安定し、top2/top3 は通常lineupで現行採用を上回る根拠が弱い。過去の top3 100戦 allStrong 崩れとも矛盾しないため、現行 `seed103` 採用を維持し、top2/top3 への差し替えは行わない。
+`seed103` top checkpoint 再評価の詳細は `docs/rl-experiments.md` に移す。現行は top1採用を維持し、top2/top3への差し替えは行わない。
 
 個別実験の詳細ログは `docs/rl-experiments.md` に移す。この README では、標準フロー、現行基準線、registry / portfolio 反映方針、最新サマリ表だけを維持する。
 
