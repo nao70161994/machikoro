@@ -91,6 +91,14 @@ function createCounters() {
         buildRedBonusDominantChosen: 0,
         buildRedBonusHalfWouldFlip: 0,
         buildRedBonusDominantNames: {},
+        buildRedBonusBasicDominantChosen: 0,
+        buildRedBonusBasicDominantCopy0: 0,
+        buildRedBonusBasicDominantCopy1: 0,
+        buildRedBonusBasicDominantCopy2Plus: 0,
+        buildRedBonusBasicDominantMallBuilt: 0,
+        buildRedBonusBasicDominantGapLe025: 0,
+        buildRedBonusBasicDominantGapLe05: 0,
+        buildRedBonusBasicDominantSecondNames: {},
         buildRenovationPenaltyWouldFlip: 0,
         buildRenovationPenaltyNames: {},
         buildRenovationFirstOptions: 0,
@@ -1243,6 +1251,22 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                             if (noRedBest && noRedBest !== best) {
                                 counters.buildRedBonusDominantChosen++;
                                 incrementName(counters.buildRedBonusDominantNames, chosenName);
+                                if (chosenName === 'ピザ屋' || chosenName === 'バーガーショップ') {
+                                    counters.buildRedBonusBasicDominantChosen++;
+                                    const copiesBefore = current.countCard(chosenName);
+                                    if (copiesBefore <= 0) counters.buildRedBonusBasicDominantCopy0++;
+                                    else if (copiesBefore === 1) counters.buildRedBonusBasicDominantCopy1++;
+                                    else counters.buildRedBonusBasicDominantCopy2Plus++;
+                                    if (current.landmarks[runtime.LANDMARK_NAMES.SHOPPING_MALL]) {
+                                        counters.buildRedBonusBasicDominantMallBuilt++;
+                                    }
+                                    if (second && second.option && second.option.card) {
+                                        const gap = best.score - second.score;
+                                        if (gap <= 0.25) counters.buildRedBonusBasicDominantGapLe025++;
+                                        if (gap <= 0.5) counters.buildRedBonusBasicDominantGapLe05++;
+                                        incrementName(counters.buildRedBonusBasicDominantSecondNames, second.option.card.name);
+                                    }
+                                }
                             }
                             if (halfRedBest && halfRedBest !== best) counters.buildRedBonusHalfWouldFlip++;
                         }
@@ -1875,6 +1899,7 @@ function toText(report) {
         `basicDuplicate: available=${totals.buildBasicDuplicateAvailable}/${totals.buildCardEvDecisions} chosen=${totals.buildBasicDuplicateChosen}/${totals.buildCardEvDecisions} lowLift=${totals.buildBasicDuplicateLowLiftChosen}/${totals.buildCardEvDecisions} near05=${totals.buildBasicDuplicateNearBest05}/${totals.buildCardEvDecisions} flip05=${totals.buildBasicDuplicateWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildBasicDuplicateNames)} lowLiftNames=${topNameCounts(totals.buildBasicDuplicateLowLiftNames)} flip05Names=${topNameCounts(totals.buildBasicDuplicateFlip05Names)}`,
         `componentDominance: tempo=${totals.buildTempoDominantChosen}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildTempoDominantNames)} combo=${totals.buildComboDominantChosen}/${totals.buildComponentDecisions} half=${totals.buildComboHalfWouldFlip}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildComboDominantNames)} red=${totals.buildRedBonusDominantChosen}/${totals.buildComponentDecisions} half=${totals.buildRedBonusHalfWouldFlip}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildRedBonusDominantNames)} renovationPenaltyFlip=${totals.buildRenovationPenaltyWouldFlip}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildRenovationPenaltyNames)}`,
         `componentRanchCombo: dominant=${totals.buildComboRanchDominantChosen}/${totals.buildComponentDecisions} copy0=${totals.buildComboRanchDominantCopy0}/${totals.buildComboRanchDominantChosen} copy1=${totals.buildComboRanchDominantCopy1}/${totals.buildComboRanchDominantChosen} copy2plus=${totals.buildComboRanchDominantCopy2Plus}/${totals.buildComboRanchDominantChosen} gap025=${totals.buildComboRanchDominantGapLe025}/${totals.buildComboRanchDominantChosen} gap05=${totals.buildComboRanchDominantGapLe05}/${totals.buildComboRanchDominantChosen} secondNames=${topNameCounts(totals.buildComboRanchDominantSecondNames)}`,
+        `componentRedBasic: dominant=${totals.buildRedBonusBasicDominantChosen}/${totals.buildComponentDecisions} copy0=${totals.buildRedBonusBasicDominantCopy0}/${totals.buildRedBonusBasicDominantChosen} copy1=${totals.buildRedBonusBasicDominantCopy1}/${totals.buildRedBonusBasicDominantChosen} copy2plus=${totals.buildRedBonusBasicDominantCopy2Plus}/${totals.buildRedBonusBasicDominantChosen} mallBuilt=${totals.buildRedBonusBasicDominantMallBuilt}/${totals.buildRedBonusBasicDominantChosen} gap025=${totals.buildRedBonusBasicDominantGapLe025}/${totals.buildRedBonusBasicDominantChosen} gap05=${totals.buildRedBonusBasicDominantGapLe05}/${totals.buildRedBonusBasicDominantChosen} secondNames=${topNameCounts(totals.buildRedBonusBasicDominantSecondNames)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} missedHarmfulImprove05=${totals.businessSimpleMissedHarmfulGiftImproves05}/${totals.businessScoredDecisions} gapLt05=${totals.businessSimpleMissedHarmfulGiftGapLt05}/${totals.businessScoredDecisions} renovation=${totals.businessSimpleMissedHarmfulGiftRenovation}/${totals.businessScoredDecisions} renovationToGrape=${totals.businessSimpleMissedHarmfulGiftRenovationToGrape}/${totals.businessScoredDecisions} renovationToGrowth=${totals.businessSimpleMissedHarmfulGiftRenovationToGrowth}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} missedHarmfulNames=${topNameCounts(totals.businessSimpleMissedHarmfulGiftNames)} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
