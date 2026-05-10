@@ -533,6 +533,7 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
             },
         },
     ], { games: 4, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: '' });
+    assert.ok(text.includes('note=default expert preset; pass --expert-preset v2simple for v2 diagnostics'));
     assert.ok(text.includes('duel: expertWinRate=25.0%'));
     assert.ok(text.includes('avgLandmarkGap=1.67'));
     assert.ok(text.includes('expertMissing=駅:3'));

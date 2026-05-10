@@ -712,6 +712,9 @@ function toText(entries, options) {
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} expertPreset=${options.expertPreset}` +
         `${options.tuningCandidate ? ` tuningCandidate=${options.tuningCandidate}` : ''}`,
     ];
+    if (options.expertPreset === 'default') {
+        lines.push('note=default expert preset; pass --expert-preset v2simple for v2 diagnostics');
+    }
     for (const entry of entries) {
         lines.push(
             `${entry.profile}: expertWinRate=${(entry.expertWinRate * 100).toFixed(1)}% losses=${entry.summary.losses} ` +
