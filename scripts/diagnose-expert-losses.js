@@ -138,6 +138,22 @@ function bestPortfolioAttributionOption(diagnostics) {
         .sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
 }
 
+function normalizeBuildAttributionEntry(entry) {
+    if (!entry) return { diagnostics: null, before: null, actorIndex: null };
+    if (entry.buildOptions) return { diagnostics: entry, before: null, actorIndex: null };
+    return {
+        diagnostics: entry.diagnostics || null,
+        before: entry.before || null,
+        actorIndex: Number.isInteger(entry.actorIndex) ? entry.actorIndex : null,
+    };
+}
+
+function cardCountBeforeBuild(before, actorIndex, cardName) {
+    if (!before || !Number.isInteger(actorIndex) || !cardName) return 0;
+    const player = before.players && before.players[actorIndex];
+    return player && player.cards ? (player.cards[cardName] || 0) : 0;
+}
+
 function buildFinishDelayTags(option) {
     const preview = option && option.landmarkDelayPreview;
     if (!preview || !preview.wouldTrigger) return [];
@@ -406,9 +422,15 @@ function summarizeBuildAttribution(losses) {
     let businessDelay = 0;
     let mallBasicChosen = 0;
     let portfolioMissedNear05 = 0;
+    let portfolioMissedVsBasicNear05 = 0;
+    let portfolioMissedVsConvenience = 0;
+    let portfolioMissedWithAirportMissing = 0;
+    let portfolioMissedChosenDuplicate = 0;
 
     for (const loss of losses || []) {
-        for (const diagnostics of loss.buildDiagnostics || []) {
+        for (const entry of loss.buildDiagnostics || []) {
+            const normalized = normalizeBuildAttributionEntry(entry);
+            const diagnostics = normalized.diagnostics;
             const chosen = chosenBuildOptionFromDiagnostics(diagnostics);
             if (!chosen) continue;
             totalBuilds++;
@@ -448,6 +470,16 @@ function summarizeBuildAttribution(losses) {
                 portfolioMissedNear05++;
                 incrementCount(portfolioMissedNames, portfolio.name || portfolio.label || 'UNKNOWN');
                 incrementCount(portfolioMissedWinnerNames, `${portfolio.name || portfolio.label || 'UNKNOWN'}->${chosen.name || chosen.label || 'UNKNOWN'}`);
+                if (chosen.type === 'card' && MALL_BASIC_CARD_NAMES.has(chosen.name)) {
+                    portfolioMissedVsBasicNear05++;
+                    if (chosen.name === 'コンビニ') portfolioMissedVsConvenience++;
+                    if (cardCountBeforeBuild(normalized.before, normalized.actorIndex, chosen.name) > 0) {
+                        portfolioMissedChosenDuplicate++;
+                    }
+                }
+                if (diagnostics.missingLandmarks && diagnostics.missingLandmarks.includes('空港')) {
+                    portfolioMissedWithAirportMissing++;
+                }
             }
         }
     }
@@ -463,6 +495,10 @@ function summarizeBuildAttribution(losses) {
         businessDelay,
         mallBasicChosen,
         portfolioMissedNear05,
+        portfolioMissedVsBasicNear05,
+        portfolioMissedVsConvenience,
+        portfolioMissedWithAirportMissing,
+        portfolioMissedChosenDuplicate,
         chosenNames: topEntries(chosenNames),
         portfolioMissedNames: topEntries(portfolioMissedNames),
         portfolioMissedWinnerNames: topEntries(portfolioMissedWinnerNames),
@@ -556,8 +592,12 @@ function diagnoseProfile(name, options) {
         const lastExpertAction = expertTrace.length > 0 ? expertTrace[expertTrace.length - 1].chosenAction.label : null;
         const finalActionDiagnostics = finalActionDiagnosticsFromTrace(expertTrace);
         const buildDiagnostics = expertTrace
-            .map(entry => entry && entry.buildDiagnostics)
-            .filter(Boolean);
+            .filter(entry => entry && entry.buildDiagnostics)
+            .map(entry => ({
+                diagnostics: entry.buildDiagnostics,
+                before: entry.before || null,
+                actorIndex: entry.actorIndex,
+            }));
         losses.push({
             profile: name,
             game: i + 1,
@@ -669,7 +709,9 @@ function toText(entries, options) {
                 `landmark:${buildAttribution.landmarkBuilds} nearTie:${buildAttribution.nearTie} ` +
                 `chosenDelay:${buildAttribution.chosenDelay} finishStrict:${buildAttribution.finishStrictDelay} ` +
                 `specialDelay:${buildAttribution.specialSpendDelay} businessDelay:${buildAttribution.businessDelay} ` +
-                `mallBasic:${buildAttribution.mallBasicChosen} portfolioMissedNear05:${buildAttribution.portfolioMissedNear05}`
+                `mallBasic:${buildAttribution.mallBasicChosen} portfolioMissedNear05:${buildAttribution.portfolioMissedNear05} ` +
+                `portfolioVsBasic:${buildAttribution.portfolioMissedVsBasicNear05} portfolioVsConvenience:${buildAttribution.portfolioMissedVsConvenience} ` +
+                `portfolioAirportMissing:${buildAttribution.portfolioMissedWithAirportMissing} portfolioChosenDuplicate:${buildAttribution.portfolioMissedChosenDuplicate}`
             );
             lines.push(
                 `  buildAttributionNames=chosen:${buildAttribution.chosenNames.map(item => `${item.name}:${item.count}`).join(',') || '-'} ` +

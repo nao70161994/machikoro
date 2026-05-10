@@ -340,24 +340,31 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
         {
             buildDiagnostics: [
                 {
-                    buildActionLabel: 'BUY_CARD:パン屋',
-                    nearTie: { isNearTie: true },
-                    buildOptions: [
-                        {
-                            type: 'card',
-                            name: 'パン屋',
-                            label: 'BUY_CARD:パン屋',
-                            score: 3,
-                            landmarkDelayPreview: { wouldTrigger: false },
-                        },
-                        {
-                            type: 'card',
-                            name: '青果市場',
-                            label: 'BUY_CARD:青果市場',
-                            score: 2.7,
-                            landmarkDelayPreview: { wouldTrigger: false },
-                        },
-                    ],
+                    actorIndex: 0,
+                    before: {
+                        players: [{ cards: { 'パン屋': 1 } }],
+                    },
+                    diagnostics: {
+                        buildActionLabel: 'BUY_CARD:パン屋',
+                        nearTie: { isNearTie: true },
+                        missingLandmarks: ['空港'],
+                        buildOptions: [
+                            {
+                                type: 'card',
+                                name: 'パン屋',
+                                label: 'BUY_CARD:パン屋',
+                                score: 3,
+                                landmarkDelayPreview: { wouldTrigger: false },
+                            },
+                            {
+                                type: 'card',
+                                name: '青果市場',
+                                label: 'BUY_CARD:青果市場',
+                                score: 2.7,
+                                landmarkDelayPreview: { wouldTrigger: false },
+                            },
+                        ],
+                    },
                 },
                 {
                     buildActionLabel: 'BUY_CARD:ビジネスセンター',
@@ -388,6 +395,9 @@ runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild�
     assert.strictEqual(summary.businessDelay, 1);
     assert.strictEqual(summary.mallBasicChosen, 1);
     assert.strictEqual(summary.portfolioMissedNear05, 1);
+    assert.strictEqual(summary.portfolioMissedVsBasicNear05, 1);
+    assert.strictEqual(summary.portfolioMissedWithAirportMissing, 1);
+    assert.strictEqual(summary.portfolioMissedChosenDuplicate, 1);
     assert.strictEqual(summary.portfolioMissedNames[0].name, '青果市場');
     assert.strictEqual(summary.portfolioMissedWinnerNames[0].name, '青果市場->パン屋');
 });
@@ -463,6 +473,10 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     businessDelay: 1,
                     mallBasicChosen: 1,
                     portfolioMissedNear05: 1,
+                    portfolioMissedVsBasicNear05: 1,
+                    portfolioMissedVsConvenience: 0,
+                    portfolioMissedWithAirportMissing: 1,
+                    portfolioMissedChosenDuplicate: 1,
                     chosenNames: [{ name: 'BUY_CARD:パン屋', count: 1 }],
                     portfolioMissedNames: [{ name: '青果市場', count: 1 }],
                     portfolioMissedWinnerNames: [{ name: '青果市場->パン屋', count: 1 }],
@@ -486,6 +500,6 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('finishDelayExamples=g2:BUY_CARD:改装屋'));
     assert.ok(text.includes('missedImmediateDisruption=total:1'));
     assert.ok(text.includes('missedDisruptionNames=missed:BUY_CARD:テレビ局:1'));
-    assert.ok(text.includes('buildAttribution=total:2 card:2 landmark:0 nearTie:1 chosenDelay:1 finishStrict:1 specialDelay:1 businessDelay:1 mallBasic:1 portfolioMissedNear05:1'));
+    assert.ok(text.includes('buildAttribution=total:2 card:2 landmark:0 nearTie:1 chosenDelay:1 finishStrict:1 specialDelay:1 businessDelay:1 mallBasic:1 portfolioMissedNear05:1 portfolioVsBasic:1 portfolioVsConvenience:0 portfolioAirportMissing:1 portfolioChosenDuplicate:1'));
     assert.ok(text.includes('buildAttributionNames=chosen:BUY_CARD:パン屋:1 portfolioMissed:青果市場:1 missedWinners:青果市場->パン屋:1'));
 });
