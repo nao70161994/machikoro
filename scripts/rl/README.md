@@ -528,6 +528,17 @@ sh scripts/rl/eval-adopted-stability.sh
 
 旧採用 `seed102` の2026-04-20 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
 
+敗戦時にランドマーク競争でどれだけ遅れているかを見る場合は landmark race 診断を使う。勝率そのものの採用判断ではなく、報酬設計や checkpoint selection の仮説確認用。
+
+```bash
+node scripts/diagnose-rl-landmark-race.js \
+  --models self-only-4p-h256-lr1e5-5000-seed103,self-only-4p-h256-lr1e5-5000-seed102 \
+  --games 20 \
+  --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal;rl,strong,strong,strong"
+```
+
+出力の `avgLossGap` は敗戦時の `winnerBuilt - rlBuilt`、`rem1/rem2` は残りランドマーク1/2個で負けた回数、`missing` は敗戦時にRLが残しがちなランドマーク名。3人以上の lineup では2人用 `STATE_DIM = 145` モデルを拒否する。
+
 2人用候補の横並び評価は次を使う。
 
 ```bash
