@@ -29,6 +29,7 @@ function parseArgs(argv) {
         registryPath: path.join(__dirname, '..', 'models', 'rl_model', 'registry.json'),
         models: [],
         runLabels: [],
+        modelPaths: [],
         games: 50,
         seed: 1,
         maxSteps: 5000,
@@ -47,6 +48,7 @@ function parseArgs(argv) {
         if (arg === '--registry') args.registryPath = argv[++i] || args.registryPath;
         else if (arg === '--models') args.models = parseList(argv[++i]);
         else if (arg === '--run-labels') args.runLabels = parseList(argv[++i]);
+        else if (arg === '--model-paths') args.modelPaths = parseList(argv[++i]);
         else if (arg === '--games') args.games = parseInt(argv[++i] || String(args.games), 10);
         else if (arg === '--seed') args.seed = parseInt(argv[++i] || String(args.seed), 10);
         else if (arg === '--max-steps') args.maxSteps = parseInt(argv[++i] || String(args.maxSteps), 10);
@@ -105,6 +107,18 @@ function resolveModelSpecs(args, registry) {
                 status: '',
             });
         }
+    }
+
+    for (const modelPath of args.modelPaths || []) {
+        const parsed = path.parse(modelPath);
+        const id = parsed.name || modelPath;
+        specs.push({
+            id,
+            label: id,
+            path: modelPath,
+            source: 'path',
+            status: '',
+        });
     }
 
     return specs;

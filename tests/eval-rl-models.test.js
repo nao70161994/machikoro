@@ -42,6 +42,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     const args = parseArgs([
         '--models', 'a,b',
         '--run-labels', 'run1,run2',
+        '--model-paths', 'tmp/a.browser.json,tmp/b.browser.json',
         '--games', '30',
         '--seed', '7',
         '--rank', '3',
@@ -52,6 +53,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     ]);
     assert.deepStrictEqual(args.models, ['a', 'b']);
     assert.deepStrictEqual(args.runLabels, ['run1', 'run2']);
+    assert.deepStrictEqual(args.modelPaths, ['tmp/a.browser.json', 'tmp/b.browser.json']);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 7);
     assert.strictEqual(args.rank, 3);
@@ -94,6 +96,16 @@ runTest('eval-rl-models は run-label の top-k を一括展開する', () => {
     );
     assert.deepStrictEqual(specs.map(spec => spec.id), ['run1', 'run1-top2', 'run1-top3']);
     assert.strictEqual(specs[2].path, 'models/rl_model/runs/run1/best_model.top3.browser.json');
+});
+
+runTest('eval-rl-models は任意の model path を評価対象へ解決する', () => {
+    const specs = resolveModelSpecs(
+        { models: [], runLabels: [], modelPaths: ['tmp/candidate-1250.browser.json'], rank: 1, runRanks: [] },
+        { models: [] }
+    );
+    assert.deepStrictEqual(specs.map(spec => spec.id), ['candidate-1250.browser']);
+    assert.strictEqual(specs[0].source, 'path');
+    assert.strictEqual(specs[0].path, 'tmp/candidate-1250.browser.json');
 });
 
 runTest('eval-rl-models scoreSummaries は strong を重く見る', () => {

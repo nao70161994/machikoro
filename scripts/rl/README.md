@@ -722,6 +722,7 @@ npm run eval-rl-models -- \
 npm run eval-rl-models -- \
   --models self-only-4p-h256-lr1e5-5000-seed103,self-only-4p-h256-lr1e5-5000-seed102 \
   --run-labels <run-label> \
+  --model-paths models/rl_model/runs/<run-label>/best_model.candidate-1250.browser.json \
   --run-ranks 1,2 \
   --games 50 \
   --lineups "rl,weak,normal,strong;rl,normal,normal,strong;rl,strong,strong,strong" \
@@ -729,6 +730,8 @@ npm run eval-rl-models -- \
   --csv models/rl_model/<run-label>-vs-existing.csv \
   --markdown models/rl_model/<run-label>-vs-existing.md
 ```
+
+`--model-paths` は registry 未登録の一時 export 済み browser JSON を比較するための指定です。candidate checkpoint を手動 export して再選抜する時だけ使い、採用候補にならない artifact はコミットしません。
 
 参考値として、2026-05-08 に既存4人用モデルだけを同じ3lineupで各10戦評価した。10戦なので採用判断には使わず、`seed110-allstrong` 完走後比較の事前基準として扱う。結果は `models/rl_model/eval-existing-4p-allstrong-small.{json,csv,md}` に保存し、`seed102` が score 63.3%（weak+normal+strong 70% / normal+normal+strong 50% / strong+strong+strong 70%）、`seed103` が score 53.3%（50% / 60% / 50%）。
 
