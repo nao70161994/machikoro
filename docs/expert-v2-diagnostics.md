@@ -67,6 +67,9 @@
 - `basicDuplicate`
   - 基本カード重複の発火、near、flip 候補を観測します。
   - 実装候補ではなく、低価値重複が本当に過大評価されているかの切り分け用です。
+- `componentDominance` / `componentRanchCombo`
+  - build EV の内訳要素だけで購入選択が反転しているかを見る診断です。`componentDominance` は tempo / combo / red bonus / renovation penalty の支配度を測り、`half` はその要素を半減しただけで反転する僅差候補を表します。
+  - `componentRanchCombo` は combo unlock bonus で `牧場` が選ばれたケースを、購入前の牧場枚数、2位との差、代替カード名で分解します。牧場 penalty の根拠ではなく、combo補正の過大評価を疑う audit として扱います。
 - `finishDelayExamples`
   - loss 診断で、終盤 build 遅延の具体例を出力します。
   - `scoreGapToBestNonDelay`, `reasonTags`, `opponentWinThreats`, `disruptionPreview` を見て、狭い実装候補だけを拾います。
