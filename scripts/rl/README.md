@@ -754,6 +754,8 @@ npm run eval-rl-models -- \
 
 個別実験の詳細ログは `docs/rl-experiments.md` に移す。この README では、標準フロー、現行基準線、registry / portfolio 反映方針、最新サマリ表だけを維持する。
 
+2026-05-10時点の次の単一仮説は `allStrong耐性` です。追加fine-tune、空港progress報酬、既存candidate再選抜はいずれも現行 `seed103` を上回らなかったため、新しい候補はまず `rl,strong,strong,strong` と `rl,normal,normal,strong` の20戦ゲートを通します。`rl,strong,strong,strong` が現行 `seed103` 以上、かつ `rl,normal,normal,strong` を落とさない候補だけ50戦へ進めます。`rl,weak,weak,normal` だけ高い候補は採用候補にしません。
+
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
