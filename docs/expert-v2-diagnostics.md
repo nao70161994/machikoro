@@ -134,6 +134,8 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 
 さらに `copy3Plus` と remaining/shortfall 層別を追加しました。20戦では allStrong4 の loss `overGrowthNear05=16` が `remaining=5:9,4:4,3:2,1:1`、`shortfall=<=3:9,>6:7` に分かれ、終盤 `remaining<=2 && shortfall<=6` へ集中していません。3枚目以降も勝ち側に多く出るため、過剰重複そのものや終盤空港shortfall限定 penalty へは進みません。
 
+追加の allStrong4 JSON 診断でも `expertWins=3/50` と負けが濃く、loss側では基本カード重複が多い一方で win側にも同種の重複が出ていました。基本重複を直接悪とみなす broad penalty には進まず、見るなら loss 側だけに偏る `portfolioMissedNear05` / `mallBasicChosen` の比率差に絞ります。
+
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
 ## RL 評価との分離
