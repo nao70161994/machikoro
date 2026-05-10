@@ -1044,6 +1044,28 @@ print(_checkpoint_npz_path("models/rl_model/runs/run-a/best_model"))
     assert.strictEqual(lines[2], 'models/rl_model/runs/run-a/best_model.npz');
 });
 
+runTest('rl train: 明示 checkpoint が無い場合は require_exists で失敗する', () => {
+    const output = runPython(`
+from scripts.rl.train import _load_agent_checkpoint
+class DummyAgent:
+    def load(self, path):
+        raise AssertionError("load should not be called")
+loaded, base_path, checkpoint_path = _load_agent_checkpoint(DummyAgent(), "models/rl_model/runs/missing/best_model", require_exists=False)
+print(loaded)
+print(base_path)
+print(checkpoint_path)
+try:
+    _load_agent_checkpoint(DummyAgent(), "models/rl_model/runs/missing/best_model", require_exists=True)
+except FileNotFoundError:
+    print("missing-error")
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], 'False');
+    assert.strictEqual(lines[1], 'models/rl_model/runs/missing/best_model');
+    assert.strictEqual(lines[2], 'models/rl_model/runs/missing/best_model.npz');
+    assert.strictEqual(lines[3], 'missing-error');
+});
+
 runTest('rl train: top-k checkpoint 候補をスコア順に保持する', () => {
     const output = runPython(`
 import json
