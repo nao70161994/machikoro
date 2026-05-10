@@ -8,6 +8,7 @@ const {
     finalActionDiagnosticsFromTrace,
     findChosenBuildOption,
     parseArgs,
+    summarizeBuildAttribution,
     summarizeFinishDelayActions,
     summarizeLosses,
     summarizeMissedImmediateDisruption,
@@ -334,6 +335,63 @@ runTest('diagnose-expert-losses finalActionDiagnosticsFromTrace は末尾IT後�
     assert.strictEqual(finalActionDiagnosticsFromTrace([]), null);
 });
 
+runTest('diagnose-expert-losses summarizeBuildAttribution は敗戦中のbuild診断を集計する', () => {
+    const summary = summarizeBuildAttribution([
+        {
+            buildDiagnostics: [
+                {
+                    buildActionLabel: 'BUY_CARD:パン屋',
+                    nearTie: { isNearTie: true },
+                    buildOptions: [
+                        {
+                            type: 'card',
+                            name: 'パン屋',
+                            label: 'BUY_CARD:パン屋',
+                            score: 3,
+                            landmarkDelayPreview: { wouldTrigger: false },
+                        },
+                        {
+                            type: 'card',
+                            name: '青果市場',
+                            label: 'BUY_CARD:青果市場',
+                            score: 2.7,
+                            landmarkDelayPreview: { wouldTrigger: false },
+                        },
+                    ],
+                },
+                {
+                    buildActionLabel: 'BUY_CARD:ビジネスセンター',
+                    buildOptions: [
+                        {
+                            type: 'card',
+                            name: 'ビジネスセンター',
+                            label: 'BUY_CARD:ビジネスセンター',
+                            score: 4,
+                            landmarkDelayPreview: {
+                                wouldTrigger: true,
+                                remainingLandmarks: 1,
+                                shortfallBefore: 4,
+                                delayCoins: 4,
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+    ]);
+    assert.strictEqual(summary.totalBuilds, 2);
+    assert.strictEqual(summary.cardBuilds, 2);
+    assert.strictEqual(summary.nearTie, 1);
+    assert.strictEqual(summary.chosenDelay, 1);
+    assert.strictEqual(summary.finishStrictDelay, 1);
+    assert.strictEqual(summary.specialSpendDelay, 1);
+    assert.strictEqual(summary.businessDelay, 1);
+    assert.strictEqual(summary.mallBasicChosen, 1);
+    assert.strictEqual(summary.portfolioMissedNear05, 1);
+    assert.strictEqual(summary.portfolioMissedNames[0].name, '青果市場');
+    assert.strictEqual(summary.portfolioMissedWinnerNames[0].name, '青果市場->パン屋');
+});
+
 runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     const text = toText([
         {
@@ -394,6 +452,23 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
                     chosenNames: [{ name: 'BUY_CARD:パン屋', count: 1 }],
                     profileNames: [{ name: 'duel', count: 1 }],
                 },
+                buildAttribution: {
+                    totalBuilds: 2,
+                    cardBuilds: 2,
+                    landmarkBuilds: 0,
+                    nearTie: 1,
+                    chosenDelay: 1,
+                    finishStrictDelay: 1,
+                    specialSpendDelay: 1,
+                    businessDelay: 1,
+                    mallBasicChosen: 1,
+                    portfolioMissedNear05: 1,
+                    chosenNames: [{ name: 'BUY_CARD:パン屋', count: 1 }],
+                    portfolioMissedNames: [{ name: '青果市場', count: 1 }],
+                    portfolioMissedWinnerNames: [{ name: '青果市場->パン屋', count: 1 }],
+                    delayNames: [{ name: 'BUY_CARD:ビジネスセンター', count: 1 }],
+                    specialDelayNames: [{ name: 'BUY_CARD:ビジネスセンター', count: 1 }],
+                },
             },
         },
     ], { games: 4, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: '' });
@@ -411,4 +486,6 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
     assert.ok(text.includes('finishDelayExamples=g2:BUY_CARD:改装屋'));
     assert.ok(text.includes('missedImmediateDisruption=total:1'));
     assert.ok(text.includes('missedDisruptionNames=missed:BUY_CARD:テレビ局:1'));
+    assert.ok(text.includes('buildAttribution=total:2 card:2 landmark:0 nearTie:1 chosenDelay:1 finishStrict:1 specialDelay:1 businessDelay:1 mallBasic:1 portfolioMissedNear05:1'));
+    assert.ok(text.includes('buildAttributionNames=chosen:BUY_CARD:パン屋:1 portfolioMissed:青果市場:1 missedWinners:青果市場->パン屋:1'));
 });
