@@ -70,6 +70,10 @@
 - `componentDominance` / `componentRanchCombo`
   - build EV の内訳要素だけで購入選択が反転しているかを見る診断です。`componentDominance` は tempo / combo / red bonus / renovation penalty の支配度を測り、`half` はその要素を半減しただけで反転する僅差候補を表します。
   - `componentRanchCombo` は combo unlock bonus で `牧場` が選ばれたケースを、購入前の牧場枚数、2位との差、代替カード名で分解します。牧場 penalty の根拠ではなく、combo補正の過大評価を疑う audit として扱います。
+  - 2026-05-11 の50戦診断では `componentRanchCombo dominant=210/1544`, `gap025=210/210` と多い一方、代替先は `パン屋:133`, `改装屋:48`, `ピザ屋:28` に寄りました。`comboWeight 0.2` smoke も normal crowd を落としたため、牧場 penalty や broad combo 弱体化には進みません。
+- `componentRedBasic`
+  - 赤の build EV 補正で `ピザ屋` / `バーガーショップ` が選ばれたケースを、購入前枚数、ショッピングモール有無、2位との差、勝敗別で分解します。
+  - 20戦では `dominant=53/613`, `gap025=53/53`, `win=21/53`, `loss=32/53` で、代替先は勝敗どちらも主に `バーガーショップ` でした。赤補正を下げても赤同士の入れ替わりになりやすいため、実装候補にはしません。
 - `finishDelayExamples`
   - loss 診断で、終盤 build 遅延の具体例を出力します。
   - `scoreGapToBestNonDelay`, `reasonTags`, `opponentWinThreats`, `disruptionPreview` を見て、狭い実装候補だけを拾います。
