@@ -397,6 +397,26 @@ runTest('_cardDependencyValue: ワイナリーはブドウ園枚数を参照す�
     assert.strictEqual(cpu._cardDependencyValue(createCardByName('ワイナリー'), player, game), 2.4);
 });
 
+runTest('_cardDependencyValue: 青果市場と工場系は実ルールと同じカテゴリを参照する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    const opponent = game.players[1];
+    player.cards = [
+        createCardByName('麦畑'),
+        createCardByName('リンゴ園'),
+        createCardByName('カフェ'),
+        createCardByName('ファミレス'),
+    ];
+    opponent.cards = [createCardByName('寿司屋')];
+    player.dormantCards = [];
+    opponent.dormantCards = [];
+
+    assert.strictEqual(cpu._cardDependencyValue(createCardByName('青果市場'), player, game), 2.6);
+    assert.strictEqual(cpu._cardDependencyValue(createCardByName('食品倉庫'), player, game), 1.8);
+    assert.strictEqual(cpu._cardDependencyValue(createCardByName('ドリンク工場'), player, game), 2.7);
+});
+
 runTest('buildEV tempo bonus: 購入後の残金を薄く加点できる', () => {
     const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple', expertBuildTempoWeight: 0.1 });
     const game = new GameManager(2);

@@ -2058,7 +2058,7 @@ class CPU {
             if (card.color === "red") score -= 1.4;
             if (card.category === CARD_CATEGORIES.RESTAURANT) score -= 1.1;
             if (highDice && card.color === "red") score -= 0.8;
-            if (card.name === "レストラン" || card.name === "ファミレス") score -= 0.9;
+            if (card.name === "会員制BAR" || card.name === "ファミレス") score -= 0.9;
         }
 
         if (this._expertFlagEnabled("crowdPurpleShortlistDelay") && earlyCrowd) {
@@ -2999,13 +2999,12 @@ class CPU {
             case CARD_EFFECTS.FLOWER:
                 return player.countCard('花畑') * 1.3;
             case CARD_EFFECTS.MARKET:
-                return player.countCard('果樹園') * 1.3;
+                return player.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !player.isDormant(c)).length * 1.3;
             case CARD_EFFECTS.FOODWAREHOUSE:
-                return ['パン屋', 'コンビニ', 'フラワーショップ', 'ドラッグストア']
-                    .reduce((sum, name) => sum + player.countCard(name), 0) * 0.9;
+                return player.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !player.isDormant(c)).length * 0.9;
             case CARD_EFFECTS.DRINKFACTORY:
-                return ['カフェ', 'レストラン', 'ファミレス', '会員制バー']
-                    .reduce((sum, name) => sum + player.countCard(name), 0) * 0.9;
+                return game.players.reduce((sum, owner) =>
+                    sum + owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length, 0) * 0.9;
             case CARD_EFFECTS.WINERY:
                 return player.countCard('ブドウ園') * 1.2;
             case CARD_EFFECTS.HARBOR:
