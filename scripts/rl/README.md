@@ -229,9 +229,11 @@ terminal =
 + terminal_landmark_value_diff * 建設済みランドマーク総コスト差
 + terminal_asset_diff          * 盤面資産差
 + terminal_coin_diff           * 手元コイン差
++ terminal_airport_progress    * 空港未建設時の所持コイン進捗
 ```
 
 `terminal_asset_diff` と `terminal_coin_diff` の差分は `--terminal-diff-clip` でクリップできる。
+`--terminal-airport-progress` は既定0で無効。空港未建設の終局状態だけ、所持コインを空港価格30まで `--terminal-airport-progress-clip` でクリップして加算する。空港未達敗戦の仮説検証用で、未達ペナルティは入れない。
 現行の terminal-shaped 実験では中間報酬をすべて0にし、終局時だけ勝敗・ランドマーク総コスト差・盤面資産差・手元コイン差で調整する。
 
 ### 方策勾配の action mask 対応

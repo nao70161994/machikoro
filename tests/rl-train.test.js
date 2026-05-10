@@ -755,6 +755,32 @@ print(round(_compute_terminal_reward(env, 0, {
     assert.strictEqual(output, '1.224');
 });
 
+runTest('rl train: 終局報酬に空港未達の進捗を加算できる', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.train import _compute_terminal_reward
+config = {
+    "win": 1.0,
+    "loss": -1.0,
+    "draw": -0.2,
+    "landmark_diff": 0.0,
+    "landmark_value_diff": 0.0,
+    "asset_diff": 0.0,
+    "coin_diff": 0.0,
+    "diff_clip": 30,
+    "airport_progress": 0.001,
+    "airport_progress_clip": 30,
+}
+env = MachikoroEnv()
+env.winner = 1
+env.players[0].coins = 20
+print(round(_compute_terminal_reward(env, 0, config), 6))
+env.players[0].landmarks["空港"] = True
+print(round(_compute_terminal_reward(env, 0, config), 6))
+`);
+    assert.strictEqual(output, '-0.98\n-1.0');
+});
+
 runTest('rl train: 模倣学習 step は教師行動で通常 policy を更新する', () => {
     const output = runPython(`
 import json

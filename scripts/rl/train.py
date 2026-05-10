@@ -235,6 +235,8 @@ def _terminal_reward_defaults() -> dict:
         "asset_diff": 0.0,
         "coin_diff": 0.0,
         "diff_clip": 30.0,
+        "airport_progress": 0.0,
+        "airport_progress_clip": 30.0,
     }
 
 
@@ -327,6 +329,13 @@ def _compute_terminal_reward(env, agent_player: int, config: dict) -> float:
     reward += config.get("landmark_value_diff", 0.0) * landmark_value_diff
     reward += config.get("asset_diff", 0.0) * asset_diff
     reward += config.get("coin_diff", 0.0) * coin_diff
+    airport_progress_weight = config.get("airport_progress", 0.0)
+    if airport_progress_weight and airport_progress_weight > 0 and not me.landmarks.get("空港"):
+        airport_progress = max(0.0, min(float(me.coins), float(LANDMARK_COSTS["空港"])))
+        airport_progress_clip = config.get("airport_progress_clip", 0.0)
+        if airport_progress_clip and airport_progress_clip > 0:
+            airport_progress = float(np.clip(airport_progress, 0.0, airport_progress_clip))
+        reward += airport_progress_weight * airport_progress
     return float(reward)
 
 
@@ -1530,6 +1539,8 @@ def main():
     parser.add_argument("--terminal-asset-diff", type=float, default=0.0, help="終局時総資産差の報酬係数")
     parser.add_argument("--terminal-coin-diff", type=float, default=0.0, help="終局時コイン差の報酬係数")
     parser.add_argument("--terminal-diff-clip", type=float, default=30.0, help="終局時の資産差/コイン差クリップ値（0で無効）")
+    parser.add_argument("--terminal-airport-progress", type=float, default=0.0, help="終局時、空港未建設の所持コイン進捗に対する報酬係数（0で無効）")
+    parser.add_argument("--terminal-airport-progress-clip", type=float, default=30.0, help="空港進捗報酬の所持コイン上限（0で無効）")
     parser.add_argument("--metrics-csv", default="", help="評価指標を追記する CSV パス")
     parser.add_argument("--run-label", default="", help="metrics CSV に残す run ラベル")
     parser.add_argument("--summary-output", default="", help="metrics CSV 集計の出力パス")
@@ -1601,6 +1612,8 @@ def main():
         "asset_diff": args.terminal_asset_diff,
         "coin_diff": args.terminal_coin_diff,
         "diff_clip": args.terminal_diff_clip,
+        "airport_progress": args.terminal_airport_progress,
+        "airport_progress_clip": args.terminal_airport_progress_clip,
     }
 
     if args.initial_eval_games > 0:
