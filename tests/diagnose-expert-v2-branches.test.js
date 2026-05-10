@@ -231,6 +231,10 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildPortfolioEffectiveByCardMissedNearNames: { ワイナリー: 1 },
             buildPortfolioEffectiveByCardFlip04Names: { ワイナリー: 1 },
             buildPortfolioEffectiveByCardFlip08Names: { 青果市場: 1, ワイナリー: 1 },
+            buildPortfolioEffectiveReadyDetailAvailableNames: { '青果市場:farm2': 2, 'ワイナリー:grape1': 1 },
+            buildPortfolioEffectiveReadyDetailMissedNearNames: { 'ワイナリー:grape1': 1 },
+            buildPortfolioEffectiveReadyDetailFlip04Names: { 'ワイナリー:grape1': 1 },
+            buildPortfolioEffectiveMissedWinnerNames: { 'ワイナリー->パン屋': 1 },
             buildPortfolioEffectiveStrongReadyAvailable: 3,
             buildPortfolioEffectiveStrongReadyMissedNear: 1,
             buildPortfolioEffectiveStrongReadyFlip04: 1,
@@ -423,6 +427,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('portfolioNoCorn: available=4/6 near05=2/6 missedNear05=1/6 flip04=1/6 flip08=2/6 missedNearNames=青果市場:1'));
     assert.ok(text.includes('portfolioEffective: available=3/6 near05=2/6 missedNear05=1/6 flip04=1/6 flip08=2/6 availableNames=青果市場:2,ワイナリー:1 missedNearNames=ワイナリー:1'));
     assert.ok(text.includes('portfolioEffectiveByCard: available=青果市場:2,ワイナリー:1 chosen=青果市場:1 near=青果市場:2,ワイナリー:1 missedNear=ワイナリー:1 flip04=ワイナリー:1 flip08=ワイナリー:1,青果市場:1'));
+    assert.ok(text.includes('portfolioEffectiveReadyDetail: available=青果市場:farm2:2,ワイナリー:grape1:1 missedNear=ワイナリー:grape1:1 flip04=ワイナリー:grape1:1 missedWinners=ワイナリー->パン屋:1'));
     assert.ok(text.includes('portfolioEffectiveReadiness: strongAvailable=3 strongMissedNear=1 strongFlip04=1 readyMissedNear=2 readyFlip04=2 strongNames=ワイナリー:2,青果市場:1 strongMissedNames=ワイナリー:1 strongFlip04Names=ワイナリー:1'));
     assert.ok(text.includes('portfolioStrongReadyHighValue: candidate=3/6 near05=2/6 missedNear05=1/6 flip025=1/6 flip04=2/6 names=サンマ漁船:1,ブドウ園:1 missedNames=サンマ漁船:1'));
     assert.ok(text.includes('portfolioReachShorten: available=4 missedNear=2 flip04=1 names=ワイナリー:2,青果市場:2 missedNames=ワイナリー:2 flip04Names=ワイナリー:1'));

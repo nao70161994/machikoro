@@ -223,6 +223,10 @@ function createCounters() {
         buildPortfolioEffectiveByCardMissedNearNames: {},
         buildPortfolioEffectiveByCardFlip04Names: {},
         buildPortfolioEffectiveByCardFlip08Names: {},
+        buildPortfolioEffectiveReadyDetailAvailableNames: {},
+        buildPortfolioEffectiveReadyDetailMissedNearNames: {},
+        buildPortfolioEffectiveReadyDetailFlip04Names: {},
+        buildPortfolioEffectiveMissedWinnerNames: {},
         buildPortfolioEffectiveStrongReadyAvailable: 0,
         buildPortfolioEffectiveStrongReadyMissedNear: 0,
         buildPortfolioEffectiveStrongReadyFlip04: 0,
@@ -424,6 +428,35 @@ function isPortfolioStrongReadyGrowthCard(runtime, game, current, card) {
         );
     }
     return false;
+}
+
+function portfolioEffectiveReadyDetailKey(runtime, game, current, card) {
+    if (!runtime || !game || !current || !card) return '';
+    if (card.name === '青果市場') {
+        const activeFarmCount = activeCardCount(current, candidate => candidate.category === '農園');
+        return activeFarmCount >= 2 ? '青果市場:farm2' : '青果市場:farm1';
+    }
+    if (card.name === 'サンマ漁船') {
+        return 'サンマ漁船:stationHarbor';
+    }
+    if (card.name === '高級フレンチ') {
+        const hasStrongTarget = game.players.some(player =>
+            player !== current &&
+            player &&
+            player.builtLandmarkCount &&
+            player.builtLandmarkCount() >= 3 &&
+            player.coins >= 5
+        );
+        return hasStrongTarget ? '高級フレンチ:oppLm3Coins5' : '高級フレンチ:oppLm2';
+    }
+    if (card.name === 'ブドウ園') {
+        return isPortfolioStrongReadyGrowthCard(runtime, game, current, card) ? 'ブドウ園:strong' : 'ブドウ園:station';
+    }
+    if (card.name === 'ワイナリー') {
+        const grapeCount = activeCardCount(current, candidate => candidate.name === 'ブドウ園');
+        return grapeCount >= 2 ? 'ワイナリー:grape2' : 'ワイナリー:grape1';
+    }
+    return `${card.name}:ready`;
 }
 
 const PORTFOLIO_STRONG_READY_HIGH_VALUE_CARDS = new Set([
@@ -1188,6 +1221,7 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                             incrementName(counters.buildPortfolioEffectiveAvailableNames, bestEffectiveGrowth.option.card.name);
                             for (const entry of effectiveGrowthEntries) {
                                 const name = entry.option.card.name;
+                                const readyDetailKey = portfolioEffectiveReadyDetailKey(runtime, game, current, entry.option.card);
                                 const isChosen = best === entry;
                                 const scoreGap = best.score - entry.score;
                                 const isStrongReady = isPortfolioStrongReadyGrowthCard(runtime, game, current, entry.option.card);
@@ -1199,10 +1233,20 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                                 );
                                 const shortensReach = reachTurnDelta !== null && reachTurnDelta >= 0.5;
                                 incrementName(counters.buildPortfolioEffectiveByCardAvailableNames, name);
+                                incrementName(counters.buildPortfolioEffectiveReadyDetailAvailableNames, readyDetailKey);
                                 if (isChosen) incrementName(counters.buildPortfolioEffectiveByCardChosenNames, name);
                                 if (scoreGap <= 0.5) incrementName(counters.buildPortfolioEffectiveByCardNearNames, name);
-                                if (!isChosen && scoreGap <= 0.5) incrementName(counters.buildPortfolioEffectiveByCardMissedNearNames, name);
-                                if (!isChosen && entry.score + 0.4 >= best.score) incrementName(counters.buildPortfolioEffectiveByCardFlip04Names, name);
+                                if (!isChosen && scoreGap <= 0.5) {
+                                    incrementName(counters.buildPortfolioEffectiveByCardMissedNearNames, name);
+                                    incrementName(counters.buildPortfolioEffectiveReadyDetailMissedNearNames, readyDetailKey);
+                                    if (best.option && best.option.card) {
+                                        incrementName(counters.buildPortfolioEffectiveMissedWinnerNames, `${name}->${best.option.card.name}`);
+                                    }
+                                }
+                                if (!isChosen && entry.score + 0.4 >= best.score) {
+                                    incrementName(counters.buildPortfolioEffectiveByCardFlip04Names, name);
+                                    incrementName(counters.buildPortfolioEffectiveReadyDetailFlip04Names, readyDetailKey);
+                                }
                                 if (!isChosen && entry.score + 0.8 >= best.score) incrementName(counters.buildPortfolioEffectiveByCardFlip08Names, name);
                                 if (shortensReach) {
                                     counters.buildPortfolioReachShortenAvailable++;
@@ -1702,6 +1746,7 @@ function toText(report) {
         `portfolioNoCorn: available=${totals.buildPortfolioNoCornAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioNoCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioNoCornMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioNoCornWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioNoCornWouldFlipBonus08}/${totals.buildCardEvDecisions} missedNearNames=${topNameCounts(totals.buildPortfolioNoCornMissedNearNames)}`,
         `portfolioEffective: available=${totals.buildPortfolioEffectiveAvailable}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioEffectiveNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioEffectiveMissedNearBest05}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioEffectiveWouldFlipBonus04}/${totals.buildCardEvDecisions} flip08=${totals.buildPortfolioEffectiveWouldFlipBonus08}/${totals.buildCardEvDecisions} availableNames=${topNameCounts(totals.buildPortfolioEffectiveAvailableNames)} missedNearNames=${topNameCounts(totals.buildPortfolioEffectiveMissedNearNames)}`,
         `portfolioEffectiveByCard: available=${topNameCounts(totals.buildPortfolioEffectiveByCardAvailableNames)} chosen=${topNameCounts(totals.buildPortfolioEffectiveByCardChosenNames)} near=${topNameCounts(totals.buildPortfolioEffectiveByCardNearNames)} missedNear=${topNameCounts(totals.buildPortfolioEffectiveByCardMissedNearNames)} flip04=${topNameCounts(totals.buildPortfolioEffectiveByCardFlip04Names)} flip08=${topNameCounts(totals.buildPortfolioEffectiveByCardFlip08Names)}`,
+        `portfolioEffectiveReadyDetail: available=${topNameCounts(totals.buildPortfolioEffectiveReadyDetailAvailableNames)} missedNear=${topNameCounts(totals.buildPortfolioEffectiveReadyDetailMissedNearNames)} flip04=${topNameCounts(totals.buildPortfolioEffectiveReadyDetailFlip04Names)} missedWinners=${topNameCounts(totals.buildPortfolioEffectiveMissedWinnerNames)}`,
         `portfolioEffectiveReadiness: strongAvailable=${totals.buildPortfolioEffectiveStrongReadyAvailable} strongMissedNear=${totals.buildPortfolioEffectiveStrongReadyMissedNear} strongFlip04=${totals.buildPortfolioEffectiveStrongReadyFlip04} readyMissedNear=${totals.buildPortfolioEffectiveReadyMissedNear} readyFlip04=${totals.buildPortfolioEffectiveReadyFlip04} strongNames=${topNameCounts(totals.buildPortfolioEffectiveStrongReadyNames)} strongMissedNames=${topNameCounts(totals.buildPortfolioEffectiveStrongReadyMissedNames)} strongFlip04Names=${topNameCounts(totals.buildPortfolioEffectiveStrongReadyFlip04Names)}`,
         `portfolioStrongReadyHighValue: candidate=${totals.buildPortfolioStrongReadyHighValueCandidate}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioStrongReadyHighValueNear05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioStrongReadyHighValueMissedNear05}/${totals.buildCardEvDecisions} flip025=${totals.buildPortfolioStrongReadyHighValueFlip025}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioStrongReadyHighValueFlip04}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildPortfolioStrongReadyHighValueNames)} missedNames=${topNameCounts(totals.buildPortfolioStrongReadyHighValueMissedNames)}`,
         `portfolioReachShorten: available=${totals.buildPortfolioReachShortenAvailable} missedNear=${totals.buildPortfolioReachShortenMissedNear} flip04=${totals.buildPortfolioReachShortenFlip04} names=${topNameCounts(totals.buildPortfolioReachShortenNames)} missedNames=${topNameCounts(totals.buildPortfolioReachShortenMissedNames)} flip04Names=${topNameCounts(totals.buildPortfolioReachShortenFlip04Names)}`,
