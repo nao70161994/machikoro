@@ -92,6 +92,10 @@
 - カード名や条件が2-3個程度に集中していること。
 - パス追加、広いカード禁止、広い終盤 penalty にならないこと。
 
+## 手書き強化の停止条件
+
+2026-05-11 時点では、Business Center harmful gift、牧場combo、赤基本カード、finishStrictDelay のいずれも、小補正で改善できる単一条件には届いていません。normal crowd や allStrong4 を崩すリスクが高いため、v2simple の追加実装はいったん停止し、新しい候補は loss 側に明確に偏り、かつ normal crowd を壊さない条件に絞れる場合だけ再開します。
+
 ## v2手書き候補の評価ゲート
 
 20戦は smoke として扱い、採用判断には使いません。`strong crowd,allStrong4` と `normal crowd` を見て、strong weighted が baseline 以上、allStrong4 が `-2pt` 以内、normal crowd が `-2pt` 以内なら50戦へ進めます。allStrong4 または normal crowd が `-4pt` 以上悪化した候補は、この時点で破棄します。
