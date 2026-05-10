@@ -49,12 +49,17 @@
   - 100戦の loss 診断で `finishStrictDelay` は `crowd=4`, `allStrong4=3` と薄く、実装候補に届きませんでした。
 - Basic duplicate low-output penalty
   - 50戦の branch 診断で基本カード重複は `chosen=170/1526` と多い一方、`deltaEv<0.2` の低出力重複は `0/1526` でした。低出力重複 penalty は現時点で根拠不足です。
+- Growth vs convenience narrow bonus
+  - 2026-05-10 に、強い成長カードがコンビニ重複へ僅差で負ける場合だけ小さく加点する smoke を試しました。
+  - 20戦 benchmark は `normalCrowd=60.0%`, `strongWeighted=49.5%`, `strongMin=35.0%`, `allStrong4=50.0%` で、baseline 方向に対して悪化が大きかったため即時 revert しました。
+  - `サンマ漁船->コンビニ` や `高級フレンチ->コンビニ` は診断上よく出ますが、単純に成長カードを押し上げる補正では改善しません。
 
 ## 保留中の診断
 
 - `portfolioEffective`
   - ready な成長カードだけを対象にした診断です。
   - 50戦では `missedNear05=170/1526`, `flip04=121/1526`, `flip08=249/1526` でしたが、カード名が分散しているため実装は保留です。
+  - 2026-05-10 の crowd/allStrong4 50戦では `missedNear05=173/1530`、missed winner は `サンマ漁船->コンビニ:72`, `青果市場->コンビニ:68`, `ブドウ園->コンビニ:42`, `高級フレンチ->コンビニ:37`, `サンマ漁船->ブドウ園:23` でした。頻度は高いものの、実装へ落とすとコンビニ即時収入を壊しやすいことが smoke で確認済みです。
 - `portfolioEffectiveByCard` / `portfolioEffectiveReadiness`
   - カード名別、ready強度別に分解する診断です。
   - 20戦では `flip04` が `青果市場`, `ブドウ園`, `高級フレンチ`, `サンマ漁船`, `ワイナリー` に分散しました。
@@ -122,6 +127,8 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 ## 方針
 
 現時点では、手書きの v2 build EV 強化は打ち止め寄りです。採用済みの赤カード相手ターン EV 補正と Business Center harmful gift 限定補正を除き、broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
+
+2026-05-10 の追加診断では、loss-only 50戦で crowd が `expertWinRate=44.0%`、allStrong4 が `expertWinRate=36.0%` でした。build attribution はどちらも `portfolioMissedNear05` と `portfolioVsBasic` が目立ち、空港未購入時の見送りも多い一方、成長カード補正の実装 smoke は悪化しました。現段階では「成長カードを買わせる」より、「どの局面ならコンビニ即時収入を捨ててよいか」をさらに診断する段階です。
 
 `CPU（最強）` の v2simple と `AI（深層学習・ランダム）` の RL CPU は別系統として並行強化します。v2simple は安定したルールベース CPU として、診断で根拠が明確な小変更だけを検証します。RL CPU は portfolio / registry を通じて、人数別モデルの採用・差し替えを進めます。どちらか一方だけを強くすればよい、という扱いにはしません。
 
