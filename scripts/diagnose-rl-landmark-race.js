@@ -264,14 +264,23 @@ function formatTop(entries) {
     return entries.map(entry => `${entry.name}:${entry.count}`).join(',');
 }
 
+function formatCounts(counts) {
+    const entries = Object.entries(counts || {});
+    if (entries.length === 0) return 'none';
+    return entries
+        .sort((a, b) => Number(a[0]) - Number(b[0]) || a[0].localeCompare(b[0], 'ja'))
+        .map(([name, count]) => `${name}:${count}`)
+        .join(',');
+}
+
 function renderText(results) {
     const lines = [];
     for (const result of results || []) {
         const agg = result.aggregate || createRaceSummary();
-        lines.push(`${result.id}: win=${formatPercent(agg.rlWinRate)} losses=${agg.losses}/${agg.games} avgTurns=${agg.averageTurns.toFixed(1)} exhausted=${agg.exhausted} avgLossGap=${agg.averageLossLandmarkGap.toFixed(2)} rem1=${agg.lossesWithRlRemainingOne} rem2=${agg.lossesWithRlRemainingTwo} missing=${formatTop(agg.topRlMissingLandmarksOnLoss)}`);
+        lines.push(`${result.id}: win=${formatPercent(agg.rlWinRate)} losses=${agg.losses}/${agg.games} avgTurns=${agg.averageTurns.toFixed(1)} exhausted=${agg.exhausted} avgLossGap=${agg.averageLossLandmarkGap.toFixed(2)} gap=${formatCounts(agg.lossGapCounts)} rem1=${agg.lossesWithRlRemainingOne} rem2=${agg.lossesWithRlRemainingTwo} missing=${formatTop(agg.topRlMissingLandmarksOnLoss)}`);
         for (const summary of result.summaries || []) {
             const race = summary.raceSummary || createRaceSummary();
-            lines.push(`  ${summary.opponent}: win=${formatPercent(race.rlWinRate)} losses=${race.losses}/${race.games} avgTurns=${race.averageTurns.toFixed(1)} exhausted=${race.exhausted} avgLossGap=${race.averageLossLandmarkGap.toFixed(2)} rem1=${race.lossesWithRlRemainingOne} rem2=${race.lossesWithRlRemainingTwo} missing=${formatTop(race.topRlMissingLandmarksOnLoss)}`);
+            lines.push(`  ${summary.opponent}: win=${formatPercent(race.rlWinRate)} losses=${race.losses}/${race.games} avgTurns=${race.averageTurns.toFixed(1)} exhausted=${race.exhausted} avgLossGap=${race.averageLossLandmarkGap.toFixed(2)} gap=${formatCounts(race.lossGapCounts)} rem1=${race.lossesWithRlRemainingOne} rem2=${race.lossesWithRlRemainingTwo} missing=${formatTop(race.topRlMissingLandmarksOnLoss)}`);
         }
     }
     return lines.join('\n');

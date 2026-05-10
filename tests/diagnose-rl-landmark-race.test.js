@@ -186,6 +186,7 @@ runTest('diagnose-rl-landmark-race renderText は主要値を出力する', () =
                 averageTurns: 88.2,
                 exhausted: 1,
                 averageLossLandmarkGap: 1.25,
+                lossGapCounts: { '1': 3, '2': 1 },
                 lossesWithRlRemainingOne: 2,
                 lossesWithRlRemainingTwo: 1,
                 topRlMissingLandmarksOnLoss: [{ name: '空港', count: 3 }],
@@ -200,6 +201,7 @@ runTest('diagnose-rl-landmark-race renderText は主要値を出力する', () =
                         averageTurns: 91.4,
                         exhausted: 2,
                         averageLossLandmarkGap: 1.8,
+                        lossGapCounts: { '0': 1, '2': 5 },
                         lossesWithRlRemainingOne: 1,
                         lossesWithRlRemainingTwo: 2,
                         topRlMissingLandmarksOnLoss: [{ name: '港', count: 2 }],
@@ -208,8 +210,8 @@ runTest('diagnose-rl-landmark-race renderText は主要値を出力する', () =
             ],
         },
     ]);
-    assert.ok(text.includes('model-a: win=60.0% losses=4/10 avgTurns=88.2 exhausted=1 avgLossGap=1.25'));
+    assert.ok(text.includes('model-a: win=60.0% losses=4/10 avgTurns=88.2 exhausted=1 avgLossGap=1.25 gap=1:3,2:1'));
     assert.ok(text.includes('空港:3'));
-    assert.ok(text.includes('rl+strong+strong+strong: win=40.0% losses=6/10 avgTurns=91.4 exhausted=2'));
+    assert.ok(text.includes('rl+strong+strong+strong: win=40.0% losses=6/10 avgTurns=91.4 exhausted=2 avgLossGap=1.80 gap=0:1,2:5'));
     assert.ok(text.includes('rem1=1 rem2=2'));
 });
