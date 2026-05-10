@@ -111,7 +111,7 @@ npm run eval-expert-v2-benchmark -- --games 50
 `CPU（最強）` の係数 tuning 前に、まず `CPU（強）` に対する負け筋を確認する場合:
 
 ```bash
-npm run diagnose-expert-losses -- --games 8 --profiles duel,trio,crowd
+npm run diagnose-expert-losses -- --games 8 --profiles duel,trio,crowd --expert-preset v2simple
 ```
 
 profile ごとに、`winner` の difficulty / seat、`expertMissing`、`winnerBuilt`、`expertCards / winnerCards`、`finalActions` を集計します。

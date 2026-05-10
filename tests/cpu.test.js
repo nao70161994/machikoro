@@ -304,6 +304,33 @@ runTest('条件付き赤評価: 会員制BARは相手が条件達成で上がる
     assert.strictEqual(cpu._estimateConditionalRedValue(memberBar, game, current), 4);
 });
 
+runTest('_cardActivationValue: 赤カードのモール加算は支払う側ではなく所有者を見る', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const owner = game.currentPlayer();
+    const roller = game.players[1];
+    const cafe = createCardByName('カフェ');
+
+    roller.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    assert.strictEqual(cpu._cardActivationValue(cafe, game, owner, roller, 3), 1);
+
+    owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    assert.strictEqual(cpu._cardActivationValue(cafe, game, owner, roller, 3), 2);
+});
+
+runTest('_cardActivationValue: コーン畑はランドマーク2軒目以降では収入0として見る', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const owner = game.currentPlayer();
+    const cornfield = createCardByName('コーン畑');
+
+    assert.strictEqual(cpu._cardActivationValue(cornfield, game, owner, owner, 2), 1);
+    owner.landmarks[LANDMARK_NAMES.STATION] = true;
+    owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    assert.strictEqual(cpu._cardActivationValue(cornfield, game, owner, owner, 2), 0);
+    assert.strictEqual(cpu._cardSelfIncomeValue(cornfield, game, owner, owner, 2), 0);
+});
+
 runTest('evalCard: HARBORは港ランドマーク所持でfullスコア、未所持で0.4倍', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
