@@ -15,6 +15,9 @@ const {
 } = require('./eval-rl-vs-js.js');
 const { loadRegistry } = require('./validate-rl-registry.js');
 
+const AIRPORT_NAME = '空港';
+const AIRPORT_COST = 30;
+
 function parseList(value) {
     return String(value || '')
         .split(',')
@@ -94,11 +97,18 @@ function createRaceSummary() {
         losses: 0,
         averageTurns: 0,
         averageLossTurns: 0,
+        averageLossCoins: 0,
         averageLossLandmarkGap: 0,
         exhausted: 0,
         lossesWithRlRemainingOne: 0,
         lossesWithRlRemainingTwo: 0,
+        lossesWithAirportMissing: 0,
+        averageAirportShortfall: 0,
+        lossesWithAirportAffordable: 0,
+        lossesWithAirportShortfallLe3: 0,
+        lossesWithAirportShortfallLe6: 0,
         lossGapCounts: {},
+        lossTurnBuckets: {},
         rlMissingLandmarkCountsOnLoss: {},
         winnerBuiltLandmarkCountsOnLoss: {},
         topRlMissingLandmarksOnLoss: [],
@@ -106,14 +116,23 @@ function createRaceSummary() {
     };
 }
 
+function lossTurnBucket(turns) {
+    if (turns < 100) return '<100';
+    if (turns < 150) return '100-149';
+    return '150+';
+}
+
 function summarizeLandmarkRaceMatches(matches) {
     const summary = createRaceSummary();
     const lossGapCounts = new Map();
+    const lossTurnBuckets = new Map();
     const missingLandmarks = new Map();
     const winnerBuiltLandmarks = new Map();
     let totalTurns = 0;
     let totalLossTurns = 0;
+    let totalLossCoins = 0;
     let totalLossGap = 0;
+    let totalAirportShortfall = 0;
 
     for (const match of matches || []) {
         if (!match || !Array.isArray(match.lineup)) continue;
@@ -139,10 +158,20 @@ function summarizeLandmarkRaceMatches(matches) {
 
         summary.losses++;
         totalLossTurns += match.turns || 0;
+        totalLossCoins += rlState.coins || 0;
         totalLossGap += gap;
         addCount(lossGapCounts, String(gap));
+        addCount(lossTurnBuckets, lossTurnBucket(match.turns || 0));
         if (remaining === 1) summary.lossesWithRlRemainingOne++;
         if (remaining === 2) summary.lossesWithRlRemainingTwo++;
+        if ((rlState.missingLandmarks || []).includes(AIRPORT_NAME)) {
+            const shortfall = Math.max(0, AIRPORT_COST - (rlState.coins || 0));
+            summary.lossesWithAirportMissing++;
+            totalAirportShortfall += shortfall;
+            if (shortfall === 0) summary.lossesWithAirportAffordable++;
+            if (shortfall <= 3) summary.lossesWithAirportShortfallLe3++;
+            if (shortfall <= 6) summary.lossesWithAirportShortfallLe6++;
+        }
         for (const name of rlState.missingLandmarks || []) addCount(missingLandmarks, name);
         for (const name of winnerState.builtLandmarks || []) addCount(winnerBuiltLandmarks, name);
     }
@@ -150,8 +179,13 @@ function summarizeLandmarkRaceMatches(matches) {
     summary.rlWinRate = summary.games > 0 ? summary.rlWins / summary.games : 0;
     summary.averageTurns = summary.games > 0 ? totalTurns / summary.games : 0;
     summary.averageLossTurns = summary.losses > 0 ? totalLossTurns / summary.losses : 0;
+    summary.averageLossCoins = summary.losses > 0 ? totalLossCoins / summary.losses : 0;
     summary.averageLossLandmarkGap = summary.losses > 0 ? totalLossGap / summary.losses : 0;
+    summary.averageAirportShortfall = summary.lossesWithAirportMissing > 0
+        ? totalAirportShortfall / summary.lossesWithAirportMissing
+        : 0;
     summary.lossGapCounts = countsObject(lossGapCounts);
+    summary.lossTurnBuckets = countsObject(lossTurnBuckets);
     summary.rlMissingLandmarkCountsOnLoss = countsObject(missingLandmarks);
     summary.winnerBuiltLandmarkCountsOnLoss = countsObject(winnerBuiltLandmarks);
     summary.topRlMissingLandmarksOnLoss = topEntries(missingLandmarks);
@@ -162,11 +196,14 @@ function summarizeLandmarkRaceMatches(matches) {
 function mergeLandmarkRaceSummaries(summaries) {
     const merged = createRaceSummary();
     const lossGapCounts = new Map();
+    const lossTurnBuckets = new Map();
     const missingLandmarks = new Map();
     const winnerBuiltLandmarks = new Map();
     let totalTurns = 0;
     let totalLossTurns = 0;
+    let totalLossCoins = 0;
     let totalLossGap = 0;
+    let totalAirportShortfall = 0;
 
     for (const summary of summaries || []) {
         if (!summary) continue;
@@ -176,10 +213,17 @@ function mergeLandmarkRaceSummaries(summaries) {
         merged.exhausted += summary.exhausted || 0;
         merged.lossesWithRlRemainingOne += summary.lossesWithRlRemainingOne || 0;
         merged.lossesWithRlRemainingTwo += summary.lossesWithRlRemainingTwo || 0;
+        merged.lossesWithAirportMissing += summary.lossesWithAirportMissing || 0;
+        merged.lossesWithAirportAffordable += summary.lossesWithAirportAffordable || 0;
+        merged.lossesWithAirportShortfallLe3 += summary.lossesWithAirportShortfallLe3 || 0;
+        merged.lossesWithAirportShortfallLe6 += summary.lossesWithAirportShortfallLe6 || 0;
         totalTurns += (summary.averageTurns || 0) * (summary.games || 0);
         totalLossTurns += (summary.averageLossTurns || 0) * (summary.losses || 0);
+        totalLossCoins += (summary.averageLossCoins || 0) * (summary.losses || 0);
         totalLossGap += (summary.averageLossLandmarkGap || 0) * (summary.losses || 0);
+        totalAirportShortfall += (summary.averageAirportShortfall || 0) * (summary.lossesWithAirportMissing || 0);
         mergeCounts(lossGapCounts, summary.lossGapCounts);
+        mergeCounts(lossTurnBuckets, summary.lossTurnBuckets);
         mergeCounts(missingLandmarks, summary.rlMissingLandmarkCountsOnLoss);
         mergeCounts(winnerBuiltLandmarks, summary.winnerBuiltLandmarkCountsOnLoss);
     }
@@ -187,8 +231,13 @@ function mergeLandmarkRaceSummaries(summaries) {
     merged.rlWinRate = merged.games > 0 ? merged.rlWins / merged.games : 0;
     merged.averageTurns = merged.games > 0 ? totalTurns / merged.games : 0;
     merged.averageLossTurns = merged.losses > 0 ? totalLossTurns / merged.losses : 0;
+    merged.averageLossCoins = merged.losses > 0 ? totalLossCoins / merged.losses : 0;
     merged.averageLossLandmarkGap = merged.losses > 0 ? totalLossGap / merged.losses : 0;
+    merged.averageAirportShortfall = merged.lossesWithAirportMissing > 0
+        ? totalAirportShortfall / merged.lossesWithAirportMissing
+        : 0;
     merged.lossGapCounts = countsObject(lossGapCounts);
+    merged.lossTurnBuckets = countsObject(lossTurnBuckets);
     merged.rlMissingLandmarkCountsOnLoss = countsObject(missingLandmarks);
     merged.winnerBuiltLandmarkCountsOnLoss = countsObject(winnerBuiltLandmarks);
     merged.topRlMissingLandmarksOnLoss = topEntries(missingLandmarks);
@@ -273,14 +322,31 @@ function formatCounts(counts) {
         .join(',');
 }
 
+function formatTurnBuckets(counts) {
+    const order = ['<100', '100-149', '150+'];
+    const entries = Object.entries(counts || {});
+    if (entries.length === 0) return 'none';
+    return entries
+        .sort((a, b) => {
+            const ai = order.indexOf(a[0]);
+            const bi = order.indexOf(b[0]);
+            if (ai >= 0 && bi >= 0) return ai - bi;
+            if (ai >= 0) return -1;
+            if (bi >= 0) return 1;
+            return a[0].localeCompare(b[0], 'ja');
+        })
+        .map(([name, count]) => `${name}:${count}`)
+        .join(',');
+}
+
 function renderText(results) {
     const lines = [];
     for (const result of results || []) {
-        const agg = result.aggregate || createRaceSummary();
-        lines.push(`${result.id}: win=${formatPercent(agg.rlWinRate)} losses=${agg.losses}/${agg.games} avgTurns=${agg.averageTurns.toFixed(1)} exhausted=${agg.exhausted} avgLossGap=${agg.averageLossLandmarkGap.toFixed(2)} gap=${formatCounts(agg.lossGapCounts)} rem1=${agg.lossesWithRlRemainingOne} rem2=${agg.lossesWithRlRemainingTwo} missing=${formatTop(agg.topRlMissingLandmarksOnLoss)}`);
+        const agg = Object.assign(createRaceSummary(), result.aggregate || {});
+        lines.push(`${result.id}: win=${formatPercent(agg.rlWinRate)} losses=${agg.losses}/${agg.games} avgTurns=${agg.averageTurns.toFixed(1)} exhausted=${agg.exhausted} avgLossGap=${agg.averageLossLandmarkGap.toFixed(2)} gap=${formatCounts(agg.lossGapCounts)} lossCoins=${agg.averageLossCoins.toFixed(1)} airportMiss=${agg.lossesWithAirportMissing} airportShortfall=${agg.averageAirportShortfall.toFixed(1)} airportAffordable=${agg.lossesWithAirportAffordable} airportLe3=${agg.lossesWithAirportShortfallLe3} airportLe6=${agg.lossesWithAirportShortfallLe6} lossTurns=${formatTurnBuckets(agg.lossTurnBuckets)} rem1=${agg.lossesWithRlRemainingOne} rem2=${agg.lossesWithRlRemainingTwo} missing=${formatTop(agg.topRlMissingLandmarksOnLoss)}`);
         for (const summary of result.summaries || []) {
-            const race = summary.raceSummary || createRaceSummary();
-            lines.push(`  ${summary.opponent}: win=${formatPercent(race.rlWinRate)} losses=${race.losses}/${race.games} avgTurns=${race.averageTurns.toFixed(1)} exhausted=${race.exhausted} avgLossGap=${race.averageLossLandmarkGap.toFixed(2)} gap=${formatCounts(race.lossGapCounts)} rem1=${race.lossesWithRlRemainingOne} rem2=${race.lossesWithRlRemainingTwo} missing=${formatTop(race.topRlMissingLandmarksOnLoss)}`);
+            const race = Object.assign(createRaceSummary(), summary.raceSummary || {});
+            lines.push(`  ${summary.opponent}: win=${formatPercent(race.rlWinRate)} losses=${race.losses}/${race.games} avgTurns=${race.averageTurns.toFixed(1)} exhausted=${race.exhausted} avgLossGap=${race.averageLossLandmarkGap.toFixed(2)} gap=${formatCounts(race.lossGapCounts)} lossCoins=${race.averageLossCoins.toFixed(1)} airportMiss=${race.lossesWithAirportMissing} airportShortfall=${race.averageAirportShortfall.toFixed(1)} airportAffordable=${race.lossesWithAirportAffordable} airportLe3=${race.lossesWithAirportShortfallLe3} airportLe6=${race.lossesWithAirportShortfallLe6} lossTurns=${formatTurnBuckets(race.lossTurnBuckets)} rem1=${race.lossesWithRlRemainingOne} rem2=${race.lossesWithRlRemainingTwo} missing=${formatTop(race.topRlMissingLandmarksOnLoss)}`);
         }
     }
     return lines.join('\n');
