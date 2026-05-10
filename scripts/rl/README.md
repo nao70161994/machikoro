@@ -749,12 +749,13 @@ npm run eval-rl-models -- \
 | `seed116 lr1e-6 fine-tune passpen` | 不採用 | passは低いが、20戦で46.3%。normal+normal+strong と allStrong が崩れた | 未反映 |
 | `seed118 seed103 low-lr fine-tune` | 不採用 | 内部3lineupのうち2つが0%。外部20戦前に破綻検出 | 未反映 |
 | `seed103 candidate checkpoint reselection` | 不採用 | candidate-1250も現行bestより通常lineup/allStrongが低い | 未反映 |
+| `seed119 allStrong-gate` | 不採用 | 20戦では67.5%だが、50戦で58.5%。allStrong 36% と normal+normal+strong 52% が現行seed103を下回った | 未反映 |
 
 `seed103` top checkpoint 再評価の詳細は `docs/rl-experiments.md` に移す。現行は top1採用を維持し、top2/top3への差し替えは行わない。
 
 個別実験の詳細ログは `docs/rl-experiments.md` に移す。この README では、標準フロー、現行基準線、registry / portfolio 反映方針、最新サマリ表だけを維持する。
 
-2026-05-10時点の次の単一仮説は `allStrong耐性` です。追加fine-tune、空港progress報酬、既存candidate再選抜はいずれも現行 `seed103` を上回らなかったため、新しい候補はまず `rl,strong,strong,strong` と `rl,normal,normal,strong` の20戦ゲートを通します。`rl,strong,strong,strong` が現行 `seed103` 以上、かつ `rl,normal,normal,strong` を落とさない候補だけ50戦へ進めます。`rl,weak,weak,normal` だけ高い候補は採用候補にしません。
+2026-05-10時点の次の単一仮説は `allStrong耐性` です。追加fine-tune、空港progress報酬、既存candidate再選抜はいずれも現行 `seed103` を上回らず、`seed119 allStrong-gate` も20戦では良化したが50戦で allStrong と `normal+normal+strong` が崩れました。新しい候補はまず `rl,strong,strong,strong` と `rl,normal,normal,strong` の20戦ゲートを通し、さらに50戦でも両方を維持できる場合だけ採用候補にします。`rl,weak,weak,normal` だけ高い候補は採用候補にしません。
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
