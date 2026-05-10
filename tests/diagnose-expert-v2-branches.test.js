@@ -268,6 +268,17 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildBasicDuplicateNames: { パン屋: 2, コンビニ: 1 },
             buildBasicDuplicateLowLiftNames: { パン屋: 2 },
             buildBasicDuplicateFlip05Names: { 青果市場: 1 },
+            buildComponentDecisions: 6,
+            buildTempoDominantChosen: 1,
+            buildTempoDominantNames: { コンビニ: 1 },
+            buildComboDominantChosen: 2,
+            buildComboHalfWouldFlip: 1,
+            buildComboDominantNames: { ブドウ園: 2 },
+            buildRedBonusDominantChosen: 1,
+            buildRedBonusHalfWouldFlip: 1,
+            buildRedBonusDominantNames: { ファミレス: 1 },
+            buildRenovationPenaltyWouldFlip: 1,
+            buildRenovationPenaltyNames: { パン屋: 1 },
             buildCornCandidate: 4,
             buildCornChosen: 2,
             buildCornChosenNoMarket: 2,
@@ -436,6 +447,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('portfolioStrongReadyHighValue: candidate=3/6 near05=2/6 missedNear05=1/6 flip025=1/6 flip04=2/6 names=サンマ漁船:1,ブドウ園:1 missedNames=サンマ漁船:1'));
     assert.ok(text.includes('portfolioReachShorten: available=4 missedNear=2 flip04=1 names=ワイナリー:2,青果市場:2 missedNames=ワイナリー:2 flip04Names=ワイナリー:1'));
     assert.ok(text.includes('basicDuplicate: available=4/6 chosen=3/6 lowLift=2/6 near05=3/6 flip05=1/6 names=パン屋:2,コンビニ:1 lowLiftNames=パン屋:2 flip05Names=青果市場:1'));
+    assert.ok(text.includes('componentDominance: tempo=1/6 names=コンビニ:1 combo=2/6 half=1/6 names=ブドウ園:2 red=1/6 half=1/6 names=ファミレス:1 renovationPenaltyFlip=1/6 names=パン屋:1'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));

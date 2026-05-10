@@ -174,6 +174,8 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
    - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装として採用しました。
    - 限定実装の50戦 smoke は `strong crowd=44.0%`, `allStrong4=48.0%`, `normal crowd=62.0%`。100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%`, `allStrong4=45.0%` でした。
    - 今後は追加候補ではなく、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないかを見る audit として扱います。
+   - 2026-05-10 に、赤カードのショッピングモール加算を支払う側ではなく所有者側で見るよう修正し、コーン畑・青果市場・食品倉庫・ドリンク工場などの収入/依存評価を実ルールと同じカテゴリ参照へ寄せました。
+   - 2026-05-11 の100戦 audit では `missedHarmful=22/265`, `crowd=8/130`, `allStrong4=14/135`。内容は全て `改装屋` で、`改装屋->ブドウ園:13`, `改装屋->鉱山:7`, `改装屋->高級フレンチ:2` でした。ただし `gapLt05=0` のため、小さい tie-breaker ではなく scored exchange 寄りの変更になります。
 3. roll/race の終盤例
    - `lateOther` 単体では薄いため、loss 診断で終盤サイコロ選択が具体的な敗因として重なる場合だけ検証します。
 4. portfolio effective の条件付き補正

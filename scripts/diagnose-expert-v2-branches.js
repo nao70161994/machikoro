@@ -75,6 +75,17 @@ function createCounters() {
         tvStealTie: 0,
         tvBuiltTie: 0,
         buildCardEvDecisions: 0,
+        buildComponentDecisions: 0,
+        buildTempoDominantChosen: 0,
+        buildTempoDominantNames: {},
+        buildComboDominantChosen: 0,
+        buildComboHalfWouldFlip: 0,
+        buildComboDominantNames: {},
+        buildRedBonusDominantChosen: 0,
+        buildRedBonusHalfWouldFlip: 0,
+        buildRedBonusDominantNames: {},
+        buildRenovationPenaltyWouldFlip: 0,
+        buildRenovationPenaltyNames: {},
         buildRenovationFirstOptions: 0,
         buildRenovationFirstChosen: 0,
         buildRenovationFirstEarlyChosen: 0,
@@ -321,6 +332,17 @@ function addCounters(target, source) {
 function incrementName(map, name) {
     if (!map || !name) return;
     map[name] = (map[name] || 0) + 1;
+}
+
+function bestAfterScoreAdjustment(scored, adjustScore) {
+    let best = null;
+    for (const entry of scored) {
+        const adjustedScore = adjustScore(entry);
+        if (!best || adjustedScore > best.adjustedScore) {
+            best = { entry, adjustedScore };
+        }
+    }
+    return best ? best.entry : null;
 }
 
 const PORTFOLIO_GROWTH_CARDS = new Set([
@@ -1162,6 +1184,71 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                         .sort((a, b) => b.score - a.score);
                     const best = scored[0] || null;
                     const second = scored[1] || null;
+                    if (best && best.option && best.option.card && best.breakdown) {
+                        counters.buildComponentDecisions++;
+                        const chosenName = best.option.card.name;
+                        const tempoBonus = best.breakdown.tempoBonus || 0;
+                        const comboUnlockBonus = best.breakdown.comboUnlockBonus || 0;
+                        const redOpponentTurnBonus = best.breakdown.redOpponentTurnBonus || 0;
+
+                        if (tempoBonus > 0) {
+                            const noTempoBest = bestAfterScoreAdjustment(scored, entry =>
+                                entry.score - (entry === best ? tempoBonus : 0)
+                            );
+                            if (noTempoBest && noTempoBest !== best) {
+                                counters.buildTempoDominantChosen++;
+                                incrementName(counters.buildTempoDominantNames, chosenName);
+                            }
+                        }
+                        if (comboUnlockBonus > 0) {
+                            const noComboBest = bestAfterScoreAdjustment(scored, entry =>
+                                entry.score - (entry === best ? comboUnlockBonus : 0)
+                            );
+                            const halfComboBest = bestAfterScoreAdjustment(scored, entry =>
+                                entry.score - (entry === best ? comboUnlockBonus * 0.5 : 0)
+                            );
+                            if (noComboBest && noComboBest !== best) {
+                                counters.buildComboDominantChosen++;
+                                incrementName(counters.buildComboDominantNames, chosenName);
+                            }
+                            if (halfComboBest && halfComboBest !== best) counters.buildComboHalfWouldFlip++;
+                        }
+                        if (redOpponentTurnBonus > 0) {
+                            const noRedBest = bestAfterScoreAdjustment(scored, entry =>
+                                entry.score - (entry === best ? redOpponentTurnBonus : 0)
+                            );
+                            const halfRedBest = bestAfterScoreAdjustment(scored, entry =>
+                                entry.score - (entry === best ? redOpponentTurnBonus * 0.5 : 0)
+                            );
+                            if (noRedBest && noRedBest !== best) {
+                                counters.buildRedBonusDominantChosen++;
+                                incrementName(counters.buildRedBonusDominantNames, chosenName);
+                            }
+                            if (halfRedBest && halfRedBest !== best) counters.buildRedBonusHalfWouldFlip++;
+                        }
+                        const renovationEntry = scored.find(entry =>
+                            entry.option &&
+                            entry.option.card &&
+                            entry.option.card.name === '改装屋' &&
+                            entry.breakdown &&
+                            entry.breakdown.renovationRiskPenalty > 0
+                        );
+                        if (renovationEntry && renovationEntry !== best) {
+                            const noRenovationPenaltyBest = bestAfterScoreAdjustment(scored, entry =>
+                                entry.score + ((entry.option && entry.option.card && entry.option.card.name === '改装屋')
+                                    ? (entry.breakdown.renovationRiskPenalty || 0)
+                                    : 0)
+                            );
+                            if (noRenovationPenaltyBest &&
+                                noRenovationPenaltyBest !== best &&
+                                noRenovationPenaltyBest.option &&
+                                noRenovationPenaltyBest.option.card &&
+                                noRenovationPenaltyBest.option.card.name === '改装屋') {
+                                counters.buildRenovationPenaltyWouldFlip++;
+                                incrementName(counters.buildRenovationPenaltyNames, chosenName);
+                            }
+                        }
+                    }
                     const currentOneScore = this._expectedDiceScoreWithHarbor(game, false);
                     const currentTwoScore = current.landmarks[runtime.LANDMARK_NAMES.STATION]
                         ? this._expectedDiceScoreWithHarbor(game, true)
@@ -1766,6 +1853,7 @@ function toText(report) {
         `portfolioStrongReadyHighValue: candidate=${totals.buildPortfolioStrongReadyHighValueCandidate}/${totals.buildCardEvDecisions} near05=${totals.buildPortfolioStrongReadyHighValueNear05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildPortfolioStrongReadyHighValueMissedNear05}/${totals.buildCardEvDecisions} flip025=${totals.buildPortfolioStrongReadyHighValueFlip025}/${totals.buildCardEvDecisions} flip04=${totals.buildPortfolioStrongReadyHighValueFlip04}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildPortfolioStrongReadyHighValueNames)} missedNames=${topNameCounts(totals.buildPortfolioStrongReadyHighValueMissedNames)}`,
         `portfolioReachShorten: available=${totals.buildPortfolioReachShortenAvailable} missedNear=${totals.buildPortfolioReachShortenMissedNear} flip04=${totals.buildPortfolioReachShortenFlip04} names=${topNameCounts(totals.buildPortfolioReachShortenNames)} missedNames=${topNameCounts(totals.buildPortfolioReachShortenMissedNames)} flip04Names=${topNameCounts(totals.buildPortfolioReachShortenFlip04Names)}`,
         `basicDuplicate: available=${totals.buildBasicDuplicateAvailable}/${totals.buildCardEvDecisions} chosen=${totals.buildBasicDuplicateChosen}/${totals.buildCardEvDecisions} lowLift=${totals.buildBasicDuplicateLowLiftChosen}/${totals.buildCardEvDecisions} near05=${totals.buildBasicDuplicateNearBest05}/${totals.buildCardEvDecisions} flip05=${totals.buildBasicDuplicateWouldFlipPenalty05}/${totals.buildCardEvDecisions} names=${topNameCounts(totals.buildBasicDuplicateNames)} lowLiftNames=${topNameCounts(totals.buildBasicDuplicateLowLiftNames)} flip05Names=${topNameCounts(totals.buildBasicDuplicateFlip05Names)}`,
+        `componentDominance: tempo=${totals.buildTempoDominantChosen}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildTempoDominantNames)} combo=${totals.buildComboDominantChosen}/${totals.buildComponentDecisions} half=${totals.buildComboHalfWouldFlip}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildComboDominantNames)} red=${totals.buildRedBonusDominantChosen}/${totals.buildComponentDecisions} half=${totals.buildRedBonusHalfWouldFlip}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildRedBonusDominantNames)} renovationPenaltyFlip=${totals.buildRenovationPenaltyWouldFlip}/${totals.buildComponentDecisions} names=${topNameCounts(totals.buildRenovationPenaltyNames)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} missedHarmfulImprove05=${totals.businessSimpleMissedHarmfulGiftImproves05}/${totals.businessScoredDecisions} gapLt05=${totals.businessSimpleMissedHarmfulGiftGapLt05}/${totals.businessScoredDecisions} renovation=${totals.businessSimpleMissedHarmfulGiftRenovation}/${totals.businessScoredDecisions} renovationToGrape=${totals.businessSimpleMissedHarmfulGiftRenovationToGrape}/${totals.businessScoredDecisions} renovationToGrowth=${totals.businessSimpleMissedHarmfulGiftRenovationToGrowth}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} missedHarmfulNames=${topNameCounts(totals.businessSimpleMissedHarmfulGiftNames)} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
