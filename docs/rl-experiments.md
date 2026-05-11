@@ -45,3 +45,7 @@
 2026-05-11追記: `seed126 imitation-only-gate` は、模倣だけでどこまで戻るかを見る診断として `--imitation-games 50 --imitation-max-steps 600` を使った。内部JS評価は `rl+weak+normal+strong=25%`, `rl+normal+normal+strong=50%`, `rl+weak+weak+normal=0%`, `rl+strong+strong+strong=25%`、score は0.325。seed125 の外部評価崩れを覆す材料にはならないため、外部評価へは進めず未採用。現時点では seed123〜126 の pass / JS mix / imitation 系は採用筋が薄く、次の RL 実験は seed103 の敗戦診断から単一の強い報酬仮説が出た場合だけ再開する。
 
 2026-05-11追記: 採用済み `seed103` について、空港目前敗戦だけを狙う terminal reward の根拠があるか `rl,normal,normal,strong` と `rl,strong,strong,strong` の各100戦で確認した。全体では `win=49.0%`, `losses=102/200`, `avgLossGap=1.83`, `airportMiss=92` と空港未達は多い一方、`airportShortfall=21.3`, `airportLe3=1`, `airportLe6=4`, `airportAffordable=0` で、空港目前の小差負けには集中していなかった。狭い空港目前 reward には進めず、`seed103` 維持とする。出力 `models/rl_model/seed103-airport-race-100.json` は生成物扱いでコミットしない。
+
+2026-05-11追記: policy gate の最小確認として、採用済み `seed103`、過去候補 `seed119 allStrong-gate`、不採用 `seed125 imitation-gate` を4lineup各10戦で比較した。10戦では `seed119=72.5%`, `seed103=57.5%`, `seed125=27.5%` となり seed119 が強く見えたが、seed119 は既に外部50戦で `normal+normal+strong` と allStrong が落ちて未採用になった候補です。この結果は、10〜20戦 gate が候補を過大評価し得ることを示す確認として扱い、採用判断には使わない。出力 `eval-policy-gate-min-10.*` は生成物扱いでコミットしない。
+
+policy gate 系は、内部JS評価や10〜20戦を最初の足切りに限定し、採用判断は採用済み `seed103` との外部50戦以上の多人数lineup比較で行う。短期gateだけで registry / portfolio へは進めません。
