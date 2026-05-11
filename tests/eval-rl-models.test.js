@@ -10,6 +10,8 @@ const {
     scoreSummaries,
     buildSignature,
     evaluateModelSpecs,
+    evaluationGate,
+    renderText,
     renderCsv,
     renderMarkdown,
 } = require('../scripts/eval-rl-models.js');
@@ -193,12 +195,14 @@ runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力�
             summaries: [
                 {
                     opponent: 'weak',
+                    games: 10,
                     rlWinRate: 0.8,
                     averageTurns: 50.25,
                     rlBuildStats: { passRate: 0.1 },
                 },
                 {
                     opponent: 'strong',
+                    games: 10,
                     rlWinRate: 0.2,
                     averageTurns: 60,
                     rlBuildStats: { passRate: 0 },
@@ -207,8 +211,43 @@ runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力�
         },
     ]);
     assert.ok(markdown.includes('| rank | id | score | style | opponents | pass | avgTurns |'));
+    assert.ok(markdown.includes('- gate: smokeOnly'));
+    assert.ok(markdown.includes('not adoption candidates'));
     assert.ok(markdown.includes('`m1`'));
     assert.ok(markdown.includes('weak 80.0%'));
     assert.ok(markdown.includes('strong 20.0%'));
     assert.ok(markdown.includes('weak 10.0%'));
+});
+
+runTest('eval-rl-models evaluationGate/renderText は短期評価を smokeOnly と表示する', () => {
+    const results = [{
+        id: 'm1',
+        score: 0.5,
+        summaries: [{
+            opponent: 'weak',
+            games: 20,
+            rlWinRate: 0.8,
+            averageTurns: 50,
+            rlBuildStats: { passRate: 0 },
+        }],
+    }];
+    assert.deepStrictEqual(evaluationGate(results), {
+        minGames: 20,
+        smokeOnly: true,
+        name: 'smokeOnly',
+    });
+    const text = renderText(results);
+    assert.ok(text.includes('gate=smokeOnly'));
+    assert.ok(text.includes('not for adoption'));
+});
+
+runTest('eval-rl-models evaluationGate は50戦以上を adoptionCandidate と表示する', () => {
+    const gate = evaluationGate([{
+        summaries: [{ games: 50 }, { games: 100 }],
+    }]);
+    assert.deepStrictEqual(gate, {
+        minGames: 50,
+        smokeOnly: false,
+        name: 'adoptionCandidate',
+    });
 });

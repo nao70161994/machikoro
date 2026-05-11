@@ -505,6 +505,7 @@ npm run eval-rl-models -- \
 
 スコアは `weak=1, normal=2, strong=3, expert=2` の重み付き平均。4人 lineup では各 lineup を同重みで平均する。
 20戦評価は smoke test として扱い、active 採用は最低50戦、主採用は100戦以上、可能なら300戦で確認する。
+`eval-rl-models` の text/markdown 出力は50戦未満を `smokeOnly` と表示する。短期結果は候補の足切りや異常検出に使い、registry / portfolio への採用判断には使わない。
 `run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
 同じ `run-label` の best/top2/top3 をまとめて比較する場合は `--run-ranks 1,2,3` を使う。
 CSV / Markdown にはモデルごとの構築シグネチャも出るため、勝率だけでなく戦略の重複も見やすい。

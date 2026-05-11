@@ -190,6 +190,9 @@ function evaluateModelSpecs(specs, args, evaluator = evaluateRlVsJs) {
 
 function renderText(results) {
     const lines = [];
+    const gate = evaluationGate(results);
+    lines.push(`gate=${gate.name} minGames=${gate.minGames === null ? 'n/a' : gate.minGames}` +
+        (gate.smokeOnly ? ' note=smokeOnly; not for adoption' : ''));
     for (const [index, result] of results.entries()) {
         lines.push(`${index + 1}. ${result.id} score=${(result.score * 100).toFixed(1)}%`);
         if (result.buildSignature && result.buildSignature.cardKey) {
@@ -257,8 +260,29 @@ function formatPercent(value) {
     return `${(value * 100).toFixed(1)}%`;
 }
 
+function evaluationGate(results, minGamesPerLineup = 50) {
+    const games = [];
+    for (const result of results || []) {
+        for (const summary of result.summaries || []) {
+            if (Number.isFinite(summary.games)) games.push(summary.games);
+        }
+    }
+    const minGames = games.length > 0 ? Math.min(...games) : null;
+    const smokeOnly = minGames !== null && minGames < minGamesPerLineup;
+    return {
+        minGames,
+        smokeOnly,
+        name: smokeOnly ? 'smokeOnly' : 'adoptionCandidate',
+    };
+}
+
 function renderMarkdown(results) {
+    const gate = evaluationGate(results);
     const lines = [
+        `- gate: ${gate.name}`,
+        `- minGames: ${gate.minGames === null ? 'n/a' : gate.minGames}`,
+        gate.smokeOnly ? '- note: smokeOnly results are not adoption candidates.' : '- note: meets minimum game count for adoption review.',
+        '',
         '| rank | id | score | style | opponents | pass | avgTurns |',
         '|---:|---|---:|---|---|---|---|',
     ];
@@ -315,6 +339,7 @@ module.exports = {
     buildSignature,
     summarizeModel,
     evaluateModelSpecs,
+    evaluationGate,
     renderText,
     renderCsv,
     renderMarkdown,
