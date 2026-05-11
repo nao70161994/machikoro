@@ -761,7 +761,7 @@ npm run eval-rl-models -- \
 
 個別実験の詳細ログは `docs/rl-experiments.md` に移す。この README では、標準フロー、現行基準線、registry / portfolio 反映方針、最新サマリ表だけを維持する。
 
-2026-05-10時点の次の単一仮説は `allStrong耐性` です。追加fine-tune、空港progress報酬、既存candidate再選抜はいずれも現行 `seed103` を上回らず、`seed119 allStrong-gate` も20戦では良化したが50戦で allStrong と `normal+normal+strong` が崩れました。新しい候補はまず `rl,strong,strong,strong` と `rl,normal,normal,strong` の20戦ゲートを通し、さらに50戦でも両方を維持できる場合だけ採用候補にします。`rl,weak,weak,normal` だけ高い候補は採用候補にしません。
+2026-05-11時点では、seed123〜126 の pass / JS mix / imitation 系と allStrong gate は採用筋が薄く、現行 `seed103` を維持します。次のRL実験は、seed103 の敗戦診断から単一の強い報酬仮説が出た場合だけ再開します。短期gateは足切り専用で、採用判断には使いません。
 
 - `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
 - `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す

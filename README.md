@@ -76,15 +76,8 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `buildTempo=0.05`
 - `incomeCap=none`
 
-この設定での直近評価:
-
-- `weak` 相手: weighted `93.17%`
-- `normal` 相手: weighted `66.2%`
-- `strong` 相手: weighted `40.4%`
-  - `duel 69%`
-  - `trio 62%`
-  - `crowd 35%`
-  - `allStrong4 27%`
+この設定での現行100戦基準線は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。
+strong profile は `duel=82.0%`, `trio=74.0%`, `crowd=41.0%`, `allStrong4=39.0%` で、詳細と停止判断は `docs/expert-v2-diagnostics.md` に集約します。
 
 `combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。`buildTempo=0.05` は購入後の残金を薄く評価して、次ランドマークへのテンポを残しやすくします。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
 
