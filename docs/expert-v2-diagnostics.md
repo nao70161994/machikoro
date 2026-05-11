@@ -84,6 +84,7 @@ npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simpl
 - `componentRedBasic`
   - 赤の build EV 補正で `ピザ屋` / `バーガーショップ` が選ばれたケースを、購入前枚数、ショッピングモール有無、2位との差、勝敗別で分解します。
   - 20戦では `dominant=53/613`, `gap025=53/53`, `win=21/53`, `loss=32/53` で、代替先は勝敗どちらも主に `バーガーショップ` でした。赤補正を下げても赤同士の入れ替わりになりやすいため、実装候補にはしません。
+  - allStrong4 50戦では `dominant=77/787`, `win=32/77`, `loss=45/77`, `secondNames=バーガーショップ:66,パン屋:10,牧場:1` でした。loss 側への偏りは 1.5倍未満で、次点も赤同士が大半のため、赤基本カード penalty や赤EV係数変更には進みません。
 - `finishDelayExamples`
   - loss 診断で、終盤 build 遅延の具体例を出力します。
   - `scoreGapToBestNonDelay`, `reasonTags`, `opponentWinThreats`, `disruptionPreview` を見て、狭い実装候補だけを拾います。

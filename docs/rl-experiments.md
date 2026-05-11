@@ -4,6 +4,8 @@
 
 このファイルは RL CPU の個別実験履歴を残すためのメモです。標準フローと現行の採用方針は `scripts/rl/README.md` を参照してください。評価 artifact は生成物扱いでコミットせず、採用判断に必要な要点だけをここか `models/rl_model/registry.json` に要約します。
 
+現行4人RLの基準線は採用済み `self-only-4p-h256-lr1e5-5000-seed103` の100戦評価を主に使います。v2simple の手書きCPU診断とは分離し、RL候補は既存RL採用モデルと多人数lineup評価だけで採否判断します。
+
 2026-05-09追記: `seed110-allstrong` は完走後の50戦比較で all lineup 0% となり不採用。registry / portfolio へは反映しない。出力された `eval-seed110-*` artifact は生成物扱いでコミットしない。
 
 2026-05-09追記: `seed111 balanced` の10戦診断では、既存 `seed102` / `seed103` が55%、`seed111` rank1 が40%、top2 が5%。短時間診断でも既存候補を上回らず、特に top2 が大きく崩れたため不採用。registry / portfolio へは反映しない。`eval-seed111-*` は生成物扱いでコミットしない。追加の50戦基準線では `seed103` が58%（56% / 56% / 74% / 46%）、`seed102` が57%（68% / 44% / 74% / 42%）で、今後の4lineup候補はこの水準を基準に比較する。
@@ -41,3 +43,5 @@
 2026-05-11追記: `seed125 imitation-gate` は `--imitation-games 200 --imitation-opponents normal,strong` を追加し、250 games 時点の内部JS評価で `rl+normal+normal+strong=50%`, `rl+weak+weak+normal=50%`, `rl+strong+strong+strong=50%` まで戻ったため外部20戦へ進めた。しかし seed103 との同条件比較では `seed103=55.0%`（50% / 70% / 75% / 25%）に対し、`seed125=32.5%`（20% / 15% / 75% / 20%）で、特に `rl+normal+normal+strong` が大きく崩れたため未採用。registry / portfolio へは反映しない。`eval-seed125-imitation-vs-seed103-20.*` は生成物扱いでコミットしない。
 
 2026-05-11追記: `seed126 imitation-only-gate` は、模倣だけでどこまで戻るかを見る診断として `--imitation-games 50 --imitation-max-steps 600` を使った。内部JS評価は `rl+weak+normal+strong=25%`, `rl+normal+normal+strong=50%`, `rl+weak+weak+normal=0%`, `rl+strong+strong+strong=25%`、score は0.325。seed125 の外部評価崩れを覆す材料にはならないため、外部評価へは進めず未採用。現時点では seed123〜126 の pass / JS mix / imitation 系は採用筋が薄く、次の RL 実験は seed103 の敗戦診断から単一の強い報酬仮説が出た場合だけ再開する。
+
+2026-05-11追記: 採用済み `seed103` について、空港目前敗戦だけを狙う terminal reward の根拠があるか `rl,normal,normal,strong` と `rl,strong,strong,strong` の各100戦で確認した。全体では `win=49.0%`, `losses=102/200`, `avgLossGap=1.83`, `airportMiss=92` と空港未達は多い一方、`airportShortfall=21.3`, `airportLe3=1`, `airportLe6=4`, `airportAffordable=0` で、空港目前の小差負けには集中していなかった。狭い空港目前 reward には進めず、`seed103` 維持とする。出力 `models/rl_model/seed103-airport-race-100.json` は生成物扱いでコミットしない。
