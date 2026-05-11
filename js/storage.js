@@ -187,6 +187,7 @@ function restoreUndoSnapshot(state) {
 
 function doUndo() {
     if (!undoState) return;
+    if (isOnlineGame && (!game || game.currentPlayerIndex !== myPlayerIndex)) return;
     const state = undoState;
     if (isOnlineGame) sendAction('undoBuild', { state });
     restoreUndoSnapshot(state);

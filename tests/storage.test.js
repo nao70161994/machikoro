@@ -79,6 +79,7 @@ function loadStorageRuntime() {
         isOnlineGame: false,
         isReconnectingOnline: false,
         isRoomHost: false,
+        myPlayerIndex: 0,
         myPlayerName: '',
         myRoomId: null,
         reconnectToken: '',
@@ -308,6 +309,34 @@ runTest('storage doUndo はオンラインで undoBuild を送信する', () => 
 
     assert.strictEqual(rt.sentActions.length, 1);
     assert.strictEqual(rt.sentActions[0].name, 'undoBuild');
+});
+
+runTest('storage doUndo はオンラインで自分の手番でなければ送信しない', () => {
+    const rt = loadStorageRuntime();
+    const game = new rt.GameManager(2);
+    game.currentPlayerIndex = 1;
+    game.players[0].coins = 1;
+    rt.__test.setGame(game);
+    rt.__test.setUndoState({
+        playerCoins: [4, 3],
+        playerCardNames: [[], []],
+        playerDormantIndices: [[], []],
+        playerLandmarks: [{}, {}],
+        playerItVenture: [0, 0],
+        playerHasYakusho: [true, true],
+        hadAmusementParkAtRoll: false,
+        shopStock: {},
+        builtThisTurn: false,
+        log: [],
+    });
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+
+    rt.doUndo();
+
+    assert.strictEqual(game.players[0].coins, 1);
+    assert.deepStrictEqual(rt.sentActions, []);
+    assert.notStrictEqual(rt.__test.getUndoState(), null);
 });
 
 runTest('storage loadSettings は旧設定にもローカル名の初期値を補う', () => {

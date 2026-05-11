@@ -45,6 +45,7 @@ function buildEntry(result, options = {}) {
     const summaries = Array.isArray(result.summaries) ? result.summaries : [];
     const summaries3p = summaries.filter(summary => playerCountOfSummary(summary) === 3);
     const summaries4p = summaries.filter(summary => playerCountOfSummary(summary) === 4);
+    const hasMultiplayerSummaries = summaries3p.length + summaries4p.length > 0;
     const avg3p = average(summaries3p.map(summary => summary.rlWinRate));
     const avg4p = average(summaries4p.map(summary => summary.rlWinRate));
     const combinedScore = average([avg3p, avg4p]);
@@ -53,6 +54,7 @@ function buildEntry(result, options = {}) {
     const minGamesPerLineup = options.minGamesPerLineup || 50;
     const minGames = minGamesAcrossSummaries(summaries);
     const smokeOnly = minGames === null || minGames < minGamesPerLineup;
+    const promotionBlocked = smokeOnly || !hasMultiplayerSummaries;
     return {
         id: result.id,
         path: result.path || '',
@@ -66,8 +68,10 @@ function buildEntry(result, options = {}) {
         diversityKey: `${cardStyle} || ${landmarkStyle}`,
         minGames,
         smokeOnly,
-        promotionBlocked: smokeOnly,
-        promotionWarning: smokeOnly
+        promotionBlocked,
+        promotionWarning: !hasMultiplayerSummaries
+            ? 'promotionBlocked: no 3p/4p lineup summaries; do not use for multiplayer adoption'
+            : smokeOnly
             ? `smokeOnly: min games per lineup ${minGames === null ? 'n/a' : minGames} < ${minGamesPerLineup}; do not use for adoption`
             : '',
         summaries3p,
@@ -151,11 +155,14 @@ function renderText(review) {
     const lines = [`RL multiplayer top-k review total=${review.totalModels} minGamesPerLineup=${review.minGamesPerLineup}`];
     lines.push('ranking:');
     for (const [index, entry] of review.entries.entries()) {
+        const gate = entry.promotionBlocked
+            ? (entry.smokeOnly ? 'smokeOnly' : 'promotionBlocked')
+            : 'adoptionCandidate';
         lines.push(
             `- #${index + 1} ${entry.id} combined=${formatPercent(entry.combinedScore)} ` +
             `3p=${formatPercent(entry.avg3p)} 4p=${formatPercent(entry.avg4p)} ` +
             `minGames=${entry.minGames === null ? 'n/a' : entry.minGames} ` +
-            `${entry.smokeOnly ? 'gate=smokeOnly promotionBlocked=true ' : 'gate=adoptionCandidate '}style=${entry.cardStyle || 'n/a'}`
+            `gate=${gate}${entry.promotionBlocked ? ' promotionBlocked=true ' : ' '}style=${entry.cardStyle || 'n/a'}`
         );
         if (entry.promotionWarning) lines.push(`  warning=${entry.promotionWarning}`);
     }
@@ -191,9 +198,12 @@ function renderMarkdown(review) {
         '|---:|---|---:|---:|---:|---:|---|---|---|',
     ];
     for (const [index, entry] of review.entries.entries()) {
+        const gate = entry.promotionBlocked
+            ? (entry.smokeOnly ? 'smokeOnly' : 'promotionBlocked')
+            : 'adoptionCandidate';
         lines.push(
             `| ${index + 1} | \`${entry.id}\` | ${formatPercent(entry.combinedScore)} | ${formatPercent(entry.avg3p)} | ${formatPercent(entry.avg4p)} | ` +
-            `${entry.minGames === null ? 'n/a' : entry.minGames} | ${entry.smokeOnly ? 'smokeOnly' : 'adoptionCandidate'} | ` +
+            `${entry.minGames === null ? 'n/a' : entry.minGames} | ${gate} | ` +
             `${entry.cardStyle || 'n/a'} | ${entry.landmarkStyle || 'n/a'} |`
         );
     }

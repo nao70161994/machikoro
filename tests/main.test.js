@@ -116,7 +116,12 @@ function loadMainRuntime() {
             landmarkNames() { return ['駅', 'ショッピングモール', '遊園地', '電波塔', '港', '空港']; },
             landmarkCost() { return 4; },
         },
-        CPU: class CPU {},
+        CPU: class CPU {
+            constructor(difficulty, options) {
+                this.difficulty = difficulty;
+                this.options = options;
+            }
+        },
         GameManager: class GameManager {
             constructor(count) {
                 this.players = Array.from({ length: count }, (_, i) => ({
@@ -253,6 +258,34 @@ runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', (
     assert.strictEqual(rt.formatCpuSpeedLabel(500), '0.5秒');
 });
 
+runTest('main createCpuPlayer は live v2simple 明示時も v2 既定modeを補う', () => {
+    const rt = loadMainRuntime();
+    const cpu = rt.createCpuPlayer('expert', {
+        expertPurpose: "live",
+        expertPreset: "v2simple",
+    });
+
+    assert.strictEqual(cpu.options.expertDiceMode, "ev");
+    assert.strictEqual(cpu.options.expertRerollMode, "simple");
+    assert.strictEqual(cpu.options.expertBuildMode, "ev");
+    assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
+    assert.strictEqual(cpu.options.expertComboMode, "core");
+    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.05);
+});
+
+runTest('main createCpuPlayer は live v2simple の明示modeを上書きしない', () => {
+    const rt = loadMainRuntime();
+    const cpu = rt.createCpuPlayer('expert', {
+        expertPurpose: "live",
+        expertPreset: "v2simple",
+        expertBusinessMode: "simple",
+        expertBuildTempoWeight: 0.2,
+    });
+
+    assert.strictEqual(cpu.options.expertBusinessMode, "simple");
+    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.2);
+});
+
 runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(2);
@@ -324,6 +357,23 @@ runTest('main checkAutoSkip は予約後にオンライン手番が変わった�
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.deepStrictEqual(rt.__test.sentActions, []);
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
+});
+
+runTest('main onSkip はオンラインで自分の手番でなければローカル適用しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayerIndex = 1;
+    game.players[1].landmarks.空港 = false;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+
+    rt.onSkip();
+
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
 runTest('main showCrashScreen はクラッシュ表示と保存データ復帰ボタンを出す', () => {

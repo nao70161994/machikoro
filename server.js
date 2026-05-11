@@ -382,7 +382,8 @@ function getExpectedReconnectTokenHash(room, playerIndex, playerName) {
     return reconnectTokenHashes[playerIndex] || '';
 }
 
-function handleRecreateRoom(socket, { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken }) {
+function handleRecreateRoom(socket, payload = {}) {
+    const { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload || {};
     if (!roomId || !gameStartPayload || !reconnectToken) {
         emitAppError(socket, '復元データが不完全です');
         return;
@@ -391,7 +392,11 @@ function handleRecreateRoom(socket, { roomId, gameStartPayload, stateSnapshot, a
         emitAppError(socket, 'ROOM_NOT_FOUND');
         return;
     }
-    const playerNames = gameStartPayload.playerNames || [];
+    if (!Array.isArray(gameStartPayload.playerNames)) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
+    const playerNames = gameStartPayload.playerNames;
     gameStartPayload.playerSettings = normalizePlayerSettings(gameStartPayload.playerSettings, playerNames.length);
     if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
         emitAppError(socket, '復元データが不完全です');

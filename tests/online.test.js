@@ -346,6 +346,42 @@ runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () =
     assert.strictEqual(g.turnCount, 4);
 });
 
+runTest('restoreOnlineSnapshot は古いsnapshotでcardsが欠落しても落ちない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    const beforeCards = rt.getGame().players[0].cards.length;
+
+    rt.restoreOnlineSnapshot({
+        players: [
+            {
+                name: 'Alice',
+                coins: 5,
+                landmarks: { 駅: true },
+            },
+        ],
+        currentPlayerIndex: 0,
+        shopStock: {},
+    });
+
+    const g = rt.getGame();
+    assert.strictEqual(g.players[0].coins, 5);
+    assert.strictEqual(g.players[0].cards.length, beforeCards);
+});
+
+runTest('_readOnlineActionLog は不正形を空配列へ正規化する', () => {
+    const rt = loadOnlineRuntime();
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify({ action: 'nextTurn', data: {} }));
+    assert.strictEqual(rt._readOnlineActionLog().length, 0);
+
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([null, { data: {} }, { action: 'nextTurn' }]));
+    const log = rt._readOnlineActionLog();
+    assert.strictEqual(log.length, 1);
+    assert.strictEqual(log[0].action, 'nextTurn');
+    assert.strictEqual(Object.keys(log[0].data).length, 0);
+});
+
 runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));

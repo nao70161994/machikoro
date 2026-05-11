@@ -61,8 +61,11 @@ function getRlCpuSettingNote(playerCount) {
 
 function createCpuPlayer(difficulty, options = {}) {
     const resolvedOptions = Object.assign({}, options);
-    if (difficulty === 'expert' && resolvedOptions.expertPurpose === "live" && !resolvedOptions.expertPreset) {
+    const isLiveExpert = difficulty === 'expert' && resolvedOptions.expertPurpose === "live";
+    if (isLiveExpert && !resolvedOptions.expertPreset) {
         resolvedOptions.expertPreset = "v2simple";
+    }
+    if (isLiveExpert && resolvedOptions.expertPreset === "v2simple") {
         if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "ev";
         if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
         if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "ev";
@@ -383,7 +386,16 @@ function scheduleCPU() {
     runNextStep();
 }
 
+function canRunLocalHumanAction(expectedPlayerIndex = null) {
+    if (!game || game.checkWinner()) return false;
+    if (expectedPlayerIndex !== null && game.currentPlayerIndex !== expectedPlayerIndex) return false;
+    if (cpuPlayers[game.currentPlayerIndex]) return false;
+    if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return false;
+    return true;
+}
+
 function onRoll() {
+    if (!canRunLocalHumanAction()) return;
     playSound('dice');
     if (game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
         // 駅あり：アニメーションなしで即座に選択肢を表示
@@ -393,8 +405,10 @@ function onRoll() {
         scheduleCPU();
     } else {
         // 駅なし：アニメーションあり
+        const scheduledPlayerIndex = game.currentPlayerIndex;
         updateDiceDisplay(null, true);
         setTimeout(() => {
+            if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
             const forceDice = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
             game.rollDice(forceDice, tunaDice);
@@ -406,9 +420,12 @@ function onRoll() {
 }
 
 function onSelectDiceCount(useTwo) {
+    if (!canRunLocalHumanAction()) return;
     playSound('dice');
+    const scheduledPlayerIndex = game.currentPlayerIndex;
     updateDiceDisplay(null, true);
     setTimeout(() => {
+        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
         const d1 = rollRandomDie();
         const d2 = useTwo ? rollRandomDie() : 0;
         const tunaDice = [rollRandomDie(), rollRandomDie()];
@@ -420,6 +437,7 @@ function onSelectDiceCount(useTwo) {
 }
 
 function onReroll() {
+    if (!canRunLocalHumanAction()) return;
     const forceDice = rollRandomDie();
     const tunaDice = [rollRandomDie(), rollRandomDie()];
     game.rerollDice(forceDice, tunaDice);
@@ -429,6 +447,7 @@ function onReroll() {
 }
 
 function onSkipReroll() {
+    if (!canRunLocalHumanAction()) return;
     game.skipReroll();
     sendAction('skipReroll');
     render();
@@ -436,6 +455,7 @@ function onSkipReroll() {
 }
 
 function onResolveHarbor(useBonus) {
+    if (!canRunLocalHumanAction()) return;
     game.resolveHarbor(useBonus);
     sendAction('resolveHarbor', { useBonus });
     render();
@@ -443,6 +463,7 @@ function onResolveHarbor(useBonus) {
 }
 
 function onResolveTV(i) {
+    if (!canRunLocalHumanAction()) return;
     game.resolveTV(i);
     sendAction('resolveTV', { targetIndex: i });
     render();
@@ -450,6 +471,7 @@ function onResolveTV(i) {
 }
 
 function onResolveBusiness(targetIndex) {
+    if (!canRunLocalHumanAction()) return;
     const myCard = parseInt(document.getElementById("myCardSelect").value, 10);
     const theirCard = parseInt(document.getElementById(`theirCardSelect_${targetIndex}`).value, 10);
     game.resolveBusiness(myCard, targetIndex, theirCard);
@@ -459,6 +481,7 @@ function onResolveBusiness(targetIndex) {
 }
 
 function onResolveCleaning(cardName) {
+    if (!canRunLocalHumanAction()) return;
     game.resolveCleaning(cardName);
     sendAction('resolveCleaning', { cardName });
     render();
@@ -466,6 +489,7 @@ function onResolveCleaning(cardName) {
 }
 
 function onResolveMover(targetIndex) {
+    if (!canRunLocalHumanAction()) return;
     const cardIndex = parseInt(document.getElementById("moverCardSelect").value, 10);
     game.resolveMover(cardIndex, targetIndex);
     sendAction('resolveMover', { cardIndex, targetIndex });
@@ -474,6 +498,7 @@ function onResolveMover(targetIndex) {
 }
 
 function onResolveRenovation(landmarkName) {
+    if (!canRunLocalHumanAction()) return;
     game.resolveRenovation(landmarkName);
     sendAction('resolveRenovation', { landmarkName });
     render();
@@ -481,6 +506,7 @@ function onResolveRenovation(landmarkName) {
 }
 
 function onResolveIT(doSave) {
+    if (!canRunLocalHumanAction()) return;
     game.resolveIT(doSave);
     sendAction('resolveIT', { doSave });
     render();
@@ -488,9 +514,12 @@ function onResolveIT(doSave) {
 }
 
 function onBuildCard(name) {
+    if (!canRunLocalHumanAction()) return;
     const card = CARDS.find(c => c.name === name);
     if (!card) return;
+    const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
+        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
         saveUndoState();
         cancelAutoSkip();
         if (game.buildCard(card)) {
@@ -504,8 +533,11 @@ function onBuildCard(name) {
 }
 
 function onBuildLandmark(name) {
+    if (!canRunLocalHumanAction()) return;
     const cost = Player.landmarkCost(name);
+    const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`, () => {
+        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
         saveUndoState();
         cancelAutoSkip();
         if (game.buildLandmark(name)) {
@@ -518,6 +550,7 @@ function onBuildLandmark(name) {
 }
 
 function onSkip() {
+    if (!canRunLocalHumanAction()) return;
     let msg;
     if (game.builtThisTurn) {
         msg = "建設完了・ターン終了しますか？";
@@ -526,7 +559,9 @@ function onSkip() {
     } else {
         msg = "建設せずにターン終了しますか？";
     }
+    const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(msg, () => {
+        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
         cancelAutoSkip();
         undoState = null;
         game.nextTurn();

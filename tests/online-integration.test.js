@@ -190,6 +190,37 @@ runTest('online integration: rejoinData は actionLog 欠落時も空ログと�
     assert.strictEqual(rt.__test.getGame().players[0].name, 'Alice');
 });
 
+runTest('online integration: rejoinData は actionLog の不正要素を無視して復元する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-1',
+    });
+
+    rt.__test.socketHandlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: rt.CARDS.map(card => card.name),
+            enabledLandmarks: rt.Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [null, { data: {} }, { action: 'nextTurn' }],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineActionLog')), [{ action: 'nextTurn', data: {} }]);
+    assert.strictEqual(rt.__test.getGame().currentPlayerIndex, 1);
+});
+
 runTest('online integration: reconnectOnline は壊れたセッションを破棄して警告する', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineSession', '{broken');
@@ -286,6 +317,34 @@ runTest('online integration: ROOM_NOT_FOUND でホストは recreateRoom を送�
     assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
     assert.strictEqual(rt.__test.socketEmits[0].payload.reconnectToken, 'token-1');
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '♻️ サーバー再起動を検知。ゲームを復元中...');
+});
+
+runTest('online integration: ROOM_NOT_FOUND 復元は壊れた actionLog を空配列として送る', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify({ action: 'nextTurn', data: {} }));
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isReconnectingOnline: true,
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-1',
+    });
+
+    rt.__test.socketHandlers.appError('ROOM_NOT_FOUND');
+
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].name, 'recreateRoom');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.actionLog.length, 0);
 });
 
 runTest('online integration: ROOM_NOT_FOUND で非ホストは再接続リトライを送る', () => {

@@ -29,6 +29,12 @@ node server.js
 - Android / TWA ビルドワークフロー
 - `expert` の自己対戦 tuning と、別系統の RL 学習基盤
 
+## 現時点の運用上の制限
+
+- `CPU（最強）` の v2simple 手書き強化は凍結中です。再開条件と評価ゲートは [docs/expert-v2-diagnostics.md](docs/expert-v2-diagnostics.md) に集約します。
+- `AI（深層学習・ランダム）` は v2simple とは別CPUとして扱います。3〜4人用RLは現行 `self-only-4p-h256-lr1e5-5000-seed103` を維持し、50戦未満の短期評価は smoke / 足切り専用です。
+- RL CPU は2〜4人戦が対象です。5人以上では安定したルールベースの `CPU（最強）` を使ってください。
+
 ## テスト
 
 自動テスト:
@@ -53,6 +59,8 @@ node --check js/online.js
 - サーバー再起動後の復元
 - CPU 手番進行
 - Undo 同期
+
+Service Worker / manifest / app shell を変更した場合は、PWA 更新通知、ゲーム中の手動 reload、タイトル画面での自動適用、オフライン表示も [`TESTPLAN.md`](./TESTPLAN.md) で確認してください。
 
 CPU の自己対戦:
 

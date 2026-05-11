@@ -574,6 +574,47 @@ runTest('handleRecreateRoom は正しい reconnectToken を要求し不正なら
     }
 });
 
+runTest('handleRecreateRoom は playerNames 欠損payloadを例外にせず拒否する', () => {
+    const emitted = [];
+    const joined = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    try {
+        handleRecreateRoom(socket, {
+            roomId: 'REST_BAD_NAMES',
+            gameStartPayload: {
+                playerSettings: [{ type: 'human' }],
+                reconnectTokenHashes: ['hash'],
+            },
+            playerIndex: 0,
+            playerName: 'Alice',
+            reconnectToken: 'token-host',
+        });
+
+        assert.deepStrictEqual(joined, []);
+        assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが不完全です' }]);
+        assert.strictEqual(__rooms.REST_BAD_NAMES, undefined);
+    } finally {
+        delete __rooms.REST_BAD_NAMES;
+    }
+});
+
+runTest('handleRecreateRoom は payload 欠損を例外にせず拒否する', () => {
+    const emitted = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join() { throw new Error('join should not be called'); },
+    };
+
+    handleRecreateRoom(socket, null);
+
+    assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが不完全です' }]);
+});
+
 runTest('handleRecreateRoom は compacted snapshot を rejoinData にそのまま返す', () => {
     const crypto = require('crypto');
     const emitted = [];

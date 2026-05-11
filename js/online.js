@@ -108,10 +108,16 @@ function _saveActionLog(action, data) {
     } catch(e) {}
 }
 
+function _normalizeOnlineActionLog(value) {
+    if (!Array.isArray(value)) return [];
+    return value.filter(entry => entry && typeof entry.action === 'string')
+        .map(entry => ({ action: entry.action, data: entry.data || {} }));
+}
+
 function _readOnlineActionLog() {
     try {
         const raw = localStorage.getItem('onlineActionLog');
-        return raw ? JSON.parse(raw) : [];
+        return raw ? _normalizeOnlineActionLog(JSON.parse(raw)) : [];
     } catch (e) {
         return [];
     }
@@ -227,7 +233,7 @@ function initSocket() {
 
     socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, playerIndex, hostPlayerIndex }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
-        const replayActionLog = Array.isArray(actionLog) ? actionLog : [];
+        const replayActionLog = _normalizeOnlineActionLog(actionLog);
         isOnlineGame = true;
         isReconnectingOnline = false;
         cpuSpeed = cs || 1500;
@@ -285,7 +291,7 @@ function initSocket() {
     socket.on('hostChanged', ({ newHostPlayerIndex }) => {
         if (myOriginalPlayerIndex === newHostPlayerIndex) {
             isRoomHost = true;
-            game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
+            game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
             render();
             scheduleCPU();
         } else {
@@ -443,11 +449,13 @@ function applyAction(action, data) {
 function restoreOnlineSnapshot(state) {
     if (!state || !game) return;
     game.players.forEach((p, i) => {
-        const playerState = state.players?.[i];
+        const playerState = Array.isArray(state.players) ? state.players[i] : null;
         if (!playerState) return;
         p.name = playerState.name;
         p.coins = playerState.coins;
-        p.cards = playerState.cards.map(name => createCardByName(name)).filter(Boolean);
+        p.cards = Array.isArray(playerState.cards)
+            ? playerState.cards.map(name => createCardByName(name)).filter(Boolean)
+            : p.cards;
         p.dormantCards = (playerState.dormantIndices || []).map(idx => p.cards[idx]).filter(Boolean);
         p.landmarks = Object.assign({}, playerState.landmarks);
         p.itVentureCoins = playerState.itVentureCoins || 0;
@@ -497,7 +505,7 @@ function _tryRestoreRoom() {
         }
         const gameStartPayload = JSON.parse(raw);
         const stateSnapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
-        const actionLog = logRaw ? JSON.parse(logRaw) : [];
+        const actionLog = logRaw ? _normalizeOnlineActionLog(JSON.parse(logRaw)) : [];
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,

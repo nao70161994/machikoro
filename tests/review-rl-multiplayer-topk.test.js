@@ -75,6 +75,22 @@ runTest('review-rl-multiplayer-topk はgames不明を smokeOnly として扱う'
     assert.ok(entry.promotionWarning.includes('n/a < 50'));
 });
 
+runTest('review-rl-multiplayer-topk は2人評価だけの入力を採用候補にしない', () => {
+    const entry = buildEntry({
+        id: 'two-player-only',
+        summaries: [
+            { opponent: 'weak', rlWinRate: 0.9, games: 100 },
+            { opponent: 'normal', rlWinRate: 0.7, games: 100 },
+        ],
+    });
+    assert.strictEqual(entry.minGames, 100);
+    assert.strictEqual(entry.smokeOnly, false);
+    assert.strictEqual(entry.promotionBlocked, true);
+    assert.ok(entry.promotionWarning.includes('no 3p/4p lineup'));
+    assert.strictEqual(entry.avg3p, null);
+    assert.strictEqual(entry.avg4p, null);
+});
+
 runTest('review-rl-multiplayer-topk buildDiversifiedPicks は style 重複を避けて拾う', () => {
     const picks = buildDiversifiedPicks([
         { id: 'a', diversityKey: 'x || y', combinedScore: 0.7 },
