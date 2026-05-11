@@ -37,7 +37,12 @@ function loadOnlineRuntime() {
         let socketHandlers = {};
         let socketEmits = [];
         let socketDisconnected = false;
-        const CPU = class { constructor() {} };
+        const CPU = class {
+            constructor(difficulty, options = {}) {
+                this.difficulty = difficulty;
+                this.options = options;
+            }
+        };
         function render() { renderCount++; }
         function scheduleCPU() { scheduleCount++; }
         function resetFullLog() {}
@@ -132,6 +137,7 @@ runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', 
     localRt.renderOnlinePlayerSettings();
 
     assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('value="rl" disabled'));
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('value="expert" selected'));
     assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('AI（深層学習）は別系統の学習CPUで、現在2〜4人戦のみ対応です'));
     assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('安定したルールベースのCPU（最強）'));
 });
@@ -244,6 +250,33 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     const cpuPlayers = rt.getCpuPlayers();
     assert.strictEqual(cpuPlayers[0], null);
     assert.ok(cpuPlayers[1] !== null);
+});
+
+runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もexpertへフォールバックする', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(
+        ['Alice', 'RL CPU', 'Bob', 'Strong CPU', 'Carol'],
+        [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'rl' },
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'strong' },
+            { type: 'human' },
+        ],
+        [3, 1, 0, 2, 4]
+    );
+
+    const game = rt.getGame();
+    const cpuPlayers = rt.getCpuPlayers();
+    const names = game.players.map(player => player.name);
+    assert.strictEqual(names.join(','), 'Strong CPU,RL CPU,Alice,Bob,Carol');
+    assert.strictEqual(cpuPlayers.length, 5);
+    assert.strictEqual(cpuPlayers[0].difficulty, 'strong');
+    assert.strictEqual(cpuPlayers[1].difficulty, 'expert');
+    assert.strictEqual(cpuPlayers[1].options.playerCount, 5);
+    assert.strictEqual(cpuPlayers[2], null);
 });
 
 runTest('initOnlineGame: 統計記録フラグをリセットする', () => {

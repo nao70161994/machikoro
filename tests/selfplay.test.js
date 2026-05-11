@@ -38,6 +38,37 @@ runTest('simulateGame は CPU 同士の試合を最後まで進められる', ()
     assert.ok(Array.isArray(result.finalState[0].builtLandmarks));
 });
 
+runTest('simulateGame は5人以上の rule-based CPU 試合を最後まで進められる', () => {
+    const result = simulateGame({
+        difficulties: ['expert', 'strong', 'normal', 'weak', 'expert'],
+        seed: 52,
+        maxSteps: 5000,
+        expertPurpose: 'live',
+        expertPreset: 'v2simple',
+        lite: true,
+    });
+
+    assert.strictEqual(result.exhausted, false);
+    assert.ok(result.winner >= 0);
+    assert.strictEqual(result.finalState.length, 5);
+});
+
+runTest('simulateGame は5人以上のrl指定をexpertへフォールバックする', () => {
+    const result = simulateGame({
+        difficulties: ['rl', 'strong', 'normal', 'weak', 'expert'],
+        seed: 53,
+        maxSteps: 5000,
+        expertPurpose: 'live',
+        expertPreset: 'v2simple',
+        lite: true,
+    });
+
+    assert.strictEqual(result.exhausted, false);
+    assert.ok(result.winner >= 0);
+    assert.strictEqual(result.finalState.length, 5);
+    assert.strictEqual(result.difficulties[0], 'rl');
+});
+
 runTest('simulateGameLightweight は軽量経路で試合を最後まで進められる', () => {
     const result = simulateGameLightweight({
         difficulties: ['expert', 'weak'],

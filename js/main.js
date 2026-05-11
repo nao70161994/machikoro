@@ -41,6 +41,15 @@ function normalizeLocalPlayerName(name, index) {
     return trimmed || defaultLocalPlayerName(index);
 }
 
+function normalizeLocalPlayerSetting(setting, index, playerCount) {
+    const current = setting || {};
+    return {
+        type: current.type === "cpu" ? "cpu" : "human",
+        difficulty: playerCount > 4 && current.difficulty === "rl" ? "expert" : current.difficulty || "normal",
+        name: normalizeLocalPlayerName(current.name, index),
+    };
+}
+
 function getLocalCpuLabel(difficulty) {
     if (difficulty === 'weak') return 'CPU（弱）';
     if (difficulty === 'normal') return 'CPU（普通）';
@@ -61,38 +70,51 @@ function getRlCpuSettingNote(playerCount) {
 
 function createCpuPlayer(difficulty, options = {}) {
     const resolvedOptions = Object.assign({}, options);
-    const isLiveExpert = difficulty === 'expert' && resolvedOptions.expertPurpose === "live";
+    const playerCount = Number(resolvedOptions.playerCount) || 2;
+    const resolvedDifficulty = difficulty === 'rl'
+        && typeof RLModelPortfolio !== "undefined"
+        && !RLModelPortfolio.supportsPlayerCount(playerCount)
+        ? 'expert'
+        : difficulty;
+    const applyLiveExpertDefaults = () => {
+        if (!resolvedOptions.expertPreset) {
+            resolvedOptions.expertPreset = "v2simple";
+        }
+        if (resolvedOptions.expertPreset === "v2simple") {
+            if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "ev";
+            if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
+            if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "ev";
+            if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
+            if (!resolvedOptions.expertTvMode) resolvedOptions.expertTvMode = "simple";
+            if (!resolvedOptions.expertBusinessMode) resolvedOptions.expertBusinessMode = "harmfulGift";
+            if (!resolvedOptions.expertCleaningMode) resolvedOptions.expertCleaningMode = "simple";
+            if (!resolvedOptions.expertHarborMode) resolvedOptions.expertHarborMode = "simple";
+            if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "simple";
+            if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
+            if (!resolvedOptions.expertComboMode) resolvedOptions.expertComboMode = "core";
+            if (!Number.isFinite(resolvedOptions.expertBuildTempoWeight)) resolvedOptions.expertBuildTempoWeight = 0.05;
+        }
+    };
+    const isLiveExpert = resolvedDifficulty === 'expert' && resolvedOptions.expertPurpose === "live";
     if (isLiveExpert && !resolvedOptions.expertPreset) {
-        resolvedOptions.expertPreset = "v2simple";
+        applyLiveExpertDefaults();
     }
     if (isLiveExpert && resolvedOptions.expertPreset === "v2simple") {
-        if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "ev";
-        if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
-        if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "ev";
-        if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
-        if (!resolvedOptions.expertTvMode) resolvedOptions.expertTvMode = "simple";
-        if (!resolvedOptions.expertBusinessMode) resolvedOptions.expertBusinessMode = "harmfulGift";
-        if (!resolvedOptions.expertCleaningMode) resolvedOptions.expertCleaningMode = "simple";
-        if (!resolvedOptions.expertHarborMode) resolvedOptions.expertHarborMode = "simple";
-        if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "simple";
-        if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
-        if (!resolvedOptions.expertComboMode) resolvedOptions.expertComboMode = "core";
-        if (!Number.isFinite(resolvedOptions.expertBuildTempoWeight)) resolvedOptions.expertBuildTempoWeight = 0.05;
+        applyLiveExpertDefaults();
     }
-    if (difficulty === 'rl') {
-        const playerCount = Number(resolvedOptions.playerCount) || 2;
-        if (typeof RLModelPortfolio === "undefined" || !RLModelPortfolio.supportsPlayerCount(playerCount)) {
-            return new CPU('expert', resolvedOptions);
-        }
+    if (resolvedDifficulty === 'rl') {
         try {
             return RLModelPortfolio.createRandomCpu(resolvedOptions);
         } catch (error) {
             console.error(error);
             alert("深層学習AIモデルを読み込めませんでした。CPU（最強）で代替します。");
+            if (resolvedOptions.expertPurpose === "live") {
+                applyLiveExpertDefaults();
+            }
             return new CPU('expert', resolvedOptions);
         }
     }
-    return new CPU(difficulty, resolvedOptions);
+    return new CPU(resolvedDifficulty, resolvedOptions);
 }
 
 function formatCpuSpeedLabel(value) {
@@ -113,11 +135,9 @@ function renderPlayerSettings() {
         const index = playerSettings.length;
         playerSettings.push({ type: "human", difficulty: "normal", name: defaultLocalPlayerName(index) });
     }
-    playerSettings = playerSettings.slice(0, selectedCount).map((setting, index) => ({
-        type: setting.type === "cpu" ? "cpu" : "human",
-        difficulty: selectedCount > 4 && setting.difficulty === "rl" ? "expert" : setting.difficulty || "normal",
-        name: normalizeLocalPlayerName(setting.name, index),
-    }));
+    playerSettings = playerSettings
+        .slice(0, selectedCount)
+        .map((setting, index) => normalizeLocalPlayerSetting(setting, index, selectedCount));
     const rlDisabled = selectedCount > 4 ? "disabled" : "";
     const rlNotice = `<div class="player-setting-note">${getRlCpuSettingNote(selectedCount)}</div>`;
     const html = playerSettings.map((s, i) => `
@@ -215,6 +235,9 @@ function init(playerCount) {
     for (const card of CARDS) {
         SHOP_STOCK[card.name] = enabledCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0;
     }
+    playerSettings = Array.from({ length: playerCount }, (_, index) =>
+        normalizeLocalPlayerSetting(playerSettings[index], index, playerCount)
+    );
 
     // ターン順をランダムにシャッフル
     const order = playerSettings.map((_, i) => i);

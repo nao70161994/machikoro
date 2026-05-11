@@ -170,6 +170,10 @@ function loadMainRuntime(options = {}) {
         },
         drawCitySkyline() { counters.drawCitySkyline++; },
         resumeGame() { counters.resumeGame++; },
+        RLModelPortfolio: {
+            supportsPlayerCount(playerCount) { return Number(playerCount) <= 4; },
+            createRandomCpu(options) { return { difficulty: 'rl', options }; },
+        },
     };
     context.global = context;
     vm.createContext(context);
@@ -195,6 +199,7 @@ function loadMainRuntime(options = {}) {
             getGame: () => game,
             getShopStock: () => SHOP_STOCK,
             setCpuPlayers: (value) => { cpuPlayers = value; },
+            getCpuPlayers: () => cpuPlayers,
             setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
             getAutoSkipPending: () => autoSkipPending,
             getCpuScheduleToken: () => cpuScheduleToken,
@@ -313,6 +318,8 @@ runTest('main createCpuPlayer は5人以上の学習AIを警告なしで最強CP
 
     assert.strictEqual(cpu.difficulty, 'expert');
     assert.strictEqual(cpu.options.playerCount, 5);
+    assert.strictEqual(cpu.options.expertPreset, "v2simple");
+    assert.strictEqual(cpu.options.expertBuildMode, "ev");
     assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
@@ -473,6 +480,27 @@ runTest('main init は固定乱数でプレイヤー順シャッフル後も名�
     assert.deepStrictEqual(names, ['CPU（強）', '花子', '太郎']);
     assert.strictEqual(rt.__test.getShopStock()['麦畑'], 6);
     assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 3);
+});
+
+runTest('main init は10人開始時に不足設定を補い学習AIを最強CPUへ正規化する', () => {
+    const rt = loadMainRuntime();
+    rt.Math.random = () => 0;
+    rt.__test.setPlayerSettings([
+        { type: 'cpu', difficulty: 'rl', name: 'unused' },
+        { type: 'cpu', difficulty: 'strong', name: 'unused' },
+    ]);
+    rt.__test.setEnabledCards(new Set(['麦畑', 'スタジアム']));
+    rt.enabledLandmarks = new Set(['駅', '空港']);
+
+    rt.init(10);
+
+    const game = rt.__test.getGame();
+    assert.strictEqual(game.players.length, 10);
+    assert.ok(game.players.every(player => !player.name.includes('NaN')));
+    assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 10);
+    const cpuDifficulties = rt.__test.getCpuPlayers().filter(Boolean).map(cpu => cpu.difficulty).sort().join(',');
+    assert.strictEqual(cpuDifficulties, 'expert,strong');
+    assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
 runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {

@@ -4,10 +4,12 @@ let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
+    const playerCount = Number(options.playerCount) || 2;
+    const resolvedDifficulty = playerCount > 4 && difficulty === "rl" ? "expert" : difficulty;
     if (typeof createCpuPlayer === "function") {
-        return createCpuPlayer(difficulty, options);
+        return createCpuPlayer(resolvedDifficulty, options);
     }
-    return new CPU(difficulty, options);
+    return new CPU(resolvedDifficulty, options);
 }
 
 function changeOnlineCount(delta) {

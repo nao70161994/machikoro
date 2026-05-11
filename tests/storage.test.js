@@ -117,6 +117,7 @@ function loadStorageRuntime() {
         this.__test = {
             elements,
             alerts,
+            getGame: () => game,
             getConfirmCount: () => ${confirmCount},
             setGame(value) { game = value; },
             setUndoState(value) { undoState = value; },
@@ -269,6 +270,41 @@ runTest('storage resumeGame はCPU復元で共通ファクトリを使う', () =
     assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.difficulty), ['expert', 'rl']);
     assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.options.playerCount), [2, 2]);
     assert.strictEqual(rt.__test.getCpuPlayers()[1].createdByFactory, true);
+});
+
+runTest('storage resumeGame は5人以上の保存済み学習AIを最強CPUとして復元する', () => {
+    const rt = loadStorageRuntime();
+    const players = Array.from({ length: 5 }, (_, index) => ({
+        name: `P${index + 1}`,
+        coins: 3,
+        cards: [],
+        dormantIndices: [],
+        landmarks: {},
+        itVentureCoins: 0,
+        hasYakusho: true,
+    }));
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState({
+        players,
+        cpuSettings: [
+            { difficulty: 'rl' },
+            { difficulty: 'strong' },
+            null,
+            { difficulty: 'expert' },
+            { difficulty: 'rl' },
+        ],
+    })));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getGame().players.length, 5);
+    assert.deepStrictEqual(
+        rt.createdCpuPlayers.map(entry => entry.difficulty),
+        ['expert', 'strong', 'expert', 'expert']
+    );
+    assert.deepStrictEqual(
+        rt.createdCpuPlayers.map(entry => entry.options.playerCount),
+        [5, 5, 5, 5]
+    );
 });
 
 runTest('storage resumeGame は共通ファクトリ不在でも既存CPUで復元できる', () => {

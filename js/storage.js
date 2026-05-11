@@ -133,12 +133,13 @@ function resumeGame() {
         game.pendingTunaDice = state.pendingTunaDice || null;
         game.turnCount = state.turnCount || 0;
         game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
-        cpuPlayers = state.cpuSettings.map(s => s
-            ? (typeof createCpuPlayer === "function"
-                ? createCpuPlayer(s.difficulty, { expertPurpose: "live", playerCount: state.players.length })
-                : new CPU(s.difficulty, { expertPurpose: "live" }))
-            : null
-        );
+        cpuPlayers = state.cpuSettings.map(s => {
+            if (!s) return null;
+            const difficulty = state.players.length > 4 && s.difficulty === "rl" ? "expert" : s.difficulty;
+            return typeof createCpuPlayer === "function"
+                ? createCpuPlayer(difficulty, { expertPurpose: "live", playerCount: state.players.length })
+                : new CPU(difficulty, { expertPurpose: "live", playerCount: state.players.length });
+        });
         prevCoins = null;
         winSoundPlayed = false;
         cancelAutoSkip();

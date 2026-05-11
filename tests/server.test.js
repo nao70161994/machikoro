@@ -504,6 +504,42 @@ runTest('validateGameAction はCPUターン中にホストのアクションを�
     assert.strictEqual(deny.ok, false);
 });
 
+runTest('validateGameAction は5人CPUターンをplayerOrder越しにホストだけ許可する', () => {
+    const room = {
+        hostPlayerIndex: 2,
+        started: true,
+        playerSettings: [
+            { type: 'cpu', difficulty: 'normal' },
+            { type: 'cpu', difficulty: 'strong' },
+            { type: 'human', difficulty: 'normal' },
+            { type: 'cpu', difficulty: 'expert' },
+            { type: 'human', difficulty: 'normal' },
+        ],
+        gameStartPayload: {
+            playerNames: ['CPU1（普）', 'CPU2（強）', 'Host', 'CPU3（最強）', 'Guest'],
+            playerSettings: [
+                { type: 'cpu', difficulty: 'normal' },
+                { type: 'cpu', difficulty: 'strong' },
+                { type: 'human', difficulty: 'normal' },
+                { type: 'cpu', difficulty: 'expert' },
+                { type: 'human', difficulty: 'normal' },
+            ],
+            cpuSpeed: 1500,
+            playerOrder: [3, 2, 4, 0, 1],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+        },
+        actionLog: [],
+        lastUndoState: null,
+    };
+
+    const allowHost = validateGameAction(room, { playerIndex: 2 }, 'rollDice', { forceDice: 3, tunaDice: [1, 1] });
+    assert.strictEqual(allowHost.ok, true);
+
+    const denyGuest = validateGameAction(room, { playerIndex: 4 }, 'rollDice', { forceDice: 3, tunaDice: [1, 1] });
+    assert.strictEqual(denyGuest.ok, false);
+});
+
 runTest('resolveRejoinPlayer は復元済みルームでも正しいトークン一致時のみ既存プレイヤーを再利用する', () => {
     const room = {
         restored: true,
@@ -909,6 +945,81 @@ runTest('checkGameStart は人間枠が揃うと gameStart を送る', () => {
         delete __rooms[roomId];
         Math.random = realRandom;
         Date.now = realNow;
+    }
+});
+
+runTest('checkGameStart は5人CPU混在でRLをexpert化したpayloadを開始する', () => {
+    const roomId = 'ROOM05';
+    const emitted = [];
+    const io = {
+        sockets: {
+            sockets: new Map([
+                ['s1', { clientVersion: 'v-host' }],
+                ['s2', { clientVersion: 'v-guest' }],
+            ]),
+        },
+        to(targetRoomId) {
+            return {
+                emit(name, payload) {
+                    emitted.push({ targetRoomId, name, payload });
+                },
+            };
+        },
+    };
+    const room = {
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        players: [
+            { id: 's1', index: 2, name: 'Host', reconnectToken: 'token-host' },
+            { id: 's2', index: 4, name: 'Guest', reconnectToken: 'token-guest' },
+        ],
+        hostPlayerIndex: 2,
+        maxPlayers: 5,
+        playerSettings: normalizePlayerSettings([
+            { type: 'cpu', difficulty: 'rl' },
+            { type: 'cpu', difficulty: 'strong' },
+            { type: 'human', difficulty: 'normal' },
+            { type: 'cpu', difficulty: 'rl' },
+            { type: 'human', difficulty: 'normal' },
+        ], 5),
+        cpuSpeed: 1500,
+        started: false,
+    };
+    const realRandom = Math.random;
+    Math.random = () => 0;
+    try {
+        __rooms[roomId] = room;
+        checkGameStart(io, roomId);
+
+        assert.strictEqual(room.started, true);
+        assert.deepStrictEqual(room.gameStartPayload.playerNames, [
+            'CPU1（最強）',
+            'CPU2（強）',
+            'Host',
+            'CPU3（最強）',
+            'Guest',
+        ]);
+        assert.deepStrictEqual(room.gameStartPayload.playerSettings.map(s => s.difficulty), [
+            'expert',
+            'strong',
+            'normal',
+            'expert',
+            'normal',
+        ]);
+        assert.deepStrictEqual(room.gameStartPayload.playerOrder, [1, 2, 3, 4, 0]);
+        assert.deepStrictEqual(room.gameStartPayload.versions, ['v-host', 'v-guest']);
+        assert.strictEqual(room.gameStartPayload.reconnectTokenHashes[0], '');
+        assert.ok(room.gameStartPayload.reconnectTokenHashes[2]);
+        assert.strictEqual(room.gameStartPayload.reconnectTokenHashes[3], '');
+        assert.ok(room.gameStartPayload.reconnectTokenHashes[4]);
+        assert.deepStrictEqual(emitted, [{
+            targetRoomId: roomId,
+            name: 'gameStart',
+            payload: room.gameStartPayload,
+        }]);
+    } finally {
+        delete __rooms[roomId];
+        Math.random = realRandom;
     }
 });
 

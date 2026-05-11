@@ -54,18 +54,19 @@ function createShopStock(cards) {
 
 function createPlayers(runtime, difficulties, options = {}) {
     return difficulties.map(difficulty => {
-        if (difficulty === 'rl') {
+        const resolvedDifficulty = difficulties.length > 4 && difficulty === 'rl' ? 'expert' : difficulty;
+        if (resolvedDifficulty === 'rl') {
             if (!options.rlModelData || !runtime.RLCPU) {
                 throw new Error('rlModelData is required when using rl difficulty');
             }
             return new runtime.RLCPU(options.rlModelData);
         }
-        if (difficulty !== 'expert') {
-            return new runtime.CPU(difficulty, {
+        if (resolvedDifficulty !== 'expert') {
+            return new runtime.CPU(resolvedDifficulty, {
                 profileStats: options.profileStats,
             });
         }
-        return new runtime.CPU(difficulty, {
+        return new runtime.CPU(resolvedDifficulty, {
             expertPurpose: options.expertPurpose || 'training',
             simulationMode: options.lite ? 'lite' : (options.fast ? 'fast' : 'full'),
             profileStats: options.profileStats,

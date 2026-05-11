@@ -1028,6 +1028,100 @@ runTest('all CPU difficulties: builtThisTurn 後は盤面を変えない', () =>
     }
 });
 
+runTest('all CPU difficulties: 10人戦でも主要判断が例外なく合法値を返す', () => {
+    const cpuCases = [
+        ['weak', () => new CPU('weak')],
+        ['normal', () => new CPU('normal')],
+        ['strong', () => new CPU('strong')],
+        ['expert', () => new CPU('expert', { simulationMode: 'lite' })],
+        ['expert-v2simple', () => new CPU('expert', {
+            expertPurpose: 'live',
+            expertPreset: 'v2simple',
+            expertRerollMode: 'simple',
+        })],
+    ];
+    const createTenPlayerGame = () => {
+        const game = new GameManager(10);
+        game.currentPlayerIndex = 0;
+        game.players.forEach((player, index) => {
+            player.coins = 6 + index;
+            player.addCard(createCardByName(index % 2 === 0 ? '牧場' : 'カフェ'));
+            player.dormantCards = [];
+        });
+        const current = game.currentPlayer();
+        current.landmarks[LANDMARK_NAMES.STATION] = true;
+        current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+        current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+        current.addCard(createCardByName('ビジネスセンター'));
+        current.addCard(createCardByName('清掃業'));
+        current.addCard(createCardByName('引越し屋'));
+        current.addCard(createCardByName('テレビ局'));
+        return game;
+    };
+    const createShopStock = () => Object.fromEntries(CARDS.map(card => [card.name, 6]));
+
+    for (const [label, createCpu] of cpuCases) {
+        let game = createTenPlayerGame();
+        let cpu = createCpu();
+        assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean', `${label}: chooseDiceCount`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        game.lastDiceResult = 4;
+        game.lastDice1 = 4;
+        game.lastDice2 = 0;
+        assert.strictEqual(typeof cpu.chooseReroll(game), 'boolean', `${label}: chooseReroll`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        game.lastDiceResult = 10;
+        assert.strictEqual(typeof cpu.chooseHarbor(game), 'boolean', `${label}: chooseHarbor`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        const tvTarget = cpu.chooseTVTarget(game);
+        assert.ok(Number.isInteger(tvTarget), `${label}: chooseTVTarget integer`);
+        assert.ok(tvTarget >= 1 && tvTarget < game.players.length, `${label}: chooseTVTarget legal`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        const businessMove = cpu.chooseBusinessMove(game);
+        assert.ok(businessMove, `${label}: chooseBusinessMove exists`);
+        assert.ok(businessMove.targetIndex >= 1 && businessMove.targetIndex < game.players.length, `${label}: business target legal`);
+        assert.ok(game.currentPlayer().cards[businessMove.myCard], `${label}: business own card legal`);
+        assert.ok(game.players[businessMove.targetIndex].cards[businessMove.theirCard], `${label}: business target card legal`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        const cleaningTarget = cpu.chooseCleaningTarget(game);
+        assert.strictEqual(typeof cleaningTarget, 'string', `${label}: chooseCleaningTarget`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        const moverMove = cpu.chooseMoverMove(game);
+        assert.ok(moverMove, `${label}: chooseMoverMove exists`);
+        assert.ok(moverMove.targetIndex >= 1 && moverMove.targetIndex < game.players.length, `${label}: mover target legal`);
+        assert.ok(game.currentPlayer().cards[moverMove.cardIndex], `${label}: mover card legal`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        const renovationTarget = cpu.chooseRenovationTarget(game);
+        assert.ok([LANDMARK_NAMES.STATION, LANDMARK_NAMES.HARBOR, LANDMARK_NAMES.SHOPPING_MALL].includes(renovationTarget), `${label}: renovation target legal`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        assert.strictEqual(typeof cpu.chooseITInvest(game), 'boolean', `${label}: chooseITInvest`);
+
+        game = createTenPlayerGame();
+        cpu = createCpu();
+        game.phase = runtime.GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        game.currentPlayer().coins = 20;
+        cpu.build(game, createShopStock());
+        assert.strictEqual(game.builtThisTurn, true, `${label}: build completes`);
+    }
+});
+
 // ===== chooseReroll =====
 
 runTest('chooseReroll: strong は不利局面でも妥当な真偽値を返す', () => {
