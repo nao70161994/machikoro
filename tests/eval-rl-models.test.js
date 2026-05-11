@@ -152,6 +152,46 @@ runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
     assert.strictEqual(results[0].buildSignature.cardKey, 'パン屋');
 });
 
+runTest('eval-rl-models は5人以上のlineupを評価前に拒否する', () => {
+    const specs = [{ id: 'm1', label: 'm1', path: 'm1.json', source: 'test', status: '' }];
+    let called = false;
+    assert.throws(
+        () => evaluateModelSpecs(
+            specs,
+            {
+                games: 10,
+                seed: 1,
+                maxSteps: 100,
+                opponents: ['normal'],
+                lineups: [['rl', 'weak', 'normal', 'strong', 'expert']],
+            },
+            () => {
+                called = true;
+                return [];
+            }
+        ),
+        /cannot be used for 5-player lineups/
+    );
+    assert.strictEqual(called, false);
+});
+
+runTest('eval-rl-models は4人lineupの既存挙動を維持する', () => {
+    const specs = [{ id: 'm1', label: 'm1', path: 'm1.json', source: 'test', status: '' }];
+    const results = evaluateModelSpecs(
+        specs,
+        {
+            games: 10,
+            seed: 1,
+            maxSteps: 100,
+            opponents: ['normal'],
+            lineups: [['rl', 'weak', 'normal', 'strong']],
+        },
+        () => [entry('rl+weak+normal+strong', 0.5)]
+    );
+    assert.strictEqual(results.length, 1);
+    assert.deepStrictEqual(results[0].summaries[0].lineup, ['rl', 'weak', 'normal', 'strong']);
+});
+
 runTest('eval-rl-models renderCsv は集計行を出力する', () => {
     const csv = renderCsv([
         {

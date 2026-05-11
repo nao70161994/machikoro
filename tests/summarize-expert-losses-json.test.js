@@ -6,6 +6,7 @@ const {
     classifyField,
     ratio,
     renderText,
+    reportMetadata,
     summarizeReport,
 } = require(path.join(__dirname, '..', 'scripts', 'summarize-expert-losses-json.js'));
 
@@ -21,8 +22,32 @@ runTest('summarize-expert-losses-json classifyField は loss 偏りを判定す�
     assert.strictEqual(classifyField(0.5, 0.0, 1.5, 9, 100), 'low-sample');
 });
 
+runTest('summarize-expert-losses-json reportMetadata は preset 警告を引き継ぐ', () => {
+    assert.deepStrictEqual(reportMetadata({
+        options: { expertPreset: 'default' },
+        metadata: {
+            comparisonScope: 'expert-loss-diagnostics',
+            presetWarning: 'default expert preset; pass --expert-preset v2simple for v2 diagnostics',
+        },
+    }), {
+        comparisonScope: 'expert-loss-diagnostics',
+        expertPreset: 'default',
+        presetWarning: 'default expert preset; pass --expert-preset v2simple for v2 diagnostics',
+    });
+    assert.deepStrictEqual(reportMetadata({ options: { expertPreset: 'v2simple' } }), {
+        comparisonScope: 'expert-v2-loss-diagnostics',
+        expertPreset: 'v2simple',
+        presetWarning: '',
+    });
+});
+
 runTest('summarize-expert-losses-json は loss/win attribution を要約する', () => {
     const report = {
+        options: { expertPreset: 'default' },
+        metadata: {
+            comparisonScope: 'expert-loss-diagnostics',
+            presetWarning: 'default expert preset; pass --expert-preset v2simple for v2 diagnostics',
+        },
         entries: [
             {
                 profile: 'allStrong4',
@@ -57,6 +82,8 @@ runTest('summarize-expert-losses-json は loss/win attribution を要約する',
     assert.strictEqual(summaries[0].profile, 'allStrong4');
     assert.strictEqual(summaries[0].fields.find(field => field.field === 'portfolioMissedNear05').status, 'loss-skew');
     const text = renderText(summaries);
+    assert.ok(text.includes('comparisonScope=expert-loss-diagnostics expertPreset=default'));
+    assert.ok(text.includes('note=default expert preset; pass --expert-preset v2simple for v2 diagnostics'));
     assert.ok(text.includes('allStrong4: expertWinRate=6.0%'));
     assert.ok(text.includes('portfolioMissedNear05=loss:30(30.0%) win:2(10.0%) loss-skew'));
     assert.ok(text.includes('lossMissedWinners=ブドウ園->駅:7'));

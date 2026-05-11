@@ -80,6 +80,10 @@ function createCpuPlayer(difficulty, options = {}) {
         if (!Number.isFinite(resolvedOptions.expertBuildTempoWeight)) resolvedOptions.expertBuildTempoWeight = 0.05;
     }
     if (difficulty === 'rl') {
+        const playerCount = Number(resolvedOptions.playerCount) || 2;
+        if (typeof RLModelPortfolio === "undefined" || !RLModelPortfolio.supportsPlayerCount(playerCount)) {
+            return new CPU('expert', resolvedOptions);
+        }
         try {
             return RLModelPortfolio.createRandomCpu(resolvedOptions);
         } catch (error) {

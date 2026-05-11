@@ -1,6 +1,6 @@
 # 多人数戦 Target Head 設計メモ
 
-最終更新: 2026-04-22
+最終更新: 2026-05-11
 
 ## 現在の実装状況
 
@@ -15,6 +15,8 @@
   - target head ありモデルの学習プリセット
   - Python/JS parity fixture の target head 学習ケース
 
+現行の採用済み `seed103` など head が無いモデルでは fallback を使う。target head の受け皿と学習更新は入っているが、target head ありモデルはまだ採用していない。
+
 ## 目的
 
 3人戦 / 4人戦の RL で、以下の「相手選択」を heuristic から policy に移す。
@@ -23,7 +25,7 @@
 - ビジネスセンター: どの相手と交換するか
 - 引越し屋: どの相手へ渡すか
 
-現状は Python / JS ともに「脅威度最大の相手」を自動選択している。多人数戦の駆け引きを RL が学べていないため、紫カード系の上限を手作り heuristic が固定している。
+head が無いモデルでは Python / JS ともに heuristic で対象を選ぶ。optional target head があるモデルでは TV / BC / Mover の対象を head で選べるが、採用済み portfolio はまだ head 無しモデルのため、実ゲームでは fallback が効いている。
 
 ## 現状棚卸し
 
@@ -35,7 +37,8 @@
 - 対象選択
   - [game_env.py](../../scripts/rl/game_env.py)
   - `_target_opponent_index()` が脅威度最大の相手 index を返す
-  - `pending_tv`, `pending_biz`, `pending_mover` はすべてこの相手 1 人前提
+  - head が無い場合は `pending_tv`, `pending_biz`, `pending_mover` がこの相手を使う
+  - head がある場合は slot -> actual player index 変換で対象を差し替える
 - 行動空間
   - `ACT_TV_TARGET` は 1 行動だけ
   - ビジネスセンターは `give x take`
@@ -46,8 +49,8 @@
 
 - RL ランタイム
   - [js/RLCPU.js](../../js/RLCPU.js)
-  - `_selectOpponentIndex()` が脅威度最大の相手を返す
-  - `chooseTVTarget()`, `chooseBusinessMove()`, `chooseMoverMove()` はこの 1 相手へ固定
+  - `_selectOpponentIndex()` が head 無しモデル向け fallback の相手を返す
+  - `chooseTVTarget()`, `chooseBusinessMove()`, `chooseMoverMove()` は optional target head があれば head の対象を使い、無ければ fallback を使う
 - ルール本体
   - [js/GameManager.js](../../js/GameManager.js)
   - `resolveTV(targetIndex)`, `resolveBusiness(..., targetIndex, ...)`, `resolveMover(..., targetIndex)` 自体は複数相手に対応している
@@ -64,14 +67,14 @@
 
 ## 問題の本質
 
-現状の多人数戦モデルは、
+head 無しの多人数戦モデルは、
 
 - 相手の状態を「脅威度順スロット」で見る
 - しかし行動は「対象相手を選ばない」
 
 という半端な構造になっている。
 
-このため、モデルが学べるのは「強い相手がいる時に TV/BC/Mover を使うかどうか」までで、
+このため、head 無しモデルが学べるのは「強い相手がいる時に TV/BC/Mover を使うかどうか」までで、
 
 - 1位を削る
 - 2位に嫌がらせする

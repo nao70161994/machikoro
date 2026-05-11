@@ -25,6 +25,7 @@ function loadMainRuntime(options = {}) {
 
     const sentActions = [];
     const timeouts = [];
+    const alerts = [];
     const eventHandlers = {};
     const counters = {
         renderOnlinePlayerSettings: 0,
@@ -51,6 +52,7 @@ function loadMainRuntime(options = {}) {
         eventHandlers,
         localStorageData,
         timeouts,
+        alerts,
         sentActions,
         document: {
             getElementById(id) {
@@ -97,7 +99,7 @@ function loadMainRuntime(options = {}) {
         saveGameState() {},
         saveUndoState() {},
         cancelAutoSkip() {},
-        alert() {},
+        alert(message) { alerts.push(message); },
         fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
         io() { return { on() {}, emit() {}, disconnect() {} }; },
         enabledCards: new Set(),
@@ -183,6 +185,7 @@ function loadMainRuntime(options = {}) {
             eventHandlers,
             localStorageData,
             sentActions,
+            alerts,
             flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
             setSelectedCount: (value) => { selectedCount = value; },
             getSelectedCount: () => selectedCount,
@@ -301,6 +304,16 @@ runTest('main createCpuPlayer は live v2simple の明示modeを上書きしな�
 
     assert.strictEqual(cpu.options.expertBusinessMode, "simple");
     assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.2);
+});
+
+runTest('main createCpuPlayer は5人以上の学習AIを警告なしで最強CPUへフォールバックする', () => {
+    const rt = loadMainRuntime();
+
+    const cpu = rt.createCpuPlayer('rl', { playerCount: 5, expertPurpose: "live" });
+
+    assert.strictEqual(cpu.difficulty, 'expert');
+    assert.strictEqual(cpu.options.playerCount, 5);
+    assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
 runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {

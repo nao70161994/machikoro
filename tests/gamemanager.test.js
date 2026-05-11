@@ -777,6 +777,24 @@ runTest('スタジアムが各相手から最大2コイン奪う', () => {
     assert.strictEqual(p0.coins, before + 3);     // 合計+3
 });
 
+runTest('5人以上でもスタジアムは全相手を対象にする', () => {
+    const game = new GameManager(5);
+    const p0 = game.currentPlayer();
+    p0.cards = [createCardByName('スタジアム')];
+    p0.dormantCards = [];
+    for (let i = 1; i < game.players.length; i++) {
+        game.players[i].coins = 2;
+    }
+    const before = p0.coins;
+
+    game.rollDice(6);
+
+    assert.strictEqual(p0.coins, before + 8);
+    for (let i = 1; i < game.players.length; i++) {
+        assert.strictEqual(game.players[i].coins, 0);
+    }
+});
+
 runTest('出版社が相手の飲食店・商店枚数分コインを奪う', () => {
     const game = new GameManager(2);
     const p0 = game.currentPlayer();

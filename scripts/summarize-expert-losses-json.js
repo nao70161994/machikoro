@@ -10,6 +10,8 @@ const RATIO_FIELDS = [
     'basicDuplicateCopy3Plus',
 ];
 
+const DEFAULT_PRESET_WARNING = 'default expert preset; pass --expert-preset v2simple for v2 diagnostics';
+
 function parseArgs(argv) {
     return {
         inputPath: argv[0] || '',
@@ -42,6 +44,16 @@ function classifyField(lossRatio, winRatio, skewRatio, lossTotal, winTotal) {
     if (lossTotal < 10 || winTotal < 10) return 'low-sample';
     if (lossRatio > 0 && lossRatio >= winRatio * skewRatio) return 'loss-skew';
     return 'not-loss-specific';
+}
+
+function reportMetadata(report = {}) {
+    const source = report.metadata || {};
+    const expertPreset = report.options && report.options.expertPreset ? report.options.expertPreset : '';
+    const comparisonScope = source.comparisonScope ||
+        (expertPreset === 'v2simple' ? 'expert-v2-loss-diagnostics' : (expertPreset ? 'expert-loss-diagnostics' : ''));
+    const presetWarning = source.presetWarning ||
+        (expertPreset === 'default' ? DEFAULT_PRESET_WARNING : '');
+    return { comparisonScope, expertPreset, presetWarning };
 }
 
 function summarizeEntry(entry, options = {}) {
@@ -77,11 +89,23 @@ function summarizeEntry(entry, options = {}) {
 }
 
 function summarizeReport(report, options = {}) {
-    return (report.entries || []).map(entry => summarizeEntry(entry, options));
+    const summaries = (report.entries || []).map(entry => summarizeEntry(entry, options));
+    summaries.metadata = reportMetadata(report);
+    return summaries;
 }
 
 function renderText(summaries) {
     const lines = [];
+    const metadata = summaries && summaries.metadata ? summaries.metadata : {};
+    if (metadata.comparisonScope || metadata.expertPreset) {
+        lines.push(
+            `comparisonScope=${metadata.comparisonScope || '-'} ` +
+            `expertPreset=${metadata.expertPreset || '-'}`
+        );
+    }
+    if (metadata.presetWarning) {
+        lines.push(`note=${metadata.presetWarning}`);
+    }
     for (const summary of summaries) {
         lines.push(
             `${summary.profile}: expertWinRate=${percent(summary.expertWinRate)} ` +
@@ -116,6 +140,7 @@ module.exports = {
     parseArgs,
     ratio,
     renderText,
+    reportMetadata,
     summarizeEntry,
     summarizeReport,
 };

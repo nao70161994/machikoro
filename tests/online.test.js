@@ -294,6 +294,40 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
     assert.ok(rt.getScheduleCount() > 0);
 });
 
+runTest('initSocket gameStart はバージョン不一致時だけ警告ログを追加する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['same', 'same'],
+    });
+    assert.ok(!rt.getGame().log.some(entry => entry.message.includes('バージョン不一致')));
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['old', 'new'],
+    });
+
+    const mismatchLog = rt.getGame().log.find(entry => entry.message.includes('バージョン不一致'));
+    assert.ok(mismatchLog);
+    assert.strictEqual(mismatchLog.type, LOG_TYPES.SYSTEM);
+    assert.ok(mismatchLog.message.includes('全員アプリをリロードしてください'));
+});
+
 runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () => {
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));

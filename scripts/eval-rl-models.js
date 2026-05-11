@@ -3,6 +3,7 @@ const path = require('path');
 
 const {
     evaluateRlVsJs,
+    assertRlModelLineupCompatible,
     summarizeEvaluationEntry,
 } = require('./eval-rl-vs-js.js');
 const { loadRegistry } = require('./validate-rl-registry.js');
@@ -178,6 +179,7 @@ function summarizeModel(spec, entries) {
 }
 
 function evaluateModelSpecs(specs, args, evaluator = evaluateRlVsJs) {
+    assertRlModelLineupCompatible(null, args.lineups, 'eval-rl-models');
     return specs.map((spec, index) => summarizeModel(spec, evaluator({
         modelPath: spec.path,
         games: args.games,
@@ -332,6 +334,7 @@ module.exports = {
     parseArgs,
     parseLineups,
     parseNumberList,
+    assertRlModelLineupCompatible,
     defaultRegistryModelIds,
     browserPathForRunLabel,
     resolveModelSpecs,
