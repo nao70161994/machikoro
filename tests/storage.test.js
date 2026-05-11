@@ -202,6 +202,21 @@ runTest('storage reconnectOnline は壊れたセッションを破棄して aler
     assert.deepStrictEqual(rt.alerts, ['再接続データの読み込みに失敗しました']);
 });
 
+runTest('storage reconnectOnline は必須項目が欠けたセッションを送信しない', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'room-1',
+        playerIndex: 0,
+        playerName: 'P1',
+    }));
+
+    rt.reconnectOnline();
+
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.deepStrictEqual(rt.emits, []);
+    assert.deepStrictEqual(rt.alerts, ['再接続データの読み込みに失敗しました']);
+});
+
 runTest('storage reconnectOnline はCPU復元を行わず再接続だけ送る', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('onlineSession', JSON.stringify({

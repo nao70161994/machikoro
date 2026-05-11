@@ -48,6 +48,16 @@ function resolveExpertTuning(options = {}) {
     return matched.tuning;
 }
 
+function reportMetadata(options = {}) {
+    const expertPreset = options.expertPreset || 'default';
+    return {
+        comparisonScope: expertPreset === 'v2simple' ? 'expert-v2-loss-diagnostics' : 'expert-loss-diagnostics',
+        presetWarning: expertPreset === 'default'
+            ? 'default expert preset; pass --expert-preset v2simple for v2 diagnostics'
+            : '',
+    };
+}
+
 function profilePlayers(name) {
     if (name === 'duel') return ['expert', 'strong'];
     if (name === 'trio') return ['expert', 'strong', 'strong'];
@@ -708,12 +718,14 @@ function diagnoseProfile(name, options) {
 }
 
 function toText(entries, options) {
+    const metadata = reportMetadata(options);
     const lines = [
+        `comparisonScope=${metadata.comparisonScope}`,
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} expertPreset=${options.expertPreset}` +
         `${options.tuningCandidate ? ` tuningCandidate=${options.tuningCandidate}` : ''}`,
     ];
-    if (options.expertPreset === 'default') {
-        lines.push('note=default expert preset; pass --expert-preset v2simple for v2 diagnostics');
+    if (metadata.presetWarning) {
+        lines.push(`note=${metadata.presetWarning}`);
     }
     for (const entry of entries) {
         lines.push(
@@ -847,8 +859,9 @@ function toText(entries, options) {
 function main() {
     const options = parseArgs(process.argv.slice(2));
     const entries = options.profiles.map(profile => diagnoseProfile(profile, options));
+    const metadata = reportMetadata(options);
     if (options.format === 'json') {
-        console.log(JSON.stringify({ options, entries }, null, 2));
+        console.log(JSON.stringify({ options, metadata, entries }, null, 2));
         return;
     }
     console.log(toText(entries, options));
@@ -863,6 +876,7 @@ module.exports = {
     diagnoseProfile,
     parseArgs,
     profilePlayers,
+    reportMetadata,
     resolveExpertTuning,
     finalActionDiagnosticsFromTrace,
     findChosenBuildOption,

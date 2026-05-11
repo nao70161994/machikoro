@@ -8,6 +8,7 @@ const {
     finalActionDiagnosticsFromTrace,
     findChosenBuildOption,
     parseArgs,
+    reportMetadata,
     summarizeBuildAttribution,
     summarizeFinishDelayActions,
     summarizeLosses,
@@ -35,6 +36,17 @@ runTest('diagnose-expert-losses parseArgs は CLI 引数を解釈する', () => 
     assert.strictEqual(args.expertPreset, 'rush');
     assert.strictEqual(args.tuningCandidate, 'default:skipPenaltyx1.25');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
+});
+
+runTest('diagnose-expert-losses reportMetadata は preset 取り違え防止情報を返す', () => {
+    assert.deepStrictEqual(reportMetadata({ expertPreset: 'default' }), {
+        comparisonScope: 'expert-loss-diagnostics',
+        presetWarning: 'default expert preset; pass --expert-preset v2simple for v2 diagnostics',
+    });
+    assert.deepStrictEqual(reportMetadata({ expertPreset: 'v2simple' }), {
+        comparisonScope: 'expert-v2-loss-diagnostics',
+        presetWarning: '',
+    });
 });
 
 runTest('diagnose-expert-losses summarizeLosses は負け筋を集計する', () => {
@@ -533,6 +545,7 @@ runTest('diagnose-expert-losses toText は主要な差分を含む', () => {
             },
         },
     ], { games: 4, seed: 1, lite: true, fast: false, expertPreset: 'default', tuningCandidate: '' });
+    assert.ok(text.includes('comparisonScope=expert-loss-diagnostics'));
     assert.ok(text.includes('note=default expert preset; pass --expert-preset v2simple for v2 diagnostics'));
     assert.ok(text.includes('duel: expertWinRate=25.0%'));
     assert.ok(text.includes('avgLandmarkGap=1.67'));

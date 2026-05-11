@@ -327,6 +327,41 @@ runTest('online integration: hostChanged は非ホスト化も保存セッショ
     assert.strictEqual(session.isRoomHost, false);
 });
 
+runTest('online integration: 非ホストはオンラインCPU手番をスケジュールしない', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setOnlineState({
+        isOnlineGame: true,
+        isRoomHost: false,
+        myOriginalPlayerIndex: 1,
+        myPlayerIndex: 1,
+    });
+
+    rt.initOnlineGame(['CPU1', 'Alice'], [{ type: 'cpu', difficulty: 'normal' }, { type: 'human' }], [0, 1]);
+
+    assert.strictEqual(rt.__test.timeouts.length, 0);
+});
+
+runTest('online integration: hostChanged でホスト化するとオンラインCPU手番をスケジュールする', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isOnlineGame: true,
+        isRoomHost: false,
+        myOriginalPlayerIndex: 1,
+        myPlayerIndex: 1,
+    });
+    rt.initOnlineGame(['CPU1', 'Alice'], [{ type: 'cpu', difficulty: 'normal' }, { type: 'human' }], [0, 1]);
+    assert.strictEqual(rt.__test.timeouts.length, 0);
+
+    rt.__test.socketHandlers.hostChanged({ newHostPlayerIndex: 1 });
+
+    assert.ok(rt.__test.timeouts.length > 0);
+});
+
 runTest('online integration: playerDisconnected/playerRejoined はゲームログへ反映する', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.initSocket();
@@ -341,6 +376,39 @@ runTest('online integration: playerDisconnected/playerRejoined はゲームロ�
     assert.ok(messages.includes('🔌 Bobが切断しました'));
     assert.ok(messages.includes('🔌 Bobが再接続しました'));
     assert.ok(!messages.includes('🔌 Aliceが再接続しました'));
+});
+
+runTest('online integration: gameAction undoBuild は保存ログに残り状態を復元する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.initOnlineGame(['Alice', 'Bob'], [{ type: 'human' }, { type: 'human' }], [0, 1]);
+    const game = rt.__test.getGame();
+    game.players[0].coins = 9;
+    const undoState = {
+        playerCoins: [3, 3],
+        playerCardNames: [
+            ['麦畑'],
+            ['麦畑'],
+        ],
+        playerDormantIndices: [[], []],
+        playerLandmarks: game.players.map(player => Object.assign({}, player.landmarks)),
+        playerItVenture: [0, 0],
+        playerHasYakusho: [true, true],
+        hadAmusementParkAtRoll: false,
+        shopStock: Object.assign({}, rt.SHOP_STOCK || {}),
+        builtThisTurn: false,
+        log: [{ type: 'system', message: 'undo target' }],
+    };
+
+    rt.__test.socketHandlers.gameAction({ action: 'undoBuild', data: { state: undoState }, playerIndex: 0 });
+
+    const after = rt.__test.getGame();
+    const actionLog = JSON.parse(rt.localStorage.getItem('onlineActionLog'));
+    assert.strictEqual(after.players[0].coins, 3);
+    assert.strictEqual(after.log[0].message, 'undo target');
+    assert.strictEqual(actionLog[actionLog.length - 1].action, 'undoBuild');
 });
 
 runTest('online integration: ROOM_NOT_FOUND でホストは recreateRoom を送る', () => {

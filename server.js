@@ -554,7 +554,11 @@ function createRoomMirror(room) {
     }
     for (const entry of room.actionLog || []) {
         if (!entry || typeof entry.action !== 'string') continue;
-        applyActionToMirror(game, shopStock, entry.action, entry.data, createCardByName);
+        try {
+            applyActionToMirror(game, shopStock, entry.action, entry.data, createCardByName);
+        } catch {
+            return null;
+        }
     }
     return { game, shopStock, cpuPlayers };
 }
@@ -576,9 +580,12 @@ function restoreMirrorState(game, shopStock, state, createCardByName) {
         p.hasYakusho = playerState.hasYakusho !== false;
     });
     Object.assign(shopStock, state.shopStock || {});
-    game.currentPlayerIndex = state.currentPlayerIndex || 0;
+    game.currentPlayerIndex = Number.isInteger(state.currentPlayerIndex) &&
+        state.currentPlayerIndex >= 0 && state.currentPlayerIndex < game.players.length
+        ? state.currentPlayerIndex
+        : 0;
     game.phase = state.phase || game.phase;
-    game.log = state.log || [];
+    game.log = Array.isArray(state.log) ? state.log : [];
     game.lastDiceResult = state.lastDiceResult || 0;
     game.lastDice1 = state.lastDice1 || 0;
     game.lastDice2 = state.lastDice2 || 0;

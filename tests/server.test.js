@@ -764,11 +764,13 @@ runTest('createRoomMirror は壊れた snapshot/actionLog entry を例外にせ�
         stateSnapshot: {
             players: [{ name: 'A', dormantIndices: 'broken', landmarks: null }],
             shopStock: { 麦畑: 5 },
+            currentPlayerIndex: 'bad',
+            log: 'bad',
         },
         actionLog: [
             null,
             { action: null, data: {} },
-            { action: 'nextTurn', data: {} },
+            { action: 'unknownAction', data: {} },
         ],
     };
 
@@ -777,7 +779,18 @@ runTest('createRoomMirror は壊れた snapshot/actionLog entry を例外にせ�
     assert.ok(mirror);
     assert.strictEqual(mirror.game.players[0].name, 'A');
     assert.strictEqual(mirror.game.players[0].coins, 3);
+    assert.strictEqual(mirror.game.currentPlayerIndex, 0);
+    assert.deepStrictEqual(mirror.game.log, []);
     assert.strictEqual(mirror.shopStock['麦畑'], 5);
+});
+
+runTest('validateGameAction は壊れた actionLog replay を拒否する', () => {
+    const room = makeRoom();
+    room.actionLog = [{ action: 'rollDice', data: null }];
+
+    const result = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: 1, tunaDice: [1, 1] });
+
+    assert.strictEqual(result.ok, false);
 });
 
 runTest('applyActionToMirror は undoBuild で保存済み状態を復元する', () => {

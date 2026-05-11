@@ -65,6 +65,9 @@ function reconnectOnline() {
     if (!raw) return;
     try {
         const session = JSON.parse(raw);
+        if (!session.roomId || !Number.isInteger(session.playerIndex) || !session.playerName || !session.reconnectToken) {
+            throw new Error('invalid online session');
+        }
         isReconnectingOnline = true;
         isRoomHost = session.isRoomHost || false;
         myPlayerName = session.playerName || '';

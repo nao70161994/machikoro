@@ -106,6 +106,13 @@ runTest('assertRlModelLineupCompatible は2人用モデルの3人以上評価を
     assert.doesNotThrow(() => assertRlModelLineupCompatible(buildRlModel({ stateDim: 145 }), [['rl', 'weak']], 'm145'));
 });
 
+runTest('assertRlModelLineupCompatible は5人以上lineup評価を拒否する', () => {
+    assert.throws(
+        () => assertRlModelLineupCompatible(buildRlModel({ stateDim: 353 }), [['rl', 'weak', 'normal', 'strong', 'expert']], 'm353'),
+        /2-4 players/
+    );
+});
+
 runTest('evaluateRlVsJs は opponent ごとの 2人戦結果を返す', () => {
     const result = evaluateRlVsJs({
         games: 1,

@@ -44,6 +44,9 @@ function maxLineupPlayers(lineups) {
 
 function assertRlModelLineupCompatible(rlModelData, lineups, label = 'RL model') {
     const maxPlayers = maxLineupPlayers(lineups);
+    if (maxPlayers > 4) {
+        throw new Error(`${label} cannot be used for ${maxPlayers}-player lineups; RL CPU supports 2-4 players`);
+    }
     if (maxPlayers >= 3 && rlModelData && rlModelData.stateDim === 145) {
         throw new Error(`${label} is a 2-player RL model (stateDim=145) and cannot be used for ${maxPlayers}-player lineups`);
     }
