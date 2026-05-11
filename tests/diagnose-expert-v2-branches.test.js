@@ -303,6 +303,16 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
                 buildV3RaceAirportGainPositive: 1,
                 buildV3RaceV2ChoiceDelaysAirport: 1,
                 buildV3RaceSecondGapLe025: 2,
+                buildV3RaceDifferentLowValue: 1,
+                buildV3RaceDifferentLowValueNoReachGain: 1,
+                buildV3RaceDifferentLowValueAirportGain: 1,
+                buildV3RaceDifferentGrowthOrDisruption: 1,
+                buildV3RaceDifferentBasic: 1,
+                buildV3RaceDifferentSpecial: 1,
+                buildV3RaceDifferentV2ChosenRedOrCombo: 2,
+                buildV3RaceDifferentAirportShortfallLe6: 1,
+                buildV3RaceDifferentRemainingOneOrTwo: 1,
+                buildV3RaceDifferentWouldImproveReachTurns: 2,
                 buildV3RaceWouldChooseNames: { ブドウ園: 1, コンビニ: 1 },
                 buildV3RaceV2ChosenNames: { パン屋: 2 },
                 buildRenovationPenaltyWouldFlip: 1,
@@ -480,6 +490,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('componentRedBasic: dominant=2/6 copy0=1/2 copy1=1/2 copy2plus=0/2 mallBuilt=1/2 gap025=1/2 gap05=2/2 secondNames=パン屋:1,牧場:1'));
     assert.ok(text.includes('componentRedBasicResult: win=1/2 loss=1/2 winSecondNames=パン屋:1 lossSecondNames=牧場:1'));
     assert.ok(text.includes('v3Race: different=2/4 reachGain=3/4 airportGain=1/4 v2DelaysAirport=1/4 gap025=2/4 wouldChoose=コンビニ:1,ブドウ園:1 v2Chosen=パン屋:2'));
+    assert.ok(text.includes('v3RaceDetail: lowValue=1/2 lowNoReach=1/1 lowAirport=1/1 growthOrDisruption=1/2 basic=1/2 special=1/2 v2RedOrCombo=2/2 airportLe6=1/2 remainingLe2=1/2 improvesReach=2/2'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));

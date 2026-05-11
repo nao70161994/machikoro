@@ -111,6 +111,16 @@ function createCounters() {
         buildV3RaceAirportGainPositive: 0,
         buildV3RaceV2ChoiceDelaysAirport: 0,
         buildV3RaceSecondGapLe025: 0,
+        buildV3RaceDifferentLowValue: 0,
+        buildV3RaceDifferentLowValueNoReachGain: 0,
+        buildV3RaceDifferentLowValueAirportGain: 0,
+        buildV3RaceDifferentGrowthOrDisruption: 0,
+        buildV3RaceDifferentBasic: 0,
+        buildV3RaceDifferentSpecial: 0,
+        buildV3RaceDifferentV2ChosenRedOrCombo: 0,
+        buildV3RaceDifferentAirportShortfallLe6: 0,
+        buildV3RaceDifferentRemainingOneOrTwo: 0,
+        buildV3RaceDifferentWouldImproveReachTurns: 0,
         buildV3RaceWouldChooseNames: {},
         buildV3RaceV2ChosenNames: {},
         buildRenovationPenaltyWouldFlip: 0,
@@ -409,8 +419,9 @@ function buildV3RaceEntryScore(runtime, game, current, entry, currentBaseEv) {
         airportGain = airportBefore - airportAfter;
     }
     const deltaEv = postEv - currentBaseEv;
+    const airportShortfall = airportCost !== null ? Math.max(0, airportCost - current.coins) : Infinity;
     const score = nearestGain * 2 + airportGain * 3 + deltaEv * 0.3;
-    return { nearestGain, airportGain, deltaEv, score };
+    return { nearestGain, airportGain, deltaEv, airportShortfall, remainingCount: remainingNames.length, score };
 }
 
 function compareRaceEntries(left, right) {
@@ -418,6 +429,50 @@ function compareRaceEntries(left, right) {
     const rightScore = right && right.race ? right.race.score : -Infinity;
     if (leftScore !== rightScore) return rightScore - leftScore;
     return (right.score || 0) - (left.score || 0);
+}
+
+function isV3RaceLowValueCard(card) {
+    if (!card) return false;
+    return card.cost <= 1 && card.income <= 1;
+}
+
+function isV3RaceBasicCard(runtime, card) {
+    if (!card) return false;
+    return card.effect === 'normal' ||
+        card.effect === 'cornfield' ||
+        card.effect === 'fewlandmark';
+}
+
+function isV3RaceSpecialCard(runtime, card) {
+    if (!card) return false;
+    return card.color === 'purple' ||
+        card.effect === 'renovation' ||
+        card.effect === 'loan' ||
+        card.effect === 'mover';
+}
+
+function isV3RaceGrowthOrDisruptionCard(runtime, card) {
+    if (!card) return false;
+    if (card.color === 'red' || card.color === 'purple') return true;
+    return card.effect === 'cheese' ||
+        card.effect === 'furniture' ||
+        card.effect === 'market' ||
+        card.effect === 'flower' ||
+        card.effect === 'foodwarehouse' ||
+        card.effect === 'drinkfactory' ||
+        card.effect === 'winery' ||
+        card.effect === 'harbor' ||
+        card.effect === 'tuna';
+}
+
+function isV3RaceRedOrComboChosen(runtime, card) {
+    if (!card) return false;
+    if (card.color === 'red') return true;
+    return card.category === '畜産' ||
+        card.name === 'ブドウ園' ||
+        card.name === '森林' ||
+        card.name === '鉱山' ||
+        card.name === '花畑';
 }
 
 function counterDelta(after, before, key) {
@@ -1403,6 +1458,32 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                                     counters.buildV3RaceDifferentChoice++;
                                     incrementName(counters.buildV3RaceWouldChooseNames, raceBest.option.card.name);
                                     incrementName(counters.buildV3RaceV2ChosenNames, best.option.card.name);
+                                    if (isV3RaceLowValueCard(raceBest.option.card)) {
+                                        counters.buildV3RaceDifferentLowValue++;
+                                        if (raceBest.race.nearestGain <= 0) counters.buildV3RaceDifferentLowValueNoReachGain++;
+                                        if (raceBest.race.airportGain > 0) counters.buildV3RaceDifferentLowValueAirportGain++;
+                                    }
+                                    if (isV3RaceGrowthOrDisruptionCard(runtime, raceBest.option.card)) {
+                                        counters.buildV3RaceDifferentGrowthOrDisruption++;
+                                    }
+                                    if (isV3RaceBasicCard(runtime, raceBest.option.card)) {
+                                        counters.buildV3RaceDifferentBasic++;
+                                    }
+                                    if (isV3RaceSpecialCard(runtime, raceBest.option.card)) {
+                                        counters.buildV3RaceDifferentSpecial++;
+                                    }
+                                    if (isV3RaceRedOrComboChosen(runtime, best.option.card)) {
+                                        counters.buildV3RaceDifferentV2ChosenRedOrCombo++;
+                                    }
+                                    if (raceBest.race.airportShortfall <= 6) {
+                                        counters.buildV3RaceDifferentAirportShortfallLe6++;
+                                    }
+                                    if (raceBest.race.remainingCount <= 2) {
+                                        counters.buildV3RaceDifferentRemainingOneOrTwo++;
+                                    }
+                                    if (raceBest.race.nearestGain > 0 || raceBest.race.airportGain > 0) {
+                                        counters.buildV3RaceDifferentWouldImproveReachTurns++;
+                                    }
                                 }
                             }
                             if (v2RaceEntry && v2RaceEntry.race && v2RaceEntry.race.airportGain < 0) {
@@ -2028,6 +2109,7 @@ function toText(report) {
         `componentRedBasic: dominant=${totals.buildRedBonusBasicDominantChosen}/${totals.buildComponentDecisions} copy0=${totals.buildRedBonusBasicDominantCopy0}/${totals.buildRedBonusBasicDominantChosen} copy1=${totals.buildRedBonusBasicDominantCopy1}/${totals.buildRedBonusBasicDominantChosen} copy2plus=${totals.buildRedBonusBasicDominantCopy2Plus}/${totals.buildRedBonusBasicDominantChosen} mallBuilt=${totals.buildRedBonusBasicDominantMallBuilt}/${totals.buildRedBonusBasicDominantChosen} gap025=${totals.buildRedBonusBasicDominantGapLe025}/${totals.buildRedBonusBasicDominantChosen} gap05=${totals.buildRedBonusBasicDominantGapLe05}/${totals.buildRedBonusBasicDominantChosen} secondNames=${topNameCounts(totals.buildRedBonusBasicDominantSecondNames)}`,
         `componentRedBasicResult: win=${totals.buildRedBonusBasicDominantWin}/${totals.buildRedBonusBasicDominantChosen} loss=${totals.buildRedBonusBasicDominantLoss}/${totals.buildRedBonusBasicDominantChosen} winSecondNames=${topNameCounts(totals.buildRedBonusBasicDominantWinNames)} lossSecondNames=${topNameCounts(totals.buildRedBonusBasicDominantLossNames)}`,
         `v3Race: different=${totals.buildV3RaceDifferentChoice}/${totals.buildV3RaceDecisions} reachGain=${totals.buildV3RaceReachGainPositive}/${totals.buildV3RaceDecisions} airportGain=${totals.buildV3RaceAirportGainPositive}/${totals.buildV3RaceDecisions} v2DelaysAirport=${totals.buildV3RaceV2ChoiceDelaysAirport}/${totals.buildV3RaceDecisions} gap025=${totals.buildV3RaceSecondGapLe025}/${totals.buildV3RaceDecisions} wouldChoose=${topNameCounts(totals.buildV3RaceWouldChooseNames)} v2Chosen=${topNameCounts(totals.buildV3RaceV2ChosenNames)}`,
+        `v3RaceDetail: lowValue=${totals.buildV3RaceDifferentLowValue}/${totals.buildV3RaceDifferentChoice} lowNoReach=${totals.buildV3RaceDifferentLowValueNoReachGain}/${totals.buildV3RaceDifferentLowValue} lowAirport=${totals.buildV3RaceDifferentLowValueAirportGain}/${totals.buildV3RaceDifferentLowValue} growthOrDisruption=${totals.buildV3RaceDifferentGrowthOrDisruption}/${totals.buildV3RaceDifferentChoice} basic=${totals.buildV3RaceDifferentBasic}/${totals.buildV3RaceDifferentChoice} special=${totals.buildV3RaceDifferentSpecial}/${totals.buildV3RaceDifferentChoice} v2RedOrCombo=${totals.buildV3RaceDifferentV2ChosenRedOrCombo}/${totals.buildV3RaceDifferentChoice} airportLe6=${totals.buildV3RaceDifferentAirportShortfallLe6}/${totals.buildV3RaceDifferentChoice} remainingLe2=${totals.buildV3RaceDifferentRemainingOneOrTwo}/${totals.buildV3RaceDifferentChoice} improvesReach=${totals.buildV3RaceDifferentWouldImproveReachTurns}/${totals.buildV3RaceDifferentChoice}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} missedHarmfulImprove05=${totals.businessSimpleMissedHarmfulGiftImproves05}/${totals.businessScoredDecisions} gapLt05=${totals.businessSimpleMissedHarmfulGiftGapLt05}/${totals.businessScoredDecisions} renovation=${totals.businessSimpleMissedHarmfulGiftRenovation}/${totals.businessScoredDecisions} renovationToGrape=${totals.businessSimpleMissedHarmfulGiftRenovationToGrape}/${totals.businessScoredDecisions} renovationToGrowth=${totals.businessSimpleMissedHarmfulGiftRenovationToGrowth}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} missedHarmfulNames=${topNameCounts(totals.businessSimpleMissedHarmfulGiftNames)} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,

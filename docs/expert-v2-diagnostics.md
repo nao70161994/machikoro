@@ -90,6 +90,7 @@ npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simpl
   - 主に `different`, `reachGain`, `airportGain`, `v2DelaysAirport`, `gap025`, `wouldChoose`, `v2Chosen` を見ます。allStrong4/crowd の loss 側に集中し、カード名が2-3個へ絞れ、normal crowd を壊さない場合だけ実装候補にします。
   - 2026-05-11 の allStrong4 20戦 smoke では `different=110/320`, `v2DelaysAirport=105/320` と差分は大きい一方、仮想bestは `雑貨屋:36`, `パン屋:35`, `改装屋:13` に寄りました。短期現金や妨害を捨てる broad race 補正になりやすいため、この時点では実装に進みません。
   - crowd/allStrong4 50戦でも `different=559/1544`, `v2DelaysAirport=505/1544`, `gap025=513/1544` と差分は大きい一方、仮想bestは `雑貨屋:198`, `パン屋:172`, `改装屋:74`, `貸金業:36`, `食品倉庫:28` へ寄りました。v2 が選んだ `牧場`, `ピザ屋`, `バーガーショップ` などを低額/特殊カードへ置き換える broad 変更になりやすく、まだ実装候補にはしません。
+  - 追加分解の crowd/allStrong4 20戦では `different=224/613`, `lowValue=175/224`, `lowNoReach=124/175`, `airportLe6=2/224`, `remainingLe2=48/224` でした。低価値候補は終盤の空港目前に限定されておらず、到達短縮より節約寄りに広く発火しているため、v3Race 実装は停止します。
 - `finishDelayExamples`
   - loss 診断で、終盤 build 遅延の具体例を出力します。
   - `scoreGapToBestNonDelay`, `reasonTags`, `opponentWinThreats`, `disruptionPreview` を見て、狭い実装候補だけを拾います。
