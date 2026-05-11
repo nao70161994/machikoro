@@ -6,6 +6,7 @@ function parseArgs(argv) {
         format: 'text',
         output: '',
         diversifiedLimit: 5,
+        minGamesPerLineup: 50,
     };
     for (let i = 0; i < argv.length; i += 1) {
         const arg = argv[i];
@@ -13,6 +14,7 @@ function parseArgs(argv) {
         else if (arg === '--format') args.format = argv[++i] || args.format;
         else if (arg === '--output') args.output = argv[++i] || '';
         else if (arg === '--diversified-limit') args.diversifiedLimit = parseInt(argv[++i] || String(args.diversifiedLimit), 10);
+        else if (arg === '--min-games-per-lineup') args.minGamesPerLineup = parseInt(argv[++i] || String(args.minGamesPerLineup), 10);
     }
     return args;
 }
@@ -31,7 +33,15 @@ function average(values) {
     return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
 }
 
-function buildEntry(result) {
+function minGamesAcrossSummaries(summaries) {
+    const games = summaries
+        .map(summary => Number.isFinite(summary.games) ? summary.games : null)
+        .filter(value => value !== null);
+    if (games.length === 0) return null;
+    return Math.min(...games);
+}
+
+function buildEntry(result, options = {}) {
     const summaries = Array.isArray(result.summaries) ? result.summaries : [];
     const summaries3p = summaries.filter(summary => playerCountOfSummary(summary) === 3);
     const summaries4p = summaries.filter(summary => playerCountOfSummary(summary) === 4);
@@ -40,6 +50,9 @@ function buildEntry(result) {
     const combinedScore = average([avg3p, avg4p]);
     const cardStyle = result.buildSignature && result.buildSignature.cardKey ? result.buildSignature.cardKey : '';
     const landmarkStyle = result.buildSignature && result.buildSignature.landmarkKey ? result.buildSignature.landmarkKey : '';
+    const minGamesPerLineup = options.minGamesPerLineup || 50;
+    const minGames = minGamesAcrossSummaries(summaries);
+    const smokeOnly = minGames !== null && minGames < minGamesPerLineup;
     return {
         id: result.id,
         path: result.path || '',
@@ -51,6 +64,12 @@ function buildEntry(result) {
         cardStyle,
         landmarkStyle,
         diversityKey: `${cardStyle} || ${landmarkStyle}`,
+        minGames,
+        smokeOnly,
+        promotionBlocked: smokeOnly,
+        promotionWarning: smokeOnly
+            ? `smokeOnly: min games per lineup ${minGames} < ${minGamesPerLineup}; do not use for adoption`
+            : '',
         summaries3p,
         summaries4p,
     };
@@ -114,9 +133,10 @@ function buildNearTiePairs(entries) {
 }
 
 function buildReview(results, options = {}) {
-    const entries = results.map(buildEntry).sort(compareEntries);
+    const entries = results.map(result => buildEntry(result, options)).sort(compareEntries);
     return {
         totalModels: entries.length,
+        minGamesPerLineup: options.minGamesPerLineup || 50,
         entries,
         diversifiedPicks: buildDiversifiedPicks(entries, options.diversifiedLimit || 5),
         nearTiePairs: buildNearTiePairs(entries),
@@ -128,13 +148,16 @@ function formatPercent(value) {
 }
 
 function renderText(review) {
-    const lines = [`RL multiplayer top-k review total=${review.totalModels}`];
+    const lines = [`RL multiplayer top-k review total=${review.totalModels} minGamesPerLineup=${review.minGamesPerLineup}`];
     lines.push('ranking:');
     for (const [index, entry] of review.entries.entries()) {
         lines.push(
             `- #${index + 1} ${entry.id} combined=${formatPercent(entry.combinedScore)} ` +
-            `3p=${formatPercent(entry.avg3p)} 4p=${formatPercent(entry.avg4p)} style=${entry.cardStyle || 'n/a'}`
+            `3p=${formatPercent(entry.avg3p)} 4p=${formatPercent(entry.avg4p)} ` +
+            `minGames=${entry.minGames === null ? 'n/a' : entry.minGames} ` +
+            `${entry.smokeOnly ? 'gate=smokeOnly promotionBlocked=true ' : 'gate=adoptionCandidate '}style=${entry.cardStyle || 'n/a'}`
         );
+        if (entry.promotionWarning) lines.push(`  warning=${entry.promotionWarning}`);
     }
     if (review.diversifiedPicks.length > 0) {
         lines.push('diversifiedPicks:');
@@ -159,15 +182,18 @@ function renderMarkdown(review) {
         '# RL Multiplayer Top-k Review',
         '',
         `- totalModels: ${review.totalModels}`,
+        `- minGamesPerLineup: ${review.minGamesPerLineup}`,
+        '- note: rows with `smokeOnly` are not adoption candidates.',
         '',
         '## Ranking',
         '',
-        '| rank | id | combined | 3p | 4p | style | landmarks |',
-        '|---:|---|---:|---:|---:|---|---|',
+        '| rank | id | combined | 3p | 4p | min games | gate | style | landmarks |',
+        '|---:|---|---:|---:|---:|---:|---|---|---|',
     ];
     for (const [index, entry] of review.entries.entries()) {
         lines.push(
             `| ${index + 1} | \`${entry.id}\` | ${formatPercent(entry.combinedScore)} | ${formatPercent(entry.avg3p)} | ${formatPercent(entry.avg4p)} | ` +
+            `${entry.minGames === null ? 'n/a' : entry.minGames} | ${entry.smokeOnly ? 'smokeOnly' : 'adoptionCandidate'} | ` +
             `${entry.cardStyle || 'n/a'} | ${entry.landmarkStyle || 'n/a'} |`
         );
     }
@@ -190,7 +216,10 @@ if (require.main === module) {
     const args = parseArgs(process.argv.slice(2));
     if (!args.input) throw new Error('--input is required');
     const results = JSON.parse(fs.readFileSync(args.input, 'utf8'));
-    const review = buildReview(results, { diversifiedLimit: args.diversifiedLimit });
+    const review = buildReview(results, {
+        diversifiedLimit: args.diversifiedLimit,
+        minGamesPerLineup: args.minGamesPerLineup,
+    });
     let output;
     if (args.format === 'json') output = JSON.stringify(review, null, 2) + '\n';
     else if (args.format === 'markdown' || args.format === 'md') output = renderMarkdown(review);
@@ -202,6 +231,7 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     playerCountOfSummary,
+    minGamesAcrossSummaries,
     buildEntry,
     compareEntries,
     buildDiversifiedPicks,

@@ -4,6 +4,7 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     playerCountOfSummary,
+    minGamesAcrossSummaries,
     buildEntry,
     buildDiversifiedPicks,
     buildNearTiePairs,
@@ -13,11 +14,12 @@ const {
 } = require('../scripts/review-rl-multiplayer-topk.js');
 
 runTest('review-rl-multiplayer-topk parseArgs は主要CLI引数を解釈する', () => {
-    const args = parseArgs(['--input', 'eval.json', '--format', 'markdown', '--output', 'out.md', '--diversified-limit', '3']);
+    const args = parseArgs(['--input', 'eval.json', '--format', 'markdown', '--output', 'out.md', '--diversified-limit', '3', '--min-games-per-lineup', '80']);
     assert.strictEqual(args.input, 'eval.json');
     assert.strictEqual(args.format, 'markdown');
     assert.strictEqual(args.output, 'out.md');
     assert.strictEqual(args.diversifiedLimit, 3);
+    assert.strictEqual(args.minGamesPerLineup, 80);
 });
 
 runTest('review-rl-multiplayer-topk playerCountOfSummary は lineup 長から人数を判定する', () => {
@@ -31,16 +33,33 @@ runTest('review-rl-multiplayer-topk buildEntry は3p/4p平均と総合点を作�
         id: 'top2',
         buildSignature: { cardKey: 'パン屋/寿司屋', landmarkKey: '港/駅' },
         summaries: [
-            { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.7 },
-            { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.5 },
-            { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.6 },
-            { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.4 },
+            { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.7, games: 50 },
+            { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.5, games: 50 },
+            { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.6, games: 50 },
+            { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.4, games: 50 },
         ],
     });
     assert.strictEqual(entry.avg3p, 0.6);
     assert.strictEqual(entry.avg4p, 0.5);
     assert.strictEqual(entry.combinedScore, 0.55);
     assert.strictEqual(entry.cardStyle, 'パン屋/寿司屋');
+    assert.strictEqual(entry.minGames, 50);
+    assert.strictEqual(entry.smokeOnly, false);
+});
+
+runTest('review-rl-multiplayer-topk は50戦未満を smokeOnly として扱う', () => {
+    const entry = buildEntry({
+        id: 'short',
+        summaries: [
+            { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.8, games: 20 },
+            { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.7, games: 20 },
+        ],
+    });
+    assert.strictEqual(minGamesAcrossSummaries(entry.summaries4p), 20);
+    assert.strictEqual(entry.minGames, 20);
+    assert.strictEqual(entry.smokeOnly, true);
+    assert.strictEqual(entry.promotionBlocked, true);
+    assert.ok(entry.promotionWarning.includes('do not use for adoption'));
 });
 
 runTest('review-rl-multiplayer-topk buildDiversifiedPicks は style 重複を避けて拾う', () => {
@@ -69,20 +88,20 @@ runTest('review-rl-multiplayer-topk buildReview/render は順位表と diversifi
             id: 'top1',
             buildSignature: { cardKey: 'パン屋/寿司屋', landmarkKey: '港/駅' },
             summaries: [
-                { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.8 },
-                { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.7 },
-                { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.6 },
-                { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.5 },
+                { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.8, games: 20 },
+                { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.7, games: 20 },
+                { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.6, games: 20 },
+                { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.5, games: 20 },
             ],
         },
         {
             id: 'top2',
             buildSignature: { cardKey: '麦畑/ブドウ園', landmarkKey: '駅/港' },
             summaries: [
-                { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.75 },
-                { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.65 },
-                { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.55 },
-                { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.45 },
+                { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.75, games: 20 },
+                { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.65, games: 20 },
+                { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.55, games: 20 },
+                { lineup: ['rl', 'normal', 'normal', 'strong'], rlWinRate: 0.45, games: 20 },
             ],
         },
     ], { diversifiedLimit: 2 });
@@ -90,6 +109,8 @@ runTest('review-rl-multiplayer-topk buildReview/render は順位表と diversifi
     const markdown = renderMarkdown(review);
     assert.strictEqual(review.entries[0].id, 'top1');
     assert.ok(text.includes('diversifiedPicks'));
+    assert.ok(text.includes('promotionBlocked=true'));
     assert.ok(markdown.includes('# RL Multiplayer Top-k Review'));
+    assert.ok(markdown.includes('smokeOnly'));
     assert.ok(markdown.includes('## Diversified Picks'));
 });

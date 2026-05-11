@@ -845,7 +845,7 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 `npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
 `npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style、target 診断で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 `review-rl-adoptions` は `status` が `adopted` / `candidate` の2人戦候補だけを対象にし、`archive` / `rejected` / `candidate-4p` は候補一覧と actions から除外する。archive 済みモデルの棚卸しは `npm run report-rl-registry` で確認する。
-3人/4人戦の自己対戦安定化では、`sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` を標準後評価フローにする。必要なら第4引数で `run-ranks` を `1,2,3` のように絞る。内部では指定 checkpoint を `rl,normal,strong` / `rl,weak,normal` / `rl,weak,strong` と `rl,weak,normal,strong` / `rl,normal,normal,strong` / `rl,weak,weak,normal` で各50戦評価し、続けて `review-rl-multiplayer-topk` の text/markdown/json を出す。review は 3人平均50% + 4人平均50% を総合点とし、近い総合点では多様性を優先して見る前提。
+3人/4人戦の自己対戦安定化では、`sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` を標準後評価フローにする。必要なら第4引数で `run-ranks` を `1,2,3` のように絞る。内部では指定 checkpoint を `rl,normal,strong` / `rl,weak,normal` / `rl,weak,strong` と `rl,weak,normal,strong` / `rl,normal,normal,strong` / `rl,weak,weak,normal` で各50戦評価し、続けて `review-rl-multiplayer-topk` の text/markdown/json を出す。review は 3人平均50% + 4人平均50% を総合点とし、近い総合点では多様性を優先して見る前提。50戦未満の review は `smokeOnly` / `promotionBlocked` と表示され、足切りには使えるが採用判断には使わない。
 
 複数 run を比較するときは、各 run の top10 review JSON を `review-rl-multiplayer-experiment-set` へ渡す。`bg-finalize-experiment-set-top10-multiplayer.sh` はこの運用をまとめたもので、完走待ちから run 間比較レポートまでを一発で生成する。
 `npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
