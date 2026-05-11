@@ -504,8 +504,18 @@ function _tryRestoreRoom() {
             return;
         }
         const gameStartPayload = JSON.parse(raw);
-        const stateSnapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
-        const actionLog = logRaw ? _normalizeOnlineActionLog(JSON.parse(logRaw)) : [];
+        let stateSnapshot = null;
+        let actionLog = [];
+        try {
+            stateSnapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
+        } catch (_) {
+            stateSnapshot = null;
+        }
+        try {
+            actionLog = logRaw ? _normalizeOnlineActionLog(JSON.parse(logRaw)) : [];
+        } catch (_) {
+            actionLog = [];
+        }
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,

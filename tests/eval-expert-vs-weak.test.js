@@ -20,6 +20,7 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.maxSteps, 5000);
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
+    assert.strictEqual(args.expertPreset, 'v2simple');
     assert.strictEqual(args.buildMode, 'ev');
     assert.strictEqual(args.diceMode, 'ev');
     assert.strictEqual(args.rerollMode, 'simple');
@@ -45,6 +46,7 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
         '--format', 'json',
         '--full',
         '--profile',
+        '--expert-preset', 'default',
         '--profiles', 'duel,crowd',
         '--build-mode', 'random',
         '--dice-mode', 'random',
@@ -67,6 +69,7 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.lite, false);
     assert.strictEqual(args.profile, true);
+    assert.strictEqual(args.expertPreset, 'default');
     assert.strictEqual(args.buildMode, 'random');
     assert.strictEqual(args.diceMode, 'random');
     assert.strictEqual(args.rerollMode, 'simple');
@@ -82,6 +85,11 @@ runTest('eval-expert-vs-weak parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.comboWeight, 0.5);
     assert.strictEqual(args.buildTempoWeight, 0.1);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
+});
+
+runTest('eval-expert-vs-weak parseArgs は expert-preset 値省略時も v2simple を使う', () => {
+    const args = parseArgs(['--expert-preset']);
+    assert.strictEqual(args.expertPreset, 'v2simple');
 });
 
 runTest('eval-expert-vs-weak profilePlayers は既知プロファイルを返す', () => {
@@ -114,6 +122,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         lite: true,
         fast: false,
         profile: true,
+        expertPreset: 'v2simple',
         buildMode: 'ev',
         diceMode: 'ev',
         rerollMode: 'simple',
@@ -176,6 +185,8 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     const text = toText(entries, summary, options);
     const md = toMarkdown(entries, summary, options);
     assert.ok(text.includes('weightedWinRate=70.0%'));
+    assert.ok(text.includes('expertPreset=v2simple'));
+    assert.ok(md.includes('- expertPreset: v2simple'));
     assert.ok(text.includes('buildMode=ev'));
     assert.ok(text.includes('diceMode=ev'));
     assert.ok(text.includes('rerollMode=simple'));
@@ -217,7 +228,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
 
 runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-weak.js'), 'utf8');
-    assert.ok(source.includes("expertPreset: 'v2simple'"));
+    assert.ok(source.includes("expertPreset: config.expertPreset || 'v2simple'"));
     assert.ok(source.includes("expertDiceMode: config.diceMode || 'ev'"));
     assert.ok(source.includes("expertRerollMode: config.rerollMode || 'simple'"));
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
@@ -232,6 +243,7 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertComboMode: config.comboMode || 'core'"));
     assert.ok(source.includes("expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35"));
     assert.ok(source.includes("expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0"));
+    assert.ok(source.includes("expertPreset: options.expertPreset"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("diceMode: options.diceMode"));
     assert.ok(source.includes("rerollMode: options.rerollMode"));

@@ -552,22 +552,26 @@ function createRoomMirror(room) {
     if (room.stateSnapshot) {
         restoreMirrorState(game, shopStock, room.stateSnapshot, createCardByName);
     }
-    for (const { action, data } of room.actionLog || []) {
-        applyActionToMirror(game, shopStock, action, data, createCardByName);
+    for (const entry of room.actionLog || []) {
+        if (!entry || typeof entry.action !== 'string') continue;
+        applyActionToMirror(game, shopStock, entry.action, entry.data, createCardByName);
     }
     return { game, shopStock, cpuPlayers };
 }
 
 function restoreMirrorState(game, shopStock, state, createCardByName) {
     if (!state) return;
+    const playersState = Array.isArray(state.players) ? state.players : [];
     game.players.forEach((p, i) => {
-        const playerState = state.players[i];
+        const playerState = playersState[i];
         if (!playerState) return;
         p.name = playerState.name;
-        p.coins = playerState.coins;
-        p.cards = playerState.cards.map(name => createCardByName(name)).filter(Boolean);
-        p.dormantCards = (playerState.dormantIndices || []).map(idx => p.cards[idx]).filter(Boolean);
-        p.landmarks = Object.assign({}, playerState.landmarks);
+        p.coins = Number.isFinite(playerState.coins) ? playerState.coins : p.coins;
+        const cardNames = Array.isArray(playerState.cards) ? playerState.cards : [];
+        p.cards = cardNames.map(name => createCardByName(name)).filter(Boolean);
+        const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
+        p.dormantCards = dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
+        p.landmarks = Object.assign({}, playerState.landmarks && typeof playerState.landmarks === 'object' ? playerState.landmarks : {});
         p.itVentureCoins = playerState.itVentureCoins || 0;
         p.hasYakusho = playerState.hasYakusho !== false;
     });

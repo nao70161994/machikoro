@@ -747,6 +747,39 @@ runTest('compactRoomActionLog は長いログを stateSnapshot に圧縮して�
     assert.strictEqual(after.game.turnCount, before.game.turnCount);
 });
 
+runTest('createRoomMirror は壊れた snapshot/actionLog entry を例外にせず扱う', () => {
+    const room = {
+        hostPlayerIndex: 0,
+        started: true,
+        restored: true,
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        gameStartPayload: {
+            playerNames: ['A', 'B'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+        },
+        stateSnapshot: {
+            players: [{ name: 'A', dormantIndices: 'broken', landmarks: null }],
+            shopStock: { 麦畑: 5 },
+        },
+        actionLog: [
+            null,
+            { action: null, data: {} },
+            { action: 'nextTurn', data: {} },
+        ],
+    };
+
+    const mirror = createRoomMirror(room);
+
+    assert.ok(mirror);
+    assert.strictEqual(mirror.game.players[0].name, 'A');
+    assert.strictEqual(mirror.game.players[0].coins, 3);
+    assert.strictEqual(mirror.shopStock['麦畑'], 5);
+});
+
 runTest('applyActionToMirror は undoBuild で保存済み状態を復元する', () => {
     const { GameManager, createCardByName } = makeGame();
     const game = new GameManager(2);

@@ -84,6 +84,29 @@ runTest('render-rl-registry-evals は多人数lineup評価を2人用js evalと�
     }, /2人用 eval-rl-models JSON/);
 });
 
+runTest('render-rl-registry-evals はopponent名だけの多人数lineup評価も変換しない', () => {
+    assert.throws(() => {
+        renderRegistryEvals([
+            {
+                id: 'model',
+                path: 'models/rl_model/runs/model/best_model.browser.json',
+                score: 0.5,
+                summaries: [
+                    {
+                        opponent: 'rl+normal+strong',
+                        games: 20,
+                        rlWins: 10,
+                        opponentWins: 10,
+                        draws: 0,
+                        rlWinRate: 0.5,
+                        averageTurns: 50,
+                    },
+                ],
+            },
+        ], '2026-04-20');
+    }, /2人用 eval-rl-models JSON/);
+});
+
 runTest('render-rl-registry-evals は registry eval を重複なしで追記する', () => {
     const registry = {
         models: [

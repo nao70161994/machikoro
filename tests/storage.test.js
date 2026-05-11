@@ -57,6 +57,7 @@ function loadStorageRuntime() {
                 this.turnCount = 0;
                 this.hadAmusementParkAtRoll = false;
             }
+            checkWinner() { return null; }
         },
         CPU: class CPU { constructor(difficulty, options = {}) { this.difficulty = difficulty; this.options = options; } },
         createCpuPlayer(difficulty, options = {}) {
@@ -221,6 +222,16 @@ runTest('storage reconnectOnline はCPU復元を行わず再接続だけ送る',
     assert.strictEqual(rt.emits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
     assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
+});
+
+runTest('storage saveGameState はオンライン中にローカル保存しない', () => {
+    const rt = loadStorageRuntime();
+    rt.__test.setGame(new rt.GameManager(2));
+    rt.isOnlineGame = true;
+
+    rt.saveGameState();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
 });
 
 runTest('storage resumeGame は壊れた保存データを破棄して alert する', () => {

@@ -4,7 +4,7 @@ const path = require('path');
 const vm = require('vm');
 const { createSequenceRandom, createStorage, makeElement, runTest } = require('./helpers/test-utils');
 
-function loadMainRuntime() {
+function loadMainRuntime(options = {}) {
     const elements = {
         playerCount: makeElement(),
         playerSettings: makeElement(),
@@ -34,6 +34,9 @@ function loadMainRuntime() {
         resumeGame: 0,
     };
     const { storage: localStorageData, localStorage } = createStorage();
+    if (options.pwaInstallDismissed) {
+        localStorage.setItem('pwaInstallDismissed', '1');
+    }
     const createdButtons = {
         '#onlineCreate button': makeElement(),
         '#onlineJoin button': makeElement(),
@@ -44,6 +47,7 @@ function loadMainRuntime() {
         Math,
         counters,
         elements,
+        createdButtons,
         eventHandlers,
         localStorageData,
         timeouts,
@@ -62,7 +66,7 @@ function loadMainRuntime() {
         window: {
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
-            matchMedia() { return { matches: false }; },
+            matchMedia() { return { matches: !!options.standalone }; },
         },
         navigator: { onLine: true },
         localStorage,
@@ -73,7 +77,10 @@ function loadMainRuntime() {
         clearTimeout() {},
         stopConfetti() {},
         playSound() {},
-        showConfirm(message, cb) { cb(); },
+        showConfirm(message, cb) {
+            if (typeof context.beforeConfirm === 'function') context.beforeConfirm(message);
+            cb();
+        },
         resetStatsRecorded() {},
         resetOnlineState() {},
         resetFullLog() {},
@@ -88,6 +95,7 @@ function loadMainRuntime() {
         updateDiceDisplay() {},
         sendAction(action, data) { sentActions.push({ action, data }); },
         saveGameState() {},
+        saveUndoState() {},
         cancelAutoSkip() {},
         alert() {},
         fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
@@ -138,6 +146,14 @@ function loadMainRuntime() {
             }
             currentPlayer() { return this.players[this.currentPlayerIndex]; }
             nextTurn() { this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length; }
+            selectDiceCount(useTwo, d1, d2, tunaDice) {
+                this.selectedDice = { useTwo, d1, d2, tunaDice };
+            }
+            buildCard(card) {
+                this.builtCard = card.name;
+                this.builtThisTurn = true;
+                return true;
+            }
             checkWinner() { return null; }
             addLog() {}
         },
@@ -163,6 +179,7 @@ function loadMainRuntime() {
     vm.runInContext(`
         this.__test = {
             elements,
+            createdButtons,
             eventHandlers,
             localStorageData,
             sentActions,
@@ -359,6 +376,43 @@ runTest('main checkAutoSkip は予約後にオンライン手番が変わった�
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
 });
 
+runTest('main onSelectDiceCount は遅延中にオンライン手番が変わったら送信しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+
+    rt.onSelectDiceCount(false);
+    game.currentPlayerIndex = 1;
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.selectedDice, undefined);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main onBuildCard はconfirm後にオンライン手番が変わったら送信しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 3;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+    rt.SHOP_STOCK['麦畑'] = 6;
+    rt.beforeConfirm = () => {
+        game.currentPlayerIndex = 1;
+    };
+
+    rt.onBuildCard('麦畑');
+
+    assert.strictEqual(game.builtCard, undefined);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
 runTest('main onSkip はオンラインで自分の手番でなければローカル適用しない', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);
@@ -415,11 +469,48 @@ runTest('appShell updateOnlineTabState はオフライン時にオンライン�
 
     assert.strictEqual(rt.__test.elements.offlineNotice.style.display, 'block');
     assert.strictEqual(rt.__test.elements.tabOnline.style.opacity, '0.4');
+    assert.strictEqual(rt.__test.createdButtons['#onlineCreate button'].disabled, true);
+    assert.strictEqual(rt.__test.createdButtons['#onlineJoin button'].disabled, true);
+
+    rt.navigator.onLine = true;
+    rt.updateOnlineTabState();
+
+    assert.strictEqual(rt.__test.elements.offlineNotice.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.tabOnline.style.opacity, '');
+    assert.strictEqual(rt.__test.createdButtons['#onlineCreate button'].disabled, false);
+    assert.strictEqual(rt.__test.createdButtons['#onlineJoin button'].disabled, false);
 });
 
 runTest('appShell bindPwaInstallHandlers は beforeinstallprompt を購読する', () => {
     const rt = loadMainRuntime();
     assert.ok(rt.__test.eventHandlers.beforeinstallprompt);
+});
+
+runTest('appShell beforeinstallprompt は標準promptを止めてバナーから実行する', () => {
+    const rt = loadMainRuntime();
+    let prevented = false;
+    let prompted = false;
+    const event = {
+        preventDefault() { prevented = true; },
+        prompt() { prompted = true; },
+        userChoice: { then(callback) { callback(); } },
+    };
+
+    rt.__test.eventHandlers.beforeinstallprompt(event);
+    assert.strictEqual(prevented, true);
+    assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
+
+    rt.pwaInstallPrompt();
+    assert.strictEqual(prompted, true);
+    assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'none');
+});
+
+runTest('appShell bindPwaInstallHandlers は standalone と dismissed では購読しない', () => {
+    const standalone = loadMainRuntime({ standalone: true });
+    assert.strictEqual(standalone.__test.eventHandlers.beforeinstallprompt, undefined);
+
+    const dismissed = loadMainRuntime({ pwaInstallDismissed: true });
+    assert.strictEqual(dismissed.__test.eventHandlers.beforeinstallprompt, undefined);
 });
 
 runTest('appShell pwaInstallDismiss はバナーを閉じて localStorage に記録する', () => {
