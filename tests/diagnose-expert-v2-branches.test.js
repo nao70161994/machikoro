@@ -291,14 +291,22 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
             buildRedBonusBasicDominantCopy2Plus: 0,
             buildRedBonusBasicDominantMallBuilt: 1,
             buildRedBonusBasicDominantGapLe025: 1,
-            buildRedBonusBasicDominantGapLe05: 2,
-            buildRedBonusBasicDominantSecondNames: { パン屋: 1, 牧場: 1 },
-            buildRedBonusBasicDominantWin: 1,
-            buildRedBonusBasicDominantLoss: 1,
-            buildRedBonusBasicDominantWinNames: { パン屋: 1 },
-            buildRedBonusBasicDominantLossNames: { 牧場: 1 },
-            buildRenovationPenaltyWouldFlip: 1,
-            buildRenovationPenaltyNames: { パン屋: 1 },
+                buildRedBonusBasicDominantGapLe05: 2,
+                buildRedBonusBasicDominantSecondNames: { パン屋: 1, 牧場: 1 },
+                buildRedBonusBasicDominantWin: 1,
+                buildRedBonusBasicDominantLoss: 1,
+                buildRedBonusBasicDominantWinNames: { パン屋: 1 },
+                buildRedBonusBasicDominantLossNames: { 牧場: 1 },
+                buildV3RaceDecisions: 4,
+                buildV3RaceDifferentChoice: 2,
+                buildV3RaceReachGainPositive: 3,
+                buildV3RaceAirportGainPositive: 1,
+                buildV3RaceV2ChoiceDelaysAirport: 1,
+                buildV3RaceSecondGapLe025: 2,
+                buildV3RaceWouldChooseNames: { ブドウ園: 1, コンビニ: 1 },
+                buildV3RaceV2ChosenNames: { パン屋: 2 },
+                buildRenovationPenaltyWouldFlip: 1,
+                buildRenovationPenaltyNames: { パン屋: 1 },
             buildCornCandidate: 4,
             buildCornChosen: 2,
             buildCornChosenNoMarket: 2,
@@ -471,6 +479,7 @@ runTest('diagnose-expert-v2-branches toText は主要カウンタを含む', () 
     assert.ok(text.includes('componentRanchCombo: dominant=2/6 copy0=1/2 copy1=1/2 copy2plus=0/2 gap025=1/2 gap05=2/2 secondNames=コンビニ:1,改装屋:1'));
     assert.ok(text.includes('componentRedBasic: dominant=2/6 copy0=1/2 copy1=1/2 copy2plus=0/2 mallBuilt=1/2 gap025=1/2 gap05=2/2 secondNames=パン屋:1,牧場:1'));
     assert.ok(text.includes('componentRedBasicResult: win=1/2 loss=1/2 winSecondNames=パン屋:1 lossSecondNames=牧場:1'));
+    assert.ok(text.includes('v3Race: different=2/4 reachGain=3/4 airportGain=1/4 v2DelaysAirport=1/4 gap025=2/4 wouldChoose=コンビニ:1,ブドウ園:1 v2Chosen=パン屋:2'));
     assert.ok(text.includes('cornGate: candidate=4/6 chosen=2/6 noMarket=2/6 noMarketStock=1/6 lateNoStation=1/6 near05=3/6 missedNear05=2/6 flipBonus08=2/6 flip05=1/6 flip05Names=パン屋:1'));
     assert.ok(text.includes('buildHighPurpleEarlyChosen=2/6'));
     assert.ok(text.includes('buildHighPurpleWouldFlipPenalty1=1/6'));

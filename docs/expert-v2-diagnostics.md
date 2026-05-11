@@ -85,6 +85,10 @@ npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simpl
   - 赤の build EV 補正で `ピザ屋` / `バーガーショップ` が選ばれたケースを、購入前枚数、ショッピングモール有無、2位との差、勝敗別で分解します。
   - 20戦では `dominant=53/613`, `gap025=53/53`, `win=21/53`, `loss=32/53` で、代替先は勝敗どちらも主に `バーガーショップ` でした。赤補正を下げても赤同士の入れ替わりになりやすいため、実装候補にはしません。
   - allStrong4 50戦では `dominant=77/787`, `win=32/77`, `loss=45/77`, `secondNames=バーガーショップ:66,パン屋:10,牧場:1` でした。loss 側への偏りは 1.5倍未満で、次点も赤同士が大半のため、赤基本カード penalty や赤EV係数変更には進みません。
+- `v3Race`
+  - build EV の候補カードについて、購入後の期待値で次ランドマーク/空港へ到達する概算ターンがどれだけ短縮されるかを見る仮想診断です。CPU本体の行動は変えず、現行 v2 選択と race score best が違う回数だけを測ります。
+  - 主に `different`, `reachGain`, `airportGain`, `v2DelaysAirport`, `gap025`, `wouldChoose`, `v2Chosen` を見ます。allStrong4/crowd の loss 側に集中し、カード名が2-3個へ絞れ、normal crowd を壊さない場合だけ実装候補にします。
+  - 2026-05-11 の allStrong4 20戦 smoke では `different=110/320`, `v2DelaysAirport=105/320` と差分は大きい一方、仮想bestは `雑貨屋:36`, `パン屋:35`, `改装屋:13` に寄りました。短期現金や妨害を捨てる broad race 補正になりやすいため、この時点では実装に進みません。
 - `finishDelayExamples`
   - loss 診断で、終盤 build 遅延の具体例を出力します。
   - `scoreGapToBestNonDelay`, `reasonTags`, `opponentWinThreats`, `disruptionPreview` を見て、狭い実装候補だけを拾います。

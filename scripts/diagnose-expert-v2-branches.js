@@ -105,6 +105,14 @@ function createCounters() {
         buildRedBonusBasicDominantLoss: 0,
         buildRedBonusBasicDominantWinNames: {},
         buildRedBonusBasicDominantLossNames: {},
+        buildV3RaceDecisions: 0,
+        buildV3RaceDifferentChoice: 0,
+        buildV3RaceReachGainPositive: 0,
+        buildV3RaceAirportGainPositive: 0,
+        buildV3RaceV2ChoiceDelaysAirport: 0,
+        buildV3RaceSecondGapLe025: 0,
+        buildV3RaceWouldChooseNames: {},
+        buildV3RaceV2ChosenNames: {},
         buildRenovationPenaltyWouldFlip: 0,
         buildRenovationPenaltyNames: {},
         buildRenovationFirstOptions: 0,
@@ -364,6 +372,52 @@ function bestAfterScoreAdjustment(scored, adjustScore) {
         }
     }
     return best ? best.entry : null;
+}
+
+function turnsToReach(cost, coins, ev) {
+    if (!Number.isFinite(cost) || !Number.isFinite(coins)) return Infinity;
+    const shortfall = Math.max(0, cost - coins);
+    if (shortfall <= 0) return 0;
+    if (!Number.isFinite(ev) || ev <= 0) return Infinity;
+    return shortfall / Math.max(ev, 0.01);
+}
+
+function buildV3RaceEntryScore(runtime, game, current, entry, currentBaseEv) {
+    if (!entry || !entry.option || !entry.option.card || !entry.breakdown) return null;
+    const enabled = game.enabledLandmarks || new Set(runtime.Player.landmarkNames());
+    const remainingNames = runtime.Player.landmarkNames()
+        .filter(name => enabled.has(name) && !current.landmarks[name]);
+    if (remainingNames.length === 0) return null;
+
+    const postCoins = current.coins - entry.option.card.cost;
+    const postEv = Math.max(0, entry.breakdown.baseEv || 0);
+    const remainingCosts = remainingNames
+        .map(name => runtime.Player.landmarkCost(name))
+        .filter(cost => Number.isFinite(cost) && cost > 0);
+    const nearestCost = Math.min(...remainingCosts);
+    const airportCost = remainingNames.includes(runtime.LANDMARK_NAMES.AIRPORT)
+        ? runtime.Player.landmarkCost(runtime.LANDMARK_NAMES.AIRPORT)
+        : null;
+
+    const nearestBefore = turnsToReach(nearestCost, current.coins, currentBaseEv);
+    const nearestAfter = turnsToReach(nearestCost, postCoins, postEv);
+    const nearestGain = nearestBefore - nearestAfter;
+    let airportGain = 0;
+    if (airportCost !== null) {
+        const airportBefore = turnsToReach(airportCost, current.coins, currentBaseEv);
+        const airportAfter = turnsToReach(airportCost, postCoins, postEv);
+        airportGain = airportBefore - airportAfter;
+    }
+    const deltaEv = postEv - currentBaseEv;
+    const score = nearestGain * 2 + airportGain * 3 + deltaEv * 0.3;
+    return { nearestGain, airportGain, deltaEv, score };
+}
+
+function compareRaceEntries(left, right) {
+    const leftScore = left && left.race ? left.race.score : -Infinity;
+    const rightScore = right && right.race ? right.race.score : -Infinity;
+    if (leftScore !== rightScore) return rightScore - leftScore;
+    return (right.score || 0) - (left.score || 0);
 }
 
 function counterDelta(after, before, key) {
@@ -1326,6 +1380,35 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                         : -Infinity;
                     const currentBaseEv = Math.max(currentOneScore, currentTwoScore);
                     if (best && best.option && best.option.card) {
+                        const raceScored = scored
+                            .map(entry => Object.assign({}, entry, {
+                                race: buildV3RaceEntryScore(runtime, game, current, entry, currentBaseEv),
+                            }))
+                            .filter(entry => entry.race);
+                        if (raceScored.length > 0) {
+                            counters.buildV3RaceDecisions++;
+                            raceScored.sort(compareRaceEntries);
+                            const raceBest = raceScored[0];
+                            const raceSecond = raceScored[1] || null;
+                            const v2RaceEntry = raceScored.find(entry =>
+                                this._sameExpertV2SimpleBuildOption(entry.option, best.option)
+                            );
+                            if (raceBest && raceBest.option && raceBest.option.card) {
+                                if (raceBest.race.nearestGain > 0) counters.buildV3RaceReachGainPositive++;
+                                if (raceBest.race.airportGain > 0) counters.buildV3RaceAirportGainPositive++;
+                                if (raceSecond && raceBest.race.score - raceSecond.race.score <= 0.25) {
+                                    counters.buildV3RaceSecondGapLe025++;
+                                }
+                                if (!this._sameExpertV2SimpleBuildOption(raceBest.option, best.option)) {
+                                    counters.buildV3RaceDifferentChoice++;
+                                    incrementName(counters.buildV3RaceWouldChooseNames, raceBest.option.card.name);
+                                    incrementName(counters.buildV3RaceV2ChosenNames, best.option.card.name);
+                                }
+                            }
+                            if (v2RaceEntry && v2RaceEntry.race && v2RaceEntry.race.airportGain < 0) {
+                                counters.buildV3RaceV2ChoiceDelaysAirport++;
+                            }
+                        }
                         const cornEntry = scored.find(entry => entry.option.card && entry.option.card.name === 'コーン畑');
                         if (cornEntry) {
                             counters.buildCornCandidate++;
@@ -1944,6 +2027,7 @@ function toText(report) {
         `componentRanchCombo: dominant=${totals.buildComboRanchDominantChosen}/${totals.buildComponentDecisions} copy0=${totals.buildComboRanchDominantCopy0}/${totals.buildComboRanchDominantChosen} copy1=${totals.buildComboRanchDominantCopy1}/${totals.buildComboRanchDominantChosen} copy2plus=${totals.buildComboRanchDominantCopy2Plus}/${totals.buildComboRanchDominantChosen} gap025=${totals.buildComboRanchDominantGapLe025}/${totals.buildComboRanchDominantChosen} gap05=${totals.buildComboRanchDominantGapLe05}/${totals.buildComboRanchDominantChosen} secondNames=${topNameCounts(totals.buildComboRanchDominantSecondNames)}`,
         `componentRedBasic: dominant=${totals.buildRedBonusBasicDominantChosen}/${totals.buildComponentDecisions} copy0=${totals.buildRedBonusBasicDominantCopy0}/${totals.buildRedBonusBasicDominantChosen} copy1=${totals.buildRedBonusBasicDominantCopy1}/${totals.buildRedBonusBasicDominantChosen} copy2plus=${totals.buildRedBonusBasicDominantCopy2Plus}/${totals.buildRedBonusBasicDominantChosen} mallBuilt=${totals.buildRedBonusBasicDominantMallBuilt}/${totals.buildRedBonusBasicDominantChosen} gap025=${totals.buildRedBonusBasicDominantGapLe025}/${totals.buildRedBonusBasicDominantChosen} gap05=${totals.buildRedBonusBasicDominantGapLe05}/${totals.buildRedBonusBasicDominantChosen} secondNames=${topNameCounts(totals.buildRedBonusBasicDominantSecondNames)}`,
         `componentRedBasicResult: win=${totals.buildRedBonusBasicDominantWin}/${totals.buildRedBonusBasicDominantChosen} loss=${totals.buildRedBonusBasicDominantLoss}/${totals.buildRedBonusBasicDominantChosen} winSecondNames=${topNameCounts(totals.buildRedBonusBasicDominantWinNames)} lossSecondNames=${topNameCounts(totals.buildRedBonusBasicDominantLossNames)}`,
+        `v3Race: different=${totals.buildV3RaceDifferentChoice}/${totals.buildV3RaceDecisions} reachGain=${totals.buildV3RaceReachGainPositive}/${totals.buildV3RaceDecisions} airportGain=${totals.buildV3RaceAirportGainPositive}/${totals.buildV3RaceDecisions} v2DelaysAirport=${totals.buildV3RaceV2ChoiceDelaysAirport}/${totals.buildV3RaceDecisions} gap025=${totals.buildV3RaceSecondGapLe025}/${totals.buildV3RaceDecisions} wouldChoose=${topNameCounts(totals.buildV3RaceWouldChooseNames)} v2Chosen=${topNameCounts(totals.buildV3RaceV2ChosenNames)}`,
         `cornGate: candidate=${totals.buildCornCandidate}/${totals.buildCardEvDecisions} chosen=${totals.buildCornChosen}/${totals.buildCardEvDecisions} noMarket=${totals.buildCornChosenNoMarket}/${totals.buildCardEvDecisions} noMarketStock=${totals.buildCornChosenNoMarketStock}/${totals.buildCardEvDecisions} lateNoStation=${totals.buildCornChosenLateNoStation}/${totals.buildCardEvDecisions} near05=${totals.buildCornNearBest05}/${totals.buildCardEvDecisions} missedNear05=${totals.buildCornMissedNearBest05}/${totals.buildCardEvDecisions} flipBonus08=${totals.buildCornWouldFlipBonus08}/${totals.buildCardEvDecisions} flip05=${totals.buildCornWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip05Names=${topNameCounts(totals.buildCornFlip05Names)}`,
         `businessDelay: chosen=${totals.buildBusinessDelayChosen}/${totals.buildCardEvDecisions} near=${totals.buildBusinessDelayNear}/${totals.buildCardEvDecisions} delay=${totals.buildBusinessDelayWouldDelay}/${totals.buildCardEvDecisions} duplicate=${totals.buildBusinessDelayDuplicate}/${totals.buildCardEvDecisions} lowExchange=${totals.buildBusinessDelayLowExchangeValue}/${totals.buildCardEvDecisions} secondGap05=${totals.buildBusinessDelaySecondGapLt05}/${totals.buildCardEvDecisions} flip05=${totals.buildBusinessDelayWouldFlipPenalty05}/${totals.buildCardEvDecisions} flip1=${totals.buildBusinessDelayWouldFlipPenalty1}/${totals.buildCardEvDecisions}`,
         `businessScored: diff=${totals.businessScoredDiffers}/${totals.businessScoredDecisions} improves=${totals.businessScoredImprovesScore}/${totals.businessScoredDecisions} harmfulAvailable=${totals.businessScoredHarmfulGiftAvailable}/${totals.businessScoredDecisions} missedHarmful=${totals.businessSimpleMissedHarmfulGift}/${totals.businessScoredDecisions} missedHarmfulImprove05=${totals.businessSimpleMissedHarmfulGiftImproves05}/${totals.businessScoredDecisions} gapLt05=${totals.businessSimpleMissedHarmfulGiftGapLt05}/${totals.businessScoredDecisions} renovation=${totals.businessSimpleMissedHarmfulGiftRenovation}/${totals.businessScoredDecisions} renovationToGrape=${totals.businessSimpleMissedHarmfulGiftRenovationToGrape}/${totals.businessScoredDecisions} renovationToGrowth=${totals.businessSimpleMissedHarmfulGiftRenovationToGrowth}/${totals.businessScoredDecisions} takesHigher=${totals.businessScoredTakesHigherValue}/${totals.businessScoredDecisions} missedHarmfulNames=${topNameCounts(totals.businessSimpleMissedHarmfulGiftNames)} simpleNames=${topNameCounts(totals.businessSimpleNames)} scoredNames=${topNameCounts(totals.businessScoredNames)}`,
