@@ -57,6 +57,10 @@ function summaryToOpponentEval(summary) {
 
 function resultToRegistryEval(result, date) {
     const summaries = Array.isArray(result.summaries) ? result.summaries : [];
+    const hasLineupEval = summaries.some(summary => Array.isArray(summary.lineup) && summary.lineup.length > 2);
+    if (hasLineupEval) {
+        throw new Error('render-rl-registry-evals は2人用 eval-rl-models JSON のみ対応しています。多人数lineup評価は registry に手動で js-lineup / js-lineup-3p として整理してください。');
+    }
     const evalEntry = {
         date,
         type: 'js',

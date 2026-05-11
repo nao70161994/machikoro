@@ -52,7 +52,7 @@ function buildEntry(result, options = {}) {
     const landmarkStyle = result.buildSignature && result.buildSignature.landmarkKey ? result.buildSignature.landmarkKey : '';
     const minGamesPerLineup = options.minGamesPerLineup || 50;
     const minGames = minGamesAcrossSummaries(summaries);
-    const smokeOnly = minGames !== null && minGames < minGamesPerLineup;
+    const smokeOnly = minGames === null || minGames < minGamesPerLineup;
     return {
         id: result.id,
         path: result.path || '',
@@ -68,7 +68,7 @@ function buildEntry(result, options = {}) {
         smokeOnly,
         promotionBlocked: smokeOnly,
         promotionWarning: smokeOnly
-            ? `smokeOnly: min games per lineup ${minGames} < ${minGamesPerLineup}; do not use for adoption`
+            ? `smokeOnly: min games per lineup ${minGames === null ? 'n/a' : minGames} < ${minGamesPerLineup}; do not use for adoption`
             : '',
         summaries3p,
         summaries4p,

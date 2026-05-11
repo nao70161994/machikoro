@@ -25,7 +25,7 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
     assert.strictEqual(args.rerollMode, 'simple');
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
-    assert.strictEqual(args.businessMode, 'simple');
+    assert.strictEqual(args.businessMode, 'harmfulGift');
     assert.strictEqual(args.cleaningMode, 'simple');
     assert.strictEqual(args.harborMode, 'simple');
     assert.strictEqual(args.moverMode, 'simple');

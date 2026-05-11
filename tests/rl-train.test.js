@@ -16,6 +16,16 @@ function runPython(code) {
     return result.stdout.trim();
 }
 
+runTest('rl train: CLI help は train-batch-size を含む', () => {
+    const result = spawnSync('python3', ['-m', 'scripts.rl.train', '--help'], {
+        cwd: path.join(__dirname, '..'),
+        encoding: 'utf8',
+    });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert.ok(result.stdout.includes('--train-batch-size'));
+    assert.ok(result.stdout.includes('--debug-train-batch'));
+});
+
 runTest('rl train: masked probs は有効手だけで合計1に正規化される', () => {
     const output = runPython(`
 import numpy as np

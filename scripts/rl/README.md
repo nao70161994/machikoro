@@ -597,7 +597,7 @@ npm run summarize-rl-metrics -- \
 - `self` は既定では現在モデルを相手にする片側自己対戦。`--self-learn-both-sides` で `opponent=self` のゲームだけ両席を学習対象にできる。
 - `pool` は過去モデル snapshot との対戦。短期実験でも効くよう `--pool-update-every 250 --pool-max-size 4` を使う。
 - `--restore-best-at-end` で、学習終了時に途中 best checkpoint を `models/rl_model/model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
-- `hidden=128` と `hidden=256` は比較対象。従来の混合相手では `hidden=256` が pass 方策へ崩れやすかったが、`lr=2e-5〜3e-5`、完全自己対戦、両側学習では有力候補が出ている。
+- `hidden=128` と `hidden=256` は比較対象。従来の混合相手では `hidden=256` が pass 方策へ崩れやすかったが、`lr=2e-5〜3e-5`、完全自己対戦、両側学習では採用候補が出た。現行の3〜4人用採用は後評価で安定した `seed103` を維持する。
 - 学習済みモデル本体は git 管理しない。採用候補・評価結果・構築傾向は `models/rl_model/registry.json` に記録する。
 
 これまでの観察:
@@ -802,7 +802,7 @@ npm run validate-rl-registry
 npm run report-rl-registry
 npm run audit-rl-portfolio
 npm run plan-rl-next-actions
-npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/eval-summary.csv
+npm run eval-rl-models -- --models <model-id> --games 50 --output models/rl_model/eval-summary.json --csv models/rl_model/eval-summary.csv
 ```
 
 貼り付け用の Markdown 順位表も同時に出す場合は `--markdown` を使う。
@@ -811,11 +811,13 @@ npm run eval-rl-models -- --models <model-id> --games 50 --csv models/rl_model/e
 npm run eval-rl-models -- \
   --models <model-id> \
   --games 100 \
+  --output models/rl_model/eval-summary.json \
   --csv models/rl_model/eval-summary.csv \
   --markdown models/rl_model/eval-summary.md
 ```
 
-評価JSONから `registry.json` の `evals` に貼る候補を作る場合は次を使う。
+2人用の評価JSONから `registry.json` の `evals` に貼る候補を作る場合は次を使う。
+多人数lineup評価は `js-lineup` / `js-lineup-3p` として要約する必要があるため、この自動変換には渡さない。
 
 ```bash
 npm run render-rl-registry-evals -- \

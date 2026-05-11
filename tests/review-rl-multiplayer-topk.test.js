@@ -62,6 +62,19 @@ runTest('review-rl-multiplayer-topk は50戦未満を smokeOnly として扱う'
     assert.ok(entry.promotionWarning.includes('do not use for adoption'));
 });
 
+runTest('review-rl-multiplayer-topk はgames不明を smokeOnly として扱う', () => {
+    const entry = buildEntry({
+        id: 'missing-games',
+        summaries: [
+            { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.8 },
+        ],
+    });
+    assert.strictEqual(entry.minGames, null);
+    assert.strictEqual(entry.smokeOnly, true);
+    assert.strictEqual(entry.promotionBlocked, true);
+    assert.ok(entry.promotionWarning.includes('n/a < 50'));
+});
+
 runTest('review-rl-multiplayer-topk buildDiversifiedPicks は style 重複を避けて拾う', () => {
     const picks = buildDiversifiedPicks([
         { id: 'a', diversityKey: 'x || y', combinedScore: 0.7 },

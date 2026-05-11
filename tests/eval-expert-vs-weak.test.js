@@ -25,7 +25,7 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.rerollMode, 'simple');
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
-    assert.strictEqual(args.businessMode, 'simple');
+    assert.strictEqual(args.businessMode, 'harmfulGift');
     assert.strictEqual(args.cleaningMode, 'simple');
     assert.strictEqual(args.harborMode, 'simple');
     assert.strictEqual(args.moverMode, 'simple');
@@ -119,7 +119,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         rerollMode: 'simple',
         itMode: 'always',
         tvMode: 'simple',
-        businessMode: 'simple',
+        businessMode: 'harmfulGift',
         cleaningMode: 'simple',
         harborMode: 'simple',
         moverMode: 'simple',
@@ -181,7 +181,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('rerollMode=simple'));
     assert.ok(text.includes('itMode=always'));
     assert.ok(text.includes('tvMode=simple'));
-    assert.ok(text.includes('businessMode=simple'));
+    assert.ok(text.includes('businessMode=harmfulGift'));
     assert.ok(text.includes('cleaningMode=simple'));
     assert.ok(text.includes('harborMode=simple'));
     assert.ok(text.includes('moverMode=simple'));
@@ -202,7 +202,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- rerollMode: simple'));
     assert.ok(md.includes('- itMode: always'));
     assert.ok(md.includes('- tvMode: simple'));
-    assert.ok(md.includes('- businessMode: simple'));
+    assert.ok(md.includes('- businessMode: harmfulGift'));
     assert.ok(md.includes('- cleaningMode: simple'));
     assert.ok(md.includes('- harborMode: simple'));
     assert.ok(md.includes('- moverMode: simple'));
@@ -223,7 +223,7 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
     assert.ok(source.includes("expertTvMode: config.tvMode || 'simple'"));
-    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'simple'"));
+    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'harmfulGift'"));
     assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'simple'"));
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
     assert.ok(source.includes("expertMoverMode: config.moverMode || 'simple'"));

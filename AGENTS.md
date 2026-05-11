@@ -108,7 +108,7 @@ RL / 学習系スクリプト:
 - 3人以上の RL 学習は `--player-count 3|4` で多人数用状態表現 (`STATE_DIM = 353`) を使います。現行の4人自己対戦プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` です。4人用モデルの主評価は `--js-eval-lineups` の4人JS評価を使い、2人評価だけを主指標にしないでください。既存2人モデル (`STATE_DIM = 145`) との互換性は維持してください。
 - 4人用 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` のような固定 trace 比較で Python/JS のズレを確認してください。
 - RL 学習相手の `normal/strong/expert` は、Python heuristic ではなく JS `CPU.js` oracle を使う設定を優先してください。Python heuristic は JS CPU とズレることがあるため、現在は主に比較・fallback 用です。
-- RL 候補モデルは `models/rl_model/registry.json` に記録します。モデル本体・`runs/`・metrics は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。
+- RL 候補モデルは `models/rl_model/registry.json` に記録します。モデル本体・`runs/`・metrics は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。50戦未満の短期評価は smoke / 足切り専用で、registry / portfolio の採用判断には使わないでください。
 - RL checkpoint の品質は `vs_random` だけでなく、`scripts/eval-rl-vs-js.js` と summary artifact を主に見て判断してください。
 - アプリレベルの Socket.IO 失敗通知には専用の `appError` event を使ってください。transport レベルの `error` に混ぜないでください。
 - Service Worker / version mismatch の挙動は製品仕様の一部です。キャッシュ資産、起動フロー、オンライン画面を触る場合は、update banner と reload 挙動も考慮してください。

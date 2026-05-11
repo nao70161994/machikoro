@@ -804,6 +804,21 @@ runTest('chooseBusinessMove: expert v2 simple は貸金業を押し付けカー�
     assert.strictEqual(move.myCard, 1);
 });
 
+runTest('chooseBusinessMove: expert v2 simple は business simple 明示なら押し付け補正を使わない', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertBusinessMode: "simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const target = game.players[1];
+    current.cards = [createCardByName('パン屋'), createCardByName('貸金業')];
+    current.dormantCards = [];
+    target.cards = [createCardByName('牧場'), createCardByName('鉱山')];
+    target.dormantCards = [];
+
+    const simpleMove = cpu._chooseSimpleBusinessMove(game);
+    const move = cpu.chooseBusinessMove(game);
+    assert.deepStrictEqual(move, simpleMove);
+});
+
 runTest('chooseBusinessMove: expert v2 simple は相手に有害な改装屋押し付けも評価する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);

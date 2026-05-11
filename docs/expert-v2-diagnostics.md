@@ -10,7 +10,7 @@
 - `reroll=simple`
 - `it=always`
 - `tv=simple`
-- `business=simple`
+- `business=harmfulGift`
 - `cleaning=simple`
 - `harbor=simple`
 - `mover=simple`
@@ -29,7 +29,7 @@
 npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simple
 ```
 
-結果は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。今後の v2simple 候補は、この100戦基準線から `normalCrowd`, `strongWeighted`, `strongMin`, `allStrong4` を比較します。
+結果は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。今後の v2simple 候補は、この100戦基準線から `normalCrowd`, `strongWeighted`, `strongMin`, `allStrong4` を比較します。この基準線は、Business Center の harmful gift 限定補正を含む live v2simple 設定です。
 
 ## 採用済み
 
@@ -37,7 +37,7 @@ npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simpl
   - `redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` を build EV に薄く加点します。
   - 条件付き赤カードは、発火時の即時評価では相手の所持コインを上限にし、build EV では将来価値として評価します。
 - Business Center harmful gift 限定補正
-  - 通常は `business=simple` の既定どおり、一番いらない自分カードと一番欲しい相手カードを交換します。
+  - 通常は simple の既定どおり、一番いらない自分カードと一番欲しい相手カードを交換します。
   - 貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ、交換全体のスコアが既定手を上回れば押し付け候補へ差し替えます。broad scored exchange には戻しません。
   - 100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%` でした。
 
@@ -125,7 +125,7 @@ normal crowd は broad 補正の副作用検出用、strong 4 profile は最悪�
 
 ### benchmark比較表
 
-`npm run eval-expert-v2-benchmark -- --games <N> --seed <seed> --expert-preset v2simple` の出力を比較するときは、まず次の4指標だけを見ます。既定の `businessMode` は `simple` です。Business Center 系の実験を再開する場合は、実装済みの mode 名を明示し、baseline simple と混ぜて比較しません。
+`npm run eval-expert-v2-benchmark -- --games <N> --seed <seed> --expert-preset v2simple` の出力を比較するときは、まず次の4指標だけを見ます。既定の `businessMode` は `harmfulGift` です。Business Center 系の実験を再開する場合は、実装済みの mode 名を明示し、baseline harmfulGift と混ぜて比較しません。
 
 | games | seed | candidate | normalCrowd | Δ | strongWeighted | Δ | strongMin | Δ | allStrong4 | Δ | 判定 |
 | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -212,7 +212,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 ## よく使う診断
 
 ```sh
-node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode simple
+node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode harmfulGift
 node scripts/eval-expert-v2-benchmark-pack.js --games 20 --suite strong --profiles crowd,allStrong4
 node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4
 node scripts/diagnose-expert-losses.js --games 100 --profiles crowd,allStrong4 --expert-preset v2simple

@@ -67,7 +67,7 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `reroll=simple`
 - `it=always`
 - `tv=simple`
-- `business=simple`
+- `business=harmfulGift`
 - `cleaning=simple`
 - `harbor=simple`
 - `mover=simple`
@@ -119,7 +119,7 @@ node scripts/diagnose-expert-v2-branches.js --games 20 --profiles duel,trio,crow
 この診断はサイコロ、リロール、港、テレビ局の僅差分岐に加えて、build EV 内の貸金業、清掃業、公園、combo payoff readiness、landmark-gated、mall-name、mall spend delay、mall basic low income、red-saturated、ITInvest、Business などの発火と flip 可能性を数えます。`mover` 行では引越し屋の対象選択について、harmful gift の取り逃しや leader 回避で反転し得る局面を確認できます。
 v2simple の診断履歴と採用/却下メモは [docs/expert-v2-diagnostics.md](docs/expert-v2-diagnostics.md) にまとめています。
 
-直近の v2simple 実験では、赤カード相手ターン EV 補正と Business Center harmful gift 限定補正を採用しています。`redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` で薄く加点し、条件付き赤カードは、ロール発火時の即時評価では相手の所持コインを上限にし、build EV の購入判断では将来価値として評価します。Business Center は通常の `business=simple` を維持し、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ、交換全体のスコアが既定手を上回れば押し付け候補へ差し替えます。broad scored exchange は引き続き不採用です。一方で build EV への追加 red payment cap penalty、IT build bonus / ITInvest、高額紫早買い、RedSaturated、貸金業重複 penalty、Cleaning value bonus、Mover leader 回避、PARK bonus、combo payoff not-ready penalty は、発火不足または50戦評価悪化により棄却/診断のみとしています。landmark-gated 分解は `harbor=0` / `station=0` で実質ショッピングモール依存のみでしたが、カード名別でも基礎カード/赤カードが主因だったため、全体 penalty は不採用です。special spend 診断では20戦で `buildSpecialSpendWouldDelayLandmark=52/1404` ですが、`Penalty05=11/1404` と反転候補は少ないため、special 全体への penalty ではなく必要ならカード名別に見ます。
+直近の v2simple 実験では、赤カード相手ターン EV 補正と Business Center harmful gift 限定補正を採用しています。`redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` で薄く加点し、条件付き赤カードは、ロール発火時の即時評価では相手の所持コインを上限にし、build EV の購入判断では将来価値として評価します。Business Center は通常の simple 交換を基準にしつつ、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ、交換全体のスコアが既定手を上回れば押し付け候補へ差し替えます。broad scored exchange は引き続き不採用です。一方で build EV への追加 red payment cap penalty、IT build bonus / ITInvest、高額紫早買い、RedSaturated、貸金業重複 penalty、Cleaning value bonus、Mover leader 回避、PARK bonus、combo payoff not-ready penalty は、発火不足または50戦評価悪化により棄却/診断のみとしています。landmark-gated 分解は `harbor=0` / `station=0` で実質ショッピングモール依存のみでしたが、カード名別でも基礎カード/赤カードが主因だったため、全体 penalty は不採用です。special spend 診断では20戦で `buildSpecialSpendWouldDelayLandmark=52/1404` ですが、`Penalty05=11/1404` と反転候補は少ないため、special 全体への penalty ではなく必要ならカード名別に見ます。
 redOneDie は5戦診断で反転 `0`、businessDelay も5戦 crowd/allStrong4 で `flip05=0` / `flip1=0` だったため、現時点では実装候補に進めません。
 mallBasic 診断では crowd/allStrong4 10戦で `chosen=74/295`, `lowIncome=10/295`、低EV増分は主に `ピザ屋:9` でした。ただしピザ屋限定 penalty 実験は normal50 が維持、strong50 が weighted `53.0%` / min `44.0%` で基準改善なしだったため棄却しています。
 CPU v2simple の build EV 手書き調整は、直近候補の診断/評価で費用対効果が低いため現採用セットで凍結中です。再開条件は、allStrong4/crowd で明確な `WouldFlip` が出る小変更に限ります。
@@ -265,8 +265,7 @@ npm run train-rl:baseline
 
 baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
 `run-js-oracle-terminal-shaped.sh` は JS CPU oracle、終局報酬調整、`self` / `pool` を含む模倣なしRL実験用です。
-2026-04時点では `hidden=128, lr=0.0001` の `terminal-shaped-h128-lr1e4` が有力候補で、20戦JS評価は `weak 90% / normal 60% / strong 35%` です。
-初期の `hidden=256` 系は pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。
+初期の `terminal-shaped-h128-lr1e4` は100戦評価で normal が不安定だったため archive 扱いです。`hidden=256` 系も pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。
 
 実ゲームでは、`CPU（最強）` と `AI（深層学習・ランダム）` を別系統として扱います。`CPU（最強）` は安定したルールベースの基準CPU、`AI（深層学習・ランダム）` は portfolio から人数別モデルを選ぶ学習CPUです。
 
@@ -310,6 +309,7 @@ npm run audit-rl-portfolio
 npm run plan-rl-next-actions
 npm run review-rl-adoptions
 npm run refresh-rl-ops-reports
+npm run eval-rl-models -- --models <model-id> --games 50 --output models/rl_model/eval-summary.json --csv models/rl_model/eval-summary.csv
 npm run update-rl-registry-from-eval -- --input models/rl_model/eval-summary.json
 npm run report-rl-diversity
 ```

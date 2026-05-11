@@ -2009,7 +2009,7 @@ function evaluateProfile(profile, options, runtime) {
                 expertRerollMode: 'simple',
                 expertInvestMode: 'always',
                 expertTvMode: 'simple',
-                expertBusinessMode: 'simple',
+                expertBusinessMode: 'harmfulGift',
                 expertCleaningMode: 'simple',
                 expertHarborMode: 'simple',
                 expertMoverMode: 'simple',

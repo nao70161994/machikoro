@@ -19,7 +19,10 @@ class CPU {
         this.expertBuildMode = options.expertBuildMode || "ev";
         this.expertInvestMode = options.expertInvestMode || "always";
         this.expertTvMode = options.expertTvMode || "simple";
-        this.expertBusinessMode = options.expertBusinessMode || "simple";
+        const defaultExpertBusinessMode = difficulty === "expert" && options.expertPreset === "v2simple"
+            ? "harmfulGift"
+            : "simple";
+        this.expertBusinessMode = options.expertBusinessMode || defaultExpertBusinessMode;
         this.expertCleaningMode = options.expertCleaningMode || "simple";
         this.expertHarborMode = options.expertHarborMode || "simple";
         this.expertMoverMode = options.expertMoverMode || "random";
@@ -1563,7 +1566,8 @@ class CPU {
         if (myCards.length === 0) return null;
         if (this._isExpertV2Simple()) {
             if (this.expertBusinessMode === "random") return this._chooseRandomBusinessMove(game);
-            return this._chooseHarmfulGiftBusinessMove(game);
+            if (this.expertBusinessMode === "harmfulGift") return this._chooseHarmfulGiftBusinessMove(game);
+            return this._chooseSimpleBusinessMove(game);
         }
         this._syncExpertTuningForGame(game);
 

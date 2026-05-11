@@ -22,7 +22,7 @@ function parseArgs(argv) {
     let lite = true;
     let fast = false;
     let expertPreset = 'v2simple';
-    let businessMode = 'simple';
+    let businessMode = 'harmfulGift';
     let suite = 'all';
     let profiles = [];
 
@@ -39,7 +39,7 @@ function parseArgs(argv) {
         } else if (arg === '--expert-preset') {
             expertPreset = argv[++i] || 'v2simple';
         } else if (arg === '--business-mode') {
-            businessMode = argv[++i] || 'simple';
+            businessMode = argv[++i] || 'harmfulGift';
         } else if (arg === '--suite') {
             suite = argv[++i] || 'all';
         } else if (arg === '--profiles') {
@@ -64,7 +64,7 @@ function baseOptions(options, profiles) {
         rerollMode: 'simple',
         itMode: 'always',
         tvMode: 'simple',
-        businessMode: options.businessMode || 'simple',
+        businessMode: options.businessMode || 'harmfulGift',
         cleaningMode: 'simple',
         harborMode: 'simple',
         moverMode: 'simple',
@@ -118,8 +118,9 @@ function evaluatePack(options) {
     delete reportOptions.runtime;
     delete normalReportOptions.runtime;
     delete strongReportOptions.runtime;
+    const expertPreset = options.expertPreset || 'v2simple';
     return {
-        cpuFamily: 'v2simple-rule-based',
+        cpuFamily: expertPreset === 'v2simple' ? 'v2simple-rule-based' : `${expertPreset}-rule-based`,
         comparisonScope: 'expert-v2-benchmark-pack',
         options: reportOptions,
         normal: {
@@ -155,7 +156,7 @@ function toText(report) {
         : 'n/a';
     const lines = [
         `cpuFamily=${report.cpuFamily || 'v2simple-rule-based'} comparisonScope=${report.comparisonScope || 'expert-v2-benchmark-pack'}`,
-        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} businessMode=${report.options.businessMode || 'simple'} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
+        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} businessMode=${report.options.businessMode || 'harmfulGift'} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
         `normalCrowd=${normalCrowd} strongWeighted=${strongWeighted} strongMin=${strongMin}`,
     ];
     if (report.normal.entries.length > 0) {
@@ -186,7 +187,7 @@ function toMarkdown(report) {
         `- seed: ${report.options.seed}`,
         `- mode: ${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')}`,
         `- expertPreset: ${report.options.expertPreset}`,
-        `- businessMode: ${report.options.businessMode || 'simple'}`,
+        `- businessMode: ${report.options.businessMode || 'harmfulGift'}`,
         `- suite: ${report.options.suite || 'all'}`,
         `- profiles: ${(report.options.profiles || []).join(',') || 'default'}`,
         `- normalCrowd: ${normalCrowd}`,

@@ -20,7 +20,7 @@ function parseArgs(argv) {
     let rerollMode = 'simple';
     let itMode = 'always';
     let tvMode = 'simple';
-    let businessMode = 'simple';
+    let businessMode = 'harmfulGift';
     let cleaningMode = 'simple';
     let harborMode = 'simple';
     let moverMode = 'simple';
@@ -57,7 +57,7 @@ function parseArgs(argv) {
         } else if (arg === '--tv-mode') {
             tvMode = argv[++i] || 'simple';
         } else if (arg === '--business-mode') {
-            businessMode = argv[++i] || 'simple';
+            businessMode = argv[++i] || 'harmfulGift';
         } else if (arg === '--cleaning-mode') {
             cleaningMode = argv[++i] || 'simple';
         } else if (arg === '--harbor-mode') {
@@ -129,7 +129,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
-                        expertBusinessMode: config.businessMode || 'simple',
+                        expertBusinessMode: config.businessMode || 'harmfulGift',
                         expertCleaningMode: config.cleaningMode || 'simple',
                         expertHarborMode: config.harborMode || 'simple',
                         expertMoverMode: config.moverMode || 'simple',

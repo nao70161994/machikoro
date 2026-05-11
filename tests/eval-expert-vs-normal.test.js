@@ -25,7 +25,7 @@ runTest('eval-expert-vs-normal parseArgs は既定値を返す', () => {
     assert.strictEqual(args.rerollMode, 'simple');
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
-    assert.strictEqual(args.businessMode, 'simple');
+    assert.strictEqual(args.businessMode, 'harmfulGift');
     assert.strictEqual(args.cleaningMode, 'simple');
     assert.strictEqual(args.harborMode, 'simple');
     assert.strictEqual(args.moverMode, 'simple');
@@ -228,7 +228,7 @@ runTest('eval-expert-vs-normal は live expert に指定presetを渡す', () => 
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
     assert.ok(source.includes("expertTvMode: config.tvMode || 'simple'"));
-    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'simple'"));
+    assert.ok(source.includes("expertBusinessMode: config.businessMode || 'harmfulGift'"));
     assert.ok(source.includes("expertCleaningMode: config.cleaningMode || 'simple'"));
     assert.ok(source.includes("expertHarborMode: config.harborMode || 'simple'"));
     assert.ok(source.includes("expertMoverMode: config.moverMode || 'simple'"));

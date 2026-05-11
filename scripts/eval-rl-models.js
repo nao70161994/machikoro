@@ -268,7 +268,7 @@ function evaluationGate(results, minGamesPerLineup = 50) {
         }
     }
     const minGames = games.length > 0 ? Math.min(...games) : null;
-    const smokeOnly = minGames !== null && minGames < minGamesPerLineup;
+    const smokeOnly = minGames === null || minGames < minGamesPerLineup;
     return {
         minGames,
         smokeOnly,

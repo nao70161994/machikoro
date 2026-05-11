@@ -20,7 +20,7 @@ runTest('eval-expert-v2-benchmark-pack parseArgs は既定値を返す', () => {
     assert.strictEqual(args.format, 'text');
     assert.strictEqual(args.lite, true);
     assert.strictEqual(args.expertPreset, 'v2simple');
-    assert.strictEqual(args.businessMode, 'simple');
+    assert.strictEqual(args.businessMode, 'harmfulGift');
     assert.strictEqual(args.suite, 'all');
     assert.deepStrictEqual(args.profiles, []);
 });

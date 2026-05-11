@@ -251,3 +251,12 @@ runTest('eval-rl-models evaluationGate は50戦以上を adoptionCandidate と�
         name: 'adoptionCandidate',
     });
 });
+
+runTest('eval-rl-models evaluationGate はgames不明を smokeOnly と表示する', () => {
+    const gate = evaluationGate([{ summaries: [{}] }]);
+    assert.deepStrictEqual(gate, {
+        minGames: null,
+        smokeOnly: true,
+        name: 'smokeOnly',
+    });
+});
