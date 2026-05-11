@@ -64,23 +64,41 @@ function hasOpponentCoverage(evalEntry, requiredOpponents) {
     return requiredOpponents.every(name => Object.prototype.hasOwnProperty.call(opponents, name));
 }
 
-function hasLineupCoverage(evalEntry, minimumLineups = 1) {
+function hasLineupCoverage(evalEntry, minimumLineups = 1, playerCount = null) {
     const lineups = evalEntry && evalEntry.lineups ? evalEntry.lineups : {};
-    return Object.keys(lineups).length >= minimumLineups;
+    const keys = Object.keys(lineups);
+    if (!playerCount) return keys.length >= minimumLineups;
+    return keys.filter(key => String(key).split('+').filter(Boolean).length === playerCount).length >= minimumLineups;
+}
+
+function isMultiplayerRecommendedRole(role) {
+    const value = String(role || '');
+    return value.includes('3p-4p') || value.includes('3p-10p') || value.includes('multiplayer');
+}
+
+function isExtendedMultiplayerRecommendedRole(role) {
+    const value = String(role || '');
+    return value.includes('3p-10p') || value.includes('multiplayer');
 }
 
 function summarizeEvalCoverage(model) {
     const jsEval = bestEvalByType(model, 'js');
     const lineup4pEval = bestEvalByType(model, 'js-lineup-stability') || bestEvalByType(model, 'js-lineup');
     const lineup3pEval = bestEvalByType(model, 'js-lineup-3p-stability') || bestEvalByType(model, 'js-lineup-3p');
+    const lineup5pEval = bestEvalByType(model, 'js-lineup-5p-stability') || bestEvalByType(model, 'js-lineup-5p');
+    const lineup10pEval = bestEvalByType(model, 'js-lineup-10p-stability') || bestEvalByType(model, 'js-lineup-10p');
     return {
         portfolioPath: modelPathIsPortfolio(model),
         best2pGames: jsEval ? (jsEval.gamesPerOpponent || 0) : 0,
         has2pOpponents: hasOpponentCoverage(jsEval, ['weak', 'normal', 'strong']),
         best4pGames: lineup4pEval ? (lineup4pEval.gamesPerLineup || 0) : 0,
-        has4pLineups: hasLineupCoverage(lineup4pEval, 1),
+        has4pLineups: hasLineupCoverage(lineup4pEval, 1, 4),
         best3pGames: lineup3pEval ? (lineup3pEval.gamesPerLineup || 0) : 0,
-        has3pLineups: hasLineupCoverage(lineup3pEval, 1),
+        has3pLineups: hasLineupCoverage(lineup3pEval, 1, 3),
+        best5pGames: lineup5pEval ? (lineup5pEval.gamesPerLineup || 0) : 0,
+        has5pLineups: hasLineupCoverage(lineup5pEval, 1, 5),
+        best10pGames: lineup10pEval ? (lineup10pEval.gamesPerLineup || 0) : 0,
+        has10pLineups: hasLineupCoverage(lineup10pEval, 1, 10),
     };
 }
 
@@ -183,12 +201,18 @@ function validateRegistry(registry, options = {}) {
             if (entry.role && String(entry.role).includes('2p') && coverage && !coverage.has2pOpponents) {
                 warnings.push(`${entry.id}: 2人用採用候補なのに weak/normal/strong の2人JS評価が不足しています`);
             }
-            if (entry.role && String(entry.role).includes('3p-4p') && coverage) {
+            if (entry.role && isMultiplayerRecommendedRole(entry.role) && coverage) {
                 if (!coverage.has3pLineups) {
-                    warnings.push(`${entry.id}: 3〜4人用採用候補なのに 3人 lineup 評価が不足しています`);
+                    warnings.push(`${entry.id}: 多人数採用候補なのに 3人 lineup 評価が不足しています`);
                 }
                 if (!coverage.has4pLineups) {
-                    warnings.push(`${entry.id}: 3〜4人用採用候補なのに 4人 lineup 評価が不足しています`);
+                    warnings.push(`${entry.id}: 多人数採用候補なのに 4人 lineup 評価が不足しています`);
+                }
+                if (isExtendedMultiplayerRecommendedRole(entry.role) && !coverage.has5pLineups) {
+                    warnings.push(`${entry.id}: 多人数採用候補なのに 5人 lineup 評価が不足しています`);
+                }
+                if (isExtendedMultiplayerRecommendedRole(entry.role) && !coverage.has10pLineups) {
+                    warnings.push(`${entry.id}: 多人数採用候補なのに 10人 lineup 評価が不足しています`);
                 }
             }
             const key = model ? modelStyleKey(model) : '';
@@ -248,6 +272,8 @@ module.exports = {
     modelPathIsPortfolio,
     hasOpponentCoverage,
     hasLineupCoverage,
+    isMultiplayerRecommendedRole,
+    isExtendedMultiplayerRecommendedRole,
     summarizeEvalCoverage,
     resolveModelSummaryPath,
     loadModelSummary,

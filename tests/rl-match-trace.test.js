@@ -9,8 +9,7 @@ const {
     exportJsMatchTrace,
 } = require(path.join(__dirname, '..', 'scripts', 'export-rl-match-trace.js'));
 
-function buildRlModel() {
-    const stateDim = 145;
+function buildRlModel(stateDim = 145) {
     const hiddenSize = 2;
     const numCards = 38;
     const numActions = 1580;
@@ -118,7 +117,7 @@ runTest('rl match trace: expert相手でもbuild診断を混入しない', () =>
 
 runTest('rl match trace: exportJsMatchTrace は4人lineup trace を返す', () => {
     const result = exportJsMatchTrace({
-        rlModelData: buildRlModel(),
+        rlModelData: buildRlModel(353),
         lineup: ['rl', 'weak', 'normal', 'strong'],
         seed: 1,
         maxSteps: 20,
@@ -134,7 +133,7 @@ runTest('rl match trace: exportJsMatchTrace は4人lineup trace を返す', () =
 
 runTest('rl match trace: 4人lineupのexpertにもbuild診断を混入しない', () => {
     const result = exportJsMatchTrace({
-        rlModelData: buildRlModel(),
+        rlModelData: buildRlModel(353),
         lineup: ['rl', 'expert', 'normal', 'strong'],
         seed: 1,
         maxSteps: 20,

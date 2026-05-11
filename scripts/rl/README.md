@@ -11,7 +11,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | ファイル | 役割 |
 |---------|------|
 | `cards.py` | カード・ランドマーク定義（基本 + プラス + シャープ、計 38 枚） |
-| `game_env.py` | 学習用ゲームエンジン（2〜4人、全フェーズ・全カード効果実装） |
+| `game_env.py` | 学習用ゲームエンジン（2〜10人、全フェーズ・全カード効果実装） |
 | `encode.py` | 局面ベクトル化・行動マスク生成 |
 | `network.py` | numpy 製 MLP（Layer + PolicyValueNet） |
 | `agent.py` | GAE Actor-Critic エージェント |
@@ -25,6 +25,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `run-js-oracle-self-both.sh` | self 対戦時だけ両席の行動を学習対象にする実験ラッパー |
 | `run-self-only-h256-lr2e5-5000.sh` | `hidden=256/lr=0.00002/5000 games/self=1/両側学習/reward cap` の短縮プリセット |
 | `run-self-only-4p-h256-lr2e5-5000.sh` | `--player-count 4` の4人専用自己対戦プリセット |
+| `run-random-2p10p-h256-lr2e5-1000.sh` | `--player-count-min 2 --player-count-max 10` のランダム人数 sanity プリセット |
 | `bg-list.sh` | 追跡中のバックグラウンド学習ジョブを一覧表示する |
 | `bg-status.sh` | ジョブの `running/stopped/done` と summary 有無を確認する |
 | `bg-tail.sh` | ジョブの最新ログを tail する |
@@ -108,6 +109,27 @@ player_count正規化         1
 ```
 
 現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、`tv_target` / `bc_target` / `mover_target` の optional target head があればその出力を使う。head が無い既存モデルでは、テレビ局・ビジネスセンターは脅威度最大の相手へ fallback し、引越し屋は渡すカードの価値と相手脅威度から recipient を選ぶ JS runtime fallback を使う。清掃業は action head が選んだカード名を基本にしつつ、相手被害と自分被害の差が明確に大きい場合だけ heuristic の最良カード名へ上書きする。target head の checkpoint / browser export / `js/RLCPU.js` / Python 推論 / 学習更新は実装済みで、学習ログでは `tgt=` として pending 発生率と更新率を確認できる。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
+
+### 2〜10人ランダム化実験の導線
+
+`train.py` は `--player-count` による固定人数学習に加えて、`--player-count-min` / `--player-count-max` によるゲームごとの人数ランダム化を受け付ける。範囲に3人以上が含まれる場合は、2人戦も含めて `STATE_DIM = 353` の多人数モデルとして学習する。
+
+2〜10人ランダム人数実験の導線:
+
+```sh
+sh scripts/rl/run-random-2p10p-h256-lr2e5-1000.sh \
+  --run-label <run-label> \
+  --seed <seed>
+
+sh scripts/rl/run-background.sh <run-label> \
+  sh scripts/rl/run-random-2p10p-h256-lr2e5-1000.sh \
+    --run-label <run-label> \
+    --seed <seed>
+```
+
+このオプションを有効化すると、学習環境側は実人数を 2〜10 から選び、状態表現は既存の `STATE_DIM = 353` に合わせて `自分 + 脅威度上位3人` へ射影する。5人以上をそのまま固定長入力へ広げるのではなく、現行 runtime と同じ射影方針に揃える。評価は5人以上の lineup も `eval-rl-vs-js` / `eval-rl-models` に渡せるが、平均だけで判断せず、2p / 3p / 4p / 5p / 10p を分けて見る。
+
+`run-random-2p10p-h256-lr2e5-1000.sh` は Termux で長いコマンドを折り返し入力しないための sanity wrapper。既定は `1000 games / eval-every 250 / self=1 / 両側学習 / js-oracle / top3 checkpoint` で、JS評価は4人3lineupに5人lineupを1つ加えた軽量構成。末尾の追加引数はそのまま `train.py` へ渡す。
 
 ### 行動空間（NUM_ACTIONS = 1580）
 
@@ -424,7 +446,7 @@ js=weak=25%(f50%/s0%/d0%)/0@122.5 normal=0%(f0%/s0%/d0%)/0@72.0 strong=25%(f0%/s
 
 4人用モデルでは2人評価だけだと目的からズレるため、`--js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong"` のように4人 lineup を指定する。4人自己対戦プリセットは既定で4人JS評価を使い、best checkpoint の算定もその lineup 勝率を優先する。
 
-3人以上の lineup 評価では `STATE_DIM = 353` の多人数モデルだけを使う。`STATE_DIM = 145` の2人用モデルを3〜4人 lineup に混ぜると比較対象がずれるため、JS評価 / build pass 診断は2人用モデルを検出した時点でエラーにする。
+3人以上の lineup 評価では `STATE_DIM = 353` の多人数モデルだけを使う。`STATE_DIM = 145` の2人用モデルを多人数 lineup に混ぜると比較対象がずれるため、JS評価 / build pass 診断は2人用モデルを検出した時点でエラーにする。
 
 ### 4人 trace 比較
 
@@ -597,7 +619,7 @@ npm run summarize-rl-metrics -- \
 - `self` は既定では現在モデルを相手にする片側自己対戦。`--self-learn-both-sides` で `opponent=self` のゲームだけ両席を学習対象にできる。
 - `pool` は過去モデル snapshot との対戦。短期実験でも効くよう `--pool-update-every 250 --pool-max-size 4` を使う。
 - `--restore-best-at-end` で、学習終了時に途中 best checkpoint を `models/rl_model/model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
-- `hidden=128` と `hidden=256` は比較対象。従来の混合相手では `hidden=256` が pass 方策へ崩れやすかったが、`lr=2e-5〜3e-5`、完全自己対戦、両側学習では採用候補が出た。現行の3〜4人用採用は後評価で安定した `seed103` を維持する。
+- `hidden=128` と `hidden=256` は比較対象。従来の混合相手では `hidden=256` が pass 方策へ崩れやすかったが、`lr=2e-5〜3e-5`、完全自己対戦、両側学習では採用候補が出た。現行の多人数用採用は後評価で安定した `seed103` を維持する。
 - 学習済みモデル本体は git 管理しない。採用候補・評価結果・構築傾向は `models/rl_model/registry.json` に記録する。
 
 これまでの観察:
@@ -609,7 +631,7 @@ npm run summarize-rl-metrics -- \
 - `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。どちらも `seed71-top3` より弱いが構築傾向が違うため、戦略バリエーション用に active portfolio へ低重みで残す。
 - `terminal-shaped-h128-lr1e4` は100戦評価で `weak 99% / normal 53% / strong 39%`。normal が不安定なので active portfolio から外し、archive 扱いにした。
 - `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、strong 性能が低く現時点の候補価値も薄いため archive 扱いにした。
-- 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、3〜4人用には `self-only-4p-h256-lr1e5-5000-seed103` を採用している。
+- 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、多人数用には `self-only-4p-h256-lr1e5-5000-seed103` を採用している。
 - `h128-lr1e4` の seed違い（seed2/seed3）は `weak 75% / normal 50% / strong 0%` 程度で、strong勝率の再現性はまだ弱い。
 - `strong` を学習相手に `0.05` / `0.10` 混ぜるだけでは改善せず、どちらも best JS評価で `strong 0%`。単純な strong 混入より、勝ち試合の分析や checkpoint 選抜の改善を優先する。
 - `terminal-shaped-h128-lr1e4` が strong に勝つ試合は、パン屋を厚く積み、マグロ漁船/コンビニ/寿司屋を絡めて全ランドマーク到達まで走る傾向がある。20戦中の strong 勝利7試合では平均60.0ターン、最終ランドマーク平均6.0個。
@@ -654,9 +676,9 @@ npm run search-expert-top-tier -- --games 8 --top 5 --format markdown
 モデル本体 `.npz` / `.browser.json` や `runs/` はサイズ・生成物扱いのため git 管理しない。
 例外として、実ゲームで使うポートフォリオ用の軽量配布セットだけは `models/rl_model/portfolio/*.browser.json` として git 管理する。
 `CPU（最強）` は安定したルールベースの基準CPU、`AI（深層学習・ランダム）` はこの portfolio 配下から人数別モデルをランダム選択する別系統の学習CPUとして扱う。
-`js/RLModelPortfolio.js` は人数別に候補を絞り込む。現時点では2人戦は既存の2人向け候補、3〜4人戦は採用済みの `self-only-4p-h256-lr1e5-5000-seed103` を使う。採用モデルと配布ファイルの整合性は `tests/rl-model-portfolio.test.js` で検査する。
+`js/RLModelPortfolio.js` は人数別に候補を絞り込む。現時点では2人戦は既存の2人向け候補、3人以上は採用済みの `self-only-4p-h256-lr1e5-5000-seed103` を使う。5人以上では4人用固定長入力に合わせて、自分 + 脅威度上位3人の相手へ射影する。採用モデルと配布ファイルの整合性は `tests/rl-model-portfolio.test.js` で検査する。
 
-UI 上の説明文もこの挙動に合わせている。ローカル/オンラインのプレイヤー設定では、2人戦は「2人用の複数モデルからランダム」、3〜4人戦は「3〜4人用の深層学習モデルからランダム」と表示し、あわせて `CPU（最強）` が安定したルールベースの基準CPUであることを示す。5人以上では `AI（深層学習）` を無効化し、`CPU（最強）` を案内する。
+UI 上の説明文もこの挙動に合わせている。ローカル/オンラインのプレイヤー設定では、2人戦は「2人用の複数モデルからランダム」、3人以上は「多人数用の深層学習モデルから選ぶ」と表示し、あわせて `CPU（最強）` が安定したルールベースの基準CPUであることを示す。
 
 バックグラウンドで学習を回すときは、次の補助スクリプトを使う。
 
@@ -688,7 +710,7 @@ sh scripts/rl/bg-experiment-set.sh \
   self-only-4p-h256-lr1e4-5000-seed105-targethead
 ```
 
-4人用 RL CPU を `CPU（最強）` とは別系統で強化する場合は、まず短時間 sanity で allStrong4 を JS 評価に含め、見込みがあれば長め background run に進む。
+固定4人プリセットで RL CPU を `CPU（最強）` とは別系統で強化する場合は、まず短時間 sanity で allStrong4 を JS 評価に含め、見込みがあれば長め background run に進む。2〜10人ランダム人数実験は上の `run-random-2p10p-h256-lr2e5-1000.sh` を使う。
 
 ```sh
 # sanity: 既存 1000 preset に allStrong4 評価を追加して短時間確認
@@ -783,7 +805,7 @@ npm run eval-rl-models -- \
 
 - 2人戦主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
 - 2人戦の補助多様性候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
-- 3〜4人戦採用: `self-only-4p-h256-lr1e5-5000-seed103`
+- 多人数戦採用: `self-only-4p-h256-lr1e5-5000-seed103`
 
 台帳に記録する主な情報:
 
@@ -873,7 +895,7 @@ npm run report-rl-registry -- --format json --output models/rl_model/registry-re
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | runtime fallback後4人100戦: weak+normal+strong 57% / normal+normal+strong 51% / weak+weak+normal 78%、3人50戦: normal+strong 72% / weak+strong 72% | 3〜4人用。麦畑・ブドウ園・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | runtime 4人100戦: weak+normal+strong 57% / normal+normal+strong 51% / weak+weak+normal 78%、3人50戦: normal+strong 72% / weak+strong 72% | 多人数用。5人以上は上位3相手射影。麦畑・ブドウ園・ピザ屋寄り |
 | `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |
@@ -944,7 +966,7 @@ roll → [selectDice] → [rerollConfirm] → [harborChoice] → pending → bui
 |------|------|
 | 引越し屋（Mover） | 休業中カードも対象に含める。同名カードに active/dormant が混在する場合は dormant を優先して移動する |
 | ビジネスセンター | 休業中カードも交換対象に含める。同名カードに active/dormant が混在する場合は dormant を優先して交換する |
-| プレイヤー数 | 2〜4人戦に対応。5人以上は未対応 |
+| プレイヤー数 | 2人戦と3人以上に対応。5人以上は多人数モデルの上位3相手射影で動作 |
 
 ---
 

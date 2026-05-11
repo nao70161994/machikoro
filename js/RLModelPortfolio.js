@@ -1,11 +1,11 @@
 const RL_MODEL_PORTFOLIO = Object.freeze([
     {
         id: "self-only-4p-h256-lr1e5-5000-seed103",
-        label: "RL（4人・麦畑）",
+        label: "RL（多人数・上位3）",
         path: "models/rl_model/portfolio/seed103-4p.browser.json",
         weight: 3,
         minPlayers: 3,
-        maxPlayers: 4,
+        maxPlayers: 10,
     },
     {
         id: "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",

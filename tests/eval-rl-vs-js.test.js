@@ -106,10 +106,9 @@ runTest('assertRlModelLineupCompatible は2人用モデルの3人以上評価を
     assert.doesNotThrow(() => assertRlModelLineupCompatible(buildRlModel({ stateDim: 145 }), [['rl', 'weak']], 'm145'));
 });
 
-runTest('assertRlModelLineupCompatible は5人以上lineup評価を拒否する', () => {
-    assert.throws(
-        () => assertRlModelLineupCompatible(buildRlModel({ stateDim: 353 }), [['rl', 'weak', 'normal', 'strong', 'expert']], 'm353'),
-        /2-4 players/
+runTest('assertRlModelLineupCompatible は5人以上lineupでも多人数モデルを許可する', () => {
+    assert.doesNotThrow(
+        () => assertRlModelLineupCompatible(buildRlModel({ stateDim: 353 }), [['rl', 'weak', 'normal', 'strong', 'expert']], 'm353')
     );
 });
 
@@ -297,5 +296,45 @@ runTest('printEvaluation は4人lineupの席別指標を出力する', () => {
         console.log = realLog;
     }
     assert.ok(lines[0].includes('rl vs rl+weak+normal+strong'));
+    assert.ok(lines[0].includes('players=4'));
     assert.ok(lines[0].includes('seat(0=100.0%,1=0.0%,2=100.0%,3=0.0%)'));
+});
+
+runTest('printEvaluation は5人lineupの人数と席別指標を出力する', () => {
+    const lines = [];
+    const realLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+        printEvaluation([{
+            opponent: 'rl+weak+normal+strong+expert',
+            lineup: ['rl', 'weak', 'normal', 'strong', 'expert'],
+            modelInfo: { stateDim: 353, hiddenSize: 256, numActions: 1580, schemaVersion: 3 },
+            result: {
+                games: 5,
+                players: ['rl', 'weak', 'normal', 'strong', 'expert'],
+                wins: { rl: 2, weak: 1, normal: 1, strong: 0, expert: 1 },
+                averageTurns: 24,
+                exhausted: 0,
+                matchLog: [
+                    { lineup: ['rl', 'weak', 'normal', 'strong', 'expert'], winnerDifficulty: 'rl' },
+                    { lineup: ['weak', 'normal', 'strong', 'expert', 'rl'], winnerDifficulty: 'weak' },
+                    { lineup: ['normal', 'strong', 'expert', 'rl', 'weak'], winnerDifficulty: 'rl' },
+                    { lineup: ['strong', 'expert', 'rl', 'weak', 'normal'], winnerDifficulty: 'normal' },
+                    { lineup: ['expert', 'rl', 'weak', 'normal', 'strong'], winnerDifficulty: 'expert' },
+                ],
+                buildStats: [
+                    { total: 5, pass: 0, cards: {}, landmarks: {} },
+                    { total: 5, pass: 0, cards: {}, landmarks: {} },
+                    { total: 5, pass: 0, cards: {}, landmarks: {} },
+                    { total: 5, pass: 0, cards: {}, landmarks: {} },
+                    { total: 5, pass: 0, cards: {}, landmarks: {} },
+                ],
+            },
+        }], { format: 'text' });
+    } finally {
+        console.log = realLog;
+    }
+    assert.ok(lines[0].includes('rl vs rl+weak+normal+strong+expert'));
+    assert.ok(lines[0].includes('players=5'));
+    assert.ok(lines[0].includes('seat(0=100.0%,1=0.0%,2=0.0%,3=100.0%,4=0.0%)'));
 });

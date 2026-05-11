@@ -82,7 +82,10 @@ function browserPathForRunLabel(runLabel, rank = 1) {
 
 function resolveModelSpecs(args, registry) {
     const registryModels = new Map((registry.models || []).map(model => [model.id, model]));
-    const ids = args.models.length > 0 ? args.models : defaultRegistryModelIds(registry);
+    const hasExplicitTargets = args.models.length > 0 || args.runLabels.length > 0 || (args.modelPaths || []).length > 0;
+    const ids = args.models.length > 0
+        ? args.models
+        : (hasExplicitTargets ? [] : defaultRegistryModelIds(registry));
     const specs = [];
 
     for (const id of ids) {
@@ -201,9 +204,14 @@ function renderText(results) {
             lines.push(`   style=${result.buildSignature.cardKey}`);
         }
         for (const summary of result.summaries) {
+            const lineup = Array.isArray(summary.lineup) ? summary.lineup : [];
+            const seat = lineup.length > 2 && Array.isArray(summary.rlSeatWinRatesByIndex)
+                ? ` seat(${summary.rlSeatWinRatesByIndex.map((rate, index) => `${index}=${(rate * 100).toFixed(1)}%`).join(',')})`
+                : '';
+            const players = lineup.length > 0 ? ` players=${lineup.length}` : '';
             lines.push(
                 `   ${summary.opponent}: win=${(summary.rlWinRate * 100).toFixed(1)}% ` +
-                `games=${summary.games} avgTurns=${summary.averageTurns.toFixed(1)} pass=` +
+                `games=${summary.games}${players}${seat} avgTurns=${summary.averageTurns.toFixed(1)} pass=` +
                 `${summary.rlBuildStats ? (summary.rlBuildStats.passRate * 100).toFixed(1) : 'n/a'}%`
             );
             if (summary.rlBusinessStats && summary.rlBusinessStats.total > 0) {

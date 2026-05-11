@@ -57,6 +57,11 @@ runTest('audit-rl-portfolio は recommended model の評価カバレッジを集
                         gamesPerLineup: 80,
                         lineups: { 'rl+normal+strong': {} },
                     },
+                    {
+                        type: 'js-lineup-5p-stability',
+                        gamesPerLineup: 60,
+                        lineups: { 'rl+weak+normal+strong+expert': {} },
+                    },
                 ],
             },
         ],
@@ -71,6 +76,9 @@ runTest('audit-rl-portfolio は recommended model の評価カバレッジを集
     assert.strictEqual(audit.recommended[0].has2pOpponents, true);
     assert.strictEqual(audit.recommended[1].has3pLineups, true);
     assert.strictEqual(audit.recommended[1].has4pLineups, true);
+    assert.strictEqual(audit.recommended[1].has5pLineups, true);
+    assert.strictEqual(audit.recommended[1].best5pGames, 60);
+    assert.strictEqual(audit.recommended[1].has10pLineups, false);
     assert.strictEqual(audit.recommended[1].targetDiagnostics.pendingRate, 0.08);
 });
 
@@ -92,6 +100,10 @@ runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を�
                 has3pLineups: false,
                 best4pGames: 0,
                 has4pLineups: false,
+                best5pGames: 0,
+                has5pLineups: false,
+                best10pGames: 0,
+                has10pLineups: false,
                 targetDiagnostics: { pendingRate: 0.08, updateRate: 0.07, tvRate: 0.03, bcRate: 0.02, moverRate: 0.01 },
             },
         ],
@@ -102,6 +114,6 @@ runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を�
     assert.ok(text.includes('m1 [adopted-2p-main]'));
     assert.ok(text.includes('target=p=8.0%'));
     assert.ok(markdown.includes('# RL Portfolio Audit'));
-    assert.ok(markdown.includes('| id | role | status | style | portfolio | 2p | 3p | 4p | target |'));
+    assert.ok(markdown.includes('| id | role | status | style | portfolio | 2p | 3p | 4p | 5p | 10p | target |'));
     assert.ok(markdown.includes('p=8.0%'));
 });

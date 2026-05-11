@@ -1,4 +1,5 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
@@ -19,6 +20,14 @@ const {
     printPresetComparison,
     printDifficultyLadder,
 } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
+
+function loadMultiplayerRlModel() {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed103-4p.browser.json'), 'utf8'));
+}
+
+function loadTwoPlayerRlModel() {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json'), 'utf8'));
+}
 
 runTest('simulateGame は CPU 同士の試合を最後まで進められる', () => {
     const result = simulateGame({
@@ -53,11 +62,12 @@ runTest('simulateGame は5人以上の rule-based CPU 試合を最後まで進�
     assert.strictEqual(result.finalState.length, 5);
 });
 
-runTest('simulateGame は5人以上のrl指定をexpertへフォールバックする', () => {
+runTest('simulateGame は5人以上のrl混在lineupをrlとして進める', () => {
     const result = simulateGame({
         difficulties: ['rl', 'strong', 'normal', 'weak', 'expert'],
         seed: 53,
         maxSteps: 5000,
+        rlModelData: loadMultiplayerRlModel(),
         expertPurpose: 'live',
         expertPreset: 'v2simple',
         lite: true,
@@ -67,6 +77,49 @@ runTest('simulateGame は5人以上のrl指定をexpertへフォールバック�
     assert.ok(result.winner >= 0);
     assert.strictEqual(result.finalState.length, 5);
     assert.strictEqual(result.difficulties[0], 'rl');
+});
+
+runTest('simulateGame は4人以下のrl混在lineupをrlとして進める', () => {
+    const result = simulateGame({
+        difficulties: ['rl', 'strong', 'normal', 'weak'],
+        seed: 54,
+        maxSteps: 5000,
+        rlModelData: loadMultiplayerRlModel(),
+        expertPurpose: 'live',
+        expertPreset: 'v2simple',
+        lite: true,
+    });
+
+    assert.strictEqual(result.exhausted, false);
+    assert.ok(result.winner >= 0);
+    assert.strictEqual(result.finalState.length, 4);
+    assert.strictEqual(result.difficulties[0], 'rl');
+});
+
+runTest('simulateGame は2人用rlモデルの3人以上lineupを拒否する', () => {
+    assert.throws(() => simulateGame({
+        difficulties: ['rl', 'normal', 'strong'],
+        seed: 56,
+        maxSteps: 10,
+        rlModelData: loadTwoPlayerRlModel(),
+        lite: true,
+    }), /2-player RL model/);
+});
+
+runTest('simulateGameLightweight は10人rule-based lineupで例外なく進む', () => {
+    const result = simulateGameLightweight({
+        difficulties: ['expert', 'strong', 'normal', 'weak', 'expert', 'strong', 'normal', 'weak', 'expert', 'strong'],
+        seed: 55,
+        maxSteps: 500,
+        expertPurpose: 'live',
+        expertPreset: 'v2simple',
+        includeRL: false,
+        lite: true,
+    });
+
+    assert.strictEqual(result.difficulties.length, 10);
+    assert.ok(result.turns > 0);
+    assert.strictEqual(result.finalState, null);
 });
 
 runTest('simulateGameLightweight は軽量経路で試合を最後まで進められる', () => {

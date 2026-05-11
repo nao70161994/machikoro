@@ -272,7 +272,7 @@ runTest('storage resumeGame はCPU復元で共通ファクトリを使う', () =
     assert.strictEqual(rt.__test.getCpuPlayers()[1].createdByFactory, true);
 });
 
-runTest('storage resumeGame は5人以上の保存済み学習AIを最強CPUとして復元する', () => {
+runTest('storage resumeGame は5人以上の保存済み学習AIを学習AIとして復元する', () => {
     const rt = loadStorageRuntime();
     const players = Array.from({ length: 5 }, (_, index) => ({
         name: `P${index + 1}`,
@@ -299,7 +299,7 @@ runTest('storage resumeGame は5人以上の保存済み学習AIを最強CPUと�
     assert.strictEqual(rt.__test.getGame().players.length, 5);
     assert.deepStrictEqual(
         rt.createdCpuPlayers.map(entry => entry.difficulty),
-        ['expert', 'strong', 'expert', 'expert']
+        ['rl', 'strong', 'expert', 'rl']
     );
     assert.deepStrictEqual(
         rt.createdCpuPlayers.map(entry => entry.options.playerCount),

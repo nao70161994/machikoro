@@ -7,6 +7,7 @@ const {
     dedupeActions,
     buildCoverageActions,
     buildWarningActions,
+    enrichAuditCoverage,
     buildNextActions,
     renderText,
     renderMarkdown,
@@ -44,17 +45,44 @@ runTest('plan-rl-next-actions buildCoverageActions は採用モデルの不足�
             },
             {
                 id: 'm4p',
-                role: 'adopted-3p-4p',
+                role: 'adopted-3p-10p',
                 has3pLineups: false,
                 has4pLineups: true,
+                has5pLineups: false,
+                has10pLineups: false,
                 targetDiagnostics: { pendingRate: 0.01, updateRate: 0 },
             },
         ],
     });
-    assert.strictEqual(actions.length, 3);
+    assert.strictEqual(actions.length, 5);
     assert.ok(actions[0].suggestedCommand.includes('eval-run.sh'));
     assert.ok(actions[1].suggestedCommand.includes('eval-run-3p.sh'));
-    assert.ok(actions[2].suggestedCommand.includes('eval-run-multiplayer.sh'));
+    assert.ok(actions.some(action => action.message.includes('5人 lineup 評価が不足')));
+    assert.ok(actions.some(action => action.message.includes('10人 lineup 評価が不足')));
+    assert.ok(actions[4].suggestedCommand.includes('eval-run-multiplayer.sh'));
+});
+
+runTest('plan-rl-next-actions enrichAuditCoverage は registry の5p/10p評価を補完する', () => {
+    const audit = {
+        recommended: [
+            { id: 'm4p', role: 'adopted-3p-10p' },
+        ],
+    };
+    const enriched = enrichAuditCoverage(audit, {
+        models: [
+            {
+                id: 'm4p',
+                evals: [
+                    { type: 'js-lineup-5p-stability', gamesPerLineup: 50, lineups: { 'rl+weak+normal+strong+expert': {} } },
+                    { type: 'js-lineup-10p-stability', gamesPerLineup: 40, lineups: { 'rl+weak+weak+normal+normal+strong+strong+expert+expert+expert': {} } },
+                ],
+            },
+        ],
+    });
+    assert.strictEqual(enriched.recommended[0].has5pLineups, true);
+    assert.strictEqual(enriched.recommended[0].best5pGames, 50);
+    assert.strictEqual(enriched.recommended[0].has10pLineups, true);
+    assert.strictEqual(enriched.recommended[0].best10pGames, 40);
 });
 
 runTest('plan-rl-next-actions buildWarningActions は reevaluate/diversity にコマンドを付ける', () => {
@@ -94,12 +122,14 @@ runTest('plan-rl-next-actions buildNextActions は coverage と warning を統�
         portfolioPolicy: {
             recommendedActiveModels: [
                 { id: 'm2p', role: 'adopted-2p-main' },
-                { id: 'm4p', role: 'adopted-3p-4p' },
+                { id: 'm4p', role: 'adopted-3p-10p' },
             ],
         },
     });
     assert.ok(plan.actions.length >= 2);
     assert.strictEqual(plan.actions[0].type, 'coverage-gap');
+    assert.ok(plan.actions.some(action => action.message.includes('5人 lineup 評価が不足')));
+    assert.ok(plan.actions.some(action => action.message.includes('10人 lineup 評価が不足')));
 });
 
 runTest('plan-rl-next-actions renderText/renderMarkdown は一覧を出力する', () => {

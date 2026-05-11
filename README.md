@@ -32,8 +32,8 @@ node server.js
 ## 現時点の運用上の制限
 
 - `CPU（最強）` の v2simple 手書き強化は凍結中です。再開条件と評価ゲートは [docs/expert-v2-diagnostics.md](docs/expert-v2-diagnostics.md) に集約します。
-- `AI（深層学習・ランダム）` は v2simple とは別CPUとして扱います。3〜4人用RLは現行 `self-only-4p-h256-lr1e5-5000-seed103` を維持し、50戦未満の短期評価は smoke / 足切り専用です。
-- ルールベース CPU は5人以上でも対応します。RL CPU は2〜4人戦が対象で、5人以上では安定したルールベースの `CPU（最強）` を使い、保存データやオンライン設定に残った `rl` 指定も安全に `expert` へフォールバックします。
+- `AI（深層学習・ランダム）` は v2simple とは別CPUとして扱います。3人以上のRLは現行 `self-only-4p-h256-lr1e5-5000-seed103` を使い、5人以上では脅威度上位3人の相手へ射影して判断します。50戦未満の短期評価は smoke / 足切り専用です。
+- ルールベース CPU と RL CPU は5人以上でも対応します。5人以上のRLは動作対応済みですが、強さの採用評価は今後の5人以上lineup評価で確認します。
 
 ## テスト
 
@@ -242,7 +242,7 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 
 ## RL 学習
 
-`expert` とは別に、`scripts/rl` 配下で RL 学習系を管理しています。現状は 2 人戦と 3〜4 人戦の学習・評価基盤が中心で、既存 `expert` を置き換えるのではなく、新しい CPU として段階的に導入する前提です。
+`expert` とは別に、`scripts/rl` 配下で RL 学習系を管理しています。現状は 2 人戦と多人数戦の学習・評価基盤が中心で、既存 `expert` を置き換えるのではなく、新しい CPU として段階的に導入する前提です。
 
 主な流れ:
 
@@ -273,19 +273,18 @@ npm run train-rl:baseline
 
 baseline ラッパーは、Termux でもまず動作確認できるように `--games 1000`、`--eval-every 500`、`--hidden 128`、`--js-eval-games 1`、初期評価スキップ、`max_steps=1200`、軽量な進捗表示を既定にしています。
 `run-js-oracle-terminal-shaped.sh` は JS CPU oracle、終局報酬調整、`self` / `pool` を含む模倣なしRL実験用です。
-初期の `terminal-shaped-h128-lr1e4` は100戦評価で normal が不安定だったため archive 扱いです。`hidden=256` 系も pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。
+初期の `terminal-shaped-h128-lr1e4` は100戦評価で normal が不安定だったため archive 扱いです。`hidden=256` 系も pass 方策へ崩れやすい傾向がありましたが、低学習率・両側自己対戦・報酬クリップの設定では改善しています。2026-05時点では 多人数用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。
 
 実ゲームでは、`CPU（最強）` と `AI（深層学習・ランダム）` を別系統として扱います。`CPU（最強）` は安定したルールベースの基準CPU、`AI（深層学習・ランダム）` は portfolio から人数別モデルを選ぶ学習CPUです。
 
 - 2人戦: 採用済み 2人用モデル群からランダム
-- 3〜4人戦: 採用済み 3〜4人用モデルからランダム
-- 5人以上: RL は未対応のため、安定したルールベースの `CPU（最強）` へフォールバックします
+- 3人以上: 採用済み多人数モデルを使用。5人以上では自分 + 脅威度上位3人の相手へ射影して判断します
 
 2026-05時点の採用済みモデル:
 
 - 2人用主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
 - 2人用補助候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
-- 3〜4人用採用: `self-only-4p-h256-lr1e5-5000-seed103`
+- 多人数用採用: `self-only-4p-h256-lr1e5-5000-seed103`
 
 baseline 学習で生成される主な成果物:
 

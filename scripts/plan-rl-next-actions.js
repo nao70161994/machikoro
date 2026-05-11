@@ -1,6 +1,6 @@
 const path = require('path');
 
-const { loadRegistry } = require('./validate-rl-registry.js');
+const { loadRegistry, summarizeEvalCoverage, isMultiplayerRecommendedRole, isExtendedMultiplayerRecommendedRole } = require('./validate-rl-registry.js');
 const { buildRegistryReport } = require('./report-rl-registry.js');
 const { buildAudit } = require('./audit-rl-portfolio.js');
 
@@ -50,27 +50,49 @@ function buildCoverageActions(audit) {
                 suggestedCommand: `sh scripts/rl/eval-run.sh ${item.id} 100 weak,normal,strong`,
             });
         }
-        if (item.role.includes('3p-4p') && !item.has3pLineups) {
+        const isMultiplayer = isMultiplayerRecommendedRole(item.role);
+        if (isMultiplayer && !item.has3pLineups) {
             actions.push({
                 type: 'coverage-gap',
                 priority: 1,
                 id: item.id,
                 role: item.role,
-                message: `${item.id}: 3〜4人用採用モデルなのに 3人 lineup 評価が不足しています`,
+                message: `${item.id}: 多人数採用モデルなのに 3人 lineup 評価が不足しています`,
                 suggestedCommand: `sh scripts/rl/eval-run-3p.sh 100 ${item.id}`,
             });
         }
-        if (item.role.includes('3p-4p') && !item.has4pLineups) {
+        if (isMultiplayer && !item.has4pLineups) {
             actions.push({
                 type: 'coverage-gap',
                 priority: 1,
                 id: item.id,
                 role: item.role,
-                message: `${item.id}: 3〜4人用採用モデルなのに 4人 lineup 評価が不足しています`,
+                message: `${item.id}: 多人数採用モデルなのに 4人 lineup 評価が不足しています`,
                 suggestedCommand: `sh scripts/rl/eval-run-4p.sh 100 ${item.id}`,
             });
         }
-        if (item.role.includes('3p-4p') && item.targetDiagnostics && Number.isFinite(item.targetDiagnostics.pendingRate)) {
+        const isExtendedMultiplayer = isExtendedMultiplayerRecommendedRole(item.role);
+        if (isExtendedMultiplayer && !item.has5pLineups) {
+            actions.push({
+                type: 'coverage-gap',
+                priority: 1,
+                id: item.id,
+                role: item.role,
+                message: `${item.id}: 多人数採用モデルなのに 5人 lineup 評価が不足しています（評価後にregistry追記も必要）`,
+                suggestedCommand: `npm run eval-rl-models -- --models ${item.id} --games 50 --lineups rl,weak,normal,strong,expert --markdown models/rl_model/eval-${item.id}-5p.md`,
+            });
+        }
+        if (isExtendedMultiplayer && !item.has10pLineups) {
+            actions.push({
+                type: 'coverage-gap',
+                priority: 1,
+                id: item.id,
+                role: item.role,
+                message: `${item.id}: 多人数採用モデルなのに 10人 lineup 評価が不足しています（評価後にregistry追記も必要）`,
+                suggestedCommand: `npm run eval-rl-models -- --models ${item.id} --games 50 --lineups rl,weak,weak,normal,normal,strong,strong,expert,expert,expert --markdown models/rl_model/eval-${item.id}-10p.md`,
+            });
+        }
+        if (isMultiplayer && item.targetDiagnostics && Number.isFinite(item.targetDiagnostics.pendingRate)) {
             const pendingRate = item.targetDiagnostics.pendingRate;
             const updateRate = Number.isFinite(item.targetDiagnostics.updateRate) ? item.targetDiagnostics.updateRate : 0;
             if (pendingRate >= 0.005 && updateRate <= 0) {
@@ -86,6 +108,23 @@ function buildCoverageActions(audit) {
         }
     }
     return actions;
+}
+
+function enrichAuditCoverage(audit, registry) {
+    const models = new Map((Array.isArray(registry.models) ? registry.models : []).map(model => [model.id, model]));
+    return Object.assign({}, audit, {
+        recommended: (audit.recommended || []).map(item => {
+            const model = models.get(item.id);
+            if (!model) return item;
+            const coverage = summarizeEvalCoverage(model);
+            return Object.assign({}, item, {
+                best5pGames: coverage.best5pGames,
+                has5pLineups: coverage.has5pLineups,
+                best10pGames: coverage.best10pGames,
+                has10pLineups: coverage.has10pLineups,
+            });
+        }),
+    });
 }
 
 function buildWarningActions(report) {
@@ -121,7 +160,7 @@ function buildWarningActions(report) {
 
 function buildNextActions(registry) {
     const report = buildRegistryReport(registry);
-    const audit = buildAudit(registry);
+    const audit = enrichAuditCoverage(buildAudit(registry), registry);
     const actions = dedupeActions([
         ...buildCoverageActions(audit),
         ...buildWarningActions(report),
@@ -181,6 +220,7 @@ module.exports = {
     dedupeActions,
     buildCoverageActions,
     buildWarningActions,
+    enrichAuditCoverage,
     buildNextActions,
     renderText,
     renderMarkdown,

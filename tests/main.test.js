@@ -171,7 +171,7 @@ function loadMainRuntime(options = {}) {
         drawCitySkyline() { counters.drawCitySkyline++; },
         resumeGame() { counters.resumeGame++; },
         RLModelPortfolio: {
-            supportsPlayerCount(playerCount) { return Number(playerCount) <= 4; },
+            supportsPlayerCount(playerCount) { return Number(playerCount) <= 10; },
             createRandomCpu(options) { return { difficulty: 'rl', options }; },
         },
     };
@@ -254,10 +254,10 @@ runTest('main renderPlayerSettings は学習AIの選択方針を説明する', (
 
     rt.renderPlayerSettings();
 
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('3〜4人用の深層学習モデルからランダム'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('多人数用の深層学習モデルから選び'));
 });
 
-runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にする', () => {
+runTest('main renderPlayerSettings は5人以上でも学習AIを選択できる', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(5);
     rt.__test.setPlayerSettings([
@@ -270,10 +270,9 @@ runTest('main renderPlayerSettings は5人以上で学習AIを選択不可にす
 
     rt.renderPlayerSettings();
 
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="rl" disabled'));
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert" selected'));
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('AI（深層学習）は別系統の学習CPUで、現在2〜4人戦のみ対応です'));
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('安定したルールベースのCPU（最強）'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="rl" selected'));
+    assert.ok(!rt.__test.elements.playerSettings.innerHTML.includes('value="rl" disabled'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('脅威度上位3人の相手を見て判断します'));
 });
 
 runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', () => {
@@ -311,15 +310,14 @@ runTest('main createCpuPlayer は live v2simple の明示modeを上書きしな�
     assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.2);
 });
 
-runTest('main createCpuPlayer は5人以上の学習AIを警告なしで最強CPUへフォールバックする', () => {
+runTest('main createCpuPlayer は5人以上でも学習AIを生成する', () => {
     const rt = loadMainRuntime();
 
     const cpu = rt.createCpuPlayer('rl', { playerCount: 5, expertPurpose: "live" });
 
-    assert.strictEqual(cpu.difficulty, 'expert');
+    assert.strictEqual(cpu.difficulty, 'rl');
     assert.strictEqual(cpu.options.playerCount, 5);
-    assert.strictEqual(cpu.options.expertPreset, "v2simple");
-    assert.strictEqual(cpu.options.expertBuildMode, "ev");
+    assert.strictEqual(cpu.options.expertPurpose, "live");
     assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
@@ -482,7 +480,7 @@ runTest('main init は固定乱数でプレイヤー順シャッフル後も名�
     assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 3);
 });
 
-runTest('main init は10人開始時に不足設定を補い学習AIを最強CPUへ正規化する', () => {
+runTest('main init は10人開始時に不足設定を補い学習AIを維持する', () => {
     const rt = loadMainRuntime();
     rt.Math.random = () => 0;
     rt.__test.setPlayerSettings([
@@ -499,7 +497,7 @@ runTest('main init は10人開始時に不足設定を補い学習AIを最強CPU
     assert.ok(game.players.every(player => !player.name.includes('NaN')));
     assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 10);
     const cpuDifficulties = rt.__test.getCpuPlayers().filter(Boolean).map(cpu => cpu.difficulty).sort().join(',');
-    assert.strictEqual(cpuDifficulties, 'expert,strong');
+    assert.strictEqual(cpuDifficulties, 'rl,strong');
     assert.deepStrictEqual(rt.__test.alerts, []);
 });
 

@@ -26,6 +26,17 @@ runTest('rl train: CLI help は train-batch-size を含む', () => {
     assert.ok(result.stdout.includes('--debug-train-batch'));
 });
 
+runTest('rl train: CLI help は2〜10人ランダム化の人数範囲オプションを含む', () => {
+    const result = spawnSync('python3', ['-m', 'scripts.rl.train', '--help'], {
+        cwd: path.join(__dirname, '..'),
+        encoding: 'utf8',
+    });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert.ok(result.stdout.includes('--player-count-min'));
+    assert.ok(result.stdout.includes('--player-count-max'));
+    assert.ok(result.stdout.includes('2〜10'));
+});
+
 runTest('rl train: masked probs は有効手だけで合計1に正規化される', () => {
     const output = runPython(`
 import numpy as np
@@ -71,6 +82,25 @@ print(json.dumps(_parse_js_eval_lineups("rl,weak,normal,strong;rl,normal,normal,
     ]);
 });
 
+runTest('rl train: player count range は2〜10に正規化し単独minは固定扱いにする', () => {
+    const output = runPython(`
+from scripts.rl.train import _resolve_player_count_range, _state_dim_for_player_count_range, _target_slots_for_player_count_range
+print(_resolve_player_count_range(2, None, None))
+print(_resolve_player_count_range(2, None, 10))
+print(_resolve_player_count_range(2, 5, None))
+print(_resolve_player_count_range(2, 10, 2))
+print(_state_dim_for_player_count_range((2, 10)))
+print(_target_slots_for_player_count_range((2, 10)))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '(2, 2)');
+    assert.strictEqual(lines[1], '(2, 10)');
+    assert.strictEqual(lines[2], '(5, 5)');
+    assert.strictEqual(lines[3], '(2, 10)');
+    assert.ok(Number(lines[4]) > 145);
+    assert.strictEqual(lines[5], '3');
+});
+
 runTest('rl train: pool が空なら学習相手選択は random へフォールバックする', () => {
     const output = runPython(`
 import json
@@ -96,6 +126,35 @@ print(entry["agent"] is agent)
     const lines = output.split('\n');
     assert.strictEqual(lines[0], 'self');
     assert.strictEqual(lines[1], 'True');
+});
+
+runTest('rl train: 人数サンプラは2〜10範囲をゲームごとに選べる', () => {
+    const output = runPython(`
+import json
+import random
+from scripts.rl.train import _resolve_player_count_range, _sample_player_count, _state_dim_for_player_count_range, _target_slots_for_player_count_range
+from scripts.rl.encode import state_dim_for_player_count
+
+player_count_range = _resolve_player_count_range(player_count=4, player_count_min=2, player_count_max=10)
+random.seed(12)
+values = [_sample_player_count(player_count_range) for _ in range(200)]
+print(min(values))
+print(max(values))
+print(json.dumps(sorted(set(values))))
+
+fixed_range = _resolve_player_count_range(player_count=7, player_count_min=None, player_count_max=None)
+print(_sample_player_count(fixed_range))
+print(_state_dim_for_player_count_range(player_count_range))
+print(_target_slots_for_player_count_range(player_count_range))
+print(state_dim_for_player_count(10))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '2');
+    assert.strictEqual(lines[1], '10');
+    assert.deepStrictEqual(JSON.parse(lines[2]), [2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    assert.strictEqual(lines[3], '7');
+    assert.strictEqual(Number(lines[4]), Number(lines[6]));
+    assert.strictEqual(lines[5], '3');
 });
 
 runTest('rl train: self 両側学習は両席の行動をバッファに積む', () => {
@@ -125,6 +184,41 @@ print(len(agent.states) == len(agent.actions) == len(agent.masks) == len(agent.v
     assert.strictEqual(lines[1], lines[2]);
     assert.strictEqual(lines[3], 'True');
     assert.ok(Number(lines[2]) > 0);
+});
+
+runTest('rl train: 10人学習環境は多人数状態次元で脅威度上位3相手へ射影する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.encode import encode_state_v2, state_dim_for_player_count, PLAYER_FEATURE_DIM_V2
+
+env = MachikoroEnv(player_count=10)
+env.current = 0
+for index, player in enumerate(env.players):
+    player.coins = index
+env.players[9].landmarks["空港"] = True
+state_dim = state_dim_for_player_count(10)
+vec = encode_state_v2(env)
+base = PLAYER_FEATURE_DIM_V2
+coins = [
+    round(float(vec[base + 0]) * 50),
+    round(float(vec[base * 2 + 0]) * 50),
+    round(float(vec[base * 3 + 0]) * 50),
+]
+print(env.player_count)
+print(len(env.players))
+print(state_dim)
+print(len(vec))
+print(json.dumps(coins))
+print(round(float(vec[-1]), 6))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '10');
+    assert.strictEqual(lines[1], '10');
+    assert.strictEqual(Number(lines[2]), Number(lines[3]));
+    assert.ok(Number(lines[2]) > 145);
+    assert.deepStrictEqual(JSON.parse(lines[4]), [9, 8, 7]);
+    assert.strictEqual(lines[5], '1.0');
 });
 
 runTest('rl train: 4人自己対戦は4人用状態次元で全席を学習対象にできる', () => {

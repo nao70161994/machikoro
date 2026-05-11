@@ -45,7 +45,7 @@ function normalizeLocalPlayerSetting(setting, index, playerCount) {
     const current = setting || {};
     return {
         type: current.type === "cpu" ? "cpu" : "human",
-        difficulty: playerCount > 4 && current.difficulty === "rl" ? "expert" : current.difficulty || "normal",
+        difficulty: current.difficulty || "normal",
         name: normalizeLocalPlayerName(current.name, index),
     };
 }
@@ -59,23 +59,15 @@ function getLocalCpuLabel(difficulty) {
 }
 
 function getRlCpuSettingNote(playerCount) {
-    if (playerCount > 4) {
-        return 'AI（深層学習）は別系統の学習CPUで、現在2〜4人戦のみ対応です。5人以上では安定したルールベースのCPU（最強）を使ってください。';
-    }
     if (playerCount >= 3) {
-        return 'AI（深層学習・ランダム）は3〜4人用の深層学習モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。';
+        return 'AI（深層学習・ランダム）は多人数用の深層学習モデルから選び、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。';
     }
     return 'AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。';
 }
 
 function createCpuPlayer(difficulty, options = {}) {
     const resolvedOptions = Object.assign({}, options);
-    const playerCount = Number(resolvedOptions.playerCount) || 2;
-    const resolvedDifficulty = difficulty === 'rl'
-        && typeof RLModelPortfolio !== "undefined"
-        && !RLModelPortfolio.supportsPlayerCount(playerCount)
-        ? 'expert'
-        : difficulty;
+    const resolvedDifficulty = difficulty;
     const applyLiveExpertDefaults = () => {
         if (!resolvedOptions.expertPreset) {
             resolvedOptions.expertPreset = "v2simple";
@@ -138,7 +130,6 @@ function renderPlayerSettings() {
     playerSettings = playerSettings
         .slice(0, selectedCount)
         .map((setting, index) => normalizeLocalPlayerSetting(setting, index, selectedCount));
-    const rlDisabled = selectedCount > 4 ? "disabled" : "";
     const rlNotice = `<div class="player-setting-note">${getRlCpuSettingNote(selectedCount)}</div>`;
     const html = playerSettings.map((s, i) => `
         <div class="player-setting">
@@ -150,7 +141,7 @@ function renderPlayerSettings() {
                     <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                     <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
                     <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>CPU（最強）</option>
-                    <option value="rl" ${rlDisabled} ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
+                    <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
                 </select>
             </div>
             ${s.type === "human" ? `

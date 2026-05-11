@@ -48,6 +48,10 @@ function buildAudit(registry, options = {}) {
             has3pLineups: coverage ? coverage.has3pLineups : false,
             best4pGames: coverage ? coverage.best4pGames : 0,
             has4pLineups: coverage ? coverage.has4pLineups : false,
+            best5pGames: coverage ? coverage.best5pGames : 0,
+            has5pLineups: coverage ? coverage.has5pLineups : false,
+            best10pGames: coverage ? coverage.best10pGames : 0,
+            has10pLineups: coverage ? coverage.has10pLineups : false,
             targetDiagnostics,
         };
     });
@@ -79,6 +83,8 @@ function renderText(audit) {
             `2p=${item.has2pOpponents ? item.best2pGames : 'missing'} ` +
             `3p=${item.has3pLineups ? item.best3pGames : 'missing'} ` +
             `4p=${item.has4pLineups ? item.best4pGames : 'missing'} ` +
+            `5p=${item.has5pLineups ? item.best5pGames : 'missing'} ` +
+            `10p=${item.has10pLineups ? item.best10pGames : 'missing'} ` +
             `target=${formatTargetDiagnostics(item.targetDiagnostics)}`
         );
     }
@@ -103,8 +109,8 @@ function renderMarkdown(audit) {
         '',
         '## Recommended Models',
         '',
-        '| id | role | status | style | portfolio | 2p | 3p | 4p | target |',
-        '|---|---|---|---|---|---:|---:|---:|---|'
+        '| id | role | status | style | portfolio | 2p | 3p | 4p | 5p | 10p | target |',
+        '|---|---|---|---|---|---:|---:|---:|---:|---:|---|'
     );
     for (const item of audit.recommended) {
         lines.push(
@@ -113,6 +119,8 @@ function renderMarkdown(audit) {
             `${item.has2pOpponents ? item.best2pGames : 'missing'} | ` +
             `${item.has3pLineups ? item.best3pGames : 'missing'} | ` +
             `${item.has4pLineups ? item.best4pGames : 'missing'} | ` +
+            `${item.has5pLineups ? item.best5pGames : 'missing'} | ` +
+            `${item.has10pLineups ? item.best10pGames : 'missing'} | ` +
             `${formatTargetDiagnostics(item.targetDiagnostics)} |`
         );
     }

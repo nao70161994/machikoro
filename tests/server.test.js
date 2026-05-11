@@ -149,7 +149,7 @@ runTest('sanitizeName がHTMLタグ・特殊文字を除去し20文字に制限�
     assert.strictEqual(sanitizeName('<>&"\'`'), '');
 });
 
-runTest('normalizePlayerSettings は5人以上のrl CPUをexpertへ正規化する', () => {
+runTest('normalizePlayerSettings は5人以上のrl CPUを維持する', () => {
     const settings = normalizePlayerSettings([
         { type: 'human', difficulty: 'normal' },
         { type: 'cpu', difficulty: 'rl' },
@@ -160,9 +160,9 @@ runTest('normalizePlayerSettings は5人以上のrl CPUをexpertへ正規化す�
 
     assert.deepStrictEqual(settings, [
         { type: 'human', difficulty: 'normal' },
-        { type: 'cpu', difficulty: 'expert' },
+        { type: 'cpu', difficulty: 'rl' },
         { type: 'cpu', difficulty: 'weak' },
-        { type: 'cpu', difficulty: 'expert' },
+        { type: 'cpu', difficulty: 'rl' },
         { type: 'human', difficulty: 'normal' },
     ]);
 });
@@ -948,7 +948,7 @@ runTest('checkGameStart は人間枠が揃うと gameStart を送る', () => {
     }
 });
 
-runTest('checkGameStart は5人CPU混在でRLをexpert化したpayloadを開始する', () => {
+runTest('checkGameStart は5人CPU混在でRLを維持したpayloadを開始する', () => {
     const roomId = 'ROOM05';
     const emitted = [];
     const io = {
@@ -993,17 +993,17 @@ runTest('checkGameStart は5人CPU混在でRLをexpert化したpayloadを開始�
 
         assert.strictEqual(room.started, true);
         assert.deepStrictEqual(room.gameStartPayload.playerNames, [
-            'CPU1（最強）',
+            'CPU1（学）',
             'CPU2（強）',
             'Host',
-            'CPU3（最強）',
+            'CPU3（学）',
             'Guest',
         ]);
         assert.deepStrictEqual(room.gameStartPayload.playerSettings.map(s => s.difficulty), [
-            'expert',
+            'rl',
             'strong',
             'normal',
-            'expert',
+            'rl',
             'normal',
         ]);
         assert.deepStrictEqual(room.gameStartPayload.playerOrder, [1, 2, 3, 4, 0]);

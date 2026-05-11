@@ -103,7 +103,7 @@ runTest('eval-rl-models は run-label の top-k を一括展開する', () => {
 runTest('eval-rl-models は任意の model path を評価対象へ解決する', () => {
     const specs = resolveModelSpecs(
         { models: [], runLabels: [], modelPaths: ['tmp/candidate-1250.browser.json'], rank: 1, runRanks: [] },
-        { models: [] }
+        { models: [{ id: 'registry-default', status: 'adopted', path: 'default.json' }] }
     );
     assert.deepStrictEqual(specs.map(spec => spec.id), ['candidate-1250.browser']);
     assert.strictEqual(specs[0].source, 'path');
@@ -152,27 +152,25 @@ runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
     assert.strictEqual(results[0].buildSignature.cardKey, 'パン屋');
 });
 
-runTest('eval-rl-models は5人以上のlineupを評価前に拒否する', () => {
+runTest('eval-rl-models は5人以上のlineupを評価へ渡せる', () => {
     const specs = [{ id: 'm1', label: 'm1', path: 'm1.json', source: 'test', status: '' }];
     let called = false;
-    assert.throws(
-        () => evaluateModelSpecs(
-            specs,
-            {
-                games: 10,
-                seed: 1,
-                maxSteps: 100,
-                opponents: ['normal'],
-                lineups: [['rl', 'weak', 'normal', 'strong', 'expert']],
-            },
-            () => {
-                called = true;
-                return [];
-            }
-        ),
-        /cannot be used for 5-player lineups/
+    const results = evaluateModelSpecs(
+        specs,
+        {
+            games: 10,
+            seed: 1,
+            maxSteps: 100,
+            opponents: ['normal'],
+            lineups: [['rl', 'weak', 'normal', 'strong', 'expert']],
+        },
+        () => {
+            called = true;
+            return [entry('rl+weak+normal+strong+expert', 0.5)];
+        }
     );
-    assert.strictEqual(called, false);
+    assert.strictEqual(called, true);
+    assert.strictEqual(results[0].summaries.length, 1);
 });
 
 runTest('eval-rl-models は4人lineupの既存挙動を維持する', () => {
@@ -225,6 +223,28 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
     assert.ok(csv.includes('パン屋x10'));
     assert.ok(csv.includes('businessTotal'));
     assert.ok(csv.includes('麦畑->パン屋x2'));
+});
+
+runTest('eval-rl-models renderText は5人lineupの人数と席別指標を出力する', () => {
+    const text = renderText([
+        {
+            id: 'm1',
+            score: 0.4,
+            summaries: [
+                {
+                    opponent: 'rl+weak+normal+strong+expert',
+                    lineup: ['rl', 'weak', 'normal', 'strong', 'expert'],
+                    games: 5,
+                    rlWinRate: 0.4,
+                    averageTurns: 24,
+                    rlSeatWinRatesByIndex: [1, 0, 0, 1, 0],
+                    rlBuildStats: { passRate: 0, topCards: [], topLandmarks: [] },
+                },
+            ],
+        },
+    ]);
+    assert.ok(text.includes('players=5'));
+    assert.ok(text.includes('seat(0=100.0%,1=0.0%,2=0.0%,3=100.0%,4=0.0%)'));
 });
 
 runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力する', () => {

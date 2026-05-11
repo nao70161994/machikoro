@@ -85,10 +85,7 @@ function normalizePlayerSettings(playerSettings, playerCount) {
     if (!Array.isArray(playerSettings)) return [];
     return playerSettings.slice(0, playerCount).map((setting) => {
         if (!setting || setting.type !== 'cpu') return { type: 'human', difficulty: 'normal' };
-        const difficulty = playerCount > 4 && setting.difficulty === 'rl'
-            ? 'expert'
-            : (setting.difficulty || 'normal');
-        return { type: 'cpu', difficulty };
+        return { type: 'cpu', difficulty: setting.difficulty || 'normal' };
     });
 }
 

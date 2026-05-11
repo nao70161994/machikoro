@@ -459,6 +459,28 @@ runTest('RLCPU: stateDim 353 モデルは4人戦を多人数表現へ変換す�
     assert.strictEqual(state[state.length - 1], 1);
 });
 
+runTest('RLCPU: stateDim 353 モデルは5人以上を脅威度上位3人へ射影する', () => {
+    const { RLCPU, GameManager, LANDMARK_NAMES } = loadRLRuntime();
+    const model = buildParityModel({ RLCPU });
+    model.stateDim = 353;
+    model.layers.shared[0].weights = Array.from({ length: 353 }, () => [0, 0]);
+    const cpu = new RLCPU(model);
+    const game = new GameManager(5);
+    game.currentPlayerIndex = 0;
+    game.players[1].coins = 4;
+    game.players[2].coins = 80;
+    game.players[3].coins = 1;
+    game.players[3].landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    game.players[4].coins = 2;
+    const state = cpu.encodeGameState(game);
+
+    assert.strictEqual(state.length, 353);
+    assert.strictEqual(state[0], 3 / 50);
+    assert.strictEqual(state[84], 1);
+    assert.strictEqual(state[state.length - 1], 1);
+    assert.strictEqual(cpu.chooseTVTarget(game), 2);
+});
+
 runTest('RLCPU: actionMask は初期 roll で1個振りのみ許可する', () => {
     const { RLCPU, GameManager } = loadRLRuntime();
     const model = buildTestModel();

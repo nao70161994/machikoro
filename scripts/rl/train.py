@@ -1533,6 +1533,40 @@ def _safe_ratio(value, total):
     return value / total
 
 
+def _resolve_player_count_range(player_count: int = 2, player_count_min=None, player_count_max=None) -> tuple[int, int]:
+    fixed = max(2, min(int(player_count or 2), 10))
+    if player_count_min is None and player_count_max is None:
+        return fixed, fixed
+    if player_count_min is None:
+        min_count = fixed
+        max_count = max(2, min(int(player_count_max or fixed), 10))
+    elif player_count_max is None:
+        min_count = max_count = max(2, min(int(player_count_min or fixed), 10))
+    else:
+        min_count = max(2, min(int(player_count_min or fixed), 10))
+        max_count = max(2, min(int(player_count_max or fixed), 10))
+    if min_count > max_count:
+        min_count, max_count = max_count, min_count
+    return min_count, max_count
+
+
+def _sample_player_count(player_count_range: tuple[int, int]) -> int:
+    min_count, max_count = player_count_range
+    if min_count >= max_count:
+        return min_count
+    return random.randint(min_count, max_count)
+
+
+def _state_dim_for_player_count_range(player_count_range: tuple[int, int]) -> int:
+    return state_dim_for_player_count(player_count_range[1])
+
+
+def _target_slots_for_player_count_range(player_count_range: tuple[int, int]) -> int:
+    if player_count_range[1] <= 2:
+        return 0
+    return min(3, max(0, player_count_range[1] - 1))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--games",      type=int,   default=10000, help="学習ゲーム数")
@@ -1542,7 +1576,9 @@ def main():
     parser.add_argument("--seed",       type=int,   default=None,  help="Python random / numpy の乱数seed（未指定なら固定しない）")
     parser.add_argument("--epsilon",    type=float, default=0.20,  help="ε-greedy 初期探索率")
     parser.add_argument("--train-opponents", default="random=0.7,pool=0.3", help="学習時に混ぜる相手の重み指定 random/self/pool/weak/normal/strong/expert")
-    parser.add_argument("--player-count", type=int, default=2, help="Python学習環境のプレイヤー人数（2〜4、3人以上は新しい多人数用状態表現）")
+    parser.add_argument("--player-count", type=int, default=2, help="Python学習環境の固定プレイヤー人数（2〜10、3人以上は多人数用状態表現）")
+    parser.add_argument("--player-count-min", type=int, default=None, help="学習ゲームごとにランダム化する最小プレイヤー人数（2〜10）。未指定なら --player-count 固定")
+    parser.add_argument("--player-count-max", type=int, default=None, help="学習ゲームごとにランダム化する最大プレイヤー人数（2〜10）。未指定なら --player-count 固定")
     parser.add_argument("--self-learn-both-sides", action="store_true", help="opponent=self の学習ゲームで両席の行動を学習対象にする")
     parser.add_argument("--target-oversample-ratio", type=float, default=0.0, help="train()直前にtarget pending遷移を複製して目標比率まで増やす（0で無効）")
     parser.add_argument("--target-oversample-max-multiplier", type=float, default=4.0, help="target oversampling後の最大buffer倍率")
@@ -1616,9 +1652,10 @@ def main():
         random.seed(args.seed)
         np.random.seed(args.seed)
 
-    args.player_count = max(2, min(args.player_count, 4))
-    state_dim = state_dim_for_player_count(args.player_count)
-    target_slots = max(0, args.player_count - 1) if args.player_count > 2 else 0
+    player_count_range = _resolve_player_count_range(args.player_count, args.player_count_min, args.player_count_max)
+    args.player_count = player_count_range[0] if player_count_range[0] == player_count_range[1] else player_count_range[1]
+    state_dim = _state_dim_for_player_count_range(player_count_range)
+    target_slots = _target_slots_for_player_count_range(player_count_range)
     agent = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim, target_slots=target_slots)
 
     model_path = os.path.join(MODEL_DIR, "model")
@@ -1648,7 +1685,12 @@ def main():
 
     oracle_text = f", cpu_opponent_impl={args.cpu_opponent_impl}"
     seed_text = f", seed={args.seed}" if args.seed is not None else ""
-    player_count_text = f", players={args.player_count}, state_dim={state_dim}"
+    player_count_label = (
+        str(player_count_range[0])
+        if player_count_range[0] == player_count_range[1]
+        else f"{player_count_range[0]}-{player_count_range[1]} random"
+    )
+    player_count_text = f", players={player_count_label}, state_dim={state_dim}"
     print(f"学習開始: {args.games} ゲーム, hidden={args.hidden}, lr={args.lr}, run={args.run_label}{oracle_text}{seed_text}{player_count_text}")
     js_eval_opponents = _parse_csv_list(args.js_eval_opponents)
     js_eval_lineups = _parse_js_eval_lineups(args.js_eval_lineups)
@@ -1728,6 +1770,7 @@ def main():
             print(f"  [pool] snapshot {pool_action} #{len(pool_agents)}/{args.pool_max_size} at game {game_i}")
 
         opponent = _choose_training_opponent(train_opponents, pool_agents, current_agent=agent)
+        game_player_count = _sample_player_count(player_count_range)
         info = play_training_game(
             agent,
             epsilon=epsilon,
@@ -1736,7 +1779,7 @@ def main():
             reward_config=reward_config,
             terminal_config=terminal_config,
             self_learn_both_sides=args.self_learn_both_sides,
-            player_count=args.player_count,
+            player_count=game_player_count,
             debug_game_label=f"{game_i}/{args.games}",
             debug_game_interval_seconds=args.debug_game_seconds,
         )

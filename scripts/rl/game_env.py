@@ -100,7 +100,7 @@ class MachikoroEnv:
     def __init__(self, enabled_lm: list = None, max_turns: int = 400, player_count: int = 2):
         self.enabled_lm = enabled_lm or LANDMARK_ORDER[:]
         self.max_turns = max_turns
-        self.player_count = max(2, min(int(player_count or 2), 4))
+        self.player_count = max(2, min(int(player_count or 2), 10))
         self.reset()
 
     def reset(self):

@@ -4,12 +4,10 @@ let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
-    const playerCount = Number(options.playerCount) || 2;
-    const resolvedDifficulty = playerCount > 4 && difficulty === "rl" ? "expert" : difficulty;
     if (typeof createCpuPlayer === "function") {
-        return createCpuPlayer(resolvedDifficulty, options);
+        return createCpuPlayer(difficulty, options);
     }
-    return new CPU(resolvedDifficulty, options);
+    return new CPU(difficulty, options);
 }
 
 function changeOnlineCount(delta) {
@@ -22,11 +20,8 @@ function getOnlineRlCpuSettingNote(playerCount) {
     if (typeof getRlCpuSettingNote === "function") {
         return getRlCpuSettingNote(playerCount);
     }
-    if (playerCount > 4) {
-        return "AI（深層学習）は別系統の学習CPUで、現在2〜4人戦のみ対応です。5人以上では安定したルールベースのCPU（最強）を使ってください。";
-    }
     if (playerCount >= 3) {
-        return "AI（深層学習・ランダム）は3〜4人用の深層学習モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。";
+        return "AI（深層学習・ランダム）は多人数用の深層学習モデルから選び、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。";
     }
     return "AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。";
 }
@@ -37,9 +32,8 @@ function renderOnlinePlayerSettings() {
     }
     onlinePlayerSettings = onlinePlayerSettings.slice(0, onlineSelectedCount).map((setting) => ({
         type: setting.type === "cpu" ? "cpu" : "human",
-        difficulty: onlineSelectedCount > 4 && setting.difficulty === "rl" ? "expert" : setting.difficulty || "normal",
+        difficulty: setting.difficulty || "normal",
     }));
-    const rlDisabled = onlineSelectedCount > 4 ? "disabled" : "";
     const rlNotice = `<div class="player-setting-note">${getOnlineRlCpuSettingNote(onlineSelectedCount)}</div>`;
     const html = onlinePlayerSettings.map((s, i) => `
         <div class="player-setting">
@@ -50,7 +44,7 @@ function renderOnlinePlayerSettings() {
                 <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
                 <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
                 <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>CPU（最強）</option>
-                <option value="rl" ${rlDisabled} ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
+                <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
             </select>
         </div>
     `).join("") + rlNotice;

@@ -44,9 +44,6 @@ function maxLineupPlayers(lineups) {
 
 function assertRlModelLineupCompatible(rlModelData, lineups, label = 'RL model') {
     const maxPlayers = maxLineupPlayers(lineups);
-    if (maxPlayers > 4) {
-        throw new Error(`${label} cannot be used for ${maxPlayers}-player lineups; RL CPU supports 2-4 players`);
-    }
     if (maxPlayers >= 3 && rlModelData && rlModelData.stateDim === 145) {
         throw new Error(`${label} is a 2-player RL model (stateDim=145) and cannot be used for ${maxPlayers}-player lineups`);
     }
@@ -194,6 +191,7 @@ function printEvaluation(entries, options = {}) {
         console.log(
             `rl vs ${summary.opponent}: rl=${summary.rlWins} ${summary.opponent}=${summary.opponentWins} ` +
             `draws=${summary.draws} winRate=${(summary.rlWinRate * 100).toFixed(1)}% ` +
+            `players=${lineup.length || 2} ` +
             `${seatText} ` +
             `avgTurns=${summary.averageTurns.toFixed(1)} exhausted=${summary.exhausted}`
         );

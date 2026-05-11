@@ -67,8 +67,8 @@ def _append_player_features(vec, player):
 
 def encode_state_v2(env: MachikoroEnv) -> np.ndarray:
     """
-    最大4人固定の多人数用状態表現。
-    自分 + 脅威度順の相手3枠を固定長で並べ、空き枠はゼロ埋めする。
+    固定長の多人数用状態表現。
+    自分 + 脅威度順の相手枠を固定長で並べ、空き枠はゼロ埋めする。
     """
     me = env.players[env.current]
     opponents = [
@@ -100,7 +100,7 @@ def encode_state_v2(env: MachikoroEnv) -> np.ndarray:
     vec.append(float(env.pending_reno))
     vec.append(float(env.pending_it))
     vec.append(min(env.turn_count / 200.0, 1.0))
-    vec.append((len(env.players) - 2) / 2.0)
+    vec.append(max(0.0, min((len(env.players) - 2) / 2.0, 1.0)))
 
     return np.array(vec, dtype=np.float32)
 

@@ -52,21 +52,28 @@ function createShopStock(cards) {
     return stock;
 }
 
+function resolveSelfplayDifficulties(difficulties) {
+    return difficulties.slice();
+}
+
 function createPlayers(runtime, difficulties, options = {}) {
-    return difficulties.map(difficulty => {
-        const resolvedDifficulty = difficulties.length > 4 && difficulty === 'rl' ? 'expert' : difficulty;
-        if (resolvedDifficulty === 'rl') {
+    const resolvedDifficulties = resolveSelfplayDifficulties(difficulties);
+    return resolvedDifficulties.map(difficulty => {
+        if (difficulty === 'rl') {
             if (!options.rlModelData || !runtime.RLCPU) {
                 throw new Error('rlModelData is required when using rl difficulty');
             }
+            if (resolvedDifficulties.length >= 3 && Number(options.rlModelData.stateDim) === 145) {
+                throw new Error('2-player RL model cannot be used for 3+ player selfplay');
+            }
             return new runtime.RLCPU(options.rlModelData);
         }
-        if (resolvedDifficulty !== 'expert') {
-            return new runtime.CPU(resolvedDifficulty, {
+        if (difficulty !== 'expert') {
+            return new runtime.CPU(difficulty, {
                 profileStats: options.profileStats,
             });
         }
-        return new runtime.CPU(resolvedDifficulty, {
+        return new runtime.CPU(difficulty, {
             expertPurpose: options.expertPurpose || 'training',
             simulationMode: options.lite ? 'lite' : (options.fast ? 'fast' : 'full'),
             profileStats: options.profileStats,
@@ -974,7 +981,7 @@ function summarizePlayer(player, enabledLandmarks) {
 
 function simulateGame(options = {}) {
     const runtime = options.runtime || loadRuntime();
-    const difficulties = options.difficulties || ['expert', 'strong'];
+    const difficulties = resolveSelfplayDifficulties(options.difficulties || ['expert', 'strong']);
     const game = new runtime.GameManager(difficulties.length);
     const shopStock = createShopStock(runtime.CARDS);
     const cpuPlayers = createPlayers(runtime, difficulties, options);
@@ -1043,7 +1050,7 @@ function simulateGame(options = {}) {
 
 function simulateGameLightweight(options = {}) {
     const runtime = options.runtime || loadRuntime({ includeRL: false });
-    const difficulties = options.difficulties || ['expert', 'weak'];
+    const difficulties = resolveSelfplayDifficulties(options.difficulties || ['expert', 'weak']);
     const game = new runtime.GameManager(difficulties.length);
     const shopStock = createShopStock(runtime.CARDS);
     const cpuPlayers = createPlayers(runtime, difficulties, options);
@@ -1313,6 +1320,7 @@ module.exports = {
     loadRuntime,
     createRng,
     createShopStock,
+    resolveSelfplayDifficulties,
     createPlayers,
     actionToLabel,
     listLegalActions,
