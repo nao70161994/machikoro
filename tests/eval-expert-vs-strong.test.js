@@ -37,6 +37,11 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
+runTest('eval-expert-vs-strong parseArgs は expert-preset 値省略時も v2simple を使う', () => {
+    const args = parseArgs(['--expert-preset']);
+    assert.strictEqual(args.expertPreset, 'v2simple');
+});
+
 runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
     const args = parseArgs([
         '--games', '30',

@@ -41,7 +41,7 @@ function parseArgs(argv) {
             lite = false;
             fast = true;
         }
-        else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
+        else if (arg === '--expert-preset') expertPreset = argv[++i] || 'v2simple';
         else if (arg === '--tuning-candidate') tuningCandidate = argv[++i] || '';
         else if (arg === '--build-mode') buildMode = argv[++i] || 'ev';
         else if (arg === '--dice-mode') diceMode = argv[++i] || 'ev';
