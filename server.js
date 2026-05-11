@@ -750,11 +750,14 @@ function validateRollDicePayload(data) {
 function validateSelectDicePayload(data) {
     if (!isPlainObject(data)) return false;
     if (typeof data.useTwo !== 'boolean') return false;
-    if (data.diceCount !== 1 && data.diceCount !== 2) return false;
+    const hasDiceCount = Object.prototype.hasOwnProperty.call(data, 'diceCount');
+    const diceCount = hasDiceCount ? data.diceCount : (data.useTwo ? 2 : 1);
+    if (diceCount !== 1 && diceCount !== 2) return false;
+    if (hasDiceCount && data.useTwo !== (diceCount === 2)) return false;
     if (!isValidDieValue(data.d1)) return false;
-    if (data.diceCount === 2) {
+    if (diceCount === 2) {
         if (!isValidDieValue(data.d2)) return false;
-    } else if (Object.prototype.hasOwnProperty.call(data, 'd2') && data.d2 != null && !isValidDieValue(data.d2)) {
+    } else if (Object.prototype.hasOwnProperty.call(data, 'd2') && data.d2 != null && data.d2 !== 0 && !isValidDieValue(data.d2)) {
         return false;
     }
     return validateTunaDiceFromData(data);
@@ -767,6 +770,10 @@ function validateRerollDicePayload(data) {
 
 function validateResolveHarborPayload(data) {
     return isPlainObject(data) && typeof data.useBonus === 'boolean';
+}
+
+function validateResolveITPayload(data) {
+    return isPlainObject(data) && typeof data.doSave === 'boolean';
 }
 
 function validateGameAction(room, socket, action, data) {
@@ -792,7 +799,8 @@ function validateGameAction(room, socket, action, data) {
 
     if (action === 'resolveTV') {
         return {
-            ok: Number.isInteger(data.targetIndex) &&
+            ok: isPlainObject(data) &&
+            Number.isInteger(data.targetIndex) &&
             data.targetIndex >= 0 &&
             data.targetIndex < game.players.length &&
             data.targetIndex !== currentIndex,
@@ -852,6 +860,13 @@ function validateGameAction(room, socket, action, data) {
     if (action === 'resolveHarbor') {
         return {
             ok: validateResolveHarborPayload(data),
+            mirror,
+        };
+    }
+
+    if (action === 'resolveIT') {
+        return {
+            ok: validateResolveITPayload(data),
             mirror,
         };
     }
@@ -1027,6 +1042,7 @@ module.exports = {
     validateSelectDicePayload,
     validateRerollDicePayload,
     validateResolveHarborPayload,
+    validateResolveITPayload,
     validateGameAction,
     getAllowedActions,
     checkGameStart,

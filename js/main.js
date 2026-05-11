@@ -273,7 +273,7 @@ const CPU_PHASE_HANDLERS = [
             const d1 = rollRandomDie();
             const d2 = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
-            cpuDo('selectDice', { useTwo, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
+            cpuDo('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
         },
     },
     {
@@ -413,7 +413,7 @@ function onSelectDiceCount(useTwo) {
         const d2 = useTwo ? rollRandomDie() : 0;
         const tunaDice = [rollRandomDie(), rollRandomDie()];
         game.selectDiceCount(useTwo, d1, d2, tunaDice);
-        sendAction('selectDice', { useTwo, d1, d2, tunaDice });
+        sendAction('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice });
         render();
         scheduleCPU();
     }, 600);
@@ -805,11 +805,19 @@ function checkAutoSkip() {
         );
 
     if (!canAffordCard && !canAffordLandmark) {
+        const scheduledPlayerIndex = game.currentPlayerIndex;
         autoSkipPending = true;
         autoSkipTimeout = setTimeout(() => {
             autoSkipPending = false;
             autoSkipTimeout = null;
-            if (game && game.phase === "build" && !game.builtThisTurn) {
+            if (
+                game &&
+                game.phase === GAME_PHASES.BUILD &&
+                game.currentPlayerIndex === scheduledPlayerIndex &&
+                !cpuPlayers[scheduledPlayerIndex] &&
+                (!isOnlineGame || scheduledPlayerIndex === myPlayerIndex) &&
+                !game.builtThisTurn
+            ) {
                 game.nextTurn();
                 sendAction('nextTurn');
                 render();

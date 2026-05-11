@@ -25,6 +25,7 @@ const {
     validateSelectDicePayload,
     validateRerollDicePayload,
     validateResolveHarborPayload,
+    validateResolveITPayload,
     makeUndoStateFromMirror,
     applyActionToMirror,
     restoreUndoMirror,
@@ -417,9 +418,25 @@ runTest('validateRollDicePayload は不正な出目を拒否する', () => {
 runTest('validateSelectDicePayload は型と出目範囲を検証する', () => {
     assert.strictEqual(validateSelectDicePayload({ useTwo: false, diceCount: 1, d1: 3, tunaDice: [2] }), true);
     assert.strictEqual(validateSelectDicePayload({ useTwo: true, diceCount: 2, d1: 4, d2: 5 }), true);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: false, d1: 3, d2: 0, tunaDice: [2] }), true);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: true, d1: 4, d2: 5 }), true);
     assert.strictEqual(validateSelectDicePayload({ useTwo: 'yes', diceCount: 2, d1: 4, d2: 5 }), false);
+    assert.strictEqual(validateSelectDicePayload({ useTwo: false, diceCount: 2, d1: 4, d2: 5 }), false);
     assert.strictEqual(validateSelectDicePayload({ useTwo: true, diceCount: 3, d1: 4, d2: 5 }), false);
     assert.strictEqual(validateSelectDicePayload({ useTwo: true, diceCount: 2, d1: 4, d2: 7 }), false);
+});
+
+runTest('validateGameAction は旧クライアントの diceCount なし selectDice を許可する', () => {
+    const runtime = loadGameRuntime();
+    const room = makeRoom();
+    const game = new runtime.GameManager(2);
+    const shopStock = {};
+    for (const card of runtime.CARDS) shopStock[card.name] = 6;
+    game.currentPlayer().landmarks['駅'] = true;
+    game.phase = runtime.GAME_PHASES.SELECT_DICE;
+    room.stateSnapshot = serializeMirrorState(game, shopStock);
+    const result = validateGameAction(room, { playerIndex: 0 }, 'selectDice', { useTwo: true, d1: 3, d2: 4, tunaDice: [1, 1] });
+    assert.strictEqual(result.ok, true);
 });
 
 runTest('validateRerollDicePayload は不正な出目を拒否する', () => {
@@ -432,6 +449,43 @@ runTest('validateResolveHarborPayload は boolean のみ許可する', () => {
     assert.strictEqual(validateResolveHarborPayload({ useBonus: true }), true);
     assert.strictEqual(validateResolveHarborPayload({ useBonus: false }), true);
     assert.strictEqual(validateResolveHarborPayload({ useBonus: 'true' }), false);
+});
+
+runTest('validateResolveITPayload は boolean のみ許可する', () => {
+    assert.strictEqual(validateResolveITPayload({ doSave: true }), true);
+    assert.strictEqual(validateResolveITPayload({ doSave: false }), true);
+    assert.strictEqual(validateResolveITPayload({ doSave: 'true' }), false);
+    assert.strictEqual(validateResolveITPayload({}), false);
+});
+
+runTest('validateGameAction は pendingIT 中の resolveIT payload を検証する', () => {
+    const { GameManager } = makeGame();
+    const room = makeRoom();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingIT = true;
+    room.stateSnapshot = serializeMirrorState(game, { 麦畑: 6 });
+
+    const allow = validateGameAction(room, { playerIndex: 0 }, 'resolveIT', { doSave: false });
+    assert.strictEqual(allow.ok, true);
+
+    const denyMissing = validateGameAction(room, { playerIndex: 0 }, 'resolveIT', {});
+    assert.strictEqual(denyMissing.ok, false);
+
+    const denyString = validateGameAction(room, { playerIndex: 0 }, 'resolveIT', { doSave: 'false' });
+    assert.strictEqual(denyString.ok, false);
+});
+
+runTest('validateGameAction は resolveTV の不正payloadを例外にせず拒否する', () => {
+    const { GameManager } = makeGame();
+    const room = makeRoom();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingTV = 1;
+    room.stateSnapshot = serializeMirrorState(game, { 麦畑: 6 });
+
+    const result = validateGameAction(room, { playerIndex: 0 }, 'resolveTV', null);
+    assert.strictEqual(result.ok, false);
 });
 
 runTest('validateGameAction はCPUターン中にホストのアクションを許可し非ホストを拒否する', () => {

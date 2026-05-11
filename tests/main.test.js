@@ -305,6 +305,27 @@ runTest('main checkAutoSkip は無効化ランドマークしか残っていな�
     assert.deepStrictEqual(rt.__test.sentActions.map(x => x.action), ['nextTurn']);
 });
 
+runTest('main checkAutoSkip は予約後にオンライン手番が変わったら送信しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = false;
+    game.pendingRenovation = 0;
+    game.currentPlayer().coins = 0;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+
+    rt.checkAutoSkip();
+    game.currentPlayerIndex = 1;
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+    assert.strictEqual(rt.__test.getAutoSkipPending(), false);
+});
+
 runTest('main showCrashScreen はクラッシュ表示と保存データ復帰ボタンを出す', () => {
     const rt = loadMainRuntime();
     rt.localStorage.setItem('savedGame', '{"ok":true}');

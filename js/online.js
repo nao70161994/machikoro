@@ -227,6 +227,7 @@ function initSocket() {
 
     socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, playerIndex, hostPlayerIndex }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
+        const replayActionLog = Array.isArray(actionLog) ? actionLog : [];
         isOnlineGame = true;
         isReconnectingOnline = false;
         cpuSpeed = cs || 1500;
@@ -244,7 +245,7 @@ function initSocket() {
             } else {
                 localStorage.removeItem('onlineStateSnapshot');
             }
-            localStorage.setItem('onlineActionLog', JSON.stringify(Array.isArray(actionLog) ? actionLog : []));
+            localStorage.setItem('onlineActionLog', JSON.stringify(replayActionLog));
         } catch(e) {}
         saveOnlineSession();
         cpuScheduleToken++;
@@ -258,7 +259,7 @@ function initSocket() {
         if (stateSnapshot) {
             restoreOnlineSnapshot(stateSnapshot);
         }
-        for (const { action, data } of actionLog) {
+        for (const { action, data } of replayActionLog) {
             applyAction(action, data);
         }
         isReplaying = false;
