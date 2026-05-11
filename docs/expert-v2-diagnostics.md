@@ -21,6 +21,16 @@
 
 ランドマークを買える場合はランドマークを買います。ランドマークを買えない場合は build EV でカードを選びます。パス追加や広いカード禁止は採用しません。
 
+## 現行基準線
+
+2026-05-11 に、追加の手書き補正を止めた状態の `v2simple` を100戦で取り直しました。
+
+```sh
+npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simple
+```
+
+結果は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。今後の v2simple 候補は、この100戦基準線から `normalCrowd`, `strongWeighted`, `strongMin`, `allStrong4` を比較します。
+
 ## 採用済み
 
 - 赤カード相手ターン EV 補正
