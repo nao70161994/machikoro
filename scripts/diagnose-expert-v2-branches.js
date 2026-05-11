@@ -8,6 +8,8 @@ const {
     summarize,
 } = require(path.join(__dirname, 'eval-expert-vs-strong.js'));
 
+const DIAGNOSTIC_EXPERT_PRESET = 'v2simple';
+
 function parseArgs(argv) {
     let games = 20;
     let seed = 1;
@@ -1836,7 +1838,7 @@ function evaluateProfile(profile, options, runtime) {
                 maxSteps: options.maxSteps,
                 lite: options.lite,
                 fast: options.fast,
-                expertPreset: 'v2simple',
+                expertPreset: DIAGNOSTIC_EXPERT_PRESET,
                 expertPurpose: 'live',
                 expertBuildMode: 'ev',
                 expertDiceMode: 'ev',
@@ -1874,6 +1876,7 @@ function evaluateProfile(profile, options, runtime) {
         const expertWins = wins.expert || 0;
         return {
             profile,
+            expertPreset: DIAGNOSTIC_EXPERT_PRESET,
             players,
             weight: profileWeight(profile),
             games: options.games,

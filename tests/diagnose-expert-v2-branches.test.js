@@ -60,6 +60,7 @@ runTest('diagnose-expert-v2-branches runDiagnostics は profile ごとのカウ�
     const report = runDiagnostics({ games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, profiles: ['duel'], margin: 0.2 });
     assert.strictEqual(report.entries.length, 1);
     assert.strictEqual(report.entries[0].profile, 'duel');
+    assert.strictEqual(report.entries[0].expertPreset, 'v2simple');
     assert.ok(typeof report.entries[0].counters.diceDecisions === 'number');
     assert.ok(typeof report.totals.rerollMarginWindow === 'number');
     assert.ok(typeof report.totals.buildRenovationFirstEarlyChosen === 'number');
