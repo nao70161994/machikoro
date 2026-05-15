@@ -119,6 +119,8 @@ function renderText(report) {
                 `2p=${coverage.has2pOpponents ? coverage.best2pGames : 'missing'} ` +
                 `3p=${coverage.has3pLineups ? coverage.best3pGames : 'missing'} ` +
                 `4p=${coverage.has4pLineups ? coverage.best4pGames : 'missing'} ` +
+                `5p=${coverage.has5pLineups ? coverage.best5pGames : 'missing'} ` +
+                `10p=${coverage.has10pLineups ? coverage.best10pGames : 'missing'} ` +
                 `target=${formatTargetDiagnostics(entry.targetDiagnostics)}`
             );
         }
@@ -157,8 +159,8 @@ function renderMarkdown(report) {
             '',
             '## Recommended',
             '',
-            '| id | role | status | 2p | 3p | 4p | target |',
-            '|---|---|---|---:|---:|---:|---|'
+            '| id | role | status | 2p | 3p | 4p | 5p | 10p | target |',
+            '|---|---|---|---:|---:|---:|---:|---:|---|'
         );
         for (const entry of report.recommended) {
             const coverage = entry.coverage || {};
@@ -167,6 +169,8 @@ function renderMarkdown(report) {
                 `${coverage.has2pOpponents ? coverage.best2pGames : 'missing'} | ` +
                 `${coverage.has3pLineups ? coverage.best3pGames : 'missing'} | ` +
                 `${coverage.has4pLineups ? coverage.best4pGames : 'missing'} | ` +
+                `${coverage.has5pLineups ? coverage.best5pGames : 'missing'} | ` +
+                `${coverage.has10pLineups ? coverage.best10pGames : 'missing'} | ` +
                 `${formatTargetDiagnostics(entry.targetDiagnostics)} |`
             );
         }

@@ -16,17 +16,17 @@
 - 長いシェルコマンドは端末の折り返しで壊れやすいので、使える場合は既存のラッパースクリプトを優先してください。
 - RL の baseline 学習は、フルコマンドを打ち直さず `sh scripts/rl/run-baseline.sh` を使ってください。既定値は Termux 向けにかなり軽量化され、初期評価スキップ、`max_steps` 制限、進捗表示も有効です。出力は `run-label` ごとの別ディレクトリへ分かれます。
 - 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使ってください。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、best checkpoint 復元が有効です。
-- 4人用 RL 実験は `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` を使ってください。`--player-count 4` により `STATE_DIM = 353` の多人数用状態表現を使います。4人用モデルの主評価は `--js-eval-lineups` の4人JS評価です。既存2人モデルは `STATE_DIM = 145` のままです。
+- 4人用 RL 実験の汎用プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` です。`--player-count 4` により `STATE_DIM = 353` の多人数用状態表現を使います。2026-05時点の採用済み多人数モデルは `self-only-4p-h256-lr1e5-5000-seed103` なので、再現・評価では registry と portfolio の採用情報を優先してください。多人数モデルの主評価は `--js-eval-lineups` の3人/4人/5人/10人JS評価です。既存2人モデルは `STATE_DIM = 145` のままです。
 - 4人用 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` で Python/JS の固定 trace 比較を行ってください。
 - RL 候補モデルは `models/rl_model/registry.json` を参照・更新してください。モデル本体や `runs/` は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-05時点では 2人用主採用が `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`、3〜10人用採用が `self-only-4p-h256-lr1e5-5000-seed103` です。
 - `CPU（最強）` は安定したルールベースの基準CPUです。`AI（深層学習・ランダム）` は別系統の学習CPUで、人数別に portfolio からランダム選択します。2人戦は2人用候補、3〜10人戦は多人数候補を使います。5人以上は多人数状態表現で脅威度上位3相手へ射影します。
-- 現行 live `CPU（最強）` は `expertPreset: "v2simple"` を使います。既定設定は `build=ev`, `dice=strongCrowdThreshold`, `reroll=simple`, `it=always`, `tv=simple`, `business=harmfulGift`, `cleaning=simple`, `harbor=simple`, `mover=simple`, `renovation=simple`, `combo=core`, `buildTempo=0.05`, `airportSkip=whenNoLandmark`, `incomeCap=none` です。直近100戦 full suite は `normalCrowd 55.0%`, `strongWeighted 50.9%`, `strongMin 39.0%` です。`strong` の内訳は `duel 82.0%`, `trio 74.0%`, `crowd 41.0%`, `allStrong4 39.0%` です。`buildGuardMode` は悪化したため削除済みです。
+- 現行 live `CPU（最強）` は `expertPreset: "v2simple"` を使います。既定設定は `build=ev`, `dice=strongCrowdThreshold`, `reroll=simple`, `it=always`, `tv=simple`, `business=harmfulGift`, `cleaning=simple`, `harbor=simple`, `mover=simple`, `renovation=simple`, `combo=core`, `buildTempo=0.05`, `airportSkip=whenNoLandmark`, `incomeCap=none`, `landmarkCardMargin=25`, `landmarkCardCompareMode=base`, `landmarkCardCompareTargets=harborMall`, `landmarkCardPenaltyMode=none`, `harborLandmarkBaseBonus=2.5`, `landmarkProgressRemaining=3`, `landmarkCostWeight=0.12` です。直近100戦 full suite は `normalCrowd 55.0%`, `strongWeighted 50.9%`, `strongMin 39.0%` です。`strong` の内訳は `duel 82.0%`, `trio 74.0%`, `crowd 41.0%`, `allStrong4 39.0%` です。`buildGuardMode` は悪化したため削除済みです。
 - `strong` 比較は軽量 selfplay 経路を使います。本物 `strong` 同士の `duel 1戦` は、期待値キャッシュと state cache により `12.364秒 -> 4.792秒` まで短縮済みです。追加の安全最適化は複数試しましたが悪化が多く、現時点ではここで打ち止めです。
 - 台帳更新後は `npm run validate-rl-registry` と `npm run report-rl-registry` を実行してください。履歴を残すときは `--format markdown --output ...` を使います。report には target head 診断も出ます。
 - 採用モデルの評価カバレッジ確認には `npm run audit-rl-portfolio` を使ってください。2人/3人/4人/5人/10人の不足に加えて target head 診断も見えます。
 - 次にやるべき再評価・多様性見直しを機械的に出したいときは `npm run plan-rl-next-actions` を使ってください。
 - 2人戦の採用候補と現 main の比較対象を固定ルールで出したいときは `npm run review-rl-adoptions` を使ってください。
-- 3人/4人戦の自己対戦安定化では `sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` で top checkpoint 群を複数 lineup 後評価し、必要なら第4引数で `run-ranks` を `1,2,3` のように絞ってください。`npm run review-rl-multiplayer-topk -- --input <json>` で総合点+多様性を確認してください。
+- 多人数戦の自己対戦安定化では `sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` で top checkpoint 群を 3人/4人/5人/10人 lineup 後評価し、必要なら第4引数で `run-ranks` を `1,2,3` のように絞ってください。`npm run review-rl-multiplayer-topk -- --input <json>` で3人/4人総合点+多様性を確認し、5人/10人は評価出力として確認してください。
 - バックグラウンド運用では `sh scripts/rl/bg-watch-summary.sh <job>` で進捗要約、`sh scripts/rl/bg-experiment-set.sh <job>...` で比較セット確認、`sh scripts/rl/bg-finalize-top10-multiplayer.sh <job> 15 50` で完走後の多人数後評価まで一発で進められます。複数 run をまとめる場合は `sh scripts/rl/bg-finalize-experiment-set-top10-multiplayer.sh <set-name> <job>...` を使ってください。
 - 台帳系レポートを一括更新したいときは `npm run refresh-rl-ops-reports` を使ってください。
 - `eval-rl-models` の JSON を registry へ追記してレポートまで更新したいときは `npm run update-rl-registry-from-eval -- --input <json>` を使ってください。
@@ -78,9 +78,9 @@
 - クライアント 1 ファイルの構文確認: `node --check js/<file>.js`
 - RL baseline 学習: `sh scripts/rl/run-baseline.sh`
 - 模倣なし RL カリキュラム学習: `sh scripts/rl/run-js-oracle-terminal-shaped.sh --run-label <label>`
-- 4人用 RL 自己対戦: `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh --run-label <label>`
+- 4人用 RL 自己対戦汎用プリセット: `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh --run-label <label>`
 - RL と JS CPU の比較: `npm run eval-rl-vs-js -- --model <path>`
-- 3人/4人の採用済みモデル評価: `sh scripts/rl/eval-run-3p.sh <model-id> 100`, `sh scripts/rl/eval-run-4p.sh <model-id> 100`, `sh scripts/rl/eval-run-multiplayer.sh <model-id> 100`
+- 多人数の採用済みモデル評価: `sh scripts/rl/eval-run-3p.sh <model-id> 100`, `sh scripts/rl/eval-run-4p.sh <model-id> 100`, `sh scripts/rl/eval-run-multiplayer.sh <model-id> 100`
 - RL 台帳の検証/棚卸し: `npm run validate-rl-registry`, `npm run report-rl-registry`
 - RL 採用モデルの評価監査: `npm run audit-rl-portfolio`
 - RL 次アクション抽出: `npm run plan-rl-next-actions`

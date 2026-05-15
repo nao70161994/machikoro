@@ -1,51 +1,15 @@
 {
-  "updatedAt": "2026-04-20",
+  "updatedAt": "2026-05-11",
   "styleGroups": [
     {
-      "style": "4p-vineyard-farm-pizza",
+      "style": "4p-wheat-vineyard-pizza",
       "entries": [
         {
-          "id": "self-only-4p-h256-lr1e5-5000-seed102",
+          "id": "self-only-4p-h256-lr1e5-5000-seed103",
           "status": "adopted",
           "score": null,
-          "games": 200,
+          "games": 100,
           "topCards": []
-        }
-      ]
-    },
-    {
-      "style": "bread-warehouse-pizza-stable",
-      "entries": [
-        {
-          "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-          "status": "candidate",
-          "score": 0.566667,
-          "games": 20,
-          "topCards": [
-            "bakery",
-            "food_warehouse",
-            "winery",
-            "loan_office",
-            "pizza_shop"
-          ]
-        }
-      ]
-    },
-    {
-      "style": "bread-warehouse-sushi-strong",
-      "entries": [
-        {
-          "id": "self-only-both-h256-lr3e5-5000-seed62",
-          "status": "candidate",
-          "score": 0.591667,
-          "games": 20,
-          "topCards": [
-            "bakery",
-            "food_warehouse",
-            "sushi_bar",
-            "loan_office",
-            "winery"
-          ]
         }
       ]
     },
@@ -58,42 +22,6 @@
           "score": 0.605,
           "games": 100,
           "topCards": []
-        }
-      ]
-    },
-    {
-      "style": "field-vineyard-normal-stable",
-      "entries": [
-        {
-          "id": "strong-select-seed21",
-          "status": "candidate",
-          "score": 0.441667,
-          "games": 20,
-          "topCards": [
-            "vineyard",
-            "wheat_field",
-            "mine",
-            "loan_office",
-            "winery"
-          ]
-        }
-      ]
-    },
-    {
-      "style": "shop-loan-fishing",
-      "entries": [
-        {
-          "id": "terminal-shaped-h128-long",
-          "status": "candidate",
-          "score": 0.458333,
-          "games": 20,
-          "topCards": [
-            "loan_office",
-            "general_store",
-            "pizza_shop",
-            "tuna_boat",
-            "winery"
-          ]
         }
       ]
     },
@@ -140,76 +68,5 @@
       ]
     }
   ],
-  "overlapPairs": [
-    {
-      "left": "self-only-both-h256-lr3e5-5000-seed62",
-      "right": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-      "overlap": 4,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models self-only-both-h256-lr3e5-5000-seed62,self-only-both-h256-lr2e5-5000-seed66-rewardcap --games 100 --markdown models/rl_model/self-only-both-h256-lr3e5-5000-seed62-self-only-both-h256-lr2e5-5000-seed66-rewardcap.md"
-    },
-    {
-      "left": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-      "right": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-      "overlap": 3,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models self-only-both-h256-lr2e5-5000-seed66-rewardcap,self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 --games 100 --markdown models/rl_model/self-only-both-h256-lr2e5-5000-seed66-rewardcap-self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3.md"
-    },
-    {
-      "left": "self-only-both-h256-lr3e5-5000-seed62",
-      "right": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-      "overlap": 3,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models self-only-both-h256-lr3e5-5000-seed62,self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 --games 100 --markdown models/rl_model/self-only-both-h256-lr3e5-5000-seed62-self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3.md"
-    },
-    {
-      "left": "strong-select-seed21",
-      "right": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-      "overlap": 3,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models strong-select-seed21,self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 --games 100 --markdown models/rl_model/strong-select-seed21-self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3.md"
-    },
-    {
-      "left": "terminal-shaped-h128-long",
-      "right": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-      "overlap": 3,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models terminal-shaped-h128-long,self-only-both-h256-lr2e5-5000-seed66-rewardcap --games 100 --markdown models/rl_model/terminal-shaped-h128-long-self-only-both-h256-lr2e5-5000-seed66-rewardcap.md"
-    },
-    {
-      "left": "strong-select-seed21",
-      "right": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-      "overlap": 2,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models strong-select-seed21,self-only-both-h256-lr2e5-5000-seed66-rewardcap --games 100 --markdown models/rl_model/strong-select-seed21-self-only-both-h256-lr2e5-5000-seed66-rewardcap.md"
-    },
-    {
-      "left": "strong-select-seed21",
-      "right": "self-only-both-h256-lr3e5-5000-seed62",
-      "overlap": 2,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models strong-select-seed21,self-only-both-h256-lr3e5-5000-seed62 --games 100 --markdown models/rl_model/strong-select-seed21-self-only-both-h256-lr3e5-5000-seed62.md"
-    },
-    {
-      "left": "terminal-shaped-h128-long",
-      "right": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-      "overlap": 2,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models terminal-shaped-h128-long,self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 --games 100 --markdown models/rl_model/terminal-shaped-h128-long-self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3.md"
-    },
-    {
-      "left": "terminal-shaped-h128-long",
-      "right": "self-only-both-h256-lr3e5-5000-seed62",
-      "overlap": 2,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models terminal-shaped-h128-long,self-only-both-h256-lr3e5-5000-seed62 --games 100 --markdown models/rl_model/terminal-shaped-h128-long-self-only-both-h256-lr3e5-5000-seed62.md"
-    },
-    {
-      "left": "terminal-shaped-h128-long",
-      "right": "strong-select-seed21",
-      "overlap": 2,
-      "sameStyle": false,
-      "compareCommand": "npm run eval-rl-models -- --models terminal-shaped-h128-long,strong-select-seed21 --games 100 --markdown models/rl_model/terminal-shaped-h128-long-strong-select-seed21.md"
-    }
-  ]
+  "overlapPairs": []
 }

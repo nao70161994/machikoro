@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-20",
+  "updatedAt": "2026-05-11",
   "minimumGames": 50,
   "currentMain": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
   "candidates": [
@@ -15,8 +15,13 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
+      "targetDiagnostics": null,
       "evalGames": 50,
       "weak": 0.96,
       "normal": 0.94,
@@ -36,8 +41,13 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
+      "targetDiagnostics": null,
       "evalGames": 300,
       "weak": 0.993333,
       "normal": 0.933333,
@@ -51,14 +61,19 @@
       "style": "burger-warehouse-wheat",
       "recommended": true,
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
+      "targetDiagnostics": null,
       "evalGames": 100,
       "weak": 0.93,
       "normal": 0.75,
@@ -67,193 +82,30 @@
       "passRate": 0
     },
     {
-      "id": "self-only-both-h256-lr3e5-5000-seed62",
-      "status": "candidate",
-      "style": "bread-warehouse-sushi-strong",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.9,
-      "normal": 0.65,
-      "strong": 0.45,
-      "score": 0.591667,
-      "passRate": 0.044
-    },
-    {
       "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
       "status": "candidate",
       "style": "sushi-warehouse-farm",
       "recommended": true,
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
+      "targetDiagnostics": null,
       "evalGames": 100,
       "weak": 1,
       "normal": 0.77,
       "strong": 0.33,
       "score": 0.588333,
       "passRate": 0.017
-    },
-    {
-      "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-      "status": "candidate",
-      "style": "bread-warehouse-pizza-stable",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.95,
-      "normal": 0.7,
-      "strong": 0.35,
-      "score": 0.566667,
-      "passRate": 0.006
-    },
-    {
-      "id": "terminal-shaped-h128-lr1e4",
-      "status": "archive",
-      "style": "bread-farm-fishing",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 100,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 100,
-      "weak": 0.99,
-      "normal": 0.53,
-      "strong": 0.39,
-      "score": 0.536667,
-      "passRate": 0.001
-    },
-    {
-      "id": "self-only-both-h256-lr2e5-5000-seed65",
-      "status": "archive",
-      "style": "sushi-warehouse-bread",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.95,
-      "normal": 0.6,
-      "strong": 0.35,
-      "score": 0.533333,
-      "passRate": 0.169
-    },
-    {
-      "id": "terminal-shaped-h128-long",
-      "status": "candidate",
-      "style": "shop-loan-fishing",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.9,
-      "normal": 0.7,
-      "strong": 0.15,
-      "score": 0.458333,
-      "passRate": null
-    },
-    {
-      "id": "strong-select-seed21",
-      "status": "candidate",
-      "style": "field-vineyard-normal-stable",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.85,
-      "normal": 0.75,
-      "strong": 0.1,
-      "score": 0.441667,
-      "passRate": null
-    },
-    {
-      "id": "terminal-shaped-h128-lr1e4-long",
-      "status": "archive",
-      "style": "farm-cheese-weak-specialist",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.95,
-      "normal": 0.35,
-      "strong": 0.2,
-      "score": 0.375,
-      "passRate": null
-    },
-    {
-      "id": "terminal-shaped-curriculum-h128",
-      "status": "archive",
-      "style": "sushi-farm-cheese",
-      "recommended": false,
-      "coverage": {
-        "portfolioPath": false,
-        "best2pGames": 20,
-        "has2pOpponents": true,
-        "best4pGames": 0,
-        "has4pLineups": false,
-        "best3pGames": 0,
-        "has3pLineups": false
-      },
-      "evalGames": 20,
-      "weak": 0.75,
-      "normal": 0.35,
-      "strong": 0.05,
-      "score": 0.266667,
-      "passRate": null
     }
   ],
   "actions": [

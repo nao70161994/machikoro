@@ -1,29 +1,17 @@
-RL registry report updatedAt=2026-04-20
-statuses=archive:6, candidate:7, adopted:2, rejected:5, candidate-4p:1
-warnings:
-- terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています
-actions:
-- reevaluate: terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- reevaluate: strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- reevaluate: self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- reevaluate: self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)
-- review-diversity: self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています
+RL registry report updatedAt=2026-05-11
+statuses=archive:10, adopted:2, candidate:3, rejected:5, candidate-4p:1
 recommended:
-- self-only-4p-h256-lr1e5-5000-seed102 [adopted-3p-4p] status=adopted 2p=missing 3p=200 4p=200 target=n/a
-- self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 [adopted-2p-main] status=adopted 2p=300 3p=missing 4p=missing target=n/a
-- self-only-both-h256-lr2e5-5000-seed70-rewardcap [sushi-warehouse-variant] status=candidate 2p=100 3p=missing 4p=missing target=n/a
-- self-only-both-h256-lr2e5-5000-seed69-rewardcap [burger-warehouse-variant] status=candidate 2p=100 3p=missing 4p=missing target=n/a
+- self-only-4p-h256-lr1e5-5000-seed103 [adopted-3p-10p] status=adopted 2p=missing 3p=50 4p=100 5p=50 10p=50 target=n/a
+- self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 [adopted-2p-main] status=adopted 2p=300 3p=missing 4p=missing 5p=missing 10p=missing target=n/a
+- self-only-both-h256-lr2e5-5000-seed70-rewardcap [sushi-warehouse-variant] status=candidate 2p=100 3p=missing 4p=missing 5p=missing 10p=missing target=n/a
+- self-only-both-h256-lr2e5-5000-seed69-rewardcap [burger-warehouse-variant] status=candidate 2p=100 3p=missing 4p=missing 5p=missing 10p=missing target=n/a
 models:
 - terminal-shaped-h128-lr1e4 [archive] eval=100 games/opponent style=bread-farm-fishing target=n/a
-- terminal-shaped-h128-long [candidate] eval=20 games/opponent style=shop-loan-fishing target=n/a
+- terminal-shaped-h128-long [archive] eval=20 games/opponent style=shop-loan-fishing target=n/a
 - terminal-shaped-curriculum-h128 [archive] eval=20 games/opponent style=sushi-farm-cheese target=n/a
-- strong-select-seed21 [candidate] eval=20 games/opponent style=field-vineyard-normal-stable target=n/a
-- self-only-both-h256-lr3e5-5000-seed62 [candidate] eval=20 games/opponent style=bread-warehouse-sushi-strong target=n/a
-- self-only-both-h256-lr2e5-5000-seed66-rewardcap [candidate] eval=20 games/opponent style=bread-warehouse-pizza-stable target=n/a
+- strong-select-seed21 [archive] eval=20 games/opponent style=field-vineyard-normal-stable target=n/a
+- self-only-both-h256-lr3e5-5000-seed62 [archive] eval=100 games/opponent style=bread-warehouse-sushi-strong target=n/a
+- self-only-both-h256-lr2e5-5000-seed66-rewardcap [archive] eval=100 games/opponent style=bread-warehouse-pizza-stable target=n/a
 - self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 [adopted] eval=300 games/opponent style=vineyard-farm-winery-strong target=n/a
 - self-only-both-h256-lr2e5-5000-seed71-rewardcap [candidate] eval=50 games/opponent style=vineyard-farm-burger target=n/a
 - self-only-both-h256-lr2e5-5000-seed69-rewardcap [candidate] eval=100 games/opponent style=burger-warehouse-wheat target=n/a
@@ -37,5 +25,5 @@ models:
 - terminal-shaped-h128-lr1e4-strong010 [rejected] eval=4 games/opponent style=strong-mix-010 target=n/a
 - terminal-shaped-curriculum-h256 [rejected] eval=no-eval style=pass-collapse target=n/a
 - terminal-shaped-curriculum-h256-lr1e4 [rejected] eval=no-eval style=high-pass-weak target=n/a
-- self-only-4p-h256-lr1e5-5000-seed102 [adopted] eval=200 games/lineup style=4p-vineyard-farm-pizza target=n/a
-- self-only-4p-h256-lr1e5-5000-seed103 [candidate-4p] eval=20 games/opponent style=4p-wheat-vineyard-pizza target=n/a
+- self-only-4p-h256-lr1e5-5000-seed102 [candidate-4p] eval=200 games/lineup style=4p-vineyard-farm-pizza target=n/a
+- self-only-4p-h256-lr1e5-5000-seed103 [adopted] eval=50 games/lineup style=4p-wheat-vineyard-pizza target=n/a

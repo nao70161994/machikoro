@@ -86,7 +86,7 @@ runTest('report-rl-registry renderText は警告とモデル一覧を出力す�
             id: 'a',
             role: 'adopted-2p-main',
             status: 'adopted',
-            coverage: { has2pOpponents: true, best2pGames: 100, has3pLineups: false, best3pGames: 0, has4pLineups: false, best4pGames: 0 },
+            coverage: { has2pOpponents: true, best2pGames: 100, has3pLineups: false, best3pGames: 0, has4pLineups: false, best4pGames: 0, has5pLineups: false, best5pGames: 0, has10pLineups: false, best10pGames: 0 },
             targetDiagnostics: { pendingRate: 0.12, updateRate: 0.1, tvRate: 0.04, bcRate: 0.03, moverRate: 0.02 },
         }],
         models: [{ id: 'a', status: 'candidate', latestEval: '50 games/opponent', style: 'style-a', targetDiagnostics: { pendingRate: 0.12, updateRate: 0.1, tvRate: 0.04, bcRate: 0.03, moverRate: 0.02 } }],
@@ -96,6 +96,7 @@ runTest('report-rl-registry renderText は警告とモデル一覧を出力す�
     assert.ok(text.includes('recommended:'));
     assert.ok(text.includes('warn-a'));
     assert.ok(text.includes('a [candidate]'));
+    assert.ok(text.includes('5p=missing 10p=missing'));
     assert.ok(text.includes('target=p=12.0%'));
 });
 
@@ -110,7 +111,7 @@ runTest('report-rl-registry renderMarkdown は表形式で出力する', () => {
             id: 'a',
             role: 'adopted-2p-main',
             status: 'adopted',
-            coverage: { has2pOpponents: true, best2pGames: 100, has3pLineups: false, best3pGames: 0, has4pLineups: false, best4pGames: 0 },
+            coverage: { has2pOpponents: true, best2pGames: 100, has3pLineups: false, best3pGames: 0, has4pLineups: false, best4pGames: 0, has5pLineups: true, best5pGames: 50, has10pLineups: true, best10pGames: 50 },
             targetDiagnostics: { pendingRate: 0.12, updateRate: 0.1, tvRate: 0.04, bcRate: 0.03, moverRate: 0.02 },
         }],
         models: [{ id: 'a', status: 'candidate', latestEval: '50 games/opponent', style: 'style-a', targetDiagnostics: { pendingRate: 0.12, updateRate: 0.1, tvRate: 0.04, bcRate: 0.03, moverRate: 0.02 } }],
@@ -118,6 +119,8 @@ runTest('report-rl-registry renderMarkdown は表形式で出力する', () => {
     assert.ok(markdown.includes('# RL Registry Report'));
     assert.ok(markdown.includes('## Actions'));
     assert.ok(markdown.includes('## Recommended'));
+    assert.ok(markdown.includes('| id | role | status | 2p | 3p | 4p | 5p | 10p | target |'));
+    assert.ok(markdown.includes('| `a` | adopted-2p-main | adopted | 100 | missing | missing | 50 | 50 |'));
     assert.ok(markdown.includes('| id | status | eval | style | target |'));
     assert.ok(markdown.includes('`a`'));
     assert.ok(markdown.includes('p=12.0%'));

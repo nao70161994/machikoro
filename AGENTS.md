@@ -38,7 +38,7 @@
 - `js/confetti.js`: 紙吹雪アニメーション補助。
 - `js/stats.js`: 統計補助と UI 支援。
 - `js/appShell.js`: クラッシュ UI、オフライン表示、PWA インストールバナー、シェル初期化。
-- `js/RLCPU.js`: 新しい experimental CPU 向けの export 済み RL モデルランタイム。
+- `js/RLCPU.js`: 採用済み portfolio モデルを読む `AI（深層学習・ランダム）` 用ランタイム。
 
 RL / 学習系スクリプト:
 
@@ -53,21 +53,8 @@ RL / 学習系スクリプト:
 
 テスト:
 
-- `tests/run-all.js`: `npm test` から呼ばれる test entrypoint。
-- `tests/gamemanager.test.js`: ルールとフェーズ遷移の回帰テスト。
-- `tests/server.test.js`: サーバー検証とルーム挙動のテスト。
-- `tests/cpu.test.js`: CPU 判断ロジックのテスト。
-- `tests/online.test.js`: オンラインクライアントフローのテスト。
-- `tests/main.test.js`: main の bootstrap / フロー回帰テスト。
-- `tests/selfplay.test.js`: self-play script の回帰テスト。
-- `tests/tune-expert.test.js`: expert tuning script の回帰テスト。
-- `tests/train-expert-crowd.test.js`: 4人戦 `expert vs normal,normal,normal` tuning 補助のテスト。
-- `tests/rlcpu.test.js`: RL CPU ランタイムの回帰テスト。
-- `tests/rl-train.test.js`: RL 学習補助処理の回帰テスト。
-- `tests/eval-rl-vs-js.test.js`: RL-vs-JS 評価の回帰テスト。
-- `tests/eval-rl-models.test.js`: 複数 RL モデル評価集計の回帰テスト。
-- `tests/validate-rl-registry.test.js`: RL モデル台帳検証の回帰テスト。
-- `tests/summarize-rl-metrics.test.js`: RL metrics 集計の回帰テスト。
+- `tests/run-all.js`: `npm test` から呼ばれる test entrypoint。`unit` / `sim` / `core` / `online` / `pwa` / `cpu` / `rl` のグループを定義しています。
+- `tests/*.test.js`: ルール、サーバー、オンライン、保存、UI、CPU、expert tuning、RL ランタイム、RL 学習・評価・registry・report、PWA 起動フローなどの回帰テスト。個別ファイルの最新一覧は `tests/run-all.js` の `TEST_GROUPS` を正とします。
 
 基本的な責務分担:
 
@@ -103,9 +90,9 @@ RL / 学習系スクリプト:
 - `scripts/tune-expert.js` は `crowdNormal` / `crowd-normal` を受け付け、`expert` を `normal,normal,normal` と直接比較できます。
 - `scripts/train-expert-crowd.js` は現在の軽量 tuning 補助で、`expert vs normal,normal,normal` を前提にしています。
 - RL 学習は現在 `expert` とは別ラインで、置き換えではなく新 CPU として導入する前提です。
-- RL の baseline 学習は、Termux での長いコマンド折り返し事故を避けるため `sh scripts/rl/run-baseline.sh` を使ってください。既定値は `1000 / 500 / 1 / strong` に加えて `hidden=128`、初期評価スキップ、`max_steps=1200`、進捗表示を含む軽量 sanity run 向けです。出力先は `run-label` ごとに分かれるので、別ラベルなら並列実行しても衝突しません。
+- RL の baseline 学習は、Termux での長いコマンド折り返し事故を避けるため `sh scripts/rl/run-baseline.sh` を使ってください。既定値は `games=1000`, `eval-every=500`, `hidden=128`, `js-eval-games=1`, `js-eval-opponents=weak,normal,strong`、学習相手 `random=0.5,normal=0.25,strong=0.15,pool=0.1`、初期評価スキップ、`max_steps=1200`、進捗表示を含む軽量 sanity run 向けです。出力先は `run-label` ごとに分かれるので、別ラベルなら並列実行しても衝突しません。
 - 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使います。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、`restore-best-at-end` が有効です。詳しい報酬設計と相手比率は `scripts/rl/README.md` を確認してください。
-- 3人以上の RL 学習は `--player-count 3..10` で多人数用状態表現 (`STATE_DIM = 353`) を使います。5人以上は `自分 + 脅威度上位3人` へ射影します。現行の4人自己対戦プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh`、2〜10人ランダム実験は `sh scripts/rl/run-random-2p10p-h256-lr2e5-1000.sh` です。多人数モデルの主評価は `--js-eval-lineups` の3p / 4p / 5p / 10p評価を使い、2人評価だけを主指標にしないでください。既存2人モデル (`STATE_DIM = 145`) との互換性は維持してください。
+- 3人以上の RL 学習は `--player-count 3..10` で多人数用状態表現 (`STATE_DIM = 353`) を使います。5人以上は `自分 + 脅威度上位3人` へ射影します。4人自己対戦の汎用プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh`、2〜10人ランダム実験は `sh scripts/rl/run-random-2p10p-h256-lr2e5-1000.sh` です。2026-05時点の多人数採用モデルは `self-only-4p-h256-lr1e5-5000-seed103` なので、再現・評価では registry と portfolio の採用情報を優先してください。多人数モデルの主評価は `--js-eval-lineups` の3p / 4p / 5p / 10p評価を使い、2人評価だけを主指標にしないでください。既存2人モデル (`STATE_DIM = 145`) との互換性は維持してください。
 - 多人数 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` のような固定 trace 比較で Python/JS のズレを確認してください。
 - RL 学習相手の `normal/strong/expert` は、Python heuristic ではなく JS `CPU.js` oracle を使う設定を優先してください。Python heuristic は JS CPU とズレることがあるため、現在は主に比較・fallback 用です。
 - RL 候補モデルは `models/rl_model/registry.json` に記録します。モデル本体・`runs/`・metrics は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-05時点では 3〜10人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。50戦未満の短期評価は smoke / 足切り専用で、registry / portfolio の採用判断には使わないでください。

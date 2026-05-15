@@ -42,9 +42,9 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `eval-run.sh` | `run-label` / `registry model id` / 直接 path から 2人評価する短縮ラッパー |
 | `eval-run-3p.sh` | `run-label` / `registry model id` / 直接 path から 3人 lineup を評価する短縮ラッパー |
 | `eval-run-4p.sh` | `run-label` / `registry model id` / 直接 path から 4人 lineup を評価する短縮ラッパー |
-| `eval-run-multiplayer.sh` | 3人/4人の標準 lineup 評価をまとめて実行する短縮ラッパー |
-| `eval-run-top10-multiplayer.sh` | `run-label` の top checkpoint 群を 3人/4人複数 lineup で後評価し、review まで出力する。第4引数で `run-ranks` を指定可能 |
-| `../review-rl-multiplayer-topk.js` | top-k 多人数後評価 JSON を 3人/4人総合点+多様性で並べる |
+| `eval-run-multiplayer.sh` | 3人/4人/5人/10人の標準 lineup 評価をまとめて実行する短縮ラッパー |
+| `eval-run-top10-multiplayer.sh` | `run-label` の top checkpoint 群を 3人/4人/5人/10人複数 lineup で後評価し、review まで出力する。第4引数で `run-ranks` を指定可能 |
+| `../review-rl-multiplayer-topk.js` | top-k 多人数後評価 JSON を、現状は3人/4人総合点+多様性で並べる。5人/10人は評価出力として確認する |
 | `../review-rl-multiplayer-experiment-set.js` | 複数 run の top10 review JSON を、run 間の総合点+多様性で比較する |
 | `../eval-rl-models.js` | 複数の registry model / run-label をまとめてJS評価し、ランキングJSON/CSVを出力 |
 | `../eval-rl-special-scenarios.js` | テレビ局 / ビジネスセンター / 清掃業 / 引越し屋 / 改装屋などの固定局面で target / pending action 選択を診断 |
@@ -108,7 +108,7 @@ player_count正規化         1
 合計                      353
 ```
 
-現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、`tv_target` / `bc_target` / `mover_target` の optional target head があればその出力を使う。head が無い既存モデルでは、テレビ局・ビジネスセンターは脅威度最大の相手へ fallback し、引越し屋は渡すカードの価値と相手脅威度から recipient を選ぶ JS runtime fallback を使う。清掃業は action head が選んだカード名を基本にしつつ、相手被害と自分被害の差が明確に大きい場合だけ heuristic の最良カード名へ上書きする。target head の checkpoint / browser export / `js/RLCPU.js` / Python 推論 / 学習更新は実装済みで、学習ログでは `tgt=` として pending 発生率と更新率を確認できる。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
+現時点の多人数モデルは、行動空間は2人モデルと同じ `NUM_ACTIONS = 1580` を使う。テレビ局・ビジネスセンター・引越し屋の対象プレイヤーは、Python checkpoint 内部名 `tv_target` / `bc_target` / `mover_target`、browser export / JS 側 `tvTargetHead` / `businessTargetHead` / `moverTargetHead` の optional target head があればその出力を使う。head が無い既存モデルでは、テレビ局・ビジネスセンターは脅威度最大の相手へ fallback し、引越し屋は渡すカードの価値と相手脅威度から recipient を選ぶ JS runtime fallback を使う。清掃業は action head が選んだカード名を基本にしつつ、相手被害と自分被害の差が明確に大きい場合だけ heuristic の最良カード名へ上書きする。target head の checkpoint / browser export / `js/RLCPU.js` / Python 推論 / 学習更新は実装済みで、学習ログでは `tgt=` として pending 発生率と更新率を確認できる。実装棚卸しと導入方針は [TARGET_HEAD_DESIGN.md](./TARGET_HEAD_DESIGN.md) を参照。
 
 ### 2〜10人ランダム化実験の導線
 
@@ -145,7 +145,7 @@ ACT_IT_SKIP       = 7
 ACT_TV_TARGET     = 8          テレビ局ターゲット（2人戦は1択）
 ACT_BC_BASE       = 9〜1452    ビジネスセンター（38×38 = 1444 通り）
 ACT_CLEAN_BASE    = 1453〜1490 清掃業（休業カード × 38）
-ACT_MOVER_BASE    = 1491〜1528 引越し屋（渡すカード × 38、activeのみ）
+ACT_MOVER_BASE    = 1491〜1528 引越し屋（渡すカード × 38、active/dormantを含む。同名混在時はdormant優先）
 ACT_RENO_BASE     = 1529〜1534 改装屋（解体ランドマーク × 6）
 ACT_BUY_CARD_BASE = 1535〜1572 カード購入 × 38
 ACT_BUY_LM_BASE   = 1573〜1578 ランドマーク購入 × 6
@@ -335,7 +335,7 @@ python3 -m scripts.rl.train \
   --eval-every 500 \
   --hidden 128 \
   --js-eval-games 1 \
-  --js-eval-opponents strong \
+  --js-eval-opponents weak,normal,strong \
   --initial-eval-games 0 \
   --eval-random-games 10 \
   --eval-heuristic-games 4 \
@@ -353,7 +353,7 @@ python3 -m scripts.rl.train \
   --summary-config-index-csv models/rl_model/runs/baseline/config_index.csv \
   --summary-format json \
   --summary-baseline-run baseline \
-  --summary-weights strong=1 \
+  --summary-weights weak=1,normal=2,strong=3 \
   --run-label baseline
 
 # オプション一覧
@@ -373,7 +373,7 @@ python3 -m scripts.rl.train \
   --pool-max-size 4  # pool snapshot 保持数
   --restore-best-at-end  # 学習終了時に best checkpoint を通常モデルへ復元
   --js-eval-games 1  # JS側 CPU 相手の定期評価ゲーム数
-  --js-eval-opponents strong  # JS評価対象 difficulty（2人評価）
+  --js-eval-opponents weak,normal,strong  # JS評価対象 difficulty（2人評価）
   --js-eval-lineups "rl,weak,normal,strong;rl,normal,normal,strong"  # 4人評価を使う場合
   --initial-eval-games 0  # 学習開始前の vs ランダム評価をスキップ
   --eval-random-games 10  # 定期評価での vs ランダム評価ゲーム数
@@ -395,7 +395,7 @@ python3 -m scripts.rl.train \
   --summary-config-index-csv models/rl_model/runs/baseline/config_index.csv  # 学習終了時の config index CSV
   --summary-format json  # 集計出力形式（text/json）
   --summary-baseline-run baseline  # 集計時の baseline run
-  --summary-weights strong=1  # 集計時の重み
+  --summary-weights weak=1,normal=2,strong=3  # 集計時の重み
   --run-label baseline  # CSV 比較用ラベル（未指定なら自動生成）
 ```
 
@@ -404,7 +404,7 @@ python3 -m scripts.rl.train \
 
 > **注意**: `--load` が読むのは run 別 best ではなく `models/rl_model/model.npz`。特定 run の best から再開する場合は、共有モデルを手動コピーで差し替えず、同じ `--hidden` / `--player-count` を指定して `--load-checkpoint models/rl_model/runs/<run-label>/best_model` を使う。`.npz` 拡張子は付けても付けなくてもよい。
 
-> **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず短時間で動作確認できて進捗が見えることを優先して `1000 / 500 / 1 / strong`、さらに初期評価スキップ、軽量評価回数、`max_steps=1200` にしている。
+> **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず短時間で動作確認できて進捗が見えることを優先して `games=1000`, `eval-every=500`, `js-eval-games=1`, `js-eval-opponents=weak,normal,strong`、さらに初期評価スキップ、軽量評価回数、`max_steps=1200` にしている。
 
 > **運用メモ**: 4人自己対戦で `--self-learn-both-sides` を使う場合、1ゲームあたりの遷移数が大きくなり、既定 `--train-batch-size 8` では `train()` が長時間無出力になることがある。速度切り分け時は `--debug-train-batch` と `--debug-game-seconds` を使い、短時間 sanity run では `--train-batch-size 1` で batch stall を避ける。これは学習更新単位を変える実験条件なので、採用評価では run label と docs に明記する。
 
@@ -606,7 +606,7 @@ npm run summarize-rl-metrics -- \
 `--run-index-csv ...` と `--config-index-csv ...` を付けると、run 全体順位と設定全体順位を CSV で別保存できる。
 `--run-label` を省略した場合は `YYYYMMDD-HHMMSS-h256-lr0.0003-ev1000-js20` のような形式で自動生成され、学習開始ログと CSV の両方に残る。
 `train.py` 側でも `--summary-output` を付ければ、学習終了時に同じ summarize 処理を自動実行できる。`--summary-run-index-csv` と `--summary-config-index-csv` も併用すれば、run/config 順位 CSV までまとめて自動生成される。
-`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。既定値は `--games 1000 --eval-every 500 --hidden 128 --js-eval-games 1 --js-eval-opponents strong` に加えて、初期評価はスキップし、定期評価・最終評価のゲーム数もかなり軽くしている。さらに `--max-steps 1200 --eval-max-steps 1200` で1試合の長さも抑え、`--progress-every 50` で進捗表示を出す。出力先は既定で `models/rl_model/runs/<run-label>/` になり、`--run-label` を変えれば衝突せず並列に回せる。例えば `sh scripts/rl/run-baseline.sh --games 5000` でゲーム数だけ上書きできる。
+`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。既定値は `--games 1000 --eval-every 500 --hidden 128 --js-eval-games 1 --js-eval-opponents weak,normal,strong` に加えて、初期評価はスキップし、定期評価・最終評価のゲーム数もかなり軽くしている。さらに `--max-steps 1200 --eval-max-steps 1200` で1試合の長さも抑え、`--progress-every 50` で進捗表示を出す。出力先は既定で `models/rl_model/runs/<run-label>/` になり、`--run-label` を変えれば衝突せず並列に回せる。例えば `sh scripts/rl/run-baseline.sh --games 5000` でゲーム数だけ上書きできる。
 `--best-checkpoint` を付けると、各評価時点で最良だったモデルを `.npz` と `.browser.json`、さらに参照用の `.meta.json` で別保存する。判定は JS 評価があればその重み付き score、無ければ `expert/strong/normal/rnd` の重み付き代替スコアを使う。`--summary-output` も併用していれば、学習終了後に `meta.json` へ `bestRuns` / `bestConfigs` の抜粋に加えて、この run 自身に対応する `summaryRunContext` も追記される。`summaryRunContext` には `runIndexEntry` として run 全体順位、`configIndexEntry` として設定全体順位、`combinedTop` に入っていればその順位と entry も入る。`meta.json` には `artifacts` として `checkpointPath` / `browserCheckpointPath` / `metaPath` / `summaryPath` / `runIndexCsvPath` / `configIndexCsvPath` もまとまって入る。
 集計結果には run 別だけでなく `hidden/lr` ごとの best config も含まれる。
 
@@ -870,19 +870,19 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 `npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
 `npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style、target 診断で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 `review-rl-adoptions` は `status` が `adopted` / `candidate` の2人戦候補だけを対象にし、`archive` / `rejected` / `candidate-4p` は候補一覧と actions から除外する。archive 済みモデルの棚卸しは `npm run report-rl-registry` で確認する。
-3人/4人戦の自己対戦安定化では、`sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` を標準後評価フローにする。必要なら第4引数で `run-ranks` を `1,2,3` のように絞る。内部では指定 checkpoint を `rl,normal,strong` / `rl,weak,normal` / `rl,weak,strong` と `rl,weak,normal,strong` / `rl,normal,normal,strong` / `rl,weak,weak,normal` で各50戦評価し、続けて `review-rl-multiplayer-topk` の text/markdown/json を出す。review は 3人平均50% + 4人平均50% を総合点とし、近い総合点では多様性を優先して見る前提。50戦未満の review は `smokeOnly` / `promotionBlocked` と表示され、足切りには使えるが採用判断には使わない。
+多人数戦の自己対戦安定化では、`sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` を標準後評価フローにする。必要なら第4引数で `run-ranks` を `1,2,3` のように絞る。内部では指定 checkpoint を 3p / 4p / 5p / 10p の標準 lineup で各50戦評価し、続けて `review-rl-multiplayer-topk` の text/markdown/json を出す。review の総合点は現状 3人平均50% + 4人平均50% で、5p / 10p は `rl,weak,normal,strong,expert` と `rl,weak,weak,normal,normal,strong,strong,expert,expert,expert` の評価出力として確認する。近い総合点では多様性を優先して見る前提。50戦未満の review は `smokeOnly` / `promotionBlocked` と表示され、足切りには使えるが採用判断には使わない。
 
 複数 run を比較するときは、各 run の top10 review JSON を `review-rl-multiplayer-experiment-set` へ渡す。`bg-finalize-experiment-set-top10-multiplayer.sh` はこの運用をまとめたもので、完走待ちから run 間比較レポートまでを一発で生成する。
-`npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
-`npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review を更新する。評価後の標準フローとして使える。
+`npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review / diversity-report をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
+`npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review / diversity-report を更新する。評価後の標準フローとして使える。
 `npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
 target head や特殊行動の局面診断だけを確認する場合は `npm run eval-rl-special-scenarios` を使う。`--models` / `--run-labels` / `--player-count` / `--scenarios` で対象を絞り、必要なら `--format json --output models/rl_model/<label>.special-scenarios.json` で保存する。この出力も評価診断artifactなので git 管理しない。mover / cleaning fallback を変更した場合は、最低限 `cleaningOpponentEngine`, `cleaningAvoidSelfDamage`, `moverTargetSafeRecipient`, `moverAvoidHelpingLeader`, `moverDormantPreferred` を確認する。改装屋の pending 選択を変更した場合は `renovationAvoidPremiumLandmark` も確認する。
 adoption review や top-k review の `*.review.md` / `*.review.json` / `*.review.txt` も再生成可能な診断artifactとして扱う。採用判断として残す内容は `registry.json` の `status` / `reason` / `evaluations` / `style` へ要約し、長い review 出力そのものはコミットしない。
 
 ```bash
-npm run report-rl-registry -- --format markdown --output models/rl_model/registry-report.md
-npm run report-rl-registry -- --format json --output models/rl_model/registry-report.json
+npm run report-rl-registry -- --format markdown --output models/rl_model/reports/registry-report.md
+npm run report-rl-registry -- --format json --output models/rl_model/reports/registry-report.json
 ```
 
 現時点の候補:

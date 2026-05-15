@@ -63,13 +63,18 @@ runTest('audit-rl-portfolio は recommended model の評価カバレッジを集
                             gamesPerLineup: 60,
                             lineups: { 'rl+weak+normal+strong+expert': {} },
                         },
+                        {
+                            type: 'js-lineup-10p-stability',
+                            gamesPerLineup: 40,
+                            lineups: { 'rl+weak+normal+strong+expert+weak+normal+strong+expert+normal': {} },
+                        },
                     ],
                 },
             ],
             portfolioPolicy: {
                 recommendedActiveModels: [
                     { id: 'm2p', role: 'adopted-2p-main' },
-                    { id: 'm4p', role: 'adopted-3p-4p' },
+                    { id: 'm4p', role: 'adopted-3p-10p' },
                 ],
             },
         }, { repoRoot });
@@ -79,7 +84,8 @@ runTest('audit-rl-portfolio は recommended model の評価カバレッジを集
         assert.strictEqual(audit.recommended[1].has4pLineups, true);
         assert.strictEqual(audit.recommended[1].has5pLineups, true);
         assert.strictEqual(audit.recommended[1].best5pGames, 60);
-        assert.strictEqual(audit.recommended[1].has10pLineups, false);
+        assert.strictEqual(audit.recommended[1].has10pLineups, true);
+        assert.strictEqual(audit.recommended[1].best10pGames, 40);
         assert.strictEqual(audit.recommended[1].targetDiagnostics.pendingRate, 0.08);
     } finally {
         fs.rmSync(repoRoot, { recursive: true, force: true });

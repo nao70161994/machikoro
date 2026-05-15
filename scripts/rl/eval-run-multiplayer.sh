@@ -22,4 +22,4 @@ echo "[5p/10p]"
 npm run eval-rl-vs-js -- \
     --model "$MODEL" \
     --games "$GAMES" \
-    --lineups "rl,weak,normal,strong,normal;rl,weak,weak,normal,normal,strong,strong,normal,weak,strong"
+    --lineups "rl,weak,normal,strong,expert;rl,weak,weak,normal,normal,strong,strong,expert,expert,expert"

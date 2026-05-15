@@ -116,7 +116,7 @@ jobs:
             },
             "generatorApp": "bubblewrap-cli",
             "webManifestUrl": "https://machikoro-9jv2.onrender.com/manifest.json",
-            "sdkVersion": "34",
+            "sdkVersion": "36",
             "minSdkVersion": "21",
             "isChromeOSOnly": false,
             "enableNotifications": false,

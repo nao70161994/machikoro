@@ -1,19 +1,13 @@
 {
-  "updatedAt": "2026-04-20",
+  "updatedAt": "2026-05-11",
   "statusCounts": {
-    "archive": 6,
-    "candidate": 7,
+    "archive": 10,
     "adopted": 2,
+    "candidate": 3,
     "rejected": 5,
     "candidate-4p": 1
   },
-  "warnings": [
-    "terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています"
-  ],
+  "warnings": [],
   "errors": [],
   "models": [
     {
@@ -29,13 +23,17 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
     {
       "id": "terminal-shaped-h128-long",
-      "status": "candidate",
+      "status": "archive",
       "style": "shop-loan-fishing",
       "bestEvalGames": 20,
       "latestEval": "20 games/opponent",
@@ -46,7 +44,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -63,13 +65,17 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
     {
       "id": "strong-select-seed21",
-      "status": "candidate",
+      "status": "archive",
       "style": "field-vineyard-normal-stable",
       "bestEvalGames": 20,
       "latestEval": "20 games/opponent",
@@ -80,41 +86,53 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr3e5-5000-seed62",
-      "status": "candidate",
+      "status": "archive",
       "style": "bread-warehouse-sushi-strong",
-      "bestEvalGames": 20,
-      "latestEval": "20 games/opponent",
+      "bestEvalGames": 100,
+      "latestEval": "100 games/opponent",
       "coverage": {
         "portfolioPath": false,
-        "best2pGames": 20,
+        "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
     {
       "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-      "status": "candidate",
+      "status": "archive",
       "style": "bread-warehouse-pizza-stable",
-      "bestEvalGames": 20,
-      "latestEval": "20 games/opponent",
+      "bestEvalGames": 100,
+      "latestEval": "100 games/opponent",
       "coverage": {
         "portfolioPath": false,
-        "best2pGames": 20,
+        "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -131,7 +149,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -148,7 +170,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -159,13 +185,17 @@
       "bestEvalGames": 100,
       "latestEval": "100 games/opponent",
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -176,13 +206,17 @@
       "bestEvalGames": 100,
       "latestEval": "100 games/opponent",
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -199,7 +233,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -216,7 +254,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -233,7 +275,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -250,7 +296,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -267,7 +317,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -284,7 +338,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -301,7 +359,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -318,7 +380,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -335,13 +401,17 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
     {
       "id": "self-only-4p-h256-lr1e5-5000-seed102",
-      "status": "adopted",
+      "status": "candidate-4p",
       "style": "4p-vineyard-farm-pizza",
       "bestEvalGames": 200,
       "latestEval": "200 games/lineup",
@@ -352,42 +422,54 @@
         "best4pGames": 200,
         "has4pLineups": true,
         "best3pGames": 200,
-        "has3pLineups": true
+        "has3pLineups": true,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
     {
       "id": "self-only-4p-h256-lr1e5-5000-seed103",
-      "status": "candidate-4p",
+      "status": "adopted",
       "style": "4p-wheat-vineyard-pizza",
-      "bestEvalGames": 20,
-      "latestEval": "20 games/opponent",
+      "bestEvalGames": 100,
+      "latestEval": "50 games/lineup",
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 0,
         "has2pOpponents": false,
-        "best4pGames": 20,
+        "best4pGames": 100,
         "has4pLineups": true,
-        "best3pGames": 0,
-        "has3pLineups": false
+        "best3pGames": 50,
+        "has3pLineups": true,
+        "best5pGames": 50,
+        "has5pLineups": true,
+        "best10pGames": 50,
+        "has10pLineups": true
       },
       "targetDiagnostics": null
     }
   ],
   "recommended": [
     {
-      "id": "self-only-4p-h256-lr1e5-5000-seed102",
-      "role": "adopted-3p-4p",
-      "style": "4p-vineyard-farm-pizza",
+      "id": "self-only-4p-h256-lr1e5-5000-seed103",
+      "role": "adopted-3p-10p",
+      "style": "4p-wheat-vineyard-pizza",
       "status": "adopted",
       "coverage": {
         "portfolioPath": true,
         "best2pGames": 0,
         "has2pOpponents": false,
-        "best4pGames": 200,
+        "best4pGames": 100,
         "has4pLineups": true,
-        "best3pGames": 200,
-        "has3pLineups": true
+        "best3pGames": 50,
+        "has3pLineups": true,
+        "best5pGames": 50,
+        "has5pLineups": true,
+        "best10pGames": 50,
+        "has10pLineups": true
       },
       "targetDiagnostics": null
     },
@@ -403,7 +485,11 @@
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -413,13 +499,17 @@
       "style": "sushi-warehouse-farm",
       "status": "candidate",
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -429,37 +519,20 @@
       "style": "burger-warehouse-wheat",
       "status": "candidate",
       "coverage": {
-        "portfolioPath": false,
+        "portfolioPath": true,
         "best2pGames": 100,
         "has2pOpponents": true,
         "best4pGames": 0,
         "has4pLineups": false,
         "best3pGames": 0,
-        "has3pLineups": false
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     }
   ],
-  "actions": [
-    {
-      "type": "reevaluate",
-      "warning": "terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)"
-    },
-    {
-      "type": "reevaluate",
-      "warning": "strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)"
-    },
-    {
-      "type": "reevaluate",
-      "warning": "self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)"
-    },
-    {
-      "type": "reevaluate",
-      "warning": "self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)"
-    },
-    {
-      "type": "review-diversity",
-      "warning": "self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています"
-    }
-  ]
+  "actions": []
 }

@@ -17,7 +17,7 @@ runTest('refresh-rl-ops-reports parseArgs は主要CLI引数を解釈する', ()
     assert.strictEqual(args.outputDir, 'reports');
 });
 
-runTest('refresh-rl-ops-reports buildArtifacts は4種類の成果物を作る', () => {
+runTest('refresh-rl-ops-reports buildArtifacts は5種類の成果物を作る', () => {
     const registry = {
         updatedAt: '2026-04-21',
         portfolioPolicy: {

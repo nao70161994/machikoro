@@ -49,7 +49,7 @@
 | field | 必須 | 互換性メモ |
 | --- | --- | --- |
 | `action` | yes | `GameManager` に replay できる action 名。未知 action は server replay で拒否。 |
-| `data` | yes | 欠落時は `{}` に正規化される。 |
+| `data` | optional | 欠落時は `{}` に正規化される。replay action 側で必要 field を検証する。 |
 | `playerIndex` | optional | server-side actor index。オンラインでは UI 表示 index ではなくこの index を検証に使う。 |
 | `seq` | optional | `actionSeq` と比較して、snapshot に畳み込まれた未 ack action の再送を避ける。 |
 | `clientActionId` | optional | ack / pending action 重複排除用。存在する場合はこれを優先して同一判定する。 |
@@ -71,7 +71,7 @@ snapshot は `serializeMirrorState()` / `buildOnlineSnapshot()` の同型デー�
 | `usedReroll` | optional | ある場合は boolean。欠落時は初期値を使う。 |
 | `turnCount`, `hadAmusementParkAtRoll` | optional | 旧 snapshot 互換のため欠落許容。 |
 | `shopStock` | optional | card name -> 非負整数。欠落カードは初期在庫として扱う。 |
-| `undoState` | nullable | valid な場合のみ採用。壊れている場合、client 由来 snapshot では null 化する。 |
+| `undoState` | nullable | valid な場合のみ採用。client 由来 snapshot は invalid `undoState` を null 化して復元を続ける。server 保持済み snapshot / mirror validation では invalid `undoState` を含む snapshot 全体を拒否する。 |
 | `actionSeq` | optional | snapshot がどこまで action を畳み込んだかを示す。 |
 
 validation の重要条件:

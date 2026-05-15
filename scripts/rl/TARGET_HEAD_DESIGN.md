@@ -12,14 +12,14 @@
   - JS `RLCPU` は optional target head があれば TV / BC / Mover の対象選択に使える
   - head が無い既存モデルは現行 heuristic へ fallback する
 - 未実装
-  - target head ありモデルの学習プリセット
-  - Python/JS parity fixture の target head 学習ケース
+  - target head ありモデル専用の採用プリセット
+  - target head あり portfolio モデルの採用
 
 現行の採用済み `seed103` など head が無いモデルでは fallback を使う。target head の受け皿と学習更新は入っているが、target head ありモデルはまだ採用していない。
 
 ## 目的
 
-3人戦 / 4人戦の RL で、以下の「相手選択」を heuristic から policy に移す。
+3人以上の多人数 RL で、以下の「相手選択」を heuristic から policy に移す。5人以上は状態表現と同じく脅威度上位3相手の slot に射影する。
 
 - テレビ局: どの相手から奪うか
 - ビジネスセンター: どの相手と交換するか
@@ -121,7 +121,8 @@ head 無しの多人数戦モデルは、
   - 追加 `tvTargetHead: MAX_PLAYERS-1`
 - BC
   - 既存 `BC give/take` を維持
-  - 追加 `bcTargetHead: MAX_PLAYERS-1`
+  - 追加 `businessTargetHead: MAX_PLAYERS-1`
+  - Python checkpoint 内部名は `bc_target`、browser export / JS 側のフィールド名は `businessTargetHead`
 - Mover
   - 既存 `MOVER_BASE + card` を維持
   - 追加 `moverTargetHead: MAX_PLAYERS-1`
@@ -166,10 +167,10 @@ head 無しの多人数戦モデルは、
 - 新 head は shape を持っても、mask で 1 択になる
 - 既存 2人戦モデルは fallback で現状動作を維持する
 
-### 3人戦 / 4人戦
+### 3人以上の多人数戦
 
 - target head を使う
-- slot ベースで選ぶ
+- slot ベースで選ぶ。5人以上は脅威度上位3相手のみを slot 化する
 - 無効 slot は mask 0
 
 ## mask 案
@@ -177,7 +178,7 @@ head 無しの多人数戦モデルは、
 pending ごとに target mask を持つ。
 
 - `tvTargetMask[playerSlots]`
-- `bcTargetMask[playerSlots]`
+- `businessTargetMask[playerSlots]`
 - `moverTargetMask[playerSlots]`
 
 ルール:
@@ -226,6 +227,4 @@ pending ごとに target mask を持つ。
 
 ## 補足
 
-引越し屋は target head だけでなく、「dormant カードを渡せるか」を action 表現へ入れるかも別課題。
-
-現状は active カード限定で、これは target head とは独立の制約。
+引越し屋は active/dormant を含む同名カードを渡せる。同名カードに active/dormant が混在する場合は dormant を優先して移動する。この挙動は target head とは独立の制約。

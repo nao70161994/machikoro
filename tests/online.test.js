@@ -104,6 +104,7 @@ function loadOnlineRuntime() {
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
         this.initSocket = initSocket;
+        this.joinRoom = joinRoom;
         this.setOnlineState = (v) => {
             if (typeof v.socket !== 'undefined') socket = v.socket;
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
@@ -1113,6 +1114,45 @@ runTest('_tryRestoreRoom は古い復元schemaを送信せず破棄する', () =
     assert.strictEqual(emitted, undefined);
     assert.strictEqual(rt.localStorage.getItem('onlineGameStart'), null);
     assert.strictEqual(rt.elements.onlineStatus.textContent, '❌ 古い復元データのため再接続できません');
+});
+
+runTest('gameStart はサーバーの hostPlayerIndex で stale host 状態を補正する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    rt.setOnlineState({ isRoomHost: true });
+    handlers.roomJoined({ roomId: 'ROOM01', playerIndex: 1, reconnectToken: 'token-bob' });
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt.getOnlineState().isRoomHost, false);
+    const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(storedGameStart.hostPlayerIndex, 0);
+});
+
+runTest('joinRoom は createRoom 失敗後に残った host 状態を落とす', () => {
+    const rt = loadOnlineRuntime();
+    rt.document.getElementById('playerNameInput').value = 'Bob';
+    rt.document.getElementById('roomIdInput').value = 'room01';
+    rt.setOnlineState({ isRoomHost: true });
+
+    rt.joinRoom();
+
+    assert.strictEqual(rt.getOnlineState().isRoomHost, false);
+    const emitted = rt.getSocketEmits().pop();
+    assert.strictEqual(emitted.name, 'joinRoom');
+    assert.strictEqual(emitted.payload.roomId, 'ROOM01');
 });
 
 runTest('hostChanged 後のホスト復元payloadは新ホストindexを保存する', () => {

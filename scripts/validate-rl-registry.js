@@ -81,6 +81,10 @@ function isExtendedMultiplayerRecommendedRole(role) {
     return value.includes('3p-10p') || value.includes('multiplayer');
 }
 
+function hasMinimumLineupGames(coverage, key, minimumGames) {
+    return coverage && Number.isFinite(coverage[key]) && coverage[key] >= minimumGames;
+}
+
 function summarizeEvalCoverage(model) {
     const jsEval = bestEvalByType(model, 'js');
     const lineup4pEval = bestEvalByType(model, 'js-lineup-stability') || bestEvalByType(model, 'js-lineup');
@@ -214,6 +218,12 @@ function validateRegistry(registry, options = {}) {
                 if (isExtendedMultiplayerRecommendedRole(entry.role) && !coverage.has10pLineups) {
                     warnings.push(`${entry.id}: 多人数採用候補なのに 10人 lineup 評価が不足しています`);
                 }
+                if (isExtendedMultiplayerRecommendedRole(entry.role) && minimumGames > 0 && coverage.has5pLineups && !hasMinimumLineupGames(coverage, 'best5pGames', minimumGames)) {
+                    warnings.push(`${entry.id}: 多人数採用候補の 5人 lineup 評価ゲーム数が少なすぎます (${coverage.best5pGames} < ${minimumGames})`);
+                }
+                if (isExtendedMultiplayerRecommendedRole(entry.role) && minimumGames > 0 && coverage.has10pLineups && !hasMinimumLineupGames(coverage, 'best10pGames', minimumGames)) {
+                    warnings.push(`${entry.id}: 多人数採用候補の 10人 lineup 評価ゲーム数が少なすぎます (${coverage.best10pGames} < ${minimumGames})`);
+                }
             }
             const key = model ? modelStyleKey(model) : '';
             if (key) {
@@ -274,6 +284,7 @@ module.exports = {
     hasLineupCoverage,
     isMultiplayerRecommendedRole,
     isExtendedMultiplayerRecommendedRole,
+    hasMinimumLineupGames,
     summarizeEvalCoverage,
     resolveModelSummaryPath,
     loadModelSummary,

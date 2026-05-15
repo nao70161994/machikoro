@@ -2,7 +2,7 @@
   "name": "machikoro",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "node tests/run-all.js unit",
     "test:sim": "node tests/run-all.js sim",

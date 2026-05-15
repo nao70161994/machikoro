@@ -115,6 +115,7 @@ function renderMarkdown(report) {
             lines.push(`| \`${pair.left}\` | \`${pair.right}\` | ${pair.overlap} | ${pair.sameStyle ? 'yes' : 'no'} | \`${pair.compareCommand}\` |`);
         }
     }
+    while (lines[lines.length - 1] === '') lines.pop();
     return lines.join('\n') + '\n';
 }
 

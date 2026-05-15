@@ -90,6 +90,13 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `mover=simple`
 - `renovation=simple`
 - `combo=core`
+- `landmarkCardMargin=25`
+- `landmarkCardCompareMode=base`
+- `landmarkCardCompareTargets=harborMall`
+- `landmarkCardPenaltyMode=none`
+- `harborLandmarkBaseBonus=2.5`
+- `landmarkProgressRemaining=3`
+- `landmarkCostWeight=0.12`
 - `buildTempo=0.05`
 - `airportSkip=whenNoLandmark`
 - `incomeCap=none`
@@ -334,7 +341,7 @@ npm run report-rl-diversity
 棚卸し結果を履歴として残す場合:
 
 ```bash
-npm run report-rl-registry -- --format markdown --output models/rl_model/registry-report.md
+npm run report-rl-registry -- --format markdown --output models/rl_model/reports/registry-report.md
 ```
 
 詳しい学習方式、評価指標、集計オプションは [scripts/rl/README.md](./scripts/rl/README.md) を参照してください。
@@ -359,6 +366,8 @@ npm run report-rl-registry -- --format markdown --output models/rl_model/registr
 - `js/ui.js`: 描画、モーダル、ログ、チュートリアル UI
 - `js/storage.js`: セーブ / 復帰 / 設定保存
 - `js/main.js`: 起動、入力、CPU 進行、タイトル/ゲーム画面制御
+- `js/audio.js`: 音声補助
+- `js/confetti.js`: 紙吹雪アニメーション補助
 - `js/stats.js`: ローカル統計表示
 - `js/appShell.js`: クラッシュ表示、オフライン表示、PWA インストールバナー、初期ビュー初期化
 - `js/RLCPU.js`: export 済み RL モデルを読む `AI（深層学習・ランダム）` 用ランタイム
@@ -377,8 +386,8 @@ RL スクリプト / モデル:
 - `scripts/rl/eval-run.sh`: `run-label` から 2人戦の `best_model.browser.json` を評価
 - `scripts/rl/eval-run-3p.sh`: 採用済み 3人 lineup を短縮評価
 - `scripts/rl/eval-run-4p.sh`: 採用済み 4人 lineup を短縮評価
-- `scripts/rl/eval-run-multiplayer.sh`: 採用済み 3人/4人 lineup をまとめて評価
-- `scripts/rl/eval-run-top10-multiplayer.sh`: `run-label` の top checkpoint 群を 3人/4人複数 lineup で後評価。第4引数で `run-ranks` を絞れます
+- `scripts/rl/eval-run-multiplayer.sh`: 採用済み 3人/4人/5人/10人 lineup をまとめて評価
+- `scripts/rl/eval-run-top10-multiplayer.sh`: `run-label` の top checkpoint 群を 3人/4人/5人/10人複数 lineup で後評価。第4引数で `run-ranks` を絞れます
 - `scripts/rl/bg-list.sh`, `scripts/rl/bg-status.sh`, `scripts/rl/bg-tail.sh`, `scripts/rl/bg-finalize.sh`: バックグラウンド学習の監視補助
 - `scripts/rl/bg-watch-summary.sh`, `scripts/rl/bg-experiment-set.sh`: 実行中/比較中ジョブの要約表示
 - `scripts/rl/bg-prune.sh`: 停止済みで `summary.json` を持たない stale job の pid/status/cmd を掃除
@@ -392,33 +401,22 @@ RL スクリプト / モデル:
 - `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人/5人/10人評価カバレッジ監査。target head 診断も含みます。
 - `scripts/plan-rl-next-actions.js`: 台帳と監査から次にやる評価・見直し作業を優先順位付きで抽出
 - `scripts/review-rl-adoptions.js`: 2人戦候補を weighted score で並べ、現採用モデルと比較すべき challenger を抽出
-- `scripts/refresh-rl-ops-reports.js`: registry レポート、portfolio 監査、次アクション、採用候補レビューをまとめて `models/rl_model/reports/` に書き出す
+- `scripts/refresh-rl-ops-reports.js`: registry レポート、portfolio 監査、次アクション、採用候補レビュー、多様性レポートをまとめて `models/rl_model/reports/` に書き出す
 - `scripts/update-rl-registry-from-eval.js`: `eval-rl-models` の JSON を registry に追記し、そのままレポート群も更新
 - `scripts/rl/TARGET_HEAD_DESIGN.md`: 多人数戦のテレビ局 / ビジネスセンター / 引越し屋 target head の現状棚卸しと導入方針
 - `scripts/report-rl-diversity.js`: candidate / adopted モデルを style と topCards 重複で整理し、比較すべきペアを出力
-- `scripts/review-rl-multiplayer-topk.js`: top-k 多人数後評価 JSON を 3人/4人総合点+多様性で並べる
+- `scripts/review-rl-multiplayer-topk.js`: top-k 多人数後評価 JSON を、現状は3人/4人総合点+多様性で並べる。5人/10人は評価出力として確認します
 - `scripts/review-rl-multiplayer-experiment-set.js`: 複数 run の top10 review JSON を、run 間の総合点+多様性で比較する
 - `scripts/summarize-rl-metrics.js`: 学習 metrics の集計
 - `scripts/rl/README.md`: RL 系の詳細ドキュメント
 - `models/rl_model/registry.json`: 採用候補モデルの台帳（モデル本体は git 管理外）
 - `models/rl_model/portfolio/`: 実ゲームで使う配布用 browser JSON
-- `models/rl_model/`: 学習済みモデル、評価結果、診断 review の出力先。`*.json` / `*.csv` / `*.md` / `*.review.txt` は原則生成物として git 管理外です
+- `models/rl_model/`: 学習済みモデル、評価結果、診断 review の出力先。直下の `*.json` / `*.csv` / `*.md` / `*.review.txt` と `runs/` は原則生成物として git 管理外です。`registry.json`, `portfolio/*.browser.json`, `reports/*` は運用成果物として git 管理します
 
 テスト:
 
-- `tests/gamemanager.test.js`
-- `tests/server.test.js`
-- `tests/cpu.test.js`
-- `tests/online.test.js`
-- `tests/main.test.js`
-- `tests/run-all.js`
-
-RL / 学習系テスト:
-
-- `tests/rlcpu.test.js`
-- `tests/rl-train.test.js`
-- `tests/eval-rl-vs-js.test.js`
-- `tests/summarize-rl-metrics.test.js`
+- `tests/run-all.js`: `unit`, `sim`, `all`, `core`, `online`, `pwa`, `cpu`, `rl` のテストグループを管理します。実行入口は `npm test` と `npm run test:*` を使ってください。
+- `tests/*.test.js`: ルール、サーバー、オンライン、保存、UI、CPU、RL runtime / registry / evaluation scripts を対象別に分けています。新規テストを追加したら `tests/run-all.js` の該当グループにも登録してください。
 
 ## オンライン復元の要点
 

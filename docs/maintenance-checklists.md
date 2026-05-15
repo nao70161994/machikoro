@@ -25,7 +25,7 @@
 | CPU 判断 | `npm run test:cpu` | 速く切り分ける場合は `node tests/cpu.test.js`。 |
 | RL runtime / export | `npm run test:rl` | 速く切り分ける場合は `node tests/rlcpu.test.js`、parity 確認は `node tests/rl-match-trace.test.js`。 |
 | RL 学習 / 評価 scripts | `npm run test:rl` | 速く切り分ける場合は `node tests/rl-train.test.js`、評価系は `node tests/eval-rl-vs-js.test.js`, `node tests/eval-rl-models.test.js`。 |
-| RL registry / portfolio | `npm run validate-rl-registry` | `npm run audit-rl-portfolio` で 2p / 3p / 4p / 5p / 10p の評価カバレッジも見る。`npm run report-rl-registry` も併用。 |
+| RL registry / portfolio | `npm run validate-rl-registry` | `npm run audit-rl-portfolio` で role 別に期待される 2p / 3p / 4p / 5p / 10p の評価カバレッジも見る。`missing` は 2人専用 / 多人数用の role と照合して判断する。`npm run report-rl-registry` も併用。 |
 | PWA / Service Worker | `npm run test:pwa` | 実ブラウザで更新通知、ゲーム中 reload 抑止、タイトル画面自動適用、オフライン表示。 |
 | Android / TWA workflow | YAML 差分確認 | GitHub Actions 手動実行で artifact 失敗検知。 |
 
@@ -44,7 +44,7 @@
 | pending action | ack 前 action は `clientActionId` / `seq` で重複排除される。 |
 | shuffled order | `playerOrder` がある場合、original index と server-side index を混同しない。 |
 | host restore race | `hostEpoch` / `actionSeq` が古い recreate payload による巻き戻しを防ぐ。 |
-| undo | `undoState` が valid な場合だけ復元され、壊れた undo は null 化される。 |
+| undo | `undoState` が valid な場合だけ復元される。client 由来 snapshot は invalid `undoState` を null 化し、server 保持済み snapshot / mirror validation では invalid `undoState` を含む snapshot 全体を拒否する。 |
 | app error | 復元失敗通知は `appError` 経由で、transport `error` と混ぜない。 |
 
 ## 2〜10人 / 旧データ互換チェックリスト
@@ -58,7 +58,7 @@
 | 2〜10人ランダム学習 | 範囲に3人以上が含まれる場合、2人戦も多人数表現として扱う。 |
 | 5人以上射影 | runtime と学習側の両方で `自分 + 脅威度上位3人` の4枠固定へ射影する。 |
 | target head なし | 旧 checkpoint は target head が無くても JS fallback で停止しない。 |
-| target head あり | `tv_target` / `bc_target` / `mover_target` が export と JS/Python 推論で同じ意味になる。 |
+| target head あり | Python checkpoint 内部名 `tv_target` / `bc_target` / `mover_target` と、browser export / JS 側の `tvTargetHead` / `businessTargetHead` / `moverTargetHead` の対応が同じ意味になる。 |
 | lineups | 2p / 3p / 4p / 5p / 10p を分けて評価し、2人評価だけで採用判断しない。 |
 | registry | 採用候補は `models/rl_model/registry.json` に記録し、50戦未満は smoke / 足切り扱いにする。 |
 

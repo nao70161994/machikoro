@@ -393,6 +393,7 @@ function initSocket() {
 
     socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq }) => {
         isOnlineGame = true;
+        isRoomHost = Number.isInteger(hostPlayerIndex) && hostPlayerIndex === myOriginalPlayerIndex;
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
@@ -669,6 +670,7 @@ function joinRoom() {
     if (roomId.length !== 6) { alert("ルームIDは6文字です"); return; }
     myPlayerName = name;
     initSocket();
+    isRoomHost = false;
     socket.emit('joinRoom', { roomId, playerName: name, clientVersion: getClientVersion() });
 }
 

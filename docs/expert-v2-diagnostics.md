@@ -19,8 +19,15 @@
 - `buildTempo=0.05`
 - `airportSkip=whenNoLandmark`
 - `incomeCap=none`
+- `landmarkCardMargin=25`
+- `landmarkCardCompareMode=base`
+- `landmarkCardCompareTargets=harborMall`
+- `landmarkCardPenaltyMode=none`
+- `harborLandmarkBaseBonus=2.5`
+- `landmarkProgressRemaining=3`
+- `landmarkCostWeight=0.12`
 
-ランドマークを買える場合はランドマークを買います。ランドマークを買えない場合は build EV でカードを選びます。パス追加や広いカード禁止は採用しません。
+ランドマークを買える場合は原則ランドマークを優先します。ただし港 / ショッピングモールは `landmarkCardCompareTargets=harborMall` の比較対象で、カード購入が `landmarkCardMargin` 以上に上回る場合はカードを買います。ランドマークを買えない場合は build EV でカードを選びます。パス追加や広いカード禁止は採用しません。
 
 ## 現行基準線
 

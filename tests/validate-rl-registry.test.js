@@ -196,7 +196,7 @@ runTest('validateRegistry は recommended role に必要な評価カバレッジ
     assert.ok(result.warnings.some(warning => warning.includes('portfolio 配下')));
 });
 
-runTest('validateRegistry は旧3p-4p roleには5p/10p警告を出さない', () => {
+runTest('validateRegistry は多人数採用モデルの3p/4p/5p/10p評価を認識する', () => {
     const result = validateRegistry({
         models: [
             {
@@ -207,17 +207,46 @@ runTest('validateRegistry は旧3p-4p roleには5p/10p警告を出さない', ()
                 evals: [
                     { type: 'js-lineup-3p-stability', gamesPerLineup: 50, lineups: { 'rl+normal+strong': {} } },
                     { type: 'js-lineup-stability', gamesPerLineup: 50, lineups: { 'rl+weak+normal+strong': {} } },
+                    { type: 'js-lineup-5p-stability', gamesPerLineup: 50, lineups: { 'rl+weak+normal+strong+expert': {} } },
+                    { type: 'js-lineup-10p-stability', gamesPerLineup: 50, lineups: { 'rl+weak+normal+strong+expert+weak+normal+strong+expert+normal': {} } },
                 ],
             },
         ],
         portfolioPolicy: {
             recommendedActiveModels: [
-                { id: 'm4p', role: 'adopted-3p-4p' },
+                { id: 'm4p', role: 'adopted-3p-10p' },
             ],
         },
     });
     assert.ok(!result.warnings.some(warning => warning.includes('5人 lineup 評価が不足')));
     assert.ok(!result.warnings.some(warning => warning.includes('10人 lineup 評価が不足')));
+});
+
+runTest('validateRegistry は多人数採用モデルの5p/10p評価ゲーム数不足を警告する', () => {
+    const result = validateRegistry({
+        evaluationPolicy: { minimumAdoptionGamesPerOpponent: 50 },
+        models: [
+            {
+                id: 'm4p',
+                status: 'adopted',
+                path: 'models/rl_model/portfolio/m4p.browser.json',
+                style: { label: 'style-b' },
+                evals: [
+                    { type: 'js-lineup-3p-stability', gamesPerLineup: 50, lineups: { 'rl+normal+strong': {} } },
+                    { type: 'js-lineup-stability', gamesPerLineup: 50, lineups: { 'rl+weak+normal+strong': {} } },
+                    { type: 'js-lineup-5p-stability', gamesPerLineup: 20, lineups: { 'rl+weak+normal+strong+expert': {} } },
+                    { type: 'js-lineup-10p-stability', gamesPerLineup: 20, lineups: { 'rl+weak+normal+normal+strong+strong+expert+expert+expert+weak': {} } },
+                ],
+            },
+        ],
+        portfolioPolicy: {
+            recommendedActiveModels: [
+                { id: 'm4p', role: 'adopted-3p-10p' },
+            ],
+        },
+    });
+    assert.ok(result.warnings.some(warning => warning.includes('5人 lineup 評価ゲーム数が少なすぎます')));
+    assert.ok(result.warnings.some(warning => warning.includes('10人 lineup 評価ゲーム数が少なすぎます')));
 });
 
 runTest('validateRegistry は多人数採用モデルの5p/10p評価があれば追加警告しない', () => {

@@ -1,27 +1,25 @@
 {
-  "updatedAt": "2026-04-20",
-  "warnings": [
-    "terminal-shaped-h128-long: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "strong-select-seed21: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "self-only-both-h256-lr3e5-5000-seed62: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "self-only-both-h256-lr2e5-5000-seed66-rewardcap: adopted/candidate の評価ゲーム数が少なすぎます (20 < 50)",
-    "self-only-both-h256-lr3e5-5000-seed62 と self-only-both-h256-lr2e5-5000-seed66-rewardcap: topCards が 4/5 重複しています"
-  ],
+  "updatedAt": "2026-05-11",
+  "warnings": [],
   "errors": [],
   "recommended": [
     {
-      "id": "self-only-4p-h256-lr1e5-5000-seed102",
-      "role": "adopted-3p-4p",
-      "reason": "Adopted for 3-player and 4-player RL CPU. 100-game lineup evaluation stayed stable against normal/strong mixed tables.",
+      "id": "self-only-4p-h256-lr1e5-5000-seed103",
+      "role": "adopted-3p-10p",
+      "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. Latest 50-game extended lineup evaluation reached 56% on 5p weak+normal+strong+expert and 50% on 10p mixed weak/normal/strong/expert.",
       "status": "adopted",
-      "style": "4p-vineyard-farm-pizza",
+      "style": "4p-wheat-vineyard-pizza",
       "portfolioPath": true,
       "best2pGames": 0,
       "has2pOpponents": false,
-      "best3pGames": 200,
+      "best3pGames": 50,
       "has3pLineups": true,
-      "best4pGames": 200,
+      "best4pGames": 100,
       "has4pLineups": true,
+      "best5pGames": 50,
+      "has5pLineups": true,
+      "best10pGames": 50,
+      "has10pLineups": true,
       "targetDiagnostics": null
     },
     {
@@ -37,6 +35,10 @@
       "has3pLineups": false,
       "best4pGames": 0,
       "has4pLineups": false,
+      "best5pGames": 0,
+      "has5pLineups": false,
+      "best10pGames": 0,
+      "has10pLineups": false,
       "targetDiagnostics": null
     },
     {
@@ -45,13 +47,17 @@
       "reason": "Very high weak/normal result with a different card mix from seed71.",
       "status": "candidate",
       "style": "sushi-warehouse-farm",
-      "portfolioPath": false,
+      "portfolioPath": true,
       "best2pGames": 100,
       "has2pOpponents": true,
       "best3pGames": 0,
       "has3pLineups": false,
       "best4pGames": 0,
       "has4pLineups": false,
+      "best5pGames": 0,
+      "has5pLineups": false,
+      "best10pGames": 0,
+      "has10pLineups": false,
       "targetDiagnostics": null
     },
     {
@@ -60,13 +66,17 @@
       "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines.",
       "status": "candidate",
       "style": "burger-warehouse-wheat",
-      "portfolioPath": false,
+      "portfolioPath": true,
       "best2pGames": 100,
       "has2pOpponents": true,
       "best3pGames": 0,
       "has3pLineups": false,
       "best4pGames": 0,
       "has4pLineups": false,
+      "best5pGames": 0,
+      "has5pLineups": false,
+      "best10pGames": 0,
+      "has10pLineups": false,
       "targetDiagnostics": null
     }
   ]
