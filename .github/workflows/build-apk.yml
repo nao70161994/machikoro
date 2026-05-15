@@ -50,35 +50,51 @@ jobs:
           KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
           KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
         run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "release APK には assetlinks.json と一致する ANDROID_KEYSTORE_BASE64 が必要です" >&2
+            exit 1
+          fi
+          if [ -z "$KEYSTORE_STORE_PASSWORD" ] || [ -z "$KEYSTORE_KEY_PASSWORD" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 を使う場合は KEYSTORE_STORE_PASSWORD と KEYSTORE_KEY_PASSWORD が必要です" >&2
+            exit 1
+          fi
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            STORE_PASSWORD="$KEYSTORE_STORE_PASSWORD"
+            KEY_PASSWORD="$KEYSTORE_KEY_PASSWORD"
             echo "=== Secretからキーストアを復元 ==="
             printf "%s" "$ANDROID_KEYSTORE_BASE64" | base64 -d > android.keystore
-          else
-            echo "=== 新規キーストア生成（初回のみ） ==="
-            keytool -genkey -v \
-              -keystore android.keystore \
-              -alias android \
-              -keyalg RSA -keysize 2048 \
-              -validity 10000 \
-              -storepass "$KEYSTORE_STORE_PASSWORD" \
-              -keypass "$KEYSTORE_KEY_PASSWORD" \
-              -dname "CN=Machikoro,O=Machikoro,C=JP"
           fi
 
       - name: SHA256フィンガープリント出力
         env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
         run: |
+          if [ -z "$KEYSTORE_STORE_PASSWORD" ]; then
+            echo "KEYSTORE_STORE_PASSWORD が必要です" >&2
+            exit 1
+          fi
+          STORE_PASSWORD="$KEYSTORE_STORE_PASSWORD"
           echo "=== SHA256フィンガープリント（assetlinks.json用） ==="
-          keytool -list -v \
+          FINGERPRINT="$(keytool -list -v \
             -keystore android.keystore \
             -alias android \
-            -storepass "$KEYSTORE_STORE_PASSWORD" \
-            | grep "SHA256:"
+            -storepass "$STORE_PASSWORD" \
+            | sed -n 's/.*SHA256: //p')"
+          if [ -z "$FINGERPRINT" ]; then
+            echo "keystore fingerprint を取得できませんでした" >&2
+            exit 1
+          fi
+          echo "SHA256: $FINGERPRINT"
+          if ! grep -q "$FINGERPRINT" server.js; then
+            echo "keystore fingerprint が server.js の assetlinks.json 設定と一致しません" >&2
+            exit 1
+          fi
 
       - name: twa-manifest.json 作成
         run: |
-          cat > twa-manifest.json << 'EOF_MANIFEST'
+          APP_VERSION_CODE="${GITHUB_RUN_NUMBER:-1}"
+          cat > twa-manifest.json << EOF_MANIFEST
           {
             "packageId": "com.machikoro.game",
             "host": "machikoro-9jv2.onrender.com",
@@ -92,8 +108,8 @@ jobs:
             "iconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
             "maskableIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
             "monochromeIconUrl": "https://machikoro-9jv2.onrender.com/icons/icon-512.png",
-            "appVersion": "1",
-            "appVersionCode": 1,
+            "appVersion": "${APP_VERSION_CODE}",
+            "appVersionCode": ${APP_VERSION_CODE},
             "signingKey": {
               "path": "android.keystore",
               "alias": "android"
@@ -119,9 +135,16 @@ jobs:
 
       - name: APK ビルド
         env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           BUBBLEWRAP_SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
           BUBBLEWRAP_SIGNING_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
         run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$BUBBLEWRAP_SIGNING_STORE_PASSWORD" ] || [ -z "$BUBBLEWRAP_SIGNING_KEY_PASSWORD" ]; then
+            echo "release APK には ANDROID_KEYSTORE_BASE64 / KEYSTORE_STORE_PASSWORD / KEYSTORE_KEY_PASSWORD が必要です" >&2
+            exit 1
+          fi
+          export BUBBLEWRAP_SIGNING_STORE_PASSWORD
+          export BUBBLEWRAP_SIGNING_KEY_PASSWORD
           which expect || sudo apt-get install -y expect
           expect << 'EXPECTEOF'
           set timeout 600
@@ -141,10 +164,12 @@ jobs:
           ls -la
           echo "=== APK検索（全体） ==="
           find /home/runner -name "*.apk" 2>/dev/null | head -20 || echo "not found"
+          test -s app-release-signed.apk
 
       - name: APK アップロード
         uses: actions/upload-artifact@v4
         with:
           name: machikoro-apk
           path: app-release-signed.apk
+          if-no-files-found: error
           retention-days: 14

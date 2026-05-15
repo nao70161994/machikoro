@@ -78,38 +78,43 @@ function filePriority(file) {
 function main() {
     const repoRoot = path.join(__dirname, '..');
     const coverageDir = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-v8-coverage-'));
-    const result = spawnSync(process.execPath, [path.join(repoRoot, 'tests', 'run-all.js'), 'all'], {
-        cwd: repoRoot,
-        stdio: 'inherit',
-        env: {
-            ...process.env,
-            NODE_V8_COVERAGE: coverageDir,
-        },
-    });
-    if (result.status !== 0) {
-        process.exit(result.status || 1);
-    }
-
-    const files = collectCoverageFiles(coverageDir);
-    const results = files.flatMap(file => {
-        try {
-            const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-            return parsed.result || [];
-        } catch (error) {
-            return [];
+    try {
+        const result = spawnSync(process.execPath, [path.join(repoRoot, 'tests', 'run-all.js'), 'all'], {
+            cwd: repoRoot,
+            stdio: 'inherit',
+            env: {
+                ...process.env,
+                NODE_V8_COVERAGE: coverageDir,
+            },
+        });
+        if (result.status !== 0) {
+            process.exitCode = result.status || 1;
+            return;
         }
-    });
-    const summary = summarizeScripts(results, repoRoot);
 
-    console.log('\n[coverage]');
-    for (const entry of summary) {
-        console.log(
-            `${entry.file} functions ${entry.functionPct}% (${entry.functionsHit}/${entry.functionsTotal}) ` +
-            `ranges ${entry.rangePct}% (${entry.rangesHit}/${entry.rangesTotal})`
-        );
-    }
-    if (!summary.some(entry => entry.file.startsWith('js/'))) {
-        console.log('note: js/*.js の V8 coverage は今回の実行では取得できませんでした');
+        const files = collectCoverageFiles(coverageDir);
+        const results = files.flatMap(file => {
+            try {
+                const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+                return parsed.result || [];
+            } catch (error) {
+                return [];
+            }
+        });
+        const summary = summarizeScripts(results, repoRoot);
+
+        console.log('\n[coverage]');
+        for (const entry of summary) {
+            console.log(
+                `${entry.file} functions ${entry.functionPct}% (${entry.functionsHit}/${entry.functionsTotal}) ` +
+                `ranges ${entry.rangePct}% (${entry.rangesHit}/${entry.rangesTotal})`
+            );
+        }
+        if (!summary.some(entry => entry.file.startsWith('js/'))) {
+            console.log('note: js/*.js の V8 coverage は今回の実行では取得できませんでした');
+        }
+    } finally {
+        fs.rmSync(coverageDir, { recursive: true, force: true });
     }
 }
 

@@ -33,14 +33,30 @@ node server.js
 
 - `CPU（最強）` の v2simple 手書き強化は凍結中です。再開条件と評価ゲートは [docs/expert-v2-diagnostics.md](docs/expert-v2-diagnostics.md) に集約します。
 - `AI（深層学習・ランダム）` は v2simple とは別CPUとして扱います。3人以上のRLは現行 `self-only-4p-h256-lr1e5-5000-seed103` を使い、5人以上では脅威度上位3人の相手へ射影して判断します。50戦未満の短期評価は smoke / 足切り専用です。
-- ルールベース CPU と RL CPU は5人以上でも対応します。5人以上のRLは動作対応済みですが、強さの採用評価は今後の5人以上lineup評価で確認します。
+- ルールベース CPU と RL CPU は5人以上でも対応します。5人以上のRLは動作対応済みで、5p / 10p の軽量 lineup 評価も registry に記録済みです。追加採用判断では 2p / 3p / 4p / 5p / 10p を分けて確認します。
 
 ## テスト
 
-自動テスト:
+既定の自動テスト:
 
 ```bash
 npm test
+```
+
+simulation 系も含めた全体確認:
+
+```bash
+npm run test:all
+```
+
+変更種別ごとの targeted test:
+
+```bash
+npm run test:core
+npm run test:online
+npm run test:pwa
+npm run test:cpu
+npm run test:rl
 ```
 
 編集後の構文確認:
@@ -51,14 +67,7 @@ node --check js/main.js
 node --check js/online.js
 ```
 
-高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md) にまとめています。オンライン変更時は最低でも以下を確認してください。
-
-- 部屋作成 / 参加
-- 再接続
-- ホスト移譲
-- サーバー再起動後の復元
-- CPU 手番進行
-- Undo 同期
+変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
 
 Service Worker / manifest / app shell を変更した場合は、PWA 更新通知、ゲーム中の手動 reload、タイトル画面での自動適用、オフライン表示も [`TESTPLAN.md`](./TESTPLAN.md) で確認してください。
 
@@ -71,7 +80,7 @@ npm run selfplay -- --games 20 expert strong strong normal
 現行の live `CPU（最強）` は `expertPreset: "v2simple"` を使います。2026-05 時点の既定設定は次です。
 
 - `build=ev`
-- `dice=ev`
+- `dice=strongCrowdThreshold`
 - `reroll=simple`
 - `it=always`
 - `tv=simple`
@@ -82,9 +91,10 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `renovation=simple`
 - `combo=core`
 - `buildTempo=0.05`
+- `airportSkip=whenNoLandmark`
 - `incomeCap=none`
 
-この設定での現行100戦基準線は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。
+この設定の評価 CLI は既定で `mode=lite` の高速比較として動きます。現行100戦基準線は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。
 strong profile は `duel=82.0%`, `trio=74.0%`, `crowd=41.0%`, `allStrong4=39.0%` で、詳細と停止判断は `docs/expert-v2-diagnostics.md` に集約します。
 
 `combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。`buildTempo=0.05` は購入後の残金を薄く評価して、次ランドマークへのテンポを残しやすくします。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
@@ -164,7 +174,7 @@ npm run selfplay -- --games 10 --lite expert normal normal normal
 - `--details` を付けると各試合の勝者、ターン数、最終盤面サマリを表示します。
 - `--fast` は `expert` の探索を軽くした比較用モードです。
 - `--lite` はさらに軽い self-play 専用モードで、4 人戦 `expert` の比較・学習を回しやすくするためのものです。
-- 通常の `expert` CPU は `default` プリセットを使い、実戦では `expertPurpose: "live"` の軽量ロジック、self-play / tuning では `training` の重いロジックを使います。
+- `selfplay` / tuning の `expert` は未指定なら `default` プリセットを使います。実ゲームの `CPU（最強）` は `expertPurpose: "live"` かつ `expertPreset: "v2simple"` の realtime 軽量ロジックを使います。`eval-expert-*` は同じ live v2simple option を既定にしつつ、速度優先で `lite` 実行します。
 - 現在の `expert` は `winDistance` ベースの局面評価、未決着 lookahead の勝利距離差評価、局面依存の lookahead 深さ調整を含みます。
 - `TV` / `Business` / `Cleaning` の pending 選択には、相手の進行圧を使った専用補正が入っています。
 - `refined` は探索で出た候補として比較用に残しています。
@@ -379,7 +389,7 @@ RL スクリプト / モデル:
 - `scripts/eval-rl-models.js`: 複数モデルの JS 評価ランキング
 - `scripts/eval-rl-special-scenarios.js`: RL モデルがテレビ局 / ビジネスセンター / 清掃業 / 引越し屋 / 改装屋などの固定局面で期待 target / pending action を選べるか確認する診断
 - `scripts/report-rl-registry.js`: registry の棚卸しレポート出力。評価カバレッジに加えて target head 診断も一覧します。
-- `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人評価カバレッジ監査。target head 診断も含みます。
+- `scripts/audit-rl-portfolio.js`: 採用済みモデルの 2人/3人/4人/5人/10人評価カバレッジ監査。target head 診断も含みます。
 - `scripts/plan-rl-next-actions.js`: 台帳と監査から次にやる評価・見直し作業を優先順位付きで抽出
 - `scripts/review-rl-adoptions.js`: 2人戦候補を weighted score で並べ、現採用モデルと比較すべき challenger を抽出
 - `scripts/refresh-rl-ops-reports.js`: registry レポート、portfolio 監査、次アクション、採用候補レビューをまとめて `models/rl_model/reports/` に書き出す
@@ -416,6 +426,8 @@ RL / 学習系テスト:
 - 長時間ゲームでは、サーバーとクライアントの両方が古いアクション列を `stateSnapshot` に圧縮し、差分ログだけを保持します。
 - 再接続時は「ゲーム初期化 → snapshot 復元 → 残り actionLog 再生」で状態を再構築します。
 - アプリ固有のオンライン失敗通知は Socket.IO 標準の `error` ではなく `appError` イベントで扱います。
+- 復元 payload / snapshot の field と互換性確認は [docs/online-restore-schema.md](docs/online-restore-schema.md) にまとめています。
+- 変更種別ごとの確認コマンド、2〜10人 / 旧データ互換、JS/Python parity fixture は [docs/maintenance-checklists.md](docs/maintenance-checklists.md) を参照してください。
 
 ## デプロイメモ
 

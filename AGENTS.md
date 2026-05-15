@@ -105,10 +105,10 @@ RL / 学習系スクリプト:
 - RL 学習は現在 `expert` とは別ラインで、置き換えではなく新 CPU として導入する前提です。
 - RL の baseline 学習は、Termux での長いコマンド折り返し事故を避けるため `sh scripts/rl/run-baseline.sh` を使ってください。既定値は `1000 / 500 / 1 / strong` に加えて `hidden=128`、初期評価スキップ、`max_steps=1200`、進捗表示を含む軽量 sanity run 向けです。出力先は `run-label` ごとに分かれるので、別ラベルなら並列実行しても衝突しません。
 - 現行の模倣なし RL 実験は `sh scripts/rl/run-js-oracle-terminal-shaped.sh` を使います。JS CPU oracle、終局報酬調整、`self` / `pool` 混合、`restore-best-at-end` が有効です。詳しい報酬設計と相手比率は `scripts/rl/README.md` を確認してください。
-- 3人以上の RL 学習は `--player-count 3|4` で多人数用状態表現 (`STATE_DIM = 353`) を使います。現行の4人自己対戦プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh` です。4人用モデルの主評価は `--js-eval-lineups` の4人JS評価を使い、2人評価だけを主指標にしないでください。既存2人モデル (`STATE_DIM = 145`) との互換性は維持してください。
-- 4人用 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` のような固定 trace 比較で Python/JS のズレを確認してください。
+- 3人以上の RL 学習は `--player-count 3..10` で多人数用状態表現 (`STATE_DIM = 353`) を使います。5人以上は `自分 + 脅威度上位3人` へ射影します。現行の4人自己対戦プリセットは `sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh`、2〜10人ランダム実験は `sh scripts/rl/run-random-2p10p-h256-lr2e5-1000.sh` です。多人数モデルの主評価は `--js-eval-lineups` の3p / 4p / 5p / 10p評価を使い、2人評価だけを主指標にしないでください。既存2人モデル (`STATE_DIM = 145`) との互換性は維持してください。
+- 多人数 RL 変更後は `npm run compare-rl-match-trace -- --python-model models/rl_model/model --js-model models/rl_model/model.browser.json --lineup rl,normal,normal,strong --max-steps 30 --js-cpu-oracle` のような固定 trace 比較で Python/JS のズレを確認してください。
 - RL 学習相手の `normal/strong/expert` は、Python heuristic ではなく JS `CPU.js` oracle を使う設定を優先してください。Python heuristic は JS CPU とズレることがあるため、現在は主に比較・fallback 用です。
-- RL 候補モデルは `models/rl_model/registry.json` に記録します。モデル本体・`runs/`・metrics は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-05時点では 3〜4人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。50戦未満の短期評価は smoke / 足切り専用で、registry / portfolio の採用判断には使わないでください。
+- RL 候補モデルは `models/rl_model/registry.json` に記録します。モデル本体・`runs/`・metrics は生成物扱いですが、実ゲームで使う配布用 browser JSON は `models/rl_model/portfolio/` に置きます。2026-05時点では 3〜10人用に `self-only-4p-h256-lr1e5-5000-seed103` を採用しています。50戦未満の短期評価は smoke / 足切り専用で、registry / portfolio の採用判断には使わないでください。
 - RL checkpoint の品質は `vs_random` だけでなく、`scripts/eval-rl-vs-js.js` と summary artifact を主に見て判断してください。
 - アプリレベルの Socket.IO 失敗通知には専用の `appError` event を使ってください。transport レベルの `error` に混ぜないでください。
 - Service Worker / version mismatch の挙動は製品仕様の一部です。キャッシュ資産、起動フロー、オンライン画面を触る場合は、update banner と reload 挙動も考慮してください。
@@ -125,7 +125,8 @@ RL / 学習系スクリプト:
 
 - `npm install`: 依存関係をインストール。
 - `node server.js`: ローカルでアプリを起動 (`http://localhost:3000`)。
-- `npm test`: `tests/run-all.js` 経由で全 Node テストを実行。
+- `npm test`: `tests/run-all.js` 経由で既定ユニットテストを実行。
+- `npm run test:all`: simulation 系も含めた全体確認を実行。
 - `npm run train-rl:baseline`: RL baseline 学習を開始。
 - `npm run eval-rl-vs-js -- --model <path>`: export 済み RL checkpoint を JS CPU 群と比較。
 - `npm run eval-rl-models -- --models <id> --games 50`: registry 上の RL モデルを一括評価・ランキング。
@@ -138,7 +139,7 @@ RL / 学習系スクリプト:
 
 - クライアントファイルを 1 つ以上編集したら、編集した各 `js/*.js` に対して `node --check` を実行してください。
 - ルール、オンラインフロー、サーバー検証、共有ゲーム挙動を変更したら `npm test` を実行してください。
-- CPU / self-play / tuning を変更したら、可能な範囲で関連する targeted test (`tests/cpu.test.js`, `tests/selfplay.test.js`, `tests/tune-expert.test.js`, `tests/train-expert-crowd.test.js`) も実行してください。
+- CPU / self-play / tuning を変更したら、可能な範囲で `npm run test:cpu` または関連する targeted test (`tests/cpu.test.js`, `tests/selfplay.test.js`, `tests/tune-expert.test.js`, `tests/train-expert-crowd.test.js`) も実行してください。
 - RL 学習 / 評価 / ランタイムを変更したら、可能な範囲で関連する targeted test (`tests/rlcpu.test.js`, `tests/rl-train.test.js`, `tests/eval-rl-vs-js.test.js`, `tests/eval-rl-models.test.js`, `tests/validate-rl-registry.test.js`, `tests/summarize-rl-metrics.test.js`) も実行してください。
 - オンライン / 再接続を変更したら、部屋作成 / 参加、再接続、ホスト移譲または再起動復元、CPU 手番、Undo 同期を手動確認してください。
 - PWA / 更新挙動を変更したら、Service Worker の更新プロンプトと reload 挙動を手動確認してください。
