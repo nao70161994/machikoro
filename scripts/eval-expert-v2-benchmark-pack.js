@@ -2,6 +2,7 @@ const path = require('path');
 
 const strongEval = require(path.join(__dirname, 'eval-expert-vs-strong.js'));
 const normalEval = require(path.join(__dirname, 'eval-expert-vs-normal.js'));
+const { parseFloatOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { loadRuntime } = require(path.join(__dirname, 'selfplay.js'));
 
 const DEFAULT_NORMAL_PROFILES = ['crowd'];
@@ -22,15 +23,38 @@ function parseArgs(argv) {
     let lite = true;
     let fast = false;
     let expertPreset = 'v2simple';
+    let buildMode = 'ev';
+    let diceMode = 'strongCrowdThreshold';
+    let rerollMode = 'simple';
+    let rerollMargin = 0;
+    let itMode = 'always';
+    let tvMode = 'simple';
     let businessMode = 'harmfulGift';
+    let cleaningMode = 'simple';
+    let harborMode = 'simple';
+    let harborMargin = 0;
+    let moverMode = 'simple';
+    let renovationMode = 'simple';
+    let incomeCapMode = 'none';
+    let comboMode = 'core';
+    let comboWeight = 0.35;
+    let buildTempoWeight = 0.05;
+    let airportSkipMode = 'whenNoLandmark';
+    let landmarkCardMargin = 25;
+    let landmarkCardCompareMode = 'base';
+    let landmarkCardCompareTargets = 'harborMall';
+    let landmarkCardPenaltyMode = 'none';
+    let harborLandmarkBaseBonus = 2.5;
+    let landmarkProgressRemaining = 3;
+    let landmarkCostWeight = 0.12;
     let suite = 'all';
     let profiles = [];
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '50', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 50);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--full') lite = false;
         else if (arg === '--fast') {
@@ -38,8 +62,54 @@ function parseArgs(argv) {
             fast = true;
         } else if (arg === '--expert-preset') {
             expertPreset = argv[++i] || 'v2simple';
+        } else if (arg === '--build-mode') {
+            buildMode = argv[++i] || 'ev';
+        } else if (arg === '--dice-mode') {
+            diceMode = argv[++i] || 'strongCrowdThreshold';
+        } else if (arg === '--reroll-mode') {
+            rerollMode = argv[++i] || 'simple';
+        } else if (arg === '--reroll-margin') {
+            rerollMargin = parseFloatOrDefault(argv[++i], 0);
+        } else if (arg === '--it-mode') {
+            itMode = argv[++i] || 'always';
+        } else if (arg === '--tv-mode') {
+            tvMode = argv[++i] || 'simple';
         } else if (arg === '--business-mode') {
             businessMode = argv[++i] || 'harmfulGift';
+        } else if (arg === '--cleaning-mode') {
+            cleaningMode = argv[++i] || 'simple';
+        } else if (arg === '--harbor-mode') {
+            harborMode = argv[++i] || 'simple';
+        } else if (arg === '--harbor-margin') {
+            harborMargin = parseFloatOrDefault(argv[++i], 0);
+        } else if (arg === '--mover-mode') {
+            moverMode = argv[++i] || 'simple';
+        } else if (arg === '--renovation-mode') {
+            renovationMode = argv[++i] || 'simple';
+        } else if (arg === '--income-cap-mode') {
+            incomeCapMode = argv[++i] || 'none';
+        } else if (arg === '--combo-mode') {
+            comboMode = argv[++i] || 'core';
+        } else if (arg === '--combo-weight') {
+            comboWeight = parseFloatOrDefault(argv[++i], 0.35);
+        } else if (arg === '--build-tempo-weight') {
+            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.05);
+        } else if (arg === '--airport-skip-mode') {
+            airportSkipMode = argv[++i] || 'whenNoLandmark';
+        } else if (arg === '--landmark-card-margin') {
+            landmarkCardMargin = parseFloatOrDefault(argv[++i], 25);
+        } else if (arg === '--landmark-card-compare-mode') {
+            landmarkCardCompareMode = argv[++i] || 'base';
+        } else if (arg === '--landmark-card-compare-targets') {
+            landmarkCardCompareTargets = argv[++i] || 'harborMall';
+        } else if (arg === '--landmark-card-penalty-mode') {
+            landmarkCardPenaltyMode = argv[++i] || 'none';
+        } else if (arg === '--harbor-landmark-base-bonus') {
+            harborLandmarkBaseBonus = parseFloatOrDefault(argv[++i], 2.5);
+        } else if (arg === '--landmark-progress-remaining') {
+            landmarkProgressRemaining = parseFloatOrDefault(argv[++i], 3);
+        } else if (arg === '--landmark-cost-weight') {
+            landmarkCostWeight = parseFloatOrDefault(argv[++i], 0.12);
         } else if (arg === '--suite') {
             suite = argv[++i] || 'all';
         } else if (arg === '--profiles') {
@@ -47,7 +117,7 @@ function parseArgs(argv) {
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, expertPreset, businessMode, suite, profiles };
+    return { games, seed, maxSteps, format, lite, fast, expertPreset, buildMode, diceMode, rerollMode, rerollMargin, itMode, tvMode, businessMode, cleaningMode, harborMode, harborMargin, moverMode, renovationMode, incomeCapMode, comboMode, comboWeight, buildTempoWeight, airportSkipMode, landmarkCardMargin, landmarkCardCompareMode, landmarkCardCompareTargets, landmarkCardPenaltyMode, harborLandmarkBaseBonus, landmarkProgressRemaining, landmarkCostWeight, suite, profiles };
 }
 
 function baseOptions(options, profiles) {
@@ -59,20 +129,31 @@ function baseOptions(options, profiles) {
         fast: options.fast,
         expertPreset: options.expertPreset,
         profiles,
-        buildMode: 'ev',
-        diceMode: 'ev',
-        rerollMode: 'simple',
-        itMode: 'always',
-        tvMode: 'simple',
+        buildMode: options.buildMode || 'ev',
+        diceMode: options.diceMode || 'strongCrowdThreshold',
+        rerollMode: options.rerollMode || 'simple',
+        rerollMargin: Number.isFinite(options.rerollMargin) ? options.rerollMargin : 0,
+        itMode: options.itMode || 'always',
+        tvMode: options.tvMode || 'simple',
         businessMode: options.businessMode || 'harmfulGift',
-        cleaningMode: 'simple',
-        harborMode: 'simple',
-        moverMode: 'simple',
-        renovationMode: 'simple',
-        incomeCapMode: 'none',
-        comboMode: 'core',
-        comboWeight: 0.35,
-        buildTempoWeight: 0.05,
+        cleaningMode: options.cleaningMode || 'simple',
+        harborMode: options.harborMode || 'simple',
+        harborMargin: Number.isFinite(options.harborMargin) ? options.harborMargin : 0,
+        moverMode: options.moverMode || 'simple',
+        renovationMode: options.renovationMode || 'simple',
+        incomeCapMode: options.incomeCapMode || 'none',
+        comboMode: options.comboMode || 'core',
+        comboWeight: Number.isFinite(options.comboWeight) ? options.comboWeight : 0.35,
+        buildTempoWeight: Number.isFinite(options.buildTempoWeight) ? options.buildTempoWeight : 0.05,
+        airportSkipMode: options.airportSkipMode || 'whenNoLandmark',
+        landmarkCardMargin: Number.isFinite(options.landmarkCardMargin) ? options.landmarkCardMargin : 25,
+        landmarkCardCompareMode: options.landmarkCardCompareMode || 'base',
+        landmarkCardCompareTargets: options.landmarkCardCompareTargets || 'harborMall',
+        landmarkCardPenaltyMode: options.landmarkCardPenaltyMode || 'none',
+        harborLandmarkBaseBonus: Number.isFinite(options.harborLandmarkBaseBonus) ? options.harborLandmarkBaseBonus : 2.5,
+        landmarkProgressRemaining: Number.isFinite(options.landmarkProgressRemaining) ? options.landmarkProgressRemaining : 3,
+        landmarkCostWeight: Number.isFinite(options.landmarkCostWeight) ? options.landmarkCostWeight : 0.12,
+        expertTraceStats: options.expertTraceStats || null,
     };
 }
 
@@ -156,7 +237,7 @@ function toText(report) {
         : 'n/a';
     const lines = [
         `cpuFamily=${report.cpuFamily || 'v2simple-rule-based'} comparisonScope=${report.comparisonScope || 'expert-v2-benchmark-pack'}`,
-        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} businessMode=${report.options.businessMode || 'harmfulGift'} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
+        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} buildMode=${report.options.buildMode || 'ev'} diceMode=${report.options.diceMode || 'strongCrowdThreshold'} rerollMode=${report.options.rerollMode || 'simple'} rerollMargin=${Number.isFinite(report.options.rerollMargin) ? report.options.rerollMargin : 0} itMode=${report.options.itMode || 'always'} tvMode=${report.options.tvMode || 'simple'} businessMode=${report.options.businessMode || 'harmfulGift'} cleaningMode=${report.options.cleaningMode || 'simple'} harborMode=${report.options.harborMode || 'simple'} harborMargin=${Number.isFinite(report.options.harborMargin) ? report.options.harborMargin : 0} moverMode=${report.options.moverMode || 'simple'} renovationMode=${report.options.renovationMode || 'simple'} incomeCapMode=${report.options.incomeCapMode || 'none'} comboMode=${report.options.comboMode || 'core'} comboWeight=${Number.isFinite(report.options.comboWeight) ? report.options.comboWeight : 0.35} buildTempoWeight=${Number.isFinite(report.options.buildTempoWeight) ? report.options.buildTempoWeight : 0.05} airportSkipMode=${report.options.airportSkipMode || 'whenNoLandmark'} landmarkCardMargin=${Number.isFinite(report.options.landmarkCardMargin) ? report.options.landmarkCardMargin : 25} landmarkCardCompareMode=${report.options.landmarkCardCompareMode || 'base'} landmarkCardCompareTargets=${report.options.landmarkCardCompareTargets || 'harborMall'} landmarkCardPenaltyMode=${report.options.landmarkCardPenaltyMode || 'none'} harborLandmarkBaseBonus=${Number.isFinite(report.options.harborLandmarkBaseBonus) ? report.options.harborLandmarkBaseBonus : 2.5} landmarkProgressRemaining=${Number.isFinite(report.options.landmarkProgressRemaining) ? report.options.landmarkProgressRemaining : 3} landmarkCostWeight=${Number.isFinite(report.options.landmarkCostWeight) ? report.options.landmarkCostWeight : 0.12} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
         `normalCrowd=${normalCrowd} strongWeighted=${strongWeighted} strongMin=${strongMin}`,
     ];
     if (report.normal.entries.length > 0) {
@@ -187,7 +268,30 @@ function toMarkdown(report) {
         `- seed: ${report.options.seed}`,
         `- mode: ${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')}`,
         `- expertPreset: ${report.options.expertPreset}`,
+        `- buildMode: ${report.options.buildMode || 'ev'}`,
+        `- diceMode: ${report.options.diceMode || 'strongCrowdThreshold'}`,
+        `- rerollMode: ${report.options.rerollMode || 'simple'}`,
+        `- rerollMargin: ${Number.isFinite(report.options.rerollMargin) ? report.options.rerollMargin : 0}`,
+        `- itMode: ${report.options.itMode || 'always'}`,
+        `- tvMode: ${report.options.tvMode || 'simple'}`,
         `- businessMode: ${report.options.businessMode || 'harmfulGift'}`,
+        `- cleaningMode: ${report.options.cleaningMode || 'simple'}`,
+        `- harborMode: ${report.options.harborMode || 'simple'}`,
+        `- harborMargin: ${Number.isFinite(report.options.harborMargin) ? report.options.harborMargin : 0}`,
+        `- moverMode: ${report.options.moverMode || 'simple'}`,
+        `- renovationMode: ${report.options.renovationMode || 'simple'}`,
+        `- incomeCapMode: ${report.options.incomeCapMode || 'none'}`,
+        `- comboMode: ${report.options.comboMode || 'core'}`,
+        `- comboWeight: ${Number.isFinite(report.options.comboWeight) ? report.options.comboWeight : 0.35}`,
+        `- buildTempoWeight: ${Number.isFinite(report.options.buildTempoWeight) ? report.options.buildTempoWeight : 0.05}`,
+        `- airportSkipMode: ${report.options.airportSkipMode || 'whenNoLandmark'}`,
+        `- landmarkCardMargin: ${Number.isFinite(report.options.landmarkCardMargin) ? report.options.landmarkCardMargin : 25}`,
+        `- landmarkCardCompareMode: ${report.options.landmarkCardCompareMode || 'base'}`,
+        `- landmarkCardCompareTargets: ${report.options.landmarkCardCompareTargets || 'harborMall'}`,
+        `- landmarkCardPenaltyMode: ${report.options.landmarkCardPenaltyMode || 'none'}`,
+        `- harborLandmarkBaseBonus: ${Number.isFinite(report.options.harborLandmarkBaseBonus) ? report.options.harborLandmarkBaseBonus : 2.5}`,
+        `- landmarkProgressRemaining: ${Number.isFinite(report.options.landmarkProgressRemaining) ? report.options.landmarkProgressRemaining : 3}`,
+        `- landmarkCostWeight: ${Number.isFinite(report.options.landmarkCostWeight) ? report.options.landmarkCostWeight : 0.12}`,
         `- suite: ${report.options.suite || 'all'}`,
         `- profiles: ${(report.options.profiles || []).join(',') || 'default'}`,
         `- normalCrowd: ${normalCrowd}`,

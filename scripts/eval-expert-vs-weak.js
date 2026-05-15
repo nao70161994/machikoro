@@ -1,6 +1,7 @@
 const path = require('path');
 const vm = require('vm');
 
+const { parseFloatOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { loadRuntime } = require(path.join(__dirname, 'selfplay.js'));
 
 const DEFAULT_PROFILES = ['duel', 'trio', 'crowd'];
@@ -16,7 +17,7 @@ function parseArgs(argv) {
     let expertPreset = 'v2simple';
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'ev';
-    let diceMode = 'ev';
+    let diceMode = 'strongCrowdThreshold';
     let rerollMode = 'simple';
     let itMode = 'always';
     let tvMode = 'simple';
@@ -32,9 +33,9 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '50', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 50);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--full') lite = false;
         else if (arg === '--fast') {
@@ -49,9 +50,9 @@ function parseArgs(argv) {
         } else if (arg === '--build-mode') {
             buildMode = argv[++i] || 'ev';
         } else if (arg === '--dice-mode') {
-            diceMode = argv[++i] || 'ev';
+            diceMode = argv[++i] || 'strongCrowdThreshold';
         } else if (arg === '--reroll-mode') {
-            rerollMode = argv[++i] || 'random';
+            rerollMode = argv[++i] || 'simple';
         } else if (arg === '--it-mode') {
             itMode = argv[++i] || 'always';
         } else if (arg === '--tv-mode') {
@@ -63,17 +64,17 @@ function parseArgs(argv) {
         } else if (arg === '--harbor-mode') {
             harborMode = argv[++i] || 'simple';
         } else if (arg === '--mover-mode') {
-            moverMode = argv[++i] || 'random';
+            moverMode = argv[++i] || 'simple';
         } else if (arg === '--renovation-mode') {
-            renovationMode = argv[++i] || 'random';
+            renovationMode = argv[++i] || 'simple';
         } else if (arg === '--income-cap-mode') {
             incomeCapMode = argv[++i] || 'none';
         } else if (arg === '--combo-mode') {
-            comboMode = argv[++i] || 'none';
+            comboMode = argv[++i] || 'core';
         } else if (arg === '--combo-weight') {
-            comboWeight = parseFloat(argv[++i] || '0.35');
+            comboWeight = parseFloatOrDefault(argv[++i], 0.35);
         } else if (arg === '--build-tempo-weight') {
-            buildTempoWeight = parseFloat(argv[++i] || '0');
+            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.05);
         }
     }
 
@@ -124,7 +125,7 @@ function getFastSeriesEvaluator(runtime) {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
                         expertPreset: config.expertPreset || 'v2simple',
-                        expertDiceMode: config.diceMode || 'ev',
+                        expertDiceMode: config.diceMode || 'strongCrowdThreshold',
                         expertRerollMode: config.rerollMode || 'simple',
                         expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
@@ -137,7 +138,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertIncomeCapMode: config.incomeCapMode || 'none',
                         expertComboMode: config.comboMode || 'core',
                         expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35,
-                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0,
+                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.05,
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
@@ -303,7 +304,7 @@ function getFastSeriesEvaluator(runtime) {
                 return players.map((_, index) => players[(index + offset) % players.length]);
             }
 
-            const games = config.games || 1;
+            const games = Number.isInteger(config.games) ? config.games : 1;
             const players = config.players;
             const wins = {};
             for (const player of players) wins[player] = 0;
@@ -354,11 +355,11 @@ function getFastSeriesEvaluator(runtime) {
                 const game = new GameManager(lineup.length);
                 const shopStock = createShopStock();
                 const cpuPlayers = lineup.map(difficulty => createCpu(difficulty, difficulty === 'expert' ? v2simpleStats : null));
-                const rng = createRng((config.seed || 1) + i);
+                const rng = createRng((Number.isInteger(config.seed) ? config.seed : 1) + i);
                 Math.random = rng;
                 game.enabledLandmarks = new Set(Player.landmarkNames());
                 let safety = 0;
-                const maxSteps = config.maxSteps || 5000;
+                const maxSteps = Number.isInteger(config.maxSteps) ? config.maxSteps : 5000;
 
                 while (!game.checkWinner() && safety < maxSteps) {
                     const phaseBefore = game.phase;
@@ -617,7 +618,7 @@ function toText(entries, summary, options) {
 
 function toMarkdown(entries, summary, options) {
     const lines = [
-        '# Expert v2simple vs Weak',
+        '# Expert Rule-Based vs Weak',
         '',
         `- games: ${options.games}`,
         `- seed: ${options.seed}`,

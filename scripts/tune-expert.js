@@ -1,5 +1,6 @@
 const path = require('path');
 
+const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { loadRuntime, runSeries } = require(path.join(__dirname, 'selfplay.js'));
 let activeLoadRuntime = loadRuntime;
 let activeRunSeries = runSeries;
@@ -34,19 +35,19 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '8', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 8);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--base-preset') basePreset = argv[++i] || 'default';
-        else if (arg === '--top') top = parseInt(argv[++i] || '5', 10);
+        else if (arg === '--top') top = parseIntegerOrDefault(argv[++i], 5);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--emit-preset') emitPreset = true;
         else if (arg === '--profiles') profiles = (argv[++i] || '').split(',').filter(Boolean);
         else if (arg === '--propose-preset') proposePreset = argv[++i] || 'profileBlend';
         else if (arg === '--evaluate-proposal') evaluateProposal = true;
-        else if (arg === '--proposal-depth') proposalDepth = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--finalist-games') finalistGames = parseInt(argv[++i] || '0', 10);
-        else if (arg === '--finalist-count') finalistCount = parseInt(argv[++i] || '0', 10);
+        else if (arg === '--proposal-depth') proposalDepth = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--finalist-games') finalistGames = parseIntegerOrDefault(argv[++i], 0);
+        else if (arg === '--finalist-count') finalistCount = parseIntegerOrDefault(argv[++i], 0);
         else if (arg === '--emit-winners') emitWinners = true;
         else if (arg === '--emit-profile-presets') emitProfilePresets = true;
         else players.push(arg);
@@ -168,11 +169,14 @@ function summarizeCandidate(result, candidate) {
 
 function tuneExpert(options = {}) {
     const runtime = activeLoadRuntime();
+    const games = integerOrDefault(options.games, 8);
+    const seed = integerOrDefault(options.seed, 1);
+    const top = integerOrDefault(options.top, 5);
     const candidates = buildCandidateTunings(runtime, options.basePreset || 'default');
     const rankings = candidates.map((candidate, index) => {
         const result = activeRunSeries({
             games: options.games,
-            seed: (options.seed || 1) + index * (options.games || 1),
+            seed: seed + index * games,
             maxSteps: options.maxSteps,
             players: options.players,
             expertPreset: options.basePreset,
@@ -188,21 +192,22 @@ function tuneExpert(options = {}) {
 
     return {
         basePreset: options.basePreset || 'default',
-        games: options.games || 8,
+        games,
         players: (options.players || ['expert', 'strong', 'strong', 'normal']).slice(),
         rankings,
-        top: rankings.slice(0, options.top || 5),
+        top: rankings.slice(0, top),
     };
 }
 
 function tuneExpertProfiles(options = {}) {
     const profiles = options.profiles || ['duel', 'crowd'];
+    const seed = integerOrDefault(options.seed, 1);
     return profiles.map((profile, index) => ({
         profile,
         result: tuneExpert(Object.assign({}, options, {
             profiles: null,
             players: profilePlayers(profile),
-            seed: (options.seed || 1) + index * 1000,
+            seed: seed + index * 1000,
         })),
     }));
 }
@@ -266,10 +271,11 @@ function proposePerProfilePresets(profileResults, options = {}) {
 }
 
 function evaluatePerProfileProposals(profileProposals, options = {}) {
+    const seed = integerOrDefault(options.seed, 1);
     return profileProposals.map((entry, index) => {
         const evaluation = evaluateProposalAgainstBase(entry.proposal, Object.assign({}, options, {
             profiles: [entry.profile],
-            seed: (options.seed || 1) + index * 3000,
+            seed: seed + index * 3000,
         }))[0];
         return {
             profile: entry.profile,
@@ -345,9 +351,10 @@ function proposePresetFromCombo(combo, options = {}) {
 
 function evaluateProposalAgainstBase(proposal, options = {}) {
     const profiles = options.profiles || ['duel', 'crowd'];
+    const baseSeed = integerOrDefault(options.seed, 1);
     return profiles.map((profile, index) => {
         const players = profilePlayers(profile);
-        const seed = (options.seed || 1) + index * 2000;
+        const seed = baseSeed + index * 2000;
         const baseResult = activeRunSeries({
             games: options.games,
             seed,
@@ -381,7 +388,7 @@ function evaluateProposalAgainstBase(proposal, options = {}) {
 }
 
 function rankProposalsFromProfiles(profileResults, options = {}) {
-    const combos = enumerateProfileLeaderCombos(profileResults, options.proposalDepth || 1);
+    const combos = enumerateProfileLeaderCombos(profileResults, integerOrDefault(options.proposalDepth, 1));
     return combos.map((combo, index) => {
         const proposal = proposePresetFromCombo(combo, {
             basePreset: options.basePreset,
@@ -404,14 +411,15 @@ function rankProposalsFromProfiles(profileResults, options = {}) {
 }
 
 function runFinalistPlayoff(rankings, options = {}) {
-    const finalistCount = Math.max(0, options.finalistCount || 0);
-    const finalistGames = Math.max(0, options.finalistGames || 0);
+    const finalistCount = Math.max(0, integerOrDefault(options.finalistCount, 0));
+    const finalistGames = Math.max(0, integerOrDefault(options.finalistGames, 0));
+    const seed = integerOrDefault(options.seed, 1);
     if (finalistCount <= 0 || finalistGames <= 0) return [];
     const finalists = rankings.slice(0, finalistCount);
     return finalists.map((entry, index) => {
         const evaluation = evaluateProposalAgainstBase(entry.proposal, Object.assign({}, options, {
             games: finalistGames,
-            seed: (options.seed || 1) + 5000 + index * 500,
+            seed: seed + 5000 + index * 500,
         }));
         const totalWinDelta = evaluation.reduce((sum, item) => sum + item.winDelta, 0);
         const totalTurnDelta = evaluation.reduce((sum, item) => sum + (item.proposalAverageTurns - item.baseAverageTurns), 0);
@@ -457,6 +465,10 @@ function printTuningResults(result, options = {}) {
 }
 
 function printProfileResults(results, options = {}) {
+    const games = integerOrDefault(options.games, 8);
+    const proposalDepth = integerOrDefault(options.proposalDepth, 1);
+    const finalistGames = integerOrDefault(options.finalistGames, 0);
+    const finalistCount = integerOrDefault(options.finalistCount, 0);
     if (options.format === 'json') {
         const output = { results };
         if (options.proposePreset) {
@@ -473,9 +485,9 @@ function printProfileResults(results, options = {}) {
             }
             if (options.evaluateProposal) {
                 output.evaluation = evaluateProposalAgainstBase(output.proposal, options);
-                if ((options.proposalDepth || 1) > 1) {
+                if (proposalDepth > 1) {
                     output.proposalRankings = rankProposalsFromProfiles(results, options);
-                    if ((options.finalistGames || 0) > 0 && (options.finalistCount || 0) > 0) {
+                    if (finalistGames > 0 && finalistCount > 0) {
                         output.finalists = runFinalistPlayoff(output.proposalRankings, options);
                         if (options.emitWinners) {
                             output.winners = selectWinningFinalists(output.finalists);
@@ -513,7 +525,7 @@ function printProfileResults(results, options = {}) {
                 for (const entry of evaluatePerProfileProposals(profileProposals, options)) {
                     const result = entry.evaluation;
                     console.log(
-                        `${entry.profile} proposalWins=${result.proposalWins}/${options.games || 8} baseWins=${result.baseWins}/${options.games || 8} winDelta=${result.winDelta} turns=${result.proposalAverageTurns.toFixed(1)} vs ${result.baseAverageTurns.toFixed(1)} exhaustedDelta=${result.exhaustedDelta}`
+                        `${entry.profile} proposalWins=${result.proposalWins}/${games} baseWins=${result.baseWins}/${games} winDelta=${result.winDelta} turns=${result.proposalAverageTurns.toFixed(1)} vs ${result.baseAverageTurns.toFixed(1)} exhaustedDelta=${result.exhaustedDelta}`
                     );
                 }
             }
@@ -522,10 +534,10 @@ function printProfileResults(results, options = {}) {
             console.log('[proposal-evaluation]');
             for (const entry of evaluateProposalAgainstBase(proposal, options)) {
                 console.log(
-                    `${entry.profile} proposalWins=${entry.proposalWins}/${options.games || 8} baseWins=${entry.baseWins}/${options.games || 8} winDelta=${entry.winDelta} turns=${entry.proposalAverageTurns.toFixed(1)} vs ${entry.baseAverageTurns.toFixed(1)} exhaustedDelta=${entry.exhaustedDelta}`
+                    `${entry.profile} proposalWins=${entry.proposalWins}/${games} baseWins=${entry.baseWins}/${games} winDelta=${entry.winDelta} turns=${entry.proposalAverageTurns.toFixed(1)} vs ${entry.baseAverageTurns.toFixed(1)} exhaustedDelta=${entry.exhaustedDelta}`
                 );
             }
-            if ((options.proposalDepth || 1) > 1) {
+            if (proposalDepth > 1) {
                 console.log('[proposal-ranking]');
                 const rankings = rankProposalsFromProfiles(results, options);
                 for (const ranked of rankings) {
@@ -533,7 +545,7 @@ function printProfileResults(results, options = {}) {
                         `${ranked.proposal.name} totalWinDelta=${ranked.totalWinDelta} totalTurnDelta=${ranked.totalTurnDelta.toFixed(1)} leaders=${ranked.proposal.profiles.map(entry => `${entry.profile}:${entry.leader}`).join(',')}`
                     );
                 }
-                if ((options.finalistGames || 0) > 0 && (options.finalistCount || 0) > 0) {
+                if (finalistGames > 0 && finalistCount > 0) {
                     console.log('[proposal-finalists]');
                     const finalists = runFinalistPlayoff(rankings, options);
                     for (const finalist of finalists) {
@@ -568,6 +580,8 @@ if (require.main === module) {
 
 module.exports = {
     parseArgs,
+    integerOrDefault,
+    parseIntegerOrDefault,
     buildCandidateTunings,
     formatPresetObject,
     profilePlayers,

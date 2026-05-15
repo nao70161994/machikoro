@@ -5,6 +5,7 @@ const { runTest } = require('./helpers/test-utils');
 
 const {
     DEFAULT_PROFILES,
+    evaluateProfile,
     parseArgs,
     profilePlayers,
     profileWeight,
@@ -21,19 +22,22 @@ runTest('eval-expert-vs-normal parseArgs は既定値を返す', () => {
     assert.strictEqual(args.lite, true);
     assert.strictEqual(args.expertPreset, 'v2simple');
     assert.strictEqual(args.buildMode, 'ev');
-    assert.strictEqual(args.diceMode, 'ev');
+    assert.strictEqual(args.diceMode, 'strongCrowdThreshold');
     assert.strictEqual(args.rerollMode, 'simple');
+    assert.strictEqual(args.rerollMargin, 0);
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
     assert.strictEqual(args.businessMode, 'harmfulGift');
     assert.strictEqual(args.cleaningMode, 'simple');
     assert.strictEqual(args.harborMode, 'simple');
+    assert.strictEqual(args.harborMargin, 0);
     assert.strictEqual(args.moverMode, 'simple');
     assert.strictEqual(args.renovationMode, 'simple');
     assert.strictEqual(args.incomeCapMode, 'none');
     assert.strictEqual(args.comboMode, 'core');
     assert.strictEqual(args.comboWeight, 0.35);
     assert.strictEqual(args.buildTempoWeight, 0.05);
+    assert.strictEqual(args.airportSkipMode, 'whenNoLandmark');
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -50,17 +54,20 @@ runTest('eval-expert-vs-normal parseArgs は CLI 引数を解釈する', () => {
         '--build-mode', 'random',
         '--dice-mode', 'random',
         '--reroll-mode', 'simple',
+        '--reroll-margin', '0.4',
         '--it-mode', 'never',
         '--tv-mode', 'random',
         '--business-mode', 'random',
         '--cleaning-mode', 'random',
         '--harbor-mode', 'random',
+        '--harbor-margin', '0.6',
         '--mover-mode', 'simple',
         '--renovation-mode', 'simple',
         '--income-cap-mode', 'soft30',
         '--combo-mode', 'unlock',
         '--combo-weight', '0.5',
         '--build-tempo-weight', '0.1',
+        '--airport-skip-mode', 'none',
     ]);
     assert.strictEqual(args.games, 30);
     assert.strictEqual(args.seed, 9);
@@ -72,18 +79,48 @@ runTest('eval-expert-vs-normal parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.buildMode, 'random');
     assert.strictEqual(args.diceMode, 'random');
     assert.strictEqual(args.rerollMode, 'simple');
+    assert.strictEqual(args.rerollMargin, 0.4);
     assert.strictEqual(args.itMode, 'never');
     assert.strictEqual(args.tvMode, 'random');
     assert.strictEqual(args.businessMode, 'random');
     assert.strictEqual(args.cleaningMode, 'random');
     assert.strictEqual(args.harborMode, 'random');
+    assert.strictEqual(args.harborMargin, 0.6);
     assert.strictEqual(args.moverMode, 'simple');
     assert.strictEqual(args.renovationMode, 'simple');
     assert.strictEqual(args.incomeCapMode, 'soft30');
     assert.strictEqual(args.comboMode, 'unlock');
     assert.strictEqual(args.comboWeight, 0.5);
     assert.strictEqual(args.buildTempoWeight, 0.1);
+    assert.strictEqual(args.airportSkipMode, 'none');
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
+});
+
+runTest('eval-expert-vs-normal parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs([
+        '--games', '0',
+        '--seed', '0',
+        '--max-steps', '0',
+        '--reroll-margin', '0',
+        '--harbor-margin', '0',
+        '--combo-weight', '0',
+        '--build-tempo-weight', '0',
+        '--landmark-card-margin', '0',
+        '--harbor-landmark-base-bonus', '0',
+        '--landmark-progress-remaining', '0',
+        '--landmark-cost-weight', '0',
+    ]);
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+    assert.strictEqual(args.rerollMargin, 0);
+    assert.strictEqual(args.harborMargin, 0);
+    assert.strictEqual(args.comboWeight, 0);
+    assert.strictEqual(args.buildTempoWeight, 0);
+    assert.strictEqual(args.landmarkCardMargin, 0);
+    assert.strictEqual(args.harborLandmarkBaseBonus, 0);
+    assert.strictEqual(args.landmarkProgressRemaining, 0);
+    assert.strictEqual(args.landmarkCostWeight, 0);
 });
 
 runTest('eval-expert-vs-normal profilePlayers は既知プロファイルを返す', () => {
@@ -96,6 +133,22 @@ runTest('eval-expert-vs-normal profileWeight は重みを返す', () => {
     assert.strictEqual(profileWeight('duel'), 1);
     assert.strictEqual(profileWeight('trio'), 2);
     assert.strictEqual(profileWeight('crowd'), 3);
+});
+
+runTest('eval-expert-vs-normal evaluateProfile は games/maxSteps の 0 指定を既定値で上書きしない', () => {
+    const entry = evaluateProfile('duel', {
+        games: 0,
+        seed: 0,
+        maxSteps: 0,
+        lite: true,
+        fast: false,
+        expertPreset: 'v2simple',
+    });
+
+    assert.strictEqual(entry.games, 0);
+    assert.strictEqual(entry.expertWins, 0);
+    assert.strictEqual(entry.winRate, 0);
+    assert.strictEqual(entry.exhausted, 0);
 });
 
 runTest('eval-expert-vs-normal summarize は重み付き勝率と最低勝率を返す', () => {
@@ -131,6 +184,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
         comboMode: 'core',
         comboWeight: 0.35,
         buildTempoWeight: 0.05,
+        airportSkipMode: 'whenNoLandmark',
     };
     const entries = [
         {
@@ -194,6 +248,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(text.includes('comboMode=core'));
     assert.ok(text.includes('comboWeight=0.35'));
     assert.ok(text.includes('buildTempoWeight=0.05'));
+    assert.ok(text.includes('airportSkipMode=whenNoLandmark'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -216,6 +271,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(md.includes('- comboMode: core'));
     assert.ok(md.includes('- comboWeight: 0.35'));
     assert.ok(md.includes('- buildTempoWeight: 0.05'));
+    assert.ok(md.includes('- airportSkipMode: whenNoLandmark'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,normal,normal,normal | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -223,7 +279,7 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
 runTest('eval-expert-vs-normal は live expert に指定presetを渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-normal.js'), 'utf8');
     assert.ok(source.includes("expertPreset: config.expertPreset || 'v2simple'"));
-    assert.ok(source.includes("expertDiceMode: config.diceMode || 'ev'"));
+    assert.ok(source.includes("expertDiceMode: config.diceMode || 'strongCrowdThreshold'"));
     assert.ok(source.includes("expertRerollMode: config.rerollMode || 'simple'"));
     assert.ok(source.includes("expertBuildMode: config.buildMode || 'ev'"));
     assert.ok(source.includes("expertInvestMode: config.itMode || 'always'"));
@@ -236,7 +292,8 @@ runTest('eval-expert-vs-normal は live expert に指定presetを渡す', () => 
     assert.ok(source.includes("expertIncomeCapMode: config.incomeCapMode || 'none'"));
     assert.ok(source.includes("expertComboMode: config.comboMode || 'core'"));
     assert.ok(source.includes("expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35"));
-    assert.ok(source.includes("expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0"));
+    assert.ok(source.includes("expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.05"));
+    assert.ok(source.includes("expertAirportSkipMode: config.airportSkipMode || 'whenNoLandmark'"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("expertPreset: options.expertPreset"));
     assert.ok(source.includes("diceMode: options.diceMode"));

@@ -38,6 +38,14 @@ runTest('diagnose-expert-losses parseArgs は CLI 引数を解釈する', () => 
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
+runTest('diagnose-expert-losses parseArgs は games/seed/maxSteps の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('diagnose-expert-losses reportMetadata は preset 取り違え防止情報を返す', () => {
     assert.deepStrictEqual(reportMetadata({ expertPreset: 'default' }), {
         comparisonScope: 'expert-loss-diagnostics',

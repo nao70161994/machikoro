@@ -1,6 +1,6 @@
 const path = require('path');
 
-const { loadRuntime, simulateGameLightweight } = require(path.join(__dirname, 'selfplay.js'));
+const { integerOrDefault, loadRuntime, parseIntegerOrDefault, simulateGameLightweight } = require(path.join(__dirname, 'selfplay.js'));
 const {
     DEFAULT_PROFILES,
     profilePlayers,
@@ -23,9 +23,9 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '20', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 20);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--full') lite = false;
         else if (arg === '--fast') {
@@ -1322,7 +1322,7 @@ function installBranchDiagnostics(runtime, counters, options = {}) {
                 const options = runtime.CARDS.filter(card =>
                     shopStock[card.name] > 0 &&
                     current.coins >= card.cost &&
-                    !(card.color === 'purple' && current.countCard(card.name) > 0)
+                    !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0)
                 ).map(card => ({ type: 'card', card }));
                 if (options.length > 0) {
                     counters.buildCardEvDecisions++;
@@ -1989,6 +1989,7 @@ function evaluateProfile(profile, options, runtime) {
         const seatWins = players.map(() => 0);
         let turns = 0;
         let exhausted = 0;
+        const seed = integerOrDefault(options.seed, 1);
         for (let i = 0; i < options.games; i++) {
             const lineup = rotatePlayers(players, i % players.length);
             const beforeGameCounters = {
@@ -1998,7 +1999,7 @@ function evaluateProfile(profile, options, runtime) {
             const result = simulateGameLightweight({
                 runtime,
                 difficulties: lineup,
-                seed: (options.seed || 1) + i,
+                seed: seed + i,
                 maxSteps: options.maxSteps,
                 lite: options.lite,
                 fast: options.fast,

@@ -6,7 +6,7 @@
 ## 現行ルール
 
 - `build=ev`
-- `dice=ev`
+- `dice=strongCrowdThreshold`
 - `reroll=simple`
 - `it=always`
 - `tv=simple`
@@ -17,6 +17,7 @@
 - `renovation=simple`
 - `combo=core`
 - `buildTempo=0.05`
+- `airportSkip=whenNoLandmark`
 - `incomeCap=none`
 
 ランドマークを買える場合はランドマークを買います。ランドマークを買えない場合は build EV でカードを選びます。パス追加や広いカード禁止は採用しません。
@@ -29,7 +30,7 @@
 npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simple
 ```
 
-結果は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。今後の v2simple 候補は、この100戦基準線から `normalCrowd`, `strongWeighted`, `strongMin`, `allStrong4` を比較します。この基準線は、Business Center の harmful gift 限定補正を含む live v2simple 設定です。
+結果は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。今後の v2simple 候補は、この100戦基準線から `normalCrowd`, `strongWeighted`, `strongMin`, `allStrong4` を比較します。この基準線は、Business Center の harmful gift 限定補正を含む live v2simple option を `mode=lite` の評価 CLI で回したものです。実ゲームの live CPU は同じ option を realtime モードで使います。
 
 ## 採用済み
 

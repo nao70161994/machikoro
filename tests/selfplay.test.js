@@ -15,6 +15,7 @@ const {
     createBusinessStatsBucket,
     resolveBusinessMoveCards,
     recordBusinessStat,
+    listLegalActions,
     parseArgs,
     printSeries,
     printPresetComparison,
@@ -106,6 +107,31 @@ runTest('simulateGame は2人用rlモデルの3人以上lineupを拒否する', 
     }), /2-player RL model/);
 });
 
+runTest('listLegalActions はRLの商店街ターゲットhead選択を合法手へ反映する', () => {
+    const runtime = loadRuntime();
+    const model = loadMultiplayerRlModel();
+    const cpu = new runtime.RLCPU(model);
+    cpu.numTargetSlots = 3;
+    cpu._targetLayerForKind = (kind) => kind === 'business' ? {} : null;
+    cpu._selectTargetIndex = () => 1;
+    const game = new runtime.GameManager(3);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.currentPlayerIndex = 0;
+    game.players[0].cards = [runtime.createCardByName('麦畑')];
+    game.players[1].cards = [runtime.createCardByName('カフェ')];
+    game.players[2].cards = [runtime.createCardByName('パン屋')];
+
+    const selectedTarget = 1;
+    const selectedCard = game.players[selectedTarget].cards[0].name;
+    const otherIndex = selectedTarget === 1 ? 2 : 1;
+    const otherCard = game.players[otherIndex].cards[0].name;
+    const labels = listLegalActions(runtime, game, createShopStock(runtime.CARDS), cpu).map(action => action.label);
+
+    assert.ok(labels.includes(`BUSINESS:麦畑->${selectedCard}`));
+    assert.ok(!labels.includes(`BUSINESS:麦畑->${otherCard}`));
+});
+
 runTest('simulateGameLightweight は10人rule-based lineupで例外なく進む', () => {
     const result = simulateGameLightweight({
         difficulties: ['expert', 'strong', 'normal', 'weak', 'expert', 'strong', 'normal', 'weak', 'expert', 'strong'],
@@ -120,6 +146,13 @@ runTest('simulateGameLightweight は10人rule-based lineupで例外なく進む'
     assert.strictEqual(result.difficulties.length, 10);
     assert.ok(result.turns > 0);
     assert.strictEqual(result.finalState, null);
+});
+
+runTest('simulateGameLightweight は5人以上の大施設初期在庫を人数分にする', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const stock = createShopStock(runtime.CARDS, 10, runtime);
+    assert.strictEqual(stock['スタジアム'], 10);
+    assert.strictEqual(stock['テレビ局'], 10);
 });
 
 runTest('simulateGameLightweight は軽量経路で試合を最後まで進められる', () => {
@@ -246,6 +279,22 @@ runTest('collectBuildDiagnostics はv2simpleでカード候補をbreakdown付き
     }
 });
 
+runTest('collectBuildDiagnostics は休業中の大施設を重複購入候補にしない', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const game = new runtime.GameManager(2);
+    game.enabledLandmarks = new Set();
+    const current = game.currentPlayer();
+    current.coins = 7;
+    const tv = runtime.createCardByName('テレビ局');
+    current.cards = [tv];
+    current.makeDormant(tv);
+    const cpu = new runtime.CPU('expert', { expertPreset: 'v2simple' });
+    const diagnostics = collectBuildDiagnostics(runtime, game, createShopStock(runtime.CARDS), cpu);
+
+    assert.strictEqual(diagnostics.diagnosticSource, 'v2simple-card-breakdown');
+    assert.ok(!diagnostics.buildOptions.some(option => option.label === 'BUY_CARD:テレビ局'));
+});
+
 runTest('collectBuildDiagnostics は相手の即勝利脅威を診断する', () => {
     const runtime = loadRuntime({ includeRL: false });
     const game = new runtime.GameManager(2);
@@ -353,6 +402,39 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.strictEqual(result.buildStats.length, 2);
     assert.ok(typeof result.buildStats[0].total === 'number');
     assert.ok(result.businessStats);
+});
+
+runTest('runSeries は games/maxSteps の 0 指定を既定値で上書きしない', () => {
+    const result = runSeries({
+        games: 0,
+        seed: 0,
+        maxSteps: 0,
+        players: ['expert', 'weak'],
+        includeRL: false,
+    });
+
+    assert.strictEqual(result.games, 0);
+    assert.strictEqual(result.wins.expert + result.wins.weak, 0);
+    assert.deepStrictEqual(result.matchLog, []);
+});
+
+runTest('runSeries は席ローテーション後もbuildStatsByDifficultyを難易度別に集計する', () => {
+    const result = runSeries({
+        games: 2,
+        seed: 18,
+        maxSteps: 1000,
+        players: ['rl', 'weak'],
+        rlModelData: loadTwoPlayerRlModel(),
+        lite: true,
+    });
+
+    assert.ok(result.buildStatsByDifficulty.rl);
+    assert.ok(result.buildStatsByDifficulty.weak);
+    const seatTotal = result.buildStats.reduce((sum, stats) => sum + stats.total, 0);
+    const difficultyTotal = Object.values(result.buildStatsByDifficulty)
+        .reduce((sum, stats) => sum + stats.total, 0);
+    assert.strictEqual(difficultyTotal, seatTotal);
+    assert.ok(result.buildStatsByDifficulty.rl.total > 0);
 });
 
 runTest('runSeries は軽量収集モードで重いログを省略できる', () => {
@@ -481,6 +563,14 @@ runTest('parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.expertPreset, 'rush');
     assert.deepStrictEqual(args.comparePresets, ['default', 'rush']);
     assert.deepStrictEqual(args.players, ['expert', 'strong']);
+});
+
+runTest('parseArgs は games/seed/maxSteps の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
 });
 
 runTest('comparePresets は複数プリセットの集計を返す', () => {

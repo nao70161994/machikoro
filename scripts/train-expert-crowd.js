@@ -1,5 +1,6 @@
 const path = require('path');
 
+const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { loadRuntime, runSeries } = require(path.join(__dirname, 'selfplay.js'));
 const { profilePlayers } = require(path.join(__dirname, 'tune-expert.js'));
 
@@ -15,11 +16,11 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '4', 10);
-        else if (arg === '--rounds') rounds = parseInt(argv[++i] || '12', 10);
-        else if (arg === '--candidates') candidates = parseInt(argv[++i] || '8', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 4);
+        else if (arg === '--rounds') rounds = parseIntegerOrDefault(argv[++i], 12);
+        else if (arg === '--candidates') candidates = parseIntegerOrDefault(argv[++i], 8);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--base-preset') basePreset = argv[++i] || 'default';
         else if (arg === '--profile') profile = argv[++i] || 'crowdNormal';
         else if (arg === '--format') format = argv[++i] || 'text';
@@ -120,26 +121,31 @@ function evaluateTuning(options) {
 
 function trainExpertCrowd(options = {}) {
     const runtime = loadRuntime();
-    const rng = createRng(options.seed || 1);
+    const games = integerOrDefault(options.games, 4);
+    const rounds = integerOrDefault(options.rounds, 12);
+    const candidates = integerOrDefault(options.candidates, 8);
+    const seed = integerOrDefault(options.seed, 1);
+    const maxSteps = integerOrDefault(options.maxSteps, 5000);
+    const rng = createRng(seed);
     let best = evaluateTuning({
         runtime,
-        games: options.games || 4,
-        seed: options.seed || 1,
-        maxSteps: options.maxSteps || 5000,
+        games,
+        seed,
+        maxSteps,
         basePreset: options.basePreset || 'default',
         profile: options.profile || 'crowdNormal',
         tuning: baseProfileTuning(runtime, options.profile || 'crowdNormal'),
     });
     const history = [Object.assign({ round: 0 }, best)];
 
-    for (let round = 1; round <= (options.rounds || 12); round++) {
+    for (let round = 1; round <= rounds; round++) {
         let roundBest = best;
-        for (let i = 0; i < (options.candidates || 8); i++) {
+        for (let i = 0; i < candidates; i++) {
             const candidate = evaluateTuning({
                 runtime,
-                games: options.games || 4,
-                seed: (options.seed || 1) + round * 100 + i * 7,
-                maxSteps: options.maxSteps || 5000,
+                games,
+                seed: seed + round * 100 + i * 7,
+                maxSteps,
                 basePreset: options.basePreset || 'default',
                 profile: options.profile || 'crowdNormal',
                 tuning: tuningForProfile(best.tuning, options.profile || 'crowdNormal', rng),
@@ -158,9 +164,9 @@ function trainExpertCrowd(options = {}) {
     return {
         basePreset: options.basePreset || 'default',
         profile: options.profile || 'crowdNormal',
-        games: options.games || 4,
-        rounds: options.rounds || 12,
-        candidates: options.candidates || 8,
+        games,
+        rounds,
+        candidates,
         players: profilePlayers(options.profile || 'crowdNormal'),
         best,
         history,
@@ -185,6 +191,8 @@ if (require.main === module) {
 
 module.exports = {
     parseArgs,
+    integerOrDefault,
+    parseIntegerOrDefault,
     baseProfileTuning,
     mutateCrowdTuning,
     mutateTrioTuning,

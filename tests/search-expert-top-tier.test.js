@@ -7,6 +7,7 @@ const {
     rankCandidates,
     renderMarkdown,
     renderText,
+    searchTopTier,
     summarizeProfileResults,
     writeOutput,
 } = require(path.join(__dirname, '..', 'scripts', 'search-expert-top-tier.js'));
@@ -31,6 +32,31 @@ runTest('search-expert-top-tier parseArgs は CLI 引数を解釈する', () => 
     assert.strictEqual(args.output, 'out.json');
     assert.strictEqual(args.lite, false);
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
+});
+
+runTest('search-expert-top-tier parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--seed', '0', '--max-steps', '0', '--top', '0']);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+    assert.strictEqual(args.top, 0);
+});
+
+runTest('search-expert-top-tier searchTopTier は top=0 を既定値で上書きしない', () => {
+    const result = searchTopTier({
+        games: 0,
+        seed: 0,
+        maxSteps: 0,
+        basePreset: 'default',
+        top: 0,
+        lite: true,
+        fast: false,
+        profiles: ['duel'],
+        progress: false,
+    });
+
+    assert.strictEqual(result.top.length, 0);
 });
 
 runTest('search-expert-top-tier summarizeProfileResults は重み付き勝率を返す', () => {
@@ -99,8 +125,12 @@ runTest('search-expert-top-tier writeOutput は format に応じて保存する'
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'search-top-tier-'));
     const textPath = path.join(dir, 'out.txt');
     const jsonPath = path.join(dir, 'out.json');
-    writeOutput(result, { format: 'text', output: textPath });
-    writeOutput(result, { format: 'json', output: jsonPath });
-    assert.ok(fs.readFileSync(textPath, 'utf8').includes('default:base: weighted=50.0%'));
-    assert.ok(fs.readFileSync(jsonPath, 'utf8').includes('"totalCandidates": 1'));
+    try {
+        writeOutput(result, { format: 'text', output: textPath });
+        writeOutput(result, { format: 'json', output: jsonPath });
+        assert.ok(fs.readFileSync(textPath, 'utf8').includes('default:base: weighted=50.0%'));
+        assert.ok(fs.readFileSync(jsonPath, 'utf8').includes('"totalCandidates": 1'));
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
 });

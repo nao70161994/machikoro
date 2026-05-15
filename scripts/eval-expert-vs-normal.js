@@ -1,6 +1,7 @@
 const path = require('path');
 const vm = require('vm');
 
+const { parseFloatOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { loadRuntime } = require(path.join(__dirname, 'selfplay.js'));
 
 const DEFAULT_PROFILES = ['duel', 'trio', 'crowd'];
@@ -16,25 +17,35 @@ function parseArgs(argv) {
     let expertPreset = 'v2simple';
     let profiles = DEFAULT_PROFILES.slice();
     let buildMode = 'ev';
-    let diceMode = 'ev';
+    let diceMode = 'strongCrowdThreshold';
     let rerollMode = 'simple';
+    let rerollMargin = 0;
     let itMode = 'always';
     let tvMode = 'simple';
     let businessMode = 'harmfulGift';
     let cleaningMode = 'simple';
     let harborMode = 'simple';
+    let harborMargin = 0;
     let moverMode = 'simple';
     let renovationMode = 'simple';
     let incomeCapMode = 'none';
     let comboMode = 'core';
     let comboWeight = 0.35;
     let buildTempoWeight = 0.05;
+    let airportSkipMode = 'whenNoLandmark';
+    let landmarkCardMargin = 25;
+    let landmarkCardCompareMode = 'base';
+    let landmarkCardCompareTargets = 'harborMall';
+    let landmarkCardPenaltyMode = 'none';
+    let harborLandmarkBaseBonus = 2.5;
+    let landmarkProgressRemaining = 3;
+    let landmarkCostWeight = 0.12;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '50', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 50);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--full') lite = false;
         else if (arg === '--fast') {
@@ -49,9 +60,11 @@ function parseArgs(argv) {
         } else if (arg === '--build-mode') {
             buildMode = argv[++i] || 'ev';
         } else if (arg === '--dice-mode') {
-            diceMode = argv[++i] || 'ev';
+            diceMode = argv[++i] || 'strongCrowdThreshold';
         } else if (arg === '--reroll-mode') {
-            rerollMode = argv[++i] || 'random';
+            rerollMode = argv[++i] || 'simple';
+        } else if (arg === '--reroll-margin') {
+            rerollMargin = parseFloatOrDefault(argv[++i], 0);
         } else if (arg === '--it-mode') {
             itMode = argv[++i] || 'always';
         } else if (arg === '--tv-mode') {
@@ -62,22 +75,40 @@ function parseArgs(argv) {
             cleaningMode = argv[++i] || 'simple';
         } else if (arg === '--harbor-mode') {
             harborMode = argv[++i] || 'simple';
+        } else if (arg === '--harbor-margin') {
+            harborMargin = parseFloatOrDefault(argv[++i], 0);
         } else if (arg === '--mover-mode') {
-            moverMode = argv[++i] || 'random';
+            moverMode = argv[++i] || 'simple';
         } else if (arg === '--renovation-mode') {
-            renovationMode = argv[++i] || 'random';
+            renovationMode = argv[++i] || 'simple';
         } else if (arg === '--income-cap-mode') {
             incomeCapMode = argv[++i] || 'none';
         } else if (arg === '--combo-mode') {
-            comboMode = argv[++i] || 'none';
+            comboMode = argv[++i] || 'core';
         } else if (arg === '--combo-weight') {
-            comboWeight = parseFloat(argv[++i] || '0.35');
+            comboWeight = parseFloatOrDefault(argv[++i], 0.35);
         } else if (arg === '--build-tempo-weight') {
-            buildTempoWeight = parseFloat(argv[++i] || '0');
+            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.05);
+        } else if (arg === '--airport-skip-mode') {
+            airportSkipMode = argv[++i] || 'whenNoLandmark';
+        } else if (arg === '--landmark-card-margin') {
+            landmarkCardMargin = parseFloatOrDefault(argv[++i], 25);
+        } else if (arg === '--landmark-card-compare-mode') {
+            landmarkCardCompareMode = argv[++i] || 'base';
+        } else if (arg === '--landmark-card-compare-targets') {
+            landmarkCardCompareTargets = argv[++i] || 'harborMall';
+        } else if (arg === '--landmark-card-penalty-mode') {
+            landmarkCardPenaltyMode = argv[++i] || 'none';
+        } else if (arg === '--harbor-landmark-base-bonus') {
+            harborLandmarkBaseBonus = parseFloatOrDefault(argv[++i], 2.5);
+        } else if (arg === '--landmark-progress-remaining') {
+            landmarkProgressRemaining = parseFloatOrDefault(argv[++i], 3);
+        } else if (arg === '--landmark-cost-weight') {
+            landmarkCostWeight = parseFloatOrDefault(argv[++i], 0.12);
         }
     }
 
-    return { games, seed, maxSteps, format, lite, fast, profile, expertPreset, profiles, buildMode, diceMode, rerollMode, itMode, tvMode, businessMode, cleaningMode, harborMode, moverMode, renovationMode, incomeCapMode, comboMode, comboWeight, buildTempoWeight };
+    return { games, seed, maxSteps, format, lite, fast, profile, expertPreset, profiles, buildMode, diceMode, rerollMode, rerollMargin, itMode, tvMode, businessMode, cleaningMode, harborMode, harborMargin, moverMode, renovationMode, incomeCapMode, comboMode, comboWeight, buildTempoWeight, airportSkipMode, landmarkCardMargin, landmarkCardCompareMode, landmarkCardCompareTargets, landmarkCardPenaltyMode, harborLandmarkBaseBonus, landmarkProgressRemaining, landmarkCostWeight };
 }
 
 function profilePlayers(name) {
@@ -124,20 +155,30 @@ function getFastSeriesEvaluator(runtime) {
                     return new CPU(difficulty, {
                         expertPurpose: 'live',
                         expertPreset: config.expertPreset || 'v2simple',
-                        expertDiceMode: config.diceMode || 'ev',
+                        expertDiceMode: config.diceMode || 'strongCrowdThreshold',
                         expertRerollMode: config.rerollMode || 'simple',
+                        expertRerollMargin: Number.isFinite(config.rerollMargin) ? config.rerollMargin : 0,
                         expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
                         expertBusinessMode: config.businessMode || 'harmfulGift',
                         expertCleaningMode: config.cleaningMode || 'simple',
                         expertHarborMode: config.harborMode || 'simple',
+                        expertHarborMargin: Number.isFinite(config.harborMargin) ? config.harborMargin : 0,
                         expertMoverMode: config.moverMode || 'simple',
                         expertRenovationMode: config.renovationMode || 'simple',
                         expertIncomeCapMode: config.incomeCapMode || 'none',
                         expertComboMode: config.comboMode || 'core',
                         expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35,
-                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0,
+                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.05,
+                        expertAirportSkipMode: config.airportSkipMode || 'whenNoLandmark',
+                        expertLandmarkCardMargin: Number.isFinite(config.landmarkCardMargin) ? config.landmarkCardMargin : 25,
+                        expertLandmarkCardCompareMode: config.landmarkCardCompareMode || 'base',
+                        expertLandmarkCardCompareTargets: config.landmarkCardCompareTargets || 'harborMall',
+                        expertLandmarkCardPenaltyMode: config.landmarkCardPenaltyMode || 'none',
+                        expertHarborLandmarkBaseBonus: Number.isFinite(config.harborLandmarkBaseBonus) ? config.harborLandmarkBaseBonus : 2.5,
+                        expertLandmarkProgressRemaining: Number.isFinite(config.landmarkProgressRemaining) ? config.landmarkProgressRemaining : 3,
+                        expertLandmarkCostWeight: Number.isFinite(config.landmarkCostWeight) ? config.landmarkCostWeight : 0.12,
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });
@@ -303,7 +344,7 @@ function getFastSeriesEvaluator(runtime) {
                 return players.map((_, index) => players[(index + offset) % players.length]);
             }
 
-            const games = config.games || 1;
+            const games = Number.isInteger(config.games) ? config.games : 1;
             const players = config.players;
             const wins = {};
             for (const player of players) wins[player] = 0;
@@ -354,11 +395,11 @@ function getFastSeriesEvaluator(runtime) {
                 const game = new GameManager(lineup.length);
                 const shopStock = createShopStock();
                 const cpuPlayers = lineup.map(difficulty => createCpu(difficulty, difficulty === 'expert' ? v2simpleStats : null));
-                const rng = createRng((config.seed || 1) + i);
+                const rng = createRng((Number.isInteger(config.seed) ? config.seed : 1) + i);
                 Math.random = rng;
                 game.enabledLandmarks = new Set(Player.landmarkNames());
                 let safety = 0;
-                const maxSteps = config.maxSteps || 5000;
+                const maxSteps = Number.isInteger(config.maxSteps) ? config.maxSteps : 5000;
 
                 while (!game.checkWinner() && safety < maxSteps) {
                     const phaseBefore = game.phase;
@@ -522,17 +563,27 @@ function evaluateProfile(name, options) {
         buildMode: options.buildMode,
         diceMode: options.diceMode,
         rerollMode: options.rerollMode,
+        rerollMargin: options.rerollMargin,
         itMode: options.itMode,
         tvMode: options.tvMode,
         businessMode: options.businessMode,
         cleaningMode: options.cleaningMode,
         harborMode: options.harborMode,
+        harborMargin: options.harborMargin,
         moverMode: options.moverMode,
         renovationMode: options.renovationMode,
         incomeCapMode: options.incomeCapMode,
         comboMode: options.comboMode,
         comboWeight: options.comboWeight,
         buildTempoWeight: options.buildTempoWeight,
+        airportSkipMode: options.airportSkipMode,
+        landmarkCardMargin: options.landmarkCardMargin,
+        landmarkCardCompareMode: options.landmarkCardCompareMode,
+        landmarkCardCompareTargets: options.landmarkCardCompareTargets,
+        landmarkCardPenaltyMode: options.landmarkCardPenaltyMode,
+        harborLandmarkBaseBonus: options.harborLandmarkBaseBonus,
+        landmarkProgressRemaining: options.landmarkProgressRemaining,
+        landmarkCostWeight: options.landmarkCostWeight,
     });
     const expertWins = result.wins.expert || 0;
     const winRate = result.games > 0 ? expertWins / result.games : 0;
@@ -568,9 +619,9 @@ function toText(entries, summary, options) {
     const lines = [
         `games=${options.games} seed=${options.seed} mode=${options.lite ? 'lite' : (options.fast ? 'fast' : 'full')} ` +
             `expertPreset=${options.expertPreset} ` +
-            `buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} itMode=${options.itMode} tvMode=${options.tvMode} ` +
-            `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} ` +
-            `moverMode=${options.moverMode} renovationMode=${options.renovationMode} incomeCapMode=${options.incomeCapMode} comboMode=${options.comboMode} comboWeight=${options.comboWeight} buildTempoWeight=${options.buildTempoWeight}`,
+            `buildMode=${options.buildMode} diceMode=${options.diceMode} rerollMode=${options.rerollMode} rerollMargin=${Number.isFinite(options.rerollMargin) ? options.rerollMargin : 0} itMode=${options.itMode} tvMode=${options.tvMode} ` +
+            `businessMode=${options.businessMode} cleaningMode=${options.cleaningMode} harborMode=${options.harborMode} harborMargin=${Number.isFinite(options.harborMargin) ? options.harborMargin : 0} ` +
+            `moverMode=${options.moverMode} renovationMode=${options.renovationMode} incomeCapMode=${options.incomeCapMode} comboMode=${options.comboMode} comboWeight=${options.comboWeight} buildTempoWeight=${options.buildTempoWeight} airportSkipMode=${options.airportSkipMode}`,
         `weightedWinRate=${(summary.weightedWinRate * 100).toFixed(1)}% minWinRate=${(summary.minWinRate * 100).toFixed(1)}%`,
     ];
     if (options.profile) {
@@ -617,7 +668,7 @@ function toText(entries, summary, options) {
 
 function toMarkdown(entries, summary, options) {
     const lines = [
-        '# Expert v2simple vs Normal',
+        '# Expert Rule-Based vs Normal',
         '',
         `- games: ${options.games}`,
         `- seed: ${options.seed}`,
@@ -626,17 +677,20 @@ function toMarkdown(entries, summary, options) {
         `- buildMode: ${options.buildMode}`,
         `- diceMode: ${options.diceMode}`,
         `- rerollMode: ${options.rerollMode}`,
+        `- rerollMargin: ${Number.isFinite(options.rerollMargin) ? options.rerollMargin : 0}`,
         `- itMode: ${options.itMode}`,
         `- tvMode: ${options.tvMode}`,
         `- businessMode: ${options.businessMode}`,
         `- cleaningMode: ${options.cleaningMode}`,
         `- harborMode: ${options.harborMode}`,
+        `- harborMargin: ${Number.isFinite(options.harborMargin) ? options.harborMargin : 0}`,
         `- moverMode: ${options.moverMode}`,
         `- renovationMode: ${options.renovationMode}`,
         `- incomeCapMode: ${options.incomeCapMode}`,
         `- comboMode: ${options.comboMode}`,
         `- comboWeight: ${options.comboWeight}`,
         `- buildTempoWeight: ${options.buildTempoWeight}`,
+        `- airportSkipMode: ${options.airportSkipMode}`,
         `- weightedWinRate: ${(summary.weightedWinRate * 100).toFixed(1)}%`,
         `- minWinRate: ${(summary.minWinRate * 100).toFixed(1)}%`,
         ...(options.profile ? [`- totalProfileMs: ${summary.totalProfileMs.toFixed(1)}ms`] : []),

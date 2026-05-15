@@ -17,6 +17,16 @@ runTest('train-expert-crowd parseArgs は CLI 引数を解釈する', () => {
     assert.strictEqual(args.format, 'json');
 });
 
+runTest('train-expert-crowd parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--rounds', '0', '--candidates', '0', '--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.rounds, 0);
+    assert.strictEqual(args.candidates, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('baseProfileTuning は crowdNormal でも crowd の既定 tuning を返す', () => {
     const runtime = loadRuntime();
     const tuning = baseProfileTuning(runtime, 'crowdNormal');
@@ -118,4 +128,22 @@ runTest('trainExpertCrowd は最良候補と履歴を返す', () => {
     assert.strictEqual(result.history.length, 3);
     assert.strictEqual(typeof result.best.winRate, 'number');
     assert.deepStrictEqual(result.players, ['expert', 'normal', 'normal', 'normal']);
+});
+
+runTest('trainExpertCrowd は games/rounds/candidates の 0 指定を既定値で上書きしない', () => {
+    const result = trainExpertCrowd({
+        games: 0,
+        rounds: 0,
+        candidates: 0,
+        seed: 0,
+        maxSteps: 0,
+        basePreset: 'default',
+        profile: 'crowdNormal',
+    });
+
+    assert.strictEqual(result.games, 0);
+    assert.strictEqual(result.rounds, 0);
+    assert.strictEqual(result.candidates, 0);
+    assert.strictEqual(result.history.length, 1);
+    assert.strictEqual(result.best.winRate, 0);
 });

@@ -1,6 +1,6 @@
 const path = require('path');
 
-const { loadRuntime, runSeries } = require(path.join(__dirname, 'selfplay.js'));
+const { loadRuntime, parseIntegerOrDefault, runSeries } = require(path.join(__dirname, 'selfplay.js'));
 const { buildCandidateTunings } = require(path.join(__dirname, 'tune-expert.js'));
 const { DEFAULT_PROFILES, profilePlayers, profileWeight } = require(path.join(__dirname, 'eval-expert-vs-strong.js'));
 
@@ -19,11 +19,11 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '8', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 8);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--base-preset') basePreset = argv[++i] || 'default';
-        else if (arg === '--top') top = parseInt(argv[++i] || '5', 10);
+        else if (arg === '--top') top = parseIntegerOrDefault(argv[++i], 5);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--output') output = argv[++i] || '';
         else if (arg === '--full') lite = false;
@@ -112,7 +112,7 @@ function searchTopTier(options = {}) {
         options,
         totalCandidates: candidates.length,
         rankings: ranked,
-        top: ranked.slice(0, options.top || 5),
+        top: ranked.slice(0, Number.isInteger(options.top) ? options.top : 5),
     };
 }
 

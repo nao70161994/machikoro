@@ -10,7 +10,7 @@ function withFakeRunSeries(fn) {
         loadRuntime,
         runSeries(options = {}) {
             const players = (options.players || ['expert', 'strong']).slice();
-            const games = options.games || 2;
+            const games = Number.isInteger(options.games) ? options.games : 2;
             const tuning = options.expertTuning || {};
             const lookahead = tuning.lookaheadWeight || 0;
             const late = tuning.lateProgressBonus || 0;
@@ -63,6 +63,26 @@ runTest('parseArgs は basePreset 未指定時に default を使う', () => {
     assert.strictEqual(args.basePreset, 'default');
 });
 
+runTest('parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs([
+        '--games', '0',
+        '--seed', '0',
+        '--max-steps', '0',
+        '--top', '0',
+        '--proposal-depth', '0',
+        '--finalist-count', '0',
+        '--finalist-games', '0',
+    ]);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+    assert.strictEqual(args.top, 0);
+    assert.strictEqual(args.proposalDepth, 0);
+    assert.strictEqual(args.finalistCount, 0);
+    assert.strictEqual(args.finalistGames, 0);
+});
+
 runTest('buildCandidateTunings は基準プリセットを含む複数候補を生成する', () => {
     const runtime = loadRuntime();
     const candidates = buildCandidateTunings(runtime, 'default');
@@ -93,6 +113,23 @@ runTest('tuneExpert は候補を勝率順に返す', () => {
         assert.strictEqual(result.top.length, 2);
         assert.ok(result.top[0].winRate >= result.top[1].winRate);
         assert.ok(typeof result.top[0].tuning.coinWeight === 'number');
+    });
+});
+
+runTest('tuneExpert は games/seed/top の 0 指定を既定値で上書きしない', () => {
+    withFakeRunSeries(() => {
+        const result = tuneExpert({
+            games: 0,
+            seed: 0,
+            maxSteps: 0,
+            basePreset: 'default',
+            top: 0,
+            players: ['expert', 'strong'],
+        });
+
+        assert.strictEqual(result.games, 0);
+        assert.strictEqual(result.top.length, 0);
+        assert.ok(result.rankings.every(entry => entry.games === 0));
     });
 });
 

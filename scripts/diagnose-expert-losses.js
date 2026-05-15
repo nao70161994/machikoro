@@ -1,6 +1,6 @@
 const path = require('path');
 
-const { loadRuntime, simulateGame } = require(path.join(__dirname, 'selfplay.js'));
+const { integerOrDefault, loadRuntime, parseIntegerOrDefault, simulateGame } = require(path.join(__dirname, 'selfplay.js'));
 const { buildCandidateTunings } = require(path.join(__dirname, 'tune-expert.js'));
 
 const DEFAULT_PROFILES = ['duel', 'trio', 'crowd', 'allStrong4'];
@@ -18,9 +18,9 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '20', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 20);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--full') lite = false;
         else if (arg === '--fast') {
@@ -639,6 +639,7 @@ function diagnoseProfile(name, options) {
     const basePlayers = profilePlayers(name);
     const runtime = loadRuntime();
     const expertTuning = options.expertTuning || resolveExpertTuning(options);
+    const seed = integerOrDefault(options.seed, 1);
     const losses = [];
     const wins = [];
     let expertWins = 0;
@@ -649,7 +650,7 @@ function diagnoseProfile(name, options) {
         const result = simulateGame({
             runtime,
             difficulties: lineup,
-            seed: (options.seed || 1) + i,
+            seed: seed + i,
             maxSteps: options.maxSteps,
             expertPreset: options.expertPreset,
             expertTuning,
@@ -675,7 +676,7 @@ function diagnoseProfile(name, options) {
             wins.push({
                 profile: name,
                 game: i + 1,
-                seed: (options.seed || 1) + i,
+                seed: seed + i,
                 lineup,
                 turns: result.turns,
                 exhausted: result.exhausted,
@@ -688,7 +689,7 @@ function diagnoseProfile(name, options) {
         losses.push({
             profile: name,
             game: i + 1,
-            seed: (options.seed || 1) + i,
+            seed: seed + i,
             lineup,
             winnerDifficulty: result.winner >= 0 ? lineup[result.winner] : null,
             winnerSeat: result.winner,

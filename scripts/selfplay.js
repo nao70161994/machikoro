@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
+const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
+
 function loadRuntime(options = {}) {
     const context = {
         console,
@@ -46,9 +48,51 @@ function randomDie(rng, rollQueue = null) {
     return Math.floor(rng() * 6) + 1;
 }
 
-function createShopStock(cards) {
+function shouldProvideTunaDice(runtime, game, dice) {
+    if (!game || !Number.isFinite(dice)) return false;
+    return game.players.some(player =>
+        player.landmarks?.[runtime.LANDMARK_NAMES.HARBOR] &&
+        player.cards.some(card =>
+            !player.isDormant(card) &&
+            card.effect === 'tuna' &&
+            card.diceNums.includes(dice)
+        )
+    );
+}
+
+function makeTunaDiceForRoll(runtime, game, dice, rng, rollQueue = null) {
+    return shouldProvideTunaDice(runtime, game, dice)
+        ? [randomDie(rng, rollQueue), randomDie(rng, rollQueue)]
+        : null;
+}
+
+function shouldDeferIncomeForRoll(runtime, game, dice, useTwo = false) {
+    const current = game.currentPlayer();
+    if (current.landmarks?.[runtime.LANDMARK_NAMES.RADIO_TOWER] && !game.usedReroll) return true;
+    return !!(useTwo && current.landmarks?.[runtime.LANDMARK_NAMES.HARBOR] && dice >= 10);
+}
+
+function makeImmediateTunaDiceForRoll(runtime, game, dice, useTwo, rng, rollQueue = null) {
+    return shouldDeferIncomeForRoll(runtime, game, dice, useTwo)
+        ? null
+        : makeTunaDiceForRoll(runtime, game, dice, rng, rollQueue);
+}
+
+function makeImmediateTunaDiceForKeep(runtime, game, rng, rollQueue = null) {
+    const useTwo = game.lastDice2 > 0;
+    if (useTwo && game.currentPlayer().landmarks?.[runtime.LANDMARK_NAMES.HARBOR] && game.lastDiceResult >= 10) {
+        return null;
+    }
+    return makeTunaDiceForRoll(runtime, game, game.lastDiceResult, rng, rollQueue);
+}
+
+function createShopStock(cards, playerCount = 2, runtime = null) {
     const stock = {};
-    for (const card of cards) stock[card.name] = 6;
+    for (const card of cards) {
+        stock[card.name] = runtime && typeof runtime.getInitialCardStock === 'function'
+            ? runtime.getInitialCardStock(card, playerCount)
+            : (card.color === 'purple' ? Math.max(0, Math.floor(Number(playerCount) || 0)) : 6);
+    }
     return stock;
 }
 
@@ -80,18 +124,31 @@ function createPlayers(runtime, difficulties, options = {}) {
             expertPreset: options.expertPreset,
             expertDiceMode: options.expertDiceMode,
             expertRerollMode: options.expertRerollMode,
+            expertRerollMargin: options.expertRerollMargin,
             expertBuildMode: options.expertBuildMode,
             expertInvestMode: options.expertInvestMode,
             expertTvMode: options.expertTvMode,
             expertBusinessMode: options.expertBusinessMode,
             expertCleaningMode: options.expertCleaningMode,
             expertHarborMode: options.expertHarborMode,
+            expertHarborMargin: options.expertHarborMargin,
             expertMoverMode: options.expertMoverMode,
             expertRenovationMode: options.expertRenovationMode,
             expertIncomeCapMode: options.expertIncomeCapMode,
             expertComboMode: options.expertComboMode,
             expertComboWeight: options.expertComboWeight,
             expertBuildTempoWeight: options.expertBuildTempoWeight,
+            expertRollRiskMode: options.expertRollRiskMode,
+            expertRollRedRiskWeight: options.expertRollRedRiskWeight,
+            expertAirportSkipMode: options.expertAirportSkipMode,
+            expertLandmarkCardMargin: options.expertLandmarkCardMargin,
+            expertLandmarkCardCompareMode: options.expertLandmarkCardCompareMode,
+            expertLandmarkCardCompareTargets: options.expertLandmarkCardCompareTargets,
+            expertLandmarkCardPenaltyMode: options.expertLandmarkCardPenaltyMode,
+            expertHarborLandmarkBaseBonus: options.expertHarborLandmarkBaseBonus,
+            expertLandmarkProgressRemaining: options.expertLandmarkProgressRemaining,
+            expertLandmarkCostWeight: options.expertLandmarkCostWeight,
+            expertOpponentDifficulties: resolvedDifficulties,
             expertTraceStats: options.expertTraceStats,
             expertTuning: options.expertTuning,
             expertBehaviorFlags: options.expertBehaviorFlags,
@@ -101,14 +158,22 @@ function createPlayers(runtime, difficulties, options = {}) {
     });
 }
 
-function createMaskHelper(runtime) {
-    return {
+function createMaskHelper(runtime, selectedBusinessTargetIndex = null) {
+    const helper = {
         _currentAndOpponent: runtime.RLCPU.prototype._currentAndOpponent,
         _selectOpponentIndex: runtime.RLCPU.prototype._selectOpponentIndex,
         _playerThreatScore: runtime.RLCPU.prototype._playerThreatScore,
         _cardCounts: runtime.RLCPU.prototype._cardCounts,
         _dormantCounts: runtime.RLCPU.prototype._dormantCounts,
+        _businessActionMaskForTarget: runtime.RLCPU.prototype._businessActionMaskForTarget,
+        _businessActionMaskForTargets: runtime.RLCPU.prototype._businessActionMaskForTargets,
     };
+    if (Number.isInteger(selectedBusinessTargetIndex)) {
+        helper._businessActionMaskForTargets = function(game) {
+            return runtime.RLCPU.prototype._businessActionMaskForTargets.call(this, game, [selectedBusinessTargetIndex]);
+        };
+    }
+    return helper;
 }
 
 function actionToLabel(runtime, action) {
@@ -147,8 +212,13 @@ function actionToLabel(runtime, action) {
     return `ACTION:${action}`;
 }
 
-function listLegalActions(runtime, game, shopStock) {
-    const helper = createMaskHelper(runtime);
+function listLegalActions(runtime, game, shopStock, cpu = null) {
+    let selectedBusinessTargetIndex = null;
+    if (runtime.RLCPU && cpu instanceof runtime.RLCPU && game.phase === runtime.GAME_PHASES.PENDING && game.pendingBusiness > 0 &&
+            typeof cpu._targetLayerForKind === 'function' && cpu._targetLayerForKind('business') && cpu.numTargetSlots > 0) {
+        selectedBusinessTargetIndex = cpu._selectTargetIndex(game, 'business');
+    }
+    const helper = createMaskHelper(runtime, selectedBusinessTargetIndex);
     const mask = runtime.RLCPU.prototype.actionMask.call(helper, game, shopStock);
     const legalActions = [];
     for (let i = 0; i < mask.length; i++) {
@@ -198,7 +268,7 @@ function pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries)
         actorIndex: game.currentPlayerIndex,
         actorDifficulty: cpu && cpu.difficulty ? cpu.difficulty : (cpu instanceof runtime.RLCPU ? 'rl' : 'cpu'),
         before: summarizeTraceState(game, shopStock),
-        legalActions: listLegalActions(runtime, game, shopStock),
+        legalActions: listLegalActions(runtime, game, shopStock, cpu),
         chosenAction: actionInfo ? {
             action: Number.isFinite(actionInfo.action) ? actionInfo.action : null,
             label: actionInfo.label || (Number.isFinite(actionInfo.action) ? actionToLabel(runtime, actionInfo.action) : 'UNKNOWN'),
@@ -206,6 +276,9 @@ function pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries)
         rollsUsed: [],
         rollCursor: 0,
     };
+    if (entry.chosenAction && Number.isInteger(actionInfo && actionInfo.targetIndex)) {
+        entry.chosenAction.targetIndex = actionInfo.targetIndex;
+    }
     traceEntries.push(entry);
 }
 
@@ -419,7 +492,7 @@ function collectV2SimpleBuildDiagnostics(runtime, game, shopStock, cpu, current,
     const affordableCards = runtime.CARDS.filter(card =>
         shopStock[card.name] > 0 &&
         current.coins >= card.cost &&
-        !(card.color === 'purple' && current.countCard(card.name) > 0)
+        !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0)
     ).map(card => ({ type: 'card', card }));
     const buildOptions = affordableCards.map(option => {
         const breakdown = augmentV2SimpleBuildBreakdown(
@@ -568,30 +641,47 @@ function fallbackRenovation(game) {
 }
 
 function playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue = null) {
-    const tunaDice = [randomDie(rng, rollQueue), randomDie(rng, rollQueue)];
     switch (game.phase) {
         case runtime.GAME_PHASES.ROLL:
             if (game.currentPlayer().landmarks['駅']) {
-                game.rollDice(null, tunaDice);
+                game.rollDice(null, null);
             } else {
-                game.rollDice(randomDie(rng, rollQueue), tunaDice);
+                const forceDice = randomDie(rng, rollQueue);
+                game.rollDice(forceDice, makeImmediateTunaDiceForRoll(runtime, game, forceDice, false, rng, rollQueue));
             }
             return;
         case runtime.GAME_PHASES.SELECT_DICE: {
             const useTwo = cpu.chooseDiceCount(game);
             if (useTwo) {
-                game.selectDiceCount(true, randomDie(rng, rollQueue), randomDie(rng, rollQueue), tunaDice);
+                const d1 = randomDie(rng, rollQueue);
+                const d2 = randomDie(rng, rollQueue);
+                game.selectDiceCount(true, d1, d2, makeImmediateTunaDiceForRoll(runtime, game, d1 + d2, true, rng, rollQueue));
             } else {
-                game.selectDiceCount(false, randomDie(rng, rollQueue), null, tunaDice);
+                const d1 = randomDie(rng, rollQueue);
+                game.selectDiceCount(false, d1, null, makeImmediateTunaDiceForRoll(runtime, game, d1, false, rng, rollQueue));
             }
             return;
         }
         case runtime.GAME_PHASES.REROLL_CONFIRM:
-            if (cpu.chooseReroll(game)) game.rerollDice(randomDie(rng, rollQueue), tunaDice);
-            else game.skipReroll();
+            if (cpu.chooseReroll(game)) {
+                if (game.currentPlayer().landmarks[runtime.LANDMARK_NAMES.STATION]) {
+                    game.rerollDice(null, null);
+                } else {
+                    const forceDice = randomDie(rng, rollQueue);
+                    game.rerollDice(forceDice, makeTunaDiceForRoll(runtime, game, forceDice, rng, rollQueue));
+                }
+            }
+            else {
+                game.pendingTunaDice = makeImmediateTunaDiceForKeep(runtime, game, rng, rollQueue);
+                game.skipReroll();
+            }
             return;
         case runtime.GAME_PHASES.HARBOR_CHOICE:
-            game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
+            {
+                const useHarbor = cpu.chooseHarbor(game);
+                const dice = useHarbor ? game.lastDiceResult + 2 : game.lastDiceResult;
+                game.resolveHarbor(useHarbor, makeTunaDiceForRoll(runtime, game, dice, rng, rollQueue));
+            }
             return;
         case runtime.GAME_PHASES.PENDING:
             if (game.pendingTV > 0) {
@@ -669,21 +759,29 @@ function detectBuildOutcome(beforeState, afterState) {
 }
 
 function recordBuildStat(game, cpu, options, outcome) {
-    if (!options || !options.buildStats) return;
+    if (!options) return;
     const key = game.currentPlayerIndex;
-    const stats = options.buildStats[key];
-    if (!stats) return;
-    stats.total++;
-    if (outcome.type === 'pass') {
-        stats.pass++;
-        return;
+    const buckets = [];
+    if (options.buildStats && options.buildStats[key]) {
+        buckets.push(options.buildStats[key]);
     }
-    if (outcome.type === 'card') {
-        stats.cards[outcome.name] = (stats.cards[outcome.name] || 0) + 1;
-        return;
+    const difficulty = Array.isArray(options.currentLineup) ? options.currentLineup[key] : null;
+    if (difficulty && options.buildStatsByDifficulty && options.buildStatsByDifficulty[difficulty]) {
+        buckets.push(options.buildStatsByDifficulty[difficulty]);
     }
-    if (outcome.type === 'landmark') {
-        stats.landmarks[outcome.name] = (stats.landmarks[outcome.name] || 0) + 1;
+    for (const stats of buckets) {
+        stats.total++;
+        if (outcome.type === 'pass') {
+            stats.pass++;
+            continue;
+        }
+        if (outcome.type === 'card') {
+            stats.cards[outcome.name] = (stats.cards[outcome.name] || 0) + 1;
+            continue;
+        }
+        if (outcome.type === 'landmark') {
+            stats.landmarks[outcome.name] = (stats.landmarks[outcome.name] || 0) + 1;
+        }
     }
 }
 
@@ -740,7 +838,6 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
     const options = runtime.__selfplayOptions;
     const actions = runtime.RLCPU ? runtime.RLCPU.ACTIONS : {};
     const rollQueue = options && options.rollQueue;
-    const tunaDice = [randomDie(rng), randomDie(rng)];
     const traceEntries = options && options.traceEntries;
     const rollStart = Array.isArray(rollQueue) ? rollQueue.length : null;
     try {
@@ -751,9 +848,10 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     label: 'ROLL1',
                 }, traceEntries);
                 if (game.currentPlayer().landmarks['駅']) {
-                    game.rollDice(null, tunaDice);
+                    game.rollDice(null, null);
                 } else {
-                    game.rollDice(randomDie(rng, rollQueue), tunaDice);
+                    const forceDice = randomDie(rng, rollQueue);
+                    game.rollDice(forceDice, makeImmediateTunaDiceForRoll(runtime, game, forceDice, false, rng, rollQueue));
                 }
                 if (Array.isArray(traceEntries)) {
                     traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
@@ -766,9 +864,12 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     label: useTwo ? 'ROLL2' : 'ROLL1',
                 }, traceEntries);
                 if (useTwo) {
-                    game.selectDiceCount(true, randomDie(rng, rollQueue), randomDie(rng, rollQueue), tunaDice);
+                    const d1 = randomDie(rng, rollQueue);
+                    const d2 = randomDie(rng, rollQueue);
+                    game.selectDiceCount(true, d1, d2, makeImmediateTunaDiceForRoll(runtime, game, d1 + d2, true, rng, rollQueue));
                 } else {
-                    game.selectDiceCount(false, randomDie(rng, rollQueue), null, tunaDice);
+                    const d1 = randomDie(rng, rollQueue);
+                    game.selectDiceCount(false, d1, null, makeImmediateTunaDiceForRoll(runtime, game, d1, false, rng, rollQueue));
                 }
                 if (Array.isArray(traceEntries)) {
                     traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
@@ -781,12 +882,18 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         action: actions.REROLL ?? null,
                         label: 'REROLL',
                     }, traceEntries);
-                    game.rerollDice(randomDie(rng, rollQueue), tunaDice);
+                    if (game.currentPlayer().landmarks[runtime.LANDMARK_NAMES.STATION]) {
+                        game.rerollDice(null, null);
+                    } else {
+                        const forceDice = randomDie(rng, rollQueue);
+                        game.rerollDice(forceDice, makeTunaDiceForRoll(runtime, game, forceDice, rng, rollQueue));
+                    }
                 } else {
                     pushTraceEntry(runtime, game, shopStock, cpu, {
                         action: actions.KEEP ?? null,
                         label: 'KEEP',
                     }, traceEntries);
+                    game.pendingTunaDice = makeImmediateTunaDiceForKeep(runtime, game, rng, rollQueue);
                     game.skipReroll();
                 }
                 if (Array.isArray(traceEntries)) {
@@ -800,7 +907,8 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         action: useHarbor ? (actions.HARBOR_YES ?? null) : (actions.HARBOR_NO ?? null),
                         label: useHarbor ? 'HARBOR_YES' : 'HARBOR_NO',
                     }, traceEntries);
-                    game.resolveHarbor(useHarbor, tunaDice);
+                    const dice = useHarbor ? game.lastDiceResult + 2 : game.lastDiceResult;
+                    game.resolveHarbor(useHarbor, makeTunaDiceForRoll(runtime, game, dice, rng, rollQueue));
                     if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
                 }
                 return;
@@ -810,6 +918,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     pushTraceEntry(runtime, game, shopStock, cpu, {
                         action: actions.TV_TARGET ?? null,
                         label: `TV_TARGET:p${targetIndex + 1}`,
+                        targetIndex,
                     }, traceEntries);
                     game.resolveTV(targetIndex);
                     if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
@@ -826,6 +935,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     pushTraceEntry(runtime, game, shopStock, cpu, move ? {
                         action: businessAction,
                         label: businessAction == null ? `BUSINESS:${move.myCard}->${move.theirCard}@p${move.targetIndex + 1}` : actionToLabel(runtime, businessAction),
+                        targetIndex: move.targetIndex,
                     } : {
                         action: actions.PASS ?? null,
                         label: 'PASS',
@@ -838,8 +948,9 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 }
                 if (game.pendingCleaning > 0) {
                     const cardName = cpu.chooseCleaningTarget(game);
+                    const cardIndex = cardName ? runtime.CARDS.findIndex(card => card.name === cardName) : -1;
                     pushTraceEntry(runtime, game, shopStock, cpu, cardName ? {
-                        action: null,
+                        action: cardIndex >= 0 && actions.CLEAN_BASE != null ? actions.CLEAN_BASE + cardIndex : null,
                         label: `CLEAN:${cardName}`,
                     } : {
                         action: actions.PASS ?? null,
@@ -852,9 +963,12 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 }
                 if (game.pendingMover > 0) {
                     const move = cpu.chooseMoverMove(game);
+                    const movedCard = move ? game.players[game.currentPlayerIndex]?.cards?.[move.cardIndex] : null;
+                    const movedCardIndex = movedCard ? runtime.CARDS.findIndex(card => card.name === movedCard.name) : -1;
                     pushTraceEntry(runtime, game, shopStock, cpu, move ? {
-                        action: null,
-                        label: `MOVER:${move.cardIndex}@p${move.targetIndex + 1}`,
+                        action: movedCardIndex >= 0 && actions.MOVER_BASE != null ? actions.MOVER_BASE + movedCardIndex : null,
+                        label: movedCardIndex >= 0 && actions.MOVER_BASE != null ? actionToLabel(runtime, actions.MOVER_BASE + movedCardIndex) : `MOVER:${move.cardIndex}@p${move.targetIndex + 1}`,
+                        targetIndex: move.targetIndex,
                     } : {
                         action: actions.PASS ?? null,
                         label: 'PASS',
@@ -866,9 +980,11 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 }
                 if (game.pendingRenovation > 0) {
                     const landmarkName = cpu.chooseRenovationTarget(game);
+                    const landmarkOrder = runtime.RLCPU ? runtime.RLCPU.LANDMARK_ORDER : runtime.Player.landmarkNames().filter(name => name !== runtime.LANDMARK_NAMES.YAKUSHO);
+                    const landmarkIndex = landmarkName ? landmarkOrder.indexOf(landmarkName) : -1;
                     pushTraceEntry(runtime, game, shopStock, cpu, landmarkName ? {
-                        action: null,
-                        label: `RENO:${landmarkName}`,
+                        action: landmarkIndex >= 0 && actions.RENO_BASE != null ? actions.RENO_BASE + landmarkIndex : null,
+                        label: landmarkIndex >= 0 && actions.RENO_BASE != null ? actionToLabel(runtime, actions.RENO_BASE + landmarkIndex) : `RENO:${landmarkName}`,
                     } : {
                         action: actions.PASS ?? null,
                         label: 'PASS',
@@ -915,10 +1031,20 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 if (Array.isArray(traceEntries) && traceEntries.length > beforeTrace) {
                     const buildTrace = traceEntries[traceEntries.length - 1];
                     if (!traceEntries[traceEntries.length - 1].chosenAction || traceEntries[traceEntries.length - 1].chosenAction.label === 'UNKNOWN') {
+                        const cardIndex = outcome.type === 'card'
+                            ? runtime.CARDS.findIndex(card => card.name === outcome.name)
+                            : -1;
+                        const landmarkOrder = runtime.RLCPU ? runtime.RLCPU.LANDMARK_ORDER : runtime.Player.landmarkNames().filter(name => name !== runtime.LANDMARK_NAMES.YAKUSHO);
+                        const landmarkIndex = outcome.type === 'landmark' ? landmarkOrder.indexOf(outcome.name) : -1;
+                        const action = outcome.type === 'card' && cardIndex >= 0 && actions.BUY_CARD_BASE != null
+                            ? actions.BUY_CARD_BASE + cardIndex
+                            : (outcome.type === 'landmark' && landmarkIndex >= 0 && actions.BUY_LM_BASE != null
+                                ? actions.BUY_LM_BASE + landmarkIndex
+                                : (outcome.type === 'pass' ? (actions.PASS ?? null) : null));
                         buildTrace.chosenAction = {
-                            action: outcome.type === 'pass' ? (actions.PASS ?? null) : null,
-                            label: outcome.type === 'card' ? `BUY_CARD:${outcome.name}` :
-                                (outcome.type === 'landmark' ? `BUY_LM:${outcome.name}` : 'PASS'),
+                            action,
+                            label: action != null ? actionToLabel(runtime, action) : (outcome.type === 'card' ? `BUY_CARD:${outcome.name}` :
+                                (outcome.type === 'landmark' ? `BUY_LM:${outcome.name}` : 'PASS')),
                         };
                     }
                     if (buildTrace.buildDiagnostics) {
@@ -983,10 +1109,11 @@ function simulateGame(options = {}) {
     const runtime = options.runtime || loadRuntime();
     const difficulties = resolveSelfplayDifficulties(options.difficulties || ['expert', 'strong']);
     const game = new runtime.GameManager(difficulties.length);
-    const shopStock = createShopStock(runtime.CARDS);
+    const shopStock = createShopStock(runtime.CARDS, difficulties.length, runtime);
     const cpuPlayers = createPlayers(runtime, difficulties, options);
     options.cpuPlayers = cpuPlayers;
-    const rng = createRng(options.seed || 1);
+    const seed = integerOrDefault(options.seed, 1);
+    const rng = createRng(seed);
     const previousRandom = runtime.Math.random;
     const hadPreviousSelfplayOptions = Object.prototype.hasOwnProperty.call(runtime, '__selfplayOptions');
     const previousSelfplayOptions = runtime.__selfplayOptions;
@@ -995,7 +1122,7 @@ function simulateGame(options = {}) {
     try {
         game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
         let safety = 0;
-        const maxSteps = options.maxSteps || 5000;
+        const maxSteps = integerOrDefault(options.maxSteps, 5000);
 
         while (!game.checkWinner() && safety < maxSteps) {
             const cpu = cpuPlayers[game.currentPlayerIndex];
@@ -1009,7 +1136,7 @@ function simulateGame(options = {}) {
             turns: game.turnCount,
             exhausted: safety >= maxSteps,
             difficulties: difficulties.slice(),
-            seed: options.seed || 1,
+            seed,
             expertPreset: options.expertPreset || 'default',
             expertPurpose: options.expertPurpose || 'training',
             expertTuning: options.expertTuning || null,
@@ -1052,15 +1179,16 @@ function simulateGameLightweight(options = {}) {
     const runtime = options.runtime || loadRuntime({ includeRL: false });
     const difficulties = resolveSelfplayDifficulties(options.difficulties || ['expert', 'weak']);
     const game = new runtime.GameManager(difficulties.length);
-    const shopStock = createShopStock(runtime.CARDS);
+    const shopStock = createShopStock(runtime.CARDS, difficulties.length, runtime);
     const cpuPlayers = createPlayers(runtime, difficulties, options);
-    const rng = createRng(options.seed || 1);
+    const seed = integerOrDefault(options.seed, 1);
+    const rng = createRng(seed);
     const previousRandom = runtime.Math.random;
     runtime.Math.random = rng;
     try {
         game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
         let safety = 0;
-        const maxSteps = options.maxSteps || 5000;
+        const maxSteps = integerOrDefault(options.maxSteps, 5000);
         const rollQueue = options.rollQueue;
 
         while (!game.checkWinner() && safety < maxSteps) {
@@ -1074,7 +1202,7 @@ function simulateGameLightweight(options = {}) {
             turns: game.turnCount,
             exhausted: safety >= maxSteps,
             difficulties: difficulties.slice(),
-            seed: options.seed || 1,
+            seed,
             expertPreset: options.expertPreset || 'default',
             expertPurpose: options.expertPurpose || 'training',
             fast: !!options.fast,
@@ -1094,7 +1222,7 @@ function rotatePlayers(players, offset) {
 }
 
 function runSeries(options = {}) {
-    const games = options.games || 20;
+    const games = integerOrDefault(options.games, 20);
     const players = options.players || ['expert', 'strong'];
     const runtime = options.runtime || loadRuntime({ includeRL: options.includeRL });
     const collectMatchLog = options.collectMatchLog !== false;
@@ -1112,11 +1240,17 @@ function runSeries(options = {}) {
         cards: {},
         landmarks: {},
     })) : null;
+    const buildStatsByDifficulty = collectBuildStats ? Object.fromEntries([...new Set(players)].map(player => [player, {
+        total: 0,
+        pass: 0,
+        cards: {},
+        landmarks: {},
+    }])) : null;
     const businessStats = collectBusinessStats ? {} : null;
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
-        const seed = (options.seed || 1) + i;
+        const seed = integerOrDefault(options.seed, 1) + i;
         const simulator = options.lightweightCpuOnly ? simulateGameLightweight : simulateGame;
         const result = simulator({
             runtime,
@@ -1134,21 +1268,35 @@ function runSeries(options = {}) {
             lite: options.lite,
             expertDiceMode: options.expertDiceMode,
             expertRerollMode: options.expertRerollMode,
+            expertRerollMargin: options.expertRerollMargin,
             expertBuildMode: options.expertBuildMode,
             expertInvestMode: options.expertInvestMode,
             expertTvMode: options.expertTvMode,
             expertBusinessMode: options.expertBusinessMode,
             expertCleaningMode: options.expertCleaningMode,
             expertHarborMode: options.expertHarborMode,
+            expertHarborMargin: options.expertHarborMargin,
             expertMoverMode: options.expertMoverMode,
             expertRenovationMode: options.expertRenovationMode,
             expertIncomeCapMode: options.expertIncomeCapMode,
             expertComboMode: options.expertComboMode,
             expertComboWeight: options.expertComboWeight,
             expertBuildTempoWeight: options.expertBuildTempoWeight,
+            expertRollRiskMode: options.expertRollRiskMode,
+            expertRollRedRiskWeight: options.expertRollRedRiskWeight,
+            expertAirportSkipMode: options.expertAirportSkipMode,
+            expertLandmarkCardMargin: options.expertLandmarkCardMargin,
+            expertLandmarkCardCompareMode: options.expertLandmarkCardCompareMode,
+            expertLandmarkCardCompareTargets: options.expertLandmarkCardCompareTargets,
+            expertLandmarkCardPenaltyMode: options.expertLandmarkCardPenaltyMode,
+            expertHarborLandmarkBaseBonus: options.expertHarborLandmarkBaseBonus,
+            expertLandmarkProgressRemaining: options.expertLandmarkProgressRemaining,
+            expertLandmarkCostWeight: options.expertLandmarkCostWeight,
             expertTraceStats: options.expertTraceStats,
             includeFinalState,
             buildStats,
+            buildStatsByDifficulty,
+            currentLineup: lineup,
             businessStats,
         });
         turns += result.turns;
@@ -1183,6 +1331,7 @@ function runSeries(options = {}) {
         averageTurns: games > 0 ? turns / games : 0,
         matchLog: matchLog || [],
         buildStats: buildStats || [],
+        buildStatsByDifficulty: buildStatsByDifficulty || {},
         businessStats: collectBusinessStats ? cloneBusinessStats(businessStats) : {},
     };
 }
@@ -1215,9 +1364,9 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        if (arg === '--games') games = parseInt(argv[++i] || '20', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 20);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--details') details = true;
         else if (arg === '--ladder') ladder = true;
@@ -1332,6 +1481,8 @@ module.exports = {
     runSeries,
     runDifficultyLadder,
     comparePresets,
+    integerOrDefault,
+    parseIntegerOrDefault,
     createBusinessStatsBucket,
     cloneBusinessStats,
     resolveBusinessMoveCards,

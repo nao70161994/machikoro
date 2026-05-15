@@ -36,6 +36,14 @@ runTest('diagnose-expert-v2-branches parseArgs は CLI 引数を解釈する', (
     assert.deepStrictEqual(args.profiles, ['duel', 'crowd']);
 });
 
+runTest('diagnose-expert-v2-branches parseArgs は games/seed/maxSteps の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('diagnose-expert-v2-branches installBranchDiagnostics は prototype を戻す', () => {
     const runtime = loadRuntime({ includeRL: false });
     const original = runtime.CPU.prototype.chooseDiceCount;
