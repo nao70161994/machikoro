@@ -452,6 +452,14 @@ function getLandmarkEmoji(name) {
     return (Player._LANDMARK_DEFS.find(d => d.name === name) || {}).emoji || "🏛️";
 }
 
+function renderBuildCardButton(card, stock, canBuildThis) {
+    return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${card.category}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${card.name}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button></div>`;
+}
+
+function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
+    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${name}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button></div>`;
+}
+
 function renderBuildMenu() {
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
@@ -467,12 +475,12 @@ function renderBuildMenu() {
         const stock = SHOP_STOCK[card.name];
         if (stock <= 0) return "";
         const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
-        return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${card.category}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${card.name}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button></div>`;
+        return renderBuildCardButton(card, stock, canBuildThis);
     }).join("");
     const landmarkHtml = Object.entries(current.landmarks).filter(([name]) => enabledLandmarks.has(name)).map(([name, built]) => {
         const cost = Player.landmarkCost(name);
         const canBuildThis = canBuild && !built && current.coins >= cost;
-        return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${name}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button></div>`;
+        return renderLandmarkBuildButton(name, built, cost, canBuildThis);
     }).join("");
     const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" onclick="doUndo()">↩ 建設を取り消す</button>` : '';
     document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;

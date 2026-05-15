@@ -231,6 +231,29 @@ runTest('renderPlayers は所持カードを色順と出目順で表示する', 
     assert.ok(html.indexOf('カフェ×1') < html.indexOf('高級フレンチ×1'));
 });
 
+runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成する', () => {
+    const { context } = loadUiRuntime();
+    const card = context.createCardByName('麦畑');
+
+    const html = context.renderBuildCardButton(card, 6, true);
+
+    assert.ok(html.includes('card-color-blue'));
+    assert.ok(html.includes("onBuildCard('麦畑')"));
+    assert.ok(html.includes('残り6枚'));
+    assert.ok(html.includes('can-afford'));
+});
+
+runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生成する', () => {
+    const { context } = loadUiRuntime();
+
+    const html = context.renderLandmarkBuildButton('駅', true, 4, false);
+
+    assert.ok(html.includes('card-color-landmark'));
+    assert.ok(html.includes("onBuildLandmark('駅')"));
+    assert.ok(html.includes('✅済'));
+    assert.ok(html.includes('disabled'));
+});
+
 runTest('renderCardSelectModal はカード選択を表示順でソートする', () => {
     const { context, elements } = loadUiRuntime();
 

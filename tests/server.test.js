@@ -20,6 +20,7 @@ const {
     rememberAcceptedClientAction,
     generateRoomId,
     nextRoomActionSeq,
+    restorePayloadRank,
     resolveRejoinPlayer,
     handleSocketDisconnect,
     handleRecreateRoom,
@@ -38,6 +39,10 @@ const {
     validateRerollDicePayload,
     validateResolveHarborPayload,
     validateResolveITPayload,
+    validateResolveTVPayload,
+    validateBuildCardPayload,
+    validateBuildLandmarkPayload,
+    validateActionPayloadForState,
     makeUndoStateFromMirror,
     applyActionToMirror,
     restoreUndoMirror,
@@ -525,24 +530,60 @@ runTest('validateGameAction は enabledCards に含まれないカードの建�
 });
 
 runTest('getAllowedActions は pendingIT 中に resolveIT のみ返す', () => {
-    const { GameManager } = makeGame();
+    const { GameManager, GAME_ACTIONS } = loadGameRuntime();
     const game = new GameManager(2);
     game.phase = 'build';
     game.pendingIT = true;
-    assert.deepStrictEqual([...getAllowedActions(game)], ['resolveIT']);
+    assert.deepStrictEqual([...getAllowedActions(game)], [GAME_ACTIONS.RESOLVE_IT]);
 });
 
 runTest('getAllowedActions は pending の内容から解決可能アクションを列挙する', () => {
-    const { GameManager } = makeGame();
+    const { GameManager, GAME_ACTIONS } = loadGameRuntime();
     const game = new GameManager(2);
     game.phase = 'pending';
+    game.pendingTV = 1;
     game.pendingBusiness = 1;
     game.pendingCleaning = 1;
     game.pendingMover = 1;
+    game.pendingRenovation = 1;
     assert.deepStrictEqual(
         [...getAllowedActions(game)],
-        ['resolveBusiness', 'resolveCleaning', 'resolveMover']
+        [
+            GAME_ACTIONS.RESOLVE_TV,
+            GAME_ACTIONS.RESOLVE_BUSINESS,
+            GAME_ACTIONS.RESOLVE_CLEANING,
+            GAME_ACTIONS.RESOLVE_MOVER,
+            GAME_ACTIONS.RESOLVE_RENOVATION,
+        ]
     );
+});
+
+runTest('getAllowedActions は単純 phase の許可 action を GameManager と共有する', () => {
+    const { GameManager, GAME_PHASES, GAME_PHASE_ACTIONS } = loadGameRuntime();
+    const game = new GameManager(2);
+    for (const phase of [
+        GAME_PHASES.ROLL,
+        GAME_PHASES.SELECT_DICE,
+        GAME_PHASES.REROLL_CONFIRM,
+        GAME_PHASES.HARBOR_CHOICE,
+        GAME_PHASES.BUILD,
+    ]) {
+        game.phase = phase;
+        assert.deepStrictEqual([...getAllowedActions(game)], [...GAME_PHASE_ACTIONS[phase]]);
+        assert.deepStrictEqual([...getAllowedActions(game)], [...GameManager.allowedActionsFor(game)]);
+    }
+});
+
+runTest('getAllowedActions は pendingIT を他の pending より優先する', () => {
+    const { GameManager, GAME_ACTIONS } = loadGameRuntime();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingTV = 1;
+    game.pendingBusiness = 1;
+    game.pendingIT = true;
+
+    assert.deepStrictEqual([...getAllowedActions(game)], [GAME_ACTIONS.RESOLVE_IT]);
+    assert.deepStrictEqual([...getAllowedActions(game)], [...GameManager.allowedActionsFor(game)]);
 });
 
 // ===== validateCleaningPayload =====
@@ -695,6 +736,39 @@ runTest('validateGameAction は replay 不能な nextTurn payload を拒否す�
 
     assert.strictEqual(invalid.ok, false);
     assert.strictEqual(valid.ok, true);
+});
+
+runTest('validateActionPayloadForState は validateGameAction と build payload 判定を共有する', () => {
+    const room = makeRoom();
+    room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, playerIndex: 0 }];
+
+    const valid = validateGameAction(room, { playerIndex: 0 }, 'buildCard', { cardName: 'カフェ' });
+    assert.strictEqual(valid.ok, true);
+    assert.strictEqual(
+        validateActionPayloadForState(room, valid.mirror.game, valid.mirror.shopStock, 'buildCard', { cardName: 'カフェ' }),
+        true
+    );
+    assert.strictEqual(
+        validateBuildCardPayload(room, valid.mirror.game, valid.mirror.shopStock, { cardName: '鉱山' }),
+        false
+    );
+});
+
+runTest('validateActionPayloadForState は resolveTV と buildLandmark payload helper を共有する', () => {
+    const { GameManager } = makeGame();
+    const room = makeRoom();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingTV = 1;
+
+    assert.strictEqual(validateResolveTVPayload(game, { targetIndex: 1 }), true);
+    assert.strictEqual(validateActionPayloadForState(room, game, {}, 'resolveTV', { targetIndex: 0 }), false);
+
+    game.phase = 'build';
+    game.pendingTV = 0;
+    game.currentPlayer().coins = 10;
+    assert.strictEqual(validateBuildLandmarkPayload(room, game, { name: '駅' }), true);
+    assert.strictEqual(validateActionPayloadForState(room, game, {}, 'buildLandmark', { name: '港' }), false);
 });
 
 runTest('validateGameAction は BUILD フェーズ以外で undoBuild を拒否する', () => {
@@ -1577,6 +1651,19 @@ runTest('handleRecreateRoom は gameStartPayload.actionSeq だけ新しい復元
     } finally {
         delete __rooms.REPLACE_SEQ;
     }
+});
+
+runTest('restorePayloadRank は共通fixtureの最大 actionSeq を復元rankに使う', () => {
+    const fixture = makeSeqRankUsesMaxFieldsFixture();
+
+    assert.deepStrictEqual(
+        restorePayloadRank(
+            Object.assign({}, fixture.gameStartPayload),
+            makeSnapshot(fixture.stateSnapshotOverrides),
+            fixture.actionLog
+        ),
+        fixture.expectedRank
+    );
 });
 
 runTest('handleRecreateRoom は共通fixtureの最大 actionSeq を復元rankに使う', () => {

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const vm = require('vm');
 const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
+const { serializeMirrorState } = require('../server');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
     makeSeqRankUsesMaxFieldsFixture,
@@ -96,6 +97,7 @@ function loadOnlineRuntime() {
         this._saveActionLog = _saveActionLog;
         this._readOnlineActionLog = _readOnlineActionLog;
         this._readPendingOutboundAction = _readPendingOutboundAction;
+        this._onlineRestoreRank = _onlineRestoreRank;
         this._tryRestoreRoom = _tryRestoreRoom;
         this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
         this.buildOnlineSnapshot = buildOnlineSnapshot;
@@ -677,6 +679,19 @@ runTest('rejoinData は共通fixtureの最大 actionSeq を canonical 値とし�
     const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(stored.hostEpoch, fixture.expectedRank.hostEpoch);
     assert.strictEqual(stored.actionSeq, fixture.expectedRank.actionSeq);
+});
+
+runTest('_onlineRestoreRank は共通fixtureの最大 actionSeq を復元rankに使う', () => {
+    const fixture = makeSeqRankUsesMaxFieldsFixture();
+    const rt = loadOnlineRuntime();
+
+    const rank = rt._onlineRestoreRank(
+        Object.assign({}, fixture.gameStartPayload),
+        Object.assign({}, fixture.stateSnapshotOverrides),
+        fixture.actionLog
+    );
+    assert.strictEqual(rank.hostEpoch, fixture.expectedRank.hostEpoch);
+    assert.strictEqual(rank.actionSeq, fixture.expectedRank.actionSeq);
 });
 
 runTest('rejoinData は共通fixtureで aggregate actionSeq だけでは pending をack扱いしない', () => {
@@ -1391,6 +1406,19 @@ runTest('_saveActionLog は適用済みactionの圧縮時に同じactionを二�
     assert.strictEqual(log.length, 0);
     assert.strictEqual(snapshot.currentPlayerIndex, game.currentPlayerIndex);
     assert.strictEqual(snapshot.turnCount, game.turnCount);
+});
+
+runTest('buildOnlineSnapshot は server mirror snapshot と主要キーが一致する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+
+    const clientSnapshot = rt.buildOnlineSnapshot();
+    const serverSnapshot = serializeMirrorState(rt.getGame(), Object.assign({}, rt.getShopStock()));
+
+    assert.deepStrictEqual(Object.keys(clientSnapshot).sort(), Object.keys(serverSnapshot).sort());
+    assert.deepStrictEqual(Object.keys(clientSnapshot.players[0]).sort(), Object.keys(serverSnapshot.players[0]).sort());
 });
 
 runTest('buildOnlineSnapshot は建設後のUndo状態を保持する', () => {

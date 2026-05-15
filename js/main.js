@@ -291,6 +291,33 @@ function runLocalOrSendOnline(action, data, fallback) {
     return true;
 }
 
+const MAIN_ACTIONS = (typeof GAME_ACTIONS !== 'undefined') ? GAME_ACTIONS : Object.freeze({
+    ROLL_DICE: 'rollDice',
+    SELECT_DICE: 'selectDice',
+    REROLL_DICE: 'rerollDice',
+    SKIP_REROLL: 'skipReroll',
+    RESOLVE_HARBOR: 'resolveHarbor',
+    RESOLVE_TV: 'resolveTV',
+    RESOLVE_BUSINESS: 'resolveBusiness',
+    RESOLVE_CLEANING: 'resolveCleaning',
+    RESOLVE_MOVER: 'resolveMover',
+    RESOLVE_RENOVATION: 'resolveRenovation',
+    RESOLVE_IT: 'resolveIT',
+    BUILD_CARD: 'buildCard',
+    BUILD_LANDMARK: 'buildLandmark',
+    NEXT_TURN: 'nextTurn',
+    UNDO_BUILD: 'undoBuild',
+});
+
+function canRunAction(action) {
+    if (!game || !action) return false;
+    if (typeof game.allowedActions === 'function') return game.allowedActions().has(action);
+    if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') {
+        return GameManager.allowedActionsFor(game).has(action);
+    }
+    return true;
+}
+
 function queueCPUStep(token, delay, fn) {
     setTimeout(() => {
         if (token !== cpuScheduleToken) return;
@@ -460,8 +487,12 @@ function canRunLocalHumanAction(expectedPlayerIndex = null) {
     return true;
 }
 
+function canRunHumanAction(action, expectedPlayerIndex = null) {
+    return canRunLocalHumanAction(expectedPlayerIndex) && canRunAction(action);
+}
+
 function onRoll() {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE)) return;
     playSound('dice');
     if (game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
         // 駅あり：アニメーションなしで即座に選択肢を表示
@@ -474,7 +505,7 @@ function onRoll() {
         updateDiceDisplay(null, true);
         setTimeout(() => {
             delayedHumanActionPending = false;
-            if (!canRunLocalHumanAction(scheduledPlayerIndex) || game.phase !== GAME_PHASES.ROLL) return;
+            if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex)) return;
             const forceDice = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
             runLocalOrSendOnline('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
@@ -483,7 +514,7 @@ function onRoll() {
 }
 
 function onSelectDiceCount(useTwo) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE)) return;
     if (delayedHumanActionPending) return;
     delayedHumanActionPending = true;
     playSound('dice');
@@ -491,7 +522,7 @@ function onSelectDiceCount(useTwo) {
     updateDiceDisplay(null, true);
     setTimeout(() => {
         delayedHumanActionPending = false;
-        if (!canRunLocalHumanAction(scheduledPlayerIndex) || game.phase !== GAME_PHASES.SELECT_DICE) return;
+        if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex)) return;
         const d1 = rollRandomDie();
         const d2 = useTwo ? rollRandomDie() : 0;
         const tunaDice = [rollRandomDie(), rollRandomDie()];
@@ -501,29 +532,29 @@ function onSelectDiceCount(useTwo) {
 }
 
 function onReroll() {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.REROLL_DICE)) return;
     const forceDice = rollRandomDie();
     const tunaDice = [rollRandomDie(), rollRandomDie()];
     runLocalOrSendOnline('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
 }
 
 function onSkipReroll() {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.SKIP_REROLL)) return;
     runLocalOrSendOnline('skipReroll', {}, () => game.skipReroll());
 }
 
 function onResolveHarbor(useBonus) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_HARBOR)) return;
     runLocalOrSendOnline('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
 }
 
 function onResolveTV(i) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_TV)) return;
     runLocalOrSendOnline('resolveTV', { targetIndex: i }, () => game.resolveTV(i));
 }
 
 function onResolveBusiness(targetIndex) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_BUSINESS)) return;
     const myCard = parseInt(document.getElementById("myCardSelect").value, 10);
     const theirCard = parseInt(document.getElementById(`theirCardSelect_${targetIndex}`).value, 10);
     runLocalOrSendOnline('resolveBusiness', { myCard, targetIndex, theirCard },
@@ -531,33 +562,33 @@ function onResolveBusiness(targetIndex) {
 }
 
 function onResolveCleaning(cardName) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_CLEANING)) return;
     runLocalOrSendOnline('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
 }
 
 function onResolveMover(targetIndex) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_MOVER)) return;
     const cardIndex = parseInt(document.getElementById("moverCardSelect").value, 10);
     runLocalOrSendOnline('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
 }
 
 function onResolveRenovation(landmarkName) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_RENOVATION)) return;
     runLocalOrSendOnline('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
 }
 
 function onResolveIT(doSave) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_IT)) return;
     runLocalOrSendOnline('resolveIT', { doSave }, () => game.resolveIT(doSave));
 }
 
 function onBuildCard(name) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD)) return;
     const card = CARDS.find(c => c.name === name);
     if (!card) return;
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
-        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
+        if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD, scheduledPlayerIndex)) return;
         if ((SHOP_STOCK[name] || 0) <= 0) return;
         saveUndoState();
         cancelAutoSkip();
@@ -575,11 +606,11 @@ function onBuildCard(name) {
 }
 
 function onBuildLandmark(name) {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK)) return;
     const cost = Player.landmarkCost(name);
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`, () => {
-        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
+        if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK, scheduledPlayerIndex)) return;
         saveUndoState();
         cancelAutoSkip();
         if (isOnlineGame) {
@@ -595,7 +626,7 @@ function onBuildLandmark(name) {
 }
 
 function onSkip() {
-    if (!canRunLocalHumanAction()) return;
+    if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN)) return;
     let msg;
     if (game.builtThisTurn) {
         msg = "建設完了・ターン終了しますか？";
@@ -606,7 +637,7 @@ function onSkip() {
     }
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(msg, () => {
-        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
+        if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN, scheduledPlayerIndex)) return;
         cancelAutoSkip();
         undoState = null;
         runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());

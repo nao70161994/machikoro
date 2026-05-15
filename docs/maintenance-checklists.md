@@ -7,16 +7,35 @@
 | 知りたいこと | 見る場所 |
 | --- | --- |
 | 高リスク変更の手動確認手順 | [`TESTPLAN.md`](../TESTPLAN.md) |
+| 段階的な保守改善計画 | [`docs/REFACTOR_PLAN.md`](REFACTOR_PLAN.md) |
+| Phase 1 棚卸し / 重複・未使用候補 | [`docs/PHASE1_INVENTORY.md`](PHASE1_INVENTORY.md) |
+| 現在の責務境界 / 状態遷移 / online invariant | [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) |
+| 新カード / 新ランドマーク追加時の追従箇所 | [`docs/CARD_SYSTEM.md`](CARD_SYSTEM.md) |
+| CPU ロジックの分割・データ駆動化方針 | [`docs/CPU_AI.md`](CPU_AI.md) |
+| オンライン同期設計 / room lifecycle | [`docs/ONLINE_SYNC.md`](ONLINE_SYNC.md) |
 | 変更種別ごとの自動確認 / 追加確認 | このファイルの「変更種別別テストコマンド」 |
 | オンライン復元の保存形式 / schema 互換 | [`docs/online-restore-schema.md`](online-restore-schema.md) |
 | RL 学習・評価フロー / artifact 運用 | [`scripts/rl/README.md`](../scripts/rl/README.md) |
 | `CPU（最強）` v2simple の診断・凍結理由 | [`docs/expert-v2-diagnostics.md`](expert-v2-diagnostics.md) |
+
+## Termux / スマホでの軽量確認
+
+短時間で構文と主要回帰を見る場合は、まず次を実行します。
+
+```bash
+npm run test:static
+npm run test:smoke
+```
+
+`test:static` は JS / JSON / shell の構文と parse を確認します。`test:smoke` は static に加えて core / online の主要回帰を実行します。PWA 変更時は続けて `npm run test:pwa` を実行してください。
 
 ## 変更種別別テストコマンド
 
 | 変更種別 | 最低限の自動確認 | 追加確認 |
 | --- | --- | --- |
 | ドキュメントのみ | `git diff --check -- <files>` | リンク先とコマンド名が現行 `package.json` と一致するか見る。 |
+| まず壊れていないか短時間で見る | `npm run test:static` | Termux で重い suite の前に、JS / JSON / shell の構文崩れを先に潰す。 |
+| 主要回帰をまとめて見る | `npm run test:smoke` | static + core + online。ルールとオンライン同期の入口確認に使う。 |
 | `server.js` のみ | `node --check server.js` | ルーム / 復元 / 検証に触る場合は `node tests/server.test.js`。 |
 | `js/*.js` クライアント | `node --check js/<file>.js` | ルール・保存・オンラインに触る場合は該当 Node test。 |
 | ルール / フェーズ | `npm run test:core` | 共有挙動まで広く見る場合は `npm test`。pending action と Undo は `TESTPLAN.md` の該当項目も見る。 |

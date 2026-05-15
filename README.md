@@ -59,6 +59,16 @@ npm run test:cpu
 npm run test:rl
 ```
 
+Termux / Android で短時間に入口を確認する場合:
+
+```bash
+npm run test:static
+npm run test:smoke
+```
+
+- `test:static`: JS / JSON / shell の構文・parse 確認をまとめて実行します。
+- `test:smoke`: static に加えて core / online の主要回帰を実行します。
+
 編集後の構文確認:
 
 ```bash
@@ -67,7 +77,9 @@ node --check js/main.js
 node --check js/online.js
 ```
 
-変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
+変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン同期の設計入口は [`docs/ONLINE_SYNC.md`](./docs/ONLINE_SYNC.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
+
+AI / 人間が途中参加するときは、まず [`docs/AI_HANDOFF.md`](./docs/AI_HANDOFF.md) を読み、そこから [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)、[`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md)、[`docs/CARD_SYSTEM.md`](./docs/CARD_SYSTEM.md) へ進んでください。
 
 Service Worker / manifest / app shell を変更した場合は、PWA 更新通知、ゲーム中の手動 reload、タイトル画面での自動適用、オフライン表示も [`TESTPLAN.md`](./TESTPLAN.md) で確認してください。
 

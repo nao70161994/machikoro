@@ -5,7 +5,114 @@ const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const runtime = loadGameRuntime();
 const GameManager = runtime.GameManager;
 const createCardByName = runtime.createCardByName;
+const createCardById = runtime.createCardById;
+const CARD_EFFECTS = runtime.CARD_EFFECTS;
+const CARD_IDS = runtime.CARD_IDS;
+const CARD_NAME_BY_ID = runtime.CARD_NAME_BY_ID;
+const CARD_ID_BY_NAME = runtime.CARD_ID_BY_NAME;
+const CARD_EFFECT_METADATA = runtime.CARD_EFFECT_METADATA;
+const CARD_INCOME_EFFECT_HANDLERS = runtime.CARD_INCOME_EFFECT_HANDLERS;
 const GAME_PHASES = runtime.GAME_PHASES;
+const GAME_ACTIONS = runtime.GAME_ACTIONS;
+const GAME_PHASE_ACTIONS = runtime.GAME_PHASE_ACTIONS;
+
+runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
+    const effects = Object.values(CARD_EFFECTS);
+    assert.deepStrictEqual(
+        Object.keys(CARD_EFFECT_METADATA).sort(),
+        effects.slice().sort()
+    );
+    for (const effect of effects) {
+        const metadata = CARD_EFFECT_METADATA[effect];
+        assert.ok(metadata.timing, `metadata timing missing: ${effect}`);
+        assert.ok(metadata.targetScope, `metadata targetScope missing: ${effect}`);
+        assert.ok(metadata.cpuKind, `metadata cpuKind missing: ${effect}`);
+    }
+});
+
+runTest('CARD_IDS は全カード名へ対応する', () => {
+    const ids = Object.values(CARD_IDS);
+    assert.strictEqual(new Set(ids).size, ids.length);
+    assert.deepStrictEqual(
+        Array.from(Object.keys(CARD_NAME_BY_ID), String).sort(),
+        Array.from(ids, String).sort()
+    );
+    assert.deepStrictEqual(
+        Array.from(Object.values(CARD_NAME_BY_ID), String).sort(),
+        Array.from(runtime.CARDS, card => card.name).sort()
+    );
+    for (const [id, name] of Object.entries(CARD_NAME_BY_ID)) {
+        assert.strictEqual(CARD_ID_BY_NAME[name], id);
+    }
+});
+
+runTest('Card の stable id は clone と createCardById で保持される', () => {
+    const ids = Object.values(CARD_IDS);
+    for (const card of runtime.CARDS) {
+        assert.ok(card.id, 'card id missing: ' + card.name);
+        assert.strictEqual(CARD_NAME_BY_ID[card.id], card.name);
+        assert.ok(ids.includes(card.id), 'unknown card id: ' + card.id);
+
+        const byName = createCardByName(card.name);
+        const byId = createCardById(card.id);
+        assert.strictEqual(byName.id, card.id);
+        assert.deepStrictEqual(byId, byName);
+    }
+});
+
+runTest('CARD_INCOME_EFFECT_HANDLERS は金額計算だけを共有する effect を網羅する', () => {
+    const expected = [
+        CARD_EFFECTS.CHEESE,
+        CARD_EFFECTS.FURNITURE,
+        CARD_EFFECTS.MARKET,
+        CARD_EFFECTS.FLOWER,
+        CARD_EFFECTS.FOODWAREHOUSE,
+        CARD_EFFECTS.FEWLANDMARK,
+        CARD_EFFECTS.CORNFIELD,
+        CARD_EFFECTS.WINERY,
+        CARD_EFFECTS.DRINKFACTORY,
+    ];
+    assert.deepStrictEqual(
+        Object.keys(CARD_INCOME_EFFECT_HANDLERS).sort(),
+        expected.slice().sort()
+    );
+    for (const effect of expected) {
+        assert.strictEqual(CARD_EFFECT_METADATA[effect].timing, 'income');
+    }
+});
+
+runTest('GAME_PHASE_ACTIONS は単純フェーズの許可actionを定義する', () => {
+    assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.ROLL]], [GAME_ACTIONS.ROLL_DICE]);
+    assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.SELECT_DICE]], [GAME_ACTIONS.SELECT_DICE]);
+    assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.REROLL_CONFIRM]], [GAME_ACTIONS.REROLL_DICE, GAME_ACTIONS.SKIP_REROLL]);
+    assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.HARBOR_CHOICE]], [GAME_ACTIONS.RESOLVE_HARBOR]);
+    assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.BUILD]], [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]);
+});
+
+runTest('allowedActions は phase と pending 状態から許可actionを返す', () => {
+    const game = new GameManager(2);
+    assert.deepStrictEqual([...game.allowedActions()].sort(), [GAME_ACTIONS.ROLL_DICE]);
+
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    game.pendingMover = 1;
+    assert.deepStrictEqual(
+        [...game.allowedActions()].sort(),
+        [GAME_ACTIONS.RESOLVE_MOVER, GAME_ACTIONS.RESOLVE_TV].sort()
+    );
+
+    game.pendingIT = true;
+    assert.deepStrictEqual([...game.allowedActions()], [GAME_ACTIONS.RESOLVE_IT]);
+
+    game.pendingIT = false;
+    game.phase = GAME_PHASES.BUILD;
+    game.pendingTV = 0;
+    game.pendingMover = 0;
+    assert.deepStrictEqual(
+        [...game.allowedActions()].sort(),
+        [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD].sort()
+    );
+});
 
 runTest('rollDice後にフェーズが適切に遷移する', () => {
     const normalGame = new GameManager(2);

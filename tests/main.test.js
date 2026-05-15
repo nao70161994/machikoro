@@ -117,6 +117,23 @@ function loadMainRuntime(options = {}) {
             PENDING: 'pending',
             BUILD: 'build',
         },
+        GAME_ACTIONS: {
+            ROLL_DICE: 'rollDice',
+            SELECT_DICE: 'selectDice',
+            REROLL_DICE: 'rerollDice',
+            SKIP_REROLL: 'skipReroll',
+            RESOLVE_HARBOR: 'resolveHarbor',
+            RESOLVE_TV: 'resolveTV',
+            RESOLVE_BUSINESS: 'resolveBusiness',
+            RESOLVE_CLEANING: 'resolveCleaning',
+            RESOLVE_MOVER: 'resolveMover',
+            RESOLVE_RENOVATION: 'resolveRenovation',
+            RESOLVE_IT: 'resolveIT',
+            BUILD_CARD: 'buildCard',
+            BUILD_LANDMARK: 'buildLandmark',
+            NEXT_TURN: 'nextTurn',
+            UNDO_BUILD: 'undoBuild',
+        },
         LANDMARK_NAMES: {
             STATION: '駅',
             AIRPORT: '空港',
@@ -133,6 +150,25 @@ function loadMainRuntime(options = {}) {
             }
         },
         GameManager: class GameManager {
+            static allowedActionsFor(game) {
+                if (game.pendingIT) return new Set(['resolveIT']);
+                if (game.phase === 'pending') {
+                    const actions = new Set();
+                    if (game.pendingTV > 0) actions.add('resolveTV');
+                    if (game.pendingBusiness > 0) actions.add('resolveBusiness');
+                    if (game.pendingCleaning > 0) actions.add('resolveCleaning');
+                    if (game.pendingMover > 0) actions.add('resolveMover');
+                    if (game.pendingRenovation > 0) actions.add('resolveRenovation');
+                    return actions;
+                }
+                return new Set({
+                    roll: ['rollDice'],
+                    selectDice: ['selectDice'],
+                    rerollConfirm: ['rerollDice', 'skipReroll'],
+                    harborChoice: ['resolveHarbor'],
+                    build: ['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild'],
+                }[game.phase] || []);
+            }
             constructor(count) {
                 this.players = Array.from({ length: count }, (_, i) => ({
                     name: `P${i + 1}`,
@@ -428,6 +464,40 @@ runTest('main onSelectDiceCount は遅延中にオンライン手番が変わっ
     rt.__test.flushTimeouts();
 
     assert.strictEqual(game.selectedDice, undefined);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main onReroll は phase が変わっていたら送信しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+
+    rt.onReroll();
+
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main onBuildCard はconfirm後に phase が変わったら送信しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 3;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+    rt.SHOP_STOCK['麦畑'] = 6;
+    rt.beforeConfirm = () => {
+        game.phase = rt.GAME_PHASES.ROLL;
+    };
+
+    rt.onBuildCard('麦畑');
+
+    assert.strictEqual(game.builtCard, undefined);
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 

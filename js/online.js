@@ -99,6 +99,40 @@ let _rejoinRetryTimer = null;
 const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
 const ONLINE_RESTORE_SCHEMA_VERSION = 2;
+const ONLINE_STORAGE_KEYS = Object.freeze({
+    gameStart: 'onlineGameStart',
+    actionLog: 'onlineActionLog',
+    stateSnapshot: 'onlineStateSnapshot',
+    pendingAction: 'onlinePendingAction',
+});
+
+function _readOnlineStorageJson(key, fallback = null) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
+function _writeOnlineStorageJson(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+function _removeOnlineStorageItem(key) {
+    localStorage.removeItem(key);
+}
+
+function _clearOnlineRestoreBundle() {
+    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.gameStart);
+    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.actionLog);
+    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
+}
+
+function _readOnlineStateSnapshot() {
+    return _readOnlineStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, null);
+}
 
 function _clearRejoinRetry() {
     _rejoinRetryCount = 0;
@@ -134,10 +168,10 @@ function _saveActionLog(action, data, options = {}) {
         if (log.length >= ONLINE_ACTION_LOG_LIMIT && game) {
             const snapshot = buildOnlineSnapshot();
             if (snapshot) {
-                localStorage.setItem('onlineStateSnapshot', JSON.stringify(snapshot));
+                _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, snapshot);
                 log = [];
                 if (options.alreadyApplied) {
-                    localStorage.setItem('onlineActionLog', JSON.stringify(log));
+                    _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
                     return;
                 }
             }
@@ -150,7 +184,7 @@ function _saveActionLog(action, data, options = {}) {
         if (typeof options.clientActionId === 'string') entry.clientActionId = options.clientActionId;
         entry.seq = seq;
         log.push(entry);
-        localStorage.setItem('onlineActionLog', JSON.stringify(log));
+        _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
     } catch(e) {}
 }
 
@@ -167,12 +201,7 @@ function _normalizeOnlineActionLog(value) {
 }
 
 function _readOnlineActionLog() {
-    try {
-        const raw = localStorage.getItem('onlineActionLog');
-        return raw ? _normalizeOnlineActionLog(JSON.parse(raw)) : [];
-    } catch (e) {
-        return [];
-    }
+    return _normalizeOnlineActionLog(_readOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, []));
 }
 
 function _savePendingOutboundAction(action, data) {
@@ -184,7 +213,7 @@ function _savePendingOutboundAction(action, data) {
         clientActionId: _createOnlineClientActionId(),
     };
     try {
-        localStorage.setItem('onlinePendingAction', JSON.stringify(entry));
+        _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry);
     } catch (e) {}
     return entry;
 }
@@ -197,12 +226,7 @@ function _createOnlineClientActionId() {
 }
 
 function _readOnlineGameStartPayload() {
-    try {
-        const raw = localStorage.getItem('onlineGameStart');
-        return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-        return null;
-    }
+    return _readOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, null);
 }
 
 function _writeOnlineGameStartPatch(patch) {
@@ -210,18 +234,14 @@ function _writeOnlineGameStartPatch(patch) {
         const payload = _readOnlineGameStartPayload();
         if (!payload) return;
         Object.assign(payload, patch);
-        localStorage.setItem('onlineGameStart', JSON.stringify(payload));
+        _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, payload);
     } catch (e) {}
 }
 
 function _currentOnlineActionSeq(log = null) {
     const payload = _readOnlineGameStartPayload();
-    const snapshotRaw = localStorage.getItem('onlineStateSnapshot');
-    let snapshotSeq = 0;
-    try {
-        const snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
-        snapshotSeq = Number.isInteger(snapshot?.actionSeq) ? snapshot.actionSeq : 0;
-    } catch (e) {}
+    const snapshot = _readOnlineStateSnapshot();
+    const snapshotSeq = Number.isInteger(snapshot?.actionSeq) ? snapshot.actionSeq : 0;
     const actionLog = log || _readOnlineActionLog();
     const logSeq = actionLog.reduce((max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max, 0);
     return Math.max(
@@ -259,23 +279,17 @@ function _nextOnlineActionSeq(log = null) {
 }
 
 function _readPendingOutboundAction() {
-    try {
-        const raw = localStorage.getItem('onlinePendingAction');
-        if (!raw) return null;
-        const entry = JSON.parse(raw);
-        if (!entry || typeof entry.action !== 'string') return null;
-        const normalized = { action: entry.action, data: entry.data || {} };
-        if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-        if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
-        if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
-        return normalized;
-    } catch (e) {
-        return null;
-    }
+    const entry = _readOnlineStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null);
+    if (!entry || typeof entry.action !== 'string') return null;
+    const normalized = { action: entry.action, data: entry.data || {} };
+    if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+    if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+    if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
+    return normalized;
 }
 
 function _clearPendingOutboundAction() {
-    try { localStorage.removeItem('onlinePendingAction'); } catch (e) {}
+    try { _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction); } catch (e) {}
 }
 
 function _sameOnlineActionEntry(a, b) {
@@ -361,6 +375,48 @@ function saveOnlineSession() {
     } catch (e) {}
 }
 
+function _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch) {
+    if (!gameStartPayload || typeof gameStartPayload !== 'object') return gameStartPayload;
+    if (Number.isInteger(hostPlayerIndex)) {
+        gameStartPayload.hostPlayerIndex = hostPlayerIndex;
+    }
+    if (Number.isInteger(hostEpoch)) {
+        gameStartPayload.hostEpoch = hostEpoch;
+    } else if (!Number.isInteger(gameStartPayload.hostEpoch)) {
+        gameStartPayload.hostEpoch = 0;
+    }
+    return gameStartPayload;
+}
+
+function _setOnlineHostState(hostPlayerIndex) {
+    isRoomHost = Number.isInteger(hostPlayerIndex) && hostPlayerIndex === myOriginalPlayerIndex;
+    return isRoomHost;
+}
+
+function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
+    const raw = localStorage.getItem('onlineSession');
+    if (raw) {
+        try {
+            const s = JSON.parse(raw);
+            s.isRoomHost = isRoomHost;
+            s.reconnectToken = reconnectToken || s.reconnectToken || '';
+            localStorage.setItem('onlineSession', JSON.stringify(s));
+        } catch (_) {}
+    }
+    try {
+        const gameStartPayload = _readOnlineGameStartPayload();
+        if (gameStartPayload) {
+            if (Number.isInteger(hostPlayerIndex)) {
+                gameStartPayload.hostPlayerIndex = hostPlayerIndex;
+            }
+            gameStartPayload.hostEpoch = Number.isInteger(hostEpoch)
+                ? hostEpoch
+                : (Number.isInteger(gameStartPayload.hostEpoch) ? gameStartPayload.hostEpoch + 1 : 1);
+            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+        }
+    } catch (_) {}
+}
+
 // オンライン対戦（Socket.IO）
 function initSocket() {
     if (socket) return;
@@ -393,15 +449,16 @@ function initSocket() {
 
     socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq }) => {
         isOnlineGame = true;
-        isRoomHost = Number.isInteger(hostPlayerIndex) && hostPlayerIndex === myOriginalPlayerIndex;
+        _setOnlineHostState(hostPlayerIndex);
         cpuSpeed = cs || 1500;
         if (ec) enabledCards = new Set(ec);
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         // ゲーム開始データとアクションログをlocalStorageに保存（サーバー再起動後の復元用）
         try {
-            localStorage.setItem('onlineGameStart', JSON.stringify({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch: Number.isInteger(hostEpoch) ? hostEpoch : 0, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }));
-            localStorage.removeItem('onlineStateSnapshot');
-            localStorage.setItem('onlineActionLog', JSON.stringify([]));
+            const gameStartPayload = _applyOnlineHostPayload({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }, hostPlayerIndex, hostEpoch);
+            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+            _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, []);
             _clearPendingOutboundAction();
         } catch(e) {}
         saveOnlineSession();
@@ -449,15 +506,8 @@ function initSocket() {
                 return;
             }
         }
-        if (Number.isInteger(hostPlayerIndex)) {
-            gameStartPayload.hostPlayerIndex = hostPlayerIndex;
-        }
         gameStartPayload.schemaVersion = ONLINE_RESTORE_SCHEMA_VERSION;
-        if (Number.isInteger(hostEpoch)) {
-            gameStartPayload.hostEpoch = hostEpoch;
-        } else if (!Number.isInteger(gameStartPayload.hostEpoch)) {
-            gameStartPayload.hostEpoch = 0;
-        }
+        _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch);
         gameStartPayload.actionSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
         const pendingBeforeRejoin = _readPendingOutboundAction();
         const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
@@ -478,19 +528,15 @@ function initSocket() {
         enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
-        if (Number.isInteger(hostPlayerIndex)) {
-            isRoomHost = myOriginalPlayerIndex === hostPlayerIndex;
-        } else {
-            isRoomHost = false;
-        }
+        _setOnlineHostState(hostPlayerIndex);
         try {
-            localStorage.setItem('onlineGameStart', JSON.stringify(gameStartPayload));
+            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
             if (stateSnapshot) {
-                localStorage.setItem('onlineStateSnapshot', JSON.stringify(stateSnapshot));
+                _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
             } else {
-                localStorage.removeItem('onlineStateSnapshot');
+                _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
             }
-            localStorage.setItem('onlineActionLog', JSON.stringify(replayActionLog));
+            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
         } catch(e) {}
         saveOnlineSession();
         cpuScheduleToken++;
@@ -548,35 +594,14 @@ function initSocket() {
     });
 
     socket.on('hostChanged', ({ newHostPlayerIndex, hostEpoch }) => {
-        if (myOriginalPlayerIndex === newHostPlayerIndex) {
-            isRoomHost = true;
+        if (_setOnlineHostState(newHostPlayerIndex)) {
             game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
             render();
             scheduleCPU();
         } else {
-            isRoomHost = false;
             cpuScheduleToken++;
         }
-        const raw = localStorage.getItem('onlineSession');
-        if (raw) {
-            try {
-                const s = JSON.parse(raw);
-                s.isRoomHost = isRoomHost;
-                s.reconnectToken = reconnectToken || s.reconnectToken || '';
-                localStorage.setItem('onlineSession', JSON.stringify(s));
-            } catch (_) {}
-        }
-        try {
-            const gameStartRaw = localStorage.getItem('onlineGameStart');
-            if (gameStartRaw) {
-                const gameStartPayload = JSON.parse(gameStartRaw);
-                gameStartPayload.hostPlayerIndex = newHostPlayerIndex;
-                gameStartPayload.hostEpoch = Number.isInteger(hostEpoch)
-                    ? hostEpoch
-                    : (Number.isInteger(gameStartPayload.hostEpoch) ? gameStartPayload.hostEpoch + 1 : 1);
-                localStorage.setItem('onlineGameStart', JSON.stringify(gameStartPayload));
-            }
-        } catch (_) {}
+        _persistOnlineHostState(newHostPlayerIndex, hostEpoch);
     });
 
     socket.on('connect', () => {
@@ -806,35 +831,19 @@ function sendAction(action, data = {}) {
 
 function _tryRestoreRoom() {
     try {
-        const raw = localStorage.getItem('onlineGameStart');
-        const logRaw = localStorage.getItem('onlineActionLog');
-        const snapshotRaw = localStorage.getItem('onlineStateSnapshot');
-        if (!raw) {
+        const gameStartPayload = _readOnlineGameStartPayload();
+        if (!gameStartPayload) {
             document.getElementById("onlineStatus").textContent = '❌ 復元データが見つかりません';
             return;
         }
-        const gameStartPayload = JSON.parse(raw);
         if (gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) {
-            localStorage.removeItem('onlineGameStart');
-            localStorage.removeItem('onlineActionLog');
-            localStorage.removeItem('onlineStateSnapshot');
-            localStorage.removeItem('onlinePendingAction');
+            _clearOnlineRestoreBundle();
             document.getElementById("onlineStatus").textContent = '❌ 古い復元データのため再接続できません';
             return;
         }
-        let stateSnapshot = null;
-        let actionLog = [];
-        try {
-            stateSnapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
-        } catch (_) {
-            stateSnapshot = null;
-        }
-        try {
-            actionLog = logRaw ? _normalizeOnlineActionLog(JSON.parse(logRaw)) : [];
-        } catch (_) {
-            actionLog = [];
-        }
+        const stateSnapshot = _readOnlineStateSnapshot();
+        const actionLog = _readOnlineActionLog();
         const pending = _readPendingOutboundAction();
         if (pending && !actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
             actionLog.push(pending);
@@ -859,13 +868,7 @@ function _readLocalRestoreBundle() {
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload || gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;
-        let stateSnapshot = null;
-        try {
-            const snapshotRaw = localStorage.getItem('onlineStateSnapshot');
-            stateSnapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
-        } catch (_) {
-            stateSnapshot = null;
-        }
+        const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
         const pending = _readPendingOutboundAction();
         if (pending && !actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {

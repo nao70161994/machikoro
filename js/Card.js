@@ -1,5 +1,5 @@
 class Card {
-    constructor(name, cost, diceNums, income, color, category, effect) {
+    constructor(name, cost, diceNums, income, color, category, effect, id = null) {
         this.name = name;
         this.cost = cost;
         this.diceNums = diceNums;
@@ -7,6 +7,7 @@ class Card {
         this.color = color;
         this.category = category;
         this.effect = effect;
+        this.id = id;
     }
 }
 
@@ -58,6 +59,121 @@ const CARD_CATEGORIES = Object.freeze({
     FISHERY:    "海産",
     MAJOR:      "大施設",
 });
+
+const CARD_IDS = Object.freeze({
+    WHEAT_FIELD:       "wheat_field",
+    RANCH:             "ranch",
+    FOREST:            "forest",
+    MINE:              "mine",
+    APPLE_ORCHARD:     "apple_orchard",
+    BAKERY:            "bakery",
+    CONVENIENCE:       "convenience_store",
+    CHEESE_FACTORY:    "cheese_factory",
+    FURNITURE_FACTORY: "furniture_factory",
+    FRUIT_MARKET:      "fruit_market",
+    CAFE:              "cafe",
+    FAMILY_RESTAURANT: "family_restaurant",
+    STADIUM:           "stadium",
+    TV_STATION:        "tv_station",
+    BUSINESS_CENTER:   "business_center",
+    FLOWER_GARDEN:     "flower_garden",
+    MACKEREL_BOAT:     "mackerel_boat",
+    TUNA_BOAT:         "tuna_boat",
+    FLOWER_SHOP:       "flower_shop",
+    FOOD_WAREHOUSE:    "food_warehouse",
+    SUSHI_BAR:         "sushi_bar",
+    PIZZA_SHOP:        "pizza_shop",
+    BURGER_SHOP:       "burger_shop",
+    PUBLISHER:         "publisher",
+    TAX_OFFICE:        "tax_office",
+    CORN_FIELD:        "corn_field",
+    VINEYARD:          "vineyard",
+    GENERAL_STORE:     "general_store",
+    RENOVATION:        "renovation_company",
+    LOAN_OFFICE:       "loan_office",
+    WINERY:            "winery",
+    MOVER:             "moving_company",
+    DRINK_FACTORY:     "drink_factory",
+    FRENCH_RESTAURANT: "french_restaurant",
+    MEMBERS_BAR:       "members_bar",
+    CLEANING_COMPANY:  "cleaning_company",
+    IT_STARTUP:        "it_startup",
+    PARK:              "park",
+});
+
+const CARD_EFFECT_METADATA = Object.freeze({
+    [CARD_EFFECTS.NORMAL]:        { timing: "income", targetScope: "self",      cpuKind: "income" },
+    [CARD_EFFECTS.CHEESE]:        { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
+    [CARD_EFFECTS.FURNITURE]:     { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
+    [CARD_EFFECTS.MARKET]:        { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
+    [CARD_EFFECTS.FLOWER]:        { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
+    [CARD_EFFECTS.FOODWAREHOUSE]: { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
+    [CARD_EFFECTS.FEWLANDMARK]:   { timing: "income", targetScope: "self",      cpuKind: "conditionalIncome" },
+    [CARD_EFFECTS.WINERY]:        { timing: "income", targetScope: "self",      cpuKind: "comboIncome", sideEffect: "dormantSelf" },
+    [CARD_EFFECTS.MOVER]:         { timing: "pending", targetScope: "opponent",  cpuKind: "interactive" },
+    [CARD_EFFECTS.DRINKFACTORY]:  { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
+    [CARD_EFFECTS.LOAN]:          { timing: "build",  targetScope: "self",      cpuKind: "upkeep" },
+    [CARD_EFFECTS.RENOVATION]:    { timing: "pending", targetScope: "self",      cpuKind: "interactive" },
+    [CARD_EFFECTS.HARBOR]:        { timing: "income", targetScope: "self",      cpuKind: "conditionalIncome", requires: "harbor" },
+    [CARD_EFFECTS.HARBOR_RED]:    { timing: "income", targetScope: "current",   cpuKind: "conditionalSteal", requires: "harbor" },
+    [CARD_EFFECTS.TUNA]:          { timing: "income", targetScope: "self",      cpuKind: "conditionalIncome", requires: "harbor" },
+    [CARD_EFFECTS.CORNFIELD]:     { timing: "income", targetScope: "self",      cpuKind: "conditionalIncome" },
+    [CARD_EFFECTS.FRENCHR]:       { timing: "income", targetScope: "current",   cpuKind: "conditionalSteal" },
+    [CARD_EFFECTS.MEMBERBAR]:     { timing: "income", targetScope: "current",   cpuKind: "conditionalSteal" },
+    [CARD_EFFECTS.STADIUM]:       { timing: "income", targetScope: "opponents", cpuKind: "steal" },
+    [CARD_EFFECTS.TV]:            { timing: "pending", targetScope: "opponent",  cpuKind: "interactive" },
+    [CARD_EFFECTS.BUSINESS]:      { timing: "pending", targetScope: "opponent",  cpuKind: "interactive" },
+    [CARD_EFFECTS.PUBLISHER]:     { timing: "income", targetScope: "opponents", cpuKind: "steal" },
+    [CARD_EFFECTS.TAXOFFICE]:     { timing: "income", targetScope: "opponents", cpuKind: "steal" },
+    [CARD_EFFECTS.CLEANING]:      { timing: "pending", targetScope: "all",       cpuKind: "interactive" },
+    [CARD_EFFECTS.ITSTARTUP]:     { timing: "turnEnd", targetScope: "opponents", cpuKind: "interactive" },
+    [CARD_EFFECTS.PARK]:          { timing: "income", targetScope: "all",       cpuKind: "redistribute" },
+});
+
+const CARD_NAME_BY_ID = Object.freeze({
+    [CARD_IDS.WHEAT_FIELD]:       "麦畑",
+    [CARD_IDS.RANCH]:             "牧場",
+    [CARD_IDS.FOREST]:            "森林",
+    [CARD_IDS.MINE]:              "鉱山",
+    [CARD_IDS.APPLE_ORCHARD]:     "リンゴ園",
+    [CARD_IDS.BAKERY]:            "パン屋",
+    [CARD_IDS.CONVENIENCE]:       "コンビニ",
+    [CARD_IDS.CHEESE_FACTORY]:    "チーズ工場",
+    [CARD_IDS.FURNITURE_FACTORY]: "家具工場",
+    [CARD_IDS.FRUIT_MARKET]:      "青果市場",
+    [CARD_IDS.CAFE]:              "カフェ",
+    [CARD_IDS.FAMILY_RESTAURANT]: "ファミレス",
+    [CARD_IDS.STADIUM]:           "スタジアム",
+    [CARD_IDS.TV_STATION]:        "テレビ局",
+    [CARD_IDS.BUSINESS_CENTER]:   "ビジネスセンター",
+    [CARD_IDS.FLOWER_GARDEN]:     "花畑",
+    [CARD_IDS.MACKEREL_BOAT]:     "サンマ漁船",
+    [CARD_IDS.TUNA_BOAT]:         "マグロ漁船",
+    [CARD_IDS.FLOWER_SHOP]:       "フラワーショップ",
+    [CARD_IDS.FOOD_WAREHOUSE]:    "食品倉庫",
+    [CARD_IDS.SUSHI_BAR]:         "寿司屋",
+    [CARD_IDS.PIZZA_SHOP]:        "ピザ屋",
+    [CARD_IDS.BURGER_SHOP]:       "バーガーショップ",
+    [CARD_IDS.PUBLISHER]:         "出版社",
+    [CARD_IDS.TAX_OFFICE]:        "税務署",
+    [CARD_IDS.CORN_FIELD]:        "コーン畑",
+    [CARD_IDS.VINEYARD]:          "ブドウ園",
+    [CARD_IDS.GENERAL_STORE]:     "雑貨屋",
+    [CARD_IDS.RENOVATION]:        "改装屋",
+    [CARD_IDS.LOAN_OFFICE]:       "貸金業",
+    [CARD_IDS.WINERY]:            "ワイナリー",
+    [CARD_IDS.MOVER]:             "引越し屋",
+    [CARD_IDS.DRINK_FACTORY]:     "ドリンク工場",
+    [CARD_IDS.FRENCH_RESTAURANT]: "高級フレンチ",
+    [CARD_IDS.MEMBERS_BAR]:       "会員制BAR",
+    [CARD_IDS.CLEANING_COMPANY]:  "清掃業",
+    [CARD_IDS.IT_STARTUP]:        "ITベンチャー",
+    [CARD_IDS.PARK]:              "公園",
+});
+
+const CARD_ID_BY_NAME = Object.freeze(Object.fromEntries(
+    Object.entries(CARD_NAME_BY_ID).map(([id, name]) => [name, id])
+));
 
 const CARDS = [
     // ===== 基本セット =====
@@ -117,6 +233,10 @@ CARDS.push(new Card("清掃業",     4, [8],     0, "purple", CARD_CATEGORIES.MA
 CARDS.push(new Card("ITベンチャー",1,[10],    0, "purple", CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.ITSTARTUP));
 CARDS.push(new Card("公園",       3, [11,12,13],0,"purple",CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.PARK));
 
+for (const card of CARDS) {
+    card.id = CARD_ID_BY_NAME[card.name] || null;
+}
+
 const CARD_EFFECT_DESCRIPTIONS = Object.freeze({
     [CARD_EFFECTS.CHEESE]:       (i) => `牧場1軒につき+${i}コイン`,
     [CARD_EFFECTS.FURNITURE]:    (i) => `森林・鉱山1軒につき+${i}コイン`,
@@ -147,10 +267,14 @@ const CARD_EFFECT_DESCRIPTIONS = Object.freeze({
 
 function cloneCard(card) {
     if (!card) return null;
-    return new Card(card.name, card.cost, [...card.diceNums], card.income, card.color, card.category, card.effect);
+    return new Card(card.name, card.cost, [...card.diceNums], card.income, card.color, card.category, card.effect, card.id || CARD_ID_BY_NAME[card.name] || null);
 }
 
 function createCardByName(name) {
     const card = CARDS.find(c => c.name === name);
     return cloneCard(card);
+}
+
+function createCardById(id) {
+    return createCardByName(CARD_NAME_BY_ID[id]);
 }

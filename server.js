@@ -867,7 +867,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.getInitialCardStock = getInitialCardStock; this.GAME_PHASES = GAME_PHASES; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.getInitialCardStock = getInitialCardStock; this.GAME_PHASES = GAME_PHASES; this.GAME_ACTIONS = GAME_ACTIONS; this.GAME_PHASE_ACTIONS = GAME_PHASE_ACTIONS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
         context
     );
     return context;
@@ -1108,50 +1108,10 @@ function validateReplayAction(room, game, shopStock, entry, lastUndoState, cpuPl
     const { action, data } = entry;
     if (!validateReplayActor(room, game, entry, cpuPlayers)) return false;
     if (!getAllowedActions(game).has(action)) return false;
-    if (action === 'rollDice') return validateRollDicePayload(data, game);
-    if (action === 'selectDice') return validateSelectDicePayload(data);
-    if (action === 'rerollDice') return validateRerollDicePayload(data);
-    if (action === 'skipReroll') return isPlainObject(data);
-    if (action === 'resolveHarbor') return validateResolveHarborPayload(data);
-    if (action === 'resolveTV') {
-        return isPlainObject(data) &&
-            Number.isInteger(data.targetIndex) &&
-            data.targetIndex >= 0 &&
-            data.targetIndex < game.players.length &&
-            data.targetIndex !== game.currentPlayerIndex;
-    }
-    if (action === 'resolveBusiness') return validateBusinessPayload(game, data);
-    if (action === 'resolveCleaning') return validateCleaningPayload(game, data);
-    if (action === 'resolveMover') return validateMoverPayload(game, data);
-    if (action === 'resolveRenovation') return validateRenovationPayload(game, data);
-    if (action === 'resolveIT') return validateResolveITPayload(data);
-    if (action === 'buildCard') {
-        const cardName = data?.cardName;
-        const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(c => c.name));
-        const card = gameRuntime.createCardByName(cardName);
-        const current = game.currentPlayer();
-        return !!card &&
-            enabledCards.has(cardName) &&
-            (shopStock[cardName] || 0) > 0 &&
-            !game.builtThisTurn &&
-            current.coins >= card.cost &&
-            !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0);
-    }
-    if (action === 'buildLandmark') {
-        const name = data?.name;
-        const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
-        const current = game.currentPlayer();
-        const cost = gameRuntime.Player.landmarkCost(name);
-        return enabledLandmarks.has(name) &&
-            !game.builtThisTurn &&
-            !current.landmarks[name] &&
-            current.coins >= cost;
-    }
-    if (action === 'undoBuild') {
-        return !!lastUndoState && game.builtThisTurn && isPlainObject(data);
-    }
-    if (action === 'nextTurn') return isPlainObject(data);
-    return false;
+    return validateActionPayloadForState(room, game, shopStock, action, data, {
+        undoState: lastUndoState,
+        requireUndoPayload: true,
+    });
 }
 
 function validateReplayActor(room, game, entry, cpuPlayers) {
@@ -1419,6 +1379,61 @@ function validateResolveITPayload(data) {
     return isPlainObject(data) && typeof data.doSave === 'boolean';
 }
 
+function validateResolveTVPayload(game, data) {
+    return isPlainObject(data) &&
+        Number.isInteger(data.targetIndex) &&
+        data.targetIndex >= 0 &&
+        data.targetIndex < game.players.length &&
+        data.targetIndex !== game.currentPlayerIndex;
+}
+
+function validateBuildCardPayload(room, game, shopStock, data) {
+    const cardName = data?.cardName;
+    const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(c => c.name));
+    const card = gameRuntime.createCardByName(cardName);
+    const current = game.currentPlayer();
+    return !!card &&
+        enabledCards.has(cardName) &&
+        (shopStock[cardName] || 0) > 0 &&
+        !game.builtThisTurn &&
+        current.coins >= card.cost &&
+        !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0);
+}
+
+function validateBuildLandmarkPayload(room, game, data) {
+    const name = data?.name;
+    const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
+    const current = game.currentPlayer();
+    const cost = gameRuntime.Player.landmarkCost(name);
+    return enabledLandmarks.has(name) &&
+        !game.builtThisTurn &&
+        !current.landmarks[name] &&
+        current.coins >= cost;
+}
+
+function validateActionPayloadForState(room, game, shopStock, action, data, options = {}) {
+    if (action === 'rollDice') return validateRollDicePayload(data, game);
+    if (action === 'selectDice') return validateSelectDicePayload(data);
+    if (action === 'rerollDice') return validateRerollDicePayload(data);
+    if (action === 'skipReroll') return isPlainObject(data);
+    if (action === 'resolveHarbor') return validateResolveHarborPayload(data);
+    if (action === 'resolveTV') return validateResolveTVPayload(game, data);
+    if (action === 'resolveBusiness') return validateBusinessPayload(game, data);
+    if (action === 'resolveCleaning') return validateCleaningPayload(game, data);
+    if (action === 'resolveMover') return validateMoverPayload(game, data);
+    if (action === 'resolveRenovation') return validateRenovationPayload(game, data);
+    if (action === 'resolveIT') return validateResolveITPayload(data);
+    if (action === 'buildCard') return validateBuildCardPayload(room, game, shopStock, data);
+    if (action === 'buildLandmark') return validateBuildLandmarkPayload(room, game, data);
+    if (action === 'undoBuild') {
+        return !!options.undoState &&
+            game.builtThisTurn &&
+            (!options.requireUndoPayload || isPlainObject(data));
+    }
+    if (action === 'nextTurn') return isPlainObject(data);
+    return false;
+}
+
 function validateGameAction(room, socket, action, data) {
     const mirror = createRoomMirror(room);
     if (!mirror) return { ok: false };
@@ -1440,160 +1455,17 @@ function validateGameAction(room, socket, action, data) {
     const allowed = getAllowedActions(game);
     if (!allowed.has(action)) return { ok: false };
 
-    if (action === 'resolveTV') {
-        return {
-            ok: isPlainObject(data) &&
-            Number.isInteger(data.targetIndex) &&
-            data.targetIndex >= 0 &&
-            data.targetIndex < game.players.length &&
-            data.targetIndex !== currentIndex,
-            mirror,
-        };
-    }
-
-    if (action === 'resolveBusiness') {
-        return {
-            ok: validateBusinessPayload(game, data),
-            mirror,
-        };
-    }
-
-    if (action === 'resolveCleaning') {
-        return {
-            ok: validateCleaningPayload(game, data),
-            mirror,
-        };
-    }
-
-    if (action === 'resolveMover') {
-        return {
-            ok: validateMoverPayload(game, data),
-            mirror,
-        };
-    }
-
-    if (action === 'resolveRenovation') {
-        return {
-            ok: validateRenovationPayload(game, data),
-            mirror,
-        };
-    }
-
-    if (action === 'rollDice') {
-        return {
-            ok: validateRollDicePayload(data, game),
-            mirror,
-        };
-    }
-
-    if (action === 'selectDice') {
-        return {
-            ok: validateSelectDicePayload(data),
-            mirror,
-        };
-    }
-
-    if (action === 'rerollDice') {
-        return {
-            ok: validateRerollDicePayload(data),
-            mirror,
-        };
-    }
-
-    if (action === 'skipReroll') {
-        return {
-            ok: isPlainObject(data),
-            mirror,
-        };
-    }
-
-    if (action === 'resolveHarbor') {
-        return {
-            ok: validateResolveHarborPayload(data),
-            mirror,
-        };
-    }
-
-    if (action === 'resolveIT') {
-        return {
-            ok: validateResolveITPayload(data),
-            mirror,
-        };
-    }
-
-    if (action === 'buildCard') {
-        const cardName = data?.cardName;
-        const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(c => c.name));
-        const card = gameRuntime.createCardByName(cardName);
-        const current = game.currentPlayer();
-        return {
-            ok: !!card &&
-                enabledCards.has(cardName) &&
-                (shopStock[cardName] || 0) > 0 &&
-                !game.builtThisTurn &&
-                current.coins >= card.cost &&
-                !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0),
-            mirror,
-        };
-    }
-
-    if (action === 'buildLandmark') {
-        const name = data?.name;
-        const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
-        const current = game.currentPlayer();
-        const cost = gameRuntime.Player.landmarkCost(name);
-        return {
-            ok: enabledLandmarks.has(name) &&
-                !game.builtThisTurn &&
-                !current.landmarks[name] &&
-                current.coins >= cost,
-            mirror,
-        };
-    }
-
-    if (action === 'undoBuild') {
-        return {
-            ok: !!(room.lastUndoState || mirror.lastUndoState) && game.builtThisTurn,
-            mirror,
-        };
-    }
-
-    if (action === 'nextTurn') {
-        return {
-            ok: isPlainObject(data),
-            mirror,
-        };
-    }
-
-    return { ok: false, mirror };
+    return {
+        ok: validateActionPayloadForState(room, game, shopStock, action, data, {
+            undoState: room.lastUndoState || mirror.lastUndoState,
+            requireUndoPayload: false,
+        }),
+        mirror,
+    };
 }
 
 function getAllowedActions(game) {
-    const { ROLL, SELECT_DICE, REROLL_CONFIRM, HARBOR_CHOICE, PENDING, BUILD } = gameRuntime.GAME_PHASES;
-    if (game.pendingIT) return new Set(['resolveIT']);
-    switch (game.phase) {
-        case ROLL:
-            return new Set(['rollDice']);
-        case SELECT_DICE:
-            return new Set(['selectDice']);
-        case REROLL_CONFIRM:
-            return new Set(['rerollDice', 'skipReroll']);
-        case HARBOR_CHOICE:
-            return new Set(['resolveHarbor']);
-        case PENDING: {
-            const actions = new Set();
-            if (game.pendingTV > 0) actions.add('resolveTV');
-            if (game.pendingBusiness > 0) actions.add('resolveBusiness');
-            if (game.pendingCleaning > 0) actions.add('resolveCleaning');
-            if (game.pendingMover > 0) actions.add('resolveMover');
-            if (game.pendingRenovation > 0) actions.add('resolveRenovation');
-            return actions;
-        }
-        case BUILD:
-            return new Set(['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild']);
-        default:
-            return new Set();
-    }
+    return gameRuntime.GameManager.allowedActionsFor(game);
 }
 
 function checkGameStart(io, roomId) {
@@ -1691,6 +1563,7 @@ module.exports = {
     rememberAcceptedClientAction,
     generateRoomId,
     nextRoomActionSeq,
+    restorePayloadRank,
     buildPlayerList,
     resolveRejoinPlayer,
     handleSocketDisconnect,
@@ -1712,6 +1585,10 @@ module.exports = {
     validateRerollDicePayload,
     validateResolveHarborPayload,
     validateResolveITPayload,
+    validateResolveTVPayload,
+    validateBuildCardPayload,
+    validateBuildLandmarkPayload,
+    validateActionPayloadForState,
     validateGameAction,
     getAllowedActions,
     checkGameStart,

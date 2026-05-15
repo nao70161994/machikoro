@@ -17,6 +17,32 @@ const GAME_PHASES = Object.freeze({
     BUILD:          "build",
 });
 
+const GAME_ACTIONS = Object.freeze({
+    ROLL_DICE:          "rollDice",
+    SELECT_DICE:        "selectDice",
+    REROLL_DICE:        "rerollDice",
+    SKIP_REROLL:        "skipReroll",
+    RESOLVE_HARBOR:     "resolveHarbor",
+    RESOLVE_TV:         "resolveTV",
+    RESOLVE_BUSINESS:   "resolveBusiness",
+    RESOLVE_CLEANING:   "resolveCleaning",
+    RESOLVE_MOVER:      "resolveMover",
+    RESOLVE_RENOVATION: "resolveRenovation",
+    RESOLVE_IT:         "resolveIT",
+    BUILD_CARD:         "buildCard",
+    BUILD_LANDMARK:     "buildLandmark",
+    UNDO_BUILD:         "undoBuild",
+    NEXT_TURN:          "nextTurn",
+});
+
+const GAME_PHASE_ACTIONS = Object.freeze({
+    [GAME_PHASES.ROLL]:           Object.freeze([GAME_ACTIONS.ROLL_DICE]),
+    [GAME_PHASES.SELECT_DICE]:    Object.freeze([GAME_ACTIONS.SELECT_DICE]),
+    [GAME_PHASES.REROLL_CONFIRM]: Object.freeze([GAME_ACTIONS.REROLL_DICE, GAME_ACTIONS.SKIP_REROLL]),
+    [GAME_PHASES.HARBOR_CHOICE]:  Object.freeze([GAME_ACTIONS.RESOLVE_HARBOR]),
+    [GAME_PHASES.BUILD]:          Object.freeze([GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]),
+});
+
 function formatDiceOutcome(d1, d2, total) {
     if (d1 > 0 && d2 > 0) {
         return `${d1}+${d2}=${total}`;
@@ -38,6 +64,28 @@ function rollRandomDie() {
     }
     return Math.floor(Math.random() * 6) + 1;
 }
+
+const CARD_INCOME_EFFECT_HANDLERS = Object.freeze({
+    [CARD_EFFECTS.CHEESE]: (card, owner) =>
+        owner.countCard(CARD_NAME_BY_ID[CARD_IDS.RANCH]) * card.income,
+    [CARD_EFFECTS.FURNITURE]: (card, owner) =>
+        (owner.countCard(CARD_NAME_BY_ID[CARD_IDS.FOREST]) + owner.countCard(CARD_NAME_BY_ID[CARD_IDS.MINE])) * card.income,
+    [CARD_EFFECTS.MARKET]: (card, owner) =>
+        owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !owner.isDormant(c)).length * card.income,
+    [CARD_EFFECTS.FLOWER]: (card, owner) =>
+        owner.countCard(CARD_NAME_BY_ID[CARD_IDS.FLOWER_GARDEN]) * card.income,
+    [CARD_EFFECTS.FOODWAREHOUSE]: (card, owner) =>
+        owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income,
+    [CARD_EFFECTS.FEWLANDMARK]: (card, owner) =>
+        owner.builtLandmarkCount() <= 1 ? card.income : 0,
+    [CARD_EFFECTS.CORNFIELD]: (card, owner) =>
+        owner.builtLandmarkCount() <= 1 ? card.income : 0,
+    [CARD_EFFECTS.WINERY]: (card, owner) =>
+        owner.cards.filter(c => c.name === CARD_NAME_BY_ID[CARD_IDS.VINEYARD] && !owner.isDormant(c)).length * card.income,
+    [CARD_EFFECTS.DRINKFACTORY]: (card, owner, game) =>
+        game.players.reduce((sum, p) =>
+            sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income,
+});
 
 class GameManager {
     constructor(playerCount) {
@@ -93,6 +141,25 @@ class GameManager {
         return this.players.some(player =>
             player.cards.some(card => card.category !== CARD_CATEGORIES.MAJOR && !player.isDormant(card))
         );
+    }
+
+    static allowedActionsFor(game) {
+        if (!game) return new Set();
+        if (game.pendingIT) return new Set([GAME_ACTIONS.RESOLVE_IT]);
+        if (game.phase === GAME_PHASES.PENDING) {
+            const actions = new Set();
+            if (game.pendingTV > 0) actions.add(GAME_ACTIONS.RESOLVE_TV);
+            if (game.pendingBusiness > 0) actions.add(GAME_ACTIONS.RESOLVE_BUSINESS);
+            if (game.pendingCleaning > 0) actions.add(GAME_ACTIONS.RESOLVE_CLEANING);
+            if (game.pendingMover > 0) actions.add(GAME_ACTIONS.RESOLVE_MOVER);
+            if (game.pendingRenovation > 0) actions.add(GAME_ACTIONS.RESOLVE_RENOVATION);
+            return actions;
+        }
+        return new Set(GAME_PHASE_ACTIONS[game.phase] || []);
+    }
+
+    allowedActions() {
+        return GameManager.allowedActionsFor(this);
     }
 
     rollDice(forceDice = null, tunaDice = null) {
@@ -193,34 +260,13 @@ class GameManager {
     // ゲームロジックと CPU 予測の乖離を防ぐ。
     // 副作用（pendingMover++ など）を持つカードは含まない。
     static calcCardIncome(card, owner, game) {
-        switch (card.effect) {
-            case CARD_EFFECTS.CHEESE:
-                return owner.countCard("牧場") * card.income;
-            case CARD_EFFECTS.FURNITURE:
-                return (owner.countCard("森林") + owner.countCard("鉱山")) * card.income;
-            case CARD_EFFECTS.MARKET:
-                return owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !owner.isDormant(c)).length * card.income;
-            case CARD_EFFECTS.FLOWER:
-                return owner.countCard("花畑") * card.income;
-            case CARD_EFFECTS.FOODWAREHOUSE:
-                return owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income;
-            case CARD_EFFECTS.FEWLANDMARK:
-            case CARD_EFFECTS.CORNFIELD: {
-                const built = owner.builtLandmarkCount();
-                return built <= 1 ? card.income : 0;
-            }
-            case CARD_EFFECTS.WINERY:
-                return owner.cards.filter(c => c.name === "ブドウ園" && !owner.isDormant(c)).length * card.income;
-            case CARD_EFFECTS.DRINKFACTORY:
-                return game.players.reduce((sum, p) =>
-                    sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income;
-            default: {
-                let amount = card.income;
-                if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
-                return amount;
-            }
-        }
+        const handler = CARD_INCOME_EFFECT_HANDLERS[card.effect];
+        if (handler) return handler(card, owner, game);
+
+        let amount = card.income;
+        if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
+            (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
+        return amount;
     }
 
     _reviveDormantCardsForDice(player, dice, shouldRevive) {
