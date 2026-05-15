@@ -101,5 +101,8 @@ class JsCpuOracle:
         result = json.loads(line)
         if "error" in result:
             raise RuntimeError(f"JS CPU oracle error: {result['error']}")
+        if "targetIndex" in result:
+            env.set_pending_target_index(int(result["targetIndex"]))
+        else:
+            env.set_pending_target_index(None)
         return int(result["action"])
-

@@ -118,40 +118,48 @@ function actionForBuild(cpu, game, shopStock) {
 }
 
 function actionForPending(cpu, game) {
-    if (game.pendingTV > 0) return actions.TV_TARGET;
+    if (game.pendingTV > 0) {
+        return { action: actions.TV_TARGET, targetIndex: cpu.chooseTVTarget(game) };
+    }
     if (game.pendingBusiness > 0) {
         const move = cpu.chooseBusinessMove(game);
-        if (!move) return actions.PASS;
+        if (!move) return { action: actions.PASS };
         const current = game.currentPlayer();
         const target = game.players[move.targetIndex];
         const give = current.cards[move.myCard];
         const take = target && target.cards[move.theirCard];
-        if (!give || !take) return actions.PASS;
-        return actions.BC_BASE +
-            runtime.CARDS.findIndex(card => card.name === give.name) * runtime.CARDS.length +
-            runtime.CARDS.findIndex(card => card.name === take.name);
+        if (!give || !take) return { action: actions.PASS };
+        return {
+            action: actions.BC_BASE +
+                runtime.CARDS.findIndex(card => card.name === give.name) * runtime.CARDS.length +
+                runtime.CARDS.findIndex(card => card.name === take.name),
+            targetIndex: move.targetIndex,
+        };
     }
     if (game.pendingCleaning > 0) {
         const name = cpu.chooseCleaningTarget(game);
-        if (!name) return actions.PASS;
-        return actions.CLEAN_BASE + runtime.CARDS.findIndex(card => card.name === name);
+        if (!name) return { action: actions.PASS };
+        return { action: actions.CLEAN_BASE + runtime.CARDS.findIndex(card => card.name === name) };
     }
     if (game.pendingMover > 0) {
         const move = cpu.chooseMoverMove(game);
-        if (!move) return actions.PASS;
+        if (!move) return { action: actions.PASS };
         const card = game.currentPlayer().cards[move.cardIndex];
-        if (!card) return actions.PASS;
-        return actions.MOVER_BASE + runtime.CARDS.findIndex(entry => entry.name === card.name);
+        if (!card) return { action: actions.PASS };
+        return {
+            action: actions.MOVER_BASE + runtime.CARDS.findIndex(entry => entry.name === card.name),
+            targetIndex: move.targetIndex,
+        };
     }
     if (game.pendingRenovation > 0) {
         const name = cpu.chooseRenovationTarget(game);
-        if (!name) return actions.PASS;
-        return actions.RENO_BASE + landmarkOrder.indexOf(name);
+        if (!name) return { action: actions.PASS };
+        return { action: actions.RENO_BASE + landmarkOrder.indexOf(name) };
     }
     if (game.pendingIT) {
-        return cpu.chooseITInvest(game) ? actions.IT_SAVE : actions.IT_SKIP;
+        return { action: cpu.chooseITInvest(game) ? actions.IT_SAVE : actions.IT_SKIP };
     }
-    return actions.PASS;
+    return { action: actions.PASS };
 }
 
 function chooseAction(input) {
@@ -161,14 +169,21 @@ function chooseAction(input) {
     const shopStock = createShopStock(state);
     const cpu = new runtime.CPU(difficulty, input.cpuOptions || {});
     let action;
+    let targetIndex = null;
     if (game.phase === runtime.GAME_PHASES.ROLL) action = actions.ROLL1;
     else if (game.phase === runtime.GAME_PHASES.SELECT_DICE) action = cpu.chooseDiceCount(game) ? actions.ROLL2 : actions.ROLL1;
     else if (game.phase === runtime.GAME_PHASES.REROLL_CONFIRM) action = cpu.chooseReroll(game) ? actions.REROLL : actions.KEEP;
     else if (game.phase === runtime.GAME_PHASES.HARBOR_CHOICE) action = cpu.chooseHarbor(game) ? actions.HARBOR_YES : actions.HARBOR_NO;
-    else if (game.phase === runtime.GAME_PHASES.PENDING) action = actionForPending(cpu, game);
+    else if (game.phase === runtime.GAME_PHASES.PENDING) {
+        const pendingChoice = actionForPending(cpu, game);
+        action = pendingChoice.action;
+        if (Number.isInteger(pendingChoice.targetIndex)) targetIndex = pendingChoice.targetIndex;
+    }
     else if (game.phase === runtime.GAME_PHASES.BUILD) action = actionForBuild(cpu, game, shopStock);
     else action = actions.PASS;
-    return { action, label: actionToLabel(runtime, action) };
+    const result = { action, label: actionToLabel(runtime, action) };
+    if (Number.isInteger(targetIndex)) result.targetIndex = targetIndex;
+    return result;
 }
 
 if (require.main === module) {

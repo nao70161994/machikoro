@@ -25,6 +25,7 @@ from .game_env import (
     ACT_KEEP,
     ACT_MOVER_BASE,
     ACT_PASS,
+    PHASE_PENDING,
     ACT_RENO_BASE,
     ACT_REROLL,
     ACT_ROLL1,
@@ -33,6 +34,7 @@ from .game_env import (
     MachikoroEnv,
 )
 from .heuristic import heuristic_action
+from .train import _apply_pending_target_choice
 from .train import _greedy_action
 
 
@@ -102,6 +104,9 @@ def _legal_actions(env):
 
 
 def _trace_entry(env, actor_difficulty, action, include_state, roll_cursor=0, agent=None):
+    target_index = None
+    if env.phase == PHASE_PENDING and (env.pending_tv > 0 or env.pending_biz > 0 or env.pending_mover > 0):
+        target_index = int(env._pending_target_index())
     entry = {
         "actorIndex": env.current,
         "actorDifficulty": actor_difficulty,
@@ -114,6 +119,8 @@ def _trace_entry(env, actor_difficulty, action, include_state, roll_cursor=0, ag
         "rollsUsed": [],
         "rollCursor": int(roll_cursor),
     }
+    if target_index is not None:
+        entry["chosenAction"]["targetIndex"] = target_index
     if include_state:
         entry["state"] = _encode_for_agent(env, agent).astype(float).tolist()
         entry["mask"] = action_mask(env).astype(int).tolist()
@@ -153,6 +160,7 @@ def export_match_trace(model_path, opponent="strong", seed=1, max_steps=5000, rl
         actor_difficulty = players[env.current]
         if actor_difficulty == "rl":
             state = _encode_for_agent(env, agent)
+            _apply_pending_target_choice(env, agent.net, state, epsilon=0.0, greedy=True)
             mask = action_mask(env)
             action = _greedy_action(agent.net, state, mask)
             entry = _trace_entry(env, "rl", action, include_state=True, roll_cursor=roll_cursor, agent=agent)

@@ -85,6 +85,12 @@ runTest('eval-rl-special-scenarios parseArgs は主要CLI引数を解釈する',
     assert.strictEqual(args.output, 'out.json');
 });
 
+runTest('eval-rl-special-scenarios parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs(['--rank', '0', '--player-count', '0']);
+    assert.strictEqual(args.rank, 0);
+    assert.strictEqual(args.playerCount, 0);
+});
+
 runTest('scenarioNamesForPlayerCount は人数に合う既定scenarioだけを返す', () => {
     const twoPlayerNames = scenarioNamesForPlayerCount(2, []);
     const fourPlayerNames = scenarioNamesForPlayerCount(4, []);

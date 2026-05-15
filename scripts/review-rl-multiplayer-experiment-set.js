@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { parseIntegerOrDefault, parseList } = require('./cli-args.js');
+
 function parseArgs(argv) {
     const args = {
         inputs: [],
@@ -11,14 +13,13 @@ function parseArgs(argv) {
     for (let i = 0; i < argv.length; i += 1) {
         const arg = argv[i];
         if (arg === '--inputs') {
-            const value = argv[++i] || '';
-            args.inputs = value.split(',').map(part => part.trim()).filter(Boolean);
+            args.inputs = parseList(argv[++i]);
         } else if (arg === '--format') {
             args.format = argv[++i] || args.format;
         } else if (arg === '--output') {
             args.output = argv[++i] || '';
         } else if (arg === '--top-run-limit') {
-            args.topRunLimit = parseInt(argv[++i] || String(args.topRunLimit), 10);
+            args.topRunLimit = parseIntegerOrDefault(argv[++i], args.topRunLimit);
         }
     }
     return args;
@@ -102,7 +103,8 @@ function buildNearTieRuns(entries) {
     return pairs.sort((a, b) => a.diff - b.diff || a.left.localeCompare(b.left) || a.right.localeCompare(b.right));
 }
 
-function buildReview(inputPaths) {
+function buildReview(inputPaths, options = {}) {
+    const topRunLimit = Number.isInteger(options.topRunLimit) ? Math.max(0, options.topRunLimit) : 5;
     const runs = inputPaths.map(inputPath => {
         const review = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
         return buildRunEntry(inputPath, review);
@@ -110,14 +112,14 @@ function buildReview(inputPaths) {
     return {
         totalRuns: runs.length,
         runs,
-        recommendedRuns: runs.slice(0, 5),
+        recommendedRuns: runs.slice(0, topRunLimit),
         diversifiedRuns: runs
             .slice()
             .sort((left, right) => {
                 if (left.distinctStyleCount !== right.distinctStyleCount) return right.distinctStyleCount - left.distinctStyleCount;
                 return compareRuns(left, right);
             })
-            .slice(0, 5),
+            .slice(0, topRunLimit),
         nearTieRuns: buildNearTieRuns(runs),
     };
 }
@@ -189,7 +191,7 @@ function renderMarkdown(review) {
 if (require.main === module) {
     const args = parseArgs(process.argv.slice(2));
     if (args.inputs.length === 0) throw new Error('--inputs is required');
-    const review = buildReview(args.inputs);
+    const review = buildReview(args.inputs, { topRunLimit: args.topRunLimit });
     let output;
     if (args.format === 'json') output = JSON.stringify(review, null, 2) + '\n';
     else if (args.format === 'markdown' || args.format === 'md') output = renderMarkdown(review);

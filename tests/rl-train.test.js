@@ -221,6 +221,19 @@ print(round(float(vec[-1]), 6))
     assert.strictEqual(lines[5], '1.0');
 });
 
+runTest('rl train: 5人以上の大施設初期在庫はJSと同じ人数分にする', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+
+env = MachikoroEnv(player_count=10)
+print(env.shop_stock["テレビ局"])
+print(env.shop_stock["麦畑"])
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '10');
+    assert.strictEqual(lines[1], '6');
+});
+
 runTest('rl train: 4人自己対戦は4人用状態次元で全席を学習対象にできる', () => {
     const output = runPython(`
 import random
@@ -321,7 +334,8 @@ runTest('rl train: target head 付き checkpoint を export できる', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-target-head-'));
     const ckptBase = path.join(tmpDir, 'model');
     const exportPath = path.join(tmpDir, 'model.browser.json');
-    const output = runPython(`
+    try {
+        const output = runPython(`
 import json
 from scripts.rl.network import PolicyValueNet
 from scripts.rl.export_model import export_checkpoint
@@ -332,11 +346,114 @@ bundle = export_checkpoint(r"${ckptBase}.npz", r"${exportPath}")
 print(bundle["numTargetSlots"])
 print(sorted(k for k in bundle["layers"].keys() if "TargetHead" in k))
 `);
+        const lines = output.split('\n');
+        assert.strictEqual(lines[0], '3');
+        assert.deepStrictEqual(JSON.parse(lines[1].replace(/'/g, '"')), ['businessTargetHead', 'moverTargetHead', 'tvTargetHead']);
+        const exported = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
+        assert.strictEqual(exported.numTargetSlots, 3);
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: export はTVなしBusiness target headだけでも target slots を保持する', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-bc-target-head-'));
+    const ckptBase = path.join(tmpDir, 'model');
+    const exportPath = path.join(tmpDir, 'model.browser.json');
+    try {
+        const output = runPython(`
+import numpy as np
+from scripts.rl.network import PolicyValueNet
+from scripts.rl.export_model import export_checkpoint
+
+net = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=3)
+net.save(r"${ckptBase}")
+path = r"${ckptBase}.npz"
+data = dict(np.load(path))
+for key in list(data.keys()):
+    if key.startswith("tv_target_") or key.startswith("mover_target_"):
+        del data[key]
+np.savez(path, **data)
+bundle = export_checkpoint(path, r"${exportPath}")
+print(bundle["numTargetSlots"])
+print("businessTargetHead" in bundle["layers"])
+print("tvTargetHead" in bundle["layers"])
+`);
+        const lines = output.split('\n');
+        assert.strictEqual(lines[0], '3');
+        assert.strictEqual(lines[1], 'True');
+        assert.strictEqual(lines[2], 'False');
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: load はTVなしBusiness target headだけでも target slots を保持する', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-bc-target-head-load-'));
+    const ckptBase = path.join(tmpDir, 'model');
+    try {
+        const output = runPython(`
+import numpy as np
+from scripts.rl.network import PolicyValueNet
+
+net = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=3)
+net.save(r"${ckptBase}")
+path = r"${ckptBase}.npz"
+data = dict(np.load(path))
+for key in list(data.keys()):
+    if key.startswith("tv_target_") or key.startswith("mover_target_"):
+        del data[key]
+np.savez(path, **data)
+
+loaded = PolicyValueNet(state_dim=353, num_actions=1580, hidden=8, lr=0.0001, target_slots=0)
+loaded.load(r"${ckptBase}")
+print(loaded.target_slots)
+print(loaded.tv_target_head is None)
+print(loaded.bc_target_head is not None)
+print(loaded.mover_target_head is None)
+`);
+        const lines = output.split('\n');
+        assert.strictEqual(lines[0], '3');
+        assert.strictEqual(lines[1], 'True');
+        assert.strictEqual(lines[2], 'True');
+        assert.strictEqual(lines[3], 'True');
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: JS CPU oracle はtargetIndexなし応答で古いpending targetを消す', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.js_cpu_oracle import JsCpuOracle
+
+class FakeStdin:
+    def write(self, value):
+        pass
+    def flush(self):
+        pass
+
+class FakeStdout:
+    def readline(self):
+        return '{"action": 7, "label": "IT_SKIP"}\\n'
+
+class FakeProc:
+    stdin = FakeStdin()
+    stdout = FakeStdout()
+    stderr = None
+    def poll(self):
+        return None
+
+env = MachikoroEnv(player_count=3)
+env.set_pending_target_index(2)
+oracle = JsCpuOracle.__new__(JsCpuOracle)
+oracle._proc = FakeProc()
+print(oracle.action(env, "normal"))
+print(env.pending_target_index)
+`);
     const lines = output.split('\n');
-    assert.strictEqual(lines[0], '3');
-    assert.deepStrictEqual(JSON.parse(lines[1].replace(/'/g, '"')), ['businessTargetHead', 'moverTargetHead', 'tvTargetHead']);
-    const exported = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
-    assert.strictEqual(exported.numTargetSlots, 3);
+    assert.strictEqual(lines[0], '7');
+    assert.strictEqual(lines[1], 'None');
 });
 
 runTest('rl train: checkpoint 保存と export は cwd 配下の絶対 path でも動く', () => {
@@ -345,7 +462,8 @@ runTest('rl train: checkpoint 保存と export は cwd 配下の絶対 path で�
     fs.rmSync(baseDir, { recursive: true, force: true });
     const ckptBase = path.join(baseDir, 'model');
     const exportPath = path.join(baseDir, 'model.browser.json');
-    const output = runPython(`
+    try {
+        const output = runPython(`
 import os
 from scripts.rl.network import PolicyValueNet
 from scripts.rl.export_model import export_checkpoint
@@ -358,10 +476,12 @@ export_checkpoint(base + ".npz", export_path)
 print(os.path.exists(base + ".npz"))
 print(os.path.exists(export_path))
 `);
-    const lines = output.split('\n');
-    assert.strictEqual(lines[0], 'True');
-    assert.strictEqual(lines[1], 'True');
-    fs.rmSync(baseDir, { recursive: true, force: true });
+        const lines = output.split('\n');
+        assert.strictEqual(lines[0], 'True');
+        assert.strictEqual(lines[1], 'True');
+    } finally {
+        fs.rmSync(baseDir, { recursive: true, force: true });
+    }
 });
 
 runTest('rl train: pending target choice は TV target head で相手を切り替えられる', () => {
@@ -395,6 +515,24 @@ print(env.pending_target_index)
     const lines = output.split('\n');
     assert.deepStrictEqual(JSON.parse(lines[0]), [2, 1, 3]);
     assert.strictEqual(lines[1], '1');
+});
+
+runTest('rl train: target slots は脅威度同点時に席順を維持する', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+
+env = MachikoroEnv(player_count=5)
+env.current = 0
+for player in env.players:
+    player.coins = 0
+print(env._target_opponent_slots())
+
+env.players[3].coins = 5
+print(env._target_opponent_slots())
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(JSON.parse(lines[0]), [1, 2, 3, 4]);
+    assert.deepStrictEqual(JSON.parse(lines[1]), [3, 1, 2, 4]);
 });
 
 runTest('rl train: pending target choice は BC target head に合わせて合法手 mask を切り替える', () => {
@@ -474,6 +612,33 @@ print(env.players[1].dormant["パン屋"])
     assert.strictEqual(lines[4], '1');
 });
 
+runTest('rl train: pending business は渡す側を休業優先・奪う側をactive優先にする', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_BC_BASE
+from scripts.rl.cards import CARD_INDEX, NUM_CARDS
+
+env = MachikoroEnv(player_count=2)
+env.current = 0
+env.phase = PHASE_PENDING
+env.pending_biz = 1
+env.players[0].cards["カフェ"] = 2
+env.players[0].dormant["カフェ"] = 1
+env.players[1].cards["パン屋"] = 2
+env.players[1].dormant["パン屋"] = 1
+action = ACT_BC_BASE + CARD_INDEX["カフェ"] * NUM_CARDS + CARD_INDEX["パン屋"]
+env.step(action)
+print(env.players[0].cards["パン屋"])
+print(env.players[0].dormant["パン屋"])
+print(env.players[1].cards["カフェ"])
+print(env.players[1].dormant["カフェ"])
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '2');
+    assert.strictEqual(lines[1], '0');
+    assert.strictEqual(lines[2], '1');
+    assert.strictEqual(lines[3], '1');
+});
+
 runTest('rl train: pending mover は休業中カードだけでも合法手になり休業状態ごと移動する', () => {
     const output = runPython(`
 from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_MOVER_BASE
@@ -502,6 +667,62 @@ print(env.players[2].dormant["パン屋"])
     assert.strictEqual(lines[2], '0');
     assert.strictEqual(lines[3], '2');
     assert.strictEqual(lines[4], '1');
+});
+
+runTest('rl train: mover と business pending は JS と同じ発動条件で立つ', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.cards import CARD_INDEX
+
+env = MachikoroEnv(player_count=2)
+env.current = 0
+env.players[0].cards["引越し屋"] = 2
+env._proc_green(env.players[0], 0, 9)
+print(env.pending_mover)
+
+env2 = MachikoroEnv(player_count=2)
+env2.current = 0
+env2.players[0].cards["ビジネスセンター"] = 1
+env2.players[0].cards["麦畑"] = 0
+env2.players[0].cards["パン屋"] = 0
+env2._proc_purple(env2.players[0], 0, 6)
+print(env2.pending_biz)
+
+env3 = MachikoroEnv(player_count=2)
+env3.current = 0
+env3.players[0].cards["ビジネスセンター"] = 1
+env3._proc_purple(env3.players[0], 0, 6)
+print(env3.pending_biz)
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '2');
+    assert.strictEqual(lines[1], '0');
+    assert.strictEqual(lines[2], '1');
+});
+
+runTest('rl train: pending target fallback はTV/Businessの合法対象を優先する', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+
+env = MachikoroEnv(player_count=3)
+env.current = 0
+env.pending_tv = 1
+env.players[1].coins = 0
+env.players[2].coins = 4
+print(env._pending_target_index())
+
+env2 = MachikoroEnv(player_count=3)
+env2.current = 0
+env2.pending_biz = 1
+for name in list(env2.players[1].cards.keys()):
+    env2.players[1].cards[name] = 0
+    env2.players[1].dormant[name] = 0
+env2.players[2].cards["カフェ"] = 1
+print(env2._pending_target_index())
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '2');
+    assert.strictEqual(lines[1], '2');
 });
 
 runTest('rl train: train は TV target head を更新できる', () => {

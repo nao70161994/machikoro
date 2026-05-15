@@ -19,67 +19,71 @@ runTest('audit-rl-portfolio parseArgs は主要CLI引数を解釈する', () => 
 
 runTest('audit-rl-portfolio は recommended model の評価カバレッジを集計する', () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-audit-'));
-    const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'm4p-run');
-    fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
-        bestRuns: [{ targetPendingRate: 0.08, targetUpdateRate: 0.07, tvTargetRate: 0.03, bcTargetRate: 0.02, moverTargetRate: 0.01 }],
-    }), 'utf8');
-    const audit = buildAudit({
-        updatedAt: '2026-04-21',
-        models: [
-            {
-                id: 'm2p',
-                status: 'adopted',
-                path: 'models/rl_model/portfolio/m2p.browser.json',
-                style: { label: 'style-2p' },
-                evals: [
-                    {
-                        type: 'js',
-                        gamesPerOpponent: 100,
-                        opponents: { weak: {}, normal: {}, strong: {} },
-                    },
-                ],
-            },
-            {
-                id: 'm4p',
-                status: 'adopted',
-                path: 'models/rl_model/portfolio/m4p.browser.json',
-                sourceRun: 'models/rl_model/runs/m4p-run',
-                style: { label: 'style-4p' },
-                evals: [
-                    {
-                        type: 'js-lineup-stability',
-                        gamesPerLineup: 100,
-                        lineups: { 'rl+weak+normal+strong': {} },
-                    },
-                    {
-                        type: 'js-lineup-3p-stability',
-                        gamesPerLineup: 80,
-                        lineups: { 'rl+normal+strong': {} },
-                    },
-                    {
-                        type: 'js-lineup-5p-stability',
-                        gamesPerLineup: 60,
-                        lineups: { 'rl+weak+normal+strong+expert': {} },
-                    },
-                ],
-            },
-        ],
-        portfolioPolicy: {
-            recommendedActiveModels: [
-                { id: 'm2p', role: 'adopted-2p-main' },
-                { id: 'm4p', role: 'adopted-3p-4p' },
+    try {
+        const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'm4p-run');
+        fs.mkdirSync(runDir, { recursive: true });
+        fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
+            bestRuns: [{ targetPendingRate: 0.08, targetUpdateRate: 0.07, tvTargetRate: 0.03, bcTargetRate: 0.02, moverTargetRate: 0.01 }],
+        }), 'utf8');
+        const audit = buildAudit({
+            updatedAt: '2026-04-21',
+            models: [
+                {
+                    id: 'm2p',
+                    status: 'adopted',
+                    path: 'models/rl_model/portfolio/m2p.browser.json',
+                    style: { label: 'style-2p' },
+                    evals: [
+                        {
+                            type: 'js',
+                            gamesPerOpponent: 100,
+                            opponents: { weak: {}, normal: {}, strong: {} },
+                        },
+                    ],
+                },
+                {
+                    id: 'm4p',
+                    status: 'adopted',
+                    path: 'models/rl_model/portfolio/m4p.browser.json',
+                    sourceRun: 'models/rl_model/runs/m4p-run',
+                    style: { label: 'style-4p' },
+                    evals: [
+                        {
+                            type: 'js-lineup-stability',
+                            gamesPerLineup: 100,
+                            lineups: { 'rl+weak+normal+strong': {} },
+                        },
+                        {
+                            type: 'js-lineup-3p-stability',
+                            gamesPerLineup: 80,
+                            lineups: { 'rl+normal+strong': {} },
+                        },
+                        {
+                            type: 'js-lineup-5p-stability',
+                            gamesPerLineup: 60,
+                            lineups: { 'rl+weak+normal+strong+expert': {} },
+                        },
+                    ],
+                },
             ],
-        },
-    }, { repoRoot });
-    assert.strictEqual(audit.recommended.length, 2);
-    assert.strictEqual(audit.recommended[0].has2pOpponents, true);
-    assert.strictEqual(audit.recommended[1].has3pLineups, true);
-    assert.strictEqual(audit.recommended[1].has4pLineups, true);
-    assert.strictEqual(audit.recommended[1].has5pLineups, true);
-    assert.strictEqual(audit.recommended[1].best5pGames, 60);
-    assert.strictEqual(audit.recommended[1].has10pLineups, false);
-    assert.strictEqual(audit.recommended[1].targetDiagnostics.pendingRate, 0.08);
+            portfolioPolicy: {
+                recommendedActiveModels: [
+                    { id: 'm2p', role: 'adopted-2p-main' },
+                    { id: 'm4p', role: 'adopted-3p-4p' },
+                ],
+            },
+        }, { repoRoot });
+        assert.strictEqual(audit.recommended.length, 2);
+        assert.strictEqual(audit.recommended[0].has2pOpponents, true);
+        assert.strictEqual(audit.recommended[1].has3pLineups, true);
+        assert.strictEqual(audit.recommended[1].has4pLineups, true);
+        assert.strictEqual(audit.recommended[1].has5pLineups, true);
+        assert.strictEqual(audit.recommended[1].best5pGames, 60);
+        assert.strictEqual(audit.recommended[1].has10pLineups, false);
+        assert.strictEqual(audit.recommended[1].targetDiagnostics.pendingRate, 0.08);
+    } finally {
+        fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
 });
 
 runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を出力する', () => {

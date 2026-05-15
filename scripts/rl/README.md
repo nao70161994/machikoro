@@ -54,7 +54,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 
 ## CPU強化方針
 
-RL CPU は `CPU（最強）` v2simple の置き換えではなく、別系統の `AI（深層学習・ランダム）` として並行強化する。registry / portfolio は RL CPU の採用管理に使い、v2simple の診断・採用判断は `docs/expert-v2-diagnostics.md` に分ける。
+RL CPU は `CPU（最強）` v2simple の置き換えではなく、別系統の `AI（深層学習・ランダム）` として並行強化する。registry / portfolio は RL CPU の採用管理に使い、v2simple の診断・採用判断は [`docs/expert-v2-diagnostics.md`](../../docs/expert-v2-diagnostics.md) に分ける。
 
 v2simple を評価相手や比較基準として使う場合も、RL の採用判断と v2simple の手書き変更判断は混ぜない。RL 候補は既存の採用 RL モデル、JS `weak/normal/strong/expert`、多人数 lineup 評価で判断する。
 
@@ -82,11 +82,11 @@ turn_count / 200            1
 合計                      145
 ```
 
-### 多人数用状態空間（4人モデル、STATE_DIM = 353）
+### 多人数用状態空間（3〜10人モデル、STATE_DIM = 353）
 
-`--player-count 3` または `--player-count 4` を指定すると、既存2人モデルとは別の多人数用状態表現を使う。既存の2人モデル互換性を保つため、デフォルトは `STATE_DIM = 145` のまま。
+`--player-count 3..10` を指定すると、既存2人モデルとは別の多人数用状態表現を使う。既存の2人モデル互換性を保つため、デフォルトは `STATE_DIM = 145` のまま。
 
-多人数用は最大4人固定長で、`自分 + 脅威度順の相手3枠` を並べる。3人戦では相手枠1つをゼロ埋めする。
+多人数用は4枠固定長で、`自分 + 脅威度順の相手3枠` を並べる。3人戦では相手枠1つをゼロ埋めし、5人以上では脅威度上位3人以外を射影対象から外す。
 
 ```
 自分/相手1枠あたり:
@@ -866,7 +866,7 @@ npm run render-rl-registry-evals -- \
 `npm run validate-rl-registry` は、active model の評価ゲーム数不足や recommended model の style 重複を警告する。警告は即エラーではないが、採用判断前に理由を `registry.json` の `reason` / `style.summary` に残す。
 `npm run report-rl-registry` は status 別件数、警告、各モデルの最新評価数、style、target head 診断を一覧する。候補棚卸しや archive 判断前の確認に使う。
 text 出力に加えて markdown/json と `actions` セクションを持ち、警告から再評価・多様性見直し・eval 追記の候補作業を拾える。
-`npm run audit-rl-portfolio` は `recommendedActiveModels` だけに絞って、2人JS評価、3人lineup評価、4人lineup評価、portfolio 配布整合、target head 診断を監査する。
+`npm run audit-rl-portfolio` は `recommendedActiveModels` だけに絞って、2人JS評価、3人/4人/5人/10人lineup評価、portfolio 配布整合、target head 診断を監査する。
 `npm run plan-rl-next-actions` は report/audit をまとめて読み、評価不足・採用カバレッジ不足・多様性見直しを優先順位付きで並べる。オートで次に進める作業の仕分けに使う。
 `npm run review-rl-adoptions` は 2人戦候補を weak/normal/strong の weighted score、評価ゲーム数、pass 率、style、target 診断で並べ、`adopted-2p-main` と比較すべき challenger を出力する。採用の自動更新はしないが、どの pair を 100 戦で再比較すべきかを固定化できる。
 `review-rl-adoptions` は `status` が `adopted` / `candidate` の2人戦候補だけを対象にし、`archive` / `rejected` / `candidate-4p` は候補一覧と actions から除外する。archive 済みモデルの棚卸しは `npm run report-rl-registry` で確認する。
@@ -895,7 +895,7 @@ npm run report-rl-registry -- --format json --output models/rl_model/registry-re
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | runtime 4人100戦: weak+normal+strong 57% / normal+normal+strong 51% / weak+weak+normal 78%、3人50戦: normal+strong 72% / weak+strong 72% | 多人数用。5人以上は上位3相手射影。麦畑・ブドウ園・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | runtime 4人100戦: weak+normal+strong 57% / normal+normal+strong 51% / weak+weak+normal 78%、3人50戦: normal+strong 72% / weak+strong 72%、5人50戦: weak+normal+strong+expert 56%、10人50戦: mixed 50% | 多人数用。5人以上は上位3相手射影。麦畑・ブドウ園・ピザ屋寄り |
 | `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |

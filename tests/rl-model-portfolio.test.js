@@ -36,6 +36,27 @@ runTest('RL model portfolio: 2人戦では2人用候補だけを選ぶ', () => {
     assert.ok(models.every(model => model.id !== 'self-only-4p-h256-lr1e5-5000-seed103'));
 });
 
+runTest('RL model portfolio: modelById は人数に合う指定モデルを返す', () => {
+    const { RLModelPortfolio } = loadPortfolio();
+    const twoPlayerModel = RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2);
+    const wrongPlayerCount = RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 5);
+    assert.ok(twoPlayerModel);
+    assert.strictEqual(twoPlayerModel.id, 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3');
+    assert.strictEqual(wrongPlayerCount, null);
+});
+
+runTest('RL model portfolio: 明示model idが不正ならランダムへfallbackしない', () => {
+    const { RLModelPortfolio } = loadPortfolio();
+    assert.throws(() => RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'unknown-model' }), /not available/);
+});
+
+runTest('RL model portfolio: weight 0 はランダム選択候補に戻さない', () => {
+    const { RLModelPortfolio } = loadPortfolio();
+    const multiplayerModel = RLModelPortfolio.models.find(model => model.id === 'self-only-4p-h256-lr1e5-5000-seed103');
+    multiplayerModel.weight = 0;
+    assert.strictEqual(RLModelPortfolio.selectRandomModel(4), null);
+});
+
 runTest('RL model portfolio: 3人以上では採用済み多人数モデルを選ぶ', () => {
     const { RLModelPortfolio } = loadPortfolio();
     for (const playerCount of [3, 4, 5, 10]) {

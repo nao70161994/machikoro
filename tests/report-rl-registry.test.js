@@ -21,39 +21,43 @@ runTest('report-rl-registry parseArgs は主要CLI引数を解釈する', () => 
 
 runTest('report-rl-registry は status と評価状況を集計する', () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-report-'));
-    const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'a-run');
-    fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
-        bestRuns: [{ targetPendingRate: 0.12, targetUpdateRate: 0.1, tvTargetRate: 0.04, bcTargetRate: 0.03, moverTargetRate: 0.02 }],
-    }), 'utf8');
-    const report = buildRegistryReport({
-        updatedAt: '2026-04-20',
-        models: [
-            {
-                id: 'a',
-                status: 'candidate',
-                path: 'a.json',
-                sourceRun: 'models/rl_model/runs/a-run',
-                style: { label: 'style-a' },
-                evals: [{ date: '2026-04-20', gamesPerOpponent: 50 }],
-            },
-            {
-                id: 'b',
-                status: 'archive',
-                path: 'b.json',
-                style: { label: 'style-b' },
-                evals: [],
-            },
-        ],
-        portfolioPolicy: { recommendedActiveModels: [] },
-    }, { repoRoot });
-    assert.strictEqual(report.statusCounts.candidate, 1);
-    assert.strictEqual(report.statusCounts.archive, 1);
-    assert.strictEqual(report.models[0].bestEvalGames, 50);
-    assert.strictEqual(report.models[0].latestEval, '50 games/opponent');
-    assert.strictEqual(report.models[0].targetDiagnostics.pendingRate, 0.12);
-    assert.ok(Array.isArray(report.actions));
-    assert.ok(Array.isArray(report.recommended));
+    try {
+        const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'a-run');
+        fs.mkdirSync(runDir, { recursive: true });
+        fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
+            bestRuns: [{ targetPendingRate: 0.12, targetUpdateRate: 0.1, tvTargetRate: 0.04, bcTargetRate: 0.03, moverTargetRate: 0.02 }],
+        }), 'utf8');
+        const report = buildRegistryReport({
+            updatedAt: '2026-04-20',
+            models: [
+                {
+                    id: 'a',
+                    status: 'candidate',
+                    path: 'a.json',
+                    sourceRun: 'models/rl_model/runs/a-run',
+                    style: { label: 'style-a' },
+                    evals: [{ date: '2026-04-20', gamesPerOpponent: 50 }],
+                },
+                {
+                    id: 'b',
+                    status: 'archive',
+                    path: 'b.json',
+                    style: { label: 'style-b' },
+                    evals: [],
+                },
+            ],
+            portfolioPolicy: { recommendedActiveModels: [] },
+        }, { repoRoot });
+        assert.strictEqual(report.statusCounts.candidate, 1);
+        assert.strictEqual(report.statusCounts.archive, 1);
+        assert.strictEqual(report.models[0].bestEvalGames, 50);
+        assert.strictEqual(report.models[0].latestEval, '50 games/opponent');
+        assert.strictEqual(report.models[0].targetDiagnostics.pendingRate, 0.12);
+        assert.ok(Array.isArray(report.actions));
+        assert.ok(Array.isArray(report.recommended));
+    } finally {
+        fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
 });
 
 runTest('report-rl-registry recommendedActions は警告を作業種別へ分類する', () => {

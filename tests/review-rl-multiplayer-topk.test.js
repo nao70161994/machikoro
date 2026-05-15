@@ -22,6 +22,25 @@ runTest('review-rl-multiplayer-topk parseArgs は主要CLI引数を解釈する'
     assert.strictEqual(args.minGamesPerLineup, 80);
 });
 
+runTest('review-rl-multiplayer-topk は 0 指定の gate/多様化件数を fallback しない', () => {
+    const args = parseArgs(['--diversified-limit', '0', '--min-games-per-lineup', '0']);
+    assert.strictEqual(args.diversifiedLimit, 0);
+    assert.strictEqual(args.minGamesPerLineup, 0);
+
+    const review = buildReview([
+        {
+            id: 'short',
+            buildSignature: { cardKey: 'パン屋', landmarkKey: '駅' },
+            summaries: [
+                { lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.5, games: 1 },
+            ],
+        },
+    ], args);
+    assert.strictEqual(review.minGamesPerLineup, 0);
+    assert.strictEqual(review.entries[0].smokeOnly, false);
+    assert.deepStrictEqual(review.diversifiedPicks, []);
+});
+
 runTest('review-rl-multiplayer-topk playerCountOfSummary は lineup 長から人数を判定する', () => {
     assert.strictEqual(playerCountOfSummary({ lineup: ['rl', 'normal', 'strong'] }), 3);
     assert.strictEqual(playerCountOfSummary({ opponent: 'rl+normal+normal+strong' }), 4);

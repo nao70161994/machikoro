@@ -13,19 +13,15 @@ const {
     assertRlModelLineupCompatible,
     loadModel,
 } = require('./eval-rl-vs-js.js');
+const {
+    parseIntegerList,
+    parseIntegerOrDefault,
+    parseList,
+} = require('./cli-args.js');
 const { loadRegistry } = require('./validate-rl-registry.js');
 
-function parseList(value) {
-    return String(value || '')
-        .split(',')
-        .map(item => item.trim())
-        .filter(Boolean);
-}
-
 function parseNumberList(value) {
-    return parseList(value)
-        .map(item => parseInt(item, 10))
-        .filter(value => Number.isInteger(value) && value >= 1);
+    return parseIntegerList(value, { min: 1 });
 }
 
 function parseArgs(argv) {
@@ -48,11 +44,11 @@ function parseArgs(argv) {
         if (arg === '--registry') args.registryPath = argv[++i] || args.registryPath;
         else if (arg === '--models') args.models = parseList(argv[++i]);
         else if (arg === '--run-labels') args.runLabels = parseList(argv[++i]);
-        else if (arg === '--rank') args.rank = parseInt(argv[++i] || String(args.rank), 10);
+        else if (arg === '--rank') args.rank = parseIntegerOrDefault(argv[++i], args.rank);
         else if (arg === '--run-ranks') args.runRanks = parseNumberList(argv[++i]);
-        else if (arg === '--games') args.games = parseInt(argv[++i] || String(args.games), 10);
-        else if (arg === '--seed') args.seed = parseInt(argv[++i] || String(args.seed), 10);
-        else if (arg === '--max-steps') args.maxSteps = parseInt(argv[++i] || String(args.maxSteps), 10);
+        else if (arg === '--games') args.games = parseIntegerOrDefault(argv[++i], args.games);
+        else if (arg === '--seed') args.seed = parseIntegerOrDefault(argv[++i], args.seed);
+        else if (arg === '--max-steps') args.maxSteps = parseIntegerOrDefault(argv[++i], args.maxSteps);
         else if (arg === '--lineups') args.lineups = parseLineups(argv[++i]);
         else if (arg === '--format') args.format = argv[++i] || args.format;
         else if (arg === '--output') args.output = argv[++i] || '';

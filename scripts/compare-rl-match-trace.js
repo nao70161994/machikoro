@@ -1,6 +1,7 @@
 const path = require('path');
 const { spawnSync } = require('child_process');
 
+const { parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const {
     exportJsMatchTrace,
 } = require(path.join(__dirname, 'export-rl-match-trace.js'));
@@ -22,8 +23,8 @@ function parseArgs(argv) {
         else if (arg === '--js-model') jsModel = argv[++i] || jsModel;
         else if (arg === '--opponent') opponent = argv[++i] || opponent;
         else if (arg === '--lineup') lineup = (argv[++i] || '').split(',').map(item => item.trim()).filter(Boolean);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '200', 10);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 200);
         else if (arg === '--rl-seat') rlSeat = argv[++i] || rlSeat;
         else if (arg === '--rolls') rolls = (argv[++i] || '').split(',').filter(Boolean).map(value => parseInt(value, 10)).filter(value => Number.isFinite(value));
         else if (arg === '--cpu-opponent-impl') cpuOpponentImpl = argv[++i] || cpuOpponentImpl;
@@ -112,7 +113,9 @@ function normalizeTraceEntry(entry) {
         actorDifficulty: entry.actorDifficulty,
         before: normalizeState(entry.before),
         chosenAction: entry.chosenAction ? {
-            label: entry.chosenAction.label,
+            action: Number.isInteger(entry.chosenAction.action) ? entry.chosenAction.action : null,
+            label: Number.isInteger(entry.chosenAction.action) ? '' : entry.chosenAction.label,
+            targetIndex: Number.isInteger(entry.chosenAction.targetIndex) ? entry.chosenAction.targetIndex : null,
         } : null,
         rollCursor: Number.isFinite(entry.rollCursor) ? entry.rollCursor : 0,
         rollsUsed: Array.isArray(entry.rollsUsed) ? entry.rollsUsed.slice() : [],

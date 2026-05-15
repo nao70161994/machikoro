@@ -74,6 +74,13 @@ runTest('rl match trace: parseArgs は CLI 引数を解釈する', () => {
     assert.deepStrictEqual(args.rolls, [1, 6, 3]);
 });
 
+runTest('rl match trace: parseArgs は seed/maxSteps の 0 指定を保持する', () => {
+    const args = parseArgs(['--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('rl match trace: buildPlayers は席に応じて lineup を返す', () => {
     assert.deepStrictEqual(buildPlayers('strong', 'first'), ['rl', 'strong']);
     assert.deepStrictEqual(buildPlayers('strong', 'second'), ['strong', 'rl']);
@@ -99,6 +106,20 @@ runTest('rl match trace: exportJsMatchTrace は単発 trace を返す', () => {
     assert.ok(result.trace[0].after);
     assert.ok(Array.isArray(result.trace[0].rollsUsed));
     assert.ok(result.trace.every(entry => !('buildDiagnostics' in entry)));
+});
+
+runTest('rl match trace: exportJsMatchTrace は seed/maxSteps の 0 指定を既定値で上書きしない', () => {
+    const result = exportJsMatchTrace({
+        rlModelData: buildRlModel(),
+        opponent: 'weak',
+        seed: 0,
+        maxSteps: 0,
+    });
+
+    assert.strictEqual(result.seed, 0);
+    assert.strictEqual(result.maxSteps, 0);
+    assert.deepStrictEqual(result.trace, []);
+    assert.strictEqual(result.exhausted, true);
 });
 
 runTest('rl match trace: expert相手でもbuild診断を混入しない', () => {

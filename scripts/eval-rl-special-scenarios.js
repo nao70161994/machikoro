@@ -4,11 +4,11 @@ const path = require('path');
 const { loadRuntime, resolveBusinessMoveCards } = require('./selfplay.js');
 const { loadModel } = require('./eval-rl-vs-js.js');
 const { resolveModelSpecs } = require('./eval-rl-models.js');
+const {
+    parseIntegerOrDefault,
+    parseList,
+} = require('./cli-args.js');
 const { loadRegistry } = require('./validate-rl-registry.js');
-
-function parseList(value) {
-    return String(value || '').split(',').map(item => item.trim()).filter(Boolean);
-}
 
 function parseArgs(argv) {
     const args = {
@@ -26,8 +26,8 @@ function parseArgs(argv) {
         if (arg === '--registry') args.registryPath = argv[++i] || args.registryPath;
         else if (arg === '--models') args.models = parseList(argv[++i]);
         else if (arg === '--run-labels') args.runLabels = parseList(argv[++i]);
-        else if (arg === '--rank') args.rank = parseInt(argv[++i] || String(args.rank), 10);
-        else if (arg === '--player-count') args.playerCount = parseInt(argv[++i] || String(args.playerCount), 10);
+        else if (arg === '--rank') args.rank = parseIntegerOrDefault(argv[++i], args.rank);
+        else if (arg === '--player-count') args.playerCount = parseIntegerOrDefault(argv[++i], args.playerCount);
         else if (arg === '--scenarios') args.scenarios = parseList(argv[++i]);
         else if (arg === '--format') args.format = argv[++i] || args.format;
         else if (arg === '--output') args.output = argv[++i] || '';

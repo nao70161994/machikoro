@@ -1,5 +1,6 @@
 const path = require('path');
 
+const { parseIntegerOrDefault } = require('./cli-args.js');
 const { loadRegistry } = require('./validate-rl-registry.js');
 
 function parseArgs(argv) {
@@ -11,7 +12,7 @@ function parseArgs(argv) {
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--registry') args.registryPath = argv[++i] || args.registryPath;
-        else if (arg === '--rank') args.rank = parseInt(argv[++i] || String(args.rank), 10);
+        else if (arg === '--rank') args.rank = parseIntegerOrDefault(argv[++i], args.rank);
         else if (!args.target) args.target = arg;
     }
     return args;
@@ -24,7 +25,9 @@ function browserPathForRunLabel(runLabel, rank = 1) {
 
 function resolveModelPath(target, rank = 1, registry = null) {
     if (!target) throw new Error('target is required');
-    if (target.startsWith('models/')) return target;
+    if (path.isAbsolute(target) || target.startsWith('./') || target.startsWith('../') || target.startsWith('models/')) {
+        return target;
+    }
     const models = registry && Array.isArray(registry.models) ? registry.models : [];
     const model = models.find(entry => entry && entry.id === target);
     if (model && model.path) return model.path;

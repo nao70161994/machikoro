@@ -74,6 +74,10 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         tv_target = _load_optional_layer(data, "tv_target")
         bc_target = _load_optional_layer(data, "bc_target")
         mover_target = _load_optional_layer(data, "mover_target")
+    target_slots = max(
+        [int(layer["shape"]["output"]) for layer in (tv_target, bc_target, mover_target) if layer],
+        default=0,
+    )
 
     bundle = {
         "formatVersion": 1,
@@ -83,7 +87,7 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         "hiddenSize": shared0["shape"]["output"],
         "numActions": policy["shape"]["output"],
         "numCards": NUM_CARDS,
-        "numTargetSlots": int(tv_target["shape"]["output"]) if tv_target else 0,
+        "numTargetSlots": target_slots,
         "layers": {
             "shared": [shared0, shared1],
             "policyHead": policy,

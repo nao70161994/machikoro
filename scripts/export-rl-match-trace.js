@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const {
     simulateGame,
 } = require(path.join(__dirname, 'selfplay.js'));
@@ -19,8 +20,8 @@ function parseArgs(argv) {
         if (arg === '--model') modelPath = argv[++i] || modelPath;
         else if (arg === '--opponent') opponent = argv[++i] || opponent;
         else if (arg === '--lineup') lineup = (argv[++i] || '').split(',').map(item => item.trim()).filter(Boolean);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--rl-seat') rlSeat = argv[++i] || rlSeat;
         else if (arg === '--rolls') rolls = (argv[++i] || '').split(',').filter(Boolean).map(value => parseInt(value, 10)).filter(value => Number.isFinite(value));
     }
@@ -49,10 +50,12 @@ function exportJsMatchTrace(options = {}) {
     const players = resolvePlayers(options);
     const requestedRolls = Array.isArray(options.rolls) ? options.rolls.slice() : [];
     const rollQueue = requestedRolls.slice();
+    const seed = integerOrDefault(options.seed, 1);
+    const maxSteps = integerOrDefault(options.maxSteps, 5000);
     const result = simulateGame({
         difficulties: players,
-        seed: options.seed || 1,
-        maxSteps: options.maxSteps || 5000,
+        seed,
+        maxSteps,
         rlModelData,
         traceEntries,
         requestedRolls,
@@ -62,8 +65,8 @@ function exportJsMatchTrace(options = {}) {
     return {
         source: 'js',
         opponent: players.length === 2 ? players.find(player => player !== 'rl') : players.join('+'),
-        seed: options.seed || 1,
-        maxSteps: options.maxSteps || 5000,
+        seed,
+        maxSteps,
         rlSeat: options.rlSeat || 'first',
         rolls: requestedRolls,
         players,
@@ -88,5 +91,7 @@ module.exports = {
     loadModel,
     buildPlayers,
     resolvePlayers,
+    integerOrDefault,
+    parseIntegerOrDefault,
     exportJsMatchTrace,
 };

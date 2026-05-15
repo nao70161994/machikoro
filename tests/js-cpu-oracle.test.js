@@ -64,4 +64,33 @@ function basePlayers() {
     assert.strictEqual(result.label, 'ROLL1');
 }
 
+{
+    const result = queryOracle({
+        difficulty: 'strong',
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        pendingTV: 1,
+        players: [
+            {
+                coins: 0,
+                cards: { 'テレビ局': 1 },
+                landmarks: {},
+            },
+            {
+                coins: 1,
+                cards: { '麦畑': 1 },
+                landmarks: {},
+            },
+            {
+                coins: 8,
+                cards: { '麦畑': 1 },
+                landmarks: {},
+            },
+        ],
+        shopStock: {},
+    });
+    assert.strictEqual(result.label, 'TV_TARGET');
+    assert.strictEqual(result.targetIndex, 2);
+}
+
 console.log('js-cpu-oracle tests passed');

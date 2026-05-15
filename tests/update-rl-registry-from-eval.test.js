@@ -32,38 +32,42 @@ runTest('update-rl-registry-from-eval は registry 更新と summary 出力を�
     const registryPath = path.join(tmpDir, 'registry.json');
     const inputPath = path.join(tmpDir, 'eval.json');
     const outputPath = path.join(tmpDir, 'summary.json');
-    fs.writeFileSync(registryPath, JSON.stringify({
-        updatedAt: '2026-04-21',
-        models: [{ id: 'model-top2', evals: [] }],
-        portfolioPolicy: { recommendedActiveModels: [] },
-    }, null, 2));
-    fs.writeFileSync(inputPath, JSON.stringify([{
-        id: 'model-top2',
-        path: 'models/rl_model/runs/model/best_model.top2.browser.json',
-        score: 0.5,
-        summaries: [{
-            opponent: 'weak',
-            games: 20,
-            rlWins: 15,
-            opponentWins: 5,
-            draws: 0,
-            rlWinRate: 0.75,
-            averageTurns: 51.2,
-            rlBuildStats: { passRate: 0.01 },
-        }],
-    }], null, 2));
-    const summary = updateRegistryFromEval({
-        input: inputPath,
-        registryPath,
-        outputDir: path.join(tmpDir, 'reports'),
-        date: '2026-04-21',
-        output: outputPath,
-        skipRefresh: true,
-    });
-    const updated = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-    assert.strictEqual(summary.appended, 1);
-    assert.strictEqual(updated.models[0].evals.length, 1);
-    assert.ok(fs.existsSync(outputPath));
+    try {
+        fs.writeFileSync(registryPath, JSON.stringify({
+            updatedAt: '2026-04-21',
+            models: [{ id: 'model-top2', evals: [] }],
+            portfolioPolicy: { recommendedActiveModels: [] },
+        }, null, 2));
+        fs.writeFileSync(inputPath, JSON.stringify([{
+            id: 'model-top2',
+            path: 'models/rl_model/runs/model/best_model.top2.browser.json',
+            score: 0.5,
+            summaries: [{
+                opponent: 'weak',
+                games: 20,
+                rlWins: 15,
+                opponentWins: 5,
+                draws: 0,
+                rlWinRate: 0.75,
+                averageTurns: 51.2,
+                rlBuildStats: { passRate: 0.01 },
+            }],
+        }], null, 2));
+        const summary = updateRegistryFromEval({
+            input: inputPath,
+            registryPath,
+            outputDir: path.join(tmpDir, 'reports'),
+            date: '2026-04-21',
+            output: outputPath,
+            skipRefresh: true,
+        });
+        const updated = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+        assert.strictEqual(summary.appended, 1);
+        assert.strictEqual(updated.models[0].evals.length, 1);
+        assert.ok(fs.existsSync(outputPath));
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
 });
 
 runTest('update-rl-registry-from-eval renderSummary は更新内容を返す', () => {

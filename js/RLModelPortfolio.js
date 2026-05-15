@@ -47,15 +47,25 @@ const RLModelPortfolio = (() => {
         return eligibleModels(playerCount).length > 0;
     }
 
+    function modelWeight(model) {
+        return Number.isFinite(model.weight) ? Math.max(0, model.weight) : 1;
+    }
+
     function selectRandomModel(playerCount) {
         const models = eligibleModels(playerCount);
-        const totalWeight = models.reduce((sum, model) => sum + Math.max(0, model.weight || 1), 0);
-        let pick = Math.random() * (totalWeight || RL_MODEL_PORTFOLIO.length || 1);
+        const totalWeight = models.reduce((sum, model) => sum + modelWeight(model), 0);
+        if (totalWeight <= 0) return null;
+        let pick = Math.random() * totalWeight;
         for (const model of models) {
-            pick -= Math.max(0, model.weight || 1);
+            pick -= modelWeight(model);
             if (pick <= 0) return model;
         }
         return models[models.length - 1] || null;
+    }
+
+    function modelById(modelId, playerCount) {
+        const models = eligibleModels(playerCount);
+        return models.find(model => model.id === modelId) || null;
     }
 
     function loadModelData(model) {
@@ -73,10 +83,16 @@ const RLModelPortfolio = (() => {
     }
 
     function createRandomCpu(options = {}) {
+        const requestedModelId = options.rlModelId || options.modelId;
+        const model = requestedModelId
+            ? modelById(requestedModelId, options.playerCount)
+            : selectRandomModel(options.playerCount);
+        if (!model) {
+            throw new Error(`RL model is not available: ${requestedModelId || "none"}`);
+        }
         if (typeof RLCPU === "undefined") {
             throw new Error("RLCPU is not loaded");
         }
-        const model = selectRandomModel(options.playerCount);
         const cpu = new RLCPU(loadModelData(model));
         cpu.difficulty = "rl";
         cpu.modelId = model.id;
@@ -88,6 +104,7 @@ const RLModelPortfolio = (() => {
         models: RL_MODEL_PORTFOLIO,
         createRandomCpu,
         eligibleModels,
+        modelById,
         selectRandomModel,
         supportsPlayerCount,
     };

@@ -9,6 +9,10 @@ const {
     normalizeTraceEntry,
     compareTraceEntries,
 } = require(path.join(__dirname, '..', 'scripts', 'compare-rl-match-trace.js'));
+const {
+    createShopStock,
+    loadRuntime,
+} = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 runTest('compare rl match trace: parseArgs は CLI 引数を解釈する', () => {
     const args = parseArgs([
@@ -33,12 +37,28 @@ runTest('compare rl match trace: parseArgs は CLI 引数を解釈する', () =>
     assert.strictEqual(args.cpuOpponentImpl, 'js-oracle');
 });
 
+runTest('compare rl match trace: parseArgs は seed/maxSteps の 0 指定を保持する', () => {
+    const args = parseArgs(['--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('compare rl match trace: buildDeterministicRolls は seed/maxSteps から固定ロール列を作る', () => {
     const first = buildDeterministicRolls(3, 10);
     const second = buildDeterministicRolls(3, 10);
     assert.strictEqual(first.length, 40);
     assert.deepStrictEqual(first, second);
     assert.ok(first.every(value => value >= 1 && value <= 6));
+});
+
+runTest('compare rl match trace: JS trace 初期在庫は7〜10人の大施設を人数分にする', () => {
+    const runtime = loadRuntime();
+    for (const playerCount of [7, 10]) {
+        const stock = createShopStock(runtime.CARDS, playerCount, runtime);
+        assert.strictEqual(stock['テレビ局'], playerCount);
+        assert.strictEqual(stock['麦畑'], 6);
+    }
 });
 
 runTest('compare rl match trace: normalizeState は Python/JS の状態表現を揃える', () => {
@@ -73,6 +93,21 @@ runTest('compare rl match trace: normalizeState は Python/JS の状態表現を
         players: [{ coins: 5, cards: { '麦畑': 1 }, dormantCards: {}, landmarks: {} }],
     });
     assert.deepStrictEqual(js, py);
+});
+
+runTest('compare rl match trace: normalizeTraceEntry は対象プレイヤー差分を保持する', () => {
+    const normalized = normalizeTraceEntry({
+        actorIndex: 0,
+        actorDifficulty: 'rl',
+        before: { current: 0, phase: 'pending', turnCount: 1, players: [] },
+        chosenAction: { action: 8, label: 'TV_TARGET:p3', targetIndex: 2 },
+        legalActions: [{ action: 8, label: 'TV_TARGET' }],
+        after: { current: 0, phase: 'build', turnCount: 1, players: [] },
+    });
+
+    assert.strictEqual(normalized.chosenAction.action, 8);
+    assert.strictEqual(normalized.chosenAction.label, '');
+    assert.strictEqual(normalized.chosenAction.targetIndex, 2);
 });
 
 runTest('compare rl match trace: compareTraceEntries は最初の差分を返す', () => {

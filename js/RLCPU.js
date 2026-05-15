@@ -8,8 +8,19 @@ class RLCPU {
         this.numActions = modelData.numActions;
         this.hiddenSize = modelData.hiddenSize;
         this.numCards = modelData.numCards;
-        this.numTargetSlots = modelData.numTargetSlots || 0;
+        this.numTargetSlots = modelData.numTargetSlots || RLCPU._inferTargetSlots(modelData.layers);
         this._validateModel();
+    }
+
+    static _inferTargetSlots(layers) {
+        if (!layers) return 0;
+        return ["tvTargetHead", "businessTargetHead", "moverTargetHead"].reduce((max, name) => {
+            const layer = layers[name];
+            const output = layer && layer.shape
+                ? Number(layer.shape.output)
+                : (layer && Array.isArray(layer.bias) ? layer.bias.length : 0);
+            return Number.isFinite(output) ? Math.max(max, output) : max;
+        }, 0);
     }
 
     static get PHASE_ORDER() {
@@ -331,15 +342,26 @@ class RLCPU {
     }
 
     _businessActionMaskForTarget(game, targetIndex) {
+        return this._businessActionMaskForTargets(game, [targetIndex]);
+    }
+
+    _businessActionMaskForTargets(game, targetIndices) {
         const mask = new Array(RLCPU.NUM_ACTIONS).fill(0);
         const current = game.currentPlayer();
-        const target = game.players[targetIndex];
-        if (!current || !target) {
+        if (!current || !Array.isArray(targetIndices) || targetIndices.length === 0) {
             mask[RLCPU.ACTIONS.PASS] = 1;
             return mask;
         }
         const myCounts = this._cardCounts(current, false);
-        const theirCounts = this._cardCounts(target, false);
+        const theirCounts = Object.fromEntries(CARDS.map(card => [card.name, 0]));
+        for (const targetIndex of targetIndices) {
+            const target = game.players[targetIndex];
+            if (!target || target === current) continue;
+            const counts = this._cardCounts(target, false);
+            for (const [name, count] of Object.entries(counts)) {
+                theirCounts[name] = (theirCounts[name] || 0) + count;
+            }
+        }
         for (let giveIndex = 0; giveIndex < CARDS.length; giveIndex++) {
             const giveCard = CARDS[giveIndex];
             if ((myCounts[giveCard.name] || 0) <= 0 || giveCard.color === "purple") continue;
@@ -355,14 +377,74 @@ class RLCPU {
         return mask;
     }
 
+    _selectBusinessTargetForTake(game, takeCardName) {
+        let bestIndex = -1;
+        let bestScore = -Infinity;
+        for (let index = 0; index < game.players.length; index++) {
+            if (index === game.currentPlayerIndex) continue;
+            const player = game.players[index];
+            const hasCard = player.getMinorCards().some(card => card.name === takeCardName);
+            if (!hasCard) continue;
+            const score = this._playerThreatScore(player);
+            if (bestIndex < 0 || score > bestScore) {
+                bestIndex = index;
+                bestScore = score;
+            }
+        }
+        return bestIndex;
+    }
+
+    _cardIndexByName(player, cardName, options = {}) {
+        if (!player || !cardName) return -1;
+        const matches = player.cards
+            .map((card, index) => ({ card, index, dormant: player.isDormant(card) }))
+            .filter(entry => entry.card.name === cardName && entry.card.category !== CARD_CATEGORIES.MAJOR);
+        if (matches.length === 0) return -1;
+        if (options.preferDormant) {
+            const dormant = matches.find(entry => entry.dormant);
+            if (dormant) return dormant.index;
+        }
+        if (options.preferActive) {
+            const active = matches.find(entry => !entry.dormant);
+            if (active) return active.index;
+        }
+        return matches[0].index;
+    }
+
+    _selectLegalTargetIndex(game, kind) {
+        let bestIndex = -1;
+        let bestScore = -Infinity;
+        const current = game.currentPlayer();
+        const currentHasMinor = current.getMinorCards().length > 0;
+        for (let index = 0; index < game.players.length; index++) {
+            if (index === game.currentPlayerIndex) continue;
+            const player = game.players[index];
+            let legal = false;
+            if (kind === 'tv') {
+                legal = (player.coins || 0) > 0;
+            } else if (kind === 'business') {
+                legal = currentHasMinor && player.getMinorCards().length > 0;
+            } else if (kind === 'mover') {
+                legal = true;
+            }
+            if (!legal) continue;
+            const score = this._playerThreatScore(player);
+            if (bestIndex < 0 || score > bestScore) {
+                bestIndex = index;
+                bestScore = score;
+            }
+        }
+        return bestIndex >= 0 ? bestIndex : this._selectOpponentIndex(game);
+    }
+
     _selectTargetIndex(game, kind) {
         const layer = this._targetLayerForKind(kind);
         if (!layer || this.numTargetSlots <= 0) {
-            return this._selectOpponentIndex(game);
+            return this._selectLegalTargetIndex(game, kind);
         }
         const { mask, slots } = this._targetMask(game, kind);
         if (!mask.some(Boolean)) {
-            return this._selectOpponentIndex(game);
+            return this._selectLegalTargetIndex(game, kind);
         }
         const state = this.encodeGameState(game);
         const hidden = this._sharedForward(state);
@@ -377,7 +459,7 @@ class RLCPU {
             }
         }
         if (bestSlot < 0 || !slots[bestSlot]) {
-            return this._selectOpponentIndex(game);
+            return this._selectLegalTargetIndex(game, kind);
         }
         return slots[bestSlot].playerIndex;
     }
@@ -573,14 +655,16 @@ class RLCPU {
             }
             if (game.pendingBusiness > 0) {
                 const myCounts = this._cardCounts(current, false);
-                const theirCounts = this._cardCounts(opponent, false);
+                const opponentIndices = game.players
+                    .map((_, index) => index)
+                    .filter(index => index !== game.currentPlayerIndex);
+                const businessMask = this._businessActionMaskForTargets(game, opponentIndices);
                 for (let giveIndex = 0; giveIndex < CARDS.length; giveIndex++) {
                     const giveCard = CARDS[giveIndex];
                     if ((myCounts[giveCard.name] || 0) <= 0 || giveCard.color === "purple") continue;
                     for (let takeIndex = 0; takeIndex < CARDS.length; takeIndex++) {
-                        const takeCard = CARDS[takeIndex];
-                        if ((theirCounts[takeCard.name] || 0) <= 0 || takeCard.color === "purple") continue;
-                        mask[actionConstants.BC_BASE + giveIndex * CARDS.length + takeIndex] = 1;
+                        const action = actionConstants.BC_BASE + giveIndex * CARDS.length + takeIndex;
+                        if (businessMask[action]) mask[action] = 1;
                     }
                 }
                 if (!mask.some(Boolean)) mask[actionConstants.PASS] = 1;
@@ -588,7 +672,9 @@ class RLCPU {
             }
             if (game.pendingCleaning > 0) {
                 for (let cardIndex = 0; cardIndex < CARDS.length; cardIndex++) {
-                    const cardName = CARDS[cardIndex].name;
+                    const card = CARDS[cardIndex];
+                    if (card.category === CARD_CATEGORIES.MAJOR) continue;
+                    const cardName = card.name;
                     const anyActive = game.players.some(player => player.cards.some(card => card.name === cardName && !player.isDormant(card)));
                     if (anyActive) mask[actionConstants.CLEAN_BASE + cardIndex] = 1;
                 }
@@ -629,7 +715,7 @@ class RLCPU {
                 const card = CARDS[cardIndex];
                 const stock = shopStock && Number.isFinite(shopStock[card.name]) ? shopStock[card.name] : 6;
                 if (stock <= 0 || current.coins < card.cost) continue;
-                if (card.color === "purple" && current.countCard(card.name) > 0) continue;
+                if (card.color === "purple" && current.countCardIncludingDormant(card.name) > 0) continue;
                 mask[actionConstants.BUY_CARD_BASE + cardIndex] = 1;
             }
             for (let landmarkIndex = 0; landmarkIndex < RLCPU.LANDMARK_ORDER.length; landmarkIndex++) {
@@ -673,18 +759,41 @@ class RLCPU {
         let action;
         if (this._targetLayerForKind('business') && this.numTargetSlots > 0) {
             targetIndex = this._selectTargetIndex(game, 'business');
-            action = this.chooseBusinessAction(this.encodeGameState(game), this._businessActionMaskForTarget(game, targetIndex)).action;
+            let targetMask = this._businessActionMaskForTarget(game, targetIndex);
+            let targetAvailable = targetMask.slice(RLCPU.ACTIONS.BC_BASE, RLCPU.ACTIONS.BC_BASE + RLCPU.ACTIONS.BC_SIZE).some(Boolean);
+            if (!targetAvailable) {
+                const opponentIndices = game.players
+                    .map((_, index) => index)
+                    .filter(index => index !== game.currentPlayerIndex);
+                targetMask = this._businessActionMaskForTargets(game, opponentIndices);
+            }
+            action = this.chooseBusinessAction(this.encodeGameState(game), targetMask).action;
         } else {
-            action = this._chooseForGame(game).action;
+            const preferredMask = this._businessActionMaskForTarget(game, targetIndex);
+            const preferredAvailable = preferredMask.slice(RLCPU.ACTIONS.BC_BASE, RLCPU.ACTIONS.BC_BASE + RLCPU.ACTIONS.BC_SIZE).some(Boolean);
+            action = preferredAvailable
+                ? this.chooseBusinessAction(this.encodeGameState(game), preferredMask).action
+                : this._chooseForGame(game).action;
         }
         if (action < RLCPU.ACTIONS.BC_BASE || action >= RLCPU.ACTIONS.BC_BASE + RLCPU.ACTIONS.BC_SIZE) return null;
         const combo = action - RLCPU.ACTIONS.BC_BASE;
         const giveIndex = Math.floor(combo / CARDS.length);
         const takeIndex = combo % CARDS.length;
+        if (!this._targetLayerForKind('business') ||
+            !game.players[targetIndex]?.getMinorCards().some(card => card.name === CARDS[takeIndex].name)) {
+            const fallbackTarget = this._selectBusinessTargetForTake(game, CARDS[takeIndex].name);
+            if (fallbackTarget < 0) return null;
+            targetIndex = fallbackTarget;
+        }
+        const current = game.currentPlayer();
+        const target = game.players[targetIndex];
+        const myCardIndex = this._cardIndexByName(current, CARDS[giveIndex].name, { preferDormant: true });
+        const theirCardIndex = this._cardIndexByName(target, CARDS[takeIndex].name, { preferActive: true });
+        if (myCardIndex < 0 || theirCardIndex < 0) return null;
         return {
-            myCard: CARDS[giveIndex].name,
+            myCard: myCardIndex,
             targetIndex,
-            theirCard: CARDS[takeIndex].name,
+            theirCard: theirCardIndex,
         };
     }
 
@@ -740,8 +849,10 @@ class RLCPU {
         const { action } = this._chooseForGame(game);
         if (action < RLCPU.ACTIONS.MOVER_BASE || action >= RLCPU.ACTIONS.MOVER_BASE + CARDS.length) return null;
         const cardName = CARDS[action - RLCPU.ACTIONS.MOVER_BASE].name;
+        const cardIndex = this._cardIndexByName(game.currentPlayer(), cardName, { preferDormant: true });
+        if (cardIndex < 0) return null;
         return {
-            cardIndex: cardName,
+            cardIndex,
             targetIndex: this._selectMoverTargetIndex(game, cardName),
         };
     }
@@ -761,13 +872,28 @@ class RLCPU {
         if (action === RLCPU.ACTIONS.PASS || action < 0) return;
         if (action >= RLCPU.ACTIONS.BUY_CARD_BASE && action < RLCPU.ACTIONS.BUY_CARD_BASE + CARDS.length) {
             const card = CARDS[action - RLCPU.ACTIONS.BUY_CARD_BASE];
+            if (typeof isOnlineGame !== "undefined" && isOnlineGame) {
+                if (typeof isRoomHost !== "undefined" && !isRoomHost) return;
+                if (typeof isReconnectingOnline !== "undefined" && isReconnectingOnline) return;
+                if (typeof socket !== "undefined" && socket && socket.connected === false) return;
+                if (typeof sendAction === "function") sendAction("buildCard", { cardName: card.name });
+                return;
+            }
             if (game.buildCard(card) && shopStock && Number.isFinite(shopStock[card.name])) {
                 shopStock[card.name] = Math.max(0, shopStock[card.name] - 1);
             }
             return;
         }
         if (action >= RLCPU.ACTIONS.BUY_LM_BASE && action < RLCPU.ACTIONS.BUY_LM_BASE + RLCPU.LANDMARK_ORDER.length) {
-            game.buildLandmark(RLCPU.LANDMARK_ORDER[action - RLCPU.ACTIONS.BUY_LM_BASE]);
+            const name = RLCPU.LANDMARK_ORDER[action - RLCPU.ACTIONS.BUY_LM_BASE];
+            if (typeof isOnlineGame !== "undefined" && isOnlineGame) {
+                if (typeof isRoomHost !== "undefined" && !isRoomHost) return;
+                if (typeof isReconnectingOnline !== "undefined" && isReconnectingOnline) return;
+                if (typeof socket !== "undefined" && socket && socket.connected === false) return;
+                if (typeof sendAction === "function") sendAction("buildLandmark", { name });
+                return;
+            }
+            game.buildLandmark(name);
         }
     }
 }

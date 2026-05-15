@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { runSeries } = require(path.join(__dirname, 'selfplay.js'));
 
 function parseArgs(argv) {
@@ -16,9 +17,9 @@ function parseArgs(argv) {
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--model') modelPath = argv[++i] || modelPath;
-        else if (arg === '--games') games = parseInt(argv[++i] || '20', 10);
-        else if (arg === '--seed') seed = parseInt(argv[++i] || '1', 10);
-        else if (arg === '--max-steps') maxSteps = parseInt(argv[++i] || '5000', 10);
+        else if (arg === '--games') games = parseIntegerOrDefault(argv[++i], 20);
+        else if (arg === '--seed') seed = parseIntegerOrDefault(argv[++i], 1);
+        else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--shared-seeds' || arg === '--same-seed') sharedSeeds = true;
         else if (arg === '--opponents') opponents = (argv[++i] || 'weak,normal,strong,expert').split(',').filter(Boolean);
@@ -56,8 +57,8 @@ function evaluateRlVsJs(options = {}) {
         ? options.lineups.map(lineup => lineup.slice())
         : (options.opponents || ['weak', 'normal', 'strong', 'expert']).map(opponent => ['rl', opponent]);
     assertRlModelLineupCompatible(rlModelData, lineups, modelPath);
-    const games = options.games || 20;
-    const baseSeed = options.seed || 1;
+    const games = integerOrDefault(options.games, 20);
+    const baseSeed = integerOrDefault(options.seed, 1);
     return lineups.map((lineup, index) => ({
         opponent: lineup.length === 2 ? lineup.find(player => player !== 'rl') : lineup.join('+'),
         lineup,
@@ -70,7 +71,7 @@ function evaluateRlVsJs(options = {}) {
         result: runSeries({
             games,
             seed: options.sharedSeeds ? baseSeed : baseSeed + index * games,
-            maxSteps: options.maxSteps || 5000,
+            maxSteps: integerOrDefault(options.maxSteps, 5000),
             players: lineup,
             rlModelData,
         }),
@@ -116,8 +117,9 @@ function summarizeEvaluationEntry(entry) {
             if (match.winnerDifficulty === 'rl') rlSecondWins++;
         }
     }
+    const buildStatsByDifficulty = entry.result.buildStatsByDifficulty || {};
     const buildStats = Array.isArray(entry.result.buildStats) ? entry.result.buildStats : [];
-    const rlBuildStats = buildStats.length > 0 ? buildStats[0] : null;
+    const rlBuildStats = buildStatsByDifficulty.rl || collectDifficultyBuildStats(buildStats, matchLog, 'rl');
     const businessStats = entry.result.businessStats || {};
     const rlBusinessStats = businessStats.rl || null;
     const topCards = rlBuildStats
@@ -175,6 +177,85 @@ function summarizeEvaluationEntry(entry) {
         modelInfo: entry.modelInfo || null,
         lineup: entry.lineup || entry.result.players || null,
     };
+}
+
+function emptyBuildStats() {
+    return {
+        total: 0,
+        pass: 0,
+        cards: {},
+        landmarks: {},
+    };
+}
+
+function addBuildStats(target, source) {
+    if (!source) return;
+    target.total += source.total || 0;
+    target.pass += source.pass || 0;
+    for (const [name, count] of Object.entries(source.cards || {})) {
+        target.cards[name] = (target.cards[name] || 0) + count;
+    }
+    for (const [name, count] of Object.entries(source.landmarks || {})) {
+        target.landmarks[name] = (target.landmarks[name] || 0) + count;
+    }
+}
+
+function subtractBuildStats(target, source) {
+    if (!source) return;
+    target.total -= source.total || 0;
+    target.pass -= source.pass || 0;
+    for (const [name, count] of Object.entries(source.cards || {})) {
+        target.cards[name] = (target.cards[name] || 0) - count;
+    }
+    for (const [name, count] of Object.entries(source.landmarks || {})) {
+        target.landmarks[name] = (target.landmarks[name] || 0) - count;
+    }
+}
+
+function pruneBuildStats(stats) {
+    for (const bucket of [stats.cards, stats.landmarks]) {
+        for (const [name, count] of Object.entries(bucket)) {
+            if (count <= 0) delete bucket[name];
+        }
+    }
+    stats.total = Math.max(0, stats.total);
+    stats.pass = Math.max(0, stats.pass);
+    return stats;
+}
+
+function collectDifficultyBuildStats(buildStats, matchLog, difficulty) {
+    if (!Array.isArray(buildStats) || buildStats.length === 0) return null;
+    if (!Array.isArray(matchLog) || matchLog.length === 0) return buildStats[0] || null;
+    const totalsBySeat = buildStats.map(stats => {
+        const clone = emptyBuildStats();
+        addBuildStats(clone, stats);
+        return clone;
+    });
+    const remainingBySeat = buildStats.map(stats => {
+        const clone = emptyBuildStats();
+        addBuildStats(clone, stats);
+        return clone;
+    });
+    const remainingGamesBySeat = buildStats.map((_, seatIndex) =>
+        matchLog.filter(match => Array.isArray(match.lineup) && seatIndex < match.lineup.length).length
+    );
+    const difficultyStats = emptyBuildStats();
+    for (const match of matchLog) {
+        const lineup = Array.isArray(match.lineup) ? match.lineup : [];
+        const seatIndex = lineup.indexOf(difficulty);
+        if (seatIndex < 0 || !remainingBySeat[seatIndex]) continue;
+        const gamesLeft = remainingGamesBySeat[seatIndex] || 1;
+        const share = emptyBuildStats();
+        const remaining = remainingBySeat[seatIndex];
+        share.total = remaining.total / gamesLeft;
+        share.pass = remaining.pass / gamesLeft;
+        for (const [name, count] of Object.entries(remaining.cards || {})) share.cards[name] = count / gamesLeft;
+        for (const [name, count] of Object.entries(remaining.landmarks || {})) share.landmarks[name] = count / gamesLeft;
+        addBuildStats(difficultyStats, share);
+        subtractBuildStats(remaining, share);
+        remainingGamesBySeat[seatIndex] = gamesLeft - 1;
+    }
+    return pruneBuildStats(difficultyStats.total > 0 ? difficultyStats : (totalsBySeat[0] || null));
 }
 
 function printEvaluation(entries, options = {}) {

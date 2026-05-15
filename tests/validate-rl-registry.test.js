@@ -148,26 +148,30 @@ runTest('validateRegistry helper は lineup type だけでなく人数も見る'
 
 runTest('validateRegistry helper は run summary から target 診断を要約する', () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-registry-'));
-    const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'sample-run');
-    fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
-        bestRuns: [{
-            runLabel: 'sample-run',
-            targetPendingRate: 0.12,
-            targetUpdateRate: 0.1,
-            tvTargetRate: 0.04,
-            bcTargetRate: 0.03,
-            moverTargetRate: 0.02,
-        }],
-    }), 'utf8');
-    const diagnostics = summarizeTargetDiagnostics({
-        id: 'sample',
-        sourceRun: 'models/rl_model/runs/sample-run',
-    }, { repoRoot });
-    assert.strictEqual(diagnostics.pendingRate, 0.12);
-    assert.strictEqual(diagnostics.updateRate, 0.1);
-    assert.strictEqual(diagnostics.bcRate, 0.03);
-    assert.ok(diagnostics.summaryPath.endsWith(path.join('models', 'rl_model', 'runs', 'sample-run', 'summary.json')));
+    try {
+        const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'sample-run');
+        fs.mkdirSync(runDir, { recursive: true });
+        fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
+            bestRuns: [{
+                runLabel: 'sample-run',
+                targetPendingRate: 0.12,
+                targetUpdateRate: 0.1,
+                tvTargetRate: 0.04,
+                bcTargetRate: 0.03,
+                moverTargetRate: 0.02,
+            }],
+        }), 'utf8');
+        const diagnostics = summarizeTargetDiagnostics({
+            id: 'sample',
+            sourceRun: 'models/rl_model/runs/sample-run',
+        }, { repoRoot });
+        assert.strictEqual(diagnostics.pendingRate, 0.12);
+        assert.strictEqual(diagnostics.updateRate, 0.1);
+        assert.strictEqual(diagnostics.bcRate, 0.03);
+        assert.ok(diagnostics.summaryPath.endsWith(path.join('models', 'rl_model', 'runs', 'sample-run', 'summary.json')));
+    } finally {
+        fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
 });
 
 runTest('validateRegistry は recommended role に必要な評価カバレッジ不足を警告する', () => {

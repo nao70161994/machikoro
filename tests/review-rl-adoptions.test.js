@@ -45,33 +45,37 @@ runTest('review-rl-adoptions weighted2pScore は weak/normal/strong の重み付
 
 runTest('review-rl-adoptions buildCandidateEntry は主要指標を抽出する', () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-review-'));
-    const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'm1-run');
-    fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
-        bestRuns: [{ targetPendingRate: 0.08, targetUpdateRate: 0.07, tvTargetRate: 0.03, bcTargetRate: 0.02, moverTargetRate: 0.01 }],
-    }), 'utf8');
-    const entry = buildCandidateEntry({
-        id: 'm1',
-        status: 'candidate',
-        sourceRun: 'models/rl_model/runs/m1-run',
-        style: { label: 'alpha' },
-        evals: [
-            {
-                type: 'js',
-                gamesPerOpponent: 50,
-                opponents: {
-                    weak: { winRate: 0.8, passRate: 0.01 },
-                    normal: { winRate: 0.7, passRate: 0.02 },
-                    strong: { winRate: 0.4, passRate: 0.03 },
+    try {
+        const runDir = path.join(repoRoot, 'models', 'rl_model', 'runs', 'm1-run');
+        fs.mkdirSync(runDir, { recursive: true });
+        fs.writeFileSync(path.join(runDir, 'summary.json'), JSON.stringify({
+            bestRuns: [{ targetPendingRate: 0.08, targetUpdateRate: 0.07, tvTargetRate: 0.03, bcTargetRate: 0.02, moverTargetRate: 0.01 }],
+        }), 'utf8');
+        const entry = buildCandidateEntry({
+            id: 'm1',
+            status: 'candidate',
+            sourceRun: 'models/rl_model/runs/m1-run',
+            style: { label: 'alpha' },
+            evals: [
+                {
+                    type: 'js',
+                    gamesPerOpponent: 50,
+                    opponents: {
+                        weak: { winRate: 0.8, passRate: 0.01 },
+                        normal: { winRate: 0.7, passRate: 0.02 },
+                        strong: { winRate: 0.4, passRate: 0.03 },
+                    },
                 },
-            },
-        ],
-    }, new Set(['m1']), { repoRoot });
-    assert.strictEqual(entry.recommended, true);
-    assert.strictEqual(entry.evalGames, 50);
-    assert.strictEqual(entry.passRate, 0.03);
-    assert.strictEqual(entry.score, 0.566667);
-    assert.strictEqual(entry.targetDiagnostics.pendingRate, 0.08);
+            ],
+        }, new Set(['m1']), { repoRoot });
+        assert.strictEqual(entry.recommended, true);
+        assert.strictEqual(entry.evalGames, 50);
+        assert.strictEqual(entry.passRate, 0.03);
+        assert.strictEqual(entry.score, 0.566667);
+        assert.strictEqual(entry.targetDiagnostics.pendingRate, 0.08);
+    } finally {
+        fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
 });
 
 runTest('review-rl-adoptions buildAdoptionReview は main と challenger を比較する', () => {

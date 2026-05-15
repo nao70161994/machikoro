@@ -45,23 +45,34 @@ runTest('diagnose-rl-landmark-race parseArgs は主要CLI引数を解釈する',
     ]);
 });
 
+runTest('diagnose-rl-landmark-race parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs(['--rank', '0', '--games', '0', '--seed', '0', '--max-steps', '0']);
+    assert.strictEqual(args.rank, 0);
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('diagnose-rl-landmark-race は2人用モデルの4人診断を拒否する', () => {
     const tmpPath = path.join(os.tmpdir(), `machikoro-rl-race-model-${process.pid}.json`);
-    fs.writeFileSync(tmpPath, JSON.stringify({ stateDim: 145 }), 'utf8');
-    assert.throws(
-        () => diagnoseModel(
-            { id: 'm145', path: tmpPath },
-            {
-                lineups: [['rl', 'weak', 'normal', 'strong']],
-                games: 1,
-                seed: 1,
-                maxSteps: 10,
-            },
-            null
-        ),
-        /2-player RL model/
-    );
-    fs.unlinkSync(tmpPath);
+    try {
+        fs.writeFileSync(tmpPath, JSON.stringify({ stateDim: 145 }), 'utf8');
+        assert.throws(
+            () => diagnoseModel(
+                { id: 'm145', path: tmpPath },
+                {
+                    lineups: [['rl', 'weak', 'normal', 'strong']],
+                    games: 1,
+                    seed: 1,
+                    maxSteps: 10,
+                },
+                null
+            ),
+            /2-player RL model/
+        );
+    } finally {
+        fs.rmSync(tmpPath, { force: true });
+    }
 });
 
 runTest('diagnose-rl-landmark-race はRL敗戦時のlandmark gapを集計する', () => {

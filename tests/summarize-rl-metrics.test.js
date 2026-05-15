@@ -49,11 +49,14 @@ runTest('parseCsvLine は基本的な CSV 行を分解する', () => {
 
 runTest('loadMetrics は CSV をオブジェクト配列へ読む', () => {
     const csvPath = writeTempCsv('game,js_opponent,js_win_rate\n1000,strong,0.6\n');
-    const rows = loadMetrics(csvPath);
-    assert.strictEqual(rows.length, 1);
-    assert.strictEqual(rows[0].game, '1000');
-    assert.strictEqual(rows[0].js_opponent, 'strong');
-    fs.unlinkSync(csvPath);
+    try {
+        const rows = loadMetrics(csvPath);
+        assert.strictEqual(rows.length, 1);
+        assert.strictEqual(rows[0].game, '1000');
+        assert.strictEqual(rows[0].js_opponent, 'strong');
+    } finally {
+        fs.rmSync(csvPath, { force: true });
+    }
 });
 
 runTest('summarizeMetrics は opponent 別ベストと総合上位を返す', () => {
@@ -194,39 +197,48 @@ runTest('renderSummary は json 形式を返す', () => {
 
 runTest('writeSummaryOutput は summary をファイルへ保存する', () => {
     const outputPath = path.join(os.tmpdir(), `machikoro-summary-${process.pid}-${Date.now()}.txt`);
-    writeSummaryOutput({
-        totalRows: 4,
-        jsRows: 4,
-        opponents: ['strong'],
-        bestByOpponent: {},
-        bestRuns: [],
-        combinedTop: [],
-    }, { format: 'text', outputPath });
-    const body = fs.readFileSync(outputPath, 'utf8');
-    assert.ok(body.includes('rows=4'));
-    fs.unlinkSync(outputPath);
+    try {
+        writeSummaryOutput({
+            totalRows: 4,
+            jsRows: 4,
+            opponents: ['strong'],
+            bestByOpponent: {},
+            bestRuns: [],
+            combinedTop: [],
+        }, { format: 'text', outputPath });
+        const body = fs.readFileSync(outputPath, 'utf8');
+        assert.ok(body.includes('rows=4'));
+    } finally {
+        fs.rmSync(outputPath, { force: true });
+    }
 });
 
 runTest('writeIndexCsv は index を CSV へ保存する', () => {
     const outputPath = path.join(os.tmpdir(), `machikoro-run-index-${process.pid}-${Date.now()}.csv`);
-    writeIndexCsv([{ rank: 1, runLabel: 'trial', game: 2000, score: 0.5, hidden: 256, lr: 0.0003 }], outputPath, ['rank', 'runLabel', 'game', 'score', 'hidden', 'lr']);
-    const body = fs.readFileSync(outputPath, 'utf8');
-    assert.ok(body.includes('rank,runLabel,game,score,hidden,lr'));
-    assert.ok(body.includes('1,trial,2000,0.5,256,0.0003'));
-    fs.unlinkSync(outputPath);
+    try {
+        writeIndexCsv([{ rank: 1, runLabel: 'trial', game: 2000, score: 0.5, hidden: 256, lr: 0.0003 }], outputPath, ['rank', 'runLabel', 'game', 'score', 'hidden', 'lr']);
+        const body = fs.readFileSync(outputPath, 'utf8');
+        assert.ok(body.includes('rank,runLabel,game,score,hidden,lr'));
+        assert.ok(body.includes('1,trial,2000,0.5,256,0.0003'));
+    } finally {
+        fs.rmSync(outputPath, { force: true });
+    }
 });
 
 runTest('writeSummaryIndexes は runIndex と configIndex を個別CSVへ保存する', () => {
     const runIndexCsvPath = path.join(os.tmpdir(), `machikoro-run-index-${process.pid}-${Date.now()}.csv`);
     const configIndexCsvPath = path.join(os.tmpdir(), `machikoro-config-index-${process.pid}-${Date.now()}.csv`);
-    writeSummaryIndexes({
-        runIndex: [{ rank: 1, runLabel: 'trial', game: 2000, score: 0.5, hidden: 256, lr: 0.0003 }],
-        configIndex: [{ rank: 1, configKey: 'hidden=256 lr=0.0003', hidden: 256, lr: 0.0003, runLabel: 'trial', game: 2000, score: 0.5 }],
-    }, { runIndexCsvPath, configIndexCsvPath });
-    const runBody = fs.readFileSync(runIndexCsvPath, 'utf8');
-    const configBody = fs.readFileSync(configIndexCsvPath, 'utf8');
-    assert.ok(runBody.includes('runLabel'));
-    assert.ok(configBody.includes('configKey'));
-    fs.unlinkSync(runIndexCsvPath);
-    fs.unlinkSync(configIndexCsvPath);
+    try {
+        writeSummaryIndexes({
+            runIndex: [{ rank: 1, runLabel: 'trial', game: 2000, score: 0.5, hidden: 256, lr: 0.0003 }],
+            configIndex: [{ rank: 1, configKey: 'hidden=256 lr=0.0003', hidden: 256, lr: 0.0003, runLabel: 'trial', game: 2000, score: 0.5 }],
+        }, { runIndexCsvPath, configIndexCsvPath });
+        const runBody = fs.readFileSync(runIndexCsvPath, 'utf8');
+        const configBody = fs.readFileSync(configIndexCsvPath, 'utf8');
+        assert.ok(runBody.includes('runLabel'));
+        assert.ok(configBody.includes('configKey'));
+    } finally {
+        fs.rmSync(runIndexCsvPath, { force: true });
+        fs.rmSync(configIndexCsvPath, { force: true });
+    }
 });

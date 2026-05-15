@@ -7,7 +7,7 @@ function loadRLRuntime() {
     const context = { console, Math: Object.create(Math) };
     vm.createContext(context);
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/RLCPU.js']);
-    vm.runInContext('this.RLCPU = RLCPU; this.GameManager = GameManager; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES; this.createCardByName = createCardByName; this.CARDS = CARDS;', context);
+    vm.runInContext('this.RLCPU = RLCPU; this.GameManager = GameManager; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES; this.createCardByName = createCardByName; this.CARDS = CARDS; this.Player = Player;', context);
     return context;
 }
 
@@ -403,6 +403,21 @@ runTest('RLCPU: forwardBusiness は give/take 分布を返す', () => {
     assert.strictEqual(result.take.length, 2);
     assert.ok(Math.abs(result.give.reduce((sum, value) => sum + value, 0) - 1) < 1e-6);
     assert.ok(Math.abs(result.take.reduce((sum, value) => sum + value, 0) - 1) < 1e-6);
+});
+
+runTest('RLCPU: numTargetSlots 欠落時はtarget head形状から推定する', () => {
+    const { RLCPU } = loadRLRuntime();
+    const model = buildTestModel();
+    model.layers.businessTargetHead = {
+        weights: [
+            [1, 0, 0],
+            [0, 1, 0],
+        ],
+        bias: [0, 0, 0],
+    };
+    const cpu = new RLCPU(model);
+
+    assert.strictEqual(cpu.numTargetSlots, 3);
 });
 
 runTest('RLCPU: encodeGameState は 2人戦初期局面を 145 次元へ変換する', () => {
@@ -829,8 +844,8 @@ runTest('RLCPU: target head があれば4人戦の対象選択に使う', () => 
     const businessMove = cpu.chooseBusinessMove(game);
     assert.ok(businessMove);
     assert.strictEqual(businessMove.targetIndex, 2);
-    assert.strictEqual(businessMove.myCard, 'パン屋');
-    assert.strictEqual(businessMove.theirCard, 'カフェ');
+    assert.strictEqual(businessMove.myCard, 3);
+    assert.strictEqual(businessMove.theirCard, 0);
 
     game.pendingBusiness = false;
     game.pendingMover = 1;
@@ -895,6 +910,110 @@ runTest('RLCPU: pending business は休業中カードだけでも合法手に�
     assert.strictEqual(cpu.actionMask(game)[action], 1);
 });
 
+runTest('RLCPU: pending business はtarget headなしでも全相手から合法交換を探す', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GAME_PHASES } = context;
+    const model = buildParityModelWithStateDim(context, 353);
+    const giveIndex = context.CARDS.findIndex(card => card.name === 'パン屋');
+    const takeIndex = context.CARDS.findIndex(card => card.name === '寿司屋');
+    model.layers.businessGiveHead.bias[giveIndex] = 10;
+    model.layers.businessTakeHead.bias[takeIndex] = 10;
+    const cpu = new RLCPU(model);
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.PENDING,
+        pendingTV: 0,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 12,
+        players: [
+            { coins: 3, cards: { 'パン屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 30, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: { '寿司屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+    const action = RLCPU.ACTIONS.BC_BASE + giveIndex * context.CARDS.length + takeIndex;
+
+    assert.strictEqual(cpu.actionMask(game)[action], 1);
+    const move = cpu.chooseBusinessMove(game);
+    assert.strictEqual(move.myCard, 0);
+    assert.strictEqual(move.targetIndex, 2);
+    assert.strictEqual(move.theirCard, 0);
+});
+
+runTest('RLCPU: target head の上位枠外にだけ合法business対象がいてもfallbackする', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GAME_PHASES } = context;
+    const model = buildTargetHeadModel(context, 353, { business: [10, 0, 0] });
+    const giveIndex = context.CARDS.findIndex(card => card.name === 'パン屋');
+    const takeIndex = context.CARDS.findIndex(card => card.name === '寿司屋');
+    model.layers.businessGiveHead.bias[giveIndex] = 10;
+    model.layers.businessTakeHead.bias[takeIndex] = 10;
+    const cpu = new RLCPU(model);
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.PENDING,
+        pendingTV: 0,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 12,
+        players: [
+            { coins: 3, cards: { 'パン屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 50, cards: { 'スタジアム': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 40, cards: { 'テレビ局': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 30, cards: { 'ビジネスセンター': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 1, cards: { '寿司屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+
+    const move = cpu.chooseBusinessMove(game);
+    assert.strictEqual(move.myCard, 0);
+    assert.strictEqual(move.targetIndex, 4);
+    assert.strictEqual(move.theirCard, 0);
+});
+
+runTest('RLCPU: target head の上位枠外にだけTV対象がいてもfallbackする', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GAME_PHASES } = context;
+    const cpu = new RLCPU(buildTargetHeadModel(context, 353, { tv: [10, 0, 0] }));
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.PENDING,
+        pendingTV: 1,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 12,
+        players: [
+            { coins: 3, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 0, cards: { 'スタジアム': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 0, cards: { 'テレビ局': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 0, cards: { 'ビジネスセンター': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 1, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+
+    assert.strictEqual(cpu.chooseTVTarget(game), 4);
+});
+
 runTest('RLCPU: pending mover は休業中カードだけでも合法手になる', () => {
     const context = loadRLRuntime();
     const { RLCPU, GAME_PHASES } = context;
@@ -922,4 +1041,81 @@ runTest('RLCPU: pending mover は休業中カードだけでも合法手にな�
     const cardIndex = context.CARDS.findIndex(card => card.name === 'パン屋');
     const action = RLCPU.ACTIONS.MOVER_BASE + cardIndex;
     assert.strictEqual(cpu.actionMask(game)[action], 1);
+});
+
+runTest('RLCPU: business/mover は同名カード混在時に具体的なカードindexを返す', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, createCardByName, GAME_PHASES, CARDS } = context;
+    const model = buildParityModelWithStateDim(context, 353);
+    const cafeIndex = CARDS.findIndex(card => card.name === 'カフェ');
+    const bakeryIndex = CARDS.findIndex(card => card.name === 'パン屋');
+    model.layers.businessGiveHead.bias[cafeIndex] = 10;
+    model.layers.businessTakeHead.bias[bakeryIndex] = 10;
+    model.layers.policyHead.bias[RLCPU.ACTIONS.MOVER_BASE + cafeIndex] = 10;
+    const cpu = new RLCPU(model);
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+    game.currentPlayerIndex = 0;
+    const dormantCafe = createCardByName('カフェ');
+    const activeCafe = createCardByName('カフェ');
+    game.currentPlayer().cards = [activeCafe, dormantCafe];
+    game.currentPlayer().makeDormant(dormantCafe);
+    const dormantBakery = createCardByName('パン屋');
+    const activeBakery = createCardByName('パン屋');
+    game.players[1].cards = [dormantBakery, activeBakery];
+    game.players[1].makeDormant(dormantBakery);
+
+    game.pendingBusiness = 1;
+    const businessMove = cpu.chooseBusinessMove(game);
+    assert.strictEqual(businessMove.myCard, 1);
+    assert.strictEqual(businessMove.targetIndex, 1);
+    assert.strictEqual(businessMove.theirCard, 1);
+
+    game.pendingBusiness = 0;
+    game.pendingMover = 1;
+    const moverMove = cpu.chooseMoverMove(game);
+    assert.strictEqual(moverMove.cardIndex, 1);
+});
+
+runTest('RLCPU: online build はローカル適用せず sendAction へ送る', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, GAME_PHASES, Player } = context;
+    const model = buildParityModelWithStateDim(context, 353);
+    const cardIndex = context.CARDS.findIndex(card => card.name === '森林');
+    model.layers.policyHead.bias[RLCPU.ACTIONS.BUY_CARD_BASE + cardIndex] = 10;
+    const cpu = new RLCPU(model);
+    const game = new GameManager(2);
+    const shopStock = createDefaultShopStock(context);
+    game.phase = GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    const sent = [];
+    context.isOnlineGame = true;
+    context.isRoomHost = true;
+    context.isReconnectingOnline = false;
+    context.socket = { connected: true };
+    context.sendAction = (action, data) => {
+        sent.push({ action, data });
+        return true;
+    };
+
+    cpu.build(game, shopStock);
+
+    assert.strictEqual(sent.length, 1);
+    assert.strictEqual(sent[0].action, 'buildCard');
+    assert.strictEqual(sent[0].data.cardName, '森林');
+    assert.strictEqual(game.currentPlayer().cards.some(card => card.name === '森林'), false);
+    assert.strictEqual(shopStock['森林'], 6);
+
+    const landmarkModel = buildParityModelWithStateDim(context, 353);
+    const stationIndex = RLCPU.LANDMARK_ORDER.indexOf('駅');
+    landmarkModel.layers.policyHead.bias[RLCPU.ACTIONS.BUY_LM_BASE + stationIndex] = 10;
+    const landmarkCpu = new RLCPU(landmarkModel);
+    sent.length = 0;
+    game.currentPlayer().coins = Player.landmarkCost('駅');
+    landmarkCpu.build(game, shopStock);
+
+    assert.strictEqual(sent.length, 1);
+    assert.strictEqual(sent[0].action, 'buildLandmark');
+    assert.strictEqual(sent[0].data.name, '駅');
+    assert.strictEqual(game.currentPlayer().landmarks['駅'], false);
 });

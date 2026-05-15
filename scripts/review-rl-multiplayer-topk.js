@@ -1,5 +1,7 @@
 const fs = require('fs');
 
+const { integerOrDefault, parseIntegerOrDefault } = require('./cli-args.js');
+
 function parseArgs(argv) {
     const args = {
         input: '',
@@ -13,8 +15,8 @@ function parseArgs(argv) {
         if (arg === '--input') args.input = argv[++i] || '';
         else if (arg === '--format') args.format = argv[++i] || args.format;
         else if (arg === '--output') args.output = argv[++i] || '';
-        else if (arg === '--diversified-limit') args.diversifiedLimit = parseInt(argv[++i] || String(args.diversifiedLimit), 10);
-        else if (arg === '--min-games-per-lineup') args.minGamesPerLineup = parseInt(argv[++i] || String(args.minGamesPerLineup), 10);
+        else if (arg === '--diversified-limit') args.diversifiedLimit = parseIntegerOrDefault(argv[++i], args.diversifiedLimit);
+        else if (arg === '--min-games-per-lineup') args.minGamesPerLineup = parseIntegerOrDefault(argv[++i], args.minGamesPerLineup);
     }
     return args;
 }
@@ -51,7 +53,7 @@ function buildEntry(result, options = {}) {
     const combinedScore = average([avg3p, avg4p]);
     const cardStyle = result.buildSignature && result.buildSignature.cardKey ? result.buildSignature.cardKey : '';
     const landmarkStyle = result.buildSignature && result.buildSignature.landmarkKey ? result.buildSignature.landmarkKey : '';
-    const minGamesPerLineup = options.minGamesPerLineup || 50;
+    const minGamesPerLineup = integerOrDefault(options.minGamesPerLineup, 50);
     const minGames = minGamesAcrossSummaries(summaries);
     const smokeOnly = minGames === null || minGames < minGamesPerLineup;
     const promotionBlocked = smokeOnly || !hasMultiplayerSummaries;
@@ -93,6 +95,7 @@ function compareEntries(left, right) {
 }
 
 function buildDiversifiedPicks(entries, limit) {
+    if (!Number.isInteger(limit) || limit <= 0) return [];
     const picks = [];
     const seenKeys = new Set();
     for (const entry of entries) {
@@ -140,9 +143,9 @@ function buildReview(results, options = {}) {
     const entries = results.map(result => buildEntry(result, options)).sort(compareEntries);
     return {
         totalModels: entries.length,
-        minGamesPerLineup: options.minGamesPerLineup || 50,
+        minGamesPerLineup: integerOrDefault(options.minGamesPerLineup, 50),
         entries,
-        diversifiedPicks: buildDiversifiedPicks(entries, options.diversifiedLimit || 5),
+        diversifiedPicks: buildDiversifiedPicks(entries, integerOrDefault(options.diversifiedLimit, 5)),
         nearTiePairs: buildNearTiePairs(entries),
     };
 }

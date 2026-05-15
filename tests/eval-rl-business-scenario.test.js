@@ -83,6 +83,12 @@ runTest('eval-rl-business-scenario parseArgs は主要CLI引数を解釈する',
     assert.strictEqual(args.output, 'out.json');
 });
 
+runTest('eval-rl-business-scenario parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs(['--rank', '0', '--player-count', '0']);
+    assert.strictEqual(args.rank, 0);
+    assert.strictEqual(args.playerCount, 0);
+});
+
 runTest('createScenarioGame はBC pending局面を作る', () => {
     const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
     const runtime = loadRuntime();

@@ -105,7 +105,10 @@ class MachikoroEnv:
 
     def reset(self):
         self.players = [PlayerState() for _ in range(self.player_count)]
-        self.shop_stock = {name: 6 for name in CARD_NAMES}
+        self.shop_stock = {
+            name: self.player_count if CARD_DEF[name].color == "purple" else 6
+            for name in CARD_NAMES
+        }
         self.current = 0
         self.phase = PHASE_ROLL
         self.last_dice = 0
@@ -251,7 +254,6 @@ class MachikoroEnv:
                 self.last_d1 = 0
                 self.last_d2 = 0
                 if p.landmarks[LM_STATION]:
-                    self._roll()
                     self.phase = PHASE_SELECT_DICE
                 else:
                     d1 = self._roll()
@@ -286,8 +288,8 @@ class MachikoroEnv:
                 if (p.cards[give_name] > 0 and opp.cards[take_name] > 0 and
                         CARD_DEF[give_name].color != "purple" and
                         CARD_DEF[take_name].color != "purple"):
-                    give_dormant = self._remove_one_card(p, give_name)
-                    take_dormant = self._remove_one_card(opp, take_name)
+                    give_dormant = self._remove_one_card(p, give_name, prefer_dormant=True)
+                    take_dormant = self._remove_one_card(opp, take_name, prefer_dormant=False)
                     self._add_one_card(p, take_name, take_dormant)
                     self._add_one_card(opp, give_name, give_dormant)
             self.pending_biz -= 1
@@ -509,7 +511,7 @@ class MachikoroEnv:
                 continue
 
             if cd.effect == MOVER:
-                self.pending_mover += 1
+                self.pending_mover += count
                 continue
 
             if cd.effect == LOAN:
@@ -584,7 +586,8 @@ class MachikoroEnv:
                 self.pending_tv += 1
 
             elif cd.effect == BUSINESS:
-                self.pending_biz += 1
+                if self._has_business_exchange(ci):
+                    self.pending_biz += 1
 
             elif cd.effect == PUBLISHER:
                 total = 0
@@ -679,10 +682,12 @@ class MachikoroEnv:
         self.pending_target_index = None
         self.last_dice = self.last_d1 = self.last_d2 = 0
 
-    def _remove_one_card(self, player: PlayerState, name: str) -> bool:
+    def _remove_one_card(self, player: PlayerState, name: str, prefer_dormant: bool = True) -> bool:
         if player.cards[name] <= 0:
             return False
-        was_dormant = player.dormant.get(name, 0) > 0
+        dormant_count = player.dormant.get(name, 0)
+        active_count = player.active(name)
+        was_dormant = dormant_count > 0 if prefer_dormant else active_count <= 0
         player.cards[name] -= 1
         if was_dormant:
             player.dormant[name] = max(0, player.dormant.get(name, 0) - 1)
@@ -701,23 +706,66 @@ class MachikoroEnv:
         self._add_one_card(dst, name, was_dormant)
         return True
 
+    def _has_business_exchange(self, current_index: int) -> bool:
+        current = self.players[current_index]
+        has_give = any(
+            current.cards[n] > 0 and CARD_DEF[n].color != "purple"
+            for n in CARD_NAMES
+        )
+        if not has_give:
+            return False
+        return any(
+            index != current_index and any(
+                player.cards[n] > 0 and CARD_DEF[n].color != "purple"
+                for n in CARD_NAMES
+            )
+            for index, player in enumerate(self.players)
+        )
+
     def _player_threat_score(self, player: PlayerState) -> float:
         score = float(player.coins)
         score += sum(LANDMARK_COSTS[n] * 2 for n in LANDMARK_ORDER if player.landmarks[n])
         score += sum(player.active(n) * CARD_DEF[n].cost for n in CARD_NAMES)
         return score
 
-    def _target_opponent_index(self) -> int:
+    def _pending_target_kind(self) -> str | None:
+        if self.pending_tv > 0:
+            return "tv"
+        if self.pending_biz > 0:
+            return "business"
+        if self.pending_mover > 0:
+            return "mover"
+        return None
+
+    def _is_legal_pending_target(self, index: int, kind: str | None = None) -> bool:
+        if index == self.current:
+            return False
+        player = self.players[index]
+        if kind == "tv":
+            return player.coins > 0
+        if kind == "business":
+            current = self.players[self.current]
+            current_has_card = any(current.cards[n] > 0 and CARD_DEF[n].color != "purple" for n in CARD_NAMES)
+            target_has_card = any(player.cards[n] > 0 and CARD_DEF[n].color != "purple" for n in CARD_NAMES)
+            return current_has_card and target_has_card
+        return True
+
+    def _target_opponent_index(self, kind: str | None = None) -> int:
         best_index = None
         best_score = None
         for index, player in enumerate(self.players):
-            if index == self.current:
+            if not self._is_legal_pending_target(index, kind):
                 continue
             score = self._player_threat_score(player)
             if best_index is None or score > best_score:
                 best_index = index
                 best_score = score
-        return best_index if best_index is not None else 0
+        if best_index is not None:
+            return best_index
+        for index in range(len(self.players)):
+            if index != self.current:
+                return index
+        return 0
 
     def _target_opponent_slots(self) -> list[int]:
         slots = []
@@ -725,17 +773,18 @@ class MachikoroEnv:
             if index == self.current:
                 continue
             slots.append((self._player_threat_score(player), index))
-        slots.sort(key=lambda item: item[0], reverse=True)
+        slots.sort(key=lambda item: -item[0])
         return [index for _, index in slots]
 
     def _pending_target_index(self) -> int:
+        kind = self._pending_target_kind()
         target_index = self.pending_target_index
         if target_index is None:
-            return self._target_opponent_index()
+            return self._target_opponent_index(kind)
         if not (0 <= int(target_index) < len(self.players)):
-            return self._target_opponent_index()
-        if int(target_index) == self.current:
-            return self._target_opponent_index()
+            return self._target_opponent_index(kind)
+        if not self._is_legal_pending_target(int(target_index), kind):
+            return self._target_opponent_index(kind)
         return int(target_index)
 
     def set_pending_target_index(self, target_index: int | None):

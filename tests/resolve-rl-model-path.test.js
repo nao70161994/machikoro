@@ -14,6 +14,11 @@ runTest('resolve-rl-model-path parseArgs は主要CLI引数を解釈する', () 
     assert.strictEqual(args.target, 'run1');
 });
 
+runTest('resolve-rl-model-path parseArgs は rank 0 指定を保持する', () => {
+    const args = parseArgs(['--rank', '0', 'run1']);
+    assert.strictEqual(args.rank, 0);
+});
+
 runTest('resolve-rl-model-path browserPathForRunLabel は rank 別 path を返す', () => {
     assert.strictEqual(browserPathForRunLabel('abc', 1), 'models/rl_model/runs/abc/best_model.browser.json');
     assert.strictEqual(browserPathForRunLabel('abc', 2), 'models/rl_model/runs/abc/best_model.top2.browser.json');
@@ -36,5 +41,13 @@ runTest('resolve-rl-model-path resolveModelPath は model id / run-label / path 
     assert.strictEqual(
         resolveModelPath('models/rl_model/custom.json', 1, registry),
         'models/rl_model/custom.json'
+    );
+    assert.strictEqual(
+        resolveModelPath('./models/rl_model/custom.json', 1, registry),
+        './models/rl_model/custom.json'
+    );
+    assert.strictEqual(
+        resolveModelPath('/home/machikoro/models/rl_model/custom.json', 1, registry),
+        '/home/machikoro/models/rl_model/custom.json'
     );
 });

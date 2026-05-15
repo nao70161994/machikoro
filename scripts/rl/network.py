@@ -298,17 +298,24 @@ class PolicyValueNet:
                     raise SchemaVersionError(
                         "非互換なチェックポイントです。models/rl_model/model.npz を削除して再実行してください。"
                     )
-                self.target_slots = int(data["tv_target_b"].shape[0]) if "tv_target_b" in data.files else 0
-                if self.target_slots <= 0:
-                    self.tv_target_head = None
-                    self.bc_target_head = None
-                    self.mover_target_head = None
-                if self.target_slots > 0 and self.tv_target_head is None:
-                    hidden = self.shared[-1].W.shape[1]
-                    lr = self.policy_head.lr
-                    self.tv_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
-                    self.bc_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
-                    self.mover_target_head = Layer(hidden, self.target_slots, activation=False, lr=lr)
+                target_prefixes = {
+                    "tv_target": "tv_target_head",
+                    "bc_target": "bc_target_head",
+                    "mover_target": "mover_target_head",
+                }
+                target_sizes = [
+                    int(data[f"{prefix}_b"].shape[0])
+                    for prefix in target_prefixes
+                    if f"{prefix}_b" in data.files
+                ]
+                self.target_slots = max(target_sizes, default=0)
+                hidden = self.shared[-1].W.shape[1]
+                lr = self.policy_head.lr
+                for prefix, attr in target_prefixes.items():
+                    if self.target_slots > 0 and f"{prefix}_b" in data.files:
+                        setattr(self, attr, Layer(hidden, self.target_slots, activation=False, lr=lr))
+                    else:
+                        setattr(self, attr, None)
                 specs = self._layer_specs()
 
                 # shape チェック

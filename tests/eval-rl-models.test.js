@@ -65,6 +65,14 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     assert.strictEqual(args.markdown, 'out.md');
 });
 
+runTest('eval-rl-models parseArgs は数値 CLI の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--seed', '0', '--max-steps', '0', '--rank', '0']);
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+    assert.strictEqual(args.rank, 0);
+});
+
 runTest('eval-rl-models parseNumberList は rank 配列を解釈する', () => {
     assert.deepStrictEqual(parseNumberList('1,2,3'), [1, 2, 3]);
     assert.deepStrictEqual(parseNumberList('1,x,0,4'), [1, 4]);

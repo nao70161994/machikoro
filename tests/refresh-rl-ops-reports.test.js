@@ -59,18 +59,22 @@ runTest('refresh-rl-ops-reports buildArtifacts は4種類の成果物を作る',
 
 runTest('refresh-rl-ops-reports writeArtifacts は report 群を書き出す', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-ops-'));
-    const artifacts = {
-        report: { updatedAt: '2026-04-21', statusCounts: {}, warnings: [], errors: [], models: [], recommended: [], actions: [] },
-        audit: { updatedAt: '2026-04-21', warnings: [], errors: [], recommended: [] },
-        plan: { updatedAt: '2026-04-21', counts: {}, actions: [] },
-        review: { updatedAt: '2026-04-21', minimumGames: 50, currentMain: '', candidates: [], actions: [] },
-        diversity: { updatedAt: '2026-04-21', styleGroups: [], overlapPairs: [] },
-    };
-    const files = writeArtifacts(artifacts, tmpDir);
-    assert.strictEqual(files.length, 15);
-    assert.ok(fs.existsSync(path.join(tmpDir, 'registry-report.txt')));
-    assert.ok(fs.existsSync(path.join(tmpDir, 'adoption-review.json')));
-    assert.ok(fs.existsSync(path.join(tmpDir, 'diversity-report.md')));
+    try {
+        const artifacts = {
+            report: { updatedAt: '2026-04-21', statusCounts: {}, warnings: [], errors: [], models: [], recommended: [], actions: [] },
+            audit: { updatedAt: '2026-04-21', warnings: [], errors: [], recommended: [] },
+            plan: { updatedAt: '2026-04-21', counts: {}, actions: [] },
+            review: { updatedAt: '2026-04-21', minimumGames: 50, currentMain: '', candidates: [], actions: [] },
+            diversity: { updatedAt: '2026-04-21', styleGroups: [], overlapPairs: [] },
+        };
+        const files = writeArtifacts(artifacts, tmpDir);
+        assert.strictEqual(files.length, 15);
+        assert.ok(fs.existsSync(path.join(tmpDir, 'registry-report.txt')));
+        assert.ok(fs.existsSync(path.join(tmpDir, 'adoption-review.json')));
+        assert.ok(fs.existsSync(path.join(tmpDir, 'diversity-report.md')));
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
 });
 
 runTest('refresh-rl-ops-reports renderSummary は出力ファイル一覧を返す', () => {

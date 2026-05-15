@@ -88,13 +88,24 @@ runTest('parseArgs は --same-seed を sharedSeeds として解釈する', () =>
     assert.strictEqual(args.sharedSeeds, true);
 });
 
+runTest('parseArgs は games/seed/maxSteps の 0 指定を保持する', () => {
+    const args = parseArgs(['--games', '0', '--seed', '0', '--max-steps', '0']);
+
+    assert.strictEqual(args.games, 0);
+    assert.strictEqual(args.seed, 0);
+    assert.strictEqual(args.maxSteps, 0);
+});
+
 runTest('loadModel は export 済み JSON を読み込む', () => {
     const tmpPath = path.join(os.tmpdir(), `machikoro-rl-model-${process.pid}.json`);
-    fs.writeFileSync(tmpPath, JSON.stringify(buildRlModel()), 'utf8');
-    const model = loadModel(tmpPath);
-    assert.strictEqual(model.stateDim, 145);
-    assert.strictEqual(model.numActions, 1580);
-    fs.unlinkSync(tmpPath);
+    try {
+        fs.writeFileSync(tmpPath, JSON.stringify(buildRlModel()), 'utf8');
+        const model = loadModel(tmpPath);
+        assert.strictEqual(model.stateDim, 145);
+        assert.strictEqual(model.numActions, 1580);
+    } finally {
+        fs.rmSync(tmpPath, { force: true });
+    }
 });
 
 runTest('assertRlModelLineupCompatible は2人用モデルの3人以上評価を拒否する', () => {
@@ -126,6 +137,19 @@ runTest('evaluateRlVsJs は opponent ごとの 2人戦結果を返す', () => {
     assert.strictEqual(result[1].opponent, 'normal');
     assert.deepStrictEqual(result[1].result.players, ['rl', 'normal']);
     assert.strictEqual(result[0].modelInfo.stateDim, 145);
+});
+
+runTest('evaluateRlVsJs は games/maxSteps の 0 指定を既定値で上書きしない', () => {
+    const result = evaluateRlVsJs({
+        games: 0,
+        seed: 0,
+        maxSteps: 0,
+        opponents: ['weak'],
+        rlModelData: buildRlModel(),
+    });
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].result.games, 0);
+    assert.deepStrictEqual(result[0].result.matchLog, []);
 });
 
 runTest('evaluateRlVsJs は既定で opponent ごとに seed 範囲をずらす', () => {
@@ -182,6 +206,10 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
                 { lineup: ['rl', 'expert'], winnerDifficulty: 'expert' },
                 { lineup: ['expert', 'rl'], winnerDifficulty: 'rl' },
             ],
+            buildStatsByDifficulty: {
+                rl: { total: 6, pass: 2, cards: { '麦畑': 3 }, landmarks: { '駅': 1 } },
+                expert: { total: 3, pass: 1, cards: { 'パン屋': 2 }, landmarks: {} },
+            },
             buildStats: [
                 { total: 5, pass: 2, cards: { '麦畑': 2, '森林': 1 }, landmarks: { '駅': 1 } },
                 { total: 4, pass: 1, cards: { 'パン屋': 2 }, landmarks: {} },
@@ -206,10 +234,11 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
     assert.strictEqual(summary.drawRate, 0.1);
     assert.strictEqual(summary.rlSeatWinRates.first, 0.5);
     assert.strictEqual(summary.rlSeatWinRates.second, 1);
-    assert.strictEqual(summary.rlBuildStats.total, 5);
+    assert.strictEqual(summary.rlBuildStats.total, 6);
     assert.strictEqual(summary.rlBuildStats.pass, 2);
-    assert.strictEqual(summary.rlBuildStats.passRate, 0.4);
-    assert.strictEqual(summary.rlBuildStats.topCards[0].name, '麦畑');
+    assert.strictEqual(summary.rlBuildStats.passRate, 2 / 6);
+    assert.ok(summary.rlBuildStats.topCards.some(entry => entry.name === '麦畑' && entry.count === 3));
+    assert.ok(!summary.rlBuildStats.topCards.some(entry => entry.name === 'パン屋'));
     assert.strictEqual(summary.rlBuildStats.topLandmarks[0].name, '駅');
     assert.strictEqual(summary.rlBusinessStats.total, 2);
     assert.strictEqual(summary.rlBusinessStats.skipRate, 0.5);
@@ -235,6 +264,10 @@ runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
                     { lineup: ['rl', 'strong'], winnerDifficulty: 'rl' },
                     { lineup: ['strong', 'rl'], winnerDifficulty: 'rl' },
                 ],
+                buildStatsByDifficulty: {
+                    rl: { total: 5, pass: 1, cards: { '麦畑': 3 }, landmarks: { '駅': 1 } },
+                    strong: { total: 3, pass: 2, cards: { 'パン屋': 1 }, landmarks: {} },
+                },
                 buildStats: [
                     { total: 4, pass: 1, cards: { '麦畑': 2 }, landmarks: { '駅': 1 } },
                     { total: 4, pass: 2, cards: {}, landmarks: {} },
@@ -257,8 +290,8 @@ runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
     assert.strictEqual(lines.length, 3);
     assert.ok(lines[0].includes('rl vs strong'));
     assert.ok(lines[0].includes('seat(first=100.0%,second=50.0%)'));
-    assert.ok(lines[1].includes('rl-build: total=4 pass=1'));
-    assert.ok(lines[1].includes('麦畑x2'));
+    assert.ok(lines[1].includes('rl-build: total=5 pass=1'));
+    assert.ok(lines[1].includes('麦畑x3'));
     assert.ok(lines[2].includes('rl-business: total=1'));
     assert.ok(lines[2].includes('麦畑->パン屋x1'));
 });
