@@ -2,7 +2,7 @@
  * Service Worker - オフラインキャッシュ
  * バージョンを上げるとキャッシュが更新される
  */
-const CACHE_NAME = 'machikoro-v3';
+const CACHE_NAME = 'machikoro-v4';
 
 const STATIC_ASSETS = [
   '/',
@@ -27,6 +27,13 @@ const STATIC_ASSETS = [
   '/icons/icon-512.png',
 ];
 
+const OPTIONAL_ASSETS = [
+  '/models/rl_model/portfolio/seed103-4p.browser.json',
+  '/models/rl_model/portfolio/seed71-top3.browser.json',
+  '/models/rl_model/portfolio/seed70.browser.json',
+  '/models/rl_model/portfolio/seed69.browser.json',
+];
+
 // 「今すぐ更新」ボタンからのメッセージを受け取る
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
@@ -35,9 +42,14 @@ self.addEventListener('message', (event) => {
 // インストール: 全アセットをキャッシュ
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(STATIC_ASSETS).then(() =>
+        Promise.all(OPTIONAL_ASSETS.map((asset) =>
+          cache.add(asset).catch(() => undefined)
+        ))
+      )
+    )
   );
-  self.skipWaiting();
 });
 
 // アクティベート: 古いキャッシュを削除

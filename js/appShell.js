@@ -40,14 +40,17 @@ function pwaInstallPrompt() {
     if (!_pwaInstallEvent) return;
     _pwaInstallEvent.prompt();
     _pwaInstallEvent.userChoice.then(() => {
-        document.getElementById('pwaInstallBanner').style.display = 'none';
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.style.display = 'none';
         _pwaInstallEvent = null;
     });
 }
 
 function pwaInstallDismiss() {
-    document.getElementById('pwaInstallBanner').style.display = 'none';
+    const banner = document.getElementById('pwaInstallBanner');
+    if (banner) banner.style.display = 'none';
     localStorage.setItem('pwaInstallDismissed', '1');
+    _pwaInstallEvent = null;
 }
 
 function bindCrashHandlers() {
@@ -69,13 +72,14 @@ function bindPwaInstallHandlers() {
     if (window.matchMedia('(display-mode: standalone)').matches) {
         return;
     }
-    if (localStorage.getItem('pwaInstallDismissed')) {
-        return;
-    }
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
+        if (localStorage.getItem('pwaInstallDismissed')) {
+            return;
+        }
         _pwaInstallEvent = e;
-        document.getElementById('pwaInstallBanner').style.display = 'block';
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.style.display = 'block';
     });
 }
 

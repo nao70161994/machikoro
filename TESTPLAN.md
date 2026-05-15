@@ -1,10 +1,23 @@
 # Manual Test Plan
 
-## Priority Checks
+## 使い方
 
 注記:
 - 「自動確認」は Node テストで主要な分岐や拒否条件を検査している範囲です。
 - 「手動確認」は複数タブ、Service Worker 更新、実ブラウザの install prompt など、実行環境依存で手動確認が必要な範囲です。
+- 変更種別別の確認コマンド、復元 schema、RL parity fixture への入口は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) です。復元 field の詳細だけを確認する場合は [`docs/online-restore-schema.md`](docs/online-restore-schema.md) を参照してください。
+- 変更内容に近いカテゴリから確認してください。複数カテゴリにまたがる変更では、該当する見出しを組み合わせて使います。
+
+| カテゴリ | 主な確認項目 | 補足 docs |
+| --- | --- | --- |
+| ゲームルール / カード効果 / 表示 | 休業、交換、譲渡、在庫、対象選択、カード表示順 | 変更種別別の自動確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) |
+| オンライン同期 / 再接続 / 保存 | CPU 進行、ホスト復元、非ホスト追従、Undo、ロビー、再接続失敗 | 復元 schema は [`docs/online-restore-schema.md`](docs/online-restore-schema.md) |
+| CPU / RL | CPU（最強）、5人以上の RL CPU、保存/復元/オンライン同期 | RL parity fixture は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) |
+| PWA / 更新 / バージョン | Service Worker 更新、オフライン、install prompt、バージョン不一致 | PWA 変更時の確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) |
+| 保存 / 再接続 UI | onlineSession 表示、壊れた保存データ、有効データからの復帰導線 | 復元 schema は [`docs/online-restore-schema.md`](docs/online-restore-schema.md) |
+| CI / Android packaging | TWA APK artifact、署名、fingerprint、upload-artifact | 変更種別別の自動確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) |
+
+## ゲームルール / カード効果 / 表示
 
 1. `清掃業` + `ビジネスセンター`
    - ローカル対戦で同名カードを休業にする。
@@ -36,6 +49,10 @@
    - 所持カード一覧、建設メニュー、カード選択モーダルを確認する。
    - 期待結果: カードは色順（青、緑、赤、紫）→出目順で表示され、休業カードは `（休1）` のように枚数で表示される。
 
+## オンライン同期 / 再接続 / 保存
+
+このカテゴリでは、複数クライアントでの表示一致、ホスト主導の CPU action、保存済み `onlineSession`、サーバー再起動後の復元を確認します。復元 payload の互換性を変える場合は [`docs/online-restore-schema.md`](docs/online-restore-schema.md) も確認してください。
+
 7. オンライン CPU 進行
    - 自動確認: `tests/online.test.js` / `tests/online-integration.test.js` で action 適用、CPU 手番、再接続まわりの主要分岐を検査する。
    - 手動確認: 複数クライアントで実際に同期表示とCPU進行タイミングを見る。
@@ -51,7 +68,7 @@
    - 期待結果: CPUが止まらず、同じ行動を二重に実行しない。
 
 9. サーバー再起動後のホスト復元
-   - 自動確認: snapshot / actionLog 復元の主要経路は `tests/server.test.js`, `tests/online-integration.test.js`, `tests/storage.test.js` で検査する。
+   - 自動確認: snapshot / actionLog 復元の主要経路と、無効化 stock・重複休業 index・小数 coin の拒否、landmark key・旧 field 欠落の補完は `tests/server.test.js`, `tests/online-integration.test.js`, `tests/storage.test.js` で検査する。
    - 手動確認: 実サーバープロセス再起動後のブラウザ再接続と表示一致を見る。
    - オンライン対戦を開始し、数ターン進める。
    - サーバープロセスを再起動する。
@@ -96,6 +113,10 @@
    - 無効な相手や対象が混ざるケースを確認する。
    - 期待結果: クラッシュせず、無効操作は拒否される。
 
+## CPU / RL
+
+CPU 判断の変更は、ローカル進行だけでなく保存/復元とオンライン同期も確認してください。RL runtime、export、trace parity の補助確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) を参照してください。
+
 17. CPU（最強）live既定
    - ローカル対戦で CPU（最強）を含む2〜5人戦を開始し、ダイス選択、pending効果、建設、ターン終了まで数ターン進める。
    - CPU（最強）を含むローカル対戦を保存/復元し、復元後もCPU手番が停止しないことを確認する。
@@ -108,6 +129,10 @@
    - 手動確認: オンライン部屋作成で5人以上のRL CPUを含め、参加者一覧と開始後のCPU action が `rl` として同期されることを見る。
    - 期待結果: RL CPU は5人以上でも自分 + 脅威度上位3人の相手を見て判断し、保存/復元/オンライン同期で停止しない。
 
+## PWA / 更新 / バージョン
+
+Service Worker 更新、install prompt、オフライン表示、バージョン不一致は実ブラウザ依存のため、Node テストだけで完結しません。変更種別別の最低確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) も参照してください。
+
 19. PWA 更新通知（ゲーム中）
    - 自動確認: なし。Service Worker の waiting / controllerchange とゲーム中 reload 抑止は実ブラウザ依存のため手動で見る。
    - 手動確認: 更新通知が出てもゲーム中に自動 reload されないこと、手動更新で安全に戻れることを見る。
@@ -119,6 +144,9 @@
    - 自動確認: なし。Service Worker 更新検知と reload は実ブラウザ依存のため手動で見る。
    - 手動確認: タイトル画面では更新が安全に適用され、古い asset と新しい asset が混在しないことを見る。
    - タイトル画面またはゲーム未開始状態で Service Worker 更新を検知させる。
+   - 初回インストール時に controllerchange が発火しても不要な reload が起きないことを確認する。
+   - 初回インストール後、同じタブで更新を検知させた場合は controllerchange によって reload されることを確認する。
+   - controllerchange が複数回発火しても reload が1回だけになることを確認する。
    - 期待結果: ゲーム中でなければ更新が自動適用または安全に reload され、古いUIと新しい asset が混在しない。
 
 21. オフライン / インストール表示
@@ -126,6 +154,7 @@
    - 手動確認: 実ブラウザの install prompt 表示、dismiss 後の挙動、オフライン時の画面表示を確認する。
    - 一度アプリを読み込んだ後、ネットワークを切って再表示する。
    - PWA install prompt またはインストールバナーが出る環境では、表示・dismiss 後の再表示を確認する。
+   - dismiss 済みの状態で `beforeinstallprompt` が再発火してもブラウザ標準 prompt が出ず、独自バナーも再表示されないことを確認する。
    - 期待結果: オフライン表示がクラッシュせず、インストール導線がゲーム進行やオンライン接続を妨げない。
 
 22. オンライン参加者のバージョン不一致警告
@@ -133,3 +162,22 @@
    - 手動確認: 古いタブや古い Service Worker 制御下のクライアントを混ぜた実ブラウザで、警告表示と継続動作を確認する。
    - 片方のクライアントだけ古いタブまたは古い Service Worker 制御下に残した状態でオンライン対戦を開始する。
    - 期待結果: ゲーム開始後のログにバージョン不一致警告が出て、全員に reload を促す。警告後もアプリ固有エラーは `appError` として扱われ、Socket.IO の transport error と混ざらない。
+
+## 保存 / 再接続 UI
+
+タイトル画面の復帰導線や localStorage の扱いを触る場合は、オンライン復元項目と合わせて確認してください。保存形式の詳細は [`docs/online-restore-schema.md`](docs/online-restore-schema.md) を参照してください。
+
+23. オンライン再接続 UI
+   - 自動確認: `tests/storage.test.js` で有効な再接続データだけ表示し、部屋IDとプレイヤー名を表示することを検査する。
+   - 手動確認: オンライン対戦中にタブを閉じてタイトルへ戻り、再接続通知の部屋ID・プレイヤー名が正しいことを見る。
+   - 壊れた `onlineSession` 相当の localStorage を入れてタイトルを表示する。
+   - 期待結果: 壊れた再接続データでは再接続 UI が出ず、有効データでは再接続ボタンからオンラインタブへ移動して復帰を試行する。
+
+## CI / Android packaging
+
+Android/TWA workflow を触る場合は、artifact が欠落しても成功扱いにならないことを確認してください。ドキュメントのみの変更では `git diff --check` で十分です。
+
+24. TWA APK artifact 失敗検知
+   - 自動確認: `.github/workflows/build-apk.yml` で `app-release-signed.apk` の存在と非空を検査し、upload-artifact は missing artifact を error にする。
+   - 手動確認: GitHub Actions の手動実行で keystore secret 不足時は早期失敗し、APK 未生成時も成功扱いにならないことを見る。
+   - 期待結果: 署名・fingerprint・APK 生成のどれかが失敗した場合、workflow が緑にならない。

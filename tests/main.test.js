@@ -289,12 +289,29 @@ runTest('main createCpuPlayer は live v2simple 明示時も v2 既定modeを補
         expertPreset: "v2simple",
     });
 
-    assert.strictEqual(cpu.options.expertDiceMode, "ev");
+    assert.strictEqual(cpu.options.expertDiceMode, "strongCrowdThreshold");
     assert.strictEqual(cpu.options.expertRerollMode, "simple");
     assert.strictEqual(cpu.options.expertBuildMode, "ev");
     assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
     assert.strictEqual(cpu.options.expertComboMode, "core");
     assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.05);
+    assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
+});
+
+runTest('main createCpuPlayer は live expert 未指定presetを v2simple 既定modeにする', () => {
+    const rt = loadMainRuntime();
+    const cpu = rt.createCpuPlayer('expert', {
+        expertPurpose: "live",
+    });
+
+    assert.strictEqual(cpu.options.expertPreset, "v2simple");
+    assert.strictEqual(cpu.options.expertDiceMode, "strongCrowdThreshold");
+    assert.strictEqual(cpu.options.expertRerollMode, "simple");
+    assert.strictEqual(cpu.options.expertBuildMode, "ev");
+    assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
+    assert.strictEqual(cpu.options.expertComboMode, "core");
+    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.05);
+    assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
 });
 
 runTest('main createCpuPlayer は live v2simple の明示modeを上書きしない', () => {
@@ -304,10 +321,12 @@ runTest('main createCpuPlayer は live v2simple の明示modeを上書きしな�
         expertPreset: "v2simple",
         expertBusinessMode: "simple",
         expertBuildTempoWeight: 0.2,
+        expertAirportSkipMode: "none",
     });
 
     assert.strictEqual(cpu.options.expertBusinessMode, "simple");
     assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.2);
+    assert.strictEqual(cpu.options.expertAirportSkipMode, "none");
 });
 
 runTest('main createCpuPlayer は5人以上でも学習AIを生成する', () => {
@@ -352,7 +371,7 @@ runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () 
     rt.__test.flushTimeouts();
 
     assert.strictEqual(game.currentPlayerIndex, 1);
-    assert.deepStrictEqual(rt.__test.sentActions.map(x => x.action), ['nextTurn']);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
 });
 
@@ -370,7 +389,8 @@ runTest('main checkAutoSkip は無効化ランドマークしか残っていな�
     rt.checkAutoSkip();
     rt.__test.flushTimeouts();
 
-    assert.deepStrictEqual(rt.__test.sentActions.map(x => x.action), ['nextTurn']);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
 runTest('main checkAutoSkip は予約後にオンライン手番が変わったら送信しない', () => {
@@ -476,6 +496,7 @@ runTest('main init は固定乱数でプレイヤー順シャッフル後も名�
 
     const names = rt.__test.getGame().players.map(player => player.name);
     assert.deepStrictEqual(names, ['CPU（強）', '花子', '太郎']);
+    assert.deepStrictEqual(Array.from(rt.__test.getCpuPlayers()[0].options.expertOpponentDifficulties), ['strong', 'human', 'human']);
     assert.strictEqual(rt.__test.getShopStock()['麦畑'], 6);
     assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 3);
 });
@@ -544,12 +565,9 @@ runTest('appShell beforeinstallprompt は標準promptを止めてバナーから
     assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'none');
 });
 
-runTest('appShell bindPwaInstallHandlers は standalone と dismissed では購読しない', () => {
+runTest('appShell bindPwaInstallHandlers は standalone では購読しない', () => {
     const standalone = loadMainRuntime({ standalone: true });
     assert.strictEqual(standalone.__test.eventHandlers.beforeinstallprompt, undefined);
-
-    const dismissed = loadMainRuntime({ pwaInstallDismissed: true });
-    assert.strictEqual(dismissed.__test.eventHandlers.beforeinstallprompt, undefined);
 });
 
 runTest('appShell pwaInstallDismiss はバナーを閉じて localStorage に記録する', () => {
@@ -560,6 +578,37 @@ runTest('appShell pwaInstallDismiss はバナーを閉じて localStorage に記
 
     assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'none');
     assert.strictEqual(rt.localStorage.getItem('pwaInstallDismissed'), '1');
+});
+
+runTest('appShell beforeinstallprompt はdismiss後の同一セッション再表示を抑止する', () => {
+    const rt = loadMainRuntime();
+    let prevented = false;
+    const event = {
+        preventDefault() { prevented = true; },
+        prompt() {},
+        userChoice: { then() {} },
+    };
+
+    rt.pwaInstallDismiss();
+    rt.__test.eventHandlers.beforeinstallprompt(event);
+
+    assert.strictEqual(prevented, true);
+    assert.notStrictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
+});
+
+runTest('appShell beforeinstallprompt はdismiss済み起動でも標準promptを抑止する', () => {
+    const rt = loadMainRuntime({ pwaInstallDismissed: true });
+    let prevented = false;
+    const event = {
+        preventDefault() { prevented = true; },
+        prompt() {},
+        userChoice: { then() {} },
+    };
+
+    rt.__test.eventHandlers.beforeinstallprompt(event);
+
+    assert.strictEqual(prevented, true);
+    assert.notStrictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
 });
 
 runTest('appShell crashResume はクラッシュ画面を閉じて resumeGame を呼ぶ', () => {
@@ -620,6 +669,33 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
     assert.ok(statsStart < gameScreen);
     assert.ok(scriptUi < scriptStats);
     assert.ok(scriptStats < scriptMain);
+});
+
+runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+    const workflow = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/build-apk.yml'), 'utf8');
+
+    assert.ok(html.includes('refreshingByServiceWorker'));
+    assert.ok(html.includes('let hadServiceWorkerController = !!navigator.serviceWorker.controller;'));
+    assert.ok(html.includes('hadServiceWorkerController = true;'));
+    assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
+    assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
+    assert.ok(workflow.includes('test -s app-release-signed.apk'));
+    assert.ok(workflow.includes('if-no-files-found: error'));
+});
+
+runTest('docs は live v2simple の実装済み既定値を記載している', () => {
+    const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+    const claude = fs.readFileSync(path.join(__dirname, '..', 'CLAUDE.md'), 'utf8');
+    const diagnostics = fs.readFileSync(path.join(__dirname, '..', 'docs/expert-v2-diagnostics.md'), 'utf8');
+
+    for (const doc of [readme, claude, diagnostics]) {
+        assert.ok(doc.includes('dice=strongCrowdThreshold'));
+        assert.ok(doc.includes('business=harmfulGift'));
+        assert.ok(doc.includes('airportSkip=whenNoLandmark'));
+    }
+    assert.ok(!claude.includes('business=simple` を維持'));
 });
 
 if (process.exitCode) {

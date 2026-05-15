@@ -26,6 +26,11 @@ function injectServiceWorkerBuildHash(content, buildHash) {
     return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
 }
 
+function injectIndexBuildHash(content, buildHash) {
+    const script = `<script>window.MACHIKORO_CLIENT_VERSION=${JSON.stringify(buildHash)};</script>`;
+    return String(content).replace('</head>', `    ${script}\n</head>`);
+}
+
 const BUILD_HASH = require.main === module ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
 if (require.main === module) {
     console.log(`Build hash: ${BUILD_HASH}`);
@@ -34,6 +39,8 @@ if (require.main === module) {
 // sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
 const swContent = injectServiceWorkerBuildHash(swTemplate, BUILD_HASH);
+const indexTemplate = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH);
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
     relation: ['delegate_permission/common.handle_all_urls'],
@@ -60,6 +67,15 @@ app.get('/api/version', (req, res) => {
     res.json({ hash: BUILD_HASH });
 });
 
+function sendIndexWithBuildHash(req, res) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(indexContent);
+}
+
+app.get('/', sendIndexWithBuildHash);
+app.get('/index.html', sendIndexWithBuildHash);
+
 app.use(express.static(path.join(__dirname)));
 
 const rooms = {};
@@ -81,12 +97,68 @@ function cpuDifficultyLabel(difficulty) {
     return '最強';
 }
 
+const ALLOWED_CPU_DIFFICULTIES = new Set(['weak', 'normal', 'strong', 'expert', 'rl']);
+const ALLOWED_RL_MODEL_IDS = new Set([
+    'self-only-4p-h256-lr1e5-5000-seed103',
+    'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3',
+    'self-only-both-h256-lr2e5-5000-seed70-rewardcap',
+    'self-only-both-h256-lr2e5-5000-seed69-rewardcap',
+]);
+
 function normalizePlayerSettings(playerSettings, playerCount) {
-    if (!Array.isArray(playerSettings)) return [];
-    return playerSettings.slice(0, playerCount).map((setting) => {
+    if (!Array.isArray(playerSettings)) {
+        return Array.from({ length: playerCount }, () => ({ type: 'human', difficulty: 'normal' }));
+    }
+    const normalized = playerSettings.slice(0, playerCount).map((setting) => {
         if (!setting || setting.type !== 'cpu') return { type: 'human', difficulty: 'normal' };
-        return { type: 'cpu', difficulty: setting.difficulty || 'normal' };
+        const difficulty = ALLOWED_CPU_DIFFICULTIES.has(setting.difficulty) ? setting.difficulty : 'normal';
+        const normalized = { type: 'cpu', difficulty };
+        if (difficulty === 'rl' && ALLOWED_RL_MODEL_IDS.has(setting.rlModelId)) {
+            normalized.rlModelId = setting.rlModelId;
+        }
+        return normalized;
     });
+    while (normalized.length < playerCount) {
+        normalized.push({ type: 'human', difficulty: 'normal' });
+    }
+    return normalized;
+}
+
+function hasInvalidRlModelId(playerSettings) {
+    if (!Array.isArray(playerSettings)) return false;
+    return playerSettings.some(setting =>
+        setting?.type === 'cpu' &&
+        setting.difficulty === 'rl' &&
+        typeof setting.rlModelId === 'string' &&
+        !ALLOWED_RL_MODEL_IDS.has(setting.rlModelId)
+    );
+}
+
+function hasMissingRlModelId(playerSettings) {
+    if (!Array.isArray(playerSettings)) return false;
+    return playerSettings.some(setting =>
+        setting?.type === 'cpu' &&
+        setting.difficulty === 'rl' &&
+        typeof setting.rlModelId !== 'string'
+    );
+}
+
+function hasInvalidOnlineRlModelSettings(playerSettings) {
+    return hasMissingRlModelId(playerSettings) || hasInvalidRlModelId(playerSettings);
+}
+
+function normalizeCpuSpeed(cpuSpeed) {
+    const value = Number(cpuSpeed);
+    if (!Number.isFinite(value)) return 1500;
+    return Math.max(0, Math.min(5000, Math.floor(value)));
+}
+
+function normalizeEnabledCards(enabledCards) {
+    const allCards = gameRuntime.CARDS.map(card => card.name);
+    if (!Array.isArray(enabledCards)) return allCards;
+    const validCards = new Set(allCards);
+    const selected = enabledCards.filter(name => validCards.has(name));
+    return selected.length > 0 ? [...new Set(selected)] : allCards;
 }
 
 function generateReconnectToken() {
@@ -113,6 +185,25 @@ function hashReconnectToken(token) {
     return token ? crypto.createHash('sha256').update(String(token)).digest('hex') : '';
 }
 
+function findAcceptedClientAction(room, clientActionId) {
+    if (!room || typeof clientActionId !== 'string' || !clientActionId) return null;
+    if (room.acceptedClientActions && room.acceptedClientActions[clientActionId]) {
+        return room.acceptedClientActions[clientActionId];
+    }
+    return (room.actionLog || []).find(entry => entry && entry.clientActionId === clientActionId) || null;
+}
+
+function rememberAcceptedClientAction(room, actionEntry) {
+    if (!room || !actionEntry || typeof actionEntry.clientActionId !== 'string' || !actionEntry.clientActionId) return;
+    if (!room.acceptedClientActions) room.acceptedClientActions = {};
+    room.acceptedClientActions[actionEntry.clientActionId] = actionEntry;
+    const ids = Object.keys(room.acceptedClientActions);
+    if (ids.length > 100) {
+        ids.sort((a, b) => (room.acceptedClientActions[a].seq || 0) - (room.acceptedClientActions[b].seq || 0));
+        for (const id of ids.slice(0, ids.length - 100)) delete room.acceptedClientActions[id];
+    }
+}
+
 // 開始済みルームのGC（2時間アクティビティなしで削除）
 const roomGcInterval = setInterval(() => {
     const TTL = 2 * 60 * 60 * 1000;
@@ -135,9 +226,20 @@ io.on('connection', (socket) => {
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
+        playerCount = Number(playerCount);
+        if (!Number.isInteger(playerCount) || playerCount < 2 || playerCount > 10) {
+            emitAppError(socket, 'プレイヤー数が無効です');
+            return;
+        }
+        if (hasInvalidOnlineRlModelSettings(playerSettings)) {
+            emitAppError(socket, 'RLモデルIDが無効です');
+            return;
+        }
         playerSettings = normalizePlayerSettings(playerSettings, playerCount);
+        cpuSpeed = normalizeCpuSpeed(cpuSpeed);
         const roomId = generateRoomId();
         const reconnectToken = generateReconnectToken();
+        const selectedCards = normalizeEnabledCards(enabledCards);
         const allLandmarks = gameRuntime.Player.landmarkNames();
         const validLandmarks = new Set(allLandmarks);
         const selectedLandmarks = Array.isArray(enabledLandmarks)
@@ -157,13 +259,16 @@ io.on('connection', (socket) => {
             }
         }
         rooms[roomId] = {
-            enabledCards: enabledCards || null,
+            enabledCards: selectedCards,
             enabledLandmarks: selectedLandmarks,
             players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
             hostPlayerIndex: hostIndex,
+            hostEpoch: 0,
+            actionSeq: 0,
+            acceptedClientActions: {},
             maxPlayers: playerCount,
             playerSettings,
-            cpuSpeed: cpuSpeed || 1500,
+            cpuSpeed,
             started: false,
         };
         socket.join(roomId);
@@ -236,11 +341,20 @@ io.on('connection', (socket) => {
         checkGameStart(io, roomId);
     });
 
-    socket.on('gameAction', ({ action, data }) => {
+    socket.on('gameAction', ({ action, data, clientActionId }) => {
         const roomId = socket.roomId;
         if (!roomId) return;
         const room = rooms[roomId];
         if (!room || !room.started) return;
+        if (!isActiveRoomSocket(room, socket)) {
+            emitAppError(socket, 'INVALID_SESSION');
+            return;
+        }
+        const acceptedAction = findAcceptedClientAction(room, clientActionId);
+        if (acceptedAction) {
+            socket.emit('actionAccepted', acceptedAction);
+            return;
+        }
         let validation;
         try {
             validation = validateGameAction(room, socket, action, data);
@@ -257,34 +371,42 @@ io.on('connection', (socket) => {
         if (action === 'buildCard' || action === 'buildLandmark') {
             room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
         } else if (action === 'undoBuild') {
-            safeData = { state: room.lastUndoState };
+            safeData = { state: room.lastUndoState || validation.mirror.lastUndoState };
             room.lastUndoState = null;
         } else if (action === 'nextTurn') {
             room.lastUndoState = null;
         }
+        const actionSeq = nextRoomActionSeq(room);
+        const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
+        if (typeof clientActionId === 'string') actionEntry.clientActionId = clientActionId;
+        rememberAcceptedClientAction(room, actionEntry);
         if (room.actionLog) {
-            room.actionLog.push({ action, data: safeData });
+            room.actionLog.push(actionEntry);
             compactRoomActionLog(room);
             room.lastTouchedAt = Date.now();
         }
-        socket.to(roomId).emit('gameAction', { action, data: safeData, playerIndex: socket.playerIndex });
+        socket.to(roomId).emit('gameAction', actionEntry);
+        socket.emit('actionAccepted', actionEntry);
     });
 
     socket.on('rejoinRoom', ({ roomId, playerIndex, playerName, reconnectToken }) => {
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
-        if (!getExpectedReconnectTokenHash(room, playerIndex, playerName)) {
+        const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
+        if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
             emitAppError(socket, 'INVALID_TOKEN');
             return;
         }
 
+        detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
         const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
         if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }
 
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
+        room.lastTouchedAt = Date.now();
 
         socket.emit('rejoinData', {
             gameStartPayload: room.gameStartPayload,
@@ -292,6 +414,7 @@ io.on('connection', (socket) => {
             actionLog: room.actionLog || [],
             playerIndex,
             hostPlayerIndex: room.hostPlayerIndex,
+            hostEpoch: room.hostEpoch || 0,
         });
         io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
         console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
@@ -332,8 +455,8 @@ function handleSocketDisconnect(io, socket) {
                 if (socket.playerIndex === room.hostPlayerIndex) {
                     const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
                     if (remaining.length > 0) {
-                        room.hostPlayerIndex = remaining[0].index;
-                        io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex });
+                        setRoomHostPlayerIndex(room, remaining[0].index);
+                        io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex, hostEpoch: room.hostEpoch || 0 });
                         console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
                     }
                 }
@@ -343,6 +466,67 @@ function handleSocketDisconnect(io, socket) {
     } catch (e) {
         console.error('disconnect handler error:', e);
     }
+}
+
+function setRoomHostPlayerIndex(room, hostPlayerIndex) {
+    if (room.hostPlayerIndex !== hostPlayerIndex) {
+        room.hostEpoch = (Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0) + 1;
+    }
+    room.hostPlayerIndex = hostPlayerIndex;
+    if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
+        room.gameStartPayload.hostPlayerIndex = hostPlayerIndex;
+        room.gameStartPayload.hostEpoch = room.hostEpoch || 0;
+    }
+}
+
+function nextRoomActionSeq(room) {
+    const current = Number.isInteger(room.actionSeq) ? room.actionSeq : restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq;
+    room.actionSeq = current + 1;
+    if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
+        room.gameStartPayload.actionSeq = room.actionSeq;
+    }
+    return room.actionSeq;
+}
+
+function restorePayloadRank(gameStartPayload, stateSnapshot, actionLog) {
+    const hostEpoch = Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0;
+    const seqValues = [
+        Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0,
+        Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0,
+    ];
+    if (Array.isArray(actionLog)) {
+        for (const entry of actionLog) {
+            if (Number.isInteger(entry?.seq)) seqValues.push(entry.seq);
+        }
+    }
+    return { hostEpoch, actionSeq: Math.max(0, ...seqValues) };
+}
+
+function isIncomingRestoreNewer(room, gameStartPayload, stateSnapshot, actionLog) {
+    const currentRank = restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog);
+    const current = {
+        hostEpoch: Number.isInteger(room.hostEpoch) ? room.hostEpoch : currentRank.hostEpoch,
+        actionSeq: Number.isInteger(room.actionSeq) ? room.actionSeq : currentRank.actionSeq,
+    };
+    const incoming = restorePayloadRank(gameStartPayload, stateSnapshot, actionLog);
+    return incoming.hostEpoch > current.hostEpoch ||
+        (incoming.hostEpoch === current.hostEpoch && incoming.actionSeq > current.actionSeq);
+}
+
+function canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, actionLog) {
+    if (!room || room.restored !== true) return false;
+    if (!Number.isInteger(playerIndex) || gameStartPayload?.hostPlayerIndex !== playerIndex) return false;
+    const currentRank = restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog);
+    const currentHostEpoch = Number.isInteger(room.hostEpoch) ? room.hostEpoch : currentRank.hostEpoch;
+    const incomingRank = restorePayloadRank(gameStartPayload, stateSnapshot, actionLog);
+    if (Number.isInteger(room.hostPlayerIndex) &&
+            room.hostPlayerIndex !== playerIndex &&
+            incomingRank.hostEpoch <= currentHostEpoch) {
+        return false;
+    }
+    return incomingRank.hostEpoch > currentHostEpoch ||
+        (incomingRank.hostEpoch === currentHostEpoch &&
+            incomingRank.actionSeq > (Number.isInteger(room.actionSeq) ? room.actionSeq : currentRank.actionSeq));
 }
 
 function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socketId) {
@@ -366,6 +550,38 @@ function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, sock
     return player;
 }
 
+function detachSocketFromRoom(socketId, roomId, message = 'INVALID_SESSION') {
+    if (!socketId) return;
+    const oldSocket = io.sockets.sockets.get(socketId);
+    if (!oldSocket) return;
+    emitAppError(oldSocket, message);
+    oldSocket.leave(roomId);
+    if (oldSocket.roomId === roomId) {
+        oldSocket.roomId = null;
+        oldSocket.playerIndex = null;
+    }
+}
+
+function detachExistingPlayerSocket(room, roomId, playerIndex, newSocketId) {
+    const existing = room?.players?.find(p => p.index === playerIndex);
+    if (!existing || !existing.id || existing.id === newSocketId) return;
+    detachSocketFromRoom(existing.id, roomId, 'INVALID_SESSION');
+}
+
+function detachRoomSockets(roomId, room, message = 'ROOM_REPLACED') {
+    if (!room || !Array.isArray(room.players)) return;
+    for (const player of room.players) {
+        detachSocketFromRoom(player.id, roomId, message);
+        player.id = null;
+    }
+}
+
+function isActiveRoomSocket(room, socket) {
+    if (!room || !socket || !Number.isInteger(socket.playerIndex)) return false;
+    const player = room.players.find(p => p.index === socket.playerIndex);
+    return !!player && player.id === socket.id;
+}
+
 function getExpectedReconnectTokenHash(room, playerIndex, playerName) {
     const player = room.players.find(p => p.index === playerIndex && p.name === playerName);
     if (player?.reconnectTokenHash) return player.reconnectTokenHash;
@@ -386,14 +602,64 @@ function handleRecreateRoom(socket, payload = {}) {
         return;
     }
     if (rooms[roomId]) {
-        emitAppError(socket, 'ROOM_NOT_FOUND');
-        return;
+        const room = rooms[roomId];
+        if (!room.started) {
+            emitAppError(socket, '同じルームIDが既に使用されています');
+            return;
+        }
+        const incomingCanReplace = isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
+            !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
+            Number.isInteger(playerIndex) &&
+            getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName) &&
+            hashReconnectToken(reconnectToken) === getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName) &&
+            canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, actionLog);
+        if (!incomingCanReplace) {
+            const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
+            if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
+                emitAppError(socket, 'INVALID_TOKEN');
+                return;
+            }
+            detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
+            const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
+            if (!player) {
+                emitAppError(socket, '再接続情報が一致しません');
+                return;
+            }
+            socket.join(roomId);
+            socket.roomId = roomId;
+            socket.playerIndex = playerIndex;
+            const hostPlayer = room.players.find(p => p.index === room.hostPlayerIndex);
+            if (!hostPlayer?.id || !io.sockets.sockets.has(hostPlayer.id)) {
+                setRoomHostPlayerIndex(room, playerIndex);
+                io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex, hostEpoch: room.hostEpoch || 0 });
+                console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+            }
+            room.lastTouchedAt = Date.now();
+            socket.emit('rejoinData', {
+                gameStartPayload: room.gameStartPayload,
+                stateSnapshot: room.stateSnapshot || null,
+                actionLog: room.actionLog || [],
+                playerIndex,
+                hostPlayerIndex: room.hostPlayerIndex,
+                hostEpoch: room.hostEpoch || 0,
+            });
+            io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
+            return;
+        }
     }
     if (!Array.isArray(gameStartPayload.playerNames)) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
     const playerNames = gameStartPayload.playerNames;
+    if (!isValidGameStartPayload(gameStartPayload, playerNames.length)) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
+    if (hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings)) {
+        emitAppError(socket, 'RLモデルIDが無効です');
+        return;
+    }
     gameStartPayload.playerSettings = normalizePlayerSettings(gameStartPayload.playerSettings, playerNames.length);
     if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
         emitAppError(socket, '復元データが不完全です');
@@ -402,6 +668,10 @@ function handleRecreateRoom(socket, payload = {}) {
     const expectedReconnectTokenHash = getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName);
     if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
         emitAppError(socket, 'INVALID_TOKEN');
+        return;
+    }
+    if (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex) {
+        emitAppError(socket, '復元は元のホストのみ実行できます');
         return;
     }
     const reconnectTokenHashes = Array.isArray(gameStartPayload.reconnectTokenHashes) ? gameStartPayload.reconnectTokenHashes : [];
@@ -419,33 +689,108 @@ function handleRecreateRoom(socket, payload = {}) {
             };
         })
         .filter(Boolean);
-    rooms[roomId] = {
+    const restoredRank = restorePayloadRank(gameStartPayload, stateSnapshot, actionLog);
+    gameStartPayload.hostEpoch = restoredRank.hostEpoch;
+    gameStartPayload.actionSeq = restoredRank.actionSeq;
+    const restoredRoom = {
         players: restoredPlayers,
         playerSettings: gameStartPayload.playerSettings,
         maxPlayers: playerNames.length,
         started: true,
         restored: true,
         hostPlayerIndex: playerIndex,
+        hostEpoch: restoredRank.hostEpoch,
+        actionSeq: restoredRank.actionSeq,
         enabledCards: gameStartPayload.enabledCards || [],
         enabledLandmarks: gameStartPayload.enabledLandmarks || [],
         cpuSpeed: gameStartPayload.cpuSpeed || 1500,
         gameStartPayload,
-        stateSnapshot: stateSnapshot || null,
-        actionLog: Array.isArray(actionLog) ? actionLog : [],
+        stateSnapshot: sanitizeClientStateSnapshot(stateSnapshot, playerNames.length),
+        acceptedClientActions: {},
+        actionLog: Array.isArray(actionLog)
+            ? actionLog.filter(entry => entry && typeof entry.action === 'string')
+                .map(entry => {
+                    const normalized = { action: entry.action, data: entry.data || {} };
+                    if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+                    if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+                    if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
+                    return normalized;
+                })
+            : [],
         lastUndoState: null,
         lastTouchedAt: Date.now(),
     };
+    for (const entry of restoredRoom.actionLog) rememberAcceptedClientAction(restoredRoom, entry);
+    const restoredMirror = createRoomMirror(restoredRoom);
+    if (!restoredMirror) {
+        emitAppError(socket, '復元データが壊れています');
+        return;
+    }
+    restoredRoom.lastUndoState = restoredMirror?.lastUndoState || null;
+    restoredRoom.stateSnapshot = serializeMirrorState(
+        restoredMirror.game,
+        restoredMirror.shopStock,
+        restoredRoom.lastUndoState,
+        restoredRoom.actionSeq
+    );
+    restoredRoom.actionLog = [];
+    if (rooms[roomId]) {
+        detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+        delete rooms[roomId];
+    }
+    rooms[roomId] = restoredRoom;
     socket.join(roomId);
     socket.roomId = roomId;
     socket.playerIndex = playerIndex;
     socket.emit('rejoinData', {
         gameStartPayload,
-        stateSnapshot: stateSnapshot || null,
-        actionLog: Array.isArray(actionLog) ? actionLog : [],
+        stateSnapshot: restoredRoom.stateSnapshot,
+        actionLog: restoredRoom.actionLog,
         playerIndex,
         hostPlayerIndex: playerIndex,
+        hostEpoch: restoredRoom.hostEpoch || 0,
     });
     console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+}
+
+function sanitizeClientStateSnapshot(stateSnapshot, playerCount) {
+    if (!isPlainObject(stateSnapshot)) return null;
+    const sanitized = Object.assign({}, stateSnapshot);
+    if (sanitized.undoState != null &&
+        !isValidUndoState(sanitized.undoState, playerCount, gameRuntime.createCardByName)) {
+        sanitized.undoState = null;
+    }
+    return sanitized;
+}
+
+function isValidGameStartPayload(payload, playerCount) {
+    if (!Number.isInteger(playerCount) || playerCount < 2 || playerCount > 10) return false;
+    if (!Array.isArray(payload.playerNames) ||
+        payload.playerNames.length !== playerCount ||
+        payload.playerNames.some(name => typeof name !== 'string')) return false;
+    if (payload.playerSettings != null &&
+        (!Array.isArray(payload.playerSettings) ||
+        (payload.playerSettings.length !== 0 && payload.playerSettings.length !== playerCount))) return false;
+    if (payload.playerOrder != null) {
+        if (!Array.isArray(payload.playerOrder) || payload.playerOrder.length !== playerCount) return false;
+        const sorted = [...payload.playerOrder].sort((a, b) => a - b);
+        for (let i = 0; i < playerCount; i++) {
+            if (sorted[i] !== i) return false;
+        }
+    }
+    if (!Number.isInteger(payload.hostPlayerIndex) ||
+        payload.hostPlayerIndex < 0 ||
+        payload.hostPlayerIndex >= playerCount) return false;
+    const knownCards = new Set(gameRuntime.CARDS.map(card => card.name));
+    if (payload.enabledCards != null &&
+        (!Array.isArray(payload.enabledCards) || payload.enabledCards.some(name => !knownCards.has(name)))) return false;
+    const knownLandmarks = new Set(gameRuntime.Player.landmarkNames());
+    if (payload.enabledLandmarks != null &&
+        (!Array.isArray(payload.enabledLandmarks) ||
+        payload.enabledLandmarks.length === 0 ||
+        payload.enabledLandmarks.some(name => !knownLandmarks.has(name)))) return false;
+    if (payload.cpuSpeed != null && (!Number.isFinite(payload.cpuSpeed) || payload.cpuSpeed < 0)) return false;
+    return true;
 }
 
 function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
@@ -456,7 +801,7 @@ function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
     );
 }
 
-function serializeMirrorState(game, shopStock) {
+function serializeMirrorState(game, shopStock, undoState = null, actionSeq = 0) {
     return {
         players: game.players.map(p => ({
             name: p.name,
@@ -485,6 +830,8 @@ function serializeMirrorState(game, shopStock) {
         turnCount: game.turnCount,
         hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
         shopStock: Object.assign({}, shopStock),
+        undoState: undoState || null,
+        actionSeq,
     };
 }
 
@@ -492,7 +839,8 @@ function compactRoomActionLog(room) {
     if (!room.actionLog || room.actionLog.length <= MAX_ACTION_LOG_LENGTH) return;
     const mirror = createRoomMirror(room);
     if (!mirror) return;
-    room.stateSnapshot = serializeMirrorState(mirror.game, mirror.shopStock);
+    room.lastUndoState = mirror.lastUndoState || null;
+    room.stateSnapshot = serializeMirrorState(mirror.game, mirror.shopStock, room.lastUndoState, room.actionSeq || 0);
     room.actionLog = [];
 }
 
@@ -519,7 +867,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.GAME_PHASES = GAME_PHASES; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.getInitialCardStock = getInitialCardStock; this.GAME_PHASES = GAME_PHASES; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
         context
     );
     return context;
@@ -527,14 +875,14 @@ function loadGameRuntime() {
 
 function createRoomMirror(room) {
     if (!room.gameStartPayload) return null;
-    const { GameManager, CARDS, createCardByName, Player } = gameRuntime;
+    const { GameManager, CARDS, createCardByName, getInitialCardStock, Player } = gameRuntime;
     const { playerNames, playerSettings, playerOrder, enabledCards, enabledLandmarks } = room.gameStartPayload;
     const game = new GameManager(playerNames.length);
     game.enabledLandmarks = new Set((enabledLandmarks && enabledLandmarks.length > 0) ? enabledLandmarks : Player.landmarkNames());
     const shopStock = {};
     const enabled = new Set(enabledCards || CARDS.map(c => c.name));
     for (const card of CARDS) {
-        shopStock[card.name] = enabled.has(card.name) ? 6 : 0;
+        shopStock[card.name] = enabled.has(card.name) ? getInitialCardStock(card, playerNames.length) : 0;
     }
 
     const order = playerOrder || playerNames.map((_, i) => i);
@@ -546,18 +894,285 @@ function createRoomMirror(room) {
         ? order.map(originalIndex => playerSettings[originalIndex]?.type === 'cpu')
         : game.players.map(() => false);
 
+    let lastUndoState = null;
     if (room.stateSnapshot) {
+        if (!validateMirrorSnapshot(room.stateSnapshot, playerNames.length, createCardByName, Player)) {
+            return null;
+        }
+        if (!validateSnapshotAgainstRoomConfig(room.stateSnapshot, room, playerNames.length)) {
+            return null;
+        }
         restoreMirrorState(game, shopStock, room.stateSnapshot, createCardByName);
+        lastUndoState = room.stateSnapshot.undoState || null;
     }
     for (const entry of room.actionLog || []) {
         if (!entry || typeof entry.action !== 'string') continue;
         try {
-            applyActionToMirror(game, shopStock, entry.action, entry.data, createCardByName);
+            if (!validateReplayAction(room, game, shopStock, entry, lastUndoState, cpuPlayers)) {
+                return null;
+            }
+            if (entry.action === 'buildCard' || entry.action === 'buildLandmark') {
+                lastUndoState = makeUndoStateFromMirror(game, shopStock);
+            }
+            const replayData = entry.action === 'undoBuild' ? { state: lastUndoState } : entry.data;
+            if (applyActionToMirror(game, shopStock, entry.action, replayData, createCardByName) === false) {
+                return null;
+            }
+            if (entry.action === 'undoBuild' || entry.action === 'nextTurn') {
+                lastUndoState = null;
+            }
         } catch {
             return null;
         }
     }
-    return { game, shopStock, cpuPlayers };
+    return { game, shopStock, cpuPlayers, lastUndoState };
+}
+
+function validateMirrorSnapshot(state, playerCount, createCardByName, PlayerClass) {
+    if (!isPlainObject(state)) return false;
+    if (!Array.isArray(state.players) || state.players.length !== playerCount) return false;
+    const landmarkNames = new Set(PlayerClass.landmarkNames());
+    for (const playerState of state.players) {
+        if (!isPlainObject(playerState)) return false;
+        if (Object.prototype.hasOwnProperty.call(playerState, 'name') &&
+            typeof playerState.name !== 'string') return false;
+        if (Object.prototype.hasOwnProperty.call(playerState, 'coins') &&
+            (!Number.isInteger(playerState.coins) || playerState.coins < 0)) return false;
+        if (Object.prototype.hasOwnProperty.call(playerState, 'cards')) {
+            if (!Array.isArray(playerState.cards) ||
+                playerState.cards.some(name => !createCardByName(name))) return false;
+        }
+        const cardCount = Array.isArray(playerState.cards) ? playerState.cards.length : 0;
+        if (Object.prototype.hasOwnProperty.call(playerState, 'dormantIndices')) {
+            if (!Array.isArray(playerState.dormantIndices) ||
+                hasDuplicateValues(playerState.dormantIndices) ||
+                playerState.dormantIndices.some(idx => !Number.isInteger(idx) || idx < 0 || idx >= cardCount)) return false;
+            const cardNames = Array.isArray(playerState.cards) ? playerState.cards : [];
+            for (const idx of playerState.dormantIndices) {
+                const card = createCardByName(cardNames[idx]);
+                if (card?.category === gameRuntime.CARD_CATEGORIES.MAJOR) return false;
+            }
+        }
+        if (Object.prototype.hasOwnProperty.call(playerState, 'landmarks')) {
+            if (!isPlainObject(playerState.landmarks)) return false;
+            for (const [name, built] of Object.entries(playerState.landmarks)) {
+                if (!landmarkNames.has(name) || typeof built !== 'boolean') return false;
+            }
+        }
+        if (Object.prototype.hasOwnProperty.call(playerState, 'itVentureCoins') &&
+            (!Number.isInteger(playerState.itVentureCoins) || playerState.itVentureCoins < 0)) return false;
+        if (Object.prototype.hasOwnProperty.call(playerState, 'hasYakusho') &&
+            typeof playerState.hasYakusho !== 'boolean') return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(state, 'shopStock')) {
+        if (!isPlainObject(state.shopStock)) return false;
+        for (const [name, count] of Object.entries(state.shopStock)) {
+            if (!createCardByName(name) || !Number.isInteger(count) || count < 0) return false;
+        }
+    }
+    if (Object.prototype.hasOwnProperty.call(state, 'currentPlayerIndex') &&
+        (!Number.isInteger(state.currentPlayerIndex) || state.currentPlayerIndex < 0 || state.currentPlayerIndex >= playerCount)) return false;
+    if (Object.prototype.hasOwnProperty.call(state, 'phase') &&
+        !Object.values(gameRuntime.GAME_PHASES).includes(state.phase)) return false;
+    if (Object.prototype.hasOwnProperty.call(state, 'log') && !Array.isArray(state.log)) return false;
+    for (const field of ['lastDiceResult', 'lastDice1', 'lastDice2', 'turnCount']) {
+        if (Object.prototype.hasOwnProperty.call(state, field) &&
+            (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+    }
+    for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
+        if (Object.prototype.hasOwnProperty.call(state, field) &&
+            (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+    }
+    for (const field of ['builtThisTurn', 'pendingIT', 'usedReroll', 'hadAmusementParkAtRoll']) {
+        if (Object.prototype.hasOwnProperty.call(state, field) &&
+            typeof state[field] !== 'boolean') return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(state, 'pendingTunaDice') &&
+        state.pendingTunaDice !== null &&
+        (!Array.isArray(state.pendingTunaDice) ||
+            state.pendingTunaDice.length !== 2 ||
+            state.pendingTunaDice.some(value => !isValidDieValue(value)))) return false;
+    if (Object.prototype.hasOwnProperty.call(state, 'undoState') &&
+        state.undoState !== null &&
+        !isValidUndoState(state.undoState, playerCount, createCardByName)) return false;
+    return true;
+}
+
+function isValidUndoState(state, playerCount, createCardByName) {
+    if (!isPlainObject(state)) return false;
+    if (!Array.isArray(state.playerCoins) || state.playerCoins.length !== playerCount) return false;
+    if (!Array.isArray(state.playerCardNames) || state.playerCardNames.length !== playerCount) return false;
+    if (!Array.isArray(state.playerLandmarks) || state.playerLandmarks.length !== playerCount) return false;
+    if (Object.prototype.hasOwnProperty.call(state, 'playerItVenture') &&
+        (!Array.isArray(state.playerItVenture) || state.playerItVenture.length !== playerCount)) return false;
+    if (!isPlainObject(state.shopStock)) return false;
+    if (Object.prototype.hasOwnProperty.call(state, 'log') && !Array.isArray(state.log)) return false;
+    if (Object.prototype.hasOwnProperty.call(state, 'builtThisTurn') && typeof state.builtThisTurn !== 'boolean') return false;
+    if (state.playerCoins.some(coins => !Number.isInteger(coins) || coins < 0)) return false;
+    const landmarkNames = new Set(gameRuntime.Player.landmarkNames());
+    for (let i = 0; i < playerCount; i++) {
+        const cardNames = state.playerCardNames[i];
+        if (!Array.isArray(cardNames) || cardNames.some(name => !createCardByName(name))) return false;
+        const dormantIndices = state.playerDormantIndices?.[i] || [];
+        if (!Array.isArray(dormantIndices) ||
+            hasDuplicateValues(dormantIndices) ||
+            dormantIndices.some(idx => !Number.isInteger(idx) || idx < 0 || idx >= cardNames.length)) return false;
+        for (const idx of dormantIndices) {
+            const card = createCardByName(cardNames[idx]);
+            if (card?.category === gameRuntime.CARD_CATEGORIES.MAJOR) return false;
+        }
+        if (!isPlainObject(state.playerLandmarks[i])) return false;
+        for (const [name, built] of Object.entries(state.playerLandmarks[i])) {
+            if (!landmarkNames.has(name) || typeof built !== 'boolean') return false;
+        }
+        const itVentureCoins = state.playerItVenture?.[i] ?? 0;
+        if (!Number.isInteger(itVentureCoins) || itVentureCoins < 0) return false;
+        if (state.playerHasYakusho && typeof state.playerHasYakusho[i] !== 'boolean') return false;
+    }
+    return Object.entries(state.shopStock)
+        .every(([name, count]) => createCardByName(name) && Number.isInteger(count) && count >= 0);
+}
+
+function validateSnapshotAgainstRoomConfig(state, room, playerCount) {
+    if (!isPlainObject(state)) return false;
+    const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(card => card.name));
+    const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
+    if (!validateSnapshotCardAndStockConfig(state.players, state.shopStock, enabledCards, playerCount)) return false;
+    if (!validateSnapshotLandmarkConfig(state.players, enabledLandmarks)) return false;
+    if (state.undoState) {
+        if (!validateSnapshotCardAndStockConfig(
+            state.undoState.playerCardNames?.map((cardNames, index) => ({ cards: cardNames, landmarks: state.undoState.playerLandmarks?.[index] })),
+            state.undoState.shopStock,
+            enabledCards,
+            playerCount
+        )) return false;
+        if (!validateSnapshotLandmarkConfig(
+            state.undoState.playerLandmarks?.map(landmarks => ({ landmarks })),
+            enabledLandmarks
+        )) return false;
+    }
+    return true;
+}
+
+function validateSnapshotCardAndStockConfig(playersState, shopStockState, enabledCards, playerCount) {
+    if (!Array.isArray(playersState)) return false;
+    const stockState = isPlainObject(shopStockState) ? shopStockState : {};
+    const initialCardNames = new Set(['麦畑', 'パン屋']);
+    const disabledInitialCardCounts = {};
+    for (const playerState of playersState) {
+        const cardNames = Array.isArray(playerState?.cards) ? playerState.cards : [];
+        for (const name of cardNames) {
+            if (!enabledCards.has(name)) {
+                if (!initialCardNames.has(name)) return false;
+                disabledInitialCardCounts[name] = (disabledInitialCardCounts[name] || 0) + 1;
+            }
+        }
+    }
+    for (const count of Object.values(disabledInitialCardCounts)) {
+        if (count > playerCount) return false;
+    }
+    for (const card of gameRuntime.CARDS) {
+        if (!enabledCards.has(card.name)) {
+            if (Object.prototype.hasOwnProperty.call(stockState, card.name) && stockState[card.name] !== 0) return false;
+            continue;
+        }
+        const initialStock = enabledCards.has(card.name)
+            ? gameRuntime.getInitialCardStock(card, playerCount)
+            : 0;
+        const stockCount = Object.prototype.hasOwnProperty.call(stockState, card.name)
+            ? stockState[card.name]
+            : initialStock;
+        if (!Number.isInteger(stockCount) || stockCount < 0 || stockCount > initialStock) return false;
+    }
+    return true;
+}
+
+function validateSnapshotLandmarkConfig(playersState, enabledLandmarks) {
+    if (!Array.isArray(playersState)) return false;
+    for (const playerState of playersState) {
+        const landmarks = playerState?.landmarks;
+        if (landmarks == null) continue;
+        if (!isPlainObject(landmarks)) return false;
+        for (const [name, built] of Object.entries(landmarks)) {
+            if (built === true && !enabledLandmarks.has(name)) return false;
+        }
+    }
+    return true;
+}
+
+function hasDuplicateValues(values) {
+    return new Set(values).size !== values.length;
+}
+
+function validateReplayAction(room, game, shopStock, entry, lastUndoState, cpuPlayers) {
+    const { action, data } = entry;
+    if (!validateReplayActor(room, game, entry, cpuPlayers)) return false;
+    if (!getAllowedActions(game).has(action)) return false;
+    if (action === 'rollDice') return validateRollDicePayload(data, game);
+    if (action === 'selectDice') return validateSelectDicePayload(data);
+    if (action === 'rerollDice') return validateRerollDicePayload(data);
+    if (action === 'skipReroll') return isPlainObject(data);
+    if (action === 'resolveHarbor') return validateResolveHarborPayload(data);
+    if (action === 'resolveTV') {
+        return isPlainObject(data) &&
+            Number.isInteger(data.targetIndex) &&
+            data.targetIndex >= 0 &&
+            data.targetIndex < game.players.length &&
+            data.targetIndex !== game.currentPlayerIndex;
+    }
+    if (action === 'resolveBusiness') return validateBusinessPayload(game, data);
+    if (action === 'resolveCleaning') return validateCleaningPayload(game, data);
+    if (action === 'resolveMover') return validateMoverPayload(game, data);
+    if (action === 'resolveRenovation') return validateRenovationPayload(game, data);
+    if (action === 'resolveIT') return validateResolveITPayload(data);
+    if (action === 'buildCard') {
+        const cardName = data?.cardName;
+        const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(c => c.name));
+        const card = gameRuntime.createCardByName(cardName);
+        const current = game.currentPlayer();
+        return !!card &&
+            enabledCards.has(cardName) &&
+            (shopStock[cardName] || 0) > 0 &&
+            !game.builtThisTurn &&
+            current.coins >= card.cost &&
+            !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0);
+    }
+    if (action === 'buildLandmark') {
+        const name = data?.name;
+        const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
+        const current = game.currentPlayer();
+        const cost = gameRuntime.Player.landmarkCost(name);
+        return enabledLandmarks.has(name) &&
+            !game.builtThisTurn &&
+            !current.landmarks[name] &&
+            current.coins >= cost;
+    }
+    if (action === 'undoBuild') {
+        return !!lastUndoState && game.builtThisTurn && isPlainObject(data);
+    }
+    if (action === 'nextTurn') return isPlainObject(data);
+    return false;
+}
+
+function validateReplayActor(room, game, entry, cpuPlayers) {
+    const currentIndex = game.currentPlayerIndex;
+    const playerOrder = room.gameStartPayload?.playerOrder;
+    const originalCurrentIndex = playerOrder ? playerOrder[currentIndex] : currentIndex;
+    if (!Number.isInteger(entry.playerIndex)) return false;
+    const settings = room.gameStartPayload?.playerSettings || [];
+    const playerCount = Array.isArray(room.gameStartPayload?.playerNames)
+        ? room.gameStartPayload.playerNames.length
+        : settings.length;
+    if (entry.playerIndex < 0 || entry.playerIndex >= playerCount) return false;
+    if (cpuPlayers[currentIndex]) {
+        const hostPlayerIndex = Number.isInteger(room.hostPlayerIndex)
+            ? room.hostPlayerIndex
+            : room.gameStartPayload?.hostPlayerIndex;
+        return Number.isInteger(hostPlayerIndex) &&
+            entry.playerIndex === hostPlayerIndex &&
+            settings[entry.playerIndex]?.type !== 'cpu';
+    }
+    return entry.playerIndex === originalCurrentIndex;
 }
 
 function restoreMirrorState(game, shopStock, state, createCardByName) {
@@ -572,7 +1187,11 @@ function restoreMirrorState(game, shopStock, state, createCardByName) {
         p.cards = cardNames.map(name => createCardByName(name)).filter(Boolean);
         const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
         p.dormantCards = dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
-        p.landmarks = Object.assign({}, playerState.landmarks && typeof playerState.landmarks === 'object' ? playerState.landmarks : {});
+        p.landmarks = Object.assign(
+            {},
+            p.landmarks,
+            playerState.landmarks && typeof playerState.landmarks === 'object' ? playerState.landmarks : {}
+        );
         p.itVentureCoins = playerState.itVentureCoins || 0;
         p.hasYakusho = playerState.hasYakusho !== false;
     });
@@ -603,68 +1222,67 @@ function applyActionToMirror(game, shopStock, action, data, createCardByName) {
     switch (action) {
         case 'rollDice':
             game.rollDice(data.forceDice, data.tunaDice);
-            break;
+            return true;
         case 'selectDice':
             game.selectDiceCount(data.useTwo, data.d1, data.d2, data.tunaDice);
-            break;
+            return true;
         case 'skipReroll':
             game.skipReroll();
-            break;
+            return true;
         case 'rerollDice':
             game.rerollDice(data.forceDice, data.tunaDice);
-            break;
+            return true;
         case 'resolveHarbor':
-            game.resolveHarbor(data.useBonus);
-            break;
+            return game.resolveHarbor(data.useBonus) !== false;
         case 'resolveTV':
-            game.resolveTV(data.targetIndex);
-            break;
+            return game.resolveTV(data.targetIndex) !== false;
         case 'resolveBusiness':
-            game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard);
-            break;
+            return game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard) !== false;
         case 'resolveCleaning':
-            game.resolveCleaning(data.cardName);
-            break;
+            return game.resolveCleaning(data.cardName) !== false;
         case 'resolveMover':
-            game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex);
-            break;
+            return game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex) !== false;
         case 'resolveRenovation':
-            game.resolveRenovation(data.landmarkName);
-            break;
+            return game.resolveRenovation(data.landmarkName) !== false;
         case 'resolveIT':
-            game.resolveIT(data.doSave);
-            break;
+            return game.resolveIT(data.doSave) !== false;
         case 'buildCard': {
             const card = createCardByName(data.cardName);
-            if (card && game.buildCard(card)) shopStock[data.cardName]--;
-            break;
+            if (!card || !game.buildCard(card)) return false;
+            shopStock[data.cardName]--;
+            return true;
         }
         case 'buildLandmark':
-            game.buildLandmark(data.name);
-            break;
+            return game.buildLandmark(data.name) !== false;
         case 'undoBuild':
-            restoreUndoMirror(game, shopStock, data.state, createCardByName);
-            break;
+            return restoreUndoMirror(game, shopStock, data.state, createCardByName);
         case 'nextTurn':
-            game.nextTurn();
-            break;
+            return game.nextTurn() !== false;
+        default:
+            return false;
     }
 }
 
 function restoreUndoMirror(game, shopStock, state, createCardByName) {
-    if (!state) return;
+    if (!state ||
+        !Array.isArray(state.playerCoins) ||
+        !Array.isArray(state.playerCardNames) ||
+        !Array.isArray(state.playerLandmarks) ||
+        !state.shopStock
+    ) return false;
     game.players.forEach((p, i) => {
         p.coins = state.playerCoins[i];
         p.cards = state.playerCardNames[i].map(name => createCardByName(name)).filter(Boolean);
         p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
-        p.landmarks = Object.assign({}, state.playerLandmarks[i]);
-        p.itVentureCoins = state.playerItVenture[i];
+        p.landmarks = Object.assign({}, p.landmarks, state.playerLandmarks[i]);
+        p.itVentureCoins = state.playerItVenture?.[i] ?? 0;
         p.hasYakusho = state.playerHasYakusho?.[i] !== false;
     });
     Object.assign(shopStock, state.shopStock);
-    game.builtThisTurn = state.builtThisTurn;
-    game.log = [...state.log];
+    game.builtThisTurn = state.builtThisTurn === true;
+    game.log = Array.isArray(state.log) ? [...state.log] : [];
     game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
+    return true;
 }
 
 function makeUndoStateFromMirror(game, shopStock) {
@@ -712,6 +1330,7 @@ function validateBusinessPayload(game, data) {
         return false;
     }
     if (targetIndex === game.currentPlayerIndex) return false;
+    if (!Number.isInteger(myCard) || !Number.isInteger(theirCard)) return false;
     const current = game.currentPlayer();
     const target = game.players[targetIndex];
     return !!game._resolveCardRef(current, myCard) &&
@@ -721,17 +1340,20 @@ function validateBusinessPayload(game, data) {
 function validateCleaningPayload(game, data) {
     if (!hasPendingAction(game, 'resolveCleaning') || !isPlainObject(data)) return false;
     if (!isNonEmptyString(data.cardName)) return false;
+    const targetCard = gameRuntime.createCardByName(data.cardName);
+    if (!targetCard || targetCard.category === gameRuntime.CARD_CATEGORIES.MAJOR) return false;
     return game.players.some(player =>
-        player.cards.some(card => card.name === data.cardName && !player.isDormant(card))
+        player.cards.some(card => card.name === data.cardName && card.category !== gameRuntime.CARD_CATEGORIES.MAJOR && !player.isDormant(card))
     );
 }
 
 function validateMoverPayload(game, data) {
     if (!hasPendingAction(game, 'resolveMover') || !isPlainObject(data)) return false;
-    const cardRef = Object.prototype.hasOwnProperty.call(data, 'cardIndex') ? data.cardIndex : data.cardName;
+    const cardRef = data.cardIndex;
     const { targetIndex } = data;
     if (!isPlayerIndex(targetIndex, game)) return false;
     if (targetIndex === game.currentPlayerIndex) return false;
+    if (!Number.isInteger(cardRef)) return false;
     const current = game.currentPlayer();
     return !!game._resolveCardRef(current, cardRef);
 }
@@ -752,11 +1374,19 @@ function validateTunaDiceFromData(data) {
     if (!isPlainObject(data) || !Object.prototype.hasOwnProperty.call(data, 'tunaDice') || data.tunaDice == null) {
         return true;
     }
-    return Array.isArray(data.tunaDice) && data.tunaDice.every(isValidDieValue);
+    return Array.isArray(data.tunaDice) &&
+        data.tunaDice.length === 2 &&
+        data.tunaDice.every(isValidDieValue);
 }
 
-function validateRollDicePayload(data) {
-    if (!isPlainObject(data) || !isValidDieValue(data.forceDice)) return false;
+function validateRollDicePayload(data, game = null) {
+    if (!isPlainObject(data)) return false;
+    if (data.forceDice == null) {
+        return !!game &&
+            !!game.currentPlayer().landmarks[gameRuntime.LANDMARK_NAMES.STATION] &&
+            validateTunaDiceFromData(data);
+    }
+    if (!isValidDieValue(data.forceDice)) return false;
     return validateTunaDiceFromData(data);
 }
 
@@ -851,7 +1481,7 @@ function validateGameAction(room, socket, action, data) {
 
     if (action === 'rollDice') {
         return {
-            ok: validateRollDicePayload(data),
+            ok: validateRollDicePayload(data, game),
             mirror,
         };
     }
@@ -866,6 +1496,13 @@ function validateGameAction(room, socket, action, data) {
     if (action === 'rerollDice') {
         return {
             ok: validateRerollDicePayload(data),
+            mirror,
+        };
+    }
+
+    if (action === 'skipReroll') {
+        return {
+            ok: isPlainObject(data),
             mirror,
         };
     }
@@ -895,7 +1532,7 @@ function validateGameAction(room, socket, action, data) {
                 (shopStock[cardName] || 0) > 0 &&
                 !game.builtThisTurn &&
                 current.coins >= card.cost &&
-                !(card.color === 'purple' && current.countCard(card.name) > 0),
+                !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0),
             mirror,
         };
     }
@@ -916,12 +1553,19 @@ function validateGameAction(room, socket, action, data) {
 
     if (action === 'undoBuild') {
         return {
-            ok: !!room.lastUndoState && game.builtThisTurn,
+            ok: !!(room.lastUndoState || mirror.lastUndoState) && game.builtThisTurn,
             mirror,
         };
     }
 
-    return { ok: true, mirror };
+    if (action === 'nextTurn') {
+        return {
+            ok: isPlainObject(data),
+            mirror,
+        };
+    }
+
+    return { ok: false, mirror };
 }
 
 function getAllowedActions(game) {
@@ -995,6 +1639,9 @@ function checkGameStart(io, roomId) {
             playerSettings: room.playerSettings,
             cpuSpeed: room.cpuSpeed,
             playerOrder,
+            hostPlayerIndex: room.hostPlayerIndex,
+            hostEpoch: room.hostEpoch || 0,
+            actionSeq: room.actionSeq || 0,
             versions,
             reconnectTokenHashes: playerNames.map((_, index) => {
                 const player = room.players.find(p => p.index === index);
@@ -1031,10 +1678,19 @@ module.exports = {
     emitAppError,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
+    injectIndexBuildHash,
     sanitizeName,
     cpuDifficultyLabel,
+    ALLOWED_RL_MODEL_IDS,
     normalizePlayerSettings,
+    hasInvalidOnlineRlModelSettings,
+    normalizeCpuSpeed,
+    normalizeEnabledCards,
+    isActiveRoomSocket,
+    findAcceptedClientAction,
+    rememberAcceptedClientAction,
     generateRoomId,
+    nextRoomActionSeq,
     buildPlayerList,
     resolveRejoinPlayer,
     handleSocketDisconnect,

@@ -30,7 +30,7 @@
 
             <div id="onlineResumeSection" style="display:none">
                 <div class="online-resume-notice">
-                    <span>🌐 オンラインゲームが中断されました</span>
+                    <span id="onlineResumeDescription">🌐 オンラインゲームが中断されました</span>
                     <div style="display:flex;gap:6px;margin-top:6px">
                         <button onclick="reconnectOnline()" class="resume-btn" style="flex:1">🔌 再接続する</button>
                         <button onclick="deleteOnlineSession()" class="delete-save-btn">🗑</button>
@@ -370,7 +370,17 @@
             banner.style.display = 'block';
           }
         }
-        navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+        let hadServiceWorkerController = !!navigator.serviceWorker.controller;
+        let refreshingByServiceWorker = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!hadServiceWorkerController) {
+            hadServiceWorkerController = true;
+            return;
+          }
+          if (refreshingByServiceWorker) return;
+          refreshingByServiceWorker = true;
+          location.reload();
+        });
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then(reg => {
             if (reg.waiting && navigator.serviceWorker.controller) {

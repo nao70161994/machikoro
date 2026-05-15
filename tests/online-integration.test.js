@@ -36,11 +36,14 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
         enabledLandmarks: rt.Player.landmarkNames(),
         versions: ['x'],
         reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
     });
+    rt.__test.getGame().phase = rt.GAME_PHASES.BUILD;
     rt.__test.socketHandlers.gameAction({ action: 'buildCard', data: { cardName: '麦畑' }, playerIndex: 0 });
     const snapshot = rt.buildOnlineSnapshot();
     const gameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.deepStrictEqual(gameStart.reconnectTokenHashes, ['hash-a', 'hash-b']);
+    assert.strictEqual(gameStart.hostPlayerIndex, 0);
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload: {
@@ -229,7 +232,7 @@ runTest('online integration: rejoinData は actionLog の不正要素を無視�
             enabledCards: rt.CARDS.map(card => card.name),
             enabledLandmarks: rt.Player.landmarkNames(),
         },
-        stateSnapshot: null,
+        stateSnapshot: { currentPlayerIndex: 0, phase: rt.GAME_PHASES.BUILD, players: [], shopStock: {} },
         actionLog: [null, { data: {} }, { action: 'nextTurn' }],
         playerIndex: 0,
         hostPlayerIndex: 0,
@@ -414,19 +417,24 @@ runTest('online integration: gameAction undoBuild は保存ログに残り状態
 runTest('online integration: ROOM_NOT_FOUND でホストは recreateRoom を送る', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
         playerNames: ['Alice', 'Bob'],
         playerSettings: [{ type: 'human' }, { type: 'human' }],
         cpuSpeed: 1500,
         playerOrder: [0, 1],
         enabledCards: rt.CARDS.map(card => card.name),
         enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
     }));
     rt.localStorage.setItem('onlineStateSnapshot', JSON.stringify({
         players: [],
         currentPlayerIndex: 0,
         shopStock: {},
     }));
-    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'nextTurn', data: {} }]));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'nextTurn', data: {}, playerIndex: 0 }]));
     rt.initSocket();
     rt.__test.setOnlineState({
         isReconnectingOnline: true,
@@ -443,21 +451,28 @@ runTest('online integration: ROOM_NOT_FOUND でホストは recreateRoom を送�
     assert.strictEqual(rt.__test.socketEmits[0].name, 'recreateRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
     assert.strictEqual(rt.__test.socketEmits[0].payload.reconnectToken, 'token-1');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.gameStartPayload.hostPlayerIndex, 0);
+    assert.strictEqual(rt.__test.socketEmits[0].payload.actionLog[0].playerIndex, 0);
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '♻️ サーバー再起動を検知。ゲームを復元中...');
 });
 
 runTest('online integration: ROOM_NOT_FOUND 復元は壊れた snapshot だけを捨てて送る', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
         playerNames: ['Alice', 'Bob'],
         playerSettings: [{ type: 'human' }, { type: 'human' }],
         cpuSpeed: 1500,
         playerOrder: [0, 1],
         enabledCards: rt.CARDS.map(card => card.name),
         enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
     }));
     rt.localStorage.setItem('onlineStateSnapshot', '{broken');
-    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'nextTurn', data: {} }]));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'nextTurn', data: {}, playerIndex: 0 }]));
     rt.initSocket();
     rt.__test.setOnlineState({
         isReconnectingOnline: true,
@@ -474,17 +489,23 @@ runTest('online integration: ROOM_NOT_FOUND 復元は壊れた snapshot だけ�
     assert.strictEqual(rt.__test.socketEmits[0].name, 'recreateRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.stateSnapshot, null);
     assert.strictEqual(rt.__test.socketEmits[0].payload.actionLog.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].payload.actionLog[0].playerIndex, 0);
 });
 
 runTest('online integration: ROOM_NOT_FOUND 復元は壊れた actionLog を空配列として送る', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
         playerNames: ['Alice', 'Bob'],
         playerSettings: [{ type: 'human' }, { type: 'human' }],
         cpuSpeed: 1500,
         playerOrder: [0, 1],
         enabledCards: rt.CARDS.map(card => card.name),
         enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
     }));
     rt.localStorage.setItem('onlineActionLog', JSON.stringify({ action: 'nextTurn', data: {} }));
     rt.initSocket();
@@ -507,12 +528,17 @@ runTest('online integration: ROOM_NOT_FOUND 復元は壊れた actionLog を空�
 runTest('online integration: ROOM_NOT_FOUND 復元は壊れた actionLog JSON でも送る', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
         playerNames: ['Alice', 'Bob'],
         playerSettings: [{ type: 'human' }, { type: 'human' }],
         cpuSpeed: 1500,
         playerOrder: [0, 1],
         enabledCards: rt.CARDS.map(card => card.name),
         enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
     }));
     rt.localStorage.setItem('onlineStateSnapshot', JSON.stringify({
         players: [],

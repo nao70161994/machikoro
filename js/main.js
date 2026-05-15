@@ -15,6 +15,7 @@ let lastWinnerName = localStorage.getItem('lastWinnerName') || '';
 // オートスキップ
 let autoSkipPending = false;
 let autoSkipTimeout = null;
+let delayedHumanActionPending = false;
 
 // 取り消し
 let undoState = null;
@@ -73,7 +74,7 @@ function createCpuPlayer(difficulty, options = {}) {
             resolvedOptions.expertPreset = "v2simple";
         }
         if (resolvedOptions.expertPreset === "v2simple") {
-            if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "ev";
+            if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "strongCrowdThreshold";
             if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
             if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "ev";
             if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
@@ -85,6 +86,7 @@ function createCpuPlayer(difficulty, options = {}) {
             if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
             if (!resolvedOptions.expertComboMode) resolvedOptions.expertComboMode = "core";
             if (!Number.isFinite(resolvedOptions.expertBuildTempoWeight)) resolvedOptions.expertBuildTempoWeight = 0.05;
+            if (!resolvedOptions.expertAirportSkipMode) resolvedOptions.expertAirportSkipMode = "whenNoLandmark";
         }
     };
     const isLiveExpert = resolvedDifficulty === 'expert' && resolvedOptions.expertPurpose === "live";
@@ -107,6 +109,13 @@ function createCpuPlayer(difficulty, options = {}) {
         }
     }
     return new CPU(resolvedDifficulty, resolvedOptions);
+}
+
+function cpuOpponentDifficultiesFromSettings(settings) {
+    return settings.map(setting => {
+        if (!setting || setting.type !== "cpu") return "human";
+        return setting.difficulty || "normal";
+    });
 }
 
 function formatCpuSpeedLabel(value) {
@@ -237,17 +246,20 @@ function init(playerCount) {
         [order[i], order[j]] = [order[j], order[i]];
     }
 
+    const shuffledSettings = order.map(originalIndex => playerSettings[originalIndex] || {});
+    const opponentDifficulties = cpuOpponentDifficultiesFromSettings(shuffledSettings);
+
     // プレイヤー名とCPU設定をシャッフル順に再設定
     const shuffledCpuPlayers = [];
     for (let i = 0; i < playerCount; i++) {
         const originalIndex = order[i];
-        const setting = playerSettings[originalIndex] || {};
+        const setting = shuffledSettings[i];
         game.players[i].name = setting.type === "cpu"
             ? getLocalCpuLabel(setting.difficulty)
             : normalizeLocalPlayerName(setting.name, originalIndex);
         shuffledCpuPlayers.push(
             setting.type === "cpu"
-                ? createCpuPlayer(setting.difficulty, { expertPurpose: "live", playerCount })
+                ? createCpuPlayer(setting.difficulty, { expertPurpose: "live", playerCount, expertOpponentDifficulties: opponentDifficulties })
                 : null
         );
     }
@@ -261,10 +273,22 @@ function init(playerCount) {
 function cpuDo(action, data, fallback) {
     if (isOnlineGame) {
         sendAction(action, data);
+        return;
     }
     fallback();
     render();
     scheduleCPU();
+}
+
+function runLocalOrSendOnline(action, data, fallback) {
+    if (isOnlineGame) {
+        return sendAction(action, data);
+    }
+    const result = fallback();
+    if (result === false) return false;
+    render();
+    scheduleCPU();
+    return true;
 }
 
 function queueCPUStep(token, delay, fn) {
@@ -325,30 +349,35 @@ const CPU_PHASE_HANDLERS = [
             if (game.pendingTV > 0) {
                 const targetIndex = cpu.chooseTVTarget(game);
                 cpuDo('resolveTV', { targetIndex }, () => game.resolveTV(targetIndex));
+                return;
             }
             if (game.pendingBusiness > 0) {
                 const move = cpu.chooseBusinessMove(game);
                 if (move) {
                     cpuDo('resolveBusiness', move,
                         () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard));
+                    return;
                 }
             }
             if (game.pendingCleaning > 0) {
                 const cardName = cpu.chooseCleaningTarget(game);
                 if (cardName) {
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
+                    return;
                 }
             }
             if (game.pendingMover > 0) {
                 const move = cpu.chooseMoverMove(game);
                 if (move) {
                     cpuDo('resolveMover', move, () => game.resolveMover(move.cardIndex, move.targetIndex));
+                    return;
                 }
             }
             if (game.pendingRenovation > 0) {
                 const landmarkName = cpu.chooseRenovationTarget(game);
                 if (landmarkName) {
                     cpuDo('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
+                    return;
                 }
             }
         },
@@ -381,6 +410,11 @@ const CPU_PHASE_HANDLERS = [
 function scheduleCPU() {
     if (isReplaying) return;
     if (isOnlineGame && !isRoomHost) return;
+    if (isOnlineGame && (
+        (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
+        (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
+        (typeof socket === 'undefined' || !socket || socket.connected === false)
+    )) return;
     if (!game || game.checkWinner()) return;
     const ci = game.currentPlayerIndex;
     if (!cpuPlayers[ci]) return;
@@ -396,6 +430,15 @@ function scheduleCPU() {
         }
         const step = CPU_PHASE_HANDLERS[stepIndex++];
         queueCPUStep(token, cpuSpeed, () => {
+            if (isReplaying) return;
+            if (isOnlineGame && !isRoomHost) return;
+            if (isOnlineGame && (
+                (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
+                (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
+                (typeof socket === 'undefined' || !socket || socket.connected === false)
+            )) return;
+            if (!game || game.checkWinner()) return;
+            if (!cpuPlayers[game.currentPlayerIndex]) return;
             step.run(cpu);
             runNextStep();
         });
@@ -409,6 +452,11 @@ function canRunLocalHumanAction(expectedPlayerIndex = null) {
     if (expectedPlayerIndex !== null && game.currentPlayerIndex !== expectedPlayerIndex) return false;
     if (cpuPlayers[game.currentPlayerIndex]) return false;
     if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return false;
+    if (isOnlineGame && (
+        (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
+        (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
+        (typeof socket === 'undefined' || !socket || socket.connected === false)
+    )) return false;
     return true;
 }
 
@@ -417,40 +465,38 @@ function onRoll() {
     playSound('dice');
     if (game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
         // 駅あり：アニメーションなしで即座に選択肢を表示
-        game.rollDice(null, null);
-        sendAction('rollDice', { forceDice: null, tunaDice: null });
-        render();
-        scheduleCPU();
+        runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
     } else {
         // 駅なし：アニメーションあり
+        if (delayedHumanActionPending) return;
+        delayedHumanActionPending = true;
         const scheduledPlayerIndex = game.currentPlayerIndex;
         updateDiceDisplay(null, true);
         setTimeout(() => {
-            if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
+            delayedHumanActionPending = false;
+            if (!canRunLocalHumanAction(scheduledPlayerIndex) || game.phase !== GAME_PHASES.ROLL) return;
             const forceDice = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
-            game.rollDice(forceDice, tunaDice);
-            sendAction('rollDice', { forceDice, tunaDice });
-            render();
-            scheduleCPU();
+            runLocalOrSendOnline('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
         }, 600);
     }
 }
 
 function onSelectDiceCount(useTwo) {
     if (!canRunLocalHumanAction()) return;
+    if (delayedHumanActionPending) return;
+    delayedHumanActionPending = true;
     playSound('dice');
     const scheduledPlayerIndex = game.currentPlayerIndex;
     updateDiceDisplay(null, true);
     setTimeout(() => {
-        if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
+        delayedHumanActionPending = false;
+        if (!canRunLocalHumanAction(scheduledPlayerIndex) || game.phase !== GAME_PHASES.SELECT_DICE) return;
         const d1 = rollRandomDie();
         const d2 = useTwo ? rollRandomDie() : 0;
         const tunaDice = [rollRandomDie(), rollRandomDie()];
-        game.selectDiceCount(useTwo, d1, d2, tunaDice);
-        sendAction('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice });
-        render();
-        scheduleCPU();
+        runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice },
+            () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
     }, 600);
 }
 
@@ -458,77 +504,51 @@ function onReroll() {
     if (!canRunLocalHumanAction()) return;
     const forceDice = rollRandomDie();
     const tunaDice = [rollRandomDie(), rollRandomDie()];
-    game.rerollDice(forceDice, tunaDice);
-    sendAction('rerollDice', { forceDice, tunaDice });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
 }
 
 function onSkipReroll() {
     if (!canRunLocalHumanAction()) return;
-    game.skipReroll();
-    sendAction('skipReroll');
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('skipReroll', {}, () => game.skipReroll());
 }
 
 function onResolveHarbor(useBonus) {
     if (!canRunLocalHumanAction()) return;
-    game.resolveHarbor(useBonus);
-    sendAction('resolveHarbor', { useBonus });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
 }
 
 function onResolveTV(i) {
     if (!canRunLocalHumanAction()) return;
-    game.resolveTV(i);
-    sendAction('resolveTV', { targetIndex: i });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveTV', { targetIndex: i }, () => game.resolveTV(i));
 }
 
 function onResolveBusiness(targetIndex) {
     if (!canRunLocalHumanAction()) return;
     const myCard = parseInt(document.getElementById("myCardSelect").value, 10);
     const theirCard = parseInt(document.getElementById(`theirCardSelect_${targetIndex}`).value, 10);
-    game.resolveBusiness(myCard, targetIndex, theirCard);
-    sendAction('resolveBusiness', { myCard, targetIndex, theirCard });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveBusiness', { myCard, targetIndex, theirCard },
+        () => game.resolveBusiness(myCard, targetIndex, theirCard));
 }
 
 function onResolveCleaning(cardName) {
     if (!canRunLocalHumanAction()) return;
-    game.resolveCleaning(cardName);
-    sendAction('resolveCleaning', { cardName });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
 }
 
 function onResolveMover(targetIndex) {
     if (!canRunLocalHumanAction()) return;
     const cardIndex = parseInt(document.getElementById("moverCardSelect").value, 10);
-    game.resolveMover(cardIndex, targetIndex);
-    sendAction('resolveMover', { cardIndex, targetIndex });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
 }
 
 function onResolveRenovation(landmarkName) {
     if (!canRunLocalHumanAction()) return;
-    game.resolveRenovation(landmarkName);
-    sendAction('resolveRenovation', { landmarkName });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
 }
 
 function onResolveIT(doSave) {
     if (!canRunLocalHumanAction()) return;
-    game.resolveIT(doSave);
-    sendAction('resolveIT', { doSave });
-    render();
-    scheduleCPU();
+    runLocalOrSendOnline('resolveIT', { doSave }, () => game.resolveIT(doSave));
 }
 
 function onBuildCard(name) {
@@ -538,15 +558,19 @@ function onBuildCard(name) {
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
         if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
+        if ((SHOP_STOCK[name] || 0) <= 0) return;
         saveUndoState();
         cancelAutoSkip();
+        if (isOnlineGame) {
+            sendAction('buildCard', { cardName: name });
+            return;
+        }
         if (game.buildCard(card)) {
             SHOP_STOCK[name]--;
-            sendAction('buildCard', { cardName: name });
             playSound('build');
+            render();
+            scheduleCPU();
         }
-        render();
-        scheduleCPU();
     });
 }
 
@@ -558,12 +582,15 @@ function onBuildLandmark(name) {
         if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
         saveUndoState();
         cancelAutoSkip();
-        if (game.buildLandmark(name)) {
+        if (isOnlineGame) {
             sendAction('buildLandmark', { name });
-            playSound('build');
+            return;
         }
-        render();
-        scheduleCPU();
+        if (game.buildLandmark(name)) {
+            playSound('build');
+            render();
+            scheduleCPU();
+        }
     });
 }
 
@@ -582,10 +609,7 @@ function onSkip() {
         if (!canRunLocalHumanAction(scheduledPlayerIndex)) return;
         cancelAutoSkip();
         undoState = null;
-        game.nextTurn();
-        sendAction('nextTurn');
-        render();
-        scheduleCPU();
+        runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
     });
 }
 
@@ -847,7 +871,7 @@ function checkAutoSkip() {
         SHOP_STOCK[card.name] > 0 &&
         current.coins >= card.cost &&
         card.cost > 0 &&
-        !(card.color === "purple" && current.countCard(card.name) > 0)
+        !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
     );
     const canAffordLandmark = Object.entries(current.landmarks)
         .some(([name, built]) =>
@@ -864,17 +888,11 @@ function checkAutoSkip() {
             autoSkipPending = false;
             autoSkipTimeout = null;
             if (
-                game &&
+                canRunLocalHumanAction(scheduledPlayerIndex) &&
                 game.phase === GAME_PHASES.BUILD &&
-                game.currentPlayerIndex === scheduledPlayerIndex &&
-                !cpuPlayers[scheduledPlayerIndex] &&
-                (!isOnlineGame || scheduledPlayerIndex === myPlayerIndex) &&
                 !game.builtThisTurn
             ) {
-                game.nextTurn();
-                sendAction('nextTurn');
-                render();
-                scheduleCPU();
+                runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
             }
         }, 1500);
     }

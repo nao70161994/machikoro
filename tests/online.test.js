@@ -1,6 +1,10 @@
 const assert = require('assert');
 const vm = require('vm');
 const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
+const {
+    makePendingAckRequiresLogOrSnapshotFixture,
+    makeSeqRankUsesMaxFieldsFixture,
+} = require('./helpers/online-restore-fixtures');
 
 function loadOnlineRuntime() {
     const { storage, localStorage } = createStorage();
@@ -8,6 +12,7 @@ function loadOnlineRuntime() {
     const context = {
         console,
         localStorage,
+        window: {},
         document: {
             getElementById(id) {
                 if (!elements[id]) elements[id] = { style: {}, textContent: '', innerHTML: '' };
@@ -80,15 +85,22 @@ function loadOnlineRuntime() {
         this.getSocketHandlers = () => socketHandlers;
         this.getSocketEmits = () => socketEmits;
         this.getSocketDisconnected = () => socketDisconnected;
+        this.getUndoState = () => undoState;
+        this.setUndoState = (value) => { undoState = value; };
         this.applyAction = applyAction;
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
+        this.getClientVersion = getClientVersion;
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
         this.setOnlineSelectedCount = (value) => { onlineSelectedCount = value; };
         this.setOnlinePlayerSettings = (value) => { onlinePlayerSettings = value; };
         this._saveActionLog = _saveActionLog;
         this._readOnlineActionLog = _readOnlineActionLog;
+        this._readPendingOutboundAction = _readPendingOutboundAction;
+        this._tryRestoreRoom = _tryRestoreRoom;
+        this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
         this.buildOnlineSnapshot = buildOnlineSnapshot;
         this.handleAppError = handleAppError;
+        this.sendAction = sendAction;
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
         this.initSocket = initSocket;
@@ -96,8 +108,13 @@ function loadOnlineRuntime() {
             if (typeof v.socket !== 'undefined') socket = v.socket;
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
+            if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
+            if (typeof v.myRoomId !== 'undefined') myRoomId = v.myRoomId;
+            if (typeof v.myOriginalPlayerIndex !== 'undefined') myOriginalPlayerIndex = v.myOriginalPlayerIndex;
+            if (typeof v.myPlayerName !== 'undefined') myPlayerName = v.myPlayerName;
+            if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
-        this.getOnlineState = () => ({ socket, isReconnectingOnline, isRoomHost });
+        this.getOnlineState = () => ({ socket, isReconnectingOnline, isRoomHost, onlineActionInFlight });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;
@@ -115,6 +132,15 @@ function makeGame(count = 2) {
     for (const card of CARDS) rt.getShopStock()[card.name] = 6;
     return g;
 }
+
+runTest('getClientVersion はindexへ注入されたビルドハッシュを使う', () => {
+    const localRt = loadOnlineRuntime();
+    assert.strictEqual(localRt.getClientVersion(), 'unknown');
+
+    localRt.window.MACHIKORO_CLIENT_VERSION = 'build-123';
+
+    assert.strictEqual(localRt.getClientVersion(), 'build-123');
+});
 
 runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', () => {
     const localRt = loadOnlineRuntime();
@@ -249,6 +275,7 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     const cpuPlayers = rt.getCpuPlayers();
     assert.strictEqual(cpuPlayers[0], null);
     assert.ok(cpuPlayers[1] !== null);
+    assert.deepStrictEqual(Array.from(cpuPlayers[1].options.expertOpponentDifficulties), ['human', 'normal']);
 });
 
 runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もrlとして生成する', () => {
@@ -259,7 +286,7 @@ runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もrlとして生�
         ['Alice', 'RL CPU', 'Bob', 'Strong CPU', 'Carol'],
         [
             { type: 'human' },
-            { type: 'cpu', difficulty: 'rl' },
+            { type: 'cpu', difficulty: 'rl', rlModelId: 'fixed-rl' },
             { type: 'human' },
             { type: 'cpu', difficulty: 'strong' },
             { type: 'human' },
@@ -275,6 +302,8 @@ runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もrlとして生�
     assert.strictEqual(cpuPlayers[0].difficulty, 'strong');
     assert.strictEqual(cpuPlayers[1].difficulty, 'rl');
     assert.strictEqual(cpuPlayers[1].options.playerCount, 5);
+    assert.strictEqual(cpuPlayers[1].options.rlModelId, 'fixed-rl');
+    assert.deepStrictEqual(Array.from(cpuPlayers[0].options.expertOpponentDifficulties), ['strong', 'rl', 'human', 'human', 'human']);
     assert.strictEqual(cpuPlayers[2], null);
 });
 
@@ -300,7 +329,11 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
         enabledCards: CARDS.map(c => c.name),
         enabledLandmarks: Player.landmarkNames(),
         versions: ['a'],
+        hostPlayerIndex: 0,
     });
+    const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(storedGameStart.hostPlayerIndex, 0);
+    rt.getGame().phase = GAME_PHASES.BUILD;
     handlers.gameAction({ action: 'buildCard', data: { cardName: '麦畑' }, playerIndex: 0 });
     const snapshot = rt.buildOnlineSnapshot();
 
@@ -324,6 +357,818 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.ok(rt.getRenderCount() > 0);
     assert.ok(rt.getScheduleCount() > 0);
+});
+
+runTest('rejoinData は build action replay から undoState を復元する', () => {
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [
+            { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } },
+            { action: 'buildCard', data: { cardName: 'カフェ' } },
+        ],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    const undoState = rt.getUndoState();
+    assert.ok(undoState);
+    assert.strictEqual(undoState.playerCoins[0], 4);
+    assert.strictEqual(undoState.shopStock['カフェ'], 6);
+});
+
+runTest('rejoinData は canonical に受理済みの未ackアクションを破棄する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.sendAction('nextTurn', {});
+    const pending = rt._readPendingOutboundAction();
+    assert.ok(pending);
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [{
+            action: pending.action,
+            data: pending.data,
+            playerIndex: pending.playerIndex,
+            seq: pending.seq,
+            clientActionId: pending.clientActionId,
+        }],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
+});
+
+runTest('rejoinData は snapshot に畳み込まれた未ackアクションを再送しない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.sendAction('nextTurn', {});
+    const pending = rt._readPendingOutboundAction();
+    const beforeEmitCount = rt.getSocketEmits().length;
+    rt.applyAction('nextTurn', {});
+    const stateSnapshot = rt.buildOnlineSnapshot();
+    stateSnapshot.actionSeq = pending.seq;
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            actionSeq: pending.seq,
+        },
+        stateSnapshot,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
+    assert.strictEqual(rt.getSocketEmits().length, beforeEmitCount);
+    assert.strictEqual(rt.getGame().currentPlayerIndex, 1);
+});
+
+runTest('rejoinData は canonical に無い未ackアクションを保持して再送する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.sendAction('nextTurn', {});
+    const pending = rt._readPendingOutboundAction();
+    const beforeEmitCount = rt.getSocketEmits().length;
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.deepStrictEqual(rt._readPendingOutboundAction(), pending);
+    assert.strictEqual(rt.getSocketEmits().length, beforeEmitCount + 1);
+    assert.strictEqual(rt.getSocketEmits()[rt.getSocketEmits().length - 1].name, 'gameAction');
+    assert.strictEqual(rt.getSocketEmits()[rt.getSocketEmits().length - 1].payload.clientActionId, pending.clientActionId);
+});
+
+runTest('rejoinData はホスト移譲後の旧ホストCPU pending actionを再送しない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-a',
+        isRoomHost: false,
+    });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 7,
+        clientActionId: 'old-host-cpu-action',
+    }));
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob', 'CPU'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }, { type: 'cpu', difficulty: 'normal' }],
+            cpuSpeed: 1500,
+            playerOrder: [2, 0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            hostPlayerIndex: 1,
+            hostEpoch: 1,
+            actionSeq: 6,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 1,
+        hostEpoch: 1,
+    });
+
+    assert.strictEqual(rt.getSocketEmits().length, 0);
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+});
+
+runTest('rejoinData は actionSeq だけ高い場合は未ackアクションを受理済みにしない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.sendAction('nextTurn', {});
+    const pending = rt._readPendingOutboundAction();
+    const beforeEmitCount = rt.getSocketEmits().length;
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            actionSeq: pending.seq + 5,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.deepStrictEqual(rt._readPendingOutboundAction(), pending);
+    assert.strictEqual(rt.getSocketEmits().length, beforeEmitCount + 1);
+    assert.strictEqual(rt.getSocketEmits()[rt.getSocketEmits().length - 1].payload.clientActionId, pending.clientActionId);
+});
+
+runTest('rejoinData は localStorage の古い高 actionSeq を canonical 値で上書きする', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 99,
+    }));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            schemaVersion: 2,
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            reconnectTokenHashes: ['hash-a', 'hash-b'],
+            hostPlayerIndex: 0,
+            hostEpoch: 0,
+            actionSeq: 1,
+        },
+        stateSnapshot: null,
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+    });
+
+    const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(stored.actionSeq, 1);
+});
+
+runTest('rejoinData は共通fixtureの最大 actionSeq を canonical 値として保存する', () => {
+    const fixture = makeSeqRankUsesMaxFieldsFixture();
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: Object.assign({}, fixture.gameStartPayload),
+        stateSnapshot: null,
+        actionLog: fixture.actionLog,
+        playerIndex: fixture.playerIndex,
+        hostPlayerIndex: fixture.gameStartPayload.hostPlayerIndex,
+        hostEpoch: fixture.expectedRank.hostEpoch,
+    });
+
+    const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(stored.hostEpoch, fixture.expectedRank.hostEpoch);
+    assert.strictEqual(stored.actionSeq, fixture.expectedRank.actionSeq);
+});
+
+runTest('rejoinData は共通fixtureで aggregate actionSeq だけでは pending をack扱いしない', () => {
+    const fixture = makePendingAckRequiresLogOrSnapshotFixture();
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: fixture.pendingAction.playerIndex,
+        myPlayerName: fixture.serverBundle.gameStartPayload.playerNames[fixture.pendingAction.playerIndex],
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+        isRoomHost: true,
+    });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify(fixture.pendingAction));
+
+    rt.getSocketHandlers().rejoinData(fixture.serverBundle);
+
+    const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    const pending = rt._readPendingOutboundAction();
+    assert.strictEqual(stored.actionSeq, fixture.serverBundle.gameStartPayload.actionSeq);
+    assert.strictEqual(pending.action, fixture.pendingAction.action);
+    assert.deepStrictEqual(Object.assign({}, pending.data), fixture.pendingAction.data);
+    assert.strictEqual(pending.playerIndex, fixture.pendingAction.playerIndex);
+    assert.strictEqual(pending.seq, fixture.pendingAction.seq);
+    assert.strictEqual(pending.clientActionId, fixture.pendingAction.clientActionId);
+    assert.strictEqual(rt.getSocketEmits().filter(e => e.name === 'gameAction').length, 1);
+});
+
+runTest('rejoinData は共通fixtureで stateSnapshot に畳み込まれた pending をack扱いする', () => {
+    const fixture = makePendingAckRequiresLogOrSnapshotFixture();
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: fixture.pendingAction.playerIndex,
+        myPlayerName: fixture.snapshotCompactedBundle.gameStartPayload.playerNames[fixture.pendingAction.playerIndex],
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+        isRoomHost: true,
+    });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify(fixture.pendingAction));
+
+    rt.getSocketHandlers().rejoinData(fixture.snapshotCompactedBundle);
+
+    const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(stored.actionSeq, fixture.snapshotCompactedBundle.gameStartPayload.actionSeq);
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
+    assert.strictEqual(rt.getSocketEmits().filter(e => e.name === 'gameAction').length, 0);
+    assert.strictEqual(rt.getGame().currentPlayerIndex, fixture.snapshotCompactedBundle.stateSnapshot.currentPlayerIndex);
+});
+
+runTest('rejoinData はサーバー上のホストが別人なら古いホスト復元payloadを送らない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+        isRoomHost: true,
+    });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+        actionSeq: 10,
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([
+        { action: 'nextTurn', data: {}, playerIndex: 0, seq: 10 },
+    ]));
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: {
+            schemaVersion: 2,
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            reconnectTokenHashes: ['hash-a', 'hash-b'],
+            hostPlayerIndex: 1,
+            hostEpoch: 2,
+            actionSeq: 5,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 1,
+        hostEpoch: 2,
+    });
+
+    assert.strictEqual(rt.getSocketEmits().filter(e => e.name === 'recreateRoom').length, 0);
+    assert.strictEqual(rt.getOnlineState().isRoomHost, false);
+    const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(stored.hostPlayerIndex, 1);
+    assert.strictEqual(stored.actionSeq, 5);
+});
+
+runTest('actionAccepted undoBuild は送信者もサーバー確定stateへ補正する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    const handlers = rt.getSocketHandlers();
+    const serverGame = new GameManager(2);
+    serverGame.players[0].coins = 12;
+
+    handlers.actionAccepted({ action: 'undoBuild', data: { state: { game: serverGame } } });
+
+    assert.strictEqual(rt.getGame(), serverGame);
+    assert.strictEqual(rt.getGame().players[0].coins, 12);
+});
+
+runTest('actionAccepted buildCard は送信者の undoState を復元snapshot用に保持する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.getGame().players[0].coins = 4;
+
+    rt.getSocketHandlers().actionAccepted({
+        action: 'buildCard',
+        data: { cardName: 'カフェ' },
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: 'accepted-build-1',
+    });
+
+    const undoState = rt.getUndoState();
+    assert.ok(undoState);
+    assert.strictEqual(undoState.playerCoins[0], 4);
+    assert.strictEqual(undoState.shopStock['カフェ'], 6);
+    assert.strictEqual(rt.buildOnlineSnapshot().undoState.playerCoins[0], 4);
+});
+
+runTest('gameAction buildCard は受信側の undoState を復元snapshot用に保持する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.getSocketHandlers().gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.getGame().players[0].coins = 4;
+
+    rt.getSocketHandlers().gameAction({
+        action: 'buildCard',
+        data: { cardName: 'カフェ' },
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: 'remote-build-1',
+    });
+
+    const undoState = rt.getUndoState();
+    assert.ok(undoState);
+    assert.strictEqual(undoState.playerCoins[0], 4);
+    assert.strictEqual(undoState.shopStock['カフェ'], 6);
+    assert.strictEqual(rt.buildOnlineSnapshot().undoState.playerCoins[0], 4);
+});
+
+runTest('sendAction は actionAccepted まで二重送信を止める', () => {
+    const rt = loadOnlineRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.setGame(game);
+    rt.initSocket();
+    vm.runInContext('isOnlineGame = true;', rt);
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    assert.strictEqual(rt.sendAction('nextTurn', {}), false);
+    assert.strictEqual(rt.getSocketEmits().length, 1);
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, true);
+
+    rt.getSocketHandlers().actionAccepted({ action: 'nextTurn', data: {} });
+
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+});
+
+runTest('sendAction は未ackアクションを復元用に保存し actionAccepted で消す', () => {
+    const rt = loadOnlineRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.setGame(game);
+    rt.initSocket();
+    rt.setOnlineState({
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const pending = rt._readPendingOutboundAction();
+    assert.strictEqual(pending.action, 'nextTurn');
+    assert.deepStrictEqual(Object.assign({}, pending.data), {});
+    assert.strictEqual(pending.playerIndex, 0);
+    assert.strictEqual(Number.isInteger(pending.seq), true);
+    assert.strictEqual(typeof pending.clientActionId, 'string');
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'gameAction').pop();
+    assert.strictEqual(emitted.payload.clientActionId, pending.clientActionId);
+
+    rt.getSocketHandlers().actionAccepted({ action: 'nextTurn', data: {}, playerIndex: 0 });
+
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
+});
+
+runTest('actionAccepted は clientActionId を復元ログへ保存する', () => {
+    const rt = loadOnlineRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.setGame(game);
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const pending = rt._readPendingOutboundAction();
+
+    rt.getSocketHandlers().actionAccepted({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: pending.clientActionId,
+    });
+
+    const actionLog = rt._readOnlineActionLog();
+    assert.strictEqual(actionLog.length, 1);
+    assert.strictEqual(actionLog[0].clientActionId, pending.clientActionId);
+});
+
+runTest('gameAction は clientActionId を受信側の復元ログへ保存する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.getSocketHandlers().gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+
+    rt.getSocketHandlers().gameAction({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: 'remote-action-1',
+    });
+
+    const actionLog = rt._readOnlineActionLog();
+    assert.strictEqual(actionLog.length, 1);
+    assert.strictEqual(actionLog[0].clientActionId, 'remote-action-1');
+});
+
+runTest('_tryRestoreRoom は未ackアクションを復元actionLogへ含める', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+    rt.setOnlineState({
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        isRoomHost: true,
+    }));
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'rollDice', data: { forceDice: 1 }, playerIndex: 0 }]));
+    rt.sendAction('nextTurn', {});
+
+    rt._tryRestoreRoom();
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 0);
+    assert.strictEqual(emitted.payload.actionLog.length, 2);
+    assert.strictEqual(emitted.payload.actionLog[1].action, 'nextTurn');
+    assert.strictEqual(emitted.payload.actionLog[1].playerIndex, 0);
+});
+
+runTest('ROOM_NOT_FOUND のホスト復元経路は未ackアクションを消さずに送る', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+    rt.setOnlineState({
+        isRoomHost: true,
+        isReconnectingOnline: false,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        isRoomHost: true,
+    }));
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([]));
+    rt.sendAction('nextTurn', {});
+    rt.setOnlineState({ isReconnectingOnline: true });
+
+    rt.handleAppError('ROOM_NOT_FOUND');
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 0);
+    assert.strictEqual(emitted.payload.actionLog.length, 1);
+    assert.strictEqual(emitted.payload.actionLog[0].action, 'nextTurn');
+    assert.strictEqual(rt._readPendingOutboundAction().action, 'nextTurn');
+});
+
+runTest('_tryRestoreRoom は同内容の過去ログがあっても未ackアクションを落とさない', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+    rt.setOnlineState({
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([
+        { action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 },
+    ]));
+    rt.sendAction('nextTurn', {});
+
+    rt._tryRestoreRoom();
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.actionLog.length, 2);
+    assert.strictEqual(emitted.payload.actionLog[1].action, 'nextTurn');
+    assert.strictEqual(typeof emitted.payload.actionLog[1].clientActionId, 'string');
+});
+
+runTest('_tryRestoreRoom は古い復元schemaを送信せず破棄する', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+    rt.setOnlineState({
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        hostPlayerIndex: 0,
+    }));
+
+    rt._tryRestoreRoom();
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.strictEqual(emitted, undefined);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart'), null);
+    assert.strictEqual(rt.elements.onlineStatus.textContent, '❌ 古い復元データのため再接続できません');
+});
+
+runTest('hostChanged 後のホスト復元payloadは新ホストindexを保存する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.roomJoined({ roomId: 'ROOM01', playerIndex: 1, reconnectToken: 'token-bob' });
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    });
+
+    handlers.hostChanged({ newHostPlayerIndex: 1 });
+    const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(storedGameStart.hostPlayerIndex, 1);
+
+    rt._tryRestoreRoom();
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.playerIndex, 1);
+    assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 1);
+});
+
+runTest('rejoinData は hostPlayerIndex 欠落時に非ホスト扱いへ倒す', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ isRoomHost: true });
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+    });
+
+    assert.strictEqual(rt.getOnlineState().isRoomHost, false);
 });
 
 runTest('initSocket gameStart はバージョン不一致時だけ警告ログを追加する', () => {
@@ -434,6 +1279,9 @@ runTest('restoreOnlineSnapshot は古いsnapshotでcardsが欠落しても落ち
     const g = rt.getGame();
     assert.strictEqual(g.players[0].coins, 5);
     assert.strictEqual(g.players[0].cards.length, beforeCards);
+    assert.strictEqual(g.players[0].landmarks['駅'], true);
+    assert.strictEqual(g.players[0].landmarks['ショッピングモール'], false);
+    assert.strictEqual(g.players[0].landmarks['空港'], false);
 });
 
 runTest('_readOnlineActionLog は不正形を空配列へ正規化する', () => {
@@ -466,6 +1314,68 @@ runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', (
     assert.strictEqual(snapshot.players[0].coins, 9);
 });
 
+runTest('_saveActionLog は未適用の受信actionをsnapshotのactionSeqに含めない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({ actionSeq: 0 }));
+    for (let i = 1; i <= 200; i++) {
+        rt._saveActionLog('nextTurn', {}, { seq: i, playerIndex: 0 });
+    }
+
+    rt._saveActionLog('buildLandmark', { name: '駅' }, { seq: 201, playerIndex: 0 });
+
+    const log = rt._readOnlineActionLog();
+    const snapshot = JSON.parse(rt.localStorage.getItem('onlineStateSnapshot'));
+    const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.strictEqual(snapshot.actionSeq, 200);
+    assert.strictEqual(log.length, 1);
+    assert.strictEqual(log[0].seq, 201);
+    assert.strictEqual(storedGameStart.actionSeq, 201);
+});
+
+runTest('_saveActionLog は適用済みactionの圧縮時に同じactionを二重保存しない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    const game = rt.getGame();
+    game.nextTurn();
+    for (let i = 0; i < 200; i++) {
+        rt._saveActionLog('rollDice', { forceDice: 1, tunaDice: null });
+    }
+    rt._saveActionLog('nextTurn', {}, { alreadyApplied: true });
+    const log = rt._readOnlineActionLog();
+    const snapshot = JSON.parse(rt.localStorage.getItem('onlineStateSnapshot'));
+    assert.strictEqual(log.length, 0);
+    assert.strictEqual(snapshot.currentPlayerIndex, game.currentPlayerIndex);
+    assert.strictEqual(snapshot.turnCount, game.turnCount);
+});
+
+runTest('buildOnlineSnapshot は建設後のUndo状態を保持する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    rt.setUndoState({
+        playerCoins: [4, 3],
+        playerCardNames: [['麦畑'], ['麦畑']],
+        playerDormantIndices: [[], []],
+        playerLandmarks: [Object.assign({}, rt.getGame().players[0].landmarks), Object.assign({}, rt.getGame().players[1].landmarks)],
+        playerItVenture: [0, 0],
+        playerHasYakusho: [true, true],
+        shopStock: Object.assign({}, rt.getShopStock()),
+        builtThisTurn: false,
+        log: [],
+    });
+
+    const snapshot = rt.buildOnlineSnapshot();
+
+    assert.ok(snapshot.undoState);
+    assert.deepStrictEqual(snapshot.undoState.playerCoins, [4, 3]);
+});
+
 runTest('handleAppError は再接続中にオンラインセッションを破棄して切断する', () => {
     const rt = loadOnlineRuntime();
     let disconnected = false;
@@ -479,6 +1389,33 @@ runTest('handleAppError は再接続中にオンラインセッションを破�
     assert.strictEqual(disconnected, true);
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
+});
+
+runTest('handleAppError は無効操作時にオンライン状態を再同期する', () => {
+    const rt = loadOnlineRuntime();
+    const emits = [];
+    rt.setOnlineState({
+        socket: { emit(name, payload) { emits.push({ name, payload }); } },
+    });
+    vm.runInContext(`
+        isOnlineGame = true;
+        myRoomId = 'ROOM01';
+        myOriginalPlayerIndex = 1;
+        myPlayerName = 'Alice';
+        reconnectToken = 'token-1';
+    `, rt);
+
+    rt.handleAppError('無効な操作です');
+
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(emits.length, 1);
+    assert.strictEqual(emits[0].name, 'rejoinRoom');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(emits[0].payload)), {
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token-1',
+    });
 });
 
 if (process.exitCode) {

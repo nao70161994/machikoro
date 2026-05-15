@@ -7,6 +7,7 @@ function loadStorageRuntime() {
     const elements = {
         resumeSection: makeElement(),
         onlineResumeSection: makeElement(),
+        onlineResumeDescription: makeElement(),
         titleScreen: makeElement(),
         gameScreen: makeElement(),
         playerCount: makeElement(),
@@ -164,12 +165,59 @@ function makeSavedGameState(overrides = {}) {
 runTest('storage updateResumeButton はローカルとオンラインの再開表示を切り替える', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('savedGame', '{"ok":true}');
-    rt.localStorage.setItem('onlineSession', '{"ok":true}');
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'room-1',
+        playerIndex: 0,
+        playerName: 'P1',
+        reconnectToken: 'token-1',
+    }));
 
     rt.updateResumeButton();
 
     assert.strictEqual(rt.elements.resumeSection.style.display, 'flex');
     assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'block');
+    assert.strictEqual(rt.elements.onlineResumeDescription.textContent, '🌐 P1 として room-1 に再接続できます');
+});
+
+runTest('storage updateResumeButton は壊れたオンライン再接続データを表示しない', () => {
+    const rt = loadStorageRuntime();
+    rt.elements.onlineResumeDescription.textContent = '🌐 P1 として room-1 に再接続できます';
+    rt.localStorage.setItem('onlineSession', '{broken');
+
+    rt.updateResumeButton();
+
+    assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'none');
+    assert.strictEqual(rt.elements.onlineResumeDescription.textContent, '🌐 オンラインゲームが中断されました');
+});
+
+runTest('storage updateResumeButton は型不正なオンライン再接続データを表示しない', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'room-1',
+        playerIndex: -1,
+        playerName: 'P1',
+        reconnectToken: 'token-1',
+    }));
+
+    rt.updateResumeButton();
+
+    assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'none');
+});
+
+runTest('storage reconnectOnline はオンライン再接続データの空白を正規化して送る', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: ' ROOM1 ',
+        playerIndex: 1,
+        playerName: ' P2 ',
+        reconnectToken: ' token-1 ',
+    }));
+
+    rt.reconnectOnline();
+
+    assert.strictEqual(rt.emits[0].payload.roomId, 'ROOM1');
+    assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
+    assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
 });
 
 runTest('storage deleteSavedGame は確認後に savedGame を削除する', () => {
@@ -263,13 +311,118 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
 
 runTest('storage resumeGame はCPU復元で共通ファクトリを使う', () => {
     const rt = loadStorageRuntime();
-    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState({
+        cpuSettings: [{ difficulty: 'expert' }, { difficulty: 'rl', rlModelId: 'fixed-model' }],
+    })));
 
     rt.resumeGame();
 
     assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.difficulty), ['expert', 'rl']);
     assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.options.playerCount), [2, 2]);
+    assert.deepStrictEqual(Array.from(rt.createdCpuPlayers[0].options.expertOpponentDifficulties), ['expert', 'rl']);
+    assert.strictEqual(rt.createdCpuPlayers[1].options.rlModelId, 'fixed-model');
     assert.strictEqual(rt.__test.getCpuPlayers()[1].createdByFactory, true);
+});
+
+runTest('storage resumeGame は旧保存データのcpuSettings欠落をnormal CPUとして復元する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState();
+    delete state.cpuSettings;
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.difficulty), ['normal']);
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), JSON.stringify(state));
+});
+
+runTest('storage resumeGame は短いcpuSettingsを人数分に補正して復元する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        players: [
+            { name: 'P1', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+            { name: 'P3', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+        ],
+        cpuSettings: ['strong'],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.deepStrictEqual(rt.createdCpuPlayers.map(entry => entry.difficulty), ['strong', 'normal', 'normal']);
+    assert.strictEqual(rt.__test.getCpuPlayers().length, 3);
+});
+
+runTest('storage resumeGame は旧保存データのshopStock/dormantIndices欠落を許容する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState();
+    delete state.shopStock;
+    delete state.pendingMover;
+    delete state.hadAmusementParkAtRoll;
+    delete state.players[1].dormantIndices;
+    delete state.players[1].itVentureCoins;
+    delete state.players[1].hasYakusho;
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getGame().players.length, 2);
+    assert.strictEqual(rt.__test.getGame().players[1].dormantCards.length, 0);
+    assert.strictEqual(rt.__test.getGame().players[1].itVentureCoins, 0);
+    assert.strictEqual(rt.__test.getGame().players[1].hasYakusho, true);
+    assert.notStrictEqual(rt.localStorage.getItem('savedGame'), null);
+});
+
+runTest('storage resumeGame は欠落ランドマークkeyを既定値で補完する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState();
+    state.players[0].landmarks = { '駅': true };
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getGame().players[0].landmarks['駅'], true);
+    assert.strictEqual(rt.__test.getGame().players[0].landmarks['ショッピングモール'], false);
+});
+
+runTest('storage resumeGame は無効化カード在庫を含む保存データを破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        enabledCardsList: ['麦畑'],
+        shopStock: { 麦畑: 6, パン屋: 1 },
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は重複休業indexを含む保存データを破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState();
+    state.players[0].cards = ['麦畑'];
+    state.players[0].dormantIndices = [0, 0];
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は小数コインを含む保存データを破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState();
+    state.players[0].coins = 3.5;
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
 runTest('storage resumeGame は5人以上の保存済み学習AIを学習AIとして復元する', () => {
@@ -347,6 +500,53 @@ runTest('storage doUndo はローカルで undoState を復元し送信しない
     assert.strictEqual(game.players[0].coins, 5);
     assert.deepStrictEqual(rt.sentActions, []);
     assert.strictEqual(rt.__test.getUndoState(), null);
+});
+
+runTest('storage doUndo は旧undoStateのlog欠落を空ログとして復元する', () => {
+    const rt = loadStorageRuntime();
+    const game = new rt.GameManager(2);
+    game.log = [{ type: 'system', message: 'before' }];
+    rt.__test.setGame(game);
+    rt.__test.setUndoState({
+        playerCoins: [5, 3],
+        playerCardNames: [[], []],
+        playerDormantIndices: [[], []],
+        playerLandmarks: [{}, {}],
+        playerItVenture: [0, 0],
+        playerHasYakusho: [true, true],
+        hadAmusementParkAtRoll: false,
+        shopStock: {},
+        builtThisTurn: false,
+    });
+
+    rt.doUndo();
+
+    assert.strictEqual(Array.isArray(game.log), true);
+    assert.strictEqual(game.log.length, 0);
+    assert.strictEqual(game.players[0].coins, 5);
+});
+
+runTest('storage doUndo は旧undoStateのplayerItVenture欠落を0として復元する', () => {
+    const rt = loadStorageRuntime();
+    const game = new rt.GameManager(2);
+    game.players[0].itVentureCoins = 4;
+    rt.__test.setGame(game);
+    rt.__test.setUndoState({
+        playerCoins: [5, 3],
+        playerCardNames: [[], []],
+        playerDormantIndices: [[], []],
+        playerLandmarks: [{}, {}],
+        playerHasYakusho: [true, true],
+        hadAmusementParkAtRoll: false,
+        shopStock: {},
+        log: [],
+    });
+
+    rt.doUndo();
+
+    assert.strictEqual(game.players[0].coins, 5);
+    assert.strictEqual(game.players[0].itVentureCoins, 0);
+    assert.strictEqual(game.builtThisTurn, false);
 });
 
 runTest('storage doUndo はオンラインで undoBuild を送信する', () => {

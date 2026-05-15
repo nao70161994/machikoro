@@ -30,7 +30,7 @@ function saveGameState() {
             turnCount: game.turnCount,
             hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
             shopStock: Object.assign({}, SHOP_STOCK),
-            cpuSettings: cpuPlayers.map(c => c ? { difficulty: c.difficulty } : null),
+            cpuSettings: cpuPlayers.map(c => c ? { difficulty: c.difficulty, rlModelId: c.modelId || null } : null),
             cpuSpeed,
             enabledCardsList: [...enabledCards],
             enabledLandmarksList: [...enabledLandmarks],
@@ -43,7 +43,38 @@ function updateResumeButton() {
     const localSection = document.getElementById('resumeSection');
     if (localSection) localSection.style.display = localStorage.getItem('savedGame') ? 'flex' : 'none';
     const onlineSection = document.getElementById('onlineResumeSection');
-    if (onlineSection) onlineSection.style.display = localStorage.getItem('onlineSession') ? 'block' : 'none';
+    const onlineDescription = document.getElementById('onlineResumeDescription');
+    const onlineSession = readOnlineSession();
+    if (onlineSection) onlineSection.style.display = onlineSession ? 'block' : 'none';
+    if (onlineDescription) {
+        onlineDescription.textContent = onlineSession
+            ? `🌐 ${onlineSession.playerName} として ${onlineSession.roomId} に再接続できます`
+            : '🌐 オンラインゲームが中断されました';
+    }
+}
+
+function readOnlineSession() {
+    try {
+        const raw = localStorage.getItem('onlineSession');
+        if (!raw) return null;
+        const session = JSON.parse(raw);
+        const roomId = typeof session.roomId === 'string' ? session.roomId.trim() : '';
+        const playerName = typeof session.playerName === 'string' ? session.playerName.trim() : '';
+        const reconnectToken = typeof session.reconnectToken === 'string' ? session.reconnectToken.trim() : '';
+        if (
+            !session ||
+            roomId === '' ||
+            !Number.isInteger(session.playerIndex) ||
+            session.playerIndex < 0 ||
+            playerName === '' ||
+            reconnectToken === ''
+        ) {
+            return null;
+        }
+        return Object.assign({}, session, { roomId, playerName, reconnectToken });
+    } catch(e) {
+        return null;
+    }
 }
 
 function deleteSavedGame() {
@@ -61,14 +92,18 @@ function deleteOnlineSession() {
 }
 
 function reconnectOnline() {
-    const raw = localStorage.getItem('onlineSession');
-    if (!raw) return;
-    try {
-        const session = JSON.parse(raw);
-        if (!session.roomId || !Number.isInteger(session.playerIndex) || !session.playerName || !session.reconnectToken) {
-            throw new Error('invalid online session');
+    const session = readOnlineSession();
+    if (!session) {
+        if (localStorage.getItem('onlineSession')) {
+            localStorage.removeItem('onlineSession');
+            updateResumeButton();
+            alert('再接続データの読み込みに失敗しました');
         }
+        return;
+    }
+    try {
         isReconnectingOnline = true;
+        if (typeof _clearRejoinRetry === 'function') _clearRejoinRetry();
         isRoomHost = session.isRoomHost || false;
         myPlayerName = session.playerName || '';
         myRoomId = session.roomId;
@@ -95,6 +130,9 @@ function resumeGame() {
     if (!raw) return;
     try {
         const state = JSON.parse(raw);
+        if (!isValidSavedGameState(state)) {
+            throw new Error('Invalid saved game');
+        }
         cpuScheduleToken++;
         cpuSpeed = state.cpuSpeed || 1500;
         if (state.enabledCardsList) enabledCards = new Set(state.enabledCardsList);
@@ -105,14 +143,14 @@ function resumeGame() {
         }
         game = new GameManager(state.players.length);
         game.enabledLandmarks = new Set(enabledLandmarks);
-        for (const [name, count] of Object.entries(state.shopStock)) SHOP_STOCK[name] = count;
+        for (const [name, count] of Object.entries(state.shopStock || {})) SHOP_STOCK[name] = count;
         state.players.forEach((ps, i) => {
             const p = game.players[i];
             p.name = ps.name;
             p.coins = ps.coins;
-            p.cards = ps.cards.map(name => createCardByName(name)).filter(Boolean);
-            p.dormantCards = ps.dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
-            p.landmarks = Object.assign({}, ps.landmarks);
+            p.cards = (Array.isArray(ps.cards) ? ps.cards : []).map(name => createCardByName(name)).filter(Boolean);
+            p.dormantCards = (Array.isArray(ps.dormantIndices) ? ps.dormantIndices : []).map(idx => p.cards[idx]).filter(Boolean);
+            p.landmarks = Object.assign({}, makeDefaultLandmarks(), p.landmarks, ps.landmarks);
             p.itVentureCoins = ps.itVentureCoins || 0;
             p.hasYakusho = ps.hasYakusho !== false;
         });
@@ -133,11 +171,19 @@ function resumeGame() {
         game.pendingTunaDice = state.pendingTunaDice || null;
         game.turnCount = state.turnCount || 0;
         game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
-        cpuPlayers = state.cpuSettings.map(s => {
+        const cpuSettings = normalizeSavedCpuSettings(state);
+        const opponentDifficulties = cpuSettings.map(s => s ? s.difficulty || "normal" : "human");
+        cpuPlayers = cpuSettings.map(s => {
             if (!s) return null;
+            const options = {
+                expertPurpose: "live",
+                playerCount: state.players.length,
+                expertOpponentDifficulties: opponentDifficulties,
+                rlModelId: s.rlModelId || s.modelId || null,
+            };
             return typeof createCpuPlayer === "function"
-                ? createCpuPlayer(s.difficulty, { expertPurpose: "live", playerCount: state.players.length })
-                : new CPU(s.difficulty, { expertPurpose: "live", playerCount: state.players.length });
+                ? createCpuPlayer(s.difficulty, options)
+                : new CPU(s.difficulty, options);
         });
         prevCoins = null;
         winSoundPlayed = false;
@@ -152,6 +198,113 @@ function resumeGame() {
         updateResumeButton();
         alert("セーブデータの読み込みに失敗しました");
     }
+}
+
+function normalizeSavedCpuSettings(state) {
+    const defaults = state.players.map((_, index) => index === 0 ? null : { difficulty: "normal" });
+    if (!Array.isArray(state.cpuSettings)) return defaults;
+    return state.players.map((_, index) => {
+        const setting = state.cpuSettings[index];
+        if (setting === undefined) return defaults[index];
+        if (!setting) return null;
+        if (typeof setting === "string") return { difficulty: setting };
+        return {
+            difficulty: setting.difficulty || "normal",
+            rlModelId: setting.rlModelId || setting.modelId || null,
+        };
+    });
+}
+
+function isPlainObject(value) {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasDuplicateValues(values) {
+    return new Set(values).size !== values.length;
+}
+
+function isKnownCardName(name) {
+    return !!createCardByName(name);
+}
+
+function isKnownLandmarkName(name) {
+    return Player.landmarkNames().includes(name);
+}
+
+function makeDefaultLandmarks() {
+    return Object.fromEntries(Player.landmarkNames().map(name => [name, false]));
+}
+
+function isValidSavedGameState(state) {
+    if (!isPlainObject(state)) return false;
+    if (!Array.isArray(state.players) || state.players.length < 2 || state.players.length > 10) return false;
+    if (!Number.isInteger(state.currentPlayerIndex) ||
+        state.currentPlayerIndex < 0 ||
+        state.currentPlayerIndex >= state.players.length) return false;
+    const phases = new Set(['roll', 'selectDice', 'rerollConfirm', 'harborChoice', 'pending', 'build']);
+    if (typeof state.phase !== 'string' || !phases.has(state.phase)) return false;
+    if (state.log != null && !Array.isArray(state.log)) return false;
+    for (const field of ['lastDiceResult', 'lastDice1', 'lastDice2', 'turnCount']) {
+        if (Object.prototype.hasOwnProperty.call(state, field) &&
+            (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+    }
+    for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
+        if (Object.prototype.hasOwnProperty.call(state, field) &&
+            (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+    }
+    for (const field of ['builtThisTurn', 'pendingIT', 'usedReroll', 'hadAmusementParkAtRoll']) {
+        if (Object.prototype.hasOwnProperty.call(state, field) &&
+            typeof state[field] !== 'boolean') return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(state, 'pendingTunaDice') &&
+        state.pendingTunaDice !== null &&
+        (!Array.isArray(state.pendingTunaDice) ||
+        state.pendingTunaDice.length !== 2 ||
+        state.pendingTunaDice.some(value => !Number.isInteger(value) || value < 1 || value > 6))) return false;
+    if (state.enabledLandmarksList != null &&
+        (!Array.isArray(state.enabledLandmarksList) ||
+        state.enabledLandmarksList.length === 0 ||
+        state.enabledLandmarksList.some(name => !isKnownLandmarkName(name)))) return false;
+    if (state.enabledCardsList != null &&
+        (!Array.isArray(state.enabledCardsList) ||
+        state.enabledCardsList.some(name => !isKnownCardName(name)))) return false;
+    for (const playerState of state.players) {
+        if (!isValidSavedPlayerState(playerState)) return false;
+    }
+    if (state.shopStock != null && !isValidSavedShopStock(state.shopStock, state.enabledCardsList)) return false;
+    return true;
+}
+
+function isValidSavedPlayerState(playerState) {
+    if (!isPlainObject(playerState)) return false;
+    if (typeof playerState.name !== 'string') return false;
+    if (!Number.isInteger(playerState.coins) || playerState.coins < 0) return false;
+    if (!Array.isArray(playerState.cards) || playerState.cards.some(name => !isKnownCardName(name))) return false;
+    const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
+    if (hasDuplicateValues(dormantIndices) ||
+        dormantIndices.some(idx => !Number.isInteger(idx) || idx < 0 || idx >= playerState.cards.length)) return false;
+    if (isPlainObject(playerState.landmarks)) {
+        for (const [name, built] of Object.entries(playerState.landmarks)) {
+            if (!isKnownLandmarkName(name) || typeof built !== 'boolean') return false;
+        }
+    } else if (playerState.landmarks != null) {
+        return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(playerState, 'itVentureCoins') &&
+        (!Number.isInteger(playerState.itVentureCoins) || playerState.itVentureCoins < 0)) return false;
+    if (Object.prototype.hasOwnProperty.call(playerState, 'hasYakusho') &&
+        typeof playerState.hasYakusho !== 'boolean') return false;
+    return true;
+}
+
+function isValidSavedShopStock(shopStock, enabledCardsList) {
+    if (!isPlainObject(shopStock)) return false;
+    const enabled = Array.isArray(enabledCardsList) ? new Set(enabledCardsList) : null;
+    for (const [name, count] of Object.entries(shopStock)) {
+        if (!isKnownCardName(name) || !Number.isInteger(count) || count < 0) return false;
+        if (enabled && !enabled.has(name) && count !== 0) return false;
+    }
+    return true;
 }
 
 function saveUndoState() {
@@ -175,13 +328,13 @@ function restoreUndoSnapshot(state) {
         p.coins = state.playerCoins[i];
         p.cards = state.playerCardNames[i].map(name => createCardByName(name)).filter(Boolean);
         p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
-        p.landmarks = Object.assign({}, state.playerLandmarks[i]);
-        p.itVentureCoins = state.playerItVenture[i];
+        p.landmarks = Object.assign({}, makeDefaultLandmarks(), p.landmarks, state.playerLandmarks[i]);
+        p.itVentureCoins = state.playerItVenture?.[i] ?? 0;
         p.hasYakusho = state.playerHasYakusho?.[i] !== false;
     });
     Object.assign(SHOP_STOCK, state.shopStock);
-    game.builtThisTurn = state.builtThisTurn;
-    game.log = [...state.log];
+    game.builtThisTurn = state.builtThisTurn === true;
+    game.log = Array.isArray(state.log) ? [...state.log] : [];
     game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
     undoState = null;
     prevCoins = null;
@@ -192,7 +345,10 @@ function doUndo() {
     if (!undoState) return;
     if (isOnlineGame && (!game || game.currentPlayerIndex !== myPlayerIndex)) return;
     const state = undoState;
-    if (isOnlineGame) sendAction('undoBuild', { state });
+    if (isOnlineGame) {
+        sendAction('undoBuild', { state });
+        return;
+    }
     restoreUndoSnapshot(state);
     render();
 }
