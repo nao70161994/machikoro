@@ -127,7 +127,7 @@ function getTutorialHints(current) {
     const affordableCards = CARDS.filter(card =>
         SHOP_STOCK[card.name] > 0 &&
         current.coins >= card.cost &&
-        !(card.color === "purple" && current.countCard(card.name) > 0)
+        !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
     ).sort((a, b) => a.cost - b.cost);
     const affordableLandmarks = Object.entries(current.landmarks)
         .filter(([name, built]) =>
@@ -466,7 +466,7 @@ function renderBuildMenu() {
     const cardHtml = visibleCards.map(card => {
         const stock = SHOP_STOCK[card.name];
         if (stock <= 0) return "";
-        const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCard(card.name) > 0);
+        const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
         return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${card.category}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${card.name}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button></div>`;
     }).join("");
     const landmarkHtml = Object.entries(current.landmarks).filter(([name]) => enabledLandmarks.has(name)).map(([name, built]) => {

@@ -5,6 +5,7 @@ const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const runtime = loadGameRuntime();
 const GameManager = runtime.GameManager;
 const createCardByName = runtime.createCardByName;
+const GAME_PHASES = runtime.GAME_PHASES;
 
 runTest('rollDice後にフェーズが適切に遷移する', () => {
     const normalGame = new GameManager(2);
@@ -28,19 +29,26 @@ runTest('1個振りの rollDice は lastDice1 に出目を保持する', () => {
 });
 
 runTest('rollRandomDieはwindow.cryptoがあればそれを優先する', () => {
-    runtime.window = {
-        crypto: {
-            getRandomValues(buffer) {
-                buffer[0] = 5;
-                return buffer;
+    const originalWindow = runtime.window;
+    const originalRandom = runtime.Math.random;
+    try {
+        runtime.window = {
+            crypto: {
+                getRandomValues(buffer) {
+                    buffer[0] = 5;
+                    return buffer;
+                },
             },
-        },
-    };
-    runtime.Math.random = () => {
-        throw new Error('Math.random should not be used when crypto is available');
-    };
+        };
+        runtime.Math.random = () => {
+            throw new Error('Math.random should not be used when crypto is available');
+        };
 
-    assert.strictEqual(runtime.rollRandomDie(), 6);
+        assert.strictEqual(runtime.rollRandomDie(), 6);
+    } finally {
+        runtime.window = originalWindow;
+        runtime.Math.random = originalRandom;
+    }
 });
 
 runTest('改装屋のpendingRenovationがランドマーク状況に応じて変化する', () => {
@@ -72,6 +80,20 @@ runTest('buildCardが所持金不足と紫カード重複を拒否する', () =>
     assert.strictEqual(duplicateGame.currentPlayer().coins, 20);
 });
 
+runTest('休業中の大施設も重複建設できない', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stadium = createCardByName('スタジアム');
+    current.coins = 20;
+    current.addCard(stadium);
+    current.makeDormant(stadium);
+
+    assert.strictEqual(current.countCard('スタジアム'), 0);
+    assert.strictEqual(game.buildCard(createCardByName('スタジアム')), false);
+    assert.strictEqual(current.cards.filter(c => c.name === 'スタジアム').length, 1);
+    assert.strictEqual(current.coins, 20);
+});
+
 runTest('nextTurnでpendingRenovationがリセットされる', () => {
     const game = new GameManager(2);
     game.phase = 'build';
@@ -98,6 +120,8 @@ runTest('引越し屋とビジネスセンターがカード単位で休業状�
     moverGame.players[1].cards = [];
     moverGame.players[1].dormantCards = [];
     moverGame.currentPlayer().makeDormant(cafeB);
+    moverGame.phase = GAME_PHASES.PENDING;
+    moverGame.pendingMover = 1;
     moverGame.resolveMover(1, 1);
     assert.strictEqual(moverGame.players[1].cards.length, 1);
     assert.strictEqual(moverGame.players[1].cards[0], cafeB);
@@ -113,6 +137,8 @@ runTest('引越し屋とビジネスセンターがカード単位で休業状�
     businessGame.currentPlayer().dormantCards = [];
     businessGame.players[1].dormantCards = [];
     businessGame.currentPlayer().makeDormant(bakeryB);
+    businessGame.phase = GAME_PHASES.PENDING;
+    businessGame.pendingBusiness = 1;
     businessGame.resolveBusiness(1, 1, 0);
     assert.strictEqual(businessGame.players[1].cards.includes(bakeryB), true);
     assert.strictEqual(businessGame.players[1].isDormant(bakeryB), true);
@@ -128,12 +154,39 @@ runTest('清掃業は同名カードを全て休業にする', () => {
     game.currentPlayer().dormantCards = [];
     game.players[1].cards = [cafeB];
     game.players[1].dormantCards = [];
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
 
     game.resolveCleaning('カフェ');
 
     assert.strictEqual(game.currentPlayer().isDormant(cafeA), true);
     assert.strictEqual(game.players[1].isDormant(cafeB), true);
     assert.strictEqual(game.currentPlayer().isDormant(family), false);
+});
+
+runTest('清掃業は大施設を対象にできない', () => {
+    const game = new GameManager(2);
+    const stadium = createCardByName('スタジアム');
+    game.players[1].cards = [stadium];
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+
+    const resolved = game.resolveCleaning('スタジアム');
+
+    assert.strictEqual(resolved, false);
+    assert.strictEqual(game.players[1].isDormant(stadium), false);
+    assert.strictEqual(game.pendingCleaning, 1);
+});
+
+runTest('清掃業は休業可能な施設がなければpendingに入らない', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().cards = [createCardByName('清掃業')];
+    game.players[1].cards = [createCardByName('スタジアム')];
+
+    game.rollDice(8);
+
+    assert.strictEqual(game.pendingCleaning, 0);
+    assert.notStrictEqual(game.phase, GAME_PHASES.PENDING);
 });
 
 runTest('ワイナリーは発動したカードだけ休業する', () => {
@@ -148,6 +201,19 @@ runTest('ワイナリーは発動したカードだけ休業する', () => {
     game.rollDice(9);
 
     assert.strictEqual(game.currentPlayer().isDormant(wineryA), false);
+    assert.strictEqual(game.currentPlayer().isDormant(wineryB), true);
+});
+
+runTest('複数ワイナリーが同時発動しても同じ出目中に休業解除されない', () => {
+    const game = new GameManager(2);
+    const grape = createCardByName('ブドウ園');
+    const wineryA = createCardByName('ワイナリー');
+    const wineryB = createCardByName('ワイナリー');
+    game.currentPlayer().cards = [grape, wineryA, wineryB];
+
+    game.rollDice(9);
+
+    assert.strictEqual(game.currentPlayer().isDormant(wineryA), true);
     assert.strictEqual(game.currentPlayer().isDormant(wineryB), true);
 });
 
@@ -256,6 +322,30 @@ runTest('テレビ局はresolveTVで指定プレイヤーから最大5コイン�
     assert.strictEqual(game2.players[1].coins, 0);
 });
 
+runTest('pending解決は対応pendingが無ければ副作用を出さない', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.BUILD;
+    game.players[0].coins = 3;
+    game.players[1].coins = 5;
+
+    assert.strictEqual(game.resolveTV(1), false);
+    assert.strictEqual(game.players[0].coins, 3);
+    assert.strictEqual(game.players[1].coins, 5);
+});
+
+runTest('build/nextTurn は BUILD フェーズ以外では副作用を出さない', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 20;
+
+    assert.strictEqual(game.buildCard(createCardByName('森林')), false);
+    assert.strictEqual(current.countCard('森林'), 0);
+    assert.strictEqual(game.buildLandmark('駅'), false);
+    assert.strictEqual(current.landmarks['駅'], false);
+    assert.strictEqual(game.nextTurn(), false);
+    assert.strictEqual(game.currentPlayerIndex, 0);
+});
+
 runTest('ITベンチャーはresolveIT(true)で積立、false でスキップ', () => {
     // resolveIT は _doNextTurn() を呼ぶのでターンが移る → players[0] で直接確認
     const game = new GameManager(2);
@@ -263,6 +353,7 @@ runTest('ITベンチャーはresolveIT(true)で積立、false でスキップ', 
     const p0 = game.players[0];
     p0.coins = 5;
     p0.itVentureCoins = 2;
+    game.phase = GAME_PHASES.PENDING;
 
     game.resolveIT(true);
 
@@ -272,6 +363,7 @@ runTest('ITベンチャーはresolveIT(true)で積立、false でスキップ', 
 
     const game2 = new GameManager(2);
     game2.pendingIT = true;
+    game2.phase = GAME_PHASES.PENDING;
     const p0b = game2.players[0];
     p0b.coins = 5;
     p0b.itVentureCoins = 1;
@@ -407,6 +499,16 @@ runTest('駅+港 2個振り sum≥10 → harborChoice → resolveHarbor でフ�
     game3.rollDice();
     game3.selectDiceCount(true, 3, 4); // sum=7
     assert.strictEqual(game3.phase, 'build');
+});
+
+runTest('resolveHarbor は harborChoice 以外では副作用を出さない', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.BUILD;
+    game.lastDiceResult = 10;
+
+    assert.strictEqual(game.resolveHarbor(true), false);
+    assert.strictEqual(game.lastDiceResult, 10);
+    assert.strictEqual(game.phase, GAME_PHASES.BUILD);
 });
 
 runTest('駅+電波塔+港の3段フェーズ遷移が正しく動く', () => {
@@ -565,10 +667,38 @@ runTest('貸金業は5か6が出ると枚数×2コイン支払う', () => {
     assert.strictEqual(p0b.coins, 10);
 });
 
+runTest('休業中の貸金業は復帰した同じ出目では支払わない', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    const loan = createCardByName('貸金業');
+    p0.cards = [loan];
+    p0.dormantCards = [];
+    p0.makeDormant(loan);
+    p0.coins = 10;
+
+    game.rollDice(5);
+
+    assert.strictEqual(p0.isDormant(loan), false);
+    assert.strictEqual(p0.coins, 10);
+});
+
+runTest('ビジネスセンターは合法交換がなければpendingに入らない', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('ビジネスセンター')];
+    game.players[1].cards = [createCardByName('テレビ局')];
+
+    game.rollDice(6);
+
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.strictEqual(game.phase, GAME_PHASES.BUILD);
+});
+
 // ===== buildCard / buildLandmark =====
 
 runTest('buildCardが成功するとコインが減りカードが追加される', () => {
     const game = new GameManager(2);
+    game.phase = GAME_PHASES.BUILD;
     const p0 = game.currentPlayer();
     p0.coins = 10;
     const result = game.buildCard(createCardByName('森林')); // cost 3
@@ -579,6 +709,7 @@ runTest('buildCardが成功するとコインが減りカードが追加され�
     assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('森林')));
     // 貸金業はcost 0で建設後+5コイン付与
     const game2 = new GameManager(2);
+    game2.phase = GAME_PHASES.BUILD;
     game2.currentPlayer().coins = 10;
     game2.buildCard(createCardByName('貸金業')); // cost 0, +5
     assert.strictEqual(game2.currentPlayer().coins, 15);
@@ -586,6 +717,7 @@ runTest('buildCardが成功するとコインが減りカードが追加され�
 
 runTest('buildLandmarkが成功するとコインが減りランドマークが建設される', () => {
     const game = new GameManager(2);
+    game.phase = GAME_PHASES.BUILD;
     const p0 = game.currentPlayer();
     p0.coins = 10;
     const result = game.buildLandmark('駅'); // cost 4
@@ -596,6 +728,7 @@ runTest('buildLandmarkが成功するとコインが減りランドマークが�
     assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('駅')));
     // 二重建設は拒否
     const game2 = new GameManager(2);
+    game2.phase = GAME_PHASES.BUILD;
     game2.currentPlayer().coins = 20;
     game2.currentPlayer().landmarks['駅'] = true;
     assert.strictEqual(game2.buildLandmark('駅'), false);

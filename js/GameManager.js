@@ -81,6 +81,20 @@ class GameManager {
         return player.cards.find(c => c.name === ref && c.category !== CARD_CATEGORIES.MAJOR) || null;
     }
 
+    _hasBusinessExchange(currentPlayerIndex) {
+        const current = this.players[currentPlayerIndex];
+        if (!current || current.getMinorCards().length === 0) return false;
+        return this.players.some((player, index) =>
+            index !== currentPlayerIndex && player.getMinorCards().length > 0
+        );
+    }
+
+    _hasCleaningTarget() {
+        return this.players.some(player =>
+            player.cards.some(card => card.category !== CARD_CATEGORIES.MAJOR && !player.isDormant(card))
+        );
+    }
+
     rollDice(forceDice = null, tunaDice = null) {
         if (this.phase !== GAME_PHASES.ROLL) return;
         if (this.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
@@ -163,6 +177,7 @@ class GameManager {
     }
 
     resolveHarbor(useBonus, tunaDice = null) {
+        if (this.phase !== GAME_PHASES.HARBOR_CHOICE) return false;
         if (useBonus) {
             this.lastDiceResult += 2;
             this.addLog(LOG_TYPES.DICE, `⚓ 港効果+2 → ${this.lastDiceResult}`);
@@ -170,6 +185,7 @@ class GameManager {
             this.addLog(LOG_TYPES.DICE, `→ そのまま ${this.lastDiceResult} を使用`);
         }
         this.processIncome(tunaDice || this.pendingTunaDice);
+        return true;
     }
 
     // 緑カードの収入額を計算する共有メソッド。
@@ -327,8 +343,6 @@ class GameManager {
 
             // 副作用を持つカードは先に処理して continue
             if (card.effect === CARD_EFFECTS.WINERY) {
-                const dormantWinery = current.dormantCards.find(c => c.name === "ワイナリー");
-                if (dormantWinery) current.revive(dormantWinery);
                 const amount = GameManager.calcCardIncome(card, current, this);
                 if (amount > 0) {
                     current.coins += amount;
@@ -365,7 +379,11 @@ class GameManager {
 
         // 貸金業：自分のターンに5か6が出たら枚数×2コイン支払い
         if (dice === 5 || dice === 6) {
-            const loanCount = current.cards.filter(c => c.effect === CARD_EFFECTS.LOAN).length;
+            const loanCount = current.cards.filter(c =>
+                c.effect === CARD_EFFECTS.LOAN &&
+                !current.isDormant(c) &&
+                !revivedCards.has(c)
+            ).length;
             if (loanCount > 0) {
                 const pay = Math.min(loanCount * 2, current.coins);
                 current.coins -= pay;
@@ -395,8 +413,12 @@ class GameManager {
                 this.pendingTV++;
                 this.addLog(LOG_TYPES.SPECIAL, `📺 テレビ局発動 → 対象プレイヤーを選んでください`);
             } else if (card.effect === CARD_EFFECTS.BUSINESS) {
-                this.pendingBusiness++;
-                this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
+                if (this._hasBusinessExchange(ci)) {
+                    this.pendingBusiness++;
+                    this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
+                } else {
+                    this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター：交換できる施設がないため不発`);
+                }
             } else if (card.effect === CARD_EFFECTS.PUBLISHER) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
@@ -424,8 +446,12 @@ class GameManager {
                 current.coins += total;
                 this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.CLEANING) {
-                this.pendingCleaning++;
-                this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にする施設を選んでください`);
+                if (this._hasCleaningTarget()) {
+                    this.pendingCleaning++;
+                    this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にする施設を選んでください`);
+                } else {
+                    this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にできる施設がありません`);
+                }
             } else if (card.effect === CARD_EFFECTS.ITSTARTUP) {
                 let total = 0;
                 for (let i = 0; i < this.players.length; i++) {
@@ -448,11 +474,12 @@ class GameManager {
     }
 
     resolveTV(targetIndex) {
+        if (this.phase !== GAME_PHASES.PENDING || this.pendingTV <= 0) return false;
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) {
             this.addLog(LOG_TYPES.ERROR, `❌ 対象プレイヤーを選び直してください`);
-            return;
+            return false;
         }
         const steal = Math.min(5, target.coins);
         target.coins -= steal;
@@ -460,15 +487,17 @@ class GameManager {
         this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${steal}コイン奪いました`);
         this.pendingTV--;
         this._checkPending();
+        return true;
     }
 
     resolveBusiness(myCardRef, targetIndex, theirCardRef) {
+        if (this.phase !== GAME_PHASES.PENDING || this.pendingBusiness <= 0) return false;
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
-        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 交換相手を選び直してください`); return; }
+        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 交換相手を選び直してください`); return false; }
         const myCard = this._resolveCardRef(current, myCardRef);
         const theirCard = this._resolveCardRef(target, theirCardRef);
-        if (!myCard || !theirCard) { this.addLog(LOG_TYPES.ERROR, `❌ 交換できない施設です`); return; }
+        if (!myCard || !theirCard) { this.addLog(LOG_TYPES.ERROR, `❌ 交換できない施設です`); return false; }
         const myCardWasDormant = current.isDormant(myCard);
         const theirCardWasDormant = target.isDormant(theirCard);
         current.revive(myCard);
@@ -482,14 +511,18 @@ class GameManager {
         this.addLog(LOG_TYPES.SPECIAL, `🔄 ${myCard.name} ⇔ ${target.name}の${theirCard.name} を交換しました`);
         this.pendingBusiness--;
         this._checkPending();
+        return true;
     }
 
     resolveCleaning(cardName) {
+        if (this.phase !== GAME_PHASES.PENDING || this.pendingCleaning <= 0) return false;
+        const targetCard = createCardByName(cardName);
+        if (!targetCard || targetCard.category === CARD_CATEGORIES.MAJOR) return false;
         const current = this.currentPlayer();
         let count = 0;
         for (const p of this.players) {
             for (const card of p.cards) {
-                if (card.name === cardName && !p.isDormant(card)) {
+                if (card.name === cardName && card.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(card)) {
                     p.makeDormant(card);
                     count++;
                 }
@@ -499,14 +532,16 @@ class GameManager {
         this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${count}軒を休業 → +${count}コイン`);
         this.pendingCleaning--;
         this._checkPending();
+        return true;
     }
 
     resolveMover(myCardRef, targetIndex) {
+        if (this.phase !== GAME_PHASES.PENDING || this.pendingMover <= 0) return false;
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
-        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 渡す相手を選び直してください`); return; }
+        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 渡す相手を選び直してください`); return false; }
         const myCard = this._resolveCardRef(current, myCardRef);
-        if (!myCard) { this.addLog(LOG_TYPES.ERROR, `❌ 渡せない施設です`); return; }
+        if (!myCard) { this.addLog(LOG_TYPES.ERROR, `❌ 渡せない施設です`); return false; }
         const myCardWasDormant = current.isDormant(myCard);
         current.revive(myCard);
         current.cards.splice(current.cards.indexOf(myCard), 1);
@@ -516,13 +551,15 @@ class GameManager {
         this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
         this.pendingMover--;
         this._checkPending();
+        return true;
     }
 
     resolveRenovation(landmarkName) {
+        if (this.phase !== GAME_PHASES.PENDING || this.pendingRenovation <= 0) return false;
         const current = this.currentPlayer();
         if (!current.landmarks[landmarkName]) {
             this.addLog(LOG_TYPES.ERROR, `❌ そのランドマークは建設されていません`);
-            return;
+            return false;
         }
         current.landmarks[landmarkName] = false;
         current.coins += 8;
@@ -539,6 +576,7 @@ class GameManager {
         }
 
         this._checkPending();
+        return true;
     }
 
     _checkPending() {
@@ -551,6 +589,7 @@ class GameManager {
 
     // ITベンチャー：任意で1コイン消費して積立
     resolveIT(doSave) {
+        if (this.phase !== GAME_PHASES.PENDING || !this.pendingIT) return false;
         const current = this.currentPlayer();
         if (doSave) {
             if (current.coins < 1) {
@@ -565,13 +604,15 @@ class GameManager {
         }
         this.pendingIT = false;
         this._doNextTurn();
+        return true;
     }
 
     buildCard(card) {
+        if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今は建設できません`); return false; }
         if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
         const current = this.currentPlayer();
         if (current.coins < card.cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
-        if (card.color === "purple" && current.countCard(card.name) > 0) {
+        if (card.color === "purple" && current.countCardIncludingDormant(card.name) > 0) {
             this.addLog(LOG_TYPES.ERROR, `❌ 大施設は1枚しか持てません`); return false;
         }
         current.coins -= card.cost;
@@ -586,6 +627,7 @@ class GameManager {
     }
 
     buildLandmark(name) {
+        if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今は建設できません`); return false; }
         if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
         const current = this.currentPlayer();
         const cost = Player.landmarkCost(name);
@@ -600,6 +642,7 @@ class GameManager {
     }
 
     nextTurn() {
+        if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今はターン終了できません`); return false; }
         const current = this.currentPlayer();
         if (!this.builtThisTurn && current.landmarks[LANDMARK_NAMES.AIRPORT]) {
             current.coins += 10;
@@ -611,9 +654,10 @@ class GameManager {
             this.pendingIT = true;
             this.phase = GAME_PHASES.PENDING;
             this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー：1コイン積立しますか？（現在${current.itVentureCoins}コイン積立中）`);
-            return;
+            return true;
         }
         this._doNextTurn();
+        return true;
     }
 
     _doNextTurn() {

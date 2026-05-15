@@ -12,6 +12,20 @@ const CARD_EFFECTS = runtime.CARD_EFFECTS;
 const CARD_CATEGORIES = runtime.CARD_CATEGORIES;
 const LANDMARK_NAMES = runtime.LANDMARK_NAMES;
 
+runTest('_runSimulationStep は pendingIT を PENDING フェーズで解決する', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingIT = true;
+    game.currentPlayer().coins = 3;
+
+    cpu._runSimulationStep(game, cpu, {}, () => 0.5);
+
+    assert.strictEqual(game.pendingIT, false);
+    assert.strictEqual(game.phase, 'roll');
+    assert.strictEqual(game.currentPlayerIndex, 1);
+});
+
 // ===== evalCard =====
 
 runTest('evalCard: NORMALカードはincome値をそのまま返す', () => {
@@ -621,6 +635,21 @@ runTest('chooseDiceCount: expert v2 simple は港込みの高出目期待値を�
     assert.strictEqual(typeof cpu.chooseDiceCount(game), 'boolean');
 });
 
+runTest('chooseDiceCount: expert v2 simple は strongCrowdThreshold ならstrong多人数で2個振りにしきい値を要求する', () => {
+    const cpu = new CPU("expert", {
+        expertPreset: "v2simple",
+        expertDiceMode: "strongCrowdThreshold",
+        expertOpponentDifficulties: ["expert", "strong", "strong", "normal"],
+    });
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('サンマ漁船')];
+    current.dormantCards = [];
+
+    assert.strictEqual(cpu.chooseDiceCount(game), false);
+});
+
 runTest('chooseDiceCount: expert v2 simple は random mode なら駅ありでランダムに選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple", expertDiceMode: "random" });
     const game = new GameManager(2);
@@ -761,6 +790,16 @@ runTest('chooseTVTarget: expert v2 simple は奪取額をランドマーク数�
     assert.strictEqual(cpu.chooseTVTarget(game), 2);
 });
 
+runTest('chooseTVTarget: expert v2 simple は denial mode ならランドマーク阻止を加味する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertTvMode: "denial" });
+    const game = new GameManager(3);
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION]);
+    game.players[1].coins = Player.landmarkCost(LANDMARK_NAMES.STATION);
+    game.players[2].coins = 5;
+    game.players[2].landmarks[LANDMARK_NAMES.STATION] = true;
+    assert.strictEqual(cpu.chooseTVTarget(game), 1);
+});
+
 runTest('chooseTVTarget: expert v2 simple は random mode なら合法対象からランダムに選ぶ', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple", expertTvMode: "random" });
     const game = new GameManager(3);
@@ -773,6 +812,14 @@ runTest('chooseTVTarget: expert v2 simple は random mode なら合法対象か�
     } finally {
         runtime.Math.random = originalRandom;
     }
+});
+
+runTest('chooseTVTarget: expert v2 simple は全相手0コインでも合法対象を返す', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(3);
+    game.players[1].coins = 0;
+    game.players[2].coins = 0;
+    assert.strictEqual(cpu.chooseTVTarget(game), 1);
 });
 
 runTest('chooseBusinessMove: expert v2 simple は一番いらない自分カードと一番欲しい相手カードを選ぶ', () => {
@@ -1211,6 +1258,33 @@ runTest('chooseHarbor: expert v2 simple は+2後の結果価値を比較する',
     current.dormantCards = [];
     current.landmarks[LANDMARK_NAMES.HARBOR] = true;
     assert.strictEqual(cpu.chooseHarbor(game), true);
+});
+
+runTest('chooseHarbor: expert v2 simple は opt-in red risk で危険な+2を避ける', () => {
+    const normalCpu = new CPU("expert", { expertPreset: "v2simple" });
+    const riskCpu = new CPU("expert", {
+        expertPreset: "v2simple",
+        expertRollRiskMode: "red",
+        expertRollRedRiskWeight: 1,
+    });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const opponent = game.players[1];
+
+    current.coins = 5;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.cards = [createCardByName('マグロ漁船')];
+    current.dormantCards = [];
+    opponent.cards = [createCardByName('会員制BAR')];
+    opponent.dormantCards = [];
+    game.lastDiceResult = 10;
+    game.lastDice1 = 4;
+    game.lastDice2 = 6;
+
+    assert.strictEqual(normalCpu.chooseHarbor(game), true);
+    assert.strictEqual(riskCpu.chooseHarbor(game), false);
 });
 
 runTest('chooseHarbor: expert v2 simple は random mode ならランダムで選ぶ', () => {
@@ -2844,12 +2918,118 @@ runTest('buildExpert: 4人戦expertは中盤以降に港をカードより優先
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
 });
 
-runTest('buildExpert: expert v2 simple は買えるランドマークから緊急度の高いものを選ぶ', () => {
+runTest('buildExpert: expert v2 simple は買えるランドマークをカードより優先する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
     const stock = {};
-    for (const card of CARDS) stock[card.name] = 6;
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['麦畑'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.HARBOR]);
+    current.coins = Math.max(
+        Player.landmarkCost(LANDMARK_NAMES.STATION),
+        Player.landmarkCost(LANDMARK_NAMES.HARBOR)
+    );
+    current.cards = [];
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
+    assert.strictEqual(current.countCard('麦畑'), 0);
+});
+
+runTest('buildExpert: expert v2 simple は港より明確に高EVなカードを選べる', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['ワイナリー'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.HARBOR,
+        LANDMARK_NAMES.AMUSEMENT_PARK,
+        LANDMARK_NAMES.RADIO_TOWER,
+        LANDMARK_NAMES.AIRPORT,
+    ]);
+    current.coins = 80;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.cards = [createCardByName('マグロ漁船'), createCardByName('寿司屋')];
+    for (let i = 0; i < 40; i++) current.cards.push(createCardByName('ブドウ園'));
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.countCard('ワイナリー'), 1);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], false);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK], false);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.RADIO_TOWER], false);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.AIRPORT], false);
+});
+
+runTest('buildExpert: expert v2 simple は港とモール以外なら高EVカードよりランドマークを優先する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['ワイナリー'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.AMUSEMENT_PARK,
+    ]);
+    current.coins = 80;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.cards = [];
+    for (let i = 0; i < 40; i++) current.cards.push(createCardByName('ブドウ園'));
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.countCard('ワイナリー'), 0);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK], true);
+});
+
+runTest('buildExpert: expert v2 simple は残り3ランドマーク以下なら港より高EVカードがあってもランドマークを優先する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['ワイナリー'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([
+        LANDMARK_NAMES.HARBOR,
+        LANDMARK_NAMES.AMUSEMENT_PARK,
+        LANDMARK_NAMES.AIRPORT,
+    ]);
+    current.coins = 80;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    current.cards = [createCardByName('マグロ漁船'), createCardByName('寿司屋')];
+    for (let i = 0; i < 40; i++) current.cards.push(createCardByName('ブドウ園'));
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.countCard('ワイナリー'), 0);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
+});
+
+runTest('buildExpert: expert v2 simple は買えるランドマークが複数ならランドマークEVで選ぶ', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
 
     game.phase = runtime.GAME_PHASES.BUILD;
     game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION, LANDMARK_NAMES.HARBOR]);
@@ -2857,13 +3037,33 @@ runTest('buildExpert: expert v2 simple は買えるランドマークから緊�
         Player.landmarkCost(LANDMARK_NAMES.STATION),
         Player.landmarkCost(LANDMARK_NAMES.HARBOR)
     );
-    current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場'), createCardByName('チーズ工場')];
+    current.cards = [createCardByName('牧場'), createCardByName('牧場'), createCardByName('牧場')];
     current.dormantCards = [];
 
     cpu.buildExpert(game, stock);
 
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], true);
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], false);
+    assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('buildExpert: expert v2 simple のランドマークEVは港関連カードがあれば港を上げる', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.HARBOR, LANDMARK_NAMES.AIRPORT]);
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.AIRPORT);
+    current.cards = [createCardByName('マグロ漁船'), createCardByName('寿司屋')];
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
+    assert.strictEqual(current.landmarks[LANDMARK_NAMES.AIRPORT], false);
 });
 
 runTest('buildExpert: expert v2 simple は random mode だと選択候補からランダムに選ぶ', () => {
@@ -2908,6 +3108,27 @@ runTest('buildExpert: expert v2 simple はランドマークが買えないと�
 
     assert.strictEqual(current.countCard('チーズ工場'), 1);
     assert.strictEqual(game.builtThisTurn, true);
+});
+
+runTest('buildExpert: expert v2 simple は airport skip mode なら空港所持かつランドマーク不可で建設しない', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple", expertAirportSkipMode: "whenNoLandmark" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['麦畑'] = 1;
+
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.AIRPORT]);
+    current.landmarks[LANDMARK_NAMES.AIRPORT] = true;
+    current.coins = 5;
+    current.cards = [];
+    current.dormantCards = [];
+
+    cpu.buildExpert(game, stock);
+
+    assert.strictEqual(current.countCard('麦畑'), 0);
+    assert.strictEqual(game.builtThisTurn, false);
 });
 
 runTest('chooseITInvest: expert v2 simple は常に積立する', () => {

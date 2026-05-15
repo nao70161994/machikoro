@@ -30,6 +30,10 @@ class Player {
         return this.cards.filter(c => c.name === name && !this.isDormant(c)).length;
     }
 
+    countCardIncludingDormant(name) {
+        return this.cards.filter(c => c.name === name).length;
+    }
+
     // 休業中かどうか
     isDormant(card) {
         return this.dormantCards.includes(card);
