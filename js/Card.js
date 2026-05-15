@@ -112,7 +112,7 @@ const CARD_EFFECT_METADATA = Object.freeze({
     [CARD_EFFECTS.WINERY]:        { timing: "income", targetScope: "self",      cpuKind: "comboIncome", sideEffect: "dormantSelf" },
     [CARD_EFFECTS.MOVER]:         { timing: "pending", targetScope: "opponent",  cpuKind: "interactive" },
     [CARD_EFFECTS.DRINKFACTORY]:  { timing: "income", targetScope: "self",      cpuKind: "comboIncome" },
-    [CARD_EFFECTS.LOAN]:          { timing: "build",  targetScope: "self",      cpuKind: "upkeep" },
+    [CARD_EFFECTS.LOAN]:          { timing: "build",  targetScope: "self",      cpuKind: "upkeep", triggers: Object.freeze(["onBuild", "afterIncome"]) },
     [CARD_EFFECTS.RENOVATION]:    { timing: "pending", targetScope: "self",      cpuKind: "interactive" },
     [CARD_EFFECTS.HARBOR]:        { timing: "income", targetScope: "self",      cpuKind: "conditionalIncome", requires: "harbor" },
     [CARD_EFFECTS.HARBOR_RED]:    { timing: "income", targetScope: "current",   cpuKind: "conditionalSteal", requires: "harbor" },
@@ -126,7 +126,7 @@ const CARD_EFFECT_METADATA = Object.freeze({
     [CARD_EFFECTS.PUBLISHER]:     { timing: "income", targetScope: "opponents", cpuKind: "steal" },
     [CARD_EFFECTS.TAXOFFICE]:     { timing: "income", targetScope: "opponents", cpuKind: "steal" },
     [CARD_EFFECTS.CLEANING]:      { timing: "pending", targetScope: "all",       cpuKind: "interactive" },
-    [CARD_EFFECTS.ITSTARTUP]:     { timing: "turnEnd", targetScope: "opponents", cpuKind: "interactive" },
+    [CARD_EFFECTS.ITSTARTUP]:     { timing: "turnEnd", targetScope: "opponents", cpuKind: "interactive", triggers: Object.freeze(["afterIncome", "turnEndPrompt"]) },
     [CARD_EFFECTS.PARK]:          { timing: "income", targetScope: "all",       cpuKind: "redistribute" },
 });
 

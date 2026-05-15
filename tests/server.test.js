@@ -738,6 +738,18 @@ runTest('validateGameAction は replay 不能な nextTurn payload を拒否す�
     assert.strictEqual(valid.ok, true);
 });
 
+runTest('validateActionPayloadForState は payload 判定専用で phase gate は validateGameAction 側に残す', () => {
+    const room = makeRoom();
+    const runtime = loadGameRuntime();
+    const game = new runtime.GameManager(2);
+    const shopStock = { 麦畑: 6, パン屋: 6, カフェ: 6, ビジネスセンター: 2, 引越し屋: 6 };
+    game.phase = runtime.GAME_PHASES.ROLL;
+    game.currentPlayer().coins = 5;
+
+    assert.strictEqual(validateActionPayloadForState(room, game, shopStock, 'buildCard', { cardName: 'カフェ' }), true);
+    assert.strictEqual(validateGameAction(room, { playerIndex: 0 }, 'buildCard', { cardName: 'カフェ' }).ok, false);
+});
+
 runTest('validateActionPayloadForState は validateGameAction と build payload 判定を共有する', () => {
     const room = makeRoom();
     room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, playerIndex: 0 }];
@@ -771,6 +783,17 @@ runTest('validateActionPayloadForState は resolveTV と buildLandmark payload h
     assert.strictEqual(validateActionPayloadForState(room, game, {}, 'buildLandmark', { name: '港' }), false);
 });
 
+runTest('validateBuildLandmarkPayload は enabledLandmarks に混入した未知名を拒否する', () => {
+    const { GameManager } = makeGame();
+    const room = makeRoom();
+    room.gameStartPayload.enabledLandmarks = ['駅', '謎ランドマーク'];
+    const game = new GameManager(2);
+    game.phase = 'build';
+    game.currentPlayer().coins = 10;
+
+    assert.strictEqual(validateBuildLandmarkPayload(room, game, { name: '謎ランドマーク' }), false);
+});
+
 runTest('validateGameAction は BUILD フェーズ以外で undoBuild を拒否する', () => {
     const room = makeRoom();
     // actionLog なし → ROLLフェーズ
@@ -796,7 +819,7 @@ runTest('validateBusinessPayload は範囲外のカードindexを拒否する', 
     assert.strictEqual(validateBusinessPayload(game, { myCard: 0, targetIndex: 0, theirCard: 0 }), false);
 });
 
-runTest('validateBusinessPayload と validateMoverPayload は曖昧な文字列カード参照を拒否する', () => {
+runTest('validateBusinessPayload は曖昧な文字列カード参照を拒否し validateMoverPayload は旧cardNameを許可する', () => {
     const { GameManager, createCardByName } = makeGame();
     const game = new GameManager(2);
     game.currentPlayer().cards = [
@@ -811,7 +834,8 @@ runTest('validateBusinessPayload と validateMoverPayload は曖昧な文字列�
 
     game.pendingBusiness = 0;
     game.pendingMover = 1;
-    assert.strictEqual(validateMoverPayload(game, { cardName: '麦畑', targetIndex: 1 }), false);
+    assert.strictEqual(validateMoverPayload(game, { cardName: '麦畑', targetIndex: 1 }), true);
+    assert.strictEqual(validateMoverPayload(game, { cardName: '存在しないカード', targetIndex: 1 }), false);
 });
 
 runTest('validateGameAction は gameStartPayload がない場合に拒否する', () => {

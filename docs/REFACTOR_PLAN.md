@@ -189,3 +189,17 @@ Phase 1 では、実装の大移動はしない。後続 Phase のために、�
 4. `docs/ONLINE_SYNC.md`
 5. 新カード追加チェックリスト
 6. `npm run test:*` の使い分け早見表
+
+
+## Review backlog after 2026-05-16 whole-project pass
+
+重大・高優先の既知指摘は今回の小修正で潰しました。残す項目は挙動変更リスクがあるため、低優先 TODO として小PR化します。
+
+- Online: server restart 後、旧 host が先に復元した場合の短時間 stale hostEpoch window を docs / test でさらに明確化する。現状は新しい hostEpoch payload が来れば置換できる。
+- Online: client `restoreOnlineSnapshot` の入力 guard を server mirror validation に少し寄せる。まず `currentPlayerIndex` と `players.length` の範囲確認から。
+- Tests: malformed replay payload matrix と snapshot roundtrip test を追加する。
+- Architecture: `server.js` の room lifecycle / replay / validation を section 単位で見出し整理し、後続で純関数 validator だけ切り出す。
+- CPU: `CPU.js` / `main.js` / `scripts/selfplay.js` の phase 実行順を `allowedActionsFor` 参照へ段階的に寄せる。
+- UI: `render()` の勝利処理・保存処理・描画処理を helper 境界に分ける。inline handler は触る UI から `data-action` へ寄せる。
+- Storage: `deleteOnlineSession()` と online restore bundle 削除の責務名を整理する。
+- Docs: `PHASE1_INVENTORY.md` の行数など固定値は、必要時に再計測して更新する。

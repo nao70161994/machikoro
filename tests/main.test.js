@@ -239,6 +239,7 @@ function loadMainRuntime(options = {}) {
             setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
             getAutoSkipPending: () => autoSkipPending,
             getCpuScheduleToken: () => cpuScheduleToken,
+            scheduleCPU: () => scheduleCPU(),
             counters,
         };
     `, context);
@@ -448,6 +449,41 @@ runTest('main checkAutoSkip は予約後にオンライン手番が変わった�
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.deepStrictEqual(rt.__test.sentActions, []);
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
+});
+
+runTest('main scheduleCPU は不正なTV targetを合法な相手へfallbackして解決する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    game.players[0].cards = [{ name: 'テレビ局', category: '大施設' }];
+    game.players[1].cards = [{ name: '麦畑', category: '農園' }];
+    game.resolveTV = (targetIndex) => {
+        game.resolvedTV = targetIndex;
+        game.pendingTV = 0;
+        game.phase = rt.GAME_PHASES.BUILD;
+        return true;
+    };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return 0; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() {},
+    }, null]);
+    rt.isOnlineGame = false;
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.resolvedTV, 1);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
 runTest('main onSelectDiceCount は遅延中にオンライン手番が変わったら送信しない', () => {

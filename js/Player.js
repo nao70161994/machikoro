@@ -70,6 +70,10 @@ class Player {
         return Player._LANDMARK_DEFS.map(d => d.name);
     }
 
+    static isKnownLandmark(name) {
+        return Player._LANDMARK_DEFS.some(d => d.name === name);
+    }
+
     static landmarkCost(name) {
         return (Player._LANDMARK_DEFS.find(d => d.name === name) ?? { cost: 0 }).cost;
     }

@@ -4,6 +4,7 @@ const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 const runtime = loadGameRuntime();
 const GameManager = runtime.GameManager;
+const Player = runtime.Player;
 const createCardByName = runtime.createCardByName;
 const createCardById = runtime.createCardById;
 const CARD_EFFECTS = runtime.CARD_EFFECTS;
@@ -28,6 +29,25 @@ runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
         assert.ok(metadata.targetScope, `metadata targetScope missing: ${effect}`);
         assert.ok(metadata.cpuKind, `metadata cpuKind missing: ${effect}`);
     }
+});
+
+runTest('CARD_EFFECT_METADATA の分類値と複合triggerは許可値だけを使う', () => {
+    const allowedTimings = new Set(['income', 'pending', 'build', 'turnEnd']);
+    const allowedScopes = new Set(['self', 'current', 'opponent', 'opponents', 'all']);
+    const allowedKinds = new Set(['income', 'comboIncome', 'conditionalIncome', 'conditionalSteal', 'interactive', 'steal', 'upkeep', 'redistribute']);
+    const allowedTriggers = new Set(['onBuild', 'afterIncome', 'turnEndPrompt']);
+
+    for (const metadata of Object.values(CARD_EFFECT_METADATA)) {
+        assert.ok(allowedTimings.has(metadata.timing));
+        assert.ok(allowedScopes.has(metadata.targetScope));
+        assert.ok(allowedKinds.has(metadata.cpuKind));
+        if (metadata.triggers) {
+            assert.ok(Array.isArray(metadata.triggers));
+            assert.ok(metadata.triggers.every(trigger => allowedTriggers.has(trigger)));
+        }
+    }
+    assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.LOAN].triggers), ['onBuild', 'afterIncome']);
+    assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.ITSTARTUP].triggers), ['afterIncome', 'turnEndPrompt']);
 });
 
 runTest('CARD_IDS は全カード名へ対応する', () => {
@@ -89,6 +109,17 @@ runTest('GAME_PHASE_ACTIONS は単純フェーズの許可actionを定義する'
     assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.BUILD]], [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]);
 });
 
+runTest('GameManager は不正カードと未知ランドマーク建設を拒否する', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    game.enabledLandmarks = new Set([...Player.landmarkNames(), '謎ランドマーク']);
+
+    assert.strictEqual(game.buildCard(null), false);
+    assert.strictEqual(game.buildLandmark('謎ランドマーク'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(game.currentPlayer().landmarks, '謎ランドマーク'), false);
+});
+
 runTest('allowedActions は phase と pending 状態から許可actionを返す', () => {
     const game = new GameManager(2);
     assert.deepStrictEqual([...game.allowedActions()].sort(), [GAME_ACTIONS.ROLL_DICE]);
@@ -112,6 +143,12 @@ runTest('allowedActions は phase と pending 状態から許可actionを返す'
         [...game.allowedActions()].sort(),
         [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD].sort()
     );
+
+    game.phase = GAME_PHASES.PENDING;
+    assert.deepStrictEqual([...game.allowedActions()], []);
+
+    game.phase = 'unknownPhase';
+    assert.deepStrictEqual([...game.allowedActions()], []);
 });
 
 runTest('rollDice後にフェーズが適切に遷移する', () => {

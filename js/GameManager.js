@@ -143,6 +143,7 @@ class GameManager {
         );
     }
 
+    // Returns action names allowed by phase/pending state only. Payload legality is validated separately.
     static allowedActionsFor(game) {
         if (!game) return new Set();
         if (game.pendingIT) return new Set([GAME_ACTIONS.RESOLVE_IT]);
@@ -656,6 +657,7 @@ class GameManager {
     buildCard(card) {
         if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今は建設できません`); return false; }
         if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
+        if (!card || !card.name) { this.addLog(LOG_TYPES.ERROR, `❌ 不正なカードです`); return false; }
         const current = this.currentPlayer();
         if (current.coins < card.cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
         if (card.color === "purple" && current.countCardIncludingDormant(card.name) > 0) {
@@ -677,6 +679,7 @@ class GameManager {
         if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
         const current = this.currentPlayer();
         const cost = Player.landmarkCost(name);
+        if (!Player.isKnownLandmark(name)) { this.addLog(LOG_TYPES.ERROR, `❌ 不正なランドマークです`); return false; }
         if (!this.enabledLandmarks.has(name)) { this.addLog(LOG_TYPES.ERROR, `❌ このランドマークは今回使用しません`); return false; }
         if (current.coins < cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
         if (current.landmarks[name]) { this.addLog(LOG_TYPES.ERROR, `❌ すでに建設済みです`); return false; }

@@ -1309,11 +1309,11 @@ function validateCleaningPayload(game, data) {
 
 function validateMoverPayload(game, data) {
     if (!hasPendingAction(game, 'resolveMover') || !isPlainObject(data)) return false;
-    const cardRef = data.cardIndex;
+    const cardRef = Number.isInteger(data.cardIndex) ? data.cardIndex : data.cardName;
     const { targetIndex } = data;
     if (!isPlayerIndex(targetIndex, game)) return false;
     if (targetIndex === game.currentPlayerIndex) return false;
-    if (!Number.isInteger(cardRef)) return false;
+    if (!Number.isInteger(cardRef) && !isNonEmptyString(cardRef)) return false;
     const current = game.currentPlayer();
     return !!game._resolveCardRef(current, cardRef);
 }
@@ -1405,12 +1405,14 @@ function validateBuildLandmarkPayload(room, game, data) {
     const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
     const current = game.currentPlayer();
     const cost = gameRuntime.Player.landmarkCost(name);
-    return enabledLandmarks.has(name) &&
+    return gameRuntime.Player.isKnownLandmark(name) &&
+        enabledLandmarks.has(name) &&
         !game.builtThisTurn &&
         !current.landmarks[name] &&
         current.coins >= cost;
 }
 
+// Payload-only validator. Actor authority and phase/action allowance must be checked by the caller.
 function validateActionPayloadForState(room, game, shopStock, action, data, options = {}) {
     if (action === 'rollDice') return validateRollDicePayload(data, game);
     if (action === 'selectDice') return validateSelectDicePayload(data);

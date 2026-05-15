@@ -43,9 +43,9 @@ CPU と UI は `GameManager` の挙動を予測または表示する補助層と
 
 ## Effect 分類
 
-### 副作用なし income
+### 金額計算 dispatch 対象
 
-最初に dispatch table 化しやすい分類です。
+最初に dispatch table 化しやすい分類です。ここでは「金額を返す純粋計算」だけを共有し、休業や pending 追加などの副作用は含めません。
 
 - `NORMAL`
 - `CHEESE`
@@ -56,6 +56,7 @@ CPU と UI は `GameManager` の挙動を予測または表示する補助層と
 - `FEWLANDMARK`
 - `CORNFIELD`
 - `DRINKFACTORY`
+- `WINERY`（金額計算のみ。発動後の休業は発火処理側で行う）
 
 `GameManager.calcCardIncome()` は `CARD_INCOME_EFFECT_HANDLERS` を通して金額計算を共有します。CPU も `GameManager.calcCardIncome()` を参照するため、単純な収入計算はルール本体と CPU 評価のズレを減らせます。
 
@@ -149,9 +150,10 @@ UI、CPU、online action schema まで波及する高リスク分類です。
 処理は変えず、`js/Card.js` に分類情報を追加済みです。今後はこの metadata を参照する側を小さく増やします。
 
 - `timing`: `income`, `pending`, `build`, `turnEnd`
-- `targetScope`: `self`, `current`, `opponents`, `all`
+- `targetScope`: `self`, `current`, `opponent`, `opponents`, `all`
 - `requires`: `harbor`, `landmarkCount`, `dice`
 - `cpuKind`: `income`, `comboIncome`, `conditionalIncome`, `steal`, `conditionalSteal`, `interactive`, `upkeep`, `redistribute`
+- `triggers`: `onBuild`, `afterIncome`, `turnEndPrompt`。`LOAN` と `ITSTARTUP` のような複合 effect だけが使います。
 
 ### Step 3: 副作用なし income を dispatch table 化する
 
@@ -175,7 +177,7 @@ CPU の手書き補正を残したまま、依存関係と effect 分類だけ m
 
 ## Metadata の現在の限界
 
-`CARD_EFFECT_METADATA` は effect 単位の分類です。`NORMAL` はカード色によって青/緑の収入にも赤の steal にもなるため、最終的な発火分類は card color と組み合わせて判断します。`ITSTARTUP` や `LOAN` のような複合効果も、現時点では追加 metadata なしに完全表現しません。これらは後続 PR で `triggers` や `comboSource` を足して段階的に精密化します。
+`CARD_EFFECT_METADATA` は effect 単位の分類です。`NORMAL` はカード色によって青/緑の収入にも赤の steal にもなるため、最終的な発火分類は card color と組み合わせて判断します。`ITSTARTUP` と `LOAN` は複合 effect の漏れを避けるため `triggers` を持ちますが、dispatch 本体はまだ既存の `GameManager` ルール処理に残しています。後続 PR では `comboSource` などを足して段階的に精密化します。
 
 ## 変更時の確認コマンド
 

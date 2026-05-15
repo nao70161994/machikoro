@@ -37,3 +37,26 @@ npm test
 ```
 
 対象別の追加確認は `docs/maintenance-checklists.md` と `TESTPLAN.md` を使います。
+
+## Review note for 932c00d
+
+2026-05-16 に 932c00d をレビューしました。大きな挙動破壊は見つかっていません。確認した責務境界は次の通りです。
+
+- `GameManager.allowedActionsFor(game)`: phase / pending state から action 名だけを返す。payload、在庫、所持金、actor 権限は判定しない。
+- `validateActionPayloadForState()`: server 内の payload 判定専用。caller が actor authority と phase/action gate を先に通す前提。
+- `CARD_INCOME_EFFECT_HANDLERS`: 金額計算だけを共有し、休業・pending・coin transfer などの副作用は実ルール側に残す。
+
+追加で、空 pending / unknown phase の allowed action が空になる test と、payload helper が phase gate を担当しないことを示す server test を足しています。
+
+
+## Whole-project review note 2026-05-16
+
+重大・高優先の指摘を再レビューし、次を小さく修正しました。
+
+- GameManager boundary: 不正 card と未知 landmark の build を拒否し、server の landmark payload validation も同じ既知 landmark 判定へ揃えた。
+- Card metadata: `LOAN` / `ITSTARTUP` に複合 `triggers` を追加し、許可値 test で固定した。
+- CPU live flow: pending 解決で CPU が不正 target / null move を返した場合、合法な最小 fallback を選び pending 停止を避ける。
+- Online restore compatibility: `resolveMover` の旧 `cardName` payload を validator でも許可し、replay 側の互換と揃えた。
+- Mobile UI: title screen は低い画面で縦 scroll できるようにした。
+
+残る中・低優先は `docs/REFACTOR_PLAN.md` の review backlog に整理しています。
