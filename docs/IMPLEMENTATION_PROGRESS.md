@@ -616,7 +616,7 @@
 ## PR-023 appShell offline button selectors
 
 - 状態: done
-- commit: `PENDING_PR_023_HASH`
+- commit: `ca4cbcd`
 - 変更ファイル:
   - `index.html`
   - `js/appShell.js`
