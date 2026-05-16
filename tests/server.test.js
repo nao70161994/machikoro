@@ -483,8 +483,9 @@ runTest('accepted clientActionId は再送時に既存actionAcceptedを返すた
 
     rememberAcceptedClientAction(room, actionEntry);
 
-    assert.strictEqual(findAcceptedClientAction(room, 'client-action-1'), actionEntry);
-    assert.strictEqual(findAcceptedClientAction(room, 'missing'), null);
+    assert.strictEqual(findAcceptedClientAction(room, 'client-action-1', 0), actionEntry);
+    assert.strictEqual(findAcceptedClientAction(room, 'client-action-1', 1), null);
+    assert.strictEqual(findAcceptedClientAction(room, 'missing', 0), null);
 });
 
 runTest('accepted clientActionId はactionLog内の既存entryからも見つけられる', () => {
@@ -498,7 +499,8 @@ runTest('accepted clientActionId はactionLog内の既存entryからも見つけ
     };
     room.actionLog = [actionEntry];
 
-    assert.strictEqual(findAcceptedClientAction(room, 'client-action-log'), actionEntry);
+    assert.strictEqual(findAcceptedClientAction(room, 'client-action-log', 0), actionEntry);
+    assert.strictEqual(findAcceptedClientAction(room, 'client-action-log', 1), null);
 });
 
 runTest('accepted clientActionId は共通fixtureのsnapshot圧縮済みpendingを既承認として返す', () => {
@@ -514,7 +516,25 @@ runTest('accepted clientActionId は共通fixtureのsnapshot圧縮済みpending�
     rememberAcceptedClientAction(room, actionEntry);
 
     assert.ok(room.stateSnapshot.actionSeq >= fixture.pendingAction.seq);
-    assert.strictEqual(findAcceptedClientAction(room, fixture.pendingAction.clientActionId), actionEntry);
+    assert.strictEqual(findAcceptedClientAction(room, fixture.pendingAction.clientActionId, fixture.pendingAction.playerIndex), actionEntry);
+    assert.strictEqual(findAcceptedClientAction(room, fixture.pendingAction.clientActionId, fixture.pendingAction.playerIndex + 1), null);
+});
+
+runTest('accepted clientActionId は旧形式cacheでも送信者一致時だけ返す', () => {
+    const room = makeRoom();
+    const actionEntry = {
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 8,
+        clientActionId: 'legacy-client-action',
+    };
+    room.acceptedClientActions = {
+        [actionEntry.clientActionId]: actionEntry,
+    };
+
+    assert.strictEqual(findAcceptedClientAction(room, actionEntry.clientActionId, 0), actionEntry);
+    assert.strictEqual(findAcceptedClientAction(room, actionEntry.clientActionId, 1), null);
 });
 
 runTest('emitAppError は appError イベントでメッセージを送る', () => {

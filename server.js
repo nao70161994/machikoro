@@ -198,18 +198,27 @@ function hashReconnectToken(token) {
     return token ? crypto.createHash('sha256').update(String(token)).digest('hex') : '';
 }
 
-function findAcceptedClientAction(room, clientActionId) {
-    if (!room || typeof clientActionId !== 'string' || !clientActionId) return null;
-    if (room.acceptedClientActions && room.acceptedClientActions[clientActionId]) {
+function acceptedClientActionKey(playerIndex, clientActionId) {
+    return `${playerIndex}:${clientActionId}`;
+}
+
+function findAcceptedClientAction(room, clientActionId, playerIndex) {
+    if (!room || typeof clientActionId !== 'string' || !clientActionId || !Number.isInteger(playerIndex)) return null;
+    const matchesPlayer = entry => entry && entry.clientActionId === clientActionId && entry.playerIndex === playerIndex;
+    const key = acceptedClientActionKey(playerIndex, clientActionId);
+    if (room.acceptedClientActions && matchesPlayer(room.acceptedClientActions[key])) {
+        return room.acceptedClientActions[key];
+    }
+    if (room.acceptedClientActions && matchesPlayer(room.acceptedClientActions[clientActionId])) {
         return room.acceptedClientActions[clientActionId];
     }
-    return (room.actionLog || []).find(entry => entry && entry.clientActionId === clientActionId) || null;
+    return (room.actionLog || []).find(matchesPlayer) || null;
 }
 
 function rememberAcceptedClientAction(room, actionEntry) {
-    if (!room || !actionEntry || typeof actionEntry.clientActionId !== 'string' || !actionEntry.clientActionId) return;
+    if (!room || !actionEntry || typeof actionEntry.clientActionId !== 'string' || !actionEntry.clientActionId || !Number.isInteger(actionEntry.playerIndex)) return;
     if (!room.acceptedClientActions) room.acceptedClientActions = {};
-    room.acceptedClientActions[actionEntry.clientActionId] = actionEntry;
+    room.acceptedClientActions[acceptedClientActionKey(actionEntry.playerIndex, actionEntry.clientActionId)] = actionEntry;
     const ids = Object.keys(room.acceptedClientActions);
     if (ids.length > 100) {
         ids.sort((a, b) => (room.acceptedClientActions[a].seq || 0) - (room.acceptedClientActions[b].seq || 0));
@@ -369,7 +378,7 @@ io.on('connection', (socket) => {
             emitAppError(socket, 'INVALID_SESSION');
             return;
         }
-        const acceptedAction = findAcceptedClientAction(room, clientActionId);
+        const acceptedAction = findAcceptedClientAction(room, clientActionId, socket.playerIndex);
         if (acceptedAction) {
             socket.emit('actionAccepted', acceptedAction);
             return;

@@ -122,7 +122,7 @@
 ## PR-006 online trust model docs
 
 - 状態: done
-- commit: this PR commit (`docs: オンライン信頼境界を明文化`)
+- commit: `b927e92`
 - 変更ファイル:
   - `docs/ONLINE_SYNC.md`
   - `docs/TECH_DEBT.md`
@@ -133,6 +133,29 @@
   - client dice、host restore snapshot、player order 境界を client 由来として整理。
   - 公開/競技運用へ進む場合に server-side dice、canonical mirror、state hash などが必要であることを技術負債・課題一覧から参照できるようにした。
 - 実行テスト:
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+
+## PR-007 accepted clientActionId owner check
+
+- 状態: done
+- commit: this PR commit (`fix: action再送ackを送信者単位で照合`)
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - accepted `clientActionId` cache を `playerIndex:clientActionId` で保持するように変更。
+  - 再送 ack 検索を `clientActionId` と `playerIndex` の両方が一致する場合だけ返すようにした。
+  - 旧形式 cache と actionLog fallback でも送信者が一致しない場合は既承認扱いにしないテストを追加。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
   - `git diff --check`
   - `npm run test:static`
   - `npm run test:smoke`
