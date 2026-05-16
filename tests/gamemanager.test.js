@@ -151,6 +151,33 @@ runTest('allowedActions は phase と pending 状態から許可actionを返す'
     assert.deepStrictEqual([...game.allowedActions()], []);
 });
 
+runTest('pendingActionsFor は pending field を解決順descriptorとして返す', () => {
+    const plain = value => JSON.parse(JSON.stringify(value));
+    const game = new GameManager(2);
+    assert.deepStrictEqual(plain(GameManager.pendingActionsFor(null)), []);
+    assert.deepStrictEqual(plain(game.pendingActions()), []);
+
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingTV = 2;
+    game.pendingBusiness = 1;
+    game.pendingMover = 1;
+    assert.deepStrictEqual(plain(game.pendingActions()), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV', count: 2 },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness', count: 1 },
+        { action: GAME_ACTIONS.RESOLVE_MOVER, field: 'pendingMover', count: 1 },
+    ]);
+
+    game.pendingIT = true;
+    assert.deepStrictEqual(plain(game.pendingActions()), [
+        { action: GAME_ACTIONS.RESOLVE_IT, field: 'pendingIT', count: 1 },
+    ]);
+
+    game.pendingIT = false;
+    game.phase = GAME_PHASES.BUILD;
+    game.pendingTV = 1;
+    assert.deepStrictEqual(plain(game.pendingActions()), []);
+});
+
 runTest('rollDice後にフェーズが適切に遷移する', () => {
     const normalGame = new GameManager(2);
     normalGame.rollDice(1);

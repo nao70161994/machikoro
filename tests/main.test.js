@@ -150,16 +150,24 @@ function loadMainRuntime(options = {}) {
             }
         },
         GameManager: class GameManager {
+            static pendingActionsFor(game) {
+                if (!game) return [];
+                if (game.pendingIT) return [{ action: 'resolveIT', field: 'pendingIT', count: 1 }];
+                if (game.phase !== 'pending') return [];
+                const actions = [];
+                const addPending = (field, action) => {
+                    if (game[field] > 0) actions.push({ action, field, count: game[field] });
+                };
+                addPending('pendingTV', 'resolveTV');
+                addPending('pendingBusiness', 'resolveBusiness');
+                addPending('pendingCleaning', 'resolveCleaning');
+                addPending('pendingMover', 'resolveMover');
+                addPending('pendingRenovation', 'resolveRenovation');
+                return actions;
+            }
             static allowedActionsFor(game) {
-                if (game.pendingIT) return new Set(['resolveIT']);
-                if (game.phase === 'pending') {
-                    const actions = new Set();
-                    if (game.pendingTV > 0) actions.add('resolveTV');
-                    if (game.pendingBusiness > 0) actions.add('resolveBusiness');
-                    if (game.pendingCleaning > 0) actions.add('resolveCleaning');
-                    if (game.pendingMover > 0) actions.add('resolveMover');
-                    if (game.pendingRenovation > 0) actions.add('resolveRenovation');
-                    return actions;
+                if (game.pendingIT || game.phase === 'pending') {
+                    return new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
                 }
                 return new Set({
                     roll: ['rollDice'],

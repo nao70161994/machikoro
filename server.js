@@ -1419,12 +1419,8 @@ function isPlayerIndex(value, game) {
 }
 
 function hasPendingAction(game, action) {
-    if (game.phase !== gameRuntime.GAME_PHASES.PENDING) return false;
-    if (action === 'resolveBusiness') return game.pendingBusiness > 0;
-    if (action === 'resolveCleaning') return game.pendingCleaning > 0;
-    if (action === 'resolveMover') return game.pendingMover > 0;
-    if (action === 'resolveRenovation') return game.pendingRenovation > 0;
-    return false;
+    return gameRuntime.GameManager.pendingActionsFor(game)
+        .some(pending => pending.action === action);
 }
 
 function validateBusinessPayload(game, data) {

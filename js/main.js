@@ -452,7 +452,8 @@ const CPU_PHASE_HANDLERS = [
         name: "pending",
         run(cpu) {
             if (game.phase !== GAME_PHASES.PENDING) return;
-            if (game.pendingTV > 0) {
+            const pendingActions = new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
+            if (pendingActions.has(GAME_ACTIONS.RESOLVE_TV)) {
                 let targetIndex = cpu.chooseTVTarget(game);
                 if (!isValidCpuOpponentIndex(targetIndex)) targetIndex = fallbackCpuOpponentIndex();
                 if (targetIndex !== null) {
@@ -460,7 +461,7 @@ const CPU_PHASE_HANDLERS = [
                     return;
                 }
             }
-            if (game.pendingBusiness > 0) {
+            if (pendingActions.has(GAME_ACTIONS.RESOLVE_BUSINESS)) {
                 let move = cpu.chooseBusinessMove(game);
                 if (!isValidCpuBusinessMove(move)) move = fallbackCpuBusinessMove();
                 if (move) {
@@ -469,7 +470,7 @@ const CPU_PHASE_HANDLERS = [
                     return;
                 }
             }
-            if (game.pendingCleaning > 0) {
+            if (pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)) {
                 let cardName = cpu.chooseCleaningTarget(game);
                 if (!cardName) cardName = fallbackCpuCleaningTarget();
                 if (cardName) {
@@ -477,7 +478,7 @@ const CPU_PHASE_HANDLERS = [
                     return;
                 }
             }
-            if (game.pendingMover > 0) {
+            if (pendingActions.has(GAME_ACTIONS.RESOLVE_MOVER)) {
                 let move = cpu.chooseMoverMove(game);
                 if (!isValidCpuMoverMove(move)) move = fallbackCpuMoverMove();
                 if (move) {
@@ -485,7 +486,7 @@ const CPU_PHASE_HANDLERS = [
                     return;
                 }
             }
-            if (game.pendingRenovation > 0) {
+            if (pendingActions.has(GAME_ACTIONS.RESOLVE_RENOVATION)) {
                 let landmarkName = cpu.chooseRenovationTarget(game);
                 if (!landmarkName) landmarkName = fallbackCpuRenovationTarget();
                 if (landmarkName) {

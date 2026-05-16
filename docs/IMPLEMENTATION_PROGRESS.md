@@ -235,3 +235,32 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: なし。
+
+
+## PR-011 pending state read helper
+
+- 状態: done
+- commit: this PR commit (`feat: pending action状態の読み取りhelperを追加`)
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `js/main.js`
+  - `server.js`
+  - `tests/gamemanager.test.js`
+  - `tests/main.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `GameManager.pendingActionsFor(game)` と instance wrapper `pendingActions()` を追加した。
+  - pending IT の優先順を維持しつつ、TV/Business/Cleaning/Mover/Renovation を descriptor として読み取れるようにした。
+  - `allowedActionsFor`、server pending payload gate、CPU pending処理の読み取りを helper 経由へ寄せた。
+- 実行テスト:
+  - `node --check js/GameManager.js`
+  - `node --check js/main.js`
+  - `node --check server.js`
+  - `node tests/gamemanager.test.js`
+  - `node tests/main.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。

@@ -143,18 +143,36 @@ class GameManager {
         );
     }
 
+    // Returns pending action descriptors in the order they should be resolved.
+    static pendingActionsFor(game) {
+        if (!game) return [];
+        if (game.pendingIT) {
+            return [{ action: GAME_ACTIONS.RESOLVE_IT, field: 'pendingIT', count: 1 }];
+        }
+        if (game.phase !== GAME_PHASES.PENDING) return [];
+        const actions = [];
+        const addPending = (field, action) => {
+            const count = Number.isInteger(game[field]) ? game[field] : 0;
+            if (count > 0) actions.push({ action, field, count });
+        };
+        addPending('pendingTV', GAME_ACTIONS.RESOLVE_TV);
+        addPending('pendingBusiness', GAME_ACTIONS.RESOLVE_BUSINESS);
+        addPending('pendingCleaning', GAME_ACTIONS.RESOLVE_CLEANING);
+        addPending('pendingMover', GAME_ACTIONS.RESOLVE_MOVER);
+        addPending('pendingRenovation', GAME_ACTIONS.RESOLVE_RENOVATION);
+        return actions;
+    }
+
+    pendingActions() {
+        return GameManager.pendingActionsFor(this);
+    }
+
     // Returns action names allowed by phase/pending state only. Payload legality is validated separately.
     static allowedActionsFor(game) {
         if (!game) return new Set();
-        if (game.pendingIT) return new Set([GAME_ACTIONS.RESOLVE_IT]);
-        if (game.phase === GAME_PHASES.PENDING) {
-            const actions = new Set();
-            if (game.pendingTV > 0) actions.add(GAME_ACTIONS.RESOLVE_TV);
-            if (game.pendingBusiness > 0) actions.add(GAME_ACTIONS.RESOLVE_BUSINESS);
-            if (game.pendingCleaning > 0) actions.add(GAME_ACTIONS.RESOLVE_CLEANING);
-            if (game.pendingMover > 0) actions.add(GAME_ACTIONS.RESOLVE_MOVER);
-            if (game.pendingRenovation > 0) actions.add(GAME_ACTIONS.RESOLVE_RENOVATION);
-            return actions;
+        const pendingActions = GameManager.pendingActionsFor(game);
+        if (game.pendingIT || game.phase === GAME_PHASES.PENDING) {
+            return new Set(pendingActions.map(pending => pending.action));
         }
         return new Set(GAME_PHASE_ACTIONS[game.phase] || []);
     }
