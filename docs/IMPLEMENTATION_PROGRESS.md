@@ -864,7 +864,7 @@
 ## PR-032 pendingActions queue migration
 
 - 状態: done
-- commit: `PENDING_PR_032_HASH`
+- commit: `be33889`
 - 変更ファイル:
   - `js/GameManager.js`
   - `js/CPU.js`
