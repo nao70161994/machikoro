@@ -301,7 +301,7 @@
 ## PR-013 action registry implementation scaffold
 
 - 状態: done
-- commit: `PENDING_PR_013_HASH`
+- commit: `d6e3201`
 - 変更ファイル:
   - `js/GameManager.js`
   - `server.js`
