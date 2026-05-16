@@ -755,3 +755,29 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: PR-028 以降で section marker に沿って validation / mirror replay を実ファイルへ段階抽出する。
+
+
+## PR-028 action validation extraction
+
+- 状態: done
+- commit: `PENDING_PR_028_HASH`
+- 変更ファイル:
+  - `server.js`
+  - `server/actionValidation.js`
+  - `tests/server.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - server の payload validation helper 群を `server/actionValidation.js` へ factory として分離した。
+  - `server.js` 側には socket event / room lifecycle / actor authority / phase gate を残し、action payload 判定だけを外部 helper へ委譲した。
+  - action registry coverage test が新しい validation source を読むように更新し、registry と validator / mirror replay の整合性確認を維持した。
+- 実行テスト:
+  - `node --check server/actionValidation.js`
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:online`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: mirror replay の分離は PR-029 で扱う。
