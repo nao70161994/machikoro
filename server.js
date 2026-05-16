@@ -498,10 +498,16 @@ io.on('connection', (socket) => {
         const actionSeq = nextRoomActionSeq(room);
         const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
         if (typeof clientActionId === 'string') actionEntry.clientActionId = clientActionId;
+        if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
+            emitAppError(socket, '無効な操作です');
+            return;
+        }
+        room.lastUndoState = room.canonicalMirror?.lastUndoState || null;
         rememberAcceptedClientAction(room, actionEntry);
         if (room.actionLog) {
             room.actionLog.push(actionEntry);
             compactRoomActionLog(room);
+            markRoomCanonicalMirrorCurrent(room);
             room.lastTouchedAt = Date.now();
         }
         socket.to(roomId).emit('gameAction', actionEntry);
@@ -856,6 +862,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが壊れています');
         return;
     }
+    restoredRoom.canonicalMirror = restoredMirror;
     restoredRoom.lastUndoState = restoredMirror?.lastUndoState || null;
     restoredRoom.stateSnapshot = serializeMirrorState(
         restoredMirror.game,
@@ -1012,6 +1019,51 @@ function makeServerDiceActionData(game, action, data, rollDie = rollServerDie) {
     return data;
 }
 
+function roomCanonicalMirrorMarker(room) {
+    return {
+        actionSeq: restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq,
+        actionLogLength: Array.isArray(room.actionLog) ? room.actionLog.length : 0,
+    };
+}
+
+function markRoomCanonicalMirrorCurrent(room) {
+    const marker = roomCanonicalMirrorMarker(room);
+    room.canonicalMirrorActionSeq = marker.actionSeq;
+    room.canonicalMirrorActionLogLength = marker.actionLogLength;
+}
+
+function resetRoomCanonicalMirror(room) {
+    room.canonicalMirror = createRoomMirror(room);
+    markRoomCanonicalMirrorCurrent(room);
+    return room.canonicalMirror;
+}
+
+function getRoomCanonicalMirror(room) {
+    if (!room) return null;
+    const marker = roomCanonicalMirrorMarker(room);
+    if (!room.canonicalMirror ||
+            room.canonicalMirrorActionSeq !== marker.actionSeq ||
+            room.canonicalMirrorActionLogLength !== marker.actionLogLength) {
+        return resetRoomCanonicalMirror(room);
+    }
+    return room.canonicalMirror;
+}
+
+function applyAcceptedActionToRoomCanonicalMirror(room, mirror, actionEntry) {
+    if (!room || !mirror || !actionEntry) return false;
+    const { action, data } = actionEntry;
+    if (action === 'buildCard' || action === 'buildLandmark') {
+        mirror.lastUndoState = makeUndoStateFromMirror(mirror.game, mirror.shopStock);
+    }
+    const ok = applyActionToMirror(mirror.game, mirror.shopStock, action, data, gameRuntime.createCardByName) !== false;
+    if (!ok) return false;
+    if (action === 'undoBuild' || action === 'nextTurn') {
+        mirror.lastUndoState = null;
+    }
+    room.canonicalMirror = mirror;
+    return true;
+}
+
 
 function buildPlayerList(room) {
     if (room.playerSettings.length === 0) {
@@ -1045,7 +1097,7 @@ function loadGameRuntime() {
 
 // ===== Validation =====
 function validateGameAction(room, socket, action, data) {
-    const mirror = createRoomMirror(room);
+    const mirror = getRoomCanonicalMirror(room);
     if (!mirror) return { ok: false };
     const { game, cpuPlayers, shopStock } = mirror;
     const currentIndex = game.currentPlayerIndex;
@@ -1133,6 +1185,7 @@ function checkGameStart(io, roomId) {
         rooms[roomId].stateSnapshot = null;
         rooms[roomId].actionLog = [];
         rooms[roomId].lastUndoState = null;
+        resetRoomCanonicalMirror(rooms[roomId]);
         rooms[roomId].lastTouchedAt = Date.now();
         io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${playerNames.join(', ')}`);
@@ -1197,6 +1250,10 @@ module.exports = {
     makeUndoStateFromMirror,
     rollServerDie,
     makeServerDiceActionData,
+    resetRoomCanonicalMirror,
+    getRoomCanonicalMirror,
+    markRoomCanonicalMirrorCurrent,
+    applyAcceptedActionToRoomCanonicalMirror,
     validateBusinessPayload,
     validateCleaningPayload,
     validateMoverPayload,

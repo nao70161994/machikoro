@@ -835,3 +835,28 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: server restart restore の過去 actionLog 内 dice は replay 互換のため引き続き検証対象。完全な競技運用には PR-031 の canonical mirror / state hash が必要。
+
+## PR-031 server canonical mirror experiment
+
+- 状態: done
+- commit: `PENDING_PR_031_HASH`
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/ONLINE_SYNC.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - live room に in-memory canonical mirror を保持し、accepted action ごとに増分適用する経路を追加した。
+  - snapshot/actionLog の進行 marker で canonical mirror の stale 判定を行い、外部から actionLog が更新された場合は安全に再構築するようにした。
+  - validation は canonical mirror を優先し、actionLog replay は復元/再構築時の補助経路へ下げた。
+  - server test で actionLog replay なしに accepted action が次の validation へ反映されることを固定した。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:online`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: canonical mirror は in-memory 実験段階のため、再接続/Undo/host移譲の手動長時間確認は TESTPLAN.md ベースで継続する。

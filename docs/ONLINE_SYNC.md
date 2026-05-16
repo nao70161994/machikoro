@@ -27,6 +27,7 @@
 - host player index と host epoch。
 - accepted action order の `seq`。
 - accepted `clientActionId` の重複排除。
+- live room 内の `canonicalMirror`。通常の action validation はこの mirror を使い、accepted action ごとに増分更新します。
 - action payload が現在の mirror state で合法かどうか。
 - `actionLog` 圧縮後の `stateSnapshot`。
 
@@ -74,12 +75,13 @@ Live action:
 
 1. Client calls `sendAction(action, data)`.
 2. Client stores `onlinePendingAction` and emits `gameAction`. For dice actions, current clients send placeholder values and wait for server-confirmed dice.
-3. Server rebuilds mirror state from `stateSnapshot + actionLog`.
+3. Server reads the room `canonicalMirror`. If it is missing or stale against the room snapshot/log marker, it rebuilds the mirror from `stateSnapshot + actionLog`.
 4. Server validates actor and phase. For `rollDice` / `selectDice` / `rerollDice`, server replaces client dice fields with server-generated dice before payload validation.
 5. Server validates payload, enabled cards / landmarks, undo state.
-6. Server assigns next `seq`, records action, possibly compacts action log. The recorded dice values are the server-generated values.
-7. Server emits `gameAction` to other clients and `actionAccepted` to sender.
-8. Clients replay the accepted action locally and persist canonical log / seq.
+6. Server assigns next `seq` and applies the accepted action to `canonicalMirror` before storing the action.
+7. Server records action, possibly compacts action log. The recorded dice values are the server-generated values.
+8. Server emits `gameAction` to other clients and `actionAccepted` to sender.
+9. Clients replay the accepted action locally and persist canonical log / seq.
 
 Reconnect:
 
@@ -140,6 +142,14 @@ This rank exists on both sides:
 - Client: `_serverOnlineActionSeq`, `_onlineRestoreRank`, `_isOnlineRestoreRankNewer`.
 
 Keep these definitions aligned. A future cleanup should move this comparison into a shared helper or add tests that assert equivalent results from representative fixtures.
+
+## Server canonical mirror
+
+Live rooms keep an in-memory `canonicalMirror` after game start or server-side restore. The mirror is not serialized to clients and is safe to discard: if it is missing or stale, server validation rebuilds it from `stateSnapshot + actionLog`.
+
+Staleness is tracked by the restore rank actionSeq and the current actionLog length. This keeps tests and restore paths that replace `actionLog` or `stateSnapshot` from accidentally validating against an old in-memory mirror.
+
+Accepted actions are applied to `canonicalMirror` before they are appended to `actionLog`. If compaction runs, the snapshot/log remain the recovery source, while the in-memory mirror stays current for the next live action.
 
 ## Host ownership rules
 

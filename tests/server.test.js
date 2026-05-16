@@ -56,6 +56,10 @@ const {
     applyActionToMirror,
     restoreUndoMirror,
     makeServerDiceActionData,
+    resetRoomCanonicalMirror,
+    getRoomCanonicalMirror,
+    markRoomCanonicalMirrorCurrent,
+    applyAcceptedActionToRoomCanonicalMirror,
     getAllowedActions,
     buildPlayerList,
     checkGameStart,
@@ -1091,6 +1095,21 @@ runTest('makeServerDiceActionData は select/reroll の出目を deterministic r
     assert.deepStrictEqual(selectTwo, { useTwo: true, diceCount: 2, d1: 5, d2: 6, tunaDice: [1, 2] });
     const reroll = makeServerDiceActionData(mirror.game, 'rerollDice', {}, rollDie);
     assert.deepStrictEqual(reroll, { forceDice: 3, tunaDice: [4, 5] });
+});
+
+runTest('canonical mirror は accepted action を actionLog replay なしで次検証へ反映する', () => {
+    const room = makeRoom();
+    resetRoomCanonicalMirror(room);
+    const validation = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: null, tunaDice: null });
+    assert.strictEqual(validation.ok, true);
+    const actionEntry = { action: 'rollDice', data: validation.data, playerIndex: 0, seq: 1 };
+    room.actionSeq = actionEntry.seq;
+    assert.strictEqual(applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry), true);
+    markRoomCanonicalMirrorCurrent(room);
+    assert.strictEqual(getRoomCanonicalMirror(room).game.phase, 'build');
+    assert.strictEqual(room.actionLog.length, 0);
+    const repeatRoll = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: null, tunaDice: null });
+    assert.strictEqual(repeatRoll.ok, false);
 });
 
 runTest('validateSelectDicePayload は型と出目範囲を検証する', () => {
