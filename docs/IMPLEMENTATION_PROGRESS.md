@@ -712,7 +712,7 @@
 ## PR-026 render side-effect split scaffold
 
 - 状態: done
-- commit: `PENDING_PR_026_HASH`
+- commit: `58c79a4`
 - 変更ファイル:
   - `js/ui.js`
   - `tests/ui.test.js`
