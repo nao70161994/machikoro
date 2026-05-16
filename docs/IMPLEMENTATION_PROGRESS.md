@@ -389,7 +389,7 @@
 ## PR-016 card id count helpers
 
 - 状態: done
-- commit: `PENDING_PR_016_HASH`
+- commit: `91b18f3`
 - 変更ファイル:
   - `js/Player.js`
   - `js/GameManager.js`
