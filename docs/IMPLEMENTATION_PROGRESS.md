@@ -417,7 +417,7 @@
 ## PR-017 shopStock ID migration scaffold
 
 - 状態: done
-- commit: `PENDING_PR_017_HASH`
+- commit: `e94b82a`
 - 変更ファイル:
   - `js/Card.js`
   - `js/main.js`
