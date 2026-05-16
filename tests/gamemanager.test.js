@@ -355,6 +355,10 @@ runTest('buildCardが所持金不足と紫カード重複を拒否する', () =>
     duplicateGame.currentPlayer().addCard(createCardByName('スタジアム'));
     assert.strictEqual(duplicateGame.buildCard(createCardByName('スタジアム')), false);
     assert.strictEqual(duplicateGame.currentPlayer().coins, 20);
+
+    const legacyCard = Object.assign({}, createCardByName('スタジアム'), { id: undefined });
+    assert.strictEqual(duplicateGame.buildCard(legacyCard), false);
+    assert.strictEqual(duplicateGame.currentPlayer().coins, 20);
 });
 
 runTest('休業中の大施設も重複建設できない', () => {
@@ -1106,6 +1110,22 @@ runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を�
 });
 
 // ===== Player メソッド =====
+
+runTest('Player のカード枚数helperは ID と休業状態で数える', () => {
+    const game = new GameManager(2);
+    const p0 = game.currentPlayer();
+    const ranchA = createCardById(CARD_IDS.RANCH);
+    const ranchB = createCardById(CARD_IDS.RANCH);
+    const legacyRanch = Object.assign({}, createCardByName('牧場'), { id: undefined });
+    const forest = createCardById(CARD_IDS.FOREST);
+    p0.cards = [ranchA, ranchB, legacyRanch, forest];
+    p0.dormantCards = [ranchA];
+
+    assert.strictEqual(p0.countCardById(CARD_IDS.RANCH), 2);
+    assert.strictEqual(p0.countCardIncludingDormantById(CARD_IDS.RANCH), 3);
+    assert.strictEqual(p0.countCardById(CARD_IDS.FOREST), 1);
+    assert.strictEqual(p0.countCardById('missing-card'), 0);
+});
 
 runTest('Player.builtLandmarkCount が建設済みランドマーク数を返す', () => {
     const game = new GameManager(2);

@@ -384,3 +384,31 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: 実際の発火dispatch本体は既存分岐のまま。後続PRでprofile参照箇所を広げる。
+
+
+## PR-016 card id count helpers
+
+- 状態: done
+- commit: `PENDING_PR_016_HASH`
+- 変更ファイル:
+  - `js/Player.js`
+  - `js/GameManager.js`
+  - `tests/gamemanager.test.js`
+  - `docs/CARD_SYSTEM.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `Player.countCardById(cardId)` と `countCardIncludingDormantById(cardId)` を追加した。
+  - ID なしの旧カード/テスト用カードは `CARD_NAME_BY_ID` へ fallback して既存挙動を維持した。
+  - チーズ工場、家具工場、フラワーショップ、ワイナリーの収入計算を ID 参照へ寄せた。
+  - 紫カード重複チェックを dormant 込みの ID helper へ移し、旧形式カードでも名前から ID を補完するようにした。
+  - `docs/CARD_SYSTEM.md` にカード枚数判定 helper の使用方針を追記した。
+- 実行テスト:
+  - `node --check js/Player.js`
+  - `node --check js/GameManager.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: カテゴリ枚数系 handler は既存カテゴリ判定のまま。後続PRでカード定義metadataへ寄せる。

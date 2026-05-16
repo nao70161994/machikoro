@@ -62,6 +62,8 @@ CPU と UI は `GameManager` の挙動を予測または表示する補助層と
 
 `CARD_INCOME_EFFECT_HANDLERS` は金額計算だけを担当します。`WINERY` の休業、pending の追加、coin transfer の実行などの副作用は含めません。新しい単純収入 effect を追加する場合は、`CARD_EFFECT_METADATA` と `CARD_INCOME_EFFECT_HANDLERS` の両方へ追加してください。
 
+カード枚数判定は、可能な限り `Player.countCardById(cardId)` / `Player.countCardIncludingDormantById(cardId)` を使います。これらは `card.id` を優先し、旧セーブやテスト用の ID なしカードだけ `CARD_NAME_BY_ID` で fallback します。新しい handler では `countCard(名前)` を増やさず、`CARD_IDS` を入口にしてください。
+
 ### 条件付き income / steal
 
 発火条件や対象の財布に依存するため、純粋な income table とは分けます。

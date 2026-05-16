@@ -30,8 +30,22 @@ class Player {
         return this.cards.filter(c => c.name === name && !this.isDormant(c)).length;
     }
 
+    countCardById(cardId) {
+        return this.cards.filter(c => this.cardMatchesId(c, cardId) && !this.isDormant(c)).length;
+    }
+
     countCardIncludingDormant(name) {
         return this.cards.filter(c => c.name === name).length;
+    }
+
+    countCardIncludingDormantById(cardId) {
+        return this.cards.filter(c => this.cardMatchesId(c, cardId)).length;
+    }
+
+    cardMatchesId(card, cardId) {
+        if (!card || !cardId) { return false; }
+        if (card.id) { return card.id === cardId; }
+        return typeof CARD_NAME_BY_ID !== "undefined" && card.name === CARD_NAME_BY_ID[cardId];
     }
 
     // 休業中かどうか

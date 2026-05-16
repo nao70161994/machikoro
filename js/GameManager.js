@@ -85,13 +85,13 @@ function rollRandomDie() {
 
 const CARD_INCOME_EFFECT_HANDLERS = Object.freeze({
     [CARD_EFFECTS.CHEESE]: (card, owner) =>
-        owner.countCard(CARD_NAME_BY_ID[CARD_IDS.RANCH]) * card.income,
+        owner.countCardById(CARD_IDS.RANCH) * card.income,
     [CARD_EFFECTS.FURNITURE]: (card, owner) =>
-        (owner.countCard(CARD_NAME_BY_ID[CARD_IDS.FOREST]) + owner.countCard(CARD_NAME_BY_ID[CARD_IDS.MINE])) * card.income,
+        (owner.countCardById(CARD_IDS.FOREST) + owner.countCardById(CARD_IDS.MINE)) * card.income,
     [CARD_EFFECTS.MARKET]: (card, owner) =>
         owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !owner.isDormant(c)).length * card.income,
     [CARD_EFFECTS.FLOWER]: (card, owner) =>
-        owner.countCard(CARD_NAME_BY_ID[CARD_IDS.FLOWER_GARDEN]) * card.income,
+        owner.countCardById(CARD_IDS.FLOWER_GARDEN) * card.income,
     [CARD_EFFECTS.FOODWAREHOUSE]: (card, owner) =>
         owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income,
     [CARD_EFFECTS.FEWLANDMARK]: (card, owner) =>
@@ -99,7 +99,7 @@ const CARD_INCOME_EFFECT_HANDLERS = Object.freeze({
     [CARD_EFFECTS.CORNFIELD]: (card, owner) =>
         owner.builtLandmarkCount() <= 1 ? card.income : 0,
     [CARD_EFFECTS.WINERY]: (card, owner) =>
-        owner.cards.filter(c => c.name === CARD_NAME_BY_ID[CARD_IDS.VINEYARD] && !owner.isDormant(c)).length * card.income,
+        owner.countCardById(CARD_IDS.VINEYARD) * card.income,
     [CARD_EFFECTS.DRINKFACTORY]: (card, owner, game) =>
         game.players.reduce((sum, p) =>
             sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income,
@@ -718,7 +718,8 @@ class GameManager {
         if (!card || !card.name) { this.addLog(LOG_TYPES.ERROR, `❌ 不正なカードです`); return false; }
         const current = this.currentPlayer();
         if (current.coins < card.cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
-        if (card.color === "purple" && current.countCardIncludingDormant(card.name) > 0) {
+        const cardId = card.id || CARD_ID_BY_NAME[card.name];
+        if (card.color === "purple" && current.countCardIncludingDormantById(cardId) > 0) {
             this.addLog(LOG_TYPES.ERROR, `❌ 大施設は1枚しか持てません`); return false;
         }
         current.coins -= card.cost;
