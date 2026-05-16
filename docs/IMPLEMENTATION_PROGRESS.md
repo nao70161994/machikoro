@@ -264,3 +264,35 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: なし。
+
+
+## PR-012 reset turn / pending helpers
+
+- 状態: done
+- commit: `PENDING_PR_012_HASH`
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `js/storage.js`
+  - `js/online.js`
+  - `server.js`
+  - `tests/gamemanager.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - pending field 初期化を `resetPendingState()` に集約した。
+  - turn開始時の log/dice/build/reroll/pending 初期化を `resetTurnState()` に寄せた。
+  - ローカル保存復元、オンラインsnapshot復元、server mirror復元で helper を先に呼び、旧snapshotの欠落field補完を保った。
+  - reset helper の保持/初期化境界を gamemanager test で固定した。
+- 実行テスト:
+  - `node --check js/GameManager.js`
+  - `node --check js/storage.js`
+  - `node --check js/online.js`
+  - `node --check server.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+  - `node tests/storage.test.js`
+  - `node tests/online.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。

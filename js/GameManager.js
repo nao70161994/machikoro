@@ -97,12 +97,7 @@ class GameManager {
         this.phase = GAME_PHASES.ROLL;
         this.log = [];
         this.builtThisTurn = false;
-        this.pendingTV = 0;
-        this.pendingBusiness = 0;
-        this.pendingCleaning = 0;
-        this.pendingMover = 0;
-        this.pendingRenovation = 0;
-        this.pendingIT = false;
+        this.resetPendingState();
         this.usedReroll = false;
         this.pendingTunaDice = null;
         this.turnCount = 0;
@@ -119,6 +114,29 @@ class GameManager {
     }
 
     currentPlayer() { return this.players[this.currentPlayerIndex]; }
+
+    resetPendingState() {
+        this.pendingTV = 0;
+        this.pendingBusiness = 0;
+        this.pendingCleaning = 0;
+        this.pendingMover = 0;
+        this.pendingRenovation = 0;
+        this.pendingIT = false;
+    }
+
+    resetTurnState(options = {}) {
+        if (options.clearLog) this.log = [];
+        if (options.clearDice) {
+            this.lastDiceResult = 0;
+            this.lastDice1 = 0;
+            this.lastDice2 = 0;
+            this.pendingTunaDice = null;
+        }
+        this.builtThisTurn = false;
+        this.usedReroll = false;
+        this.resetPendingState();
+        this.hadAmusementParkAtRoll = false;
+    }
 
     _resolveCardRef(player, ref) {
         if (!player) return null;
@@ -731,35 +749,14 @@ class GameManager {
         if (this.hadAmusementParkAtRoll &&
             this.lastDice1 > 0 && this.lastDice1 === this.lastDice2) {
             this.phase = GAME_PHASES.ROLL;
-            this.log = [];
-            this.builtThisTurn = false;
-            this.usedReroll = false;
-            this.pendingTV = 0;
-            this.pendingBusiness = 0;
-            this.pendingCleaning = 0;
-            this.pendingMover = 0;
-            this.pendingIT = false;
-            this.pendingRenovation = 0;
-            this.hadAmusementParkAtRoll = false;
+            this.resetTurnState({ clearLog: true });
             this.addLog(LOG_TYPES.SYSTEM, `🎡 遊園地効果！ゾロ目でもう一度ターン`);
             return;
         }
-        this.hadAmusementParkAtRoll = false;
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.turnCount++;
         this.phase = GAME_PHASES.ROLL;
-        this.lastDiceResult = 0;
-        this.lastDice1 = 0;
-        this.lastDice2 = 0;
-        this.log = [];
-        this.builtThisTurn = false;
-        this.usedReroll = false;
-        this.pendingTV = 0;
-        this.pendingBusiness = 0;
-        this.pendingCleaning = 0;
-        this.pendingMover = 0;
-        this.pendingIT = false;
-        this.pendingRenovation = 0;
+        this.resetTurnState({ clearLog: true, clearDice: true });
 
         this.addLog(LOG_TYPES.SYSTEM, `👤 ${this.currentPlayer().name}のターン`);
     }

@@ -161,6 +161,7 @@ function resumeGame() {
         game.lastDice1 = state.lastDice1 || 0;
         game.lastDice2 = state.lastDice2 || 0;
         game.builtThisTurn = state.builtThisTurn || false;
+        if (typeof game.resetPendingState === 'function') game.resetPendingState();
         game.pendingTV = state.pendingTV || 0;
         game.pendingBusiness = state.pendingBusiness || 0;
         game.pendingCleaning = state.pendingCleaning || 0;

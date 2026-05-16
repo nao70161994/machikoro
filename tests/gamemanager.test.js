@@ -15,6 +15,7 @@ const CARD_EFFECT_METADATA = runtime.CARD_EFFECT_METADATA;
 const CARD_INCOME_EFFECT_HANDLERS = runtime.CARD_INCOME_EFFECT_HANDLERS;
 const GAME_PHASES = runtime.GAME_PHASES;
 const GAME_ACTIONS = runtime.GAME_ACTIONS;
+const LOG_TYPES = runtime.LOG_TYPES;
 const GAME_PHASE_ACTIONS = runtime.GAME_PHASE_ACTIONS;
 
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
@@ -177,6 +178,64 @@ runTest('pendingActionsFor は pending field を解決順descriptorとして返�
     game.pendingTV = 1;
     assert.deepStrictEqual(plain(game.pendingActions()), []);
 });
+
+runTest('resetPendingState と resetTurnState は共通turn fieldを初期化する', () => {
+    const game = new GameManager(2);
+    game.pendingTV = 1;
+    game.pendingBusiness = 1;
+    game.pendingCleaning = 1;
+    game.pendingMover = 1;
+    game.pendingRenovation = 1;
+    game.pendingIT = true;
+    game.resetPendingState();
+    assert.deepStrictEqual(plainPendingState(game), {
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+    });
+
+    game.log = [{ type: LOG_TYPES.SYSTEM, message: 'old' }];
+    game.lastDiceResult = 8;
+    game.lastDice1 = 4;
+    game.lastDice2 = 4;
+    game.pendingTunaDice = [3, 4];
+    game.builtThisTurn = true;
+    game.usedReroll = true;
+    game.pendingTV = 1;
+    game.hadAmusementParkAtRoll = true;
+
+    game.resetTurnState({ clearLog: true });
+    assert.strictEqual(game.log.length, 0);
+    assert.strictEqual(game.lastDiceResult, 8);
+    assert.strictEqual(game.lastDice1, 4);
+    assert.strictEqual(game.lastDice2, 4);
+    assert.strictEqual(game.pendingTunaDice[0], 3);
+    assert.strictEqual(game.pendingTunaDice[1], 4);
+    assert.strictEqual(game.builtThisTurn, false);
+    assert.strictEqual(game.usedReroll, false);
+    assert.strictEqual(game.pendingTV, 0);
+    assert.strictEqual(game.hadAmusementParkAtRoll, false);
+
+    game.resetTurnState({ clearDice: true });
+    assert.strictEqual(game.lastDiceResult, 0);
+    assert.strictEqual(game.lastDice1, 0);
+    assert.strictEqual(game.lastDice2, 0);
+    assert.strictEqual(game.pendingTunaDice, null);
+});
+
+function plainPendingState(game) {
+    return {
+        pendingTV: game.pendingTV,
+        pendingBusiness: game.pendingBusiness,
+        pendingCleaning: game.pendingCleaning,
+        pendingMover: game.pendingMover,
+        pendingRenovation: game.pendingRenovation,
+        pendingIT: game.pendingIT,
+    };
+}
 
 runTest('rollDice後にフェーズが適切に遷移する', () => {
     const normalGame = new GameManager(2);
