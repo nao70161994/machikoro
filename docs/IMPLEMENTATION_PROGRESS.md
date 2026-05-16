@@ -240,7 +240,7 @@
 ## PR-011 pending state read helper
 
 - 状態: done
-- commit: this PR commit (`feat: pending action状態の読み取りhelperを追加`)
+- commit: `813fe37`
 - 変更ファイル:
   - `js/GameManager.js`
   - `js/main.js`
