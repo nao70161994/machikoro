@@ -360,7 +360,7 @@
 ## PR-015 card activation profile helper
 
 - 状態: done
-- commit: `PENDING_PR_015_HASH`
+- commit: `1a49085`
 - 変更ファイル:
   - `js/Card.js`
   - `js/GameManager.js`
