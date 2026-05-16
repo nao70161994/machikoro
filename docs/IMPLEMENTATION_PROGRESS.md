@@ -781,3 +781,29 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: mirror replay の分離は PR-029 で扱う。
+
+
+## PR-029 mirror replay extraction
+
+- 状態: done
+- commit: `PENDING_PR_029_HASH`
+- 変更ファイル:
+  - `server.js`
+  - `server/mirrorReplay.js`
+  - `tests/server.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - mirror state の serialize / restore / compact と replay 適用を `server/mirrorReplay.js` へ分離した。
+  - `server.js` には VM runtime 読込、Socket.IO entrypoint、room lifecycle、action authority validation を残した。
+  - registry coverage test が新しい mirror replay source を読むように更新し、action registry と replay switch の整合性確認を維持した。
+- 実行テスト:
+  - `node --check server/mirrorReplay.js`
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:online`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: server-side dice と canonical mirror の設計・試作は PR-030 / PR-031 で扱う。

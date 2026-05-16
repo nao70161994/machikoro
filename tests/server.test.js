@@ -205,6 +205,7 @@ runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で�
     const registry = runtime.GAME_ACTION_REGISTRY;
     const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
     const validationSource = fs.readFileSync(path.join(__dirname, '..', 'server/actionValidation.js'), 'utf8');
+    const mirrorSource = fs.readFileSync(path.join(__dirname, '..', 'server/mirrorReplay.js'), 'utf8');
 
     assert.deepStrictEqual(Object.keys(registry).sort(), actions);
     for (const action of actions) {
@@ -217,7 +218,7 @@ runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で�
     }
 
     const validatorActions = extractActionValidatorBranches(extractFunctionBody(validationSource, 'validateActionPayloadForState'));
-    const mirrorActions = extractSwitchActionCases(extractFunctionBody(source, 'applyActionToMirror'));
+    const mirrorActions = extractSwitchActionCases(extractFunctionBody(mirrorSource, 'applyActionToMirror'));
     const serverPayloadActions = actions.filter(action => registry[action].serverPayload);
     const serverReplayActions = actions.filter(action => registry[action].serverReplay);
 
