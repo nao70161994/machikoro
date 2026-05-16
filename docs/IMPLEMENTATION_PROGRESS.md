@@ -760,7 +760,7 @@
 ## PR-028 action validation extraction
 
 - 状態: done
-- commit: `PENDING_PR_028_HASH`
+- commit: `17f5360`
 - 変更ファイル:
   - `server.js`
   - `server/actionValidation.js`
