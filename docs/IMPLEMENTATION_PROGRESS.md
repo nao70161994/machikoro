@@ -812,7 +812,7 @@
 ## PR-030 server-side dice design and prototype
 
 - 状態: done
-- commit: `PENDING_PR_030_HASH`
+- commit: `5c4a79b`
 - 変更ファイル:
   - `docs/ONLINE_SYNC.md`
   - `server.js`
