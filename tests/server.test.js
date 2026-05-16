@@ -181,6 +181,43 @@ runTest('createRoomMirror は build action replay から lastUndoState を復元
     assert.strictEqual(mirror.lastUndoState.shopStock['カフェ'], 6);
 });
 
+runTest('server mirror snapshot は serialize/restore/serialize でroundtripできる', () => {
+    const { GameManager, createCardByName } = makeGame();
+    const game = new GameManager(2);
+    const shopStock = { 麦畑: 4, パン屋: 5, カフェ: 6, ビジネスセンター: 4, 引越し屋: 5 };
+    game.players[0].name = 'Alice';
+    game.players[0].coins = 9;
+    game.players[0].cards = [createCardByName('麦畑'), createCardByName('カフェ')];
+    game.players[0].dormantCards = [game.players[0].cards[1]];
+    game.players[0].landmarks['駅'] = true;
+    game.players[0].itVentureCoins = 3;
+    game.players[0].hasYakusho = false;
+    game.players[1].name = 'Bob';
+    game.players[1].coins = 5;
+    game.players[1].cards = [createCardByName('パン屋')];
+    game.currentPlayerIndex = 1;
+    game.phase = 'pending';
+    game.log = [{ type: 'system', message: 'roundtrip' }];
+    game.lastDiceResult = 10;
+    game.lastDice1 = 4;
+    game.lastDice2 = 6;
+    game.builtThisTurn = true;
+    game.pendingTV = 1;
+    game.usedReroll = true;
+    game.pendingTunaDice = [3, 4];
+    game.turnCount = 7;
+    game.hadAmusementParkAtRoll = true;
+    const undoState = makeUndoStateFromMirror(game, shopStock);
+    const snapshot = serializeMirrorState(game, shopStock, undoState, 42);
+
+    const restoredGame = new GameManager(2);
+    const restoredShopStock = {};
+    restoreMirrorState(restoredGame, restoredShopStock, snapshot, createCardByName);
+    const roundtrip = serializeMirrorState(restoredGame, restoredShopStock, snapshot.undoState, snapshot.actionSeq);
+
+    assert.deepStrictEqual(roundtrip, snapshot);
+});
+
 runTest('createRoomMirror は snapshot の undoState から undoBuild replay を復元する', () => {
     const room = makeRoom();
     room.actionLog = [

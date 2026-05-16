@@ -54,7 +54,7 @@
 ## PR-003 replay malformed payload matrix
 
 - 状態: done
-- commit: this PR commit (`test: replay payload不正形の拒否を網羅`)
+- commit: `7853a58`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
@@ -66,6 +66,30 @@
   - `node --check server.js`
   - `node --check tests/server.test.js`
   - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+
+## PR-004 snapshot roundtrip tests
+
+- 状態: done
+- commit: this PR commit (`test: online snapshot roundtripを固定`)
+- 変更ファイル:
+  - `tests/server.test.js`
+  - `tests/online.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - server mirror snapshot を `serializeMirrorState() -> restoreMirrorState() -> serializeMirrorState()` で roundtrip できることを固定。
+  - online client snapshot を `buildOnlineSnapshot() -> restoreOnlineSnapshot() -> buildOnlineSnapshot()` で roundtrip できることを固定。
+  - undoState, dormant card, pending state, dice fields, actionSeq を含む復元対象の回帰を広げた。
+- 実行テスト:
+  - `node --check tests/server.test.js`
+  - `node --check tests/online.test.js`
+  - `node tests/server.test.js`
+  - `node tests/online.test.js`
   - `git diff --check`
   - `npm run test:static`
   - `npm run test:smoke`

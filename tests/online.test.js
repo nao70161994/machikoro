@@ -1421,6 +1421,50 @@ runTest('buildOnlineSnapshot は server mirror snapshot と主要キーが一致
     assert.deepStrictEqual(Object.keys(clientSnapshot.players[0]).sort(), Object.keys(serverSnapshot.players[0]).sort());
 });
 
+runTest('online snapshot は build/restore/build でroundtripできる', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    const game = rt.getGame();
+    game.players[0].coins = 8;
+    game.players[0].cards.push(createCardByName('カフェ'));
+    game.players[0].dormantCards = [game.players[0].cards[1]];
+    game.players[0].landmarks['駅'] = true;
+    game.players[0].itVentureCoins = 2;
+    game.players[0].hasYakusho = false;
+    game.currentPlayerIndex = 1;
+    game.phase = GAME_PHASES.PENDING;
+    game.log = [{ type: LOG_TYPES.SYSTEM, message: 'roundtrip' }];
+    game.lastDiceResult = 10;
+    game.lastDice1 = 4;
+    game.lastDice2 = 6;
+    game.builtThisTurn = true;
+    game.pendingTV = 1;
+    game.usedReroll = true;
+    game.pendingTunaDice = [3, 4];
+    game.turnCount = 7;
+    game.hadAmusementParkAtRoll = true;
+    rt.getShopStock()['カフェ'] = 5;
+    rt.setUndoState({
+        playerCoins: [4, 3],
+        playerCardNames: [['麦畑'], ['麦畑']],
+        playerDormantIndices: [[], []],
+        playerLandmarks: [Object.assign({}, game.players[0].landmarks), Object.assign({}, game.players[1].landmarks)],
+        playerItVenture: [0, 0],
+        playerHasYakusho: [true, true],
+        shopStock: Object.assign({}, rt.getShopStock()),
+        builtThisTurn: false,
+        log: [],
+    });
+    const snapshot = rt.buildOnlineSnapshot();
+
+    rt.restoreOnlineSnapshot(snapshot);
+    const roundtrip = rt.buildOnlineSnapshot();
+
+    assert.deepStrictEqual(roundtrip, snapshot);
+});
+
 runTest('buildOnlineSnapshot は建設後のUndo状態を保持する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
