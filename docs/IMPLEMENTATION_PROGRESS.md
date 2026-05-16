@@ -587,7 +587,7 @@
 ## PR-022 PWA banner and z-index scale
 
 - 状態: done
-- commit: `PENDING_PR_022_HASH`
+- commit: `50dbacc`
 - 変更ファイル:
   - `style.css`
   - `index.html`
