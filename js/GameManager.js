@@ -43,6 +43,24 @@ const GAME_PHASE_ACTIONS = Object.freeze({
     [GAME_PHASES.BUILD]:          Object.freeze([GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]),
 });
 
+const GAME_ACTION_REGISTRY = Object.freeze({
+    [GAME_ACTIONS.ROLL_DICE]:          Object.freeze({ action: GAME_ACTIONS.ROLL_DICE,          phase: GAME_PHASES.ROLL,           payloadKind: 'rollDice',          serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.SELECT_DICE]:        Object.freeze({ action: GAME_ACTIONS.SELECT_DICE,        phase: GAME_PHASES.SELECT_DICE,    payloadKind: 'selectDice',        serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.REROLL_DICE]:        Object.freeze({ action: GAME_ACTIONS.REROLL_DICE,        phase: GAME_PHASES.REROLL_CONFIRM, payloadKind: 'rerollDice',        serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.SKIP_REROLL]:        Object.freeze({ action: GAME_ACTIONS.SKIP_REROLL,        phase: GAME_PHASES.REROLL_CONFIRM, payloadKind: 'emptyObject',       serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_HARBOR]:     Object.freeze({ action: GAME_ACTIONS.RESOLVE_HARBOR,     phase: GAME_PHASES.HARBOR_CHOICE,  payloadKind: 'resolveHarbor',     serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_TV]:         Object.freeze({ action: GAME_ACTIONS.RESOLVE_TV,         phase: GAME_PHASES.PENDING,        payloadKind: 'resolveTV',         serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_BUSINESS]:   Object.freeze({ action: GAME_ACTIONS.RESOLVE_BUSINESS,   phase: GAME_PHASES.PENDING,        payloadKind: 'resolveBusiness',   serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_CLEANING]:   Object.freeze({ action: GAME_ACTIONS.RESOLVE_CLEANING,   phase: GAME_PHASES.PENDING,        payloadKind: 'resolveCleaning',   serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_MOVER]:      Object.freeze({ action: GAME_ACTIONS.RESOLVE_MOVER,      phase: GAME_PHASES.PENDING,        payloadKind: 'resolveMover',      serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_RENOVATION]: Object.freeze({ action: GAME_ACTIONS.RESOLVE_RENOVATION, phase: GAME_PHASES.PENDING,        payloadKind: 'resolveRenovation', serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.RESOLVE_IT]:         Object.freeze({ action: GAME_ACTIONS.RESOLVE_IT,         phase: GAME_PHASES.PENDING,        payloadKind: 'resolveIT',         serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.BUILD_CARD]:         Object.freeze({ action: GAME_ACTIONS.BUILD_CARD,         phase: GAME_PHASES.BUILD,          payloadKind: 'buildCard',         serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.BUILD_LANDMARK]:     Object.freeze({ action: GAME_ACTIONS.BUILD_LANDMARK,     phase: GAME_PHASES.BUILD,          payloadKind: 'buildLandmark',     serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.UNDO_BUILD]:         Object.freeze({ action: GAME_ACTIONS.UNDO_BUILD,         phase: GAME_PHASES.BUILD,          payloadKind: 'undoBuild',         serverPayload: true, serverReplay: true, clientApply: true }),
+    [GAME_ACTIONS.NEXT_TURN]:          Object.freeze({ action: GAME_ACTIONS.NEXT_TURN,          phase: GAME_PHASES.BUILD,          payloadKind: 'emptyObject',       serverPayload: true, serverReplay: true, clientApply: true }),
+});
+
 function formatDiceOutcome(d1, d2, total) {
     if (d1 > 0 && d2 > 0) {
         return `${d1}+${d2}=${total}`;

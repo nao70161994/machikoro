@@ -296,3 +296,35 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: なし。
+
+
+## PR-013 action registry implementation scaffold
+
+- 状態: done
+- commit: `PENDING_PR_013_HASH`
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `server.js`
+  - `tests/helpers/runtime-loaders.js`
+  - `tests/server.test.js`
+  - `tests/online.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `GAME_ACTION_REGISTRY` を追加し、action名、phase、payload kind、server payload/replay、client apply の存在metadataを持たせた。
+  - server runtime / test runtime / online test runtime から registry を参照できるようにした。
+  - server payload validator と mirror replay、client `applyAction` の網羅テストを registry と照合する形へ更新した。
+  - 実際のaction実行switchは維持し、共通化は次段階に残した。
+- 実行テスト:
+  - `node --check js/GameManager.js`
+  - `node --check server.js`
+  - `node --check js/online.js`
+  - `node --check tests/server.test.js`
+  - `node --check tests/online.test.js`
+  - `node tests/server.test.js`
+  - `node tests/online.test.js`
+  - `git diff --check`
+  - `npm run test:online`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: server/client共通dispatch化は未実施。PR-013の範囲では registry 足場のみ。

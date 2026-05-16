@@ -104,6 +104,7 @@ function loadOnlineRuntime() {
         this.createCardByName = createCardByName;
         this.GAME_PHASES = GAME_PHASES;
         this.GAME_ACTIONS = GAME_ACTIONS;
+        this.GAME_ACTION_REGISTRY = GAME_ACTION_REGISTRY;
         this.LOG_TYPES = LOG_TYPES;
         this.getGame = () => game;
         this.setGame = (g) => { game = g; };
@@ -169,12 +170,22 @@ function makeGame(count = 2) {
     return g;
 }
 
-runTest('GAME_ACTIONS は client applyAction で網羅される', () => {
+runTest('GAME_ACTION_REGISTRY は client applyAction で網羅される', () => {
     const runtime = loadOnlineRuntime();
     const actions = Object.values(runtime.GAME_ACTIONS).sort();
+    const registry = runtime.GAME_ACTION_REGISTRY;
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
 
-    assert.deepStrictEqual(extractSwitchActionCases(extractFunctionBody(source, 'applyAction')), actions);
+    assert.deepStrictEqual(Object.keys(registry).sort(), actions);
+    for (const action of actions) {
+        const entry = registry[action];
+        assert.strictEqual(entry.action, action);
+        assert.ok(entry.payloadKind);
+        assert.strictEqual(entry.clientApply, true);
+    }
+
+    const clientActions = actions.filter(action => registry[action].clientApply);
+    assert.deepStrictEqual(extractSwitchActionCases(extractFunctionBody(source, 'applyAction')), clientActions);
 });
 
 runTest('getClientVersion はindexへ注入されたビルドハッシュを使う', () => {

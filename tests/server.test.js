@@ -199,15 +199,29 @@ runTest('createRoom rate limit は同一socketの連続作成だけを拒否す�
     assert.strictEqual(validateCreateRoomLifecycle({}, now + 1, {}).ok, true);
 });
 
-runTest('GAME_ACTIONS は server payload validator と mirror apply で網羅される', () => {
-    const actions = Object.values(loadGameRuntime().GAME_ACTIONS).sort();
+runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で網羅される', () => {
+    const runtime = loadGameRuntime();
+    const actions = Object.values(runtime.GAME_ACTIONS).sort();
+    const registry = runtime.GAME_ACTION_REGISTRY;
     const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+
+    assert.deepStrictEqual(Object.keys(registry).sort(), actions);
+    for (const action of actions) {
+        const entry = registry[action];
+        assert.strictEqual(entry.action, action);
+        assert.ok(Object.values(runtime.GAME_PHASES).includes(entry.phase));
+        assert.ok(entry.payloadKind);
+        assert.strictEqual(entry.serverPayload, true);
+        assert.strictEqual(entry.serverReplay, true);
+    }
 
     const validatorActions = extractActionValidatorBranches(extractFunctionBody(source, 'validateActionPayloadForState'));
     const mirrorActions = extractSwitchActionCases(extractFunctionBody(source, 'applyActionToMirror'));
+    const serverPayloadActions = actions.filter(action => registry[action].serverPayload);
+    const serverReplayActions = actions.filter(action => registry[action].serverReplay);
 
-    assert.deepStrictEqual(validatorActions, actions);
-    assert.deepStrictEqual(mirrorActions, actions);
+    assert.deepStrictEqual(validatorActions, serverPayloadActions);
+    assert.deepStrictEqual(mirrorActions, serverReplayActions);
 });
 
 runTest('server validateBusinessPayload はカードindex指定を許可する', () => {
