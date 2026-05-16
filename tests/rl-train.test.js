@@ -1519,3 +1519,18 @@ print(rows[1]["js_avg_turns"])
     assert.strictEqual(lines[9], '0.1');
     assert.strictEqual(lines[10], '17.4');
 });
+
+runTest('rl encode: schema helper は既存 state dim と draft action schema を公開する', () => {
+    const code = [
+        'from scripts.rl.encode import STATE_DIM, STATE_DIM_4P, state_schema_for_dim',
+        'from scripts.rl.encode import STATE_SCHEMA_2P_V1, STATE_SCHEMA_MP_V1, STATE_SCHEMA_CUSTOM',
+        'from scripts.rl.encode import ACTION_SCHEMA_FLAT_V1, ACTION_SCHEMA_FACTORED_BUSINESS_TARGET_V2_DRAFT',
+        'assert state_schema_for_dim(STATE_DIM) == STATE_SCHEMA_2P_V1',
+        'assert state_schema_for_dim(STATE_DIM_4P) == STATE_SCHEMA_MP_V1',
+        'assert state_schema_for_dim(999) == STATE_SCHEMA_CUSTOM',
+        'assert ACTION_SCHEMA_FLAT_V1 == "action-flat-v1"',
+        'assert ACTION_SCHEMA_FACTORED_BUSINESS_TARGET_V2_DRAFT.endswith("v2-draft")',
+    ].join('\n');
+    const result = spawnSync('python3', ['-c', code], { encoding: 'utf8' });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+});

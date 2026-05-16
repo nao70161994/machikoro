@@ -9,6 +9,7 @@ class RLCPU {
         this.hiddenSize = modelData.hiddenSize;
         this.numCards = modelData.numCards;
         this.numTargetSlots = modelData.numTargetSlots || RLCPU._inferTargetSlots(modelData.layers);
+        this.schema = RLCPU.resolveModelSchema(modelData);
         this._validateModel();
     }
 
@@ -69,6 +70,34 @@ class RLCPU {
 
     static get NUM_ACTIONS() {
         return RLCPU.ACTIONS.PASS + 1;
+    }
+
+    static get STATE_SCHEMAS() {
+        return Object.freeze({
+            TWO_PLAYER_V1: "state-2p-v1",
+            MULTIPLAYER_V1: "state-mp-v1",
+            CUSTOM: "state-custom",
+        });
+    }
+
+    static get ACTION_SCHEMAS() {
+        return Object.freeze({
+            LEGACY_FLAT_V1: "action-flat-v1",
+            FACTORED_BUSINESS_TARGET_V2_DRAFT: "action-factored-business-target-v2-draft",
+        });
+    }
+
+    static stateSchemaForDim(stateDim) {
+        if (stateDim === 145) return RLCPU.STATE_SCHEMAS.TWO_PLAYER_V1;
+        if (stateDim === 353) return RLCPU.STATE_SCHEMAS.MULTIPLAYER_V1;
+        return RLCPU.STATE_SCHEMAS.CUSTOM;
+    }
+
+    static resolveModelSchema(modelData = {}) {
+        return Object.freeze({
+            state: modelData.stateSchema || RLCPU.stateSchemaForDim(modelData.stateDim),
+            action: modelData.actionSchema || RLCPU.ACTION_SCHEMAS.LEGACY_FLAT_V1,
+        });
     }
 
     static fromGlobal(modelData = globalThis.RL_MODEL_DATA) {

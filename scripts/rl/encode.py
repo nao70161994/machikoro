@@ -45,9 +45,23 @@ GLOBAL_FEATURE_DIM_V2 = (
 )
 STATE_DIM_4P = PLAYER_FEATURE_DIM_V2 * MAX_PLAYERS + GLOBAL_FEATURE_DIM_V2
 
+STATE_SCHEMA_2P_V1 = "state-2p-v1"
+STATE_SCHEMA_MP_V1 = "state-mp-v1"
+STATE_SCHEMA_CUSTOM = "state-custom"
+ACTION_SCHEMA_FLAT_V1 = "action-flat-v1"
+ACTION_SCHEMA_FACTORED_BUSINESS_TARGET_V2_DRAFT = "action-factored-business-target-v2-draft"
+
 
 def state_dim_for_player_count(player_count: int = 2) -> int:
     return STATE_DIM if int(player_count or 2) <= 2 else STATE_DIM_4P
+
+
+def state_schema_for_dim(state_dim: int) -> str:
+    if int(state_dim) == STATE_DIM:
+        return STATE_SCHEMA_2P_V1
+    if int(state_dim) == STATE_DIM_4P:
+        return STATE_SCHEMA_MP_V1
+    return STATE_SCHEMA_CUSTOM
 
 
 def _player_threat_score(player) -> float:

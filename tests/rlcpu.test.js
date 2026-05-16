@@ -366,6 +366,25 @@ function applyActionIdToGame(context, game, action, options = {}) {
     applyRlActionToGame(context, game, action);
 }
 
+runTest('RLCPU: schema metadata は既存2人/多人数モデルを識別する', () => {
+    const context = loadRLRuntime();
+    const RLCPU = context.RLCPU;
+
+    assert.strictEqual(RLCPU.stateSchemaForDim(145), RLCPU.STATE_SCHEMAS.TWO_PLAYER_V1);
+    assert.strictEqual(RLCPU.stateSchemaForDim(353), RLCPU.STATE_SCHEMAS.MULTIPLAYER_V1);
+    assert.strictEqual(RLCPU.stateSchemaForDim(3), RLCPU.STATE_SCHEMAS.CUSTOM);
+    const twoPlayerSchema = RLCPU.resolveModelSchema({ stateDim: 145 });
+    assert.strictEqual(twoPlayerSchema.state, RLCPU.STATE_SCHEMAS.TWO_PLAYER_V1);
+    assert.strictEqual(twoPlayerSchema.action, RLCPU.ACTION_SCHEMAS.LEGACY_FLAT_V1);
+
+    const draftSchema = RLCPU.resolveModelSchema({
+        stateDim: 353,
+        actionSchema: RLCPU.ACTION_SCHEMAS.FACTORED_BUSINESS_TARGET_V2_DRAFT,
+    });
+    assert.strictEqual(draftSchema.state, RLCPU.STATE_SCHEMAS.MULTIPLAYER_V1);
+    assert.strictEqual(draftSchema.action, RLCPU.ACTION_SCHEMAS.FACTORED_BUSINESS_TARGET_V2_DRAFT);
+});
+
 runTest('RLCPU: forward は policy と value を返す', () => {
     const { RLCPU } = loadRLRuntime();
     const cpu = new RLCPU(buildTestModel());

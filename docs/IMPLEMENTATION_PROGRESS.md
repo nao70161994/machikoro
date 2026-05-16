@@ -896,3 +896,34 @@
   - `npm test`
   - `npm run test:cpu`
 - 残課題: 実処理の主読み取りはまだ互換 descriptor 経由。field 削減は後続PRで小分けに進める。
+
+## PR-033 RL state/action schema v2 design
+
+- 状態: done
+- commit: `PENDING_PR_033_HASH`
+- 変更ファイル:
+  - `docs/CPU_AI.md`
+  - `docs/rl-experiments.md`
+  - `js/RLCPU.js`
+  - `scripts/rl/encode.py`
+  - `tests/rlcpu.test.js`
+  - `tests/rl-train.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - JS runtime に state/action schema identifier と `resolveModelSchema()` を追加し、既存モデルは未指定なら v1 schema として扱う互換層を用意した。
+  - Python encoder に同じ schema identifier と `state_schema_for_dim()` を追加し、JS/Python で同じ文字列を使えるようにした。
+  - `CPU_AI.md` と `rl-experiments.md` に v2 draft の境界、Business factorization、overflow feature、既存 portfolio 互換方針を記録した。
+  - RLCPU / rl-train tests で schema helper と draft action schema の公開を固定した。
+- 実行テスト:
+  - `node --check js/RLCPU.js`
+  - `node --check tests/rlcpu.test.js`
+  - `node --check tests/rl-train.test.js`
+  - `python3 -m py_compile scripts/rl/encode.py`
+  - `node tests/rlcpu.test.js`
+  - `node tests/rl-train.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:rl`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: v2 draft は識別子と設計のみ。実際の入力次元追加、Business head 変更、portfolio更新は既存モデルと別 lineage の後続作業に分ける。
