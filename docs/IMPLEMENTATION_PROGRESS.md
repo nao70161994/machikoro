@@ -166,7 +166,7 @@
 ## PR-008 online action timeout
 
 - 状態: done
-- commit: this PR commit (`fix: online action送信待ちにtimeoutを追加`)
+- commit: `8ff8724`
 - 変更ファイル:
   - `js/online.js`
   - `tests/online.test.js`
@@ -181,6 +181,31 @@
   - `node --check tests/online.test.js`
   - `node tests/online.test.js`
   - `node tests/online-integration.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+
+## PR-009 room lifecycle rate limit / pre-start TTL
+
+- 状態: done
+- commit: `7033883`
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/ONLINE_SYNC.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - room lifecycle 制限を `ROOM_LIFECYCLE_LIMITS` と helper に集約した。
+  - 未開始roomのTTL、最大room数、socket単位の `createRoom` rate limit を追加した。
+  - 新規room作成時と未開始room参加時に `lastTouchedAt` を更新し、期限切れroomを作成前に掃除してから上限を判定するようにした。
+  - online sync docs に room lifecycle limits と運用上の前提を追記した。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
   - `git diff --check`
   - `npm run test:static`
   - `npm run test:smoke`

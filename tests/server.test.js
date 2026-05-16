@@ -6,6 +6,12 @@ const {
     APP_ERROR_EVENT,
     emitAppError,
     requirePlainSocketPayload,
+    ROOM_LIFECYCLE_LIMITS,
+    isRoomExpired,
+    cleanupExpiredRooms,
+    canCreateRoomForSocket,
+    markCreateRoomForSocket,
+    validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
     resolveBuildHash,
@@ -114,6 +120,59 @@ runTest('generateRoomId は紛らわしい文字を含まない6文字IDを生�
         assert.match(roomId, /^[2-9A-HJ-NP-Z]{6}$/);
         assert(!/[01IO]/.test(roomId));
     }
+});
+
+runTest('cleanupExpiredRooms は未開始roomをTTLで削除し新しいroomを残す', () => {
+    const now = ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs * 2;
+    const targetRooms = {
+        oldPending: { started: false, createdAt: now - ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs - 1, lastTouchedAt: now - ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs - 1 },
+        freshPending: { started: false, createdAt: now - ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs + 1, lastTouchedAt: now - ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs + 1 },
+    };
+
+    assert.strictEqual(isRoomExpired(targetRooms.oldPending, now), true);
+    assert.strictEqual(isRoomExpired(targetRooms.freshPending, now), false);
+    assert.strictEqual(cleanupExpiredRooms(now, targetRooms), 1);
+    assert.strictEqual(targetRooms.oldPending, undefined);
+    assert.ok(targetRooms.freshPending);
+});
+
+runTest('cleanupExpiredRooms は開始済みroomの既存TTLを維持する', () => {
+    const now = ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs * 2;
+    const targetRooms = {
+        oldStarted: { started: true, lastTouchedAt: now - ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs - 1 },
+        freshStarted: { started: true, lastTouchedAt: now - ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs + 1 },
+    };
+
+    assert.strictEqual(cleanupExpiredRooms(now, targetRooms), 1);
+    assert.strictEqual(targetRooms.oldStarted, undefined);
+    assert.ok(targetRooms.freshStarted);
+});
+
+runTest('validateCreateRoomLifecycle は期限切れroomを掃除してから上限を判定する', () => {
+    const now = 3000000;
+    const targetRooms = {};
+    for (let i = 0; i < ROOM_LIFECYCLE_LIMITS.maxRooms - 1; i++) {
+        targetRooms[`fresh${i}`] = { started: false, createdAt: now, lastTouchedAt: now };
+    }
+    targetRooms.expired = { started: false, createdAt: now - ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs - 1, lastTouchedAt: now - ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs - 1 };
+
+    assert.deepStrictEqual(validateCreateRoomLifecycle({}, now, targetRooms), { ok: true });
+    assert.strictEqual(targetRooms.expired, undefined);
+
+    targetRooms.full = { started: false, createdAt: now, lastTouchedAt: now };
+    assert.strictEqual(validateCreateRoomLifecycle({}, now, targetRooms).ok, false);
+});
+
+runTest('createRoom rate limit は同一socketの連続作成だけを拒否する', () => {
+    const now = 4000000;
+    const socket = {};
+
+    assert.strictEqual(canCreateRoomForSocket(socket, now), true);
+    markCreateRoomForSocket(socket, now);
+    assert.strictEqual(canCreateRoomForSocket(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs - 1), false);
+    assert.strictEqual(validateCreateRoomLifecycle(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs - 1, {}).ok, false);
+    assert.strictEqual(canCreateRoomForSocket(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs), true);
+    assert.strictEqual(validateCreateRoomLifecycle({}, now + 1, {}).ok, true);
 });
 
 runTest('server validateBusinessPayload はカードindex指定を許可する', () => {

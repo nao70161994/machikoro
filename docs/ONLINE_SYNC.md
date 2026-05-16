@@ -92,6 +92,17 @@ Server restart restore:
 4. Server validates restore schema, token hash, host identity, rank, snapshot, action log.
 5. Server creates restored room and returns `rejoinData`.
 
+## Room lifecycle limits
+
+Room作成入口は、正常な待ち合わせを妨げない範囲で緩いDoS対策を持ちます。2026-05時点の値は `server.js` の `ROOM_LIFECYCLE_LIMITS` が正本です。
+
+- 開始済みroom: 最終activityから2時間でGC対象。
+- 未開始room: 最終activityから30分でGC対象。作成直後と参加時に `lastTouchedAt` を更新します。
+- 最大room数: 500。新規作成時に期限切れroomを先に掃除してから判定します。
+- socket単位の `createRoom` rate limit: 5秒。無効なpayloadや設定不備では記録せず、実際にroomを作る直前だけ記録します。
+
+この制限は公開サービス向けの完全なrate limitではありません。reverse proxy、IP単位制限、永続room storeを導入する場合も、既存の再接続・server restart restore・host handoffを壊さないように同じライフサイクル観点でテストしてください。
+
 ## Restore payload limits
 
 After server restart の `recreateRoom` payload は client 由来の復元材料なので、room を作る前に `server.js` の `RESTORE_PAYLOAD_LIMITS` で早期拒否します。2026-05時点の上限は以下です。

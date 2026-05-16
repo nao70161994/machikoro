@@ -12,6 +12,12 @@ const server = http.createServer(app);
 const io = new Server(server);
 const gameRuntime = loadGameRuntime();
 const MAX_ACTION_LOG_LENGTH = 200;
+const ROOM_LIFECYCLE_LIMITS = Object.freeze({
+    startedRoomTtlMs: 2 * 60 * 60 * 1000,
+    pendingRoomTtlMs: 30 * 60 * 1000,
+    maxRooms: 500,
+    createRoomRateLimitMs: 5000,
+});
 const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 1024 * 1024,
     maxActionLogEntries: 1000,
@@ -96,6 +102,51 @@ function requirePlainSocketPayload(socket, payload) {
     if (isPlainObject(payload)) return true;
     emitAppError(socket, '無効なリクエストです');
     return false;
+}
+
+function roomTimestamp(value) {
+    return Number.isFinite(value) ? value : 0;
+}
+
+function isRoomExpired(room, now = Date.now()) {
+    if (!room) return false;
+    const ttl = room.started
+        ? ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs
+        : ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs;
+    const touchedAt = roomTimestamp(room.lastTouchedAt) || roomTimestamp(room.createdAt);
+    return touchedAt > 0 && now - touchedAt > ttl;
+}
+
+function cleanupExpiredRooms(now = Date.now(), targetRooms = rooms) {
+    let deleted = 0;
+    for (const [id, room] of Object.entries(targetRooms)) {
+        if (isRoomExpired(room, now)) {
+            delete targetRooms[id];
+            deleted++;
+            console.log(`ルーム削除（TTL）: ${id}`);
+        }
+    }
+    return deleted;
+}
+
+function canCreateRoomForSocket(socket, now = Date.now()) {
+    const lastCreatedAt = roomTimestamp(socket && socket.lastCreateRoomAt);
+    return lastCreatedAt === 0 || now - lastCreatedAt >= ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs;
+}
+
+function markCreateRoomForSocket(socket, now = Date.now()) {
+    if (socket) socket.lastCreateRoomAt = now;
+}
+
+function validateCreateRoomLifecycle(socket, now = Date.now(), targetRooms = rooms) {
+    cleanupExpiredRooms(now, targetRooms);
+    if (Object.keys(targetRooms).length >= ROOM_LIFECYCLE_LIMITS.maxRooms) {
+        return { ok: false, message: 'ルーム数が上限に達しています。しばらくしてから再試行してください' };
+    }
+    if (!canCreateRoomForSocket(socket, now)) {
+        return { ok: false, message: 'ルーム作成が短時間に連続しています。少し待ってから再試行してください' };
+    }
+    return { ok: true };
 }
 
 function sanitizeName(name) {
@@ -226,16 +277,9 @@ function rememberAcceptedClientAction(room, actionEntry) {
     }
 }
 
-// 開始済みルームのGC（2時間アクティビティなしで削除）
+// 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 const roomGcInterval = setInterval(() => {
-    const TTL = 2 * 60 * 60 * 1000;
-    const now = Date.now();
-    for (const [id, room] of Object.entries(rooms)) {
-        if (room.started && room.lastTouchedAt && now - room.lastTouchedAt > TTL) {
-            delete rooms[id];
-            console.log(`ルーム削除（TTL）: ${id}`);
-        }
-    }
+    cleanupExpiredRooms(Date.now(), rooms);
 }, 10 * 60 * 1000);
 if (typeof roomGcInterval.unref === 'function') {
     roomGcInterval.unref();
@@ -261,6 +305,12 @@ io.on('connection', (socket) => {
         }
         playerSettings = normalizePlayerSettings(playerSettings, playerCount);
         cpuSpeed = normalizeCpuSpeed(cpuSpeed);
+        const now = Date.now();
+        const roomLifecycle = validateCreateRoomLifecycle(socket, now, rooms);
+        if (!roomLifecycle.ok) {
+            emitAppError(socket, roomLifecycle.message);
+            return;
+        }
         const roomId = generateRoomId();
         const reconnectToken = generateReconnectToken();
         const selectedCards = normalizeEnabledCards(enabledCards);
@@ -282,7 +332,10 @@ io.on('connection', (socket) => {
                 return;
             }
         }
+        markCreateRoomForSocket(socket, now);
         rooms[roomId] = {
+            createdAt: now,
+            lastTouchedAt: now,
             enabledCards: selectedCards,
             enabledLandmarks: selectedLandmarks,
             players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
@@ -353,6 +406,7 @@ io.on('connection', (socket) => {
         }
 
         const reconnectToken = generateReconnectToken();
+        room.lastTouchedAt = Date.now();
         room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken });
         socket.join(roomId);
         socket.roomId = roomId;
@@ -1641,6 +1695,12 @@ module.exports = {
     APP_ERROR_EVENT,
     emitAppError,
     requirePlainSocketPayload,
+    ROOM_LIFECYCLE_LIMITS,
+    isRoomExpired,
+    cleanupExpiredRooms,
+    canCreateRoomForSocket,
+    markCreateRoomForSocket,
+    validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
     resolveBuildHash,
