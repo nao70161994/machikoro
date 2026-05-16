@@ -314,6 +314,10 @@ class GameManager {
     // _processGreen・CPU._cardActivationValue・CPU.evalCard が参照することで
     // ゲームロジックと CPU 予測の乖離を防ぐ。
     // 副作用（pendingMover++ など）を持つカードは含まない。
+    static cardActivationProfile(card) {
+        return getCardActivationProfile(card);
+    }
+
     static calcCardIncome(card, owner, game) {
         const handler = CARD_INCOME_EFFECT_HANDLERS[card.effect];
         if (handler) return handler(card, owner, game);

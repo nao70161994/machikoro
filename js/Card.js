@@ -130,6 +130,35 @@ const CARD_EFFECT_METADATA = Object.freeze({
     [CARD_EFFECTS.PARK]:          { timing: "income", targetScope: "all",       cpuKind: "redistribute" },
 });
 
+function getCardActivationProfile(card) {
+    if (!card) return null;
+    const metadata = CARD_EFFECT_METADATA[card.effect] || CARD_EFFECT_METADATA[CARD_EFFECTS.NORMAL];
+    let targetScope = metadata.targetScope;
+    let cpuKind = metadata.cpuKind;
+
+    if (card.effect === CARD_EFFECTS.NORMAL) {
+        if (card.color === "red") {
+            targetScope = "current";
+            cpuKind = "conditionalSteal";
+        } else {
+            targetScope = "self";
+            cpuKind = "income";
+        }
+    }
+
+    return Object.freeze({
+        cardId: card.id || CARD_ID_BY_NAME[card.name] || null,
+        effect: card.effect,
+        color: card.color,
+        timing: metadata.timing,
+        targetScope,
+        cpuKind,
+        requires: metadata.requires || null,
+        sideEffect: metadata.sideEffect || null,
+        triggers: Object.freeze(Array.from(metadata.triggers || [])),
+    });
+}
+
 const CARD_DEFS = Object.freeze([
     Object.freeze({ id: "wheat_field", name: "麦畑", cost: 1, diceNums: Object.freeze([1]), income: 1, color: "blue", category: "農園", effect: "normal" }),
     Object.freeze({ id: "ranch", name: "牧場", cost: 1, diceNums: Object.freeze([2]), income: 1, color: "blue", category: "畜産", effect: "normal" }),

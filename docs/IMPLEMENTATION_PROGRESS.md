@@ -355,3 +355,32 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: なし。
+
+
+## PR-015 card activation profile helper
+
+- 状態: done
+- commit: `PENDING_PR_015_HASH`
+- 変更ファイル:
+  - `js/Card.js`
+  - `js/GameManager.js`
+  - `tests/gamemanager.test.js`
+  - `tests/helpers/runtime-loaders.js`
+  - `docs/CARD_SYSTEM.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `getCardActivationProfile(card)` を追加し、effect metadata と card color を組み合わせた発火profileを返すようにした。
+  - `NORMAL` の青/緑は `targetScope: self`、赤は `targetScope: current` / `cpuKind: conditionalSteal` として明示した。
+  - `LOAN` / `ITSTARTUP` の複合triggerを profile から読めるようにした。
+  - `GameManager.cardActivationProfile(card)` の薄いwrapperを追加し、ルール層から同じprofileを参照できる足場を作った。
+  - `docs/CARD_SYSTEM.md` に profile helper と NORMAL 色別補正を追記した。
+- 実行テスト:
+  - `node --check js/Card.js`
+  - `node --check js/GameManager.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: 実際の発火dispatch本体は既存分岐のまま。後続PRでprofile参照箇所を広げる。

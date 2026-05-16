@@ -147,13 +147,14 @@ UI、CPU、online action schema まで波及する高リスク分類です。
 
 ### Step 2: effect metadata を追加する
 
-処理は変えず、`js/Card.js` に分類情報を追加済みです。今後はこの metadata を参照する側を小さく増やします。
+処理は変えず、`js/Card.js` に分類情報を追加済みです。`getCardActivationProfile(card)` は effect metadata と card color を組み合わせた読み取り用profileを返します。
 
 - `timing`: `income`, `pending`, `build`, `turnEnd`
 - `targetScope`: `self`, `current`, `opponent`, `opponents`, `all`
 - `requires`: `harbor`, `landmarkCount`, `dice`
 - `cpuKind`: `income`, `comboIncome`, `conditionalIncome`, `steal`, `conditionalSteal`, `interactive`, `upkeep`, `redistribute`
 - `triggers`: `onBuild`, `afterIncome`, `turnEndPrompt`。`LOAN` と `ITSTARTUP` のような複合 effect だけが使います。
+- `NORMAL` は色で発火対象が変わります。青/緑は `targetScope: self`、赤は `targetScope: current` として `getCardActivationProfile(card)` が補正します。
 
 ### Step 3: 副作用なし income を dispatch table 化する
 
@@ -177,7 +178,7 @@ CPU の手書き補正を残したまま、依存関係と effect 分類だけ m
 
 ## Metadata の現在の限界
 
-`CARD_EFFECT_METADATA` は effect 単位の分類です。`NORMAL` はカード色によって青/緑の収入にも赤の steal にもなるため、最終的な発火分類は card color と組み合わせて判断します。`ITSTARTUP` と `LOAN` は複合 effect の漏れを避けるため `triggers` を持ちますが、dispatch 本体はまだ既存の `GameManager` ルール処理に残しています。後続 PR では `comboSource` などを足して段階的に精密化します。
+`CARD_EFFECT_METADATA` は effect 単位の分類です。`NORMAL` はカード色によって青/緑の収入にも赤の steal にもなるため、`getCardActivationProfile(card)` が card color と組み合わせた発火profileを返します。`ITSTARTUP` と `LOAN` は複合 effect の漏れを避けるため `triggers` を持ちますが、dispatch 本体はまだ既存の `GameManager` ルール処理に残しています。後続 PR では `comboSource` などを足して段階的に精密化します。
 
 ## 変更時の確認コマンド
 

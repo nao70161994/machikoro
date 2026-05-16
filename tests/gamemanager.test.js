@@ -52,6 +52,36 @@ runTest('CARD_EFFECT_METADATA の分類値と複合triggerは許可値だけを�
     assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.ITSTARTUP].triggers), ['afterIncome', 'turnEndPrompt']);
 });
 
+runTest('getCardActivationProfile は NORMAL の色別対象と複合triggerを返す', () => {
+    const wheat = createCardByName('麦畑');
+    const cafe = createCardByName('カフェ');
+    const bakery = createCardByName('パン屋');
+    const loan = createCardByName('貸金業');
+    const itStartup = createCardByName('ITベンチャー');
+
+    assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(wheat)), {
+        cardId: CARD_IDS.WHEAT_FIELD,
+        effect: CARD_EFFECTS.NORMAL,
+        color: 'blue',
+        timing: 'income',
+        targetScope: 'self',
+        cpuKind: 'income',
+        requires: null,
+        sideEffect: null,
+        triggers: [],
+    });
+    assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(bakery)).targetScope, 'self');
+    assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(cafe)).targetScope, 'current');
+    assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(cafe)).cpuKind, 'conditionalSteal');
+    assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(loan)).triggers, ['onBuild', 'afterIncome']);
+    assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(itStartup)).triggers, ['afterIncome', 'turnEndPrompt']);
+    assert.deepStrictEqual(plainProfile(GameManager.cardActivationProfile(cafe)), plainProfile(runtime.getCardActivationProfile(cafe)));
+});
+
+function plainProfile(profile) {
+    return Object.assign({}, profile, { triggers: Array.from(profile.triggers) });
+}
+
 runTest('CARD_DEFS は CARDS と ID map の正本になる', () => {
     assert.strictEqual(CARD_DEFS.length, runtime.CARDS.length);
     assert.deepStrictEqual(
