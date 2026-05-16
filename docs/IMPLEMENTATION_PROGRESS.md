@@ -216,7 +216,7 @@
 ## PR-010 action registry coverage test
 
 - 状態: done
-- commit: this PR commit (`test: action schemaの層間網羅性を固定`)
+- commit: `055a6d0`
 - 変更ファイル:
   - `tests/server.test.js`
   - `tests/online.test.js`
