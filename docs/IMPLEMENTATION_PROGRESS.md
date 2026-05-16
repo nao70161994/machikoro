@@ -514,7 +514,7 @@
 ## PR-020 CPU build action result
 
 - 状態: done
-- commit: `PENDING_PR_020_HASH`
+- commit: `a700e89`
 - 変更ファイル:
   - `js/CPU.js`
   - `js/RLCPU.js`
