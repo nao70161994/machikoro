@@ -36,19 +36,22 @@ function updateOnlineTabState() {
 // ===== PWAインストールバナー =====
 let _pwaInstallEvent = null;
 
+function setPwaBannerVisible(id, visible) {
+    const banner = document.getElementById(id);
+    if (banner) banner.style.display = visible ? 'block' : 'none';
+}
+
 function pwaInstallPrompt() {
     if (!_pwaInstallEvent) return;
     _pwaInstallEvent.prompt();
     _pwaInstallEvent.userChoice.then(() => {
-        const banner = document.getElementById('pwaInstallBanner');
-        if (banner) banner.style.display = 'none';
+        setPwaBannerVisible('pwaInstallBanner', false);
         _pwaInstallEvent = null;
     });
 }
 
 function pwaInstallDismiss() {
-    const banner = document.getElementById('pwaInstallBanner');
-    if (banner) banner.style.display = 'none';
+    setPwaBannerVisible('pwaInstallBanner', false);
     localStorage.setItem('pwaInstallDismissed', '1');
     _pwaInstallEvent = null;
 }
@@ -78,8 +81,7 @@ function bindPwaInstallHandlers() {
             return;
         }
         _pwaInstallEvent = e;
-        const banner = document.getElementById('pwaInstallBanner');
-        if (banner) banner.style.display = 'block';
+        setPwaBannerVisible('pwaInstallBanner', true);
     });
 }
 

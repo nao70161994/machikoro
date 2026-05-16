@@ -4,6 +4,21 @@
     padding: 0;
 }
 
+/*
+ * z-index scale:
+ * - PWA banner: below gameplay overlays so update/install notices never cover an active modal.
+ * - Pending modal: above page UI, below turn announcement and full modal dialogs.
+ * - Modal: top normal interaction layer.
+ * - Crash: emergency recovery layer above all app UI.
+ */
+:root {
+    --z-pwa-banner: 500;
+    --z-pending-modal: 600;
+    --z-turn-announcer: 700;
+    --z-modal: 1000;
+    --z-crash-screen: 2000;
+}
+
 body {
     font-family: 'Helvetica Neue', sans-serif;
     background: #0f0e17;
@@ -474,7 +489,7 @@ body {
     background: rgba(0,0,0,0.75);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    z-index: 1000;
+    z-index: var(--z-modal);
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -1248,7 +1263,7 @@ button:not(:disabled):active {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 600;
+    z-index: var(--z-pending-modal);
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
@@ -1405,7 +1420,7 @@ button:not(:disabled):active {
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    z-index: 700;
+    z-index: var(--z-turn-announcer);
 }
 
 .turn-announcer-content {
@@ -1864,7 +1879,7 @@ button:not(:disabled):active {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.85);
-    z-index: 99998;
+    z-index: var(--z-crash-screen);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2123,8 +2138,10 @@ button:not(:disabled):active {
     flex-shrink: 0;
 }
 
-/* ===== PWAインストールバナー ===== */
-#pwaInstallBanner {
+/* ===== PWAバナー ===== */
+.pwa-banner,
+#pwaInstallBanner,
+#pwaUpdateBanner {
     position: fixed;
     bottom: 0;
     left: 50%;
@@ -2134,8 +2151,12 @@ button:not(:disabled):active {
     background: linear-gradient(135deg, #1a1a3e, #2a1a30);
     border-top: 1px solid rgba(245,166,35,0.4);
     padding: 12px 16px;
-    z-index: 9999;
+    z-index: var(--z-pwa-banner);
     animation: pwaSlideUp 0.3s ease;
+}
+
+#pwaUpdateBanner {
+    border-top-color: rgba(126,211,33,0.45);
 }
 
 @keyframes pwaSlideUp {

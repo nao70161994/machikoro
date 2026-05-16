@@ -582,3 +582,32 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: tuning の意味説明や各 profile の用途整理は、後続の docs / CPU 診断強化で扱う。
+
+
+## PR-022 PWA banner and z-index scale
+
+- 状態: done
+- commit: `PENDING_PR_022_HASH`
+- 変更ファイル:
+  - `style.css`
+  - `index.html`
+  - `js/appShell.js`
+  - `tests/main.test.js`
+  - `docs/maintenance-checklists.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `#pwaUpdateBanner` と `#pwaInstallBanner` を共通 `pwa-banner` class へ揃え、更新バナーにも CSS を適用した。
+  - `style.css` に PWA / pending / turn announcer / modal / crash の z-index scale をコメント付きで定義した。
+  - PWA バナーの z-index を modal より下に下げ、ゲーム中 modal を覆わない階層へ整理した。
+  - appShell の install banner 表示/非表示を小さな helper 経由へ寄せた。
+  - PWA checklist と main test に z-index scale / update banner CSS の確認を追加した。
+- 実行テスト:
+  - `node --check js/appShell.js`
+  - `node --check tests/main.test.js`
+  - `npm run test:pwa`
+  - `node tests/main.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: 実ブラウザでの更新バナー表示は自動テストでは DOM/CSS の静的確認まで。Service Worker 更新通知の見た目は次回PWA手動確認で見る。

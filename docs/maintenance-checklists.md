@@ -45,7 +45,7 @@ npm run test:smoke
 | RL runtime / export | `npm run test:rl` | 速く切り分ける場合は `node tests/rlcpu.test.js`、parity 確認は `node tests/rl-match-trace.test.js`。 |
 | RL 学習 / 評価 scripts | `npm run test:static:py` と `npm run test:rl` | Python 構文だけなら `python3 -m py_compile scripts/rl/*.py`。速く切り分ける場合は `node tests/rl-train.test.js`、評価系は `node tests/eval-rl-vs-js.test.js`, `node tests/eval-rl-models.test.js`。 |
 | RL registry / portfolio | `npm run validate-rl-registry` | `npm run audit-rl-portfolio` で role 別に期待される 2p / 3p / 4p / 5p / 10p の評価カバレッジも見る。`missing` は 2人専用 / 多人数用の role と照合して判断する。`npm run report-rl-registry` も併用。 |
-| PWA / Service Worker | `npm run test:pwa` | 実ブラウザで更新通知、ゲーム中 reload 抑止、タイトル画面自動適用、オフライン表示。 |
+| PWA / Service Worker | `npm run test:pwa` | 実ブラウザで更新通知、ゲーム中 reload 抑止、タイトル画面自動適用、オフライン表示。バナー更新時は `style.css` の z-index scale コメントに沿って、PWA banner が modal / pending 操作を覆わないことも確認する。 |
 | Android / TWA workflow | YAML 差分確認 | GitHub Actions 手動実行で artifact 失敗検知。 |
 
 ## Online Restore Compatibility

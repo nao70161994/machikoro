@@ -826,12 +826,21 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
 
 runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     const workflow = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/build-apk.yml'), 'utf8');
 
     assert.ok(html.includes('refreshingByServiceWorker'));
     assert.ok(html.includes('let hadServiceWorkerController = !!navigator.serviceWorker.controller;'));
     assert.ok(html.includes('hadServiceWorkerController = true;'));
+    assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner"'));
+    assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner"'));
+    assert.ok(css.includes('--z-pwa-banner: 500;'));
+    assert.ok(css.includes('--z-pending-modal: 600;'));
+    assert.ok(css.includes('--z-modal: 1000;'));
+    assert.ok(css.includes('#pwaUpdateBanner'));
+    assert.ok(css.includes('z-index: var(--z-pwa-banner);'));
+    assert.ok(css.includes('z-index: var(--z-modal);'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
     assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
     assert.ok(workflow.includes('test -s app-release-signed.apk'));
