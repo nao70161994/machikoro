@@ -21,6 +21,63 @@ function getInitialCardStock(card, playerCount) {
     return DEFAULT_SHOP_STOCK;
 }
 
+function resolveCardStockName(cardRef) {
+    if (!cardRef) return null;
+    if (typeof cardRef === "string") {
+        if (typeof CARD_NAME_BY_ID !== "undefined" && CARD_NAME_BY_ID[cardRef]) return CARD_NAME_BY_ID[cardRef];
+        if (typeof CARD_ID_BY_NAME !== "undefined" && CARD_ID_BY_NAME[cardRef]) return cardRef;
+        return null;
+    }
+    if (cardRef.name) return cardRef.name;
+    if (cardRef.id && typeof CARD_NAME_BY_ID !== "undefined") return CARD_NAME_BY_ID[cardRef.id] || null;
+    return null;
+}
+
+function resolveCardStockId(cardRef) {
+    if (!cardRef) return null;
+    if (typeof cardRef === "string") {
+        if (typeof CARD_NAME_BY_ID !== "undefined" && CARD_NAME_BY_ID[cardRef]) return cardRef;
+        if (typeof CARD_ID_BY_NAME !== "undefined") return CARD_ID_BY_NAME[cardRef] || null;
+        return null;
+    }
+    if (cardRef.id) return cardRef.id;
+    if (cardRef.name && typeof CARD_ID_BY_NAME !== "undefined") return CARD_ID_BY_NAME[cardRef.name] || null;
+    return null;
+}
+
+function getShopStockCount(shopStock, cardRef) {
+    if (!shopStock) return 0;
+    const name = resolveCardStockName(cardRef);
+    const id = resolveCardStockId(cardRef);
+    if (name && Object.prototype.hasOwnProperty.call(shopStock, name)) return shopStock[name] || 0;
+    if (id && Object.prototype.hasOwnProperty.call(shopStock, id)) return shopStock[id] || 0;
+    return 0;
+}
+
+function setShopStockCount(shopStock, cardRef, count) {
+    if (!shopStock || !Number.isInteger(count) || count < 0) return false;
+    const name = resolveCardStockName(cardRef);
+    const id = resolveCardStockId(cardRef);
+    if (name && Object.prototype.hasOwnProperty.call(shopStock, name)) { shopStock[name] = count; return true; }
+    if (id && Object.prototype.hasOwnProperty.call(shopStock, id)) { shopStock[id] = count; return true; }
+    if (name) { shopStock[name] = count; return true; }
+    return false;
+}
+
+function decrementShopStock(shopStock, cardRef) {
+    const count = getShopStockCount(shopStock, cardRef);
+    if (count <= 0) return false;
+    return setShopStockCount(shopStock, cardRef, count - 1);
+}
+
+function assignShopStockSnapshot(shopStock, source) {
+    if (!shopStock || !source || typeof source !== "object") return shopStock;
+    for (const [key, count] of Object.entries(source)) {
+        if (Number.isInteger(count) && count >= 0) setShopStockCount(shopStock, key, count);
+    }
+    return shopStock;
+}
+
 const CARD_EFFECTS = Object.freeze({
     NORMAL:        "normal",
     CHEESE:        "cheese",

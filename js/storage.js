@@ -143,7 +143,7 @@ function resumeGame() {
         }
         game = new GameManager(state.players.length);
         game.enabledLandmarks = new Set(enabledLandmarks);
-        for (const [name, count] of Object.entries(state.shopStock || {})) SHOP_STOCK[name] = count;
+        assignSavedShopStockSnapshot(SHOP_STOCK, state.shopStock || {});
         state.players.forEach((ps, i) => {
             const p = game.players[i];
             p.name = ps.name;
@@ -228,6 +228,24 @@ function isKnownCardName(name) {
     return !!createCardByName(name);
 }
 
+function savedShopStockNameFromKey(key) {
+    if (isKnownCardName(key)) return key;
+    if (typeof CARD_NAME_BY_ID !== "undefined" && CARD_NAME_BY_ID[key] && isKnownCardName(CARD_NAME_BY_ID[key])) {
+        return CARD_NAME_BY_ID[key];
+    }
+    return null;
+}
+
+function assignSavedShopStockSnapshot(target, source) {
+    if (typeof assignShopStockSnapshot === "function") return assignShopStockSnapshot(target, source);
+    if (!target || !source || typeof source !== "object") return target;
+    for (const [key, count] of Object.entries(source)) {
+        const name = savedShopStockNameFromKey(key);
+        if (name && Number.isInteger(count) && count >= 0) target[name] = count;
+    }
+    return target;
+}
+
 function isKnownLandmarkName(name) {
     return Player.landmarkNames().includes(name);
 }
@@ -301,8 +319,9 @@ function isValidSavedPlayerState(playerState) {
 function isValidSavedShopStock(shopStock, enabledCardsList) {
     if (!isPlainObject(shopStock)) return false;
     const enabled = Array.isArray(enabledCardsList) ? new Set(enabledCardsList) : null;
-    for (const [name, count] of Object.entries(shopStock)) {
-        if (!isKnownCardName(name) || !Number.isInteger(count) || count < 0) return false;
+    for (const [key, count] of Object.entries(shopStock)) {
+        const name = savedShopStockNameFromKey(key);
+        if (!name || !Number.isInteger(count) || count < 0) return false;
         if (enabled && !enabled.has(name) && count !== 0) return false;
     }
     return true;
@@ -333,7 +352,7 @@ function restoreUndoSnapshot(state) {
         p.itVentureCoins = state.playerItVenture?.[i] ?? 0;
         p.hasYakusho = state.playerHasYakusho?.[i] !== false;
     });
-    Object.assign(SHOP_STOCK, state.shopStock);
+    assignSavedShopStockSnapshot(SHOP_STOCK, state.shopStock);
     game.builtThisTurn = state.builtThisTurn === true;
     game.log = Array.isArray(state.log) ? [...state.log] : [];
     game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;

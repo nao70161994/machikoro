@@ -233,7 +233,7 @@ function init(playerCount) {
     if (enabledLandmarks.size === 0) enabledLandmarks = new Set(Player.landmarkNames());
     game.enabledLandmarks = new Set(enabledLandmarks);
     for (const card of CARDS) {
-        SHOP_STOCK[card.name] = enabledCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0;
+        setShopStockCount(SHOP_STOCK, card, enabledCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
     }
     playerSettings = Array.from({ length: playerCount }, (_, index) =>
         normalizeLocalPlayerSetting(playerSettings[index], index, playerCount)
@@ -676,7 +676,7 @@ function onBuildCard(name) {
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
         if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD, scheduledPlayerIndex)) return;
-        if ((SHOP_STOCK[name] || 0) <= 0) return;
+        if (getShopStockCount(SHOP_STOCK, card) <= 0) return;
         saveUndoState();
         cancelAutoSkip();
         if (isOnlineGame) {
@@ -684,7 +684,7 @@ function onBuildCard(name) {
             return;
         }
         if (game.buildCard(card)) {
-            SHOP_STOCK[name]--;
+            decrementShopStock(SHOP_STOCK, card);
             playSound('build');
             render();
             scheduleCPU();
@@ -986,7 +986,7 @@ function checkAutoSkip() {
 
     const current = game.currentPlayer();
     const canAffordCard = CARDS.some(card =>
-        SHOP_STOCK[card.name] > 0 &&
+        getShopStockCount(SHOP_STOCK, card) > 0 &&
         current.coins >= card.cost &&
         card.cost > 0 &&
         !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)

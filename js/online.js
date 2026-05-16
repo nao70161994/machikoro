@@ -746,7 +746,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     game = new GameManager(count);
     game.enabledLandmarks = new Set(enabledLandmarks.size > 0 ? enabledLandmarks : Player.landmarkNames());
     for (const card of CARDS) {
-        SHOP_STOCK[card.name] = enabledCards.has(card.name) ? getInitialCardStock(card, count) : 0;
+        setShopStockCount(SHOP_STOCK, card, enabledCards.has(card.name) ? getInitialCardStock(card, count) : 0);
     }
 
     // playerOrderに従ってプレイヤー名とCPU設定を設定
@@ -794,7 +794,7 @@ function applyAction(action, data) {
         case 'resolveIT':       game.resolveIT(data.doSave); break;
         case 'buildCard': {
             const card = CARDS.find(c => c.name === data.cardName);
-            if (card && game.buildCard(card)) SHOP_STOCK[data.cardName]--;
+            if (card && game.buildCard(card)) decrementShopStock(SHOP_STOCK, card);
             break;
         }
         case 'buildLandmark':   game.buildLandmark(data.name); break;
@@ -828,7 +828,7 @@ function restoreOnlineSnapshot(state) {
         p.itVentureCoins = playerState.itVentureCoins || 0;
         p.hasYakusho = playerState.hasYakusho !== false;
     });
-    Object.assign(SHOP_STOCK, state.shopStock || {});
+    assignShopStockSnapshot(SHOP_STOCK, state.shopStock || {});
     game.currentPlayerIndex = state.currentPlayerIndex || 0;
     game.phase = state.phase || game.phase;
     game.log = state.log || [];

@@ -1010,7 +1010,7 @@ function loadGameRuntime() {
         vm.runInContext(source, context, { filename: file });
     }
     vm.runInContext(
-        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.getInitialCardStock = getInitialCardStock; this.GAME_PHASES = GAME_PHASES; this.GAME_ACTIONS = GAME_ACTIONS; this.GAME_ACTION_REGISTRY = GAME_ACTION_REGISTRY; this.GAME_PHASE_ACTIONS = GAME_PHASE_ACTIONS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.getInitialCardStock = getInitialCardStock; this.getShopStockCount = getShopStockCount; this.setShopStockCount = setShopStockCount; this.decrementShopStock = decrementShopStock; this.assignShopStockSnapshot = assignShopStockSnapshot; this.resolveCardStockName = resolveCardStockName; this.GAME_PHASES = GAME_PHASES; this.GAME_ACTIONS = GAME_ACTIONS; this.GAME_ACTION_REGISTRY = GAME_ACTION_REGISTRY; this.GAME_PHASE_ACTIONS = GAME_PHASE_ACTIONS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
         context
     );
     return context;
@@ -1018,14 +1018,14 @@ function loadGameRuntime() {
 
 function createRoomMirror(room) {
     if (!room.gameStartPayload) return null;
-    const { GameManager, CARDS, createCardByName, getInitialCardStock, Player } = gameRuntime;
+    const { GameManager, CARDS, createCardByName, getInitialCardStock, setShopStockCount, Player } = gameRuntime;
     const { playerNames, playerSettings, playerOrder, enabledCards, enabledLandmarks } = room.gameStartPayload;
     const game = new GameManager(playerNames.length);
     game.enabledLandmarks = new Set((enabledLandmarks && enabledLandmarks.length > 0) ? enabledLandmarks : Player.landmarkNames());
     const shopStock = {};
     const enabled = new Set(enabledCards || CARDS.map(c => c.name));
     for (const card of CARDS) {
-        shopStock[card.name] = enabled.has(card.name) ? getInitialCardStock(card, playerNames.length) : 0;
+        setShopStockCount(shopStock, card, enabled.has(card.name) ? getInitialCardStock(card, playerNames.length) : 0);
     }
 
     const order = playerOrder || playerNames.map((_, i) => i);
@@ -1109,8 +1109,8 @@ function validateMirrorSnapshot(state, playerCount, createCardByName, PlayerClas
     }
     if (Object.prototype.hasOwnProperty.call(state, 'shopStock')) {
         if (!isPlainObject(state.shopStock)) return false;
-        for (const [name, count] of Object.entries(state.shopStock)) {
-            if (!createCardByName(name) || !Number.isInteger(count) || count < 0) return false;
+        for (const [key, count] of Object.entries(state.shopStock)) {
+            if (!gameRuntime.resolveCardStockName(key) || !Number.isInteger(count) || count < 0) return false;
         }
     }
     if (Object.prototype.hasOwnProperty.call(state, 'currentPlayerIndex') &&
@@ -1173,7 +1173,7 @@ function isValidUndoState(state, playerCount, createCardByName) {
         if (state.playerHasYakusho && typeof state.playerHasYakusho[i] !== 'boolean') return false;
     }
     return Object.entries(state.shopStock)
-        .every(([name, count]) => createCardByName(name) && Number.isInteger(count) && count >= 0);
+        .every(([key, count]) => gameRuntime.resolveCardStockName(key) && Number.isInteger(count) && count >= 0);
 }
 
 function validateSnapshotAgainstRoomConfig(state, room, playerCount) {
@@ -1216,15 +1216,15 @@ function validateSnapshotCardAndStockConfig(playersState, shopStockState, enable
     }
     for (const card of gameRuntime.CARDS) {
         if (!enabledCards.has(card.name)) {
-            if (Object.prototype.hasOwnProperty.call(stockState, card.name) && stockState[card.name] !== 0) return false;
+            if (gameRuntime.getShopStockCount(stockState, card) !== 0) return false;
             continue;
         }
         const initialStock = enabledCards.has(card.name)
             ? gameRuntime.getInitialCardStock(card, playerCount)
             : 0;
-        const stockCount = Object.prototype.hasOwnProperty.call(stockState, card.name)
-            ? stockState[card.name]
-            : initialStock;
+        const hasStock = Object.prototype.hasOwnProperty.call(stockState, card.name) ||
+            Object.prototype.hasOwnProperty.call(stockState, card.id);
+        const stockCount = hasStock ? gameRuntime.getShopStockCount(stockState, card) : initialStock;
         if (!Number.isInteger(stockCount) || stockCount < 0 || stockCount > initialStock) return false;
     }
     return true;
@@ -1298,7 +1298,7 @@ function restoreMirrorState(game, shopStock, state, createCardByName) {
         p.itVentureCoins = playerState.itVentureCoins || 0;
         p.hasYakusho = playerState.hasYakusho !== false;
     });
-    Object.assign(shopStock, state.shopStock || {});
+    gameRuntime.assignShopStockSnapshot(shopStock, state.shopStock || {});
     game.currentPlayerIndex = Number.isInteger(state.currentPlayerIndex) &&
         state.currentPlayerIndex >= 0 && state.currentPlayerIndex < game.players.length
         ? state.currentPlayerIndex
@@ -1354,7 +1354,7 @@ function applyActionToMirror(game, shopStock, action, data, createCardByName) {
         case 'buildCard': {
             const card = createCardByName(data.cardName);
             if (!card || !game.buildCard(card)) return false;
-            shopStock[data.cardName]--;
+            gameRuntime.decrementShopStock(shopStock, card);
             return true;
         }
         case 'buildLandmark':
@@ -1383,7 +1383,7 @@ function restoreUndoMirror(game, shopStock, state, createCardByName) {
         p.itVentureCoins = state.playerItVenture?.[i] ?? 0;
         p.hasYakusho = state.playerHasYakusho?.[i] !== false;
     });
-    Object.assign(shopStock, state.shopStock);
+    gameRuntime.assignShopStockSnapshot(shopStock, state.shopStock);
     game.builtThisTurn = state.builtThisTurn === true;
     game.log = Array.isArray(state.log) ? [...state.log] : [];
     game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
@@ -1535,10 +1535,10 @@ function validateBuildCardPayload(room, game, shopStock, data) {
     const current = game.currentPlayer();
     return !!card &&
         enabledCards.has(cardName) &&
-        (shopStock[cardName] || 0) > 0 &&
+        gameRuntime.getShopStockCount(shopStock, card) > 0 &&
         !game.builtThisTurn &&
         current.coins >= card.cost &&
-        !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0);
+        !(card.color === 'purple' && current.countCardIncludingDormantById(card.id) > 0);
 }
 
 function validateBuildLandmarkPayload(room, game, data) {

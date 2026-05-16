@@ -212,6 +212,18 @@ function loadMainRuntime(options = {}) {
         getInitialCardStock(card, playerCount) {
             return card.color === 'purple' ? playerCount : 6;
         },
+        getShopStockCount(shopStock, card) {
+            return shopStock?.[card.name] || 0;
+        },
+        setShopStockCount(shopStock, card, count) {
+            shopStock[card.name] = count;
+            return true;
+        },
+        decrementShopStock(shopStock, card) {
+            if ((shopStock?.[card.name] || 0) <= 0) return false;
+            shopStock[card.name]--;
+            return true;
+        },
         drawCitySkyline() { counters.drawCitySkyline++; },
         resumeGame() { counters.resumeGame++; },
         RLModelPortfolio: {

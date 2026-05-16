@@ -412,3 +412,41 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: カテゴリ枚数系 handler は既存カテゴリ判定のまま。後続PRでカード定義metadataへ寄せる。
+
+
+## PR-017 shopStock ID migration scaffold
+
+- 状態: done
+- commit: `PENDING_PR_017_HASH`
+- 変更ファイル:
+  - `js/Card.js`
+  - `js/main.js`
+  - `js/online.js`
+  - `js/storage.js`
+  - `server.js`
+  - `tests/main.test.js`
+  - `tests/online.test.js`
+  - `tests/server.test.js`
+  - `tests/storage.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - shop stock の読み書き用に `getShopStockCount`, `setShopStockCount`, `decrementShopStock`, `assignShopStockSnapshot` を追加した。
+  - 保存形式は名前keyのまま維持しつつ、ID key の snapshot/undo state も名前keyへ復元できるようにした。
+  - local/online/server mirror の初期化、復元、buildCard減算、server payload validation を helper 経由へ寄せた。
+  - storage / online / server / main のテストで ID key stock と test runtime helper を固定した。
+- 実行テスト:
+  - `node --check js/Card.js`
+  - `node --check js/main.js`
+  - `node --check js/online.js`
+  - `node --check js/storage.js`
+  - `node --check server.js`
+  - `node tests/storage.test.js`
+  - `node tests/online.test.js`
+  - `node tests/server.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+  - `npm run test:online`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: CPU/RL/UI の直接 `shopStock[card.name]` 参照は後続PRで段階的に移行する。

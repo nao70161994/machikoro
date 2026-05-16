@@ -90,7 +90,8 @@ function loadStorageRuntime() {
         prevCoins: null,
         winSoundPlayed: false,
         undoState: null,
-        createCardByName(name) { return { name }; },
+        CARD_NAME_BY_ID: { wheat_field: '麦畑', bakery: 'パン屋' },
+        createCardByName(name) { return ['麦畑', 'パン屋'].includes(name) ? { name } : null; },
         render() { context.renderCount = (context.renderCount || 0) + 1; },
         scheduleCPU() { context.scheduleCount = (context.scheduleCount || 0) + 1; },
         cancelAutoSkip() {},
@@ -126,6 +127,7 @@ function loadStorageRuntime() {
             getCpuPlayers: () => cpuPlayers,
             getPlayerSettings: () => playerSettings,
             getSelectedCount: () => selectedCount,
+            getShopStock: () => SHOP_STOCK,
         };
     `, context);
     return context;
@@ -372,6 +374,19 @@ runTest('storage resumeGame は旧保存データのshopStock/dormantIndices欠�
     assert.strictEqual(rt.__test.getGame().players[1].itVentureCoins, 0);
     assert.strictEqual(rt.__test.getGame().players[1].hasYakusho, true);
     assert.notStrictEqual(rt.localStorage.getItem('savedGame'), null);
+});
+
+runTest('storage resumeGame は ID key の shopStock を名前keyへ復元する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        shopStock: { wheat_field: 4 },
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getShopStock()['麦畑'], 4);
+    assert.strictEqual(rt.__test.getShopStock().wheat_field, undefined);
 });
 
 runTest('storage resumeGame は欠落ランドマークkeyを既定値で補完する', () => {

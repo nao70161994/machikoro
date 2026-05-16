@@ -951,6 +951,18 @@ runTest('validateActionPayloadForState は validateGameAction と build payload 
     );
 });
 
+runTest('validateBuildCardPayload は ID key の shopStock を読める', () => {
+    const runtime = loadGameRuntime();
+    const room = makeRoom();
+    const { game } = createRoomMirror(room);
+    game.phase = 'build';
+    game.currentPlayer().coins = 10;
+    const cafe = runtime.createCardByName('カフェ');
+    const shopStock = { [cafe.id]: 1 };
+
+    assert.strictEqual(validateBuildCardPayload(room, game, shopStock, { cardName: 'カフェ' }), true);
+});
+
 runTest('validateActionPayloadForState は resolveTV と buildLandmark payload helper を共有する', () => {
     const { GameManager } = makeGame();
     const room = makeRoom();

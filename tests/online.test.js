@@ -101,6 +101,7 @@ function loadOnlineRuntime() {
         this.GameManager = GameManager;
         this.Player = Player;
         this.CARDS = CARDS;
+        this.CARD_IDS = CARD_IDS;
         this.createCardByName = createCardByName;
         this.GAME_PHASES = GAME_PHASES;
         this.GAME_ACTIONS = GAME_ACTIONS;
@@ -160,7 +161,7 @@ function loadOnlineRuntime() {
 }
 
 const rt = loadOnlineRuntime();
-const { GameManager, Player, CARDS, createCardByName, GAME_PHASES, LOG_TYPES } = rt;
+const { GameManager, Player, CARDS, CARD_IDS, createCardByName, GAME_PHASES, LOG_TYPES } = rt;
 
 function makeGame(count = 2) {
     const g = new GameManager(count);
@@ -1387,13 +1388,14 @@ runTest('restoreOnlineSnapshot はゲーム状態と在庫を復元する', () =
         pendingTunaDice: [1, 2],
         turnCount: 4,
         hadAmusementParkAtRoll: true,
-        shopStock: { 麦畑: 4, パン屋: 5 },
+        shopStock: { 麦畑: 4, [CARD_IDS.BAKERY]: 5 },
     });
     const g = rt.getGame();
     assert.strictEqual(g.currentPlayerIndex, 1);
     assert.strictEqual(g.players[0].coins, 7);
     assert.strictEqual(g.players[0].dormantCards.length, 1);
     assert.strictEqual(rt.getShopStock()['麦畑'], 4);
+    assert.strictEqual(rt.getShopStock()['パン屋'], 5);
     assert.strictEqual(g.turnCount, 4);
 });
 
