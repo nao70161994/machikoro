@@ -43,6 +43,14 @@ function loadOnlineRuntime() {
         let socketHandlers = {};
         let socketEmits = [];
         let socketDisconnected = false;
+        let timeoutHandlers = [];
+        function setTimeout(handler, ms) {
+            timeoutHandlers.push({ handler, ms });
+            return timeoutHandlers.length;
+        }
+        function clearTimeout(id) {
+            if (Number.isInteger(id) && timeoutHandlers[id - 1]) timeoutHandlers[id - 1].cleared = true;
+        }
         const CPU = class {
             constructor(difficulty, options = {}) {
                 this.difficulty = difficulty;
@@ -100,6 +108,8 @@ function loadOnlineRuntime() {
         this._onlineRestoreRank = _onlineRestoreRank;
         this._tryRestoreRoom = _tryRestoreRoom;
         this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
+        this._handleOnlineActionTimeout = _handleOnlineActionTimeout;
+        this.getTimeoutHandlers = () => timeoutHandlers;
         this.buildOnlineSnapshot = buildOnlineSnapshot;
         this.handleAppError = handleAppError;
         this.sendAction = sendAction;
@@ -892,6 +902,39 @@ runTest('sendAction は actionAccepted まで二重送信を止める', () => {
     rt.getSocketHandlers().actionAccepted({ action: 'nextTurn', data: {} });
 
     assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+});
+
+runTest('sendAction はack timeoutでpendingを残して再同期する', () => {
+    const rt = loadOnlineRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.setGame(game);
+    rt.initSocket();
+    rt.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const pending = rt._readPendingOutboundAction();
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, true);
+    assert.strictEqual(rt.getTimeoutHandlers().length, 1);
+
+    assert.strictEqual(rt._handleOnlineActionTimeout(), true);
+
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.deepStrictEqual(rt._readPendingOutboundAction(), pending);
+    const rejoin = rt.getSocketEmits().filter(e => e.name === 'rejoinRoom').pop();
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rejoin.payload)), {
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+    });
 });
 
 runTest('sendAction は未ackアクションを復元用に保存し actionAccepted で消す', () => {

@@ -143,7 +143,7 @@
 ## PR-007 accepted clientActionId owner check
 
 - 状態: done
-- commit: this PR commit (`fix: action再送ackを送信者単位で照合`)
+- commit: `be36a0a`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
@@ -156,6 +156,31 @@
   - `node --check server.js`
   - `node --check tests/server.test.js`
   - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+
+## PR-008 online action timeout
+
+- 状態: done
+- commit: this PR commit (`fix: online action送信待ちにtimeoutを追加`)
+- 変更ファイル:
+  - `js/online.js`
+  - `tests/online.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - online action 送信時に ack timeout timer と送信時刻を持つようにした。
+  - timeout 時は pending action を保持したまま in-flight を解除し、`rejoinRoom` で canonical state の再同期へ倒す。
+  - actionAccepted、rejoinData、disconnect、appError、reset で timeout を解除するようにした。
+  - ack timeout で pending を消さず再同期要求を送る online test を追加。
+- 実行テスト:
+  - `node --check js/online.js`
+  - `node --check tests/online.test.js`
+  - `node tests/online.test.js`
+  - `node tests/online-integration.test.js`
   - `git diff --check`
   - `npm run test:static`
   - `npm run test:smoke`

@@ -94,10 +94,13 @@ let reconnectToken = '';
 let isReplaying = false;
 let isReconnectingOnline = false;
 let onlineActionInFlight = false;
+let onlineActionInFlightAt = 0;
+let _onlineActionTimeoutTimer = null;
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
+const ONLINE_ACTION_ACK_TIMEOUT_MS = 15000;
 const ONLINE_RESTORE_SCHEMA_VERSION = 2;
 const ONLINE_STORAGE_KEYS = Object.freeze({
     gameStart: 'onlineGameStart',
@@ -142,6 +145,46 @@ function _clearRejoinRetry() {
     }
 }
 
+function _clearOnlineActionTimeout() {
+    onlineActionInFlightAt = 0;
+    if (_onlineActionTimeoutTimer && typeof clearTimeout === 'function') {
+        clearTimeout(_onlineActionTimeoutTimer);
+    }
+    _onlineActionTimeoutTimer = null;
+}
+
+function _setOnlineActionInFlight(value) {
+    onlineActionInFlight = value === true;
+    _clearOnlineActionTimeout();
+    if (!onlineActionInFlight) return;
+    onlineActionInFlightAt = Date.now();
+    if (typeof setTimeout === 'function') {
+        _onlineActionTimeoutTimer = setTimeout(_handleOnlineActionTimeout, ONLINE_ACTION_ACK_TIMEOUT_MS);
+    }
+}
+
+function _emitOnlineRejoinRequest() {
+    if (!socket || socket.connected === false || !myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return false;
+    socket.emit('rejoinRoom', {
+        roomId: myRoomId,
+        playerIndex: myOriginalPlayerIndex,
+        playerName: myPlayerName,
+        reconnectToken,
+    });
+    return true;
+}
+
+function _handleOnlineActionTimeout() {
+    if (!onlineActionInFlight) return false;
+    _setOnlineActionInFlight(false);
+    if (!isOnlineGame) return false;
+    isReconnectingOnline = true;
+    cpuScheduleToken++;
+    const el = document.getElementById("onlineStatus");
+    if (el) el.textContent = '⚠️ サーバー応答がタイムアウトしました。状態を再同期しています...';
+    return _emitOnlineRejoinRequest();
+}
+
 function resetOnlineState() {
     cpuScheduleToken++;
     if (socket) { socket.disconnect(); socket = null; }
@@ -153,7 +196,7 @@ function resetOnlineState() {
     reconnectToken = '';
     isReplaying = false;
     isReconnectingOnline = false;
-    onlineActionInFlight = false;
+    _setOnlineActionInFlight(false);
     _clearPendingOutboundAction();
     _clearRejoinRetry();
 }
@@ -482,7 +525,7 @@ function initSocket() {
     });
 
     socket.on('actionAccepted', ({ action, data, playerIndex, seq, clientActionId }) => {
-        onlineActionInFlight = false;
+        _setOnlineActionInFlight(false);
         _clearPendingOutboundAction();
         applyReplayedAction(action, data);
         render();
@@ -520,7 +563,7 @@ function initSocket() {
             pendingCompactedIntoSnapshot;
         isOnlineGame = true;
         isReconnectingOnline = false;
-        onlineActionInFlight = false;
+        _setOnlineActionInFlight(false);
         if (pendingAccepted) _clearPendingOutboundAction();
         _clearRejoinRetry();
         cpuSpeed = cs || 1500;
@@ -571,7 +614,7 @@ function initSocket() {
                 _clearPendingOutboundAction();
                 return;
             }
-            onlineActionInFlight = true;
+            _setOnlineActionInFlight(true);
             socket.emit('gameAction', {
                 action: pendingBeforeRejoin.action,
                 data: pendingBeforeRejoin.data,
@@ -621,7 +664,7 @@ function initSocket() {
     socket.on('disconnect', () => {
         if (!isOnlineGame) return;
         isReconnectingOnline = true;
-        onlineActionInFlight = false;
+        _setOnlineActionInFlight(false);
         cpuScheduleToken++;
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = '⏳ 接続が切れました。再接続しています...';
@@ -636,7 +679,7 @@ function initSocket() {
 }
 
 function handleAppError(msg) {
-    onlineActionInFlight = false;
+    _setOnlineActionInFlight(false);
     if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
         if (isRoomHost) {
             _tryRestoreRoom();
@@ -650,12 +693,7 @@ function handleAppError(msg) {
         isReconnectingOnline = true;
         cpuScheduleToken++;
         document.getElementById("onlineStatus").textContent = '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...';
-        socket.emit('rejoinRoom', {
-            roomId: myRoomId,
-            playerIndex: myOriginalPlayerIndex,
-            playerName: myPlayerName,
-            reconnectToken,
-        });
+        _emitOnlineRejoinRequest();
         return;
     }
     if (isReconnectingOnline) {
@@ -820,7 +858,7 @@ function handleRemoteAction(action, data) {
 function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {
         if (isReconnectingOnline || onlineActionInFlight || socket.connected === false) return false;
-        onlineActionInFlight = true;
+        _setOnlineActionInFlight(true);
         cpuScheduleToken++;
         const pending = _savePendingOutboundAction(action, data);
         socket.emit('gameAction', { action, data, clientActionId: pending.clientActionId });
