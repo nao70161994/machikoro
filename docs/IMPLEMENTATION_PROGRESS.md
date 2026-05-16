@@ -333,7 +333,7 @@
 ## PR-014 CARD_DEFS scaffold
 
 - 状態: done
-- commit: `PENDING_PR_014_HASH`
+- commit: `0219072`
 - 変更ファイル:
   - `js/Card.js`
   - `tests/gamemanager.test.js`
