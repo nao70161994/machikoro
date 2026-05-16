@@ -684,7 +684,7 @@
 ## PR-025 pending UI event delegation scaffold
 
 - 状態: done
-- commit: `PENDING_PR_025_HASH`
+- commit: `2dc6966`
 - 変更ファイル:
   - `js/ui.js`
   - `js/main.js`
