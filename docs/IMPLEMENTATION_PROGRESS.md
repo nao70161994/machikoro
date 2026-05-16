@@ -481,7 +481,7 @@
 ## PR-019 CPU execution helper alignment
 
 - 状態: done
-- commit: `PENDING_PR_019_HASH`
+- commit: `fe681ef`
 - 変更ファイル:
   - `js/CPU.js`
   - `js/main.js`
