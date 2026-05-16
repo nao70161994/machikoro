@@ -454,7 +454,7 @@
 ## PR-018 CPU smoke coverage
 
 - 状態: done
-- commit: `PENDING_PR_018_HASH`
+- commit: `323cfa6`
 - 変更ファイル:
   - `package.json`
   - `tests/run-all.js`
