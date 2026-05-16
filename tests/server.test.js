@@ -6,6 +6,8 @@ const {
     APP_ERROR_EVENT,
     emitAppError,
     requirePlainSocketPayload,
+    RESTORE_PAYLOAD_LIMITS,
+    validateRestorePayloadLimits,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
@@ -1158,6 +1160,40 @@ runTest('handleRecreateRoom は payload 欠損を例外にせず拒否する', (
 
         assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '復元データが不完全です' }]);
     }
+});
+
+runTest('validateRestorePayloadLimits は復元payloadの件数とサイズ上限を検証する', () => {
+    assert.strictEqual(validateRestorePayloadLimits({ roomId: 'A', actionLog: [] }).ok, true);
+    assert.strictEqual(validateRestorePayloadLimits({
+        roomId: 'A',
+        actionLog: Array.from({ length: RESTORE_PAYLOAD_LIMITS.maxActionLogEntries + 1 }, () => ({ action: 'nextTurn' })),
+    }).reason, 'action-log-length');
+    assert.strictEqual(validateRestorePayloadLimits({ roomId: 'A', memo: 'x'.repeat(RESTORE_PAYLOAD_LIMITS.maxStringLength + 1) }).reason, 'content-size');
+    assert.strictEqual(validateRestorePayloadLimits({
+        roomId: 'A',
+        stateSnapshot: {
+            players: [{ cards: Array.from({ length: RESTORE_PAYLOAD_LIMITS.maxPlayerCardRefs + 1 }, () => '麦畑') }],
+        },
+    }).reason, 'content-size');
+});
+
+runTest('handleRecreateRoom は過大な復元payloadを早期拒否する', () => {
+    const emitted = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, body) { emitted.push({ name, body }); },
+        join() { throw new Error('join should not be called'); },
+    };
+
+    handleRecreateRoom(socket, {
+        roomId: 'REST_BIG',
+        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+        reconnectToken: 'token',
+        actionLog: Array.from({ length: RESTORE_PAYLOAD_LIMITS.maxActionLogEntries + 1 }, () => ({ action: 'nextTurn' })),
+    });
+
+    assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '復元データが大きすぎます' }]);
+    assert.strictEqual(__rooms.REST_BIG, undefined);
 });
 
 runTest('handleRecreateRoom は復元payloadでも2〜10人制限を守る', () => {

@@ -7,7 +7,7 @@
 ## PR-001 Socket.IO payload guard
 
 - 状態: done
-- commit: this PR commit (`fix: Socket.IO payload入口を不正形から保護`)
+- commit: `38cee56`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
@@ -17,6 +17,30 @@
   - `createRoom`, `joinRoom`, `gameAction`, `rejoinRoom` の destructuring 前に plain object guard を追加。
   - `handleRecreateRoom()` でも non-plain payload を例外化せず拒否するようにした。
   - 不正 payload guard の server test を追加。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+## PR-002 recreateRoom payload size limit
+
+- 状態: done
+- commit: this PR commit (`fix: 復元payloadのサイズ上限を追加`)
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/ONLINE_SYNC.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `RESTORE_PAYLOAD_LIMITS` と `validateRestorePayloadLimits()` を追加。
+  - `handleRecreateRoom()` の room 作成・復元検証前に、JSON概算サイズ、actionLog件数、文字列長、文字列総量、player card references の上限を確認。
+  - 過大な復元 payload は `appError` の「復元データが大きすぎます」で早期拒否。
+  - 上限値と見直し方針を `docs/ONLINE_SYNC.md` に記録。
 - 実行テスト:
   - `node --check server.js`
   - `node --check tests/server.test.js`

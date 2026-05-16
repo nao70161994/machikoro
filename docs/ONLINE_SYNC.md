@@ -78,6 +78,18 @@ Server restart restore:
 4. Server validates restore schema, token hash, host identity, rank, snapshot, action log.
 5. Server creates restored room and returns `rejoinData`.
 
+## Restore payload limits
+
+After server restart の `recreateRoom` payload は client 由来の復元材料なので、room を作る前に `server.js` の `RESTORE_PAYLOAD_LIMITS` で早期拒否します。2026-05時点の上限は以下です。
+
+- JSON概算サイズ: 1 MiB。
+- `actionLog`: 最大 1000 entries。live room は通常 200 entries を超えると snapshot へ圧縮されるため、restore 上限は余裕を持たせています。
+- 1文字列: 最大 4000 characters。
+- payload内の文字列合計: 最大 200000 characters。
+- snapshot / undoState 内の player card references: 最大 5000。
+
+上限に当たった payload は `appError` の「復元データが大きすぎます」で拒否します。長時間対戦の復元を広げる場合は、client 側の snapshot compaction と server 側の上限を同じ PR で見直してください。
+
 ## Restore rank
 
 Restore freshness is ordered by:

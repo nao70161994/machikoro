@@ -12,6 +12,13 @@ const server = http.createServer(app);
 const io = new Server(server);
 const gameRuntime = loadGameRuntime();
 const MAX_ACTION_LOG_LENGTH = 200;
+const RESTORE_PAYLOAD_LIMITS = Object.freeze({
+    maxJsonBytes: 1024 * 1024,
+    maxActionLogEntries: 1000,
+    maxStringLength: 4000,
+    maxTotalStringChars: 200000,
+    maxPlayerCardRefs: 5000,
+});
 
 function resolveBuildHash() {
     if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
@@ -614,6 +621,10 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
+    if (!validateRestorePayloadLimits(payload).ok) {
+        emitAppError(socket, '復元データが大きすぎます');
+        return;
+    }
     const { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload;
     if (!roomId || !gameStartPayload || !reconnectToken) {
         emitAppError(socket, '復元データが不完全です');
@@ -769,6 +780,57 @@ function handleRecreateRoom(socket, payload = {}) {
         hostEpoch: restoredRoom.hostEpoch || 0,
     });
     console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+}
+
+function validateRestorePayloadLimits(payload, limits = RESTORE_PAYLOAD_LIMITS) {
+    if (!isPlainObject(payload)) return { ok: false, reason: 'not-object' };
+    let jsonBytes = 0;
+    try {
+        jsonBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    } catch {
+        return { ok: false, reason: 'json' };
+    }
+    if (jsonBytes > limits.maxJsonBytes) return { ok: false, reason: 'json-size', jsonBytes };
+    if (Array.isArray(payload.actionLog) && payload.actionLog.length > limits.maxActionLogEntries) {
+        return { ok: false, reason: 'action-log-length', actionLogEntries: payload.actionLog.length };
+    }
+
+    const stats = { stringChars: 0, playerCardRefs: 0 };
+    const visit = (value, key = '', depth = 0) => {
+        if (depth > 20) return false;
+        if (typeof value === 'string') {
+            if (value.length > limits.maxStringLength) return false;
+            stats.stringChars += value.length;
+            return stats.stringChars <= limits.maxTotalStringChars;
+        }
+        if (Array.isArray(value)) {
+            if ((key === 'cards' || key === 'playerCardNames') && value.every(item => typeof item === 'string' || Array.isArray(item))) {
+                stats.playerCardRefs += countNestedStrings(value);
+                if (stats.playerCardRefs > limits.maxPlayerCardRefs) return false;
+            }
+            for (const item of value) {
+                if (!visit(item, key, depth + 1)) return false;
+            }
+            return true;
+        }
+        if (isPlainObject(value)) {
+            for (const [childKey, childValue] of Object.entries(value)) {
+                if (!visit(childValue, childKey, depth + 1)) return false;
+            }
+        }
+        return true;
+    };
+
+    if (!visit(payload)) {
+        return { ok: false, reason: 'content-size', stringChars: stats.stringChars, playerCardRefs: stats.playerCardRefs };
+    }
+    return { ok: true, jsonBytes, actionLogEntries: Array.isArray(payload.actionLog) ? payload.actionLog.length : 0, playerCardRefs: stats.playerCardRefs };
+}
+
+function countNestedStrings(value) {
+    if (typeof value === 'string') return 1;
+    if (!Array.isArray(value)) return 0;
+    return value.reduce((sum, item) => sum + countNestedStrings(item), 0);
 }
 
 function sanitizeClientStateSnapshot(stateSnapshot, playerCount) {
@@ -1569,6 +1631,8 @@ module.exports = {
     APP_ERROR_EVENT,
     emitAppError,
     requirePlainSocketPayload,
+    RESTORE_PAYLOAD_LIMITS,
+    validateRestorePayloadLimits,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
