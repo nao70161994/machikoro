@@ -51,6 +51,7 @@ function loadUiRuntime() {
         winSoundPlayed: false,
         renderStatsCalls: 0,
         recordCalls: 0,
+        saveGameCalls: 0,
         crashErr: '',
         updateResumeButton() {},
         startConfetti() {},
@@ -68,6 +69,7 @@ function loadUiRuntime() {
         escapeHtml(value) { return String(value); },
         renderStats() { context.renderStatsCalls++; },
         recordGameStats() { context.recordCalls++; },
+        saveGameState() { context.saveGameCalls++; },
         LOG_TYPES: {
             DICE: 'dice',
             GAIN: 'gain',
@@ -109,6 +111,18 @@ runTest('switchTab は stats タブ表示時に renderStats を呼ぶ', () => {
     assert.strictEqual(elements.tabContentOnline.style.display, 'none');
     assert.strictEqual(elements.tabContentStats.style.display, 'block');
     assert.strictEqual(context.renderStatsCalls, 1);
+});
+
+runTest('render helper は勝利・通常描画・保存境界へ分かれている', () => {
+    const { context } = loadUiRuntime();
+
+    assert.strictEqual(typeof context.renderWinnerState, 'function');
+    assert.strictEqual(typeof context.renderActiveGameState, 'function');
+    assert.strictEqual(typeof context.persistAfterRender, 'function');
+
+    context.persistAfterRender();
+
+    assert.strictEqual(context.saveGameCalls, 1);
 });
 
 runTest('render は勝利時に recordGameStats を一度だけ呼ぶ', () => {

@@ -707,3 +707,29 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: ビジネスセンターのカード選択チップと build menu の inline handler は別PRで扱う。
+
+
+## PR-026 render side-effect split scaffold
+
+- 状態: done
+- commit: `PENDING_PR_026_HASH`
+- 変更ファイル:
+  - `js/ui.js`
+  - `tests/ui.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `_render()` の勝利処理を `renderWinnerState()` へ分離した。
+  - 通常ゲーム中の描画処理を `renderActiveGameState()` へ分離した。
+  - render 後の保存境界を `persistAfterRender()` に切り出し、通常描画後だけ呼ぶ既存順序を維持した。
+  - UIテストで helper の存在と保存境界呼び出しを固定した。
+- 実行テスト:
+  - `node --check js/ui.js`
+  - `node --check tests/ui.test.js`
+  - `node --check tests/storage.test.js`
+  - `node tests/ui.test.js`
+  - `node tests/storage.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: render 内の coin animation / build menu / autoskip のさらなる細分化は後続のUI分離で扱う。

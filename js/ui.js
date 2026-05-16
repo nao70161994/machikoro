@@ -266,38 +266,47 @@ function _render() {
     syncTutorialControls();
 
     if (winner) {
-        const winnerIdx = game.players.indexOf(winner);
-        const isCPUWinner = cpuPlayers[winnerIdx] !== null;
-        if (!winSoundPlayed) {
-            if (winner.name === lastWinnerName) winStreak++;
-            else { winStreak = 1; lastWinnerName = winner.name; }
-            localStorage.setItem('winStreak', winStreak);
-            localStorage.setItem('lastWinnerName', lastWinnerName);
-        }
-        const scoreRows = game.players.slice().sort((a, b) => b.coins - a.coins).map(p => {
-            const isW = p === winner;
-            return `<div class="winner-stats-row ${isW ? 'highlight' : ''}"><span>${isW ? '🏆 ' : ''}${escapeHtml(p.name)}</span><span>🪙 ${p.coins}</span></div>`;
-        }).join('');
-        const streakHtml = winStreak >= 2 ? `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>` : '';
-        document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div></div>`;
-        if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); recordGameStats(winner, game, cpuPlayers); }
-        localStorage.removeItem('savedGame');
-        localStorage.removeItem('onlineSession');
-        updateResumeButton();
-        startConfetti();
-        document.getElementById("btnRoll").disabled = true;
-        const btnSkip = document.getElementById("btnSkip");
-        btnSkip.disabled = true;
-        btnSkip.textContent = "建設しないでターン終了";
-        document.getElementById("btnReroll").style.display = "none";
-        document.getElementById("diceChoose").innerHTML = "";
-        document.getElementById("buildMenu").innerHTML = "";
-        renderTutorial();
-        renderLog();
-        renderPlayers();
+        renderWinnerState(winner);
         return;
     }
 
+    renderActiveGameState(current);
+    persistAfterRender();
+}
+
+function renderWinnerState(winner) {
+    const winnerIdx = game.players.indexOf(winner);
+    const isCPUWinner = cpuPlayers[winnerIdx] !== null;
+    if (!winSoundPlayed) {
+        if (winner.name === lastWinnerName) winStreak++;
+        else { winStreak = 1; lastWinnerName = winner.name; }
+        localStorage.setItem('winStreak', winStreak);
+        localStorage.setItem('lastWinnerName', lastWinnerName);
+    }
+    const scoreRows = game.players.slice().sort((a, b) => b.coins - a.coins).map(p => {
+        const isW = p === winner;
+        return `<div class="winner-stats-row ${isW ? 'highlight' : ''}"><span>${isW ? '🏆 ' : ''}${escapeHtml(p.name)}</span><span>🪙 ${p.coins}</span></div>`;
+    }).join('');
+    const streakHtml = winStreak >= 2 ? `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>` : '';
+    document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div></div>`;
+    if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); recordGameStats(winner, game, cpuPlayers); }
+    localStorage.removeItem('savedGame');
+    localStorage.removeItem('onlineSession');
+    updateResumeButton();
+    startConfetti();
+    document.getElementById("btnRoll").disabled = true;
+    const btnSkip = document.getElementById("btnSkip");
+    btnSkip.disabled = true;
+    btnSkip.textContent = "建設しないでターン終了";
+    document.getElementById("btnReroll").style.display = "none";
+    document.getElementById("diceChoose").innerHTML = "";
+    document.getElementById("buildMenu").innerHTML = "";
+    renderTutorial();
+    renderLog();
+    renderPlayers();
+}
+
+function renderActiveGameState(current) {
     document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
     if (game.phase === GAME_PHASES.ROLL && game.currentPlayerIndex !== prevPlayerIndex) {
@@ -330,6 +339,9 @@ function _render() {
     prevCoins = game.players.map(p => p.coins);
     renderBuildMenu();
     checkAutoSkip();
+}
+
+function persistAfterRender() {
     saveGameState();
 }
 
