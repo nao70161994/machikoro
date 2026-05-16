@@ -450,3 +450,30 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: CPU/RL/UI の直接 `shopStock[card.name]` 参照は後続PRで段階的に移行する。
+
+## PR-018 CPU smoke coverage
+
+- 状態: done
+- commit: `PENDING_PR_018_HASH`
+- 変更ファイル:
+  - `package.json`
+  - `tests/run-all.js`
+  - `tests/cpu.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `cpu-smoke` test group を追加し、`MACHIKORO_CPU_SMOKE=1` で `cpu.test.js` の軽量subsetだけ実行できるようにした。
+  - `test:smoke` に `node tests/run-all.js cpu-smoke` を追加した。
+  - CPU pending 解決が pending phase に残らないこと、主要 pending field がクリアされることを軽量に検証した。
+  - 全 CPU difficulty の `build()` が1呼び出しで終了し、手番を進めないことを smoke で固定した。
+- 実行テスト:
+  - `node --check tests/cpu.test.js`
+  - `node --check tests/run-all.js`
+  - `node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"`
+  - `node tests/run-all.js cpu-smoke`
+  - `node tests/cpu.test.js`
+  - `git diff --check`
+  - `npm run test:cpu`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: smoke では重い selfplay simulation は回さない。長時間のCPU品質確認は `npm run test:cpu` / `npm run test:sim` に残す。

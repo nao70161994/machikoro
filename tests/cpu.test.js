@@ -1,6 +1,17 @@
 const assert = require('assert');
-const { runTest } = require('./helpers/test-utils');
+const { runTest: baseRunTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
+
+const CPU_SMOKE_ONLY = process.env.MACHIKORO_CPU_SMOKE === '1';
+const CPU_SMOKE_TESTS = new Set([
+    'CPU smoke: pending actions resolve without staying in pending phase',
+    'CPU smoke: build calls terminate for all difficulties',
+]);
+
+function runTest(name, fn) {
+    if (CPU_SMOKE_ONLY && !CPU_SMOKE_TESTS.has(name)) return;
+    baseRunTest(name, fn);
+}
 
 const runtime = loadCPURuntime();
 const CPU = runtime.CPU;
@@ -11,6 +22,83 @@ const CARDS = runtime.CARDS;
 const CARD_EFFECTS = runtime.CARD_EFFECTS;
 const CARD_CATEGORIES = runtime.CARD_CATEGORIES;
 const LANDMARK_NAMES = runtime.LANDMARK_NAMES;
+
+function makeFullShopStock() {
+    return Object.fromEntries(CARDS.map(card => [card.name, 6]));
+}
+
+runTest('CPU smoke: pending actions resolve without staying in pending phase', () => {
+    const makeBaseGame = () => {
+        const game = new GameManager(2);
+        game.phase = runtime.GAME_PHASES.PENDING;
+        game.players[0].coins = 10;
+        game.players[1].coins = 10;
+        return game;
+    };
+    const cases = [
+        ['tv', game => {
+            game.pendingTV = 1;
+            game.currentPlayer().cards = [createCardByName('テレビ局')];
+        }],
+        ['business', game => {
+            game.pendingBusiness = 1;
+            game.currentPlayer().cards = [createCardByName('ビジネスセンター'), createCardByName('麦畑')];
+            game.players[1].cards = [createCardByName('森林')];
+        }],
+        ['cleaning', game => {
+            game.pendingCleaning = 1;
+            game.currentPlayer().cards = [createCardByName('清掃業')];
+            game.players[1].cards = [createCardByName('カフェ')];
+        }],
+        ['mover', game => {
+            game.pendingMover = 1;
+            game.currentPlayer().cards = [createCardByName('引越し屋'), createCardByName('カフェ')];
+        }],
+        ['renovation', game => {
+            game.pendingRenovation = 1;
+            game.currentPlayer().cards = [createCardByName('改装屋')];
+            game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+        }],
+        ['it', game => {
+            game.pendingIT = true;
+            game.currentPlayer().cards = [createCardByName('ITベンチャー')];
+        }],
+    ];
+
+    for (const [label, setup] of cases) {
+        const game = makeBaseGame();
+        setup(game);
+        const cpu = new CPU('expert', { expertPreset: 'v2simple', simulationMode: 'lite' });
+
+        cpu._runSimulationStep(game, cpu, makeFullShopStock(), () => 0.5);
+
+        assert.notStrictEqual(game.phase, runtime.GAME_PHASES.PENDING, label);
+        assert.strictEqual(game.pendingTV, 0, label);
+        assert.strictEqual(game.pendingBusiness, 0, label);
+        assert.strictEqual(game.pendingCleaning, 0, label);
+        assert.strictEqual(game.pendingMover, 0, label);
+        assert.strictEqual(game.pendingRenovation, 0, label);
+        assert.strictEqual(game.pendingIT, false, label);
+    }
+});
+
+runTest('CPU smoke: build calls terminate for all difficulties', () => {
+    for (const difficulty of ['weak', 'normal', 'strong', 'expert']) {
+        const options = difficulty === 'expert' ? { simulationMode: 'lite' } : undefined;
+        const cpu = new CPU(difficulty, options);
+        const game = new GameManager(2);
+        const current = game.currentPlayer();
+        current.coins = 6;
+        game.phase = runtime.GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        const beforeTurn = game.currentPlayerIndex;
+
+        cpu.build(game, makeFullShopStock());
+
+        assert.strictEqual(game.currentPlayerIndex, beforeTurn, difficulty);
+        assert.strictEqual(typeof game.builtThisTurn, 'boolean', difficulty);
+    }
+});
 
 runTest('_runSimulationStep は pendingIT を PENDING フェーズで解決する', () => {
     const cpu = new CPU('normal');
@@ -1105,7 +1193,7 @@ runTest('all CPU difficulties: 10人戦でも主要判断が例外なく合法�
         current.addCard(createCardByName('テレビ局'));
         return game;
     };
-    const createShopStock = () => Object.fromEntries(CARDS.map(card => [card.name, 6]));
+    const createShopStock = makeFullShopStock;
 
     for (const [label, createCpu] of cpuCases) {
         let game = createTenPlayerGame();

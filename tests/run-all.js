@@ -72,6 +72,9 @@ const TEST_GROUPS = {
         'storage.test.js',
         'main.test.js',
     ],
+    'cpu-smoke': [
+        'cpu.test.js',
+    ],
     cpu: [
         'cpu.test.js',
         'selfplay.test.js',
@@ -177,6 +180,9 @@ for (const file of testFiles) {
     const result = spawnSync(process.execPath, [path.join(__dirname, file)], {
         cwd: repoRoot,
         stdio: 'inherit',
+        env: mode === 'cpu-smoke'
+            ? Object.assign({}, process.env, { MACHIKORO_CPU_SMOKE: '1' })
+            : process.env,
     });
     if (result.status !== 0) {
         failed = true;
