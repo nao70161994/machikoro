@@ -839,7 +839,7 @@
 ## PR-031 server canonical mirror experiment
 
 - 状態: done
-- commit: `PENDING_PR_031_HASH`
+- commit: `48c24d1`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
