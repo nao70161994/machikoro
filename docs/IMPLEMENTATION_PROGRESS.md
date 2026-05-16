@@ -76,7 +76,7 @@
 ## PR-004 snapshot roundtrip tests
 
 - 状態: done
-- commit: this PR commit (`test: online snapshot roundtripを固定`)
+- commit: `9f39c00`
 - 変更ファイル:
   - `tests/server.test.js`
   - `tests/online.test.js`
@@ -90,6 +90,28 @@
   - `node --check tests/online.test.js`
   - `node tests/server.test.js`
   - `node tests/online.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+
+## PR-005 Python static check
+
+- 状態: done
+- commit: this PR commit (`test: Python構文チェック入口を追加`)
+- 変更ファイル:
+  - `package.json`
+  - `docs/maintenance-checklists.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `test:static:py` を追加し、`python3 -m py_compile scripts/rl/*.py` で RL Python scripts の構文を確認できるようにした。
+  - `npm run test:static` から Python 構文チェックも実行するようにした。
+  - Termux で Python 3 が無い場合の扱いと切り分け用コマンドを保守チェックリストに記録した。
+- 実行テスト:
+  - `python3 -m py_compile scripts/rl/*.py`
+  - `npm run test:static:py`
   - `git diff --check`
   - `npm run test:static`
   - `npm run test:smoke`

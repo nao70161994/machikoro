@@ -27,7 +27,7 @@ npm run test:static
 npm run test:smoke
 ```
 
-`test:static` は JS / JSON / shell の構文と parse を確認します。`test:smoke` は static に加えて core / online の主要回帰を実行します。PWA 変更時は続けて `npm run test:pwa` を実行してください。
+`test:static` は JS / JSON / shell / RL Python の構文と parse を確認します。Python は RL 学習・評価スクリプトの保守に必要なため、`python3` が無い Termux 環境では `pkg install python` などで Python 3 を入れてから実行してください。Python だけを切り分ける場合は `npm run test:static:py` を使います。`test:smoke` は static に加えて core / online の主要回帰を実行します。PWA 変更時は続けて `npm run test:pwa` を実行してください。
 
 ## 変更種別別テストコマンド
 
@@ -43,7 +43,7 @@ npm run test:smoke
 | 保存 / localStorage | `node tests/storage.test.js` | online restore schema を変えた場合は `docs/online-restore-schema.md` も更新。 |
 | CPU 判断 | `npm run test:cpu` | 速く切り分ける場合は `node tests/cpu.test.js`。 |
 | RL runtime / export | `npm run test:rl` | 速く切り分ける場合は `node tests/rlcpu.test.js`、parity 確認は `node tests/rl-match-trace.test.js`。 |
-| RL 学習 / 評価 scripts | `npm run test:rl` | 速く切り分ける場合は `node tests/rl-train.test.js`、評価系は `node tests/eval-rl-vs-js.test.js`, `node tests/eval-rl-models.test.js`。 |
+| RL 学習 / 評価 scripts | `npm run test:static:py` と `npm run test:rl` | Python 構文だけなら `python3 -m py_compile scripts/rl/*.py`。速く切り分ける場合は `node tests/rl-train.test.js`、評価系は `node tests/eval-rl-vs-js.test.js`, `node tests/eval-rl-models.test.js`。 |
 | RL registry / portfolio | `npm run validate-rl-registry` | `npm run audit-rl-portfolio` で role 別に期待される 2p / 3p / 4p / 5p / 10p の評価カバレッジも見る。`missing` は 2人専用 / 多人数用の role と照合して判断する。`npm run report-rl-registry` も併用。 |
 | PWA / Service Worker | `npm run test:pwa` | 実ブラウザで更新通知、ゲーム中 reload 抑止、タイトル画面自動適用、オフライン表示。 |
 | Android / TWA workflow | YAML 差分確認 | GitHub Actions 手動実行で artifact 失敗検知。 |
