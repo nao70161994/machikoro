@@ -5,10 +5,10 @@
 
 ## 現在の正本
 
-- カード定義: `js/Card.js`
+- カード定義: `js/Card.js` の `CARD_DEFS`
 - 効果定数: `CARD_EFFECTS`
 - 分類定数: `CARD_CATEGORIES`
-- 安定ID: `CARD_IDS`, `CARD_NAME_BY_ID`
+- 安定ID: `CARD_IDS`, `CARD_NAME_BY_ID`, `CARD_ID_BY_NAME`（`CARD_DEFS` から生成）
 - effect 分類 metadata: `CARD_EFFECT_METADATA`
 - 実ルール: `js/GameManager.js`
 - ランドマーク定義: `js/Player.js`
@@ -22,9 +22,9 @@ CPU と UI は `GameManager` の挙動を予測または表示する補助層と
 ## 新カード追加時の現状チェックリスト
 
 1. `js/Card.js`
-    - `CARD_IDS`, `CARD_NAME_BY_ID`, `CARD_ID_BY_NAME` に安定IDと表示名を追加する。
+    - `CARD_IDS` に安定IDを追加する。
+    - `CARD_DEFS` にカード本体を追加する。`CARD_NAME_BY_ID`, `CARD_ID_BY_NAME`, `CARDS` はここから生成される。
     - `CARD_EFFECTS` に effect を追加する。既存 effect を使う場合も `CARD_EFFECT_METADATA` の分類が合っているか確認する。
-    - `CARDS` にカードを追加する。
     - `CARD_EFFECT_DESCRIPTIONS` に説明文を追加する。
     - 新 effect の場合は `CARD_EFFECT_METADATA` に `timing`, `targetScope`, `cpuKind` を追加する。
 2. `js/GameManager.js`
@@ -142,8 +142,8 @@ UI、CPU、online action schema まで波及する高リスク分類です。
 ### Step 1: データの名前を安定化する
 
 - `CARD_IDS`, `CARD_NAME_BY_ID`, `CARD_ID_BY_NAME` は追加済み。
-- `Card` は stable `id` を保持し、`cloneCard()` と `createCardById()` でも維持する。
-- `Card` constructor は互換を維持しているため、内部定義の object 化は後続 PR で行う。
+- `CARD_DEFS` がカード定義の正本です。`CARD_NAME_BY_ID`, `CARD_ID_BY_NAME`, `CARDS` は `CARD_DEFS` から生成します。
+- `CARDS` は従来どおり `Card` instance 配列として公開し、既存の UI / CPU / RL / save 互換を維持します。
 
 ### Step 2: effect metadata を追加する
 

@@ -130,112 +130,65 @@ const CARD_EFFECT_METADATA = Object.freeze({
     [CARD_EFFECTS.PARK]:          { timing: "income", targetScope: "all",       cpuKind: "redistribute" },
 });
 
-const CARD_NAME_BY_ID = Object.freeze({
-    [CARD_IDS.WHEAT_FIELD]:       "麦畑",
-    [CARD_IDS.RANCH]:             "牧場",
-    [CARD_IDS.FOREST]:            "森林",
-    [CARD_IDS.MINE]:              "鉱山",
-    [CARD_IDS.APPLE_ORCHARD]:     "リンゴ園",
-    [CARD_IDS.BAKERY]:            "パン屋",
-    [CARD_IDS.CONVENIENCE]:       "コンビニ",
-    [CARD_IDS.CHEESE_FACTORY]:    "チーズ工場",
-    [CARD_IDS.FURNITURE_FACTORY]: "家具工場",
-    [CARD_IDS.FRUIT_MARKET]:      "青果市場",
-    [CARD_IDS.CAFE]:              "カフェ",
-    [CARD_IDS.FAMILY_RESTAURANT]: "ファミレス",
-    [CARD_IDS.STADIUM]:           "スタジアム",
-    [CARD_IDS.TV_STATION]:        "テレビ局",
-    [CARD_IDS.BUSINESS_CENTER]:   "ビジネスセンター",
-    [CARD_IDS.FLOWER_GARDEN]:     "花畑",
-    [CARD_IDS.MACKEREL_BOAT]:     "サンマ漁船",
-    [CARD_IDS.TUNA_BOAT]:         "マグロ漁船",
-    [CARD_IDS.FLOWER_SHOP]:       "フラワーショップ",
-    [CARD_IDS.FOOD_WAREHOUSE]:    "食品倉庫",
-    [CARD_IDS.SUSHI_BAR]:         "寿司屋",
-    [CARD_IDS.PIZZA_SHOP]:        "ピザ屋",
-    [CARD_IDS.BURGER_SHOP]:       "バーガーショップ",
-    [CARD_IDS.PUBLISHER]:         "出版社",
-    [CARD_IDS.TAX_OFFICE]:        "税務署",
-    [CARD_IDS.CORN_FIELD]:        "コーン畑",
-    [CARD_IDS.VINEYARD]:          "ブドウ園",
-    [CARD_IDS.GENERAL_STORE]:     "雑貨屋",
-    [CARD_IDS.RENOVATION]:        "改装屋",
-    [CARD_IDS.LOAN_OFFICE]:       "貸金業",
-    [CARD_IDS.WINERY]:            "ワイナリー",
-    [CARD_IDS.MOVER]:             "引越し屋",
-    [CARD_IDS.DRINK_FACTORY]:     "ドリンク工場",
-    [CARD_IDS.FRENCH_RESTAURANT]: "高級フレンチ",
-    [CARD_IDS.MEMBERS_BAR]:       "会員制BAR",
-    [CARD_IDS.CLEANING_COMPANY]:  "清掃業",
-    [CARD_IDS.IT_STARTUP]:        "ITベンチャー",
-    [CARD_IDS.PARK]:              "公園",
-});
+const CARD_DEFS = Object.freeze([
+    Object.freeze({ id: "wheat_field", name: "麦畑", cost: 1, diceNums: Object.freeze([1]), income: 1, color: "blue", category: "農園", effect: "normal" }),
+    Object.freeze({ id: "ranch", name: "牧場", cost: 1, diceNums: Object.freeze([2]), income: 1, color: "blue", category: "畜産", effect: "normal" }),
+    Object.freeze({ id: "forest", name: "森林", cost: 3, diceNums: Object.freeze([5]), income: 1, color: "blue", category: "工業", effect: "normal" }),
+    Object.freeze({ id: "mine", name: "鉱山", cost: 6, diceNums: Object.freeze([9]), income: 5, color: "blue", category: "工業", effect: "normal" }),
+    Object.freeze({ id: "apple_orchard", name: "リンゴ園", cost: 3, diceNums: Object.freeze([10]), income: 3, color: "blue", category: "農園", effect: "normal" }),
+    Object.freeze({ id: "bakery", name: "パン屋", cost: 1, diceNums: Object.freeze([2,3]), income: 1, color: "green", category: "飲食店", effect: "normal" }),
+    Object.freeze({ id: "convenience_store", name: "コンビニ", cost: 2, diceNums: Object.freeze([4]), income: 3, color: "green", category: "商店", effect: "normal" }),
+    Object.freeze({ id: "cheese_factory", name: "チーズ工場", cost: 5, diceNums: Object.freeze([7]), income: 3, color: "green", category: "工業", effect: "cheese" }),
+    Object.freeze({ id: "furniture_factory", name: "家具工場", cost: 3, diceNums: Object.freeze([8]), income: 3, color: "green", category: "工業", effect: "furniture" }),
+    Object.freeze({ id: "fruit_market", name: "青果市場", cost: 2, diceNums: Object.freeze([11,12]), income: 2, color: "green", category: "商店", effect: "market" }),
+    Object.freeze({ id: "cafe", name: "カフェ", cost: 2, diceNums: Object.freeze([3]), income: 1, color: "red", category: "飲食店", effect: "normal" }),
+    Object.freeze({ id: "family_restaurant", name: "ファミレス", cost: 3, diceNums: Object.freeze([9,10]), income: 2, color: "red", category: "飲食店", effect: "normal" }),
+    Object.freeze({ id: "stadium", name: "スタジアム", cost: 6, diceNums: Object.freeze([6]), income: 2, color: "purple", category: "大施設", effect: "stadium" }),
+    Object.freeze({ id: "tv_station", name: "テレビ局", cost: 7, diceNums: Object.freeze([6]), income: 5, color: "purple", category: "大施設", effect: "tv" }),
+    Object.freeze({ id: "business_center", name: "ビジネスセンター", cost: 8, diceNums: Object.freeze([6]), income: 0, color: "purple", category: "大施設", effect: "business" }),
+    Object.freeze({ id: "flower_garden", name: "花畑", cost: 2, diceNums: Object.freeze([4]), income: 1, color: "blue", category: "農園", effect: "normal" }),
+    Object.freeze({ id: "mackerel_boat", name: "サンマ漁船", cost: 2, diceNums: Object.freeze([8]), income: 3, color: "blue", category: "海産", effect: "harbor" }),
+    Object.freeze({ id: "tuna_boat", name: "マグロ漁船", cost: 5, diceNums: Object.freeze([12,13,14]), income: 0, color: "blue", category: "海産", effect: "tuna" }),
+    Object.freeze({ id: "flower_shop", name: "フラワーショップ", cost: 1, diceNums: Object.freeze([6]), income: 1, color: "green", category: "商店", effect: "flower" }),
+    Object.freeze({ id: "food_warehouse", name: "食品倉庫", cost: 2, diceNums: Object.freeze([12,13]), income: 2, color: "green", category: "工業", effect: "foodwarehouse" }),
+    Object.freeze({ id: "sushi_bar", name: "寿司屋", cost: 1, diceNums: Object.freeze([1]), income: 3, color: "red", category: "飲食店", effect: "harbor_red" }),
+    Object.freeze({ id: "pizza_shop", name: "ピザ屋", cost: 1, diceNums: Object.freeze([7]), income: 1, color: "red", category: "飲食店", effect: "normal" }),
+    Object.freeze({ id: "burger_shop", name: "バーガーショップ", cost: 1, diceNums: Object.freeze([8]), income: 1, color: "red", category: "飲食店", effect: "normal" }),
+    Object.freeze({ id: "publisher", name: "出版社", cost: 5, diceNums: Object.freeze([7]), income: 0, color: "purple", category: "大施設", effect: "publisher" }),
+    Object.freeze({ id: "tax_office", name: "税務署", cost: 4, diceNums: Object.freeze([8,9]), income: 0, color: "purple", category: "大施設", effect: "taxoffice" }),
+    Object.freeze({ id: "corn_field", name: "コーン畑", cost: 2, diceNums: Object.freeze([3,4]), income: 1, color: "blue", category: "農園", effect: "cornfield" }),
+    Object.freeze({ id: "vineyard", name: "ブドウ園", cost: 3, diceNums: Object.freeze([7]), income: 3, color: "blue", category: "農園", effect: "normal" }),
+    Object.freeze({ id: "general_store", name: "雑貨屋", cost: 0, diceNums: Object.freeze([2]), income: 1, color: "green", category: "商店", effect: "fewlandmark" }),
+    Object.freeze({ id: "renovation_company", name: "改装屋", cost: 1, diceNums: Object.freeze([4]), income: 8, color: "green", category: "商店", effect: "renovation" }),
+    Object.freeze({ id: "loan_office", name: "貸金業", cost: 0, diceNums: Object.freeze([5,6]), income: 0, color: "green", category: "商店", effect: "loan" }),
+    Object.freeze({ id: "winery", name: "ワイナリー", cost: 3, diceNums: Object.freeze([9]), income: 6, color: "green", category: "工業", effect: "winery" }),
+    Object.freeze({ id: "moving_company", name: "引越し屋", cost: 2, diceNums: Object.freeze([9,10]), income: 4, color: "green", category: "商店", effect: "mover" }),
+    Object.freeze({ id: "drink_factory", name: "ドリンク工場", cost: 5, diceNums: Object.freeze([11]), income: 1, color: "green", category: "工業", effect: "drinkfactory" }),
+    Object.freeze({ id: "french_restaurant", name: "高級フレンチ", cost: 3, diceNums: Object.freeze([5]), income: 5, color: "red", category: "飲食店", effect: "frenchr" }),
+    Object.freeze({ id: "members_bar", name: "会員制BAR", cost: 4, diceNums: Object.freeze([12,13,14]), income: 0, color: "red", category: "飲食店", effect: "memberbar" }),
+    Object.freeze({ id: "cleaning_company", name: "清掃業", cost: 4, diceNums: Object.freeze([8]), income: 0, color: "purple", category: "大施設", effect: "cleaning" }),
+    Object.freeze({ id: "it_startup", name: "ITベンチャー", cost: 1, diceNums: Object.freeze([10]), income: 0, color: "purple", category: "大施設", effect: "itstartup" }),
+    Object.freeze({ id: "park", name: "公園", cost: 3, diceNums: Object.freeze([11,12,13]), income: 0, color: "purple", category: "大施設", effect: "park" })
+]);
 
-const CARD_ID_BY_NAME = Object.freeze(Object.fromEntries(
-    Object.entries(CARD_NAME_BY_ID).map(([id, name]) => [name, id])
+const CARD_NAME_BY_ID = Object.freeze(Object.fromEntries(
+    CARD_DEFS.map(def => [def.id, def.name])
 ));
 
-const CARDS = [
-    // ===== 基本セット =====
-    // 青カード
-    new Card("麦畑",     1, [1],     1, "blue",   CARD_CATEGORIES.FARM,       CARD_EFFECTS.NORMAL),
-    new Card("牧場",     1, [2],     1, "blue",   CARD_CATEGORIES.LIVESTOCK,  CARD_EFFECTS.NORMAL),
-    new Card("森林",     3, [5],     1, "blue",   CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.NORMAL),
-    new Card("鉱山",     6, [9],     5, "blue",   CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.NORMAL),
-    new Card("リンゴ園", 3, [10],    3, "blue",   CARD_CATEGORIES.FARM,       CARD_EFFECTS.NORMAL),
-    // 緑カード
-    new Card("パン屋",      1, [2,3],   1, "green", CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.NORMAL),
-    new Card("コンビニ",    2, [4],     3, "green", CARD_CATEGORIES.SHOP,       CARD_EFFECTS.NORMAL),
-    new Card("チーズ工場",  5, [7],     3, "green", CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.CHEESE),
-    new Card("家具工場",    3, [8],     3, "green", CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.FURNITURE),
-    new Card("青果市場",    2, [11,12], 2, "green", CARD_CATEGORIES.SHOP,       CARD_EFFECTS.MARKET),
-    // 赤カード
-    new Card("カフェ",    2, [3],    1, "red", CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.NORMAL),
-    new Card("ファミレス",3, [9,10], 2, "red", CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.NORMAL),
-    // 紫カード（大施設）
-    new Card("スタジアム",      6, [6], 2, "purple", CARD_CATEGORIES.MAJOR, CARD_EFFECTS.STADIUM),
-    new Card("テレビ局",        7, [6], 5, "purple", CARD_CATEGORIES.MAJOR, CARD_EFFECTS.TV),
-    new Card("ビジネスセンター",8, [6], 0, "purple", CARD_CATEGORIES.MAJOR, CARD_EFFECTS.BUSINESS),
+const CARD_ID_BY_NAME = Object.freeze(Object.fromEntries(
+    CARD_DEFS.map(def => [def.name, def.id])
+));
 
-    // ===== プラス =====
-    // 青カード
-    new Card("花畑",     2, [4],     1, "blue",  CARD_CATEGORIES.FARM,       CARD_EFFECTS.NORMAL),
-    new Card("サンマ漁船",2, [8],     3, "blue",  CARD_CATEGORIES.FISHERY,    CARD_EFFECTS.HARBOR),
-    new Card("マグロ漁船",5, [12,13,14],0,"blue", CARD_CATEGORIES.FISHERY,    CARD_EFFECTS.TUNA),
-    // 緑カード
-    new Card("フラワーショップ",1,[6], 1, "green", CARD_CATEGORIES.SHOP,       CARD_EFFECTS.FLOWER),
-    new Card("食品倉庫",  2, [12,13], 2, "green", CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.FOODWAREHOUSE),
-    // 赤カード
-    new Card("寿司屋",   1, [1],     3, "red",   CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.HARBOR_RED),
-    new Card("ピザ屋",   1, [7],     1, "red",   CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.NORMAL),
-    new Card("バーガーショップ",1,[8],1, "red",   CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.NORMAL),
-    // 紫カード（大施設）
-    new Card("出版社",   5, [7],     0, "purple", CARD_CATEGORIES.MAJOR, CARD_EFFECTS.PUBLISHER),
-    new Card("税務署",   4, [8,9],   0, "purple", CARD_CATEGORIES.MAJOR, CARD_EFFECTS.TAXOFFICE),
-];
-
-// ===== シャープ =====
-// 青カード
-CARDS.push(new Card("コーン畑",   2, [3,4],   1, "blue",   CARD_CATEGORIES.FARM,       CARD_EFFECTS.CORNFIELD));
-CARDS.push(new Card("ブドウ園",   3, [7],     3, "blue",   CARD_CATEGORIES.FARM,       CARD_EFFECTS.NORMAL));
-// 緑カード
-CARDS.push(new Card("雑貨屋",     0, [2],     1, "green",  CARD_CATEGORIES.SHOP,       CARD_EFFECTS.FEWLANDMARK));
-CARDS.push(new Card("改装屋",     1, [4],     8, "green",  CARD_CATEGORIES.SHOP,       CARD_EFFECTS.RENOVATION));
-CARDS.push(new Card("貸金業",     0, [5,6],   0, "green",  CARD_CATEGORIES.SHOP,       CARD_EFFECTS.LOAN));
-CARDS.push(new Card("ワイナリー", 3, [9],     6, "green",  CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.WINERY));
-CARDS.push(new Card("引越し屋",   2, [9,10],  4, "green",  CARD_CATEGORIES.SHOP,       CARD_EFFECTS.MOVER));
-CARDS.push(new Card("ドリンク工場",5,[11],    1, "green",  CARD_CATEGORIES.INDUSTRY,   CARD_EFFECTS.DRINKFACTORY));
-// 赤カード
-CARDS.push(new Card("高級フレンチ",3,[5],     5, "red",    CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.FRENCHR));
-CARDS.push(new Card("会員制BAR",  4, [12,13,14],0,"red",  CARD_CATEGORIES.RESTAURANT, CARD_EFFECTS.MEMBERBAR));
-// 紫カード
-CARDS.push(new Card("清掃業",     4, [8],     0, "purple", CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.CLEANING));
-CARDS.push(new Card("ITベンチャー",1,[10],    0, "purple", CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.ITSTARTUP));
-CARDS.push(new Card("公園",       3, [11,12,13],0,"purple",CARD_CATEGORIES.MAJOR,      CARD_EFFECTS.PARK));
-
-for (const card of CARDS) {
-    card.id = CARD_ID_BY_NAME[card.name] || null;
-}
+const CARDS = CARD_DEFS.map(def => new Card(
+    def.name,
+    def.cost,
+    Array.from(def.diceNums),
+    def.income,
+    def.color,
+    def.category,
+    def.effect,
+    def.id
+));
 
 const CARD_EFFECT_DESCRIPTIONS = Object.freeze({
     [CARD_EFFECTS.CHEESE]:       (i) => `牧場1軒につき+${i}コイン`,

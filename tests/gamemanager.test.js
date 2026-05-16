@@ -12,6 +12,7 @@ const CARD_IDS = runtime.CARD_IDS;
 const CARD_NAME_BY_ID = runtime.CARD_NAME_BY_ID;
 const CARD_ID_BY_NAME = runtime.CARD_ID_BY_NAME;
 const CARD_EFFECT_METADATA = runtime.CARD_EFFECT_METADATA;
+const CARD_DEFS = runtime.CARD_DEFS;
 const CARD_INCOME_EFFECT_HANDLERS = runtime.CARD_INCOME_EFFECT_HANDLERS;
 const GAME_PHASES = runtime.GAME_PHASES;
 const GAME_ACTIONS = runtime.GAME_ACTIONS;
@@ -49,6 +50,22 @@ runTest('CARD_EFFECT_METADATA の分類値と複合triggerは許可値だけを�
     }
     assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.LOAN].triggers), ['onBuild', 'afterIncome']);
     assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.ITSTARTUP].triggers), ['afterIncome', 'turnEndPrompt']);
+});
+
+runTest('CARD_DEFS は CARDS と ID map の正本になる', () => {
+    assert.strictEqual(CARD_DEFS.length, runtime.CARDS.length);
+    assert.deepStrictEqual(
+        CARD_DEFS.map(def => def.id),
+        runtime.CARDS.map(card => card.id)
+    );
+    assert.deepStrictEqual(
+        CARD_DEFS.map(def => def.name),
+        runtime.CARDS.map(card => card.name)
+    );
+    for (const def of CARD_DEFS) {
+        assert.strictEqual(CARD_NAME_BY_ID[def.id], def.name);
+        assert.strictEqual(CARD_ID_BY_NAME[def.name], def.id);
+    }
 });
 
 runTest('CARD_IDS は全カード名へ対応する', () => {

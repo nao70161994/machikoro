@@ -328,3 +328,30 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: server/client共通dispatch化は未実施。PR-013の範囲では registry 足場のみ。
+
+
+## PR-014 CARD_DEFS scaffold
+
+- 状態: done
+- commit: `PENDING_PR_014_HASH`
+- 変更ファイル:
+  - `js/Card.js`
+  - `tests/gamemanager.test.js`
+  - `tests/helpers/runtime-loaders.js`
+  - `docs/CARD_SYSTEM.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `CARD_DEFS` をカード定義の正本として追加した。
+  - `CARD_NAME_BY_ID`, `CARD_ID_BY_NAME`, `CARDS` を `CARD_DEFS` から生成するようにした。
+  - `CARDS` は従来どおり `Card` instance 配列として公開し、外部挙動と順序を維持した。
+  - `CARD_DEFS` と `CARDS` / ID map の順序・対応を回帰テストで固定した。
+  - `docs/CARD_SYSTEM.md` の新カード追加手順を `CARD_DEFS` 前提へ更新した。
+- 実行テスト:
+  - `node --check js/Card.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
