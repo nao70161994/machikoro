@@ -2803,8 +2803,9 @@ class CPU {
     // ===== 購入戦略 =====
 
     build(game, shopStock) {
+        this._lastBuildActionResult = null;
         this._syncExpertTuningForGame(game);
-        if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return;
+        if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
         if (this.difficulty === "weak") {
             this.buildWeak(game, shopStock);
         } else if (this.difficulty === "normal") {
@@ -2814,34 +2815,39 @@ class CPU {
         } else {
             this.buildExpert(game, shopStock);
         }
+        return this._lastBuildActionResult;
+    }
+
+    _setBuildActionResult(result) {
+        this._lastBuildActionResult = result;
+        return result;
     }
 
     _buyCard(card, game, shopStock) {
-        if (!game || game.builtThisTurn) return;
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return;
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return;
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof socket !== 'undefined' && socket && socket.connected === false) return;
-        if (!shopStock || (shopStock[card.name] || 0) <= 0) return;
+        if (!game || game.builtThisTurn || !card) return this._setBuildActionResult(false);
+        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return this._setBuildActionResult(false);
+        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return this._setBuildActionResult(false);
+        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof socket !== 'undefined' && socket && socket.connected === false) return this._setBuildActionResult(false);
+        if (!shopStock || (shopStock[card.name] || 0) <= 0) return this._setBuildActionResult(false);
         if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-            if (typeof sendAction === 'function') sendAction('buildCard', { cardName: card.name });
-            return;
+            return this._setBuildActionResult(typeof sendAction === 'function' && sendAction('buildCard', { cardName: card.name }) === true);
         }
         if (game.buildCard(card)) {
             shopStock[card.name]--;
+            return this._setBuildActionResult(true);
         }
+        return this._setBuildActionResult(false);
     }
 
     _buyLandmark(name, game) {
-        if (!game || game.builtThisTurn) return;
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return;
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return;
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof socket !== 'undefined' && socket && socket.connected === false) return;
+        if (!game || game.builtThisTurn || !name) return this._setBuildActionResult(false);
+        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return this._setBuildActionResult(false);
+        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return this._setBuildActionResult(false);
+        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof socket !== 'undefined' && socket && socket.connected === false) return this._setBuildActionResult(false);
         if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-            if (typeof sendAction === 'function') sendAction('buildLandmark', { name });
-            return;
+            return this._setBuildActionResult(typeof sendAction === 'function' && sendAction('buildLandmark', { name }) === true);
         }
-        if (game.buildLandmark(name)) {
-        }
+        return this._setBuildActionResult(game.buildLandmark(name) === true);
     }
 
     _landmarkUrgency(name, current, game) {

@@ -506,6 +506,33 @@ runTest('main scheduleCPU は不正なTV targetを合法な相手へfallbackし�
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
+runTest('main scheduleCPU は build failure なら nextTurn へ進めない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    let buildCalls = 0;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return 1; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { buildCalls++; return false; },
+    }, null]);
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(buildCalls, 1);
+    assert.strictEqual(game.currentPlayerIndex, 0);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
 runTest('main onSelectDiceCount は遅延中にオンライン手番が変わったら送信しない', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);

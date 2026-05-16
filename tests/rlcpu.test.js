@@ -1098,7 +1098,7 @@ runTest('RLCPU: online build はローカル適用せず sendAction へ送る', 
         return true;
     };
 
-    cpu.build(game, shopStock);
+    assert.strictEqual(cpu.build(game, shopStock), true);
 
     assert.strictEqual(sent.length, 1);
     assert.strictEqual(sent[0].action, 'buildCard');
@@ -1112,10 +1112,18 @@ runTest('RLCPU: online build はローカル適用せず sendAction へ送る', 
     const landmarkCpu = new RLCPU(landmarkModel);
     sent.length = 0;
     game.currentPlayer().coins = Player.landmarkCost('駅');
-    landmarkCpu.build(game, shopStock);
+    assert.strictEqual(landmarkCpu.build(game, shopStock), true);
 
     assert.strictEqual(sent.length, 1);
     assert.strictEqual(sent[0].action, 'buildLandmark');
     assert.strictEqual(sent[0].data.name, '駅');
     assert.strictEqual(game.currentPlayer().landmarks['駅'], false);
+
+    context.sendAction = (action, data) => {
+        sent.push({ action, data });
+        return false;
+    };
+    sent.length = 0;
+    assert.strictEqual(cpu.build(game, shopStock), false);
+    assert.strictEqual(sent.length, 1);
 });

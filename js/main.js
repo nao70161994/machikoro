@@ -531,8 +531,10 @@ const CPU_PHASE_HANDLERS = [
         name: "build",
         run(cpu) {
             if (game.phase !== GAME_PHASES.BUILD) return;
-            cpu.build(game, SHOP_STOCK);
+            const buildResult = cpu.build(game, SHOP_STOCK);
+            if (buildResult === false) return false;
             render();
+            return true;
         },
     },
     {
@@ -584,7 +586,8 @@ function scheduleCPU() {
             )) return;
             if (!game || game.checkWinner()) return;
             if (!cpuPlayers[game.currentPlayerIndex]) return;
-            step.run(cpu);
+            const stepResult = step.run(cpu);
+            if (stepResult === false) return;
             runNextStep();
         });
     }

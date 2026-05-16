@@ -510,3 +510,38 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: Cleaning / IT の pending 解決は既存経路のまま。PR-019 の範囲外として、後続で必要になった時に同じ helper へ拡張する。
+
+## PR-020 CPU build action result
+
+- 状態: done
+- commit: `PENDING_PR_020_HASH`
+- 変更ファイル:
+  - `js/CPU.js`
+  - `js/RLCPU.js`
+  - `js/main.js`
+  - `tests/main.test.js`
+  - `tests/cpu.test.js`
+  - `tests/rlcpu.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `CPU.build()` が建設成功 `true`、建設なし `null`、送信/適用失敗 `false` を返すようにした。
+  - `CPU._buyCard()` / `_buyLandmark()` が local build と online `sendAction` の成否を記録して返すようにした。
+  - `RLCPU.build()` も同じ success/failure/null の戻り値へ揃えた。
+  - `main.js` の CPU build phase は `false` を受けた場合に後続 step、特に `nextTurn` へ進まないようにした。
+  - CPU / RLCPU / main scheduler の回帰テストを追加した。
+- 実行テスト:
+  - `node --check js/CPU.js`
+  - `node --check js/RLCPU.js`
+  - `node --check js/main.js`
+  - `node --check tests/cpu.test.js`
+  - `node --check tests/main.test.js`
+  - `node --check tests/rlcpu.test.js`
+  - `node tests/main.test.js`
+  - `node tests/cpu.test.js`
+  - `node tests/rlcpu.test.js`
+  - `git diff --check`
+  - `npm run test:cpu`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: build 戻り値は `true/false/null` の軽量な結果に留めた。購入種別や理由の詳細 result object 化は後続の診断/ログ強化で扱う。

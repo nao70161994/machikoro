@@ -1895,6 +1895,56 @@ runTest('build: builtThisTurn 済みなら追加建設を試みない', () => {
     assert.strictEqual(game.builtThisTurn, true);
 });
 
+runTest('build は建設成功なら true、建設済みなら null を返す', () => {
+    const cpu = new CPU('weak');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 1;
+    const stock = makeFullShopStock();
+
+    const beforeStockTotal = Object.values(stock).reduce((sum, count) => sum + count, 0);
+    const result = cpu.build(game, stock);
+
+    assert.strictEqual(result, true);
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(Object.values(stock).reduce((sum, count) => sum + count, 0), beforeStockTotal - 1);
+    assert.strictEqual(cpu.build(game, stock), null);
+});
+
+runTest('build は online buildCard の送信失敗を false で返す', () => {
+    const cpu = new CPU('weak');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 1;
+    const stock = makeFullShopStock();
+    const sent = [];
+    runtime.isOnlineGame = true;
+    runtime.isRoomHost = true;
+    runtime.isReconnectingOnline = false;
+    runtime.socket = { connected: true };
+    runtime.sendAction = (action, data) => {
+        sent.push({ action, data });
+        return false;
+    };
+
+    try {
+        const result = cpu.build(game, stock);
+
+        assert.strictEqual(result, false);
+        assert.strictEqual(game.builtThisTurn, false);
+        assert.strictEqual(stock['麦畑'], 6);
+        assert.strictEqual(sent.length, 1);
+        assert.strictEqual(sent[0].action, 'buildCard');
+        assert.ok(sent[0].data.cardName);
+    } finally {
+        delete runtime.isOnlineGame;
+        delete runtime.isRoomHost;
+        delete runtime.isReconnectingOnline;
+        delete runtime.socket;
+        delete runtime.sendAction;
+    }
+});
+
 runTest('chooseTVTarget: 勝利に近い相手を優先して狙う', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(3);
