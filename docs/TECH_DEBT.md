@@ -9,8 +9,8 @@
 ### 1. Online authority and restore debt
 
 - Server は full canonical state を常時保持せず、action log / snapshot から mirror を再構築する。
-- Dice は client 生成で、server は範囲検証のみ。
-- Server restart restore は host local bundle を強く信頼する。
+- Dice は client 生成で、server は範囲検証のみ。現行の信頼境界は `docs/ONLINE_SYNC.md` の casual trust model を正本にする。
+- Server restart restore は host local bundle を強く信頼する。公開/競技運用では server canonical mirror か signed action log が必要。
 - Snapshot schema が local save / online / server / undo で分散している。
 - `onlineActionInFlight` timeout がなく、モバイル回線で固まりやすい。
 - `recreateRoom` payload に総量制限がない。
@@ -19,7 +19,7 @@
 
 1. Socket handler payload guard と size limit を追加する。
 2. Snapshot roundtrip / malformed actionLog matrix test を追加する。
-3. server-side dice 方針を `ONLINE_SYNC.md` に設計として書く。
+3. server-side dice / canonical mirror が必要になる運用条件を `ONLINE_SYNC.md` の trust boundary と同期する。
 4. room 内に server canonical mirror を保持する実験ブランチを作る。
 5. action log に hash / signature / seq owner invariant を導入する。
 

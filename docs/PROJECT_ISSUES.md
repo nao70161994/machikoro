@@ -21,7 +21,7 @@
 - 問題点: `rollDice`, `selectDice`, `rerollDice` の出目は client payload で送られ、server は 1〜6 の範囲だけ検証する。
 - 原因: server は完全な authoritative state を持たず、client action log を検証/中継する設計。
 - 影響: devtools 等で任意の出目を送れるため、競技性や公開対戦の cheating 耐性は低い。
-- 推奨改善: server-side dice、server seed、または commit-reveal を導入する。短期は `ONLINE_SYNC.md` に「現状は casual trust」と明記する。
+- 推奨改善: server-side dice、server seed、または commit-reveal を導入する。短期の正本として `ONLINE_SYNC.md` の trust boundary に「現状は casual trust」と明記済み。
 - 修正難易度: 中〜高。
 - 関連ファイル: `server.js`, `js/main.js`, `js/online.js`, `docs/ONLINE_SYNC.md`
 - 将来的リスク: ランク戦、公開部屋、観戦、戦績保存を入れると信頼境界が破綻する。
@@ -31,7 +31,7 @@
 - 問題点: host の local restore bundle を改変すると、server 再起動後に不正な coins/cards/state を持ち込める余地がある。
 - 原因: 復元時に snapshot を高速化材料として使い、initial state + signed action log だけで完全再構築していない。
 - 影響: 型・在庫・有効カード検証はあるが、全コイン増減やカード流通量の正当性証明が弱い。
-- 推奨改善: snapshot conservation test を追加し、長期的には signed action log / server canonical mirror / state hash を導入する。
+- 推奨改善: snapshot conservation test を追加し、長期的には signed action log / server canonical mirror / state hash を導入する。現行の host restore 信頼境界は `ONLINE_SYNC.md` の trust boundary を正本にする。
 - 修正難易度: 中〜高。
 - 関連ファイル: `server.js`, `js/online.js`, `docs/online-restore-schema.md`
 - 将来的リスク: 再接続復元が中核機能であるほど、不正復元と同期ズレ調査が難しくなる。

@@ -100,7 +100,7 @@
 ## PR-005 Python static check
 
 - 状態: done
-- commit: this PR commit (`test: Python構文チェック入口を追加`)
+- commit: `0b32282`
 - 変更ファイル:
   - `package.json`
   - `docs/maintenance-checklists.md`
@@ -112,6 +112,27 @@
 - 実行テスト:
   - `python3 -m py_compile scripts/rl/*.py`
   - `npm run test:static:py`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+
+## PR-006 online trust model docs
+
+- 状態: done
+- commit: this PR commit (`docs: オンライン信頼境界を明文化`)
+- 変更ファイル:
+  - `docs/ONLINE_SYNC.md`
+  - `docs/TECH_DEBT.md`
+  - `docs/PROJECT_ISSUES.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - 現行オンライン対戦が server authoritative ではなく casual trust model であることを `docs/ONLINE_SYNC.md` に明文化。
+  - client dice、host restore snapshot、player order 境界を client 由来として整理。
+  - 公開/競技運用へ進む場合に server-side dice、canonical mirror、state hash などが必要であることを技術負債・課題一覧から参照できるようにした。
+- 実行テスト:
   - `git diff --check`
   - `npm run test:static`
   - `npm run test:smoke`

@@ -40,6 +40,20 @@
 
 注意: client snapshot はサーバー再起動後の復元材料ですが、通常の live room では既存 room の token / host / rank 判定より優先しません。
 
+### Trust boundary and cheating model
+
+現行のオンライン対戦は、知人同士の casual play を前提にした信頼モデルです。サーバーは action の順序、手番、phase、payload 型、有効カード/ランドマーク、mirror replay で検証できる範囲を守りますが、完全な不正耐性を提供していません。
+
+特に次は client 由来です。
+
+- `rollDice`, `selectDice`, `rerollDice` の出目。サーバーは範囲と phase を検証しますが、乱数生成そのものは client 側です。
+- server restart 後の `recreateRoom` restore bundle。サーバーは token、host、rank、schema、size、mirror replay を検証しますが、host の local snapshot を復元材料として受け取ります。
+- UI 上の player order 表示。検証では server 側の original player index / shuffled order を区別して扱います。
+
+そのため、公開部屋、ランク戦、賞品付き対戦、恒久的な戦績保存、観戦/replay配信のように不正耐性が必要な運用へ進む場合は、現行設計を server authoritative とみなしてはいけません。先に server-side dice、server seed または commit-reveal、room 内 canonical mirror、action/state hash、復元 snapshot の保全チェックを設計してください。
+
+短期変更では、この casual trust model を壊さないことを優先します。つまり、サーバー検証を強化するときも、既存の再接続、host handoff、server restart restore、snapshot compaction が同じ action log を再生できることをテストで確認してください。
+
 ## Room lifecycle
 
 通常開始:
