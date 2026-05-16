@@ -900,7 +900,7 @@
 ## PR-033 RL state/action schema v2 design
 
 - 状態: done
-- commit: `PENDING_PR_033_HASH`
+- commit: `dede0f0`
 - 変更ファイル:
   - `docs/CPU_AI.md`
   - `docs/rl-experiments.md`
