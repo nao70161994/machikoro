@@ -643,7 +643,7 @@
 ## PR-024 showNotice helper
 
 - 状態: done
-- commit: `PENDING_PR_024_HASH`
+- commit: `c96704a`
 - 変更ファイル:
   - `js/ui.js`
   - `js/main.js`
