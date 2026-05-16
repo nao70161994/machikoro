@@ -710,7 +710,7 @@ function handleAppError(msg) {
 
 function showCreateRoom() {
     const name = document.getElementById("playerNameInput").value.trim();
-    if (!name) { alert("名前を入力してください"); return; }
+    if (!name) { showNotice("名前を入力してください"); return; }
     myPlayerName = name;
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
     initSocket();
@@ -729,8 +729,8 @@ function showCreateRoom() {
 function joinRoom() {
     const name = document.getElementById("playerNameInput").value.trim();
     const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
-    if (!name) { alert("名前を入力してください"); return; }
-    if (roomId.length !== 6) { alert("ルームIDは6文字です"); return; }
+    if (!name) { showNotice("名前を入力してください"); return; }
+    if (roomId.length !== 6) { showNotice("ルームIDは6文字です"); return; }
     myPlayerName = name;
     initSocket();
     isRoomHost = false;

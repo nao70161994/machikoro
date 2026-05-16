@@ -97,6 +97,7 @@ function loadMainRuntime(options = {}) {
         saveUndoState() {},
         cancelAutoSkip() {},
         alert(message) { alerts.push(message); },
+        showNotice(message) { alerts.push(message); },
         fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
         io() { return { on() {}, emit() {}, disconnect() {} }; },
         enabledCards: new Set(),

@@ -91,6 +91,7 @@ function loadOnlineRuntime() {
             disconnect() { socketDisconnected = true; },
         });
         const alert = () => {};
+        const showNotice = () => {};
     `, context);
 
     // online.js をロード

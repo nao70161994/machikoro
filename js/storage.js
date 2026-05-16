@@ -97,7 +97,7 @@ function reconnectOnline() {
         if (localStorage.getItem('onlineSession')) {
             localStorage.removeItem('onlineSession');
             updateResumeButton();
-            alert('再接続データの読み込みに失敗しました');
+            showNotice('再接続データの読み込みに失敗しました');
         }
         return;
     }
@@ -121,7 +121,7 @@ function reconnectOnline() {
         isReconnectingOnline = false;
         localStorage.removeItem('onlineSession');
         updateResumeButton();
-        alert('再接続データの読み込みに失敗しました');
+        showNotice('再接続データの読み込みに失敗しました');
     }
 }
 
@@ -197,7 +197,7 @@ function resumeGame() {
     } catch(e) {
         localStorage.removeItem('savedGame');
         updateResumeButton();
-        alert("セーブデータの読み込みに失敗しました");
+        showNotice("セーブデータの読み込みに失敗しました");
     }
 }
 

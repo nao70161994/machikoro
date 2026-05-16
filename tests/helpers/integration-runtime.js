@@ -85,6 +85,7 @@ function loadIntegrationRuntime(options = {}) {
         },
         clearTimeout() {},
         alert(message) { alerts.push(message); },
+        showNotice(message) { alerts.push(message); },
         showConfirm(message, cb) { cb(); },
         drawCitySkyline() {},
         playSound() {},

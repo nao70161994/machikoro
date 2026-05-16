@@ -638,3 +638,44 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: なし。
+
+
+## PR-024 showNotice helper
+
+- 状態: done
+- commit: `PENDING_PR_024_HASH`
+- 変更ファイル:
+  - `js/ui.js`
+  - `js/main.js`
+  - `js/storage.js`
+  - `js/online.js`
+  - `tests/ui.test.js`
+  - `tests/storage.test.js`
+  - `tests/online.test.js`
+  - `tests/main.test.js`
+  - `tests/helpers/integration-runtime.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - 通知入口として `showNotice()` を追加し、現段階では既存挙動を保つ `alert` fallback にした。
+  - RLモデル読み込み失敗、保存/再接続データ読み込み失敗、オンライン作成/参加の入力エラーを `showNotice()` 経由へ置換した。
+  - ui/storage/online/main のテスト fixture を更新し、`showNotice` fallback を回帰テストで固定した。
+- 実行テスト:
+  - `node --check js/ui.js`
+  - `node --check js/main.js`
+  - `node --check js/storage.js`
+  - `node --check js/online.js`
+  - `node --check tests/ui.test.js`
+  - `node --check tests/storage.test.js`
+  - `node --check tests/online.test.js`
+  - `node --check tests/main.test.js`
+  - `node --check tests/helpers/integration-runtime.js`
+  - `node tests/ui.test.js`
+  - `node tests/storage.test.js`
+  - `node tests/online.test.js`
+  - `node tests/main.test.js`
+  - `npm run test:pwa`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: 専用 notice modal の UI 実装は後続PRで扱う。今回は fallback 経由で既存挙動を維持した。

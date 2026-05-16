@@ -684,6 +684,13 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function showNotice(message) {
+    const text = String(message || '');
+    if (typeof alert === 'function') {
+        alert(text);
+    }
+}
+
 function showConfirm(message, onOk) {
     const modal = document.getElementById('confirmModal');
     document.getElementById('confirmMessage').textContent = message;

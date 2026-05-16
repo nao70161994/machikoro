@@ -83,12 +83,22 @@ function loadUiRuntime() {
             PENDING: 'pending',
         },
         game: null,
+        alertMessages: [],
+        alert(message) { context.alertMessages.push(message); },
     };
     context.global = context;
     vm.createContext(context);
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/ui.js']);
     return { context, elements };
 }
+
+runTest('showNotice は alert fallback で通知する', () => {
+    const { context } = loadUiRuntime();
+
+    context.showNotice('通知テスト');
+
+    assert.deepStrictEqual(context.alertMessages, ['通知テスト']);
+});
 
 runTest('switchTab は stats タブ表示時に renderStats を呼ぶ', () => {
     const { context, elements } = loadUiRuntime();

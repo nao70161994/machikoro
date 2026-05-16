@@ -101,7 +101,7 @@ function createCpuPlayer(difficulty, options = {}) {
             return RLModelPortfolio.createRandomCpu(resolvedOptions);
         } catch (error) {
             console.error(error);
-            alert("深層学習AIモデルを読み込めませんでした。CPU（最強）で代替します。");
+            showNotice("深層学習AIモデルを読み込めませんでした。CPU（最強）で代替します。");
             if (resolvedOptions.expertPurpose === "live") {
                 applyLiveExpertDefaults();
             }

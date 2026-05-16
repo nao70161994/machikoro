@@ -108,6 +108,7 @@ function loadStorageRuntime() {
         sendAction(name, payload) { context.sentActions.push({ name, payload }); },
         showConfirm(message, cb) { confirmCount++; cb(); },
         alert(message) { alerts.push(message); },
+        showNotice(message) { alerts.push(message); },
         emits: [],
         sentActions: [],
         createdCpuPlayers: [],
