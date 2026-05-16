@@ -486,7 +486,7 @@ io.on('connection', (socket) => {
             emitAppError(socket, '無効な操作です');
             return;
         }
-        let safeData = data;
+        let safeData = validation.data;
         if (action === 'buildCard' || action === 'buildLandmark') {
             room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
         } else if (action === 'undoBuild') {
@@ -983,6 +983,35 @@ function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
     );
 }
 
+function rollServerDie() {
+    return crypto.randomInt(1, 7);
+}
+
+function makeServerDiceActionData(game, action, data, rollDie = rollServerDie) {
+    if (!isPlainObject(data)) return data;
+    const tunaDice = () => [rollDie(), rollDie()];
+    if (action === 'rollDice') {
+        if (game.currentPlayer().landmarks[gameRuntime.LANDMARK_NAMES.STATION]) {
+            return { forceDice: null, tunaDice: null };
+        }
+        return { forceDice: rollDie(), tunaDice: tunaDice() };
+    }
+    if (action === 'selectDice') {
+        if (typeof data.useTwo !== 'boolean') return data;
+        return {
+            useTwo: data.useTwo,
+            diceCount: data.useTwo ? 2 : 1,
+            d1: rollDie(),
+            d2: data.useTwo ? rollDie() : 0,
+            tunaDice: tunaDice(),
+        };
+    }
+    if (action === 'rerollDice') {
+        return { forceDice: rollDie(), tunaDice: tunaDice() };
+    }
+    return data;
+}
+
 
 function buildPlayerList(room) {
     if (room.playerSettings.length === 0) {
@@ -1036,12 +1065,14 @@ function validateGameAction(room, socket, action, data) {
     const allowed = getAllowedActions(game);
     if (!allowed.has(action)) return { ok: false };
 
+    const authoritativeData = makeServerDiceActionData(game, action, data);
     return {
-        ok: validateActionPayloadForState(room, game, shopStock, action, data, {
+        ok: validateActionPayloadForState(room, game, shopStock, action, authoritativeData, {
             undoState: room.lastUndoState || mirror.lastUndoState,
             requireUndoPayload: false,
         }),
         mirror,
+        data: authoritativeData,
     };
 }
 
@@ -1164,6 +1195,8 @@ module.exports = {
     applyActionToMirror,
     restoreUndoMirror,
     makeUndoStateFromMirror,
+    rollServerDie,
+    makeServerDiceActionData,
     validateBusinessPayload,
     validateCleaningPayload,
     validateMoverPayload,

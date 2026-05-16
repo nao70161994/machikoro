@@ -55,6 +55,7 @@ const {
     makeUndoStateFromMirror,
     applyActionToMirror,
     restoreUndoMirror,
+    makeServerDiceActionData,
     getAllowedActions,
     buildPlayerList,
     checkGameStart,
@@ -1068,11 +1069,28 @@ runTest('validateGameAction は駅あり rollDice の forceDice null を許可�
     assert.strictEqual(result.ok, true);
 });
 
-runTest('validateGameAction は駅なし rollDice の forceDice null を拒否する', () => {
+runTest('validateGameAction は駅なし online rollDice の client dice を server dice へ置き換える', () => {
     const room = makeRoom();
     room.gameStartPayload.enabledLandmarks = ['ショッピングモール'];
     const result = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: null, tunaDice: null });
-    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.ok, true);
+    assert.ok(Number.isInteger(result.data.forceDice));
+    assert.ok(result.data.forceDice >= 1 && result.data.forceDice <= 6);
+    assert.ok(Array.isArray(result.data.tunaDice));
+    assert.strictEqual(result.data.tunaDice.length, 2);
+});
+
+runTest('makeServerDiceActionData は select/reroll の出目を deterministic roller で生成する', () => {
+    const room = makeRoom();
+    const mirror = createRoomMirror(room);
+    const rolls = [2, 3, 4, 5, 6, 1, 2, 3, 4, 5];
+    const rollDie = () => rolls.shift();
+    const selectOne = makeServerDiceActionData(mirror.game, 'selectDice', { useTwo: false, diceCount: 1, d1: 6, tunaDice: [6, 6] }, rollDie);
+    assert.deepStrictEqual(selectOne, { useTwo: false, diceCount: 1, d1: 2, d2: 0, tunaDice: [3, 4] });
+    const selectTwo = makeServerDiceActionData(mirror.game, 'selectDice', { useTwo: true, diceCount: 2, d1: 6, d2: 6 }, rollDie);
+    assert.deepStrictEqual(selectTwo, { useTwo: true, diceCount: 2, d1: 5, d2: 6, tunaDice: [1, 2] });
+    const reroll = makeServerDiceActionData(mirror.game, 'rerollDice', {}, rollDie);
+    assert.deepStrictEqual(reroll, { forceDice: 3, tunaDice: [4, 5] });
 });
 
 runTest('validateSelectDicePayload は型と出目範囲を検証する', () => {

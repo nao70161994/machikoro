@@ -44,10 +44,15 @@
 
 現行のオンライン対戦は、知人同士の casual play を前提にした信頼モデルです。サーバーは action の順序、手番、phase、payload 型、有効カード/ランドマーク、mirror replay で検証できる範囲を守りますが、完全な不正耐性を提供していません。
 
-特に次は client 由来です。
+live room では、次は server 由来です。
 
-- `rollDice`, `selectDice`, `rerollDice` の出目。サーバーは範囲と phase を検証しますが、乱数生成そのものは client 側です。
-- server restart 後の `recreateRoom` restore bundle。サーバーは token、host、rank、schema、size、mirror replay を検証しますが、host の local snapshot を復元材料として受け取ります。
+- `rollDice`, `selectDice`, `rerollDice` の出目。client payload は互換用の placeholder として受け取り、accepted action に記録する出目は server が `crypto.randomInt(1, 7)` で生成します。
+- 駅ありの `rollDice` は出目を確定せず、従来通り `selectDice` で server が 1個/2個の出目を発行します。
+- 旧clientが送る `forceDice`, `d1`, `d2`, `tunaDice` は live validation 前に server dice へ置き換えられます。
+
+引き続き次は client 由来です。
+
+- server restart 後の `recreateRoom` restore bundle。サーバーは token、host、rank、schema、size、mirror replay を検証しますが、host の local snapshot を復元材料として受け取ります。過去log内のdice値は replay 互換のため検証対象であり、live room の新規dice発行とは別扱いです。
 - UI 上の player order 表示。検証では server 側の original player index / shuffled order を区別して扱います。
 
 そのため、公開部屋、ランク戦、賞品付き対戦、恒久的な戦績保存、観戦/replay配信のように不正耐性が必要な運用へ進む場合は、現行設計を server authoritative とみなしてはいけません。先に server-side dice、server seed または commit-reveal、room 内 canonical mirror、action/state hash、復元 snapshot の保全チェックを設計してください。
@@ -68,12 +73,13 @@
 Live action:
 
 1. Client calls `sendAction(action, data)`.
-2. Client stores `onlinePendingAction` and emits `gameAction`.
+2. Client stores `onlinePendingAction` and emits `gameAction`. For dice actions, current clients send placeholder values and wait for server-confirmed dice.
 3. Server rebuilds mirror state from `stateSnapshot + actionLog`.
-4. Server validates actor, phase, payload, enabled cards / landmarks, undo state.
-5. Server assigns next `seq`, records action, possibly compacts action log.
-6. Server emits `gameAction` to other clients and `actionAccepted` to sender.
-7. Clients replay action locally and persist canonical log / seq.
+4. Server validates actor and phase. For `rollDice` / `selectDice` / `rerollDice`, server replaces client dice fields with server-generated dice before payload validation.
+5. Server validates payload, enabled cards / landmarks, undo state.
+6. Server assigns next `seq`, records action, possibly compacts action log. The recorded dice values are the server-generated values.
+7. Server emits `gameAction` to other clients and `actionAccepted` to sender.
+8. Clients replay the accepted action locally and persist canonical log / seq.
 
 Reconnect:
 

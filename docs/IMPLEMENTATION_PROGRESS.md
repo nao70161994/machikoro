@@ -807,3 +807,31 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: server-side dice と canonical mirror の設計・試作は PR-030 / PR-031 で扱う。
+
+
+## PR-030 server-side dice design and prototype
+
+- 状態: done
+- commit: `PENDING_PR_030_HASH`
+- 変更ファイル:
+  - `docs/ONLINE_SYNC.md`
+  - `server.js`
+  - `js/main.js`
+  - `tests/server.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `ONLINE_SYNC.md` に live room の dice authority と restore replay 互換境界を明記した。
+  - online の `rollDice` / `selectDice` / `rerollDice` で server が accepted action 用の出目を生成する prototype を追加した。
+  - client 側の人間操作は online dice action で placeholder を送信し、ack / broadcast で server 確定出目を適用する流れにした。
+  - server test で client dice が server dice へ置き換わることと deterministic roller による select/reroll 生成を固定した。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check js/main.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:online`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: server restart restore の過去 actionLog 内 dice は replay 互換のため引き続き検証対象。完全な競技運用には PR-031 の canonical mirror / state hash が必要。

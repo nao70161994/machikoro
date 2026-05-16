@@ -627,6 +627,10 @@ function onRoll() {
         setTimeout(() => {
             delayedHumanActionPending = false;
             if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex)) return;
+            if (isOnlineGame) {
+                runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
+                return;
+            }
             const forceDice = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
             runLocalOrSendOnline('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
@@ -644,6 +648,11 @@ function onSelectDiceCount(useTwo) {
     setTimeout(() => {
         delayedHumanActionPending = false;
         if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex)) return;
+        if (isOnlineGame) {
+            runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1 },
+                () => game.selectDiceCount(useTwo, 1, useTwo ? 1 : 0, null));
+            return;
+        }
         const d1 = rollRandomDie();
         const d2 = useTwo ? rollRandomDie() : 0;
         const tunaDice = [rollRandomDie(), rollRandomDie()];
@@ -654,6 +663,10 @@ function onSelectDiceCount(useTwo) {
 
 function onReroll() {
     if (!canRunHumanAction(MAIN_ACTIONS.REROLL_DICE)) return;
+    if (isOnlineGame) {
+        runLocalOrSendOnline('rerollDice', {}, () => game.rerollDice(1, null));
+        return;
+    }
     const forceDice = rollRandomDie();
     const tunaDice = [rollRandomDie(), rollRandomDie()];
     runLocalOrSendOnline('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
