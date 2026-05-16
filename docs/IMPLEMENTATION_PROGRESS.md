@@ -611,3 +611,30 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: 実ブラウザでの更新バナー表示は自動テストでは DOM/CSS の静的確認まで。Service Worker 更新通知の見た目は次回PWA手動確認で見る。
+
+
+## PR-023 appShell offline button selectors
+
+- 状態: done
+- commit: `PENDING_PR_023_HASH`
+- 変更ファイル:
+  - `index.html`
+  - `js/appShell.js`
+  - `tests/main.test.js`
+  - `tests/helpers/integration-runtime.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - オンラインの作成/参加 submit button に `onlineCreateSubmitButton` / `onlineJoinSubmitButton` を追加した。
+  - `updateOnlineTabState()` が構造依存の `#onlineCreate button` / `#onlineJoin button` ではなく専用 id を見るようにした。
+  - main / integration runtime fixture を専用 id へ更新し、HTML 側の id 存在もテストで固定した。
+- 実行テスト:
+  - `node --check js/appShell.js`
+  - `node --check tests/main.test.js`
+  - `node --check tests/helpers/integration-runtime.js`
+  - `node tests/main.test.js`
+  - `npm run test:pwa`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。

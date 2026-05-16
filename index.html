@@ -109,7 +109,7 @@
                             <span id="onlineSpeedLabel">1.5秒</span>
                         </div>
                     </div>
-                    <button onclick="showCreateRoom()">🏠 ルームを作る</button>
+                    <button id="onlineCreateSubmitButton" onclick="showCreateRoom()">🏠 ルームを作る</button>
                 </div>
 
                 <div id="onlineJoin" style="display:none">
@@ -118,7 +118,7 @@
                         <input id="roomIdInput" type="text" placeholder="6文字のルームID" maxlength="6"
                             class="text-input" style="text-transform:uppercase">
                     </div>
-                    <button onclick="joinRoom()">🚪 参加する</button>
+                    <button id="onlineJoinSubmitButton" onclick="joinRoom()">🚪 参加する</button>
                 </div>
 
                 <div id="offlineNotice" class="offline-notice" style="display:none">

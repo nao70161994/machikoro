@@ -25,8 +25,8 @@ function updateOnlineTabState() {
     const offline = !navigator.onLine;
     const tabBtn = document.getElementById('tabOnline');
     const notice = document.getElementById('offlineNotice');
-    const createBtn = document.querySelector('#onlineCreate button');
-    const joinBtn = document.querySelector('#onlineJoin button');
+    const createBtn = document.getElementById('onlineCreateSubmitButton');
+    const joinBtn = document.getElementById('onlineJoinSubmitButton');
     if (tabBtn) tabBtn.style.opacity = offline ? '0.4' : '';
     if (notice) notice.style.display = offline ? 'block' : 'none';
     if (createBtn) createBtn.disabled = offline;

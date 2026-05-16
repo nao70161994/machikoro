@@ -23,6 +23,8 @@ function loadIntegrationRuntime(options = {}) {
         tabContentStats: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
+        onlineCreateSubmitButton: makeElement(),
+        onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
         gameScreen: makeElement(),
         status: makeElement(),
@@ -41,10 +43,6 @@ function loadIntegrationRuntime(options = {}) {
         playerNameInput: makeElement({ value: 'Alice' }),
         roomIdInput: makeElement({ value: 'ROOM01' }),
     };
-    const createdButtons = {
-        '#onlineCreate button': makeElement(),
-        '#onlineJoin button': makeElement(),
-    };
     const timeouts = [];
     const eventHandlers = {};
     const socketHandlers = {};
@@ -62,7 +60,7 @@ function loadIntegrationRuntime(options = {}) {
                 return elements[id];
             },
             querySelector(selector) {
-                return createdButtons[selector] || null;
+                return null;
             },
             querySelectorAll() { return []; },
             createElement() { return makeElement(); },

@@ -19,6 +19,8 @@ function loadMainRuntime(options = {}) {
         tabOnline: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
+        onlineCreateSubmitButton: makeElement(),
+        onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
         gameScreen: makeElement(),
     };
@@ -38,17 +40,12 @@ function loadMainRuntime(options = {}) {
     if (options.pwaInstallDismissed) {
         localStorage.setItem('pwaInstallDismissed', '1');
     }
-    const createdButtons = {
-        '#onlineCreate button': makeElement(),
-        '#onlineJoin button': makeElement(),
-    };
 
     const context = {
         console,
         Math,
         counters,
         elements,
-        createdButtons,
         eventHandlers,
         localStorageData,
         timeouts,
@@ -60,7 +57,7 @@ function loadMainRuntime(options = {}) {
                 return elements[id];
             },
             querySelector(selector) {
-                return createdButtons[selector] || null;
+                return null;
             },
             querySelectorAll() { return []; },
             createElement() { return makeElement(); },
@@ -241,8 +238,7 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(`
         this.__test = {
             elements,
-            createdButtons,
-            eventHandlers,
+                eventHandlers,
             localStorageData,
             sentActions,
             alerts,
@@ -682,16 +678,16 @@ runTest('appShell updateOnlineTabState はオフライン時にオンライン�
 
     assert.strictEqual(rt.__test.elements.offlineNotice.style.display, 'block');
     assert.strictEqual(rt.__test.elements.tabOnline.style.opacity, '0.4');
-    assert.strictEqual(rt.__test.createdButtons['#onlineCreate button'].disabled, true);
-    assert.strictEqual(rt.__test.createdButtons['#onlineJoin button'].disabled, true);
+    assert.strictEqual(rt.__test.elements.onlineCreateSubmitButton.disabled, true);
+    assert.strictEqual(rt.__test.elements.onlineJoinSubmitButton.disabled, true);
 
     rt.navigator.onLine = true;
     rt.updateOnlineTabState();
 
     assert.strictEqual(rt.__test.elements.offlineNotice.style.display, 'none');
     assert.strictEqual(rt.__test.elements.tabOnline.style.opacity, '');
-    assert.strictEqual(rt.__test.createdButtons['#onlineCreate button'].disabled, false);
-    assert.strictEqual(rt.__test.createdButtons['#onlineJoin button'].disabled, false);
+    assert.strictEqual(rt.__test.elements.onlineCreateSubmitButton.disabled, false);
+    assert.strictEqual(rt.__test.elements.onlineJoinSubmitButton.disabled, false);
 });
 
 runTest('appShell bindPwaInstallHandlers は beforeinstallprompt を購読する', () => {
@@ -835,6 +831,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('hadServiceWorkerController = true;'));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner"'));
+    assert.ok(html.includes('id="onlineCreateSubmitButton"'));
+    assert.ok(html.includes('id="onlineJoinSubmitButton"'));
     assert.ok(css.includes('--z-pwa-banner: 500;'));
     assert.ok(css.includes('--z-pending-modal: 600;'));
     assert.ok(css.includes('--z-modal: 1000;'));
