@@ -191,7 +191,7 @@
 ## PR-009 room lifecycle rate limit / pre-start TTL
 
 - 状態: done
-- commit: `7033883`
+- commit: `4f15e63`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
