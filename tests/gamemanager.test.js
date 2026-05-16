@@ -226,6 +226,45 @@ runTest('pendingActionsFor は pending field を解決順descriptorとして返�
     assert.deepStrictEqual(plain(game.pendingActions()), []);
 });
 
+runTest('pendingActions queue は互換fieldとdual-writeされる', () => {
+    const plain = value => JSON.parse(JSON.stringify(value));
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+
+    assert.strictEqual(game._enqueuePendingAction('pendingTV'), true);
+    assert.strictEqual(game._enqueuePendingAction('pendingTV'), true);
+    assert.strictEqual(game._enqueuePendingAction('pendingBusiness'), true);
+    assert.strictEqual(game.pendingTV, 2);
+    assert.strictEqual(game.pendingBusiness, 1);
+    assert.deepStrictEqual(plain(game.pendingActionQueue), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+    ]);
+    assert.deepStrictEqual(plain(game.pendingActions()), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV', count: 2 },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness', count: 1 },
+    ]);
+
+    assert.strictEqual(game._consumePendingAction('pendingTV'), true);
+    assert.strictEqual(game.pendingTV, 1);
+    assert.deepStrictEqual(plain(game.pendingActionQueue), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+    ]);
+
+    game.pendingActionQueue = [];
+    assert.deepStrictEqual(plain(game.pendingActions()), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV', count: 1 },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness', count: 1 },
+    ]);
+    game.rebuildPendingActionsFromFields();
+    assert.deepStrictEqual(plain(game.pendingActionQueue), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+    ]);
+});
+
 runTest('resetPendingState と resetTurnState は共通turn fieldを初期化する', () => {
     const game = new GameManager(2);
     game.pendingTV = 1;

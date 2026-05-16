@@ -31,6 +31,9 @@ function makeMirrorReplay({
             pendingCleaning: game.pendingCleaning,
             pendingMover: game.pendingMover,
             pendingRenovation: game.pendingRenovation,
+            pendingActions: (gameRuntime.GameManager && typeof gameRuntime.GameManager.serializedPendingActionsFor === 'function')
+                ? gameRuntime.GameManager.serializedPendingActionsFor(game)
+                : [],
             pendingIT: game.pendingIT,
             usedReroll: game.usedReroll,
             pendingTunaDice: game.pendingTunaDice,
@@ -160,6 +163,21 @@ function makeMirrorReplay({
         for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+        }
+        if (Object.prototype.hasOwnProperty.call(state, 'pendingActions')) {
+            const validFields = new Set(['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']);
+            const validActions = new Set([
+                gameRuntime.GAME_ACTIONS.RESOLVE_TV,
+                gameRuntime.GAME_ACTIONS.RESOLVE_BUSINESS,
+                gameRuntime.GAME_ACTIONS.RESOLVE_CLEANING,
+                gameRuntime.GAME_ACTIONS.RESOLVE_MOVER,
+                gameRuntime.GAME_ACTIONS.RESOLVE_RENOVATION,
+            ]);
+            if (!Array.isArray(state.pendingActions) || state.pendingActions.some(pending =>
+                !isPlainObject(pending) ||
+                !validFields.has(pending.field) ||
+                !validActions.has(pending.action)
+            )) return false;
         }
         for (const field of ['builtThisTurn', 'pendingIT', 'usedReroll', 'hadAmusementParkAtRoll']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
@@ -350,6 +368,14 @@ function makeMirrorReplay({
         game.pendingCleaning = state.pendingCleaning || 0;
         game.pendingMover = state.pendingMover || 0;
         game.pendingRenovation = state.pendingRenovation || 0;
+        game.pendingActionQueue = Array.isArray(state.pendingActions)
+            ? state.pendingActions
+                .filter(pending => pending && typeof pending === 'object')
+                .map(pending => ({ action: pending.action, field: pending.field }))
+            : [];
+        if (typeof game.rebuildPendingActionsFromFields === 'function' && game.pendingActionQueue.length === 0) {
+            game.rebuildPendingActionsFromFields();
+        }
         game.pendingIT = state.pendingIT || false;
         game.usedReroll = state.usedReroll || false;
         game.pendingTunaDice = state.pendingTunaDice || null;

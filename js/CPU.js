@@ -3594,6 +3594,12 @@ class CPU {
             clone.pendingCleaning = game.pendingCleaning || 0;
             clone.pendingMover = game.pendingMover || 0;
             clone.pendingRenovation = game.pendingRenovation || 0;
+            clone.pendingActionQueue = Array.isArray(game.pendingActionQueue)
+                ? game.pendingActionQueue.map(pending => ({ action: pending.action, field: pending.field }))
+                : [];
+            if (typeof clone.rebuildPendingActionsFromFields === "function" && clone.pendingActionQueue.length === 0) {
+                clone.rebuildPendingActionsFromFields();
+            }
             clone.pendingIT = game.pendingIT || false;
             clone.usedReroll = game.usedReroll || false;
             clone.pendingTunaDice = game.pendingTunaDice || null;

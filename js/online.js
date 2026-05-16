@@ -377,6 +377,9 @@ function buildOnlineSnapshot() {
         pendingCleaning: game.pendingCleaning,
         pendingMover: game.pendingMover,
         pendingRenovation: game.pendingRenovation,
+        pendingActions: (typeof GameManager !== 'undefined' && typeof GameManager.serializedPendingActionsFor === 'function')
+            ? GameManager.serializedPendingActionsFor(game)
+            : [],
         pendingIT: game.pendingIT,
         usedReroll: game.usedReroll,
         pendingTunaDice: game.pendingTunaDice,
@@ -842,6 +845,14 @@ function restoreOnlineSnapshot(state) {
     game.pendingCleaning = state.pendingCleaning || 0;
     game.pendingMover = state.pendingMover || 0;
     game.pendingRenovation = state.pendingRenovation || 0;
+    game.pendingActionQueue = Array.isArray(state.pendingActions)
+        ? state.pendingActions
+            .filter(pending => pending && typeof pending === 'object')
+            .map(pending => ({ action: pending.action, field: pending.field }))
+        : [];
+    if (typeof game.rebuildPendingActionsFromFields === 'function' && game.pendingActionQueue.length === 0) {
+        game.rebuildPendingActionsFromFields();
+    }
     game.pendingIT = state.pendingIT || false;
     game.usedReroll = state.usedReroll || false;
     game.pendingTunaDice = state.pendingTunaDice || null;

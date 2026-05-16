@@ -43,6 +43,22 @@ const GAME_PHASE_ACTIONS = Object.freeze({
     [GAME_PHASES.BUILD]:          Object.freeze([GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]),
 });
 
+const PENDING_ACTION_SPECS = Object.freeze([
+    Object.freeze({ field: 'pendingTV', action: GAME_ACTIONS.RESOLVE_TV }),
+    Object.freeze({ field: 'pendingBusiness', action: GAME_ACTIONS.RESOLVE_BUSINESS }),
+    Object.freeze({ field: 'pendingCleaning', action: GAME_ACTIONS.RESOLVE_CLEANING }),
+    Object.freeze({ field: 'pendingMover', action: GAME_ACTIONS.RESOLVE_MOVER }),
+    Object.freeze({ field: 'pendingRenovation', action: GAME_ACTIONS.RESOLVE_RENOVATION }),
+]);
+
+const PENDING_ACTION_SPEC_BY_FIELD = Object.freeze(Object.fromEntries(
+    PENDING_ACTION_SPECS.map(spec => [spec.field, spec])
+));
+
+const PENDING_ACTION_SPEC_BY_ACTION = Object.freeze(Object.fromEntries(
+    PENDING_ACTION_SPECS.map(spec => [spec.action, spec])
+));
+
 const GAME_ACTION_REGISTRY = Object.freeze({
     [GAME_ACTIONS.ROLL_DICE]:          Object.freeze({ action: GAME_ACTIONS.ROLL_DICE,          phase: GAME_PHASES.ROLL,           payloadKind: 'rollDice',          serverPayload: true, serverReplay: true, clientApply: true }),
     [GAME_ACTIONS.SELECT_DICE]:        Object.freeze({ action: GAME_ACTIONS.SELECT_DICE,        phase: GAME_PHASES.SELECT_DICE,    payloadKind: 'selectDice',        serverPayload: true, serverReplay: true, clientApply: true }),
@@ -140,6 +156,7 @@ class GameManager {
         this.pendingMover = 0;
         this.pendingRenovation = 0;
         this.pendingIT = false;
+        this.pendingActionQueue = [];
     }
 
     resetTurnState(options = {}) {
@@ -179,6 +196,48 @@ class GameManager {
         );
     }
 
+    static _pendingDescriptorsFromFields(game) {
+        if (!game) return [];
+        return PENDING_ACTION_SPECS
+            .map(spec => ({
+                action: spec.action,
+                field: spec.field,
+                count: Number.isInteger(game[spec.field]) ? game[spec.field] : 0,
+            }))
+            .filter(pending => pending.count > 0);
+    }
+
+    static _normalizePendingActionQueue(game) {
+        if (!game || !Array.isArray(game.pendingActionQueue)) return [];
+        const counts = Object.fromEntries(PENDING_ACTION_SPECS.map(spec => [spec.field, 0]));
+        const queue = [];
+        for (const entry of game.pendingActionQueue) {
+            if (!entry || typeof entry !== 'object') continue;
+            const spec = PENDING_ACTION_SPEC_BY_FIELD[entry.field] || PENDING_ACTION_SPEC_BY_ACTION[entry.action];
+            if (!spec) continue;
+            queue.push({ action: spec.action, field: spec.field, count: 1 });
+            counts[spec.field]++;
+        }
+        for (const spec of PENDING_ACTION_SPECS) {
+            const fieldCount = Number.isInteger(game[spec.field]) ? game[spec.field] : 0;
+            if (counts[spec.field] !== fieldCount) return [];
+        }
+        return queue;
+    }
+
+    static _groupPendingQueue(queue) {
+        const grouped = [];
+        for (const entry of queue) {
+            const last = grouped[grouped.length - 1];
+            if (last && last.action === entry.action && last.field === entry.field) {
+                last.count++;
+            } else {
+                grouped.push({ action: entry.action, field: entry.field, count: 1 });
+            }
+        }
+        return grouped;
+    }
+
     // Returns pending action descriptors in the order they should be resolved.
     static pendingActionsFor(game) {
         if (!game) return [];
@@ -186,21 +245,54 @@ class GameManager {
             return [{ action: GAME_ACTIONS.RESOLVE_IT, field: 'pendingIT', count: 1 }];
         }
         if (game.phase !== GAME_PHASES.PENDING) return [];
-        const actions = [];
-        const addPending = (field, action) => {
-            const count = Number.isInteger(game[field]) ? game[field] : 0;
-            if (count > 0) actions.push({ action, field, count });
-        };
-        addPending('pendingTV', GAME_ACTIONS.RESOLVE_TV);
-        addPending('pendingBusiness', GAME_ACTIONS.RESOLVE_BUSINESS);
-        addPending('pendingCleaning', GAME_ACTIONS.RESOLVE_CLEANING);
-        addPending('pendingMover', GAME_ACTIONS.RESOLVE_MOVER);
-        addPending('pendingRenovation', GAME_ACTIONS.RESOLVE_RENOVATION);
-        return actions;
+        const queue = GameManager._normalizePendingActionQueue(game);
+        if (queue.length > 0) return GameManager._groupPendingQueue(queue);
+        return GameManager._pendingDescriptorsFromFields(game);
     }
 
     pendingActions() {
         return GameManager.pendingActionsFor(this);
+    }
+
+    static serializedPendingActionsFor(game) {
+        const queue = GameManager._normalizePendingActionQueue(game);
+        if (queue.length > 0) {
+            return queue.map(pending => ({ action: pending.action, field: pending.field }));
+        }
+        const pendingActions = [];
+        for (const pending of GameManager._pendingDescriptorsFromFields(game)) {
+            for (let i = 0; i < pending.count; i++) {
+                pendingActions.push({ action: pending.action, field: pending.field });
+            }
+        }
+        return pendingActions;
+    }
+
+    rebuildPendingActionsFromFields() {
+        this.pendingActionQueue = GameManager.serializedPendingActionsFor(this);
+    }
+
+    _enqueuePendingAction(field) {
+        const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
+        if (!spec) return false;
+        this[field] = (Number.isInteger(this[field]) ? this[field] : 0) + 1;
+        if (!Array.isArray(this.pendingActionQueue)) this.pendingActionQueue = [];
+        this.pendingActionQueue.push({ action: spec.action, field: spec.field });
+        return true;
+    }
+
+    _consumePendingAction(field) {
+        const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
+        if (!spec || (Number.isInteger(this[field]) ? this[field] : 0) <= 0) return false;
+        this[field]--;
+        if (Array.isArray(this.pendingActionQueue)) {
+            const index = this.pendingActionQueue.findIndex(entry => entry && (entry.field === spec.field || entry.action === spec.action));
+            if (index >= 0) this.pendingActionQueue.splice(index, 1);
+            else this.rebuildPendingActionsFromFields();
+        } else {
+            this.rebuildPendingActionsFromFields();
+        }
+        return true;
     }
 
     // Returns action names allowed by phase/pending state only. Payload legality is validated separately.
@@ -458,7 +550,7 @@ class GameManager {
                 continue;
             }
             if (card.effect === CARD_EFFECTS.MOVER) {
-                this.pendingMover++;
+                this._enqueuePendingAction('pendingMover');
                 this.addLog(LOG_TYPES.SPECIAL, `🚚 引越し屋発動 → 渡す施設を選んでください`);
                 continue;
             }
@@ -467,7 +559,7 @@ class GameManager {
                 const builtLandmarks = Object.entries(current.landmarks)
                     .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
                 if (builtLandmarks.length > 0) {
-                    this.pendingRenovation++;
+                    this._enqueuePendingAction('pendingRenovation');
                     this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋発動 → 戻すランドマークを選んでください`);
                 } else {
                     this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
@@ -515,11 +607,11 @@ class GameManager {
                 current.coins += total;
                 this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.TV) {
-                this.pendingTV++;
+                this._enqueuePendingAction('pendingTV');
                 this.addLog(LOG_TYPES.SPECIAL, `📺 テレビ局発動 → 対象プレイヤーを選んでください`);
             } else if (card.effect === CARD_EFFECTS.BUSINESS) {
                 if (this._hasBusinessExchange(ci)) {
-                    this.pendingBusiness++;
+                    this._enqueuePendingAction('pendingBusiness');
                     this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
                 } else {
                     this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター：交換できる施設がないため不発`);
@@ -552,7 +644,7 @@ class GameManager {
                 this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${total}コイン`);
             } else if (card.effect === CARD_EFFECTS.CLEANING) {
                 if (this._hasCleaningTarget()) {
-                    this.pendingCleaning++;
+                    this._enqueuePendingAction('pendingCleaning');
                     this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にする施設を選んでください`);
                 } else {
                     this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にできる施設がありません`);
@@ -590,7 +682,7 @@ class GameManager {
         target.coins -= steal;
         current.coins += steal;
         this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${steal}コイン奪いました`);
-        this.pendingTV--;
+        this._consumePendingAction('pendingTV');
         this._checkPending();
         return true;
     }
@@ -614,7 +706,7 @@ class GameManager {
         if (theirCardWasDormant) current.makeDormant(theirCard);
         if (myCardWasDormant) target.makeDormant(myCard);
         this.addLog(LOG_TYPES.SPECIAL, `🔄 ${myCard.name} ⇔ ${target.name}の${theirCard.name} を交換しました`);
-        this.pendingBusiness--;
+        this._consumePendingAction('pendingBusiness');
         this._checkPending();
         return true;
     }
@@ -635,7 +727,7 @@ class GameManager {
         }
         current.coins += count;
         this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${count}軒を休業 → +${count}コイン`);
-        this.pendingCleaning--;
+        this._consumePendingAction('pendingCleaning');
         this._checkPending();
         return true;
     }
@@ -654,7 +746,7 @@ class GameManager {
         if (myCardWasDormant) target.makeDormant(myCard);
         current.coins += 4;
         this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
-        this.pendingMover--;
+        this._consumePendingAction('pendingMover');
         this._checkPending();
         return true;
     }
@@ -669,7 +761,7 @@ class GameManager {
         current.landmarks[landmarkName] = false;
         current.coins += 8;
         this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+8コイン`);
-        this.pendingRenovation--;
+        this._consumePendingAction('pendingRenovation');
 
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ
         while (this.pendingRenovation > 0) {
@@ -677,7 +769,7 @@ class GameManager {
                 .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
             if (builtLandmarks.length > 0) break;
             this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
-            this.pendingRenovation--;
+            this._consumePendingAction('pendingRenovation');
         }
 
         this._checkPending();

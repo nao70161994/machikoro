@@ -860,3 +860,39 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: canonical mirror は in-memory 実験段階のため、再接続/Undo/host移譲の手動長時間確認は TESTPLAN.md ベースで継続する。
+
+## PR-032 pendingActions queue migration
+
+- 状態: done
+- commit: `PENDING_PR_032_HASH`
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `js/CPU.js`
+  - `js/online.js`
+  - `js/storage.js`
+  - `server/mirrorReplay.js`
+  - `tests/gamemanager.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - 既存の `pendingTV` などを互換 field として残しつつ、内部 queue `pendingActionQueue` を dual-write する足場を追加した。
+  - 保存/online/server mirror snapshot には schema 名 `pendingActions` として queue を含め、旧 snapshot は field から queue を再構築できるようにした。
+  - CPU simulation clone でも pending queue を引き継ぎ、pending 解決順の互換性を維持した。
+  - GameManager test で enqueue/consume と field fallback/rebuild の挙動を固定した。
+- 実行テスト:
+  - `node --check js/GameManager.js`
+  - `node --check js/storage.js`
+  - `node --check js/online.js`
+  - `node --check js/CPU.js`
+  - `node --check server/mirrorReplay.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+  - `node tests/server.test.js`
+  - `node tests/online.test.js`
+  - `node tests/cpu.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:online`
+  - `npm run test:smoke`
+  - `npm test`
+  - `npm run test:cpu`
+- 残課題: 実処理の主読み取りはまだ互換 descriptor 経由。field 削減は後続PRで小分けに進める。
