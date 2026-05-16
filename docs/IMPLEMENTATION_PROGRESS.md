@@ -738,7 +738,7 @@
 ## PR-027 server section markers and test-only exports note
 
 - 状態: done
-- commit: `PENDING_PR_027_HASH`
+- commit: `25bf5fe`
 - 変更ファイル:
   - `server.js`
   - `docs/ARCHITECTURE.md`
