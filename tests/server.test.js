@@ -2233,6 +2233,28 @@ runTest('createRoomMirror は未知 action を復元失敗として拒否する'
     assert.strictEqual(mirror, null);
 });
 
+runTest('createRoomMirror は全actionの不正payload replayを例外にせず拒否する', () => {
+    const { GAME_ACTIONS } = loadGameRuntime();
+    const invalidPayloads = [null, [], 'x', {}];
+    for (const action of Object.values(GAME_ACTIONS)) {
+        for (const data of invalidPayloads) {
+            const room = makeRoom();
+            room.actionLog = [{ action, data, playerIndex: 0 }];
+            assert.strictEqual(createRoomMirror(room), null, action + ' should reject ' + JSON.stringify(data));
+        }
+    }
+});
+
+runTest('applyActionToMirror は非object payloadを例外にせず拒否する', () => {
+    const { GameManager, createCardByName } = makeGame();
+    const game = new GameManager(2);
+    const shopStock = { 麦畑: 6 };
+    const invalidPayloads = [null, [], 'x'];
+    for (const data of invalidPayloads) {
+        assert.strictEqual(applyActionToMirror(game, shopStock, 'rollDice', data, createCardByName), false);
+    }
+});
+
 runTest('validateGameAction は壊れた actionLog replay を拒否する', () => {
     const room = makeRoom();
     room.actionLog = [{ action: 'rollDice', data: null, playerIndex: 0 }];

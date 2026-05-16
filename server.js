@@ -1259,6 +1259,7 @@ function restoreMirrorState(game, shopStock, state, createCardByName) {
 }
 
 function applyActionToMirror(game, shopStock, action, data, createCardByName) {
+    if (!isPlainObject(data)) return false;
     switch (action) {
         case 'rollDice':
             game.rollDice(data.forceDice, data.tunaDice);

@@ -30,7 +30,7 @@
 ## PR-002 recreateRoom payload size limit
 
 - 状態: done
-- commit: this PR commit (`fix: 復元payloadのサイズ上限を追加`)
+- commit: `a611393`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
@@ -41,6 +41,27 @@
   - `handleRecreateRoom()` の room 作成・復元検証前に、JSON概算サイズ、actionLog件数、文字列長、文字列総量、player card references の上限を確認。
   - 過大な復元 payload は `appError` の「復元データが大きすぎます」で早期拒否。
   - 上限値と見直し方針を `docs/ONLINE_SYNC.md` に記録。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
+
+## PR-003 replay malformed payload matrix
+
+- 状態: done
+- commit: this PR commit (`test: replay payload不正形の拒否を網羅`)
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `applyActionToMirror()` に non-plain payload guard を追加し、直接呼び出しでも例外化せず `false` を返すようにした。
+  - `GAME_ACTIONS` 全 action について、`null`, `[]`, `"x"`, `{}` の replay が `createRoomMirror()` で拒否される table-driven test を追加。
 - 実行テスト:
   - `node --check server.js`
   - `node --check tests/server.test.js`
