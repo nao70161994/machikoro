@@ -550,7 +550,7 @@
 ## PR-021 CPU tuning extraction scaffold
 
 - 状態: done
-- commit: `PENDING_PR_021_HASH`
+- commit: `3bec7e1`
 - 変更ファイル:
   - `js/cpuTuning.js`
   - `js/CPU.js`
