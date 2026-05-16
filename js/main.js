@@ -664,6 +664,37 @@ function onSkipReroll() {
     runLocalOrSendOnline('skipReroll', {}, () => game.skipReroll());
 }
 
+let pendingActionHandlersBound = false;
+
+function pendingActionButtonFromEvent(event) {
+    const target = event && event.target;
+    if (!target) return null;
+    if (typeof target.closest === 'function') return target.closest('[data-action]');
+    return target.dataset && target.dataset.action ? target : null;
+}
+
+function handlePendingActionClick(event) {
+    const button = pendingActionButtonFromEvent(event);
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'resolveTV') onResolveTV(parseInt(button.dataset.targetIndex, 10));
+    if (action === 'resolveBusiness') onResolveBusiness(parseInt(button.dataset.targetIndex, 10));
+    if (action === 'resolveCleaning') onResolveCleaning(button.dataset.cardName);
+    if (action === 'resolveMover') onResolveMover(parseInt(button.dataset.targetIndex, 10));
+    if (action === 'resolveRenovation') onResolveRenovation(button.dataset.landmarkName);
+    if (action === 'resolveIT') onResolveIT(button.dataset.doSave === 'true');
+}
+
+function bindPendingActionHandlers() {
+    if (pendingActionHandlersBound) return;
+    const menu = document.getElementById('pendingMenu');
+    if (!menu || typeof menu.addEventListener !== 'function') return;
+    menu.addEventListener('click', handlePendingActionClick);
+    pendingActionHandlersBound = true;
+}
+
 function onResolveHarbor(useBonus) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_HARBOR)) return;
     runLocalOrSendOnline('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
@@ -1052,3 +1083,4 @@ function checkAutoSkip() {
 
 // 初期表示
 initMainView();
+bindPendingActionHandlers();

@@ -19,6 +19,9 @@ function loadMainRuntime(options = {}) {
         tabOnline: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
+        pendingMenu: makeElement({
+            addEventListener(name, handler) { eventHandlers[`pendingMenu:${name}`] = handler; },
+        }),
         onlineCreateSubmitButton: makeElement(),
         onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
@@ -670,6 +673,28 @@ runTest('main init は10人開始時に不足設定を補い学習AIを維持す
     const cpuDifficulties = rt.__test.getCpuPlayers().filter(Boolean).map(cpu => cpu.difficulty).sort().join(',');
     assert.strictEqual(cpuDifficulties, 'rl,strong');
     assert.deepStrictEqual(rt.__test.alerts, []);
+});
+
+runTest('main bindPendingActionHandlers は data-action から pending action を呼ぶ', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    let resolvedTarget = null;
+    game.resolveTV = (targetIndex) => { resolvedTarget = targetIndex; };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.__test.eventHandlers['pendingMenu:click']({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'resolveTV', targetIndex: '1' },
+            closest() { return this; },
+        },
+    });
+
+    assert.strictEqual(resolvedTarget, 1);
 });
 
 runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {

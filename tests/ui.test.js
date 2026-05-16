@@ -206,6 +206,9 @@ runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
     assert.ok(elements.pendingMenu.innerHTML.includes('盤面確認中もこのパネルは開いたままです'));
     assert.ok(elements.pendingMenu.innerHTML.includes('Bob'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-target-index="1"'));
+    assert.ok(!elements.pendingMenu.innerHTML.includes('onResolveTV('));
 });
 
 runTest('renderPlayers は所持カードを色順と出目順で表示する', () => {

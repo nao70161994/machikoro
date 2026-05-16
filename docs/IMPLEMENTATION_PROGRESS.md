@@ -679,3 +679,31 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: 専用 notice modal の UI 実装は後続PRで扱う。今回は fallback 経由で既存挙動を維持した。
+
+
+## PR-025 pending UI event delegation scaffold
+
+- 状態: done
+- commit: `PENDING_PR_025_HASH`
+- 変更ファイル:
+  - `js/ui.js`
+  - `js/main.js`
+  - `tests/ui.test.js`
+  - `tests/main.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - pending modal の主要解決ボタンを inline `onResolve*` 呼び出しから `data-action` / `data-*` 属性へ移行した。
+  - `main.js` に pending action 用の delegated click handler を追加し、起動時に一度だけ `pendingMenu` へ登録するようにした。
+  - TV pending の HTML が `data-action` を出すこと、delegated click が既存の `onResolveTV` 経路を呼ぶことをテストで固定した。
+- 実行テスト:
+  - `node --check js/ui.js`
+  - `node --check js/main.js`
+  - `node --check tests/ui.test.js`
+  - `node --check tests/main.test.js`
+  - `node tests/ui.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: ビジネスセンターのカード選択チップと build menu の inline handler は別PRで扱う。
