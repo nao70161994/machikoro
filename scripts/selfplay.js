@@ -640,6 +640,75 @@ function fallbackRenovation(game) {
     game._checkPending();
 }
 
+function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, traceEntries, actions) {
+    if (!resolution) return;
+    switch (resolution.action) {
+        case 'resolveTV': {
+            const targetIndex = resolution.targetIndex;
+            pushTraceEntry(runtime, game, shopStock, cpu, {
+                action: actions.TV_TARGET ?? null,
+                label: `TV_TARGET:p${targetIndex + 1}`,
+                targetIndex,
+            }, traceEntries);
+            break;
+        }
+        case 'resolveBusiness': {
+            const move = resolution.move || null;
+            const { giveCard, takeCard } = resolveBusinessMoveCards(game, move);
+            const giveIndex = giveCard ? runtime.CARDS.findIndex(card => card.name === giveCard.name) : -1;
+            const takeIndex = takeCard ? runtime.CARDS.findIndex(card => card.name === takeCard.name) : -1;
+            const businessAction = giveIndex >= 0 && takeIndex >= 0
+                ? (actions.BC_BASE != null ? actions.BC_BASE + giveIndex * runtime.CARDS.length + takeIndex : null)
+                : null;
+            pushTraceEntry(runtime, game, shopStock, cpu, move ? {
+                action: businessAction,
+                label: businessAction == null ? `BUSINESS:${move.myCard}->${move.theirCard}@p${move.targetIndex + 1}` : actionToLabel(runtime, businessAction),
+                targetIndex: move.targetIndex,
+            } : {
+                action: actions.PASS ?? null,
+                label: 'PASS',
+            }, traceEntries);
+            recordBusinessStat(game, cpu, runtime.__selfplayOptions, move, giveCard, takeCard);
+            break;
+        }
+        case 'resolveMover': {
+            const move = resolution.move || null;
+            const movedCard = move ? game.players[game.currentPlayerIndex]?.cards?.[move.cardIndex] : null;
+            const movedCardIndex = movedCard ? runtime.CARDS.findIndex(card => card.name === movedCard.name) : -1;
+            pushTraceEntry(runtime, game, shopStock, cpu, move ? {
+                action: movedCardIndex >= 0 && actions.MOVER_BASE != null ? actions.MOVER_BASE + movedCardIndex : null,
+                label: movedCardIndex >= 0 && actions.MOVER_BASE != null ? actionToLabel(runtime, actions.MOVER_BASE + movedCardIndex) : `MOVER:${move.cardIndex}@p${move.targetIndex + 1}`,
+                targetIndex: move.targetIndex,
+            } : {
+                action: actions.PASS ?? null,
+                label: 'PASS',
+            }, traceEntries);
+            break;
+        }
+        case 'resolveRenovation': {
+            const landmarkName = resolution.landmarkName || null;
+            const landmarkOrder = runtime.RLCPU ? runtime.RLCPU.LANDMARK_ORDER : runtime.Player.landmarkNames().filter(name => name !== runtime.LANDMARK_NAMES.YAKUSHO);
+            const landmarkIndex = landmarkName ? landmarkOrder.indexOf(landmarkName) : -1;
+            pushTraceEntry(runtime, game, shopStock, cpu, landmarkName ? {
+                action: landmarkIndex >= 0 && actions.RENO_BASE != null ? actions.RENO_BASE + landmarkIndex : null,
+                label: landmarkIndex >= 0 && actions.RENO_BASE != null ? actionToLabel(runtime, actions.RENO_BASE + landmarkIndex) : `RENO:${landmarkName}`,
+            } : {
+                action: actions.PASS ?? null,
+                label: 'PASS',
+            }, traceEntries);
+            break;
+        }
+        default:
+            pushTraceEntry(runtime, game, shopStock, cpu, {
+                action: actions.PASS ?? null,
+                label: 'PASS',
+            }, traceEntries);
+            break;
+    }
+    resolution.apply();
+    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+}
+
 function playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue = null) {
     switch (game.phase) {
         case runtime.GAME_PHASES.ROLL:
@@ -684,32 +753,21 @@ function playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue = 
             }
             return;
         case runtime.GAME_PHASES.PENDING:
-            if (game.pendingTV > 0) {
-                game.resolveTV(cpu.chooseTVTarget(game));
-                return;
-            }
-            if (game.pendingBusiness > 0) {
-                const move = cpu.chooseBusinessMove(game);
-                if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
-                else fallbackBusiness(game);
-                return;
+            {
+                const pendingResolution = runtime.CPU.choosePendingResolution(game, cpu, {
+                    fallbackBusiness,
+                    fallbackMover,
+                    fallbackRenovation,
+                });
+                if (pendingResolution) {
+                    pendingResolution.apply();
+                    return;
+                }
             }
             if (game.pendingCleaning > 0) {
                 const cardName = cpu.chooseCleaningTarget(game);
                 if (cardName) game.resolveCleaning(cardName);
                 else fallbackCleaning(game);
-                return;
-            }
-            if (game.pendingMover > 0) {
-                const move = cpu.chooseMoverMove(game);
-                if (move) game.resolveMover(move.cardIndex, move.targetIndex);
-                else fallbackMover(game);
-                return;
-            }
-            if (game.pendingRenovation > 0) {
-                const landmarkName = cpu.chooseRenovationTarget(game);
-                if (landmarkName) game.resolveRenovation(landmarkName);
-                else fallbackRenovation(game);
                 return;
             }
             if (game.pendingIT) {
@@ -913,38 +971,16 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                 }
                 return;
             case runtime.GAME_PHASES.PENDING:
-                if (game.pendingTV > 0) {
-                    const targetIndex = cpu.chooseTVTarget(game);
-                    pushTraceEntry(runtime, game, shopStock, cpu, {
-                        action: actions.TV_TARGET ?? null,
-                        label: `TV_TARGET:p${targetIndex + 1}`,
-                        targetIndex,
-                    }, traceEntries);
-                    game.resolveTV(targetIndex);
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
-                    return;
-                }
-                if (game.pendingBusiness > 0) {
-                    const move = cpu.chooseBusinessMove(game);
-                    const { giveCard, takeCard } = resolveBusinessMoveCards(game, move);
-                    const giveIndex = giveCard ? runtime.CARDS.findIndex(card => card.name === giveCard.name) : -1;
-                    const takeIndex = takeCard ? runtime.CARDS.findIndex(card => card.name === takeCard.name) : -1;
-                    const businessAction = giveIndex >= 0 && takeIndex >= 0
-                        ? (actions.BC_BASE != null ? actions.BC_BASE + giveIndex * runtime.CARDS.length + takeIndex : null)
-                        : null;
-                    pushTraceEntry(runtime, game, shopStock, cpu, move ? {
-                        action: businessAction,
-                        label: businessAction == null ? `BUSINESS:${move.myCard}->${move.theirCard}@p${move.targetIndex + 1}` : actionToLabel(runtime, businessAction),
-                        targetIndex: move.targetIndex,
-                    } : {
-                        action: actions.PASS ?? null,
-                        label: 'PASS',
-                    }, traceEntries);
-                    recordBusinessStat(game, cpu, runtime.__selfplayOptions, move, giveCard, takeCard);
-                    if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
-                    else fallbackBusiness(game);
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
-                    return;
+                {
+                    const pendingResolution = runtime.CPU.choosePendingResolution(game, cpu, {
+                        fallbackBusiness,
+                        fallbackMover,
+                        fallbackRenovation,
+                    });
+                    if (pendingResolution) {
+                        pushPendingResolutionTrace(runtime, game, shopStock, cpu, pendingResolution, traceEntries, actions);
+                        return;
+                    }
                 }
                 if (game.pendingCleaning > 0) {
                     const cardName = cpu.chooseCleaningTarget(game);
@@ -958,39 +994,6 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     }, traceEntries);
                     if (cardName) game.resolveCleaning(cardName);
                     else fallbackCleaning(game);
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
-                    return;
-                }
-                if (game.pendingMover > 0) {
-                    const move = cpu.chooseMoverMove(game);
-                    const movedCard = move ? game.players[game.currentPlayerIndex]?.cards?.[move.cardIndex] : null;
-                    const movedCardIndex = movedCard ? runtime.CARDS.findIndex(card => card.name === movedCard.name) : -1;
-                    pushTraceEntry(runtime, game, shopStock, cpu, move ? {
-                        action: movedCardIndex >= 0 && actions.MOVER_BASE != null ? actions.MOVER_BASE + movedCardIndex : null,
-                        label: movedCardIndex >= 0 && actions.MOVER_BASE != null ? actionToLabel(runtime, actions.MOVER_BASE + movedCardIndex) : `MOVER:${move.cardIndex}@p${move.targetIndex + 1}`,
-                        targetIndex: move.targetIndex,
-                    } : {
-                        action: actions.PASS ?? null,
-                        label: 'PASS',
-                    }, traceEntries);
-                    if (move) game.resolveMover(move.cardIndex, move.targetIndex);
-                    else fallbackMover(game);
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
-                    return;
-                }
-                if (game.pendingRenovation > 0) {
-                    const landmarkName = cpu.chooseRenovationTarget(game);
-                    const landmarkOrder = runtime.RLCPU ? runtime.RLCPU.LANDMARK_ORDER : runtime.Player.landmarkNames().filter(name => name !== runtime.LANDMARK_NAMES.YAKUSHO);
-                    const landmarkIndex = landmarkName ? landmarkOrder.indexOf(landmarkName) : -1;
-                    pushTraceEntry(runtime, game, shopStock, cpu, landmarkName ? {
-                        action: landmarkIndex >= 0 && actions.RENO_BASE != null ? actions.RENO_BASE + landmarkIndex : null,
-                        label: landmarkIndex >= 0 && actions.RENO_BASE != null ? actionToLabel(runtime, actions.RENO_BASE + landmarkIndex) : `RENO:${landmarkName}`,
-                    } : {
-                        action: actions.PASS ?? null,
-                        label: 'PASS',
-                    }, traceEntries);
-                    if (landmarkName) game.resolveRenovation(landmarkName);
-                    else fallbackRenovation(game);
                     if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
                     return;
                 }

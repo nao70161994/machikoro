@@ -100,6 +100,40 @@ runTest('CPU smoke: build calls terminate for all difficulties', () => {
     }
 });
 
+runTest('choosePendingResolution は pending 順と fallback move を共有する', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.currentPlayer().cards = [createCardByName('ビジネスセンター'), createCardByName('麦畑')];
+    game.players[1].cards = [createCardByName('森林')];
+    cpu.chooseBusinessMove = () => ({ myCard: 99, targetIndex: 1, theirCard: 99 });
+
+    const resolution = CPU.choosePendingResolution(game, cpu);
+
+    assert.strictEqual(resolution.action, 'resolveBusiness');
+    assert.strictEqual(resolution.payload.myCard, 1);
+    assert.strictEqual(resolution.payload.targetIndex, 1);
+    assert.strictEqual(resolution.payload.theirCard, 0);
+    resolution.apply();
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.ok(game.currentPlayer().cards.some(card => card.name === '森林'));
+});
+
+runTest('choosePendingResolution は未対応pendingを飛ばして後続pendingを処理しない', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+    game.pendingMover = 1;
+    game.currentPlayer().cards = [createCardByName('引越し屋'), createCardByName('麦畑')];
+
+    const resolution = CPU.choosePendingResolution(game, cpu);
+
+    assert.strictEqual(resolution, null);
+    assert.strictEqual(game.pendingMover, 1);
+});
+
 runTest('_runSimulationStep は pendingIT を PENDING フェーズで解決する', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);

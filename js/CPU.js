@@ -4334,6 +4334,181 @@ class CPU {
         return set;
     }
 
+    static _pendingActionDescriptors(game) {
+        if (!game) return [];
+        if (typeof GameManager !== "undefined" && typeof GameManager.pendingActionsFor === "function") {
+            return GameManager.pendingActionsFor(game);
+        }
+        if (game.phase !== GAME_PHASES.PENDING) return [];
+        const descriptors = [];
+        const add = (field, action) => {
+            if ((game[field] || 0) > 0) descriptors.push({ field, action, count: game[field] || 0 });
+        };
+        add('pendingTV', 'resolveTV');
+        add('pendingBusiness', 'resolveBusiness');
+        add('pendingCleaning', 'resolveCleaning');
+        add('pendingMover', 'resolveMover');
+        add('pendingRenovation', 'resolveRenovation');
+        return descriptors;
+    }
+
+    static _isCpuOpponentIndex(game, index) {
+        return !!game && Number.isInteger(index) && index >= 0 && index < game.players.length && index !== game.currentPlayerIndex;
+    }
+
+    static _fallbackCpuOpponentIndex(game) {
+        if (!game || !Array.isArray(game.players)) return null;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i !== game.currentPlayerIndex) return i;
+        }
+        return null;
+    }
+
+    static _isCpuMinorCard(card) {
+        return !!card && card.category !== CARD_CATEGORIES.MAJOR;
+    }
+
+    static _resolveCpuCard(player, ref) {
+        if (!player || !Array.isArray(player.cards) || ref == null) return null;
+        const card = Number.isInteger(ref)
+            ? player.cards[ref]
+            : player.cards.find(entry => entry && entry.name === ref);
+        return CPU._isCpuMinorCard(card) ? card : null;
+    }
+
+    static _isCpuBusinessMove(game, move) {
+        if (!move || !CPU._isCpuOpponentIndex(game, move.targetIndex)) return false;
+        return !!CPU._resolveCpuCard(game.currentPlayer(), move.myCard) &&
+            !!CPU._resolveCpuCard(game.players[move.targetIndex], move.theirCard);
+    }
+
+    static _fallbackCpuBusinessMove(game) {
+        if (!game) return null;
+        const current = game.currentPlayer();
+        const myCard = current.cards.findIndex(CPU._isCpuMinorCard);
+        if (myCard < 0) return null;
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === game.currentPlayerIndex) continue;
+            const theirCard = game.players[i].cards.findIndex(CPU._isCpuMinorCard);
+            if (theirCard >= 0) return { myCard, targetIndex: i, theirCard };
+        }
+        return null;
+    }
+
+    static _isCpuMoverMove(game, move) {
+        if (!move || !CPU._isCpuOpponentIndex(game, move.targetIndex)) return false;
+        return !!CPU._resolveCpuCard(game.currentPlayer(), move.cardIndex ?? move.cardName);
+    }
+
+    static _fallbackCpuMoverMove(game) {
+        if (!game) return null;
+        const cardIndex = game.currentPlayer().cards.findIndex(CPU._isCpuMinorCard);
+        const targetIndex = CPU._fallbackCpuOpponentIndex(game);
+        if (cardIndex < 0 || targetIndex === null) return null;
+        return { cardIndex, targetIndex };
+    }
+
+    static _fallbackCpuRenovationTarget(game) {
+        if (!game) return null;
+        const current = game.currentPlayer();
+        const built = Object.entries(current.landmarks || {})
+            .find(([name, value]) => value === true && name !== LANDMARK_NAMES.YAKUSHO);
+        return built ? built[0] : null;
+    }
+
+    static _clearPendingField(game, field) {
+        if (!game || !field) return;
+        game[field] = 0;
+        if (typeof game._checkPending === "function") game._checkPending();
+    }
+
+    static _pendingFallback(game, action, field, fallbackFn, options) {
+        if (typeof fallbackFn === "function") {
+            return {
+                action,
+                payload: {},
+                usedFallback: true,
+                apply: () => fallbackFn(game),
+            };
+        }
+        if (options.clearFallback === false) return null;
+        return {
+            action,
+            payload: {},
+            usedFallback: true,
+            apply: () => CPU._clearPendingField(game, field),
+        };
+    }
+
+    static choosePendingResolution(game, cpu, options = {}) {
+        if (!game || !cpu || game.phase !== GAME_PHASES.PENDING) return null;
+        const descriptors = CPU._pendingActionDescriptors(game);
+        for (const descriptor of descriptors) {
+            switch (descriptor.action) {
+                case 'resolveTV': {
+                    let targetIndex = cpu.chooseTVTarget(game);
+                    const fallback = options.fallbackTvTarget || CPU._fallbackCpuOpponentIndex;
+                    if (!CPU._isCpuOpponentIndex(game, targetIndex)) targetIndex = fallback(game, cpu);
+                    if (!CPU._isCpuOpponentIndex(game, targetIndex)) return null;
+                    return {
+                        action: 'resolveTV',
+                        payload: { targetIndex },
+                        targetIndex,
+                        apply: () => game.resolveTV(targetIndex),
+                    };
+                }
+                case 'resolveBusiness': {
+                    let move = cpu.chooseBusinessMove(game);
+                    const fallback = options.fallbackBusinessMove || CPU._fallbackCpuBusinessMove;
+                    if (!CPU._isCpuBusinessMove(game, move)) move = fallback(game, cpu);
+                    if (!CPU._isCpuBusinessMove(game, move)) {
+                        return CPU._pendingFallback(game, 'resolveBusiness', 'pendingBusiness', options.fallbackBusiness, options);
+                    }
+                    return {
+                        action: 'resolveBusiness',
+                        payload: move,
+                        move,
+                        apply: () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard),
+                    };
+                }
+                case 'resolveCleaning':
+                case 'resolveIT':
+                    return null;
+                case 'resolveMover': {
+                    let move = cpu.chooseMoverMove(game);
+                    const fallback = options.fallbackMoverMove || CPU._fallbackCpuMoverMove;
+                    if (!CPU._isCpuMoverMove(game, move)) move = fallback(game, cpu);
+                    if (!CPU._isCpuMoverMove(game, move)) {
+                        return CPU._pendingFallback(game, 'resolveMover', 'pendingMover', options.fallbackMover, options);
+                    }
+                    return {
+                        action: 'resolveMover',
+                        payload: move,
+                        move,
+                        apply: () => game.resolveMover(move.cardIndex, move.targetIndex),
+                    };
+                }
+                case 'resolveRenovation': {
+                    let landmarkName = cpu.chooseRenovationTarget(game);
+                    const fallback = options.fallbackRenovationTarget || CPU._fallbackCpuRenovationTarget;
+                    if (!landmarkName) landmarkName = fallback(game, cpu);
+                    if (!landmarkName) {
+                        return CPU._pendingFallback(game, 'resolveRenovation', 'pendingRenovation', options.fallbackRenovation, options);
+                    }
+                    return {
+                        action: 'resolveRenovation',
+                        payload: { landmarkName },
+                        landmarkName,
+                        apply: () => game.resolveRenovation(landmarkName),
+                    };
+                }
+                default:
+                    return null;
+            }
+        }
+        return null;
+    }
+
     _runSimulationStep(game, cpu, shopStock, rng) {
         const die = () => Math.floor(rng() * 6) + 1;
         const tunaDice = [die(), die()];
@@ -4358,32 +4533,15 @@ class CPU {
                     game.resolveIT(cpu.chooseITInvest(game));
                     return;
                 }
-                if (game.pendingTV > 0) {
-                    game.resolveTV(cpu.chooseTVTarget(game));
-                    return;
-                }
-                if (game.pendingBusiness > 0) {
-                    const move = cpu.chooseBusinessMove(game);
-                    if (move) game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard);
-                    else { game.pendingBusiness = 0; game._checkPending(); }
+                const pendingResolution = CPU.choosePendingResolution(game, cpu);
+                if (pendingResolution) {
+                    pendingResolution.apply();
                     return;
                 }
                 if (game.pendingCleaning > 0) {
                     const cardName = cpu.chooseCleaningTarget(game);
                     if (cardName) game.resolveCleaning(cardName);
                     else { game.pendingCleaning = 0; game._checkPending(); }
-                    return;
-                }
-                if (game.pendingMover > 0) {
-                    const move = cpu.chooseMoverMove(game);
-                    if (move) game.resolveMover(move.cardIndex, move.targetIndex);
-                    else { game.pendingMover = 0; game._checkPending(); }
-                    return;
-                }
-                if (game.pendingRenovation > 0) {
-                    const landmarkName = cpu.chooseRenovationTarget(game);
-                    if (landmarkName) game.resolveRenovation(landmarkName);
-                    else { game.pendingRenovation = 0; game._checkPending(); }
                     return;
                 }
                 game.phase = GAME_PHASES.BUILD;

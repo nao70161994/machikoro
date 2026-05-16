@@ -404,6 +404,65 @@ function fallbackCpuRenovationTarget() {
     return built ? built[0] : null;
 }
 
+function chooseCpuPendingResolution(cpu) {
+    if (typeof CPU.choosePendingResolution === "function") {
+        return CPU.choosePendingResolution(game, cpu, {
+            clearFallback: false,
+            fallbackTvTarget: fallbackCpuOpponentIndex,
+            fallbackBusinessMove: fallbackCpuBusinessMove,
+            fallbackMoverMove: fallbackCpuMoverMove,
+            fallbackRenovationTarget: fallbackCpuRenovationTarget,
+        });
+    }
+    const pendingActions = new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
+    if (pendingActions.has(GAME_ACTIONS.RESOLVE_TV)) {
+        let targetIndex = cpu.chooseTVTarget(game);
+        if (!isValidCpuOpponentIndex(targetIndex)) targetIndex = fallbackCpuOpponentIndex();
+        if (targetIndex !== null) {
+            return {
+                action: 'resolveTV',
+                payload: { targetIndex },
+                apply: () => game.resolveTV(targetIndex),
+            };
+        }
+    }
+    if (pendingActions.has(GAME_ACTIONS.RESOLVE_BUSINESS)) {
+        let move = cpu.chooseBusinessMove(game);
+        if (!isValidCpuBusinessMove(move)) move = fallbackCpuBusinessMove();
+        if (move) {
+            return {
+                action: 'resolveBusiness',
+                payload: move,
+                apply: () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard),
+            };
+        }
+    }
+    if (pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)) return null;
+    if (pendingActions.has(GAME_ACTIONS.RESOLVE_MOVER)) {
+        let move = cpu.chooseMoverMove(game);
+        if (!isValidCpuMoverMove(move)) move = fallbackCpuMoverMove();
+        if (move) {
+            return {
+                action: 'resolveMover',
+                payload: move,
+                apply: () => game.resolveMover(move.cardIndex, move.targetIndex),
+            };
+        }
+    }
+    if (pendingActions.has(GAME_ACTIONS.RESOLVE_RENOVATION)) {
+        let landmarkName = cpu.chooseRenovationTarget(game);
+        if (!landmarkName) landmarkName = fallbackCpuRenovationTarget();
+        if (landmarkName) {
+            return {
+                action: 'resolveRenovation',
+                payload: { landmarkName },
+                apply: () => game.resolveRenovation(landmarkName),
+            };
+        }
+    }
+    return null;
+}
+
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
 const CPU_PHASE_HANDLERS = [
@@ -452,45 +511,17 @@ const CPU_PHASE_HANDLERS = [
         name: "pending",
         run(cpu) {
             if (game.phase !== GAME_PHASES.PENDING) return;
+            const pendingResolution = chooseCpuPendingResolution(cpu);
+            if (pendingResolution) {
+                cpuDo(pendingResolution.action, pendingResolution.payload, () => pendingResolution.apply());
+                return;
+            }
             const pendingActions = new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
-            if (pendingActions.has(GAME_ACTIONS.RESOLVE_TV)) {
-                let targetIndex = cpu.chooseTVTarget(game);
-                if (!isValidCpuOpponentIndex(targetIndex)) targetIndex = fallbackCpuOpponentIndex();
-                if (targetIndex !== null) {
-                    cpuDo('resolveTV', { targetIndex }, () => game.resolveTV(targetIndex));
-                    return;
-                }
-            }
-            if (pendingActions.has(GAME_ACTIONS.RESOLVE_BUSINESS)) {
-                let move = cpu.chooseBusinessMove(game);
-                if (!isValidCpuBusinessMove(move)) move = fallbackCpuBusinessMove();
-                if (move) {
-                    cpuDo('resolveBusiness', move,
-                        () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard));
-                    return;
-                }
-            }
             if (pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)) {
                 let cardName = cpu.chooseCleaningTarget(game);
                 if (!cardName) cardName = fallbackCpuCleaningTarget();
                 if (cardName) {
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
-                    return;
-                }
-            }
-            if (pendingActions.has(GAME_ACTIONS.RESOLVE_MOVER)) {
-                let move = cpu.chooseMoverMove(game);
-                if (!isValidCpuMoverMove(move)) move = fallbackCpuMoverMove();
-                if (move) {
-                    cpuDo('resolveMover', move, () => game.resolveMover(move.cardIndex, move.targetIndex));
-                    return;
-                }
-            }
-            if (pendingActions.has(GAME_ACTIONS.RESOLVE_RENOVATION)) {
-                let landmarkName = cpu.chooseRenovationTarget(game);
-                if (!landmarkName) landmarkName = fallbackCpuRenovationTarget();
-                if (landmarkName) {
-                    cpuDo('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
                     return;
                 }
             }

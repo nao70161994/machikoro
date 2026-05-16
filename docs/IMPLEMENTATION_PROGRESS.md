@@ -477,3 +477,36 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: smoke では重い selfplay simulation は回さない。長時間のCPU品質確認は `npm run test:cpu` / `npm run test:sim` に残す。
+
+## PR-019 CPU execution helper alignment
+
+- 状態: done
+- commit: `PENDING_PR_019_HASH`
+- 変更ファイル:
+  - `js/CPU.js`
+  - `js/main.js`
+  - `scripts/selfplay.js`
+  - `tests/cpu.test.js`
+  - `tests/selfplay.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - TV / Business / Mover / Renovation の CPU pending 解決を `CPU.choosePendingResolution()` へ集約した。
+  - live `main.js` は共通 helper の結果を `cpuDo` で送信/適用し、旧テスト用 CPU stub でも動く fallback wrapper を残した。
+  - simulation `CPU._runSimulationStep` と selfplay の軽量/trace 経路を同じ pending 解決 helper へ寄せた。
+  - selfplay trace では共通 helper の選択結果から TV / Business / Mover / Renovation の action label と business stat を記録するようにした。
+  - helper が未対応 pending（Cleaning / IT）を飛ばして後続 pending を処理しないことを固定した。
+- 実行テスト:
+  - `node --check js/CPU.js`
+  - `node --check js/main.js`
+  - `node --check scripts/selfplay.js`
+  - `node --check tests/cpu.test.js`
+  - `node --check tests/selfplay.test.js`
+  - `node tests/cpu.test.js`
+  - `node tests/selfplay.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+  - `npm run test:cpu`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: Cleaning / IT の pending 解決は既存経路のまま。PR-019 の範囲外として、後続で必要になった時に同じ helper へ拡張する。

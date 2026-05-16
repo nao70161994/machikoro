@@ -6,6 +6,7 @@ const { runTest } = require('./helpers/test-utils');
 const {
     loadRuntime,
     createShopStock,
+    playCpuStep,
     simulateGame,
     simulateGameLightweight,
     collectBuildDiagnostics,
@@ -29,6 +30,32 @@ function loadMultiplayerRlModel() {
 function loadTwoPlayerRlModel() {
     return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json'), 'utf8'));
 }
+
+runTest('playCpuStep は CPU pending helper の fallback business を trace 付きで使う', () => {
+    const runtime = loadRuntime();
+    const game = new runtime.GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.currentPlayer().cards = [runtime.createCardByName('ビジネスセンター'), runtime.createCardByName('麦畑')];
+    game.players[1].cards = [runtime.createCardByName('森林')];
+    const cpu = new runtime.CPU('normal');
+    cpu.chooseBusinessMove = () => ({ myCard: 99, targetIndex: 1, theirCard: 99 });
+    const traceEntries = [];
+    runtime.__selfplayOptions = {
+        traceEntries,
+        businessStats: {},
+        cpuPlayers: [cpu, new runtime.CPU('normal')],
+    };
+
+    playCpuStep(runtime, game, cpu, createShopStock(runtime.CARDS), () => 0.5);
+
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.ok(game.currentPlayer().cards.some(card => card.name === '森林'));
+    assert.strictEqual(traceEntries.length, 1);
+    assert.ok(traceEntries[0].chosenAction.label.startsWith('BUSINESS:'));
+    assert.ok(traceEntries[0].after);
+    assert.strictEqual(runtime.__selfplayOptions.businessStats.normal.total, 1);
+});
 
 runTest('simulateGame は CPU 同士の試合を最後まで進められる', () => {
     const result = simulateGame({
