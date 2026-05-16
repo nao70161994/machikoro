@@ -16,7 +16,7 @@
 7. `js/storage.js`: ローカル保存、オンライン再接続 session、Undo、設定保存。
 8. `js/stats.js`, `js/appShell.js`, `js/main.js`: 統計、PWA/app shell、起動と入力ハンドラ。
 
-`server.js` は Express / Socket.IO server です。静的配信、SW build hash 注入、room 管理、action 検証、mirror replay、snapshot compaction、再接続、room 再作成を同じファイルで持っています。
+`server.js` は Express / Socket.IO server です。静的配信、SW build hash 注入、room 管理、action 検証、mirror replay、snapshot compaction、再接続、room 再作成を同じファイルで持っています。ファイル内の section marker は将来の抽出単位を示す保守用の目印で、現時点では実行時境界ではありません。
 
 ## Ownership map
 
@@ -103,7 +103,7 @@ The same action semantics are replayed in both:
 - `js/online.js` `applyAction`
 - `server.js` `applyActionToMirror`
 
-The server also validates the same actions separately. This duplication is currently necessary because browser globals are loaded into the server through `vm`, but it should be protected by tests before adding more actions.
+The server also validates the same actions separately. This duplication is currently necessary because browser globals are loaded into the server through `vm`, but it should be protected by tests before adding more actions. Most `server.js` exports are test-only hooks for this protection, not a public application API.
 
 ### UI/action coupling
 

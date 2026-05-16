@@ -733,3 +733,25 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: render 内の coin animation / build menu / autoskip のさらなる細分化は後続のUI分離で扱う。
+
+
+## PR-027 server section markers and test-only exports note
+
+- 状態: done
+- commit: `PENDING_PR_027_HASH`
+- 変更ファイル:
+  - `server.js`
+  - `docs/ARCHITECTURE.md`
+  - `docs/AI_MAINTENANCE_ISSUES.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `server.js` に Room lifecycle / Socket events / Snapshot / Mirror replay / Validation / Test exports の section marker を追加した。
+  - architecture docs に section marker が将来の抽出単位を示す保守用目印であり、実行時境界ではないことを追記した。
+  - `server.js` exports は外部APIではなく主に test-only hook であることを docs に明記した。
+- 実行テスト:
+  - `node --check server.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: PR-028 以降で section marker に沿って validation / mirror replay を実ファイルへ段階抽出する。

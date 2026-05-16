@@ -65,7 +65,7 @@
 ### 9. `server.js` exports は外部APIではなく test hook が多い
 
 - 誤解: exported helper を互換維持すべき公開APIと見る。
-- 実際: 多くは tests 用の内部関数。
+- 実際: 多くは tests 用の内部関数。`server.js` の `Test exports` section はこの前提を示す目印であり、外部利用向けの互換契約ではない。
 - 関連: `server.js`, `tests/server.test.js`
 - AI向け対策: export変更は tests とセットで判断し、docs に test-only と明記する。
 

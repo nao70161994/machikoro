@@ -91,6 +91,7 @@ app.get('/index.html', sendIndexWithBuildHash);
 
 app.use(express.static(path.join(__dirname)));
 
+// ===== Room lifecycle =====
 const rooms = {};
 const APP_ERROR_EVENT = 'appError';
 
@@ -277,6 +278,7 @@ function rememberAcceptedClientAction(room, actionEntry) {
     }
 }
 
+// ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 const roomGcInterval = setInterval(() => {
     cleanupExpiredRooms(Date.now(), rooms);
@@ -552,6 +554,7 @@ function handleSocketDisconnect(io, socket) {
     }
 }
 
+// ===== Room lifecycle helpers =====
 function setRoomHostPlayerIndex(room, hostPlayerIndex) {
     if (room.hostPlayerIndex !== hostPlayerIndex) {
         room.hostEpoch = (Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0) + 1;
@@ -845,6 +848,7 @@ function handleRecreateRoom(socket, payload = {}) {
     console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
 }
 
+// ===== Snapshot limits and restore payload guards =====
 function validateRestorePayloadLimits(payload, limits = RESTORE_PAYLOAD_LIMITS) {
     if (!isPlainObject(payload)) return { ok: false, reason: 'not-object' };
     let jsonBytes = 0;
@@ -944,6 +948,7 @@ function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
     );
 }
 
+// ===== Snapshot serialization =====
 function serializeMirrorState(game, shopStock, undoState = null, actionSeq = 0) {
     return {
         players: game.players.map(p => ({
@@ -1002,6 +1007,7 @@ function buildPlayerList(room) {
     });
 }
 
+// ===== Mirror replay =====
 function loadGameRuntime() {
     const context = { console };
     vm.createContext(context);
@@ -1407,6 +1413,7 @@ function makeUndoStateFromMirror(game, shopStock) {
     };
 }
 
+// ===== Validation =====
 function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -1687,6 +1694,7 @@ if (require.main === module) {
     });
 }
 
+// ===== Test exports =====
 module.exports = {
     __rooms: rooms,
     APP_ERROR_EVENT,
