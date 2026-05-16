@@ -5,6 +5,7 @@ const vm = require('vm');
 const {
     APP_ERROR_EVENT,
     emitAppError,
+    requirePlainSocketPayload,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
@@ -481,6 +482,23 @@ runTest('emitAppError は appError イベントでメッセージを送る', () 
     const emitted = [];
     emitAppError({ emit(name, payload) { emitted.push({ name, payload }); } }, 'bad');
     assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: 'bad' }]);
+});
+
+runTest('requirePlainSocketPayload は非object payloadをappErrorで拒否する', () => {
+    const invalidPayloads = [null, undefined, [], 'x', 1, true];
+    for (const payload of invalidPayloads) {
+        const emitted = [];
+        const ok = requirePlainSocketPayload({ emit(name, body) { emitted.push({ name, body }); } }, payload);
+        assert.strictEqual(ok, false);
+        assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '無効なリクエストです' }]);
+    }
+});
+
+runTest('requirePlainSocketPayload はplain object payloadを許可する', () => {
+    const emitted = [];
+    const ok = requirePlainSocketPayload({ emit(name, body) { emitted.push({ name, body }); } }, { unexpected: true });
+    assert.strictEqual(ok, true);
+    assert.deepStrictEqual(emitted, []);
 });
 
 runTest('resolveBuildHash は環境変数 BUILD_HASH を優先する', () => {
@@ -1127,16 +1145,19 @@ runTest('handleRecreateRoom は playerNames 欠損payloadを例外にせず拒�
 });
 
 runTest('handleRecreateRoom は payload 欠損を例外にせず拒否する', () => {
-    const emitted = [];
-    const socket = {
-        id: 'socket-host',
-        emit(name, payload) { emitted.push({ name, payload }); },
-        join() { throw new Error('join should not be called'); },
-    };
+    const invalidPayloads = [null, undefined, [], 'x'];
+    for (const payload of invalidPayloads) {
+        const emitted = [];
+        const socket = {
+            id: 'socket-host',
+            emit(name, body) { emitted.push({ name, body }); },
+            join() { throw new Error('join should not be called'); },
+        };
 
-    handleRecreateRoom(socket, null);
+        handleRecreateRoom(socket, payload);
 
-    assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが不完全です' }]);
+        assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '復元データが不完全です' }]);
+    }
 });
 
 runTest('handleRecreateRoom は復元payloadでも2〜10人制限を守る', () => {

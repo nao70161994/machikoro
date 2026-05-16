@@ -85,6 +85,12 @@ function emitAppError(socket, message) {
     socket.emit(APP_ERROR_EVENT, message);
 }
 
+function requirePlainSocketPayload(socket, payload) {
+    if (isPlainObject(payload)) return true;
+    emitAppError(socket, '無効なリクエストです');
+    return false;
+}
+
 function sanitizeName(name) {
     return String(name || '').trim().slice(0, 20).replace(/[<>&"'`]/g, '');
 }
@@ -222,7 +228,9 @@ if (typeof roomGcInterval.unref === 'function') {
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
 
-    socket.on('createRoom', ({ playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion }) => {
+    socket.on('createRoom', (payload) => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
@@ -285,7 +293,9 @@ io.on('connection', (socket) => {
         console.log(`ルーム作成: ${roomId} (${playerCount}人)`);
     });
 
-    socket.on('joinRoom', ({ roomId, playerName, clientVersion }) => {
+    socket.on('joinRoom', (payload) => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        let { roomId, playerName, clientVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
@@ -341,7 +351,9 @@ io.on('connection', (socket) => {
         checkGameStart(io, roomId);
     });
 
-    socket.on('gameAction', ({ action, data, clientActionId }) => {
+    socket.on('gameAction', (payload) => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        const { action, data, clientActionId } = payload;
         const roomId = socket.roomId;
         if (!roomId) return;
         const room = rooms[roomId];
@@ -389,7 +401,9 @@ io.on('connection', (socket) => {
         socket.emit('actionAccepted', actionEntry);
     });
 
-    socket.on('rejoinRoom', ({ roomId, playerIndex, playerName, reconnectToken }) => {
+    socket.on('rejoinRoom', (payload) => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        const { roomId, playerIndex, playerName, reconnectToken } = payload;
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
@@ -596,7 +610,11 @@ function getExpectedReconnectTokenHash(room, playerIndex, playerName) {
 }
 
 function handleRecreateRoom(socket, payload = {}) {
-    const { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload || {};
+    if (!isPlainObject(payload)) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
+    const { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload;
     if (!roomId || !gameStartPayload || !reconnectToken) {
         emitAppError(socket, '復元データが不完全です');
         return;
@@ -1550,6 +1568,7 @@ module.exports = {
     __rooms: rooms,
     APP_ERROR_EVENT,
     emitAppError,
+    requirePlainSocketPayload,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
