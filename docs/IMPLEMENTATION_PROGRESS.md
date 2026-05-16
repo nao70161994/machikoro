@@ -545,3 +545,40 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: build 戻り値は `true/false/null` の軽量な結果に留めた。購入種別や理由の詳細 result object 化は後続の診断/ログ強化で扱う。
+
+
+## PR-021 CPU tuning extraction scaffold
+
+- 状態: done
+- commit: `PENDING_PR_021_HASH`
+- 変更ファイル:
+  - `js/cpuTuning.js`
+  - `js/CPU.js`
+  - `index.html`
+  - `scripts/selfplay.js`
+  - `tests/cpu.test.js`
+  - `tests/helpers/runtime-loaders.js`
+  - `tests/helpers/integration-runtime.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - expert preset / profile tuning / expert option 既定値を `js/cpuTuning.js` へ分離した。
+  - `CPU.js` は外部 table を参照して tuning と v2simple の既定 mode を解決するようにした。
+  - browser script order と Node/vm test runtime の読み込み順を `cpuTuning.js` → `CPU.js` に揃えた。
+  - selfplay runtime も同じ読み込み順へ更新した。
+  - CPU tuning scaffold が外部 table から preset と v2simple 既定 option を読むことをテストで固定した。
+- 実行テスト:
+  - `node --check js/cpuTuning.js`
+  - `node --check js/CPU.js`
+  - `node --check tests/cpu.test.js`
+  - `node --check tests/helpers/runtime-loaders.js`
+  - `node --check tests/helpers/integration-runtime.js`
+  - `node --check scripts/selfplay.js`
+  - `node tests/cpu.test.js`
+  - `node tests/main.test.js`
+  - `node tests/selfplay.test.js`
+  - `git diff --check`
+  - `npm run test:cpu`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: tuning の意味説明や各 profile の用途整理は、後続の docs / CPU 診断強化で扱う。

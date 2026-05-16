@@ -27,6 +27,16 @@ function makeFullShopStock() {
     return Object.fromEntries(CARDS.map(card => [card.name, 6]));
 }
 
+runTest('CPU tuning scaffold は外部tableからexpert presetと既定optionを読む', () => {
+    assert.ok(runtime.CPU_EXPERT_PRESETS.default);
+    assert.ok(runtime.CPU_EXPERT_PRESETS.v2simple);
+    assert.strictEqual(CPU._resolveExpertTuning('rush').landmarkActionBonus, 30);
+
+    const cpu = new CPU('expert', { expertPreset: 'v2simple' });
+    assert.strictEqual(cpu.expertBusinessMode, 'harmfulGift');
+    assert.strictEqual(cpu.expertAirportSkipMode, 'whenNoLandmark');
+});
+
 runTest('CPU smoke: pending actions resolve without staying in pending phase', () => {
     const makeBaseGame = () => {
         const game = new GameManager(2);

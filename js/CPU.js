@@ -1,7 +1,8 @@
 class CPU {
     constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
-        this.expertPurpose = options.expertPurpose || "training";
+        const expertDefaults = CPU._defaultExpertOptions(options.expertPreset || "default");
+        this.expertPurpose = options.expertPurpose || expertDefaults.expertPurpose;
         this.expertBehaviorFlags = Object.assign(
             {
                 crowdBuildLookahead: difficulty === "expert",
@@ -11,46 +12,42 @@ class CPU {
             options.expertBehaviorFlags || {}
         );
         this.simulationMode = options.simulationMode || (
-            difficulty === "expert" && this.expertPurpose === "live" ? "realtime" : "full"
+            difficulty === "expert" && this.expertPurpose === "live"
+                ? expertDefaults.liveSimulationMode
+                : expertDefaults.simulationMode
         );
-        this.expertPreset = options.expertPreset || "default";
-        this.expertDiceMode = options.expertDiceMode || "ev";
-        this.expertRerollMode = options.expertRerollMode || "random";
-        this.expertBuildMode = options.expertBuildMode || "ev";
-        this.expertInvestMode = options.expertInvestMode || "always";
-        this.expertTvMode = options.expertTvMode || "simple";
-        const defaultExpertBusinessMode = difficulty === "expert" && options.expertPreset === "v2simple"
-            ? "harmfulGift"
-            : "simple";
-        this.expertBusinessMode = options.expertBusinessMode || defaultExpertBusinessMode;
-        this.expertCleaningMode = options.expertCleaningMode || "simple";
-        this.expertHarborMode = options.expertHarborMode || "simple";
+        this.expertPreset = options.expertPreset || expertDefaults.expertPreset;
+        this.expertDiceMode = options.expertDiceMode || expertDefaults.expertDiceMode;
+        this.expertRerollMode = options.expertRerollMode || expertDefaults.expertRerollMode;
+        this.expertBuildMode = options.expertBuildMode || expertDefaults.expertBuildMode;
+        this.expertInvestMode = options.expertInvestMode || expertDefaults.expertInvestMode;
+        this.expertTvMode = options.expertTvMode || expertDefaults.expertTvMode;
+        this.expertBusinessMode = options.expertBusinessMode || expertDefaults.expertBusinessMode;
+        this.expertCleaningMode = options.expertCleaningMode || expertDefaults.expertCleaningMode;
+        this.expertHarborMode = options.expertHarborMode || expertDefaults.expertHarborMode;
         this.expertHarborMargin = Number.isFinite(options.expertHarborMargin)
             ? options.expertHarborMargin
             : 0;
-        this.expertMoverMode = options.expertMoverMode || "random";
-        this.expertRenovationMode = options.expertRenovationMode || "random";
+        this.expertMoverMode = options.expertMoverMode || expertDefaults.expertMoverMode;
+        this.expertRenovationMode = options.expertRenovationMode || expertDefaults.expertRenovationMode;
         this.expertRerollMargin = Number.isFinite(options.expertRerollMargin)
             ? options.expertRerollMargin
             : 0;
-        this.expertIncomeCapMode = options.expertIncomeCapMode || "none";
-        this.expertComboMode = options.expertComboMode || "none";
+        this.expertIncomeCapMode = options.expertIncomeCapMode || expertDefaults.expertIncomeCapMode;
+        this.expertComboMode = options.expertComboMode || expertDefaults.expertComboMode;
         this.expertComboWeight = Number.isFinite(options.expertComboWeight) ? options.expertComboWeight : 0.35;
         this.expertBuildTempoWeight = Number.isFinite(options.expertBuildTempoWeight) ? options.expertBuildTempoWeight : 0;
-        this.expertRollRiskMode = options.expertRollRiskMode || "none";
+        this.expertRollRiskMode = options.expertRollRiskMode || expertDefaults.expertRollRiskMode;
         this.expertRollRedRiskWeight = Number.isFinite(options.expertRollRedRiskWeight)
             ? options.expertRollRedRiskWeight
             : 0;
-        const defaultExpertAirportSkipMode = difficulty === "expert" && options.expertPreset === "v2simple"
-            ? "whenNoLandmark"
-            : "none";
-        this.expertAirportSkipMode = options.expertAirportSkipMode || defaultExpertAirportSkipMode;
+        this.expertAirportSkipMode = options.expertAirportSkipMode || expertDefaults.expertAirportSkipMode;
         this.expertLandmarkCardMargin = Number.isFinite(options.expertLandmarkCardMargin)
             ? options.expertLandmarkCardMargin
             : 25;
-        this.expertLandmarkCardCompareMode = options.expertLandmarkCardCompareMode || "base";
-        this.expertLandmarkCardCompareTargets = options.expertLandmarkCardCompareTargets || "harborMall";
-        this.expertLandmarkCardPenaltyMode = options.expertLandmarkCardPenaltyMode || "none";
+        this.expertLandmarkCardCompareMode = options.expertLandmarkCardCompareMode || expertDefaults.expertLandmarkCardCompareMode;
+        this.expertLandmarkCardCompareTargets = options.expertLandmarkCardCompareTargets || expertDefaults.expertLandmarkCardCompareTargets;
+        this.expertLandmarkCardPenaltyMode = options.expertLandmarkCardPenaltyMode || expertDefaults.expertLandmarkCardPenaltyMode;
         this.expertHarborLandmarkBaseBonus = Number.isFinite(options.expertHarborLandmarkBaseBonus)
             ? options.expertHarborLandmarkBaseBonus
             : 2.5;
@@ -435,120 +432,26 @@ class CPU {
             .sort((a, b) => (b.timeMs || 0) - (a.timeMs || 0) || (b.count || 0) - (a.count || 0) || a.label.localeCompare(b.label));
     }
 
-    static _expertPresets() {
-        return {
-            default: {
-                coinWeight: 1.1,
-                turnWeight: 3.2,
-                landmarkWeight: 14,
-                builtLandmarkWeight: 8,
-                landmarkReachWeight: 6,
-                stableIncomeWeight: 1.4,
-                redPressureWeight: 1.1,
-                leaderThreatWeight: 1.3,
-                lateCoinWeight: 1.6,
-                finalCoinWeight: 2.2,
-                lateProgressBonus: 8,
-                lowValueSpamThreshold: 4,
-                lowValueSpamPenalty: 6,
-                landmarkActionBonus: 24,
-                lateLandmarkActionBonus: 18,
-                skipAirportBonus: 10,
-                skipPenalty: 8,
-                winLookaheadBonus: 5000,
-                loseLookaheadPenalty: 3000,
-                lookaheadWeight: 0.7,
-                lateGameLookaheadStepsPerPlayer: 6,
-            },
-            refined: {
-                lateCoinWeight: 1.44,
-                skipPenalty: 10,
-            },
-            rush: {
-                coinWeight: 1.25,
-                turnWeight: 3.1,
-                landmarkWeight: 16,
-                builtLandmarkWeight: 9,
-                landmarkReachWeight: 7,
-                stableIncomeWeight: 1.1,
-                redPressureWeight: 1.2,
-                leaderThreatWeight: 1.45,
-                lateCoinWeight: 2.0,
-                finalCoinWeight: 2.8,
-                lateProgressBonus: 10,
-                lowValueSpamThreshold: 3,
-                lowValueSpamPenalty: 8,
-                landmarkActionBonus: 30,
-                lateLandmarkActionBonus: 26,
-                skipAirportBonus: 8,
-                skipPenalty: 12,
-                winLookaheadBonus: 6000,
-                loseLookaheadPenalty: 3200,
-                lookaheadWeight: 0.75,
-                lateGameLookaheadStepsPerPlayer: 6,
-            },
-            economy: {
-                coinWeight: 1.3,
-                turnWeight: 3.5,
-                landmarkWeight: 13,
-                builtLandmarkWeight: 7,
-                landmarkReachWeight: 5,
-                stableIncomeWeight: 1.7,
-                redPressureWeight: 0.8,
-                leaderThreatWeight: 1.1,
-                lateCoinWeight: 1.4,
-                finalCoinWeight: 2.0,
-                lateProgressBonus: 6,
-                lowValueSpamThreshold: 5,
-                lowValueSpamPenalty: 4,
-                landmarkActionBonus: 20,
-                lateLandmarkActionBonus: 12,
-                skipAirportBonus: 14,
-                skipPenalty: 6,
-                winLookaheadBonus: 4800,
-                loseLookaheadPenalty: 2800,
-                lookaheadWeight: 0.65,
-                lateGameLookaheadStepsPerPlayer: 7,
-            },
-            v2simple: {
-            },
-        };
+    static _expertPresetTable() {
+        return CPU_EXPERT_PRESETS;
+    }
+
+    static _expertDefaultOptionsTable() {
+        return CPU_EXPERT_DEFAULT_OPTIONS;
+    }
+
+    static _defaultExpertOptions(presetName = "default") {
+        const defaults = CPU._expertDefaultOptionsTable();
+        return Object.assign({}, defaults, (defaults.byPreset && defaults.byPreset[presetName]) || {});
     }
 
     static _resolveExpertTuning(presetName = "default") {
-        const presets = CPU._expertPresets();
+        const presets = CPU._expertPresetTable();
         return Object.assign({}, presets.default, presets[presetName] || {});
     }
 
     static _defaultExpertProfileTunings() {
-        return {
-            duel: {
-                lowValueSpamPenalty: 5.1,
-            },
-            trio: {
-                coinWeight: 1.16,
-                turnWeight: 3.28,
-                stableIncomeWeight: 2.15,
-                redPressureWeight: 0.72,
-                leaderThreatWeight: 0.82,
-                landmarkActionBonus: 21,
-                lateLandmarkActionBonus: 16,
-                lookaheadWeight: 0.52,
-                lowValueSpamPenalty: 5.6,
-            },
-            crowd: {
-                coinWeight: 1.22,
-                turnWeight: 3.35,
-                stableIncomeWeight: 3.4,
-                redPressureWeight: 0.14,
-                leaderThreatWeight: 0.08,
-                lateCoinWeight: 2.05,
-                finalCoinWeight: 2.55,
-                landmarkActionBonus: 18,
-                lateLandmarkActionBonus: 14,
-                lookaheadWeight: 0.28,
-            },
-        };
+        return CPU_EXPERT_PROFILE_TUNINGS;
     }
 
     takeTurn(game, shopStock) {
