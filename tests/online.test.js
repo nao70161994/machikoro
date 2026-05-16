@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const vm = require('vm');
 const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
 const { serializeMirrorState } = require('../server');
@@ -6,6 +8,26 @@ const {
     makePendingAckRequiresLogOrSnapshotFixture,
     makeSeqRankUsesMaxFieldsFixture,
 } = require('./helpers/online-restore-fixtures');
+
+function extractFunctionBody(source, functionName) {
+    const signature = `function ${functionName}`;
+    const start = source.indexOf(signature);
+    assert(start >= 0, `missing function ${functionName}`);
+    const signatureEnd = source.indexOf('\n', start);
+    const openBrace = source.lastIndexOf('{', signatureEnd);
+    let depth = 0;
+    for (let i = openBrace; i < source.length; i++) {
+        const ch = source[i];
+        if (ch === '{') depth++;
+        if (ch === '}') depth--;
+        if (depth === 0) return source.slice(openBrace, i + 1);
+    }
+    throw new Error(`unterminated function ${functionName}`);
+}
+
+function extractSwitchActionCases(functionBody) {
+    return [...functionBody.matchAll(/case ['"]([^'"]+)['"]:/g)].map(match => match[1]).sort();
+}
 
 function loadOnlineRuntime() {
     const { storage, localStorage } = createStorage();
@@ -81,6 +103,7 @@ function loadOnlineRuntime() {
         this.CARDS = CARDS;
         this.createCardByName = createCardByName;
         this.GAME_PHASES = GAME_PHASES;
+        this.GAME_ACTIONS = GAME_ACTIONS;
         this.LOG_TYPES = LOG_TYPES;
         this.getGame = () => game;
         this.setGame = (g) => { game = g; };
@@ -145,6 +168,14 @@ function makeGame(count = 2) {
     for (const card of CARDS) rt.getShopStock()[card.name] = 6;
     return g;
 }
+
+runTest('GAME_ACTIONS は client applyAction で網羅される', () => {
+    const runtime = loadOnlineRuntime();
+    const actions = Object.values(runtime.GAME_ACTIONS).sort();
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+
+    assert.deepStrictEqual(extractSwitchActionCases(extractFunctionBody(source, 'applyAction')), actions);
+});
 
 runTest('getClientVersion はindexへ注入されたビルドハッシュを使う', () => {
     const localRt = loadOnlineRuntime();

@@ -106,6 +106,30 @@ function makeGame() {
     };
 }
 
+function extractFunctionBody(source, functionName) {
+    const signature = `function ${functionName}`;
+    const start = source.indexOf(signature);
+    assert(start >= 0, `missing function ${functionName}`);
+    const signatureEnd = source.indexOf('\n', start);
+    const openBrace = source.lastIndexOf('{', signatureEnd);
+    let depth = 0;
+    for (let i = openBrace; i < source.length; i++) {
+        const ch = source[i];
+        if (ch === '{') depth++;
+        if (ch === '}') depth--;
+        if (depth === 0) return source.slice(openBrace, i + 1);
+    }
+    throw new Error(`unterminated function ${functionName}`);
+}
+
+function extractSwitchActionCases(functionBody) {
+    return [...functionBody.matchAll(/case ['"]([^'"]+)['"]:/g)].map(match => match[1]).sort();
+}
+
+function extractActionValidatorBranches(functionBody) {
+    return [...functionBody.matchAll(/action === ['"]([^'"]+)['"]/g)].map(match => match[1]).sort();
+}
+
 function makeSnapshot(overrides = {}) {
     const runtime = loadGameRuntime();
     const game = new runtime.GameManager(2);
@@ -173,6 +197,17 @@ runTest('createRoom rate limit は同一socketの連続作成だけを拒否す�
     assert.strictEqual(validateCreateRoomLifecycle(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs - 1, {}).ok, false);
     assert.strictEqual(canCreateRoomForSocket(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs), true);
     assert.strictEqual(validateCreateRoomLifecycle({}, now + 1, {}).ok, true);
+});
+
+runTest('GAME_ACTIONS は server payload validator と mirror apply で網羅される', () => {
+    const actions = Object.values(loadGameRuntime().GAME_ACTIONS).sort();
+    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+
+    const validatorActions = extractActionValidatorBranches(extractFunctionBody(source, 'validateActionPayloadForState'));
+    const mirrorActions = extractSwitchActionCases(extractFunctionBody(source, 'applyActionToMirror'));
+
+    assert.deepStrictEqual(validatorActions, actions);
+    assert.deepStrictEqual(mirrorActions, actions);
 });
 
 runTest('server validateBusinessPayload はカードindex指定を許可する', () => {

@@ -211,3 +211,27 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: なし。
+
+
+## PR-010 action registry coverage test
+
+- 状態: done
+- commit: this PR commit (`test: action schemaの層間網羅性を固定`)
+- 変更ファイル:
+  - `tests/server.test.js`
+  - `tests/online.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `GAME_ACTIONS` の全値が server payload validator にあることを source coverage test で固定した。
+  - `GAME_ACTIONS` の全値が server mirror replay と client `applyAction` にあることを固定した。
+  - 新action追加時に server validator / replay / client apply のいずれかを漏らすと targeted test が落ちるようにした。
+- 実行テスト:
+  - `node --check tests/server.test.js`
+  - `node --check tests/online.test.js`
+  - `node tests/server.test.js`
+  - `node tests/online.test.js`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
+- 残課題: なし。
