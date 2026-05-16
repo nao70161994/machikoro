@@ -269,7 +269,7 @@
 ## PR-012 reset turn / pending helpers
 
 - 状態: done
-- commit: `PENDING_PR_012_HASH`
+- commit: `b28a189`
 - 変更ファイル:
   - `js/GameManager.js`
   - `js/storage.js`
