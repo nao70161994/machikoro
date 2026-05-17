@@ -385,6 +385,20 @@ runTest('RLCPU: schema metadata は既存2人/多人数モデルを識別する'
     assert.strictEqual(draftSchema.action, RLCPU.ACTION_SCHEMAS.FACTORED_BUSINESS_TARGET_V2_DRAFT);
 });
 
+runTest('RLCPU: schema mismatch guard は未対応action schemaとstate schema不一致を拒否する', () => {
+    const { RLCPU } = loadRLRuntime();
+    const draftActionModel = Object.assign(buildTestModel(), {
+        actionSchema: RLCPU.ACTION_SCHEMAS.FACTORED_BUSINESS_TARGET_V2_DRAFT,
+    });
+    assert.throws(() => new RLCPU(draftActionModel), /unsupported action schema/);
+
+    const mismatchedStateModel = Object.assign(buildTestModel(), {
+        stateDim: 145,
+        stateSchema: RLCPU.STATE_SCHEMAS.MULTIPLAYER_V1,
+    });
+    assert.throws(() => new RLCPU(mismatchedStateModel), /state schema mismatch/);
+});
+
 runTest('RLCPU: forward は policy と value を返す', () => {
     const { RLCPU } = loadRLRuntime();
     const cpu = new RLCPU(buildTestModel());

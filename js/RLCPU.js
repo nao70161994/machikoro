@@ -10,6 +10,7 @@ class RLCPU {
         this.numCards = modelData.numCards;
         this.numTargetSlots = modelData.numTargetSlots || RLCPU._inferTargetSlots(modelData.layers);
         this.schema = RLCPU.resolveModelSchema(modelData);
+        this._validateSchemaCompatibility();
         this._validateModel();
     }
 
@@ -102,6 +103,16 @@ class RLCPU {
 
     static fromGlobal(modelData = globalThis.RL_MODEL_DATA) {
         return new RLCPU(modelData);
+    }
+
+    _validateSchemaCompatibility() {
+        const expectedStateSchema = RLCPU.stateSchemaForDim(this.stateDim);
+        if (this.schema.state !== expectedStateSchema) {
+            throw new Error(`RLCPU state schema mismatch: expected ${expectedStateSchema}, got ${this.schema.state}`);
+        }
+        if (this.schema.action !== RLCPU.ACTION_SCHEMAS.LEGACY_FLAT_V1) {
+            throw new Error(`RLCPU unsupported action schema: ${this.schema.action}`);
+        }
     }
 
     _validateModel() {

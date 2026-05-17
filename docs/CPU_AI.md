@@ -105,13 +105,14 @@ PR-033 時点では既存モデル互換を優先し、実際の state/action �
 - `state-2p-v1`: 2人用 `STATE_DIM = 145`。既存2人モデルの互換表現。
 - `state-mp-v1`: 3人以上用 `STATE_DIM = 353`。自分 + 脅威度上位3人へ射影する現行多人数表現。
 - `action-flat-v1`: 既存の flat action space。Business は `giveCard * NUM_CARDS + takeCard` を1 actionへ畳み込む。
-- `action-factored-business-target-v2-draft`: draft identifier。Business の相手選択、渡すカード、奪うカードを分ける将来 schema 用で、現時点では学習・推論には使わない。
+- `action-factored-business-target-v2-draft`: draft identifier。Business の相手選択、渡すカード、奪うカードを分ける将来 schema 用で、現時点では学習・推論には使わない。実行時 `RLCPU` はこの action schema を明示的に拒否する。
 
 次に v2 を実装する場合の制約:
 
 - export 済みモデルは `stateSchema` / `actionSchema` 未指定なら既存 v1 として扱う。
 - 新 schema は checkpoint metadata、browser JSON、registry に同じ文字列で記録する。
 - Python/JS trace 比較は schema mismatch を失敗として扱う。
+- Browser runtime は `stateDim` から期待される state schema と metadata が一致しない model JSON を拒否する。
 - Business factorization はまず target head 付き多人数モデルだけで試し、2人用 portfolio とは別 lineage にする。
 - overflow feature は既存の clipped count を置き換えず、`count > cap` や `extra / cap` の追加特徴として足す。
 

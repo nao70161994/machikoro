@@ -992,3 +992,25 @@
   - `node --check tests/gamemanager.test.js`
   - `node tests/gamemanager.test.js`
 - 残課題: 互換 field の削除は save/online/server mirror の schema 互換期間を置いてから別PRで判断する。
+
+
+## Post-audit RL schema mismatch guard
+
+- 状態: done
+- commit: `533b724`
+- 変更ファイル:
+  - `js/RLCPU.js`
+  - `tests/rlcpu.test.js`
+  - `docs/CPU_AI.md`
+  - `docs/rl-experiments.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `RLCPU` constructor で schema compatibility を検証し、`stateDim` と metadata の不一致を拒否するようにした。
+  - 現行 runtime が対応する action schema を `action-flat-v1` に限定し、v2 draft action schema の実行時読み込みを拒否する guard を追加した。
+  - docs に v2 draft は別 lineage で導入するまで実ゲームへ接続しない方針を追記した。
+- 実行テスト:
+  - `node --check js/RLCPU.js`
+  - `node --check tests/rlcpu.test.js`
+  - `node tests/rlcpu.test.js`
+- 残課題: v2 schema 本体、新しい action head、registry / portfolio 更新は未実装。

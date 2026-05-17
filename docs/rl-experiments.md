@@ -60,6 +60,7 @@ PR-033 では実験履歴と実装の橋渡しとして、次の schema identifi
 当面の採用方針:
 
 - 現行 portfolio は schema 未指定でも `state-2p-v1/action-flat-v1` または `state-mp-v1/action-flat-v1` として扱う。
+- Browser runtime は metadata と `stateDim` の不一致、または `action-flat-v1` 以外の action schema を拒否する。v2 draft model は別 lineage として導入するまで実ゲームへ接続しない。
 - v2 draft は新規 run label でのみ使い、既存 registry の採用モデルを上書きしない。
 - Business factorization は target slot、give card、take card を別 head として比較できるようにする。flat action との bridge は `ACT_BC_BASE + give * NUM_CARDS + take` へ戻せる形を維持する。
 - 5人以上で省略された相手は、脅威度上位3人だけでなく「省略相手数」「省略相手の最大コイン」「省略相手の最大建設済みランドマーク数」のような集約特徴を追加候補にする。
