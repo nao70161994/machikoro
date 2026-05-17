@@ -214,6 +214,16 @@ class GameManager {
             .filter(pending => pending.count > 0);
     }
 
+    static _pendingQueueEntriesFromFields(game) {
+        const entries = [];
+        for (const pending of GameManager._pendingDescriptorsFromFields(game)) {
+            for (let i = 0; i < pending.count; i++) {
+                entries.push({ action: pending.action, field: pending.field });
+            }
+        }
+        return entries;
+    }
+
     static _normalizePendingActionQueue(game) {
         if (!game || !Array.isArray(game.pendingActionQueue)) return [];
         const counts = Object.fromEntries(PENDING_ACTION_SPECS.map(spec => [spec.field, 0]));
@@ -245,6 +255,17 @@ class GameManager {
         return grouped;
     }
 
+    static ensurePendingActionQueue(game) {
+        if (!game) return [];
+        const queue = GameManager._normalizePendingActionQueue(game);
+        if (queue.length > 0) return queue;
+        const entries = GameManager._pendingQueueEntriesFromFields(game);
+        if (Array.isArray(game.pendingActionQueue) || entries.length > 0) {
+            game.pendingActionQueue = entries.map(entry => ({ action: entry.action, field: entry.field }));
+        }
+        return entries;
+    }
+
     // Returns pending action descriptors in the order they should be resolved.
     static pendingActionsFor(game) {
         if (!game) return [];
@@ -252,9 +273,9 @@ class GameManager {
             return [{ action: PENDING_IT_QUEUE_POLICY.action, field: PENDING_IT_QUEUE_POLICY.field, count: 1 }];
         }
         if (game.phase !== GAME_PHASES.PENDING) return [];
-        const queue = GameManager._normalizePendingActionQueue(game);
+        const queue = GameManager.ensurePendingActionQueue(game);
         if (queue.length > 0) return GameManager._groupPendingQueue(queue);
-        return GameManager._pendingDescriptorsFromFields(game);
+        return [];
     }
 
     pendingActions() {
@@ -262,17 +283,8 @@ class GameManager {
     }
 
     static serializedPendingActionsFor(game) {
-        const queue = GameManager._normalizePendingActionQueue(game);
-        if (queue.length > 0) {
-            return queue.map(pending => ({ action: pending.action, field: pending.field }));
-        }
-        const pendingActions = [];
-        for (const pending of GameManager._pendingDescriptorsFromFields(game)) {
-            for (let i = 0; i < pending.count; i++) {
-                pendingActions.push({ action: pending.action, field: pending.field });
-            }
-        }
-        return pendingActions;
+        return GameManager.ensurePendingActionQueue(game)
+            .map(pending => ({ action: pending.action, field: pending.field }));
     }
 
     rebuildPendingActionsFromFields() {

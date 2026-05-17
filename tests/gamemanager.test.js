@@ -271,6 +271,10 @@ runTest('pendingActions queue は互換fieldとdual-writeされる', () => {
         { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV', count: 1 },
         { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness', count: 1 },
     ]);
+    assert.deepStrictEqual(plain(game.pendingActionQueue), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+    ]);
     game.rebuildPendingActionsFromFields();
     assert.deepStrictEqual(plain(game.pendingActionQueue), [
         { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },

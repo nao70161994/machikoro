@@ -107,7 +107,7 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - PR-031: canonical mirror の長時間手動確認。対象は再接続、Undo、host 移譲、server restart restore。lightweight state hash / mismatch log は実装済み。
 - PR-032: pendingIT は queue 外 special case として設計固定済み。
-- PR-032: field fallback が残っているため、後続で read 移行と field 削減を小分けに実施する。
+- PR-032: pending queue read path は `ensurePendingActionQueue()` 経由へ移行済み。互換 field は旧 snapshot / 不整合 queue 補修用に残す。
 - PR-033: v2 schema を実装する場合は、既存 portfolio と別 lineage にして schema mismatch guard を先に入れる。
 
 ### Low

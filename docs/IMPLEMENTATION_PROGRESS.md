@@ -971,3 +971,24 @@
   - `node --check tests/gamemanager.test.js`
   - `node tests/gamemanager.test.js`
 - 残課題: field fallback 削減は pending action 種別ごとに後続で進める。
+
+
+## Post-audit pending queue read path
+
+- 状態: done
+- commit: `655d7ec`
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `tests/gamemanager.test.js`
+  - `docs/CARD_SYSTEM.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `ensurePendingActionQueue()` を追加し、queue が欠落または不整合な場合は互換 field から補修してから読み取るようにした。
+  - `pendingActionsFor()` と `serializedPendingActionsFor()` を queue read path に寄せた。
+  - 旧 snapshot / 古い保存データ用の互換 field は残しつつ、通常の read は補修済み queue を正として扱う。
+- 実行テスト:
+  - `node --check js/GameManager.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+- 残課題: 互換 field の削除は save/online/server mirror の schema 互換期間を置いてから別PRで判断する。
