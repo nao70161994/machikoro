@@ -21,8 +21,8 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 | PR-032 副作用確認 | pendingActionQueue dual-write、旧 field fallback、save/online/server mirror snapshot 復元を確認 | GameManager.js, storage.js, online.js, server/mirrorReplay.js | pass |
 | PR-033 互換性確認 | schema identifier は metadata のみで既存 state/action 次元を変更しないことを確認 | RLCPU.js, scripts/rl/encode.py, RL tests | pass |
 | main/server/GameManager 責務増加 | 行数と追加責務を確認 | server.js 1274行, GameManager.js 881行, main.js 1099行 | residual |
-| commit / push | 監査結果を commit/push する | この文書の commit | pending at document creation |
-| working tree clean | commit/push 後に確認する | git status --short | pending at document creation |
+| commit / push | 監査結果を commit/push する | 監査文書 commit 3e0bd1c を push 済み | pass |
+| working tree clean | commit/push 後に確認する | 最終確認で git status --short が空 | pass |
 
 ## 重点監査結果
 
