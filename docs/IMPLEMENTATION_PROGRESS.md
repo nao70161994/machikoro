@@ -948,3 +948,26 @@
   - `node --check tests/server.test.js`
   - `npm run test:online`
 - 残課題: 長時間の再接続 / Undo / host 移譲 / server restart restore は TESTPLAN.md に沿った手動確認が必要。
+
+
+## Post-audit pendingIT queue policy
+
+- 状態: done
+- commit: `e8d5642`
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `tests/helpers/runtime-loaders.js`
+  - `tests/gamemanager.test.js`
+  - `docs/CARD_SYSTEM.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `PENDING_IT_QUEUE_POLICY` を追加し、`pendingIT` は queue 外の優先 special case として継続する方針をコード上で固定した。
+  - `pendingActionsFor()` は policy を参照して `resolveIT` を返し、`serializedPendingActionsFor()` には `pendingIT` を含めないことをテストで固定した。
+  - `CARD_SYSTEM.md` に新しい interactive 効果は `PENDING_ACTION_SPECS` に追加し、IT だけ例外にする運用を記録した。
+- 実行テスト:
+  - `node --check js/GameManager.js`
+  - `node --check tests/helpers/runtime-loaders.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+- 残課題: field fallback 削減は pending action 種別ごとに後続で進める。

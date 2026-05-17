@@ -18,6 +18,7 @@ const GAME_PHASES = runtime.GAME_PHASES;
 const GAME_ACTIONS = runtime.GAME_ACTIONS;
 const LOG_TYPES = runtime.LOG_TYPES;
 const GAME_PHASE_ACTIONS = runtime.GAME_PHASE_ACTIONS;
+const PENDING_IT_QUEUE_POLICY = runtime.PENDING_IT_QUEUE_POLICY;
 
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
     const effects = Object.values(CARD_EFFECTS);
@@ -216,8 +217,20 @@ runTest('pendingActionsFor は pending field を解決順descriptorとして返�
     ]);
 
     game.pendingIT = true;
+    assert.deepStrictEqual(plain(PENDING_IT_QUEUE_POLICY), {
+        field: 'pendingIT',
+        action: GAME_ACTIONS.RESOLVE_IT,
+        queued: false,
+        reason: PENDING_IT_QUEUE_POLICY.reason,
+    });
     assert.deepStrictEqual(plain(game.pendingActions()), [
         { action: GAME_ACTIONS.RESOLVE_IT, field: 'pendingIT', count: 1 },
+    ]);
+    assert.deepStrictEqual(plain(GameManager.serializedPendingActionsFor(game)), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+        { action: GAME_ACTIONS.RESOLVE_MOVER, field: 'pendingMover' },
     ]);
 
     game.pendingIT = false;

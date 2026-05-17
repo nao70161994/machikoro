@@ -51,6 +51,13 @@ const PENDING_ACTION_SPECS = Object.freeze([
     Object.freeze({ field: 'pendingRenovation', action: GAME_ACTIONS.RESOLVE_RENOVATION }),
 ]);
 
+const PENDING_IT_QUEUE_POLICY = Object.freeze({
+    field: 'pendingIT',
+    action: GAME_ACTIONS.RESOLVE_IT,
+    queued: false,
+    reason: 'ITベンチャーはターン終了時の任意確認で、他の同時pending効果と混在しないためqueue外の優先special caseとして扱う',
+});
+
 const PENDING_ACTION_SPEC_BY_FIELD = Object.freeze(Object.fromEntries(
     PENDING_ACTION_SPECS.map(spec => [spec.field, spec])
 ));
@@ -242,7 +249,7 @@ class GameManager {
     static pendingActionsFor(game) {
         if (!game) return [];
         if (game.pendingIT) {
-            return [{ action: GAME_ACTIONS.RESOLVE_IT, field: 'pendingIT', count: 1 }];
+            return [{ action: PENDING_IT_QUEUE_POLICY.action, field: PENDING_IT_QUEUE_POLICY.field, count: 1 }];
         }
         if (game.phase !== GAME_PHASES.PENDING) return [];
         const queue = GameManager._normalizePendingActionQueue(game);

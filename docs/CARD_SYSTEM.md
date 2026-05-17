@@ -92,8 +92,8 @@ UI、CPU、online action schema まで波及する高リスク分類です。
 - `RENOVATION`
 - `ITSTARTUP`
 
-現状は `pendingTV`, `pendingBusiness`, `pendingCleaning`, `pendingMover`, `pendingRenovation`, `pendingIT` の個別 state で管理されています。
-新しい interactive 効果を追加する前に、`pendingActions = [{ type, sourceCardId, count, payload }]` の薄い queue へ段階移行するのが安全です。
+現状は `pendingTV`, `pendingBusiness`, `pendingCleaning`, `pendingMover`, `pendingRenovation` を互換 field として残しつつ、内部 `pendingActionQueue` と dual-write しています。`pendingIT` は `PENDING_IT_QUEUE_POLICY.queued === false` として設計固定し、queue 外の優先 special case として扱います。ITベンチャーはターン終了時の任意確認で、他の同時 pending 効果と混在しないためです。
+新しい interactive 効果を追加する場合は、まず `PENDING_ACTION_SPECS` に field/action を追加して queue 対象にし、保存/online/server mirror snapshot の `pendingActions` roundtrip テストを追加してください。
 
 ### Build-time / upkeep
 
