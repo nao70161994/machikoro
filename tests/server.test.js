@@ -56,6 +56,8 @@ const {
     applyActionToMirror,
     restoreUndoMirror,
     makeServerDiceActionData,
+    stableStateHash,
+    canonicalMirrorStateHash,
     resetRoomCanonicalMirror,
     getRoomCanonicalMirror,
     markRoomCanonicalMirrorCurrent,
@@ -1110,6 +1112,33 @@ runTest('canonical mirror は accepted action を actionLog replay なしで次�
     assert.strictEqual(room.actionLog.length, 0);
     const repeatRoll = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: null, tunaDice: null });
     assert.strictEqual(repeatRoll.ok, false);
+});
+
+runTest('canonical mirror は stale rebuild 時に state hash mismatch を記録する', () => {
+    const room = makeRoom();
+    resetRoomCanonicalMirror(room);
+    const initialHash = canonicalMirrorStateHash(room.canonicalMirror);
+    assert.strictEqual(room.canonicalMirrorStateHash, initialHash);
+    assert.strictEqual(stableStateHash({ b: 2, a: 1 }), stableStateHash({ a: 1, b: 2 }));
+
+    room.canonicalMirror.game.players[0].coins += 5;
+    const corruptedHash = canonicalMirrorStateHash(room.canonicalMirror);
+    room.canonicalMirrorActionSeq = -1;
+
+    const realWarn = console.warn;
+    let warned = null;
+    console.warn = (message, detail) => { warned = { message, detail }; };
+    try {
+        const rebuilt = getRoomCanonicalMirror(room);
+        assert.ok(rebuilt);
+    } finally {
+        console.warn = realWarn;
+    }
+
+    assert.strictEqual(room.lastCanonicalMirrorMismatch.previousHash, corruptedHash);
+    assert.strictEqual(room.lastCanonicalMirrorMismatch.rebuiltHash, initialHash);
+    assert.strictEqual(room.canonicalMirrorStateHash, initialHash);
+    assert.strictEqual(warned.message, 'canonical mirror mismatch detected');
 });
 
 runTest('validateSelectDicePayload は型と出目範囲を検証する', () => {

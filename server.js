@@ -1019,6 +1019,41 @@ function makeServerDiceActionData(game, action, data, rollDie = rollServerDie) {
     return data;
 }
 
+function stableHashStringify(value) {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) {
+        return '[' + value.map(stableHashStringify).join(',') + ']';
+    }
+    const keys = Object.keys(value).sort();
+    return '{' + keys.map(key => JSON.stringify(key) + ':' + stableHashStringify(value[key])).join(',') + '}';
+}
+
+function stableStateHash(value) {
+    return crypto.createHash('sha256').update(stableHashStringify(value)).digest('hex').slice(0, 16);
+}
+
+function canonicalMirrorStateHash(mirror) {
+    if (!mirror || !mirror.game) return null;
+    const state = serializeMirrorState(mirror.game, mirror.shopStock, mirror.lastUndoState || null, 0);
+    return stableStateHash(state);
+}
+
+function recordCanonicalMirrorMismatch(room, marker, previousHash, rebuiltHash) {
+    if (!room || !previousHash || !rebuiltHash || previousHash === rebuiltHash) return;
+    room.lastCanonicalMirrorMismatch = {
+        previousHash,
+        rebuiltHash,
+        marker,
+        detectedAt: Date.now(),
+    };
+    console.warn('canonical mirror mismatch detected', {
+        roomId: room.roomId || null,
+        previousHash,
+        rebuiltHash,
+        marker,
+    });
+}
+
 function roomCanonicalMirrorMarker(room) {
     return {
         actionSeq: restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq,
@@ -1030,6 +1065,7 @@ function markRoomCanonicalMirrorCurrent(room) {
     const marker = roomCanonicalMirrorMarker(room);
     room.canonicalMirrorActionSeq = marker.actionSeq;
     room.canonicalMirrorActionLogLength = marker.actionLogLength;
+    room.canonicalMirrorStateHash = canonicalMirrorStateHash(room.canonicalMirror);
 }
 
 function resetRoomCanonicalMirror(room) {
@@ -1044,7 +1080,16 @@ function getRoomCanonicalMirror(room) {
     if (!room.canonicalMirror ||
             room.canonicalMirrorActionSeq !== marker.actionSeq ||
             room.canonicalMirrorActionLogLength !== marker.actionLogLength) {
-        return resetRoomCanonicalMirror(room);
+        const recordedHash = room.canonicalMirrorStateHash;
+        const currentHash = canonicalMirrorStateHash(room.canonicalMirror);
+        const mirror = createRoomMirror(room);
+        const rebuiltHash = canonicalMirrorStateHash(mirror);
+        if (recordedHash && currentHash && recordedHash !== currentHash) {
+            recordCanonicalMirrorMismatch(room, marker, currentHash, rebuiltHash);
+        }
+        room.canonicalMirror = mirror;
+        markRoomCanonicalMirrorCurrent(room);
+        return room.canonicalMirror;
     }
     return room.canonicalMirror;
 }
@@ -1250,6 +1295,8 @@ module.exports = {
     makeUndoStateFromMirror,
     rollServerDie,
     makeServerDiceActionData,
+    stableStateHash,
+    canonicalMirrorStateHash,
     resetRoomCanonicalMirror,
     getRoomCanonicalMirror,
     markRoomCanonicalMirrorCurrent,

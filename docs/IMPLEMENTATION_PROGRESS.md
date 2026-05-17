@@ -927,3 +927,24 @@
   - `npm run test:smoke`
   - `npm test`
 - 残課題: v2 draft は識別子と設計のみ。実際の入力次元追加、Business head 変更、portfolio更新は既存モデルと別 lineage の後続作業に分ける。
+
+
+## Post-audit online canonical mirror diagnostics
+
+- 状態: done
+- commit: `eb1c3db`
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/ONLINE_SYNC.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - canonical mirror の current marker に deterministic state hash を保存するようにした。
+  - stale rebuild 時に、保存済み hash と in-memory mirror hash がズレた場合だけ `lastCanonicalMirrorMismatch` と server warning を残す診断を追加した。
+  - 通常の actionLog 伸長による stale rebuild は警告しない。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check tests/server.test.js`
+  - `npm run test:online`
+- 残課題: 長時間の再接続 / Undo / host 移譲 / server restart restore は TESTPLAN.md に沿った手動確認が必要。

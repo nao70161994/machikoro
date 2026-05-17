@@ -105,7 +105,7 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 ### Medium
 
-- PR-031: canonical mirror の長時間手動確認。対象は再接続、Undo、host 移譲、server restart restore。
+- PR-031: canonical mirror の長時間手動確認。対象は再接続、Undo、host 移譲、server restart restore。lightweight state hash / mismatch log は実装済み。
 - PR-032: pending queue を完全な内部正本へ進める前に、pendingIT を queue に含めるか special case のままにするか設計を固定する。
 - PR-032: field fallback が残っているため、後続で read 移行と field 削減を小分けに実施する。
 - PR-033: v2 schema を実装する場合は、既存 portfolio と別 lineage にして schema mismatch guard を先に入れる。
@@ -119,6 +119,6 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 ## 次回推奨
 
 1. TESTPLAN.md に沿ってオンライン手動回帰を実施する。
-2. canonical mirror に lightweight state hash を追加し、client/server のズレ検出をログ化する。
+2. TESTPLAN.md のオンライン手動回帰で、canonical mirror mismatch log が出ないことを確認する。
 3. pending queue の read path を 1 action 種別ずつ移行し、互換 field の削減判断を行う。
 4. RL schema v2 は metadata / registry / browser JSON の schema guard を先に入れてから新次元を試す。

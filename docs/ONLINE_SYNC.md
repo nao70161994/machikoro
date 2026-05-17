@@ -151,6 +151,8 @@ Staleness is tracked by the restore rank actionSeq and the current actionLog len
 
 Accepted actions are applied to `canonicalMirror` before they are appended to `actionLog`. If compaction runs, the snapshot/log remain the recovery source, while the in-memory mirror stays current for the next live action.
 
+Each current mirror marker also stores a lightweight deterministic state hash. When a stale mirror is rebuilt, the server compares the stored hash with the current in-memory mirror hash; if they differ, it records `lastCanonicalMirrorMismatch` on the room and writes a `canonical mirror mismatch detected` warning with the old/rebuilt hashes. Normal stale rebuilds caused only by actionLog growth do not warn.
+
 ## Host ownership rules
 
 Host is special because online CPU turns are host-driven.
