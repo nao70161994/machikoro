@@ -1213,8 +1213,11 @@ button:not(:disabled):active {
     display: inline-block;
     font-size: 10px;
     padding: 2px 5px;
+    border: 0;
     border-radius: 4px;
     background: #2a2a4a;
+    color: inherit;
+    font-family: inherit;
     margin: 1px;
 }
 

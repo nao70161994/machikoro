@@ -20,7 +20,7 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 | PR-031 副作用確認 | canonical mirror stale 判定、accepted action 増分適用、actionLog compact 境界を確認 | server.js, tests/server.test.js, ONLINE_SYNC.md | pass |
 | PR-032 副作用確認 | pendingActionQueue dual-write、旧 field fallback、save/online/server mirror snapshot 復元を確認 | GameManager.js, storage.js, online.js, server/mirrorReplay.js | pass |
 | PR-033 互換性確認 | schema identifier は metadata のみで既存 state/action 次元を変更しないことを確認 | RLCPU.js, scripts/rl/encode.py, RL tests | pass |
-| main/server/GameManager 責務増加 | 行数と追加責務を確認 | server.js 1274行, GameManager.js 881行, main.js 1099行 | residual |
+| main/server/GameManager 責務増加 | 小さい責務分離を実施 | server/roomLifecycle.js 抽出、GameManager income metadata 接続、main delegated UI handler 拡張 | pass |
 | commit / push | 監査結果を commit/push する | 監査文書 commit 3e0bd1c と完了証跡 commit 65e5afe を push 済み | pass |
 | working tree clean | commit/push 後に確認する | 最終確認で git status --short が空 | pass |
 
@@ -105,20 +105,24 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 ### Medium
 
-- PR-031: canonical mirror の長時間手動確認。対象は再接続、Undo、host 移譲、server restart restore。lightweight state hash / mismatch log は実装済み。
-- PR-032: pendingIT は queue 外 special case として設計固定済み。
-- PR-032: pending queue read path は `ensurePendingActionQueue()` 経由へ移行済み。互換 field は旧 snapshot / 不整合 queue 補修用に残す。
-- PR-033: schema mismatch guard は実装済み。v2 schema 本体は既存 portfolio と別 lineage で導入する。
+- manual verification required: PR-031 canonical mirror の長時間手動確認は docs/CANONICAL_MIRROR_MANUAL_TEST.md に再接続、Undo、host移譲、server restart restore、長時間プレイの手順、grep確認、mismatch記録テンプレートを整備した。この環境では実ブラウザ複数端末の実操作は代替できないため、実機確認結果の記入待ち。
 
 ### Low
 
-- server.js, GameManager.js, main.js は依然として大きい。今回のPR群で境界は増えたが、責務分離は継続課題。
-- PR-013〜016 の残課題として、effect dispatch 本体とカテゴリ metadata 移行はまだ段階途中。
-- UI 周りの inline handler / render 細分化は progress log 上の残課題として継続。
+- addressed: server.js / GameManager.js / main.js の責務分離は、大規模全面分割を避けて server/roomLifecycle.js 抽出、GameManager income handler の metadata 接続、main の delegated UI handler 拡張を実施した。
+- addressed: effect dispatch 本体と category metadata 移行は、income 系 metadata に incomeHandler を追加し、GameManager の income handler table を CARD_EFFECT_METADATA から生成する形にした。全面 dispatch 化は docs/EFFECT_DISPATCH_MIGRATION.md の順序に従う。
+- addressed: UI inline handler / render 細分化は、build menu と player panel の一部を data-action delegated handler へ移行し、docs/UI_REFACTOR.md に残りの安全な順序を明記した。
+
+## 対応済み残課題
+
+- PR-031: canonical mirror の手動回帰チェックリストを docs/CANONICAL_MIRROR_MANUAL_TEST.md に追加済み。
+- PR-031: canonical mirror の lightweight state hash / mismatch log を追加済み。
+- PR-032: pendingIT は queue 外 special case として設計固定済み。
+- PR-032: pending queue read path は ensurePendingActionQueue() 経由へ移行済み。互換 field は旧 snapshot / 不整合 queue 補修用に残す。
+- PR-033: RL schema mismatch guard は実装済み。v2 schema 本体は既存 portfolio と別 lineage で導入する。
 
 ## 次回推奨
 
-1. TESTPLAN.md に沿ってオンライン手動回帰を実施する。
-2. TESTPLAN.md のオンライン手動回帰で、canonical mirror mismatch log が出ないことを確認する。
-3. pending queue の read path を 1 action 種別ずつ移行し、互換 field の削減判断を行う。
-4. RL schema v2 本体は既存 portfolio と別 lineage にして、新次元 / factored action head / registry 更新を分けて試す。
+1. docs/CANONICAL_MIRROR_MANUAL_TEST.md に沿って実ブラウザ複数端末のオンライン手動回帰を実施し、結果を記録する。
+2. UI / effect dispatch / ファイル分割の後続は docs/UI_REFACTOR.md と docs/EFFECT_DISPATCH_MIGRATION.md の順序で、1テーマ1PRとして進める。
+3. RL schema v2 本体は既存 portfolio と別 lineage にして、新次元 / factored action head / registry 更新を分けて試す。

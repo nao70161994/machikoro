@@ -677,9 +677,9 @@ function onSkipReroll() {
     runLocalOrSendOnline('skipReroll', {}, () => game.skipReroll());
 }
 
-let pendingActionHandlersBound = false;
+let delegatedUiHandlersBound = false;
 
-function pendingActionButtonFromEvent(event) {
+function actionButtonFromEvent(event) {
     const target = event && event.target;
     if (!target) return null;
     if (typeof target.closest === 'function') return target.closest('[data-action]');
@@ -687,7 +687,7 @@ function pendingActionButtonFromEvent(event) {
 }
 
 function handlePendingActionClick(event) {
-    const button = pendingActionButtonFromEvent(event);
+    const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
     const action = button.dataset.action;
     if (!action) return;
@@ -700,12 +700,37 @@ function handlePendingActionClick(event) {
     if (action === 'resolveIT') onResolveIT(button.dataset.doSave === 'true');
 }
 
-function bindPendingActionHandlers() {
-    if (pendingActionHandlersBound) return;
-    const menu = document.getElementById('pendingMenu');
-    if (!menu || typeof menu.addEventListener !== 'function') return;
-    menu.addEventListener('click', handlePendingActionClick);
-    pendingActionHandlersBound = true;
+function handleBuildMenuClick(event) {
+    const button = actionButtonFromEvent(event);
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'buildCard') onBuildCard(button.dataset.cardName);
+    if (action === 'buildLandmark') onBuildLandmark(button.dataset.landmarkName);
+    if (action === 'showCardDetail') showCardDetail(button.dataset.cardName);
+    if (action === 'showLandmarkDetail') showCardDetail(button.dataset.landmarkName, true);
+    if (action === 'setCardFilter') setCardFilter(button.dataset.cardFilter || '');
+    if (action === 'undoBuild') doUndo();
+}
+
+function handlePlayerPanelClick(event) {
+    const button = actionButtonFromEvent(event);
+    if (!button || button.disabled) return;
+    if (button.dataset.action !== 'showCardDetail') return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    showCardDetail(button.dataset.cardName);
+}
+
+function bindDelegatedUiHandlers() {
+    if (delegatedUiHandlersBound) return;
+    const pendingMenu = document.getElementById('pendingMenu');
+    const buildMenu = document.getElementById('buildMenu');
+    const players = document.getElementById('players');
+    if (pendingMenu && typeof pendingMenu.addEventListener === 'function') pendingMenu.addEventListener('click', handlePendingActionClick);
+    if (buildMenu && typeof buildMenu.addEventListener === 'function') buildMenu.addEventListener('click', handleBuildMenuClick);
+    if (players && typeof players.addEventListener === 'function') players.addEventListener('click', handlePlayerPanelClick);
+    delegatedUiHandlersBound = true;
 }
 
 function onResolveHarbor(useBonus) {
@@ -1096,4 +1121,4 @@ function checkAutoSkip() {
 
 // 初期表示
 initMainView();
-bindPendingActionHandlers();
+bindDelegatedUiHandlers();

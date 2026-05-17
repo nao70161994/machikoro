@@ -69,6 +69,7 @@ runTest('getCardActivationProfile は NORMAL の色別対象と複合triggerを�
         cpuKind: 'income',
         requires: null,
         sideEffect: null,
+        incomeHandler: null,
         triggers: [],
     });
     assert.deepStrictEqual(plainProfile(runtime.getCardActivationProfile(bakery)).targetScope, 'self');

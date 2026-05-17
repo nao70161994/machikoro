@@ -106,27 +106,33 @@ function rollRandomDie() {
     return Math.floor(Math.random() * 6) + 1;
 }
 
-const CARD_INCOME_EFFECT_HANDLERS = Object.freeze({
-    [CARD_EFFECTS.CHEESE]: (card, owner) =>
+const CARD_INCOME_HANDLER_IMPLS = Object.freeze({
+    cheese: (card, owner) =>
         owner.countCardById(CARD_IDS.RANCH) * card.income,
-    [CARD_EFFECTS.FURNITURE]: (card, owner) =>
+    furniture: (card, owner) =>
         (owner.countCardById(CARD_IDS.FOREST) + owner.countCardById(CARD_IDS.MINE)) * card.income,
-    [CARD_EFFECTS.MARKET]: (card, owner) =>
+    market: (card, owner) =>
         owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !owner.isDormant(c)).length * card.income,
-    [CARD_EFFECTS.FLOWER]: (card, owner) =>
+    flower: (card, owner) =>
         owner.countCardById(CARD_IDS.FLOWER_GARDEN) * card.income,
-    [CARD_EFFECTS.FOODWAREHOUSE]: (card, owner) =>
+    foodwarehouse: (card, owner) =>
         owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income,
-    [CARD_EFFECTS.FEWLANDMARK]: (card, owner) =>
+    fewlandmark: (card, owner) =>
         owner.builtLandmarkCount() <= 1 ? card.income : 0,
-    [CARD_EFFECTS.CORNFIELD]: (card, owner) =>
+    cornfield: (card, owner) =>
         owner.builtLandmarkCount() <= 1 ? card.income : 0,
-    [CARD_EFFECTS.WINERY]: (card, owner) =>
+    winery: (card, owner) =>
         owner.countCardById(CARD_IDS.VINEYARD) * card.income,
-    [CARD_EFFECTS.DRINKFACTORY]: (card, owner, game) =>
+    drinkfactory: (card, owner, game) =>
         game.players.reduce((sum, p) =>
             sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income,
 });
+
+const CARD_INCOME_EFFECT_HANDLERS = Object.freeze(Object.fromEntries(
+    Object.entries(CARD_EFFECT_METADATA)
+        .filter(([, metadata]) => metadata.incomeHandler && CARD_INCOME_HANDLER_IMPLS[metadata.incomeHandler])
+        .map(([effect, metadata]) => [effect, CARD_INCOME_HANDLER_IMPLS[metadata.incomeHandler]])
+));
 
 class GameManager {
     constructor(playerCount) {

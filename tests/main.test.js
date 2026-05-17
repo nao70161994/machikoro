@@ -22,6 +22,12 @@ function loadMainRuntime(options = {}) {
         pendingMenu: makeElement({
             addEventListener(name, handler) { eventHandlers[`pendingMenu:${name}`] = handler; },
         }),
+        buildMenu: makeElement({
+            addEventListener(name, handler) { eventHandlers[`buildMenu:${name}`] = handler; },
+        }),
+        players: makeElement({
+            addEventListener(name, handler) { eventHandlers[`players:${name}`] = handler; },
+        }),
         onlineCreateSubmitButton: makeElement(),
         onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
@@ -675,7 +681,7 @@ runTest('main init は10人開始時に不足設定を補い学習AIを維持す
     assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
-runTest('main bindPendingActionHandlers は data-action から pending action を呼ぶ', () => {
+runTest('main delegated handler は data-action から pending action を呼ぶ', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);
     game.phase = rt.GAME_PHASES.PENDING;
@@ -695,6 +701,27 @@ runTest('main bindPendingActionHandlers は data-action から pending action �
     });
 
     assert.strictEqual(resolvedTarget, 1);
+});
+
+runTest('main delegated handler は build menu action を呼ぶ', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.__test.getShopStock()['麦畑'] = 6;
+
+    rt.__test.eventHandlers['buildMenu:click']({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'buildCard', cardName: '麦畑' },
+            closest() { return this; },
+        },
+    });
+
+    assert.strictEqual(game.builtCard, '麦畑');
 });
 
 runTest('appShell updateOnlineTabState はオフライン時にオンライン操作を無効化する', () => {

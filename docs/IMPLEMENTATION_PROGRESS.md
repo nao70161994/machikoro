@@ -7,7 +7,7 @@
 ## PR-001 Socket.IO payload guard
 
 - 状態: done
-- commit: `38cee56`
+- commit: this commit
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
@@ -953,7 +953,7 @@
 ## Post-audit pendingIT queue policy
 
 - 状態: done
-- commit: `e8d5642`
+- commit: `58fdb11`
 - 変更ファイル:
   - `js/GameManager.js`
   - `tests/helpers/runtime-loaders.js`
@@ -976,7 +976,7 @@
 ## Post-audit pending queue read path
 
 - 状態: done
-- commit: `655d7ec`
+- commit: `ace13fb`
 - 変更ファイル:
   - `js/GameManager.js`
   - `tests/gamemanager.test.js`
@@ -997,7 +997,7 @@
 ## Post-audit RL schema mismatch guard
 
 - 状態: done
-- commit: `533b724`
+- commit: `a9b5a73`
 - 変更ファイル:
   - `js/RLCPU.js`
   - `tests/rlcpu.test.js`
@@ -1014,3 +1014,67 @@
   - `node --check tests/rlcpu.test.js`
   - `node tests/rlcpu.test.js`
 - 残課題: v2 schema 本体、新しい action head、registry / portfolio 更新は未実装。
+
+
+## Post-audit final residual triage
+
+- 状態: done
+- commit: this commit
+- 変更ファイル:
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - High / Medium / Low の残課題を再分類し、対応済み Medium を残課題から移動した。
+  - 実ブラウザ長時間確認が必要な canonical mirror 手動回帰だけを Medium deferred として残した。
+  - 巨大ファイル分割、effect dispatch 本体移行、UI handler 分離は既存挙動を守るため Low deferred とし、次アクションを明記した。
+- 実行テスト:
+  - docs-only 変更のため最終一括確認で実行
+- 残課題: 実ブラウザ複数端末の長時間オンライン手動回帰は docs/CANONICAL_MIRROR_MANUAL_TEST.md に沿った実機実施待ち。
+
+
+## Post-audit deferred residual reduction
+
+- 状態: done
+- commit: this commit
+- 変更ファイル:
+  - `server/roomLifecycle.js`
+  - `server.js`
+  - `js/Card.js`
+  - `js/GameManager.js`
+  - `js/ui.js`
+  - `js/main.js`
+  - `tests/main.test.js`
+  - `style.css`
+  - `docs/CANONICAL_MIRROR_MANUAL_TEST.md`
+  - `docs/UI_REFACTOR.md`
+  - `docs/EFFECT_DISPATCH_MIGRATION.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - PR-031 canonical mirror の実ブラウザ手動回帰について、再接続、Undo、host移譲、server restart restore、長時間プレイの再現手順とログ確認方法を追加した。
+  - server room lifecycle の TTL / create rate limit helper を `server/roomLifecycle.js` へ抽出し、`server.js` の socket event 本体から分離した。
+  - income 系 `CARD_EFFECT_METADATA` に `incomeHandler` を追加し、`GameManager` の income handler table を metadata から生成するようにした。
+  - build menu と player panel の一部 inline handler を `data-action` delegated handler へ移行し、main 側の handler を pending / build / player panel で共有できる形にした。
+  - UI と effect dispatch の後続移行順を docs に固定した。
+- 実行テスト:
+  - node --check server.js
+  - node --check server/roomLifecycle.js
+  - node --check js/Card.js
+  - node --check js/GameManager.js
+  - node --check js/ui.js
+  - node --check js/main.js
+  - node --check tests/main.test.js
+  - node --check tests/gamemanager.test.js
+  - node --check tests/ui.test.js
+  - node tests/main.test.js
+  - node tests/server.test.js
+  - node tests/gamemanager.test.js
+  - node tests/ui.test.js
+  - git diff --check
+  - npm run test:static
+  - npm run test:online
+  - npm run test:smoke
+  - npm test
+  - npm run test:cpu
+  - npm run test:rl
+- 残課題: 実ブラウザ複数端末の長時間オンライン手動回帰そのものは、この環境では manual verification required。

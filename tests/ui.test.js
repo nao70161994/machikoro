@@ -265,7 +265,9 @@ runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成
     const html = context.renderBuildCardButton(card, 6, true);
 
     assert.ok(html.includes('card-color-blue'));
-    assert.ok(html.includes("onBuildCard('麦畑')"));
+    assert.ok(html.includes('data-action="buildCard"'));
+    assert.ok(html.includes('data-card-name="麦畑"'));
+    assert.ok(!html.includes('onBuildCard('));
     assert.ok(html.includes('残り6枚'));
     assert.ok(html.includes('can-afford'));
 });
@@ -276,7 +278,9 @@ runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生
     const html = context.renderLandmarkBuildButton('駅', true, 4, false);
 
     assert.ok(html.includes('card-color-landmark'));
-    assert.ok(html.includes("onBuildLandmark('駅')"));
+    assert.ok(html.includes('data-action="buildLandmark"'));
+    assert.ok(html.includes('data-landmark-name="駅"'));
+    assert.ok(!html.includes('onBuildLandmark('));
     assert.ok(html.includes('✅済'));
     assert.ok(html.includes('disabled'));
 });

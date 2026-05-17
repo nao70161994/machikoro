@@ -438,7 +438,8 @@ function renderPlayers() {
         const colorDot = { blue: "#3b82f6", green: "#22c55e", red: "#ef4444", purple: "#a855f7" };
         const cardHtml = Object.entries(cards).sort(([a], [b]) => compareCardNamesForDisplay(a, b)).map(([name, info]) => {
             const dormantText = info.dormant > 0 ? `（休${info.dormant}）` : '';
-            return `<span class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" onclick="showCardDetail('${name}')">${name}×${info.count}${dormantText}</span>`;
+            const safeName = escapeHtml(name);
+            return `<button type="button" class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" data-action="showCardDetail" data-card-name="${safeName}">${safeName}×${info.count}${dormantText}</button>`;
         }).join("");
         const itCoins = p.itVentureCoins > 0 ? `<span class="it-badge">💻${p.itVentureCoins}</span>` : "";
         const loanCount = p.cards.filter(c => c.effect === CARD_EFFECTS.LOAN).length;
@@ -465,11 +466,13 @@ function getLandmarkEmoji(name) {
 }
 
 function renderBuildCardButton(card, stock, canBuildThis) {
-    return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildCard('${card.name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${card.category}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${card.name}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" onclick="showCardDetail('${card.name}')">ℹ</button></div>`;
+    const safeName = escapeHtml(card.name);
+    return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}">ℹ</button></div>`;
 }
 
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
-    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" onclick="onBuildLandmark('${name}')" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${name}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" onclick="showCardDetail('${name}', true)">ℹ</button></div>`;
+    const safeName = escapeHtml(name);
+    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}">ℹ</button></div>`;
 }
 
 function renderBuildMenu() {
@@ -480,7 +483,7 @@ function renderBuildMenu() {
     const sortedCards = [...CARDS].sort(compareCardsForDisplay);
     const filterDefs = [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫']];
     const filterBtnsHtml = filterDefs.map(([c, label]) =>
-        `<button class="card-filter-btn${cardFilter === c ? ' active' : ''}" onclick="setCardFilter('${c}')">${label}</button>`
+        `<button class="card-filter-btn${cardFilter === c ? ' active' : ''}" data-action="setCardFilter" data-card-filter="${c}">${label}</button>`
     ).join('');
     const visibleCards = cardFilter ? sortedCards.filter(c => c.color === cardFilter) : sortedCards;
     const cardHtml = visibleCards.map(card => {
@@ -494,7 +497,7 @@ function renderBuildMenu() {
         const canBuildThis = canBuild && !built && current.coins >= cost;
         return renderLandmarkBuildButton(name, built, cost, canBuildThis);
     }).join("");
-    const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" onclick="doUndo()">↩ 建設を取り消す</button>` : '';
+    const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>` : '';
     document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
 }
 

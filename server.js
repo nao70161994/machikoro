@@ -53,6 +53,18 @@ const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     maxRooms: 500,
     createRoomRateLimitMs: 5000,
 });
+const rooms = {};
+const {
+    roomTimestamp,
+    isRoomExpired,
+    cleanupExpiredRooms,
+    canCreateRoomForSocket,
+    markCreateRoomForSocket,
+    validateCreateRoomLifecycle,
+} = require('./server/roomLifecycle')({
+    limits: ROOM_LIFECYCLE_LIMITS,
+    defaultRooms: rooms,
+});
 const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 1024 * 1024,
     maxActionLogEntries: 1000,
@@ -127,7 +139,6 @@ app.get('/index.html', sendIndexWithBuildHash);
 app.use(express.static(path.join(__dirname)));
 
 // ===== Room lifecycle =====
-const rooms = {};
 const APP_ERROR_EVENT = 'appError';
 
 function emitAppError(socket, message) {
@@ -138,51 +149,6 @@ function requirePlainSocketPayload(socket, payload) {
     if (isPlainObject(payload)) return true;
     emitAppError(socket, '無効なリクエストです');
     return false;
-}
-
-function roomTimestamp(value) {
-    return Number.isFinite(value) ? value : 0;
-}
-
-function isRoomExpired(room, now = Date.now()) {
-    if (!room) return false;
-    const ttl = room.started
-        ? ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs
-        : ROOM_LIFECYCLE_LIMITS.pendingRoomTtlMs;
-    const touchedAt = roomTimestamp(room.lastTouchedAt) || roomTimestamp(room.createdAt);
-    return touchedAt > 0 && now - touchedAt > ttl;
-}
-
-function cleanupExpiredRooms(now = Date.now(), targetRooms = rooms) {
-    let deleted = 0;
-    for (const [id, room] of Object.entries(targetRooms)) {
-        if (isRoomExpired(room, now)) {
-            delete targetRooms[id];
-            deleted++;
-            console.log(`ルーム削除（TTL）: ${id}`);
-        }
-    }
-    return deleted;
-}
-
-function canCreateRoomForSocket(socket, now = Date.now()) {
-    const lastCreatedAt = roomTimestamp(socket && socket.lastCreateRoomAt);
-    return lastCreatedAt === 0 || now - lastCreatedAt >= ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs;
-}
-
-function markCreateRoomForSocket(socket, now = Date.now()) {
-    if (socket) socket.lastCreateRoomAt = now;
-}
-
-function validateCreateRoomLifecycle(socket, now = Date.now(), targetRooms = rooms) {
-    cleanupExpiredRooms(now, targetRooms);
-    if (Object.keys(targetRooms).length >= ROOM_LIFECYCLE_LIMITS.maxRooms) {
-        return { ok: false, message: 'ルーム数が上限に達しています。しばらくしてから再試行してください' };
-    }
-    if (!canCreateRoomForSocket(socket, now)) {
-        return { ok: false, message: 'ルーム作成が短時間に連続しています。少し待ってから再試行してください' };
-    }
-    return { ok: true };
 }
 
 function sanitizeName(name) {
