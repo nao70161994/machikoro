@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   '/js/Card.js',
   '/js/Player.js',
   '/js/GameManager.js',
+  '/js/cpuTuning.js',
   '/js/CPU.js',
   '/js/RLCPU.js',
   '/js/RLModelPortfolio.js',

@@ -7,7 +7,7 @@
 ## PR-001 Socket.IO payload guard
 
 - 状態: done
-- commit: this commit
+- commit: `38cee56`
 - 変更ファイル:
   - `server.js`
   - `tests/server.test.js`
@@ -1019,7 +1019,7 @@
 ## Post-audit final residual triage
 
 - 状態: done
-- commit: this commit
+- commit: `225184e`
 - 変更ファイル:
   - `docs/POST_IMPLEMENTATION_AUDIT.md`
   - `docs/IMPLEMENTATION_PROGRESS.md`
@@ -1035,7 +1035,7 @@
 ## Post-audit deferred residual reduction
 
 - 状態: done
-- commit: this commit
+- commit: `225184e`
 - 変更ファイル:
   - `server/roomLifecycle.js`
   - `server.js`

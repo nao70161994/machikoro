@@ -894,6 +894,11 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('z-index: var(--z-modal);'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
     assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
+    const indexScripts = [...html.matchAll(/<script src=\"(js\/[^\"]+)\"/g)].map(match => `/${match[1]}`);
+    const cachedAssets = [...sw.matchAll(/'([^']+)'/g)].map(match => match[1]);
+    for (const script of indexScripts) {
+        assert.ok(cachedAssets.includes(script), `${script} is missing from service worker cache`);
+    }
     assert.ok(workflow.includes('test -s app-release-signed.apk'));
     assert.ok(workflow.includes('if-no-files-found: error'));
 });
