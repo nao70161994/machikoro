@@ -288,7 +288,13 @@ function renderWinnerState(winner) {
         return `<div class="winner-stats-row ${isW ? 'highlight' : ''}"><span>${isW ? '🏆 ' : ''}${escapeHtml(p.name)}</span><span>🪙 ${p.coins}</span></div>`;
     }).join('');
     const streakHtml = winStreak >= 2 ? `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>` : '';
-    document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div></div>`;
+    let resultAdSlot = '';
+    try {
+        resultAdSlot = typeof renderAdSlot === 'function' ? renderAdSlot('result-bottom') : '';
+    } catch (error) {
+        resultAdSlot = '';
+    }
+    document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div>${resultAdSlot}</div>`;
     if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); recordGameStats(winner, game, cpuPlayers); }
     localStorage.removeItem('savedGame');
     localStorage.removeItem('onlineSession');

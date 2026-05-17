@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   '/js/CPU.js',
   '/js/RLCPU.js',
   '/js/RLModelPortfolio.js',
+  '/js/adSlots.js',
   '/js/confetti.js',
   '/js/audio.js',
   '/js/online.js',

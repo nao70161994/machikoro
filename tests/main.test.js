@@ -903,6 +903,32 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(workflow.includes('if-no-files-found: error'));
 });
 
+runTest('広告 placeholder は許可された画面だけに配置される', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+    const docs = fs.readFileSync(path.join(__dirname, '..', 'docs/ADS_PLAN.md'), 'utf8');
+    const { AD_SLOT_CONFIGS, renderAdSlot } = require('../js/adSlots.js');
+
+    assert.deepStrictEqual(Object.keys(AD_SLOT_CONFIGS).sort(), ['result-bottom', 'rules-bottom', 'title-bottom']);
+    assert.ok(html.includes('id="adSlotTitleBottom" class="ad-slot-host" data-ad-slot-host="title-bottom"'));
+    assert.ok(html.includes('id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"'));
+    assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
+    assert.ok(sw.includes("'/js/adSlots.js'"));
+    assert.ok(css.includes('.ad-slot'));
+    assert.ok(css.includes('pointer-events: none;'));
+
+    const titleSlot = renderAdSlot('title-bottom');
+    const rulesSlot = renderAdSlot('rules-bottom');
+    const resultSlot = renderAdSlot('result-bottom');
+    assert.ok(titleSlot.includes('data-ad-location="title-bottom"'));
+    assert.ok(rulesSlot.includes('data-ad-location="rules-bottom"'));
+    assert.ok(resultSlot.includes('data-ad-location="result-bottom"'));
+    assert.strictEqual(renderAdSlot('game-action'), '');
+    assert.ok(docs.includes('AdSense / AdMob'));
+    assert.ok(docs.includes('ゲーム中の主要操作'));
+});
+
 runTest('docs は live v2simple の実装済み既定値を記載している', () => {
     const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
     const claude = fs.readFileSync(path.join(__dirname, '..', 'CLAUDE.md'), 'utf8');

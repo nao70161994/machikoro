@@ -141,6 +141,47 @@ body {
     text-align: center;
 }
 
+/* ===== 広告 placeholder ===== */
+.ad-slot-host,
+.ad-slot {
+    width: 100%;
+}
+
+.ad-slot {
+    min-height: 64px;
+    border: 1px dashed rgba(167,169,190,0.35);
+    border-radius: 8px;
+    background: rgba(15,14,23,0.72);
+    color: #a7a9be;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 12px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.ad-slot-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgba(255,255,254,0.72);
+}
+
+.ad-slot-description {
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.modal-body .ad-slot {
+    margin-top: 4px;
+}
+
+.winner-screen .ad-slot {
+    margin-top: 12px;
+}
+
 /* ===== タブ ===== */
 .tab-bar {
     display: flex;
