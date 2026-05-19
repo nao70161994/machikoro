@@ -210,3 +210,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - 今後追加する動的 UI は `data-action` または `data-ui-*` に合わせる必要がある。
+
+
+### Phase D renderPending helper split
+
+確認した内容:
+
+- `renderPending()` の表示可否判定と modal content 更新を helper に分離した。
+- pending 種別 HTML の全面再構成は、テンプレート文字列差分が大きくなるため今回の自動対応からは外した。
+
+残リスク:
+
+- pending 種別ごとの HTML helper 化は未完了。HTML 出力の targeted assertion を増やしてから小さく進める。

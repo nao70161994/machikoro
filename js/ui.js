@@ -370,14 +370,24 @@ function renderDiceChoose() {
     el.innerHTML = "";
 }
 
+function shouldShowPendingForCurrentPlayer() {
+    if (game.phase !== GAME_PHASES.PENDING && !game.pendingIT && game.pendingRenovation <= 0) return false;
+    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    return (!isOnlineGame && !isCPUTurn) || (isOnlineGame && game.currentPlayerIndex === myPlayerIndex);
+}
+
+function updatePendingModalContent(el, modal, html) {
+    updatePendingModalContent(el, modal, html);
+}
+
+function hidePendingModalContent(el, modal) {
+    updatePendingModalContent(el, modal, "");
+}
+
 function renderPending() {
     const el = document.getElementById("pendingMenu");
     const modal = document.getElementById("pendingModal");
-    const hide = () => { el.innerHTML = ""; modal.style.display = "none"; };
-    if (game.phase !== GAME_PHASES.PENDING && !game.pendingIT && game.pendingRenovation <= 0) { hide(); return; }
-    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    const isMyTurn = (!isOnlineGame && !isCPUTurn) || (isOnlineGame && game.currentPlayerIndex === myPlayerIndex);
-    if (!isMyTurn) { hide(); return; }
+    if (!shouldShowPendingForCurrentPlayer()) { hidePendingModalContent(el, modal); return; }
     let html = "";
     const inspectHint = `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
     if (game.pendingTV > 0) {

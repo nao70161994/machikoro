@@ -164,6 +164,8 @@ runTest('render helper は勝利・通常描画・保存境界へ分かれてい
     assert.strictEqual(typeof context.renderWinnerState, 'function');
     assert.strictEqual(typeof context.renderActiveGameState, 'function');
     assert.strictEqual(typeof context.persistAfterRender, 'function');
+    assert.strictEqual(typeof context.shouldShowPendingForCurrentPlayer, 'function');
+    assert.strictEqual(typeof context.updatePendingModalContent, 'function');
 
     context.persistAfterRender();
 

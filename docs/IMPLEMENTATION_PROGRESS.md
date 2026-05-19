@@ -1334,3 +1334,24 @@
   - `node tests/online.test.js`
   - `git diff --check`
 - 残課題: 既知の動的 inline handler は解消済み。次は renderPending の helper 分離へ進む。
+
+
+## Phase D ui renderPending helper split
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/ui.js`
+  - `tests/ui.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+- 実装内容:
+  - `renderPending()` から pending UI の表示可否判定と modal content 更新を helper に分離した。
+  - pending 種別ごとの HTML は挙動差分リスクが高いため、このテーマでは文字列構造を維持した。
+  - UI targeted test に helper 存在確認を追加した。
+- 実行テスト:
+  - `node --check js/ui.js`
+  - `node --check tests/ui.test.js`
+  - `node tests/ui.test.js`
+  - `git diff --check`
+- 残課題: pending 種別ごとの HTML helper 化は、snapshot 的な HTML assertion を増やしてから小分けで進める。
