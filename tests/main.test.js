@@ -110,6 +110,12 @@ function loadMainRuntime(options = {}) {
         cancelAutoSkip() {},
         alert(message) { alerts.push(message); },
         showNotice(message) { alerts.push(message); },
+        bcSelectCard(btn, inputId) {
+            const group = btn.closest('.bc-chip-group');
+            if (group) group.querySelectorAll('.bc-chip').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            context.document.getElementById(inputId).value = btn.dataset.idx;
+        },
         fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
         io() { return { on() {}, emit() {}, disconnect() {} }; },
         enabledCards: new Set(),
@@ -704,6 +710,30 @@ runTest('main delegated handler は dice choice action を呼ぶ', () => {
     });
 
     assert.strictEqual(resolvedBonus, true);
+});
+
+runTest('main delegated handler は Business Center chip 選択を hidden input へ反映する', () => {
+    const rt = loadMainRuntime();
+    const removed = [];
+    const added = [];
+    const sibling = { classList: { remove(value) { removed.push(value); } } };
+    const button = {
+        disabled: false,
+        dataset: { action: 'selectBusinessCard', idx: '2', inputId: 'myCardSelect' },
+        classList: { add(value) { added.push(value); } },
+        closest(selector) {
+            if (selector === '[data-action]') return this;
+            if (selector === '.bc-chip-group') return { querySelectorAll() { return [sibling]; } };
+            return null;
+        },
+    };
+    rt.__test.elements.myCardSelect = { value: '0' };
+
+    rt.__test.eventHandlers['pendingMenu:click']({ preventDefault() {}, target: button });
+
+    assert.deepStrictEqual(removed, ['selected']);
+    assert.deepStrictEqual(added, ['selected']);
+    assert.strictEqual(rt.__test.elements.myCardSelect.value, '2');
 });
 
 runTest('main delegated handler は data-action から pending action を呼ぶ', () => {

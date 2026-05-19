@@ -243,6 +243,37 @@ runTest('render は同じ勝利画面の再描画で連勝数を二重加算し�
     assert.strictEqual(second, '3');
 });
 
+runTest('renderPending は Business Center chip を data-action で描画する', () => {
+    const { context, elements } = loadUiRuntime();
+    const makePlayer = (name, cardNames) => ({
+        name,
+        coins: 3,
+        cards: cardNames.map(cardName => ({ name: cardName, color: 'blue' })),
+        getMinorCards() { return this.cards; },
+        isDormant() { return false; },
+    });
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        pendingTV: 0,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        players: [makePlayer('Alice', ['麦畑', 'パン屋']), makePlayer('Bob', ['牧場'])],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+
+    context.renderPending();
+
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="selectBusinessCard"'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-input-id="myCardSelect"'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-input-id="theirCardSelect_1"'));
+    assert.ok(!elements.pendingMenu.innerHTML.includes('bcSelectCard('));
+});
+
 runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示する', () => {
     const { context, elements } = loadUiRuntime();
     context.game = {

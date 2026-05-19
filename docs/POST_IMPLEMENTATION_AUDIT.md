@@ -150,3 +150,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - Business Center chip selection、card / landmark toggle、stats UI は inline handler が残る。入力状態や既存 DOM id 依存を壊さないよう、別テーマで targeted test を追加してから移す。
+
+
+### Phase D Business Center delegated handler
+
+確認した内容:
+
+- Business Center chip の inline `onclick` を `data-action="selectBusinessCard"` に置き換えた。
+- hidden input と selected class の更新は既存 `bcSelectCard()` を使い、交換 action payload の読み取り経路は維持した。
+
+残リスク:
+
+- card / landmark toggle と stats UI は inline handler が残るため、次の小さい delegated handler 化対象として扱う。

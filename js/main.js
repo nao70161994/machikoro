@@ -705,6 +705,7 @@ function handlePendingActionClick(event) {
     const action = button.dataset.action;
     if (!action) return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'selectBusinessCard') { bcSelectCard(button, button.dataset.inputId); return; }
     if (action === 'resolveTV') onResolveTV(parseInt(button.dataset.targetIndex, 10));
     if (action === 'resolveBusiness') onResolveBusiness(parseInt(button.dataset.targetIndex, 10));
     if (action === 'resolveCleaning') onResolveCleaning(button.dataset.cardName);

@@ -1212,3 +1212,29 @@
   - `node tests/ui.test.js`
   - `git diff --check`
 - 残課題: Business Center chip、card / landmark toggle、stats UI は DOM id と入力状態依存が残るため、別テーマで targeted test を追加してから移行する。
+
+
+## Phase D inline handler cleanup: Business Center chips
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/main.js`
+  - `js/ui.js`
+  - `tests/main.test.js`
+  - `tests/ui.test.js`
+  - `docs/UI_REFACTOR.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - Business Center のカード chip から inline `onclick` を外し、`data-action="selectBusinessCard"` を pending menu の delegated handler で処理するようにした。
+  - `bcSelectCard()` は hidden input 更新と selected class 更新の既存 helper として維持し、挙動変更を避けた。
+  - main / ui targeted tests で chip 選択と HTML 出力を確認した。
+- 実行テスト:
+  - `node --check js/main.js`
+  - `node --check js/ui.js`
+  - `node --check tests/main.test.js`
+  - `node --check tests/ui.test.js`
+  - `node tests/main.test.js`
+  - `node tests/ui.test.js`
+  - `git diff --check`
+- 残課題: card / landmark toggle と stats UI の inline handler は残るため、次テーマで delegated handler 化する。

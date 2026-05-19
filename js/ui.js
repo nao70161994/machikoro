@@ -390,13 +390,13 @@ function renderPending() {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         const myDefaultIdx = myCards[0]?.index ?? 0;
         const myChips = myCards.map(({ card, index }, j) =>
-            `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'myCardSelect')">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
+            `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="myCardSelect">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
         ).join("");
         const othersHtml = others.map(({ p, i }) => {
             const theirCards = p.getMinorCards().map(card => ({ card, index: p.cards.indexOf(card) }));
             const theirDefaultIdx = theirCards[0]?.index ?? 0;
             const theirChips = theirCards.map(({ card, index }, j) =>
-                `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-idx="${index}" onclick="bcSelectCard(this,'theirCardSelect_${i}')">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
+                `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="theirCardSelect_${i}">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
             ).join("");
             return `<p class="bc-label">${escapeHtml(p.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="theirCardSelect_${i}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${i}">⇄ ${escapeHtml(p.name)}と交換</button>`;
         }).join("");
