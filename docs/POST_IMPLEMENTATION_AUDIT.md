@@ -246,3 +246,16 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - pending / steal / redistribute の全面 dispatch registry 化は未実施。挙動差分が出やすいため、効果単位で進める。
+
+
+### Phase D server restore rank split
+
+確認した内容:
+
+- `restorePayloadRank()` / `restorePayloadRankDetails()` / restore room replacement 判定を `server/restoreRank.js` に分離した。
+- `server.js` の public test export と restore flow の呼び出し名は維持した。
+- restore rank と recreateRoom 既存 tests をそのまま通し、挙動変更ではなく責務分離に限定した。
+
+残リスク:
+
+- hostless restore 本実装、socket handler の大規模分割、validation 境界の再設計は trust boundary と手動回帰に触れるため未実施。

@@ -1217,7 +1217,7 @@
 ## Phase D inline handler cleanup: Business Center chips
 
 - 状態: done
-- commit: pending
+- commit: `a7a87f9`
 - 変更ファイル:
   - `js/main.js`
   - `js/ui.js`
@@ -1243,7 +1243,7 @@
 ## Phase D inline handler cleanup: card select modal
 
 - 状態: done
-- commit: pending
+- commit: `973baea`
 - 変更ファイル:
   - `index.html`
   - `js/ui.js`
@@ -1269,7 +1269,7 @@
 ## Phase D inline handler cleanup: stats UI
 
 - 状態: done
-- commit: pending
+- commit: `50661d7`
 - 変更ファイル:
   - `js/stats.js`
   - `tests/stats.test.js`
@@ -1290,7 +1290,7 @@
 ## Phase D inline handler cleanup: static shell controls
 
 - 状態: done
-- commit: pending
+- commit: `2b59061`
 - 変更ファイル:
   - `index.html`
   - `js/main.js`
@@ -1313,7 +1313,7 @@
 ## Phase D inline handler cleanup: player settings
 
 - 状態: done
-- commit: pending
+- commit: `a434e2f`
 - 変更ファイル:
   - `js/main.js`
   - `js/online.js`
@@ -1339,7 +1339,7 @@
 ## Phase D ui renderPending helper split
 
 - 状態: done
-- commit: pending
+- commit: `2689c77`
 - 変更ファイル:
   - `js/ui.js`
   - `tests/ui.test.js`
@@ -1360,7 +1360,7 @@
 ## Phase D CPU diagnostics split
 
 - 状態: done
-- commit: pending
+- commit: `ffb97dd`
 - 変更ファイル:
   - `js/cpuDiagnostics.js`
   - `js/CPU.js`
@@ -1385,7 +1385,7 @@
 ## Phase D effect metadata category group
 
 - 状態: done
-- commit: pending
+- commit: `96b5ef3`
 - 変更ファイル:
   - `js/Card.js`
   - `js/GameManager.js`
@@ -1404,3 +1404,25 @@
   - `node tests/gamemanager.test.js`
   - `git diff --check`
 - 残課題: pending / steal / redistribute の dispatch registry 化は、発火順とログ文言への影響が大きいため別テーマで targeted test を増やしてから進める。
+
+
+## Phase D server restore rank split
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `server/restoreRank.js`
+  - `server.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/AI_HANDOFF.md`
+- 実装内容:
+  - restore rank / restore replacement 判定を `server/restoreRank.js` に分離した。
+  - `server.js` の test export 名と既存呼び出しは維持し、room lifecycle / recreateRoom 本体の挙動は変更していない。
+  - restore rank details の source / replayedActionSeq 診断は既存 API のまま残した。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check server/restoreRank.js`
+  - `node tests/server.test.js`
+  - `git diff --check`
+- 残課題: hostless restore 本実装、server validation / socket handler の大きな分割、永続 room store は仕様判断と手動回帰が必要なため未実施。

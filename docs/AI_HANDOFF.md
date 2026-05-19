@@ -21,12 +21,20 @@
 - Phase 5: 建設メニューのカード / ランドマーク button HTML を helper 化した。
 - Phase 6: docs の入口と実施済みログを揃えた。
 
+## 2026-05-19 時点の追加実施済み範囲
+
+- UI: dice / Business Center / card select / stats / static shell / player settings の inline handler を delegated handler へ移行した。既知の `onclick=` / `onchange=` / `oninput=` は解消済み。
+- UI: `renderPending()` の表示可否と modal content 更新を helper 化した。pending 種別 HTML の分割は targeted HTML assertion 追加後に行う。
+- CPU: 診断系 profile / trace 集計を `js/cpuDiagnostics.js` へ分離した。評価式と行動選択は未変更。
+- GameManager/Card metadata: 飲食店・商店 category group を `CARD_CATEGORY_GROUPS` に寄せ、該当効果のカテゴリ判定を helper 経由にした。
+- Server: restore rank / replacement 判定を `server/restoreRank.js` へ分離した。
+
 ## 次に安全な作業候補
 
-- Card system: `CARD_EFFECT_METADATA` の `requires` / `cpuKind` を CPU 評価で読む小さな helper を追加する。
-- Turn management: pending field は残したまま、`pending action` を読むだけの snapshot helper を追加する。
-- Online sync: `applyActionToMirror` と `js/online.js applyAction` の action 対応表テストを追加する。実行本体の統合はまだしない。
-- UI: 触る箇所から順に小さな render helper へ切り出す。inline handler の全面移行はまだしない。
+- UI: pending 種別ごとの HTML helper 化は、HTML 出力の targeted assertion を追加してから小さく進める。
+- CPU: evaluation / execution の分離は、同等性を固定する targeted tests を先に追加してから関数単位で進める。
+- GameManager: pending / steal / redistribute の dispatch registry 化は、発火順とログ文言 test を増やしてから効果単位で進める。
+- Server: socket handler / validation のさらなる分割は、room lifecycle と restore manual regression の影響範囲を docs に固定してから小さく進める。
 
 ## 変更時の最低確認
 
