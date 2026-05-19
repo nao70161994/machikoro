@@ -29,27 +29,18 @@ const STATIC_ASSETS = [
   '/icons/icon-512.png',
 ];
 
-const OPTIONAL_ASSETS = [
-  '/models/rl_model/portfolio/seed103-4p.browser.json',
-  '/models/rl_model/portfolio/seed71-top3.browser.json',
-  '/models/rl_model/portfolio/seed70.browser.json',
-  '/models/rl_model/portfolio/seed69.browser.json',
-];
+const RL_MODEL_PATH_PATTERN = /^\/models\/rl_model\/portfolio\/[^/]+\.browser\.json$/;
 
 // 「今すぐ更新」ボタンからのメッセージを受け取る
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// インストール: 全アセットをキャッシュ
+// インストール: アプリ起動に必要な軽量アセットだけをキャッシュ
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(STATIC_ASSETS).then(() =>
-        Promise.all(OPTIONAL_ASSETS.map((asset) =>
-          cache.add(asset).catch(() => undefined)
-        ))
-      )
+      cache.addAll(STATIC_ASSETS)
     )
   );
 });
@@ -67,6 +58,7 @@ self.addEventListener('activate', (event) => {
 // フェッチ戦略:
 //   JS / CSS / HTML → ネットワーク優先（失敗時はキャッシュ）
 //   画像・アイコン  → キャッシュ優先（失敗時はネットワーク）
+//   RLモデルJSON   → 選択時に取得してruntime cache（install/updateでは先読みしない）
 //   socket.io      → キャッシュしない
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -74,6 +66,22 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (url.pathname.startsWith('/socket.io')) return;
+
+  if (RL_MODEL_PATH_PATTERN.test(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
 
   const isAsset = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff2?)$/.test(url.pathname);
 

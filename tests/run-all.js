@@ -11,6 +11,7 @@ const TEST_GROUPS = {
         'online-integration.test.js',
         'storage.test.js',
         'main.test.js',
+        'sw.test.js',
         'stats.test.js',
         'ui.test.js',
         'integration.test.js',
@@ -71,6 +72,7 @@ const TEST_GROUPS = {
     pwa: [
         'storage.test.js',
         'main.test.js',
+        'sw.test.js',
     ],
     'cpu-smoke': [
         'cpu.test.js',

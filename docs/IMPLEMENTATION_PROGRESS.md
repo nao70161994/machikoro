@@ -1078,3 +1078,27 @@
   - npm run test:cpu
   - npm run test:rl
 - 残課題: 実ブラウザ複数端末の長時間オンライン手動回帰そのものは、この環境では manual verification required。
+
+
+## Phase A PWA RL model loading and SW fetch tests
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `sw.js`
+  - `tests/sw.test.js`
+  - `tests/run-all.js`
+  - `docs/PWA_MODEL_LOADING.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+- 実装内容:
+  - Service Worker install/update の optional precache から RL portfolio model JSON を外し、app shell の軽量 asset だけを precache するようにした。
+  - `/models/rl_model/portfolio/*.browser.json` は fetch 時に cache-first の runtime cache として扱い、RL CPU 選択時だけ取得される境界にした。
+  - Service Worker の install / RL model runtime cache / HTML offline fallback / socket.io 除外を `tests/sw.test.js` で実行テスト化し、PWA test group に追加した。
+  - `docs/PWA_MODEL_LOADING.md` に model loading 方針と手動確認観点を追加した。
+- 実行テスト:
+  - `node --check sw.js`
+  - `node --check tests/sw.test.js`
+  - `node tests/sw.test.js`
+  - `npm run test:pwa`
+- 残課題: 実ブラウザ Network panel で install/update 時に RL model JSON が先読みされず、RL CPU 選択時だけ取得されることは manual verification required。
