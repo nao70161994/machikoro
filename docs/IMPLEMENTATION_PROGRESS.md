@@ -1083,7 +1083,7 @@
 ## Phase A PWA RL model loading and SW fetch tests
 
 - 状態: done
-- commit: pending
+- commit: dbd3543
 - 変更ファイル:
   - `sw.js`
   - `tests/sw.test.js`
@@ -1107,7 +1107,7 @@
 ## Phase A accessibility baseline
 
 - 状態: done
-- commit: pending
+- commit: af3a5d1
 - 変更ファイル:
   - `index.html`
   - `js/ui.js`
@@ -1138,7 +1138,7 @@
 ## Phase B online recovery cleanup and rank diagnostics
 
 - 状態: done
-- commit: pending
+- commit: b6a6ff0
 - 変更ファイル:
   - `js/storage.js`
   - `js/main.js`
@@ -1169,7 +1169,7 @@
 ## Phase C RL parity report
 
 - 状態: done
-- commit: pending
+- commit: 7c3c866
 - 変更ファイル:
   - `scripts/rl/parity_report.py`
   - `tests/rl-train.test.js`
@@ -1192,7 +1192,7 @@
 ## Phase D inline handler cleanup: dice choice
 
 - 状態: done
-- commit: pending
+- commit: 567d4eb
 - 変更ファイル:
   - `js/main.js`
   - `js/ui.js`
