@@ -1355,3 +1355,28 @@
   - `node tests/ui.test.js`
   - `git diff --check`
 - 残課題: pending 種別ごとの HTML helper 化は、snapshot 的な HTML assertion を増やしてから小分けで進める。
+
+
+## Phase D CPU diagnostics split
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/cpuDiagnostics.js`
+  - `js/CPU.js`
+  - `index.html`
+  - `tests/helpers/runtime-loaders.js`
+  - `tests/helpers/integration-runtime.js`
+  - `scripts/selfplay.js`
+  - `docs/CPU_AI.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - CPU の profile / trace 集計処理を `CPUDiagnostics` helper に分離した。
+  - `CPU.js` 側の public / private method 名は維持し、既存テストや呼び出し側の互換性を保った。
+  - ブラウザ script 順と Node runtime loader / selfplay runtime に `js/cpuDiagnostics.js` を追加した。
+- 実行テスト:
+  - `node --check js/cpuDiagnostics.js`
+  - `node --check js/CPU.js`
+  - `node tests/cpu.test.js`
+  - `git diff --check`
+- 残課題: evaluation / execution の分離は影響範囲が広いため、同等の helper 境界と targeted test を追加してから進める。

@@ -134,3 +134,8 @@ npm test
 ```
 
 RL oracle や多人数評価に影響する場合は、対象に応じて `npm run test:rl` と trace 比較も検討します。
+
+
+## CPU diagnostics helper
+
+2026-05-19: `js/cpuDiagnostics.js` を追加し、`CPU.js` の profile / trace 集計処理を分離した。CPU の評価式や行動選択は引き続き `CPU.js` が正本で、diagnostics helper は `profileStats` / `expertTraceStats` の集計だけを担当する。

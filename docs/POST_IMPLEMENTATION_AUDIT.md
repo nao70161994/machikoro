@@ -222,3 +222,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - pending 種別ごとの HTML helper 化は未完了。HTML 出力の targeted assertion を増やしてから小さく進める。
+
+
+### Phase D CPU diagnostics split
+
+確認した内容:
+
+- `CPU.js` の診断系 profile / trace 集計処理を `js/cpuDiagnostics.js` に分離した。
+- CPU の判断ロジック、評価式、行動選択は変更していない。
+
+残リスク:
+
+- evaluation / execution の本格分離は CPU の中核判断に触れるため、今回の自動対応では診断系に限定した。

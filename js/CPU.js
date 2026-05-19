@@ -108,21 +108,11 @@ class CPU {
     }
 
     _profileMeasure(label, fn) {
-        if (!this.profileStats) return fn();
-        const startedAt = CPU._nowMs();
-        try {
-            return fn();
-        } finally {
-            const entry = this.profileStats[label] || (this.profileStats[label] = { calls: 0, timeMs: 0 });
-            entry.calls++;
-            entry.timeMs = Number((entry.timeMs + (CPU._nowMs() - startedAt)).toFixed(3));
-        }
+        return CPUDiagnostics.profileMeasure(this, label, fn);
     }
 
     _profileCount(label, amount = 1) {
-        if (!this.profileStats) return;
-        const entry = this.profileStats[label] || (this.profileStats[label] = { count: 0 });
-        entry.count = (entry.count || 0) + amount;
+        CPUDiagnostics.profileCount(this, label, amount);
     }
 
     _profileDecision(label, fn) {
@@ -191,32 +181,15 @@ class CPU {
     }
 
     _traceV2Simple(key, amount = 1) {
-        if (!this.expertTraceStats || !this._isExpertV2Simple()) return;
-        this.expertTraceStats[key] = (this.expertTraceStats[key] || 0) + amount;
+        CPUDiagnostics.traceV2Simple(this, key, amount);
     }
 
     _traceV2SimpleBuildOption(prefix, option) {
-        if (!option) return;
-        if (option.type === 'landmark') {
-            this._traceV2Simple(`${prefix}:landmark:${option.name}`);
-            return;
-        }
-        if (option.type === 'card' && option.card) {
-            this._traceV2Simple(`${prefix}:card:${option.card.name}`);
-        }
+        CPUDiagnostics.traceV2SimpleBuildOption(this, prefix, option);
     }
 
     _traceV2SimpleBuildBreakdown(option, breakdown, chosen = false) {
-        if (!this.expertTraceStats || !this._isExpertV2Simple() || !option || !breakdown) return;
-        const name = option.type === 'card' && option.card ? option.card.name : option.name;
-        if (!name) return;
-        const prefix = `buildBreakdown:${option.type}:${name}`;
-        this._traceV2Simple(`${prefix}:considered`);
-        this._traceV2Simple(`${prefix}:baseEvTotal`, breakdown.baseEv || 0);
-        this._traceV2Simple(`${prefix}:comboUnlockBonusTotal`, breakdown.comboUnlockBonus || 0);
-        this._traceV2Simple(`${prefix}:tempoBonusTotal`, breakdown.tempoBonus || 0);
-        this._traceV2Simple(`${prefix}:scoreTotal`, breakdown.total || 0);
-        if (chosen) this._traceV2Simple(`${prefix}:chosen`);
+        CPUDiagnostics.traceV2SimpleBuildBreakdown(this, option, breakdown, chosen);
     }
 
     _randomChoice(items) {
@@ -426,10 +399,7 @@ class CPU {
     }
 
     getProfileSummary() {
-        if (!this.profileStats) return [];
-        return Object.entries(this.profileStats)
-            .map(([label, value]) => Object.assign({ label }, value))
-            .sort((a, b) => (b.timeMs || 0) - (a.timeMs || 0) || (b.count || 0) - (a.count || 0) || a.label.localeCompare(b.label));
+        return CPUDiagnostics.profileSummary(this.profileStats);
     }
 
     static _expertPresetTable() {
