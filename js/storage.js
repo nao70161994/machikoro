@@ -1,3 +1,25 @@
+const ONLINE_RESTORE_BUNDLE_KEYS = Object.freeze([
+    'onlineGameStart',
+    'onlineActionLog',
+    'onlineStateSnapshot',
+    'onlinePendingAction',
+]);
+
+function clearOnlineRestoreBundleStorage() {
+    if (typeof _clearOnlineRestoreBundle === 'function') {
+        _clearOnlineRestoreBundle();
+        return;
+    }
+    for (const key of ONLINE_RESTORE_BUNDLE_KEYS) {
+        localStorage.removeItem(key);
+    }
+}
+
+function clearOnlineSessionStorage() {
+    localStorage.removeItem('onlineSession');
+    clearOnlineRestoreBundleStorage();
+}
+
 function saveGameState() {
     if (!game || isOnlineGame) return;
     if (game.checkWinner()) return;
@@ -89,7 +111,7 @@ function deleteSavedGame() {
 
 function deleteOnlineSession() {
     showConfirm("オンライン再接続データを削除しますか？", () => {
-        localStorage.removeItem('onlineSession');
+        clearOnlineSessionStorage();
         updateResumeButton();
     });
 }
@@ -98,7 +120,7 @@ function reconnectOnline() {
     const session = readOnlineSession();
     if (!session) {
         if (localStorage.getItem('onlineSession')) {
-            localStorage.removeItem('onlineSession');
+            clearOnlineSessionStorage();
             updateResumeButton();
             showNotice('再接続データの読み込みに失敗しました');
         }
@@ -122,7 +144,7 @@ function reconnectOnline() {
         });
     } catch(e) {
         isReconnectingOnline = false;
-        localStorage.removeItem('onlineSession');
+        clearOnlineSessionStorage();
         updateResumeButton();
         showNotice('再接続データの読み込みに失敗しました');
     }

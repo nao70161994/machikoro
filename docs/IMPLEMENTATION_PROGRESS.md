@@ -1133,3 +1133,34 @@
   - `node tests/main.test.js`
   - `git diff --check`
 - 残課題: 実ブラウザでキーボードのみ操作、スクリーンリーダー向け状態、reduced motion、モバイル低画面での notice / modal 重なりは manual verification required。
+
+
+## Phase B online recovery cleanup and rank diagnostics
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/storage.js`
+  - `js/main.js`
+  - `server.js`
+  - `tests/storage.test.js`
+  - `tests/server.test.js`
+  - `docs/ONLINE_RECOVERY.md`
+  - `docs/HOSTLESS_RESTORE_DESIGN.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+- 実装内容:
+  - `onlineSession` 削除時に `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` / `onlinePendingAction` も削除する helper を追加した。
+  - 壊れた再接続 session の破棄時も restore bundle を同時に削除するようにした。
+  - `restorePayloadRankDetails()` を追加し、rank の内訳（gameStartSeq / snapshotSeq / logSeq / replayedActionSeq / source）を診断できるようにした。
+  - host 不在 restore は即実装せず、候補 bundle / grace window / hash 比較の設計を `docs/HOSTLESS_RESTORE_DESIGN.md` に固定した。
+  - online recovery の cleanup と rank diagnostics 方針を `docs/ONLINE_RECOVERY.md` に追加した。
+- 実行テスト:
+  - `node --check js/storage.js`
+  - `node --check js/main.js`
+  - `node --check server.js`
+  - `node --check tests/storage.test.js`
+  - `node --check tests/server.test.js`
+  - `node tests/storage.test.js`
+  - `node tests/server.test.js`
+- 残課題: hostless restore の実採用は破壊的な trust boundary 変更になり得るため、設計 docs と manual verification required に留めた。

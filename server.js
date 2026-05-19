@@ -582,18 +582,34 @@ function nextRoomActionSeq(room) {
     return room.actionSeq;
 }
 
-function restorePayloadRank(gameStartPayload, stateSnapshot, actionLog) {
+function restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog) {
     const hostEpoch = Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0;
-    const seqValues = [
-        Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0,
-        Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0,
-    ];
+    const gameStartSeq = Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0;
+    const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
+    let logSeq = 0;
     if (Array.isArray(actionLog)) {
         for (const entry of actionLog) {
-            if (Number.isInteger(entry?.seq)) seqValues.push(entry.seq);
+            if (Number.isInteger(entry?.seq)) logSeq = Math.max(logSeq, entry.seq);
         }
     }
-    return { hostEpoch, actionSeq: Math.max(0, ...seqValues) };
+    const actionSeq = Math.max(0, gameStartSeq, snapshotSeq, logSeq);
+    const source = actionSeq === logSeq && logSeq > 0
+        ? 'actionLog'
+        : (actionSeq === snapshotSeq && snapshotSeq > 0 ? 'stateSnapshot' : 'gameStartPayload');
+    return {
+        hostEpoch,
+        actionSeq,
+        gameStartSeq,
+        snapshotSeq,
+        logSeq,
+        replayedActionSeq: Math.max(snapshotSeq, logSeq),
+        source,
+    };
+}
+
+function restorePayloadRank(gameStartPayload, stateSnapshot, actionLog) {
+    const details = restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog);
+    return { hostEpoch: details.hostEpoch, actionSeq: details.actionSeq };
 }
 
 function isIncomingRestoreNewer(room, gameStartPayload, stateSnapshot, actionLog) {
@@ -1247,6 +1263,7 @@ module.exports = {
     generateRoomId,
     nextRoomActionSeq,
     restorePayloadRank,
+    restorePayloadRankDetails,
     buildPlayerList,
     resolveRejoinPlayer,
     handleSocketDisconnect,

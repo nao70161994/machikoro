@@ -30,6 +30,7 @@ const {
     generateRoomId,
     nextRoomActionSeq,
     restorePayloadRank,
+    restorePayloadRankDetails,
     resolveRejoinPlayer,
     handleSocketDisconnect,
     handleRecreateRoom,
@@ -1990,6 +1991,24 @@ runTest('restorePayloadRank は共通fixtureの最大 actionSeq を復元rankに
         ),
         fixture.expectedRank
     );
+});
+
+runTest('restorePayloadRankDetails はrankの内訳と最大seqのsourceを返す', () => {
+    const details = restorePayloadRankDetails(
+        { hostEpoch: 2, actionSeq: 8 },
+        { actionSeq: 10 },
+        [{ seq: 9 }, { seq: 12 }]
+    );
+
+    assert.deepStrictEqual(details, {
+        hostEpoch: 2,
+        actionSeq: 12,
+        gameStartSeq: 8,
+        snapshotSeq: 10,
+        logSeq: 12,
+        replayedActionSeq: 12,
+        source: 'actionLog',
+    });
 });
 
 runTest('handleRecreateRoom は共通fixtureの最大 actionSeq を復元rankに使う', () => {

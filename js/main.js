@@ -206,7 +206,8 @@ function startGame() {
 function restartGame() {
     showConfirm("最初からやり直しますか？\n現在のゲームは終了します", () => {
         localStorage.removeItem('savedGame');
-        localStorage.removeItem('onlineSession');
+        if (typeof clearOnlineSessionStorage === 'function') clearOnlineSessionStorage();
+        else localStorage.removeItem('onlineSession');
         cpuScheduleToken++;
         resetOnlineState();
         document.getElementById("gameScreen").style.display = "none";

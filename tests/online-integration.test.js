@@ -253,8 +253,8 @@ runTest('online integration: reconnectOnline は壊れたセッションを破�
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(rt.__test.elements.onlineResumeSection.style.display, 'none');
     assert.strictEqual(rt.__test.elements.resumeSection.style.display, 'flex');
-    assert.strictEqual(rt.__test.alerts.length, 1);
-    assert.strictEqual(rt.__test.alerts[0], '再接続データの読み込みに失敗しました');
+    assert.strictEqual(rt.__test.elements.noticeToast.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.noticeToastMessage.textContent, '再接続データの読み込みに失敗しました');
 });
 
 runTest('online integration: appError は再接続中のセッションを破棄して切断する', () => {
