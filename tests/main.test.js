@@ -19,6 +19,9 @@ function loadMainRuntime(options = {}) {
         tabOnline: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
+        diceChoose: makeElement({
+            addEventListener(name, handler) { eventHandlers[`diceChoose:${name}`] = handler; },
+        }),
         pendingMenu: makeElement({
             addEventListener(name, handler) { eventHandlers[`pendingMenu:${name}`] = handler; },
         }),
@@ -679,6 +682,28 @@ runTest('main init は10人開始時に不足設定を補い学習AIを維持す
     const cpuDifficulties = rt.__test.getCpuPlayers().filter(Boolean).map(cpu => cpu.difficulty).sort().join(',');
     assert.strictEqual(cpuDifficulties, 'rl,strong');
     assert.deepStrictEqual(rt.__test.alerts, []);
+});
+
+runTest('main delegated handler は dice choice action を呼ぶ', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.HARBOR_CHOICE;
+    game.lastDiceResult = 8;
+    let resolvedBonus = null;
+    game.resolveHarbor = (useBonus) => { resolvedBonus = useBonus; };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.__test.eventHandlers['diceChoose:click']({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'resolveHarbor', useBonus: 'true' },
+            closest() { return this; },
+        },
+    });
+
+    assert.strictEqual(resolvedBonus, true);
 });
 
 runTest('main delegated handler は data-action から pending action を呼ぶ', () => {

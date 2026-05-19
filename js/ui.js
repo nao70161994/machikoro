@@ -356,15 +356,15 @@ function renderDiceChoose() {
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     if (!isMyTurn) { el.innerHTML = ""; return; }
     if (game.phase === GAME_PHASES.SELECT_DICE) {
-        el.innerHTML = `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button onclick="onSelectDiceCount(false)">🎲 1個</button><button onclick="onSelectDiceCount(true)">🎲🎲 2個（合計を使う）</button></div>`;
+        el.innerHTML = `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false">🎲 1個</button><button data-action="selectDiceCount" data-use-two="true">🎲🎲 2個（合計を使う）</button></div>`;
         return;
     }
     if (game.phase === GAME_PHASES.REROLL_CONFIRM) {
-        el.innerHTML = `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button onclick="onReroll()">振り直す</button><button onclick="onSkipReroll()">このまま使う</button></div>`;
+        el.innerHTML = `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button data-action="rerollDice">振り直す</button><button data-action="skipReroll">このまま使う</button></div>`;
         return;
     }
     if (game.phase === GAME_PHASES.HARBOR_CHOICE) {
-        el.innerHTML = `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button onclick="onResolveHarbor(true)">+2する（→${game.lastDiceResult + 2}）</button><button onclick="onResolveHarbor(false)">そのまま使う（${game.lastDiceResult}）</button></div>`;
+        el.innerHTML = `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true">+2する（→${game.lastDiceResult + 2}）</button><button data-action="resolveHarbor" data-use-bonus="false">そのまま使う（${game.lastDiceResult}）</button></div>`;
         return;
     }
     el.innerHTML = "";

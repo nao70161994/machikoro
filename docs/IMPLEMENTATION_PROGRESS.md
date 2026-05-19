@@ -1187,3 +1187,28 @@
   - `node --check tests/rl-train.test.js`
   - `node tests/rl-train.test.js`
 - 残課題: target head 採用モデルの新規学習 / portfolio 更新は既存採用モデルと別 lineage で進める。
+
+
+## Phase D inline handler cleanup: dice choice
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/main.js`
+  - `js/ui.js`
+  - `tests/main.test.js`
+  - `docs/UI_REFACTOR.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `renderDiceChoose()` の駅 / 電波塔 / 港 UI から inline `onclick` を外し、`data-action` と `handleDiceChoiceClick()` に移行した。
+  - build menu / pending menu と同じ `actionButtonFromEvent()` を使い、UI action の入口を main 側の delegated handler に寄せた。
+  - harbor 選択の delegated handler test を追加した。
+  - `docs/UI_REFACTOR.md` に残りの inline handler 削減順序を更新した。
+- 実行テスト:
+  - `node --check js/main.js`
+  - `node --check js/ui.js`
+  - `node --check tests/main.test.js`
+  - `node tests/main.test.js`
+  - `node tests/ui.test.js`
+  - `git diff --check`
+- 残課題: Business Center chip、card / landmark toggle、stats UI は DOM id と入力状態依存が残るため、別テーマで targeted test を追加してから移行する。

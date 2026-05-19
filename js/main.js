@@ -687,6 +687,18 @@ function actionButtonFromEvent(event) {
     return target.dataset && target.dataset.action ? target : null;
 }
 
+function handleDiceChoiceClick(event) {
+    const button = actionButtonFromEvent(event);
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'selectDiceCount') onSelectDiceCount(button.dataset.useTwo === 'true');
+    else if (action === 'rerollDice') onReroll();
+    else if (action === 'skipReroll') onSkipReroll();
+    else if (action === 'resolveHarbor') onResolveHarbor(button.dataset.useBonus === 'true');
+}
+
 function handlePendingActionClick(event) {
     const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
@@ -725,9 +737,11 @@ function handlePlayerPanelClick(event) {
 
 function bindDelegatedUiHandlers() {
     if (delegatedUiHandlersBound) return;
+    const diceChoose = document.getElementById('diceChoose');
     const pendingMenu = document.getElementById('pendingMenu');
     const buildMenu = document.getElementById('buildMenu');
     const players = document.getElementById('players');
+    if (diceChoose && typeof diceChoose.addEventListener === 'function') diceChoose.addEventListener('click', handleDiceChoiceClick);
     if (pendingMenu && typeof pendingMenu.addEventListener === 'function') pendingMenu.addEventListener('click', handlePendingActionClick);
     if (buildMenu && typeof buildMenu.addEventListener === 'function') buildMenu.addEventListener('click', handleBuildMenuClick);
     if (players && typeof players.addEventListener === 'function') players.addEventListener('click', handlePlayerPanelClick);
