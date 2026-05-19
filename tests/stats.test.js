@@ -114,8 +114,10 @@ runTest('renderStats は統計モード切替ボタンを表示する', () => {
     const game = makeGame();
     rt.recordGameStats(game.players[0], game, [null, null]);
     rt.renderStats();
-    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsViewMode('all')"));
-    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsViewMode('online')"));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-action="setStatsViewMode"'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-stats-mode="all"'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-stats-mode="online"'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('setStatsViewMode('));
 });
 
 runTest('renderStats はプレイヤー別フィルタを表示する', () => {
@@ -124,8 +126,10 @@ runTest('renderStats はプレイヤー別フィルタを表示する', () => {
     rt.__test.setOnline(true);
     rt.recordGameStats(game.players[0], game, [null, null]);
     rt.renderStats();
-    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('Alice')"));
-    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('Bob')"));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-action="setStatsPlayerFilter"'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="Alice"'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="Bob"'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('setStatsPlayerFilter('));
 });
 
 runTest('renderStats はCPU別フィルタを表示する', () => {
@@ -133,7 +137,44 @@ runTest('renderStats はCPU別フィルタを表示する', () => {
     const game = makeGame();
     rt.recordGameStats(game.players[0], game, [{ difficulty: 'expert' }, null]);
     rt.renderStats();
-    assert.ok(rt.__test.statsEl.innerHTML.includes("setStatsPlayerFilter('CPU（最強）')"));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="CPU（最強）"'));
+});
+
+runTest('handleStatsClick は data-action から統計表示を切り替える', () => {
+    const rt = loadStatsRuntime();
+    const game = makeGame();
+    rt.recordGameStats(game.players[0], game, [null, null]);
+    rt.renderStats();
+
+    rt.handleStatsClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'setStatsViewMode', statsMode: 'online' },
+            closest() { return this; },
+        },
+    });
+    assert.ok(rt.__test.statsEl.innerHTML.includes('オンラインの記録がありません'));
+
+    rt.handleStatsClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'setStatsPlayerFilter', playerName: 'Alice' },
+            closest() { return this; },
+        },
+    });
+    assert.ok(rt.__test.statsEl.innerHTML.includes('Aliceの成績'));
+
+    rt.handleStatsClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'clearStats' },
+            closest() { return this; },
+        },
+    });
+    assert.strictEqual(rt.localStorage.getItem('gameStats'), null);
 });
 
 runTest('recordGameStats は reset なしで二重記録しない', () => {

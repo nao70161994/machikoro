@@ -1264,3 +1264,24 @@
   - `node tests/main.test.js`
   - `git diff --check`
 - 残課題: stats UI の inline handler が残るため、次テーマで delegated handler 化する。
+
+
+## Phase D inline handler cleanup: stats UI
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/stats.js`
+  - `tests/stats.test.js`
+  - `docs/UI_REFACTOR.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - 統計画面の view mode、プレイヤー/CPU filter、filter解除、統計リセットから inline `onclick` を外した。
+  - `handleStatsClick()` / `bindStatsHandlers()` を追加し、`tabContentStats` 内 action を `data-action` で処理するようにした。
+  - stats targeted tests を data-action 前提に更新し、click handler の表示切替と clear を検証した。
+- 実行テスト:
+  - `node --check js/stats.js`
+  - `node --check tests/stats.test.js`
+  - `node tests/stats.test.js`
+  - `git diff --check`
+- 残課題: renderPending の helper 分離と、index.html の静的 inline handler 削減は別テーマで扱う。

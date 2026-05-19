@@ -180,6 +180,34 @@ function resetStatsRecorded() {
     _statsRecorded = false;
 }
 
+let _statsHandlersBound = false;
+
+function statsActionFromEvent(event) {
+    const target = event && event.target;
+    if (!target) return null;
+    if (typeof target.closest === 'function') return target.closest('[data-action]');
+    return target.dataset && target.dataset.action ? target : null;
+}
+
+function handleStatsClick(event) {
+    const button = statsActionFromEvent(event);
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'setStatsViewMode') setStatsViewMode(button.dataset.statsMode);
+    else if (action === 'setStatsPlayerFilter') setStatsPlayerFilter(button.dataset.playerName || '');
+    else if (action === 'clearStats') clearStats();
+}
+
+function bindStatsHandlers(el) {
+    if (_statsHandlersBound) return;
+    if (el && typeof el.addEventListener === 'function') {
+        el.addEventListener('click', handleStatsClick);
+    }
+    _statsHandlersBound = true;
+}
+
 function clearStats() {
     localStorage.removeItem('gameStats');
     renderStats();
@@ -199,6 +227,7 @@ function setStatsPlayerFilter(playerName) {
 function renderStats() {
     const el = document.getElementById('tabContentStats');
     if (!el) return;
+    bindStatsHandlers(el);
 
     const stats = loadStats();
     const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
@@ -207,17 +236,17 @@ function renderStats() {
     const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
     const filterTabsHtml = `
         <div class="stats-filter-tabs">
-            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'all' ? 'active' : ''}" onclick="setStatsViewMode('all')">全体</button>
-            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'local' ? 'active' : ''}" onclick="setStatsViewMode('local')">ローカル</button>
-            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'online' ? 'active' : ''}" onclick="setStatsViewMode('online')">オンライン</button>
+            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'all' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all">全体</button>
+            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'local' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="local">ローカル</button>
+            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'online' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online">オンライン</button>
         </div>
         ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
-            ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" onclick="setStatsPlayerFilter('${escapeJsSingleQuoted(name)}')">${escapeHtml(name)}</button>`).join('')}
+            ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join('')}
         </div>` : ''}
         ${cpuLabels.length ? `<div class="stats-filter-group-label">CPU別</div><div class="stats-player-filters">
-            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${_statsPlayerFilter === name ? 'active' : ''}" onclick="setStatsPlayerFilter('${escapeJsSingleQuoted(name)}')">${escapeHtml(name)}</button>`).join('')}
+            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join('')}
         </div>` : ''}
-        ${_statsPlayerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" onclick="setStatsPlayerFilter('')">解除</button></div>` : ''}
+        ${_statsPlayerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" data-action="setStatsPlayerFilter" data-player-name="">解除</button></div>` : ''}
     `;
 
     if (bucket.totalGames === 0) {
@@ -287,6 +316,6 @@ function renderStats() {
         ${lmRows ? `<div class="stats-section-title">🏛️ ランドマーク建設時勝率</div>
         <div class="stats-cards">${lmRows}</div>` : ''}
 
-        <button onclick="clearStats()" class="delete-save-btn" style="margin-top:16px;width:100%">🗑 統計をリセット</button>
+        <button data-action="clearStats" class="delete-save-btn" style="margin-top:16px;width:100%">🗑 統計をリセット</button>
     `;
 }

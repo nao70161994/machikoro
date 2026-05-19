@@ -174,3 +174,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - stats UI は inline handler が残る。統計 view mode と player filter の state 更新を壊さないよう targeted test と一緒に移す。
+
+
+### Phase D stats delegated handler
+
+確認した内容:
+
+- stats UI の filter / reset 操作を `data-action` に移行した。
+- `renderStats()` が stats container に一度だけ delegated click handler を登録し、再描画後も同じ入口で処理する。
+
+残リスク:
+
+- `index.html` 直書きの静的 inline handler は残る。起動順と既存 global API への影響が大きいため、画面領域ごとに別テーマで小さく移す。

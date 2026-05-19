@@ -11,6 +11,7 @@ UI は browser-global のまま維持する。大規模な framework 化や全�
 - dice choice（駅のダイス数選択、電波塔の振り直し、港の +2 選択）を `data-action` ベースの delegated click handler へ移行した。
 - Business Center のカード chip 選択を `data-action="selectBusinessCard"` に移行し、hidden input 更新は既存 helper で維持した。
 - カード選択 modal のセット切替、個別カード、ランドマーク、決定ボタンを delegated handler へ移行した。
+- stats UI の表示モード、プレイヤー/CPU filter、リセット操作を delegated handler へ移行した。
 - build menu のカード建設、ランドマーク建設、詳細表示、filter、Undo を `data-action` ベースの delegated click handler へ移行した。
 - player panel のカード詳細表示を `data-action="showCardDetail"` へ移行した。
 - pending menu の既存 delegated handler と同じ `actionButtonFromEvent()` helper を使うようにした。
@@ -22,5 +23,5 @@ UI は browser-global のまま維持する。大規模な framework 化や全�
 
 ## 次に触る順序
 
-1. stats UI の inline handler 削減。
-2. renderPending の pending 種別ごとの helper 分離。
+1. renderPending の pending 種別ごとの helper 分離。
+2. index.html の静的 inline handler を、起動順と既存 global API を壊さない範囲で段階的に delegated handler 化する。
