@@ -1431,7 +1431,7 @@
 ## Phase D static inline handler regression guard
 
 - 状態: done
-- commit: pending
+- commit: `068e726`
 - 変更ファイル:
   - `tests/main.test.js`
   - `sw.js`
