@@ -8,10 +8,14 @@ const Player = runtime.Player;
 const createCardByName = runtime.createCardByName;
 const createCardById = runtime.createCardById;
 const CARD_EFFECTS = runtime.CARD_EFFECTS;
+const CARD_CATEGORIES = runtime.CARD_CATEGORIES;
+const CARD_CATEGORY_GROUPS = runtime.CARD_CATEGORY_GROUPS;
+const isCardInCategoryGroup = runtime.isCardInCategoryGroup;
 const CARD_IDS = runtime.CARD_IDS;
 const CARD_NAME_BY_ID = runtime.CARD_NAME_BY_ID;
 const CARD_ID_BY_NAME = runtime.CARD_ID_BY_NAME;
 const CARD_EFFECT_METADATA = runtime.CARD_EFFECT_METADATA;
+const CARDS = runtime.CARDS;
 const CARD_DEFS = runtime.CARD_DEFS;
 const CARD_INCOME_EFFECT_HANDLERS = runtime.CARD_INCOME_EFFECT_HANDLERS;
 const GAME_PHASES = runtime.GAME_PHASES;
@@ -51,6 +55,14 @@ runTest('CARD_EFFECT_METADATA の分類値と複合triggerは許可値だけを�
     }
     assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.LOAN].triggers), ['onBuild', 'afterIncome']);
     assert.deepStrictEqual(Array.from(CARD_EFFECT_METADATA[CARD_EFFECTS.ITSTARTUP].triggers), ['afterIncome', 'turnEndPrompt']);
+});
+
+
+runTest('CARD_CATEGORY_GROUPS は飲食店・商店の分類判定を共有する', () => {
+    assert.ok(CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP.includes(CARD_CATEGORIES.RESTAURANT));
+    assert.ok(CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP.includes(CARD_CATEGORIES.SHOP));
+    assert.strictEqual(isCardInCategoryGroup(CARDS.find(c => c.name === 'パン屋'), CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP), true);
+    assert.strictEqual(isCardInCategoryGroup(CARDS.find(c => c.name === '麦畑'), CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP), false);
 });
 
 runTest('getCardActivationProfile は NORMAL の色別対象と複合triggerを返す', () => {

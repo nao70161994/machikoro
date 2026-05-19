@@ -1380,3 +1380,27 @@
   - `node tests/cpu.test.js`
   - `git diff --check`
 - 残課題: evaluation / execution の分離は影響範囲が広いため、同等の helper 境界と targeted test を追加してから進める。
+
+
+## Phase D effect metadata category group
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/Card.js`
+  - `js/GameManager.js`
+  - `tests/helpers/runtime-loaders.js`
+  - `tests/gamemanager.test.js`
+  - `docs/EFFECT_DISPATCH_MIGRATION.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP` と `isCardInCategoryGroup()` を追加した。
+  - GameManager のショッピングモール / 出版社で使う飲食店・商店判定を category group helper へ寄せた。
+  - カテゴリ判定 helper の targeted test を追加した。
+- 実行テスト:
+  - `node --check js/Card.js`
+  - `node --check js/GameManager.js`
+  - `node --check tests/gamemanager.test.js`
+  - `node tests/gamemanager.test.js`
+  - `git diff --check`
+- 残課題: pending / steal / redistribute の dispatch registry 化は、発火順とログ文言への影響が大きいため別テーマで targeted test を増やしてから進める。

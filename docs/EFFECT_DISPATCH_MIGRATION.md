@@ -8,6 +8,7 @@
 
 ## 今回対応
 
+- `CARD_CATEGORY_GROUPS` と `isCardInCategoryGroup()` を追加し、飲食店・商店の分類判定を共有 helper 経由へ移した。
 - income 系 metadata に `incomeHandler` を追加した。
 - `GameManager` の income handler table は `CARD_EFFECT_METADATA` から生成するようにした。
 - 既存の `calcCardIncome()` 呼び出しと発火順序は維持した。

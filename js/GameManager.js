@@ -441,7 +441,7 @@ class GameManager {
 
         let amount = card.income;
         if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-            (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
+            isCardInCategoryGroup(card, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP)) amount += 1;
         return amount;
     }
 
@@ -513,7 +513,7 @@ class GameManager {
 
                 let amount = card.income;
                 if (other.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
+                    isCardInCategoryGroup(card, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP)) amount += 1;
                 amount = Math.min(amount, current.coins);
                 current.coins -= amount;
                 other.coins += amount;
@@ -646,7 +646,7 @@ class GameManager {
                 for (let i = 0; i < this.players.length; i++) {
                     if (i === ci) continue;
                     const count = this.players[i].cards.filter(
-                        c => (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP) && !this.players[i].isDormant(c)).length;
+                        c => isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) && !this.players[i].isDormant(c)).length;
                     const steal = Math.min(count, this.players[i].coins);
                     this.players[i].coins -= steal;
                     total += steal;

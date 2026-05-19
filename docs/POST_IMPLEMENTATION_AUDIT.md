@@ -234,3 +234,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - evaluation / execution の本格分離は CPU の中核判断に触れるため、今回の自動対応では診断系に限定した。
+
+
+### Phase D category group metadata
+
+確認した内容:
+
+- 飲食店・商店のカテゴリ組み合わせを `CARD_CATEGORY_GROUPS` に移し、GameManager の該当分岐を helper 経由へ移行した。
+- 効果の発火順、金額計算、ログ文言は変更していない。
+
+残リスク:
+
+- pending / steal / redistribute の全面 dispatch registry 化は未実施。挙動差分が出やすいため、効果単位で進める。

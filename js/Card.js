@@ -117,6 +117,14 @@ const CARD_CATEGORIES = Object.freeze({
     MAJOR:      "大施設",
 });
 
+const CARD_CATEGORY_GROUPS = Object.freeze({
+    RESTAURANT_OR_SHOP: Object.freeze([CARD_CATEGORIES.RESTAURANT, CARD_CATEGORIES.SHOP]),
+});
+
+function isCardInCategoryGroup(card, group) {
+    return !!card && Array.isArray(group) && group.includes(card.category);
+}
+
 const CARD_IDS = Object.freeze({
     WHEAT_FIELD:       "wheat_field",
     RANCH:             "ranch",
