@@ -259,3 +259,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - hostless restore 本実装、socket handler の大規模分割、validation 境界の再設計は trust boundary と手動回帰に触れるため未実施。
+
+
+### Phase D static inline handler regression guard
+
+確認した内容:
+
+- 主要 HTML/JS の inline handler 属性再導入を検出する static test を追加した。
+- `js/cpuDiagnostics.js` を PWA static asset cache に追加し、offline 起動時の CPU helper 欠落を避けた。
+
+残リスク:
+
+- Service Worker の実更新挙動は自動テストでは完全代替できないため、更新バナーと reload は実ブラウザで確認する。

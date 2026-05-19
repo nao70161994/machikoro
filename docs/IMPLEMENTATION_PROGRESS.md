@@ -1409,7 +1409,7 @@
 ## Phase D server restore rank split
 
 - 状態: done
-- commit: pending
+- commit: `cce83c9`
 - 変更ファイル:
   - `server/restoreRank.js`
   - `server.js`
@@ -1426,3 +1426,22 @@
   - `node tests/server.test.js`
   - `git diff --check`
 - 残課題: hostless restore 本実装、server validation / socket handler の大きな分割、永続 room store は仕様判断と手動回帰が必要なため未実施。
+
+
+## Phase D static inline handler regression guard
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `tests/main.test.js`
+  - `sw.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+- 実装内容:
+  - 主要 HTML/JS に `onclick=` / `onchange=` / `oninput=` を再導入しない静的テストを追加した。
+  - CPU diagnostics helper を script に追加した後の PWA precache 漏れを修正し、`/js/cpuDiagnostics.js` を `STATIC_ASSETS` に追加した。
+- 実行テスト:
+  - `node --check tests/main.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+- 残課題: 実ブラウザでの Service Worker 更新バナーと cache refresh は manual verification required。

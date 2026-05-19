@@ -988,6 +988,20 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
     assert.ok(scriptStats < scriptMain);
 });
 
+runTest('主要HTML/JSには inline handler 属性を再導入しない', () => {
+    const files = [
+        'index.html',
+        'js/main.js',
+        'js/ui.js',
+        'js/online.js',
+        'js/stats.js',
+    ];
+    for (const file of files) {
+        const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+        assert.ok(!/on(?:click|change|input)=/.test(source), `inline handler attribute found in ${file}`);
+    }
+});
+
 runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
