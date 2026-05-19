@@ -555,11 +555,11 @@ function switchOnlineTab(tab) {
 }
 
 function showRules() {
-    document.getElementById("rulesModal").style.display = "flex";
+    openAccessibleModal("rulesModal");
 }
 
 function closeRules() {
-    document.getElementById("rulesModal").style.display = "none";
+    closeAccessibleModal("rulesModal");
 }
 
 const CARD_SETS = {
@@ -575,6 +575,16 @@ let prevLogLength = 0;
 let prevPlayerIndex = -1;
 let announcerTimer = null;
 let cardFilter = '';
+let activeModalId = null;
+let lastModalFocus = null;
+let noticeTimer = null;
+
+const MODAL_CLOSE_HANDLERS = Object.freeze({
+    rulesModal: closeRules,
+    cardSelectModal: closeCardSelect,
+    cardDetailModal: closeCardDetail,
+    confirmModal: () => closeConfirmModal(false),
+});
 
 const CARD_COLOR_ORDER = Object.freeze({ blue: 0, green: 1, red: 2, purple: 3 });
 
@@ -599,13 +609,86 @@ function compareCardNamesForDisplay(a, b) {
 
 function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; cardFilter = ''; }
 
+function getFocusableElements(root) {
+    if (!root || typeof root.querySelectorAll !== 'function') return [];
+    return Array.from(root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(el => !el.disabled && el.getAttribute('aria-hidden') !== 'true');
+}
+
+function focusModal(modal) {
+    const focusable = getFocusableElements(modal);
+    const target = focusable[0] || modal;
+    if (target && typeof target.focus === 'function') target.focus();
+}
+
+function openAccessibleModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
+    activeModalId = id;
+    modal.style.display = 'flex';
+    if (typeof modal.setAttribute === 'function') {
+        modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+    }
+    setTimeout(() => focusModal(modal), 0);
+}
+
+function closeAccessibleModal(id, options = {}) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'none';
+    if (activeModalId === id) activeModalId = null;
+    if (options.restoreFocus !== false && lastModalFocus && typeof lastModalFocus.focus === 'function') {
+        lastModalFocus.focus();
+    }
+    lastModalFocus = null;
+}
+
+function closeConfirmModal(accepted) {
+    closeAccessibleModal('confirmModal');
+}
+
+function handleModalKeydown(event) {
+    if (!activeModalId) return;
+    const modal = document.getElementById(activeModalId);
+    if (!modal || modal.style.display === 'none') return;
+    if (event.key === 'Escape') {
+        const closeHandler = MODAL_CLOSE_HANDLERS[activeModalId];
+        if (closeHandler) {
+            event.preventDefault();
+            closeHandler();
+        }
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getFocusableElements(modal);
+    if (focusable.length === 0) {
+        event.preventDefault();
+        focusModal(modal);
+        return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    document.addEventListener('keydown', handleModalKeydown);
+}
+
 function showCardSelect() {
     renderCardSelectModal();
-    document.getElementById("cardSelectModal").style.display = "flex";
+    openAccessibleModal("cardSelectModal");
 }
 
 function closeCardSelect() {
-    document.getElementById("cardSelectModal").style.display = "none";
+    closeAccessibleModal("cardSelectModal");
 }
 
 function renderCardSelectModal() {
@@ -689,11 +772,11 @@ function showCardDetail(name, isLandmark = false) {
         title.textContent = card.name;
         body.innerHTML = `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[card.color]}">${colorNames[card.color]}</span> ${card.category}</span></div></div><div class="card-detail-effect">${getEffectText(card)}</div>`;
     }
-    modal.style.display = 'flex';
+    openAccessibleModal('cardDetailModal');
 }
 
 function closeCardDetail() {
-    document.getElementById('cardDetailModal').style.display = 'none';
+    closeAccessibleModal('cardDetailModal');
 }
 
 function escapeHtml(str) {
@@ -705,22 +788,41 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function hideNotice() {
+    const toast = document.getElementById('noticeToast');
+    if (noticeTimer) {
+        clearTimeout(noticeTimer);
+        noticeTimer = null;
+    }
+    if (toast) toast.style.display = 'none';
+}
+
 function showNotice(message) {
     const text = String(message || '');
-    if (typeof alert === 'function') {
-        alert(text);
+    const toast = document.getElementById('noticeToast');
+    const body = document.getElementById('noticeToastMessage');
+    if (!toast || !body) {
+        if (typeof alert === 'function') alert(text);
+        return;
     }
+    body.textContent = text;
+    toast.style.display = 'flex';
+    if (noticeTimer) clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => {
+        toast.style.display = 'none';
+        noticeTimer = null;
+    }, 4500);
 }
 
 function showConfirm(message, onOk) {
     const modal = document.getElementById('confirmModal');
     document.getElementById('confirmMessage').textContent = message;
-    modal.style.display = 'flex';
+    openAccessibleModal('confirmModal');
     document.getElementById('confirmOkBtn').onclick = () => {
-        modal.style.display = 'none';
+        closeAccessibleModal('confirmModal');
         onOk();
     };
     document.getElementById('confirmCancelBtn').onclick = () => {
-        modal.style.display = 'none';
+        closeAccessibleModal('confirmModal');
     };
 }

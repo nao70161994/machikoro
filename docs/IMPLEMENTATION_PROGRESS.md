@@ -1102,3 +1102,34 @@
   - `node tests/sw.test.js`
   - `npm run test:pwa`
 - 残課題: 実ブラウザ Network panel で install/update 時に RL model JSON が先読みされず、RL CPU 選択時だけ取得されることは manual verification required。
+
+
+## Phase A accessibility baseline
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `index.html`
+  - `js/ui.js`
+  - `style.css`
+  - `tests/helpers/test-utils.js`
+  - `tests/main.test.js`
+  - `tests/ui.test.js`
+  - `docs/ACCESSIBILITY_GUIDE.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+- 実装内容:
+  - rules / card select / card detail / confirm modal に dialog semantics を追加し、共通 modal helper で初期フォーカス、Tab trap、Esc close、フォーカス復帰を扱うようにした。
+  - pending modal はゲーム進行上閉じられない overlay として role/aria は付けつつ Esc close 対象から外した。
+  - `showNotice()` を non-blocking toast 優先に変更し、DOM が無い旧環境だけ alert fallback にした。
+  - `:focus-visible` と `prefers-reduced-motion` を追加した。
+  - modal / notice / accessibility CSS の静的・UI targeted tests を追加した。
+  - `docs/ACCESSIBILITY_GUIDE.md` に追加 UI のルールと手動確認項目を追加した。
+- 実行テスト:
+  - `node --check js/ui.js`
+  - `node --check tests/main.test.js`
+  - `node --check tests/ui.test.js`
+  - `node tests/ui.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+- 残課題: 実ブラウザでキーボードのみ操作、スクリーンリーダー向け状態、reduced motion、モバイル低画面での notice / modal 重なりは manual verification required。

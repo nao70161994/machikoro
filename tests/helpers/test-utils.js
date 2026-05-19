@@ -14,7 +14,8 @@ function runTest(name, fn) {
 }
 
 function makeElement(overrides = {}) {
-    return Object.assign({
+    const attributes = new Map();
+    const element = Object.assign({
         style: {},
         textContent: '',
         innerHTML: '',
@@ -27,6 +28,11 @@ function makeElement(overrides = {}) {
             remove() {},
             toggle() {},
         },
+        setAttribute(name, value) { attributes.set(String(name), String(value)); },
+        getAttribute(name) { return attributes.has(String(name)) ? attributes.get(String(name)) : null; },
+        removeAttribute(name) { attributes.delete(String(name)); },
+        focus() { element.focused = true; },
+        querySelectorAll() { return []; },
         appendChild() {},
         remove() {},
         getContext() {
@@ -46,6 +52,7 @@ function makeElement(overrides = {}) {
             };
         },
     }, overrides);
+    return element;
 }
 
 function createStorage() {

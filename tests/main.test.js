@@ -884,6 +884,11 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('hadServiceWorkerController = true;'));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner"'));
+    assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
+    assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle"'));
+    assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle"'));
+    assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardDetailTitle"'));
+    assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="confirmMessage"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton"'));
     assert.ok(html.includes('id="onlineJoinSubmitButton"'));
     assert.ok(css.includes('--z-pwa-banner: 500;'));
@@ -892,6 +897,9 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('#pwaUpdateBanner'));
     assert.ok(css.includes('z-index: var(--z-pwa-banner);'));
     assert.ok(css.includes('z-index: var(--z-modal);'));
+    assert.ok(css.includes(':focus-visible'));
+    assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));
+    assert.ok(css.includes('.notice-toast'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
     assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
     const indexScripts = [...html.matchAll(/<script src=\"(js\/[^\"]+)\"/g)].map(match => `/${match[1]}`);

@@ -22,6 +22,15 @@ function loadUiRuntime() {
         logSummary: makeElement(),
         pendingModal: makeElement(),
         pendingMenu: makeElement(),
+        noticeToast: makeElement(),
+        noticeToastMessage: makeElement(),
+        rulesModal: makeElement(),
+        cardSelectModal: makeElement(),
+        cardDetailModal: makeElement(),
+        confirmModal: makeElement(),
+        confirmMessage: makeElement(),
+        confirmOkBtn: makeElement(),
+        confirmCancelBtn: makeElement(),
         players: makeElement(),
         tutorialBox: makeElement(),
     };
@@ -29,10 +38,12 @@ function loadUiRuntime() {
         console,
         localStorage,
         document: {
+            activeElement: null,
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];
             },
+            addEventListener() {},
         },
         enabledLandmarks: new Set(['駅', 'ショッピングモール', '遊園地', '電波塔', '港', '空港']),
         isOnlineGame: false,
@@ -87,6 +98,8 @@ function loadUiRuntime() {
         game: null,
         alertMessages: [],
         alert(message) { context.alertMessages.push(message); },
+        setTimeout(fn) { context.lastTimeout = fn; return 1; },
+        clearTimeout() {},
     };
     context.global = context;
     vm.createContext(context);
@@ -94,12 +107,44 @@ function loadUiRuntime() {
     return { context, elements };
 }
 
-runTest('showNotice は alert fallback で通知する', () => {
-    const { context } = loadUiRuntime();
+runTest('showNotice は non-blocking toast で通知する', () => {
+    const { context, elements } = loadUiRuntime();
 
     context.showNotice('通知テスト');
 
-    assert.deepStrictEqual(context.alertMessages, ['通知テスト']);
+    assert.deepStrictEqual(context.alertMessages, []);
+    assert.strictEqual(elements.noticeToast.style.display, 'flex');
+    assert.strictEqual(elements.noticeToastMessage.textContent, '通知テスト');
+    context.hideNotice();
+    assert.strictEqual(elements.noticeToast.style.display, 'none');
+});
+
+runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.showRules();
+
+    assert.strictEqual(elements.rulesModal.style.display, 'flex');
+    assert.strictEqual(elements.rulesModal.getAttribute('role'), 'dialog');
+    assert.strictEqual(elements.rulesModal.getAttribute('aria-modal'), 'true');
+
+    context.closeRules();
+
+    assert.strictEqual(elements.rulesModal.style.display, 'none');
+});
+
+runTest('modal keydown handler はEscapeで閉じる', () => {
+    const { context, elements } = loadUiRuntime();
+    let prevented = false;
+
+    context.showRules();
+    context.handleModalKeydown({
+        key: 'Escape',
+        preventDefault() { prevented = true; },
+    });
+
+    assert.strictEqual(prevented, true);
+    assert.strictEqual(elements.rulesModal.style.display, 'none');
 });
 
 runTest('switchTab は stats タブ表示時に renderStats を呼ぶ', () => {

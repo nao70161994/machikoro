@@ -2261,3 +2261,49 @@ button:not(:disabled):active {
 .card-badge:active {
     opacity: 0.7;
 }
+
+/* ===== Accessibility helpers ===== */
+:focus-visible {
+    outline: 3px solid #f0c040;
+    outline-offset: 3px;
+}
+
+.notice-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 72px;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 448px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    color: #fffffe;
+    background: #20203a;
+    border: 1px solid rgba(240,192,64,0.45);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+    z-index: var(--z-modal);
+}
+
+.notice-toast-close {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    color: #fffffe;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+    }
+}

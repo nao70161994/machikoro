@@ -169,16 +169,16 @@
         </div>
     </div>
 
-    <div id="pendingModal" class="pending-modal" style="display:none">
+    <div id="pendingModal" class="pending-modal" role="dialog" aria-modal="true" aria-label="追加効果の選択" tabindex="-1" style="display:none">
         <div class="pending-modal-inner">
             <div id="pendingMenu"></div>
         </div>
     </div>
 
-    <div id="rulesModal" class="modal" style="display:none">
+    <div id="rulesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle" tabindex="-1" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>📖 街コロ ルール説明</h2>
+                <h2 id="rulesModalTitle">📖 街コロ ルール説明</h2>
                 <button onclick="closeRules()">✕</button>
             </div>
             <div class="modal-body">
@@ -231,10 +231,10 @@
         </div>
     </div>
 
-    <div id="cardSelectModal" class="modal" style="display:none">
+    <div id="cardSelectModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle" tabindex="-1" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🃏 カード・ランドマーク選択</h2>
+                <h2 id="cardSelectModalTitle">🃏 カード・ランドマーク選択</h2>
                 <button onclick="closeCardSelect()">✕</button>
             </div>
             <div class="modal-body">
@@ -273,7 +273,7 @@
 
     <canvas id="confettiCanvas" style="position:fixed;top:0;left:0;pointer-events:none;z-index:999;display:none"></canvas>
 
-    <div id="cardDetailModal" class="modal" style="display:none">
+    <div id="cardDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardDetailTitle" tabindex="-1" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="cardDetailTitle">カード詳細</h2>
@@ -283,7 +283,7 @@
         </div>
     </div>
 
-    <div id="confirmModal" class="modal" style="display:none">
+    <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmMessage" tabindex="-1" style="display:none">
         <div class="modal-content confirm-modal-content">
             <div class="confirm-modal-body">
                 <p id="confirmMessage"></p>
@@ -293,6 +293,11 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="noticeToast" class="notice-toast" role="status" aria-live="polite" style="display:none">
+        <span id="noticeToastMessage"></span>
+        <button class="notice-toast-close" onclick="hideNotice()" aria-label="通知を閉じる">×</button>
     </div>
 
     <!-- クラッシュ回復画面 -->
