@@ -1164,3 +1164,26 @@
   - `node tests/storage.test.js`
   - `node tests/server.test.js`
 - 残課題: hostless restore の実採用は破壊的な trust boundary 変更になり得るため、設計 docs と manual verification required に留めた。
+
+
+## Phase C RL parity report
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `scripts/rl/parity_report.py`
+  - `tests/rl-train.test.js`
+  - `docs/RL_PARITY.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+- 実装内容:
+  - Python RL 環境の既知近似を軽量に出力する `scripts/rl/parity_report.py` を追加した。
+  - ワイナリーのカード実体処理と Python 集約近似の差分を gain / dormant count で明示した。
+  - `tests/rl-train.test.js` に parity report の smoke assertion を追加した。
+  - `docs/RL_PARITY.md` に JS 正本、Python 近似、trace 比較の使い分けを記録した。
+- 実行テスト:
+  - `python3 -m py_compile scripts/rl/*.py`
+  - `python3 -m scripts.rl.parity_report --format text`
+  - `node --check tests/rl-train.test.js`
+  - `node tests/rl-train.test.js`
+- 残課題: target head 採用モデルの新規学習 / portfolio 更新は既存採用モデルと別 lineage で進める。

@@ -16,6 +16,28 @@ function runPython(code) {
     return result.stdout.trim();
 }
 
+
+runTest('rl parity report: ワイナリー集約近似を既知差分として出力する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.parity_report import build_report
+print(json.dumps(build_report(), ensure_ascii=False))
+`);
+    const report = JSON.parse(output);
+    assert.strictEqual(report.schema, 'rl-parity-report-v1');
+    assert.ok(report.knownApproximationCount >= 1);
+    const dormantCase = report.knownApproximations.find(entry =>
+        entry.card === 'ワイナリー' &&
+        entry.totalWineries === 2 &&
+        entry.dormantWineriesBefore === 1 &&
+        entry.grapes === 1
+    );
+    assert.ok(dormantCase);
+    assert.strictEqual(dormantCase.js.gain, 6);
+    assert.strictEqual(dormantCase.pythonApprox.gain, 12);
+    assert.strictEqual(dormantCase.gainDiff, 6);
+});
+
 runTest('rl train: CLI help は train-batch-size を含む', () => {
     const result = spawnSync('python3', ['-m', 'scripts.rl.train', '--help'], {
         cwd: path.join(__dirname, '..'),
