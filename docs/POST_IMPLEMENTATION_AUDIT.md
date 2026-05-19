@@ -186,3 +186,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - `index.html` 直書きの静的 inline handler は残る。起動順と既存 global API への影響が大きいため、画面領域ごとに別テーマで小さく移す。
+
+
+### Phase D static shell delegated handler
+
+確認した内容:
+
+- `index.html` の静的 inline handler を `data-ui-*` 属性へ移し、main 側 document handler で既存関数へ委譲するようにした。
+- ゲーム内の `data-action` と衝突しない別 namespace にしたため、pending/build/dice の delegated handler へ副作用を出さない。
+
+残リスク:
+
+- 動的に生成する player settings / online player settings の select/input inline handler は残る。DOM 再描画と設定保存の境界を壊さないよう、次テーマで個別に扱う。

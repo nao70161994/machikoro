@@ -73,6 +73,7 @@ function loadMainRuntime(options = {}) {
             },
             querySelectorAll() { return []; },
             createElement() { return makeElement(); },
+            addEventListener(name, handler) { eventHandlers[`document:${name}`] = handler; },
         },
         window: {
             innerWidth: 360,
@@ -99,6 +100,8 @@ function loadMainRuntime(options = {}) {
         updateResumeButton() { counters.updateResumeButton++; },
         loadSettings() { counters.loadSettings++; },
         syncTutorialControls() {},
+        onToggleTutorial(enabled) { localStorage.setItem('tutorialEnabled', enabled ? 'true' : 'false'); },
+        onChangeTutorialLevel(level) { localStorage.setItem('tutorialLevel', level); },
         render() {},
         switchTab() {},
         scheduleCPU() {},
@@ -690,6 +693,38 @@ runTest('main init は10人開始時に不足設定を補い学習AIを維持す
     assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
+runTest('main static UI handler は data-ui-action/input/change を処理する', () => {
+    const rt = loadMainRuntime();
+
+    rt.__test.eventHandlers['document:click']({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { uiAction: 'changeCount', delta: '1' },
+            closest() { return this; },
+        },
+    });
+    assert.strictEqual(rt.__test.getSelectedCount(), 3);
+
+    rt.__test.eventHandlers['document:input']({
+        target: {
+            value: '100',
+            dataset: { uiInput: 'cpuSpeed' },
+            closest() { return this; },
+        },
+    });
+    assert.strictEqual(rt.__test.elements.speedLabel.textContent, '超高速');
+
+    rt.__test.eventHandlers['document:change']({
+        target: {
+            checked: false,
+            dataset: { uiChange: 'toggleTutorialEnabled' },
+            closest() { return this; },
+        },
+    });
+    assert.strictEqual(rt.localStorage.getItem('tutorialEnabled'), 'false');
+});
+
 runTest('main delegated handler は dice choice action を呼ぶ', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);
@@ -950,6 +985,13 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="confirmMessage"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton"'));
     assert.ok(html.includes('id="onlineJoinSubmitButton"'));
+    assert.ok(html.includes('data-ui-action="showRules"'));
+    assert.ok(html.includes('data-ui-action="switchTab" data-tab="online"'));
+    assert.ok(html.includes('data-ui-input="cpuSpeed"'));
+    assert.ok(html.includes('data-ui-change="toggleTutorialEnabled"'));
+    assert.ok(!html.includes('onclick='));
+    assert.ok(!html.includes('oninput='));
+    assert.ok(!html.includes('onchange='));
     assert.ok(css.includes('--z-pwa-banner: 500;'));
     assert.ok(css.includes('--z-pending-modal: 600;'));
     assert.ok(css.includes('--z-modal: 1000;'));

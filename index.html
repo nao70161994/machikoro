@@ -23,8 +23,8 @@
                 <p class="title-logo-sub">MACHI KORO</p>
                 <div class="title-logo-deco"><span>🏙️ ボードゲーム 🏙️</span></div>
                 <div class="title-buttons-row">
-                    <button class="rules-btn" onclick="showRules()">📖 ルール</button>
-                    <button class="rules-btn" onclick="showCardSelect()">🃏 カード選択</button>
+                    <button class="rules-btn" data-ui-action="showRules">📖 ルール</button>
+                    <button class="rules-btn" data-ui-action="showCardSelect">🃏 カード選択</button>
                 </div>
             </div>
 
@@ -32,25 +32,25 @@
                 <div class="online-resume-notice">
                     <span id="onlineResumeDescription">🌐 オンラインゲームが中断されました</span>
                     <div style="display:flex;gap:6px;margin-top:6px">
-                        <button onclick="reconnectOnline()" class="resume-btn" style="flex:1">🔌 再接続する</button>
-                        <button onclick="deleteOnlineSession()" class="delete-save-btn">🗑</button>
+                        <button data-ui-action="reconnectOnline" class="resume-btn" style="flex:1">🔌 再接続する</button>
+                        <button data-ui-action="deleteOnlineSession" class="delete-save-btn">🗑</button>
                     </div>
                 </div>
             </div>
 
             <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('local')" id="tabLocal">🏠 ローカル</button>
-                <button class="tab-btn" onclick="switchTab('online')" id="tabOnline">🌐 オンライン</button>
-                <button class="tab-btn" onclick="switchTab('stats')" id="tabStats">📊 統計</button>
+                <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal">🏠 ローカル</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline">🌐 オンライン</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats">📊 統計</button>
             </div>
 
             <div id="tabContentLocal" class="tab-content">
                 <div class="setting-section">
                     <div class="setting-label">プレイ人数</div>
                     <div class="player-select">
-                        <button onclick="changeCount(-1)">－</button>
+                        <button data-ui-action="changeCount" data-delta="-1">－</button>
                         <span id="playerCount">2</span>人
-                        <button onclick="changeCount(1)">＋</button>
+                        <button data-ui-action="changeCount" data-delta="1">＋</button>
                     </div>
                 </div>
                 <div id="playerSettings" class="setting-section"></div>
@@ -58,25 +58,25 @@
                     <div class="setting-label">CPUの速さ</div>
                     <div class="speed-setting">
                         <input type="range" id="cpuSpeed" min="100" max="3000" step="100" value="1500"
-                            oninput="document.getElementById('speedLabel').textContent = formatCpuSpeedLabel(this.value)">
+                            data-ui-input="cpuSpeed">
                         <span id="speedLabel">1.5秒</span>
                     </div>
                 </div>
                 <div class="setting-section">
                     <div class="setting-label">チュートリアル表示</div>
                     <label class="toggle-setting">
-                        <input id="tutorialEnabled" type="checkbox" onchange="onToggleTutorial(this.checked)">
+                        <input id="tutorialEnabled" type="checkbox" data-ui-change="toggleTutorialEnabled">
                         <span>現在のフェーズに応じたガイドを表示する</span>
                     </label>
-                    <select id="tutorialLevel" class="text-input" onchange="onChangeTutorialLevel(this.value)">
+                    <select id="tutorialLevel" class="text-input" data-ui-change="tutorialLevel">
                         <option value="beginner">初心者向け</option>
                         <option value="advanced">上級者向け</option>
                     </select>
                 </div>
-                <button id="btnStart" onclick="startGame()">ゲーム開始</button>
+                <button id="btnStart" data-ui-action="startGame">ゲーム開始</button>
                 <div id="resumeSection" style="display:none">
-                    <button id="btnResume" onclick="resumeGame()" class="resume-btn">▶ 続きから再開</button>
-                    <button id="btnDeleteSave" onclick="deleteSavedGame()" class="delete-save-btn">🗑</button>
+                    <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">▶ 続きから再開</button>
+                    <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn">🗑</button>
                 </div>
             </div>
 
@@ -87,17 +87,17 @@
                 </div>
 
                 <div class="online-tabs">
-                    <button class="online-tab-btn active" onclick="switchOnlineTab('create')" id="onlineTabCreate">ルームを作る</button>
-                    <button class="online-tab-btn" onclick="switchOnlineTab('join')" id="onlineTabJoin">ルームに参加</button>
+                    <button class="online-tab-btn active" data-ui-action="switchOnlineTab" data-online-tab="create" id="onlineTabCreate">ルームを作る</button>
+                    <button class="online-tab-btn" data-ui-action="switchOnlineTab" data-online-tab="join" id="onlineTabJoin">ルームに参加</button>
                 </div>
 
                 <div id="onlineCreate">
                     <div class="setting-section">
                         <div class="setting-label">プレイ人数</div>
                         <div class="player-select">
-                            <button onclick="changeOnlineCount(-1)">－</button>
+                            <button data-ui-action="changeOnlineCount" data-delta="-1">－</button>
                             <span id="onlinePlayerCount">2</span>人
-                            <button onclick="changeOnlineCount(1)">＋</button>
+                            <button data-ui-action="changeOnlineCount" data-delta="1">＋</button>
                         </div>
                     </div>
                     <div id="onlinePlayerSettings" class="setting-section"></div>
@@ -105,11 +105,11 @@
                         <div class="setting-label">CPUの速さ</div>
                         <div class="speed-setting">
                             <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
-                                oninput="document.getElementById('onlineSpeedLabel').textContent = formatCpuSpeedLabel(this.value)">
+                                data-ui-input="onlineCpuSpeed">
                             <span id="onlineSpeedLabel">1.5秒</span>
                         </div>
                     </div>
-                    <button id="onlineCreateSubmitButton" onclick="showCreateRoom()">🏠 ルームを作る</button>
+                    <button id="onlineCreateSubmitButton" data-ui-action="showCreateRoom">🏠 ルームを作る</button>
                 </div>
 
                 <div id="onlineJoin" style="display:none">
@@ -118,7 +118,7 @@
                         <input id="roomIdInput" type="text" placeholder="6文字のルームID" maxlength="6"
                             class="text-input" style="text-transform:uppercase">
                     </div>
-                    <button id="onlineJoinSubmitButton" onclick="joinRoom()">🚪 参加する</button>
+                    <button id="onlineJoinSubmitButton" data-ui-action="joinRoom">🚪 参加する</button>
                 </div>
 
                 <div id="offlineNotice" class="offline-notice" style="display:none">
@@ -139,19 +139,19 @@
         <div id="tutorialBox" class="tutorial-box" style="display:none"></div>
         <div class="game-action-panel">
             <div class="panel-tools">
-                <button id="btnTutorialToggle" class="tutorial-toggle-btn" onclick="toggleTutorial()"></button>
-                <button id="btnTutorialLevel" class="tutorial-toggle-btn" onclick="cycleTutorialLevel()"></button>
+                <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial"></button>
+                <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel"></button>
             </div>
             <div id="diceResult"></div>
             <div id="diceChoose"></div>
             <div class="buttons">
-                <button id="btnRoll" onclick="onRoll()">🎲 サイコロを振る</button>
-                <button id="btnReroll" onclick="onReroll()" style="display:none">📡 電波塔で振り直す</button>
-                <button id="btnSkip" onclick="onSkip()" disabled>建設しないでターン終了</button>
+                <button id="btnRoll" data-ui-action="onRoll">🎲 サイコロを振る</button>
+                <button id="btnReroll" data-ui-action="onReroll" style="display:none">📡 電波塔で振り直す</button>
+                <button id="btnSkip" data-ui-action="onSkip" disabled>建設しないでターン終了</button>
             </div>
         </div>
         <div class="log-container">
-            <div class="log-header" onclick="toggleLog()">
+            <div class="log-header" data-ui-action="toggleLog">
                 <span id="logTitle">📋 ログ</span>
                 <span id="logToggleIcon">▼</span>
             </div>
@@ -160,7 +160,7 @@
         </div>
         <div id="players"></div>
         <div id="buildMenu"></div>
-        <button class="btn-restart" onclick="restartGame()">🔄 最初からやり直す</button>
+        <button class="btn-restart" data-ui-action="restartGame">🔄 最初からやり直す</button>
     </div>
 
     <div id="turnAnnouncer" class="turn-announcer" style="display:none">
@@ -179,7 +179,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="rulesModalTitle">📖 街コロ ルール説明</h2>
-                <button onclick="closeRules()">✕</button>
+                <button data-ui-action="closeRules">✕</button>
             </div>
             <div class="modal-body">
                 <div class="rules-section">
@@ -277,7 +277,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="cardDetailTitle">カード詳細</h2>
-                <button onclick="closeCardDetail()">✕</button>
+                <button data-ui-action="closeCardDetail">✕</button>
             </div>
             <div class="modal-body" id="cardDetailBody"></div>
         </div>
@@ -297,7 +297,7 @@
 
     <div id="noticeToast" class="notice-toast" role="status" aria-live="polite" style="display:none">
         <span id="noticeToastMessage"></span>
-        <button class="notice-toast-close" onclick="hideNotice()" aria-label="通知を閉じる">×</button>
+        <button class="notice-toast-close" data-ui-action="hideNotice" aria-label="通知を閉じる">×</button>
     </div>
 
     <!-- クラッシュ回復画面 -->
@@ -307,8 +307,8 @@
             <div class="crash-title">エラーが発生しました</div>
             <div id="crashMessage" class="crash-message"></div>
             <div class="crash-actions">
-                <button onclick="location.reload()" class="crash-btn-primary">🔄 タイトルに戻る</button>
-                <button id="crashResumeBtn" onclick="crashResume()" class="crash-btn-secondary" style="display:none">▶ セーブから再開</button>
+                <button data-ui-action="reloadPage" class="crash-btn-primary">🔄 タイトルに戻る</button>
+                <button id="crashResumeBtn" data-ui-action="crashResume" class="crash-btn-secondary" style="display:none">▶ セーブから再開</button>
             </div>
         </div>
     </div>
@@ -320,8 +320,8 @@
             <span id="pwaUpdateMsg">新しいバージョンがあります</span>
         </div>
         <div class="pwa-banner-actions">
-            <button id="pwaUpdateBtn" class="pwa-banner-btn" onclick="pwaApplyUpdate()">今すぐ更新</button>
-            <button class="pwa-banner-dismiss" onclick="document.getElementById('pwaUpdateBanner').style.display='none'">×</button>
+            <button id="pwaUpdateBtn" class="pwa-banner-btn" data-ui-action="pwaApplyUpdate">今すぐ更新</button>
+            <button class="pwa-banner-dismiss" data-ui-action="hidePwaUpdateBanner">×</button>
         </div>
     </div>
 
@@ -332,8 +332,8 @@
             <span>ホーム画面に追加するとオフラインでも遊べます</span>
         </div>
         <div class="pwa-banner-actions">
-            <button class="pwa-banner-btn" onclick="pwaInstallPrompt()">追加する</button>
-            <button class="pwa-banner-dismiss" onclick="pwaInstallDismiss()">×</button>
+            <button class="pwa-banner-btn" data-ui-action="pwaInstallPrompt">追加する</button>
+            <button class="pwa-banner-dismiss" data-ui-action="pwaInstallDismiss">×</button>
         </div>
     </div>
 

@@ -687,6 +687,78 @@ function actionButtonFromEvent(event) {
     return target.dataset && target.dataset.action ? target : null;
 }
 
+function uiActionElementFromEvent(event, attributeName) {
+    const target = event && event.target;
+    if (!target) return null;
+    const selector = '[' + attributeName + ']';
+    if (typeof target.closest === 'function') return target.closest(selector);
+    return target.dataset && target.dataset[attributeName.replace(/^data-/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase())] ? target : null;
+}
+
+function handleStaticUiClick(event) {
+    const element = uiActionElementFromEvent(event, 'data-ui-action');
+    if (!element || element.disabled) return;
+    const action = element.dataset.uiAction;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'showRules') showRules();
+    else if (action === 'showCardSelect') showCardSelect();
+    else if (action === 'reconnectOnline') reconnectOnline();
+    else if (action === 'deleteOnlineSession') deleteOnlineSession();
+    else if (action === 'switchTab') switchTab(element.dataset.tab);
+    else if (action === 'changeCount') changeCount(parseInt(element.dataset.delta, 10));
+    else if (action === 'startGame') startGame();
+    else if (action === 'resumeGame') resumeGame();
+    else if (action === 'deleteSavedGame') deleteSavedGame();
+    else if (action === 'switchOnlineTab') switchOnlineTab(element.dataset.onlineTab);
+    else if (action === 'changeOnlineCount') changeOnlineCount(parseInt(element.dataset.delta, 10));
+    else if (action === 'showCreateRoom') showCreateRoom();
+    else if (action === 'joinRoom') joinRoom();
+    else if (action === 'toggleTutorial') toggleTutorial();
+    else if (action === 'cycleTutorialLevel') cycleTutorialLevel();
+    else if (action === 'onRoll') onRoll();
+    else if (action === 'onReroll') onReroll();
+    else if (action === 'onSkip') onSkip();
+    else if (action === 'toggleLog') toggleLog();
+    else if (action === 'restartGame') restartGame();
+    else if (action === 'closeRules') closeRules();
+    else if (action === 'closeCardDetail') closeCardDetail();
+    else if (action === 'hideNotice') hideNotice();
+    else if (action === 'reloadPage') location.reload();
+    else if (action === 'crashResume') crashResume();
+    else if (action === 'pwaApplyUpdate') pwaApplyUpdate();
+    else if (action === 'hidePwaUpdateBanner') {
+        const banner = document.getElementById('pwaUpdateBanner');
+        if (banner) banner.style.display = 'none';
+    }
+    else if (action === 'pwaInstallPrompt') pwaInstallPrompt();
+    else if (action === 'pwaInstallDismiss') pwaInstallDismiss();
+}
+
+function handleStaticUiInput(event) {
+    const element = uiActionElementFromEvent(event, 'data-ui-input');
+    if (!element) return;
+    if (element.dataset.uiInput === 'cpuSpeed') {
+        document.getElementById('speedLabel').textContent = formatCpuSpeedLabel(element.value);
+    } else if (element.dataset.uiInput === 'onlineCpuSpeed') {
+        document.getElementById('onlineSpeedLabel').textContent = formatCpuSpeedLabel(element.value);
+    }
+}
+
+function handleStaticUiChange(event) {
+    const element = uiActionElementFromEvent(event, 'data-ui-change');
+    if (!element) return;
+    if (element.dataset.uiChange === 'toggleTutorialEnabled') onToggleTutorial(element.checked);
+    else if (element.dataset.uiChange === 'tutorialLevel') onChangeTutorialLevel(element.value);
+}
+
+function bindStaticUiHandlers() {
+    if (!document || typeof document.addEventListener !== 'function') return;
+    document.addEventListener('click', handleStaticUiClick);
+    document.addEventListener('input', handleStaticUiInput);
+    document.addEventListener('change', handleStaticUiChange);
+}
+
 function handleDiceChoiceClick(event) {
     const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
@@ -746,6 +818,7 @@ function bindDelegatedUiHandlers() {
     if (pendingMenu && typeof pendingMenu.addEventListener === 'function') pendingMenu.addEventListener('click', handlePendingActionClick);
     if (buildMenu && typeof buildMenu.addEventListener === 'function') buildMenu.addEventListener('click', handleBuildMenuClick);
     if (players && typeof players.addEventListener === 'function') players.addEventListener('click', handlePlayerPanelClick);
+    bindStaticUiHandlers();
     delegatedUiHandlersBound = true;
 }
 

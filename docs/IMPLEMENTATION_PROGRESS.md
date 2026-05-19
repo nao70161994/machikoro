@@ -1285,3 +1285,26 @@
   - `node tests/stats.test.js`
   - `git diff --check`
 - 残課題: renderPending の helper 分離と、index.html の静的 inline handler 削減は別テーマで扱う。
+
+
+## Phase D inline handler cleanup: static shell controls
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `index.html`
+  - `js/main.js`
+  - `tests/main.test.js`
+  - `docs/UI_REFACTOR.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `index.html` の静的 click / input / change inline handler を `data-ui-action` / `data-ui-input` / `data-ui-change` に置き換えた。
+  - `main.js` に static UI 用 document delegated handler を追加し、既存 global 関数へ薄く橋渡しする形にした。
+  - 既存のゲーム内 `data-action` namespace とは分離し、build / pending / dice handler と衝突しないようにした。
+  - main targeted tests で static action、input、change の処理と index.html からの inline handler 消滅を確認した。
+- 実行テスト:
+  - `node --check js/main.js`
+  - `node --check tests/main.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+- 残課題: `renderPlayerSettings()` と `renderOnlinePlayerSettings()` の動的 select/input inline handler は残るため、次テーマで delegated handler 化する。
