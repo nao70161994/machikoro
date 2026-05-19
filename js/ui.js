@@ -682,7 +682,38 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
     document.addEventListener('keydown', handleModalKeydown);
 }
 
+let cardSelectModalHandlersBound = false;
+
+function cardSelectActionFromEvent(event) {
+    const target = event && event.target;
+    if (!target) return null;
+    if (typeof target.closest === 'function') return target.closest('[data-action]');
+    return target.dataset && target.dataset.action ? target : null;
+}
+
+function handleCardSelectModalClick(event) {
+    const button = cardSelectActionFromEvent(event);
+    if (!button || button.disabled) return;
+    const action = button.dataset.action;
+    if (!action) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    if (action === 'toggleCard') toggleCard(button.dataset.cardName);
+    else if (action === 'toggleLandmark') toggleLandmark(button.dataset.landmarkName);
+    else if (action === 'toggleSet') toggleSet(button.dataset.set);
+    else if (action === 'closeCardSelect') closeCardSelect();
+}
+
+function bindCardSelectModalHandlers() {
+    if (cardSelectModalHandlersBound) return;
+    const modal = document.getElementById('cardSelectModal');
+    if (modal && typeof modal.addEventListener === 'function') {
+        modal.addEventListener('click', handleCardSelectModalClick);
+    }
+    cardSelectModalHandlersBound = true;
+}
+
 function showCardSelect() {
+    bindCardSelectModalHandlers();
     renderCardSelectModal();
     openAccessibleModal("cardSelectModal");
 }
@@ -696,7 +727,8 @@ function renderCardSelectModal() {
         const el = document.getElementById(`cardList${set.charAt(0).toUpperCase() + set.slice(1)}`);
         el.innerHTML = [...cards].sort(compareCardNamesForDisplay).map(name => {
             const on = enabledCards.has(name);
-            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" onclick="toggleCard('${name}')" id="cardToggle_${name}">${name}</button>`;
+            const safeName = escapeHtml(name);
+            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}">${safeName}</button>`;
         }).join("");
         const allOn = cards.every(n => enabledCards.has(n));
         const btn = document.getElementById(`btnSet${set.charAt(0).toUpperCase() + set.slice(1)}`);
@@ -707,7 +739,8 @@ function renderCardSelectModal() {
     if (landmarkList) {
         landmarkList.innerHTML = Player.landmarkNames().map(name => {
             const on = enabledLandmarks.has(name);
-            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" onclick="toggleLandmark('${name}')">${getLandmarkEmoji(name)} ${name}</button>`;
+            const safeName = escapeHtml(name);
+            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleLandmark" data-landmark-name="${safeName}">${getLandmarkEmoji(name)} ${safeName}</button>`;
         }).join("");
     }
 }

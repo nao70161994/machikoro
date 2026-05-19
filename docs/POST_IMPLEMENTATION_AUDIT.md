@@ -162,3 +162,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - card / landmark toggle と stats UI は inline handler が残るため、次の小さい delegated handler 化対象として扱う。
+
+
+### Phase D card select delegated handler
+
+確認した内容:
+
+- カード選択 modal のセット / カード / ランドマーク / 決定操作を `data-action` に移行した。
+- 既存の toggle 関数は維持し、handler 入口だけを delegated click に寄せた。
+
+残リスク:
+
+- stats UI は inline handler が残る。統計 view mode と player filter の state 更新を壊さないよう targeted test と一緒に移す。

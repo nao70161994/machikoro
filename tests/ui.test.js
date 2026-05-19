@@ -361,6 +361,38 @@ runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生
     assert.ok(html.includes('disabled'));
 });
 
+runTest('card select modal handler はカードとランドマークを data-action で切り替える', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.renderCardSelectModal();
+    assert.ok(elements.cardListBasic.innerHTML.includes('data-action="toggleCard"'));
+    assert.ok(elements.landmarkList.innerHTML.includes('data-action="toggleLandmark"'));
+    assert.ok(!elements.cardListBasic.innerHTML.includes('toggleCard('));
+    assert.ok(!elements.landmarkList.innerHTML.includes('toggleLandmark('));
+
+    context.handleCardSelectModalClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'toggleCard', cardName: '牧場' },
+            closest() { return this; },
+        },
+    });
+    assert.ok(elements.cardListBasic.innerHTML.includes('data-card-name="牧場"'));
+    assert.ok(elements.cardListBasic.innerHTML.includes('card-toggle-btn off'));
+
+    context.handleCardSelectModalClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'toggleLandmark', landmarkName: '港' },
+            closest() { return this; },
+        },
+    });
+    assert.ok(elements.landmarkList.innerHTML.includes('data-landmark-name="港"'));
+    assert.ok(elements.landmarkList.innerHTML.includes('card-toggle-btn off'));
+});
+
 runTest('renderCardSelectModal はカード選択を表示順でソートする', () => {
     const { context, elements } = loadUiRuntime();
 
@@ -371,6 +403,8 @@ runTest('renderCardSelectModal はカード選択を表示順でソートする'
     assert.ok(basic.indexOf('牧場') < basic.indexOf('森林'));
     assert.ok(basic.indexOf('リンゴ園') < basic.indexOf('パン屋'));
     assert.ok(basic.indexOf('ファミレス') < basic.indexOf('スタジアム'));
+    assert.ok(basic.includes('data-action="toggleCard"'));
+    assert.ok(!basic.includes('onclick="toggleCard'));
 });
 
 if (process.exitCode) {

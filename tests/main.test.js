@@ -942,6 +942,10 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle"'));
+    assert.ok(html.includes('data-action="toggleSet" data-set="basic"'));
+    assert.ok(html.includes('data-action="closeCardSelect"'));
+    assert.ok(!html.includes('onclick="toggleSet'));
+    assert.ok(!html.includes('onclick="closeCardSelect'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardDetailTitle"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="confirmMessage"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton"'));

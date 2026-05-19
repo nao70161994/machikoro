@@ -1238,3 +1238,29 @@
   - `node tests/ui.test.js`
   - `git diff --check`
 - 残課題: card / landmark toggle と stats UI の inline handler は残るため、次テーマで delegated handler 化する。
+
+
+## Phase D inline handler cleanup: card select modal
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `index.html`
+  - `js/ui.js`
+  - `tests/main.test.js`
+  - `tests/ui.test.js`
+  - `docs/UI_REFACTOR.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - カード選択 modal のセット切替、個別カード toggle、ランドマーク toggle、決定ボタンから inline handler を外した。
+  - `handleCardSelectModalClick()` と `bindCardSelectModalHandlers()` を追加し、modal 内 action を `data-action` で処理するようにした。
+  - 既存の `toggleCard()` / `toggleSet()` / `toggleLandmark()` は維持し、挙動変更を避けた。
+  - UI / static tests に data-action と inline handler 退避の assertion を追加した。
+- 実行テスト:
+  - `node --check js/ui.js`
+  - `node --check tests/ui.test.js`
+  - `node --check tests/main.test.js`
+  - `node tests/ui.test.js`
+  - `node tests/main.test.js`
+  - `git diff --check`
+- 残課題: stats UI の inline handler が残るため、次テーマで delegated handler 化する。

@@ -235,28 +235,28 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="cardSelectModalTitle">🃏 カード・ランドマーク選択</h2>
-                <button onclick="closeCardSelect()">✕</button>
+                <button data-action="closeCardSelect">✕</button>
             </div>
             <div class="modal-body">
                 <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">使用するカードとランドマークを選んでください（ランドマークは最低1つ必要です）</p>
                 <div class="card-set-section">
                     <div class="card-set-header">
                         <span>📦 基本セット</span>
-                        <button onclick="toggleSet('basic')" id="btnSetBasic" class="set-toggle on">ON</button>
+                        <button data-action="toggleSet" data-set="basic" id="btnSetBasic" class="set-toggle on">ON</button>
                     </div>
                     <div id="cardListBasic" class="card-toggle-list"></div>
                 </div>
                 <div class="card-set-section">
                     <div class="card-set-header">
                         <span>📦 プラス</span>
-                        <button onclick="toggleSet('plus')" id="btnSetPlus" class="set-toggle on">ON</button>
+                        <button data-action="toggleSet" data-set="plus" id="btnSetPlus" class="set-toggle on">ON</button>
                     </div>
                     <div id="cardListPlus" class="card-toggle-list"></div>
                 </div>
                 <div class="card-set-section">
                     <div class="card-set-header">
                         <span>📦 シャープ</span>
-                        <button onclick="toggleSet('sharp')" id="btnSetSharp" class="set-toggle on">ON</button>
+                        <button data-action="toggleSet" data-set="sharp" id="btnSetSharp" class="set-toggle on">ON</button>
                     </div>
                     <div id="cardListSharp" class="card-toggle-list"></div>
                 </div>
@@ -266,7 +266,7 @@
                     </div>
                     <div id="landmarkList" class="card-toggle-list"></div>
                 </div>
-                <button onclick="closeCardSelect()" style="margin-top:8px;text-align:center;background:#e94560;">決定</button>
+                <button data-action="closeCardSelect" style="margin-top:8px;text-align:center;background:#e94560;">決定</button>
             </div>
         </div>
     </div>
