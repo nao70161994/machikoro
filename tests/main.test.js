@@ -268,6 +268,7 @@ function loadMainRuntime(options = {}) {
             setSelectedCount: (value) => { selectedCount = value; },
             getSelectedCount: () => selectedCount,
             setPlayerSettings: (value) => { playerSettings = value; },
+            getPlayerSettings: () => playerSettings,
             setEnabledCards: (value) => { enabledCards = value; },
             setGame: (value) => { game = value; },
             getGame: () => game,
@@ -308,6 +309,8 @@ runTest('main renderPlayerSettings は CPU（最強）オプションを表示�
 
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（最強）'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('data-ui-change="localPlayerType"'));
+    assert.ok(!rt.__test.elements.playerSettings.innerHTML.includes('onchange="onChangePlayerType'));
 });
 
 runTest('main renderPlayerSettings は学習AIの選択方針を説明する', () => {
@@ -426,7 +429,9 @@ runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を
     rt.renderPlayerSettings();
 
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="太郎"'));
-    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('onChangePlayerName(0, this.value)'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('data-ui-input="localPlayerName"'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('data-player-index="0"'));
+    assert.ok(!rt.__test.elements.playerSettings.innerHTML.includes('onChangePlayerName('));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（強）として統計を記録'));
 });
 
@@ -723,6 +728,26 @@ runTest('main static UI handler は data-ui-action/input/change を処理する'
         },
     });
     assert.strictEqual(rt.localStorage.getItem('tutorialEnabled'), 'false');
+
+    rt.__test.setPlayerSettings([{ type: 'human', difficulty: 'normal', name: 'Alice' }]);
+    rt.__test.eventHandlers['document:change']({
+        target: {
+            value: 'strong',
+            dataset: { uiChange: 'localPlayerType', playerIndex: '0' },
+            closest() { return this; },
+        },
+    });
+    assert.strictEqual(rt.__test.getPlayerSettings()[0].type, 'cpu');
+    assert.strictEqual(rt.__test.getPlayerSettings()[0].difficulty, 'strong');
+
+    rt.__test.eventHandlers['document:input']({
+        target: {
+            value: '新名',
+            dataset: { uiInput: 'localPlayerName', playerIndex: '0' },
+            closest() { return this; },
+        },
+    });
+    assert.strictEqual(rt.__test.getPlayerSettings()[0].name, '新名');
 });
 
 runTest('main delegated handler は dice choice action を呼ぶ', () => {

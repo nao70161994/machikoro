@@ -61,7 +61,7 @@ function renderOnlinePlayerSettings() {
     const html = onlinePlayerSettings.map((s, i) => `
         <div class="player-setting">
             <span class="player-setting-name">プレイヤー${i + 1}</span>
-            <select onchange="onChangeOnlinePlayerType(${i}, this.value)" class="player-setting-select">
+            <select data-ui-change="onlinePlayerType" data-player-index="${i}" class="player-setting-select">
                 <option value="human" ${s.type === "human" ? "selected" : ""}>人間</option>
                 <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
                 <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>

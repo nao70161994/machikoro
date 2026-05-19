@@ -222,6 +222,8 @@ runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', 
     assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('value="rl" selected'));
     assert.ok(!localRt.elements.onlinePlayerSettings.innerHTML.includes('value="rl" disabled'));
     assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('脅威度上位3人の相手を見て判断します'));
+    assert.ok(localRt.elements.onlinePlayerSettings.innerHTML.includes('data-ui-change="onlinePlayerType"'));
+    assert.ok(!localRt.elements.onlinePlayerSettings.innerHTML.includes('onChangeOnlinePlayerType('));
 });
 
 // ===== applyAction =====

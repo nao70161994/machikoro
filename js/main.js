@@ -144,7 +144,7 @@ function renderPlayerSettings() {
         <div class="player-setting">
             <div class="player-setting-row">
                 <span class="player-setting-name">プレイヤー${i + 1}</span>
-                <select onchange="onChangePlayerType(${i}, this.value)" class="player-setting-select">
+                <select data-ui-change="localPlayerType" data-player-index="${i}" class="player-setting-select">
                     <option value="human" ${s.type === "human" ? "selected" : ""}>人間</option>
                     <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
                     <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
@@ -160,7 +160,8 @@ function renderPlayerSettings() {
                     class="text-input player-name-input"
                     placeholder="${defaultLocalPlayerName(i)}"
                     value="${escapeAttribute(s.name)}"
-                    oninput="onChangePlayerName(${i}, this.value)"
+                    data-ui-input="localPlayerName"
+                    data-player-index="${i}"
                 >
             ` : `<div class="player-setting-cpu-label">${getLocalCpuLabel(s.difficulty)}として統計を記録</div>`}
         </div>
@@ -742,6 +743,8 @@ function handleStaticUiInput(event) {
         document.getElementById('speedLabel').textContent = formatCpuSpeedLabel(element.value);
     } else if (element.dataset.uiInput === 'onlineCpuSpeed') {
         document.getElementById('onlineSpeedLabel').textContent = formatCpuSpeedLabel(element.value);
+    } else if (element.dataset.uiInput === 'localPlayerName') {
+        onChangePlayerName(parseInt(element.dataset.playerIndex, 10), element.value);
     }
 }
 
@@ -750,6 +753,8 @@ function handleStaticUiChange(event) {
     if (!element) return;
     if (element.dataset.uiChange === 'toggleTutorialEnabled') onToggleTutorial(element.checked);
     else if (element.dataset.uiChange === 'tutorialLevel') onChangeTutorialLevel(element.value);
+    else if (element.dataset.uiChange === 'localPlayerType') onChangePlayerType(parseInt(element.dataset.playerIndex, 10), element.value);
+    else if (element.dataset.uiChange === 'onlinePlayerType') onChangeOnlinePlayerType(parseInt(element.dataset.playerIndex, 10), element.value);
 }
 
 function bindStaticUiHandlers() {

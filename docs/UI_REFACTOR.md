@@ -13,6 +13,7 @@ UI は browser-global のまま維持する。大規模な framework 化や全�
 - カード選択 modal のセット切替、個別カード、ランドマーク、決定ボタンを delegated handler へ移行した。
 - stats UI の表示モード、プレイヤー/CPU filter、リセット操作を delegated handler へ移行した。
 - `index.html` の静的 click/input/change inline handler を `data-ui-action` / `data-ui-input` / `data-ui-change` の document delegated handler へ移行した。
+- ローカル / オンラインのプレイヤー設定 select/input を `data-ui-change` / `data-ui-input` へ移行した。
 - build menu のカード建設、ランドマーク建設、詳細表示、filter、Undo を `data-action` ベースの delegated click handler へ移行した。
 - player panel のカード詳細表示を `data-action="showCardDetail"` へ移行した。
 - pending menu の既存 delegated handler と同じ `actionButtonFromEvent()` helper を使うようにした。
@@ -24,5 +25,4 @@ UI は browser-global のまま維持する。大規模な framework 化や全�
 
 ## 次に触る順序
 
-1. player settings / online player settings の動的 select/input inline handler を targeted test 付きで移行する。
-2. renderPending の pending 種別ごとの helper 分離。
+1. renderPending の pending 種別ごとの helper 分離。

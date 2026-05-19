@@ -198,3 +198,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - 動的に生成する player settings / online player settings の select/input inline handler は残る。DOM 再描画と設定保存の境界を壊さないよう、次テーマで個別に扱う。
+
+
+### Phase D player settings delegated handler
+
+確認した内容:
+
+- ローカル / オンラインのプレイヤー設定 UI から動的 inline handler を外し、既存の設定更新関数を document delegated handler から呼ぶようにした。
+- `index.html` と主要動的 UI から inline handler を取り除き、残る UI action は data attribute 経由で追える状態にした。
+
+残リスク:
+
+- 今後追加する動的 UI は `data-action` または `data-ui-*` に合わせる必要がある。

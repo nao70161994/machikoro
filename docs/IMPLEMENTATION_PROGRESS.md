@@ -1308,3 +1308,29 @@
   - `node tests/main.test.js`
   - `git diff --check`
 - 残課題: `renderPlayerSettings()` と `renderOnlinePlayerSettings()` の動的 select/input inline handler は残るため、次テーマで delegated handler 化する。
+
+
+## Phase D inline handler cleanup: player settings
+
+- 状態: done
+- commit: pending
+- 変更ファイル:
+  - `js/main.js`
+  - `js/online.js`
+  - `tests/main.test.js`
+  - `tests/online.test.js`
+  - `docs/UI_REFACTOR.md`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - `renderPlayerSettings()` の player type select と player name input から inline handler を外し、static UI delegated handler の `data-ui-change` / `data-ui-input` に接続した。
+  - `renderOnlinePlayerSettings()` の player type select も `data-ui-change="onlinePlayerType"` に移行した。
+  - main / online targeted tests で local settings の変更反映と online settings HTML の inline handler 退避を確認した。
+- 実行テスト:
+  - `node --check js/main.js`
+  - `node --check js/online.js`
+  - `node --check tests/main.test.js`
+  - `node --check tests/online.test.js`
+  - `node tests/main.test.js`
+  - `node tests/online.test.js`
+  - `git diff --check`
+- 残課題: 既知の動的 inline handler は解消済み。次は renderPending の helper 分離へ進む。
