@@ -271,3 +271,21 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - Service Worker の実更新挙動は自動テストでは完全代替できないため、更新バナーと reload は実ブラウザで確認する。
+
+### 2026-05-20 pending modal recursion fix
+
+確認した内容:
+
+- 実機 iPhone Safari で `updatePendingModalContent()` が大量に再帰表示される症状は、helper 本体が同名関数を再呼び出ししていたため発生していた。
+- `updatePendingModalContent()` を実際の DOM 更新処理へ戻し、`pendingMenu` / `pendingModal` が欠ける場合は `false` で抜ける guard を追加した。
+- DOM 更新中に再入しても即 return する guard を追加し、Safari の modal / layout 更新タイミングやテスト用 setter 由来の再帰で stack overflow しないようにした。
+- `renderPending()` は末尾でも同 helper を使うように統一し、表示・非表示の経路を同じ guard に通した。
+
+再発防止:
+
+- `tests/ui.test.js` に、DOM 欠落時と `innerHTML` setter からの再入時に `updatePendingModalContent()` が再帰しない targeted test を追加した。
+- pending modal まわりを触る場合は `node tests/ui.test.js` に加え、`npm run test:smoke` / `npm test` / `npm run test:online` で render / delegated handler / online pending 復元経路を確認する。
+
+残リスク:
+
+- 実ブラウザ iPhone Safari での長時間 pending 操作、画面復帰、複数 pending の連続解決は manual verification required。

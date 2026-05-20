@@ -172,6 +172,33 @@ runTest('render helper は勝利・通常描画・保存境界へ分かれてい
     assert.strictEqual(context.saveGameCalls, 1);
 });
 
+runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () => {
+    const { context } = loadUiRuntime();
+    const modal = makeElement();
+    let writeCount = 0;
+    let currentHtml = '';
+    const el = makeElement();
+    Object.defineProperty(el, 'innerHTML', {
+        get() { return currentHtml; },
+        set(value) {
+            writeCount++;
+            currentHtml = value;
+            context.updatePendingModalContent(el, modal, '<p>recursive</p>');
+        },
+    });
+
+    assert.strictEqual(context.updatePendingModalContent(null, modal, '<p>x</p>'), false);
+    assert.strictEqual(context.updatePendingModalContent(el, null, '<p>x</p>'), false);
+    assert.strictEqual(context.updatePendingModalContent(el, modal, '<p>x</p>'), true);
+    assert.strictEqual(currentHtml, '<p>x</p>');
+    assert.strictEqual(writeCount, 1);
+    assert.strictEqual(modal.style.display, 'flex');
+
+    assert.strictEqual(context.updatePendingModalContent(el, modal, ''), true);
+    assert.strictEqual(currentHtml, '');
+    assert.strictEqual(modal.style.display, 'none');
+});
+
 runTest('render は勝利時に recordGameStats を一度だけ呼ぶ', () => {
     const { context, elements } = loadUiRuntime();
     context.game = {

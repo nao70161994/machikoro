@@ -7,6 +7,7 @@ const LOG_TYPE_DISPLAY = {
     [LOG_TYPES.SYSTEM]:  { cls: "log-system",  label: "進行"   },
     [LOG_TYPES.ERROR]:   { cls: "log-error",   label: "エラー" },
 };
+let isUpdatingPendingModalContent = false;
 
 function classifyLogEntry(entry) {
     return LOG_TYPE_DISPLAY[entry.type] || { cls: "log-system", label: "進行" };
@@ -377,7 +378,17 @@ function shouldShowPendingForCurrentPlayer() {
 }
 
 function updatePendingModalContent(el, modal, html) {
-    updatePendingModalContent(el, modal, html);
+    if (!el || !modal) return false;
+    if (isUpdatingPendingModalContent) return false;
+    isUpdatingPendingModalContent = true;
+    try {
+        const nextHtml = html || "";
+        if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
+        if (modal.style) modal.style.display = nextHtml ? "flex" : "none";
+        return true;
+    } finally {
+        isUpdatingPendingModalContent = false;
+    }
 }
 
 function hidePendingModalContent(el, modal) {
@@ -432,8 +443,7 @@ function renderPending() {
         const canSave = cur.coins >= 1;
         html += `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button data-action="resolveIT" data-do-save="true" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button data-action="resolveIT" data-do-save="false">スキップ</button></div>`;
     }
-    el.innerHTML = html;
-    modal.style.display = html ? "flex" : "none";
+    updatePendingModalContent(el, modal, html);
 }
 
 function renderPlayers() {
