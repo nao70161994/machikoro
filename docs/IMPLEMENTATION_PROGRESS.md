@@ -25,6 +25,17 @@
   - `npm run test:static`
   - `npm run test:smoke`
   - `npm test`
+  - `npm run test:online`
+  - `npm run test:cpu`
+  - `npm run test:rl`
+  - `npm run test:pwa`
+  - `node --check js/*.js`
+  - `node --check server.js`
+  - `python3 -m py_compile scripts/rl/*.py`
+  - `git diff --check`
+  - `npm run test:static`
+  - `npm run test:smoke`
+  - `npm test`
 - 残課題: なし。
 
 ## PR-002 recreateRoom payload size limit
@@ -1445,3 +1456,30 @@
   - `node tests/main.test.js`
   - `git diff --check`
 - 残課題: 実ブラウザでの Service Worker 更新バナーと cache refresh は manual verification required。
+
+## Continuous review Cycle 1 runtime/online safety
+
+- 状態: verified, full suite passed
+- 変更ファイル:
+  - `js/main.js`
+  - `js/GameManager.js`
+  - `js/ui.js`
+  - `server.js`
+  - `tests/gamemanager.test.js`
+  - `tests/main.test.js`
+  - `tests/server.test.js`
+  - `tests/ui.test.js`
+- 実装内容:
+  - 遅延 dice 操作に token / timeout id を追加し、`init()` / `restartGame()` 後に古い callback が action を実行しないようにした。
+  - pending action queue は先頭 descriptor の action だけを許可するようにし、out-of-order な pending 解決を `GameManager` / server allowed action / UI 表示で揃えた。
+  - 勝利済み canonical mirror に対する `nextTurn` / `undoBuild` などの online action を server validator で拒否するようにした。
+- 実行テスト:
+  - `node --check js/main.js`
+  - `node --check js/GameManager.js`
+  - `node --check js/ui.js`
+  - `node --check server.js`
+  - `node tests/gamemanager.test.js`
+  - `node tests/main.test.js`
+  - `node tests/ui.test.js`
+  - `node tests/server.test.js`
+- 残課題: action contract の統合、snapshot ownership の整理、server socket handler 分割は設計判断を伴うため Medium/design として継続管理する。

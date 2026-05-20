@@ -595,6 +595,24 @@ runTest('main onSelectDiceCount は遅延中にオンライン手番が変わっ
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
+runTest('main init は遅延中のdice選択callbackを無効化する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    rt.isOnlineGame = true;
+    rt.myPlayerIndex = 0;
+
+    rt.onSelectDiceCount(false);
+    rt.isOnlineGame = false;
+    rt.init(2);
+    rt.__test.flushTimeouts();
+
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+    assert.strictEqual(rt.__test.getGame().selectedDice, undefined);
+});
+
 runTest('main onReroll は phase が変わっていたら送信しない', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);

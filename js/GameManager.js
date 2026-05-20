@@ -288,6 +288,16 @@ class GameManager {
         return GameManager.pendingActionsFor(this);
     }
 
+    static nextPendingActionFor(game) {
+        return GameManager.pendingActionsFor(game)[0] || null;
+    }
+
+    static canResolvePendingField(game, field) {
+        if (!game || !field) return false;
+        const next = GameManager.nextPendingActionFor(game);
+        return !!next && next.field === field;
+    }
+
     static serializedPendingActionsFor(game) {
         return GameManager.ensurePendingActionQueue(game)
             .map(pending => ({ action: pending.action, field: pending.field }));
@@ -309,6 +319,7 @@ class GameManager {
     _consumePendingAction(field) {
         const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
         if (!spec || (Number.isInteger(this[field]) ? this[field] : 0) <= 0) return false;
+        if (!GameManager.canResolvePendingField(this, field)) return false;
         this[field]--;
         if (Array.isArray(this.pendingActionQueue)) {
             const index = this.pendingActionQueue.findIndex(entry => entry && (entry.field === spec.field || entry.action === spec.action));
@@ -325,7 +336,7 @@ class GameManager {
         if (!game) return new Set();
         const pendingActions = GameManager.pendingActionsFor(game);
         if (game.pendingIT || game.phase === GAME_PHASES.PENDING) {
-            return new Set(pendingActions.map(pending => pending.action));
+            return new Set(pendingActions[0] ? [pendingActions[0].action] : []);
         }
         return new Set(GAME_PHASE_ACTIONS[game.phase] || []);
     }
@@ -697,6 +708,7 @@ class GameManager {
 
     resolveTV(targetIndex) {
         if (this.phase !== GAME_PHASES.PENDING || this.pendingTV <= 0) return false;
+        if (!GameManager.canResolvePendingField(this, 'pendingTV')) return false;
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) {
@@ -714,6 +726,7 @@ class GameManager {
 
     resolveBusiness(myCardRef, targetIndex, theirCardRef) {
         if (this.phase !== GAME_PHASES.PENDING || this.pendingBusiness <= 0) return false;
+        if (!GameManager.canResolvePendingField(this, 'pendingBusiness')) return false;
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 交換相手を選び直してください`); return false; }
@@ -738,6 +751,7 @@ class GameManager {
 
     resolveCleaning(cardName) {
         if (this.phase !== GAME_PHASES.PENDING || this.pendingCleaning <= 0) return false;
+        if (!GameManager.canResolvePendingField(this, 'pendingCleaning')) return false;
         const targetCard = createCardByName(cardName);
         if (!targetCard || targetCard.category === CARD_CATEGORIES.MAJOR) return false;
         const current = this.currentPlayer();
@@ -759,6 +773,7 @@ class GameManager {
 
     resolveMover(myCardRef, targetIndex) {
         if (this.phase !== GAME_PHASES.PENDING || this.pendingMover <= 0) return false;
+        if (!GameManager.canResolvePendingField(this, 'pendingMover')) return false;
         const current = this.currentPlayer();
         const target = this.players[targetIndex];
         if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 渡す相手を選び直してください`); return false; }
@@ -778,6 +793,7 @@ class GameManager {
 
     resolveRenovation(landmarkName) {
         if (this.phase !== GAME_PHASES.PENDING || this.pendingRenovation <= 0) return false;
+        if (!GameManager.canResolvePendingField(this, 'pendingRenovation')) return false;
         const current = this.currentPlayer();
         if (!current.landmarks[landmarkName]) {
             this.addLog(LOG_TYPES.ERROR, `❌ そのランドマークは建設されていません`);

@@ -16,6 +16,8 @@ let lastWinnerName = localStorage.getItem('lastWinnerName') || '';
 let autoSkipPending = false;
 let autoSkipTimeout = null;
 let delayedHumanActionPending = false;
+let delayedHumanActionTimeout = null;
+let delayedHumanActionToken = 0;
 
 // 取り消し
 let undoState = null;
@@ -210,6 +212,7 @@ function restartGame() {
         if (typeof clearOnlineSessionStorage === 'function') clearOnlineSessionStorage();
         else localStorage.removeItem('onlineSession');
         cpuScheduleToken++;
+        cancelDelayedHumanAction();
         resetOnlineState();
         document.getElementById("gameScreen").style.display = "none";
         document.getElementById("titleScreen").style.display = "block";
@@ -225,6 +228,7 @@ function restartGame() {
 
 function init(playerCount) {
     cpuScheduleToken++;
+    cancelDelayedHumanAction();
     prevCoins = null;
     stopConfetti();
     winSoundPlayed = false;
@@ -614,6 +618,15 @@ function canRunHumanAction(action, expectedPlayerIndex = null) {
     return canRunLocalHumanAction(expectedPlayerIndex) && canRunAction(action);
 }
 
+function cancelDelayedHumanAction() {
+    delayedHumanActionToken++;
+    delayedHumanActionPending = false;
+    if (delayedHumanActionTimeout !== null) {
+        clearTimeout(delayedHumanActionTimeout);
+        delayedHumanActionTimeout = null;
+    }
+}
+
 function onRoll() {
     if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE)) return;
     playSound('dice');
@@ -624,10 +637,13 @@ function onRoll() {
         // 駅なし：アニメーションあり
         if (delayedHumanActionPending) return;
         delayedHumanActionPending = true;
+        const scheduledToken = ++delayedHumanActionToken;
         const scheduledPlayerIndex = game.currentPlayerIndex;
         updateDiceDisplay(null, true);
-        setTimeout(() => {
+        delayedHumanActionTimeout = setTimeout(() => {
+            if (scheduledToken !== delayedHumanActionToken) return;
             delayedHumanActionPending = false;
+            delayedHumanActionTimeout = null;
             if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex)) return;
             if (isOnlineGame) {
                 runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
@@ -644,11 +660,14 @@ function onSelectDiceCount(useTwo) {
     if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE)) return;
     if (delayedHumanActionPending) return;
     delayedHumanActionPending = true;
+    const scheduledToken = ++delayedHumanActionToken;
     playSound('dice');
     const scheduledPlayerIndex = game.currentPlayerIndex;
     updateDiceDisplay(null, true);
-    setTimeout(() => {
+    delayedHumanActionTimeout = setTimeout(() => {
+        if (scheduledToken !== delayedHumanActionToken) return;
         delayedHumanActionPending = false;
+        delayedHumanActionTimeout = null;
         if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex)) return;
         if (isOnlineGame) {
             runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1 },

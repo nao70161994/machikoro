@@ -1305,6 +1305,7 @@ function validateGameAction(room, socket, action, data) {
     const mirror = getRoomCanonicalMirror(room);
     if (!mirror) return { ok: false };
     const { game, cpuPlayers, shopStock } = mirror;
+    if (game.checkWinner && game.checkWinner()) return { ok: false };
     const currentIndex = game.currentPlayerIndex;
     const currentIsCpu = !!cpuPlayers[currentIndex];
     const hostPlayerIndex = room.hostPlayerIndex;

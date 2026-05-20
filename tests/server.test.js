@@ -419,6 +419,20 @@ runTest('online validateGameAction は lastUndoState があると undoBuild を�
     assert.strictEqual(result.ok, true);
 });
 
+runTest('validateGameAction は勝利後の nextTurn と undoBuild を拒否する', () => {
+    const room = makeRoom();
+    room.gameStartPayload.enabledLandmarks = ['駅'];
+    room.actionLog = [
+        { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, playerIndex: 0 },
+        { action: 'buildLandmark', data: { name: '駅' }, playerIndex: 0 },
+    ];
+
+    const mirror = createRoomMirror(room);
+    assert.ok(mirror.game.checkWinner());
+    assert.strictEqual(validateGameAction(room, { playerIndex: 0 }, 'nextTurn', {}).ok, false);
+    assert.strictEqual(validateGameAction(room, { playerIndex: 0 }, 'undoBuild', {}).ok, false);
+});
+
 runTest('createRoomMirror は build action replay から lastUndoState を復元する', () => {
     const room = makeRoom();
     room.actionLog = [
@@ -865,7 +879,7 @@ runTest('getAllowedActions は pendingIT 中に resolveIT のみ返す', () => {
     assert.deepStrictEqual([...getAllowedActions(game)], [GAME_ACTIONS.RESOLVE_IT]);
 });
 
-runTest('getAllowedActions は pending の内容から解決可能アクションを列挙する', () => {
+runTest('getAllowedActions は pending queue の先頭actionだけを返す', () => {
     const { GameManager, GAME_ACTIONS } = loadGameRuntime();
     const game = new GameManager(2);
     game.phase = 'pending';
@@ -874,16 +888,7 @@ runTest('getAllowedActions は pending の内容から解決可能アクショ�
     game.pendingCleaning = 1;
     game.pendingMover = 1;
     game.pendingRenovation = 1;
-    assert.deepStrictEqual(
-        [...getAllowedActions(game)],
-        [
-            GAME_ACTIONS.RESOLVE_TV,
-            GAME_ACTIONS.RESOLVE_BUSINESS,
-            GAME_ACTIONS.RESOLVE_CLEANING,
-            GAME_ACTIONS.RESOLVE_MOVER,
-            GAME_ACTIONS.RESOLVE_RENOVATION,
-        ]
-    );
+    assert.deepStrictEqual([...getAllowedActions(game)], [GAME_ACTIONS.RESOLVE_TV]);
 });
 
 runTest('getAllowedActions は単純 phase の許可 action を GameManager と共有する', () => {

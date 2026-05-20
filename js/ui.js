@@ -401,12 +401,16 @@ function renderPending() {
     const modal = document.getElementById("pendingModal");
     if (!shouldShowPendingForCurrentPlayer()) { hidePendingModalContent(el, modal); return; }
     let html = "";
+    const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
+        ? GameManager.nextPendingActionFor(game)
+        : null;
+    const shouldRenderPendingField = field => !nextPending || nextPending.field === field;
     const inspectHint = `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
-    if (game.pendingTV > 0) {
+    if (shouldRenderPendingField('pendingTV') && game.pendingTV > 0) {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         html += `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${inspectHint}${others.map(({ p, i }) => `<button data-action="resolveTV" data-target-index="${i}">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
     }
-    if (game.pendingBusiness > 0) {
+    if (shouldRenderPendingField('pendingBusiness') && game.pendingBusiness > 0) {
         const current = game.currentPlayer();
         const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
@@ -424,22 +428,22 @@ function renderPending() {
         }).join("");
         html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
     }
-    if (game.pendingCleaning > 0) {
+    if (shouldRenderPendingField('pendingCleaning') && game.pendingCleaning > 0) {
         const allCardNames = [...new Set(game.players.flatMap(p => p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
         html += `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div>`;
     }
-    if (game.pendingMover > 0) {
+    if (shouldRenderPendingField('pendingMover') && game.pendingMover > 0) {
         const current = game.currentPlayer();
         const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         html += `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
     }
-    if (game.pendingRenovation > 0) {
+    if (shouldRenderPendingField('pendingRenovation') && game.pendingRenovation > 0) {
         const current = game.currentPlayer();
         const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO).map(([name]) => name);
         html += `<div class="pending-box"><p>🔨 改装屋：取り壊すランドマークを選んでください（+8コイン）</p>${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button data-action="resolveRenovation" data-landmark-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
     }
-    if (game.pendingIT) {
+    if (shouldRenderPendingField('pendingIT') && game.pendingIT) {
         const cur = game.currentPlayer();
         const canSave = cur.coins >= 1;
         html += `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button data-action="resolveIT" data-do-save="true" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button data-action="resolveIT" data-do-save="false">スキップ</button></div>`;

@@ -323,6 +323,37 @@ runTest('renderPending は Business Center chip を data-action で描画する'
     assert.ok(!elements.pendingMenu.innerHTML.includes('bcSelectCard('));
 });
 
+runTest('renderPending は pending queue の先頭panelだけを描画する', () => {
+    const { context, elements } = loadUiRuntime();
+    const makePlayer = (name, cardNames) => ({
+        name,
+        coins: 3,
+        cards: cardNames.map(cardName => ({ name: cardName, color: 'blue' })),
+        getMinorCards() { return this.cards; },
+        isDormant() { return false; },
+    });
+    context.GameManager = {
+        nextPendingActionFor() { return { action: 'resolveBusiness', field: 'pendingBusiness', count: 1 }; },
+    };
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        pendingTV: 1,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        players: [makePlayer('Alice', ['麦畑']), makePlayer('Bob', ['牧場'])],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+
+    context.renderPending();
+
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
+    assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
+});
+
 runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示する', () => {
     const { context, elements } = loadUiRuntime();
     context.game = {

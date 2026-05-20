@@ -68,3 +68,11 @@ npm test
 - Mobile UI: title screen は低い画面で縦 scroll できるようにした。
 
 残る中・低優先は `docs/REFACTOR_PLAN.md` の review backlog に整理しています。
+
+## 2026-05-20 continuous review Cycle 1
+
+- Critical: 未検出。
+- High fixed: 遅延 dice callback の世代ずれ、pending queue の out-of-order 解決、勝利後 online action の許可。
+- 追加した不変条件: pending 中に許可される action は queue の先頭 descriptor の action だけ。UI も server も `GameManager` の同じ helper を正本にする。
+- 次に見る Medium/design: action contract の層間重複、snapshot ownership の整理、server socket handler / validation 分割、CPU evaluation / execution 分割。
+- 手動確認候補: 複数端末 online で複数 pending が連続するケース、最終ランドマーク建設直後の reconnect / restore、iPhone Safari の dice animation 中 restart。

@@ -189,10 +189,7 @@ runTest('allowedActions は phase と pending 状態から許可actionを返す'
     game.phase = GAME_PHASES.PENDING;
     game.pendingTV = 1;
     game.pendingMover = 1;
-    assert.deepStrictEqual(
-        [...game.allowedActions()].sort(),
-        [GAME_ACTIONS.RESOLVE_MOVER, GAME_ACTIONS.RESOLVE_TV].sort()
-    );
+    assert.deepStrictEqual([...game.allowedActions()], [GAME_ACTIONS.RESOLVE_TV]);
 
     game.pendingIT = true;
     assert.deepStrictEqual([...game.allowedActions()], [GAME_ACTIONS.RESOLVE_IT]);
@@ -293,6 +290,25 @@ runTest('pendingActions queue は互換fieldとdual-writeされる', () => {
         { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
         { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
     ]);
+});
+
+runTest('pendingActions queue は先頭のpendingだけを解決可能にする', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingActionQueue = [
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+    ];
+    game.pendingBusiness = 1;
+    game.pendingTV = 1;
+
+    assert.deepStrictEqual([...game.allowedActions()], [GAME_ACTIONS.RESOLVE_BUSINESS]);
+    assert.strictEqual(GameManager.canResolvePendingField(game, 'pendingTV'), false);
+    assert.strictEqual(game._consumePendingAction('pendingTV'), false);
+    assert.strictEqual(game.pendingTV, 1);
+
+    assert.strictEqual(game._consumePendingAction('pendingBusiness'), true);
+    assert.deepStrictEqual([...game.allowedActions()], [GAME_ACTIONS.RESOLVE_TV]);
 });
 
 runTest('resetPendingState と resetTurnState は共通turn fieldを初期化する', () => {

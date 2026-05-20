@@ -310,3 +310,23 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - 実ブラウザ iPhone Safari での長時間 pending / modal 操作、画面復帰、複数 pending の連続解決は manual verification required。
 - build menu や card select のさらなる helper 分離は可能だが、HTML 出力差分が大きくなるため今回の自動対応では guard と再発テストに限定した。
+
+### Continuous review Cycle 1 runtime/online safety
+
+確認した内容:
+
+- サブエージェントレビューで Critical は未検出。High として、遅延 dice callback の世代ずれ、pending queue の out-of-order 解決、勝利後 online action の許可を確認した。
+- `main.js` の遅延 dice action は token と timeout id で管理し、`init()` / `restartGame()` で古い callback を無効化した。
+- `GameManager.nextPendingActionFor()` / `canResolvePendingField()` を追加し、pending queue の先頭以外は action gate と resolver の両方で拒否するようにした。
+- `renderPending()` は pending queue の先頭 panel だけを描画するようにし、server の `getAllowedActions()` も同じ正本へ揃えた。
+- `validateGameAction()` は canonical mirror が勝利済みなら action を拒否し、最終ランドマーク建設後の `undoBuild` / `nextTurn` 通過を防止した。
+
+再発防止:
+
+- pending queue の先頭制約、UI panel 表示、勝利後 server action reject、遅延 dice callback invalidation の targeted tests を追加した。
+- pending / restore / online action を触る場合は `node tests/gamemanager.test.js` と `node tests/server.test.js` を最低限実行する。
+
+残リスク:
+
+- action contract の重複、snapshot ownership の分散、server socket handler の大きさは Medium/design。小さな helper 分離は可能だが、仕様境界を崩さないため継続 review cycle で扱う。
+- 複数端末の online pending 連続解決、勝利直後の reconnect / restore は manual verification required。
