@@ -464,3 +464,17 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - formatting や branch instrumentation の分離はまだ大きめの差分になるため、今後も helper 単位で小さく進める。
+
+### Automated release pseudo-E2E gate
+
+確認した内容:
+
+- Playwright は現状依存に無く、sandbox/network 制約下で browser binary を追加取得しない方針にした。
+- 代替として既存 Node/vm harness に `release` group を追加し、`npm run test:release` で mobile/PWA/ntfy/restore/long-run 近似をまとめて実行できるようにした。
+- ntfy test は mock fetch を使い、実通知を送らずに title/body/topic を検証する。
+- PWA update は `index.html` の update contract と SW `message` / `activate` lifecycle を検証する。
+
+残リスク:
+
+- 実ブラウザの描画、OS install prompt、iOS Safari の keyboard/safe-area 挙動、Android TWA/WebView 差分、実ネットワークでの sleep/reconnect は manual only。
+- 将来 Playwright を導入できる環境になった場合は、この `release` group に browser-backed spec を追加する。

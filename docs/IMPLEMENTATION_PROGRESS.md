@@ -1648,3 +1648,18 @@
 - 実装内容:
   - `diagnose-expert-v2-branches.js` から counter 作成/合算/name counter 差分 helper を小さな CommonJS module へ分離した。
   - diagnostics 本体の実行フロー・CLI・出力形式は変更していない。
+
+## Automated release pseudo-E2E gate
+
+- 状態: implemented, targeted tests pending
+- 変更ファイル:
+  - `tests/release-e2e.test.js`
+  - `tests/run-all.js`
+  - `package.json`
+  - `docs/AUTOMATED_RELEASE_TEST.md`
+- 実装内容:
+  - Playwright 依存は追加せず、既存 Node/vm harness で `npm run test:release` を追加した。
+  - iPhone Safari / Android Chrome 相当 profile、safe-area / viewport / touch 前提、client-error capture、ntfy test endpoint mock、PWA install/update、SW lifecycle、modal focus/Esc、server restart restore / host migration、短縮 long-run snapshot roundtrip を release gate にまとめた。
+  - `docs/AUTOMATED_RELEASE_TEST.md` に automated / partial / manual only の分類と release command set を追加した。
+- manual only:
+  - 実 iOS Safari / Android Chrome の rendering、native install UI、multi-tab SW update、実 ntfy delivery、実ネットワークでの複数端末 reconnect は手動確認が必要。

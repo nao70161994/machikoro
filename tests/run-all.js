@@ -74,6 +74,9 @@ const TEST_GROUPS = {
         'main.test.js',
         'sw.test.js',
     ],
+    release: [
+        'release-e2e.test.js',
+    ],
     'cpu-smoke': [
         'cpu.test.js',
     ],
