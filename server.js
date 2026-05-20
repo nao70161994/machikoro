@@ -90,6 +90,7 @@ const CLIENT_ERROR_LIMITS = Object.freeze({
 });
 const clientErrorRateBuckets = new Map();
 const clientErrorDedupeCache = new Map();
+const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 function truncateText(value, maxLength) {
     const text = String(value || '');
@@ -243,6 +244,52 @@ async function handleClientErrorRequest(req, res, options = {}) {
 }
 
 
+function isClientErrorTestEnabled(env = process.env) {
+    const explicit = String(env.CLIENT_ERROR_TEST_ENABLED || '').toLowerCase();
+    if (CLIENT_ERROR_TEST_ENABLED_VALUES.has(explicit)) return true;
+    const nodeEnv = String(env.NODE_ENV || '').toLowerCase();
+    return nodeEnv === 'development' || nodeEnv === 'test';
+}
+
+function buildClientErrorTestPayload(now = Date.now(), buildHash = BUILD_HASH) {
+    return {
+        source: 'manual-test-endpoint',
+        message: 'Machikoro ntfy test notification',
+        stack: 'Manual test via /api/client-error-test; no real client error occurred.',
+        filename: 'server.js',
+        line: null,
+        column: null,
+        userAgent: 'server-side test endpoint',
+        phase: 'test',
+        roomId: 'TEST01',
+        playerIndex: 0,
+        timestamp: new Date(now).toISOString(),
+        appVersion: buildHash,
+    };
+}
+
+async function handleClientErrorTestRequest(req, res, options = {}) {
+    const env = options.env || process.env;
+    if (!isClientErrorTestEnabled(env)) {
+        res.status(404).json({ ok: false, error: 'client_error_test_disabled' });
+        return;
+    }
+    if (!env.NTFY_TOPIC && !(options.notifyOptions && options.notifyOptions.topic)) {
+        console.warn('[client-error-test] NTFY_TOPIC is not set; test notification was not sent');
+        res.status(503).json({ ok: false, error: 'missing_ntfy_topic', message: 'NTFY_TOPIC is not set' });
+        return;
+    }
+    const now = options.now || Date.now();
+    const normalized = normalizeClientErrorPayload(buildClientErrorTestPayload(now, options.buildHash || BUILD_HASH), now);
+    if (!normalized.ok) {
+        res.status(500).json({ ok: false, error: normalized.reason });
+        return;
+    }
+    const result = await notifyClientError(normalized.report, options.notifyOptions || {});
+    res.status(result.sent ? 202 : 503).json({ ok: result.sent, test: true, result });
+}
+
+
 function resolveBuildHash() {
     if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
     try {
@@ -303,6 +350,13 @@ app.post('/api/client-error', (req, res) => {
     handleClientErrorRequest(req, res).catch((error) => {
         console.warn('[client-error] handler failed:', error?.message || error);
         res.status(202).json({ ok: true, notificationFailed: true });
+    });
+});
+
+app.post('/api/client-error-test', (req, res) => {
+    handleClientErrorTestRequest(req, res).catch((error) => {
+        console.warn('[client-error-test] handler failed:', error?.message || error);
+        res.status(503).json({ ok: false, error: 'client_error_test_failed' });
     });
 });
 
@@ -1378,6 +1432,9 @@ module.exports = {
     formatNtfyClientErrorMessage,
     notifyClientError,
     handleClientErrorRequest,
+    isClientErrorTestEnabled,
+    buildClientErrorTestPayload,
+    handleClientErrorTestRequest,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,

@@ -20,6 +20,9 @@ const {
     isDuplicateClientError,
     formatNtfyClientErrorMessage,
     notifyClientError,
+    isClientErrorTestEnabled,
+    buildClientErrorTestPayload,
+    handleClientErrorTestRequest,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
@@ -290,6 +293,51 @@ runTest('notifyClientError は ntfy topic 設定時に title/priority/tags 付�
     assert.strictEqual(calls[0].options.headers.Priority, '4');
     assert.ok(calls[0].options.headers.Tags.includes('warning'));
     assert.ok(calls[0].options.body.includes('phase=build'));
+});
+
+runTest('client error test endpoint helper は production 既定で無効、dev/debug で有効になる', () => {
+    assert.strictEqual(isClientErrorTestEnabled({ NODE_ENV: 'production' }), false);
+    assert.strictEqual(isClientErrorTestEnabled({ NODE_ENV: 'production', CLIENT_ERROR_TEST_ENABLED: '1' }), true);
+    assert.strictEqual(isClientErrorTestEnabled({ NODE_ENV: 'development' }), true);
+    assert.strictEqual(isClientErrorTestEnabled({ NODE_ENV: 'test' }), true);
+    assert.strictEqual(isClientErrorTestEnabled({}), false);
+});
+
+runTest('client error test payload は実エラーではないことが分かる通知内容を作る', () => {
+    const payload = buildClientErrorTestPayload(1700000000000, 'testhash');
+    const normalized = normalizeClientErrorPayload(payload, 1700000000000);
+    assert.strictEqual(normalized.ok, true);
+    assert.strictEqual(normalized.report.source, 'manual-test-endpoint');
+    assert.strictEqual(normalized.report.message, 'Machikoro ntfy test notification');
+    assert.strictEqual(normalized.report.phase, 'test');
+    assert.strictEqual(normalized.report.roomId, 'TEST01');
+    assert.strictEqual(normalized.report.appVersion, 'testhash');
+    assert.ok(normalized.report.stack.includes('no real client error occurred'));
+});
+
+runTest('client error test endpoint は無効時404、NTFY_TOPIC未設定時503を返す', () => {
+    const makeRes = () => ({
+        statusCode: null,
+        body: null,
+        status(code) {
+            this.statusCode = code;
+            return this;
+        },
+        json(body) {
+            this.body = body;
+            return this;
+        },
+    });
+
+    const disabledRes = makeRes();
+    handleClientErrorTestRequest({}, disabledRes, { env: { NODE_ENV: 'production' } });
+    assert.strictEqual(disabledRes.statusCode, 404);
+    assert.strictEqual(disabledRes.body.error, 'client_error_test_disabled');
+
+    const missingTopicRes = makeRes();
+    handleClientErrorTestRequest({}, missingTopicRes, { env: { NODE_ENV: 'development' } });
+    assert.strictEqual(missingTopicRes.statusCode, 503);
+    assert.strictEqual(missingTopicRes.body.error, 'missing_ntfy_topic');
 });
 
 runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で網羅される', () => {

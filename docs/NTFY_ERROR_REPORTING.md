@@ -70,6 +70,31 @@ updatePendingModalContent recursion
 js/ui.js:381:5
 ```
 
+
+## Test notification
+
+A development/debug-only test endpoint is available:
+
+```sh
+curl -X POST http://localhost:3000/api/client-error-test
+```
+
+The endpoint is enabled only when one of these is true:
+
+- `NODE_ENV=development`
+- `NODE_ENV=test`
+- `CLIENT_ERROR_TEST_ENABLED=1`
+
+It is disabled by default when `NODE_ENV` is unset or `production`, so it is not a production button that anyone can press. For Render production, enable `CLIENT_ERROR_TEST_ENABLED=1` only temporarily while testing, then remove it and redeploy/restart.
+
+If `NTFY_TOPIC` is missing, the endpoint returns a clear warning response:
+
+```json
+{"ok":false,"error":"missing_ntfy_topic","message":"NTFY_TOPIC is not set"}
+```
+
+A successful test returns `202` and sends a notification with `phase=test`, `room=TEST01`, and the message `Machikoro ntfy test notification`. This notification is explicitly marked as a manual test and does not represent a real client error.
+
 ## Server safeguards
 
 - Payloads are validated and capped to 32 KiB.
