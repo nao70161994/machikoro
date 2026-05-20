@@ -600,6 +600,26 @@ runTest('RLCPU: actionMask は駅あり roll でもまず1個振りのみ許可�
     assert.strictEqual(mask[RLCPU.ACTIONS.ROLL2], 0);
 });
 
+runTest('RLCPU: actionMask は pending queue の先頭fieldだけを有効化する', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, GAME_PHASES, CARDS } = context;
+    const cpu = new RLCPU(buildParityModel(context));
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingActionQueue = [
+        { action: 'resolveCleaning', field: 'pendingCleaning' },
+        { action: 'resolveTV', field: 'pendingTV' },
+    ];
+    game.pendingCleaning = 1;
+    game.pendingTV = 1;
+
+    const mask = cpu.actionMask(game);
+    const wheatIndex = CARDS.findIndex(card => card.name === '麦畑');
+
+    assert.strictEqual(mask[RLCPU.ACTIONS.TV_TARGET], 0);
+    assert.strictEqual(mask[RLCPU.ACTIONS.CLEAN_BASE + wheatIndex], 1);
+});
+
 runTest('RLCPU: 初期局面の encodeGameState は Python 側 encode_state と一致する', () => {
     const context = loadRLRuntime();
     vm.runInContext('this.CARDS = CARDS;', context);

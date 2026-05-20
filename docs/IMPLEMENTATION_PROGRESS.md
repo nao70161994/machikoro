@@ -1483,3 +1483,42 @@
   - `node tests/ui.test.js`
   - `node tests/server.test.js`
 - 残課題: action contract の統合、snapshot ownership の整理、server socket handler 分割は設計判断を伴うため Medium/design として継続管理する。
+
+## Continuous review Cycle 2 restore replay winner guard
+
+- 状態: implemented, targeted server tests passed
+- 変更ファイル:
+  - `server/mirrorReplay.js`
+  - `tests/server.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/AI_HANDOFF.md`
+- 実装内容:
+  - live validator の勝利後 action reject と同じ不変条件を restore replay 側にも追加した。
+  - server restart restore / recreateRoom の actionLog replay で、終局後に続く `nextTurn` / `undoBuild` などの action を拒否する。
+- 実行テスト:
+  - `node --check server/mirrorReplay.js`
+  - `node --check server.js`
+  - `node tests/server.test.js`
+- 残課題: eval script / RLCPU の pending queue 順追従は Medium として次 Cycle で安全性を確認する。
+
+## Continuous review Cycle 2 pending queue parity
+
+- 状態: implemented, targeted tests passed
+- 変更ファイル:
+  - `js/RLCPU.js`
+  - `scripts/eval-expert-vs-weak.js`
+  - `scripts/eval-expert-vs-normal.js`
+  - `tests/rlcpu.test.js`
+  - `tests/eval-expert-vs-weak.test.js`
+  - `tests/eval-expert-vs-normal.test.js`
+- 実装内容:
+  - RLCPU の pending action mask を `GameManager.nextPendingActionFor()` に追従させ、queue 先頭以外の pending action を mask しないようにした。
+  - expert eval fast path の pending 解決も queue 先頭 field を見るようにし、固定 field 順による空回りを避けた。
+- 実行テスト:
+  - `node --check js/RLCPU.js`
+  - `node --check scripts/eval-expert-vs-weak.js`
+  - `node --check scripts/eval-expert-vs-normal.js`
+  - `node tests/rlcpu.test.js`
+  - `node tests/eval-expert-vs-weak.test.js`
+  - `node tests/eval-expert-vs-normal.test.js`

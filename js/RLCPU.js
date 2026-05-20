@@ -689,11 +689,15 @@ class RLCPU {
         }
 
         if (game.phase === GAME_PHASES.PENDING) {
-            if (game.pendingTV > 0) {
+            const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
+                ? GameManager.nextPendingActionFor(game)
+                : null;
+            const shouldMaskPendingField = field => !nextPending || nextPending.field === field;
+            if (shouldMaskPendingField('pendingTV') && game.pendingTV > 0) {
                 mask[actionConstants.TV_TARGET] = 1;
                 return mask;
             }
-            if (game.pendingBusiness > 0) {
+            if (shouldMaskPendingField('pendingBusiness') && game.pendingBusiness > 0) {
                 const myCounts = this._cardCounts(current, false);
                 const opponentIndices = game.players
                     .map((_, index) => index)
@@ -710,7 +714,7 @@ class RLCPU {
                 if (!mask.some(Boolean)) mask[actionConstants.PASS] = 1;
                 return mask;
             }
-            if (game.pendingCleaning > 0) {
+            if (shouldMaskPendingField('pendingCleaning') && game.pendingCleaning > 0) {
                 for (let cardIndex = 0; cardIndex < CARDS.length; cardIndex++) {
                     const card = CARDS[cardIndex];
                     if (card.category === CARD_CATEGORIES.MAJOR) continue;
@@ -721,7 +725,7 @@ class RLCPU {
                 if (!mask.some(Boolean)) mask[actionConstants.PASS] = 1;
                 return mask;
             }
-            if (game.pendingMover > 0) {
+            if (shouldMaskPendingField('pendingMover') && game.pendingMover > 0) {
                 const myCounts = this._cardCounts(current, false);
                 for (let cardIndex = 0; cardIndex < CARDS.length; cardIndex++) {
                     const card = CARDS[cardIndex];
@@ -731,7 +735,7 @@ class RLCPU {
                 if (!mask.some(Boolean)) mask[actionConstants.PASS] = 1;
                 return mask;
             }
-            if (game.pendingRenovation > 0) {
+            if (shouldMaskPendingField('pendingRenovation') && game.pendingRenovation > 0) {
                 for (let landmarkIndex = 0; landmarkIndex < RLCPU.LANDMARK_ORDER.length; landmarkIndex++) {
                     const name = RLCPU.LANDMARK_ORDER[landmarkIndex];
                     if (current.landmarks[name]) mask[actionConstants.RENO_BASE + landmarkIndex] = 1;
@@ -739,7 +743,7 @@ class RLCPU {
                 if (!mask.some(Boolean)) mask[actionConstants.PASS] = 1;
                 return mask;
             }
-            if (game.pendingIT) {
+            if (shouldMaskPendingField('pendingIT') && game.pendingIT) {
                 if (current.coins >= 1) mask[actionConstants.IT_SAVE] = 1;
                 mask[actionConstants.IT_SKIP] = 1;
                 return mask;

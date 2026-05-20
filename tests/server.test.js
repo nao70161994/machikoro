@@ -433,6 +433,20 @@ runTest('validateGameAction は勝利後の nextTurn と undoBuild を拒否す�
     assert.strictEqual(validateGameAction(room, { playerIndex: 0 }, 'undoBuild', {}).ok, false);
 });
 
+runTest('createRoomMirror は勝利後の replay action を拒否する', () => {
+    for (const tailAction of ['nextTurn', 'undoBuild']) {
+        const room = makeRoom();
+        room.gameStartPayload.enabledLandmarks = ['駅'];
+        room.actionLog = [
+            { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, playerIndex: 0 },
+            { action: 'buildLandmark', data: { name: '駅' }, playerIndex: 0 },
+            { action: tailAction, data: {}, playerIndex: 0 },
+        ];
+
+        assert.strictEqual(createRoomMirror(room), null, tailAction + ' should be rejected after winner');
+    }
+});
+
 runTest('createRoomMirror は build action replay から lastUndoState を復元する', () => {
     const room = makeRoom();
     room.actionLog = [

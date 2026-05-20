@@ -330,3 +330,30 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - action contract の重複、snapshot ownership の分散、server socket handler の大きさは Medium/design。小さな helper 分離は可能だが、仕様境界を崩さないため継続 review cycle で扱う。
 - 複数端末の online pending 連続解決、勝利直後の reconnect / restore は manual verification required。
+
+### Continuous review Cycle 2 restore replay winner guard
+
+確認した内容:
+
+- Cycle 2 再レビューで、live の `validateGameAction()` は勝利後 action を拒否する一方、`createRoomMirror()` の actionLog replay は終局後 action を再生できる不整合を確認した。
+- `validateReplayAction()` に勝利済み game の action reject を追加し、server restart restore で終局後 actionLog を復元正本へ混ぜないようにした。
+
+再発防止:
+
+- `createRoomMirror` に、最終ランドマーク build 後の `nextTurn` / `undoBuild` replay を拒否する targeted test を追加した。
+
+残リスク:
+
+- 既に勝利済みの snapshot 自体を actionLog なしで復元する経路は維持している。勝利後に追加 actionLog がある bundle だけを拒否する。
+
+### Continuous review Cycle 2 pending queue parity
+
+確認した内容:
+
+- Cycle 2 再レビューで、RLCPU の action mask と一部 expert eval fast path が pending field の固定順を見ており、GameManager の queue 先頭制約とズレる可能性を確認した。
+- RLCPU / eval fast path の pending 判定を `GameManager.nextPendingActionFor()` に追従させた。
+
+再発防止:
+
+- RLCPU の action mask が queue 先頭 field だけを有効化する test を追加した。
+- expert eval fast path が `GameManager.nextPendingActionFor(game)` と field guard を使うことを static test で固定した。

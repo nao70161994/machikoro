@@ -302,6 +302,7 @@ function makeMirrorReplay({
 
     function validateReplayAction(room, game, shopStock, entry, lastUndoState, cpuPlayers) {
         const { action, data } = entry;
+        if (game.checkWinner && game.checkWinner()) return false;
         if (!validateReplayActor(room, game, entry, cpuPlayers)) return false;
         if (!getAllowedActions(game).has(action)) return false;
         return validateActionPayloadForState(room, game, shopStock, action, data, {

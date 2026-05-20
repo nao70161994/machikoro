@@ -276,6 +276,14 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(md.includes('| crowd | expert,normal,normal,normal | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
 
+runTest('eval-expert-vs-normal fast pending は queue 先頭fieldを参照する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-normal.js'), 'utf8');
+
+    assert.ok(source.includes('GameManager.nextPendingActionFor(game)'));
+    assert.ok(source.includes("shouldResolvePendingField('pendingTV')"));
+    assert.ok(source.includes("shouldResolvePendingField('pendingBusiness')"));
+});
+
 runTest('eval-expert-vs-normal は live expert に指定presetを渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-normal.js'), 'utf8');
     assert.ok(source.includes("expertPreset: config.expertPreset || 'v2simple'"));

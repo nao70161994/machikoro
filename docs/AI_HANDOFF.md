@@ -76,3 +76,14 @@ npm test
 - 追加した不変条件: pending 中に許可される action は queue の先頭 descriptor の action だけ。UI も server も `GameManager` の同じ helper を正本にする。
 - 次に見る Medium/design: action contract の層間重複、snapshot ownership の整理、server socket handler / validation 分割、CPU evaluation / execution 分割。
 - 手動確認候補: 複数端末 online で複数 pending が連続するケース、最終ランドマーク建設直後の reconnect / restore、iPhone Safari の dice animation 中 restart。
+
+## 2026-05-20 continuous review Cycle 2
+
+- High fixed: server restart restore の actionLog replay が勝利後 action を再生できる不整合を修正した。
+- 追加した不変条件: live validation と restore replay のどちらでも、勝利済み game には追加 action を適用しない。
+- Medium follow-up: eval scripts と RLCPU action mask は pending queue の先頭 descriptor を正本にする余地がある。
+
+## 2026-05-20 continuous review Cycle 2 pending parity
+
+- Medium fixed: RLCPU action mask と expert eval fast path を pending queue 先頭 descriptor に追従させた。
+- 追加した不変条件: RL / CPU evaluation 補助でも、pending 中に扱う action は GameManager の queue 先頭を正本にする。

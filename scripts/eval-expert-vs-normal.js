@@ -286,11 +286,15 @@ function getFastSeriesEvaluator(runtime) {
                         game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
                         return;
                     case GAME_PHASES.PENDING:
-                        if (game.pendingTV > 0) {
+                        const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
+                            ? GameManager.nextPendingActionFor(game)
+                            : null;
+                        const shouldResolvePendingField = field => !nextPending || nextPending.field === field;
+                        if (shouldResolvePendingField('pendingTV') && game.pendingTV > 0) {
                             game.resolveTV(cpu.chooseTVTarget(game));
                             return;
                         }
-                        if (game.pendingBusiness > 0) {
+                        if (shouldResolvePendingField('pendingBusiness') && game.pendingBusiness > 0) {
                             const candidatePairs = countBusinessCandidatePairs(game);
                             profile.pendingBusinessCandidatePairs += candidatePairs;
                             profile.pendingBusinessCandidatePairsMax = Math.max(profile.pendingBusinessCandidatePairsMax, candidatePairs);
@@ -307,25 +311,25 @@ function getFastSeriesEvaluator(runtime) {
                             profile.pendingBusinessResolveMaxMs = Math.max(profile.pendingBusinessResolveMaxMs, resolveElapsed);
                             return;
                         }
-                        if (game.pendingCleaning > 0) {
+                        if (shouldResolvePendingField('pendingCleaning') && game.pendingCleaning > 0) {
                             const cardName = cpu.chooseCleaningTarget(game);
                             if (cardName) game.resolveCleaning(cardName);
                             else fallbackCleaning(game);
                             return;
                         }
-                        if (game.pendingMover > 0) {
+                        if (shouldResolvePendingField('pendingMover') && game.pendingMover > 0) {
                             const move = cpu.chooseMoverMove(game);
                             if (move) game.resolveMover(move.cardIndex, move.targetIndex);
                             else fallbackMover(game);
                             return;
                         }
-                        if (game.pendingRenovation > 0) {
+                        if (shouldResolvePendingField('pendingRenovation') && game.pendingRenovation > 0) {
                             const landmarkName = cpu.chooseRenovationTarget(game);
                             if (landmarkName) game.resolveRenovation(landmarkName);
                             else fallbackRenovation(game);
                             return;
                         }
-                        if (game.pendingIT) {
+                        if (shouldResolvePendingField('pendingIT') && game.pendingIT) {
                             game.resolveIT(cpu.chooseITInvest(game));
                             return;
                         }
