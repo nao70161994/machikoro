@@ -1616,3 +1616,13 @@
   - `POST /api/client-error` と `/api/client-error-test` に optional `CLIENT_ERROR_SHARED_TOKEN` gate を追加した。未設定時は既存どおり動く。
   - browser の `Origin` / `Referer` が cross-origin の場合は拒否し、same-origin と `CLIENT_ERROR_ALLOWED_ORIGINS` を許可する。
   - auth gate は rate limit / notify より前に評価し、不正tokenやcross-origin reportを通知へ流さない。
+
+## Continuous review Cycle 5 RL eval simulator guard
+
+- 状態: implemented, targeted tests pending
+- 変更ファイル:
+  - `scripts/eval-rl-vs-js.js`
+  - `tests/eval-rl-vs-js.test.js`
+- 実装内容:
+  - RL 採用評価は fast/lite/lightweight 経路を使わない full-fidelity simulator 方針を `RL_EVAL_SIMULATION_MODE` と `buildRlEvalRunSeriesOptions()` で明示した。
+  - `--fast` / `--lite` は現時点では CLI で採用せず、将来対応する場合はこの test を意図的に更新する。

@@ -431,3 +431,14 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - shared token を browser に配る運用は強い秘密にはならない。公開productionでより強い abuse 対策が必要なら、server-side sampling や認証済み運用を別途検討する。
+
+### Continuous review Cycle 5 RL eval simulator guard
+
+確認した内容:
+
+- `eval-rl-vs-js` は RL portfolio / adoption 判断に近い評価なので、現時点では lightweight/fast simulator を使わない方針を明示した。
+- `buildRlEvalRunSeriesOptions()` は `fast=false` / `lite=false` / `lightweightCpuOnly=false` を常に `runSeries()` へ渡す。
+
+残リスク:
+
+- 将来 `eval-rl-vs-js` に fast/lite を正式導入する場合は、評価用途を smoke と adoption に分ける設計判断が必要。

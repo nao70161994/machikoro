@@ -7,7 +7,9 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     loadModel,
+    RL_EVAL_SIMULATION_MODE,
     assertRlModelLineupCompatible,
+    buildRlEvalRunSeriesOptions,
     evaluateRlVsJs,
     summarizeEvaluationEntry,
     printEvaluation,
@@ -94,6 +96,26 @@ runTest('parseArgs は games/seed/maxSteps の 0 指定を保持する', () => {
     assert.strictEqual(args.games, 0);
     assert.strictEqual(args.seed, 0);
     assert.strictEqual(args.maxSteps, 0);
+});
+
+runTest('eval-rl-vs-js は fast/lite CLI を採用評価へ入れない', () => {
+    const args = parseArgs(['--fast', '--lite']);
+    assert.strictEqual(args.fast, undefined);
+    assert.strictEqual(args.lite, undefined);
+    assert.strictEqual(RL_EVAL_SIMULATION_MODE.fast, false);
+    assert.strictEqual(RL_EVAL_SIMULATION_MODE.lite, false);
+    assert.strictEqual(RL_EVAL_SIMULATION_MODE.lightweightCpuOnly, false);
+});
+
+runTest('buildRlEvalRunSeriesOptions は full-fidelity simulator を明示する', () => {
+    const options = buildRlEvalRunSeriesOptions({ games: 1, maxSteps: 2 }, ['rl', 'weak'], 7, buildRlModel());
+    assert.strictEqual(options.games, 1);
+    assert.strictEqual(options.seed, 7);
+    assert.strictEqual(options.maxSteps, 2);
+    assert.deepStrictEqual(options.players, ['rl', 'weak']);
+    assert.strictEqual(options.fast, false);
+    assert.strictEqual(options.lite, false);
+    assert.strictEqual(options.lightweightCpuOnly, false);
 });
 
 runTest('loadModel は export 済み JSON を読み込む', () => {

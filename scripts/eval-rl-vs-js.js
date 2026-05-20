@@ -4,6 +4,13 @@ const path = require('path');
 const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
 const { runSeries } = require(path.join(__dirname, 'selfplay.js'));
 
+const RL_EVAL_SIMULATION_MODE = Object.freeze({
+    fast: false,
+    lite: false,
+    lightweightCpuOnly: false,
+    reason: 'RL adoption evaluation must use the full selfplay simulator unless a future design explicitly changes this contract.',
+});
+
 function parseArgs(argv) {
     let modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
     let games = 20;
@@ -50,6 +57,19 @@ function assertRlModelLineupCompatible(rlModelData, lineups, label = 'RL model')
     }
 }
 
+function buildRlEvalRunSeriesOptions(options, lineup, seed, rlModelData) {
+    return {
+        games: integerOrDefault(options.games, 20),
+        seed,
+        maxSteps: integerOrDefault(options.maxSteps, 5000),
+        players: lineup.slice(),
+        rlModelData,
+        fast: RL_EVAL_SIMULATION_MODE.fast,
+        lite: RL_EVAL_SIMULATION_MODE.lite,
+        lightweightCpuOnly: RL_EVAL_SIMULATION_MODE.lightweightCpuOnly,
+    };
+}
+
 function evaluateRlVsJs(options = {}) {
     const modelPath = options.modelPath || path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
     const rlModelData = options.rlModelData || loadModel(modelPath);
@@ -68,13 +88,12 @@ function evaluateRlVsJs(options = {}) {
             numActions: rlModelData.numActions,
             schemaVersion: rlModelData.schemaVersion,
         },
-        result: runSeries({
-            games,
-            seed: options.sharedSeeds ? baseSeed : baseSeed + index * games,
-            maxSteps: integerOrDefault(options.maxSteps, 5000),
-            players: lineup,
-            rlModelData,
-        }),
+        result: runSeries(buildRlEvalRunSeriesOptions(
+            options,
+            lineup,
+            options.sharedSeeds ? baseSeed : baseSeed + index * games,
+            rlModelData
+        )),
     }));
 }
 
@@ -309,7 +328,9 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     loadModel,
+    RL_EVAL_SIMULATION_MODE,
     assertRlModelLineupCompatible,
+    buildRlEvalRunSeriesOptions,
     evaluateRlVsJs,
     summarizeEvaluationEntry,
     printEvaluation,

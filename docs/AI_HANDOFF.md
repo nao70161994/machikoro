@@ -122,3 +122,8 @@ npm test
 - ntfy client error endpoint は optional `CLIENT_ERROR_SHARED_TOKEN` と origin gate を持つ。未設定時は既存の browser reporter がそのまま動く。
 - cross-origin `Origin` / `Referer` は拒否される。production で別 origin から投げる必要がある場合は `CLIENT_ERROR_ALLOWED_ORIGINS` に明記する。
 - Debug test endpoint も同じ auth gate を通るため、token 設定時の curl には `X-Client-Error-Token` が必要。
+
+## 2026-05-20 continuous review Cycle 5 RL eval simulator guard
+
+- `eval-rl-vs-js` は full-fidelity simulator 固定。`--fast` / `--lite` を安易に通さないことを test で固定した。
+- 将来 lightweight 評価を足す場合は、adoption 用ではなく smoke 用の別 flag / 別 command として設計する。
