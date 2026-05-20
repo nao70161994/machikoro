@@ -92,7 +92,7 @@ UI、CPU、online action schema まで波及する高リスク分類です。
 - `RENOVATION`
 - `ITSTARTUP`
 
-現状は `pendingTV`, `pendingBusiness`, `pendingCleaning`, `pendingMover`, `pendingRenovation` を互換 field として残しつつ、内部 `pendingActionQueue` と dual-write しています。読み取りは `ensurePendingActionQueue()` で queue を補修してから行います。`pendingIT` は `PENDING_IT_QUEUE_POLICY.queued === false` として設計固定し、queue 外の優先 special case として扱います。ITベンチャーはターン終了時の任意確認で、他の同時 pending 効果と混在しないためです。
+現状は `pendingTV`, `pendingBusiness`, `pendingCleaning`, `pendingMover`, `pendingRenovation` を互換 field として残しつつ、内部 `pendingActionQueue` と dual-write しています。読み取りは `ensurePendingActionQueue()` で queue を補修してから行います。保存・online restore の `pendingActions` は `{ action, field }` の固定対応と legacy pending count の一致が必要です。server mirror は不一致 snapshot を拒否し、client 側の queue 正規化は不一致 entry を捨てて legacy field から補修します。`pendingIT` は `PENDING_IT_QUEUE_POLICY.queued === false` として設計固定し、queue 外の優先 special case として扱います。ITベンチャーはターン終了時の任意確認で、他の同時 pending 効果と混在しないためです。
 新しい interactive 効果を追加する場合は、まず `PENDING_ACTION_SPECS` に field/action を追加して queue 対象にし、保存/online/server mirror snapshot の `pendingActions` roundtrip テストを追加してください。
 
 ### Build-time / upkeep

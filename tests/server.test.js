@@ -37,6 +37,9 @@ const {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     generateRoomId,
+    isValidRoomId,
+    canonicalizeActionData,
+    normalizeClientActionId,
     nextRoomActionSeq,
     restorePayloadRank,
     restorePayloadRankDetails,
@@ -160,6 +163,14 @@ runTest('generateRoomId は紛らわしい文字を含まない6文字IDを生�
         const roomId = generateRoomId();
         assert.match(roomId, /^[2-9A-HJ-NP-Z]{6}$/);
         assert(!/[01IO]/.test(roomId));
+    }
+});
+
+runTest('isValidRoomId は prototype key と危険形式を拒否する', () => {
+    assert.strictEqual(isValidRoomId('REST_EMPTY_SETTINGS'), true);
+    assert.strictEqual(isValidRoomId('ABC-123_foo'), true);
+    for (const roomId of ['__proto__', 'constructor', 'prototype', 'bad space', 'x'.repeat(65), '', null, {}]) {
+        assert.strictEqual(isValidRoomId(roomId), false);
     }
 });
 
@@ -590,6 +601,27 @@ runTest('createRoomMirror は snapshot 内の重複休業indexを拒否する', 
     assert.strictEqual(createRoomMirror(room), null);
 });
 
+runTest('createRoomMirror は snapshot の pendingActions action/field 不一致を拒否する', () => {
+    const mismatch = makeSnapshot({
+        phase: 'pending',
+        pendingTV: 1,
+        pendingActions: [{ action: 'resolveBusiness', field: 'pendingTV' }],
+    });
+    const countMismatch = makeSnapshot({
+        phase: 'pending',
+        pendingTV: 1,
+        pendingActions: [],
+    });
+
+    const mismatchRoom = makeRoom();
+    mismatchRoom.stateSnapshot = mismatch;
+    assert.strictEqual(createRoomMirror(mismatchRoom), null);
+
+    const countRoom = makeRoom();
+    countRoom.stateSnapshot = countMismatch;
+    assert.strictEqual(createRoomMirror(countRoom), null);
+});
+
 runTest('createRoomMirror は snapshot 内の小数コインを拒否する', () => {
     const room = makeRoom();
     const snapshot = makeSnapshot();
@@ -747,6 +779,20 @@ runTest('isActiveRoomSocket は再接続後の古いsocketを拒否する', () =
     };
     assert.strictEqual(isActiveRoomSocket(room, { id: 'new-socket', playerIndex: 0 }), true);
     assert.strictEqual(isActiveRoomSocket(room, { id: 'old-socket', playerIndex: 0 }), false);
+});
+
+runTest('canonicalizeActionData は action log に余分なpayload keyを残さない', () => {
+    assert.deepStrictEqual(canonicalizeActionData('nextTurn', { extra: 'x' }), {});
+    assert.deepStrictEqual(canonicalizeActionData('buildCard', { cardName: '麦畑', huge: 'x'.repeat(1000) }), { cardName: '麦畑' });
+    assert.deepStrictEqual(canonicalizeActionData('resolveMover', { cardIndex: 1, cardName: '麦畑', targetIndex: 2, extra: true }), { cardIndex: 1, targetIndex: 2 });
+    assert.deepStrictEqual(canonicalizeActionData('resolveMover', { cardName: '麦畑', targetIndex: 2, extra: true }), { cardName: '麦畑', targetIndex: 2 });
+});
+
+runTest('normalizeClientActionId は長すぎる値と危険文字を落とす', () => {
+    assert.strictEqual(normalizeClientActionId('client-action_1:2'), 'client-action_1:2');
+    assert.strictEqual(normalizeClientActionId('x'.repeat(121)), '');
+    assert.strictEqual(normalizeClientActionId('__proto__'), '__proto__');
+    assert.strictEqual(normalizeClientActionId('bad space'), '');
 });
 
 runTest('accepted clientActionId は再送時に既存actionAcceptedを返すため保持できる', () => {
@@ -1226,6 +1272,15 @@ runTest('validateGameAction は駅あり rollDice の forceDice null を許可�
     });
     const result = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: null, tunaDice: null });
     assert.strictEqual(result.ok, true);
+});
+
+runTest('validateGameAction は accepted payload を canonicalize できるdataへ正規化する', () => {
+    const room = makeRoom();
+    room.canonicalMirror = createRoomMirror(room);
+    const validation = validateGameAction(room, { playerIndex: 0 }, 'rollDice', { forceDice: null, tunaDice: null, extra: 'drop' });
+    assert.strictEqual(validation.ok, true);
+    const safeData = canonicalizeActionData('rollDice', validation.data);
+    assert.deepStrictEqual(Object.keys(safeData).sort(), ['forceDice', 'tunaDice']);
 });
 
 runTest('validateGameAction は駅なし online rollDice の client dice を server dice へ置き換える', () => {

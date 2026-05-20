@@ -825,10 +825,10 @@ runTest('rejoinData はサーバー上のホストが別人なら古いホスト
         reconnectTokenHashes: ['hash-a', 'hash-b'],
         hostPlayerIndex: 0,
         hostEpoch: 2,
-        actionSeq: 10,
+        actionSeq: 5,
     }));
     rt.localStorage.setItem('onlineActionLog', JSON.stringify([
-        { action: 'nextTurn', data: {}, playerIndex: 0, seq: 10 },
+        { action: 'nextTurn', data: {}, playerIndex: 0, seq: 5 },
     ]));
 
     rt.getSocketHandlers().rejoinData({
@@ -857,6 +857,59 @@ runTest('rejoinData はサーバー上のホストが別人なら古いホスト
     const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(stored.hostPlayerIndex, 1);
     assert.strictEqual(stored.actionSeq, 5);
+});
+
+runTest('rejoinData はサーバー上のホストが古くても新しいローカルホストbundleを送る', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-bob',
+        isRoomHost: true,
+    });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 1,
+        hostEpoch: 3,
+        actionSeq: 12,
+    }));
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: {
+            schemaVersion: 2,
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            reconnectTokenHashes: ['hash-a', 'hash-b'],
+            hostPlayerIndex: 0,
+            hostEpoch: 2,
+            actionSeq: 8,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 1,
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+    });
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 1);
+    assert.strictEqual(emitted.payload.gameStartPayload.hostEpoch, 3);
 });
 
 runTest('actionAccepted undoBuild は送信者もサーバー確定stateへ補正する', () => {

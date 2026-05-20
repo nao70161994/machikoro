@@ -123,6 +123,7 @@ class MachikoroEnv:
         self.pending_mover = 0
         self.pending_reno  = 0
         self.pending_it    = False
+        self.pending_action_queue = []
         self.pending_target_index = None
         self.turn_count    = 0
         self.done   = False
@@ -151,9 +152,10 @@ class MachikoroEnv:
 
         if self.phase == PHASE_PENDING:
             opp = self.players[self._pending_target_index()]
-            if self.pending_tv > 0:
+            pending_field = self._next_pending_field()
+            if pending_field == "pendingTV" and self.pending_tv > 0:
                 return [ACT_TV_TARGET]
-            if self.pending_biz > 0:
+            if pending_field == "pendingBusiness" and self.pending_biz > 0:
                 acts = []
                 # 本番ルールに合わせて、交換対象は休業中を含む施設全体から選ぶ。
                 for give_ci, give_name in enumerate(CARD_NAMES):
@@ -164,7 +166,7 @@ class MachikoroEnv:
                             continue
                         acts.append(ACT_BC_BASE + give_ci * NUM_CARDS + take_ci)
                 return acts if acts else [ACT_PASS]
-            if self.pending_clean > 0:
+            if pending_field == "pendingCleaning" and self.pending_clean > 0:
                 seen = set()
                 acts = []
                 for ci, n in enumerate(CARD_NAMES):
@@ -175,12 +177,12 @@ class MachikoroEnv:
                             seen.add(ci)
                             break
                 return acts if acts else [ACT_PASS]
-            if self.pending_mover > 0:
+            if pending_field == "pendingMover" and self.pending_mover > 0:
                 acts = [ACT_MOVER_BASE + ci
                         for ci, n in enumerate(CARD_NAMES)
                         if p.cards[n] > 0 and CARD_DEF[n].color != "purple"]
                 return acts if acts else [ACT_PASS]
-            if self.pending_reno > 0:
+            if pending_field == "pendingRenovation" and self.pending_reno > 0:
                 acts = [ACT_RENO_BASE + li
                         for li, n in enumerate(LANDMARK_ORDER)
                         if p.landmarks[n]]
@@ -270,15 +272,16 @@ class MachikoroEnv:
             self._process_income()
 
         # --- Pending: TV ---
-        elif self.phase == PHASE_PENDING and self.pending_tv > 0:
+        elif self.phase == PHASE_PENDING and self._next_pending_field() == "pendingTV" and self.pending_tv > 0:
             steal = min(5, opp.coins)
             opp.coins -= steal
             p.coins += steal
             self.pending_tv -= 1
+            self._consume_pending("pendingTV")
             self._check_pending()
 
         # --- Pending: ビジネスセンター ---
-        elif self.phase == PHASE_PENDING and self.pending_biz > 0:
+        elif self.phase == PHASE_PENDING and self._next_pending_field() == "pendingBusiness" and self.pending_biz > 0:
             combo = action - ACT_BC_BASE
             if 0 <= combo < ACT_BC_SIZE:
                 give_ci = combo // NUM_CARDS
@@ -293,10 +296,11 @@ class MachikoroEnv:
                     self._add_one_card(p, take_name, take_dormant)
                     self._add_one_card(opp, give_name, give_dormant)
             self.pending_biz -= 1
+            self._consume_pending("pendingBusiness")
             self._check_pending()
 
         # --- Pending: 清掃業 ---
-        elif self.phase == PHASE_PENDING and self.pending_clean > 0:
+        elif self.phase == PHASE_PENDING and self._next_pending_field() == "pendingCleaning" and self.pending_clean > 0:
             ci = action - ACT_CLEAN_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]
@@ -308,10 +312,11 @@ class MachikoroEnv:
                         count += n
                 p.coins += count
             self.pending_clean -= 1
+            self._consume_pending("pendingCleaning")
             self._check_pending()
 
         # --- Pending: 引越し屋 ---
-        elif self.phase == PHASE_PENDING and self.pending_mover > 0:
+        elif self.phase == PHASE_PENDING and self._next_pending_field() == "pendingMover" and self.pending_mover > 0:
             ci = action - ACT_MOVER_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]
@@ -319,10 +324,11 @@ class MachikoroEnv:
                     self._transfer_one_card(p, opp, name)
                     p.coins += 4
             self.pending_mover -= 1
+            self._consume_pending("pendingMover")
             self._check_pending()
 
         # --- Pending: 改装屋 ---
-        elif self.phase == PHASE_PENDING and self.pending_reno > 0:
+        elif self.phase == PHASE_PENDING and self._next_pending_field() == "pendingRenovation" and self.pending_reno > 0:
             li = action - ACT_RENO_BASE
             if 0 <= li < NUM_LANDMARKS:
                 lm = LANDMARK_ORDER[li]
@@ -330,10 +336,14 @@ class MachikoroEnv:
                     p.landmarks[lm] = False
                     p.coins += 8
             self.pending_reno -= 1
+            self._consume_pending("pendingRenovation")
             while self.pending_reno > 0:
+                if self._next_pending_field() != "pendingRenovation":
+                    break
                 if any(p.landmarks[n] for n in LANDMARK_ORDER):
                     break
                 self.pending_reno -= 1
+                self._consume_pending("pendingRenovation")
             self._check_pending()
 
         # --- Pending: IT ベンチャー ---
@@ -508,10 +518,12 @@ class MachikoroEnv:
                 built = [n for n in LANDMARK_ORDER if p.landmarks[n]]
                 if built:
                     self.pending_reno += count
+                    self._append_pending("pendingRenovation", count)
                 continue
 
             if cd.effect == MOVER:
                 self.pending_mover += count
+                self._append_pending("pendingMover", count)
                 continue
 
             if cd.effect == LOAN:
@@ -584,10 +596,12 @@ class MachikoroEnv:
 
             elif cd.effect == TV:
                 self.pending_tv += 1
+                self._append_pending("pendingTV")
 
             elif cd.effect == BUSINESS:
                 if self._has_business_exchange(ci):
                     self.pending_biz += 1
+                    self._append_pending("pendingBusiness")
 
             elif cd.effect == PUBLISHER:
                 total = 0
@@ -613,6 +627,7 @@ class MachikoroEnv:
 
             elif cd.effect == CLEANING:
                 self.pending_clean += 1
+                self._append_pending("pendingCleaning")
 
             elif cd.effect == ITSTARTUP:
                 total = 0
@@ -632,10 +647,47 @@ class MachikoroEnv:
                     pl.coins = each
                 p.coins += rem
 
+    def _pending_count_for_field(self, field: str) -> int:
+        return {
+            "pendingTV": self.pending_tv,
+            "pendingBusiness": self.pending_biz,
+            "pendingCleaning": self.pending_clean,
+            "pendingMover": self.pending_mover,
+            "pendingRenovation": self.pending_reno,
+        }.get(field, 0)
+
+    def _append_pending(self, field: str, count: int = 1):
+        for _ in range(max(0, int(count))):
+            self.pending_action_queue.append(field)
+
+    def _next_pending_field(self):
+        while self.pending_action_queue and self._pending_count_for_field(self.pending_action_queue[0]) <= 0:
+            self.pending_action_queue.pop(0)
+        if self.pending_action_queue:
+            return self.pending_action_queue[0]
+        if self.pending_tv > 0:
+            return "pendingTV"
+        if self.pending_biz > 0:
+            return "pendingBusiness"
+        if self.pending_clean > 0:
+            return "pendingCleaning"
+        if self.pending_mover > 0:
+            return "pendingMover"
+        if self.pending_reno > 0:
+            return "pendingRenovation"
+        return None
+
+    def _consume_pending(self, field: str) -> bool:
+        if self.pending_action_queue and self.pending_action_queue[0] == field:
+            self.pending_action_queue.pop(0)
+            return True
+        return not self.pending_action_queue
+
     def _check_pending(self):
         if (self.pending_tv <= 0 and self.pending_biz <= 0 and
                 self.pending_clean <= 0 and self.pending_mover <= 0 and
                 self.pending_reno <= 0):
+            self.pending_action_queue = []
             self.pending_target_index = None
             self.phase = PHASE_BUILD
 
@@ -679,6 +731,7 @@ class MachikoroEnv:
         self.pending_mover = 0
         self.pending_reno  = 0
         self.pending_it    = False
+        self.pending_action_queue = []
         self.pending_target_index = None
         self.last_dice = self.last_d1 = self.last_d2 = 0
 

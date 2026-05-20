@@ -444,6 +444,36 @@ print(loaded.mover_target_head is None)
     }
 });
 
+runTest('rl train: Python env は pending queue 先頭fieldを合法actionに使う', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_TV_TARGET, ACT_RENO_BASE, LANDMARK_INDEX
+
+env = MachikoroEnv(player_count=2)
+env.phase = PHASE_PENDING
+env.pending_tv = 1
+env.pending_reno = 1
+env.pending_action_queue = ["pendingRenovation", "pendingTV"]
+env.players[0].landmarks["駅"] = True
+acts = env.valid_actions()
+print(ACT_TV_TARGET in acts)
+print(ACT_RENO_BASE + LANDMARK_INDEX["駅"] in acts)
+env.step(ACT_RENO_BASE + LANDMARK_INDEX["駅"])
+print(env.pending_reno)
+print(env.pending_tv)
+print(env._next_pending_field())
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(lines, ['False', 'True', '0', '1', 'pendingTV']);
+});
+
+runTest('rl train: JS CPU oracle state は pending queue を渡す', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_oracle.py'), 'utf8');
+    const oracleSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_action_oracle.js'), 'utf8');
+    assert.ok(source.includes('pendingActions'));
+    assert.ok(oracleSource.includes('game.pendingActionQueue = Array.isArray(state.pendingActions)'));
+    assert.ok(oracleSource.includes('runtime.GameManager.nextPendingActionFor(game)'));
+});
+
 runTest('rl train: JS CPU oracle はtargetIndexなし応答で古いpending targetを消す', () => {
     const output = runPython(`
 from scripts.rl.game_env import MachikoroEnv
@@ -476,6 +506,19 @@ print(env.pending_target_index)
     const lines = output.split('\n');
     assert.strictEqual(lines[0], '7');
     assert.strictEqual(lines[1], 'None');
+});
+
+runTest('rl train: eval_vs_js_cpu は run-local browser export path を使う', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'train.py'), 'utf8');
+    assert.ok(source.includes('browser_path = model_path + ".browser.json"'));
+    assert.ok(!source.includes('browser_path = os.path.join(MODEL_DIR, "model.browser.json")'));
+});
+
+runTest('rl train: JS CPU oracle は応答timeoutを持つ', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_oracle.py'), 'utf8');
+    assert.ok(source.includes('timeout_seconds: float = 5.0'));
+    assert.ok(source.includes('select.select'));
+    assert.ok(source.includes('JS CPU oracle timed out'));
 });
 
 runTest('rl train: checkpoint 保存と export は cwd 配下の絶対 path でも動く', () => {

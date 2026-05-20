@@ -68,6 +68,7 @@ snapshot は `serializeMirrorState()` / `buildOnlineSnapshot()` の同型デー�
 | `builtThisTurn` | optional | ある場合は boolean。欠落時は初期値を使う。 |
 | `pendingTV`, `pendingBusiness`, `pendingCleaning` | optional | ある場合は非負整数。欠落時は初期値を使う。 |
 | `pendingMover`, `pendingRenovation`, `pendingIT`, `pendingTunaDice` | optional | 旧 snapshot 互換のため欠落許容。復元時は既定値へ戻る。 |
+| `pendingActions` | optional | interactive pending の解決順 queue。各 entry は `{ action, field }` で、`pendingTV`/`resolveTV`, `pendingBusiness`/`resolveBusiness`, `pendingCleaning`/`resolveCleaning`, `pendingMover`/`resolveMover`, `pendingRenovation`/`resolveRenovation` の正しい対応だけを許可する。旧 snapshot は欠落許容。 |
 | `usedReroll` | optional | ある場合は boolean。欠落時は初期値を使う。 |
 | `turnCount`, `hadAmusementParkAtRoll` | optional | 旧 snapshot 互換のため欠落許容。 |
 | `shopStock` | optional | card name -> 非負整数。欠落カードは初期在庫として扱う。 |
@@ -81,6 +82,7 @@ validation の重要条件:
 - `landmarks` は既知 key かつ boolean のみ許可する。欠落 key は既定値 `false` で補完される。
 - `enabledCards` で無効化されたカードは、初期配布の `麦畑` / `パン屋` を人数分まで持つ場合を除き snapshot 所持を拒否する。無効化カードの `shopStock` は欠落または `0` のみ許可する。
 - `enabledLandmarks` で無効化されたランドマークは、建設済み `true` の snapshot を拒否する。未建設または欠落は許容される。
+- `pendingActions` が存在する場合、各 entry の `field` と `action` は固定対応している必要がある。queue 内の field 件数は対応する legacy pending count と一致する必要がある。不一致 snapshot は server mirror では拒否し、client 側では queue を捨てて legacy field から補修する。
 
 ## `undoState`
 

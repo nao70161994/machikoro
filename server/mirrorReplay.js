@@ -165,19 +165,23 @@ function makeMirrorReplay({
                 (!Number.isInteger(state[field]) || state[field] < 0)) return false;
         }
         if (Object.prototype.hasOwnProperty.call(state, 'pendingActions')) {
-            const validFields = new Set(['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']);
-            const validActions = new Set([
-                gameRuntime.GAME_ACTIONS.RESOLVE_TV,
-                gameRuntime.GAME_ACTIONS.RESOLVE_BUSINESS,
-                gameRuntime.GAME_ACTIONS.RESOLVE_CLEANING,
-                gameRuntime.GAME_ACTIONS.RESOLVE_MOVER,
-                gameRuntime.GAME_ACTIONS.RESOLVE_RENOVATION,
-            ]);
-            if (!Array.isArray(state.pendingActions) || state.pendingActions.some(pending =>
-                !isPlainObject(pending) ||
-                !validFields.has(pending.field) ||
-                !validActions.has(pending.action)
-            )) return false;
+            const actionByField = {
+                pendingTV: gameRuntime.GAME_ACTIONS.RESOLVE_TV,
+                pendingBusiness: gameRuntime.GAME_ACTIONS.RESOLVE_BUSINESS,
+                pendingCleaning: gameRuntime.GAME_ACTIONS.RESOLVE_CLEANING,
+                pendingMover: gameRuntime.GAME_ACTIONS.RESOLVE_MOVER,
+                pendingRenovation: gameRuntime.GAME_ACTIONS.RESOLVE_RENOVATION,
+            };
+            const pendingCounts = Object.fromEntries(Object.keys(actionByField).map(field => [field, 0]));
+            if (!Array.isArray(state.pendingActions)) return false;
+            for (const pending of state.pendingActions) {
+                if (!isPlainObject(pending) || actionByField[pending.field] !== pending.action) return false;
+                pendingCounts[pending.field]++;
+            }
+            for (const field of Object.keys(actionByField)) {
+                const fieldCount = Object.prototype.hasOwnProperty.call(state, field) ? state[field] : 0;
+                if (pendingCounts[field] !== fieldCount) return false;
+            }
         }
         for (const field of ['builtThisTurn', 'pendingIT', 'usedReroll', 'hadAmusementParkAtRoll']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&

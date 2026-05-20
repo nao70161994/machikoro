@@ -169,7 +169,7 @@
         </div>
     </div>
 
-    <div id="pendingModal" class="pending-modal" role="dialog" aria-modal="true" aria-label="追加効果の選択" tabindex="-1" style="display:none">
+    <div id="pendingModal" class="pending-modal" role="region" aria-label="追加効果の選択" tabindex="-1" style="display:none">
         <div class="pending-modal-inner">
             <div id="pendingMenu"></div>
         </div>
@@ -372,6 +372,9 @@
             const banner = document.getElementById('pwaUpdateBanner');
             const btn = document.getElementById('pwaUpdateBtn');
             const msg = document.getElementById('pwaUpdateMsg');
+            msg.textContent = '新しいバージョンがあります';
+            btn.disabled = false;
+            btn.style.opacity = '';
             if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
               msg.textContent = '新バージョンあり（ゲーム終了後に再起動してください）';
               btn.disabled = true;

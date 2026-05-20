@@ -420,8 +420,9 @@ function chooseCpuPendingResolution(cpu) {
             fallbackRenovationTarget: fallbackCpuRenovationTarget,
         });
     }
-    const pendingActions = new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
-    if (pendingActions.has(GAME_ACTIONS.RESOLVE_TV)) {
+    const nextPending = GameManager.nextPendingActionFor(game);
+    const pendingAction = nextPending && nextPending.action;
+    if (pendingAction === GAME_ACTIONS.RESOLVE_TV) {
         let targetIndex = cpu.chooseTVTarget(game);
         if (!isValidCpuOpponentIndex(targetIndex)) targetIndex = fallbackCpuOpponentIndex();
         if (targetIndex !== null) {
@@ -432,7 +433,7 @@ function chooseCpuPendingResolution(cpu) {
             };
         }
     }
-    if (pendingActions.has(GAME_ACTIONS.RESOLVE_BUSINESS)) {
+    if (pendingAction === GAME_ACTIONS.RESOLVE_BUSINESS) {
         let move = cpu.chooseBusinessMove(game);
         if (!isValidCpuBusinessMove(move)) move = fallbackCpuBusinessMove();
         if (move) {
@@ -443,8 +444,8 @@ function chooseCpuPendingResolution(cpu) {
             };
         }
     }
-    if (pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)) return null;
-    if (pendingActions.has(GAME_ACTIONS.RESOLVE_MOVER)) {
+    if (pendingAction === GAME_ACTIONS.RESOLVE_CLEANING) return null;
+    if (pendingAction === GAME_ACTIONS.RESOLVE_MOVER) {
         let move = cpu.chooseMoverMove(game);
         if (!isValidCpuMoverMove(move)) move = fallbackCpuMoverMove();
         if (move) {
@@ -455,7 +456,7 @@ function chooseCpuPendingResolution(cpu) {
             };
         }
     }
-    if (pendingActions.has(GAME_ACTIONS.RESOLVE_RENOVATION)) {
+    if (pendingAction === GAME_ACTIONS.RESOLVE_RENOVATION) {
         let landmarkName = cpu.chooseRenovationTarget(game);
         if (!landmarkName) landmarkName = fallbackCpuRenovationTarget();
         if (landmarkName) {
@@ -522,8 +523,8 @@ const CPU_PHASE_HANDLERS = [
                 cpuDo(pendingResolution.action, pendingResolution.payload, () => pendingResolution.apply());
                 return;
             }
-            const pendingActions = new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
-            if (pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)) {
+            const nextPending = GameManager.nextPendingActionFor(game);
+            if (nextPending && nextPending.action === GAME_ACTIONS.RESOLVE_CLEANING) {
                 let cardName = cpu.chooseCleaningTarget(game);
                 if (!cardName) cardName = fallbackCpuCleaningTarget();
                 if (cardName) {

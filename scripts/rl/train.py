@@ -1503,7 +1503,7 @@ def eval_vs_js_cpu(model_path, opponents, games=10, max_steps=5000, lineups=None
     lineups = lineups or []
     if games <= 0 or (not opponents and not lineups):
         return []
-    browser_path = os.path.join(MODEL_DIR, "model.browser.json")
+    browser_path = model_path + ".browser.json"
     export_checkpoint(model_path + ".npz", browser_path, fmt="json")
     command = [
         "node",

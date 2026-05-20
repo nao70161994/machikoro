@@ -53,7 +53,7 @@ const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     maxRooms: 500,
     createRoomRateLimitMs: 5000,
 });
-const rooms = {};
+const rooms = Object.create(null);
 const {
     roomTimestamp,
     isRoomExpired,
@@ -470,6 +470,17 @@ function generateReconnectToken() {
 
 const ROOM_ID_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
+function isValidRoomId(roomId) {
+    if (typeof roomId !== 'string') return false;
+    if (roomId.length < 1 || roomId.length > 64) return false;
+    if (roomId === '__proto__' || roomId === 'constructor' || roomId === 'prototype') return false;
+    return /^[A-Za-z0-9_-]+$/.test(roomId);
+}
+
+function hasOwnRoom(roomId) {
+    return isValidRoomId(roomId) && Object.prototype.hasOwnProperty.call(rooms, roomId);
+}
+
 function generateRoomId(existingRooms = rooms) {
     let roomId;
     do {
@@ -477,7 +488,7 @@ function generateRoomId(existingRooms = rooms) {
         for (let i = 0; i < 6; i++) {
             roomId += ROOM_ID_ALPHABET[Math.floor(Math.random() * ROOM_ID_ALPHABET.length)];
         }
-    } while (existingRooms[roomId]);
+    } while (Object.prototype.hasOwnProperty.call(existingRooms, roomId));
     return roomId;
 }
 
@@ -605,6 +616,7 @@ io.on('connection', (socket) => {
         socket.clientVersion = clientVersion || 'unknown';
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
+        if (!isValidRoomId(roomId)) { emitAppError(socket, 'ルームが見つかりません'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
         if (room.started) { emitAppError(socket, 'ゲームはすでに開始されています'); return; }
@@ -669,7 +681,8 @@ io.on('connection', (socket) => {
             emitAppError(socket, 'INVALID_SESSION');
             return;
         }
-        const acceptedAction = findAcceptedClientAction(room, clientActionId, socket.playerIndex);
+        const safeClientActionId = normalizeClientActionId(clientActionId);
+        const acceptedAction = findAcceptedClientAction(room, safeClientActionId, socket.playerIndex);
         if (acceptedAction) {
             socket.emit('actionAccepted', acceptedAction);
             return;
@@ -686,7 +699,7 @@ io.on('connection', (socket) => {
             emitAppError(socket, '無効な操作です');
             return;
         }
-        let safeData = validation.data;
+        let safeData = canonicalizeActionData(action, validation.data);
         if (action === 'buildCard' || action === 'buildLandmark') {
             room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
         } else if (action === 'undoBuild') {
@@ -697,7 +710,7 @@ io.on('connection', (socket) => {
         }
         const actionSeq = nextRoomActionSeq(room);
         const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
-        if (typeof clientActionId === 'string') actionEntry.clientActionId = clientActionId;
+        if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
         if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
             emitAppError(socket, '無効な操作です');
             return;
@@ -717,6 +730,7 @@ io.on('connection', (socket) => {
     socket.on('rejoinRoom', (payload) => {
         if (!requirePlainSocketPayload(socket, payload)) return;
         const { roomId, playerIndex, playerName, reconnectToken } = payload;
+        if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
@@ -897,7 +911,11 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
-    if (rooms[roomId]) {
+    if (!isValidRoomId(roomId)) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
+    if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
         if (!room.started) {
             emitAppError(socket, '同じルームIDが既に使用されています');
@@ -1031,7 +1049,7 @@ function handleRecreateRoom(socket, payload = {}) {
         restoredRoom.actionSeq
     );
     restoredRoom.actionLog = [];
-    if (rooms[roomId]) {
+    if (hasOwnRoom(roomId)) {
         detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
         delete rooms[roomId];
     }
@@ -1301,6 +1319,50 @@ function loadGameRuntime() {
 }
 
 // ===== Validation =====
+function canonicalizeActionData(action, data) {
+    if (!isPlainObject(data)) return {};
+    switch (action) {
+        case 'rollDice':
+            return { forceDice: data.forceDice, tunaDice: data.tunaDice };
+        case 'selectDice':
+            return { useTwo: data.useTwo, diceCount: data.diceCount, d1: data.d1, d2: data.d2, tunaDice: data.tunaDice };
+        case 'rerollDice':
+            return { forceDice: data.forceDice, tunaDice: data.tunaDice };
+        case 'skipReroll':
+        case 'nextTurn':
+            return {};
+        case 'resolveHarbor':
+            return { useBonus: data.useBonus };
+        case 'resolveTV':
+            return { targetIndex: data.targetIndex };
+        case 'resolveBusiness':
+            return { myCard: data.myCard, targetIndex: data.targetIndex, theirCard: data.theirCard };
+        case 'resolveCleaning':
+            return { cardName: data.cardName };
+        case 'resolveMover':
+            return Number.isInteger(data.cardIndex)
+                ? { cardIndex: data.cardIndex, targetIndex: data.targetIndex }
+                : { cardName: data.cardName, targetIndex: data.targetIndex };
+        case 'resolveRenovation':
+            return { landmarkName: data.landmarkName };
+        case 'resolveIT':
+            return { doSave: data.doSave };
+        case 'buildCard':
+            return { cardName: data.cardName };
+        case 'buildLandmark':
+            return { name: data.name };
+        case 'undoBuild':
+            return {};
+        default:
+            return {};
+    }
+}
+
+function normalizeClientActionId(clientActionId) {
+    if (typeof clientActionId !== 'string') return '';
+    return /^[A-Za-z0-9:_-]{1,120}$/.test(clientActionId) ? clientActionId : '';
+}
+
 function validateGameAction(room, socket, action, data) {
     const mirror = getRoomCanonicalMirror(room);
     if (!mirror) return { ok: false };
@@ -1450,6 +1512,9 @@ module.exports = {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     generateRoomId,
+    isValidRoomId,
+    canonicalizeActionData,
+    normalizeClientActionId,
     nextRoomActionSeq,
     restorePayloadRank,
     restorePayloadRankDetails,

@@ -249,6 +249,17 @@ runTest('pendingActionsFor は pending field を解決順descriptorとして返�
     assert.deepStrictEqual(plain(game.pendingActions()), []);
 });
 
+runTest('pendingActions queue は action/field 不一致entryを捨ててfieldから補修する', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    game.pendingActionQueue = [{ action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingTV' }];
+
+    const pending = GameManager.pendingActionsFor(game);
+
+    assert.deepStrictEqual(Array.from(pending.map(entry => entry.action)), [GAME_ACTIONS.RESOLVE_TV]);
+});
+
 runTest('pendingActions queue は互換fieldとdual-writeされる', () => {
     const plain = value => JSON.parse(JSON.stringify(value));
     const game = new GameManager(2);
@@ -427,6 +438,25 @@ runTest('改装屋のpendingRenovationがランドマーク状況に応じて変
     skipGame.rollDice(4);
     assert.strictEqual(skipGame.pendingRenovation, 0);
     assert.strictEqual(skipGame.phase, 'build');
+});
+
+runTest('resolveRenovation は不正な非連続pending queueで無限loopしない', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    game.phase = GAME_PHASES.PENDING;
+    current.landmarks['駅'] = true;
+    game.pendingRenovation = 2;
+    game.pendingTV = 1;
+    game.pendingActionQueue = [
+        { action: GAME_ACTIONS.RESOLVE_RENOVATION, field: 'pendingRenovation' },
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_RENOVATION, field: 'pendingRenovation' },
+    ];
+
+    assert.strictEqual(game.resolveRenovation('駅'), true);
+    assert.strictEqual(game.pendingRenovation, 1);
+    assert.strictEqual(game.pendingTV, 1);
+    assert.strictEqual(GameManager.nextPendingActionFor(game).field, 'pendingTV');
 });
 
 runTest('buildCardが所持金不足と紫カード重複を拒否する', () => {

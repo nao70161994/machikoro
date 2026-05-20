@@ -87,3 +87,23 @@ npm test
 
 - Medium fixed: RLCPU action mask と expert eval fast path を pending queue 先頭 descriptor に追従させた。
 - 追加した不変条件: RL / CPU evaluation 補助でも、pending 中に扱う action は GameManager の queue 先頭を正本にする。
+
+
+## 2026-05-20 continuous review Cycle 3 UI/PWA
+
+- High fixed: pending floating panel の ARIA contract mismatch、PWA waiting update button の disabled 状態残留、PWA banner の iPhone safe-area 未対応。
+- 追加した不変条件: non-blocking panel は `aria-modal=true` にしない。PWA update banner は表示ごとに既定状態を初期化してからオンライン対戦中の制約を適用する。
+- 手動確認候補: iPhone Safari / Android Chrome の install/update banner、standalone PWA の home indicator 付近、オンライン対戦中に waiting SW が来てゲーム終了後に更新可能になる流れ。
+
+
+## 2026-05-20 continuous review Cycle 3 online/RL safety
+
+- High fixed: malformed pending renovation queue の loop、prototype roomId lookup、accepted action payload の余分 key 保持、host migration 後の stale server host restore、Python/JS RL pending queue drift、JS eval export path race、JS CPU oracle hang。
+- 追加した不変条件: pending queue が存在する場合、各 resolver/evaluator/oracle は queue 先頭 field のみを処理する。server が受理して残す action data は action ごとの canonical payload だけにする。
+- Design deferred: host-supplied restore snapshot の server signature / persisted canonical state。
+
+
+## 2026-05-20 continuous review Cycle 3 pendingActions schema
+
+- High fixed: pendingActions snapshot の action/field 不一致・count mismatch、CPU fallback の queue 先頭迂回、pendingActions schema docs 欠落。
+- 不変条件: `pendingActions` の entry は固定 action/field pair で、queue 内 field 件数は legacy pending field count と一致する。

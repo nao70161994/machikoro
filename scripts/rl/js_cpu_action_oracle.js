@@ -33,6 +33,21 @@ function createGameFromState(state) {
     game.pendingMover = state.pendingMover || 0;
     game.pendingRenovation = state.pendingRenovation || 0;
     game.pendingIT = !!state.pendingIT;
+    game.pendingActionQueue = Array.isArray(state.pendingActions)
+        ? state.pendingActions.map(entry => ({
+            action: entry.action || ({
+                pendingTV: 'resolveTV',
+                pendingBusiness: 'resolveBusiness',
+                pendingCleaning: 'resolveCleaning',
+                pendingMover: 'resolveMover',
+                pendingRenovation: 'resolveRenovation',
+            })[entry.field],
+            field: entry.field,
+        })).filter(entry => entry.action && entry.field)
+        : [];
+    if (game.pendingActionQueue.length === 0 && typeof game.rebuildPendingActionsFromFields === 'function') {
+        game.rebuildPendingActionsFromFields();
+    }
     game.usedReroll = !!state.usedReroll;
     game.builtThisTurn = !!state.builtThisTurn;
     game.hadAmusementParkAtRoll = !!state.hadAmusementParkAtRoll;
@@ -118,10 +133,12 @@ function actionForBuild(cpu, game, shopStock) {
 }
 
 function actionForPending(cpu, game) {
-    if (game.pendingTV > 0) {
+    const nextPending = runtime.GameManager.nextPendingActionFor(game);
+    const pendingField = nextPending && nextPending.field;
+    if (pendingField === 'pendingTV' && game.pendingTV > 0) {
         return { action: actions.TV_TARGET, targetIndex: cpu.chooseTVTarget(game) };
     }
-    if (game.pendingBusiness > 0) {
+    if (pendingField === 'pendingBusiness' && game.pendingBusiness > 0) {
         const move = cpu.chooseBusinessMove(game);
         if (!move) return { action: actions.PASS };
         const current = game.currentPlayer();
@@ -136,12 +153,12 @@ function actionForPending(cpu, game) {
             targetIndex: move.targetIndex,
         };
     }
-    if (game.pendingCleaning > 0) {
+    if (pendingField === 'pendingCleaning' && game.pendingCleaning > 0) {
         const name = cpu.chooseCleaningTarget(game);
         if (!name) return { action: actions.PASS };
         return { action: actions.CLEAN_BASE + runtime.CARDS.findIndex(card => card.name === name) };
     }
-    if (game.pendingMover > 0) {
+    if (pendingField === 'pendingMover' && game.pendingMover > 0) {
         const move = cpu.chooseMoverMove(game);
         if (!move) return { action: actions.PASS };
         const card = game.currentPlayer().cards[move.cardIndex];
@@ -151,7 +168,7 @@ function actionForPending(cpu, game) {
             targetIndex: move.targetIndex,
         };
     }
-    if (game.pendingRenovation > 0) {
+    if (pendingField === 'pendingRenovation' && game.pendingRenovation > 0) {
         const name = cpu.chooseRenovationTarget(game);
         if (!name) return { action: actions.PASS };
         return { action: actions.RENO_BASE + landmarkOrder.indexOf(name) };

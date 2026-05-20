@@ -357,3 +357,52 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - RLCPU の action mask が queue 先頭 field だけを有効化する test を追加した。
 - expert eval fast path が `GameManager.nextPendingActionFor(game)` と field guard を使うことを static test で固定した。
+
+
+### Continuous review Cycle 3 UI/PWA accessibility contract
+
+確認した内容:
+
+- `pendingModal` は見た目と挙動として non-blocking floating panel だが、ARIA 上は modal dialog と宣言されていた。assistive technology に対する契約を実挙動へ合わせるため `role=region` に変更した。
+- Service Worker の waiting update banner は、オンライン対戦中に一度 disabled になったボタン状態が同一セッション内で残る可能性があった。表示時に既定文言・有効状態・opacity を初期化するようにした。
+- PWA install/update banner が iPhone の home indicator / safe area と競合しないよう、bottom safe-area padding を追加した。
+
+再発防止:
+
+- `tests/main.test.js` の PWA/TWA safety assertion に pending panel の ARIA contract、update button reset、safe-area padding を追加した。
+
+残リスク:
+
+- iPhone Safari / Android Chrome の実機 standalone 表示、Service Worker waiting 状態の実操作、オンライン対戦中から終了後への banner 状態遷移は manual verification required。
+
+
+### Continuous review Cycle 3 online/RL safety fixes
+
+確認した内容:
+
+- `resolveRenovation()` の自動不発処理は queue 先頭が renovation でなくなった場合に停止するようにし、壊れた restore snapshot からの無限 loop を避ける。
+- server room table は `Object.create(null)` と roomId validation / own lookup helper で prototype key を踏まないようにした。
+- `gameAction` の accepted payload は validation 後に canonicalize し、actionLog / accepted cache / broadcast / restore payload に余分な key を残さない。
+- host migration 後の restore では、local host bundle の rank が server bundle より新しければ、server の stale hostPlayerIndex によらず replacement を試す。
+- RL Python env と JS CPU oracle は pending queue の先頭 field を共有し、JS 評価 export は run-local browser json を使う。persistent oracle には応答 timeout を追加した。
+
+再発防止:
+
+- GameManager / server / online / RL train の targeted tests に、非連続 pending queue、roomId prototype key、payload canonicalization、host migration stale restore、Python/JS pending queue parity、oracle timeout/export path を追加した。
+
+残リスク:
+
+- host がローカル restore snapshot を改ざんした場合の完全な防御には、server-signed snapshot または server-side persisted canonical state が必要。これは設計判断待ち。
+
+
+### Continuous review Cycle 3 pendingActions schema hardening
+
+確認した内容:
+
+- `pendingActions` は pending queue 正本だが、snapshot validation が action/field 対応と legacy count 一致を十分に固定していなかった。server mirror では不一致 snapshot を拒否する。
+- client queue normalization は壊れた pair を採用せず、必要なら legacy pending fields から rebuild する。
+- CPU fallback / selfplay fallback は `GameManager.nextPendingActionFor()` の queue 先頭だけを解決対象にする。
+
+再発防止:
+
+- GameManager / server / main の targeted tests と schema docs を追加した。

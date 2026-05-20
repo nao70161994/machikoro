@@ -203,6 +203,9 @@ function loadMainRuntime(options = {}) {
                 addPending('pendingRenovation', 'resolveRenovation');
                 return actions;
             }
+            static nextPendingActionFor(game) {
+                return GameManager.pendingActionsFor(game)[0] || null;
+            }
             static allowedActionsFor(game) {
                 if (game.pendingIT || game.phase === 'pending') {
                     return new Set(GameManager.pendingActionsFor(game).map(pending => pending.action));
@@ -549,6 +552,13 @@ runTest('main scheduleCPU は不正なTV targetを合法な相手へfallbackし�
 
     assert.strictEqual(game.resolvedTV, 1);
     assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main fallback pending は queue 先頭actionだけを見る', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
+    assert.ok(source.includes('GameManager.nextPendingActionFor(game)'));
+    assert.ok(source.includes('pendingAction === GAME_ACTIONS.RESOLVE_CLEANING'));
+    assert.ok(!source.includes('pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)'));
 });
 
 runTest('main scheduleCPU は build failure なら nextTurn へ進めない', () => {
@@ -1096,6 +1106,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner"'));
     assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
+    assert.ok(html.includes('id="pendingModal" class="pending-modal" role="region"'));
+    assert.ok(!html.includes('id="pendingModal" class="pending-modal" role="dialog" aria-modal="true"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle"'));
     assert.ok(html.includes('data-action="toggleSet" data-set="basic"'));
@@ -1106,6 +1118,9 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="confirmMessage"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton"'));
     assert.ok(html.includes('id="onlineJoinSubmitButton"'));
+    assert.ok(html.includes("msg.textContent = '新しいバージョンがあります';"));
+    assert.ok(html.includes('btn.disabled = false;'));
+    assert.ok(html.includes("btn.style.opacity = '';"));
     assert.ok(html.includes('data-ui-action="showRules"'));
     assert.ok(html.includes('data-ui-action="switchTab" data-tab="online"'));
     assert.ok(html.includes('data-ui-input="cpuSpeed"'));
@@ -1118,6 +1133,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('--z-modal: 1000;'));
     assert.ok(css.includes('#pwaUpdateBanner'));
     assert.ok(css.includes('z-index: var(--z-pwa-banner);'));
+    assert.ok(css.includes('calc(12px + env(safe-area-inset-bottom, 0px))'));
     assert.ok(css.includes('z-index: var(--z-modal);'));
     assert.ok(css.includes(':focus-visible'));
     assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));

@@ -1522,3 +1522,67 @@
   - `node tests/rlcpu.test.js`
   - `node tests/eval-expert-vs-weak.test.js`
   - `node tests/eval-expert-vs-normal.test.js`
+
+
+## Continuous review Cycle 3 UI/PWA accessibility contract
+
+- 状態: implemented, targeted tests passed
+- 変更ファイル:
+  - `index.html`
+  - `style.css`
+  - `tests/main.test.js`
+  - `docs/IMPLEMENTATION_PROGRESS.md`
+  - `docs/POST_IMPLEMENTATION_AUDIT.md`
+  - `docs/AI_HANDOFF.md`
+- 実装内容:
+  - `pendingModal` は背景操作を許す floating panel のため、`aria-modal=true` の dialog ではなく `role=region` へ変更した。
+  - PWA waiting SW banner は表示時に message / disabled / opacity を既定状態へ戻してから、オンライン対戦中だけ更新ボタンを無効化するようにした。
+  - PWA install/update banner に iPhone safe-area bottom padding を追加した。
+- 実行テスト:
+  - `node --check tests/main.test.js`
+  - `node tests/main.test.js`
+- 残課題: 実機 iPhone Safari / Android Chrome の PWA install/update banner 表示は manual verification required。
+
+
+## Continuous review Cycle 3 online/RL safety fixes
+
+- 状態: implemented, targeted tests passed
+- 変更ファイル:
+  - `js/GameManager.js`
+  - `js/online.js`
+  - `server.js`
+  - `scripts/rl/game_env.py`
+  - `scripts/rl/js_cpu_action_oracle.js`
+  - `scripts/rl/js_cpu_oracle.py`
+  - `scripts/rl/train.py`
+  - `tests/gamemanager.test.js`
+  - `tests/online.test.js`
+  - `tests/rl-train.test.js`
+  - `tests/server.test.js`
+- 実装内容:
+  - malformed restore snapshot 由来の非連続 `pendingRenovation` queue で auto-skip loop が止まらない可能性を guard した。
+  - `rooms` を prototype-less map にし、roomId lookup / restore room lookup が prototype key を踏まないようにした。
+  - accepted action payload を action ごとの whitelist で canonicalize し、余分な巨大 field を actionLog / broadcast / reconnect へ残さないようにした。
+  - host migration 後、server 側 host 情報が古い場合でも、ローカル host bundle の rank が新しければ `recreateRoom` を送るようにした。
+  - Python RL env / JS CPU oracle / JS eval export を pending queue・run-local export・oracle timeout に対応させた。
+- 実行テスト:
+  - `node --check server.js`
+  - `node --check js/GameManager.js`
+  - `node --check js/online.js`
+  - `node --check scripts/rl/js_cpu_action_oracle.js`
+  - `python3 -m py_compile scripts/rl/*.py`
+  - `node tests/gamemanager.test.js`
+  - `node tests/server.test.js`
+  - `node tests/online.test.js`
+  - `node tests/rl-train.test.js`
+- 残課題: host-supplied restore snapshot の server signature / persisted canonical state は設計判断が必要。
+
+
+## Continuous review Cycle 3 pendingActions schema hardening
+
+- 状態: implemented, targeted tests pending full suite
+- 実装内容:
+  - snapshot `pendingActions` の action/field 固定対応と legacy pending count 一致を server mirror で検証するようにした。
+  - client-side queue 正規化は action/field 不一致 entry を採用せず、count 不一致時は legacy pending fields から補修する。
+  - CPU fallback / selfplay fallback の cleaning 解決を queue 先頭 action に限定した。
+  - `docs/online-restore-schema.md` と `docs/CARD_SYSTEM.md` に pendingActions schema を追記した。

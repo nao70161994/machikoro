@@ -236,7 +236,10 @@ class GameManager {
         const queue = [];
         for (const entry of game.pendingActionQueue) {
             if (!entry || typeof entry !== 'object') continue;
-            const spec = PENDING_ACTION_SPEC_BY_FIELD[entry.field] || PENDING_ACTION_SPEC_BY_ACTION[entry.action];
+            const fieldSpec = PENDING_ACTION_SPEC_BY_FIELD[entry.field];
+            const actionSpec = PENDING_ACTION_SPEC_BY_ACTION[entry.action];
+            if (entry.field && entry.action && (!fieldSpec || fieldSpec !== actionSpec)) continue;
+            const spec = fieldSpec || actionSpec;
             if (!spec) continue;
             queue.push({ action: spec.action, field: spec.field, count: 1 });
             counts[spec.field]++;
@@ -806,11 +809,12 @@ class GameManager {
 
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ
         while (this.pendingRenovation > 0) {
+            if (!GameManager.canResolvePendingField(this, 'pendingRenovation')) break;
             const builtLandmarks = Object.entries(current.landmarks)
                 .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
             if (builtLandmarks.length > 0) break;
             this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
-            this._consumePendingAction('pendingRenovation');
+            if (!this._consumePendingAction('pendingRenovation')) break;
         }
 
         this._checkPending();

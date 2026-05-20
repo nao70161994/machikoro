@@ -764,7 +764,7 @@ function playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue = 
                     return;
                 }
             }
-            if (game.pendingCleaning > 0) {
+            if (runtime.GameManager.nextPendingActionFor(game)?.action === 'resolveCleaning' && game.pendingCleaning > 0) {
                 const cardName = cpu.chooseCleaningTarget(game);
                 if (cardName) game.resolveCleaning(cardName);
                 else fallbackCleaning(game);
@@ -982,7 +982,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         return;
                     }
                 }
-                if (game.pendingCleaning > 0) {
+                if (runtime.GameManager.nextPendingActionFor(game)?.action === 'resolveCleaning' && game.pendingCleaning > 0) {
                     const cardName = cpu.chooseCleaningTarget(game);
                     const cardIndex = cardName ? runtime.CARDS.findIndex(card => card.name === cardName) : -1;
                     pushTraceEntry(runtime, game, shopStock, cpu, cardName ? {

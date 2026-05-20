@@ -540,9 +540,7 @@ function initSocket() {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
         const localBundle = _readLocalRestoreBundle();
-        if (localBundle && Number.isInteger(hostPlayerIndex) &&
-                hostPlayerIndex === myOriginalPlayerIndex &&
-                localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex) {
+        if (localBundle && localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex) {
             const localRank = _onlineRestoreRank(localBundle.gameStartPayload, localBundle.stateSnapshot, localBundle.actionLog);
             const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
             if (_isOnlineRestoreRankNewer(localRank, serverRank)) {
