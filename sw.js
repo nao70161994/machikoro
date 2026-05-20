@@ -7,6 +7,8 @@ const CACHE_NAME = 'machikoro-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/privacy.html',
+  '/rules.html',
   '/style.css',
   '/manifest.json',
   '/js/Card.js',

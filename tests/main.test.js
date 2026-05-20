@@ -1165,15 +1165,26 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     const docs = fs.readFileSync(path.join(__dirname, '..', 'docs/ADS_PLAN.md'), 'utf8');
+    const releaseChecklist = fs.readFileSync(path.join(__dirname, '..', 'docs/RELEASE_CHECKLIST.md'), 'utf8');
+    const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
+    const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
     const { AD_SLOT_CONFIGS, renderAdSlot } = require('../js/adSlots.js');
 
     assert.deepStrictEqual(Object.keys(AD_SLOT_CONFIGS).sort(), ['result-bottom', 'rules-bottom', 'title-bottom']);
     assert.ok(html.includes('id="adSlotTitleBottom" class="ad-slot-host" data-ad-slot-host="title-bottom"'));
     assert.ok(html.includes('id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"'));
+    assert.ok(html.includes('href="privacy.html"'));
+    assert.ok(html.includes('href="rules.html"'));
     assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
     assert.ok(sw.includes("'/js/adSlots.js'"));
+    assert.ok(sw.includes("'/privacy.html'"));
+    assert.ok(sw.includes("'/rules.html'"));
     assert.ok(css.includes('.ad-slot'));
     assert.ok(css.includes('pointer-events: none;'));
+    assert.ok(css.includes('.legal-links'));
+    assert.ok(privacy.includes('Google AdSense'));
+    assert.ok(privacy.includes('エラー'));
+    assert.ok(rules.includes('勝利'));
 
     const titleSlot = renderAdSlot('title-bottom');
     const rulesSlot = renderAdSlot('rules-bottom');
@@ -1184,6 +1195,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.strictEqual(renderAdSlot('game-action'), '');
     assert.ok(docs.includes('AdSense / AdMob'));
     assert.ok(docs.includes('ゲーム中の主要操作'));
+    assert.ok(releaseChecklist.includes('privacy.html'));
+    assert.ok(releaseChecklist.includes('pointer-events: none'));
 });
 
 runTest('docs は live v2simple の実装済み既定値を記載している', () => {

@@ -182,6 +182,79 @@ body {
     margin-top: 12px;
 }
 
+.legal-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.legal-links a,
+.static-page-links a {
+    color: #7fdbca;
+    text-decoration: none;
+}
+
+.legal-links a:focus-visible,
+.legal-links a:hover,
+.static-page-links a:focus-visible,
+.static-page-links a:hover {
+    text-decoration: underline;
+}
+
+.static-page {
+    min-height: 100vh;
+    padding: 24px 16px;
+    color: #fffffe;
+    background: #0f0e17;
+}
+
+.static-page-content {
+    width: min(100%, 720px);
+    margin: 0 auto;
+    padding: 24px;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    background: #1a1a2e;
+}
+
+.static-page-eyebrow,
+.static-page-updated {
+    color: #a7a9be;
+    font-size: 13px;
+}
+
+.static-page h1 {
+    margin: 4px 0 16px;
+    font-size: 30px;
+}
+
+.static-page h2 {
+    margin: 22px 0 8px;
+    font-size: 18px;
+    color: #f0c040;
+}
+
+.static-page p,
+.static-page li {
+    color: #e8e8ee;
+    line-height: 1.8;
+}
+
+.static-page ol,
+.static-page ul {
+    padding-left: 22px;
+}
+
+.static-page-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 24px;
+}
+
 /* ===== タブ ===== */
 .tab-bar {
     display: flex;
