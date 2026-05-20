@@ -66,6 +66,12 @@ npm run test:static
 npm run test:smoke
 ```
 
+リリース前の疑似実機 E2E / PWA / ntfy / online restore 近似確認:
+
+```bash
+npm run test:release
+```
+
 - `test:static`: JS / JSON / shell の構文・parse 確認をまとめて実行します。
 - `test:smoke`: static に加えて core / online の主要回帰を実行します。
 
@@ -77,7 +83,7 @@ node --check js/main.js
 node --check js/online.js
 ```
 
-変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン同期の設計入口は [`docs/ONLINE_SYNC.md`](./docs/ONLINE_SYNC.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
+変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。リリース前の最終確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)、疑似実機 E2E と CI は [`docs/AUTOMATED_RELEASE_TEST.md`](./docs/AUTOMATED_RELEASE_TEST.md) にまとめています。高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン同期の設計入口は [`docs/ONLINE_SYNC.md`](./docs/ONLINE_SYNC.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
 
 AI / 人間が途中参加するときは、まず [`docs/AI_HANDOFF.md`](./docs/AI_HANDOFF.md) を読み、そこから [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)、[`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md)、[`docs/CARD_SYSTEM.md`](./docs/CARD_SYSTEM.md) へ進んでください。
 
@@ -442,6 +448,7 @@ RL スクリプト / モデル:
 ## デプロイメモ
 
 - Render での稼働を前提にしています。
+- Render 環境変数、ntfy、広告 placeholder、PWA、CI のリリース前確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) を参照してください。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
 - Android 向けには `.github/workflows/build-apk.yml` で TWA APK をビルドします。
 
