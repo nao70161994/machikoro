@@ -12,6 +12,17 @@ const {
 } = require(path.join(__dirname, '..', 'scripts', 'diagnose-expert-v2-branches.js'));
 const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
+runTest('diagnose-expert-v2-branches counter helper は name counter を合算する', () => {
+    const counters = createCounters();
+    const source = createCounters();
+    source.buildComboDominantNames = { '牧場': 2 };
+    source.diceDecisions = 3;
+    const { addCounters } = require(path.join(__dirname, '..', 'scripts', 'diagnostics', 'expert-v2-branch-counters.js'));
+    addCounters(counters, source);
+    assert.strictEqual(counters.diceDecisions, 3);
+    assert.strictEqual(counters.buildComboDominantNames['牧場'], 2);
+});
+
 runTest('diagnose-expert-v2-branches parseArgs は既定値を返す', () => {
     const args = parseArgs([]);
     assert.strictEqual(args.games, 20);

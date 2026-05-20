@@ -1637,3 +1637,14 @@
   - CPU速度 slider / online CPU速度 slider / player name / room id を programmatic label または describedby に紐付けた。
   - icon-only / empty-text buttons に `aria-label` を追加した。対象は保存削除、PWA dismiss、tutorial toggle、人数 +/-。
   - 既存 delegated handler / data-ui-action の契約は維持した。
+
+## Continuous review Cycle 5 diagnostics helper split
+
+- 状態: implemented, targeted tests pending
+- 変更ファイル:
+  - `scripts/diagnostics/expert-v2-branch-counters.js`
+  - `scripts/diagnose-expert-v2-branches.js`
+  - `tests/diagnose-expert-v2-branches.test.js`
+- 実装内容:
+  - `diagnose-expert-v2-branches.js` から counter 作成/合算/name counter 差分 helper を小さな CommonJS module へ分離した。
+  - diagnostics 本体の実行フロー・CLI・出力形式は変更していない。

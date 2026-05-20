@@ -132,3 +132,8 @@ npm test
 
 - title/game/PWA shell の主要 input と icon-only button に programmatic label を追加した。
 - 今後 UI を追加する場合、視覚的な近接テキストだけに頼らず `label for` / `aria-label` / `aria-describedby` のいずれかで名前を固定する。
+
+## 2026-05-20 continuous review Cycle 5 diagnostics helper split
+
+- `diagnose-expert-v2-branches.js` の counter utilities は `scripts/diagnostics/expert-v2-branch-counters.js` に分離済み。
+- 次に分けるなら、formatting helper か branch instrumentation の一部を targeted tests 付きで小さく抽出する。

@@ -453,3 +453,14 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - 実スクリーンリーダーでの読み上げ順とモバイル実機フォーカス確認は manual verification required。
+
+### Continuous review Cycle 5 diagnostics helper split
+
+確認した内容:
+
+- 巨大 diagnostics script のうち、純粋 helper として切り出しやすい counter utilities だけを `scripts/diagnostics/expert-v2-branch-counters.js` へ分離した。
+- CLI / runDiagnostics / toText の挙動は既存 exports 経由で維持する。
+
+残リスク:
+
+- formatting や branch instrumentation の分離はまだ大きめの差分になるため、今後も helper 単位で小さく進める。
