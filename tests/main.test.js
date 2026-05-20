@@ -41,6 +41,7 @@ function loadMainRuntime(options = {}) {
     const timeouts = [];
     const alerts = [];
     const eventHandlers = {};
+    const eventAddCounts = {};
     const counters = {
         renderOnlinePlayerSettings: 0,
         updateResumeButton: 0,
@@ -59,6 +60,7 @@ function loadMainRuntime(options = {}) {
         counters,
         elements,
         eventHandlers,
+        eventAddCounts,
         localStorageData,
         timeouts,
         alerts,
@@ -73,7 +75,10 @@ function loadMainRuntime(options = {}) {
             },
             querySelectorAll() { return []; },
             createElement() { return makeElement(); },
-            addEventListener(name, handler) { eventHandlers[`document:${name}`] = handler; },
+            addEventListener(name, handler) {
+                eventAddCounts[`document:${name}`] = (eventAddCounts[`document:${name}`] || 0) + 1;
+                eventHandlers[`document:${name}`] = handler;
+            },
         },
         window: {
             innerWidth: 360,
@@ -260,7 +265,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(`
         this.__test = {
             elements,
-                eventHandlers,
+            eventHandlers,
+            eventAddCounts,
             localStorageData,
             sentActions,
             alerts,
@@ -696,6 +702,24 @@ runTest('main init は10人開始時に不足設定を補い学習AIを維持す
     const cpuDifficulties = rt.__test.getCpuPlayers().filter(Boolean).map(cpu => cpu.difficulty).sort().join(',');
     assert.strictEqual(cpuDifficulties, 'rl,strong');
     assert.deepStrictEqual(rt.__test.alerts, []);
+});
+
+runTest('main delegated/static UI handler は重複登録しない', () => {
+    const rt = loadMainRuntime();
+    assert.deepStrictEqual(rt.__test.eventAddCounts, {
+        'document:click': 1,
+        'document:input': 1,
+        'document:change': 1,
+    });
+
+    rt.bindStaticUiHandlers();
+    rt.bindDelegatedUiHandlers();
+
+    assert.deepStrictEqual(rt.__test.eventAddCounts, {
+        'document:click': 1,
+        'document:input': 1,
+        'document:change': 1,
+    });
 });
 
 runTest('main static UI handler は data-ui-action/input/change を処理する', () => {

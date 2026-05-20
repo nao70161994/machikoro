@@ -680,6 +680,7 @@ function onSkipReroll() {
 }
 
 let delegatedUiHandlersBound = false;
+let staticUiHandlersBound = false;
 
 function actionButtonFromEvent(event) {
     const target = event && event.target;
@@ -740,9 +741,11 @@ function handleStaticUiInput(event) {
     const element = uiActionElementFromEvent(event, 'data-ui-input');
     if (!element) return;
     if (element.dataset.uiInput === 'cpuSpeed') {
-        document.getElementById('speedLabel').textContent = formatCpuSpeedLabel(element.value);
+        const label = document.getElementById('speedLabel');
+        if (label) label.textContent = formatCpuSpeedLabel(element.value);
     } else if (element.dataset.uiInput === 'onlineCpuSpeed') {
-        document.getElementById('onlineSpeedLabel').textContent = formatCpuSpeedLabel(element.value);
+        const label = document.getElementById('onlineSpeedLabel');
+        if (label) label.textContent = formatCpuSpeedLabel(element.value);
     } else if (element.dataset.uiInput === 'localPlayerName') {
         onChangePlayerName(parseInt(element.dataset.playerIndex, 10), element.value);
     }
@@ -758,10 +761,12 @@ function handleStaticUiChange(event) {
 }
 
 function bindStaticUiHandlers() {
-    if (!document || typeof document.addEventListener !== 'function') return;
+    if (staticUiHandlersBound) return;
+    if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
     document.addEventListener('click', handleStaticUiClick);
     document.addEventListener('input', handleStaticUiInput);
     document.addEventListener('change', handleStaticUiChange);
+    staticUiHandlersBound = true;
 }
 
 function handleDiceChoiceClick(event) {

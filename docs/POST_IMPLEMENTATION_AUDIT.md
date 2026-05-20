@@ -289,3 +289,24 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - 実ブラウザ iPhone Safari での長時間 pending 操作、画面復帰、複数 pending の連続解決は manual verification required。
+
+
+### 2026-05-20 UI update recursion / null DOM cross-audit
+
+確認した内容:
+
+- `js/ui.js` / `js/main.js` / `js/stats.js` の modal / pending / notice / build menu / stats / card select 周辺を確認した。
+- 直接自己再帰は前回の `updatePendingModalContent()` 修正後に再発していないことを確認した。
+- `renderDiceChoose()` / `renderBuildMenu()` / `renderCardSelectModal()` / `toggleLog()` / `showCardDetail()` / `showConfirm()` / Business Center chip 選択に DOM 欠落 guard を追加した。
+- `bindStaticUiHandlers()` に重複登録 guard を追加し、既存の delegated handler / card select modal / stats handler の guard と合わせて再登録経路を抑止した。
+- CPU speed label 更新は対象 label がない画面でも例外化しないようにした。
+
+再発防止:
+
+- `tests/ui.test.js` に、対象 DOM が欠ける状態で UI 更新関数が例外化しない targeted test を追加した。
+- `tests/main.test.js` に、static / delegated UI handler が再呼び出しで重複登録されない targeted test を追加した。
+
+残リスク:
+
+- 実ブラウザ iPhone Safari での長時間 pending / modal 操作、画面復帰、複数 pending の連続解決は manual verification required。
+- build menu や card select のさらなる helper 分離は可能だが、HTML 出力差分が大きくなるため今回の自動対応では guard と再発テストに限定した。

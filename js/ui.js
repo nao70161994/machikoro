@@ -354,6 +354,7 @@ function persistAfterRender() {
 
 function renderDiceChoose() {
     const el = document.getElementById("diceChoose");
+    if (!el) return;
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     if (!isMyTurn) { el.innerHTML = ""; return; }
     if (game.phase === GAME_PHASES.SELECT_DICE) {
@@ -502,6 +503,8 @@ function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
 }
 
 function renderBuildMenu() {
+    const buildMenu = document.getElementById("buildMenu");
+    if (!buildMenu || !game) return;
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
     const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
@@ -524,7 +527,7 @@ function renderBuildMenu() {
         return renderLandmarkBuildButton(name, built, cost, canBuildThis);
     }).join("");
     const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>` : '';
-    document.getElementById("buildMenu").innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+    buildMenu.innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
 }
 
 function setCardFilter(color) {
@@ -533,10 +536,14 @@ function setCardFilter(color) {
 }
 
 function bcSelectCard(btn, inputId) {
-    const group = btn.closest('.bc-chip-group');
-    if (group) group.querySelectorAll('.bc-chip').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    document.getElementById(inputId).value = btn.dataset.idx;
+    if (!btn) return false;
+    const group = typeof btn.closest === 'function' ? btn.closest('.bc-chip-group') : null;
+    if (group && typeof group.querySelectorAll === 'function') group.querySelectorAll('.bc-chip').forEach(b => b.classList.remove('selected'));
+    if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('selected');
+    const input = document.getElementById(inputId);
+    if (!input) return false;
+    input.value = btn.dataset?.idx ?? '';
+    return true;
 }
 
 function showTurnAnnouncer(name, isCPU) {
@@ -744,16 +751,21 @@ function closeCardSelect() {
 
 function renderCardSelectModal() {
     for (const [set, cards] of Object.entries(CARD_SETS)) {
-        const el = document.getElementById(`cardList${set.charAt(0).toUpperCase() + set.slice(1)}`);
-        el.innerHTML = [...cards].sort(compareCardNamesForDisplay).map(name => {
-            const on = enabledCards.has(name);
-            const safeName = escapeHtml(name);
-            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}">${safeName}</button>`;
-        }).join("");
+        const suffix = set.charAt(0).toUpperCase() + set.slice(1);
+        const el = document.getElementById(`cardList${suffix}`);
+        if (el) {
+            el.innerHTML = [...cards].sort(compareCardNamesForDisplay).map(name => {
+                const on = enabledCards.has(name);
+                const safeName = escapeHtml(name);
+                return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}">${safeName}</button>`;
+            }).join("");
+        }
         const allOn = cards.every(n => enabledCards.has(n));
-        const btn = document.getElementById(`btnSet${set.charAt(0).toUpperCase() + set.slice(1)}`);
-        btn.textContent = allOn ? "ON" : "OFF";
-        btn.className = `set-toggle ${allOn ? 'on' : 'off'}`;
+        const btn = document.getElementById(`btnSet${suffix}`);
+        if (btn) {
+            btn.textContent = allOn ? "ON" : "OFF";
+            btn.className = `set-toggle ${allOn ? 'on' : 'off'}`;
+        }
     }
     const landmarkList = document.getElementById("landmarkList");
     if (landmarkList) {
@@ -777,6 +789,7 @@ function toggleCard(name) {
 
 function toggleSet(set) {
     const cards = CARD_SETS[set];
+    if (!cards) return;
     const allOn = cards.every(n => enabledCards.has(n));
     for (const name of cards) {
         if (name === "麦畑" || name === "パン屋") continue;
@@ -801,16 +814,19 @@ function toggleLog() {
     const summary = document.getElementById("logSummary");
     const icon = document.getElementById("logToggleIcon");
     const header = document.querySelector(".log-header");
+    if (!log || !icon || !header || !log.classList || !header.classList) return false;
     const collapsed = log.classList.toggle("collapsed");
-    if (summary) summary.classList.toggle("collapsed", collapsed);
+    if (summary && summary.classList) summary.classList.toggle("collapsed", collapsed);
     icon.textContent = collapsed ? "▶" : "▼";
     header.classList.toggle("collapsed", collapsed);
+    return true;
 }
 
 function showCardDetail(name, isLandmark = false) {
     const modal = document.getElementById('cardDetailModal');
     const title = document.getElementById('cardDetailTitle');
     const body = document.getElementById('cardDetailBody');
+    if (!modal || !title || !body) return false;
     if (isLandmark) {
         const emoji = getLandmarkEmoji(name);
         const cost = Player.landmarkCost(name);
@@ -819,7 +835,7 @@ function showCardDetail(name, isLandmark = false) {
         body.innerHTML = `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`;
     } else {
         const card = CARDS.find(c => c.name === name);
-        if (!card) return;
+        if (!card) return false;
         const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
         const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
         title.textContent = card.name;
@@ -869,13 +885,21 @@ function showNotice(message) {
 
 function showConfirm(message, onOk) {
     const modal = document.getElementById('confirmModal');
-    document.getElementById('confirmMessage').textContent = message;
+    const messageEl = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    if (!modal || !messageEl || !okBtn || !cancelBtn) {
+        showNotice('確認ダイアログを表示できません');
+        return false;
+    }
+    messageEl.textContent = message;
     openAccessibleModal('confirmModal');
-    document.getElementById('confirmOkBtn').onclick = () => {
+    okBtn.onclick = () => {
         closeAccessibleModal('confirmModal');
         onOk();
     };
-    document.getElementById('confirmCancelBtn').onclick = () => {
+    cancelBtn.onclick = () => {
         closeAccessibleModal('confirmModal');
     };
+    return true;
 }

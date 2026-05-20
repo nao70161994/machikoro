@@ -199,6 +199,26 @@ runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () 
     assert.strictEqual(modal.style.display, 'none');
 });
 
+runTest('UI更新関数は対象DOM欠落時に例外化しない', () => {
+    const { context } = loadUiRuntime();
+    const originalGetElementById = context.document.getElementById;
+    const originalQuerySelector = context.document.querySelector;
+    context.document.getElementById = () => null;
+    context.document.querySelector = () => null;
+
+    assert.doesNotThrow(() => context.renderDiceChoose());
+    assert.doesNotThrow(() => context.renderBuildMenu());
+    assert.doesNotThrow(() => context.renderCardSelectModal());
+    assert.doesNotThrow(() => context.toggleSet('unknown-set'));
+    assert.strictEqual(context.toggleLog(), false);
+    assert.strictEqual(context.showCardDetail('麦畑'), false);
+    assert.strictEqual(context.showConfirm('確認', () => { throw new Error('missing modal should not accept'); }), false);
+    assert.deepStrictEqual(context.alertMessages, ['確認ダイアログを表示できません']);
+
+    context.document.getElementById = originalGetElementById;
+    context.document.querySelector = originalQuerySelector;
+});
+
 runTest('render は勝利時に recordGameStats を一度だけ呼ぶ', () => {
     const { context, elements } = loadUiRuntime();
     context.game = {
