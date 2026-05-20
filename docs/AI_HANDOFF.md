@@ -127,3 +127,8 @@ npm test
 
 - `eval-rl-vs-js` は full-fidelity simulator 固定。`--fast` / `--lite` を安易に通さないことを test で固定した。
 - 将来 lightweight 評価を足す場合は、adoption 用ではなく smoke 用の別 flag / 別 command として設計する。
+
+## 2026-05-20 continuous review Cycle 5 accessibility labels
+
+- title/game/PWA shell の主要 input と icon-only button に programmatic label を追加した。
+- 今後 UI を追加する場合、視覚的な近接テキストだけに頼らず `label for` / `aria-label` / `aria-describedby` のいずれかで名前を固定する。

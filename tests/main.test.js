@@ -1123,6 +1123,17 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes("btn.style.opacity = '';"));
     assert.ok(html.includes('data-ui-action="showRules"'));
     assert.ok(html.includes('data-ui-action="switchTab" data-tab="online"'));
+    assert.ok(html.includes('for="cpuSpeed"'));
+    assert.ok(html.includes('aria-describedby="speedLabel"'));
+    assert.ok(html.includes('for="onlineCpuSpeed"'));
+    assert.ok(html.includes('aria-describedby="onlineSpeedLabel"'));
+    assert.ok(html.includes('for="playerNameInput"'));
+    assert.ok(html.includes('for="roomIdInput"'));
+    assert.ok(html.includes('aria-label="保存データを削除"'));
+    assert.ok(html.includes('aria-label="更新通知を閉じる"'));
+    assert.ok(html.includes('aria-label="インストール案内を閉じる"'));
+    assert.ok(html.includes('aria-label="チュートリアル表示を切り替える"'));
+    assert.ok(html.includes('aria-label="チュートリアルの詳しさ"'));
     assert.ok(html.includes('data-ui-input="cpuSpeed"'));
     assert.ok(html.includes('data-ui-change="toggleTutorialEnabled"'));
     assert.ok(!html.includes('onclick='));

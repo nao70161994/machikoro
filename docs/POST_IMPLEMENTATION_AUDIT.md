@@ -442,3 +442,14 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 残リスク:
 
 - 将来 `eval-rl-vs-js` に fast/lite を正式導入する場合は、評価用途を smoke と adoption に分ける設計判断が必要。
+
+### Continuous review Cycle 5 accessibility label pass
+
+確認した内容:
+
+- 目視テキストに依存していた主要 input/select/button に `label for` / `aria-describedby` / `aria-label` を追加した。
+- UI event は既存の `data-ui-action` / `data-ui-input` / `data-ui-change` を維持し、挙動変更を避けた。
+
+残リスク:
+
+- 実スクリーンリーダーでの読み上げ順とモバイル実機フォーカス確認は manual verification required。

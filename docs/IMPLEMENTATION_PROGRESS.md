@@ -1626,3 +1626,14 @@
 - 実装内容:
   - RL 採用評価は fast/lite/lightweight 経路を使わない full-fidelity simulator 方針を `RL_EVAL_SIMULATION_MODE` と `buildRlEvalRunSeriesOptions()` で明示した。
   - `--fast` / `--lite` は現時点では CLI で採用せず、将来対応する場合はこの test を意図的に更新する。
+
+## Continuous review Cycle 5 accessibility label pass
+
+- 状態: implemented, targeted tests pending
+- 変更ファイル:
+  - `index.html`
+  - `tests/main.test.js`
+- 実装内容:
+  - CPU速度 slider / online CPU速度 slider / player name / room id を programmatic label または describedby に紐付けた。
+  - icon-only / empty-text buttons に `aria-label` を追加した。対象は保存削除、PWA dismiss、tutorial toggle、人数 +/-。
+  - 既存 delegated handler / data-ui-action の契約は維持した。

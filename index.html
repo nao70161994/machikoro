@@ -48,17 +48,17 @@
                 <div class="setting-section">
                     <div class="setting-label">プレイ人数</div>
                     <div class="player-select">
-                        <button data-ui-action="changeCount" data-delta="-1">－</button>
+                        <button data-ui-action="changeCount" data-delta="-1" aria-label="プレイ人数を減らす">－</button>
                         <span id="playerCount">2</span>人
-                        <button data-ui-action="changeCount" data-delta="1">＋</button>
+                        <button data-ui-action="changeCount" data-delta="1" aria-label="プレイ人数を増やす">＋</button>
                     </div>
                 </div>
                 <div id="playerSettings" class="setting-section"></div>
                 <div class="setting-section">
-                    <div class="setting-label">CPUの速さ</div>
+                    <label class="setting-label" for="cpuSpeed">CPUの速さ</label>
                     <div class="speed-setting">
                         <input type="range" id="cpuSpeed" min="100" max="3000" step="100" value="1500"
-                            data-ui-input="cpuSpeed">
+                            data-ui-input="cpuSpeed" aria-describedby="speedLabel">
                         <span id="speedLabel">1.5秒</span>
                     </div>
                 </div>
@@ -68,7 +68,7 @@
                         <input id="tutorialEnabled" type="checkbox" data-ui-change="toggleTutorialEnabled">
                         <span>現在のフェーズに応じたガイドを表示する</span>
                     </label>
-                    <select id="tutorialLevel" class="text-input" data-ui-change="tutorialLevel">
+                    <select id="tutorialLevel" class="text-input" data-ui-change="tutorialLevel" aria-label="チュートリアルの詳しさ">
                         <option value="beginner">初心者向け</option>
                         <option value="advanced">上級者向け</option>
                     </select>
@@ -76,13 +76,13 @@
                 <button id="btnStart" data-ui-action="startGame">ゲーム開始</button>
                 <div id="resumeSection" style="display:none">
                     <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">▶ 続きから再開</button>
-                    <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn">🗑</button>
+                    <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">🗑</button>
                 </div>
             </div>
 
             <div id="tabContentOnline" class="tab-content" style="display:none">
                 <div class="setting-section">
-                    <div class="setting-label">あなたの名前</div>
+                    <label class="setting-label" for="playerNameInput">あなたの名前</label>
                     <input id="playerNameInput" type="text" placeholder="名前を入力" maxlength="10" class="text-input">
                 </div>
 
@@ -95,17 +95,17 @@
                     <div class="setting-section">
                         <div class="setting-label">プレイ人数</div>
                         <div class="player-select">
-                            <button data-ui-action="changeOnlineCount" data-delta="-1">－</button>
+                            <button data-ui-action="changeOnlineCount" data-delta="-1" aria-label="オンライン人数を減らす">－</button>
                             <span id="onlinePlayerCount">2</span>人
-                            <button data-ui-action="changeOnlineCount" data-delta="1">＋</button>
+                            <button data-ui-action="changeOnlineCount" data-delta="1" aria-label="オンライン人数を増やす">＋</button>
                         </div>
                     </div>
                     <div id="onlinePlayerSettings" class="setting-section"></div>
                     <div class="setting-section">
-                        <div class="setting-label">CPUの速さ</div>
+                        <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
                         <div class="speed-setting">
                             <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
-                                data-ui-input="onlineCpuSpeed">
+                                data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel">
                             <span id="onlineSpeedLabel">1.5秒</span>
                         </div>
                     </div>
@@ -114,7 +114,7 @@
 
                 <div id="onlineJoin" style="display:none">
                     <div class="setting-section">
-                        <div class="setting-label">ルームID</div>
+                        <label class="setting-label" for="roomIdInput">ルームID</label>
                         <input id="roomIdInput" type="text" placeholder="6文字のルームID" maxlength="6"
                             class="text-input" style="text-transform:uppercase">
                     </div>
@@ -139,8 +139,8 @@
         <div id="tutorialBox" class="tutorial-box" style="display:none"></div>
         <div class="game-action-panel">
             <div class="panel-tools">
-                <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial"></button>
-                <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel"></button>
+                <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial" aria-label="チュートリアル表示を切り替える"></button>
+                <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel" aria-label="チュートリアルの詳しさを切り替える"></button>
             </div>
             <div id="diceResult"></div>
             <div id="diceChoose"></div>
@@ -321,7 +321,7 @@
         </div>
         <div class="pwa-banner-actions">
             <button id="pwaUpdateBtn" class="pwa-banner-btn" data-ui-action="pwaApplyUpdate">今すぐ更新</button>
-            <button class="pwa-banner-dismiss" data-ui-action="hidePwaUpdateBanner">×</button>
+            <button class="pwa-banner-dismiss" data-ui-action="hidePwaUpdateBanner" aria-label="更新通知を閉じる">×</button>
         </div>
     </div>
 
@@ -333,7 +333,7 @@
         </div>
         <div class="pwa-banner-actions">
             <button class="pwa-banner-btn" data-ui-action="pwaInstallPrompt">追加する</button>
-            <button class="pwa-banner-dismiss" data-ui-action="pwaInstallDismiss">×</button>
+            <button class="pwa-banner-dismiss" data-ui-action="pwaInstallDismiss" aria-label="インストール案内を閉じる">×</button>
         </div>
     </div>
 
