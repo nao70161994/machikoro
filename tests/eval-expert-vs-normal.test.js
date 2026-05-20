@@ -2,10 +2,12 @@ const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
 const { runTest } = require('./helpers/test-utils');
+const { loadRuntime } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
 
 const {
     DEFAULT_PROFILES,
     evaluateProfile,
+    getFastSeriesEvaluator,
     parseArgs,
     profilePlayers,
     profileWeight,
@@ -13,6 +15,23 @@ const {
     toMarkdown,
     toText,
 } = require(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-normal.js'));
+
+function runFastPendingProbe(queue) {
+    const runtime = loadRuntime({ includeRL: false });
+    const evaluator = getFastSeriesEvaluator(runtime);
+    const result = evaluator({
+        games: 1,
+        seed: 1,
+        maxSteps: 3,
+        players: ['expert', 'normal'],
+        lite: false,
+        fast: true,
+        profile: true,
+        pendingOrderProbe: queue,
+    });
+    return result.probe;
+}
+
 runTest('eval-expert-vs-normal parseArgs は既定値を返す', () => {
     const args = parseArgs([]);
     assert.strictEqual(args.games, 50);
@@ -276,12 +295,22 @@ runTest('eval-expert-vs-normal formatter は主要値を含む', () => {
     assert.ok(md.includes('| crowd | expert,normal,normal,normal | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
 
-runTest('eval-expert-vs-normal fast pending は queue 先頭fieldを参照する', () => {
-    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'eval-expert-vs-normal.js'), 'utf8');
+runTest('eval-expert-vs-normal fast pending は queue 先頭だけを解決する', () => {
+    const cleaningFirst = runFastPendingProbe([
+        { action: 'resolveCleaning', field: 'pendingCleaning' },
+        { action: 'resolveTV', field: 'pendingTV' },
+    ]);
+    assert.strictEqual(cleaningFirst.pendingCleaning, 0);
+    assert.strictEqual(cleaningFirst.pendingTV, 1);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(cleaningFirst.pendingActionQueue)), [{ action: 'resolveTV', field: 'pendingTV' }]);
 
-    assert.ok(source.includes('GameManager.nextPendingActionFor(game)'));
-    assert.ok(source.includes("shouldResolvePendingField('pendingTV')"));
-    assert.ok(source.includes("shouldResolvePendingField('pendingBusiness')"));
+    const tvFirst = runFastPendingProbe([
+        { action: 'resolveTV', field: 'pendingTV' },
+        { action: 'resolveCleaning', field: 'pendingCleaning' },
+    ]);
+    assert.strictEqual(tvFirst.pendingTV, 0);
+    assert.strictEqual(tvFirst.pendingCleaning, 1);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(tvFirst.pendingActionQueue)), [{ action: 'resolveCleaning', field: 'pendingCleaning' }]);
 });
 
 runTest('eval-expert-vs-normal は live expert に指定presetを渡す', () => {

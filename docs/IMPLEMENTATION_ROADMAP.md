@@ -4,6 +4,9 @@
 
 このロードマップは `docs/PROJECT_ISSUES.md`, `docs/TECH_DEBT.md`, `docs/AI_MAINTENANCE_ISSUES.md` を実装順に並べ替えたものです。Codex が上から順に小さな PR として処理できる粒度を優先します。
 
+> Status note (2026-05-20): この roadmap は historical plan を含みます。PR-001 以降の多くは `docs/IMPLEMENTATION_PROGRESS.md` に完了記録があります。新規作業では、各 PR 見出しを未実装とみなす前に progress/audit/handoff の最新日付を確認してください。
+
+
 ## 方針
 
 - Critical / High を先に潰す。

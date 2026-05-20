@@ -4,6 +4,9 @@
 
 この文書は、街コロプロジェクト全体を「半年〜数年運用したときに壊れそうな場所」という観点で棚卸ししたものです。現時点で通常プレイを即停止させる既知バグだけでなく、公開運用、オンライン長時間対戦、新カード追加、スマホ作業、AI保守で問題化しやすい構造も含めます。
 
+> Status note (2026-05-20): この棚卸しは historical inventory です。C-01/C-04 など複数項目は `docs/IMPLEMENTATION_PROGRESS.md` の Cycle/PR 記録で対応済みです。現時点の active Critical/High はこの文書単体ではなく、最新の `docs/POST_IMPLEMENTATION_AUDIT.md` と `docs/AI_HANDOFF.md` の review note を優先してください。C-03 host-supplied restore snapshot の署名/永続 canonical state は design decision required として残っています。
+
+
 ## Critical
 
 ### C-01 Socket.IO event entrypoint が malformed payload に弱い

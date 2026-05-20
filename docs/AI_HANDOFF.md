@@ -107,3 +107,12 @@ npm test
 
 - High fixed: pendingActions snapshot の action/field 不一致・count mismatch、CPU fallback の queue 先頭迂回、pendingActions schema docs 欠落。
 - 不変条件: `pendingActions` の entry は固定 action/field pair で、queue 内 field 件数は legacy pending field count と一致する。
+
+## 2026-05-20 continuous review Cycle 4
+
+- Critical: 未検出。
+- High: host-supplied restore snapshot の署名/永続 canonical state は設計判断待ちのため自動修正対象外。
+- Medium fixed: expert eval fast path の pending queue test を static source assertion から behavioral probe へ変更した。
+- 追加した不変条件: eval fast path でも mixed pending queue は `GameManager.nextPendingActionFor()` が示す先頭 field だけを解決する。
+- Docs: `PROJECT_ISSUES.md` / `IMPLEMENTATION_ROADMAP.md` は historical inventory/plan を含むため、最新状態は progress/audit/handoff を優先する。inline handler docs は delegated handler 移行済みとして更新した。
+- Follow-up: ntfy endpoint の shared token/origin gate は production hardening backlog。iPhone/Android の PWA/update/online restore は manual verification required。

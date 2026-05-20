@@ -406,3 +406,16 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 再発防止:
 
 - GameManager / server / main の targeted tests と schema docs を追加した。
+
+### Continuous review Cycle 4 eval fast path behavioral guard
+
+確認した内容:
+
+- Cycle 4 では全体再レビューを行い、Critical は未検出。
+- 自動で安全に対応できる Medium として、expert eval fast path の pending queue regression test が static source assertion に偏っていた点を修正した。
+- `scripts/eval-expert-vs-normal.js` / `scripts/eval-expert-vs-weak.js` の fast evaluator に test-only probe を追加し、queue 先頭が cleaning の場合は cleaning だけ、queue 先頭が TV の場合は TV だけが解決されることを実行時に検証する。
+
+残リスク:
+
+- host-supplied restore snapshot を server が署名/永続 canonical state なしで正本化する問題は設計判断待ち。
+- ntfy client error reporting は rate limit / dedupe 済みだが、production でより強い spam/privacy 境界が必要なら shared token / origin gate を別 PR で検討する。

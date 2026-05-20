@@ -394,6 +394,49 @@ function getFastSeriesEvaluator(runtime) {
             };
             const v2simpleStats = {};
 
+            if (Array.isArray(config.pendingOrderProbe)) {
+                const probeGame = new GameManager(2);
+                probeGame.phase = GAME_PHASES.PENDING;
+                probeGame.pendingActionQueue = config.pendingOrderProbe.map(entry => ({
+                    action: entry && entry.action,
+                    field: entry && entry.field,
+                }));
+                probeGame.pendingTV = probeGame.pendingActionQueue.filter(entry => entry.field === 'pendingTV').length;
+                probeGame.pendingBusiness = 0;
+                probeGame.pendingCleaning = probeGame.pendingActionQueue.filter(entry => entry.field === 'pendingCleaning').length;
+                probeGame.pendingMover = 0;
+                probeGame.pendingRenovation = 0;
+                probeGame.pendingIT = false;
+                if (probeGame.players[1]) probeGame.players[1].coins = Math.max(probeGame.players[1].coins || 0, 5);
+                const probeCpu = {
+                    chooseTVTarget() { return 1; },
+                    chooseCleaningTarget() { return '麦畑'; },
+                    chooseDiceCount() { return false; },
+                    chooseReroll() { return false; },
+                    chooseHarbor() { return false; },
+                    chooseBusinessMove() { return null; },
+                    chooseMoverMove() { return null; },
+                    chooseRenovationTarget() { return null; },
+                    chooseITInvest() { return false; },
+                    build(game) { if (game.phase === GAME_PHASES.BUILD) game.nextTurn(); },
+                };
+                playStep(probeGame, [probeCpu, probeCpu], createShopStock(), createRng(1));
+                return {
+                    games: 0,
+                    players: (config.players || []).slice(),
+                    wins: {},
+                    seatWins: [],
+                    exhausted: 0,
+                    averageTurns: 0,
+                    profile: null,
+                    probe: {
+                        pendingTV: probeGame.pendingTV,
+                        pendingCleaning: probeGame.pendingCleaning,
+                        pendingActionQueue: probeGame.pendingActionQueue.map(entry => ({ action: entry.action, field: entry.field })),
+                    },
+                };
+            }
+
             for (let i = 0; i < games; i++) {
                 const lineup = rotatePlayers(players, i % players.length);
                 const game = new GameManager(lineup.length);
@@ -733,6 +776,7 @@ if (require.main === module) {
 module.exports = {
     DEFAULT_PROFILES,
     evaluateProfile,
+    getFastSeriesEvaluator,
     parseArgs,
     profilePlayers,
     profileWeight,

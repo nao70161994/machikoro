@@ -58,15 +58,15 @@
 - server の room lifecycle と restore rank 比較を小さな純粋関数へ寄せる。
 - `appError` event と transport error の使い分けを維持したまま、payload schema を文書化する。
 
-### 5. UI は inline handler と HTML 生成文字列が多い
+### 5. UI は HTML 生成文字列と delegated handler の境界を保つ
 
-`index.html` と `js/ui.js` には `onclick` / `onchange` / `innerHTML` ベースの UI が多い。
-現状の browser-global 構成では自然だが、スマホ UI 改善や component 分離を進めるときに差分が大きくなりやすい。
+`index.html` と `js/ui.js` は browser-global 構成と `innerHTML` 生成を残しているが、既知の `onclick=` / `onchange=` / `oninput=` は delegated handler へ移行済み。
+スマホ UI 改善や component 分離を進めるときは、既存の `data-action` / `addEventListener` 境界を維持する。
 
 小さな改善候補:
 
 - まず title / online / game / modal の DOM id と担当関数を文書化する。
-- 新規 UI から `addEventListener` 初期化へ寄せ、既存 inline handler はまとめて移動しない。
+- 新規 UI は `data-action` と delegated `addEventListener` へ寄せ、inline handler を再導入しない。
 - card rendering は `renderCardButton` のような小単位 helper へ切り出す。
 
 ### 6. console 出力は用途が混在している
@@ -99,7 +99,7 @@ Phase 1 では、実装の大移動はしない。後続 Phase のために、�
 - TODO / FIXME: project files では実質なし。`docs/REFACTOR_PLAN.md` 自身の棚卸し項目だけが該当します。
 - runtime console: `js/main.js` に crash 表示用の `console.error`、`server.js` に起動・room lifecycle・例外ログがあります。まず server runtime log を薄い helper に寄せる候補です。
 - CLI / tests console: `scripts/` と `tests/` の `console.log` は出力仕様または test hook なので、runtime log 整理とは分けます。
-- inline handlers: `index.html` に `onclick` / `onchange` が多数あり、`js/ui.js` も `innerHTML` 生成文字列内の handler に依存しています。UI 分割時は新規・変更箇所から `addEventListener` へ寄せます。
+- inline handlers: 既知の `onclick=` / `onchange=` / `oninput=` は delegated handler へ移行済みです。UI 分割時は `innerHTML` の構造と `data-action` の契約を同時に保守します。
 - 巨大ファイル: `js/CPU.js` が最大で、card effect 評価、戦略 table、simulation 補助が同居しています。最初の分割候補は card metadata 参照と CPU tuning table の分離です。
 
 ## Phase 2: Card / effect system

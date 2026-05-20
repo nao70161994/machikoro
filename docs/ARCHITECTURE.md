@@ -107,7 +107,7 @@ The server also validates the same actions separately. This duplication is curre
 
 ### UI/action coupling
 
-`index.html` and `js/ui.js` use inline handlers and `innerHTML` heavily. This keeps the app simple, but it couples visible markup to global function names and action payload shapes.
+`index.html` and `js/ui.js` still use browser-global UI helpers and `innerHTML` in several render paths. Known `onclick=` / `onchange=` / `oninput=` handlers have been migrated to delegated handlers, so new UI should keep using `data-action` / `addEventListener` instead of reintroducing inline handlers.
 
 ## Small PR route
 

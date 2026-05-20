@@ -1586,3 +1586,21 @@
   - client-side queue 正規化は action/field 不一致 entry を採用せず、count 不一致時は legacy pending fields から補修する。
   - CPU fallback / selfplay fallback の cleaning 解決を queue 先頭 action に限定した。
   - `docs/online-restore-schema.md` と `docs/CARD_SYSTEM.md` に pendingActions schema を追記した。
+
+## Continuous review Cycle 4 eval fast path behavioral guard
+
+- 状態: implemented, targeted tests passed
+- 変更ファイル:
+  - `scripts/eval-expert-vs-normal.js`
+  - `scripts/eval-expert-vs-weak.js`
+  - `tests/eval-expert-vs-normal.test.js`
+  - `tests/eval-expert-vs-weak.test.js`
+  - docs maintenance files
+- 実装内容:
+  - expert eval fast path に test-only probe を追加し、mixed pending queue で先頭 entry だけを解決する挙動を behavioral test で固定した。
+  - 既存の source string assertion を、`[Cleaning, TV]` と `[TV, Cleaning]` の両順序を実行する検証へ置き換えた。
+  - historical issue / roadmap docs に status note を追加し、既に対応済みの Critical/High を active backlog と誤読しないようにした。
+- deferred:
+  - host-supplied restore snapshot の server signature / persisted canonical state は design decision required。
+  - ntfy endpoint の shared token / origin gate は production hardening backlog。
+  - 実機 iPhone/Android の PWA / online restore 長時間確認は manual verification required。
