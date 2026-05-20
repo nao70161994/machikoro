@@ -84,6 +84,7 @@ Manual-only checks are listed in `docs/AUTOMATED_RELEASE_TEST.md` and `docs/PWA_
 
 - Release pseudo E2E and CI: `docs/AUTOMATED_RELEASE_TEST.md`
 - ntfy browser error notification: `docs/NTFY_ERROR_REPORTING.md`
+- AdSense public URL setup: `docs/ADSENSE_SETUP.md`
 - Ads placeholder policy: `docs/ADS_PLAN.md`
 - PWA model loading: `docs/PWA_MODEL_LOADING.md`
 - Online restore/recovery: `docs/ONLINE_RECOVERY.md`, `docs/online-restore-schema.md`

@@ -1166,6 +1166,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     const docs = fs.readFileSync(path.join(__dirname, '..', 'docs/ADS_PLAN.md'), 'utf8');
     const releaseChecklist = fs.readFileSync(path.join(__dirname, '..', 'docs/RELEASE_CHECKLIST.md'), 'utf8');
+    const adsenseSetup = fs.readFileSync(path.join(__dirname, '..', 'docs/ADSENSE_SETUP.md'), 'utf8');
     const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
     const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
     const { AD_SLOT_CONFIGS, renderAdSlot } = require('../js/adSlots.js');
@@ -1195,8 +1196,14 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.strictEqual(renderAdSlot('game-action'), '');
     assert.ok(docs.includes('AdSense / AdMob'));
     assert.ok(docs.includes('ゲーム中の主要操作'));
+    assert.ok(releaseChecklist.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(releaseChecklist.includes('privacy.html'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
+    assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
+    assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
+    assert.ok(adsenseSetup.includes('/api/client-error-test'));
+    assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
+    assert.ok(adsenseSetup.includes('index.html'));
 });
 
 runTest('docs は live v2simple の実装済み既定値を記載している', () => {
