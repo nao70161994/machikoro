@@ -135,6 +135,70 @@ function clientErrorRateKey(req) {
     return req?.ip || req?.socket?.remoteAddress || 'unknown';
 }
 
+function requestHeader(req, name) {
+    if (!req) return '';
+    if (typeof req.get === 'function') return req.get(name) || '';
+    const headers = req.headers || {};
+    return headers[name.toLowerCase()] || headers[name] || '';
+}
+
+function normalizeOriginValue(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    try {
+        const parsed = new URL(text);
+        return parsed.origin;
+    } catch (_error) {
+        return '';
+    }
+}
+
+function requestBaseOrigin(req) {
+    const host = requestHeader(req, 'host');
+    if (!host) return '';
+    const forwardedProto = requestHeader(req, 'x-forwarded-proto').split(',')[0].trim();
+    const proto = forwardedProto || req?.protocol || 'http';
+    return normalizeOriginValue(proto + '://' + host);
+}
+
+function clientErrorAllowedOrigins(req, env = process.env) {
+    const configured = String(env.CLIENT_ERROR_ALLOWED_ORIGINS || env.CLIENT_ERROR_ALLOWED_ORIGIN || '')
+        .split(',')
+        .map(normalizeOriginValue)
+        .filter(Boolean);
+    const sameOrigin = requestBaseOrigin(req);
+    if (sameOrigin) configured.push(sameOrigin);
+    return Array.from(new Set(configured));
+}
+
+function isClientErrorOriginAllowed(req, env = process.env) {
+    const origin = normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer'));
+    if (!origin) return true;
+    const allowed = clientErrorAllowedOrigins(req, env);
+    return allowed.includes(origin);
+}
+
+function clientErrorSharedToken(env = process.env) {
+    return String(env.CLIENT_ERROR_SHARED_TOKEN || env.CLIENT_ERROR_TOKEN || '').trim();
+}
+
+function requestClientErrorToken(req) {
+    const headerToken = String(requestHeader(req, 'x-client-error-token') || '').trim();
+    if (headerToken) return headerToken;
+    const authorization = String(requestHeader(req, 'authorization') || '').trim();
+    const match = authorization.match(/^Bearer\s+(.+)$/i);
+    return match ? match[1].trim() : '';
+}
+
+function authorizeClientErrorRequest(req, env = process.env) {
+    if (!isClientErrorOriginAllowed(req, env)) return { ok: false, error: 'forbidden_origin' };
+    const expectedToken = clientErrorSharedToken(env);
+    if (!expectedToken) return { ok: true };
+    return requestClientErrorToken(req) === expectedToken
+        ? { ok: true }
+        : { ok: false, error: 'invalid_client_error_token' };
+}
+
 function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
     const bucket = buckets.get(key);
     if (!bucket || now - bucket.windowStart >= CLIENT_ERROR_LIMITS.rateLimitWindowMs) {
@@ -225,6 +289,11 @@ async function notifyClientError(report, options = {}) {
 }
 
 async function handleClientErrorRequest(req, res, options = {}) {
+    const auth = authorizeClientErrorRequest(req, options.env || process.env);
+    if (!auth.ok) {
+        res.status(403).json({ ok: false, error: auth.error });
+        return;
+    }
     const now = options.now || Date.now();
     const rateKey = clientErrorRateKey(req);
     if (isClientErrorRateLimited(rateKey, now, options.rateBuckets || clientErrorRateBuckets)) {
@@ -270,6 +339,11 @@ function buildClientErrorTestPayload(now = Date.now(), buildHash = BUILD_HASH) {
 
 async function handleClientErrorTestRequest(req, res, options = {}) {
     const env = options.env || process.env;
+    const auth = authorizeClientErrorRequest(req, env);
+    if (!auth.ok) {
+        res.status(403).json({ ok: false, error: auth.error });
+        return;
+    }
     if (!isClientErrorTestEnabled(env)) {
         res.status(404).json({ ok: false, error: 'client_error_test_disabled' });
         return;
@@ -1490,11 +1564,18 @@ module.exports = {
     validateRestorePayloadLimits,
     CLIENT_ERROR_LIMITS,
     normalizeClientErrorPayload,
+    requestHeader,
+    requestBaseOrigin,
+    clientErrorAllowedOrigins,
+    isClientErrorOriginAllowed,
+    clientErrorSharedToken,
+    requestClientErrorToken,
+    authorizeClientErrorRequest,
+    handleClientErrorRequest,
     isClientErrorRateLimited,
     isDuplicateClientError,
     formatNtfyClientErrorMessage,
     notifyClientError,
-    handleClientErrorRequest,
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,

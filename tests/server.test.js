@@ -16,6 +16,12 @@ const {
     validateRestorePayloadLimits,
     CLIENT_ERROR_LIMITS,
     normalizeClientErrorPayload,
+    requestBaseOrigin,
+    clientErrorAllowedOrigins,
+    isClientErrorOriginAllowed,
+    requestClientErrorToken,
+    authorizeClientErrorRequest,
+    handleClientErrorRequest,
     isClientErrorRateLimited,
     isDuplicateClientError,
     formatNtfyClientErrorMessage,
@@ -266,6 +272,64 @@ runTest('client error rate limit と duplicate suppression は短時間の連投
     assert.strictEqual(isDuplicateClientError(report, now + CLIENT_ERROR_LIMITS.duplicateWindowMs + 1001, cache), false);
 });
 
+function makeMockReq({ headers = {}, body = {}, protocol = 'https', ip = '127.0.0.1' } = {}) {
+    const normalizedHeaders = Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]));
+    return {
+        body,
+        protocol,
+        ip,
+        headers: normalizedHeaders,
+        get(name) { return normalizedHeaders[String(name).toLowerCase()] || ''; },
+    };
+}
+
+function makeMockRes() {
+    return {
+        statusCode: null,
+        body: null,
+        status(code) {
+            this.statusCode = code;
+            return this;
+        },
+        json(body) {
+            this.body = body;
+            return this;
+        },
+    };
+}
+
+runTest('client error auth は same-origin を許可し cross-origin と不正tokenを拒否する', () => {
+    const sameOriginReq = makeMockReq({
+        headers: { host: 'example.com', origin: 'https://example.com' },
+    });
+    assert.strictEqual(requestBaseOrigin(sameOriginReq), 'https://example.com');
+    assert.ok(clientErrorAllowedOrigins(sameOriginReq, {}).includes('https://example.com'));
+    assert.strictEqual(isClientErrorOriginAllowed(sameOriginReq, {}), true);
+    assert.deepStrictEqual(authorizeClientErrorRequest(sameOriginReq, {}), { ok: true });
+
+    const crossOriginReq = makeMockReq({
+        headers: { host: 'example.com', origin: 'https://evil.example' },
+    });
+    assert.strictEqual(authorizeClientErrorRequest(crossOriginReq, {}).error, 'forbidden_origin');
+
+    const tokenReq = makeMockReq({
+        headers: { host: 'example.com', origin: 'https://example.com', authorization: 'Bearer secret-token' },
+    });
+    assert.strictEqual(requestClientErrorToken(tokenReq), 'secret-token');
+    assert.deepStrictEqual(authorizeClientErrorRequest(tokenReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
+    assert.strictEqual(authorizeClientErrorRequest(sameOriginReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }).error, 'invalid_client_error_token');
+});
+
+runTest('client error request は auth gate で通知前に拒否する', () => {
+    const res = makeMockRes();
+    handleClientErrorRequest(makeMockReq({
+        headers: { host: 'example.com', origin: 'https://example.com' },
+        body: { message: 'boom' },
+    }), res, { env: { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' } });
+    assert.strictEqual(res.statusCode, 403);
+    assert.strictEqual(res.body.error, 'invalid_client_error_token');
+});
+
 runTest('ntfy client error message は phase/room/UA と本文を含む', () => {
     const report = normalizeClientErrorPayload({
         message: 'updatePendingModalContent recursion',
@@ -327,25 +391,12 @@ runTest('client error test payload は実エラーではないことが分かる
 });
 
 runTest('client error test endpoint は無効時404、NTFY_TOPIC未設定時503を返す', () => {
-    const makeRes = () => ({
-        statusCode: null,
-        body: null,
-        status(code) {
-            this.statusCode = code;
-            return this;
-        },
-        json(body) {
-            this.body = body;
-            return this;
-        },
-    });
-
-    const disabledRes = makeRes();
+    const disabledRes = makeMockRes();
     handleClientErrorTestRequest({}, disabledRes, { env: { NODE_ENV: 'production' } });
     assert.strictEqual(disabledRes.statusCode, 404);
     assert.strictEqual(disabledRes.body.error, 'client_error_test_disabled');
 
-    const missingTopicRes = makeRes();
+    const missingTopicRes = makeMockRes();
     handleClientErrorTestRequest({}, missingTopicRes, { env: { NODE_ENV: 'development' } });
     assert.strictEqual(missingTopicRes.statusCode, 503);
     assert.strictEqual(missingTopicRes.body.error, 'missing_ntfy_topic');

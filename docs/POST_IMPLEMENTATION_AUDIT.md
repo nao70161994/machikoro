@@ -419,3 +419,15 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - host-supplied restore snapshot を server が署名/永続 canonical state なしで正本化する問題は設計判断待ち。
 - ntfy client error reporting は rate limit / dedupe 済みだが、production でより強い spam/privacy 境界が必要なら shared token / origin gate を別 PR で検討する。
+
+### Continuous review Cycle 5 ntfy endpoint gate
+
+確認した内容:
+
+- ntfy client error endpoint は従来の payload validation / dedupe / rate limit に加えて、optional shared token と origin gate を持つ。
+- `CLIENT_ERROR_SHARED_TOKEN` 未設定時は既存クライアント通知を維持する。設定時は `X-Client-Error-Token` または Bearer token が必要。
+- cross-origin browser report は default で拒否し、必要な場合は `CLIENT_ERROR_ALLOWED_ORIGINS` で許可する。
+
+残リスク:
+
+- shared token を browser に配る運用は強い秘密にはならない。公開productionでより強い abuse 対策が必要なら、server-side sampling や認証済み運用を別途検討する。

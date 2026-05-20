@@ -4,9 +4,11 @@ Machikoro can forward real browser errors to ntfy so iPhone Safari / Android Chr
 
 ## Server setup
 
-Set this environment variable on Render:
+Set these environment variables on Render:
 
 - `NTFY_TOPIC`: ntfy topic name to publish client errors to.
+- `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, `POST /api/client-error` and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Leave unset to keep the browser reporter working without a token.
+- `CLIENT_ERROR_ALLOWED_ORIGINS`: optional comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
 
 Example topic names:
 
@@ -20,7 +22,9 @@ Render steps:
 1. Open the Render service dashboard.
 2. Go to `Environment`.
 3. Add `NTFY_TOPIC` with the chosen topic name.
-4. Redeploy or restart the service.
+4. Optional: add `CLIENT_ERROR_ALLOWED_ORIGINS` with your production origin.
+5. Optional: add `CLIENT_ERROR_SHARED_TOKEN` only if your reporter/test caller will send the matching header.
+6. Redeploy or restart the service.
 
 If `NTFY_TOPIC` is not set, `POST /api/client-error` still accepts reports but only writes a server-side `console.warn`. The game must not stop when notification delivery fails.
 
@@ -77,6 +81,8 @@ A development/debug-only test endpoint is available:
 
 ```sh
 curl -X POST http://localhost:3000/api/client-error-test
+# If CLIENT_ERROR_SHARED_TOKEN is set:
+curl -X POST -H 'X-Client-Error-Token: <token>' http://localhost:3000/api/client-error-test
 ```
 
 The endpoint is enabled only when one of these is true:
@@ -101,6 +107,8 @@ A successful test returns `202` and sends a notification with `phase=test`, `roo
 - Long strings and stack traces are truncated.
 - Duplicate reports are suppressed for a short window.
 - Per-IP reports are rate limited.
+- Browser reports with a cross-origin `Origin` / `Referer` are rejected unless explicitly allowlisted.
+- `CLIENT_ERROR_SHARED_TOKEN` can require a shared token for report and test endpoints.
 - ntfy failures are logged and do not block gameplay.
 
 ## Privacy notes

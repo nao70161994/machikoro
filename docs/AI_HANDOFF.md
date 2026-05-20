@@ -116,3 +116,9 @@ npm test
 - 追加した不変条件: eval fast path でも mixed pending queue は `GameManager.nextPendingActionFor()` が示す先頭 field だけを解決する。
 - Docs: `PROJECT_ISSUES.md` / `IMPLEMENTATION_ROADMAP.md` は historical inventory/plan を含むため、最新状態は progress/audit/handoff を優先する。inline handler docs は delegated handler 移行済みとして更新した。
 - Follow-up: ntfy endpoint の shared token/origin gate は production hardening backlog。iPhone/Android の PWA/update/online restore は manual verification required。
+
+## 2026-05-20 continuous review Cycle 5 ntfy endpoint gate
+
+- ntfy client error endpoint は optional `CLIENT_ERROR_SHARED_TOKEN` と origin gate を持つ。未設定時は既存の browser reporter がそのまま動く。
+- cross-origin `Origin` / `Referer` は拒否される。production で別 origin から投げる必要がある場合は `CLIENT_ERROR_ALLOWED_ORIGINS` に明記する。
+- Debug test endpoint も同じ auth gate を通るため、token 設定時の curl には `X-Client-Error-Token` が必要。

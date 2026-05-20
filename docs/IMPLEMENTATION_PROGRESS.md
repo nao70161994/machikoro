@@ -1604,3 +1604,15 @@
   - host-supplied restore snapshot の server signature / persisted canonical state は design decision required。
   - ntfy endpoint の shared token / origin gate は production hardening backlog。
   - 実機 iPhone/Android の PWA / online restore 長時間確認は manual verification required。
+
+## Continuous review Cycle 5 ntfy endpoint gate
+
+- 状態: implemented, targeted tests passed
+- 変更ファイル:
+  - `server.js`
+  - `tests/server.test.js`
+  - `docs/NTFY_ERROR_REPORTING.md`
+- 実装内容:
+  - `POST /api/client-error` と `/api/client-error-test` に optional `CLIENT_ERROR_SHARED_TOKEN` gate を追加した。未設定時は既存どおり動く。
+  - browser の `Origin` / `Referer` が cross-origin の場合は拒否し、same-origin と `CLIENT_ERROR_ALLOWED_ORIGINS` を許可する。
+  - auth gate は rate limit / notify より前に評価し、不正tokenやcross-origin reportを通知へ流さない。
