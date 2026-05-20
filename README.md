@@ -115,14 +115,14 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `harborLandmarkBaseBonus=2.5`
 - `landmarkProgressRemaining=3`
 - `landmarkCostWeight=0.12`
-- `buildTempo=0.05`
+- `buildTempo=0.03`
 - `airportSkip=whenNoLandmark`
 - `incomeCap=none`
 
-この設定の評価 CLI は既定で `mode=lite` の高速比較として動きます。現行100戦基準線は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。
-strong profile は `duel=82.0%`, `trio=74.0%`, `crowd=41.0%`, `allStrong4=39.0%` で、詳細と停止判断は `docs/expert-v2-diagnostics.md` に集約します。
+この設定の評価 CLI は既定で `mode=lite` の高速比較として動きます。現行100戦基準線は `normalCrowd=57.0%`, `strongWeighted=57.5%`, `strongMin=38.0%` です。
+strong profile は `duel=87.0%`, `trio=78.0%`, `crowd=60.0%`, `allStrong4=38.0%` で、詳細と停止判断は `docs/expert-v2-diagnostics.md` に集約します。
 
-`combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。`buildTempo=0.05` は購入後の残金を薄く評価して、次ランドマークへのテンポを残しやすくします。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
+`combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。`buildTempo=0.03` は購入後の残金評価を旧 `0.05` より少し弱め、低テンポな残金温存に寄りすぎないようにした採用値です。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
 
 `strong` 比較の速度改善も入っています。本物 `strong` 同士の `duel 1戦` は、直近の最適化で `12.364秒 -> 4.792秒` まで短縮しています。ここから先の最適化案は複数試しましたが、悪化が多かったため、現時点ではここを打ち止めにしています。
 

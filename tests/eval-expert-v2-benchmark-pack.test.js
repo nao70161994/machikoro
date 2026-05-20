@@ -35,7 +35,7 @@ runTest('eval-expert-v2-benchmark-pack parseArgs は既定値を返す', () => {
     assert.strictEqual(args.incomeCapMode, 'none');
     assert.strictEqual(args.comboMode, 'core');
     assert.strictEqual(args.comboWeight, 0.35);
-    assert.strictEqual(args.buildTempoWeight, 0.05);
+    assert.strictEqual(args.buildTempoWeight, 0.03);
     assert.strictEqual(args.airportSkipMode, 'whenNoLandmark');
     assert.strictEqual(args.suite, 'all');
     assert.deepStrictEqual(args.profiles, []);
@@ -123,7 +123,7 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は normal/strong の基準�
     assert.strictEqual(report.normal.options.incomeCapMode, 'none');
     assert.strictEqual(report.strong.options.comboMode, 'core');
     assert.strictEqual(report.normal.options.comboWeight, 0.35);
-    assert.strictEqual(report.strong.options.buildTempoWeight, 0.05);
+    assert.strictEqual(report.strong.options.buildTempoWeight, 0.03);
     assert.strictEqual(report.normal.summary.executed, true);
     assert.strictEqual(report.normal.summary.skipped, false);
     assert.strictEqual(report.strong.summary.executed, true);
@@ -168,7 +168,7 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は未実行 strong suite �
 
 runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力する', () => {
     const report = {
-        options: { games: 2, seed: 1, lite: true, fast: false, expertPreset: 'v2simple', buildMode: 'ev', diceMode: 'ev', rerollMode: 'simple', itMode: 'always', tvMode: 'simple', businessMode: 'harmfulGift', cleaningMode: 'simple', harborMode: 'simple', moverMode: 'simple', renovationMode: 'simple', incomeCapMode: 'none', comboMode: 'core', comboWeight: 0.35, buildTempoWeight: 0.05, airportSkipMode: 'whenNoLandmark', suite: 'all', profiles: [] },
+        options: { games: 2, seed: 1, lite: true, fast: false, expertPreset: 'v2simple', buildMode: 'ev', diceMode: 'ev', rerollMode: 'simple', itMode: 'always', tvMode: 'simple', businessMode: 'harmfulGift', cleaningMode: 'simple', harborMode: 'simple', moverMode: 'simple', renovationMode: 'simple', incomeCapMode: 'none', comboMode: 'core', comboWeight: 0.35, buildTempoWeight: 0.03, airportSkipMode: 'whenNoLandmark', suite: 'all', profiles: [] },
         normal: {
             summary: { weightedWinRate: 0.5, minWinRate: 0.5 },
             entries: [{ profile: 'crowd', players: ['expert', 'normal', 'normal', 'normal'], expertWins: 1, games: 2, winRate: 0.5, averageTurns: 40, exhausted: 0 }],
@@ -192,7 +192,7 @@ runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力す�
     assert.ok(toText(report).includes('incomeCapMode=none'));
     assert.ok(toText(report).includes('comboMode=core'));
     assert.ok(toText(report).includes('comboWeight=0.35'));
-    assert.ok(toText(report).includes('buildTempoWeight=0.05'));
+    assert.ok(toText(report).includes('buildTempoWeight=0.03'));
     assert.ok(toText(report).includes('airportSkipMode=whenNoLandmark'));
     assert.ok(toText(report).includes('suite=all profiles=default'));
     assert.ok(toText(report).includes('cpuFamily=v2simple-rule-based comparisonScope=expert-v2-benchmark-pack'));
@@ -210,7 +210,7 @@ runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力す�
     assert.ok(toMarkdown(report).includes('- incomeCapMode: none'));
     assert.ok(toMarkdown(report).includes('- comboMode: core'));
     assert.ok(toMarkdown(report).includes('- comboWeight: 0.35'));
-    assert.ok(toMarkdown(report).includes('- buildTempoWeight: 0.05'));
+    assert.ok(toMarkdown(report).includes('- buildTempoWeight: 0.03'));
     assert.ok(toMarkdown(report).includes('- airportSkipMode: whenNoLandmark'));
     assert.ok(toMarkdown(report).includes('- suite: all'));
     assert.ok(toMarkdown(report).includes('| strong | allStrong4 | expert,strong,strong,strong | 50.0% | 50.0 | 0 |'));

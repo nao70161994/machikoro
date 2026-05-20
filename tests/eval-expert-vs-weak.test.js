@@ -54,7 +54,7 @@ runTest('eval-expert-vs-weak parseArgs は既定値を返す', () => {
     assert.strictEqual(args.incomeCapMode, 'none');
     assert.strictEqual(args.comboMode, 'core');
     assert.strictEqual(args.comboWeight, 0.35);
-    assert.strictEqual(args.buildTempoWeight, 0.05);
+    assert.strictEqual(args.buildTempoWeight, 0.03);
     assert.deepStrictEqual(args.profiles, DEFAULT_PROFILES);
 });
 
@@ -187,7 +187,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
         incomeCapMode: 'none',
         comboMode: 'core',
         comboWeight: 0.35,
-        buildTempoWeight: 0.05,
+        buildTempoWeight: 0.03,
     };
     const entries = [
         {
@@ -251,7 +251,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(text.includes('incomeCapMode=none'));
     assert.ok(text.includes('comboMode=core'));
     assert.ok(text.includes('comboWeight=0.35'));
-    assert.ok(text.includes('buildTempoWeight=0.05'));
+    assert.ok(text.includes('buildTempoWeight=0.03'));
     assert.ok(text.includes('totalProfileMs=1234.0ms'));
     assert.ok(text.includes('perf: total=1234.0ms'));
     assert.ok(text.includes('pendingStats: business count=2 avg=4.500ms max=8.0ms'));
@@ -272,7 +272,7 @@ runTest('eval-expert-vs-weak formatter は主要値を含む', () => {
     assert.ok(md.includes('- incomeCapMode: none'));
     assert.ok(md.includes('- comboMode: core'));
     assert.ok(md.includes('- comboWeight: 0.35'));
-    assert.ok(md.includes('- buildTempoWeight: 0.05'));
+    assert.ok(md.includes('- buildTempoWeight: 0.03'));
     assert.ok(md.includes('| profile | players | weight | winRate | seatWins |'));
     assert.ok(md.includes('| crowd | expert,weak,weak,weak | 3 | 70.0% | 20,8,4,3 | 42.3 | 1 |'));
 });
@@ -311,7 +311,7 @@ runTest('eval-expert-vs-weak は live expert に v2simple preset を渡す', () 
     assert.ok(source.includes("expertIncomeCapMode: config.incomeCapMode || 'none'"));
     assert.ok(source.includes("expertComboMode: config.comboMode || 'core'"));
     assert.ok(source.includes("expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35"));
-    assert.ok(source.includes("expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.05"));
+    assert.ok(source.includes("expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.03"));
     assert.ok(source.includes("expertPreset: options.expertPreset"));
     assert.ok(source.includes("buildMode: options.buildMode"));
     assert.ok(source.includes("diceMode: options.diceMode"));

@@ -31,7 +31,7 @@ function parseArgs(argv) {
     let incomeCapMode = 'none';
     let comboMode = 'core';
     let comboWeight = 0.35;
-    let buildTempoWeight = 0.05;
+    let buildTempoWeight = 0.03;
     let rollRiskMode = 'none';
     let rollRedRiskWeight = 0;
     let airportSkipMode = 'whenNoLandmark';
@@ -71,7 +71,7 @@ function parseArgs(argv) {
         else if (arg === '--income-cap-mode') incomeCapMode = argv[++i] || 'none';
         else if (arg === '--combo-mode') comboMode = argv[++i] || 'core';
         else if (arg === '--combo-weight') comboWeight = parseFloatOrDefault(argv[++i], 0.35);
-        else if (arg === '--build-tempo-weight') buildTempoWeight = parseFloatOrDefault(argv[++i], 0.05);
+        else if (arg === '--build-tempo-weight') buildTempoWeight = parseFloatOrDefault(argv[++i], 0.03);
         else if (arg === '--roll-risk-mode') rollRiskMode = argv[++i] || 'none';
         else if (arg === '--roll-red-risk-weight') rollRedRiskWeight = parseFloatOrDefault(argv[++i], 0);
         else if (arg === '--airport-skip-mode') airportSkipMode = argv[++i] || 'whenNoLandmark';
@@ -188,7 +188,7 @@ function evaluateProfile(name, options) {
         expertIncomeCapMode: options.incomeCapMode || 'none',
         expertComboMode: options.comboMode || 'core',
         expertComboWeight: Number.isFinite(options.comboWeight) ? options.comboWeight : 0.35,
-        expertBuildTempoWeight: Number.isFinite(options.buildTempoWeight) ? options.buildTempoWeight : 0.05,
+        expertBuildTempoWeight: Number.isFinite(options.buildTempoWeight) ? options.buildTempoWeight : 0.03,
         expertRollRiskMode: options.rollRiskMode || 'none',
         expertRollRedRiskWeight: Number.isFinite(options.rollRedRiskWeight) ? options.rollRedRiskWeight : 0,
         expertAirportSkipMode: options.airportSkipMode || 'whenNoLandmark',

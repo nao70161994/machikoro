@@ -35,7 +35,7 @@ runTest('eval-expert-vs-strong parseArgs は既定値を返す', () => {
     assert.strictEqual(args.incomeCapMode, 'none');
     assert.strictEqual(args.comboMode, 'core');
     assert.strictEqual(args.comboWeight, 0.35);
-    assert.strictEqual(args.buildTempoWeight, 0.05);
+    assert.strictEqual(args.buildTempoWeight, 0.03);
     assert.strictEqual(args.rollRiskMode, 'none');
     assert.strictEqual(args.rollRedRiskWeight, 0);
     assert.strictEqual(args.airportSkipMode, 'whenNoLandmark');
@@ -49,7 +49,7 @@ runTest('eval-expert-vs-strong parseArgs は expert-preset 値省略時も v2sim
 
 runTest('eval-expert-vs-strong parseArgs は v2simple mode 値省略時も live 既定値を使う', () => {
     assert.strictEqual(parseArgs(['--combo-mode']).comboMode, 'core');
-    assert.strictEqual(parseArgs(['--build-tempo-weight']).buildTempoWeight, 0.05);
+    assert.strictEqual(parseArgs(['--build-tempo-weight']).buildTempoWeight, 0.03);
 });
 
 runTest('eval-expert-vs-strong parseArgs は CLI 引数を解釈する', () => {
@@ -194,7 +194,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
         incomeCapMode: 'none',
         comboMode: 'core',
         comboWeight: 0.35,
-        buildTempoWeight: 0.05,
+        buildTempoWeight: 0.03,
         rollRiskMode: 'red',
         rollRedRiskWeight: 0.4,
         airportSkipMode: 'whenNoLandmark',
@@ -222,7 +222,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     assert.ok(text.includes('incomeCapMode=none'));
     assert.ok(text.includes('comboMode=core'));
     assert.ok(text.includes('comboWeight=0.35'));
-    assert.ok(text.includes('buildTempoWeight=0.05'));
+    assert.ok(text.includes('buildTempoWeight=0.03'));
     assert.ok(text.includes('rollRiskMode=red'));
     assert.ok(text.includes('rollRedRiskWeight=0.4'));
     assert.ok(text.includes('airportSkipMode=whenNoLandmark'));
@@ -236,7 +236,7 @@ runTest('eval-expert-vs-strong formatter は主要値を含む', () => {
     assert.ok(md.includes('- incomeCapMode: none'));
     assert.ok(md.includes('- comboMode: core'));
     assert.ok(md.includes('- comboWeight: 0.35'));
-    assert.ok(md.includes('- buildTempoWeight: 0.05'));
+    assert.ok(md.includes('- buildTempoWeight: 0.03'));
     assert.ok(md.includes('- rollRiskMode: red'));
     assert.ok(md.includes('- rollRedRiskWeight: 0.4'));
     assert.ok(md.includes('- airportSkipMode: whenNoLandmark'));

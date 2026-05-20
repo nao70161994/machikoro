@@ -29,7 +29,7 @@ function parseArgs(argv) {
     let incomeCapMode = 'none';
     let comboMode = 'core';
     let comboWeight = 0.35;
-    let buildTempoWeight = 0.05;
+    let buildTempoWeight = 0.03;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -74,7 +74,7 @@ function parseArgs(argv) {
         } else if (arg === '--combo-weight') {
             comboWeight = parseFloatOrDefault(argv[++i], 0.35);
         } else if (arg === '--build-tempo-weight') {
-            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.05);
+            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.03);
         }
     }
 
@@ -138,7 +138,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertIncomeCapMode: config.incomeCapMode || 'none',
                         expertComboMode: config.comboMode || 'core',
                         expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35,
-                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.05,
+                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.03,
                         expertTraceStats: traceStats || null,
                         simulationMode: config.lite ? 'lite' : (config.fast ? 'fast' : 'full'),
                     });

@@ -137,3 +137,10 @@ npm test
 
 - `diagnose-expert-v2-branches.js` の counter utilities は `scripts/diagnostics/expert-v2-branch-counters.js` に分離済み。
 - 次に分けるなら、formatting helper か branch instrumentation の一部を targeted tests 付きで小さく抽出する。
+
+## 2026-05-21 expert v2simple search
+
+- v2simple 凍結を解除し、最小変更として `buildTempo` を `0.05 -> 0.03` に下げた。
+- 採用理由: 100戦 full suite で旧 `0.05` 比 `strongWeighted 56.2% -> 57.5%`, `strongMin/allStrong4 36.0% -> 38.0%`、`normalCrowd 59.0% -> 57.0%` で -2pt 以内。
+- 不採用: `buildTempo=0.02` は strong 側を改善したが `normalCrowd=56.0%` で -3pt のため採用しない。
+- 次候補は、広い duplicate/growth/guard ではなく、loss 側に偏る狭い条件だけを見る。benchmark は `docs/expert-v2-diagnostics.md` の gate を優先する。

@@ -1694,7 +1694,7 @@ function evaluateProfile(profile, options, runtime) {
                 expertIncomeCapMode: 'none',
                 expertComboMode: 'core',
                 expertComboWeight: 0.35,
-                expertBuildTempoWeight: 0.05,
+                expertBuildTempoWeight: 0.03,
             });
             turns += result.turns;
             if (result.exhausted) exhausted++;

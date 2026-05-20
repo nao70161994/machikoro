@@ -397,7 +397,7 @@ runTest('main createCpuPlayer は live v2simple 明示時も v2 既定modeを補
     assert.strictEqual(cpu.options.expertBuildMode, "ev");
     assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
     assert.strictEqual(cpu.options.expertComboMode, "core");
-    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.05);
+    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.03);
     assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
 });
 
@@ -413,7 +413,7 @@ runTest('main createCpuPlayer は live expert 未指定presetを v2simple 既定
     assert.strictEqual(cpu.options.expertBuildMode, "ev");
     assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
     assert.strictEqual(cpu.options.expertComboMode, "core");
-    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.05);
+    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.03);
     assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
 });
 

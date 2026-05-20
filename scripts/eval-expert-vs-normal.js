@@ -31,7 +31,7 @@ function parseArgs(argv) {
     let incomeCapMode = 'none';
     let comboMode = 'core';
     let comboWeight = 0.35;
-    let buildTempoWeight = 0.05;
+    let buildTempoWeight = 0.03;
     let airportSkipMode = 'whenNoLandmark';
     let landmarkCardMargin = 25;
     let landmarkCardCompareMode = 'base';
@@ -88,7 +88,7 @@ function parseArgs(argv) {
         } else if (arg === '--combo-weight') {
             comboWeight = parseFloatOrDefault(argv[++i], 0.35);
         } else if (arg === '--build-tempo-weight') {
-            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.05);
+            buildTempoWeight = parseFloatOrDefault(argv[++i], 0.03);
         } else if (arg === '--airport-skip-mode') {
             airportSkipMode = argv[++i] || 'whenNoLandmark';
         } else if (arg === '--landmark-card-margin') {
@@ -170,7 +170,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertIncomeCapMode: config.incomeCapMode || 'none',
                         expertComboMode: config.comboMode || 'core',
                         expertComboWeight: Number.isFinite(config.comboWeight) ? config.comboWeight : 0.35,
-                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.05,
+                        expertBuildTempoWeight: Number.isFinite(config.buildTempoWeight) ? config.buildTempoWeight : 0.03,
                         expertAirportSkipMode: config.airportSkipMode || 'whenNoLandmark',
                         expertLandmarkCardMargin: Number.isFinite(config.landmarkCardMargin) ? config.landmarkCardMargin : 25,
                         expertLandmarkCardCompareMode: config.landmarkCardCompareMode || 'base',

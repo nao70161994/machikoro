@@ -16,7 +16,7 @@
 - `mover=simple`
 - `renovation=simple`
 - `combo=core`
-- `buildTempo=0.05`
+- `buildTempo=0.03`
 - `airportSkip=whenNoLandmark`
 - `incomeCap=none`
 - `landmarkCardMargin=25`
@@ -37,9 +37,19 @@
 npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simple
 ```
 
-結果は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%` です。strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。今後の v2simple 候補は、この100戦基準線から `normalCrowd`, `strongWeighted`, `strongMin`, `allStrong4` を比較します。この基準線は、Business Center の harmful gift 限定補正を含む live v2simple option を `mode=lite` の評価 CLI で回したものです。実ゲームの live CPU は同じ option を realtime モードで使います。
+この旧基準線は `normalCrowd=55.0%`, `strongWeighted=50.9%`, `strongMin=39.0%`、strong profile は duel `82.0%`, trio `74.0%`, crowd `41.0%`, allStrong4 `39.0%` でした。2026-05-21 以降の現行基準線は下の `buildTempo=0.03` 採用節を正とします。実ゲームの live CPU は同じ option を realtime モードで使います。
 
 ## 採用済み
+
+### 2026-05-21 buildTempo 0.03 採用
+
+凍結解除後の最初の採用変更として、live v2simple の `buildTempo` を `0.05 -> 0.03` に下げました。これは新しい分岐を増やす変更ではなく、カード購入後の残金を評価する係数を少し弱めるだけです。目的は、次ランドマークへの残金温存を見すぎて低テンポになる局面を減らすことです。
+
+同条件の 50戦 full suite では、旧 `0.05` が `normalCrowd=58.0%`, `strongWeighted=62.0%`, `strongMin=44.0%`, `allStrong4=44.0%`、候補 `0.03` が `normalCrowd=58.0%`, `strongWeighted=63.6%`, `strongMin=48.0%`, `allStrong4=48.0%` でした。
+
+100戦 full suite では、旧 `0.05` が `normalCrowd=59.0%`, `strongWeighted=56.2%`, `strongMin=36.0%`, strong profile `duel=86.0%`, `trio=79.0%`, `crowd=58.0%`, `allStrong4=36.0%`。採用 `0.03` は `normalCrowd=57.0%`, `strongWeighted=57.5%`, `strongMin=38.0%`, strong profile `duel=87.0%`, `trio=78.0%`, `crowd=60.0%`, `allStrong4=38.0%` でした。normal crowd は -2pt 以内、strongWeighted / strongMin / allStrong4 は改善したため採用します。
+
+候補 `0.02` は 50戦では良好でしたが、100戦で `normalCrowd=56.0%` となり旧 `0.05` から -3pt だったため不採用です。strong 側は改善しても normal crowd を壊す候補として扱います。
 
 - 赤カード相手ターン EV 補正
   - `redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` を build EV に薄く加点します。
