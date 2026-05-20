@@ -52,3 +52,15 @@ npm run test:rl
 - ntfy failures should not send real notifications. The test uses mock fetch and fails on payload/header/body mismatches.
 - Restore failures usually mean `server.js` restore validation, snapshot serialization, or restore rank changed. Run `npm run test:online` after fixing.
 - Long-run smoke failures usually indicate a phase transition or snapshot roundtrip regression; inspect the failing iteration in the assertion stack.
+
+## CI Integration
+
+`npm run test:release` runs in GitHub Actions via `.github/workflows/release-test.yml`.
+
+Triggers:
+
+- `pull_request`: blocks PRs when the release pseudo E2E gate fails.
+- `push` to `main`: catches regressions after merge.
+- `workflow_dispatch`: lets maintainers re-run the gate manually.
+
+The workflow uses Node.js 20, `npm ci`, `npm test`, and `npm run test:release`. It does not send real ntfy notifications because the release pseudo E2E uses a mocked `fetchImpl` for `/api/client-error-test`.
