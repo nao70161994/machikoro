@@ -40,6 +40,13 @@ function loadMainRuntime(options = {}) {
     const sentActions = [];
     const timeouts = [];
     const alerts = [];
+    const fetchCalls = [];
+    const consoleErrors = [];
+    const testConsole = {
+        log() {},
+        warn(...args) { consoleErrors.push(args); },
+        error(...args) { consoleErrors.push(args); },
+    };
     const eventHandlers = {};
     const eventAddCounts = {};
     const counters = {
@@ -55,7 +62,7 @@ function loadMainRuntime(options = {}) {
     }
 
     const context = {
-        console,
+        console: testConsole,
         Math,
         counters,
         elements,
@@ -65,6 +72,8 @@ function loadMainRuntime(options = {}) {
         timeouts,
         alerts,
         sentActions,
+        fetchCalls,
+        consoleErrors,
         document: {
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
@@ -82,10 +91,12 @@ function loadMainRuntime(options = {}) {
         },
         window: {
             innerWidth: 360,
+            location: { href: 'https://example.test/play' },
+            MACHIKORO_CLIENT_VERSION: 'test-version',
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: !!options.standalone }; },
         },
-        navigator: { onLine: true },
+        navigator: { onLine: true, userAgent: options.userAgent || 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1' },
         localStorage,
         setTimeout(fn) {
             timeouts.push(fn);
@@ -124,7 +135,10 @@ function loadMainRuntime(options = {}) {
             btn.classList.add('selected');
             context.document.getElementById(inputId).value = btn.dataset.idx;
         },
-        fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
+        fetch(url, options) {
+            fetchCalls.push({ url, options });
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({ hash: 'test' }) });
+        },
         io() { return { on() {}, emit() {}, disconnect() {} }; },
         enabledCards: new Set(),
         enabledLandmarks: new Set(),
@@ -270,6 +284,8 @@ function loadMainRuntime(options = {}) {
             localStorageData,
             sentActions,
             alerts,
+            fetchCalls,
+            consoleErrors,
             flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
             setSelectedCount: (value) => { selectedCount = value; },
             getSelectedCount: () => selectedCount,
@@ -962,15 +978,39 @@ runTest('appShell crashResume はクラッシュ画面を閉じて resumeGame �
     assert.strictEqual(rt.__test.counters.resumeGame, 1);
 });
 
-runTest('appShell bindCrashHandlers は error と rejection を crash 画面へ流す', () => {
+runTest('appShell bindCrashHandlers は error と rejection を crash 画面へ流し通知する', () => {
     const rt = loadMainRuntime();
+    rt.__test.setGame({ phase: 'build' });
 
-    rt.__test.eventHandlers.error({ message: 'sync boom' });
+    rt.__test.eventHandlers.error({ message: 'sync boom', filename: 'js/ui.js', lineno: 12, colno: 3 });
     assert.strictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
+    assert.strictEqual(rt.__test.fetchCalls[0].url, '/api/client-error');
+    const syncReport = JSON.parse(rt.__test.fetchCalls[0].options.body);
+    assert.strictEqual(syncReport.message, 'sync boom');
+    assert.strictEqual(syncReport.filename, 'js/ui.js');
+    assert.strictEqual(syncReport.line, 12);
+    assert.strictEqual(syncReport.column, 3);
+    assert.strictEqual(syncReport.phase, 'build');
+    assert.strictEqual(syncReport.appVersion, 'test-version');
+    assert.ok(syncReport.userAgent.includes('iPhone'));
 
     rt.crashResume();
     rt.__test.eventHandlers.unhandledrejection({ reason: new Error('async boom') });
     assert.ok(rt.__test.elements.crashMessage.textContent.includes('async boom'));
+    assert.strictEqual(rt.__test.fetchCalls.length, 2);
+});
+
+runTest('appShell console.error hook は最小限のクライアントエラー通知を送る', () => {
+    const rt = loadMainRuntime();
+    const before = rt.__test.fetchCalls.length;
+
+    rt.console.error(new Error('logged boom'));
+
+    assert.strictEqual(rt.__test.fetchCalls.length, before + 1);
+    const report = JSON.parse(rt.__test.fetchCalls[before].options.body);
+    assert.strictEqual(report.source, 'console.error');
+    assert.strictEqual(report.message, 'logged boom');
+    assert.ok(report.stack.includes('logged boom'));
 });
 
 runTest('appShell initMainView は shell 初期化をまとめて呼ぶ', () => {

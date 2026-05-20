@@ -79,6 +79,170 @@ const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxPlayerCardRefs: 5000,
 });
 
+const CLIENT_ERROR_LIMITS = Object.freeze({
+    maxJsonBytes: 32 * 1024,
+    maxStringLength: 4000,
+    maxStackLength: 2400,
+    maxMessageLength: 500,
+    rateLimitWindowMs: 60 * 1000,
+    rateLimitMax: 20,
+    duplicateWindowMs: 60 * 1000,
+});
+const clientErrorRateBuckets = new Map();
+const clientErrorDedupeCache = new Map();
+
+function truncateText(value, maxLength) {
+    const text = String(value || '');
+    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+}
+
+function normalizeClientErrorNumber(value) {
+    const number = Number(value);
+    return Number.isInteger(number) && number >= 0 && number <= 1000000 ? number : null;
+}
+
+function normalizeClientErrorPlayerIndex(value) {
+    const number = Number(value);
+    return Number.isInteger(number) && number >= -1 && number <= 20 ? number : null;
+}
+
+function normalizeClientErrorPayload(payload, now = Date.now()) {
+    if (!isPlainObject(payload)) return { ok: false, reason: 'payload must be an object' };
+    const message = truncateText(payload.message, CLIENT_ERROR_LIMITS.maxMessageLength).trim();
+    const stack = truncateText(payload.stack, CLIENT_ERROR_LIMITS.maxStackLength);
+    if (!message && !stack) return { ok: false, reason: 'message or stack is required' };
+    const report = {
+        source: truncateText(payload.source || 'client', 80),
+        message: message || '(no message)',
+        stack,
+        filename: truncateText(payload.filename, 300),
+        line: normalizeClientErrorNumber(payload.line),
+        column: normalizeClientErrorNumber(payload.column),
+        userAgent: truncateText(payload.userAgent, 300),
+        phase: truncateText(payload.phase, 80),
+        roomId: truncateText(payload.roomId, 40),
+        playerIndex: normalizeClientErrorPlayerIndex(payload.playerIndex),
+        timestamp: truncateText(payload.timestamp || new Date(now).toISOString(), 80),
+        appVersion: truncateText(payload.appVersion || BUILD_HASH, 80),
+        url: truncateText(payload.url, 300),
+        receivedAt: new Date(now).toISOString(),
+    };
+    return { ok: true, report };
+}
+
+function clientErrorRateKey(req) {
+    return req?.ip || req?.socket?.remoteAddress || 'unknown';
+}
+
+function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
+    const bucket = buckets.get(key);
+    if (!bucket || now - bucket.windowStart >= CLIENT_ERROR_LIMITS.rateLimitWindowMs) {
+        buckets.set(key, { windowStart: now, count: 1 });
+        return false;
+    }
+    bucket.count++;
+    return bucket.count > CLIENT_ERROR_LIMITS.rateLimitMax;
+}
+
+function clientErrorDedupeKey(report) {
+    return crypto.createHash('sha256').update(JSON.stringify({
+        source: report.source,
+        message: report.message,
+        stack: report.stack.slice(0, 600),
+        filename: report.filename,
+        line: report.line,
+        column: report.column,
+        userAgent: report.userAgent,
+        phase: report.phase,
+        roomId: report.roomId,
+    })).digest('hex');
+}
+
+function isDuplicateClientError(report, now = Date.now(), cache = clientErrorDedupeCache) {
+    const key = clientErrorDedupeKey(report);
+    const previous = cache.get(key);
+    cache.set(key, now);
+    for (const [cachedKey, timestamp] of cache.entries()) {
+        if (now - timestamp > CLIENT_ERROR_LIMITS.duplicateWindowMs) cache.delete(cachedKey);
+    }
+    return previous !== undefined && now - previous < CLIENT_ERROR_LIMITS.duplicateWindowMs;
+}
+
+function summarizeUserAgent(userAgent) {
+    const text = String(userAgent || 'unknown');
+    if (/iPhone|iPad|iPod/.test(text) && /Safari/.test(text)) return 'Safari iPhone';
+    if (/Android/.test(text) && /Chrome/.test(text)) return 'Android Chrome';
+    if (/Safari/.test(text) && !/Chrome/.test(text)) return 'Safari';
+    if (/Chrome/.test(text)) return 'Chrome';
+    return text.slice(0, 80);
+}
+
+function formatNtfyClientErrorMessage(report) {
+    const lines = [
+        'phase=' + (report.phase || 'unknown'),
+        'room=' + (report.roomId || '-'),
+        'player=' + (report.playerIndex ?? '-'),
+        'version=' + (report.appVersion || '-'),
+        summarizeUserAgent(report.userAgent),
+        report.message,
+    ];
+    if (report.filename) lines.push(report.filename + ':' + (report.line ?? '-') + ':' + (report.column ?? '-'));
+    if (report.stack) lines.push('', truncateText(report.stack, CLIENT_ERROR_LIMITS.maxStackLength));
+    return lines.join('\n');
+}
+
+async function notifyClientError(report, options = {}) {
+    const topic = options.topic || process.env.NTFY_TOPIC;
+    if (!topic) {
+        console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + (report.roomId || '-'));
+        return { sent: false, reason: 'missing-topic' };
+    }
+    const fetchImpl = options.fetchImpl || global.fetch;
+    if (typeof fetchImpl !== 'function') {
+        console.warn('[client-error] fetch unavailable; ntfy notification skipped');
+        return { sent: false, reason: 'fetch-unavailable' };
+    }
+    try {
+        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic), {
+            method: 'POST',
+            headers: {
+                Title: '[Machikoro] Client Error',
+                Priority: '4',
+                Tags: 'warning,computer',
+            },
+            body: formatNtfyClientErrorMessage(report),
+        });
+        if (response && response.ok === false) {
+            console.warn('[client-error] ntfy notification failed:', response.status || 'unknown');
+            return { sent: false, reason: 'ntfy-status' };
+        }
+        return { sent: true };
+    } catch (error) {
+        console.warn('[client-error] ntfy notification failed:', error?.message || error);
+        return { sent: false, reason: 'ntfy-error' };
+    }
+}
+
+async function handleClientErrorRequest(req, res, options = {}) {
+    const now = options.now || Date.now();
+    const rateKey = clientErrorRateKey(req);
+    if (isClientErrorRateLimited(rateKey, now, options.rateBuckets || clientErrorRateBuckets)) {
+        res.status(429).json({ ok: false, error: 'rate_limited' });
+        return;
+    }
+    const normalized = normalizeClientErrorPayload(req.body, now);
+    if (!normalized.ok) {
+        res.status(400).json({ ok: false, error: normalized.reason });
+        return;
+    }
+    const duplicate = isDuplicateClientError(normalized.report, now, options.dedupeCache || clientErrorDedupeCache);
+    if (!duplicate) {
+        await notifyClientError(normalized.report, options.notifyOptions || {});
+    }
+    res.status(202).json({ ok: true, duplicate });
+}
+
+
 function resolveBuildHash() {
     if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
     try {
@@ -132,6 +296,16 @@ app.get('/sw.js', (req, res) => {
 app.get('/api/version', (req, res) => {
     res.json({ hash: BUILD_HASH });
 });
+
+
+app.use('/api/client-error', express.json({ limit: CLIENT_ERROR_LIMITS.maxJsonBytes }));
+app.post('/api/client-error', (req, res) => {
+    handleClientErrorRequest(req, res).catch((error) => {
+        console.warn('[client-error] handler failed:', error?.message || error);
+        res.status(202).json({ ok: true, notificationFailed: true });
+    });
+});
+
 
 function sendIndexWithBuildHash(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -1197,6 +1371,13 @@ module.exports = {
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
+    CLIENT_ERROR_LIMITS,
+    normalizeClientErrorPayload,
+    isClientErrorRateLimited,
+    isDuplicateClientError,
+    formatNtfyClientErrorMessage,
+    notifyClientError,
+    handleClientErrorRequest,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,

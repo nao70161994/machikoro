@@ -14,6 +14,12 @@ const {
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
+    CLIENT_ERROR_LIMITS,
+    normalizeClientErrorPayload,
+    isClientErrorRateLimited,
+    isDuplicateClientError,
+    formatNtfyClientErrorMessage,
+    notifyClientError,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
@@ -205,6 +211,85 @@ runTest('createRoom rate limit は同一socketの連続作成だけを拒否す�
     assert.strictEqual(validateCreateRoomLifecycle(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs - 1, {}).ok, false);
     assert.strictEqual(canCreateRoomForSocket(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomRateLimitMs), true);
     assert.strictEqual(validateCreateRoomLifecycle({}, now + 1, {}).ok, true);
+});
+
+runTest('client error payload は必要項目を正規化し長すぎるstackを切り詰める', () => {
+    const normalized = normalizeClientErrorPayload({
+        source: 'window.onerror',
+        message: 'updatePendingModalContent recursion',
+        stack: 'x'.repeat(CLIENT_ERROR_LIMITS.maxStackLength + 100),
+        filename: 'js/ui.js',
+        line: 12,
+        column: 3,
+        userAgent: 'Mozilla/5.0 (iPhone) Safari/604.1',
+        phase: 'build',
+        roomId: 'ABCD',
+        playerIndex: 1,
+        appVersion: 'abc123',
+    }, 1700000000000);
+
+    assert.strictEqual(normalized.ok, true);
+    assert.strictEqual(normalized.report.message, 'updatePendingModalContent recursion');
+    assert.strictEqual(normalized.report.phase, 'build');
+    assert.strictEqual(normalized.report.roomId, 'ABCD');
+    assert.strictEqual(normalized.report.playerIndex, 1);
+    assert.ok(normalized.report.stack.length <= CLIENT_ERROR_LIMITS.maxStackLength + 3);
+});
+
+runTest('client error rate limit と duplicate suppression は短時間の連投を抑止する', () => {
+    const buckets = new Map();
+    const cache = new Map();
+    const now = 1700000000000;
+    for (let i = 0; i < CLIENT_ERROR_LIMITS.rateLimitMax; i++) {
+        assert.strictEqual(isClientErrorRateLimited('ip1', now + i, buckets), false);
+    }
+    assert.strictEqual(isClientErrorRateLimited('ip1', now + CLIENT_ERROR_LIMITS.rateLimitMax + 1, buckets), true);
+    assert.strictEqual(isClientErrorRateLimited('ip1', now + CLIENT_ERROR_LIMITS.rateLimitWindowMs + 1, buckets), false);
+
+    const report = normalizeClientErrorPayload({ message: 'same', stack: 'stack', phase: 'build' }, now).report;
+    assert.strictEqual(isDuplicateClientError(report, now, cache), false);
+    assert.strictEqual(isDuplicateClientError(report, now + 1000, cache), true);
+    assert.strictEqual(isDuplicateClientError(report, now + CLIENT_ERROR_LIMITS.duplicateWindowMs + 1001, cache), false);
+});
+
+runTest('ntfy client error message は phase/room/UA と本文を含む', () => {
+    const report = normalizeClientErrorPayload({
+        message: 'updatePendingModalContent recursion',
+        stack: 'stack line',
+        phase: 'build',
+        roomId: 'ABCD',
+        playerIndex: 2,
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1',
+        appVersion: 'abc123',
+    }, 1700000000000).report;
+    const message = formatNtfyClientErrorMessage(report);
+
+    assert.ok(message.includes('phase=build'));
+    assert.ok(message.includes('room=ABCD'));
+    assert.ok(message.includes('player=2'));
+    assert.ok(message.includes('version=abc123'));
+    assert.ok(message.includes('Safari iPhone'));
+    assert.ok(message.includes('updatePendingModalContent recursion'));
+});
+
+runTest('notifyClientError は ntfy topic 設定時に title/priority/tags 付きでPOSTする', () => {
+    const calls = [];
+    const report = normalizeClientErrorPayload({ message: 'boom', phase: 'build', roomId: 'ABCD' }, 1700000000000).report;
+    notifyClientError(report, {
+        topic: 'machikoro-test-topic',
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-test-topic');
+    assert.strictEqual(calls[0].options.method, 'POST');
+    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Client Error');
+    assert.strictEqual(calls[0].options.headers.Priority, '4');
+    assert.ok(calls[0].options.headers.Tags.includes('warning'));
+    assert.ok(calls[0].options.body.includes('phase=build'));
 });
 
 runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で網羅される', () => {
