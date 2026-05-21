@@ -238,3 +238,25 @@ node scripts/diagnose-expert-losses.js --games 50 --profiles allStrong4 --expert
 node scripts/summarize-expert-losses-json.js /tmp/v2-allstrong4-losses.json
 npm run eval-expert-vs-strong -- --games 100 --expert-preset v2simple
 ```
+
+## 2026-05-21 v2simple simple heuristic exploration
+
+Baseline is the adopted live v2simple preset with `buildTempoWeight=0.03`. This round intentionally did not retune buildTempo; it tested small, explainable rules one at a time and reverted candidates that lacked benchmark support.
+
+Baseline reference values:
+
+| games | normalCrowd | strongWeighted | strongMin | duel | trio | crowd | allStrong4 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 20 | 65.0% | 68.5% | 50.0% | 85.0% | 80.0% | 80.0% | 50.0% |
+| 50 | 58.0% | 63.6% | 48.0% | 92.0% | 80.0% | 64.0% | 48.0% |
+
+Rejected candidates:
+
+| Candidate | Rule | Result | Decision |
+| --- | --- | --- | --- |
+| Red crowd scale | Raise v2 red opponent-turn EV scale from 0.25 to 0.32 only in 3+ player games. | 20 games: normalCrowd 65.0%, strongWeighted 63.5%, strongMin 45.0%, allStrong4 45.0%. | Reverted. It hurt strong profiles and allStrong4. |
+| IT coin starvation guard | In v2simple `it=always`, skip IT saving only when remaining landmarks <= 3 and current coins <= 1. | 20 games matched baseline. 50 games matched baseline: normalCrowd 58.0%, strongWeighted 63.6%, strongMin 48.0%. | Reverted. Safe but no measurable improvement. |
+| High-urgency landmark timing | With 4 landmarks remaining, force landmark progress only when an affordable landmark urgency is >= 8. | 20 and 50 games matched baseline. | Reverted. Safe but no measurable improvement. |
+| Airport skip high-EV exception | Keep airport skip unless an affordable card improves build EV by at least 2.5 over current roll EV. | 20 games: normalCrowd 65.0%, strongWeighted 68.0%, duel 80.0%, allStrong4 50.0%. | Reverted. Duel regression without compensating improvement. |
+
+No new heuristic was adopted in this pass. The useful signal is that broad red/crowd pressure still destabilizes strong profiles, while very narrow terminal guards are often too rare to move benchmark results. Next v2simple work should start from loss diagnostics that show a repeated concrete decision, not from generic duplicate/red/tempo rules.
