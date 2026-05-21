@@ -286,3 +286,23 @@ Rejected candidates:
 | Cleaning value mode | Use existing `--cleaning-mode value` without code changes. | 20-game smoke: strong crowd 65.0%, allStrong4 50.0%, normal crowd 50.0%. | Rejected. Better target valuation for cleaning hurts broad benchmark stability. |
 
 No new heuristic was adopted. At this point, the simple rule-based search has repeatedly shown that v2simple's apparent loss signals are entangled with winning behavior. Future changes should require a stronger loss-skew signal across multiple seeds before implementation, or move to diagnostic/test tooling rather than preset changes.
+
+## 2026-05-22 multi-seed baseline verification
+
+Single-seed 50-game results vary enough that v2simple heuristic adoption should not be judged from one seed. Seed 1 was the original buildTempo=0.03 reference; seeds 2 and 3 were rerun to estimate variance.
+
+| seed | normalCrowd | strongWeighted | strongMin | duel | trio | crowd | allStrong4 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 58.0% | 63.6% | 48.0% | 92.0% | 80.0% | 64.0% | 48.0% |
+| 2 | 52.0% | 47.2% | 36.0% | 86.0% | 58.0% | 42.0% | 36.0% |
+| 3 | 50.0% | 53.0% | 38.0% | 92.0% | 74.0% | 46.0% | 38.0% |
+
+This confirms that 20-game smoke is only a regression filter and 50-game single-seed results are still noisy. A candidate should now pass a multi-seed gate before adoption, especially if it touches crowd, allStrong4, portfolio/growth, red cards, cleaning, or airport/landmark timing.
+
+Added helper command:
+
+`npm run eval-expert-v2-multiseed -- --games 50 --seeds 1,2,3 --suite all`
+
+Use it after a candidate passes 20-game smoke. For faster triage, narrow suites are acceptable, for example:
+
+`npm run eval-expert-v2-multiseed -- --games 20 --seeds 1,2,3 --suite strong --profiles crowd,allStrong4`
