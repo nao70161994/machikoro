@@ -260,3 +260,29 @@ Rejected candidates:
 | Airport skip high-EV exception | Keep airport skip unless an affordable card improves build EV by at least 2.5 over current roll EV. | 20 games: normalCrowd 65.0%, strongWeighted 68.0%, duel 80.0%, allStrong4 50.0%. | Reverted. Duel regression without compensating improvement. |
 
 No new heuristic was adopted in this pass. The useful signal is that broad red/crowd pressure still destabilizes strong profiles, while very narrow terminal guards are often too rare to move benchmark results. Next v2simple work should start from loss diagnostics that show a repeated concrete decision, not from generic duplicate/red/tempo rules.
+
+## 2026-05-22 focused loss-skew exploration
+
+After the generic 2026-05-21 candidates failed, this pass started from fresh loss and branch diagnostics instead of buildTempo retuning.
+
+Diagnostics used:
+
+- `node scripts/diagnose-expert-losses.js --games 50 --profiles crowd,allStrong4 --expert-preset v2simple --seed 1`
+- `node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4 --seed 1`
+
+Observed signals:
+
+- Loss diagnostics still show missing `空港` and late landmark gap, but previous airport/landmark timing rules already regressed benchmarks.
+- `finishDelayExamples` were concrete but small: crowd had two strict delay examples, both `BUY_CARD:税務署`.
+- Portfolio misses concentrated on `サンマ漁船` and `高級フレンチ`, but branch diagnostics also showed broad portfolio changes are high risk.
+- `cleaningValueAlt` had many alternative targets, so existing `cleaningMode=value` was smoke-tested without code changes.
+
+Rejected candidates:
+
+| Candidate | Rule | Result | Decision |
+| --- | --- | --- | --- |
+| Endgame tax office delay penalty | Penalize `税務署` only when remaining landmarks <= 2, closest shortfall <= 6, and tax office would not break an opponent's immediate landmark affordability. | 20-game smoke: normal crowd stayed 65.0%, allStrong4 stayed 50.0%, but strong crowd fell from 80.0% to 75.0%. | Reverted. The strict-delay signal was too small and the strong crowd drop is not acceptable. |
+| First tuna boat portfolio bonus | Add a small `+0.6` build bonus only for first `サンマ漁船` in 4p+ when `駅` and `港` are already built. | 20-game smoke: strong crowd 65.0%, allStrong4 20.0%, normal crowd 50.0%. | Reverted. Even the narrow portfolio bonus collapsed allStrong4 and normal crowd. |
+| Cleaning value mode | Use existing `--cleaning-mode value` without code changes. | 20-game smoke: strong crowd 65.0%, allStrong4 50.0%, normal crowd 50.0%. | Rejected. Better target valuation for cleaning hurts broad benchmark stability. |
+
+No new heuristic was adopted. At this point, the simple rule-based search has repeatedly shown that v2simple's apparent loss signals are entangled with winning behavior. Future changes should require a stronger loss-skew signal across multiple seeds before implementation, or move to diagnostic/test tooling rather than preset changes.
