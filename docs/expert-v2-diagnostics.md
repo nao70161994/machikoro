@@ -322,3 +322,21 @@ Rejected/compared candidates before adoption:
 | Business Center `simple` | 50-game x seeds 1,2,3: normalCrowd 53.3%, strongWeighted 55.1%, strongMin 42.0%; 100-game seed 1: normalCrowd 55.0%, strongWeighted 57.1%, strongMin 41.0%. | Adopted. It is simpler, explainable, and improves strong stability without normalCrowd loss. |
 
 100-game seed 1 adopted profile details: duel 86.0%, trio 75.0%, crowd 57.0%, allStrong4 41.0%.
+
+## 2026-05-22 additional simple heuristic search after Business Center adoption
+
+Baseline for this search is live v2simple with `business=simple`, `buildTempo=0.03`, and `harborLandmarkBaseBonus=2.5`. No additional heuristic was adopted. The only mildly positive candidate was `harborLandmarkBaseBonus=3.0`, but it was identical to baseline on the 100-game seed 1 confirmation, so the improvement was treated as noise.
+
+| candidate | screen / confirmation | decision |
+| --- | --- | --- |
+| `landmarkCostWeight=0.10` | 20-game x seeds 1,2,3 strong crowd/allStrong4: weighted 49.3%, min 45.0%. | Rejected/neutral. Same as baseline. |
+| `landmarkCostWeight=0.15` | 20-game x seeds 1,2,3: weighted 48.3%, min 43.3%. | Rejected. Slightly worse. |
+| `harborLandmarkBaseBonus=3.0` | 20-game screen: weighted 50.0%, min 45.0%. 50-game x seeds 1,2,3 full suite: normalCrowd 53.3%, strongWeighted 55.6%, strongMin 42.7%. 100-game seed 1: normalCrowd 55.0%, strongWeighted 57.1%, strongMin 41.0%. | Held/rejected as too small. 100-game confirmation matched current default. |
+| `landmarkCardMargin=20` | 20-game x seeds 1,2,3 strong crowd/allStrong4: weighted 49.3%, min 45.0%. | Rejected/neutral. Same as baseline. |
+| `landmarkCardMargin=30` | 20-game x seeds 1,2,3 strong crowd/allStrong4: weighted 49.3%, min 45.0%. | Rejected/neutral. Same as baseline. |
+| `landmarkCardCompareTargets=harbor` | 20-game x seeds 1,2,3 strong crowd/allStrong4: weighted 49.3%, min 45.0%. | Rejected/neutral. Same as baseline. |
+| `diceMode=ev` | 20-game x seeds 1,2,3: weighted 47.1%, min 40.0%. | Rejected. Worse than strongCrowdThreshold. |
+| `rerollMode=random` | 20-game x seeds 1,2,3: weighted 46.7%, min 40.0%. | Rejected. Worse than simple reroll. |
+| `itMode=never` | 20-game x seeds 1,2,3: weighted 49.3%, min 45.0%. | Rejected/neutral. Same as baseline. |
+
+Next useful search should not retest these broad knobs unless a new diagnostic points to a specific profile or branch. The remaining promising direction is a narrow allStrong4/crowd diagnostic that identifies a concrete flip candidate, not another broad global coefficient.
