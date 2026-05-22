@@ -340,3 +340,34 @@ Baseline for this search is live v2simple with `business=simple`, `buildTempo=0.
 | `itMode=never` | 20-game x seeds 1,2,3: weighted 49.3%, min 45.0%. | Rejected/neutral. Same as baseline. |
 
 Next useful search should not retest these broad knobs unless a new diagnostic points to a specific profile or branch. The remaining promising direction is a narrow allStrong4/crowd diagnostic that identifies a concrete flip candidate, not another broad global coefficient.
+
+## 2026-05-23 loss-position flip search
+
+This pass diagnosed allStrong4 / crowd losses for live v2simple after the Business Center simple adoption. The goal was not broad coefficient tuning, but finding a single simple rule that can flip a repeated losing position.
+
+Diagnostics used:
+
+- `npm run diagnose-expert-losses -- --games 50 --seed 11 --profiles crowd,allStrong4 --expert-preset v2simple`
+- `node scripts/diagnose-expert-v2-branches.js --games 50 --seed 11 --profiles crowd,allStrong4`
+
+Observed loss pattern:
+
+- Losses still finish with a landmark gap. Missing landmarks are dominated by `空港`, then `遊園地` / `電波塔` / `ショッピングモール`.
+- The winner side often has growth / high-ceiling cards such as `青果市場`, `高級フレンチ`, `ブドウ園`, and `サンマ漁船`.
+- v2simple's losing builds repeatedly include basic repeats: `パン屋`, `コンビニ`, `ピザ屋`, `バーガーショップ`, `食品倉庫`.
+- Direct finish-delay and Business Center harmful-gift signals were too sparse to justify another broad rule. The clearest candidate was a late, mall-less basic duplicate guard.
+
+Candidate tested:
+
+| candidate | rule | result | decision |
+| --- | --- | --- | --- |
+| Late basic duplicate guard | In 4-player games only, when `ショッピングモール` is still missing and remaining landmarks <= 4, slightly penalize buying another low-EV basic card already owned at least twice. | 20-game x seeds 11,12,13 strong crowd/allStrong4 improved from baseline weighted 39.0%, min 28.3% to weighted 40.7%, min 30.0%. 50-game x seeds 11,12,13 improved from weighted 43.3%, min 37.3%, crowd 51.3%, allStrong4 37.3% to weighted 45.2%, min 38.7%, crowd 54.0%, allStrong4 38.7%. 100-game seed 11 improved strongWeighted 51.1% -> 53.3%, crowd 47.0% -> 49.0%, allStrong4 33.0% -> 37.0%, but normalCrowd dropped 60.0% -> 57.0%. | Rejected for now. It finds a real losing-position lever, but the 100-game normalCrowd regression is -3pt, exceeding the -2pt adoption guard. |
+| Weaker late basic duplicate guard | Same rule with smaller penalties. | 20-game behavior matched the stronger candidate. | Rejected. It did not reduce the observed behavior enough to justify a separate 50/100-game confirmation. |
+| 3rd-copy-only basic duplicate guard | Penalize only when the same basic card count is already >= 3. | 20-game x seeds 11,12,13 strongWeighted 39.8%, strongMin 28.3%, normalCrowd 60.0%. | Rejected. Too narrow; strongMin improvement disappeared. |
+| Remaining-3-landmarks duplicate guard | Apply the original duplicate guard only when remaining landmarks <= 3. | 20-game x seeds 11,12,13 strongWeighted 39.0%, strongMin 28.3%, normalCrowd 60.0%. | Rejected. Too late to flip the allStrong4/crowd losses. |
+
+Conclusion:
+
+- The most concrete flip candidate is late basic duplicate suppression before `ショッピングモール`, but the useful version also suppresses some winning normalCrowd lines.
+- This is not safe to adopt as a default rule yet. Future work should collect a paired before/after decision trace for the -3pt normalCrowd regression and look for an additional condition that distinguishes harmful duplicates from productive repeat-buy tempo.
+- Do not retest broad duplicate penalties; previous 4th-copy and broad duplicate attempts already showed that repeat buys are often part of winning behavior.
