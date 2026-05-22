@@ -395,7 +395,7 @@ runTest('main createCpuPlayer は live v2simple 明示時も v2 既定modeを補
     assert.strictEqual(cpu.options.expertDiceMode, "strongCrowdThreshold");
     assert.strictEqual(cpu.options.expertRerollMode, "simple");
     assert.strictEqual(cpu.options.expertBuildMode, "ev");
-    assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
+    assert.strictEqual(cpu.options.expertBusinessMode, "simple");
     assert.strictEqual(cpu.options.expertComboMode, "core");
     assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.03);
     assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
@@ -411,7 +411,7 @@ runTest('main createCpuPlayer は live expert 未指定presetを v2simple 既定
     assert.strictEqual(cpu.options.expertDiceMode, "strongCrowdThreshold");
     assert.strictEqual(cpu.options.expertRerollMode, "simple");
     assert.strictEqual(cpu.options.expertBuildMode, "ev");
-    assert.strictEqual(cpu.options.expertBusinessMode, "harmfulGift");
+    assert.strictEqual(cpu.options.expertBusinessMode, "simple");
     assert.strictEqual(cpu.options.expertComboMode, "core");
     assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.03);
     assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
@@ -1213,7 +1213,7 @@ runTest('docs は live v2simple の実装済み既定値を記載している', 
 
     for (const doc of [readme, claude, diagnostics]) {
         assert.ok(doc.includes('dice=strongCrowdThreshold'));
-        assert.ok(doc.includes('business=harmfulGift'));
+        assert.ok(doc.includes('business=simple'));
         assert.ok(doc.includes('airportSkip=whenNoLandmark'));
     }
     assert.ok(!claude.includes('business=simple` を維持'));

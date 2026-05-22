@@ -29,7 +29,7 @@ function parseArgs(argv) {
     let rerollMargin = 0;
     let itMode = 'always';
     let tvMode = 'simple';
-    let businessMode = 'harmfulGift';
+    let businessMode = 'simple';
     let cleaningMode = 'simple';
     let harborMode = 'simple';
     let harborMargin = 0;
@@ -75,7 +75,7 @@ function parseArgs(argv) {
         } else if (arg === '--tv-mode') {
             tvMode = argv[++i] || 'simple';
         } else if (arg === '--business-mode') {
-            businessMode = argv[++i] || 'harmfulGift';
+            businessMode = argv[++i] || 'simple';
         } else if (arg === '--cleaning-mode') {
             cleaningMode = argv[++i] || 'simple';
         } else if (arg === '--harbor-mode') {
@@ -135,7 +135,7 @@ function baseOptions(options, profiles) {
         rerollMargin: Number.isFinite(options.rerollMargin) ? options.rerollMargin : 0,
         itMode: options.itMode || 'always',
         tvMode: options.tvMode || 'simple',
-        businessMode: options.businessMode || 'harmfulGift',
+        businessMode: options.businessMode || 'simple',
         cleaningMode: options.cleaningMode || 'simple',
         harborMode: options.harborMode || 'simple',
         harborMargin: Number.isFinite(options.harborMargin) ? options.harborMargin : 0,
@@ -237,7 +237,7 @@ function toText(report) {
         : 'n/a';
     const lines = [
         `cpuFamily=${report.cpuFamily || 'v2simple-rule-based'} comparisonScope=${report.comparisonScope || 'expert-v2-benchmark-pack'}`,
-        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} buildMode=${report.options.buildMode || 'ev'} diceMode=${report.options.diceMode || 'strongCrowdThreshold'} rerollMode=${report.options.rerollMode || 'simple'} rerollMargin=${Number.isFinite(report.options.rerollMargin) ? report.options.rerollMargin : 0} itMode=${report.options.itMode || 'always'} tvMode=${report.options.tvMode || 'simple'} businessMode=${report.options.businessMode || 'harmfulGift'} cleaningMode=${report.options.cleaningMode || 'simple'} harborMode=${report.options.harborMode || 'simple'} harborMargin=${Number.isFinite(report.options.harborMargin) ? report.options.harborMargin : 0} moverMode=${report.options.moverMode || 'simple'} renovationMode=${report.options.renovationMode || 'simple'} incomeCapMode=${report.options.incomeCapMode || 'none'} comboMode=${report.options.comboMode || 'core'} comboWeight=${Number.isFinite(report.options.comboWeight) ? report.options.comboWeight : 0.35} buildTempoWeight=${Number.isFinite(report.options.buildTempoWeight) ? report.options.buildTempoWeight : 0.03} airportSkipMode=${report.options.airportSkipMode || 'whenNoLandmark'} landmarkCardMargin=${Number.isFinite(report.options.landmarkCardMargin) ? report.options.landmarkCardMargin : 25} landmarkCardCompareMode=${report.options.landmarkCardCompareMode || 'base'} landmarkCardCompareTargets=${report.options.landmarkCardCompareTargets || 'harborMall'} landmarkCardPenaltyMode=${report.options.landmarkCardPenaltyMode || 'none'} harborLandmarkBaseBonus=${Number.isFinite(report.options.harborLandmarkBaseBonus) ? report.options.harborLandmarkBaseBonus : 2.5} landmarkProgressRemaining=${Number.isFinite(report.options.landmarkProgressRemaining) ? report.options.landmarkProgressRemaining : 3} landmarkCostWeight=${Number.isFinite(report.options.landmarkCostWeight) ? report.options.landmarkCostWeight : 0.12} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
+        `games=${report.options.games} seed=${report.options.seed} mode=${report.options.lite ? 'lite' : (report.options.fast ? 'fast' : 'full')} expertPreset=${report.options.expertPreset} buildMode=${report.options.buildMode || 'ev'} diceMode=${report.options.diceMode || 'strongCrowdThreshold'} rerollMode=${report.options.rerollMode || 'simple'} rerollMargin=${Number.isFinite(report.options.rerollMargin) ? report.options.rerollMargin : 0} itMode=${report.options.itMode || 'always'} tvMode=${report.options.tvMode || 'simple'} businessMode=${report.options.businessMode || 'simple'} cleaningMode=${report.options.cleaningMode || 'simple'} harborMode=${report.options.harborMode || 'simple'} harborMargin=${Number.isFinite(report.options.harborMargin) ? report.options.harborMargin : 0} moverMode=${report.options.moverMode || 'simple'} renovationMode=${report.options.renovationMode || 'simple'} incomeCapMode=${report.options.incomeCapMode || 'none'} comboMode=${report.options.comboMode || 'core'} comboWeight=${Number.isFinite(report.options.comboWeight) ? report.options.comboWeight : 0.35} buildTempoWeight=${Number.isFinite(report.options.buildTempoWeight) ? report.options.buildTempoWeight : 0.03} airportSkipMode=${report.options.airportSkipMode || 'whenNoLandmark'} landmarkCardMargin=${Number.isFinite(report.options.landmarkCardMargin) ? report.options.landmarkCardMargin : 25} landmarkCardCompareMode=${report.options.landmarkCardCompareMode || 'base'} landmarkCardCompareTargets=${report.options.landmarkCardCompareTargets || 'harborMall'} landmarkCardPenaltyMode=${report.options.landmarkCardPenaltyMode || 'none'} harborLandmarkBaseBonus=${Number.isFinite(report.options.harborLandmarkBaseBonus) ? report.options.harborLandmarkBaseBonus : 2.5} landmarkProgressRemaining=${Number.isFinite(report.options.landmarkProgressRemaining) ? report.options.landmarkProgressRemaining : 3} landmarkCostWeight=${Number.isFinite(report.options.landmarkCostWeight) ? report.options.landmarkCostWeight : 0.12} suite=${report.options.suite || 'all'} profiles=${(report.options.profiles || []).join(',') || 'default'}`,
         `normalCrowd=${normalCrowd} strongWeighted=${strongWeighted} strongMin=${strongMin}`,
     ];
     if (report.normal.entries.length > 0) {
@@ -274,7 +274,7 @@ function toMarkdown(report) {
         `- rerollMargin: ${Number.isFinite(report.options.rerollMargin) ? report.options.rerollMargin : 0}`,
         `- itMode: ${report.options.itMode || 'always'}`,
         `- tvMode: ${report.options.tvMode || 'simple'}`,
-        `- businessMode: ${report.options.businessMode || 'harmfulGift'}`,
+        `- businessMode: ${report.options.businessMode || 'simple'}`,
         `- cleaningMode: ${report.options.cleaningMode || 'simple'}`,
         `- harborMode: ${report.options.harborMode || 'simple'}`,
         `- harborMargin: ${Number.isFinite(report.options.harborMargin) ? report.options.harborMargin : 0}`,

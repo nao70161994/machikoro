@@ -10,7 +10,7 @@
 - `reroll=simple`
 - `it=always`
 - `tv=simple`
-- `business=harmfulGift`
+- `business=simple`
 - `cleaning=simple`
 - `harbor=simple`
 - `mover=simple`
@@ -143,7 +143,7 @@ normal crowd は broad 補正の副作用検出用、strong 4 profile は最悪�
 
 ### benchmark比較表
 
-`npm run eval-expert-v2-benchmark -- --games <N> --seed <seed> --expert-preset v2simple` の出力を比較するときは、まず次の4指標だけを見ます。既定の `businessMode` は `harmfulGift` です。Business Center 系の実験を再開する場合は、実装済みの mode 名を明示し、baseline harmfulGift と混ぜて比較しません。
+`npm run eval-expert-v2-benchmark -- --games <N> --seed <seed> --expert-preset v2simple` の出力を比較するときは、まず次の4指標だけを見ます。既定の `businessMode` は `simple` です。Business Center 系の実験を再開する場合は、実装済みの mode 名を明示し、baseline simple と混ぜて比較しません。
 
 | games | seed | candidate | normalCrowd | Δ | strongWeighted | Δ | strongMin | Δ | allStrong4 | Δ | 判定 |
 | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -230,7 +230,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 ## よく使う診断
 
 ```sh
-node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode harmfulGift
+node scripts/eval-expert-v2-benchmark-pack.js --games 50 --business-mode simple
 node scripts/eval-expert-v2-benchmark-pack.js --games 20 --suite strong --profiles crowd,allStrong4
 node scripts/diagnose-expert-v2-branches.js --games 50 --profiles crowd,allStrong4
 node scripts/diagnose-expert-losses.js --games 100 --profiles crowd,allStrong4 --expert-preset v2simple
@@ -306,3 +306,19 @@ Added helper command:
 Use it after a candidate passes 20-game smoke. For faster triage, narrow suites are acceptable, for example:
 
 `npm run eval-expert-v2-multiseed -- --games 20 --seeds 1,2,3 --suite strong --profiles crowd,allStrong4`
+
+## 2026-05-22 Business Center simple mode adoption
+
+The previous default `business=harmfulGift` tried to give 貸金業/改装屋 only when the recipient value was negative. Multi-seed evaluation showed the simpler exchange rule is more stable, so live v2simple now uses `business=simple`. The mode remains available for diagnostics, but it is no longer the default.
+
+Rejected/compared candidates before adoption:
+
+| candidate | result | decision |
+| --- | --- | --- |
+| airport skip disabled (`airportSkipMode=never`) | 20-game x seeds 1,2,3 strong crowd/allStrong4: weighted 47.9%, min 41.7% vs baseline weighted 48.6%, min 41.7%. | Rejected. Removing airport skip was slightly worse. |
+| 4p red future bonus cap 1.35 | 20-game x seeds 1,2,3 strong crowd/allStrong4 matched baseline exactly. | Rejected. No measurable effect. |
+| earlier landmark force (`landmarkProgressRemaining=4`) | 20-game x seeds 1,2,3 strong crowd/allStrong4 matched baseline exactly. | Rejected. No measurable effect. |
+| duplicate penalty on 4th+ copy | 20-game x seeds 1,2,3 strong crowd/allStrong4: weighted 46.4%, min 40.0%; seed 3 collapsed to weighted 29.3%. | Rejected. It suppresses useful repeat buys too often. |
+| Business Center `simple` | 50-game x seeds 1,2,3: normalCrowd 53.3%, strongWeighted 55.1%, strongMin 42.0%; 100-game seed 1: normalCrowd 55.0%, strongWeighted 57.1%, strongMin 41.0%. | Adopted. It is simpler, explainable, and improves strong stability without normalCrowd loss. |
+
+100-game seed 1 adopted profile details: duel 86.0%, trio 75.0%, crowd 57.0%, allStrong4 41.0%.

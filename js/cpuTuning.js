@@ -30,7 +30,7 @@
         expertLandmarkCardPenaltyMode: "none",
         byPreset: Object.freeze({
             v2simple: Object.freeze({
-                expertBusinessMode: "harmfulGift",
+                expertBusinessMode: "simple",
                 expertAirportSkipMode: "whenNoLandmark",
             }),
         }),

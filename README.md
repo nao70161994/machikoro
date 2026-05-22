@@ -102,7 +102,7 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `reroll=simple`
 - `it=always`
 - `tv=simple`
-- `business=harmfulGift`
+- `business=simple`
 - `cleaning=simple`
 - `harbor=simple`
 - `mover=simple`

@@ -26,7 +26,7 @@ runTest('eval-expert-v2-benchmark-pack parseArgs は既定値を返す', () => {
     assert.strictEqual(args.rerollMargin, 0);
     assert.strictEqual(args.itMode, 'always');
     assert.strictEqual(args.tvMode, 'simple');
-    assert.strictEqual(args.businessMode, 'harmfulGift');
+    assert.strictEqual(args.businessMode, 'simple');
     assert.strictEqual(args.cleaningMode, 'simple');
     assert.strictEqual(args.harborMode, 'simple');
     assert.strictEqual(args.harborMargin, 0);
@@ -42,7 +42,7 @@ runTest('eval-expert-v2-benchmark-pack parseArgs は既定値を返す', () => {
 });
 
 runTest('eval-expert-v2-benchmark-pack parseArgs は CLI 引数を解釈する', () => {
-    const args = parseArgs(['--games', '3', '--seed', '7', '--max-steps', '900', '--format', 'markdown', '--full', '--expert-preset', 'default', '--build-mode', 'random', '--dice-mode', 'random', '--reroll-mode', 'random', '--reroll-margin', '0.4', '--it-mode', 'never', '--tv-mode', 'random', '--business-mode', 'harmfulGift', '--cleaning-mode', 'random', '--harbor-mode', 'random', '--harbor-margin', '0.6', '--mover-mode', 'random', '--renovation-mode', 'random', '--income-cap-mode', 'soft30', '--combo-mode', 'unlock', '--combo-weight', '0.5', '--build-tempo-weight', '0.1', '--airport-skip-mode', 'none', '--suite', 'strong', '--profiles', 'crowd,allStrong4']);
+    const args = parseArgs(['--games', '3', '--seed', '7', '--max-steps', '900', '--format', 'markdown', '--full', '--expert-preset', 'default', '--build-mode', 'random', '--dice-mode', 'random', '--reroll-mode', 'random', '--reroll-margin', '0.4', '--it-mode', 'never', '--tv-mode', 'random', '--business-mode', 'simple', '--cleaning-mode', 'random', '--harbor-mode', 'random', '--harbor-margin', '0.6', '--mover-mode', 'random', '--renovation-mode', 'random', '--income-cap-mode', 'soft30', '--combo-mode', 'unlock', '--combo-weight', '0.5', '--build-tempo-weight', '0.1', '--airport-skip-mode', 'none', '--suite', 'strong', '--profiles', 'crowd,allStrong4']);
     assert.strictEqual(args.games, 3);
     assert.strictEqual(args.seed, 7);
     assert.strictEqual(args.maxSteps, 900);
@@ -55,7 +55,7 @@ runTest('eval-expert-v2-benchmark-pack parseArgs は CLI 引数を解釈する',
     assert.strictEqual(args.rerollMargin, 0.4);
     assert.strictEqual(args.itMode, 'never');
     assert.strictEqual(args.tvMode, 'random');
-    assert.strictEqual(args.businessMode, 'harmfulGift');
+    assert.strictEqual(args.businessMode, 'simple');
     assert.strictEqual(args.cleaningMode, 'random');
     assert.strictEqual(args.harborMode, 'random');
     assert.strictEqual(args.harborMargin, 0.6);
@@ -106,7 +106,7 @@ runTest('eval-expert-v2-benchmark-pack suite/profile helper は対象を絞る',
 });
 
 runTest('eval-expert-v2-benchmark-pack evaluatePack は normal/strong の基準を返す', () => {
-    const report = evaluatePack({ games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, expertPreset: 'v2simple', businessMode: 'harmfulGift' });
+    const report = evaluatePack({ games: 1, seed: 1, maxSteps: 5000, lite: true, fast: false, expertPreset: 'v2simple', businessMode: 'simple' });
     assert.strictEqual(report.cpuFamily, 'v2simple-rule-based');
     assert.strictEqual(report.comparisonScope, 'expert-v2-benchmark-pack');
     assert.strictEqual(report.normal.options.diceMode, 'strongCrowdThreshold');
@@ -114,8 +114,8 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は normal/strong の基準�
     assert.strictEqual(report.strong.options.rerollMode, 'simple');
     assert.strictEqual(report.normal.options.itMode, 'always');
     assert.strictEqual(report.strong.options.tvMode, 'simple');
-    assert.strictEqual(report.normal.options.businessMode, 'harmfulGift');
-    assert.strictEqual(report.strong.options.businessMode, 'harmfulGift');
+    assert.strictEqual(report.normal.options.businessMode, 'simple');
+    assert.strictEqual(report.strong.options.businessMode, 'simple');
     assert.strictEqual(report.normal.options.cleaningMode, 'simple');
     assert.strictEqual(report.strong.options.harborMode, 'simple');
     assert.strictEqual(report.normal.options.moverMode, 'simple');
@@ -168,7 +168,7 @@ runTest('eval-expert-v2-benchmark-pack evaluatePack は未実行 strong suite �
 
 runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力する', () => {
     const report = {
-        options: { games: 2, seed: 1, lite: true, fast: false, expertPreset: 'v2simple', buildMode: 'ev', diceMode: 'ev', rerollMode: 'simple', itMode: 'always', tvMode: 'simple', businessMode: 'harmfulGift', cleaningMode: 'simple', harborMode: 'simple', moverMode: 'simple', renovationMode: 'simple', incomeCapMode: 'none', comboMode: 'core', comboWeight: 0.35, buildTempoWeight: 0.03, airportSkipMode: 'whenNoLandmark', suite: 'all', profiles: [] },
+        options: { games: 2, seed: 1, lite: true, fast: false, expertPreset: 'v2simple', buildMode: 'ev', diceMode: 'ev', rerollMode: 'simple', itMode: 'always', tvMode: 'simple', businessMode: 'simple', cleaningMode: 'simple', harborMode: 'simple', moverMode: 'simple', renovationMode: 'simple', incomeCapMode: 'none', comboMode: 'core', comboWeight: 0.35, buildTempoWeight: 0.03, airportSkipMode: 'whenNoLandmark', suite: 'all', profiles: [] },
         normal: {
             summary: { weightedWinRate: 0.5, minWinRate: 0.5 },
             entries: [{ profile: 'crowd', players: ['expert', 'normal', 'normal', 'normal'], expertWins: 1, games: 2, winRate: 0.5, averageTurns: 40, exhausted: 0 }],
@@ -184,7 +184,7 @@ runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力す�
     assert.ok(toText(report).includes('rerollMode=simple'));
     assert.ok(toText(report).includes('itMode=always'));
     assert.ok(toText(report).includes('tvMode=simple'));
-    assert.ok(toText(report).includes('businessMode=harmfulGift'));
+    assert.ok(toText(report).includes('businessMode=simple'));
     assert.ok(toText(report).includes('cleaningMode=simple'));
     assert.ok(toText(report).includes('harborMode=simple'));
     assert.ok(toText(report).includes('moverMode=simple'));
@@ -202,7 +202,7 @@ runTest('eval-expert-v2-benchmark-pack toText/toMarkdown は概要を出力す�
     assert.ok(toMarkdown(report).includes('- rerollMode: simple'));
     assert.ok(toMarkdown(report).includes('- itMode: always'));
     assert.ok(toMarkdown(report).includes('- tvMode: simple'));
-    assert.ok(toMarkdown(report).includes('- businessMode: harmfulGift'));
+    assert.ok(toMarkdown(report).includes('- businessMode: simple'));
     assert.ok(toMarkdown(report).includes('- cleaningMode: simple'));
     assert.ok(toMarkdown(report).includes('- harborMode: simple'));
     assert.ok(toMarkdown(report).includes('- moverMode: simple'));

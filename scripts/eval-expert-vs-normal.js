@@ -22,7 +22,7 @@ function parseArgs(argv) {
     let rerollMargin = 0;
     let itMode = 'always';
     let tvMode = 'simple';
-    let businessMode = 'harmfulGift';
+    let businessMode = 'simple';
     let cleaningMode = 'simple';
     let harborMode = 'simple';
     let harborMargin = 0;
@@ -70,7 +70,7 @@ function parseArgs(argv) {
         } else if (arg === '--tv-mode') {
             tvMode = argv[++i] || 'simple';
         } else if (arg === '--business-mode') {
-            businessMode = argv[++i] || 'harmfulGift';
+            businessMode = argv[++i] || 'simple';
         } else if (arg === '--cleaning-mode') {
             cleaningMode = argv[++i] || 'simple';
         } else if (arg === '--harbor-mode') {
@@ -161,7 +161,7 @@ function getFastSeriesEvaluator(runtime) {
                         expertBuildMode: config.buildMode || 'ev',
                         expertInvestMode: config.itMode || 'always',
                         expertTvMode: config.tvMode || 'simple',
-                        expertBusinessMode: config.businessMode || 'harmfulGift',
+                        expertBusinessMode: config.businessMode || 'simple',
                         expertCleaningMode: config.cleaningMode || 'simple',
                         expertHarborMode: config.harborMode || 'simple',
                         expertHarborMargin: Number.isFinite(config.harborMargin) ? config.harborMargin : 0,

@@ -22,7 +22,7 @@ function parseArgs(argv) {
     let rerollMargin = 0;
     let itMode = 'always';
     let tvMode = 'simple';
-    let businessMode = 'harmfulGift';
+    let businessMode = 'simple';
     let cleaningMode = 'simple';
     let harborMode = 'simple';
     let harborMargin = 0;
@@ -62,7 +62,7 @@ function parseArgs(argv) {
         else if (arg === '--reroll-margin') rerollMargin = parseFloatOrDefault(argv[++i], 0);
         else if (arg === '--it-mode') itMode = argv[++i] || 'always';
         else if (arg === '--tv-mode') tvMode = argv[++i] || 'simple';
-        else if (arg === '--business-mode') businessMode = argv[++i] || 'harmfulGift';
+        else if (arg === '--business-mode') businessMode = argv[++i] || 'simple';
         else if (arg === '--cleaning-mode') cleaningMode = argv[++i] || 'simple';
         else if (arg === '--harbor-mode') harborMode = argv[++i] || 'simple';
         else if (arg === '--harbor-margin') harborMargin = parseFloatOrDefault(argv[++i], 0);
@@ -179,7 +179,7 @@ function evaluateProfile(name, options) {
         expertRerollMargin: Number.isFinite(options.rerollMargin) ? options.rerollMargin : 0,
         expertInvestMode: options.itMode || 'always',
         expertTvMode: options.tvMode || 'simple',
-        expertBusinessMode: options.businessMode || 'harmfulGift',
+        expertBusinessMode: options.businessMode || 'simple',
         expertCleaningMode: options.cleaningMode || 'simple',
         expertHarborMode: options.harborMode || 'simple',
         expertHarborMargin: Number.isFinite(options.harborMargin) ? options.harborMargin : 0,

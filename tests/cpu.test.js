@@ -33,7 +33,7 @@ runTest('CPU tuning scaffold は外部tableからexpert presetと既定optionを
     assert.strictEqual(CPU._resolveExpertTuning('rush').landmarkActionBonus, 30);
 
     const cpu = new CPU('expert', { expertPreset: 'v2simple' });
-    assert.strictEqual(cpu.expertBusinessMode, 'harmfulGift');
+    assert.strictEqual(cpu.expertBusinessMode, 'simple');
     assert.strictEqual(cpu.expertAirportSkipMode, 'whenNoLandmark');
 });
 
@@ -969,7 +969,7 @@ runTest('chooseBusinessMove: expert v2 simple は一番いらない自分カー�
     assert.strictEqual(move.theirCard, 1);
 });
 
-runTest('chooseBusinessMove: expert v2 simple は貸金業を押し付けカードとして優先して渡す', () => {
+runTest('chooseBusinessMove: expert v2 simple は低価値な貸金業を渡す候補にする', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -983,7 +983,7 @@ runTest('chooseBusinessMove: expert v2 simple は貸金業を押し付けカー�
     assert.strictEqual(move.myCard, 1);
 });
 
-runTest('chooseBusinessMove: expert v2 simple は business simple 明示なら押し付け補正を使わない', () => {
+runTest('chooseBusinessMove: expert v2 simple は business simple で単純交換を使う', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple", expertBusinessMode: "simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -998,7 +998,7 @@ runTest('chooseBusinessMove: expert v2 simple は business simple 明示なら�
     assert.deepStrictEqual(move, simpleMove);
 });
 
-runTest('chooseBusinessMove: expert v2 simple は相手に有害な改装屋押し付けも評価する', () => {
+runTest('chooseBusinessMove: expert v2 simple は低価値な改装屋を渡す候補にする', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
@@ -1017,7 +1017,7 @@ runTest('chooseBusinessMove: expert v2 simple は相手に有害な改装屋押�
     assert.strictEqual(move.targetIndex, 1);
 });
 
-runTest('chooseBusinessMove: expert v2 simple は改装屋が有害でない場合は simple 選択を維持する', () => {
+runTest('chooseBusinessMove: expert v2 simple は改装屋でも simple 選択を維持する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const current = game.currentPlayer();
