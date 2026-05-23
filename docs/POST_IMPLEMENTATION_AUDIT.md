@@ -874,3 +874,11 @@ Additional hardening:
 
 - `FREEZE_SUMMARY` now includes compact `gameScreen`, `confirmModal`, `bodyClassName`, and `expectedPrimaryActions` fields. This keeps ntfy payloads privacy-light while showing whether a visible confirm modal or ancestor lock caused the blocked button.
 - Added regression coverage that reconnecting online clients do not clear stale confirm locks, and that the summary contains the modal/root lock fields needed to diagnose post-build blocked input.
+
+### human-turn-ui-locked orphan gameScreen inert fix
+
+Observed ntfy freeze reports for `version=d1eb530` showed `freezeKind=human-turn-ui-locked` in a local game with `phase=build`, `allowedActions` including `nextTurn`, `visibleModals=[]`, and `confirmModal` closed / not awaiting choice. The `btnSkip` element itself was enabled, but `btnSkip.ancestorBlocked=true` because `gameScreen.inert=true` remained after the modal was already gone.
+
+This is distinct from the earlier stale `confirmModal` report: no active modal needed to be closed. The recovery now treats `gameScreen.inert=true` with no active blocking modal and a permitted primary action as an inconsistent orphan lock, clears the `gameScreen` inert / `aria-hidden` state through the same human-turn / post-build watchdog recovery path, and records an `orphan-game-screen-inert` checkpoint. Active modal locks are preserved for valid `confirmModal`, `pendingModal`, `rulesModal`, `cardSelectModal`, and `cardDetailModal` states so legitimate user-choice dialogs still block background input.
+
+Regression coverage now includes the exact local `myPlayerIndex=-1` orphan inert case and a guard that a visible card detail modal is not cleared by watchdog recovery.

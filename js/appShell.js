@@ -253,11 +253,24 @@ function resetAccessibleModalStateForRecovery() {
     try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
 }
 
+function modalSnapshotFromRuntime(snapshot, id) {
+    if (snapshot && snapshot.ui) {
+        if (id === 'confirmModal') return snapshot.ui.confirmModal;
+        if (id === 'pendingModal') return snapshot.ui.pendingModal;
+    }
+    return safeElementSnapshot(id);
+}
+
+function explicitModalOpenFromSnapshot(snapshot, id) {
+    const state = modalSnapshotFromRuntime(snapshot, id);
+    if (!state || state.hidden) return false;
+    if (state.display === 'none' || state.computedDisplay === 'none') return false;
+    if (state.visibility === 'hidden' || state.computedVisibility === 'hidden') return false;
+    return !!(state.display || state.computedDisplay);
+}
+
 function confirmModalOpenFromSnapshot(snapshot) {
-    if (!snapshot) return false;
-    if (Array.isArray(snapshot.visibleModals) && snapshot.visibleModals.includes('confirmModal')) return true;
-    const confirm = snapshot.ui && snapshot.ui.confirmModal;
-    return !!(confirm && confirm.display && confirm.display !== 'none' && confirm.computedDisplay !== 'none' && !confirm.hidden);
+    return explicitModalOpenFromSnapshot(snapshot, 'confirmModal');
 }
 
 function isConfirmModalAwaitingUserChoice() {
@@ -277,7 +290,59 @@ function isStaleConfirmModalSnapshot(snapshot) {
     return snapshot.phase === 'roll' && allowed.includes('rollDice');
 }
 
-function forceClearModalLocksForRecovery() {
+function activeBlockingModalIds(snapshot) {
+    return Array.isArray(snapshot && snapshot.visibleModals)
+        ? snapshot.visibleModals.filter(id => explicitModalOpenFromSnapshot(snapshot, id) && (id !== 'confirmModal' || !isStaleConfirmModalSnapshot(snapshot)))
+        : [];
+}
+
+function hasActiveBlockingModal(snapshot) {
+    return activeBlockingModalIds(snapshot).length > 0;
+}
+
+function clearElementModalLock(id) {
+    const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+    if (!el) return false;
+    let changed = false;
+    if (el.inert) {
+        el.inert = false;
+        changed = true;
+    }
+    if (typeof el.getAttribute === 'function' && el.getAttribute('aria-hidden') !== null) {
+        el.removeAttribute('aria-hidden');
+        changed = true;
+    }
+    if (el.style && el.style.pointerEvents === 'none') {
+        el.style.pointerEvents = '';
+        changed = true;
+    }
+    return changed;
+}
+
+function clearGameScreenInertIfNoActiveModal(snapshot, reason = 'game-screen-inert-recovery') {
+    if (hasActiveBlockingModal(snapshot)) return false;
+    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+    const expected = expectedPrimaryActions(snapshot || {});
+    if (!allowed.includes('nextTurn') && !expected.length) return false;
+    const changed = clearElementModalLock('gameScreen');
+    if (changed) markClientFlowCheckpoint(reason, { recovery: 'orphan-game-screen-inert' });
+    return changed;
+}
+
+function forceClearModalLocksForRecovery(snapshot = null) {
+    if (hasActiveBlockingModal(snapshot)) return false;
+    let changed = false;
+    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
+        changed = clearElementModalLock(id) || changed;
+    });
+    if (typeof document !== 'undefined' && document.body && document.body.classList && document.body.classList.contains('modal-open')) {
+        document.body.classList.remove('modal-open');
+        changed = true;
+    }
+    return changed;
+}
+
+function forceClearStaleModalLocksForRecovery() {
     ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
         if (!el) return;
@@ -299,7 +364,7 @@ function closeStaleConfirmModal(snapshot, reason = 'stale-confirm-recovery') {
     } catch (_) {
         if (confirmModal.style) confirmModal.style.display = 'none';
     }
-    forceClearModalLocksForRecovery();
+    forceClearStaleModalLocksForRecovery();
     resetAccessibleModalStateForRecovery();
     markClientFlowCheckpoint(reason, { modal: 'confirmModal' });
     return true;
@@ -318,15 +383,16 @@ function closeStaleBlockingModals(snapshot, reason = 'ui-unlock') {
 
 function clearUiLocks(reason = 'ui-unlock', snapshot = null) {
     closeStaleBlockingModals(snapshot, reason);
-    forceClearModalLocksForRecovery();
-    markClientFlowCheckpoint(reason);
+    const changed = forceClearModalLocksForRecovery(snapshot);
+    clearGameScreenInertIfNoActiveModal(snapshot, reason + '-game-screen');
+    if (changed || !hasActiveBlockingModal(snapshot)) markClientFlowCheckpoint(reason);
 }
 
 function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     const snapshot = buildClientRuntimeSnapshot(reason);
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
     if (!expectedPrimaryActions(snapshot).length) return false;
-    if (confirmModalOpenFromSnapshot(snapshot) && !isStaleConfirmModalSnapshot(snapshot)) return false;
+    if (hasActiveBlockingModal(snapshot)) return false;
     clearUiLocks(reason, snapshot);
     try { if (typeof render === 'function') render(); } catch (_) {}
     return true;
@@ -606,17 +672,18 @@ function classifyLikelyFreeze(snapshot) {
     const gameInert = !!(ui.gameScreen && ui.gameScreen.inert);
     const confirmOpen = confirmModalOpenFromSnapshot(snapshot);
     const staleConfirmOpen = isStaleConfirmModalSnapshot(snapshot);
+    const activeBlockingModalOpen = hasActiveBlockingModal(snapshot);
     const onlineBlocked = isOnlineUiBlockedSnapshot(snapshot);
     const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
     const expectedActions = expectedPrimaryActions(snapshot);
     const expectedPending = expectedPendingActions(snapshot);
     const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
     const noUsablePendingAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedPending.length > 0 && !hasUsablePendingAction(snapshot);
-    if (!onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || staleConfirmOpen || noUsablePrimaryAction)) {
+    if ((confirmOpen && !staleConfirmOpen) || (activeBlockingModalOpen && !expectedPending.length)) return '';
+    if (!activeBlockingModalOpen && !onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || staleConfirmOpen || noUsablePrimaryAction)) {
         return 'post-build-ui-blocked';
     }
-    if (confirmOpen && !staleConfirmOpen) return '';
-    if (noUsablePrimaryAction) return 'human-turn-ui-locked';
+    if (!activeBlockingModalOpen && noUsablePrimaryAction) return 'human-turn-ui-locked';
     if (noUsablePendingAction) return 'pending-ui-locked';
     if (pendingOpenWithoutContent) return 'pending-without-action';
     if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight) return 'cpu-turn-stalled';
