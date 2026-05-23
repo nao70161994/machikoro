@@ -717,16 +717,27 @@ function recordFlowTrace(event, details = {}) {
 }
 
 function reportRenderStepError(step, error) {
-    const trace = recordFlowTrace('render-step-error', { step, message: error && error.message || String(error) });
+    const message = error && error.message || String(error);
+    const stack = error && error.stack || '';
+    const trace = recordFlowTrace('render-step-error', {
+        step,
+        message,
+        stack: stack.slice(0, 1200),
+        recoverable: true,
+    });
     if (typeof console !== 'undefined' && typeof console.warn === 'function') {
         console.warn('[machikoro-render-step-error]', step, trace.snapshot, error);
     }
     if (typeof reportClientError === 'function') {
+        let traceSummary = '';
+        try {
+            traceSummary = JSON.stringify({ event: trace.event, snapshot: trace.snapshot }).slice(0, 1200);
+        } catch (_) {}
         reportClientError({
             source: 'render-step',
             phase: game && game.phase,
-            message: 'render ' + step + ': ' + (error && error.message || error),
-            stack: error && error.stack || '',
+            message: 'render ' + step + ': ' + message,
+            stack: [stack, traceSummary ? 'FLOW_TRACE ' + traceSummary : ''].filter(Boolean).join('\n'),
         });
     }
 }

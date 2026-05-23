@@ -689,7 +689,7 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 修正済み:
 
 - `renderActiveGameState` の主要 step を `safeRenderStep` で分離し、`renderPending` 等の非致命 UI step が落ちても status/buttons/build menu/checkAutoSkip の更新を継続するようにした。
-- render step 例外時は `machikoroLastFlowTrace` と `window.__machikoroFlowTrace` に phase / pending fields / pending action queue / modal/build/skip UI 状態の snapshot を残し、ntfy client-error にも `render-step` として送る。
+- render step 例外時は `machikoroLastFlowTrace` と `window.__machikoroFlowTrace` に phase / pending fields / pending action queue / modal/build/skip UI 状態の snapshot を残し、ntfy client-error にも `render-step` として送る。通知stackには短い `FLOW_TRACE` summary を含め、実機通知だけでも直前UI状態を追えるようにした。
 - build card / landmark の request, confirm, online send, local apply, rendered を flow trace に記録し、購入後停止時の直前状態を実機で追えるようにした。
 - regression として、購入後に `renderPending` が例外化しても confirm modal が閉じ、gameScreen inert が解除され、skip ボタンと build menu が操作可能な状態へ更新される integration test を追加した。ランドマーク購入後の同経路も固定した。
 
@@ -697,3 +697,9 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - 実機 iPhone Safari / Android Chrome での長時間手動再現確認は manual verification required。
 - 追加の実機ログが届いた場合は `machikoroLastFlowTrace` の event と snapshot を見て、落ちている render step をさらに局所修正する。
+
+横断監査メモ:
+
+- `safeRenderStep` は active game state の副次的な描画 step のみに適用し、`_render()` 全体・勝利処理・永続化の致命例外は従来どおり crash screen 経路へ残している。
+- render step 例外は console warn だけで終わらず、`reportClientError` から `/api/client-error` に送信されることを integration test で固定した。
+- 例外を意図的に起こす regression では、UI が操作可能なまま残ること、trace に step / stack / recoverable が残ること、client-error payload に `FLOW_TRACE` が含まれることを確認している。

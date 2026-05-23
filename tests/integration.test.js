@@ -90,7 +90,21 @@ runTest('integration: 購入後もrender step例外で操作不能にならな�
     const trace = JSON.parse(rt.localStorage.getItem('machikoroLastFlowTrace'));
     assert.strictEqual(trace.event, 'build-card-rendered');
     assert.strictEqual(Array.isArray(rt.window.__machikoroFlowTrace), true);
-    assert.ok(rt.window.__machikoroFlowTrace.some(entry => entry.event === 'render-step-error'));
+    const renderErrorTrace = rt.window.__machikoroFlowTrace.find(entry => entry.event === 'render-step-error');
+    assert.ok(renderErrorTrace);
+    assert.strictEqual(renderErrorTrace.details.step, 'renderPending');
+    assert.strictEqual(renderErrorTrace.details.recoverable, true);
+    assert.ok(renderErrorTrace.details.stack.includes('pending render boom'));
+
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.strictEqual(report.source, 'render-step');
+    assert.strictEqual(report.phase, rt.GAME_PHASES.BUILD);
+    assert.ok(report.message.includes('render renderPending'));
+    assert.ok(report.stack.includes('pending render boom'));
+    assert.ok(report.stack.includes('FLOW_TRACE'));
+    assert.ok(report.stack.includes('render-step-error'));
 });
 
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {

@@ -54,6 +54,7 @@ function loadIntegrationRuntime(options = {}) {
     const eventHandlers = {};
     const socketHandlers = {};
     const socketEmits = [];
+    const fetchCalls = [];
     let socketDisconnected = false;
     const context = {
         console,
@@ -80,7 +81,10 @@ function loadIntegrationRuntime(options = {}) {
             matchMedia() { return { matches: false }; },
         },
         navigator: { onLine: true },
-        fetch() { return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) }); },
+        fetch(url, options) {
+            fetchCalls.push({ url, options });
+            return Promise.resolve({ json: () => Promise.resolve({ hash: 'test' }) });
+        },
         io() {
             return {
                 on(name, handler) { socketHandlers[name] = handler; },
@@ -153,6 +157,7 @@ function loadIntegrationRuntime(options = {}) {
         eventHandlers,
         socketHandlers,
         socketEmits,
+        fetchCalls,
         alerts,
         isSocketDisconnected: () => socketDisconnected,
         flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
