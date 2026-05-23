@@ -223,6 +223,7 @@ function restartGame() {
         renderPlayerSettings();
         updateResumeButton();
         drawCitySkyline();
+        if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
     });
 }
 

@@ -383,15 +383,19 @@
           banner.style.display = 'block';
           if (document.body && document.body.classList) document.body.classList.add('pwa-banner-open');
         }
+        function refreshPwaUpdateState() {
+          if (!_waitingSW) return false;
+          if (!_isInGame()) {
+            _waitingSW.postMessage({ type: 'SKIP_WAITING' });
+            return true;
+          }
+          _showPwaUpdateBanner();
+          return false;
+        }
+        window.refreshPwaUpdateState = refreshPwaUpdateState;
         function _handleWaitingSW(sw) {
           _waitingSW = sw;
-          if (!_isInGame()) {
-            // タイトル画面なら自動適用
-            sw.postMessage({ type: 'SKIP_WAITING' });
-          } else {
-            // ゲーム中：オンライン対戦中は更新ボタンを無効化して警告
-            _showPwaUpdateBanner();
-          }
+          refreshPwaUpdateState();
         }
         let hadServiceWorkerController = !!navigator.serviceWorker.controller;
         let refreshingByServiceWorker = false;

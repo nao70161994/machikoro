@@ -1925,7 +1925,7 @@
 
 ## UI action gate final audit
 
-- 状態: completed; verification/commit pending.
+- 状態: completed; full verification passed; commit/push pending.
 - 変更ファイル:
   - `js/ui.js`, `tests/ui.test.js`, `docs/POST_IMPLEMENTATION_AUDIT.md`, `docs/AI_HANDOFF.md`, `docs/IMPLEMENTATION_PROGRESS.md`
 - 実装内容:
@@ -1933,3 +1933,22 @@
   - CPUターン、他人onlineターン、onlineActionInFlight、reconnecting、socket disconnected/missing、pending resolver の gate 回帰テストを追加した。
   - `buildCard` / `buildLandmark` / `undoBuild` / `nextTurn` の独立表示gateを最終確認した。
   - `ROOM_REPLACED` には触れていない。
+
+## Maintainability up-cycle restart Cycle 1
+
+- 状態: completed; verification/commit pending.
+- 新規指摘:
+  - High: `scripts/compare-rl-match-trace.js` は trace mismatch を表示しても CLI exit code が 0 のままで、RL parity regression を CI/automation が取りこぼす可能性があった。
+  - High: online game 中に Service Worker update が waiting になった場合、title/reset へ戻ったあとも `_waitingSW` を再評価せず、update banner / auto-apply が stranded になる可能性があった。
+  - Low: `docs/RELEASE_CHECKLIST.md` の release workflow 説明が `.github/workflows/release-test.yml` とずれ、`npm run test:pwa` gate を本文で落としていた。
+  - Medium/deferred: hostless restore / server persisted canonical state / signed restore snapshot は設計判断待ちとして維持。実機 iOS/Android の長時間 online/PWA 回帰も manual verification required。
+- 修正済み:
+  - RL match trace comparison は mismatch 時に `printComparison()` が 1 を返し、CLI が `process.exitCode = 1` を設定するようにした。match 時の成功挙動は維持した。
+  - PWA waiting SW の再評価を `refreshPwaUpdateState()` に分離し、`restartGame()` で title/reset へ戻った後に再評価するようにした。
+  - Release checklist の CI gate 説明を workflow 実体に同期した。
+  - `tests/compare-rl-match-trace.test.js`, `tests/main.test.js`, `tests/release-e2e.test.js` に regression assertion を追加した。
+- rollback: なし。
+- regressions: full verification passed.
+- benchmark影響: ゲームロジック、CPU preset、RL model は未変更。RL parity tooling は mismatch を失敗として扱うため automation gate が厳しくなる。
+- 残課題:
+  - action metadata contract の追加 test、legacy pending outbound のさらなる room gate、`CLIENT_ERROR_SHARED_TOKEN` 運用docsの明確化、hostless restore 本実装、実機複数端末確認は継続 backlog / manual / design required。

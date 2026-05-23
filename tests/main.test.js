@@ -1306,14 +1306,18 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     const uiSource = fs.readFileSync(path.join(__dirname, '..', 'js/ui.js'), 'utf8');
+    const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     const workflow = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/build-apk.yml'), 'utf8');
 
     assert.ok(html.includes('refreshingByServiceWorker'));
     assert.ok(html.includes('let hadServiceWorkerController = !!navigator.serviceWorker.controller;'));
     assert.ok(html.includes('hadServiceWorkerController = true;'));
     assert.ok(html.includes('let updateRequestedByUser = false;'));
+    assert.ok(html.includes('function refreshPwaUpdateState()'));
+    assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));
     assert.ok(html.includes('if (_isInGame() && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('updateRequestedByUser = true;'));
+    assert.ok(mainSource.includes("if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();"));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="region" aria-labelledby="pwaUpdateMsg"'));
     assert.ok(html.includes('id="pwaUpdateMsg" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));

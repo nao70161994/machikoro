@@ -421,6 +421,7 @@ runTest('release workflow と checklist は static safety gate を含む', () =>
     assert.ok(workflow.indexOf('npm run test:pwa') < workflow.indexOf('npm run test:release'));
     assert.ok(checklist.includes('npm run test:static'));
     assert.ok(checklist.includes('npm run test:smoke'));
+    assert.ok(checklist.includes('CI also runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`'));
     assert.ok(checklist.includes('Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`'));
     assert.ok(apkWorkflow.includes('npm run test:static'));
     assert.ok(apkWorkflow.includes('npm test'));

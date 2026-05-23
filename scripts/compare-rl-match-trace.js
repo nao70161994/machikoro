@@ -199,14 +199,16 @@ function compareMatchTrace(options) {
 function printComparison(result) {
     if (!result.mismatch) {
         console.log(`trace matched: steps=${result.pythonTrace.trace.length}`);
-        return;
+        return 0;
     }
     console.log(`trace mismatch at step ${result.mismatch.index}: ${result.mismatch.reason}`);
     console.log(JSON.stringify(result.mismatch, null, 2));
+    return 1;
 }
 
 if (require.main === module) {
-    printComparison(compareMatchTrace(parseArgs(process.argv.slice(2))));
+    const exitCode = printComparison(compareMatchTrace(parseArgs(process.argv.slice(2))));
+    if (exitCode) process.exitCode = exitCode;
 }
 
 module.exports = {
@@ -217,4 +219,5 @@ module.exports = {
     normalizeTraceEntry,
     compareTraceEntries,
     compareMatchTrace,
+    printComparison,
 };

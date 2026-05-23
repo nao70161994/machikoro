@@ -9,6 +9,7 @@ const {
     normalizeState,
     normalizeTraceEntry,
     compareTraceEntries,
+    printComparison,
 } = require(path.join(__dirname, '..', 'scripts', 'compare-rl-match-trace.js'));
 const {
     createShopStock,
@@ -158,4 +159,23 @@ runTest('compare rl match trace: compareTraceEntries は最初の差分を返す
     );
     assert.strictEqual(result.index, 0);
     assert.strictEqual(result.reason, 'trace entry mismatch');
+});
+
+runTest('compare rl match trace: CLI comparison は mismatch で失敗exit用コードを返す', () => {
+    const originalLog = console.log;
+    const lines = [];
+    console.log = message => lines.push(String(message));
+    try {
+        const ok = printComparison({ pythonTrace: { trace: [{}] }, jsTrace: { trace: [{}] }, mismatch: null });
+        assert.strictEqual(ok, 0);
+        const failed = printComparison({
+            pythonTrace: { trace: [{}] },
+            jsTrace: { trace: [{}] },
+            mismatch: { index: 0, reason: 'trace entry mismatch', python: {}, js: {} },
+        });
+        assert.strictEqual(failed, 1);
+    } finally {
+        console.log = originalLog;
+    }
+    assert.ok(lines.some(line => line.includes('trace mismatch at step 0')));
 });

@@ -825,3 +825,27 @@ Regression test index:
 - Final UI action gate audit found one display-side mismatch: online UI considered a missing socket as not blocked, while handler-side guards in `main.js` reject online actions when `socket` is missing. `isOnlineUiInputBlocked()` now treats missing socket, disconnected socket, reconnecting, and `onlineActionInFlight` as input-blocked.
 - Added regression coverage for local human turn, CPU turn, other-player online turn, in-flight online action, reconnecting, disconnected socket, missing socket, independent `buildCard` / `buildLandmark` / `undoBuild` gating, and pending resolver queue-head + allowedActions parity.
 - No change was made to `ROOM_REPLACED` or reconnect replacement semantics.
+
+### Maintainability up-cycle restart Cycle 1
+
+Findings:
+
+- High fixed: `scripts/compare-rl-match-trace.js` printed mismatch diagnostics but still exited successfully, so RL parity automation could miss a divergence.
+- High fixed: a waiting Service Worker created during an online game could remain stranded after returning to title/reset because the waiting update state was not refreshed.
+- Low fixed: release checklist の CI説明が workflow 実体より古く、`npm run test:pwa` gate を本文で落としていた。
+- No Critical issue was confirmed in the automatically safe scope of this cycle.
+
+Fixes:
+
+- `compare-rl-match-trace` now returns a nonzero exit code for mismatches while keeping successful comparisons at 0.
+- PWA update handling now exposes `refreshPwaUpdateState()` and rechecks waiting updates after `restartGame()` returns to title/reset.
+- `docs/RELEASE_CHECKLIST.md` の CI gate 文を `.github/workflows/release-test.yml` に同期した。
+- Added regression coverage in `tests/compare-rl-match-trace.test.js`, `tests/main.test.js`, and `tests/release-e2e.test.js`.
+
+Verification:
+
+- `git diff --check`, static syntax checks, `npm run test:static`, `npm run test:smoke`, `npm test`, `npm run test:online`, `npm run test:release`, `npm run test:pwa`, `npm run test:cpu`, and `npm run test:rl` passed.
+
+Deferred:
+
+- Hostless restore, signed restore snapshot, server persisted canonical state, client-error token deployment policy docs, broader online action metadata contract tests, and real-device long-run online/PWA/accessibility checks remain design/manual required.

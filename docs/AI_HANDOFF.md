@@ -270,3 +270,11 @@ Test index:
 
 - Keep `isOnlineUiInputBlocked()` aligned with `canRunLocalHumanAction()`: missing socket, disconnected socket, reconnecting, and `onlineActionInFlight` all mean display-side controls must be disabled/hidden.
 - UI tests now cover CPU turns, other-player online turns, reconnecting/disconnected/missing socket, and pending resolver hiding while online input is blocked. Update those tests when changing online action gate semantics.
+
+## Maintainability up-cycle Cycle 1 handoff
+
+- `scripts/compare-rl-match-trace.js` now treats a JS/Python trace mismatch as automation failure (`process.exitCode = 1`). If future parity diagnostics intentionally tolerate mismatches, update both the script and `tests/compare-rl-match-trace.test.js` explicitly.
+- PWA waiting Service Worker state is centralized in `refreshPwaUpdateState()` and is rechecked from `restartGame()` after returning to title/reset. Keep this hook in sync if title/game lifecycle moves out of `js/main.js`.
+- Release checklist CI gate wording is now tested against the actual release workflow and includes `npm run test:pwa`. Keep `docs/RELEASE_CHECKLIST.md`, `docs/AUTOMATED_RELEASE_TEST.md`, `.github/workflows/release-test.yml`, and `tests/release-e2e.test.js` synchronized when changing release gates.
+- This cycle intentionally avoided broad refactors. CPU/RL/gameplay logic and model selection were not changed, so no benchmark interpretation changes are expected.
+- Remaining larger items are still design/manual scoped: hostless restore, signed/server-persisted canonical state, client-error token deployment policy docs, broader action metadata contract tests, and real-device long-run online/PWA/accessibility checks.
