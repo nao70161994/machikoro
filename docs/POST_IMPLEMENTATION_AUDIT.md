@@ -524,3 +524,22 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 - client duplicate action idempotency、restore snapshot conservation、canonical mismatch client surfacing は継続候補。
 - host-supplied snapshot への完全防御は server-signed snapshot または server persisted canonical state の設計判断が必要。
 - 実ブラウザ複数端末 / native PWA install / sleep-wake は manual verification required。
+
+
+### Continuous review Cycle 8 restore/PWA follow-up guards
+
+確認した内容:
+
+- Cycle 3 全体再レビューで Critical は未検出。High として、Cycle 7 の game 中 controllerchange guard がユーザー明示更新まで止める点、client/server restore rank の規則差分、raw actionLog seq を復元rankに使える点を確認した。
+
+修正済み:
+
+- ユーザー明示の PWA update は controllerchange 後に reload する。unsolicited update は game 中 banner のまま維持する。
+- SW fetch は RL model / HTML の HTTP 失敗時にも cached fallback を試し、cache なしでは明示的な error / 503 を返す。
+- restore rank は replay可能件数から進捗を算出し、client/server/docs/tests を同期した。
+- restored actionLog の clientActionId sanitizer、restore bundle cleanup、RL custom schema action count guard を追加した。
+
+残リスク:
+
+- host restore の完全な改ざん耐性は server persisted canonical state または署名付きsnapshot設計が必要。
+- 実ブラウザ複数端末、native PWA install/update、sleep-wake reconnect は manual verification required。

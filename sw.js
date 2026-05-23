@@ -75,10 +75,11 @@ self.addEventListener('fetch', (event) => {
         if (response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
         }
-        return response;
+        return caches.match(event.request).then((cached) => cached || response);
       }).catch(() => {
-        return caches.match(event.request);
+        return caches.match(event.request).then((cached) => cached || Response.error());
       })
     );
     return;
@@ -107,14 +108,16 @@ self.addEventListener('fetch', (event) => {
         if (response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
         }
-        return response;
+        return caches.match(event.request).then((cached) => cached || response);
       }).catch(() => {
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
           if (event.request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/');
+            return caches.match('/').then((shell) => shell || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
           }
+          return Response.error();
         });
       })
     );

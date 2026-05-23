@@ -6,6 +6,9 @@ const CLIENT_ERROR_REPORT_SUPPRESS_MS = 10000;
 let _clientErrorReportingBound = false;
 let _consoleErrorHooked = false;
 let _lastClientErrorReport = { key: '', time: 0 };
+let _onlineStatusHandlersBound = false;
+let _pwaInstallHandlersBound = false;
+let _mainViewResizeBound = false;
 
 function truncateClientErrorField(value, limit) {
     const text = String(value || '');
@@ -188,13 +191,20 @@ function bindCrashHandlers() {
 }
 
 function bindOnlineStatusHandlers() {
+    if (_onlineStatusHandlersBound) {
+        updateOnlineTabState();
+        return;
+    }
     window.addEventListener('online', updateOnlineTabState);
     window.addEventListener('offline', updateOnlineTabState);
+    _onlineStatusHandlersBound = true;
     updateOnlineTabState();
 }
 
 function bindPwaInstallHandlers() {
+    if (_pwaInstallHandlersBound) return;
     if (window.matchMedia('(display-mode: standalone)').matches) {
+        _pwaInstallHandlersBound = true;
         return;
     }
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -205,6 +215,7 @@ function bindPwaInstallHandlers() {
         _pwaInstallEvent = e;
         setPwaBannerVisible('pwaInstallBanner', true);
     });
+    _pwaInstallHandlersBound = true;
 }
 
 function initMainView() {
@@ -212,7 +223,10 @@ function initMainView() {
     renderOnlinePlayerSettings();
     updateResumeButton();
     drawCitySkyline();
-    window.addEventListener("resize", drawCitySkyline);
+    if (!_mainViewResizeBound) {
+        window.addEventListener("resize", drawCitySkyline);
+        _mainViewResizeBound = true;
+    }
     bindCrashHandlers();
     bindOnlineStatusHandlers();
     bindPwaInstallHandlers();

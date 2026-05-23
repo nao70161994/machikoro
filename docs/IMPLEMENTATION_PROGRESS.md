@@ -1725,3 +1725,24 @@
   - host-supplied snapshot の完全な署名 / server persisted canonical state は design decision required。
   - client duplicate action idempotency と replay parity matrix は次 Cycle の安全な候補。
   - 実機 iOS/Android の update/reconnect は manual verification required。
+
+
+## Continuous review Cycle 8 restore/PWA follow-up guards
+
+- 状態: implemented; full suite passed, commit/push pending.
+- 変更ファイル:
+  - `index.html`, `style.css`, `sw.js`, `tests/main.test.js`, `tests/sw.test.js`
+  - `js/online.js`, `server/restoreRank.js`, `server.js`, `tests/server.test.js`, `tests/helpers/online-restore-fixtures.js`
+  - `js/RLCPU.js`, `tests/rlcpu.test.js`
+  - `docs/ONLINE_SYNC.md`, `docs/ONLINE_RECOVERY.md`
+- 実装内容:
+  - game 中の SW controllerchange 抑止は unsolicited update のみ対象にし、ユーザーが `pwaApplyUpdate()` を押した場合は reload を許可する。
+  - PWA update/install banner と pending modal の announce 属性、modal 中の scroll bleed guard、SW fetch の HTTP failure fallback を補強した。
+  - restore freshness は raw `actionLog[].seq` ではなく `stateSnapshot.actionSeq + replayable action count` で評価し、client/server の rank 規則を揃えた。
+  - restored actionLog の `clientActionId` は live action と同じ sanitizer を通す。
+  - reconnect 失敗 cleanup は restore bundle も破棄する。
+  - RLCPU は custom state schema でも flat action head の action count mismatch を拒否する。
+- deferred:
+  - server persisted canonical state / signed restore snapshot は design decision required。
+  - client duplicate action idempotency と replay parity matrix は次 Cycle の安全候補。
+  - 実機 iOS/Android の update/reconnect は manual verification required。

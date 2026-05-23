@@ -303,10 +303,18 @@ function _serverOnlineActionSeq(gameStartPayload, stateSnapshot, actionLog) {
     );
 }
 
+function _onlineRestoreReplaySeq(stateSnapshot, actionLog) {
+    const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
+    const replayedActionCount = Array.isArray(actionLog)
+        ? actionLog.filter(entry => entry && typeof entry.action === 'string').length
+        : 0;
+    return snapshotSeq + replayedActionCount;
+}
+
 function _onlineRestoreRank(gameStartPayload, stateSnapshot, actionLog) {
     return {
         hostEpoch: Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0,
-        actionSeq: _serverOnlineActionSeq(gameStartPayload || {}, stateSnapshot || null, actionLog || []),
+        actionSeq: _onlineRestoreReplaySeq(stateSnapshot || null, actionLog || []),
     };
 }
 
@@ -341,6 +349,14 @@ function _sameOnlineActionEntry(a, b) {
     return a.action === b.action &&
         a.playerIndex === b.playerIndex &&
         JSON.stringify(a.data || {}) === JSON.stringify(b.data || {});
+}
+
+function _appendPendingForRestore(actionLog, pending) {
+    if (!pending) return actionLog;
+    if (!actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
+        actionLog.push(pending);
+    }
+    return actionLog;
 }
 
 function _canResendPendingOutboundAction(pending) {
@@ -547,7 +563,8 @@ function initSocket() {
         if (localBundle && localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex) {
             const localRank = _onlineRestoreRank(localBundle.gameStartPayload, localBundle.stateSnapshot, localBundle.actionLog);
             const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
-            if (_isOnlineRestoreRankNewer(localRank, serverRank)) {
+            const canOfferLocalHostBundle = hostPlayerIndex === myOriginalPlayerIndex || localRank.hostEpoch > serverRank.hostEpoch;
+            if (canOfferLocalHostBundle && _isOnlineRestoreRankNewer(localRank, serverRank)) {
                 isReconnectingOnline = true;
                 document.getElementById("onlineStatus").textContent = '♻️ より新しいローカル復元データをサーバーへ送信しています...';
                 _sendRecreateRoomFromBundle(localBundle);
@@ -704,6 +721,7 @@ function handleAppError(msg) {
     if (isReconnectingOnline) {
         isReconnectingOnline = false;
         localStorage.removeItem('onlineSession');
+        _clearOnlineRestoreBundle();
         updateResumeButton();
         if (socket) {
             socket.disconnect();
@@ -896,10 +914,7 @@ function _tryRestoreRoom() {
         }
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
-        const pending = _readPendingOutboundAction();
-        if (pending && !actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
-            actionLog.push(pending);
-        }
+        _appendPendingForRestore(actionLog, _readPendingOutboundAction());
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,
@@ -922,10 +937,7 @@ function _readLocalRestoreBundle() {
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
-        const pending = _readPendingOutboundAction();
-        if (pending && !actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
-            actionLog.push(pending);
-        }
+        _appendPendingForRestore(actionLog, _readPendingOutboundAction());
         return { gameStartPayload, stateSnapshot, actionLog };
     } catch (_) {
         return null;

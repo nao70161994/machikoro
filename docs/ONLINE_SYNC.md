@@ -130,11 +130,12 @@ Restore freshness is ordered by:
 1. `hostEpoch`
 2. maximum known `actionSeq`
 
-`actionSeq` is derived from the maximum of:
+`actionSeq` for replacement freshness is derived from replay-backed progress only:
 
-- `gameStartPayload.actionSeq`
 - `stateSnapshot.actionSeq`
-- every `actionLog[].seq`
+- `stateSnapshot.actionSeq + replayable actionLog entry count`
+
+`gameStartPayload.actionSeq` is compatibility/local sequencing metadata and must not be used to outrank an existing restored room. Raw client-supplied `actionLog[].seq` values are diagnostic only; they are not trusted for restore freshness.
 
 This rank exists on both sides:
 

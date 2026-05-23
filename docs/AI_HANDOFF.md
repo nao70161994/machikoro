@@ -32,7 +32,7 @@
 
 ## Continuous review operating policy
 
-- Continuous review は Cycle 完了ごとに停止せず、停止条件に該当するまで Cycle 1, 2, 3... と自律継続する。
+- Continuous review は、現在のユーザー依頼が自律的な実装修正を求めている場合に限り、Cycle 完了ごとに停止せず、停止条件に該当するまで Cycle 1, 2, 3... と自律継続する。明示的な review-only / no-edit 指示がある場合はそれを優先する。
 - 各 Cycle は全体レビュー、修正、tests、docs 更新、commit / push、working tree clean 確認まで行い、直後に次 Cycle を開始する。
 - 「完了しました。次へ進めますか？」で止めない。停止してよいのは、テスト3回修正失敗、git conflict、push失敗、破壊的変更、実機確認必須、hostless restore / server persisted canonical state など設計判断必須、または自動で安全に対応できる指摘がなくなった場合のみ。
 - 次 Cycle では前 Cycle の副作用も含め、変更箇所だけでなく毎回ディレクトリ全体を再レビューする。
@@ -162,3 +162,10 @@ npm test
 - `eval-rl-models` result と registry import は `evaluationConfig` で seed policy を残す。
 - APK workflow は Bubblewrap build 前に `test:static`, `test:pwa`, `test:release` を通す。
 - game 中の Service Worker update / controllerchange は自動 reload せず banner 表示へ倒す。
+
+## 2026-05-23 continuous review Cycle 8
+
+- PWA update: game 中の unsolicited controllerchange は reload しないが、ユーザーが `pwaApplyUpdate()` を押した場合は reload を許可する。
+- Restore rank: replacement freshness は `gameStartPayload.actionSeq` と raw `actionLog[].seq` を信頼しない。`stateSnapshot.actionSeq + replayable action count` を client/server/docs/tests の正とする。
+- Restore cleanup: reconnect failure cleanup は restore bundle も破棄する。
+- RLCPU: custom state schema でも flat action head の `numActions` mismatch は早期拒否する。

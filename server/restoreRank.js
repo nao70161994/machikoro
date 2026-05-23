@@ -4,14 +4,12 @@ function restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog) {
     const hostEpoch = Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0;
     const gameStartSeq = Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0;
     const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
-    let logSeq = 0;
-    if (Array.isArray(actionLog)) {
-        for (const entry of actionLog) {
-            if (Number.isInteger(entry?.seq)) logSeq = Math.max(logSeq, entry.seq);
-        }
-    }
+    const replayedActionCount = Array.isArray(actionLog)
+        ? actionLog.filter(entry => entry && typeof entry.action === 'string').length
+        : 0;
+    const logSeq = snapshotSeq + replayedActionCount;
     const actionSeq = Math.max(0, snapshotSeq, logSeq);
-    const source = actionSeq === logSeq && logSeq > 0
+    const source = replayedActionCount > 0 && actionSeq === logSeq && logSeq > 0
         ? 'actionLog'
         : (actionSeq === snapshotSeq && snapshotSeq > 0 ? 'stateSnapshot' : 'none');
     return {
@@ -20,7 +18,8 @@ function restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog) {
         gameStartSeq,
         snapshotSeq,
         logSeq,
-        replayedActionSeq: Math.max(snapshotSeq, logSeq),
+        replayedActionSeq: logSeq,
+        replayedActionCount,
         source,
     };
 }

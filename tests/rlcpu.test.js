@@ -412,6 +412,16 @@ runTest('RLCPU: runtime action/card count mismatch は既知schemaで早期拒�
     assert.throws(() => new RLCPU(wrongCards), /card count mismatch/);
 });
 
+runTest('RLCPU: custom state schema でも flat action count mismatch は拒否する', () => {
+    const context = loadRLRuntime();
+    const { RLCPU } = context;
+    const customStateWrongActions = Object.assign(buildTestModel(), {
+        actionSchema: RLCPU.ACTION_SCHEMAS.LEGACY_FLAT_V1,
+        numActions: RLCPU.NUM_ACTIONS - 1,
+    });
+    assert.throws(() => new RLCPU(customStateWrongActions), /action count mismatch/);
+});
+
 runTest('RLCPU: forward は policy と value を返す', () => {
     const { RLCPU } = loadRLRuntime();
     const cpu = new RLCPU(buildTestModel());

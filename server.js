@@ -1084,7 +1084,18 @@ function handleRecreateRoom(socket, payload = {}) {
             };
         })
         .filter(Boolean);
-    const restoredRank = restorePayloadRank(gameStartPayload, stateSnapshot, actionLog);
+    const sanitizedActionLog = Array.isArray(actionLog)
+        ? actionLog.filter(entry => entry && typeof entry.action === 'string')
+            .map(entry => {
+                const normalized = { action: entry.action, data: entry.data || {} };
+                if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+                if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+                const safeClientActionId = normalizeClientActionId(entry.clientActionId);
+                if (safeClientActionId) normalized.clientActionId = safeClientActionId;
+                return normalized;
+            })
+        : [];
+    const restoredRank = restorePayloadRank(gameStartPayload, stateSnapshot, sanitizedActionLog);
     gameStartPayload.hostEpoch = restoredRank.hostEpoch;
     gameStartPayload.actionSeq = restoredRank.actionSeq;
     const restoredRoom = {
@@ -1102,16 +1113,7 @@ function handleRecreateRoom(socket, payload = {}) {
         gameStartPayload,
         stateSnapshot: sanitizeClientStateSnapshot(stateSnapshot, playerNames.length),
         acceptedClientActions: {},
-        actionLog: Array.isArray(actionLog)
-            ? actionLog.filter(entry => entry && typeof entry.action === 'string')
-                .map(entry => {
-                    const normalized = { action: entry.action, data: entry.data || {} };
-                    if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-                    if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
-                    if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
-                    return normalized;
-                })
-            : [],
+        actionLog: sanitizedActionLog,
         lastUndoState: null,
         lastTouchedAt: Date.now(),
     };

@@ -730,7 +730,7 @@ runTest('rejoinData は localStorage の古い高 actionSeq を canonical 値で
     assert.strictEqual(stored.actionSeq, 1);
 });
 
-runTest('rejoinData は共通fixtureの最大 actionSeq を canonical 値として保存する', () => {
+runTest('rejoinData は共通fixtureの最大 actionSeq を local sequencing 用に保存する', () => {
     const fixture = makeSeqRankUsesMaxFieldsFixture();
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
@@ -748,10 +748,10 @@ runTest('rejoinData は共通fixtureの最大 actionSeq を canonical 値とし�
 
     const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(stored.hostEpoch, fixture.expectedRank.hostEpoch);
-    assert.strictEqual(stored.actionSeq, fixture.expectedRank.actionSeq);
+    assert.strictEqual(stored.actionSeq, 8);
 });
 
-runTest('_onlineRestoreRank は共通fixtureの最大 actionSeq を復元rankに使う', () => {
+runTest('_onlineRestoreRank は共通fixtureのreplay可能action数を復元rankに使う', () => {
     const fixture = makeSeqRankUsesMaxFieldsFixture();
     const rt = loadOnlineRuntime();
 

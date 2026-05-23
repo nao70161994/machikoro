@@ -62,6 +62,7 @@ function loadServiceWorker(options = {}) {
     };
     const context = {
         URL,
+        Response,
         console,
         self: {
             addEventListener(type, listener) {
@@ -196,6 +197,20 @@ async function dispatchFetch(runtime, request) {
         assert.strictEqual(runtime.fetchCalls.length, 1);
     });
 
+    await runTest('Service Worker はRLモデルJSONのHTTP失敗時にcached fallbackを返す', async () => {
+        const cached = makeResponse('cached-model');
+        const network = makeResponse('server-error', 503);
+        const request = makeRequest('https://example.test/models/rl_model/portfolio/seed71-top3.browser.json');
+        const runtime = loadServiceWorker({
+            cacheEntries: [[request.url, cached]],
+            fetchResponse: () => network,
+        });
+        const response = await dispatchFetch(runtime, request);
+
+        assert.strictEqual(response, cached);
+        assert.strictEqual(runtime.fetchCalls.length, 1);
+    });
+
     await runTest('Service Worker はHTML requestをoffline時にshellへfallbackする', async () => {
         const shell = makeResponse('shell');
         const request = makeRequest('https://example.test/some/page', { accept: 'text/html' });
@@ -205,6 +220,18 @@ async function dispatchFetch(runtime, request) {
         });
         const response = await dispatchFetch(runtime, request);
         assert.strictEqual(response, shell);
+    });
+
+    await runTest('Service Worker はHTML HTTP失敗時にcached pageへfallbackする', async () => {
+        const cached = makeResponse('cached-page');
+        const network = makeResponse('server-error', 503);
+        const request = makeRequest('https://example.test/some/page', { accept: 'text/html' });
+        const runtime = loadServiceWorker({
+            fetchResponse: () => network,
+            cacheEntries: [[request.url, cached]],
+        });
+        const response = await dispatchFetch(runtime, request);
+        assert.strictEqual(response, cached);
     });
 
     await runTest('Service Worker はsocket.io requestを横取りしない', async () => {

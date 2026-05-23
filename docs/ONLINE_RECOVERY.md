@@ -26,8 +26,9 @@
 
 - `gameStartSeq`
 - `snapshotSeq`
-- `logSeq`
+- `logSeq`（snapshot seq + replayable action count）
 - `replayedActionSeq`
+- `replayedActionCount`
 - `source`
 
 `actionSeq` だけで採用判断を広げる変更は避け、canonical mirror replay と hash 診断を併用します。

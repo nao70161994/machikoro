@@ -2396,11 +2396,11 @@ runTest('restorePayloadRank は共通fixtureの最大 actionSeq を復元rankに
     );
 });
 
-runTest('restorePayloadRankDetails はrankの内訳と最大seqのsourceを返す', () => {
+runTest('restorePayloadRankDetails はrankの内訳とreplay済みaction数を返す', () => {
     const details = restorePayloadRankDetails(
         { hostEpoch: 2, actionSeq: 8 },
         { actionSeq: 10 },
-        [{ seq: 9 }, { seq: 12 }]
+        [{ action: 'nextTurn', seq: 999 }, { action: 'nextTurn', seq: 12 }]
     );
 
     assert.deepStrictEqual(details, {
@@ -2410,8 +2410,20 @@ runTest('restorePayloadRankDetails はrankの内訳と最大seqのsourceを返�
         snapshotSeq: 10,
         logSeq: 12,
         replayedActionSeq: 12,
+        replayedActionCount: 2,
         source: 'actionLog',
     });
+});
+
+runTest('restorePayloadRank は actionLog の巨大seqではなくreplay可能件数でrankする', () => {
+    assert.deepStrictEqual(
+        restorePayloadRank(
+            { hostEpoch: 2, actionSeq: 999999 },
+            { actionSeq: 4 },
+            [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 999999 }]
+        ),
+        { hostEpoch: 2, actionSeq: 5 }
+    );
 });
 
 runTest('handleRecreateRoom は共通fixtureの最大 actionSeq を復元rankに使う', () => {

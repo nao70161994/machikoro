@@ -28,7 +28,9 @@ body {
     margin: 0 auto;
 }
 
-body.modal-open {
+body.modal-open,
+body.modal-open #titleScreen,
+body.modal-open #gameScreen {
     overflow: hidden;
 }
 

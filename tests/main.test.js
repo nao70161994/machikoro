@@ -93,7 +93,10 @@ function loadMainRuntime(options = {}) {
             innerWidth: 360,
             location: { href: 'https://example.test/play' },
             MACHIKORO_CLIENT_VERSION: 'test-version',
-            addEventListener(name, handler) { eventHandlers[name] = handler; },
+            addEventListener(name, handler) {
+                eventAddCounts[`window:${name}`] = (eventAddCounts[`window:${name}`] || 0) + 1;
+                eventHandlers[name] = handler;
+            },
             matchMedia() { return { matches: !!options.standalone }; },
         },
         navigator: { onLine: true, userAgent: options.userAgent || 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1' },
@@ -774,7 +777,10 @@ runTest('main init は10人開始時に不足設定を補い学習AIを維持す
 
 runTest('main delegated/static UI handler は重複登録しない', () => {
     const rt = loadMainRuntime();
-    assert.deepStrictEqual(rt.__test.eventAddCounts, {
+    const documentHandlerCounts = () => Object.fromEntries(
+        Object.entries(rt.__test.eventAddCounts).filter(([key]) => key.startsWith('document:'))
+    );
+    assert.deepStrictEqual(documentHandlerCounts(), {
         'document:click': 1,
         'document:input': 1,
         'document:change': 1,
@@ -783,7 +789,7 @@ runTest('main delegated/static UI handler は重複登録しない', () => {
     rt.bindStaticUiHandlers();
     rt.bindDelegatedUiHandlers();
 
-    assert.deepStrictEqual(rt.__test.eventAddCounts, {
+    assert.deepStrictEqual(documentHandlerCounts(), {
         'document:click': 1,
         'document:input': 1,
         'document:change': 1,
@@ -1070,11 +1076,16 @@ runTest('appShell initMainView は shell 初期化をまとめて呼ぶ', () => 
     const before = { ...rt.__test.counters };
 
     rt.initMainView();
+    rt.initMainView();
 
-    assert.ok(rt.__test.counters.loadSettings >= before.loadSettings + 1);
-    assert.ok(rt.__test.counters.renderOnlinePlayerSettings >= before.renderOnlinePlayerSettings + 1);
-    assert.ok(rt.__test.counters.updateResumeButton >= before.updateResumeButton + 1);
+    assert.ok(rt.__test.counters.loadSettings >= before.loadSettings + 2);
+    assert.ok(rt.__test.counters.renderOnlinePlayerSettings >= before.renderOnlinePlayerSettings + 2);
+    assert.ok(rt.__test.counters.updateResumeButton >= before.updateResumeButton + 2);
     assert.ok(rt.__test.eventHandlers.resize);
+    assert.strictEqual(rt.__test.eventAddCounts['window:resize'], 1);
+    assert.strictEqual(rt.__test.eventAddCounts['window:online'], 1);
+    assert.strictEqual(rt.__test.eventAddCounts['window:offline'], 1);
+    assert.strictEqual(rt.__test.eventAddCounts['window:beforeinstallprompt'], 1);
 });
 
 runTest('index.html は統計タブをオンラインタブの外に配置している', () => {
@@ -1138,11 +1149,13 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('refreshingByServiceWorker'));
     assert.ok(html.includes('let hadServiceWorkerController = !!navigator.serviceWorker.controller;'));
     assert.ok(html.includes('hadServiceWorkerController = true;'));
-    assert.ok(html.includes('if (_isInGame()) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
-    assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner"'));
-    assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner"'));
+    assert.ok(html.includes('let updateRequestedByUser = false;'));
+    assert.ok(html.includes('if (_isInGame() && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
+    assert.ok(html.includes('updateRequestedByUser = true;'));
+    assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
-    assert.ok(html.includes('id="pendingModal" class="pending-modal" role="region"'));
+    assert.ok(html.includes('id="pendingModal" class="pending-modal" role="region" aria-label="追加効果の選択" aria-live="polite"'));
     assert.ok(!html.includes('id="pendingModal" class="pending-modal" role="dialog" aria-modal="true"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle"'));
@@ -1186,6 +1199,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));
     assert.ok(css.includes('.notice-toast'));
     assert.ok(css.includes('body.modal-open'));
+    assert.ok(css.includes('body.modal-open #titleScreen'));
+    assert.ok(css.includes('overscroll-behavior: contain'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
     assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
     const indexScripts = [...html.matchAll(/<script src=\"(js\/[^\"]+)\"/g)].map(match => `/${match[1]}`);

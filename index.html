@@ -173,7 +173,7 @@
         </div>
     </div>
 
-    <div id="pendingModal" class="pending-modal" role="region" aria-label="追加効果の選択" tabindex="-1" style="display:none">
+    <div id="pendingModal" class="pending-modal" role="region" aria-label="追加効果の選択" aria-live="polite" tabindex="-1" style="display:none">
         <div class="pending-modal-inner">
             <div id="pendingMenu"></div>
         </div>
@@ -318,7 +318,7 @@
     </div>
 
     <!-- PWA更新バナー -->
-    <div id="pwaUpdateBanner" class="pwa-banner" style="display:none">
+    <div id="pwaUpdateBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true" style="display:none">
         <div class="pwa-banner-text">
             <span class="pwa-banner-icon">🔄</span>
             <span id="pwaUpdateMsg">新しいバージョンがあります</span>
@@ -330,7 +330,7 @@
     </div>
 
     <!-- PWAインストールバナー -->
-    <div id="pwaInstallBanner" class="pwa-banner" style="display:none">
+    <div id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true" style="display:none">
         <div class="pwa-banner-text">
             <span class="pwa-banner-icon">🏙️</span>
             <span>ホーム画面に追加するとオフラインでも遊べます</span>
@@ -392,12 +392,13 @@
         }
         let hadServiceWorkerController = !!navigator.serviceWorker.controller;
         let refreshingByServiceWorker = false;
+        let updateRequestedByUser = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!hadServiceWorkerController) {
             hadServiceWorkerController = true;
             return;
           }
-          if (_isInGame()) {
+          if (_isInGame() && !updateRequestedByUser) {
             _showPwaUpdateBanner();
             return;
           }
@@ -421,6 +422,7 @@
           }).catch(() => {});
         });
         window.pwaApplyUpdate = () => {
+          updateRequestedByUser = true;
           if (_waitingSW) {
             _waitingSW.postMessage({ type: 'SKIP_WAITING' });
           } else {
