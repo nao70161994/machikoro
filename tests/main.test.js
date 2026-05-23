@@ -340,6 +340,7 @@ runTest('main renderPlayerSettings は CPU（最強）オプションを表示�
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（最強）'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('data-ui-change="localPlayerType"'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('aria-label="プレイヤー1の種類"'));
     assert.ok(!rt.__test.elements.playerSettings.innerHTML.includes('onchange="onChangePlayerType'));
 });
 
@@ -1181,6 +1182,14 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
     assert.ok(statsStart < gameScreen);
     assert.ok(scriptUi < scriptStats);
     assert.ok(scriptStats < scriptMain);
+});
+
+runTest('player setting select は local/online とも programmatic label を持つ', () => {
+    const main = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    const online = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+
+    assert.ok(main.includes('aria-label=\"プレイヤー${i + 1}の種類\"'));
+    assert.ok(online.includes('aria-label=\"プレイヤー${i + 1}の種類\"'));
 });
 
 runTest('主要HTML/JSには inline handler 属性を再導入しない', () => {

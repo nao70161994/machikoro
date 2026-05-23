@@ -814,7 +814,7 @@ function renderCardSelectModal() {
             el.innerHTML = [...cards].sort(compareCardNamesForDisplay).map(name => {
                 const on = enabledCards.has(name);
                 const safeName = escapeHtml(name);
-                return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}">${safeName}</button>`;
+                return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}" aria-pressed="${on ? 'true' : 'false'}">${safeName}</button>`;
             }).join("");
         }
         const allOn = cards.every(n => enabledCards.has(n));
@@ -822,6 +822,7 @@ function renderCardSelectModal() {
         if (btn) {
             btn.textContent = allOn ? "ON" : "OFF";
             btn.className = `set-toggle ${allOn ? 'on' : 'off'}`;
+            if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', allOn ? 'true' : 'false');
         }
     }
     const landmarkList = document.getElementById("landmarkList");
@@ -829,7 +830,7 @@ function renderCardSelectModal() {
         landmarkList.innerHTML = Player.landmarkNames().map(name => {
             const on = enabledLandmarks.has(name);
             const safeName = escapeHtml(name);
-            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleLandmark" data-landmark-name="${safeName}">${getLandmarkEmoji(name)} ${safeName}</button>`;
+            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleLandmark" data-landmark-name="${safeName}" aria-pressed="${on ? 'true' : 'false'}">${getLandmarkEmoji(name)} ${safeName}</button>`;
         }).join("");
     }
 }

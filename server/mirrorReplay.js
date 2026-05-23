@@ -1,5 +1,7 @@
 'use strict';
 
+const MAX_SNAPSHOT_PENDING_COUNT = 50;
+
 function makeMirrorReplay({
     gameRuntime,
     maxActionLogLength,
@@ -160,10 +162,15 @@ function makeMirrorReplay({
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 (!Number.isInteger(state[field]) || state[field] < 0)) return false;
         }
+        let pendingFieldTotal = 0;
         for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
-            if (Object.prototype.hasOwnProperty.call(state, field) &&
-                (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+            if (Object.prototype.hasOwnProperty.call(state, field)) {
+                if (!Number.isInteger(state[field]) || state[field] < 0 || state[field] > MAX_SNAPSHOT_PENDING_COUNT) return false;
+                pendingFieldTotal += state[field];
+            }
         }
+        if (pendingFieldTotal > MAX_SNAPSHOT_PENDING_COUNT) return false;
+        if (state.phase && state.phase !== gameRuntime.GAME_PHASES.PENDING && pendingFieldTotal > 0) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'pendingActions')) {
             const actionByField = {
                 pendingTV: gameRuntime.GAME_ACTIONS.RESOLVE_TV,
@@ -173,7 +180,8 @@ function makeMirrorReplay({
                 pendingRenovation: gameRuntime.GAME_ACTIONS.RESOLVE_RENOVATION,
             };
             const pendingCounts = Object.fromEntries(Object.keys(actionByField).map(field => [field, 0]));
-            if (!Array.isArray(state.pendingActions)) return false;
+            if (!Array.isArray(state.pendingActions) || state.pendingActions.length > MAX_SNAPSHOT_PENDING_COUNT) return false;
+            if (state.phase && state.phase !== gameRuntime.GAME_PHASES.PENDING && state.pendingActions.length > 0) return false;
             for (const pending of state.pendingActions) {
                 if (!isPlainObject(pending) || actionByField[pending.field] !== pending.action) return false;
                 pendingCounts[pending.field]++;
@@ -187,6 +195,7 @@ function makeMirrorReplay({
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 typeof state[field] !== 'boolean') return false;
         }
+        if (state.pendingIT === true && state.phase && state.phase !== gameRuntime.GAME_PHASES.PENDING) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'pendingTunaDice') &&
             state.pendingTunaDice !== null &&
             (!Array.isArray(state.pendingTunaDice) ||
@@ -344,8 +353,9 @@ function makeMirrorReplay({
             if (!playerState) return;
             p.name = playerState.name;
             p.coins = Number.isFinite(playerState.coins) ? playerState.coins : p.coins;
-            const cardNames = Array.isArray(playerState.cards) ? playerState.cards : [];
-            p.cards = cardNames.map(name => createCardByName(name)).filter(Boolean);
+            if (Array.isArray(playerState.cards)) {
+                p.cards = playerState.cards.map(name => createCardByName(name)).filter(Boolean);
+            }
             const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
             p.dormantCards = dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
             p.landmarks = Object.assign(

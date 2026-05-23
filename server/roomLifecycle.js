@@ -1,6 +1,8 @@
 'use strict';
 
 function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
+    const createRoomRateBuckets = new Map();
+
     function roomTimestamp(value) {
         return Number.isFinite(value) ? value : 0;
     }
@@ -35,6 +37,52 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         if (socket) socket.lastCreateRoomAt = now;
     }
 
+    function createRoomRateKeyForSocket(socket) {
+        return socket?.handshake?.address ||
+            socket?.conn?.remoteAddress ||
+            socket?.request?.socket?.remoteAddress ||
+            socket?.request?.connection?.remoteAddress ||
+            null;
+    }
+
+    function pruneCreateRoomRateBuckets(now = Date.now()) {
+        const windowMs = limits.createRoomIpRateLimitWindowMs || limits.createRoomRateLimitMs;
+        for (const [key, bucket] of createRoomRateBuckets.entries()) {
+            if (now - bucket.windowStart >= windowMs) createRoomRateBuckets.delete(key);
+        }
+        const maxBuckets = limits.createRoomIpRateLimitMaxBuckets || 0;
+        if (maxBuckets > 0 && createRoomRateBuckets.size > maxBuckets) {
+            for (const key of createRoomRateBuckets.keys()) {
+                createRoomRateBuckets.delete(key);
+                if (createRoomRateBuckets.size <= maxBuckets) break;
+            }
+        }
+    }
+
+    function createRoomRateBucketForKey(rateKey, now = Date.now()) {
+        if (!rateKey) return null;
+        const windowMs = limits.createRoomIpRateLimitWindowMs || limits.createRoomRateLimitMs;
+        let bucket = createRoomRateBuckets.get(rateKey);
+        if (!bucket || now - bucket.windowStart >= windowMs) {
+            bucket = { windowStart: now, count: 0 };
+            createRoomRateBuckets.set(rateKey, bucket);
+        }
+        pruneCreateRoomRateBuckets(now);
+        return bucket;
+    }
+
+    function canCreateRoomForRateKey(rateKey, now = Date.now()) {
+        if (!rateKey || !limits.createRoomIpRateLimitMax) return true;
+        const bucket = createRoomRateBucketForKey(rateKey, now);
+        return !bucket || bucket.count < limits.createRoomIpRateLimitMax;
+    }
+
+    function markCreateRoomForRateKey(rateKey, now = Date.now()) {
+        if (!rateKey || !limits.createRoomIpRateLimitMax) return;
+        const bucket = createRoomRateBucketForKey(rateKey, now);
+        if (bucket) bucket.count++;
+    }
+
     function validateCreateRoomLifecycle(socket, now = Date.now(), targetRooms = defaultRooms) {
         cleanupExpiredRooms(now, targetRooms);
         if (Object.keys(targetRooms).length >= limits.maxRooms) {
@@ -42,6 +90,9 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         }
         if (!canCreateRoomForSocket(socket, now)) {
             return { ok: false, message: 'ルーム作成が短時間に連続しています。少し待ってから再試行してください' };
+        }
+        if (!canCreateRoomForRateKey(createRoomRateKeyForSocket(socket), now)) {
+            return { ok: false, message: 'ルーム作成が短時間に集中しています。少し待ってから再試行してください' };
         }
         return { ok: true };
     }
@@ -52,6 +103,9 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         cleanupExpiredRooms,
         canCreateRoomForSocket,
         markCreateRoomForSocket,
+        createRoomRateKeyForSocket,
+        canCreateRoomForRateKey,
+        markCreateRoomForRateKey,
         validateCreateRoomLifecycle,
     };
 }

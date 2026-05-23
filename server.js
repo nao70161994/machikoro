@@ -53,6 +53,9 @@ const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     pendingRoomTtlMs: 30 * 60 * 1000,
     maxRooms: 500,
     createRoomRateLimitMs: 5000,
+    createRoomIpRateLimitWindowMs: 60 * 1000,
+    createRoomIpRateLimitMax: 20,
+    createRoomIpRateLimitMaxBuckets: 2000,
 });
 const rooms = Object.create(null);
 const {
@@ -61,6 +64,9 @@ const {
     cleanupExpiredRooms,
     canCreateRoomForSocket,
     markCreateRoomForSocket,
+    createRoomRateKeyForSocket,
+    canCreateRoomForRateKey,
+    markCreateRoomForRateKey,
     validateCreateRoomLifecycle,
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
@@ -131,7 +137,7 @@ function normalizeClientErrorPlayerIndex(value) {
 
 function normalizeClientErrorPayload(payload, now = Date.now()) {
     if (!isPlainObject(payload)) return { ok: false, reason: 'payload must be an object' };
-    const message = truncateText(payload.message, CLIENT_ERROR_LIMITS.maxMessageLength).trim();
+    const message = truncateText(scrubClientErrorText(payload.message), CLIENT_ERROR_LIMITS.maxMessageLength).trim();
     const stack = truncateText(scrubClientErrorText(payload.stack), CLIENT_ERROR_LIMITS.maxStackLength);
     if (!message && !stack) return { ok: false, reason: 'message or stack is required' };
     const report = {
@@ -147,7 +153,7 @@ function normalizeClientErrorPayload(payload, now = Date.now()) {
         playerIndex: normalizeClientErrorPlayerIndex(payload.playerIndex),
         timestamp: truncateText(payload.timestamp || new Date(now).toISOString(), 80),
         appVersion: truncateText(payload.appVersion || BUILD_HASH, 80),
-        url: truncateText(payload.url, 300),
+        url: truncateText(scrubClientErrorText(payload.url), 300),
         receivedAt: new Date(now).toISOString(),
     };
     return { ok: true, report };
@@ -491,7 +497,34 @@ function sendIndexWithBuildHash(req, res) {
 app.get('/', sendIndexWithBuildHash);
 app.get('/index.html', sendIndexWithBuildHash);
 
-app.use(express.static(path.join(__dirname)));
+const PUBLIC_ROOT_FILES = Object.freeze(new Set([
+    'style.css',
+    'manifest.json',
+    'sw.js',
+    'privacy.html',
+    'rules.html',
+]));
+
+const PUBLIC_STATIC_DIRS = Object.freeze([
+    { route: '/js', directory: 'js' },
+    { route: '/icons', directory: 'icons' },
+    { route: '/models/rl_model/portfolio', directory: path.join('models', 'rl_model', 'portfolio') },
+]);
+
+function isPublicRootFile(fileName) {
+    return PUBLIC_ROOT_FILES.has(String(fileName || '').replace(/^\/+/, ''));
+}
+
+function sendPublicRootFile(req, res, next) {
+    const fileName = String(req.path || '').replace(/^\/+/, '');
+    if (!isPublicRootFile(fileName)) return next();
+    res.sendFile(path.join(__dirname, fileName));
+}
+
+app.get(Array.from(PUBLIC_ROOT_FILES).map(fileName => '/' + fileName), sendPublicRootFile);
+for (const entry of PUBLIC_STATIC_DIRS) {
+    app.use(entry.route, express.static(path.join(__dirname, entry.directory)));
+}
 
 // ===== Room lifecycle =====
 const APP_ERROR_EVENT = 'appError';
@@ -713,6 +746,7 @@ io.on('connection', (socket) => {
             }
         }
         markCreateRoomForSocket(socket, now);
+        markCreateRoomForRateKey(createRoomRateKeyForSocket(socket), now);
         rooms[roomId] = {
             createdAt: now,
             lastTouchedAt: now,
@@ -1629,6 +1663,9 @@ module.exports = {
     cleanupExpiredRooms,
     canCreateRoomForSocket,
     markCreateRoomForSocket,
+    createRoomRateKeyForSocket,
+    canCreateRoomForRateKey,
+    markCreateRoomForRateKey,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
@@ -1653,6 +1690,9 @@ module.exports = {
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,
+    PUBLIC_ROOT_FILES,
+    PUBLIC_STATIC_DIRS,
+    isPublicRootFile,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,

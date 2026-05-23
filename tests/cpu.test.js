@@ -9,8 +9,8 @@ const CPU_SMOKE_TESTS = new Set([
 ]);
 
 function runTest(name, fn) {
-    if (CPU_SMOKE_ONLY && !CPU_SMOKE_TESTS.has(name)) return;
-    baseRunTest(name, fn);
+    if (CPU_SMOKE_ONLY && !CPU_SMOKE_TESTS.has(name)) return undefined;
+    return baseRunTest(name, fn);
 }
 
 const runtime = loadCPURuntime();

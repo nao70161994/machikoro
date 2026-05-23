@@ -7,6 +7,8 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     validateRegistry,
+    evalGameCount,
+    latestEval,
     bestEvalGames,
     modelTopCards,
     modelStyleKey,
@@ -158,6 +160,20 @@ runTest('validateRegistry は active model の topCards 類似を警告する', 
     });
     assert.strictEqual(result.ok, true);
     assert.ok(result.warnings.some(warning => warning.includes('topCards が 4/5 重複')));
+});
+
+
+runTest('validateRegistry helper は lineup eval のゲーム数も latest/best に使う', () => {
+    const model = {
+        evals: [
+            { type: 'js-lineup', date: '2026-05-21', gamesPerLineup: 10 },
+            { type: 'js-lineup', date: '2026-05-21', gamesPerLineup: 80 },
+        ],
+    };
+
+    assert.strictEqual(evalGameCount(model.evals[1]), 80);
+    assert.strictEqual(latestEval(model).gamesPerLineup, 80);
+    assert.strictEqual(bestEvalGames(model), 80);
 });
 
 runTest('validateRegistry helper は評価数と style key を返す', () => {

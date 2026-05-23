@@ -1791,7 +1791,7 @@
 
 ## Continuous review Cycle 11 PWA/security/test tooling hardening
 
-- 状態: implemented; full verification passed; ready to commit/push.
+- 状態: implemented; full suite passed and pushed in `a6b8179`.
 - 変更ファイル:
   - `server.js`, `tests/server.test.js`
   - `js/appShell.js`, `js/main.js`, `index.html`, `style.css`, `tests/main.test.js`
@@ -1810,3 +1810,25 @@
 - deferred / design required:
   - host-controlled restore snapshot / missing-room restore の署名付き検証、server persisted canonical state は設計判断が必要なため未実装。
   - iOS Safari 専用 install guidance は実機UX確認待ち。
+
+## Continuous review Cycle 12 public surface / restore guard hardening
+
+- 状態: completed; full verification passed; committed in this cycle.
+- 変更ファイル:
+  - `server.js`, `server/roomLifecycle.js`, `server/mirrorReplay.js`, `tests/server.test.js`
+  - `sw.js`, `tests/sw.test.js`
+  - `js/main.js`, `js/online.js`, `js/ui.js`, related UI tests
+  - `js/RLModelPortfolio.js`, `models/rl_model/portfolio/*.browser.json`, `scripts/validate-rl-registry.js`, related RL tests
+  - `tests/cpu.test.js`, `tests/release-e2e.test.js`, `tests/test-utils.test.js`
+- 実装内容:
+  - root `express.static(__dirname)` を廃止し、公開rootファイルと `/js`, `/icons`, `/models/rl_model/portfolio` だけを allowlist 配信するようにした。
+  - `createRoom` に socket 単位に加えて IP/rate-key 単位の軽い rate limit を追加した。
+  - client-error payload の `message` / `url` も query/hash scrub 対象にした。
+  - restore snapshot の pending count を上限付きにし、pending field / pendingActions / pendingIT と phase の不整合を拒否する。旧snapshotで `cards` 欠落時は初期カードを消さず維持する。
+  - Service Worker は allowlist 外 GET を runtime cache しない。RL portfolio JSON は従来どおり runtime network-first cache の対象。
+  - player type select に programmatic label、card/landmark/set toggle に `aria-pressed` を追加した。
+  - RL portfolio entries を freeze し、配布モデルJSONへ explicit `stateSchema` / `actionSchema` を追加した。registry helper は lineup eval の `gamesPerLineup` も latest/best 判定に使う。
+  - async `runTest` の fire-and-forget 再発を release/cpu test 側で抑止した。
+- deferred / design required:
+  - signed restore snapshot / server persisted canonical state / missing-room restore signature は引き続き design decision required。
+  - non-host hostless restore 本実装、iOS Safari install guidance、実機複数端末の長時間 online/PWA 回帰は manual/design required。

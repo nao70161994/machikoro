@@ -603,3 +603,24 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - Signed restore snapshot / server persisted canonical state、room secret による missing-room restore 認証は design decision required。
 - 実機 iOS Safari / Android Chrome の install/update/reconnect は manual verification required。
+
+### Continuous review Cycle 12 public surface / restore guard hardening
+
+確認した内容:
+
+- High fixed: repository root が `express.static(__dirname)` で公開され、server/tests/scripts/docs/generated model artifacts までHTTP到達可能になり得る問題を確認した。
+- High partially mitigated: restore snapshot の pending counter は小さなpayloadで大きな pending queue を復元できる余地があった。署名なし snapshot の根本 trust boundary は残るが、pending count / phase invariant は自動で安全に締めた。
+- Medium fixed: client-error `message` / `url` のURL query/hash scrub、PWA runtime cache の allowlist、player setting labels、card toggle pressed state、RL portfolio explicit schema metadata、async test convention を補強した。
+
+修正済み:
+
+- server static surface は root file allowlist と明示ディレクトリだけに限定した。
+- createRoom は socket-local rate limit に加えて IP/rate-key bucket でも連投を抑止する。
+- restore snapshot は pending fields, pendingActions, pendingIT と phase の不整合および過大pendingを拒否する。
+- SW は allowlist 外GETを cache.put しない。
+- RL portfolio entries と配布JSON schema metadata を明示し、registry summary の lineup game count ranking を補正した。
+
+残課題:
+
+- server restart 後の host-supplied restore snapshot を完全に信頼可能にするには signed snapshot または persisted canonical state が必要。これは設計判断とmigrationが必要なため未実装。
+- hostless restore、実機 iOS/Android PWA install/update/reconnect は manual verification required。

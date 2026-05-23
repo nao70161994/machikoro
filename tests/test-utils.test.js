@@ -25,3 +25,13 @@ runTest('runTest は await された async failure を exitCode に反映する'
     assert.strictEqual(result.status, 1);
     assert.ok((result.stderr || '').includes('async boom'));
 });
+
+runTest('test files は async runTest を fire-and-forget にしない', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const files = ['tests/release-e2e.test.js', 'tests/cpu.test.js'];
+    for (const file of files) {
+        const source = fs.readFileSync(path.join(process.cwd(), file), 'utf8');
+        assert.ok(!/[^A-Za-z0-9_]runTest\([^\n]+async\s*\(/.test(source), file + ' has fire-and-forget async runTest');
+    }
+});

@@ -234,6 +234,18 @@ async function dispatchFetch(runtime, request) {
         assert.strictEqual(response, cached);
     });
 
+
+    await runTest('Service Worker はallowlist外GETをruntime cacheしない', async () => {
+        const request = makeRequest('https://example.test/scripts/private-report.js');
+        const runtime = loadServiceWorker({
+            fetchResponse: () => makeResponse('private-script'),
+        });
+        const response = await dispatchFetch(runtime, request);
+
+        assert.strictEqual(response.label, 'private-script');
+        assert.strictEqual(runtime.putCalls.length, 0);
+    });
+
     await runTest('Service Worker はsocket.io requestを横取りしない', async () => {
         const request = makeRequest('https://example.test/socket.io/socket.io.js');
         const runtime = loadServiceWorker();

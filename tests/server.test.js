@@ -11,6 +11,9 @@ const {
     cleanupExpiredRooms,
     canCreateRoomForSocket,
     markCreateRoomForSocket,
+    createRoomRateKeyForSocket,
+    canCreateRoomForRateKey,
+    markCreateRoomForRateKey,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
@@ -33,6 +36,9 @@ const {
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,
+    PUBLIC_ROOT_FILES,
+    PUBLIC_STATIC_DIRS,
+    isPublicRootFile,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
@@ -239,6 +245,30 @@ runTest('createRoom rate limit は同一socketの連続作成だけを拒否す�
     assert.strictEqual(validateCreateRoomLifecycle({}, now + 1, {}).ok, true);
 });
 
+runTest('createRoom rate limit は同一IPの再接続連投も抑止する', () => {
+    const now = 5000000;
+    const socket = { handshake: { address: '203.0.113.9' } };
+    assert.strictEqual(createRoomRateKeyForSocket(socket), '203.0.113.9');
+    for (let i = 0; i < ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitMax; i++) {
+        assert.strictEqual(canCreateRoomForRateKey('203.0.113.9', now + i), true);
+        markCreateRoomForRateKey('203.0.113.9', now + i);
+    }
+    assert.strictEqual(canCreateRoomForRateKey('203.0.113.9', now + ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitMax + 1), false);
+    assert.strictEqual(validateCreateRoomLifecycle(socket, now + ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitMax + 1, {}).ok, false);
+    assert.strictEqual(canCreateRoomForRateKey('203.0.113.9', now + ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitWindowMs + 1), true);
+});
+
+runTest('public static はアプリ資産だけをallowlist公開する', () => {
+    assert.strictEqual(isPublicRootFile('style.css'), true);
+    assert.strictEqual(isPublicRootFile('/manifest.json'), true);
+    assert.strictEqual(isPublicRootFile('server.js'), false);
+    assert.strictEqual(isPublicRootFile('package.json'), false);
+    assert.ok(PUBLIC_STATIC_DIRS.some(entry => entry.route === '/js'));
+    assert.ok(PUBLIC_STATIC_DIRS.some(entry => entry.route === '/models/rl_model/portfolio'));
+    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    assert.ok(!source.includes('app.use(express.static(path.join(__dirname)))'));
+});
+
 runTest('client error payload は必要項目を正規化し長すぎるstackを切り詰める', () => {
     const normalized = normalizeClientErrorPayload({
         source: 'window.onerror',
@@ -262,18 +292,22 @@ runTest('client error payload は必要項目を正規化し長すぎるstackを
     assert.ok(normalized.report.stack.length <= CLIENT_ERROR_LIMITS.maxStackLength + 3);
 });
 
-runTest('client error payload はstackとfilenameのURL query/hashを除去する', () => {
+runTest('client error payload はmessage/url/stack/filenameのURL query/hashを除去する', () => {
     const normalized = normalizeClientErrorPayload({
-        message: 'boom',
+        message: 'boom https://machikoro.example.test/play?token=secret#frag',
         stack: 'Error: boom\n at https://machikoro.example.test/js/ui.js?token=secret#frag:10:2',
         filename: 'https://machikoro.example.test/js/ui.js?room=SECRET#hash',
+        url: 'https://machikoro.example.test/?room=SECRET#hash',
     }, 1700000000000);
 
     assert.strictEqual(normalized.ok, true);
+    assert.ok(!normalized.report.message.includes('secret'));
     assert.ok(!normalized.report.stack.includes('secret'));
     assert.ok(!normalized.report.filename.includes('SECRET'));
+    assert.ok(!normalized.report.url.includes('SECRET'));
     assert.ok(normalized.report.stack.includes('https://machikoro.example.test/js/ui.js'));
     assert.strictEqual(normalized.report.filename, 'https://machikoro.example.test/js/ui.js');
+    assert.strictEqual(normalized.report.url, 'https://machikoro.example.test/');
 });
 
 runTest('client error rate limit と duplicate suppression は短時間の連投を抑止する', () => {
@@ -716,6 +750,41 @@ runTest('createRoomMirror は snapshot の pendingActions action/field 不一致
     const countRoom = makeRoom();
     countRoom.stateSnapshot = countMismatch;
     assert.strictEqual(createRoomMirror(countRoom), null);
+});
+
+runTest('createRoomMirror は snapshot の pending と phase 不整合や過大countを拒否する', () => {
+    const phaseMismatch = makeSnapshot({
+        phase: 'build',
+        pendingTV: 1,
+        pendingActions: [{ action: 'resolveTV', field: 'pendingTV' }],
+    });
+    const pendingItMismatch = makeSnapshot({
+        phase: 'build',
+        pendingIT: true,
+    });
+    const excessivePending = makeSnapshot({
+        phase: 'pending',
+        pendingTV: 51,
+    });
+
+    for (const snapshot of [phaseMismatch, pendingItMismatch, excessivePending]) {
+        const room = makeRoom();
+        room.stateSnapshot = snapshot;
+        assert.strictEqual(createRoomMirror(room), null);
+    }
+});
+
+runTest('createRoomMirror は旧snapshotのcards欠落時に初期カードを維持する', () => {
+    const room = makeRoom();
+    const snapshot = makeSnapshot();
+    delete snapshot.players[0].cards;
+    delete snapshot.players[0].dormantIndices;
+    room.stateSnapshot = snapshot;
+
+    const mirror = createRoomMirror(room);
+
+    assert.ok(mirror);
+    assert.deepStrictEqual(Array.from(mirror.game.players[0].cards, card => card.name), ['麦畑', 'パン屋']);
 });
 
 runTest('createRoomMirror は snapshot 内の小数コインを拒否する', () => {

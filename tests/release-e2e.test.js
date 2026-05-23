@@ -4,6 +4,22 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+const releaseAsyncTests = [];
+
+function runAsyncTest(name, fn) {
+    const result = runTest(name, fn);
+    releaseAsyncTests.push(result);
+    return result;
+}
+
+process.on('beforeExit', () => {
+    if (releaseAsyncTests.length === 0) return;
+    const pending = releaseAsyncTests.splice(0);
+    Promise.all(pending).catch((error) => {
+        console.error(error && error.stack ? error.stack : error);
+        process.exitCode = 1;
+    });
+});
 const {
     __rooms,
     CLIENT_ERROR_LIMITS,
@@ -240,7 +256,7 @@ runTest('release client error capture は iPhone Safari 風コンテキストと
     assert.strictEqual(JSON.parse(fetchCalls[0].options.body).source, 'window.onerror');
 });
 
-runTest('release ntfy client-error-test は実送信せず mock fetch で通知内容を検証する', async () => {
+runAsyncTest('release ntfy client-error-test は実送信せず mock fetch で通知内容を検証する', async () => {
     const calls = [];
     const { recorder, res } = makeResponseRecorder();
     await handleClientErrorTestRequest({
@@ -292,7 +308,7 @@ runTest('release modal/toast は non-blocking 表示、focus trap、Esc close、
     assert.strictEqual(context.document.activeElement, opener);
 });
 
-runTest('release PWA install/update と Service Worker lifecycle を疑似実行する', async () => {
+runAsyncTest('release PWA install/update と Service Worker lifecycle を疑似実行する', async () => {
     const index = readRepoFile('index.html');
     assert.ok(index.includes("navigator.serviceWorker.register('/sw.js')"));
     assert.ok(index.includes('updatefound'));

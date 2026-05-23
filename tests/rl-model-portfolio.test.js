@@ -50,11 +50,13 @@ runTest('RL model portfolio: 明示model idが不正ならランダムへfallbac
     assert.throws(() => RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'unknown-model' }), /not available/);
 });
 
-runTest('RL model portfolio: weight 0 はランダム選択候補に戻さない', () => {
+runTest('RL model portfolio: entries は外部から重みを書き換えられない', () => {
     const { RLModelPortfolio } = loadPortfolio();
     const multiplayerModel = RLModelPortfolio.models.find(model => model.id === 'self-only-4p-h256-lr1e5-5000-seed103');
+    assert.strictEqual(Object.isFrozen(multiplayerModel), true);
     multiplayerModel.weight = 0;
-    assert.strictEqual(RLModelPortfolio.selectRandomModel(4), null);
+    assert.strictEqual(multiplayerModel.weight, 3);
+    assert.strictEqual(RLModelPortfolio.selectRandomModel(4).id, 'self-only-4p-h256-lr1e5-5000-seed103');
 });
 
 runTest('RL model portfolio: 3人以上では採用済み多人数モデルを選ぶ', () => {
@@ -86,12 +88,9 @@ runTest('RL model portfolio: adopted モデルは portfolio に存在し配布JS
         if (portfolioEntry.minPlayers && portfolioEntry.minPlayers >= 3) {
             assert.strictEqual(stateDim, 353, `${model.id} multiplayer model must use 353-dim state`);
         }
-        if (data.stateSchema) {
-            assert.ok(['state-2p-v1', 'state-mp-v1'].includes(data.stateSchema), `${model.id} has unknown state schema`);
-        }
-        if (data.actionSchema) {
-            assert.strictEqual(data.actionSchema, 'action-flat-v1', `${model.id} has unsupported action schema`);
-        }
+        assert.ok(data.stateSchema, `${model.id} has no explicit state schema`);
+        assert.ok(['state-2p-v1', 'state-mp-v1'].includes(data.stateSchema), `${model.id} has unknown state schema`);
+        assert.strictEqual(data.actionSchema, 'action-flat-v1', `${model.id} has unsupported action schema`);
         assert.ok(data.layers, `${model.id} has no exported layers`);
     }
 });

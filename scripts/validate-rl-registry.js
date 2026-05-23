@@ -5,6 +5,10 @@ function loadRegistry(registryPath) {
     return JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 }
 
+function evalGameCount(entry) {
+    return entry?.gamesPerOpponent || entry?.gamesPerLineup || 0;
+}
+
 function latestEval(model) {
     const evals = Array.isArray(model.evals) ? model.evals : [];
     if (evals.length === 0) return null;
@@ -12,13 +16,13 @@ function latestEval(model) {
         .slice()
         .sort((a, b) => (
             String(b.date || '').localeCompare(String(a.date || '')) ||
-            ((b.gamesPerOpponent || 0) - (a.gamesPerOpponent || 0))
+            (evalGameCount(b) - evalGameCount(a))
         ))[0];
 }
 
 function bestEvalGames(model) {
     const evals = Array.isArray(model.evals) ? model.evals : [];
-    return evals.reduce((best, entry) => Math.max(best, entry.gamesPerOpponent || entry.gamesPerLineup || 0), 0);
+    return evals.reduce((best, entry) => Math.max(best, evalGameCount(entry)), 0);
 }
 
 function modelTopCards(model) {
@@ -341,6 +345,7 @@ if (require.main === module) {
 
 module.exports = {
     loadRegistry,
+    evalGameCount,
     latestEval,
     bestEvalGames,
     modelTopCards,

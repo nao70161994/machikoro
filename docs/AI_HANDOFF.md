@@ -192,3 +192,12 @@ npm test
 - `runTest()` returns async test promises. New async tests should either return/await `runTest(...)` or stay synchronous; do not rely on fire-and-forget promise handlers.
 - `validate-rl-registry --strict-warnings` fails on warnings for adoption review. `render-rl-registry-evals` rejects same-identity evals with conflicting metrics instead of silently skipping them.
 - Host-supplied restore snapshot signing / server persisted canonical state remains design decision required; do not implement partial trust-boundary changes without a design doc and migration plan.
+
+## 2026-05-23 continuous review Cycle 12
+
+- Public static serving is allowlisted. Do not reintroduce `express.static(__dirname)`; add public assets to `PUBLIC_ROOT_FILES` or `PUBLIC_STATIC_DIRS` deliberately.
+- Restore snapshot validation now rejects pending counters/actions outside `phase === pending` and caps pending counts. Preserve this invariant when changing pending queue serialization.
+- Service Worker runtime caching should stay allowlisted: app shell assets and RL portfolio JSON only. Avoid caching arbitrary same-origin GETs.
+- RL portfolio browser JSONs now carry explicit `stateSchema` / `actionSchema`; adopted/active portfolio additions should include these fields.
+- Async tests should return/await `runTest(...)`; release async cases use `runAsyncTest(...)` and `tests/test-utils.test.js` guards against direct async fire-and-forget patterns.
+- Signed restore snapshots / server persisted canonical state remain design-required; do not patch around that with partial trust changes.

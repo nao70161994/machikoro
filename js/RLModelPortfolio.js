@@ -28,7 +28,7 @@ const RL_MODEL_PORTFOLIO = Object.freeze([
         weight: 1,
         maxPlayers: 2,
     },
-]);
+].map(model => Object.freeze(model)));
 
 const RLModelPortfolio = (() => {
     const cache = new Map();

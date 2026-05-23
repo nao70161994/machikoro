@@ -511,7 +511,9 @@ runTest('card select modal handler はカードとランドマークを data-act
 
     context.renderCardSelectModal();
     assert.ok(elements.cardListBasic.innerHTML.includes('data-action="toggleCard"'));
+    assert.ok(elements.cardListBasic.innerHTML.includes('aria-pressed="true"'));
     assert.ok(elements.landmarkList.innerHTML.includes('data-action="toggleLandmark"'));
+    assert.ok(elements.landmarkList.innerHTML.includes('aria-pressed="true"'));
     assert.ok(!elements.cardListBasic.innerHTML.includes('toggleCard('));
     assert.ok(!elements.landmarkList.innerHTML.includes('toggleLandmark('));
 
@@ -525,6 +527,7 @@ runTest('card select modal handler はカードとランドマークを data-act
     });
     assert.ok(elements.cardListBasic.innerHTML.includes('data-card-name="牧場"'));
     assert.ok(elements.cardListBasic.innerHTML.includes('card-toggle-btn off'));
+    assert.ok(/data-card-name="牧場"[^>]+aria-pressed="false"/.test(elements.cardListBasic.innerHTML));
 
     context.handleCardSelectModalClick({
         preventDefault() {},
@@ -536,6 +539,7 @@ runTest('card select modal handler はカードとランドマークを data-act
     });
     assert.ok(elements.landmarkList.innerHTML.includes('data-landmark-name="港"'));
     assert.ok(elements.landmarkList.innerHTML.includes('card-toggle-btn off'));
+    assert.ok(/data-landmark-name="港"[^>]+aria-pressed="false"/.test(elements.landmarkList.innerHTML));
 });
 
 runTest('renderCardSelectModal はカード選択を表示順でソートする', () => {
