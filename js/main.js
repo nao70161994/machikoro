@@ -916,24 +916,37 @@ function onResolveIT(doSave) {
     runLocalOrSendOnline('resolveIT', { doSave }, () => game.resolveIT(doSave));
 }
 
+function traceBuildFlow(stage, details = {}) {
+    if (typeof recordFlowTrace === 'function') {
+        recordFlowTrace('build-' + stage, details);
+    } else if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[machikoro-build-flow]', stage, details);
+    }
+}
+
 function onBuildCard(name) {
     if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD)) return;
+    traceBuildFlow('card-request', { cardName: name });
     const card = CARDS.find(c => c.name === name);
     if (!card) return;
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
-        if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD, scheduledPlayerIndex)) return;
-        if (getShopStockCount(SHOP_STOCK, card) <= 0) return;
+        traceBuildFlow('card-confirmed', { cardName: name, scheduledPlayerIndex });
+        if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD, scheduledPlayerIndex)) { traceBuildFlow('card-stale-action', { cardName: name, scheduledPlayerIndex }); return; }
+        if (getShopStockCount(SHOP_STOCK, card) <= 0) { traceBuildFlow('card-out-of-stock', { cardName: name }); return; }
         saveUndoState();
         cancelAutoSkip();
         if (isOnlineGame) {
-            sendAction('buildCard', { cardName: name });
+            const sent = sendAction('buildCard', { cardName: name });
+            traceBuildFlow('card-online-send', { cardName: name, sent });
             return;
         }
         if (game.buildCard(card)) {
+            traceBuildFlow('card-applied', { cardName: name });
             decrementShopStock(SHOP_STOCK, card);
             playSound('build');
             render();
+            traceBuildFlow('card-rendered', { cardName: name });
             scheduleCPU();
         }
     });
@@ -941,19 +954,24 @@ function onBuildCard(name) {
 
 function onBuildLandmark(name) {
     if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK)) return;
+    traceBuildFlow('landmark-request', { landmarkName: name });
     const cost = Player.landmarkCost(name);
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`, () => {
-        if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK, scheduledPlayerIndex)) return;
+        traceBuildFlow('landmark-confirmed', { landmarkName: name, scheduledPlayerIndex });
+        if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK, scheduledPlayerIndex)) { traceBuildFlow('landmark-stale-action', { landmarkName: name, scheduledPlayerIndex }); return; }
         saveUndoState();
         cancelAutoSkip();
         if (isOnlineGame) {
-            sendAction('buildLandmark', { name });
+            const sent = sendAction('buildLandmark', { name });
+            traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
             return;
         }
         if (game.buildLandmark(name)) {
+            traceBuildFlow('landmark-applied', { landmarkName: name });
             playSound('build');
             render();
+            traceBuildFlow('landmark-rendered', { landmarkName: name });
             scheduleCPU();
         }
     });

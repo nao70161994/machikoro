@@ -188,7 +188,7 @@ function getTutorialMessage() {
 }
 
 function renderTutorial() {
-    syncTutorialControls();
+    safeRenderStep('syncTutorialControls', () => syncTutorialControls());
     const box = document.getElementById("tutorialBox");
     if (!box) return;
     if (!tutorialEnabled || !game || game.checkWinner()) {
@@ -342,21 +342,23 @@ function renderActiveGameState(current) {
     else if (game.lastDiceResult > 0) updateDiceDisplay([game.lastDiceResult]);
     else updateDiceDisplay(null);
 
-    renderDiceChoose();
-    renderPending();
-    renderTutorial();
-    renderLog();
-    renderPlayers();
+    safeRenderStep('renderDiceChoose', () => renderDiceChoose());
+    safeRenderStep('renderPending', () => renderPending());
+    safeRenderStep('renderTutorial', () => renderTutorial());
+    safeRenderStep('renderLog', () => renderLog());
+    safeRenderStep('renderPlayers', () => renderPlayers());
 
-    if (prevCoins) {
-        game.players.forEach((p, i) => {
-            const diff = p.coins - prevCoins[i];
-            if (diff !== 0) showCoinAnimation(i, diff);
-        });
-    }
-    prevCoins = game.players.map(p => p.coins);
-    renderBuildMenu();
-    checkAutoSkip();
+    safeRenderStep('coinAnimation', () => {
+        if (prevCoins) {
+            game.players.forEach((p, i) => {
+                const diff = p.coins - prevCoins[i];
+                if (diff !== 0) showCoinAnimation(i, diff);
+            });
+        }
+        prevCoins = game.players.map(p => p.coins);
+    });
+    safeRenderStep('renderBuildMenu', () => renderBuildMenu());
+    safeRenderStep('checkAutoSkip', () => checkAutoSkip());
 }
 
 function persistAfterRender() {
@@ -642,6 +644,102 @@ const MODAL_CLOSE_HANDLERS = Object.freeze({
 });
 
 const CARD_COLOR_ORDER = Object.freeze({ blue: 0, green: 1, red: 2, purple: 3 });
+
+const FLOW_TRACE_LIMIT = 40;
+
+function buildRuntimeStateSnapshot(reason = '') {
+    const pendingActions = game && typeof GameManager !== 'undefined' && typeof GameManager.pendingActionsFor === 'function'
+        ? GameManager.pendingActionsFor(game).map(entry => ({
+            action: entry && entry.action,
+            field: entry && entry.field,
+            count: entry && entry.count,
+        }))
+        : [];
+    const elementState = id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (!el) return null;
+        return {
+            display: el.style ? el.style.display || '' : '',
+            disabled: !!el.disabled,
+            inert: !!el.inert,
+            htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
+        };
+    };
+    return {
+        reason,
+        timestamp: new Date().toISOString(),
+        phase: game && game.phase,
+        builtThisTurn: !!(game && game.builtThisTurn),
+        currentPlayerIndex: game && game.currentPlayerIndex,
+        isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
+        myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+        pendingFields: game ? {
+            pendingTV: game.pendingTV || 0,
+            pendingBusiness: game.pendingBusiness || 0,
+            pendingCleaning: game.pendingCleaning || 0,
+            pendingMover: game.pendingMover || 0,
+            pendingRenovation: game.pendingRenovation || 0,
+            pendingIT: !!game.pendingIT,
+        } : null,
+        pendingActions,
+        ui: {
+            gameScreen: elementState('gameScreen'),
+            pendingModal: elementState('pendingModal'),
+            pendingMenu: elementState('pendingMenu'),
+            buildMenu: elementState('buildMenu'),
+            btnSkip: elementState('btnSkip'),
+            confirmModal: elementState('confirmModal'),
+        },
+    };
+}
+
+function recordFlowTrace(event, details = {}) {
+    const trace = {
+        event,
+        details,
+        snapshot: buildRuntimeStateSnapshot(event),
+    };
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) {
+            const list = Array.isArray(root.__machikoroFlowTrace) ? root.__machikoroFlowTrace : [];
+            list.push(trace);
+            while (list.length > FLOW_TRACE_LIMIT) list.shift();
+            root.__machikoroFlowTrace = list;
+        }
+    } catch (_) {}
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('machikoroLastFlowTrace', JSON.stringify(trace).slice(0, 4000));
+        }
+    } catch (_) {}
+    return trace;
+}
+
+function reportRenderStepError(step, error) {
+    const trace = recordFlowTrace('render-step-error', { step, message: error && error.message || String(error) });
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[machikoro-render-step-error]', step, trace.snapshot, error);
+    }
+    if (typeof reportClientError === 'function') {
+        reportClientError({
+            source: 'render-step',
+            phase: game && game.phase,
+            message: 'render ' + step + ': ' + (error && error.message || error),
+            stack: error && error.stack || '',
+        });
+    }
+}
+
+function safeRenderStep(step, fn) {
+    try {
+        fn();
+        return true;
+    } catch (error) {
+        reportRenderStepError(step, error);
+        return false;
+    }
+}
 
 function compareCardsForDisplay(a, b) {
     const colorDiff = (CARD_COLOR_ORDER[a.color] ?? 9) - (CARD_COLOR_ORDER[b.color] ?? 9);

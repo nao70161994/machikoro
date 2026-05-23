@@ -23,6 +23,13 @@ function loadIntegrationRuntime(options = {}) {
         tabContentStats: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
+        pwaUpdateBanner: makeElement({ style: { display: 'none' } }),
+        pendingModal: makeElement(),
+        pendingMenu: makeElement(),
+        confirmModal: makeElement(),
+        confirmMessage: makeElement(),
+        confirmOkBtn: makeElement(),
+        confirmCancelBtn: makeElement(),
         onlineCreateSubmitButton: makeElement(),
         onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
@@ -55,6 +62,8 @@ function loadIntegrationRuntime(options = {}) {
         storage,
         localStorage,
         document: {
+            activeElement: null,
+            body: makeElement(),
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];

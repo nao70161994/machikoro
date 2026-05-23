@@ -677,3 +677,23 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 - Signed restore snapshot / server persisted canonical state は design decision required。
 - Hostless restore 本実装、複数実機での reconnect/PWA/update/accessibility 長時間確認は manual verification required。
 - inline SW update lifecycle の appShell への完全分離は安全な小変更範囲を超えるため backlog。
+
+
+### Build freeze investigation: render isolation and flow diagnostics
+
+確認した内容:
+
+- 実機の「購入後にゲーム画面がフリーズする」症状は、build 自体の phase 進行よりも、購入直後の `render()` が一部 UI render 例外で丸ごと中断し、skip/build menu 更新や modal inert 復元後の操作導線が残らないパターンが最も危険だった。
+- 特に recent refactor で `renderPending()`, build menu, modal lifecycle, delegated handler が分離されたため、1つの render step の実機限定例外が全体 render loop を止めると、購入済み状態 `builtThisTurn=true` なのに UI が古いまま残り得る。
+
+修正済み:
+
+- `renderActiveGameState` の主要 step を `safeRenderStep` で分離し、`renderPending` 等の非致命 UI step が落ちても status/buttons/build menu/checkAutoSkip の更新を継続するようにした。
+- render step 例外時は `machikoroLastFlowTrace` と `window.__machikoroFlowTrace` に phase / pending fields / pending action queue / modal/build/skip UI 状態の snapshot を残し、ntfy client-error にも `render-step` として送る。
+- build card / landmark の request, confirm, online send, local apply, rendered を flow trace に記録し、購入後停止時の直前状態を実機で追えるようにした。
+- regression として、購入後に `renderPending` が例外化しても confirm modal が閉じ、gameScreen inert が解除され、skip ボタンと build menu が操作可能な状態へ更新される integration test を追加した。ランドマーク購入後の同経路も固定した。
+
+残課題:
+
+- 実機 iPhone Safari / Android Chrome での長時間手動再現確認は manual verification required。
+- 追加の実機ログが届いた場合は `machikoroLastFlowTrace` の event と snapshot を見て、落ちている render step をさらに局所修正する。
