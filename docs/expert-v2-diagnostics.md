@@ -401,3 +401,20 @@ Benchmark comparison against the live `business=simple` baseline:
 | 100-game seed 11 strong crowd | 47.0% | 47.0% | +0.0pt |
 
 Decision: adopted. The rule is one small guard, preserves normalCrowd in the confirmation run, and improves the weaker allStrong4 / strongMin tail without touching RL or broad tuning coefficients.
+
+
+## 2026-05-23 post-adoption one-condition search
+
+After adopting the refined late basic duplicate guard, this pass tested whether one more simple condition could improve strongWeighted / allStrong4 while keeping normalCrowd intact. The live refined guard was kept as the baseline: `コンビニ` / `ピザ屋` / `バーガーショップ` / `食品倉庫` only, `パン屋` excluded.
+
+20-game quick screen baseline for seeds 11,12,13 strong crowd/allStrong4 was strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. The tested candidates did not beat that screen, so none advanced to 50/100-game confirmation.
+
+| candidate | change | 20-game strong crowd/allStrong4 result | decision |
+| --- | --- | --- | --- |
+| Stronger 3rd+ duplicate penalty | Raise only the 3rd-copy-or-later penalty from 0.75 to 1.0. | strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No measurable behavior change in the quick gate. |
+| Stronger 食品倉庫 penalty | Penalize only `食品倉庫` duplicates more heavily. | strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No measurable behavior change in the quick gate. |
+| Stricter コンビニ endgame condition | Apply `コンビニ` duplicate penalty only when remaining landmarks <= 3. | strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No improvement over the adopted guard. |
+| Coin-rich weaker penalty | If current coins >= 10, weaken the duplicate penalty. | strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No improvement over the adopted guard. |
+| Disable near-win penalty | Disable the guard when remaining landmarks <= 2. | strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No improvement over the adopted guard. |
+
+Conclusion: no extra one-condition refinement is justified right now. The adopted refined guard appears to be close to the useful simple boundary; further gains likely need either a new loss-position signal or paired trace analysis for specific allStrong4 losses, not another generic tweak to the same duplicate penalty.
