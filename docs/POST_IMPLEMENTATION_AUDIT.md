@@ -849,3 +849,19 @@ Verification:
 Deferred:
 
 - Hostless restore, signed restore snapshot, server persisted canonical state, client-error token deployment policy docs, broader online action metadata contract tests, and real-device long-run online/PWA/accessibility checks remain design/manual required.
+
+### post-build-ui-blocked confirmModal ancestor lock fix
+
+Observed ntfy freeze reports showed `freezeKind=post-build-ui-blocked` with `phase=build`, `allowedActions` including `nextTurn`, `visibleModals=["confirmModal"]`, and `btnSkip.disabled=false` while `btnSkip.ancestorBlocked=true`. This means the game was not stopped and the button itself was enabled; the stale confirm modal left an ancestor `inert` / `aria-hidden` lock that intercepted normal post-build input.
+
+Fixes:
+
+- Confirm dialogs now track whether they are actively waiting for a user choice via `__machikoroConfirmModalOpen`.
+- Post-build recovery and human-turn unlock only close `confirmModal` when it is stale: build phase, `builtThisTurn=true`, `nextTurn` allowed, and no active confirm choice is pending.
+- Stale confirm recovery uses the accessible close path when possible, then forcibly clears app inert / aria-hidden / body modal locks so enabled buttons are actually clickable.
+- Valid confirm dialogs remain open and locked; pending, card detail, card select, and rules modals are not included in this stale-confirm cleanup path.
+
+Regression:
+
+- `tests/integration.test.js`: stale `confirmModal` after build with `btnSkip.disabled=false` and `ancestorBlocked=true` is reported and recovered, including local `myPlayerIndex=-1`.
+- `tests/integration.test.js`: active confirm dialog is not closed by the watchdog.

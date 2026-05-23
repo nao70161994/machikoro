@@ -253,13 +253,60 @@ function resetAccessibleModalStateForRecovery() {
     try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
 }
 
-function closeStaleBlockingModals() {
-    let closed = false;
-    const confirmModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('confirmModal') : null;
-    if (confirmModal && confirmModal.style && confirmModal.style.display !== 'none') {
-        confirmModal.style.display = 'none';
-        closed = true;
+function confirmModalOpenFromSnapshot(snapshot) {
+    if (!snapshot) return false;
+    if (Array.isArray(snapshot.visibleModals) && snapshot.visibleModals.includes('confirmModal')) return true;
+    const confirm = snapshot.ui && snapshot.ui.confirmModal;
+    return !!(confirm && confirm.display && confirm.display !== 'none' && confirm.computedDisplay !== 'none' && !confirm.hidden);
+}
+
+function isConfirmModalAwaitingUserChoice() {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        return !!(root && root.__machikoroConfirmModalOpen === true);
+    } catch (_) {
+        return false;
     }
+}
+
+function isStaleConfirmModalSnapshot(snapshot) {
+    if (!snapshot || !confirmModalOpenFromSnapshot(snapshot)) return false;
+    if (isConfirmModalAwaitingUserChoice()) return false;
+    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+    if (snapshot.phase === 'build' && !!snapshot.builtThisTurn && allowed.includes('nextTurn')) return true;
+    return snapshot.phase === 'roll' && allowed.includes('rollDice');
+}
+
+function forceClearModalLocksForRecovery() {
+    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (!el) return;
+        el.inert = false;
+        if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
+        if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
+    });
+    if (typeof document !== 'undefined' && document.body && document.body.classList) document.body.classList.remove('modal-open');
+}
+
+function closeStaleConfirmModal(snapshot, reason = 'stale-confirm-recovery') {
+    if (!isStaleConfirmModalSnapshot(snapshot)) return false;
+    const confirmModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('confirmModal') : null;
+    if (!confirmModal) return false;
+    try {
+        if (typeof closeConfirmModal === 'function') closeConfirmModal(false);
+        else if (typeof closeAccessibleModal === 'function') closeAccessibleModal('confirmModal', { restoreFocus: false });
+        else if (confirmModal.style) confirmModal.style.display = 'none';
+    } catch (_) {
+        if (confirmModal.style) confirmModal.style.display = 'none';
+    }
+    forceClearModalLocksForRecovery();
+    resetAccessibleModalStateForRecovery();
+    markClientFlowCheckpoint(reason, { modal: 'confirmModal' });
+    return true;
+}
+
+function closeStaleBlockingModals(snapshot, reason = 'ui-unlock') {
+    let closed = closeStaleConfirmModal(snapshot, reason + '-confirm');
     const pendingModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingModal') : null;
     const pendingMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingMenu') : null;
     if (pendingModal && pendingModal.style && pendingMenu && !pendingMenu.innerHTML) {
@@ -269,16 +316,9 @@ function closeStaleBlockingModals() {
     if (closed) resetAccessibleModalStateForRecovery();
 }
 
-function clearUiLocks(reason = 'ui-unlock') {
-    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-        if (!el) return;
-        el.inert = false;
-        if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
-        if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
-    });
-    if (typeof document !== 'undefined' && document.body && document.body.classList) document.body.classList.remove('modal-open');
-    closeStaleBlockingModals();
+function clearUiLocks(reason = 'ui-unlock', snapshot = null) {
+    closeStaleBlockingModals(snapshot, reason);
+    forceClearModalLocksForRecovery();
     markClientFlowCheckpoint(reason);
 }
 
@@ -286,7 +326,8 @@ function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     const snapshot = buildClientRuntimeSnapshot(reason);
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
     if (!expectedPrimaryActions(snapshot).length) return false;
-    clearUiLocks(reason);
+    if (confirmModalOpenFromSnapshot(snapshot) && !isStaleConfirmModalSnapshot(snapshot)) return false;
+    clearUiLocks(reason, snapshot);
     try { if (typeof render === 'function') render(); } catch (_) {}
     return true;
 }
@@ -563,16 +604,18 @@ function classifyLikelyFreeze(snapshot) {
     const isMyTurn = !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
     const skipDisabled = !!(ui.btnSkip && ui.btnSkip.disabled);
     const gameInert = !!(ui.gameScreen && ui.gameScreen.inert);
-    const confirmOpen = !!(ui.confirmModal && ui.confirmModal.display && ui.confirmModal.display !== 'none');
+    const confirmOpen = confirmModalOpenFromSnapshot(snapshot);
+    const staleConfirmOpen = isStaleConfirmModalSnapshot(snapshot);
     const onlineBlocked = isOnlineUiBlockedSnapshot(snapshot);
     const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
     const expectedActions = expectedPrimaryActions(snapshot);
     const expectedPending = expectedPendingActions(snapshot);
     const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
     const noUsablePendingAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedPending.length > 0 && !hasUsablePendingAction(snapshot);
-    if (!onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || confirmOpen || noUsablePrimaryAction)) {
+    if (!onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || staleConfirmOpen || noUsablePrimaryAction)) {
         return 'post-build-ui-blocked';
     }
+    if (confirmOpen && !staleConfirmOpen) return '';
     if (noUsablePrimaryAction) return 'human-turn-ui-locked';
     if (noUsablePendingAction) return 'pending-ui-locked';
     if (pendingOpenWithoutContent) return 'pending-without-action';
@@ -584,7 +627,7 @@ function classifyLikelyFreeze(snapshot) {
 function recoverPostBuildUiFreeze(snapshot) {
     if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    clearUiLocks('freeze-watchdog-post-build-unlock');
+    clearUiLocks('freeze-watchdog-post-build-unlock', snapshot);
     try {
         if (typeof render === 'function') render();
     } catch (_) {}

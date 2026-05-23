@@ -330,6 +330,77 @@ runTest('integration: pending操作不能ならwatchdogが縮約通知してrend
     assert.strictEqual(snapshot.freezeKind, 'pending-ui-locked');
 });
 
+runTest('integration: stale confirmModal が post-build の親lockを残してもwatchdogが復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+    assert.strictEqual(game.builtThisTurn, true);
+    rt.__test.setOnlineState({ isOnlineGame: false, myPlayerIndex: -1 });
+
+    rt.__test.elements.confirmModal.style.display = 'flex';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.btnSkip.disabled = false;
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'post-build-ui-blocked');
+    assert.ok(freezeSnapshot.snapshot.allowedActions.includes('nextTurn'));
+    assert.ok(freezeSnapshot.snapshot.visibleModals.includes('confirmModal'));
+    assert.strictEqual(freezeSnapshot.snapshot.myPlayerIndex, -1);
+    assert.strictEqual(freezeSnapshot.snapshot.ui.btnSkip.disabled, false);
+    assert.strictEqual(freezeSnapshot.snapshot.ui.btnSkip.ancestorBlocked, true);
+    assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+});
+
+runTest('integration: 正当なconfirmModal表示中はwatchdogが閉じない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+
+    rt.onBuildCard('麦畑');
+    assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, true);
+    assert.strictEqual(rt.window.__machikoroConfirmModalOpen, true);
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, true);
+    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.strictEqual(reportCall, undefined);
+});
+
 runTest('integration: client側debug error reportを手動送信できる', () => {
     const rt = loadIntegrationRuntime();
     assert.strictEqual(typeof rt.window.__machikoroSendTestErrorReport, 'function');

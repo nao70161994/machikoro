@@ -892,7 +892,15 @@ function closeAccessibleModal(id, options = {}) {
     lastModalFocus = null;
 }
 
+function setConfirmModalAwaitingChoice(value) {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) root.__machikoroConfirmModalOpen = !!value;
+    } catch (_) {}
+}
+
 function closeConfirmModal(accepted) {
+    setConfirmModalAwaitingChoice(false);
     closeAccessibleModal('confirmModal');
 }
 
@@ -1122,12 +1130,13 @@ function showConfirm(message, onOk) {
     }
     messageEl.textContent = message;
     openAccessibleModal('confirmModal');
+    setConfirmModalAwaitingChoice(true);
     okBtn.onclick = () => {
-        closeAccessibleModal('confirmModal');
+        closeConfirmModal(true);
         onOk();
     };
     cancelBtn.onclick = () => {
-        closeAccessibleModal('confirmModal');
+        closeConfirmModal(false);
     };
     return true;
 }
