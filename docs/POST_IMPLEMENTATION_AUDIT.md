@@ -899,3 +899,13 @@ Regression coverage:
 
 - `tests/ui.test.js`: `players.length > playerSettings.length` renders without throwing, with normal CPU and human fallback icons.
 - `tests/integration.test.js`: render recovery with shortened `playerSettings` / `cpuPlayers` does not trigger a second `/api/client-error` report and records fallback diagnostics.
+
+### post-build-ui-blocked orphan gameScreen display fix
+
+Observed ntfy reports for `version=86136c7` showed `freezeKind=post-build-ui-blocked` with `phase=build`, `allowedActions` including `nextTurn`, `visibleModals=[]`, and `btnSkip.disabled=false` while `btnSkip.ancestorBlocked=true`. Unlike the prior stale confirm / orphan inert cases, `gameScreen.display="none"` remained in addition to `gameScreen.inert=true`, so clearing only `inert` / `aria-hidden` was not enough to make the enabled skip button clickable.
+
+Fix:
+- `clearGameScreenInertIfNoActiveModal` was expanded into `clearGameScreenLockIfNoActiveModal`, which clears `inert`, `aria-hidden`, pointer lock, and restores `gameScreen.style.display='block'` only for active game snapshots with allowed actions.
+- The recovery is guarded by active game phase, valid current player, allowed actions, and no active blocking modal, so the title/start screen and legitimate modal interactions do not force the game screen open.
+- The freeze classifier now treats a hidden `gameScreen` as a post-build UI block, and button ancestor diagnostics consider hidden `gameScreen` a blocking ancestor.
+- Regression coverage recreates the real notification shape: local game, build phase, `nextTurn` allowed, no visible modals, `gameScreen.display='none'`, `gameScreen.inert=true`, and enabled skip button blocked by its parent.

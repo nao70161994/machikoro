@@ -437,6 +437,105 @@ runTest('integration: active modalなしでgameScreen.inertだけ残ったhuman-
     assert.strictEqual(summary.gameScreen.inert, true);
 });
 
+runTest('integration: gameScreen display none と inert が残ったpost-build lockをwatchdogが復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    hideAllTestModals(rt);
+    rt.__test.setOnlineState({ isOnlineGame: false, myPlayerIndex: -1 });
+    rt.render();
+    hideAllTestModals(rt);
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.btnSkip.disabled = false;
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'post-build-ui-blocked');
+    assert.deepStrictEqual(freezeSnapshot.snapshot.visibleModals, []);
+    assert.ok(freezeSnapshot.snapshot.allowedActions.includes('nextTurn'));
+    assert.strictEqual(freezeSnapshot.snapshot.ui.gameScreen.display, 'none');
+    assert.strictEqual(freezeSnapshot.snapshot.ui.gameScreen.inert, true);
+    assert.strictEqual(freezeSnapshot.snapshot.ui.btnSkip.disabled, false);
+    assert.strictEqual(freezeSnapshot.snapshot.ui.btnSkip.ancestorBlocked, true);
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    const summary = JSON.parse(report.stack.replace(/^FREEZE_SUMMARY /, ''));
+    assert.strictEqual(summary.gameScreen.display, 'none');
+    assert.strictEqual(summary.gameScreen.inert, true);
+});
+
+runTest('integration: title screenではorphan gameScreen displayを勝手に復旧しない', () => {
+    const rt = loadIntegrationRuntime();
+    hideAllTestModals(rt);
+    rt.__test.elements.titleScreen.style.display = 'block';
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, true);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+});
+
+runTest('integration: active modal表示中はgameScreen display復旧を走らせない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    hideAllTestModals(rt);
+    rt.render();
+    hideAllTestModals(rt);
+    rt.__test.elements.cardDetailModal.style.display = 'flex';
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.btnSkip.disabled = false;
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    assert.strictEqual(rt.__test.elements.cardDetailModal.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, true);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.strictEqual(reportCall, undefined);
+});
+
 runTest('integration: 正当な別modal表示中はorphan inert復旧を走らせない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
