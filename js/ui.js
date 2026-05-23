@@ -331,10 +331,9 @@ function renderActiveGameState(current) {
         if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
         prevPlayerIndex = game.currentPlayerIndex;
     }
-    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    document.getElementById("btnRoll").disabled = game.phase !== GAME_PHASES.ROLL || isCPUTurn || !isMyTurn;
+    document.getElementById("btnRoll").disabled = !canShowUiAction('rollDice');
     const btnSkip = document.getElementById("btnSkip");
-    btnSkip.disabled = game.phase !== GAME_PHASES.BUILD || isCPUTurn || game.pendingRenovation > 0 || !isMyTurn;
+    btnSkip.disabled = !canShowUiAction('nextTurn') || game.pendingRenovation > 0;
     btnSkip.textContent = game.builtThisTurn ? "建設完了・ターン終了" : "建設しないでターン終了";
     document.getElementById("btnReroll").style.display = "none";
 
@@ -374,10 +373,19 @@ function currentUiAllowedActions() {
     return new Set();
 }
 
+function isOnlineUiInputBlocked() {
+    if (!isOnlineGame) return false;
+    if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return true;
+    if (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) return true;
+    if (typeof socket !== 'undefined' && (!socket || !socket.connected)) return true;
+    return false;
+}
+
 function isCurrentHumanUiTurn() {
     if (!game) return false;
     const isCPUTurn = Array.isArray(cpuPlayers) && cpuPlayers[game.currentPlayerIndex] !== null;
     if (isCPUTurn) return false;
+    if (isOnlineUiInputBlocked()) return false;
     return !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
 }
 
@@ -549,9 +557,10 @@ function renderBuildMenu() {
     const buildMenu = document.getElementById("buildMenu");
     if (!buildMenu || !game) return;
     const current = game.currentPlayer();
-    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    const canBuild = game.phase === GAME_PHASES.BUILD && isMyTurn && !isCPUTurn && game.pendingRenovation <= 0 && !game.builtThisTurn;
+    const buildGateOpen = game.phase === GAME_PHASES.BUILD && game.pendingRenovation <= 0 && !game.builtThisTurn;
+    const canBuildCardAction = buildGateOpen && canShowUiAction('buildCard');
+    const canBuildLandmarkAction = buildGateOpen && canShowUiAction('buildLandmark');
+    const canBuild = canBuildCardAction || canBuildLandmarkAction;
     const sortedCards = [...CARDS].sort(compareCardsForDisplay);
     const filterDefs = [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫']];
     const filterBtnsHtml = filterDefs.map(([c, label]) =>
@@ -561,15 +570,15 @@ function renderBuildMenu() {
     const cardHtml = visibleCards.map(card => {
         const stock = SHOP_STOCK[card.name];
         if (stock <= 0) return "";
-        const canBuildThis = canBuild && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
+        const canBuildThis = canBuildCardAction && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
         return renderBuildCardButton(card, stock, canBuildThis);
     }).join("");
     const landmarkHtml = Object.entries(current.landmarks).filter(([name]) => enabledLandmarks.has(name)).map(([name, built]) => {
         const cost = Player.landmarkCost(name);
-        const canBuildThis = canBuild && !built && current.coins >= cost;
+        const canBuildThis = canBuildLandmarkAction && !built && current.coins >= cost;
         return renderLandmarkBuildButton(name, built, cost, canBuildThis);
     }).join("");
-    const undoBtn = (undoState && game.builtThisTurn && isMyTurn && !isCPUTurn) ? `<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>` : '';
+    const undoBtn = (undoState && game.builtThisTurn && canShowUiAction('undoBuild')) ? `<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>` : '';
     buildMenu.innerHTML = `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
 }
 

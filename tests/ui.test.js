@@ -66,6 +66,9 @@ function loadUiRuntime() {
         announcerTimer: null,
         cardFilter: '',
         cpuPlayers: [null, null],
+        SHOP_STOCK: { 麦畑: 6, 牧場: 6, パン屋: 6, カフェ: 6, コンビニ: 6 },
+        undoState: null,
+        prevCoins: null,
         lastWinnerName: '',
         winStreak: 0,
         winSoundPlayed: false,
@@ -84,6 +87,7 @@ function loadUiRuntime() {
         renderPending() {},
         renderTutorial() {},
         updateDiceDisplay() {},
+        checkAutoSkip() {},
         playSound() {},
         showCardDetail() {},
         showLandmarkDetail() {},
@@ -376,6 +380,106 @@ runTest('renderPending は allowedActionsFor の先頭pending actionだけを表
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
     assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
+});
+
+runTest('renderActiveGameState は skip/end turn を allowedActions と online gate に同期する', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        name: 'Alice',
+        coins: 5,
+        cards: [],
+        landmarks: { 駅: false },
+        countCardIncludingDormant() { return 0; },
+        isDormant() { return false; },
+    };
+    context.GameManager = { allowedActionsFor(game) { return new Set(game.allowed || []); } };
+    context.game = {
+        phase: 'build',
+        currentPlayerIndex: 0,
+        turnCount: 1,
+        builtThisTurn: false,
+        pendingRenovation: 0,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingIT: false,
+        allowed: [],
+        lastDice1: 0,
+        lastDice2: 0,
+        lastDiceResult: 0,
+        log: [],
+        players: [player],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+    context.cpuPlayers = [null];
+
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+
+    context.game.allowed = ['nextTurn'];
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, false);
+
+    context.isOnlineGame = true;
+    context.myPlayerIndex = 0;
+    context.onlineActionInFlight = true;
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+});
+
+runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedActions と online gate に同期する', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        name: 'Alice',
+        coins: 10,
+        cards: [],
+        landmarks: { 駅: false },
+        countCardIncludingDormant() { return 0; },
+        isDormant() { return false; },
+    };
+    context.GameManager = { allowedActionsFor(game) { return new Set(game.allowed || []); } };
+    context.game = {
+        phase: 'build',
+        currentPlayerIndex: 0,
+        builtThisTurn: false,
+        pendingRenovation: 0,
+        allowed: [],
+        currentPlayer() { return player; },
+    };
+    context.cpuPlayers = [null];
+    context.enabledLandmarks = new Set(['駅']);
+
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildCard"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+    assert.ok(/data-action="buildLandmark"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+
+    context.game.allowed = ['buildCard'];
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildCard"[^>]+data-card-name="麦畑"(?![^>]+disabled)/.test(elements.buildMenu.innerHTML));
+    assert.ok(/data-action="buildLandmark"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+
+    context.game.allowed = ['buildCard', 'buildLandmark'];
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildLandmark"[^>]+data-landmark-name="駅"(?![^>]+disabled)/.test(elements.buildMenu.innerHTML));
+
+    context.isOnlineGame = true;
+    context.myPlayerIndex = 0;
+    context.onlineActionInFlight = true;
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildCard"[^>]+data-card-name="麦畑"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+
+    context.isOnlineGame = false;
+    context.onlineActionInFlight = false;
+    context.game.builtThisTurn = true;
+    context.game.allowed = ['undoBuild'];
+    context.undoState = { cardName: '麦畑' };
+    context.renderBuildMenu();
+    assert.ok(elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+
+    context.game.allowed = [];
+    context.renderBuildMenu();
+    assert.ok(!elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
 });
 
 runTest('UI更新関数は対象DOM欠落時に例外化しない', () => {

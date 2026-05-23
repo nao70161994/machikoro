@@ -245,3 +245,10 @@ npm test
 
 - Dice choice, harbor choice, and pending resolver panels should consult `currentUiAllowedActions()` / `canShowUiAction()` when deciding what to render. Keep handler guards in `main.js`; UI helpers are for display/enabled parity, not authority.
 - Do not mix this work with `ROOM_REPLACED` reconnect handling; that path remains a separate online/restore design item.
+
+## UI build action enabled helper
+
+- Build menu, landmark, skip/end turn, and undo build UI now use `currentUiAllowedActions()` / `canShowUiAction()` in `js/ui.js`. Keep handler authority in `main.js`; the UI helper is only a display/enabled parity layer.
+- Online rendering treats reconnecting, disconnected socket, and `onlineActionInFlight` as input-blocked. Do not enable buttons during those states just because phase/turn ownership looks valid.
+- `buildCard` and `buildLandmark` are checked independently. Avoid collapsing them into one phase-only `canBuild` gate, because restore/pending regressions can expose only one action at a time.
+- `ROOM_REPLACED` remains intentionally separate from this UI parity work.

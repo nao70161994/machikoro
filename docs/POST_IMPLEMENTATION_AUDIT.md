@@ -789,3 +789,16 @@ Regression added:
 
 - Dice/harbor choice UI only renders when the matching allowed action is present.
 - Pending UI renders only the queue head action when that action is allowed; mismatched allowed action and queue head hides the resolver panel instead of showing a stale choice.
+
+### UI action enabled helper follow-up: build controls and online gate
+
+- Build menu, landmark buttons, skip/end turn, and undo build rendering now use the same `currentUiAllowedActions()` / `canShowUiAction()` gate as dice and pending UI.
+- Online UI rendering also treats reconnecting, disconnected socket, and `onlineActionInFlight` as temporary input blocks. This mirrors the handler-side guard in `main.js` and avoids presenting clickable controls while an online action is already in flight.
+- CPU turns and other-player online turns remain display-only: action buttons may be visible as board information, but build/landmark/skip/undo controls are disabled unless the current human player owns the turn and the action is currently allowed.
+- `ROOM_REPLACED` handling was intentionally left untouched; reconnect replacement remains a separate online/restore design item.
+
+Regression added:
+
+- Skip/end turn is disabled when `nextTurn` is absent from allowed actions or an online input block is active.
+- Build card and landmark buttons are enabled independently based on `buildCard` / `buildLandmark`, so a mismatch cannot enable the wrong construction class.
+- Undo build is shown only when `undoBuild` is allowed.

@@ -1908,3 +1908,17 @@
   - signed restore snapshot / server persisted canonical state は引き続き design decision required。
   - hostless restore 本実装、実機 iOS/Android の長時間 online/PWA/reconnect/accessibility 回帰は manual verification required。
   - inline Service Worker update flow の appShell への完全分離は larger refactor のため未実施。
+
+## UI action enabled parity follow-up
+
+- 状態: completed; full verification passed before commit.
+- 変更ファイル:
+  - `js/ui.js`, `tests/ui.test.js`, `docs/POST_IMPLEMENTATION_AUDIT.md`, `docs/AI_HANDOFF.md`, `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - skip/end turn, build card, build landmark, undo build の enabled 表示を `allowedActionsFor` と同期した。
+  - online reconnect / socket disconnected / `onlineActionInFlight` 中は UI 表示側も入力不可として扱うようにした。
+  - build card と landmark は別 action として判定し、片方だけ許可される状態でも別系統を誤って有効化しないようにした。
+  - `ROOM_REPLACED` には触れていない。
+- regression:
+  - skip/end turn が `nextTurn` と online gate に同期することを UI test で固定した。
+  - build/landmark/undo 表示が `buildCard` / `buildLandmark` / `undoBuild` と online gate に同期することを UI test で固定した。
