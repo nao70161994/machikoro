@@ -598,7 +598,7 @@ runTest('buildEV tempo bonus: 購入後の残金を薄く加点できる', () =>
     const wheat = createCardByName('麦畑');
     const breakdown = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, { type: 'card', card: wheat });
     assert.ok(breakdown.tempoBonus > 0);
-    assert.strictEqual(breakdown.total, breakdown.baseEv + breakdown.comboUnlockBonus + breakdown.tempoBonus);
+    assert.strictEqual(breakdown.total, breakdown.baseEv + breakdown.comboUnlockBonus + breakdown.tempoBonus - breakdown.lateBasicDuplicatePenalty);
 });
 
 runTest('buildEV red opponent turn bonus: expert v2 simple は赤カードの相手ターン価値を薄く加点する', () => {
@@ -614,7 +614,7 @@ runTest('buildEV red opponent turn bonus: expert v2 simple は赤カードの相
     assert.strictEqual(blue.redOpponentTurnBonus, 0);
     assert.strictEqual(
         red.total,
-        red.baseEv + red.comboUnlockBonus + red.tempoBonus + red.redOpponentTurnBonus - red.renovationRiskPenalty
+        red.baseEv + red.comboUnlockBonus + red.tempoBonus + red.redOpponentTurnBonus - red.lateBasicDuplicatePenalty - red.renovationRiskPenalty
     );
 });
 
@@ -635,6 +635,27 @@ runTest('buildEV red opponent turn bonus: expert v2 simple は条件付き赤の
     assert.ok(breakdown.redOpponentTurnBonus > 0.1);
 });
 
+
+runTest('buildEV late duplicate guard: expert v2 simple は終盤の低EV基本カード重複だけを減点する', () => {
+    const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple' });
+    const game = new GameManager(4);
+    const player = game.currentPlayer();
+    player.landmarks[LANDMARK_NAMES.STATION] = true;
+    player.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    player.cards = [createCardByName('ピザ屋'), createCardByName('ピザ屋')];
+    player.dormantCards = [];
+
+    const pizza = createCardByName('ピザ屋');
+    const bakery = createCardByName('パン屋');
+    const penalty = cpu._expertV2SimpleLateBasicDuplicatePenalty(game, { type: 'card', card: pizza }, 0.3);
+    const highEv = cpu._expertV2SimpleLateBasicDuplicatePenalty(game, { type: 'card', card: pizza }, 0.8);
+    const bakeryPenalty = cpu._expertV2SimpleLateBasicDuplicatePenalty(game, { type: 'card', card: bakery }, 0.3);
+
+    assert.ok(penalty > 0);
+    assert.strictEqual(highEv, 0);
+    assert.strictEqual(bakeryPenalty, 0);
+});
+
 runTest('buildEV renovation risk: expert v2 simple は改装屋2枚目以降を薄く減点する', () => {
     const cpu = new CPU("expert", { expertPurpose: 'live', expertPreset: 'v2simple' });
     const game = new GameManager(2);
@@ -648,7 +669,7 @@ runTest('buildEV renovation risk: expert v2 simple は改装屋2枚目以降を�
     assert.ok(second.renovationRiskPenalty > 0);
     assert.strictEqual(
         second.total,
-        second.baseEv + second.comboUnlockBonus + second.tempoBonus - second.renovationRiskPenalty
+        second.baseEv + second.comboUnlockBonus + second.tempoBonus - second.lateBasicDuplicatePenalty - second.renovationRiskPenalty
     );
 });
 

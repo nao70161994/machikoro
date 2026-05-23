@@ -3368,18 +3368,41 @@ class CPU {
             ? this._expectedDiceScoreWithHarbor(clone, true)
             : -Infinity;
         const baseEv = Math.max(oneScore, twoScore);
+        const beforeOneScore = this._expectedDiceScoreWithHarbor(game, false);
+        const beforeTwoScore = game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]
+            ? this._expectedDiceScoreWithHarbor(game, true)
+            : -Infinity;
+        const deltaEv = baseEv - Math.max(beforeOneScore, beforeTwoScore);
         const comboUnlockBonus = this._expertV2SimpleComboUnlockBonus(game, option, shopStock);
         const tempoBonus = this._expertV2SimpleBuildTempoBonus(clone);
         const redOpponentTurnBonus = this._expertV2SimpleRedOpponentTurnBonus(game, option);
+        const lateBasicDuplicatePenalty = this._expertV2SimpleLateBasicDuplicatePenalty(game, option, deltaEv);
         const renovationRiskPenalty = this._expertV2SimpleRenovationRiskPenalty(game, option);
         return {
             baseEv,
+            deltaEv,
             comboUnlockBonus,
             tempoBonus,
             redOpponentTurnBonus,
+            lateBasicDuplicatePenalty,
             renovationRiskPenalty,
-            total: baseEv + comboUnlockBonus + tempoBonus + redOpponentTurnBonus - renovationRiskPenalty,
+            total: baseEv + comboUnlockBonus + tempoBonus + redOpponentTurnBonus - lateBasicDuplicatePenalty - renovationRiskPenalty,
         };
+    }
+
+    _expertV2SimpleLateBasicDuplicatePenalty(game, option, deltaEv) {
+        if (!this._isExpertV2Simple() || !option || option.type !== 'card' || !option.card) return 0;
+        if (!game || game.players.length < 4) return 0;
+        const current = game.currentPlayer();
+        if (!current || current.landmarks[LANDMARK_NAMES.SHOPPING_MALL]) return 0;
+        const remaining = this._remainingEnabledLandmarks(current, game).length;
+        if (remaining > 4) return 0;
+        const card = option.card;
+        const basicNames = new Set(['コンビニ', 'ピザ屋', 'バーガーショップ', '食品倉庫']);
+        if (!basicNames.has(card.name)) return 0;
+        if (current.countCard(card.name) < 2) return 0;
+        if (Number.isFinite(deltaEv) && deltaEv > 0.45) return 0;
+        return current.countCard(card.name) >= 3 ? 0.75 : 0.45;
     }
 
     _expertV2SimpleRedOpponentTurnBonus(game, option) {

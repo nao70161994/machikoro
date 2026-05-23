@@ -371,3 +371,33 @@ Conclusion:
 - The most concrete flip candidate is late basic duplicate suppression before `ショッピングモール`, but the useful version also suppresses some winning normalCrowd lines.
 - This is not safe to adopt as a default rule yet. Future work should collect a paired before/after decision trace for the -3pt normalCrowd regression and look for an additional condition that distinguishes harmful duplicates from productive repeat-buy tempo.
 - Do not retest broad duplicate penalties; previous 4th-copy and broad duplicate attempts already showed that repeat buys are often part of winning behavior.
+
+## 2026-05-23 late duplicate guard refinement
+
+The first late basic duplicate guard improved strong crowd / allStrong4 but was rejected because 100-game seed 11 normalCrowd fell from 60.0% to 57.0%. A before/after trace pass then focused on baseline-win / guard-loss normalCrowd games.
+
+Trace signal:
+
+- Many baseline-win / guard-loss normalCrowd games used low-cost repeated `パン屋` buys as harmless tempo fillers before the final landmark race.
+- Those `パン屋` repeats often had low immediate EV, so the broad guard classified them as bad duplicates even when they kept the normalCrowd line moving.
+- Strong-side gains did not require penalizing `パン屋`; excluding it kept the rule explainable and reduced the normalCrowd regression.
+
+Adopted rule:
+
+> In 4-player games, if `ショッピングモール` is still missing and only four or fewer landmarks remain, lightly penalize another low-EV duplicate of `コンビニ`, `ピザ屋`, `バーガーショップ`, or `食品倉庫`. Do not penalize `パン屋` repeats.
+
+Benchmark comparison against the live `business=simple` baseline:
+
+| check | baseline | refined guard | delta |
+| --- | ---: | ---: | ---: |
+| 50-game seeds 11,12,13 strongWeighted | 43.3% | 44.8% | +1.5pt |
+| 50-game seeds 11,12,13 strongMin | 37.3% | 39.3% | +2.0pt |
+| 50-game seeds 11,12,13 strong crowd | 51.3% | 52.0% | +0.7pt |
+| 50-game seeds 11,12,13 allStrong4 | 37.3% | 39.3% | +2.0pt |
+| 50-game seeds 11,12,13 normalCrowd | 58.0% | 58.0% | +0.0pt |
+| 100-game seed 11 normalCrowd | 60.0% | 60.0% | +0.0pt |
+| 100-game seed 11 strongWeighted | 51.1% | 52.3% | +1.2pt |
+| 100-game seed 11 strongMin / allStrong4 | 33.0% | 36.0% | +3.0pt |
+| 100-game seed 11 strong crowd | 47.0% | 47.0% | +0.0pt |
+
+Decision: adopted. The rule is one small guard, preserves normalCrowd in the confirmation run, and improves the weaker allStrong4 / strongMin tail without touching RL or broad tuning coefficients.
