@@ -11,6 +11,8 @@ jobs:
   release-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      NTFY_CI_TOPIC: ${{ secrets.NTFY_CI_TOPIC }}
 
     steps:
       - uses: actions/checkout@v4
@@ -43,3 +45,25 @@ jobs:
 
       - name: Release pseudo E2E gate
         run: npm run test:release
+
+      - name: Notify CI failure
+        if: ${{ failure() && env.NTFY_CI_TOPIC != '' }}
+        continue-on-error: true
+        env:
+          FAILED_JOB: release-test
+        run: |
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          COMMIT="${GITHUB_SHA}"
+          SHORT_COMMIT="${COMMIT:0:7}"
+          cat > /tmp/ntfy-ci-message.txt << EOF_NTFY
+          workflow=${GITHUB_WORKFLOW}
+          branch=${GITHUB_REF_NAME}
+          commit=${SHORT_COMMIT}
+          failed_job=${FAILED_JOB}
+          run=${RUN_URL}
+          EOF_NTFY
+          curl -fsS -X POST "https://ntfy.sh/${NTFY_CI_TOPIC}" \
+            -H "Title: [Machikoro CI] ${GITHUB_WORKFLOW} failed" \
+            -H "Priority: 4" \
+            -H "Tags: warning,github_actions" \
+            --data-binary @/tmp/ntfy-ci-message.txt

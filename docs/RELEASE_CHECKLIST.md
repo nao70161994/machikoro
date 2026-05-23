@@ -29,6 +29,7 @@ Required / platform-provided:
 Recommended for production observability:
 
 - `NTFY_TOPIC`: ntfy topic for browser error notification. Without it, client error reports only write `console.warn` on the server.
+- GitHub Secret `NTFY_CI_TOPIC`: optional topic for GitHub Actions failure notifications. Set it in GitHub repository `Settings > Secrets and variables > Actions > Repository secrets`; success runs do not notify, and unset secrets skip the notification step.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: comma-separated allowed origins, for example `https://machikoro-9jv2.onrender.com`. Same-origin reports are always accepted; cross-origin reports are rejected unless allowlisted.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token for `/api/client-error` and `/api/client-error-test`. Leave unset unless the client/test caller will send `X-Client-Error-Token` or `Authorization: Bearer`.
 - `TRUST_PROXY=1`: set only when deployed behind a trusted proxy and paired with `CLIENT_ERROR_ALLOWED_ORIGINS` for the public HTTPS origin. Leave unset for direct serving.
@@ -55,6 +56,7 @@ Android/TWA build workflow secrets:
 - Game lifecycle notifications are opt-in only. Confirm `localStorage.machikoroLifecycleNotificationsEnabled` is unset by default, and enable it only on the browser profiles used for production monitoring.
 - Lifecycle ntfy payloads must not include player names, room codes, reconnect tokens, card inventories, or full snapshots.
 - Do not leave a public or guessable `NTFY_TOPIC` in production.
+- If CI failure notifications are needed, set GitHub Secret `NTFY_CI_TOPIC` to a separate hard-to-guess topic. The workflow posts only on failure and includes workflow name, branch, short commit, failed job, and the Actions run URL.
 
 ## Ads Placeholder Safety
 

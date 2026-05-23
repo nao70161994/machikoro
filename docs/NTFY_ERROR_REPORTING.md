@@ -174,3 +174,37 @@ Spam controls:
 - A short localStorage start suppression window prevents reload/start button repeats from sending multiple start notifications.
 - The server deduplicates identical lifecycle event/session pairs for several minutes and rate limits the endpoint per sender.
 - Self-play and CLI benchmark loops do not load the browser app shell, so they do not send lifecycle notifications.
+
+## GitHub Actions CI failure notifications
+
+GitHub Actions can send ntfy notifications when a CI job fails. This is separate from Render/browser error reporting and uses a repository secret instead of a server environment variable.
+
+Setup:
+
+1. Open the GitHub repository settings.
+2. Go to `Secrets and variables > Actions > Repository secrets`.
+3. Add `NTFY_CI_TOPIC` with a hard-to-guess topic name, ideally separate from `NTFY_TOPIC`.
+4. Subscribe to that topic in the ntfy app or web UI.
+
+The workflows in `.github/workflows/` post only when `failure()` is true. If `NTFY_CI_TOPIC` is unset, the notify step is skipped. Successful runs do not notify.
+
+CI failure notifications include only compact build metadata:
+
+- workflow name
+- branch
+- short commit hash
+- failed job name
+- GitHub Actions run URL
+
+Example CI notification:
+
+```text
+Title: [Machikoro CI] Release pseudo E2E failed
+workflow=Release pseudo E2E
+branch=main
+commit=1a84285
+failed_job=release-test
+run=https://github.com/nao70161994/machikoro/actions/runs/123456789
+```
+
+Keep `NTFY_CI_TOPIC` private. Anyone who knows the topic can subscribe to CI failure messages on ntfy.sh.
