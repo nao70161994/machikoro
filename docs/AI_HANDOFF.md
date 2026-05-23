@@ -252,3 +252,8 @@ npm test
 - Online rendering treats reconnecting, disconnected socket, and `onlineActionInFlight` as input-blocked. Do not enable buttons during those states just because phase/turn ownership looks valid.
 - `buildCard` and `buildLandmark` are checked independently. Avoid collapsing them into one phase-only `canBuild` gate, because restore/pending regressions can expose only one action at a time.
 - `ROOM_REPLACED` remains intentionally separate from this UI parity work.
+
+## UI action gate final audit
+
+- Keep `isOnlineUiInputBlocked()` aligned with `canRunLocalHumanAction()`: missing socket, disconnected socket, reconnecting, and `onlineActionInFlight` all mean display-side controls must be disabled/hidden.
+- UI tests now cover CPU turns, other-player online turns, reconnecting/disconnected/missing socket, and pending resolver hiding while online input is blocked. Update those tests when changing online action gate semantics.

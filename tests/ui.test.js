@@ -423,8 +423,72 @@ runTest('renderActiveGameState は skip/end turn を allowedActions と online g
 
     context.isOnlineGame = true;
     context.myPlayerIndex = 0;
+    context.onlineActionInFlight = false;
+    context.socket = { connected: true };
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, false);
+
     context.onlineActionInFlight = true;
     context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+
+    context.onlineActionInFlight = false;
+    context.isReconnectingOnline = true;
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+
+    context.isReconnectingOnline = false;
+    context.socket = { connected: false };
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+
+    delete context.socket;
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+});
+
+runTest('renderActiveGameState は CPUターンと他人オンラインターンで主要ボタンを無効にする', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        name: 'Alice',
+        coins: 5,
+        cards: [],
+        landmarks: { 駅: false },
+        countCardIncludingDormant() { return 0; },
+        isDormant() { return false; },
+    };
+    context.GameManager = { allowedActionsFor(game) { return new Set(game.allowed || []); } };
+    context.game = {
+        phase: 'roll',
+        currentPlayerIndex: 0,
+        turnCount: 1,
+        builtThisTurn: false,
+        pendingRenovation: 0,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingIT: false,
+        allowed: ['rollDice', 'nextTurn'],
+        lastDice1: 0,
+        lastDice2: 0,
+        lastDiceResult: 0,
+        log: [],
+        players: [player],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+
+    context.cpuPlayers = [{ difficulty: 'normal' }];
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnRoll.disabled, true);
+    assert.strictEqual(elements.btnSkip.disabled, true);
+
+    context.cpuPlayers = [null];
+    context.isOnlineGame = true;
+    context.myPlayerIndex = 1;
+    context.socket = { connected: true };
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnRoll.disabled, true);
     assert.strictEqual(elements.btnSkip.disabled, true);
 });
 
@@ -465,7 +529,21 @@ runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedAction
 
     context.isOnlineGame = true;
     context.myPlayerIndex = 0;
+    context.socket = { connected: true };
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildCard"[^>]+data-card-name="麦畑"(?![^>]+disabled)/.test(elements.buildMenu.innerHTML));
+
     context.onlineActionInFlight = true;
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildCard"[^>]+data-card-name="麦畑"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+
+    context.onlineActionInFlight = false;
+    context.isReconnectingOnline = true;
+    context.renderBuildMenu();
+    assert.ok(/data-action="buildCard"[^>]+data-card-name="麦畑"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+
+    context.isReconnectingOnline = false;
+    context.socket = { connected: false };
     context.renderBuildMenu();
     assert.ok(/data-action="buildCard"[^>]+data-card-name="麦畑"[^>]+disabled/.test(elements.buildMenu.innerHTML));
 
@@ -480,6 +558,47 @@ runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedAction
     context.game.allowed = [];
     context.renderBuildMenu();
     assert.ok(!elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+});
+
+runTest('renderPending は online input block 中に resolver を表示しない', () => {
+    const { context, elements } = loadUiRuntime();
+    const makePlayer = (name, cardNames) => ({
+        name,
+        coins: 3,
+        cards: cardNames.map(cardName => ({ name: cardName, color: 'blue' })),
+        getMinorCards() { return this.cards; },
+        isDormant() { return false; },
+    });
+    context.GameManager = {
+        nextPendingActionFor() { return { action: 'resolveTV', field: 'pendingTV', count: 1 }; },
+        allowedActionsFor(game) { return new Set(game.allowed || []); },
+    };
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        allowed: ['resolveTV'],
+        pendingTV: 1,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        players: [makePlayer('Alice', ['麦畑']), makePlayer('Bob', ['牧場'])],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+    context.cpuPlayers = [null, null];
+    context.isOnlineGame = true;
+    context.myPlayerIndex = 0;
+    context.socket = { connected: true };
+
+    context.renderPending();
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
+
+    context.isReconnectingOnline = true;
+    context.renderPending();
+    assert.strictEqual(elements.pendingModal.style.display, 'none');
+    assert.strictEqual(elements.pendingMenu.innerHTML, '');
 });
 
 runTest('UI更新関数は対象DOM欠落時に例外化しない', () => {

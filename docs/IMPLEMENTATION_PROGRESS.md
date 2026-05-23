@@ -1922,3 +1922,14 @@
 - regression:
   - skip/end turn が `nextTurn` と online gate に同期することを UI test で固定した。
   - build/landmark/undo 表示が `buildCard` / `buildLandmark` / `undoBuild` と online gate に同期することを UI test で固定した。
+
+## UI action gate final audit
+
+- 状態: completed; verification/commit pending.
+- 変更ファイル:
+  - `js/ui.js`, `tests/ui.test.js`, `docs/POST_IMPLEMENTATION_AUDIT.md`, `docs/AI_HANDOFF.md`, `docs/IMPLEMENTATION_PROGRESS.md`
+- 実装内容:
+  - UI 表示側の online input block 判定を handler 側と揃え、socket 未定義も操作不可にした。
+  - CPUターン、他人onlineターン、onlineActionInFlight、reconnecting、socket disconnected/missing、pending resolver の gate 回帰テストを追加した。
+  - `buildCard` / `buildLandmark` / `undoBuild` / `nextTurn` の独立表示gateを最終確認した。
+  - `ROOM_REPLACED` には触れていない。

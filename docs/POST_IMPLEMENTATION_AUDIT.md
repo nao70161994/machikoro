@@ -802,3 +802,9 @@ Regression added:
 - Skip/end turn is disabled when `nextTurn` is absent from allowed actions or an online input block is active.
 - Build card and landmark buttons are enabled independently based on `buildCard` / `buildLandmark`, so a mismatch cannot enable the wrong construction class.
 - Undo build is shown only when `undoBuild` is allowed.
+
+### UI action gate final audit
+
+- Final UI action gate audit found one display-side mismatch: online UI considered a missing socket as not blocked, while handler-side guards in `main.js` reject online actions when `socket` is missing. `isOnlineUiInputBlocked()` now treats missing socket, disconnected socket, reconnecting, and `onlineActionInFlight` as input-blocked.
+- Added regression coverage for local human turn, CPU turn, other-player online turn, in-flight online action, reconnecting, disconnected socket, missing socket, independent `buildCard` / `buildLandmark` / `undoBuild` gating, and pending resolver queue-head + allowedActions parity.
+- No change was made to `ROOM_REPLACED` or reconnect replacement semantics.

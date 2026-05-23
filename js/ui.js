@@ -377,7 +377,7 @@ function isOnlineUiInputBlocked() {
     if (!isOnlineGame) return false;
     if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return true;
     if (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) return true;
-    if (typeof socket !== 'undefined' && (!socket || !socket.connected)) return true;
+    if (typeof socket === 'undefined' || !socket || socket.connected === false) return true;
     return false;
 }
 
