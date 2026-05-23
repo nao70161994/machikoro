@@ -18,7 +18,7 @@ npm run test:cpu
 npm run test:rl
 ```
 
-CI also runs `npm run test:static`, `npm test`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`.
+CI also runs `npm run test:static`, `npm test`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`.
 
 ## Render Environment Variables
 

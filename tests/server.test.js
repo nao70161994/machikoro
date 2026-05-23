@@ -44,6 +44,7 @@ const {
     isActiveRoomSocket,
     findAcceptedClientAction,
     rememberAcceptedClientAction,
+    acceptedClientActionRefs,
     generateRoomId,
     isValidRoomId,
     canonicalizeActionData,
@@ -257,6 +258,20 @@ runTest('client error payload は必要項目を正規化し長すぎるstackを
     assert.strictEqual(normalized.report.roomId, 'ABCD');
     assert.strictEqual(normalized.report.playerIndex, 1);
     assert.ok(normalized.report.stack.length <= CLIENT_ERROR_LIMITS.maxStackLength + 3);
+});
+
+runTest('client error payload はstackとfilenameのURL query/hashを除去する', () => {
+    const normalized = normalizeClientErrorPayload({
+        message: 'boom',
+        stack: 'Error: boom\n at https://machikoro.example.test/js/ui.js?token=secret#frag:10:2',
+        filename: 'https://machikoro.example.test/js/ui.js?room=SECRET#hash',
+    }, 1700000000000);
+
+    assert.strictEqual(normalized.ok, true);
+    assert.ok(!normalized.report.stack.includes('secret'));
+    assert.ok(!normalized.report.filename.includes('SECRET'));
+    assert.ok(normalized.report.stack.includes('https://machikoro.example.test/js/ui.js'));
+    assert.strictEqual(normalized.report.filename, 'https://machikoro.example.test/js/ui.js');
 });
 
 runTest('client error rate limit と duplicate suppression は短時間の連投を抑止する', () => {
@@ -869,6 +884,25 @@ runTest('accepted clientActionId は再送時に既存actionAcceptedを返すた
     assert.strictEqual(findAcceptedClientAction(room, 'client-action-1', 0), actionEntry);
     assert.strictEqual(findAcceptedClientAction(room, 'client-action-1', 1), null);
     assert.strictEqual(findAcceptedClientAction(room, 'missing', 0), null);
+});
+
+runTest('acceptedClientActionRefs は reconnect ack metadata 用の最小refを返す', () => {
+    const room = makeRoom();
+    room.acceptedClientActions = {};
+    const actionEntry = {
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 1,
+        seq: 11,
+        clientActionId: 'client-action-ref',
+    };
+
+    rememberAcceptedClientAction(room, actionEntry);
+
+    assert.deepStrictEqual(acceptedClientActionRefs(room), [{ playerIndex: 1, clientActionId: 'client-action-ref', seq: 11 }]);
+    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const occurrences = source.match(/acceptedClientActions: acceptedClientActionRefs/g) || [];
+    assert.ok(occurrences.length >= 3);
 });
 
 runTest('accepted clientActionId はactionLog内の既存entryからも見つけられる', () => {

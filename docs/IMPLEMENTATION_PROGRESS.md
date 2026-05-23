@@ -1749,7 +1749,7 @@
 
 ## Continuous review Cycle 9 restore ack / release gate / diagnostics polish
 
-- 状態: implemented; full suite passed, commit/push pending.
+- 状態: implemented; full suite passed and pushed in `0bd8ba0`.
 - 変更ファイル:
   - `server.js`, `js/online.js`, `tests/server.test.js`, `tests/online.test.js`
   - `js/appShell.js`, `tests/main.test.js`, `tests/release-e2e.test.js`, `docs/NTFY_ERROR_REPORTING.md`
@@ -1763,4 +1763,27 @@
   - client error 通知は URL query/hash を送らず、ntfy 本文では roomId を hash 表示にする。rate bucket は期限切れ prune を行う。
 - deferred:
   - modal background inert 化、iOS Safari install guidance、PWA banner state machine は Medium backlog。
+  - server persisted canonical state / signed restore snapshot は design decision required。
+
+
+## Continuous review Cycle 10 reconnect ack / modal inert / release contract
+
+- 状態: implemented; full suite passed; commit/push pending.
+- 変更ファイル:
+  - `server.js`, `tests/server.test.js`
+  - `js/ui.js`, `tests/ui.test.js`
+  - `js/appShell.js`, `index.html`, `tests/main.test.js`
+  - `scripts/validate-rl-registry.js`, `tests/validate-rl-registry.test.js`
+  - `tests/helpers/test-utils.js`, `tests/release-e2e.test.js`
+  - docs maintenance files
+- 実装内容:
+  - 通常 `rejoinRoom` の `rejoinData` にも `acceptedClientActions` を含め、snapshot 圧縮後の pending 再送/二重適用を防ぐ契約を全復元経路で揃えた。
+  - modal 表示中は title/game/PWA banner roots を `inert` + `aria-hidden` にし、close/Escape で既存属性を復元する。
+  - PWA update banner 表示中は install banner を出さず、install/update banner が重ならないようにした。
+  - client-error の stack/filename URL は query/hash を削除してから保存/通知する。
+  - RL registry validation は同一条件で結果だけ異なる eval を warning にし、best eval 選択の曖昧さを見える化する。
+  - async `runTest` が Promise rejection を拾うようにし、release pseudo-E2E の非同期失敗を見落とさない。
+- deferred:
+  - iOS Safari 専用 install guidance と PWA bottom spacer は実機表示確認が必要。
+  - client-error endpoint の trust proxy / no-origin production policy は deploy topology の設計判断が必要。
   - server persisted canonical state / signed restore snapshot は design decision required。

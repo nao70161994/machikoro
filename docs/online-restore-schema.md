@@ -20,7 +20,7 @@
 | `onlineGameStart` | client | 復元の root payload。`schemaVersion` と開始時設定を含む。 | schema mismatch、壊れた JSON、再接続不能な session |
 | `onlineActionLog` | client | snapshot 以降の action 差分。各 entry は replay 可能な action。 | snapshot 圧縮時、schema mismatch |
 | `onlineStateSnapshot` | client | `GameManager` 相当の復元用状態。action log 圧縮後の基準点。 | 新規ゲーム開始、schema mismatch、壊れた JSON |
-| `onlinePendingAction` | client | 送信済みだが ack 前の action。再接続時に重複しない形で action log へ戻す。 | ack、reset、schema mismatch |
+| `onlinePendingAction` | client | 送信済みだが ack 前の action。再接続時に canonical log/snapshot または `rejoinData.acceptedClientActions` と照合し、重複しない場合だけ再送する。 | ack、reset、schema mismatch |
 | `onlineSession` | client | タイトル画面の再接続 UI 用 session 情報。 | reconnect failure、明示削除 |
 
 ## `onlineGameStart`
@@ -41,6 +41,10 @@
 | `hostPlayerIndex` | yes | host 復元 / 移譲の基準。server-side player index。 |
 | `hostEpoch` | optional | 復元 bundle の新旧比較に使う。欠落時は `0` 扱い。 |
 | `actionSeq` | optional | compatibility / local sequencing metadata。復元置換の freshness は `stateSnapshot.actionSeq + replayable actionLog count` を使い、この値だけでは既存roomを上書きしない。 |
+
+## `rejoinData.acceptedClientActions`
+
+`acceptedClientActions` は server が受理済みの `clientActionId` を最小 ref として返す ack metadata です。形式は `{ playerIndex, clientActionId, seq }` の配列です。これは action replay の正本ではなく、snapshot 圧縮後に client の `onlinePendingAction` が canonical `actionLog` に見えない場合でも、再送と `actionAccepted` 二重適用を避けるためだけに使います。通常 `rejoinRoom` と server restart 後の `recreateRoom` の両方で返してください。
 
 ## `onlineActionLog` / Server `actionLog`
 

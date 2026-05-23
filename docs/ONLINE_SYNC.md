@@ -88,9 +88,9 @@ Reconnect:
 1. Client reads `onlineSession` and emits `rejoinRoom`.
 2. Server validates reconnect token hash for the requested player.
 3. Server detaches any stale socket for that player.
-4. Server emits `rejoinData` with canonical `gameStartPayload`, `stateSnapshot`, `actionLog`, host fields.
+4. Server emits `rejoinData` with canonical `gameStartPayload`, `stateSnapshot`, `actionLog`, host fields, and `acceptedClientActions`.
 5. Client rebuilds game from payload, snapshot, then remaining log.
-6. Client clears pending action if canonical log or snapshot includes it; otherwise it may resend only if current state still allows it.
+6. Client clears pending action if canonical log, snapshot, or `acceptedClientActions` includes it; otherwise it may resend only if current state still allows it.
 
 Server restart restore:
 
@@ -210,7 +210,7 @@ Socket events used by the online flow:
 - `gameAction`: client -> server for requested action; server -> clients for accepted remote action.
 - `actionAccepted`: server -> sender, canonical accepted action.
 - `rejoinRoom`: client -> server, reconnect credentials.
-- `rejoinData`: server -> client, canonical restore bundle.
+- `rejoinData`: server -> client, canonical restore bundle. Includes `acceptedClientActions` as non-replay ack metadata for compacted pending actions.
 - `recreateRoom`: host client -> server, local restore bundle after server restart.
 - `playerRejoined`: server -> room, log display.
 - `playerDisconnected`: server -> room, log display.

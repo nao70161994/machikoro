@@ -19,6 +19,7 @@ function loadMainRuntime(options = {}) {
         tabOnline: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
+        pwaUpdateBanner: makeElement({ style: { display: 'none' } }),
         diceChoose: makeElement({
             addEventListener(name, handler) { eventHandlers[`diceChoose:${name}`] = handler; },
         }),
@@ -998,6 +999,22 @@ runTest('appShell beforeinstallprompt は標準promptを止めてバナーから
     rt.pwaInstallPrompt();
     assert.strictEqual(prompted, true);
     assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'none');
+});
+
+runTest('appShell beforeinstallprompt は更新バナー表示中のinstallバナー重複を抑止する', () => {
+    const rt = loadMainRuntime();
+    let prevented = false;
+    const event = {
+        preventDefault() { prevented = true; },
+        prompt() {},
+        userChoice: { then() {} },
+    };
+
+    rt.__test.elements.pwaUpdateBanner.style.display = 'block';
+    rt.__test.eventHandlers.beforeinstallprompt(event);
+
+    assert.strictEqual(prevented, true);
+    assert.notStrictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
 });
 
 runTest('appShell bindPwaInstallHandlers は standalone では購読しない', () => {

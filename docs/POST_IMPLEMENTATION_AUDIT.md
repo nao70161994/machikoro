@@ -562,3 +562,23 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - Modal background inert、iOS Safari install guidance、PWA banner arbitration は安全だが別 Cycle の Medium backlog。
 - Restore の signed/persisted canonical state は design decision required。
+
+### Continuous review Cycle 10 reconnect ack / modal inert / release contract
+
+確認した内容:
+
+- Critical: 未コミット差分の PWA install banner 抑止条件が fixture 上で常時抑止になる regressions と、release pseudo-E2E の async rejection 見落としを確認した。
+- High: 通常 `rejoinRoom` が `acceptedClientActions` を返さず、recreate path と reconnect contract がズレる経路を確認した。RL registry の同条件 eval 重複も採用判断の曖昧さとして確認した。
+
+修正済み:
+
+- 通常 rejoin / recreate の両方で `acceptedClientActions` を返す契約を test と docs に固定した。
+- PWA install banner は update banner が明示表示中の時だけ抑止し、update 表示時は install banner を閉じる。
+- modal background roots を inert/aria-hidden にし、close 時に元の状態へ戻す。
+- client-error stack/filename の URL query/hash を取り除く。
+- `runTest` を Promise 対応にし、release gate の async test failure を検出する。
+
+残課題:
+
+- iOS Safari install guidance、PWA bottom safe-area spacer、trust-proxy 運用方針は実機/デプロイ判断待ち。
+- server persisted canonical state / signed restore snapshot は design decision required。

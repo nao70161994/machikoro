@@ -53,6 +53,33 @@ runTest('validateRegistry は重複idをエラーにする', () => {
     assert.ok(result.errors.some(error => error.includes('重複')));
 });
 
+runTest('validateRegistry は同一条件で結果だけ違うevalを警告する', () => {
+    const baseEval = {
+        date: '2026-05-07',
+        type: 'js-lineup',
+        gamesPerLineup: 100,
+        evaluationConfig: { seed: 1, maxSteps: 1200 },
+        lineups: { 'rl+normal+normal+strong': { winRate: 0.4 } },
+    };
+    const result = validateRegistry({
+        models: [
+            {
+                id: 'a',
+                status: 'candidate',
+                path: 'a.json',
+                evals: [
+                    baseEval,
+                    { ...baseEval, lineups: { 'rl+normal+normal+strong': { winRate: 0.5 } } },
+                ],
+            },
+        ],
+        portfolioPolicy: { recommendedActiveModels: [{ id: 'a' }] },
+    });
+
+    assert.strictEqual(result.ok, true);
+    assert.ok(result.warnings.some(warning => warning.includes('同一条件の eval')));
+});
+
 runTest('validateRegistry は active model の評価ゲーム数不足を警告する', () => {
     const result = validateRegistry({
         evaluationPolicy: {

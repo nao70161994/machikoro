@@ -71,6 +71,61 @@ function hasLineupCoverage(evalEntry, minimumLineups = 1, playerCount = null) {
     return keys.filter(key => String(key).split('+').filter(Boolean).length === playerCount).length >= minimumLineups;
 }
 
+function stableConfigValue(value) {
+    if (Array.isArray(value)) return value.map(stableConfigValue);
+    if (value && typeof value === 'object') {
+        return Object.keys(value).sort().reduce((acc, key) => {
+            acc[key] = stableConfigValue(value[key]);
+            return acc;
+        }, {});
+    }
+    return value;
+}
+
+function evalIdentityKey(entry) {
+    const opponents = entry && entry.opponents ? Object.keys(entry.opponents).sort() : [];
+    const lineups = entry && entry.lineups ? Object.keys(entry.lineups).sort() : [];
+    return JSON.stringify({
+        date: entry && entry.date || '',
+        type: entry && entry.type || '',
+        gamesPerOpponent: entry && entry.gamesPerOpponent || 0,
+        gamesPerLineup: entry && entry.gamesPerLineup || 0,
+        checkpointRank: entry && entry.checkpointRank || null,
+        evaluationConfig: stableConfigValue(entry && entry.evaluationConfig || null),
+        runtimeFallback: entry && entry.runtimeFallback || null,
+        baselineModel: entry && entry.baselineModel || null,
+        projection: entry && entry.projection || null,
+        maxSteps: entry && entry.maxSteps || null,
+        opponents,
+        lineups,
+    });
+}
+
+function evalMetricsKey(entry) {
+    return JSON.stringify(stableConfigValue({
+        opponents: entry && entry.opponents || {},
+        lineups: entry && entry.lineups || {},
+        aggregate: entry && entry.aggregate || null,
+        winRate: entry && entry.winRate || null,
+    }));
+}
+
+function warnAmbiguousDuplicateEvals(model, warnings) {
+    const evals = Array.isArray(model && model.evals) ? model.evals : [];
+    const seen = new Map();
+    for (const entry of evals) {
+        const key = evalIdentityKey(entry || {});
+        const previous = seen.get(key);
+        if (!previous) {
+            seen.set(key, entry || {});
+            continue;
+        }
+        if (evalMetricsKey(previous) !== evalMetricsKey(entry || {})) {
+            warnings.push(String(model.id || 'unknown') + ': 同一条件の eval が複数あり結果が異なります (' + String(entry && entry.date || 'no-date') + ' ' + String(entry && entry.type || 'unknown') + ')');
+        }
+    }
+}
+
 function isMultiplayerRecommendedRole(role) {
     const value = String(role || '');
     return value.includes('3p-4p') || value.includes('3p-10p') || value.includes('multiplayer');
@@ -180,6 +235,7 @@ function validateRegistry(registry, options = {}) {
         if ((model.status === 'adopted' || model.status === 'candidate') && (!model.style || !model.style.label)) {
             warnings.push(`${model.id}: active model に style.label がありません`);
         }
+        warnAmbiguousDuplicateEvals(model, warnings);
     }
 
     const recommended = (((registry.portfolioPolicy || {}).recommendedActiveModels) || []);
@@ -294,6 +350,9 @@ module.exports = {
     modelPathIsPortfolio,
     hasOpponentCoverage,
     hasLineupCoverage,
+    stableConfigValue,
+    evalIdentityKey,
+    warnAmbiguousDuplicateEvals,
     isMultiplayerRecommendedRole,
     isExtendedMultiplayerRecommendedRole,
     hasMinimumLineupGames,

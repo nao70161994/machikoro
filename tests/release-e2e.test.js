@@ -268,6 +268,8 @@ runTest('release ntfy client-error-test は実送信せず mock fetch で通知�
     assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Client Error');
     assert.ok(calls[0].options.body.includes('phase=test'));
     assert.ok(calls[0].options.body.includes('Machikoro ntfy test notification'));
+    assert.ok(calls[0].options.body.includes('room=hash:'));
+    assert.ok(!calls[0].options.body.includes('room=TEST01'));
 });
 
 runTest('release modal/toast は non-blocking 表示、focus trap、Esc close、focus restore を近似する', () => {
@@ -397,6 +399,7 @@ runTest('release workflow と checklist は static safety gate を含む', () =>
     assert.ok(workflow.indexOf('npm run test:static') < workflow.indexOf('npm test'));
     assert.ok(checklist.includes('npm run test:static'));
     assert.ok(checklist.includes('npm run test:smoke'));
+    assert.ok(checklist.includes('Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`'));
     assert.ok(apkWorkflow.includes('npm run test:static'));
     assert.ok(apkWorkflow.includes('npm test'));
     assert.ok(apkWorkflow.indexOf('npm run test:static') < apkWorkflow.indexOf('npm test'));

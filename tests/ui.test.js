@@ -5,6 +5,10 @@ const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/
 function loadUiRuntime() {
     const { localStorage } = createStorage();
     const elements = {
+        titleScreen: makeElement(),
+        gameScreen: makeElement(),
+        pwaUpdateBanner: makeElement(),
+        pwaInstallBanner: makeElement(),
         tabContentLocal: makeElement(),
         tabContentOnline: makeElement(),
         tabContentStats: makeElement(),
@@ -128,10 +132,16 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     assert.strictEqual(elements.rulesModal.style.display, 'flex');
     assert.strictEqual(elements.rulesModal.getAttribute('role'), 'dialog');
     assert.strictEqual(elements.rulesModal.getAttribute('aria-modal'), 'true');
+    assert.strictEqual(elements.titleScreen.inert, true);
+    assert.strictEqual(elements.gameScreen.inert, true);
+    assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), 'true');
 
     context.closeRules();
 
     assert.strictEqual(elements.rulesModal.style.display, 'none');
+    assert.strictEqual(elements.titleScreen.inert, undefined);
+    assert.strictEqual(elements.gameScreen.inert, undefined);
+    assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
 });
 
 runTest('modal keydown handler はTab focus escapeをmodal内へ戻す', () => {
@@ -167,6 +177,18 @@ runTest('modal keydown handler はEscapeで閉じる', () => {
 
     assert.strictEqual(prevented, true);
     assert.strictEqual(elements.rulesModal.style.display, 'none');
+});
+
+runTest('modal close は背景の既存aria-hiddenを復元する', () => {
+    const { context, elements } = loadUiRuntime();
+    elements.gameScreen.setAttribute('aria-hidden', 'false');
+
+    context.showRules();
+    context.handleModalKeydown({ key: 'Escape', preventDefault() {} });
+
+    assert.strictEqual(elements.rulesModal.style.display, 'none');
+    assert.strictEqual(elements.titleScreen.inert, undefined);
+    assert.strictEqual(elements.gameScreen.getAttribute('aria-hidden'), 'false');
 });
 
 runTest('switchTab は stats タブ表示時に renderStats を呼ぶ', () => {

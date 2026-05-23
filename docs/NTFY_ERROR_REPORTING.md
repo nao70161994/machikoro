@@ -99,7 +99,7 @@ If `NTFY_TOPIC` is missing, the endpoint returns a clear warning response:
 {"ok":false,"error":"missing_ntfy_topic","message":"NTFY_TOPIC is not set"}
 ```
 
-A successful test returns `202` and sends a notification with `phase=test`, `room=TEST01`, and the message `Machikoro ntfy test notification`. This notification is explicitly marked as a manual test and does not represent a real client error.
+A successful test returns `202` and sends a notification with `phase=test`, a hashed room label such as `room=hash:e12e115a`, and the message `Machikoro ntfy test notification`. This notification is explicitly marked as a manual test and does not represent a real client error.
 
 ## Server safeguards
 

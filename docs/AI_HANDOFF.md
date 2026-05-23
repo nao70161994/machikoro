@@ -160,7 +160,7 @@ npm test
 - restore rank は replacement 判定で replay-backed seq（snapshot/actionLog）だけを使う。`gameStartPayload.actionSeq` は互換用 metadata として扱う。
 - RL export は `stateSchema` / `actionSchema` を明示し、runtime は既知 schema の action/card count mismatch を早期拒否する。
 - `eval-rl-models` result と registry import は `evaluationConfig` で seed policy を残す。
-- APK workflow は Bubblewrap build 前に `test:static`, `test:pwa`, `test:release` を通す。
+- APK workflow は Bubblewrap build 前に `test:static`, `npm test`, `test:pwa`, `test:release` を通す。
 - game 中の Service Worker update / controllerchange は自動 reload せず banner 表示へ倒す。
 
 ## 2026-05-23 continuous review Cycle 8
@@ -175,3 +175,11 @@ npm test
 - Restore ack guard: `rejoinData.acceptedClientActions` is now part of reconnect semantics. It is a compact list of accepted `clientActionId` refs retained even after action log compaction into canonical snapshot; clients use it only to clear matching pending outbound action, not to replay.
 - Client-error privacy: browser reports send only origin+pathname; ntfy output hashes room id. Avoid reintroducing query/hash or raw reconnect/session data into notifications.
 - RL eval artifacts now record effective schema/action metadata. Legacy portfolio JSONs without explicit schema should still evaluate via `stateDim` fallback.
+
+## 2026-05-23 continuous review Cycle 10
+
+- `rejoinData.acceptedClientActions` must be present on normal `rejoinRoom` and server-restart `recreateRoom` paths. It is ack metadata only; never replay it as canonical action log.
+- Modal open now marks `titleScreen`, `gameScreen`, `pwaUpdateBanner`, and `pwaInstallBanner` inert/aria-hidden, then restores previous attributes on close. New modal roots need the same restore discipline.
+- PWA update banner wins over install banner. Only suppress install when update banner is explicitly `display: block`; an absent/default display must not block `beforeinstallprompt`.
+- `normalizeClientErrorPayload` strips URL query/hash from stack and filename before ntfy formatting. Do not reintroduce raw room/session/token data into notification text.
+- `validate-rl-registry` warns on same-condition eval entries with conflicting metrics. Treat warnings as adoption-review blockers until the registry records a discriminator or removes the duplicate.

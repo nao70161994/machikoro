@@ -367,6 +367,8 @@
           return gs && gs.style.display !== 'none' && gs.style.display !== '';
         }
         function _showPwaUpdateBanner() {
+          const installBanner = document.getElementById('pwaInstallBanner');
+          if (installBanner) installBanner.style.display = 'none';
           const banner = document.getElementById('pwaUpdateBanner');
           const btn = document.getElementById('pwaUpdateBtn');
           const msg = document.getElementById('pwaUpdateMsg');

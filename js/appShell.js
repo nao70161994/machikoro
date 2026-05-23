@@ -132,7 +132,12 @@ let _pwaInstallEvent = null;
 
 function setPwaBannerVisible(id, visible) {
     const banner = document.getElementById(id);
-    if (banner) banner.style.display = visible ? 'block' : 'none';
+    if (!banner) return;
+    if (id === 'pwaInstallBanner' && visible) {
+        const updateBanner = document.getElementById('pwaUpdateBanner');
+        if (updateBanner && updateBanner.style.display === 'block') return;
+    }
+    banner.style.display = visible ? 'block' : 'none';
 }
 
 function pwaInstallPrompt() {

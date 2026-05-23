@@ -4,7 +4,17 @@ const vm = require('vm');
 
 function runTest(name, fn) {
     try {
-        fn();
+        const result = fn();
+        if (result && typeof result.then === 'function') {
+            result
+                .then(() => console.log(`テスト成功: ${name}`))
+                .catch(error => {
+                    console.error(`テスト失敗: ${name}`);
+                    console.error(error && error.stack || error);
+                    process.exitCode = 1;
+                });
+            return;
+        }
         console.log(`テスト成功: ${name}`);
     } catch (error) {
         console.error(`テスト失敗: ${name}`);

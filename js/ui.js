@@ -608,8 +608,10 @@ let announcerTimer = null;
 let cardFilter = '';
 let activeModalId = null;
 let lastModalFocus = null;
+let modalInertRestore = [];
 let noticeTimer = null;
 
+const MODAL_INERT_ROOT_IDS = Object.freeze(['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']);
 const MODAL_CLOSE_HANDLERS = Object.freeze({
     rulesModal: closeRules,
     cardSelectModal: closeCardSelect,
@@ -662,12 +664,43 @@ function focusModal(modal) {
     if (target && typeof target.focus === 'function') target.focus();
 }
 
+function setAppInertForModal(enabled) {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    if (!enabled) {
+        for (const entry of modalInertRestore) {
+            const el = entry && entry.el;
+            if (!el) continue;
+            if (entry.hadInert) el.inert = entry.inert;
+            else { try { delete el.inert; } catch (_) { el.inert = false; } }
+            if (entry.ariaHidden === null) el.removeAttribute && el.removeAttribute('aria-hidden');
+            else el.setAttribute && el.setAttribute('aria-hidden', entry.ariaHidden);
+        }
+        modalInertRestore = [];
+        return;
+    }
+    if (modalInertRestore.length > 0) return;
+    modalInertRestore = MODAL_INERT_ROOT_IDS
+        .map(rootId => document.getElementById(rootId))
+        .filter(Boolean)
+        .map(el => ({
+            el,
+            hadInert: Object.prototype.hasOwnProperty.call(el, 'inert'),
+            inert: el.inert,
+            ariaHidden: el.getAttribute ? el.getAttribute('aria-hidden') : null,
+        }));
+    for (const { el } of modalInertRestore) {
+        el.inert = true;
+        if (el.setAttribute) el.setAttribute('aria-hidden', 'true');
+    }
+}
+
 function openAccessibleModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
     if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
     activeModalId = id;
     if (document.body && document.body.classList) document.body.classList.add('modal-open');
+    setAppInertForModal(true);
     modal.style.display = 'flex';
     if (typeof modal.setAttribute === 'function') {
         modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
@@ -680,7 +713,10 @@ function closeAccessibleModal(id, options = {}) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'none';
     if (activeModalId === id) activeModalId = null;
-    if (!activeModalId && document.body && document.body.classList) document.body.classList.remove('modal-open');
+    if (!activeModalId) {
+        setAppInertForModal(false);
+        if (document.body && document.body.classList) document.body.classList.remove('modal-open');
+    }
     if (options.restoreFocus !== false && lastModalFocus && typeof lastModalFocus.focus === 'function') {
         lastModalFocus.focus();
     }

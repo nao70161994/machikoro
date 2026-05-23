@@ -99,6 +99,17 @@ function truncateText(value, maxLength) {
     return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
 }
 
+function scrubClientErrorText(value) {
+    return String(value || '').replace(/https?:\/\/[^\s)'\"]+/g, rawUrl => {
+        try {
+            const parsed = new URL(rawUrl);
+            return parsed.origin + parsed.pathname;
+        } catch (_error) {
+            return rawUrl.split(/[?#]/)[0];
+        }
+    });
+}
+
 function normalizeClientErrorNumber(value) {
     const number = Number(value);
     return Number.isInteger(number) && number >= 0 && number <= 1000000 ? number : null;
@@ -112,13 +123,13 @@ function normalizeClientErrorPlayerIndex(value) {
 function normalizeClientErrorPayload(payload, now = Date.now()) {
     if (!isPlainObject(payload)) return { ok: false, reason: 'payload must be an object' };
     const message = truncateText(payload.message, CLIENT_ERROR_LIMITS.maxMessageLength).trim();
-    const stack = truncateText(payload.stack, CLIENT_ERROR_LIMITS.maxStackLength);
+    const stack = truncateText(scrubClientErrorText(payload.stack), CLIENT_ERROR_LIMITS.maxStackLength);
     if (!message && !stack) return { ok: false, reason: 'message or stack is required' };
     const report = {
         source: truncateText(payload.source || 'client', 80),
         message: message || '(no message)',
         stack,
-        filename: truncateText(payload.filename, 300),
+        filename: truncateText(scrubClientErrorText(payload.filename), 300),
         line: normalizeClientErrorNumber(payload.line),
         column: normalizeClientErrorNumber(payload.column),
         userAgent: truncateText(payload.userAgent, 300),
@@ -856,6 +867,7 @@ io.on('connection', (socket) => {
             gameStartPayload: room.gameStartPayload,
             stateSnapshot: room.stateSnapshot || null,
             actionLog: room.actionLog || [],
+            acceptedClientActions: acceptedClientActionRefs(room),
             playerIndex,
             hostPlayerIndex: room.hostPlayerIndex,
             hostEpoch: room.hostEpoch || 0,
