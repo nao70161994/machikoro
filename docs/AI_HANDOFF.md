@@ -253,6 +253,19 @@ npm test
 - `buildCard` and `buildLandmark` are checked independently. Avoid collapsing them into one phase-only `canBuild` gate, because restore/pending regressions can expose only one action at a time.
 - `ROOM_REPLACED` remains intentionally separate from this UI parity work.
 
+## UI action gate maintenance rule
+
+- UI操作可否は `GameManager.allowedActionsFor(game)` を読む `currentUiAllowedActions()` / `canShowUiAction()` と、online input block 判定 `isOnlineUiInputBlocked()` に集約する。
+- 新しい gameplay button を追加するときは、phase / turn / `isOnlineGame` だけで `disabled` や表示状態を決める別経路を作らない。表示側は `canShowUiAction()` 系 helper、実行側は `main.js` の `canRunHumanAction()` / `canRunLocalHumanAction()` 系 gate を通す。
+- online input block は missing socket、disconnected socket、reconnecting、`onlineActionInFlight` を含む。これを緩める場合は `main.js` の handler gate と `tests/ui.test.js` の online gate tests を同時に更新する。
+- `buildCard`, `buildLandmark`, `undoBuild`, `nextTurn` は独立 action として扱う。一つの `canBuild` や build phase 判定へ戻すと、restore/pending/online gate のズレが再発する。
+- Pending resolver は queue head と allowed action の両方が一致する時だけ表示する。pending count だけで resolver を出さない。
+
+Test index:
+
+- `tests/ui.test.js`: skip/end turn, CPU/other online turn, build/landmark/undo, pending queue head, online input block.
+- `tests/integration.test.js`: post-build UI lock recovery, CPU turn return unlock, human-turn watchdog, pending UI lock watchdog.
+
 ## UI action gate final audit
 
 - Keep `isOnlineUiInputBlocked()` aligned with `canRunLocalHumanAction()`: missing socket, disconnected socket, reconnecting, and `onlineActionInFlight` all mean display-side controls must be disabled/hidden.

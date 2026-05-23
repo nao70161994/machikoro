@@ -84,6 +84,34 @@ Release expectations:
 
 Manual-only checks are listed in `docs/AUTOMATED_RELEASE_TEST.md` and `docs/PWA_MODEL_LOADING.md`.
 
+## UI Action Gate / UI Lock
+
+Automated checks:
+
+- `node tests/ui.test.js`
+- `node tests/integration.test.js`
+- `npm run test:online`
+- `npm run test:release`
+
+Release expectations:
+
+- UI操作可否は `GameManager.allowedActionsFor(game)` を読む `currentUiAllowedActions()` / `canShowUiAction()` と、online input block 判定 `isOnlineUiInputBlocked()` に集約する。
+- online input block は missing socket、disconnected socket、reconnecting、`onlineActionInFlight` をすべて含む。これらの状態では表示側も操作不可にする。
+- `rollDice`, `nextTurn`, `buildCard`, `buildLandmark`, `undoBuild`, pending resolver は別経路で phase / turn だけを見て有効化しない。
+- 新しいボタンや delegated handler を追加する場合、UI 表示は `canShowUiAction()` 系 helper、実行権限は `main.js` の handler gate を通す。DOM の `disabled` 直書きだけで新しい操作可否ルールを作らない。
+- Pending resolver は queue head と allowed action の両方が一致する時だけ表示する。
+- CPUターン、他人onlineターン、online in-flight/reconnecting/disconnected 中にクリック可能な gameplay action が出ないことを確認する。
+
+Regression test index:
+
+- `renderActiveGameState は skip/end turn を allowedActions と online gate に同期する`
+- `renderActiveGameState は CPUターンと他人オンラインターンで主要ボタンを無効にする`
+- `renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedActions と online gate に同期する`
+- `renderPending は allowedActionsFor の先頭pending actionだけを表示する`
+- `renderPending は online input block 中に resolver を表示しない`
+- `integration: 自分ターンで操作可能ボタンがなければwatchdogがUI lockを検知する`
+- `integration: pending操作不能ならwatchdogが縮約通知してrender復旧する`
+
 ## Documentation Entrypoints
 
 - Release pseudo E2E and CI: `docs/AUTOMATED_RELEASE_TEST.md`

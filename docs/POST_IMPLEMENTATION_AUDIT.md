@@ -803,6 +803,23 @@ Regression added:
 - Build card and landmark buttons are enabled independently based on `buildCard` / `buildLandmark`, so a mismatch cannot enable the wrong construction class.
 - Undo build is shown only when `undoBuild` is allowed.
 
+### UI action gate maintenance contract
+
+- UI操作可否は `allowedActionsFor` 由来の `currentUiAllowedActions()` / `canShowUiAction()` と、online input block 判定 `isOnlineUiInputBlocked()` に集約する。今後の UI 変更で phase / turn / CSS class / modal state だけを見た新しい有効化経路を増やさない。
+- online input block は missing socket、disconnected socket、reconnecting、`onlineActionInFlight` を含む。表示側だけを緩めると二重送信・reconnect中操作・stale socket操作の再発リスクがある。
+- `buildCard` / `buildLandmark` / `undoBuild` / `nextTurn` は独立 action として表示可否を確認する。build phase の単一 `canBuild` gate へ戻さない。
+- Pending resolver は queue head と allowed action の両方が一致する時だけ表示する。pending count だけで表示すると古い resolver が残る。
+- Watchdog / unlock helper は stale UI lock の修復だけを行い、game action の自動実行や pending resolver の自動解決をしてはいけない。
+
+Regression test index:
+
+- `tests/ui.test.js`: `renderActiveGameState は skip/end turn を allowedActions と online gate に同期する`
+- `tests/ui.test.js`: `renderActiveGameState は CPUターンと他人オンラインターンで主要ボタンを無効にする`
+- `tests/ui.test.js`: `renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedActions と online gate に同期する`
+- `tests/ui.test.js`: `renderPending は allowedActionsFor の先頭pending actionだけを表示する`
+- `tests/ui.test.js`: `renderPending は online input block 中に resolver を表示しない`
+- `tests/integration.test.js`: human-turn / pending UI lock watchdog recovery tests.
+
 ### UI action gate final audit
 
 - Final UI action gate audit found one display-side mismatch: online UI considered a missing socket as not blocked, while handler-side guards in `main.js` reject online actions when `socket` is missing. `isOnlineUiInputBlocked()` now treats missing socket, disconnected socket, reconnecting, and `onlineActionInFlight` as input-blocked.
