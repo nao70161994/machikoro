@@ -384,6 +384,24 @@ function classifyLikelyFreeze(snapshot) {
     return '';
 }
 
+function recoverPostBuildUiFreeze(snapshot) {
+    if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
+    try {
+        if (typeof render === 'function') render();
+    } catch (_) {}
+    const gameScreen = typeof document !== 'undefined' && document.getElementById ? document.getElementById('gameScreen') : null;
+    if (gameScreen) gameScreen.inert = false;
+    const confirmModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('confirmModal') : null;
+    if (confirmModal && confirmModal.style) confirmModal.style.display = 'none';
+    const btnSkip = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnSkip') : null;
+    if (btnSkip) {
+        btnSkip.disabled = false;
+        btnSkip.textContent = '建設完了・ターン終了';
+    }
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'post-build-ui-blocked' });
+    return true;
+}
+
 function checkFreezeWatchdog() {
     const now = Date.now();
     const snapshot = buildClientRuntimeSnapshot('freeze-watchdog');
@@ -417,6 +435,7 @@ function checkFreezeWatchdog() {
             stack: 'FREEZE_SNAPSHOT ' + JSON.stringify(payload).slice(0, 1800),
         });
     }
+    if (freezeKind === 'post-build-ui-blocked') recoverPostBuildUiFreeze(snapshot);
 }
 
 function startFreezeWatchdog() {

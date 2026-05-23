@@ -715,14 +715,14 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 修正済み:
 
 - `markClientFlowCheckpoint()` を追加し、購入、skip、local/online action apply、render 後、CPU schedule の最後に通った処理を `machikoroLastClientCheckpoint` に保存する。
-- `startFreezeWatchdog()` を追加し、1秒ごとに phase / turn / pending / UI 状態を監視する。5秒以上同じ状態が続き、かつ「購入済み build で skip disabled / gameScreen inert / confirm modal 残留」など操作不能条件がある場合だけ `machikoroFreezeSnapshot` を保存して `freeze-watchdog` として `/api/client-error` へ送る。
+- `startFreezeWatchdog()` を追加し、1秒ごとに phase / turn / pending / UI 状態を監視する。5秒以上同じ状態が続き、かつ「購入済み build で skip disabled / gameScreen inert / confirm modal 残留」など操作不能条件がある場合だけ `machikoroFreezeSnapshot` を保存して `freeze-watchdog` として `/api/client-error` へ送る。その後、post-build UI block は `render()` 再実行、inert解除、confirm modal close、skip有効化で自己回復する。
 - 通常の「購入後にユーザーがターン終了を押すまで待っている」状態は freeze として扱わない。誤通知を避けるため、`builtThisTurn=true` だけでは report せず、UI block 条件を併用する。
 - CPU turn 停滞、online action in-flight 停滞、pending action 不整合も watchdog の分類対象にした。
 
 Regression:
 
 - 購入後に skip が有効な通常待機では freeze report が出ないことを integration test で固定した。
-- 購入後に skip が disabled のまま 5秒以上停滞した場合、`machikoroFreezeSnapshot` が保存され、`/api/client-error` に `freeze-watchdog` report が送られることを integration test で固定した。
+- 購入後に skip が disabled のまま 5秒以上停滞した場合、`machikoroFreezeSnapshot` が保存され、`/api/client-error` に `freeze-watchdog` report が送られ、skip が再有効化されることを integration test で固定した。
 
 実機で見るキー:
 

@@ -173,6 +173,10 @@ runTest('integration: 購入後操作不能ならwatchdogがsnapshot保存と通
     const report = JSON.parse(reportCall.options.body);
     assert.ok(report.message.includes('post-build-ui-blocked'));
     assert.ok(report.stack.includes('FREEZE_SNAPSHOT'));
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
+    const checkpoint = JSON.parse(rt.localStorage.getItem('machikoroLastClientCheckpoint'));
+    assert.strictEqual(checkpoint.event, 'freeze-watchdog-recovered');
 });
 
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {
