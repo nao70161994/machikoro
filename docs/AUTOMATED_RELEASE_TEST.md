@@ -63,4 +63,4 @@ Triggers:
 - `push` to `main`: catches regressions after merge.
 - `workflow_dispatch`: lets maintainers re-run the gate manually.
 
-The workflow uses Node.js 20, `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`. It does not send real ntfy notifications because the release pseudo E2E uses a mocked `fetchImpl` for `/api/client-error-test`. The APK workflow runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before Bubblewrap.
+The workflow uses Node.js 20, Python 3, `npm ci`, `pip install -r scripts/rl/requirements.txt`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`. The Python dependency install is required because `npm test` includes RLCPU parity fixtures that import `scripts/rl/encode.py` and require `numpy`. It does not send real ntfy notifications because the release pseudo E2E uses a mocked `fetchImpl` for `/api/client-error-test`. The APK workflow installs the same RL Python dependencies, then runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before Bubblewrap.

@@ -161,6 +161,7 @@ npm test
 - RL export は `stateSchema` / `actionSchema` を明示し、runtime は既知 schema の action/card count mismatch を早期拒否する。
 - `eval-rl-models` result と registry import は `evaluationConfig` で seed policy を残す。
 - APK workflow は Bubblewrap build 前に `test:static`, `npm test`, `test:pwa`, `test:release` を通す。
+- CI の `npm test` は RLCPU parity fixture で Python `numpy` を使う。`.github/workflows/release-test.yml` と `build-apk.yml` は `scripts/rl/requirements.txt` を `pip install` してから Node test gate を実行する。
 - game 中の Service Worker update / controllerchange は自動 reload せず banner 表示へ倒す。
 
 ## 2026-05-23 continuous review Cycle 8

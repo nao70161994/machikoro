@@ -20,8 +20,17 @@ jobs:
         with:
           node-version: '20'
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: pip
+          cache-dependency-path: scripts/rl/requirements.txt
+
       - name: 依存関係インストール
-        run: npm ci
+        run: |
+          npm ci
+          python -m pip install --upgrade pip
+          pip install -r scripts/rl/requirements.txt
 
       - name: APK build 前リリースゲート
         run: |
