@@ -503,11 +503,55 @@ function renderPending() {
     updatePendingModalContent(el, modal, html);
 }
 
+function renderPlayerDifficultyLabel(difficulty) {
+    if (difficulty === 'weak') return '弱';
+    if (difficulty === 'normal') return '普';
+    if (difficulty === 'strong') return '強';
+    if (difficulty === 'rl') return '深';
+    return 'AI';
+}
+
+function validRenderCpuDifficulty(value) {
+    return ['weak', 'normal', 'strong', 'expert', 'rl'].includes(value) ? value : 'normal';
+}
+
+function getPlayerSettingForRender(index, player) {
+    const settings = typeof playerSettings !== 'undefined' && Array.isArray(playerSettings) ? playerSettings : [];
+    const cpus = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
+    const setting = settings[index];
+    const cpu = cpus[index] || null;
+    const inferredCpu = !!cpu || setting?.type === 'cpu' || player?.isCPU === true;
+    if (setting && (!inferredCpu || setting.difficulty || cpu?.difficulty)) {
+        return {
+            type: inferredCpu ? 'cpu' : 'human',
+            difficulty: inferredCpu ? validRenderCpuDifficulty(cpu?.difficulty || setting.difficulty) : 'human',
+            name: player?.name || setting.name || `プレイヤー${index + 1}`,
+            missing: false,
+        };
+    }
+    const fallback = {
+        type: inferredCpu ? 'cpu' : 'human',
+        difficulty: inferredCpu ? validRenderCpuDifficulty(cpu?.difficulty) : 'human',
+        name: player?.name || `プレイヤー${index + 1}`,
+        missing: true,
+    };
+    recordFlowTrace('render-player-setting-fallback', {
+        playerIndex: index,
+        fallbackType: fallback.type,
+        fallbackDifficulty: fallback.difficulty,
+        playerSettingsLength: settings.length,
+        cpuPlayersLength: cpus.length,
+        playersLength: game && Array.isArray(game.players) ? game.players.length : 0,
+    });
+    return fallback;
+}
+
 function renderPlayers() {
     const html = game.players.map((p, idx) => {
         const isActive = idx === game.currentPlayerIndex;
-        const isCPU = cpuPlayers[idx] !== null;
-        const cpuLabel = isCPU ? `🤖${cpuPlayers[idx].difficulty === 'weak' ? '弱' : cpuPlayers[idx].difficulty === 'normal' ? '普' : cpuPlayers[idx].difficulty === 'strong' ? '強' : cpuPlayers[idx].difficulty === 'rl' ? '深' : 'AI'}` : '👤';
+        const setting = getPlayerSettingForRender(idx, p);
+        const isCPU = setting.type === 'cpu';
+        const cpuLabel = isCPU ? `🤖${renderPlayerDifficultyLabel(setting.difficulty)}` : '👤';
         const landmarks = Object.entries(p.landmarks)
             .filter(([name]) => enabledLandmarks.has(name))
             .map(([name, built]) => `<span class="landmark-badge ${built ? 'built' : ''}">${getLandmarkEmoji(name)} ${name}</span>`)

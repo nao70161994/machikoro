@@ -649,6 +649,31 @@ runTest('integration: ランドマーク購入後もskip操作へ進める', () 
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
 });
 
+
+runTest('integration: render recovery中にplayerSettingsが短くてもrenderPlayersは再例外にしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setPlayerSettings([]);
+    rt.__test.setCpuPlayers([null]);
+
+    rt.render();
+
+    assert.ok(rt.__test.elements.players.innerHTML.includes('プレイヤー'));
+    assert.ok(!rt.__test.fetchCalls.some(call => call.url === '/api/client-error'));
+    const trace = rt.window.__machikoroFlowTrace.find(entry => entry.event === 'render-player-setting-fallback');
+    assert.ok(trace);
+    assert.strictEqual(trace.details.playerSettingsLength, 0);
+});
+
 if (process.exitCode) {
     throw new Error('integrationテストで失敗が発生しました');
 }

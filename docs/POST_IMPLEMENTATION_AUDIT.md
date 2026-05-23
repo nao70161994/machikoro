@@ -882,3 +882,20 @@ Observed ntfy freeze reports for `version=d1eb530` showed `freezeKind=human-turn
 This is distinct from the earlier stale `confirmModal` report: no active modal needed to be closed. The recovery now treats `gameScreen.inert=true` with no active blocking modal and a permitted primary action as an inconsistent orphan lock, clears the `gameScreen` inert / `aria-hidden` state through the same human-turn / post-build watchdog recovery path, and records an `orphan-game-screen-inert` checkpoint. Active modal locks are preserved for valid `confirmModal`, `pendingModal`, `rulesModal`, `cardSelectModal`, and `cardDetailModal` states so legitimate user-choice dialogs still block background input.
 
 Regression coverage now includes the exact local `myPlayerIndex=-1` orphan inert case and a guard that a visible card detail modal is not cleared by watchdog recovery.
+
+### renderPlayers playerSettings/cpuPlayers fallback fix
+
+Observed ntfy reports for `version=f6ce626` showed a recoverable render error in `renderPlayers`: `Cannot read properties of undefined (reading 'difficulty')` around `js/ui.js:510` while the game was already in `build` phase. The UI was not blocked by game rules; rendering retried during recovery and hit the same unsafe player metadata read.
+
+Root cause: `renderPlayers()` treated `cpuPlayers[idx] !== null` as CPU, so a short `cpuPlayers` array made `undefined` count as CPU and then read `.difficulty`. The same path was also fragile when `playerSettings.length` and `game.players.length` diverged after local restore, CPU mix changes, or render recovery.
+
+Fixes:
+
+- Added `getPlayerSettingForRender(index, player)` as the only render-side player metadata reader.
+- Missing CPU settings fall back to `{ type: "cpu", difficulty: "normal" }`; missing human settings fall back to `{ type: "human", difficulty: "human" }` while preserving the player's displayed name.
+- Missing metadata records a lightweight `render-player-setting-fallback` flow trace with lengths and chosen fallback, but does not make render fatal.
+
+Regression coverage:
+
+- `tests/ui.test.js`: `players.length > playerSettings.length` renders without throwing, with normal CPU and human fallback icons.
+- `tests/integration.test.js`: render recovery with shortened `playerSettings` / `cpuPlayers` does not trigger a second `/api/client-error` report and records fallback diagnostics.

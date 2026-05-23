@@ -821,6 +821,68 @@ runTest('renderPlayers は所持カードを色順と出目順で表示する', 
     assert.ok(html.indexOf('カフェ×1') < html.indexOf('高級フレンチ×1'));
 });
 
+
+runTest('renderPlayers は playerSettings が短くても fallback で描画する', () => {
+    const { context, elements } = loadUiRuntime();
+    const cards = [context.createCardByName('麦畑')];
+    const makePlayer = (name, isCPU = false) => ({
+        name,
+        isCPU,
+        coins: 3,
+        cards,
+        dormantCards: [],
+        itVentureCoins: 0,
+        landmarks: { 駅: false, ショッピングモール: false, 遊園地: false, 電波塔: false, 港: false, 空港: false },
+        isDormant(card) { return this.dormantCards.includes(card); },
+    });
+    context.game = {
+        currentPlayerIndex: 0,
+        players: [makePlayer('Alice'), makePlayer('CPU欠落', true)],
+    };
+    context.cpuPlayers = [null];
+    context.playerSettings = [{ type: 'human', name: 'Alice' }];
+
+    context.renderPlayers();
+
+    const html = elements.players.innerHTML;
+    assert.ok(html.includes('👤'));
+    assert.ok(html.includes('🤖普'));
+    assert.ok(html.includes('CPU欠落'));
+    const trace = context.__machikoroFlowTrace.find(entry => entry.event === 'render-player-setting-fallback');
+    assert.ok(trace);
+    assert.strictEqual(trace.details.playerIndex, 1);
+    assert.strictEqual(trace.details.fallbackType, 'cpu');
+    assert.strictEqual(trace.details.fallbackDifficulty, 'normal');
+});
+
+runTest('renderPlayers は human の playerSettings 欠落時も落ちない', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        name: 'Human欠落',
+        coins: 4,
+        cards: [context.createCardByName('パン屋')],
+        dormantCards: [],
+        itVentureCoins: 0,
+        landmarks: { 駅: false, ショッピングモール: false, 遊園地: false, 電波塔: false, 港: false, 空港: false },
+        isDormant(card) { return this.dormantCards.includes(card); },
+    };
+    context.game = {
+        currentPlayerIndex: 0,
+        players: [player],
+    };
+    context.cpuPlayers = [];
+    context.playerSettings = [];
+
+    context.renderPlayers();
+
+    assert.ok(elements.players.innerHTML.includes('👤'));
+    assert.ok(elements.players.innerHTML.includes('Human欠落'));
+    const trace = context.__machikoroFlowTrace.find(entry => entry.event === 'render-player-setting-fallback');
+    assert.ok(trace);
+    assert.strictEqual(trace.details.fallbackType, 'human');
+    assert.strictEqual(trace.details.fallbackDifficulty, 'human');
+});
+
 runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成する', () => {
     const { context } = loadUiRuntime();
     const card = context.createCardByName('麦畑');
