@@ -119,25 +119,35 @@ Client reports can include player-visible names inside stack messages, raw room 
 
 ## Optional game lifecycle notifications
 
-Client error reporting and lifecycle reporting are separate. Lifecycle notifications are intentionally opt-in and stay off by default.
+Client error reporting and lifecycle reporting are separate. Lifecycle notifications are enabled by default for browser gameplay so production monitoring sees normal starts and finishes without per-device setup. They can be disabled per browser profile when they become noisy.
 
-Enable them in a browser profile with localStorage:
+Explicitly keep them enabled in a browser profile with localStorage:
 
 ```js
-localStorage.setItem('machikoroLifecycleNotificationsEnabled', '1')
+localStorage.setItem('machikoroLifecycleNotifyEnabled', 'true')
 // or from the console:
 window.__machikoroSetLifecycleNotificationsEnabled(true)
 ```
 
-Disable them again with:
+Opt out of lifecycle notifications with:
 
 ```js
-localStorage.removeItem('machikoroLifecycleNotificationsEnabled')
+localStorage.setItem('machikoroLifecycleNotifyEnabled', 'false')
 // or:
 window.__machikoroSetLifecycleNotificationsEnabled(false)
 ```
 
-When enabled, the browser sends compact `POST /api/game-lifecycle` reports for:
+
+Check the current browser setting with:
+
+```js
+window.__machikoroLifecycleNotifyState()
+// { key: 'machikoroLifecycleNotifyEnabled', value: null, enabled: true, defaultEnabled: true, ... }
+```
+
+Only false-like values such as `false`, `0`, `off`, `no`, or `disabled` turn lifecycle reporting off. The old key `machikoroLifecycleNotificationsEnabled` is still read as a compatibility fallback, but new tooling should use `machikoroLifecycleNotifyEnabled`.
+
+When not explicitly disabled, the browser sends compact `POST /api/game-lifecycle` reports for:
 
 - `play-start`
 - `play-finish`

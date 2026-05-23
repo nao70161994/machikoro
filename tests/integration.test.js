@@ -536,15 +536,22 @@ runTest('integration: 正当なconfirmModal表示中はwatchdogが閉じない',
     assert.strictEqual(reportCall, undefined);
 });
 
-runTest('integration: lifecycle通知はopt-in無効時に送信しない', () => {
+runTest('integration: lifecycle通知はlocalStorage false時だけ送信しない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.localStorage.setItem('machikoroLifecycleNotifyEnabled', 'false');
     rt.__test.setPlayerSettings([
         { type: 'human', difficulty: 'normal' },
         { type: 'cpu', difficulty: 'strong' },
     ]);
 
+    const disabledState = rt.window.__machikoroLifecycleNotifyState();
+    assert.strictEqual(disabledState.key, 'machikoroLifecycleNotifyEnabled');
+    assert.strictEqual(disabledState.legacyKey, 'machikoroLifecycleNotificationsEnabled');
+    assert.strictEqual(disabledState.value, 'false');
+    assert.strictEqual(disabledState.enabled, false);
+    assert.strictEqual(disabledState.defaultEnabled, false);
     rt.startGame();
 
     assert.strictEqual(rt.__test.fetchCalls.some(call => call.url === '/api/game-lifecycle'), false);
@@ -554,7 +561,12 @@ runTest('integration: lifecycle通知は開始と終了を短いpayloadで送る
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
-    rt.localStorage.setItem('machikoroLifecycleNotificationsEnabled', '1');
+    const defaultState = rt.window.__machikoroLifecycleNotifyState();
+    assert.strictEqual(defaultState.key, 'machikoroLifecycleNotifyEnabled');
+    assert.strictEqual(defaultState.legacyKey, 'machikoroLifecycleNotificationsEnabled');
+    assert.strictEqual(defaultState.value, null);
+    assert.strictEqual(defaultState.enabled, true);
+    assert.strictEqual(defaultState.defaultEnabled, true);
     rt.changeCount(2);
     rt.__test.setPlayerSettings([
         { type: 'human', difficulty: 'normal', name: 'Alice' },
@@ -590,11 +602,26 @@ runTest('integration: lifecycle通知は開始と終了を短いpayloadで送る
     assert.ok(!JSON.stringify(finishPayload).includes('ROOM'));
 });
 
+runTest('integration: lifecycle通知は旧localStorage key falseもopt-outとして扱う', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.localStorage.setItem('machikoroLifecycleNotificationsEnabled', '0');
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    assert.strictEqual(rt.window.__machikoroLifecycleNotifyState().enabled, false);
+    rt.startGame();
+
+    assert.strictEqual(rt.__test.fetchCalls.some(call => call.url === '/api/game-lifecycle'), false);
+});
+
 runTest('integration: lifecycle開始通知は同一sessionとreload連打を抑止する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
-    rt.localStorage.setItem('machikoroLifecycleNotificationsEnabled', '1');
     rt.__test.setPlayerSettings([
         { type: 'human', difficulty: 'normal' },
         { type: 'cpu', difficulty: 'strong' },

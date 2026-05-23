@@ -474,30 +474,57 @@ function reportClientError(input) {
 
 // ===== ゲームライフサイクル通知 =====
 const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
-const GAME_LIFECYCLE_OPT_IN_KEY = 'machikoroLifecycleNotificationsEnabled';
+const GAME_LIFECYCLE_NOTIFY_KEY = 'machikoroLifecycleNotifyEnabled';
+const GAME_LIFECYCLE_LEGACY_NOTIFY_KEY = 'machikoroLifecycleNotificationsEnabled';
 const GAME_LIFECYCLE_START_SENT_KEY = 'machikoroLifecycleStartSent';
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
 let _gameLifecycleSessionId = '';
 let _gameLifecycleStartSent = false;
 let _gameLifecycleFinishSent = false;
 
-function isGameLifecycleNotificationEnabled() {
+function readGameLifecycleNotifyValue() {
     try {
-        if (typeof localStorage === 'undefined') return false;
-        return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(localStorage.getItem(GAME_LIFECYCLE_OPT_IN_KEY) || '').toLowerCase());
+        if (typeof localStorage === 'undefined') return null;
+        const value = localStorage.getItem(GAME_LIFECYCLE_NOTIFY_KEY);
+        if (value !== null) return value;
+        return localStorage.getItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
     } catch (_) {
-        return false;
+        return null;
     }
+}
+
+function isLifecycleNotifyFalse(value) {
+    return ['0', 'false', 'no', 'off', 'disabled'].includes(String(value || '').toLowerCase());
+}
+
+function isGameLifecycleNotificationEnabled() {
+    return !isLifecycleNotifyFalse(readGameLifecycleNotifyValue());
 }
 
 function setGameLifecycleNotificationEnabled(enabled) {
     try {
         if (typeof localStorage !== 'undefined') {
-            if (enabled) localStorage.setItem(GAME_LIFECYCLE_OPT_IN_KEY, '1');
-            else localStorage.removeItem(GAME_LIFECYCLE_OPT_IN_KEY);
+            if (enabled) {
+                localStorage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'true');
+                localStorage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
+            } else {
+                localStorage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'false');
+                localStorage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
+            }
         }
     } catch (_) {}
     return isGameLifecycleNotificationEnabled();
+}
+
+function gameLifecycleNotifyState() {
+    const value = readGameLifecycleNotifyValue();
+    return {
+        key: GAME_LIFECYCLE_NOTIFY_KEY,
+        legacyKey: GAME_LIFECYCLE_LEGACY_NOTIFY_KEY,
+        value,
+        enabled: !isLifecycleNotifyFalse(value),
+        defaultEnabled: value === null,
+    };
 }
 
 function createGameLifecycleSessionId() {
@@ -648,6 +675,7 @@ function notifyGameLifecycleFinish(winner) {
 
 if (typeof window !== 'undefined') {
     window.__machikoroSetLifecycleNotificationsEnabled = setGameLifecycleNotificationEnabled;
+    window.__machikoroLifecycleNotifyState = gameLifecycleNotifyState;
     window.__machikoroSendLifecycleNotification = sendGameLifecycleNotification;
 }
 
