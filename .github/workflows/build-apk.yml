@@ -26,6 +26,7 @@ jobs:
       - name: APK build 前リリースゲート
         run: |
           npm run test:static
+          npm test
           npm run test:pwa
           npm run test:release
 

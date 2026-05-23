@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server);
 const gameRuntime = loadGameRuntime();
@@ -86,6 +87,7 @@ const CLIENT_ERROR_LIMITS = Object.freeze({
     maxMessageLength: 500,
     rateLimitWindowMs: 60 * 1000,
     rateLimitMax: 20,
+    rateLimitMaxBuckets: 2000,
     duplicateWindowMs: 60 * 1000,
 });
 const clientErrorRateBuckets = new Map();
@@ -199,9 +201,19 @@ function authorizeClientErrorRequest(req, env = process.env) {
         : { ok: false, error: 'invalid_client_error_token' };
 }
 
+function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
+    for (const [bucketKey, bucket] of buckets.entries()) {
+        if (!bucket || now - bucket.windowStart >= CLIENT_ERROR_LIMITS.rateLimitWindowMs) buckets.delete(bucketKey);
+    }
+    if (buckets.size <= CLIENT_ERROR_LIMITS.rateLimitMaxBuckets) return;
+    const overflow = buckets.size - CLIENT_ERROR_LIMITS.rateLimitMaxBuckets;
+    for (const bucketKey of Array.from(buckets.keys()).slice(0, overflow)) buckets.delete(bucketKey);
+}
+
 function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
+    pruneClientErrorRateBuckets(now, buckets);
     const bucket = buckets.get(key);
-    if (!bucket || now - bucket.windowStart >= CLIENT_ERROR_LIMITS.rateLimitWindowMs) {
+    if (!bucket) {
         buckets.set(key, { windowStart: now, count: 1 });
         return false;
     }
@@ -242,10 +254,16 @@ function summarizeUserAgent(userAgent) {
     return text.slice(0, 80);
 }
 
+function redactedClientErrorRoomId(roomId) {
+    const text = String(roomId || '').trim();
+    if (!text) return '-';
+    return 'hash:' + crypto.createHash('sha256').update(text).digest('hex').slice(0, 8);
+}
+
 function formatNtfyClientErrorMessage(report) {
     const lines = [
         'phase=' + (report.phase || 'unknown'),
-        'room=' + (report.roomId || '-'),
+        'room=' + redactedClientErrorRoomId(report.roomId),
         'player=' + (report.playerIndex ?? '-'),
         'version=' + (report.appVersion || '-'),
         summarizeUserAgent(report.userAgent),
@@ -259,7 +277,7 @@ function formatNtfyClientErrorMessage(report) {
 async function notifyClientError(report, options = {}) {
     const topic = options.topic || process.env.NTFY_TOPIC;
     if (!topic) {
-        console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + (report.roomId || '-'));
+        console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + redactedClientErrorRoomId(report.roomId));
         return { sent: false, reason: 'missing-topic' };
     }
     const fetchImpl = options.fetchImpl || global.fetch;
@@ -596,6 +614,17 @@ function rememberAcceptedClientAction(room, actionEntry) {
         ids.sort((a, b) => (room.acceptedClientActions[a].seq || 0) - (room.acceptedClientActions[b].seq || 0));
         for (const id of ids.slice(0, ids.length - 100)) delete room.acceptedClientActions[id];
     }
+}
+
+function acceptedClientActionRefs(room) {
+    if (!room || !room.acceptedClientActions) return [];
+    return Object.values(room.acceptedClientActions)
+        .filter(entry => entry && typeof entry.clientActionId === 'string' && Number.isInteger(entry.playerIndex))
+        .map(entry => {
+            const ref = { playerIndex: entry.playerIndex, clientActionId: entry.clientActionId };
+            if (Number.isInteger(entry.seq)) ref.seq = entry.seq;
+            return ref;
+        });
 }
 
 // ===== Socket events =====
@@ -1034,6 +1063,7 @@ function handleRecreateRoom(socket, payload = {}) {
                 gameStartPayload: room.gameStartPayload,
                 stateSnapshot: room.stateSnapshot || null,
                 actionLog: room.actionLog || [],
+                acceptedClientActions: acceptedClientActionRefs(room),
                 playerIndex,
                 hostPlayerIndex: room.hostPlayerIndex,
                 hostEpoch: room.hostEpoch || 0,
@@ -1144,6 +1174,7 @@ function handleRecreateRoom(socket, payload = {}) {
         gameStartPayload,
         stateSnapshot: restoredRoom.stateSnapshot,
         actionLog: restoredRoom.actionLog,
+        acceptedClientActions: acceptedClientActionRefs(restoredRoom),
         playerIndex,
         hostPlayerIndex: playerIndex,
         hostEpoch: restoredRoom.hostEpoch || 0,
@@ -1582,8 +1613,10 @@ module.exports = {
     authorizeClientErrorRequest,
     handleClientErrorRequest,
     isClientErrorRateLimited,
+    pruneClientErrorRateBuckets,
     isDuplicateClientError,
     formatNtfyClientErrorMessage,
+    redactedClientErrorRoomId,
     notifyClientError,
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
@@ -1601,6 +1634,7 @@ module.exports = {
     isActiveRoomSocket,
     findAcceptedClientAction,
     rememberAcceptedClientAction,
+    acceptedClientActionRefs,
     generateRoomId,
     isValidRoomId,
     canonicalizeActionData,

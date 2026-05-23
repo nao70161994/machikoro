@@ -23,8 +23,10 @@ const {
     authorizeClientErrorRequest,
     handleClientErrorRequest,
     isClientErrorRateLimited,
+    pruneClientErrorRateBuckets,
     isDuplicateClientError,
     formatNtfyClientErrorMessage,
+    redactedClientErrorRoomId,
     notifyClientError,
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
@@ -266,6 +268,9 @@ runTest('client error rate limit と duplicate suppression は短時間の連投
     }
     assert.strictEqual(isClientErrorRateLimited('ip1', now + CLIENT_ERROR_LIMITS.rateLimitMax + 1, buckets), true);
     assert.strictEqual(isClientErrorRateLimited('ip1', now + CLIENT_ERROR_LIMITS.rateLimitWindowMs + 1, buckets), false);
+    buckets.set('stale-ip', { windowStart: now - CLIENT_ERROR_LIMITS.rateLimitWindowMs - 1, count: 1 });
+    pruneClientErrorRateBuckets(now, buckets);
+    assert.strictEqual(buckets.has('stale-ip'), false);
 
     const report = normalizeClientErrorPayload({ message: 'same', stack: 'stack', phase: 'build' }, now).report;
     assert.strictEqual(isDuplicateClientError(report, now, cache), false);
@@ -344,7 +349,8 @@ runTest('ntfy client error message は phase/room/UA と本文を含む', () => 
     const message = formatNtfyClientErrorMessage(report);
 
     assert.ok(message.includes('phase=build'));
-    assert.ok(message.includes('room=ABCD'));
+    assert.ok(message.includes('room=' + redactedClientErrorRoomId('ABCD')));
+    assert.ok(!message.includes('room=ABCD'));
     assert.ok(message.includes('player=2'));
     assert.ok(message.includes('version=abc123'));
     assert.ok(message.includes('Safari iPhone'));
@@ -1732,6 +1738,7 @@ runTest('handleRecreateRoom は復元payloadでも2〜10人制限を守る', () 
                 },
                 stateSnapshot: null,
                 actionLog: [],
+                acceptedClientActions: [],
                 playerIndex: 0,
                 playerName: 'Alice',
                 reconnectToken,
@@ -1839,6 +1846,7 @@ runTest('handleRecreateRoom は既に復元済みのルームなら再作成せ�
                 gameStartPayload: existingPayload,
                 stateSnapshot,
                 actionLog,
+                acceptedClientActions: [],
                 playerIndex: 0,
                 hostPlayerIndex: 0,
                 hostEpoch: 0,
@@ -1902,6 +1910,7 @@ runTest('handleRecreateRoom は復元データを canonical snapshot に畳み�
                 gameStartPayload: payload.gameStartPayload,
                 stateSnapshot: __rooms.REST02.stateSnapshot,
                 actionLog: [],
+                acceptedClientActions: [],
                 playerIndex: 0,
                 hostPlayerIndex: 0,
                 hostEpoch: 0,
@@ -2424,6 +2433,50 @@ runTest('restorePayloadRank は actionLog の巨大seqではなくreplay可能�
         ),
         { hostEpoch: 2, actionSeq: 5 }
     );
+});
+
+runTest('handleRecreateRoom はsnapshot圧縮後も受理済みclientActionIdを返す', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    const reconnectToken = 'token-host';
+    const payload = {
+        roomId: 'REST_ACCEPTED_IDS',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build', shopStock: { '麦畑': 5 }, actionSeq: 4 }),
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 99, clientActionId: 'pending-high-seq' }],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    };
+
+    try {
+        handleRecreateRoom(socket, payload);
+
+        assert.deepStrictEqual(joined, ['REST_ACCEPTED_IDS']);
+        assert.deepStrictEqual(emitted[0].payload.actionLog, []);
+        assert.deepStrictEqual(emitted[0].payload.acceptedClientActions, [{ playerIndex: 0, clientActionId: 'pending-high-seq', seq: 99 }]);
+        assert.strictEqual(emitted[0].payload.stateSnapshot.actionSeq, 5);
+    } finally {
+        delete __rooms.REST_ACCEPTED_IDS;
+    }
 });
 
 runTest('handleRecreateRoom は共通fixtureの最大 actionSeq を復元rankに使う', () => {

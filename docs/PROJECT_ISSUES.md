@@ -341,13 +341,9 @@
 
 ### M-15 Python static check が `test:static` に入っていない
 
-- 問題点: RL Python は重要だが、JS/JSON/sh の static check から漏れる。
-- 原因: package script が Node中心。
-- 影響: Python構文壊れがpush前に漏れる。
-- 推奨改善: `python3 -m py_compile $(git ls-files '*.py')` 相当の軽量入口を追加する。
-- 修正難易度: 小。
-- 関連ファイル: `package.json`, `scripts/rl/*.py`
-- 将来的リスク: RL改善時の基本回帰漏れ。
+- 状態: resolved / historical。`package.json` の `test:static` は `test:static:py` を呼び、`python3 -m py_compile scripts/rl/*.py` を実行する。
+- 残リスク: Python 未導入環境では `test:static` が失敗するため、Termux/CI の前提は `docs/maintenance-checklists.md` と release docs を優先する。
+- 関連ファイル: `package.json`, `scripts/rl/*.py`, `docs/maintenance-checklists.md`.
 
 ## Low
 

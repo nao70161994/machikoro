@@ -40,7 +40,7 @@
 | `reconnectTokenHashes` | yes | プレイヤーごとの再接続検証用。配列であることが schema gate。 |
 | `hostPlayerIndex` | yes | host 復元 / 移譲の基準。server-side player index。 |
 | `hostEpoch` | optional | 復元 bundle の新旧比較に使う。欠落時は `0` 扱い。 |
-| `actionSeq` | optional | snapshot / action log の新旧比較に使う。欠落時は `0` 扱い。 |
+| `actionSeq` | optional | compatibility / local sequencing metadata。復元置換の freshness は `stateSnapshot.actionSeq + replayable actionLog count` を使い、この値だけでは既存roomを上書きしない。 |
 
 ## `onlineActionLog` / Server `actionLog`
 

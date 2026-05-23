@@ -71,14 +71,9 @@
 
 ### PR-005 Python static check
 
-- 優先順位: High
-- 対象ファイル: `package.json`, `tests/run-all.js` または新規 script, `docs/maintenance-checklists.md`
-- 修正内容: `test:static` か新規 `test:static:py` に `python3 -m py_compile` を追加する。Termuxで Python が無い場合の扱いを docs に明記する。
-- 期待効果: RL Python の構文壊れを早期検出する。
-- リスク: Python 未導入環境で `test:static` が落ちる可能性。必須化するか別 script にするかを明示する。
-- テスト方法: `npm run test:static`, `python3 -m py_compile scripts/rl/*.py`
-- 推奨コミット単位: `test: Python構文チェック入口を追加`
-- 依存: なし。
+- 状態: done / historical。`package.json` の `test:static` から `test:static:py` を呼び、`python3 -m py_compile scripts/rl/*.py` を実行する。
+- 残リスク: Python 未導入環境で `test:static` が落ちる可能性は残るため、Termux/CI 前提は maintenance/release docs を優先する。
+- テスト方法: `npm run test:static`, `python3 -m py_compile scripts/rl/*.py`.
 
 ## Priority 1: オンライン信頼境界の明文化と短期補強
 

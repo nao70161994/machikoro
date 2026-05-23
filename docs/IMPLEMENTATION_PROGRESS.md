@@ -1729,7 +1729,7 @@
 
 ## Continuous review Cycle 8 restore/PWA follow-up guards
 
-- 状態: implemented; full suite passed, commit/push pending.
+- 状態: implemented; full suite passed and pushed in `cd25c68`.
 - 変更ファイル:
   - `index.html`, `style.css`, `sw.js`, `tests/main.test.js`, `tests/sw.test.js`
   - `js/online.js`, `server/restoreRank.js`, `server.js`, `tests/server.test.js`, `tests/helpers/online-restore-fixtures.js`
@@ -1746,3 +1746,21 @@
   - server persisted canonical state / signed restore snapshot は design decision required。
   - client duplicate action idempotency と replay parity matrix は次 Cycle の安全候補。
   - 実機 iOS/Android の update/reconnect は manual verification required。
+
+## Continuous review Cycle 9 restore ack / release gate / diagnostics polish
+
+- 状態: implemented; full suite passed, commit/push pending.
+- 変更ファイル:
+  - `server.js`, `js/online.js`, `tests/server.test.js`, `tests/online.test.js`
+  - `js/appShell.js`, `tests/main.test.js`, `tests/release-e2e.test.js`, `docs/NTFY_ERROR_REPORTING.md`
+  - `scripts/eval-rl-vs-js.js`, `scripts/render-rl-registry-evals.js`, `tests/eval-rl-vs-js.test.js`, `tests/render-rl-registry-evals.test.js`
+  - `.github/workflows/build-apk.yml`, `docs/AUTOMATED_RELEASE_TEST.md`, `docs/ONLINE_SYNC.md`, `docs/online-restore-schema.md`, `AGENTS.md`
+- 実装内容:
+  - restore 後の `rejoinData` に snapshot 圧縮済みの受理済み `clientActionId` を含め、pending seq が canonical rank より大きい場合でも再送・二重適用しない。
+  - APK build 前 gate に `npm test` を追加し、release docs と test を同期した。
+  - log header の keyboard button semantics、modal focusable filtering、PWA/a11y source tests を補強した。
+  - RL eval artifact は effective schema/action metadata を出し、registry eval の duplicate 判定は object key order を正規化する。
+  - client error 通知は URL query/hash を送らず、ntfy 本文では roomId を hash 表示にする。rate bucket は期限切れ prune を行う。
+- deferred:
+  - modal background inert 化、iOS Safari install guidance、PWA banner state machine は Medium backlog。
+  - server persisted canonical state / signed restore snapshot は design decision required。

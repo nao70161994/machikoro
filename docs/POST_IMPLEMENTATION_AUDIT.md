@@ -530,7 +530,7 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 確認した内容:
 
-- Cycle 3 全体再レビューで Critical は未検出。High として、Cycle 7 の game 中 controllerchange guard がユーザー明示更新まで止める点、client/server restore rank の規則差分、raw actionLog seq を復元rankに使える点を確認した。
+- Cycle 8 全体再レビューで Critical は未検出。High として、Cycle 7 の game 中 controllerchange guard がユーザー明示更新まで止める点、client/server restore rank の規則差分、raw actionLog seq を復元rankに使える点を確認した。
 
 修正済み:
 
@@ -543,3 +543,22 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - host restore の完全な改ざん耐性は server persisted canonical state または署名付きsnapshot設計が必要。
 - 実ブラウザ複数端末、native PWA install/update、sleep-wake reconnect は manual verification required。
+
+### Continuous review Cycle 9 restore ack / release gate / diagnostics polish
+
+確認した内容:
+
+- Cycle 9 全体再レビューで Critical は、未コミット差分のテスト落ちとして検出された `tests/main.test.js` の未定義変数と RL eval fixture schema mismatch。
+- High として、restore snapshot 圧縮後に元の高い pending seq を持つ `clientActionId` が再送され、cached `actionAccepted` でクライアント二重適用され得る経路を確認した。
+
+修正済み:
+
+- server は `acceptedClientActions` refs を `rejoinData` に含め、client は一致する pending を再送せず破棄する。
+- APK workflow の pre-build gate に `npm test` を追加した。
+- RL eval metadata と registry eval duplicate 判定の再現性を補強した。
+- client error URL/roomId の privacy guard と rate bucket prune を追加した。
+
+残課題:
+
+- Modal background inert、iOS Safari install guidance、PWA banner arbitration は安全だが別 Cycle の Medium backlog。
+- Restore の signed/persisted canonical state は design decision required。

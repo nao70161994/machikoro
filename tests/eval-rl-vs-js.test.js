@@ -23,10 +23,13 @@ function buildRlModel(overrides = {}) {
     return {
         formatVersion: 1,
         schemaVersion: 3,
+        stateSchema: stateDim === 353 ? 'state-mp-v1' : 'state-2p-v1',
+        actionSchema: 'action-flat-v1',
         stateDim,
         hiddenSize,
         numActions,
         numCards,
+        numTargetSlots: 10,
         layers: {
             shared: [
                 {
@@ -159,6 +162,10 @@ runTest('evaluateRlVsJs は opponent ごとの 2人戦結果を返す', () => {
     assert.strictEqual(result[1].opponent, 'normal');
     assert.deepStrictEqual(result[1].result.players, ['rl', 'normal']);
     assert.strictEqual(result[0].modelInfo.stateDim, 145);
+    assert.strictEqual(result[0].modelInfo.stateSchema, 'state-2p-v1');
+    assert.strictEqual(result[0].modelInfo.actionSchema, 'action-flat-v1');
+    assert.strictEqual(result[0].modelInfo.numCards, 38);
+    assert.strictEqual(result[0].modelInfo.numTargetSlots, 10);
 });
 
 runTest('evaluateRlVsJs は games/maxSteps の 0 指定を既定値で上書きしない', () => {

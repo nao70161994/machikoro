@@ -57,7 +57,7 @@ Included fields:
 - `filename`, `line`, `column`
 - `userAgent`
 - current game `phase`
-- online `roomId`
+- online `roomId` in the server payload; ntfy notification text uses a short hash instead of the raw room id
 - `playerIndex`
 - `timestamp`
 - app version / build hash when available
@@ -66,7 +66,7 @@ Example ntfy message:
 
 ```
 phase=build
-room=ABCD
+room=hash:e12e115a
 player=1
 version=89bdf41
 Safari iPhone
@@ -113,4 +113,4 @@ A successful test returns `202` and sends a notification with `phase=test`, `roo
 
 ## Privacy notes
 
-Client reports can include player-visible names inside stack messages, room IDs, URLs, user agent strings, and app version data. Do not put public or shared topics into production. Rotate the topic if it leaks. Avoid adding localStorage contents, reconnect tokens, card inventories, or full game snapshots to this endpoint.
+Client reports can include player-visible names inside stack messages, raw room IDs in the server payload, origin/path URLs, user agent strings, and app version data. Browser reports intentionally strip query strings and hashes from URLs, and ntfy notification text hashes room IDs. Do not put public or shared topics into production. Rotate the topic if it leaks. Avoid adding localStorage contents, reconnect tokens, card inventories, or full game snapshots to this endpoint.

@@ -31,6 +31,15 @@ function isErrorLike(value) {
     return value instanceof Error || !!(value && (typeof value.message === 'string' || typeof value.stack === 'string'));
 }
 
+function safeClientErrorUrl() {
+    if (typeof window === 'undefined' || !window.location) return '';
+    const origin = window.location.origin || '';
+    const pathname = window.location.pathname || '';
+    if (origin || pathname) return origin + pathname;
+    const href = window.location.href || '';
+    return href.split(/[?#]/)[0];
+}
+
 function safeClientErrorContext() {
     return {
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent || '' : '',
@@ -38,7 +47,7 @@ function safeClientErrorContext() {
         roomId: typeof myRoomId !== 'undefined' && myRoomId ? myRoomId : '',
         playerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         appVersion: typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION ? window.MACHIKORO_CLIENT_VERSION : '',
-        url: typeof window !== 'undefined' && window.location ? window.location.href || '' : '',
+        url: safeClientErrorUrl(),
     };
 }
 

@@ -780,12 +780,20 @@ function handleStaticUiChange(event) {
     else if (element.dataset.uiChange === 'onlinePlayerType') onChangeOnlinePlayerType(parseInt(element.dataset.playerIndex, 10), element.value);
 }
 
+function handleStaticUiKeydown(event) {
+    if (!event || (event.key !== 'Enter' && event.key !== ' ')) return;
+    const element = uiActionElementFromEvent(event, 'data-ui-action');
+    if (!element || element.disabled || element.getAttribute('role') !== 'button') return;
+    handleStaticUiClick(event);
+}
+
 function bindStaticUiHandlers() {
     if (staticUiHandlersBound) return;
     if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
     document.addEventListener('click', handleStaticUiClick);
     document.addEventListener('input', handleStaticUiInput);
     document.addEventListener('change', handleStaticUiChange);
+    document.addEventListener('keydown', handleStaticUiKeydown);
     staticUiHandlersBound = true;
 }
 

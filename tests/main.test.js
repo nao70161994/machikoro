@@ -784,6 +784,7 @@ runTest('main delegated/static UI handler は重複登録しない', () => {
         'document:click': 1,
         'document:input': 1,
         'document:change': 1,
+        'document:keydown': 1,
     });
 
     rt.bindStaticUiHandlers();
@@ -793,6 +794,7 @@ runTest('main delegated/static UI handler は重複登録しない', () => {
         'document:click': 1,
         'document:input': 1,
         'document:change': 1,
+        'document:keydown': 1,
     });
 });
 
@@ -846,6 +848,24 @@ runTest('main static UI handler は data-ui-action/input/change を処理する'
         },
     });
     assert.strictEqual(rt.__test.getPlayerSettings()[0].name, '新名');
+});
+
+runTest('main static UI handler は role button の Enter/Space を処理する', () => {
+    const rt = loadMainRuntime();
+    let prevented = false;
+    rt.__test.eventHandlers['document:keydown']({
+        key: 'Enter',
+        preventDefault() { prevented = true; },
+        target: {
+            disabled: false,
+            dataset: { uiAction: 'changeCount', delta: '1' },
+            getAttribute(name) { return name === 'role' ? 'button' : null; },
+            closest() { return this; },
+        },
+    });
+
+    assert.strictEqual(prevented, true);
+    assert.strictEqual(rt.__test.getSelectedCount(), 3);
 });
 
 runTest('main delegated handler は dice choice action を呼ぶ', () => {
@@ -1050,6 +1070,7 @@ runTest('appShell bindCrashHandlers は error と rejection を crash 画面へ�
     assert.strictEqual(syncReport.column, 3);
     assert.strictEqual(syncReport.phase, 'build');
     assert.strictEqual(syncReport.appVersion, 'test-version');
+    assert.strictEqual(syncReport.url, 'https://example.test/play');
     assert.ok(syncReport.userAgent.includes('iPhone'));
 
     rt.crashResume();
@@ -1144,6 +1165,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+    const uiSource = fs.readFileSync(path.join(__dirname, '..', 'js/ui.js'), 'utf8');
     const workflow = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/build-apk.yml'), 'utf8');
 
     assert.ok(html.includes('refreshingByServiceWorker'));
@@ -1171,6 +1193,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('btn.disabled = false;'));
     assert.ok(html.includes("btn.style.opacity = '';"));
     assert.ok(html.includes('data-ui-action="showRules"'));
+    assert.ok(html.includes('class="log-header" data-ui-action="toggleLog" role="button" tabindex="0" aria-expanded="true"'));
     assert.ok(html.includes('data-ui-action="switchTab" data-tab="online"'));
     assert.ok(html.includes('for="cpuSpeed"'));
     assert.ok(html.includes('aria-describedby="speedLabel"'));
@@ -1200,6 +1223,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('.notice-toast'));
     assert.ok(css.includes('body.modal-open'));
     assert.ok(css.includes('body.modal-open #titleScreen'));
+    assert.ok(uiSource.includes('function isVisibleFocusableElement'));
+    assert.ok(uiSource.includes("header.setAttribute('aria-expanded'"));
     assert.ok(css.includes('overscroll-behavior: contain'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
     assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));

@@ -53,7 +53,7 @@ RL / 学習系スクリプト:
 
 テスト:
 
-- `tests/run-all.js`: `npm test` から呼ばれる test entrypoint。`unit` / `sim` / `core` / `online` / `pwa` / `cpu` / `rl` のグループを定義しています。
+- `tests/run-all.js`: `npm test` から呼ばれる test entrypoint。`all` / `unit` / `sim` / `core` / `online` / `pwa` / `release` / `cpu-smoke` / `cpu` / `rl` のグループを定義しています。
 - `tests/*.test.js`: ルール、サーバー、オンライン、保存、UI、CPU、expert tuning、RL ランタイム、RL 学習・評価・registry・report、PWA 起動フローなどの回帰テスト。個別ファイルの最新一覧は `tests/run-all.js` の `TEST_GROUPS` を正とします。
 
 基本的な責務分担:

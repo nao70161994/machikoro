@@ -98,8 +98,19 @@ function sameOpponentKeys(a, b) {
     return aKeys.length === bKeys.length && aKeys.every((key, index) => key === bKeys[index]);
 }
 
+function stableConfigValue(value) {
+    if (Array.isArray(value)) return value.map(stableConfigValue);
+    if (value && typeof value === 'object') {
+        return Object.keys(value).sort().reduce((acc, key) => {
+            acc[key] = stableConfigValue(value[key]);
+            return acc;
+        }, {});
+    }
+    return value;
+}
+
 function sameEvaluationConfig(a, b) {
-    return JSON.stringify(a || null) === JSON.stringify(b || null);
+    return JSON.stringify(stableConfigValue(a || null)) === JSON.stringify(stableConfigValue(b || null));
 }
 
 function isSameEval(a, b) {

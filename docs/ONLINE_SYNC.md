@@ -140,7 +140,8 @@ Restore freshness is ordered by:
 This rank exists on both sides:
 
 - Server: `restorePayloadRank`, `isIncomingRestoreNewer`, `canReplaceRestoredRoom`.
-- Client: `_serverOnlineActionSeq`, `_onlineRestoreRank`, `_isOnlineRestoreRankNewer`.
+- Client freshness rank: `_onlineRestoreRank`, `_isOnlineRestoreRankNewer`.
+- Client local sequencing metadata: `_serverOnlineActionSeq` may preserve larger observed seq values for next-action numbering, but it must not be treated as replacement freshness.
 
 Keep these definitions aligned. A future cleanup should move this comparison into a shared helper or add tests that assert equivalent results from representative fixtures.
 

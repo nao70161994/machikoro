@@ -351,6 +351,12 @@ function _sameOnlineActionEntry(a, b) {
         JSON.stringify(a.data || {}) === JSON.stringify(b.data || {});
 }
 
+function _acceptedClientActionMatchesPending(ref, pending) {
+    return !!(ref && pending && typeof ref.clientActionId === 'string' &&
+        ref.clientActionId === pending.clientActionId &&
+        Number.isInteger(ref.playerIndex) && ref.playerIndex === pending.playerIndex);
+}
+
 function _appendPendingForRestore(actionLog, pending) {
     if (!pending) return actionLog;
     if (!actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
@@ -556,7 +562,7 @@ function initSocket() {
         scheduleCPU();
     });
 
-    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, playerIndex, hostPlayerIndex, hostEpoch }) => {
+    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
         const localBundle = _readLocalRestoreBundle();
@@ -580,9 +586,12 @@ function initSocket() {
             Number.isInteger(pendingBeforeRejoin.seq) &&
             Number.isInteger(stateSnapshot?.actionSeq) &&
             stateSnapshot.actionSeq >= pendingBeforeRejoin.seq;
+        const pendingAcceptedById = pendingBeforeRejoin && Array.isArray(acceptedClientActions) &&
+            acceptedClientActions.some(ref => _acceptedClientActionMatchesPending(ref, pendingBeforeRejoin));
         const pendingAccepted = !pendingBeforeRejoin ||
             replayActionLog.some(entry => _sameOnlineActionEntry(entry, pendingBeforeRejoin)) ||
-            pendingCompactedIntoSnapshot;
+            pendingCompactedIntoSnapshot ||
+            pendingAcceptedById;
         isOnlineGame = true;
         isReconnectingOnline = false;
         _setOnlineActionInFlight(false);

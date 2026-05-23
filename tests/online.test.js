@@ -555,6 +555,53 @@ runTest('rejoinData は snapshot に畳み込まれた未ackアクションを�
     assert.strictEqual(rt.getGame().currentPlayerIndex, 1);
 });
 
+runTest('rejoinData は受理済みclientActionIdでsnapshot未達seqの未ackアクションを破棄する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.sendAction('nextTurn', {});
+    const pending = rt._readPendingOutboundAction();
+    const beforeEmitCount = rt.getSocketEmits().length;
+    const stateSnapshot = rt.buildOnlineSnapshot();
+    stateSnapshot.actionSeq = pending.seq - 1;
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            actionSeq: pending.seq - 1,
+        },
+        stateSnapshot,
+        actionLog: [],
+        acceptedClientActions: [{ playerIndex: pending.playerIndex, clientActionId: pending.clientActionId, seq: pending.seq + 20 }],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
+    assert.strictEqual(rt.getSocketEmits().length, beforeEmitCount);
+    assert.strictEqual(rt.getGame().currentPlayerIndex, 0);
+});
+
 runTest('rejoinData は canonical に無い未ackアクションを保持して再送する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));

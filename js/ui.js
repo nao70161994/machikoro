@@ -640,10 +640,20 @@ function compareCardNamesForDisplay(a, b) {
 
 function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; cardFilter = ''; }
 
+function isVisibleFocusableElement(el) {
+    if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
+    if (typeof el.closest === 'function' && el.closest('[hidden], [aria-hidden="true"]')) return false;
+    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+        const style = window.getComputedStyle(el);
+        if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+    }
+    return true;
+}
+
 function getFocusableElements(root) {
     if (!root || typeof root.querySelectorAll !== 'function') return [];
     return Array.from(root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-        .filter(el => !el.disabled && el.getAttribute('aria-hidden') !== 'true');
+        .filter(isVisibleFocusableElement);
 }
 
 function focusModal(modal) {
@@ -830,6 +840,7 @@ function toggleLog() {
     if (summary && summary.classList) summary.classList.toggle("collapsed", collapsed);
     icon.textContent = collapsed ? "▶" : "▼";
     header.classList.toggle("collapsed", collapsed);
+    if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     return true;
 }
 

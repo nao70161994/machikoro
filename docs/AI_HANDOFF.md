@@ -169,3 +169,9 @@ npm test
 - Restore rank: replacement freshness は `gameStartPayload.actionSeq` と raw `actionLog[].seq` を信頼しない。`stateSnapshot.actionSeq + replayable action count` を client/server/docs/tests の正とする。
 - Restore cleanup: reconnect failure cleanup は restore bundle も破棄する。
 - RLCPU: custom state schema でも flat action head の `numActions` mismatch は早期拒否する。
+
+## 2026-05-23 continuous review Cycle 9
+
+- Restore ack guard: `rejoinData.acceptedClientActions` is now part of reconnect semantics. It is a compact list of accepted `clientActionId` refs retained even after action log compaction into canonical snapshot; clients use it only to clear matching pending outbound action, not to replay.
+- Client-error privacy: browser reports send only origin+pathname; ntfy output hashes room id. Avoid reintroducing query/hash or raw reconnect/session data into notifications.
+- RL eval artifacts now record effective schema/action metadata. Legacy portfolio JSONs without explicit schema should still evaluate via `stateDim` fallback.

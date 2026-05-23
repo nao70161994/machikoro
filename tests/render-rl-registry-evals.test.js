@@ -138,6 +138,42 @@ runTest('render-rl-registry-evals は registry eval を重複なしで追記す�
     assert.strictEqual(second.registry.models[0].lastEvalScore, 0.5);
 });
 
+runTest('render-rl-registry-evals は evaluationConfig のキー順だけ違う評価を重複扱いする', () => {
+    const registry = {
+        models: [
+            {
+                id: 'model-top2',
+                evals: [{
+                    date: '2026-04-20',
+                    type: 'js',
+                    gamesPerOpponent: 20,
+                    checkpointRank: 2,
+                    evaluationConfig: { seed: 1, sharedSeeds: true, lineups: [['rl', 'strong']] },
+                    opponents: { strong: { wins: 12 } },
+                }],
+            },
+        ],
+    };
+    const rendered = [{
+        id: 'model-top2',
+        score: 0.6,
+        eval: {
+            date: '2026-04-20',
+            type: 'js',
+            gamesPerOpponent: 20,
+            checkpointRank: 2,
+            evaluationConfig: { lineups: [['rl', 'strong']], sharedSeeds: true, seed: 1 },
+            opponents: { strong: { wins: 12 } },
+        },
+    }];
+
+    const merged = mergeRegistryEvals(registry, rendered);
+
+    assert.strictEqual(merged.stats.appended, 0);
+    assert.strictEqual(merged.stats.skippedDuplicates, 1);
+    assert.strictEqual(merged.registry.models[0].evals.length, 1);
+});
+
 runTest('render-rl-registry-evals はseed policyが違う同日評価を重複扱いしない', () => {
     const registry = {
         models: [

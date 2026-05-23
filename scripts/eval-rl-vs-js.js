@@ -11,6 +11,17 @@ const RL_EVAL_SIMULATION_MODE = Object.freeze({
     reason: 'RL adoption evaluation must use the full selfplay simulator unless a future design explicitly changes this contract.',
 });
 
+function effectiveStateSchema(modelData) {
+    if (typeof modelData.stateSchema === 'string' && modelData.stateSchema) return modelData.stateSchema;
+    if (modelData.stateDim === 145) return 'state-2p-v1';
+    if (modelData.stateDim === 353) return 'state-mp-v1';
+    return null;
+}
+
+function effectiveActionSchema(modelData) {
+    return typeof modelData.actionSchema === 'string' && modelData.actionSchema ? modelData.actionSchema : 'action-flat-v1';
+}
+
 function parseArgs(argv) {
     let modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
     let games = 20;
@@ -87,6 +98,10 @@ function evaluateRlVsJs(options = {}) {
             hiddenSize: rlModelData.hiddenSize,
             numActions: rlModelData.numActions,
             schemaVersion: rlModelData.schemaVersion,
+            stateSchema: effectiveStateSchema(rlModelData),
+            actionSchema: effectiveActionSchema(rlModelData),
+            numCards: rlModelData.numCards ?? null,
+            numTargetSlots: rlModelData.numTargetSlots ?? null,
         },
         result: runSeries(buildRlEvalRunSeriesOptions(
             options,
@@ -328,6 +343,8 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     loadModel,
+    effectiveStateSchema,
+    effectiveActionSchema,
     RL_EVAL_SIMULATION_MODE,
     assertRlModelLineupCompatible,
     buildRlEvalRunSeriesOptions,

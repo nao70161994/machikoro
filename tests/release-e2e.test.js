@@ -230,6 +230,7 @@ runTest('release client error capture は iPhone Safari 風コンテキストと
     assert.strictEqual(report.playerIndex, 1);
     assert.ok(report.userAgent.includes('iPhone'));
     assert.strictEqual(report.appVersion, 'test-build');
+    assert.strictEqual(report.url, 'https://machikoro.example.test/');
     assert.ok(report.stack.length <= CLIENT_ERROR_LIMITS.maxStackLength + 3);
 
     assert.strictEqual(context.reportClientError({ source: 'window.onerror', message: 'same', filename: 'x.js', line: 1, column: 1 }), true);
@@ -389,12 +390,16 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
 
 runTest('release workflow と checklist は static safety gate を含む', () => {
     const workflow = readRepoFile('.github/workflows/release-test.yml');
+    const apkWorkflow = readRepoFile('.github/workflows/build-apk.yml');
     const checklist = readRepoFile('docs/RELEASE_CHECKLIST.md');
 
     assert.ok(workflow.includes('npm run test:static'));
     assert.ok(workflow.indexOf('npm run test:static') < workflow.indexOf('npm test'));
     assert.ok(checklist.includes('npm run test:static'));
     assert.ok(checklist.includes('npm run test:smoke'));
+    assert.ok(apkWorkflow.includes('npm run test:static'));
+    assert.ok(apkWorkflow.includes('npm test'));
+    assert.ok(apkWorkflow.indexOf('npm run test:static') < apkWorkflow.indexOf('npm test'));
 });
 
 runTest('release shortened long-run smoke は 60分相当を短縮して snapshot roundtrip を繰り返す', () => {
