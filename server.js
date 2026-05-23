@@ -1164,6 +1164,10 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元は元のホストのみ実行できます');
         return;
     }
+    if (!isValidRestoreReconnectTokenHashes(gameStartPayload)) {
+        emitAppError(socket, '復元データが不完全です');
+        return;
+    }
     const reconnectTokenHashes = Array.isArray(gameStartPayload.reconnectTokenHashes) ? gameStartPayload.reconnectTokenHashes : [];
     const restoredPlayers = playerNames
         .map((name, index) => {
@@ -1179,17 +1183,11 @@ function handleRecreateRoom(socket, payload = {}) {
             };
         })
         .filter(Boolean);
-    const sanitizedActionLog = Array.isArray(actionLog)
-        ? actionLog.filter(entry => entry && typeof entry.action === 'string')
-            .map(entry => {
-                const normalized = { action: entry.action, data: entry.data || {} };
-                if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-                if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
-                const safeClientActionId = normalizeClientActionId(entry.clientActionId);
-                if (safeClientActionId) normalized.clientActionId = safeClientActionId;
-                return normalized;
-            })
-        : [];
+    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot);
+    if (!sanitizedActionLog) {
+        emitAppError(socket, '復元データが壊れています');
+        return;
+    }
     const restoredRank = restorePayloadRank(gameStartPayload, stateSnapshot, sanitizedActionLog);
     gameStartPayload.hostEpoch = restoredRank.hostEpoch;
     gameStartPayload.actionSeq = restoredRank.actionSeq;
@@ -1300,6 +1298,51 @@ function countNestedStrings(value) {
     return value.reduce((sum, item) => sum + countNestedStrings(item), 0);
 }
 
+function isReconnectTokenHashString(value) {
+    return typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value);
+}
+
+function isCpuPlayerSetting(setting) {
+    return setting && typeof setting === 'object' && setting.type === 'cpu';
+}
+
+function isValidRestoreReconnectTokenHashes(gameStartPayload) {
+    if (!gameStartPayload || !Array.isArray(gameStartPayload.playerNames)) return false;
+    const playerCount = gameStartPayload.playerNames.length;
+    const hashes = gameStartPayload.reconnectTokenHashes;
+    if (!Array.isArray(hashes) || hashes.length !== playerCount) return false;
+    const settings = Array.isArray(gameStartPayload.playerSettings) ? gameStartPayload.playerSettings : [];
+    for (let index = 0; index < playerCount; index++) {
+        const hash = hashes[index];
+        if (isCpuPlayerSetting(settings[index])) {
+            if (hash !== '' && !isReconnectTokenHashString(hash)) return false;
+        } else if (!isReconnectTokenHashString(hash)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot) {
+    if (!Array.isArray(actionLog)) return [];
+    const snapshotSeq = isPlainObject(stateSnapshot) && Number.isInteger(stateSnapshot.actionSeq) && stateSnapshot.actionSeq >= 0
+        ? stateSnapshot.actionSeq
+        : 0;
+    const sanitized = [];
+    for (const entry of actionLog) {
+        if (!entry || typeof entry.action !== 'string') continue;
+        if (typeof entry.roomId === 'string' && entry.roomId !== roomId) return null;
+        if (Number.isInteger(entry.seq) && entry.seq <= snapshotSeq) continue;
+        const normalized = { action: entry.action, data: entry.data || {} };
+        if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+        if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+        const safeClientActionId = normalizeClientActionId(entry.clientActionId);
+        if (safeClientActionId) normalized.clientActionId = safeClientActionId;
+        sanitized.push(normalized);
+    }
+    return sanitized;
+}
+
 function sanitizeClientStateSnapshot(stateSnapshot, playerCount) {
     if (!isPlainObject(stateSnapshot)) return null;
     const sanitized = Object.assign({}, stateSnapshot);
@@ -1314,7 +1357,7 @@ function isValidGameStartPayload(payload, playerCount) {
     if (!Number.isInteger(playerCount) || playerCount < 2 || playerCount > 10) return false;
     if (!Array.isArray(payload.playerNames) ||
         payload.playerNames.length !== playerCount ||
-        payload.playerNames.some(name => typeof name !== 'string')) return false;
+        payload.playerNames.some(name => typeof name !== 'string' || !name || sanitizeName(name) !== name)) return false;
     if (payload.playerSettings != null &&
         (!Array.isArray(payload.playerSettings) ||
         (payload.playerSettings.length !== 0 && payload.playerSettings.length !== playerCount))) return false;

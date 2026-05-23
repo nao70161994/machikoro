@@ -439,6 +439,51 @@ runTest('storage resumeGame は重複休業indexを含む保存データを破�
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame は pendingActions の field/action 不一致を破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        phase: 'pending',
+        pendingBusiness: 1,
+        pendingActions: [{ field: 'pendingBusiness', action: 'resolveTV' }],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は pendingActions 空配列と pending count 不一致を破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        phase: 'pending',
+        pendingBusiness: 1,
+        pendingActions: [],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は pendingActions の count 不一致を破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        phase: 'pending',
+        pendingBusiness: 2,
+        pendingActions: [{ field: 'pendingBusiness', action: 'resolveBusiness' }],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
 runTest('storage resumeGame は小数コインを含む保存データを破棄する', () => {
     const rt = loadStorageRuntime();
     const state = makeSavedGameState();

@@ -877,6 +877,51 @@ runTest('rejoinData は共通fixtureで stateSnapshot に畳み込まれた pend
     assert.strictEqual(rt.getGame().currentPlayerIndex, fixture.snapshotCompactedBundle.stateSnapshot.currentPlayerIndex);
 });
 
+runTest('rejoinData は別roomの未ackアクションを再送しない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+        isRoomHost: true,
+    });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'OTHER',
+        clientActionId: 'other-room-action',
+    }));
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: {
+            schemaVersion: 2,
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            reconnectTokenHashes: ['hash-a', 'hash-b'],
+            hostPlayerIndex: 0,
+            hostEpoch: 0,
+            actionSeq: 0,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+    });
+
+    assert.strictEqual(rt.getSocketEmits().some(e => e.name === 'gameAction' && e.payload.clientActionId === 'other-room-action'), false);
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
+});
+
 runTest('rejoinData はサーバー上のホストが別人なら古いホスト復元payloadを送らない', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
@@ -1238,6 +1283,45 @@ runTest('_tryRestoreRoom は未ackアクションを復元actionLogへ含める'
     assert.strictEqual(emitted.payload.actionLog.length, 2);
     assert.strictEqual(emitted.payload.actionLog[1].action, 'nextTurn');
     assert.strictEqual(emitted.payload.actionLog[1].playerIndex, 0);
+});
+
+runTest('_tryRestoreRoom は別roomの未ackアクションを復元actionLogへ混ぜない', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+    rt.setOnlineState({
+        isRoomHost: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'rollDice', data: { forceDice: 1 }, playerIndex: 0 }]));
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'OTHER',
+        clientActionId: 'other-room-action',
+    }));
+
+    rt._tryRestoreRoom();
+
+    const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.actionLog.length, 1);
+    assert.strictEqual(emitted.payload.actionLog.some(entry => entry.clientActionId === 'other-room-action'), false);
 });
 
 runTest('ROOM_NOT_FOUND のホスト復元経路は未ackアクションを消さずに送る', () => {

@@ -5,6 +5,7 @@ const { runTest } = require('./helpers/test-utils');
 const {
     parseArgs,
     buildDeterministicRolls,
+    normalizePendingActions,
     normalizeState,
     normalizeTraceEntry,
     compareTraceEntries,
@@ -61,6 +62,28 @@ runTest('compare rl match trace: JS trace 初期在庫は7〜10人の大施設�
     }
 });
 
+runTest('compare rl match trace: normalizePendingActions は queue 順序を保持して揃える', () => {
+    assert.deepStrictEqual(
+        normalizePendingActions({
+            pendingActions: [
+                { field: 'pendingBusiness', action: 'resolveBusiness' },
+                { field: 'pendingTV', action: 'resolveTV' },
+            ],
+        }),
+        [
+            { field: 'pendingBusiness', action: 'resolveBusiness' },
+            { field: 'pendingTV', action: 'resolveTV' },
+        ],
+    );
+    assert.deepStrictEqual(
+        normalizePendingActions({ pending_action_queue: ['pendingMover', 'pendingCleaning'] }),
+        [
+            { field: 'pendingMover', action: 'resolveMover' },
+            { field: 'pendingCleaning', action: 'resolveCleaning' },
+        ],
+    );
+});
+
 runTest('compare rl match trace: normalizeState は Python/JS の状態表現を揃える', () => {
     const py = normalizeState({
         current: 0,
@@ -70,7 +93,8 @@ runTest('compare rl match trace: normalizeState は Python/JS の状態表現を
         lastDice1: 4,
         lastDice2: 0,
         pendingTV: 0,
-        pendingBusiness: 0,
+        pendingBusiness: 1,
+        pendingActions: [{ field: 'pendingBusiness', action: 'resolveBusiness' }],
         pendingCleaning: 0,
         pendingMover: 0,
         pendingRenovation: 0,
@@ -85,7 +109,8 @@ runTest('compare rl match trace: normalizeState は Python/JS の状態表現を
         lastDice1: 4,
         lastDice2: 0,
         pendingTV: 0,
-        pendingBusiness: 0,
+        pendingBusiness: 1,
+        pendingActions: [{ field: 'pendingBusiness', action: 'resolveBusiness' }],
         pendingCleaning: 0,
         pendingMover: 0,
         pendingRenovation: 0,

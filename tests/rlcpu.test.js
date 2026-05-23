@@ -272,6 +272,7 @@ function serializeGameSetup(game, context) {
         pendingCleaning: game.pendingCleaning,
         pendingMover: game.pendingMover,
         pendingRenovation: game.pendingRenovation,
+        pendingActions: context.GameManager.serializedPendingActionsFor(game),
         pendingIT: game.pendingIT,
         usedReroll: !!game.usedReroll,
         shopStock: Object.fromEntries(Object.entries(shopStock).filter(([, count]) => count !== 6)),

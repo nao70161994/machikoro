@@ -84,6 +84,27 @@ function normalizePlayer(player) {
     };
 }
 
+function normalizePendingActions(state) {
+    const actionsByField = {
+        pendingTV: 'resolveTV',
+        pendingBusiness: 'resolveBusiness',
+        pendingCleaning: 'resolveCleaning',
+        pendingMover: 'resolveMover',
+        pendingRenovation: 'resolveRenovation',
+    };
+    const entries = Array.isArray(state.pendingActions)
+        ? state.pendingActions
+        : (Array.isArray(state.pending_action_queue)
+            ? state.pending_action_queue.map(field => ({ field }))
+            : []);
+    return entries
+        .filter(entry => entry && typeof entry === 'object' && actionsByField[entry.field])
+        .map(entry => ({
+            field: entry.field,
+            action: entry.action || actionsByField[entry.field],
+        }));
+}
+
 function normalizeState(state) {
     const shopStock = state.shopStock || {};
     return {
@@ -98,6 +119,7 @@ function normalizeState(state) {
         pendingCleaning: state.pendingCleaning || 0,
         pendingMover: state.pendingMover || 0,
         pendingRenovation: state.pendingRenovation || 0,
+        pendingActions: normalizePendingActions(state),
         pendingIT: !!state.pendingIT,
         usedReroll: !!state.usedReroll,
         shopStock: Object.fromEntries(Object.entries(shopStock).sort(([a], [b]) => a.localeCompare(b, 'ja'))),
@@ -190,6 +212,7 @@ if (require.main === module) {
 module.exports = {
     parseArgs,
     buildDeterministicRolls,
+    normalizePendingActions,
     normalizeState,
     normalizeTraceEntry,
     compareTraceEntries,

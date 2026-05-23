@@ -638,6 +638,18 @@ runTest('server mirror snapshot は serialize/restore/serialize でroundtripで�
     assert.deepStrictEqual(roundtrip, snapshot);
 });
 
+runTest('server mirror snapshot は長いlogを末尾30件に制限する', () => {
+    const { GameManager } = makeGame();
+    const game = new GameManager(2);
+    game.log = Array.from({ length: 40 }, (_, index) => ({ type: 'system', message: `log-${index}` }));
+
+    const snapshot = serializeMirrorState(game, { 麦畑: 6 }, null, 1);
+
+    assert.strictEqual(snapshot.log.length, 30);
+    assert.strictEqual(snapshot.log[0].message, 'log-10');
+    assert.strictEqual(snapshot.log[29].message, 'log-39');
+});
+
 runTest('createRoomMirror は snapshot の undoState から undoBuild replay を復元する', () => {
     const room = makeRoom();
     room.actionLog = [
@@ -845,6 +857,40 @@ runTest('sanitizeName がHTMLタグ・特殊文字を除去し20文字に制限�
     assert.strictEqual(sanitizeName('  Alice  '), 'Alice');
     assert.strictEqual(sanitizeName(null), '');
     assert.strictEqual(sanitizeName('<>&"\'`'), '');
+});
+
+runTest('handleRecreateRoom は未sanitizeの復元playerNameを拒否する', () => {
+    const crypto = require('crypto');
+    const reconnectToken = 'token-host';
+    const emitted = [];
+    handleRecreateRoom({
+        id: 'socket-host-name',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join() {},
+    }, {
+        roomId: 'REST_BAD_NAME',
+        gameStartPayload: {
+            playerNames: ['Alice<script>', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ actionSeq: 0 }),
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice<script>',
+        reconnectToken,
+    });
+
+    assert.strictEqual(__rooms.REST_BAD_NAME, undefined);
+    assert.strictEqual(emitted[0].name, APP_ERROR_EVENT);
 });
 
 runTest('normalizePlayerSettings は5人以上のrl CPUを維持する', () => {
@@ -2627,6 +2673,151 @@ runTest('restorePayloadRank は actionLog の巨大seqではなくreplay可能�
         ),
         { hostEpoch: 2, actionSeq: 5 }
     );
+});
+
+runTest('handleRecreateRoom はsnapshot以前のactionLogを再適用しない', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const reconnectToken = 'token-host';
+    const payload = {
+        roomId: 'REST_SKIP_OLD_LOG',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build', shopStock: { '麦畑': 5 }, actionSeq: 5 }),
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 5, clientActionId: 'old-compacted-action' }],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    };
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        handleRecreateRoom(socket, payload);
+
+        assert.deepStrictEqual(joined, ['REST_SKIP_OLD_LOG']);
+        assert.deepStrictEqual(emitted[0].payload.acceptedClientActions, []);
+        assert.strictEqual(emitted[0].payload.stateSnapshot.actionSeq, 5);
+        assert.deepStrictEqual(__rooms.REST_SKIP_OLD_LOG.actionLog, []);
+    } finally {
+        delete __rooms.REST_SKIP_OLD_LOG;
+    }
+});
+
+runTest('handleRecreateRoom は別roomId付きactionLogを拒否する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const reconnectToken = 'token-host';
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    handleRecreateRoom(socket, {
+        roomId: 'REST_ROOM_ID_GUARD',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ actionSeq: 0 }),
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1, roomId: 'OTHER' }],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    });
+
+    assert.deepStrictEqual(joined, []);
+    assert.strictEqual(__rooms.REST_ROOM_ID_GUARD, undefined);
+    assert.strictEqual(emitted[0].name, APP_ERROR_EVENT);
+});
+
+runTest('handleRecreateRoom はhuman reconnectTokenHash欠落を拒否しCPU空hashは許容する', () => {
+    const crypto = require('crypto');
+    const reconnectToken = 'token-host';
+    const goodHostHash = crypto.createHash('sha256').update(reconnectToken).digest('hex');
+    const badEmitted = [];
+    handleRecreateRoom({
+        id: 'socket-host-bad',
+        emit(name, payload) { badEmitted.push({ name, payload }); },
+        join() {},
+    }, {
+        roomId: 'REST_BAD_HASHES',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [goodHostHash, ''],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ actionSeq: 0 }),
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    });
+    assert.strictEqual(__rooms.REST_BAD_HASHES, undefined);
+    assert.strictEqual(badEmitted[0].name, APP_ERROR_EVENT);
+
+    const goodEmitted = [];
+    const joined = [];
+    handleRecreateRoom({
+        id: 'socket-host-good',
+        emit(name, payload) { goodEmitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    }, {
+        roomId: 'REST_CPU_EMPTY_HASH',
+        gameStartPayload: {
+            playerNames: ['Alice', 'CPU'],
+            playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'normal' }],
+            reconnectTokenHashes: [goodHostHash, ''],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ actionSeq: 0 }),
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    });
+
+    try {
+        assert.deepStrictEqual(joined, ['REST_CPU_EMPTY_HASH']);
+        assert.strictEqual(goodEmitted[0].name, 'rejoinData');
+    } finally {
+        delete __rooms.REST_CPU_EMPTY_HASH;
+    }
 });
 
 runTest('handleRecreateRoom はsnapshot圧縮後も受理済みclientActionIdを返す', () => {

@@ -1836,7 +1836,7 @@
 
 ## Continuous review Cycle 13 restore boundary / accessibility / pending queue hardening
 
-- 状態: completed; full verification passed; commit/push pending.
+- 状態: completed; full verification passed and pushed in `8e64774`.
 - 変更ファイル:
   - `server.js`, `tests/server.test.js`
   - `js/online.js`, `tests/online.test.js`
@@ -1857,3 +1857,26 @@
   - pending action key の完全な per-tab/per-session namespacing は保存schema変更が大きいため未実装。
   - signed restore snapshot / server persisted canonical state は引き続き design decision required。
   - iOS/Android 実機の crash overlay focus, tab announcement, PWA install/update/reconnect は manual verification required。
+
+## Continuous review Cycle 14 restore replay / pending trace / mobile a11y hardening
+
+- 状態: completed; full verification passed; commit/push pending.
+- 変更ファイル:
+  - `server.js`, `server/mirrorReplay.js`, `tests/server.test.js`
+  - `js/online.js`, `tests/online.test.js`
+  - `js/storage.js`, `tests/storage.test.js`
+  - `scripts/selfplay.js`, `scripts/compare-rl-match-trace.js`, `scripts/rl/export_debug_fixture.py`, `tests/compare-rl-match-trace.test.js`, `tests/rlcpu.test.js`
+  - `index.html`, `style.css`, `tests/main.test.js`
+- 実装内容:
+  - `onlinePendingAction` の `roomId` を restore append / reconnect resend の gate にも使い、別room/旧tabの未ack actionが復元bundleや再送に混入しないようにした。
+  - server restore の actionLog sanitize で、entry の `roomId` が復元対象roomと違う場合は拒否し、`stateSnapshot.actionSeq` 以下の action は replay 対象から除外する。
+  - restore payload の `reconnectTokenHashes` は人数分の配列を要求し、人間slotは64桁hash必須、CPU slotのみ空hashを許容する。
+  - restore payload の playerNames は live room と同じ sanitize contract を通す。未sanitize/空/過長名は復元前に拒否する。
+  - local save の `pendingActions` は field/action 対応と pending count 一致を検証する。legacy の `pendingActions` 欠落は許容するが、空配列と非zero pending count の不整合は拒否する。
+  - JS/Python RL trace export と compare normalization に `pendingActions` を含め、queue順序のズレを trace parity で検出できるようにした。
+  - online/server snapshots と undo snapshot の `log` は末尾30件に制限し、長期対戦で actionLog compact 後も snapshot payload が膨らみ続けないようにした。
+  - `onlineStatus` を live region 化し、card detail button の touch hit area を拡大した。
+- deferred / design required:
+  - client-error origin policy の production 強化は Render/ntfy の既存運用を変える可能性があるため、`PUBLIC_ORIGIN` / token 必須化の設計判断待ち。
+  - signed restore snapshot / server persisted canonical state は引き続き design decision required。
+  - 実機 iOS/Android の live region 読み上げ、tap target、restore/reconnect 長時間回帰は manual verification required。

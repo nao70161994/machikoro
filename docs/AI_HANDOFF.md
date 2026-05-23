@@ -212,3 +212,13 @@ npm test
 - Python RL target-head code must use pending queue order, not raw pending counts, when selecting pending target kind.
 - Crash/offline/tab/Business Center accessibility metadata is now covered by static/unit tests; preserve aria-selected/aria-pressed/live-region contracts when editing UI.
 - Full per-tab/per-session pending-key namespacing and signed restore snapshots remain larger restore-schema design items.
+
+## 2026-05-23 continuous review Cycle 14
+
+- `onlinePendingAction.roomId` is now enforced at all use sites: app-error cleanup, restore bundle append, and reconnect resend. Do not append or resend a pending outbound action unless it belongs to the current room.
+- Server restore sanitization drops actionLog entries at or below `stateSnapshot.actionSeq` and rejects actionLog entries that carry a mismatched `roomId`. Keep compacted snapshot + residual action log semantics monotonic.
+- Restore `reconnectTokenHashes` must have one entry per player. Human slots require a valid 64-hex hash; CPU slots may use an empty hash.
+- Local saved `pendingActions` are optional for legacy saves, but if present they must match field/action pairs and pending counts exactly. Empty queue plus nonzero pending count is invalid.
+- RL parity traces now include ordered `pendingActions`; queue order differences should be treated as real parity differences, not just diagnostics noise.
+- Online/server snapshots trim `log` to the last 30 entries. Avoid reintroducing unbounded logs into restore snapshots.
+- `onlineStatus` is a polite live region, and `.card-detail-btn` has a larger touch target. Preserve these mobile/accessibility contracts.

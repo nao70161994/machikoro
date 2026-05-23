@@ -287,6 +287,29 @@ function makeDefaultLandmarks() {
     return Object.fromEntries(Player.landmarkNames().map(name => [name, false]));
 }
 
+const SAVED_PENDING_ACTION_BY_FIELD = Object.freeze({
+    pendingTV: 'resolveTV',
+    pendingBusiness: 'resolveBusiness',
+    pendingCleaning: 'resolveCleaning',
+    pendingMover: 'resolveMover',
+    pendingRenovation: 'resolveRenovation',
+});
+
+function isValidSavedPendingActions(state) {
+    if (!Object.prototype.hasOwnProperty.call(state, 'pendingActions')) return true;
+    if (!Array.isArray(state.pendingActions)) return false;
+    const counts = Object.fromEntries(Object.keys(SAVED_PENDING_ACTION_BY_FIELD).map(field => [field, 0]));
+    for (const pending of state.pendingActions) {
+        if (!isPlainObject(pending)) return false;
+        const expectedAction = SAVED_PENDING_ACTION_BY_FIELD[pending.field];
+        if (!expectedAction || pending.action !== expectedAction) return false;
+        counts[pending.field]++;
+    }
+    return Object.keys(SAVED_PENDING_ACTION_BY_FIELD).every(field =>
+        counts[field] === (Number.isInteger(state[field]) ? state[field] : 0)
+    );
+}
+
 function isValidSavedGameState(state) {
     if (!isPlainObject(state)) return false;
     if (!Array.isArray(state.players) || state.players.length < 2 || state.players.length > 10) return false;
@@ -304,15 +327,7 @@ function isValidSavedGameState(state) {
         if (Object.prototype.hasOwnProperty.call(state, field) &&
             (!Number.isInteger(state[field]) || state[field] < 0)) return false;
     }
-    if (Object.prototype.hasOwnProperty.call(state, 'pendingActions')) {
-        const validFields = new Set(['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']);
-        const validActions = new Set(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation']);
-        if (!Array.isArray(state.pendingActions) || state.pendingActions.some(pending =>
-            !isPlainObject(pending) ||
-            !validFields.has(pending.field) ||
-            !validActions.has(pending.action)
-        )) return false;
-    }
+    if (!isValidSavedPendingActions(state)) return false;
     for (const field of ['builtThisTurn', 'pendingIT', 'usedReroll', 'hadAmusementParkAtRoll']) {
         if (Object.prototype.hasOwnProperty.call(state, field) &&
             typeof state[field] !== 'boolean') return false;

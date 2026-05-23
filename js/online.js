@@ -2,6 +2,7 @@
 let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
+const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
     if (typeof createCpuPlayer === "function") {
@@ -375,6 +376,7 @@ function _acceptedClientActionMatchesPending(ref, pending) {
 
 function _appendPendingForRestore(actionLog, pending) {
     if (!pending) return actionLog;
+    if (!_pendingOutboundActionBelongsToCurrentSession(pending)) return actionLog;
     if (!actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
         actionLog.push(pending);
     }
@@ -382,6 +384,7 @@ function _appendPendingForRestore(actionLog, pending) {
 }
 
 function _canResendPendingOutboundAction(pending) {
+    if (!_pendingOutboundActionBelongsToCurrentSession(pending)) return false;
     if (!pending || !game || !Number.isInteger(myOriginalPlayerIndex)) return false;
     if (Number.isInteger(pending.playerIndex) && pending.playerIndex >= 0 && pending.playerIndex !== myOriginalPlayerIndex) return false;
     if (!Number.isInteger(myPlayerIndex) || myPlayerIndex < 0) return false;
@@ -405,7 +408,7 @@ function buildOnlineSnapshot() {
         })),
         currentPlayerIndex: game.currentPlayerIndex,
         phase: game.phase,
-        log: [...game.log],
+        log: Array.isArray(game.log) ? game.log.slice(-ONLINE_SNAPSHOT_LOG_LIMIT) : [],
         lastDiceResult: game.lastDiceResult,
         lastDice1: game.lastDice1,
         lastDice2: game.lastDice2,
@@ -441,7 +444,7 @@ function buildOnlineUndoSnapshot() {
         hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
         shopStock: Object.assign({}, SHOP_STOCK),
         builtThisTurn: game.builtThisTurn,
-        log: [...game.log],
+        log: Array.isArray(game.log) ? game.log.slice(-ONLINE_SNAPSHOT_LOG_LIMIT) : [],
     };
 }
 

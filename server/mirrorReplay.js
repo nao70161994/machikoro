@@ -1,6 +1,7 @@
 'use strict';
 
 const MAX_SNAPSHOT_PENDING_COUNT = 50;
+const MAX_SNAPSHOT_LOG_ENTRIES = 30;
 
 function makeMirrorReplay({
     gameRuntime,
@@ -23,7 +24,7 @@ function makeMirrorReplay({
             })),
             currentPlayerIndex: game.currentPlayerIndex,
             phase: game.phase,
-            log: [...game.log],
+            log: Array.isArray(game.log) ? game.log.slice(-MAX_SNAPSHOT_LOG_ENTRIES) : [],
             lastDiceResult: game.lastDiceResult,
             lastDice1: game.lastDice1,
             lastDice2: game.lastDice2,
@@ -479,7 +480,7 @@ function makeMirrorReplay({
             hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
             shopStock: Object.assign({}, shopStock),
             builtThisTurn: game.builtThisTurn,
-            log: [...game.log],
+            log: Array.isArray(game.log) ? game.log.slice(-MAX_SNAPSHOT_LOG_ENTRIES) : [],
         };
     }
 

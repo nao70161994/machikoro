@@ -5,6 +5,14 @@ import argparse
 import json
 
 from .cards import CARD_NAMES, LANDMARK_ORDER
+
+PENDING_ACTION_BY_FIELD = {
+    "pendingTV": "resolveTV",
+    "pendingBusiness": "resolveBusiness",
+    "pendingCleaning": "resolveCleaning",
+    "pendingMover": "resolveMover",
+    "pendingRenovation": "resolveRenovation",
+}
 from .encode import STATE_DIM, action_mask, encode_state
 from .game_env import (
     MachikoroEnv,
@@ -77,6 +85,11 @@ def _serialize_env_setup(env):
         "pendingCleaning": env.pending_clean,
         "pendingMover": env.pending_mover,
         "pendingRenovation": env.pending_reno,
+        "pendingActions": [
+            {"field": field, "action": PENDING_ACTION_BY_FIELD[field]}
+            for field in getattr(env, "pending_action_queue", [])
+            if field in PENDING_ACTION_BY_FIELD
+        ],
         "pendingIT": env.pending_it,
         "usedReroll": env.used_reroll,
         "shopStock": {name: int(env.shop_stock[name]) for name in CARD_NAMES if env.shop_stock.get(name, 0) != 6},

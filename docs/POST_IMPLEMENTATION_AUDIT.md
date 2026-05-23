@@ -642,3 +642,20 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 - pending action の完全な per-tab namespacing は既存restore schemaとUXに影響するため、設計判断が必要。
 - server restart restore の署名付き検証や server persisted canonical state は引き続き design required。
 - iOS/Android 実機での accessibility/PWA/reconnect 長時間確認は manual verification required。
+
+### Continuous review Cycle 14 restore replay / pending trace / mobile a11y hardening
+
+確認した内容:
+
+- High fixed: 別roomの `onlinePendingAction` が restore actionLog append や reconnect resend に混入し得る経路を確認した。cleanupだけでなく restore/resend の使用点にも `roomId` gate を追加した。
+- High fixed: snapshot compact 後に古い `actionLog` が残った場合、`stateSnapshot.actionSeq` 以下の action が再適用され得る余地を確認した。server restore sanitize で古いseqを replay対象から外し、別roomId付きentryは拒否する。
+- Medium fixed: restore payload の reconnect token hash 配列が欠けると、人間プレイヤーの再接続経路が失われる可能性があった。人間slotはhash必須、CPU slotのみ空hash許容にした。
+- Medium fixed: JS/Python trace comparison が pending count だけを比較し、queue順序のズレを見逃す可能性があった。trace setup/normalizationに `pendingActions` を追加した。
+- Low fixed: online/server snapshot の `log` が actionLog compact 後も増え続ける可能性があった。snapshot log は local save と同じく末尾30件へ制限した。
+- Low fixed: online status の live region と card detail button の touch hit area を補強した。
+
+残課題:
+
+- Production client-error origin policy を `PUBLIC_ORIGIN` または shared token 必須へ寄せる変更は、Render 環境での設定手順に影響するため design/ops decision required。
+- Host-supplied restore snapshot の完全な信頼性は signed snapshot または server persisted canonical state が必要で、引き続き design decision required。
+- 実機 iOS/Android での reconnect/PWA/accessibility 長時間確認は manual verification required。

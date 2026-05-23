@@ -229,7 +229,11 @@ function listLegalActions(runtime, game, shopStock, cpu = null) {
     return legalActions;
 }
 
-function summarizeTraceState(game, shopStock) {
+function summarizeTraceState(runtimeOrGame, gameOrShopStock, maybeShopStock) {
+    const hasRuntime = runtimeOrGame && runtimeOrGame.GameManager;
+    const runtime = hasRuntime ? runtimeOrGame : null;
+    const game = hasRuntime ? gameOrShopStock : runtimeOrGame;
+    const shopStock = hasRuntime ? maybeShopStock : gameOrShopStock;
     return {
         currentPlayerIndex: game.currentPlayerIndex,
         phase: game.phase,
@@ -242,6 +246,9 @@ function summarizeTraceState(game, shopStock) {
         pendingCleaning: game.pendingCleaning || 0,
         pendingMover: game.pendingMover || 0,
         pendingRenovation: game.pendingRenovation || 0,
+        pendingActions: (runtime && runtime.GameManager && typeof runtime.GameManager.serializedPendingActionsFor === 'function')
+            ? runtime.GameManager.serializedPendingActionsFor(game)
+            : [],
         pendingIT: !!game.pendingIT,
         usedReroll: !!game.usedReroll,
         builtThisTurn: !!game.builtThisTurn,
@@ -267,7 +274,7 @@ function pushTraceEntry(runtime, game, shopStock, cpu, actionInfo, traceEntries)
     const entry = {
         actorIndex: game.currentPlayerIndex,
         actorDifficulty: cpu && cpu.difficulty ? cpu.difficulty : (cpu instanceof runtime.RLCPU ? 'rl' : 'cpu'),
-        before: summarizeTraceState(game, shopStock),
+        before: summarizeTraceState(runtime, game, shopStock),
         legalActions: listLegalActions(runtime, game, shopStock, cpu),
         chosenAction: actionInfo ? {
             action: Number.isFinite(actionInfo.action) ? actionInfo.action : null,
@@ -713,7 +720,7 @@ function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, t
             break;
     }
     resolution.apply();
-    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
 }
 
 function playCpuStepLightweight(runtime, game, cpu, shopStock, rng, rollQueue = null) {
@@ -919,7 +926,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     game.rollDice(forceDice, makeImmediateTunaDiceForRoll(runtime, game, forceDice, false, rng, rollQueue));
                 }
                 if (Array.isArray(traceEntries)) {
-                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                 }
                 return;
             case runtime.GAME_PHASES.SELECT_DICE: {
@@ -937,7 +944,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     game.selectDiceCount(false, d1, null, makeImmediateTunaDiceForRoll(runtime, game, d1, false, rng, rollQueue));
                 }
                 if (Array.isArray(traceEntries)) {
-                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                 }
                 return;
             }
@@ -962,7 +969,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     game.skipReroll();
                 }
                 if (Array.isArray(traceEntries)) {
-                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                 }
                 return;
             case runtime.GAME_PHASES.HARBOR_CHOICE:
@@ -974,7 +981,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     }, traceEntries);
                     const dice = useHarbor ? game.lastDiceResult + 2 : game.lastDiceResult;
                     game.resolveHarbor(useHarbor, makeTunaDiceForRoll(runtime, game, dice, rng, rollQueue));
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                 }
                 return;
             case runtime.GAME_PHASES.PENDING:
@@ -1001,7 +1008,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     }, traceEntries);
                     if (cardName) game.resolveCleaning(cardName);
                     else fallbackCleaning(game);
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                     return;
                 }
                 if (game.pendingIT) {
@@ -1011,7 +1018,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         label: save ? 'IT_SAVE' : 'IT_SKIP',
                     }, traceEntries);
                     game.resolveIT(save);
-                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                    if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                     return;
                 }
                 game.phase = runtime.GAME_PHASES.BUILD;
@@ -1067,7 +1074,7 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                     }
                 }
                 if (game.phase === runtime.GAME_PHASES.BUILD) game.nextTurn();
-                if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(game, shopStock);
+                if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                 return;
             default:
                 return;
