@@ -418,3 +418,17 @@ After adopting the refined late basic duplicate guard, this pass tested whether 
 | Disable near-win penalty | Disable the guard when remaining landmarks <= 2. | strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No improvement over the adopted guard. |
 
 Conclusion: no extra one-condition refinement is justified right now. The adopted refined guard appears to be close to the useful simple boundary; further gains likely need either a new loss-position signal or paired trace analysis for specific allStrong4 losses, not another generic tweak to the same duplicate penalty.
+
+## 2026-05-23 non-duplicate-axis search after refined guard
+
+This pass kept the adopted refined late basic duplicate guard unchanged and screened other simple rule axes. The current quick baseline for seeds 11,12,13 strong crowd/allStrong4 remains strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. The current 50-game baseline from the refined-guard adoption is strongWeighted 44.8%, strongMin 39.3%, crowd 52.0%, allStrong4 39.3%, with normalCrowd 58.0% on 50-game seeds 11,12,13 and 60.0% on 100-game seed 11.
+
+| candidate | rule / option | result | decision |
+| --- | --- | --- | --- |
+| Endgame landmark pressure | `landmarkProgressRemaining=4` | 20-game seeds 11,12,13 strong crowd/allStrong4: strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. No measurable improvement over the current refined guard. |
+| Opponent win-range disruption | `tvMode=denial` | 20-game seeds 11,12,13 strong crowd/allStrong4: strongWeighted 40.0%, strongMin 30.0%, crowd 53.3%, allStrong4 30.0%. | Rejected. Denial scoring did not flip the target allStrong4/crowd losses. |
+| Airport skip disabled | `airportSkipMode=never` | 20-game screen improved slightly to strongWeighted 41.0%, strongMin 31.7%. NormalCrowd 20-game seeds 11,12,13 stayed at 60.0%, but 50-game strong confirmation was strongWeighted 44.5%, strongMin 39.3%, crowd 51.3%, allStrong4 39.3%, below the current 44.8% weighted baseline. | Rejected. The quick gain did not survive 50-game confirmation. |
+| Business Center harmful gift | `businessMode=harmfulGift` | 20-game seeds 11,12,13 strong crowd/allStrong4: strongWeighted 39.8%, strongMin 28.3%, crowd 55.0%, allStrong4 28.3%. | Rejected. It raises crowd mean in this sample but damages allStrong4 and strongMin. Keep the simpler default Business Center exchange. |
+| Red card crowd compensation | Raise v2simple red-opponent future bonus scale from 0.25 to 0.30. | 20-game seeds 11,12,13 strong crowd/allStrong4: strongWeighted 38.6%, strongMin 30.0%, crowd 50.0%, allStrong4 30.0%. | Rejected and reverted. The extra red pressure over-buys red cards in the target screen. |
+
+Conclusion: no non-duplicate simple rule cleared the adoption gate. The refined late basic duplicate guard remains the best current simple v2simple improvement. The next useful search should use paired loss traces for specific allStrong4 positions or search a narrower airport-skip condition; broad airport/landmark/TV/Business/red knobs have now been rechecked after the refined guard and did not justify changing the live preset.
