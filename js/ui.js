@@ -365,21 +365,47 @@ function persistAfterRender() {
     saveGameState();
 }
 
+function currentUiAllowedActions() {
+    if (!game) return new Set();
+    try {
+        if (typeof game.allowedActions === 'function') return game.allowedActions();
+        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return GameManager.allowedActionsFor(game);
+    } catch (_) {}
+    return new Set();
+}
+
+function isCurrentHumanUiTurn() {
+    if (!game) return false;
+    const isCPUTurn = Array.isArray(cpuPlayers) && cpuPlayers[game.currentPlayerIndex] !== null;
+    if (isCPUTurn) return false;
+    return !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+}
+
+function canShowUiAction(action) {
+    if (!action || !isCurrentHumanUiTurn()) return false;
+    return currentUiAllowedActions().has(action);
+}
+
+function uiActionDisabledAttr(action) {
+    return canShowUiAction(action) ? '' : ' disabled';
+}
+
 function renderDiceChoose() {
     const el = document.getElementById("diceChoose");
     if (!el) return;
-    const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    if (!isMyTurn) { el.innerHTML = ""; return; }
-    if (game.phase === GAME_PHASES.SELECT_DICE) {
-        el.innerHTML = `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false">🎲 1個</button><button data-action="selectDiceCount" data-use-two="true">🎲🎲 2個（合計を使う）</button></div>`;
+    if (!isCurrentHumanUiTurn()) { el.innerHTML = ""; return; }
+    if (game.phase === GAME_PHASES.SELECT_DICE && currentUiAllowedActions().has('selectDice')) {
+        const disabled = uiActionDisabledAttr('selectDice');
+        el.innerHTML = `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}>🎲 1個</button><button data-action="selectDiceCount" data-use-two="true"${disabled}>🎲🎲 2個（合計を使う）</button></div>`;
         return;
     }
-    if (game.phase === GAME_PHASES.REROLL_CONFIRM) {
-        el.innerHTML = `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button data-action="rerollDice">振り直す</button><button data-action="skipReroll">このまま使う</button></div>`;
+    if (game.phase === GAME_PHASES.REROLL_CONFIRM && (currentUiAllowedActions().has('rerollDice') || currentUiAllowedActions().has('skipReroll'))) {
+        el.innerHTML = `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button data-action="rerollDice"${uiActionDisabledAttr('rerollDice')}>振り直す</button><button data-action="skipReroll"${uiActionDisabledAttr('skipReroll')}>このまま使う</button></div>`;
         return;
     }
-    if (game.phase === GAME_PHASES.HARBOR_CHOICE) {
-        el.innerHTML = `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true">+2する（→${game.lastDiceResult + 2}）</button><button data-action="resolveHarbor" data-use-bonus="false">そのまま使う（${game.lastDiceResult}）</button></div>`;
+    if (game.phase === GAME_PHASES.HARBOR_CHOICE && currentUiAllowedActions().has('resolveHarbor')) {
+        const disabled = uiActionDisabledAttr('resolveHarbor');
+        el.innerHTML = `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true"${disabled}>+2する（→${game.lastDiceResult + 2}）</button><button data-action="resolveHarbor" data-use-bonus="false"${disabled}>そのまま使う（${game.lastDiceResult}）</button></div>`;
         return;
     }
     el.innerHTML = "";
@@ -387,8 +413,7 @@ function renderDiceChoose() {
 
 function shouldShowPendingForCurrentPlayer() {
     if (game.phase !== GAME_PHASES.PENDING && !game.pendingIT && game.pendingRenovation <= 0) return false;
-    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
-    return (!isOnlineGame && !isCPUTurn) || (isOnlineGame && game.currentPlayerIndex === myPlayerIndex);
+    return isCurrentHumanUiTurn();
 }
 
 function updatePendingModalContent(el, modal, html) {
@@ -417,13 +442,14 @@ function renderPending() {
     const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
         ? GameManager.nextPendingActionFor(game)
         : null;
-    const shouldRenderPendingField = field => !nextPending || nextPending.field === field;
+    const allowedActions = currentUiAllowedActions();
+    const shouldRenderPendingField = (field, action) => (!nextPending || nextPending.field === field) && allowedActions.has(action);
     const inspectHint = `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
-    if (shouldRenderPendingField('pendingTV') && game.pendingTV > 0) {
+    if (shouldRenderPendingField('pendingTV', 'resolveTV') && game.pendingTV > 0) {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         html += `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${inspectHint}${others.map(({ p, i }) => `<button data-action="resolveTV" data-target-index="${i}">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
     }
-    if (shouldRenderPendingField('pendingBusiness') && game.pendingBusiness > 0) {
+    if (shouldRenderPendingField('pendingBusiness', 'resolveBusiness') && game.pendingBusiness > 0) {
         const current = game.currentPlayer();
         const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
@@ -441,22 +467,22 @@ function renderPending() {
         }).join("");
         html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
     }
-    if (shouldRenderPendingField('pendingCleaning') && game.pendingCleaning > 0) {
+    if (shouldRenderPendingField('pendingCleaning', 'resolveCleaning') && game.pendingCleaning > 0) {
         const allCardNames = [...new Set(game.players.flatMap(p => p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
         html += `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div>`;
     }
-    if (shouldRenderPendingField('pendingMover') && game.pendingMover > 0) {
+    if (shouldRenderPendingField('pendingMover', 'resolveMover') && game.pendingMover > 0) {
         const current = game.currentPlayer();
         const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         html += `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
     }
-    if (shouldRenderPendingField('pendingRenovation') && game.pendingRenovation > 0) {
+    if (shouldRenderPendingField('pendingRenovation', 'resolveRenovation') && game.pendingRenovation > 0) {
         const current = game.currentPlayer();
         const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO).map(([name]) => name);
         html += `<div class="pending-box"><p>🔨 改装屋：取り壊すランドマークを選んでください（+8コイン）</p>${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button data-action="resolveRenovation" data-landmark-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
     }
-    if (shouldRenderPendingField('pendingIT') && game.pendingIT) {
+    if (shouldRenderPendingField('pendingIT', 'resolveIT') && game.pendingIT) {
         const cur = game.currentPlayer();
         const canSave = cur.coins >= 1;
         html += `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button data-action="resolveIT" data-do-save="true" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button data-action="resolveIT" data-do-save="false">スキップ</button></div>`;

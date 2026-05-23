@@ -240,3 +240,8 @@ npm test
 - Normal human-turn unlock is limited to primary actions and must not close informational modals. Pending recovery is a separate `pending-ui-locked` path and only repairs `pendingModal` / `pendingMenu` visibility/lock state.
 - Client error freeze notifications send compact `FREEZE_SUMMARY` data to ntfy. Keep full text-bearing UI snapshots local-only unless privacy is explicitly reviewed.
 - CPU pending choices should be validated against live board state before sending/applying, especially RL-derived target names.
+
+## UI action enabled helper
+
+- Dice choice, harbor choice, and pending resolver panels should consult `currentUiAllowedActions()` / `canShowUiAction()` when deciding what to render. Keep handler guards in `main.js`; UI helpers are for display/enabled parity, not authority.
+- Do not mix this work with `ROOM_REPLACED` reconnect handling; that path remains a separate online/restore design item.

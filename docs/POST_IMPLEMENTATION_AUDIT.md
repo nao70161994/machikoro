@@ -778,3 +778,14 @@ Residual backlog:
 
 - `ROOM_REPLACED` currently still flows through generic appError handling. A safer reconnect-specific path should be designed and tested separately because it touches restore/session ownership.
 - Broader UI/action parity for dice choice, harbor, and all pending resolver controls can be improved by a shared UI-enabled helper, but this is larger than the safe UI lock follow-up.
+
+### UI action enabled helper follow-up
+
+- Dice choice, reroll, harbor choice, and pending resolver panels now use `currentUiAllowedActions()` / `canShowUiAction()` in `ui.js` instead of relying only on phase and turn ownership.
+- This keeps displayed controls closer to `GameManager.allowedActionsFor()` and prevents stale or out-of-order pending panels from rendering when the action gate says a different action is currently legal.
+- The change is intentionally limited to rendering/enabled state. It does not modify action handlers, restore flow, or the `ROOM_REPLACED` reconnect path.
+
+Regression added:
+
+- Dice/harbor choice UI only renders when the matching allowed action is present.
+- Pending UI renders only the queue head action when that action is allowed; mismatched allowed action and queue head hides the resolver panel instead of showing a stale choice.

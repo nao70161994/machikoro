@@ -306,6 +306,78 @@ runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () 
     assert.strictEqual(modal.style.display, 'none');
 });
 
+runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択を表示する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.GAME_PHASES.SELECT_DICE = 'selectDice';
+    context.GAME_PHASES.REROLL_CONFIRM = 'rerollConfirm';
+    context.GAME_PHASES.HARBOR_CHOICE = 'harborChoice';
+    context.GameManager = {
+        allowedActionsFor(game) { return new Set(game.allowed || []); },
+    };
+    context.game = {
+        phase: 'selectDice',
+        currentPlayerIndex: 0,
+        allowed: [],
+        lastDiceResult: 10,
+    };
+    context.cpuPlayers = [null, null];
+
+    context.renderDiceChoose();
+    assert.strictEqual(elements.diceChoose.innerHTML, '');
+
+    context.game.allowed = ['selectDice'];
+    context.renderDiceChoose();
+    assert.ok(elements.diceChoose.innerHTML.includes('data-action="selectDiceCount"'));
+
+    context.game.phase = 'harborChoice';
+    context.game.allowed = ['selectDice'];
+    context.renderDiceChoose();
+    assert.strictEqual(elements.diceChoose.innerHTML, '');
+
+    context.game.allowed = ['resolveHarbor'];
+    context.renderDiceChoose();
+    assert.ok(elements.diceChoose.innerHTML.includes('data-action="resolveHarbor"'));
+    assert.ok(!elements.diceChoose.innerHTML.includes(' disabled'));
+});
+
+runTest('renderPending は allowedActionsFor の先頭pending actionだけを表示する', () => {
+    const { context, elements } = loadUiRuntime();
+    const makePlayer = (name, cardNames) => ({
+        name,
+        coins: 3,
+        cards: cardNames.map(cardName => ({ name: cardName, color: 'blue' })),
+        getMinorCards() { return this.cards; },
+        isDormant() { return false; },
+    });
+    context.GameManager = {
+        nextPendingActionFor() { return { action: 'resolveTV', field: 'pendingTV', count: 1 }; },
+        allowedActionsFor(game) { return new Set(game.allowed || []); },
+    };
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        allowed: ['resolveBusiness'],
+        pendingTV: 1,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        players: [makePlayer('Alice', ['麦畑']), makePlayer('Bob', ['牧場'])],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+
+    context.renderPending();
+    assert.strictEqual(elements.pendingModal.style.display, 'none');
+    assert.strictEqual(elements.pendingMenu.innerHTML, '');
+
+    context.game.allowed = ['resolveTV'];
+    context.renderPending();
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
+    assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
+});
+
 runTest('UI更新関数は対象DOM欠落時に例外化しない', () => {
     const { context } = loadUiRuntime();
     const originalGetElementById = context.document.getElementById;
@@ -417,6 +489,7 @@ runTest('renderPending は Business Center chip を data-action で描画する'
         pendingMover: 0,
         pendingRenovation: 0,
         pendingIT: false,
+        allowedActions() { return new Set(['resolveBusiness']); },
         players: [makePlayer('Alice', ['麦畑', 'パン屋']), makePlayer('Bob', ['牧場'])],
         currentPlayer() { return this.players[this.currentPlayerIndex]; },
     };
@@ -453,6 +526,7 @@ runTest('renderPending は pending queue の先頭panelだけを描画する', (
         pendingMover: 0,
         pendingRenovation: 0,
         pendingIT: false,
+        allowedActions() { return new Set(['resolveBusiness']); },
         players: [makePlayer('Alice', ['麦畑']), makePlayer('Bob', ['牧場'])],
         currentPlayer() { return this.players[this.currentPlayerIndex]; },
     };
@@ -474,6 +548,7 @@ runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示
         pendingBusiness: 0,
         pendingCleaning: 0,
         pendingMover: 0,
+        allowedActions() { return new Set(['resolveTV']); },
         players: [
             { name: 'Alice', coins: 3 },
             { name: 'Bob', coins: 8 },
