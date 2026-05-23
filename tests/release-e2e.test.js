@@ -415,7 +415,10 @@ runTest('release workflow と checklist は static safety gate を含む', () =>
     const checklist = readRepoFile('docs/RELEASE_CHECKLIST.md');
 
     assert.ok(workflow.includes('npm run test:static'));
+    assert.ok(workflow.includes('npm run test:pwa'));
     assert.ok(workflow.indexOf('npm run test:static') < workflow.indexOf('npm test'));
+    assert.ok(workflow.indexOf('npm test') < workflow.indexOf('npm run test:pwa'));
+    assert.ok(workflow.indexOf('npm run test:pwa') < workflow.indexOf('npm run test:release'));
     assert.ok(checklist.includes('npm run test:static'));
     assert.ok(checklist.includes('npm run test:smoke'));
     assert.ok(checklist.includes('Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`'));

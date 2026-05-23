@@ -305,10 +305,15 @@ function _serverOnlineActionSeq(gameStartPayload, stateSnapshot, actionLog) {
     );
 }
 
+function _isOnlineRestoreRankAction(entry) {
+    return !!(entry && typeof entry.action === 'string' &&
+        typeof GAME_ACTION_REGISTRY !== 'undefined' && GAME_ACTION_REGISTRY[entry.action]);
+}
+
 function _onlineRestoreReplaySeq(stateSnapshot, actionLog) {
     const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
     const replayedActionCount = Array.isArray(actionLog)
-        ? actionLog.filter(entry => entry && typeof entry.action === 'string').length
+        ? actionLog.filter(_isOnlineRestoreRankAction).length
         : 0;
     return snapshotSeq + replayedActionCount;
 }
@@ -346,9 +351,9 @@ function _clearPendingOutboundAction() {
     try { _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction); } catch (e) {}
 }
 
-function _pendingOutboundActionBelongsToCurrentSession(entry) {
+function _pendingOutboundActionBelongsToCurrentSession(entry, options = {}) {
     if (!entry) return true;
-    if (typeof entry.roomId !== 'string') return true;
+    if (typeof entry.roomId !== 'string') return !options.requireRoomId || !myRoomId || Number.isInteger(entry.seq);
     if (!myRoomId) return false;
     return entry.roomId === myRoomId;
 }
@@ -376,7 +381,7 @@ function _acceptedClientActionMatchesPending(ref, pending) {
 
 function _appendPendingForRestore(actionLog, pending) {
     if (!pending) return actionLog;
-    if (!_pendingOutboundActionBelongsToCurrentSession(pending)) return actionLog;
+    if (!_pendingOutboundActionBelongsToCurrentSession(pending, { requireRoomId: true })) return actionLog;
     if (!actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
         actionLog.push(pending);
     }
@@ -384,7 +389,7 @@ function _appendPendingForRestore(actionLog, pending) {
 }
 
 function _canResendPendingOutboundAction(pending) {
-    if (!_pendingOutboundActionBelongsToCurrentSession(pending)) return false;
+    if (!_pendingOutboundActionBelongsToCurrentSession(pending, { requireRoomId: true })) return false;
     if (!pending || !game || !Number.isInteger(myOriginalPlayerIndex)) return false;
     if (Number.isInteger(pending.playerIndex) && pending.playerIndex >= 0 && pending.playerIndex !== myOriginalPlayerIndex) return false;
     if (!Number.isInteger(myPlayerIndex) || myPlayerIndex < 0) return false;

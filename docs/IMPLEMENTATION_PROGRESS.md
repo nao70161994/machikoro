@@ -1860,7 +1860,7 @@
 
 ## Continuous review Cycle 14 restore replay / pending trace / mobile a11y hardening
 
-- 状態: completed; full verification passed; commit/push pending.
+- 状態: completed; full verification passed and pushed in `555c49a`.
 - 変更ファイル:
   - `server.js`, `server/mirrorReplay.js`, `tests/server.test.js`
   - `js/online.js`, `tests/online.test.js`
@@ -1880,3 +1880,31 @@
   - client-error origin policy の production 強化は Render/ntfy の既存運用を変える可能性があるため、`PUBLIC_ORIGIN` / token 必須化の設計判断待ち。
   - signed restore snapshot / server persisted canonical state は引き続き design decision required。
   - 実機 iOS/Android の live region 読み上げ、tap target、restore/reconnect 長時間回帰は manual verification required。
+
+
+## Continuous review Cycle 15 restore rank / PWA lifecycle / pending replay hardening
+
+- 状態: completed; full verification passed; commit/push pending.
+- 変更ファイル:
+  - `server.js`, `server/restoreRank.js`, `tests/server.test.js`
+  - `js/online.js`, `tests/online.test.js`
+  - `sw.js`, `tests/sw.test.js`
+  - `index.html`, `js/main.js`, `js/ui.js`, `tests/main.test.js`, `tests/ui.test.js`
+  - `.github/workflows/release-test.yml`, `tests/release-e2e.test.js`
+- 実装内容:
+  - restore freshness rank は未知 action を replay 可能件数へ含めない。server 側 allowlist と client `GAME_ACTION_REGISTRY` の同期を test で固定した。
+  - 既存 restored room の置換判定は、raw actionLog ではなく sanitize 後 actionLog の rank で行うようにした。
+  - snapshot 圧縮後は `stateSnapshot.actionSeq` 以下の action と、`seq` を持たない legacy action を replay 対象から外し、古い action の二重適用を避ける。
+  - `onlinePendingAction` は roomId がある場合は current room と一致する時だけ復元bundle append / reconnect resend に使う。roomId なし legacy entry は `seq` がある場合だけ互換再送を維持し、seq もない stale 候補は混入させない。
+  - Service Worker の runtime cache write は `event.waitUntil` に載せ、fetch event lifetime 中に cache 更新を完了できるようにした。
+  - PWA update banner は interactive content を含むため `role=status` ではなく `role=region` + live message へ整理した。
+  - `pwaApplyUpdate` が存在しない環境では reload fallback へ倒す。release workflow には `npm run test:pwa` gate を追加した。
+  - 勝利時の online cleanup は `clearOnlineSessionStorage` を使い、online restore bundle もまとめて消す。
+- targeted verification passed before full suite:
+  - `git diff --check`
+  - `node --check server.js server/restoreRank.js js/online.js js/main.js sw.js js/ui.js`
+  - `node tests/server.test.js`, `node tests/online.test.js`, `node tests/sw.test.js`, `node tests/main.test.js`, `node tests/release-e2e.test.js`, `node tests/ui.test.js`
+- deferred / design required:
+  - signed restore snapshot / server persisted canonical state は引き続き design decision required。
+  - hostless restore 本実装、実機 iOS/Android の長時間 online/PWA/reconnect/accessibility 回帰は manual verification required。
+  - inline Service Worker update flow の appShell への完全分離は larger refactor のため未実施。

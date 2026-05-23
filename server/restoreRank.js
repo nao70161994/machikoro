@@ -1,11 +1,33 @@
 'use strict';
 
+const RESTORE_RANK_ACTIONS = new Set([
+    'rollDice',
+    'selectDice',
+    'rerollDice',
+    'skipReroll',
+    'resolveHarbor',
+    'resolveTV',
+    'resolveBusiness',
+    'resolveCleaning',
+    'resolveMover',
+    'resolveRenovation',
+    'resolveIT',
+    'buildCard',
+    'buildLandmark',
+    'undoBuild',
+    'nextTurn',
+]);
+
+function isRestoreRankAction(entry) {
+    return !!(entry && typeof entry.action === 'string' && RESTORE_RANK_ACTIONS.has(entry.action));
+}
+
 function restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog) {
     const hostEpoch = Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0;
     const gameStartSeq = Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0;
     const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
     const replayedActionCount = Array.isArray(actionLog)
-        ? actionLog.filter(entry => entry && typeof entry.action === 'string').length
+        ? actionLog.filter(isRestoreRankAction).length
         : 0;
     const logSeq = snapshotSeq + replayedActionCount;
     const actionSeq = Math.max(0, snapshotSeq, logSeq);
@@ -57,6 +79,7 @@ function canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapsh
 module.exports = {
     restorePayloadRank,
     restorePayloadRankDetails,
+    isRestoreRankAction,
     isIncomingRestoreNewer,
     canReplaceRestoredRoom,
 };

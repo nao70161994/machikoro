@@ -29,5 +29,8 @@ jobs:
       - name: Unit test gate
         run: npm test
 
+      - name: PWA test gate
+        run: npm run test:pwa
+
       - name: Release pseudo E2E gate
         run: npm run test:release

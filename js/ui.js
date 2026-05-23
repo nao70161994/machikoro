@@ -275,6 +275,17 @@ function _render() {
     persistAfterRender();
 }
 
+function clearOnlineSessionAfterWin() {
+    const clearOnlineSession = typeof globalThis !== 'undefined' && typeof globalThis.clearOnlineSessionStorage === 'function'
+        ? globalThis.clearOnlineSessionStorage
+        : (typeof clearOnlineSessionStorage === 'function' ? clearOnlineSessionStorage : null);
+    if (clearOnlineSession) {
+        clearOnlineSession();
+    } else {
+        localStorage.removeItem('onlineSession');
+    }
+}
+
 function renderWinnerState(winner) {
     const winnerIdx = game.players.indexOf(winner);
     const isCPUWinner = cpuPlayers[winnerIdx] !== null;
@@ -298,7 +309,7 @@ function renderWinnerState(winner) {
     document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div>${resultAdSlot}</div>`;
     if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); recordGameStats(winner, game, cpuPlayers); }
     localStorage.removeItem('savedGame');
-    localStorage.removeItem('onlineSession');
+    clearOnlineSessionAfterWin();
     updateResumeButton();
     startConfetti();
     document.getElementById("btnRoll").disabled = true;

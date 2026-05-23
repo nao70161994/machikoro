@@ -717,6 +717,14 @@ function uiActionElementFromEvent(event, attributeName) {
     return target.dataset && target.dataset[attributeName.replace(/^data-/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase())] ? target : null;
 }
 
+function reloadCurrentPage() {
+    if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
+        window.location.reload();
+    } else if (typeof location !== 'undefined' && typeof location.reload === 'function') {
+        location.reload();
+    }
+}
+
 function handleStaticUiClick(event) {
     const element = uiActionElementFromEvent(event, 'data-ui-action');
     if (!element || element.disabled) return;
@@ -746,9 +754,12 @@ function handleStaticUiClick(event) {
     else if (action === 'closeRules') closeRules();
     else if (action === 'closeCardDetail') closeCardDetail();
     else if (action === 'hideNotice') hideNotice();
-    else if (action === 'reloadPage') location.reload();
+    else if (action === 'reloadPage') reloadCurrentPage();
     else if (action === 'crashResume') crashResume();
-    else if (action === 'pwaApplyUpdate') pwaApplyUpdate();
+    else if (action === 'pwaApplyUpdate') {
+        if (typeof pwaApplyUpdate === 'function') pwaApplyUpdate();
+        else reloadCurrentPage();
+    }
     else if (action === 'hidePwaUpdateBanner') {
         const banner = document.getElementById('pwaUpdateBanner');
         if (banner) banner.style.display = 'none';

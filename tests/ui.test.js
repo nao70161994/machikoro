@@ -72,6 +72,7 @@ function loadUiRuntime() {
         renderStatsCalls: 0,
         recordCalls: 0,
         saveGameCalls: 0,
+        clearOnlineSessionStorageCalls: 0,
         crashErr: '',
         updateResumeButton() {},
         startConfetti() {},
@@ -90,6 +91,7 @@ function loadUiRuntime() {
         renderStats() { context.renderStatsCalls++; },
         recordGameStats() { context.recordCalls++; },
         saveGameState() { context.saveGameCalls++; },
+        clearOnlineSessionStorage() { context.clearOnlineSessionStorageCalls++; localStorage.removeItem('onlineSession'); },
         LOG_TYPES: {
             DICE: 'dice',
             GAIN: 'gain',
@@ -111,6 +113,7 @@ function loadUiRuntime() {
         clearTimeout() {},
     };
     context.global = context;
+    context.globalThis = context;
     vm.createContext(context);
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/ui.js']);
     return { context, elements };
@@ -253,6 +256,27 @@ runTest('render helper は勝利・通常描画・保存境界へ分かれてい
     context.persistAfterRender();
 
     assert.strictEqual(context.saveGameCalls, 1);
+});
+
+runTest('renderWinnerState はオンライン復元bundleをまとめて消す', () => {
+    const { context, elements } = loadUiRuntime();
+    const winner = { name: 'Alice', coins: 20, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
+    const opponent = { name: 'Bob', coins: 3, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
+    context.game = {
+        players: [winner, opponent],
+        currentPlayerIndex: 0,
+        turnCount: 12,
+    };
+    context.cpuPlayers = [null, null];
+    context.localStorage.setItem('savedGame', '{}');
+    context.localStorage.setItem('onlineSession', '{}');
+
+    context.renderWinnerState(winner);
+
+    assert.strictEqual(context.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(context.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(context.clearOnlineSessionStorageCalls, 1);
+    assert.strictEqual(elements.btnRoll.disabled, true);
 });
 
 runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () => {

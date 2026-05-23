@@ -96,7 +96,10 @@ function loadMainRuntime(options = {}) {
         },
         window: {
             innerWidth: 360,
-            location: { href: 'https://example.test/play' },
+            location: {
+                href: 'https://example.test/play',
+                reload() { context.reloadCount = (context.reloadCount || 0) + 1; },
+            },
             MACHIKORO_CLIENT_VERSION: 'test-version',
             addEventListener(name, handler) {
                 eventAddCounts[`window:${name}`] = (eventAddCounts[`window:${name}`] || 0) + 1;
@@ -1039,6 +1042,22 @@ runTest('appShell beforeinstallprompt は更新バナー表示中のinstallバ�
     assert.strictEqual(rt.document.body.classList.contains('pwa-banner-open'), true);
 });
 
+runTest('main delegated handler は pwaApplyUpdate 不在でもreloadへfallbackする', () => {
+    const rt = loadMainRuntime();
+    rt.pwaApplyUpdate = undefined;
+
+    rt.__test.eventHandlers['document:click']({
+        target: {
+            disabled: false,
+            dataset: { uiAction: 'pwaApplyUpdate' },
+            closest(selector) { return selector === '[data-ui-action]' ? this : null; },
+        },
+        preventDefault() {},
+    });
+
+    assert.strictEqual(rt.reloadCount, 1);
+});
+
 runTest('appShell hidePwaUpdateBanner は保留中のinstall promptを再表示する', () => {
     const rt = loadMainRuntime();
     let prompted = false;
@@ -1260,7 +1279,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('let updateRequestedByUser = false;'));
     assert.ok(html.includes('if (_isInGame() && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('updateRequestedByUser = true;'));
-    assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="region" aria-labelledby="pwaUpdateMsg"'));
+    assert.ok(html.includes('id="pwaUpdateMsg" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('aria-label="ルール説明を閉じる"'));
     assert.ok(html.includes('aria-label="カード選択を閉じる"'));

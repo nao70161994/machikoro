@@ -659,3 +659,21 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 - Production client-error origin policy を `PUBLIC_ORIGIN` または shared token 必須へ寄せる変更は、Render 環境での設定手順に影響するため design/ops decision required。
 - Host-supplied restore snapshot の完全な信頼性は signed snapshot または server persisted canonical state が必要で、引き続き design decision required。
 - 実機 iOS/Android での reconnect/PWA/accessibility 長時間確認は manual verification required。
+
+
+### Continuous review Cycle 15 restore rank / PWA lifecycle / pending replay hardening
+
+確認した内容:
+
+- High fixed: compacted snapshot 後に `seq` を持たない古い actionLog entry が残ると、snapshot 復元後に legacy action が再適用される余地があった。snapshot actionSeq が進んでいる場合は seq なし action を replay 対象から外す。
+- High fixed: existing restored room の replacement rank が sanitize 前 actionLog を見ると、古い/不正 action が freshness を水増しする余地があった。置換判定を sanitize 後 rank に変更した。
+- Medium fixed: restore rank が未知 action を replay 可能件数に含めると、malformed bundle の freshness が過大評価され得た。server/client とも既知 action だけを数え、server allowlist は registry 同期 test で固定した。
+- Medium fixed: roomId なし `onlinePendingAction` は旧互換として残っていたが、seq もない stale 候補は restore append / reconnect resend に使わないようにした。
+- Medium fixed: Service Worker の runtime cache write が fetch event lifetime から外れて落ちる可能性があった。`event.waitUntil` で cache write を追跡する。
+- Low fixed: PWA update banner の ARIA role、`pwaApplyUpdate` fallback、release workflow の PWA gate、勝利時 online restore bundle cleanup を補強した。
+
+残課題:
+
+- Signed restore snapshot / server persisted canonical state は design decision required。
+- Hostless restore 本実装、複数実機での reconnect/PWA/update/accessibility 長時間確認は manual verification required。
+- inline SW update lifecycle の appShell への完全分離は安全な小変更範囲を超えるため backlog。

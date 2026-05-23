@@ -75,6 +75,7 @@ const {
 const {
     restorePayloadRank,
     restorePayloadRankDetails,
+    isRestoreRankAction,
     isIncomingRestoreNewer,
     canReplaceRestoredRoom,
 } = require('./server/restoreRank');
@@ -1096,13 +1097,15 @@ function handleRecreateRoom(socket, payload = {}) {
             return;
         }
         const existingReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
-        const incomingCanReplace = isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
+        const sanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot);
+        const incomingCanReplace = !!sanitizedExistingRoomActionLog &&
+            isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
             !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
             Number.isInteger(playerIndex) &&
             existingReconnectTokenHash &&
             hashReconnectToken(reconnectToken) === existingReconnectTokenHash &&
             room.hostPlayerIndex === playerIndex &&
-            canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, actionLog);
+            canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, sanitizedExistingRoomActionLog);
         if (!incomingCanReplace) {
             const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
             if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
@@ -1332,7 +1335,11 @@ function sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot) {
     for (const entry of actionLog) {
         if (!entry || typeof entry.action !== 'string') continue;
         if (typeof entry.roomId === 'string' && entry.roomId !== roomId) return null;
-        if (Number.isInteger(entry.seq) && entry.seq <= snapshotSeq) continue;
+        if (Number.isInteger(entry.seq)) {
+            if (entry.seq <= snapshotSeq) continue;
+        } else if (snapshotSeq > 0) {
+            continue;
+        }
         const normalized = { action: entry.action, data: entry.data || {} };
         if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
         if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
@@ -1759,6 +1766,7 @@ module.exports = {
     nextRoomActionSeq,
     restorePayloadRank,
     restorePayloadRankDetails,
+    isRestoreRankAction,
     buildPlayerList,
     resolveRejoinPlayer,
     handleSocketDisconnect,

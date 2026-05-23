@@ -131,13 +131,18 @@ async function dispatchActivate(runtime) {
 
 async function dispatchFetch(runtime, request) {
     let responsePromise = null;
+    const waitUntilPromises = [];
     runtime.listeners.fetch({
         request,
         respondWith(promise) {
             responsePromise = promise;
         },
+        waitUntil(promise) {
+            waitUntilPromises.push(promise);
+        },
     });
-    return responsePromise ? responsePromise : null;
+    const response = responsePromise ? await responsePromise : null;
+    return { response, waitUntilPromises };
 }
 
 (async () => {
@@ -176,10 +181,12 @@ async function dispatchFetch(runtime, request) {
             cacheEntries: [[request.url, cached]],
             fetchResponse: () => network,
         });
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
 
         assert.strictEqual(response, network);
         assert.strictEqual(runtime.fetchCalls.length, 1);
+        assert.strictEqual(waitUntilPromises.length, 1);
+        await Promise.all(waitUntilPromises);
         assert.strictEqual(runtime.putCalls.length, 1);
         assert.strictEqual(runtime.putCalls[0].request, request);
     });
@@ -191,7 +198,7 @@ async function dispatchFetch(runtime, request) {
             cacheEntries: [[request.url, cached]],
             fetchReject: true,
         });
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
 
         assert.strictEqual(response, cached);
         assert.strictEqual(runtime.fetchCalls.length, 1);
@@ -205,7 +212,7 @@ async function dispatchFetch(runtime, request) {
             cacheEntries: [[request.url, cached]],
             fetchResponse: () => network,
         });
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
 
         assert.strictEqual(response, cached);
         assert.strictEqual(runtime.fetchCalls.length, 1);
@@ -218,7 +225,7 @@ async function dispatchFetch(runtime, request) {
             fetchReject: true,
             cacheEntries: [['/', shell]],
         });
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
         assert.strictEqual(response, shell);
     });
 
@@ -230,7 +237,7 @@ async function dispatchFetch(runtime, request) {
             fetchResponse: () => network,
             cacheEntries: [[request.url, cached]],
         });
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
         assert.strictEqual(response, cached);
     });
 
@@ -240,16 +247,17 @@ async function dispatchFetch(runtime, request) {
         const runtime = loadServiceWorker({
             fetchResponse: () => makeResponse('private-script'),
         });
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
 
         assert.strictEqual(response.label, 'private-script');
+        assert.strictEqual(waitUntilPromises.length, 0);
         assert.strictEqual(runtime.putCalls.length, 0);
     });
 
     await runTest('Service Worker はsocket.io requestを横取りしない', async () => {
         const request = makeRequest('https://example.test/socket.io/socket.io.js');
         const runtime = loadServiceWorker();
-        const response = await dispatchFetch(runtime, request);
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
         assert.strictEqual(response, null);
     });
 })();

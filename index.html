@@ -318,10 +318,10 @@
     </div>
 
     <!-- PWA更新バナー -->
-    <div id="pwaUpdateBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true" style="display:none">
+    <div id="pwaUpdateBanner" class="pwa-banner" role="region" aria-labelledby="pwaUpdateMsg" style="display:none">
         <div class="pwa-banner-text">
             <span class="pwa-banner-icon">🔄</span>
-            <span id="pwaUpdateMsg">新しいバージョンがあります</span>
+            <span id="pwaUpdateMsg" aria-live="polite" aria-atomic="true">新しいバージョンがあります</span>
         </div>
         <div class="pwa-banner-actions">
             <button id="pwaUpdateBtn" class="pwa-banner-btn" data-ui-action="pwaApplyUpdate">今すぐ更新</button>

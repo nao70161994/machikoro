@@ -222,3 +222,14 @@ npm test
 - RL parity traces now include ordered `pendingActions`; queue order differences should be treated as real parity differences, not just diagnostics noise.
 - Online/server snapshots trim `log` to the last 30 entries. Avoid reintroducing unbounded logs into restore snapshots.
 - `onlineStatus` is a polite live region, and `.card-detail-btn` has a larger touch target. Preserve these mobile/accessibility contracts.
+
+
+## 2026-05-23 continuous review Cycle 15
+
+- Restore rank は既知 replay action の件数だけで freshness を決める。server allowlist は `GAME_ACTION_REGISTRY` と同期する test があるため、新しい game action を追加したら restore rank test も更新されるべき。
+- Existing restored room の replacement 判定は sanitize 後 actionLog を使う。raw actionLog seq や unknown action を freshness 根拠に戻さない。
+- Snapshot compact 後は `stateSnapshot.actionSeq` 以下の action と seq なし legacy action を replay しない。legacy roomless pending は `seq` がある場合のみ互換再送を許容する。
+- `onlinePendingAction` の復元bundle append / reconnect resend は current room gate を維持する。roomId なし + seq なし entry は stale 候補として使わない。
+- Service Worker runtime cache writes use `event.waitUntil`; new fetch caching branches should call the same helper so cache writes are not detached from the fetch event.
+- PWA update banner is `role=region` with a live message child, not `role=status` on a button container. Keep the release workflow `npm run test:pwa` gate when editing CI.
+- Winner cleanup should call `clearOnlineSessionStorage` when available so restore bundle keys are cleared together with `onlineSession`.
