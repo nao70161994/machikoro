@@ -1952,3 +1952,34 @@
 - benchmark影響: ゲームロジック、CPU preset、RL model は未変更。RL parity tooling は mismatch を失敗として扱うため automation gate が厳しくなる。
 - 残課題:
   - action metadata contract の追加 test、legacy pending outbound のさらなる room gate、`CLIENT_ERROR_SHARED_TOKEN` 運用docsの明確化、hostless restore 本実装、実機複数端末確認は継続 backlog / manual / design required。
+
+## Maintainability up-cycle restart/UI lifecycle Cycle 2
+
+- 状態: completed; verification pending.
+- 新規指摘:
+  - High: `selectDice` / `rerollConfirm` / `harborChoice` の dice choice UI が watchdog の usable action 対象外で、gameScreen orphan lock 時に復旧できない可能性があった。
+  - High: online `gameStart` / `rejoinData` と local `resumeGame()` が stale modal/root lock を引き継ぐ可能性があった。
+  - High: local start/resume が待機中 online socket や delayed human action を止めず、後着 online event / 古い timeout が新しいゲームへ干渉し得た。
+  - High: online init が CPU schedule / autoskip / delayed action / undo の transient reset をローカル init と同等に行っていなかった。
+  - Medium: restart fallback cleanup は `clearOnlineSessionStorage()` 不在時に restore bundle keys を直接消すテストが薄かった。
+  - Medium: 0コストカードを autoskip が建設可能扱いしない問題を確認した。
+- 修正済み:
+  - watchdog の primary action snapshot に `diceChoose` を追加し、`selectDice` / `rerollDice` / `skipReroll` / `resolveHarbor` を interactive action として扱うようにした。
+  - `startGame()` / `resumeGame()` は local play へ入る前に online runtime と stale UI lock を reset する。
+  - `gameStart` / `rejoinData` は game screen 表示前に `resetUiLocksForGameReset()` を通し、online start は lifecycle start 通知を送る。
+  - `initOnlineGame()` で `cpuScheduleToken` 更新、delayed action / autoskip cancel、`prevCoins` / `undoState` reset を行う。
+  - ローカル CPU build failure は pass 扱いで `nextTurn` へ進め、online 送信失敗時だけ従来どおり停止する。
+  - autoskip の建設可能判定から `card.cost > 0` を外し、0コストカードも在庫があれば建設可能扱いにした。
+  - restart fallback cleanup は online restore bundle keys も消すようにした。
+- tests added/updated:
+  - dice choice phase の orphan gameScreen lock watchdog recovery。
+  - online gameStart / rejoinData の stale modal lock cleanup と lifecycle start privacy。
+  - resumeGame の delayed action / online state / UI lock reset。
+  - restart の restore bundle cleanup と stopConfetti。
+  - local CPU build failure pass。
+- rollback: なし。
+- regressions: targeted tests passed; full verification pending.
+- benchmark影響: CPU preset/RL model は未変更。CPU build failure の fallback 挙動だけ、停止より pass を優先する安定化。
+- 残課題:
+  - PWA version mismatch inline flow は引き続き source-level/release approximation 中心で、実ブラウザ cache/controller timing は manual verification required。
+  - online storage の per-room namespace 化、hostless restore、signed/server persisted canonical state は design required。

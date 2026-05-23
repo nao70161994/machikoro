@@ -928,3 +928,17 @@ Fixes:
 Regression coverage:
 - `tests/main.test.js`: restart clears saved/online session state, modal/root locks, freeze snapshot, autoskip, game runtime, and allows the next start notification to be sent again.
 - `tests/integration.test.js`: after confirming restart and returning to title, watchdog does not classify the未開始 title state as a UI lock and does not send a client-error report.
+
+### restart/UI lifecycle continuation audit
+
+Cycle 2 found no Critical issue, but several High state-carryover risks around the recent restart/UI lock recovery work.
+
+Fixes:
+- Watchdog recovery now treats dice choice phases as interactive states. `diceChoose` is part of the action button snapshot, and `selectDice` / `rerollDice` / `skipReroll` / `resolveHarbor` are expected actions, so orphan `gameScreen` locks during station/reroll/harbor choices are detectable and recoverable.
+- Local start/resume now resets stale online runtime and UI locks before showing a game. This prevents pending room sockets or stale delayed human input from mutating a newly started/restored local game.
+- Online `gameStart` / `rejoinData` reset stale modal/root locks before showing `gameScreen`, and online `gameStart` emits a privacy-light lifecycle start notification.
+- `initOnlineGame()` now clears transient async state in the same spirit as local `init()`.
+- Local CPU build failure now passes the turn instead of permanently stopping the CPU turn. Online send failure still stops to avoid duplicate/invalid network actions.
+- Autoskip now considers 0-cost cards as buildable when stock and duplicate rules allow them.
+
+Regression coverage was added for dice choice watchdog recovery, online start/rejoin modal lock cleanup, resume reset boundaries, restart restore-bundle cleanup, and local CPU build failure pass.

@@ -100,7 +100,9 @@ function loadStorageRuntime() {
                 emit(name, payload) { context.emits.push({ name, payload }); },
             };
         },
-        resetOnlineState() {},
+        resetOnlineState() { context.resetOnlineStateCalls = (context.resetOnlineStateCalls || 0) + 1; },
+        cancelDelayedHumanAction() { context.cancelDelayedHumanActionCalls = (context.cancelDelayedHumanActionCalls || 0) + 1; },
+        resetUiLocksForGameReset(reason) { context.resetUiLocksForGameResetCalls = (context.resetUiLocksForGameResetCalls || 0) + 1; context.resetUiLocksReason = reason; },
         switchTab(tab) { context.switchedTab = tab; },
         updateResumeButton: null,
         syncTutorialControls() {},
@@ -129,6 +131,10 @@ function loadStorageRuntime() {
             getPlayerSettings: () => playerSettings,
             getSelectedCount: () => selectedCount,
             getShopStock: () => SHOP_STOCK,
+            getCancelDelayedHumanActionCalls: () => (typeof cancelDelayedHumanActionCalls !== 'undefined' ? cancelDelayedHumanActionCalls : 0),
+            getResetOnlineStateCalls: () => (typeof resetOnlineStateCalls !== 'undefined' ? resetOnlineStateCalls : 0),
+            getResetUiLocksForGameResetCalls: () => (typeof resetUiLocksForGameResetCalls !== 'undefined' ? resetUiLocksForGameResetCalls : 0),
+            getResetUiLocksReason: () => (typeof resetUiLocksReason !== 'undefined' ? resetUiLocksReason : ''),
         };
     `, context);
     return context;
@@ -320,6 +326,20 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
     assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
     assert.strictEqual(rt.elements.resumeSection.style.display, 'none');
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は古い非同期入力とUI lockを復元前にリセットする', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getCancelDelayedHumanActionCalls(), 1);
+    assert.strictEqual(rt.__test.getResetOnlineStateCalls(), 1);
+    assert.strictEqual(rt.__test.getResetUiLocksForGameResetCalls(), 1);
+    assert.strictEqual(rt.__test.getResetUiLocksReason(), 'resume-game-reset-ui-locks');
+    assert.strictEqual(rt.elements.titleScreen.style.display, 'none');
+    assert.strictEqual(rt.elements.gameScreen.style.display, 'block');
 });
 
 runTest('storage resumeGame はCPU復元で共通ファクトリを使う', () => {

@@ -21,6 +21,42 @@ runTest('online integration: reconnectOnline は rejoinRoom を送信して onli
     assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
 });
 
+runTest('online integration: gameStart はtitle modal lockを解除してlifecycle startを送る', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.document.getElementById('rulesModal').style.display = 'flex';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.document.body.classList.add('modal-open');
+
+    rt.__test.socketHandlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+        versions: ['x'],
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt.document.getElementById('rulesModal').style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
+    const lifecycleCalls = rt.__test.fetchCalls.filter(call => call.url === '/api/game-lifecycle');
+    assert.strictEqual(lifecycleCalls.length, 1);
+    const payload = JSON.parse(lifecycleCalls[0].options.body);
+    assert.strictEqual(payload.event, 'play-start');
+    assert.strictEqual(payload.mode, 'online');
+    assert.strictEqual(payload.roomId, undefined);
+    assert.strictEqual(payload.playerName, undefined);
+});
+
 runTest('online integration: gameStart から rejoinData で画面と状態を復元する', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -44,6 +80,10 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     const gameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.deepStrictEqual(gameStart.reconnectTokenHashes, ['hash-a', 'hash-b']);
     assert.strictEqual(gameStart.hostPlayerIndex, 0);
+    rt.document.getElementById('cardDetailModal').style.display = 'flex';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.document.body.classList.add('modal-open');
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload: {
@@ -62,6 +102,10 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     const game = rt.__test.getGame();
     assert.strictEqual(rt.__test.elements.titleScreen.style.display, 'none');
     assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
+    assert.strictEqual(rt.document.getElementById('cardDetailModal').style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
     assert.strictEqual(game.players[0].name, 'Alice');
     assert.ok(game.players[0].countCard('麦畑') >= 2);
     assert.strictEqual(game.currentPlayerIndex, 1);

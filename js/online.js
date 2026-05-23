@@ -558,9 +558,11 @@ function initSocket() {
             _clearPendingOutboundAction();
         } catch(e) {}
         saveOnlineSession();
+        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-game-start-reset-ui-locks');
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
         initOnlineGame(playerNames, ps, playerOrder);
+        if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
         // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
         if (versions && versions.length > 1) {
             const unique = [...new Set(versions)];
@@ -638,6 +640,7 @@ function initSocket() {
         } catch(e) {}
         saveOnlineSession();
         cpuScheduleToken++;
+        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
 
         document.getElementById("titleScreen").style.display = "none";
         document.getElementById("gameScreen").style.display = "block";
@@ -795,6 +798,11 @@ function joinRoom() {
 
 function initOnlineGame(playerNames, ps, playerOrder) {
     const count = playerNames.length;
+    cpuScheduleToken++;
+    if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
+    if (typeof cancelAutoSkip === 'function') cancelAutoSkip();
+    prevCoins = null;
+    undoState = null;
     resetFullLog();
     if (typeof resetStatsRecorded === "function") {
         resetStatsRecorded();

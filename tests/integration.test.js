@@ -437,6 +437,40 @@ runTest('integration: active modalなしでgameScreen.inertだけ残ったhuman-
     assert.strictEqual(summary.gameScreen.inert, true);
 });
 
+runTest('integration: selectDice中のgameScreen lockをwatchdogが復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    game.players[game.currentPlayerIndex].landmarks['駅'] = true;
+    hideAllTestModals(rt);
+    rt.render();
+    assert.ok(rt.__test.elements.diceChoose.innerHTML.includes('selectDiceCount'));
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'human-turn-ui-locked');
+    assert.ok(freezeSnapshot.snapshot.allowedActions.includes('selectDice'));
+    assert.strictEqual(freezeSnapshot.snapshot.ui.gameScreen.display, 'none');
+    assert.strictEqual(freezeSnapshot.snapshot.actionButtons.buttons.diceChoose.ancestorBlocked, true);
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+});
+
 runTest('integration: gameScreen display none と inert が残ったpost-build lockをwatchdogが復旧する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -782,8 +816,8 @@ runTest('integration: client側debug error reportを手動送信できる', () =
     const report = JSON.parse(reportCall.options.body);
     assert.strictEqual(report.source, 'debug-client-test');
     assert.strictEqual(report.message, 'debug ping');
-    const checkpoint = JSON.parse(rt.localStorage.getItem('machikoroLastClientCheckpoint'));
-    assert.strictEqual(checkpoint.event, 'client-error-fetch-start');
+    const checkpoint = rt.window.__machikoroClientCheckpoints.find(entry => entry.event === 'client-error-fetch-start');
+    assert.ok(checkpoint);
 });
 
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {

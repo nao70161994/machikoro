@@ -279,3 +279,12 @@ Test index:
 - Release checklist CI gate wording is now tested against the actual release workflow and includes `npm run test:pwa`. Keep `docs/RELEASE_CHECKLIST.md`, `docs/AUTOMATED_RELEASE_TEST.md`, `.github/workflows/release-test.yml`, and `tests/release-e2e.test.js` synchronized when changing release gates.
 - This cycle intentionally avoided broad refactors. CPU/RL/gameplay logic and model selection were not changed, so no benchmark interpretation changes are expected.
 - Remaining larger items are still design/manual scoped: hostless restore, signed/server-persisted canonical state, client-error token deployment policy docs, broader action metadata contract tests, and real-device long-run online/PWA/accessibility checks.
+
+## Maintainability up-cycle Cycle 2 handoff
+
+- Local `startGame()` / `resumeGame()` should terminate stale online runtime before entering local play. Do not remove the `resetOnlineState()` calls unless a replacement socket/session ownership guard is added.
+- `resetUiLocksForGameReset()` is now shared by local start, restart, resume, online gameStart, and online rejoin. New game-screen entry points should call it before showing `gameScreen`.
+- Watchdog interactive action coverage includes dice choice phases (`selectDice`, `rerollDice`, `skipReroll`, `resolveHarbor`) through the `diceChoose` snapshot. If new choice panels are added, include their root in the usable-action snapshot and tests.
+- `initOnlineGame()` is responsible for transient async reset: CPU schedule token, delayed human action, autoskip, `prevCoins`, and `undoState`. Keep it aligned with local `init()` for async safety.
+- Local CPU build failure is pass-through to `nextTurn`; online send failure remains a hard stop. Preserve this distinction when editing CPU execution.
+- Online lifecycle `play-start` is sent on fresh `gameStart`, not on `rejoinData`. Payload must stay privacy-light: no room id, reconnect token, or player names.

@@ -114,7 +114,7 @@ function loadMainRuntime(options = {}) {
             return timeouts.length;
         },
         clearTimeout() {},
-        stopConfetti() {},
+        stopConfetti() { counters.stopConfetti = (counters.stopConfetti || 0) + 1; },
         playSound() {},
         showConfirm(message, cb) {
             if (typeof context.beforeConfirm === 'function') context.beforeConfirm(message);
@@ -408,6 +408,10 @@ runTest('main restartGame はゲーム状態とUI lockを未開始状態へ完�
 
     rt.localStorage.setItem('savedGame', 'old');
     rt.localStorage.setItem('onlineSession', 'old-online');
+    rt.localStorage.setItem('onlineGameStart', 'old-game-start');
+    rt.localStorage.setItem('onlineActionLog', 'old-action-log');
+    rt.localStorage.setItem('onlineStateSnapshot', 'old-state-snapshot');
+    rt.localStorage.setItem('onlinePendingAction', 'old-pending-action');
     rt.localStorage.setItem('machikoroFreezeSnapshot', 'old-freeze');
     rt.localStorage.setItem('machikoroLifecycleStartSent', JSON.stringify({ signature: 'local|2|0', timestamp: Date.now() }));
     rt.__test.elements.gameScreen.style.display = 'block';
@@ -426,6 +430,10 @@ runTest('main restartGame はゲーム状態とUI lockを未開始状態へ完�
     assert.strictEqual(rt.__test.getGame(), null);
     assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineActionLog'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineStateSnapshot'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
     assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
     assert.strictEqual(rt.localStorage.getItem('machikoroLifecycleStartSent'), null);
     assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'none');
@@ -439,6 +447,7 @@ runTest('main restartGame はゲーム状態とUI lockを未開始状態へ完�
     assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
     assert.ok(rt.__test.getCpuScheduleToken() > tokenBefore);
+    assert.ok(rt.counters.stopConfetti >= 1);
 });
 
 runTest('main restart後のstartGameは古いgameScreen lockを引き継がず開始通知を再送できる', () => {
@@ -697,7 +706,7 @@ runTest('main fallback pending は queue 先頭actionだけを見る', () => {
     assert.ok(!source.includes('pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)'));
 });
 
-runTest('main scheduleCPU は build failure なら nextTurn へ進めない', () => {
+runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTurnへ進める', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);
     game.phase = rt.GAME_PHASES.BUILD;
@@ -720,7 +729,7 @@ runTest('main scheduleCPU は build failure なら nextTurn へ進めない', ()
     rt.__test.flushTimeouts();
 
     assert.strictEqual(buildCalls, 1);
-    assert.strictEqual(game.currentPlayerIndex, 0);
+    assert.strictEqual(game.currentPlayerIndex, 1);
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 

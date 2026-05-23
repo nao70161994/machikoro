@@ -201,6 +201,7 @@ function startGame() {
     cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
     saveSettings();
     resetStatsRecorded();
+    if (typeof resetOnlineState === 'function') resetOnlineState();
     if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('start-game-reset-ui-locks');
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
@@ -213,10 +214,13 @@ function restartGame() {
         markMainCheckpoint('restart-game-confirmed-start');
         localStorage.removeItem('savedGame');
         if (typeof clearOnlineSessionStorage === 'function') clearOnlineSessionStorage();
-        else localStorage.removeItem('onlineSession');
+        else {
+            ['onlineSession', 'onlineGameStart', 'onlineActionLog', 'onlineStateSnapshot', 'onlinePendingAction'].forEach(key => localStorage.removeItem(key));
+        }
         cpuScheduleToken++;
         cancelDelayedHumanAction();
         cancelAutoSkip();
+        stopConfetti();
         if (typeof resetOnlineState === 'function') resetOnlineState();
         else {
             try { isOnlineGame = false; } catch (_) {}
@@ -572,7 +576,14 @@ const CPU_PHASE_HANDLERS = [
         run(cpu) {
             if (game.phase !== GAME_PHASES.BUILD) return;
             const buildResult = cpu.build(game, SHOP_STOCK);
-            if (buildResult === false) return false;
+            if (buildResult === false) {
+                if (isOnlineGame) return false;
+                if (!game.builtThisTurn) {
+                    markMainCheckpoint('scheduleCPU-build-failed-pass');
+                    game.nextTurn();
+                }
+                return true;
+            }
             render();
             return true;
         },
@@ -1303,7 +1314,6 @@ function checkAutoSkip() {
     const canAffordCard = CARDS.some(card =>
         getShopStockCount(SHOP_STOCK, card) > 0 &&
         current.coins >= card.cost &&
-        card.cost > 0 &&
         !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
     );
     const canAffordLandmark = Object.entries(current.landmarks)

@@ -159,6 +159,9 @@ function resumeGame() {
             throw new Error('Invalid saved game');
         }
         cpuScheduleToken++;
+        if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
+        if (typeof resetOnlineState === 'function') resetOnlineState();
+        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('resume-game-reset-ui-locks');
         cpuSpeed = state.cpuSpeed || 1500;
         if (state.enabledCardsList) enabledCards = new Set(state.enabledCardsList);
         if (state.enabledLandmarksList && state.enabledLandmarksList.length > 0) {

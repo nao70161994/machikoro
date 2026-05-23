@@ -145,9 +145,14 @@ function primaryActionButtonStates() {
         btnRoll: safeElementSnapshot('btnRoll'),
         btnSkip: safeElementSnapshot('btnSkip'),
         btnReroll: safeElementSnapshot('btnReroll'),
+        diceChoose: safeElementSnapshot('diceChoose'),
     };
     const enabled = Object.entries(buttons)
-        .filter(([, snapshot]) => isElementUsablyEnabled(snapshot))
+        .filter(([id, snapshot]) => {
+            if (!isElementUsablyEnabled(snapshot)) return false;
+            if (id === 'diceChoose') return !!snapshot.htmlLength;
+            return true;
+        })
         .map(([id]) => id);
     return { buttons, enabled };
 }
@@ -214,7 +219,7 @@ function isHumanTurnSnapshot(snapshot) {
 
 function expectedPrimaryActions(snapshot) {
     const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
-    return allowed.filter(action => ['rollDice', 'nextTurn'].includes(action));
+    return allowed.filter(action => ['rollDice', 'nextTurn', 'selectDice', 'rerollDice', 'skipReroll', 'resolveHarbor'].includes(action));
 }
 
 function hasUsablePrimaryAction(snapshot) {
