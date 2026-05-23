@@ -233,3 +233,10 @@ npm test
 - Service Worker runtime cache writes use `event.waitUntil`; new fetch caching branches should call the same helper so cache writes are not detached from the fetch event.
 - PWA update banner is `role=region` with a live message child, not `role=status` on a button container. Keep the release workflow `npm run test:pwa` gate when editing CI.
 - Winner cleanup should call `clearOnlineSessionStorage` when available so restore bundle keys are cleared together with `onlineSession`.
+
+## UI lock recovery guardrails
+
+- UI watchdog recovery must only clear stale UI locks and re-render. It must not call game actions such as `nextTurn()`, pending resolvers, or CPU decisions.
+- Normal human-turn unlock is limited to primary actions and must not close informational modals. Pending recovery is a separate `pending-ui-locked` path and only repairs `pendingModal` / `pendingMenu` visibility/lock state.
+- Client error freeze notifications send compact `FREEZE_SUMMARY` data to ntfy. Keep full text-bearing UI snapshots local-only unless privacy is explicitly reviewed.
+- CPU pending choices should be validated against live board state before sending/applying, especially RL-derived target names.

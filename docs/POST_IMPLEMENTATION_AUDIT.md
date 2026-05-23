@@ -756,3 +756,25 @@ Regression:
 - CPU ターン終了後に人間ターンへ戻った時、stale UI lock が解除され roll button が有効になる。
 - 自分ターンで allowed action があるのに操作可能ボタンがない場合、watchdog が `human-turn-ui-locked` として snapshot / client-error report を残し、UI unlock を実行する。
 - debug client error report function が `/api/client-error` を実際に呼び、送信開始checkpointを残す。
+
+### UI lock review follow-up: modal scope, pending actions, and notification privacy
+
+Review findings after the UI lock recovery change:
+
+- Classification remains: no Critical issue found. The main risk was over-recovery, not broken game rules.
+- `unlockUiForHumanTurn()` is now limited to primary human actions (`rollDice` / `nextTurn`) and skips online blocked states (`onlineActionInFlight`, reconnecting, disconnected socket). It no longer unlocks merely because pending work exists.
+- Recovery no longer closes informational modals (`rulesModal`, `cardDetailModal`, `cardSelectModal`). Stale close is limited to `confirmModal` and empty pending modal, and recovery resets the accessible modal bookkeeping when it forcibly closes a stale modal.
+- The watchdog now detects pending resolver UI lock as `pending-ui-locked`. It only clears stale lock flags on `pendingModal` / `pendingMenu` and re-renders; it never auto-resolves a pending action.
+- Freeze reports sent to `/api/client-error` now use a compact `FREEZE_SUMMARY` stack. Detailed UI text remains in local `machikoroFreezeSnapshot` for on-device debugging, but ntfy payloads should not include UI text or player names from full snapshots.
+- CPU `resolveCleaning` now validates the CPU-selected card name against live, non-dormant minor cards before applying/sending. Invalid RL/heuristic choices fall back to a legal board card.
+
+Regression added:
+
+- Pending modal lock is not cleared by normal human-turn unlock.
+- Pending menu pointer lock is detected as `pending-ui-locked`, reported with `FREEZE_SUMMARY`, and recovered by render without auto action.
+- Invalid CPU cleaning target falls back to a legal card.
+
+Residual backlog:
+
+- `ROOM_REPLACED` currently still flows through generic appError handling. A safer reconnect-specific path should be designed and tested separately because it touches restore/session ownership.
+- Broader UI/action parity for dice choice, harbor, and all pending resolver controls can be improved by a shared UI-enabled helper, but this is larger than the safe UI lock follow-up.

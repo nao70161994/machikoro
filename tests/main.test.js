@@ -594,6 +594,41 @@ runTest('main scheduleCPU は不正なTV targetを合法な相手へfallbackし�
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
+runTest('main scheduleCPU は不正なcleaning targetを盤面上の合法カードへfallbackする', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+    game.players[0].cards = [{ name: '清掃業', category: '大施設' }];
+    game.players[1].cards = [{ name: '麦畑', category: '農園' }];
+    game.players[1].isDormant = () => false;
+    game.resolveCleaning = (cardName) => {
+        game.resolvedCleaning = cardName;
+        game.pendingCleaning = 0;
+        game.phase = rt.GAME_PHASES.BUILD;
+        return true;
+    };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return null; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return '存在しない施設'; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() {},
+    }, null]);
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.resolvedCleaning, '麦畑');
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
 runTest('main fallback pending は queue 先頭actionだけを見る', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
     assert.ok(source.includes('GameManager.nextPendingActionFor(game)'));

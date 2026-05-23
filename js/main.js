@@ -389,6 +389,13 @@ function fallbackCpuBusinessMove() {
     return null;
 }
 
+function isValidCpuCleaningTarget(cardName) {
+    if (!game || !cardName) return false;
+    return game.players.some(player => Array.isArray(player.cards) && player.cards.some(card =>
+        card && card.name === cardName && isMinorCardForCpuFallback(card) && !isDormantForCpuFallback(player, card)
+    ));
+}
+
 function fallbackCpuCleaningTarget() {
     if (!game) return null;
     for (const player of game.players) {
@@ -536,8 +543,8 @@ const CPU_PHASE_HANDLERS = [
             const nextPending = GameManager.nextPendingActionFor(game);
             if (nextPending && nextPending.action === GAME_ACTIONS.RESOLVE_CLEANING) {
                 let cardName = cpu.chooseCleaningTarget(game);
-                if (!cardName) cardName = fallbackCpuCleaningTarget();
-                if (cardName) {
+                if (!isValidCpuCleaningTarget(cardName)) cardName = fallbackCpuCleaningTarget();
+                if (isValidCpuCleaningTarget(cardName)) {
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
                     return;
                 }

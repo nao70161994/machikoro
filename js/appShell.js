@@ -58,6 +58,17 @@ function safeClientErrorContext() {
     };
 }
 
+function elementHasBlockingAncestor(id, el) {
+    try {
+        if (el && typeof el.closest === 'function' && el.closest('[inert], [aria-hidden="true"]')) return true;
+    } catch (_) {}
+    if (['btnRoll', 'btnSkip', 'btnReroll', 'diceChoose', 'buildMenu'].includes(id)) {
+        const gameScreen = typeof document !== 'undefined' && document.getElementById ? document.getElementById('gameScreen') : null;
+        if (gameScreen && (gameScreen.inert || (typeof gameScreen.getAttribute === 'function' && gameScreen.getAttribute('aria-hidden') === 'true'))) return true;
+    }
+    return false;
+}
+
 function safeElementSnapshot(id) {
     const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
     if (!el) return null;
@@ -72,7 +83,9 @@ function safeElementSnapshot(id) {
             computedVisibility = style && style.visibility || '';
         }
     } catch (_) {}
+    const ancestorBlocked = elementHasBlockingAncestor(id, el);
     return {
+        id,
         display: el.style ? el.style.display || '' : '',
         computedDisplay,
         visibility: el.style ? el.style.visibility || '' : '',
@@ -82,6 +95,7 @@ function safeElementSnapshot(id) {
         disabled: !!el.disabled,
         hidden: !!el.hidden,
         inert: !!el.inert,
+        ancestorBlocked,
         ariaHidden: typeof el.getAttribute === 'function' ? el.getAttribute('aria-hidden') : null,
         className: el.className || '',
         htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
@@ -118,7 +132,7 @@ function allowedActionListForSnapshot() {
 
 function isElementUsablyEnabled(snapshot) {
     if (!snapshot) return false;
-    if (snapshot.disabled || snapshot.hidden || snapshot.inert) return false;
+    if (snapshot.disabled || snapshot.hidden || snapshot.inert || snapshot.ancestorBlocked) return false;
     if (snapshot.display === 'none' || snapshot.computedDisplay === 'none') return false;
     if (snapshot.visibility === 'hidden' || snapshot.computedVisibility === 'hidden') return false;
     if (snapshot.pointerEvents === 'none' || snapshot.computedPointerEvents === 'none') return false;
@@ -154,6 +168,8 @@ function buildClientRuntimeSnapshot(reason = '') {
         isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? !!onlineActionInFlight : null,
+        isReconnectingOnline: typeof isReconnectingOnline !== 'undefined' ? !!isReconnectingOnline : null,
+        socketConnected: typeof socket !== 'undefined' && socket ? socket.connected !== false : null,
         allowedActions: allowedActionListForSnapshot(),
         activeElement: typeof document !== 'undefined' && document.activeElement ? {
             id: document.activeElement.id || '',
@@ -207,14 +223,50 @@ function hasUsablePrimaryAction(snapshot) {
     return enabled.length > 0;
 }
 
+function expectedPendingActions(snapshot) {
+    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+    const pendingActions = new Set(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']);
+    return allowed.filter(action => pendingActions.has(action));
+}
+
+function hasUsablePendingAction(snapshot) {
+    if (!snapshot) return false;
+    const ui = snapshot.ui || {};
+    const pendingMenu = ui.pendingMenu;
+    const pendingModal = ui.pendingModal;
+    if (!pendingMenu || pendingMenu.htmlLength <= 0) return false;
+    if (!isElementUsablyEnabled(pendingMenu)) return false;
+    if (pendingModal && !isElementUsablyEnabled(pendingModal)) return false;
+    return true;
+}
+
+function isOnlineUiBlockedSnapshot(snapshot) {
+    if (!snapshot || !snapshot.isOnlineGame) return false;
+    if (snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return true;
+    return snapshot.socketConnected === false;
+}
+
+
+function resetAccessibleModalStateForRecovery() {
+    try { if (typeof activeModalId !== 'undefined') activeModalId = null; } catch (_) {}
+    try { if (typeof lastModalFocus !== 'undefined') lastModalFocus = null; } catch (_) {}
+    try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
+}
+
 function closeStaleBlockingModals() {
-    ['confirmModal', 'cardSelectModal', 'cardDetailModal', 'rulesModal'].forEach(id => {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-        if (el && el.style) el.style.display = 'none';
-    });
+    let closed = false;
+    const confirmModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('confirmModal') : null;
+    if (confirmModal && confirmModal.style && confirmModal.style.display !== 'none') {
+        confirmModal.style.display = 'none';
+        closed = true;
+    }
     const pendingModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingModal') : null;
     const pendingMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingMenu') : null;
-    if (pendingModal && pendingModal.style && pendingMenu && !pendingMenu.innerHTML) pendingModal.style.display = 'none';
+    if (pendingModal && pendingModal.style && pendingMenu && !pendingMenu.innerHTML) {
+        pendingModal.style.display = 'none';
+        closed = true;
+    }
+    if (closed) resetAccessibleModalStateForRecovery();
 }
 
 function clearUiLocks(reason = 'ui-unlock') {
@@ -232,8 +284,8 @@ function clearUiLocks(reason = 'ui-unlock') {
 
 function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     const snapshot = buildClientRuntimeSnapshot(reason);
-    if (!isHumanTurnSnapshot(snapshot)) return false;
-    if (!expectedPrimaryActions(snapshot).length && !hasPendingWork(snapshot)) return false;
+    if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    if (!expectedPrimaryActions(snapshot).length) return false;
     clearUiLocks(reason);
     try { if (typeof render === 'function') render(); } catch (_) {}
     return true;
@@ -512,13 +564,17 @@ function classifyLikelyFreeze(snapshot) {
     const skipDisabled = !!(ui.btnSkip && ui.btnSkip.disabled);
     const gameInert = !!(ui.gameScreen && ui.gameScreen.inert);
     const confirmOpen = !!(ui.confirmModal && ui.confirmModal.display && ui.confirmModal.display !== 'none');
+    const onlineBlocked = isOnlineUiBlockedSnapshot(snapshot);
     const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
     const expectedActions = expectedPrimaryActions(snapshot);
-    const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
-    if (snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || confirmOpen || noUsablePrimaryAction)) {
+    const expectedPending = expectedPendingActions(snapshot);
+    const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
+    const noUsablePendingAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedPending.length > 0 && !hasUsablePendingAction(snapshot);
+    if (!onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || confirmOpen || noUsablePrimaryAction)) {
         return 'post-build-ui-blocked';
     }
     if (noUsablePrimaryAction) return 'human-turn-ui-locked';
+    if (noUsablePendingAction) return 'pending-ui-locked';
     if (pendingOpenWithoutContent) return 'pending-without-action';
     if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight) return 'cpu-turn-stalled';
     if (snapshot.onlineActionInFlight) return 'online-action-in-flight-stalled';
@@ -527,20 +583,53 @@ function classifyLikelyFreeze(snapshot) {
 
 function recoverPostBuildUiFreeze(snapshot) {
     if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
+    if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    clearUiLocks('freeze-watchdog-post-build-unlock');
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    const gameScreen = typeof document !== 'undefined' && document.getElementById ? document.getElementById('gameScreen') : null;
-    if (gameScreen) gameScreen.inert = false;
-    const confirmModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('confirmModal') : null;
-    if (confirmModal && confirmModal.style) confirmModal.style.display = 'none';
-    const btnSkip = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnSkip') : null;
-    if (btnSkip) {
-        btnSkip.disabled = false;
-        btnSkip.textContent = '建設完了・ターン終了';
-    }
     markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'post-build-ui-blocked' });
     return true;
+}
+
+function recoverPendingUiLock(snapshot) {
+    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    ['pendingModal', 'pendingMenu'].forEach(id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (!el) return;
+        el.inert = false;
+        if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
+        if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
+    });
+    try {
+        if (typeof render === 'function') render();
+    } catch (_) {}
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'pending-ui-locked' });
+    return true;
+}
+
+function buildFreezeReportStack(payload) {
+    const snapshot = payload && payload.snapshot || {};
+    const ui = snapshot.ui || {};
+    const buttonSummary = snapshot.actionButtons && snapshot.actionButtons.buttons
+        ? Object.fromEntries(Object.entries(snapshot.actionButtons.buttons).map(([id, state]) => [id, state ? { disabled: !!state.disabled, hidden: !!state.hidden, inert: !!state.inert, ancestorBlocked: !!state.ancestorBlocked, pointerEvents: state.pointerEvents || state.computedPointerEvents || '' } : null]))
+        : {};
+    return 'FREEZE_SUMMARY ' + JSON.stringify({
+        freezeKind: payload && payload.freezeKind,
+        stagnantMs: payload && payload.stagnantMs,
+        phase: snapshot.phase,
+        currentPlayerIndex: snapshot.currentPlayerIndex,
+        myPlayerIndex: snapshot.myPlayerIndex,
+        isOnlineGame: snapshot.isOnlineGame,
+        onlineActionInFlight: snapshot.onlineActionInFlight,
+        isReconnectingOnline: snapshot.isReconnectingOnline,
+        socketConnected: snapshot.socketConnected,
+        allowedActions: snapshot.allowedActions,
+        visibleModals: snapshot.visibleModals,
+        pendingMenu: ui.pendingMenu ? { display: ui.pendingMenu.display, hidden: !!ui.pendingMenu.hidden, inert: !!ui.pendingMenu.inert, ancestorBlocked: !!ui.pendingMenu.ancestorBlocked, pointerEvents: ui.pendingMenu.pointerEvents || ui.pendingMenu.computedPointerEvents || '', htmlLength: ui.pendingMenu.htmlLength } : null,
+        pendingModal: ui.pendingModal ? { display: ui.pendingModal.display, hidden: !!ui.pendingModal.hidden, inert: !!ui.pendingModal.inert, pointerEvents: ui.pendingModal.pointerEvents || ui.pendingModal.computedPointerEvents || '' } : null,
+        actionButtons: buttonSummary,
+    });
 }
 
 function checkFreezeWatchdog() {
@@ -573,11 +662,12 @@ function checkFreezeWatchdog() {
             source: 'freeze-watchdog',
             phase: snapshot.phase,
             message: freezeKind + ' after ' + payload.stagnantMs + 'ms',
-            stack: 'FREEZE_SNAPSHOT ' + JSON.stringify(payload).slice(0, 1800),
+            stack: buildFreezeReportStack(payload),
         });
     }
     if (freezeKind === 'post-build-ui-blocked') recoverPostBuildUiFreeze(snapshot);
     else if (freezeKind === 'human-turn-ui-locked') unlockUiForHumanTurn('freeze-watchdog-human-turn-unlock');
+    else if (freezeKind === 'pending-ui-locked') recoverPendingUiLock(snapshot);
 }
 
 function startFreezeWatchdog() {

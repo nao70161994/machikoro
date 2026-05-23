@@ -171,11 +171,11 @@ runTest('integration: 購入後操作不能ならwatchdogがsnapshot保存と通
     assert.ok(reportCall);
     const report = JSON.parse(reportCall.options.body);
     assert.ok(report.message.includes('post-build-ui-blocked'));
-    assert.ok(report.stack.includes('FREEZE_SNAPSHOT'));
+    assert.ok(report.stack.includes('FREEZE_SUMMARY'));
+    assert.ok(!report.stack.includes('FREEZE_SNAPSHOT'));
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
-    const checkpoint = JSON.parse(rt.localStorage.getItem('machikoroLastClientCheckpoint'));
-    assert.strictEqual(checkpoint.event, 'freeze-watchdog-recovered');
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
 });
 
 
@@ -237,6 +237,31 @@ runTest('integration: CPUターン終了後に人間ターンのUI lockを解除
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-human-turn-unlock'));
 });
 
+runTest('integration: pending中の正当なmodal lockは人間ターンunlockで解除しない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    rt.__test.elements.pendingModal.style.display = 'flex';
+    rt.__test.elements.pendingMenu.innerHTML = '<button data-action="resolveTV">対象</button>';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+
+    rt.scheduleCPU();
+
+    assert.strictEqual(rt.__test.elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, true);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), 'true');
+});
+
 runTest('integration: 自分ターンで操作可能ボタンがなければwatchdogがUI lockを検知する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -266,6 +291,43 @@ runTest('integration: 自分ターンで操作可能ボタンがなければwatc
     const snapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
     assert.ok(snapshot.snapshot.allowedActions.includes('rollDice'));
     assert.strictEqual(snapshot.freezeKind, 'human-turn-ui-locked');
+});
+
+runTest('integration: pending操作不能ならwatchdogが縮約通知してrender復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    rt.render();
+    assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('テレビ局'));
+    rt.__test.elements.pendingMenu.style.pointerEvents = 'none';
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const reportCall = rt.__test.fetchCalls.find(call => {
+        if (call.url !== '/api/client-error') return false;
+        const report = JSON.parse(call.options.body);
+        return report.source === 'freeze-watchdog' && report.message.includes('pending-ui-locked');
+    });
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.stack.includes('FREEZE_SUMMARY'));
+    assert.ok(!report.stack.includes('FREEZE_SNAPSHOT'));
+    assert.ok(!report.stack.includes('Alice'));
+    assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, '');
+    assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('テレビ局'));
+    const snapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(snapshot.freezeKind, 'pending-ui-locked');
 });
 
 runTest('integration: client側debug error reportを手動送信できる', () => {
