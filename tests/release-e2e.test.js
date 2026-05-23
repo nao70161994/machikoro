@@ -314,6 +314,10 @@ runAsyncTest('release PWA install/update と Service Worker lifecycle を疑似�
     assert.ok(index.includes('updatefound'));
     assert.ok(index.includes('controllerchange'));
     assert.ok(index.includes('SKIP_WAITING'));
+    assert.ok(index.includes('function checkClientVersionMismatch()'));
+    assert.ok(index.includes("fetch('/api/version',"));
+    assert.ok(index.includes('古いバージョンです。修正済みバグを避けるため更新してください。'));
+    assert.ok(index.includes('_forceVersionReload();'));
 
     const appShell = loadAppShellRuntime(MOBILE_PROFILES[1]);
     let prevented = false;

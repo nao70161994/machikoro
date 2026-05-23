@@ -366,16 +366,22 @@
           const gs = document.getElementById('gameScreen');
           return gs && gs.style.display !== 'none' && gs.style.display !== '';
         }
-        function _showPwaUpdateBanner() {
+        let _serverVersionHash = '';
+        let _versionMismatchDetected = false;
+        let _versionMismatchReported = false;
+        function _showPwaUpdateBanner(message, options = {}) {
           const installBanner = document.getElementById('pwaInstallBanner');
           if (installBanner) installBanner.style.display = 'none';
           const banner = document.getElementById('pwaUpdateBanner');
           const btn = document.getElementById('pwaUpdateBtn');
           const msg = document.getElementById('pwaUpdateMsg');
-          msg.textContent = '新しいバージョンがあります';
+          if (!banner || !btn || !msg) return;
+          msg.textContent = message || '新しいバージョンがあります';
           btn.disabled = false;
           btn.style.opacity = '';
-          if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
+          if (options.versionMismatch) btn.dataset.versionMismatch = '1';
+          else delete btn.dataset.versionMismatch;
+          if (!options.versionMismatch && typeof isOnlineGame !== 'undefined' && isOnlineGame) {
             msg.textContent = '新バージョンあり（ゲーム終了後に再起動してください）';
             btn.disabled = true;
             btn.style.opacity = '0.4';
@@ -392,6 +398,57 @@
           _showPwaUpdateBanner();
           return false;
         }
+        function _forceVersionReload() {
+          const tasks = [];
+          if (typeof caches !== 'undefined' && caches.keys) {
+            tasks.push(caches.keys().then(keys => Promise.all(keys.filter(key => /^machikoro-/.test(key)).map(key => caches.delete(key)))));
+          }
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            tasks.push(navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(registrations.map(reg => reg.unregister()))));
+          }
+          Promise.allSettled(tasks).finally(() => location.reload());
+        }
+        function _reportVersionMismatch(serverHash) {
+          if (_versionMismatchReported) return;
+          _versionMismatchReported = true;
+          if (typeof markClientFlowCheckpoint === 'function') {
+            markClientFlowCheckpoint('client-version-mismatch', { clientVersion: window.MACHIKORO_CLIENT_VERSION || '', serverVersion: serverHash });
+          }
+          if (typeof showNotice === 'function') showNotice('古いバージョンを検出しました。更新してください。');
+          if (typeof reportClientError === 'function') {
+            reportClientError({
+              source: 'version-mismatch',
+              message: 'Client version mismatch',
+              stack: 'client=' + (window.MACHIKORO_CLIENT_VERSION || 'unknown') + '\nserver=' + serverHash,
+            });
+          }
+        }
+        function _handleVersionMismatch(serverHash) {
+          _serverVersionHash = serverHash || '';
+          _versionMismatchDetected = true;
+          window.__machikoroVersionMismatch = {
+            clientVersion: window.MACHIKORO_CLIENT_VERSION || '',
+            serverVersion: _serverVersionHash,
+          };
+          _reportVersionMismatch(_serverVersionHash);
+          _showPwaUpdateBanner('古いバージョンです。修正済みバグを避けるため更新してください。', { versionMismatch: true });
+        }
+        function checkClientVersionMismatch() {
+          if (typeof fetch !== 'function') return Promise.resolve(false);
+          const clientVersion = window.MACHIKORO_CLIENT_VERSION || '';
+          return fetch('/api/version', {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+          }).then(response => response && response.ok ? response.json() : null).then(data => {
+            const serverHash = data && data.hash ? String(data.hash) : '';
+            if (serverHash && clientVersion && serverHash !== clientVersion) {
+              _handleVersionMismatch(serverHash);
+              return true;
+            }
+            return false;
+          }).catch(() => false);
+        }
+        window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;
         window.refreshPwaUpdateState = refreshPwaUpdateState;
         function _handleWaitingSW(sw) {
           _waitingSW = sw;
@@ -414,6 +471,7 @@
           location.reload();
         });
         window.addEventListener('load', () => {
+          checkClientVersionMismatch();
           navigator.serviceWorker.register('/sw.js').then(reg => {
             if (reg.waiting && navigator.serviceWorker.controller) {
               _handleWaitingSW(reg.waiting);
@@ -432,6 +490,8 @@
           updateRequestedByUser = true;
           if (_waitingSW) {
             _waitingSW.postMessage({ type: 'SKIP_WAITING' });
+          } else if (_versionMismatchDetected) {
+            _forceVersionReload();
           } else {
             location.reload();
           }

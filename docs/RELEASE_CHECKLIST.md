@@ -84,6 +84,9 @@ Release expectations:
 - Service Worker install does not precache RL model JSON.
 - RL model JSON is lazy-loaded and runtime cached only when needed.
 - Update banner keeps game-in-progress updates manual; title/app shell update flow remains available.
+- `/api/version` returns the deployed build hash with no-store cache headers. A client whose `window.MACHIKORO_CLIENT_VERSION` differs from that hash must show the PWA update banner, emit a compact `version-mismatch` client notification, and offer an update button.
+- For stale-cache reports such as an old `version=f6ce626`, open DevTools console and compare `window.MACHIKORO_CLIENT_VERSION`, `window.__machikoroVersionMismatch`, and `curl -s <PUBLIC_ORIGIN>/api/version`. Use the banner update button to clear Machikoro caches/service worker registrations and reload.
+- If the banner does not appear, run `window.__machikoroCheckVersionMismatch()` from the console, then manually unregister the Service Worker and clear `machikoro-*` caches before reloading.
 - PWA banner z-index stays below modals and crash recovery UI.
 
 Manual-only checks are listed in `docs/AUTOMATED_RELEASE_TEST.md` and `docs/PWA_MODEL_LOADING.md`.

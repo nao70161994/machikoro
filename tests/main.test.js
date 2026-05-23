@@ -1313,10 +1313,19 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('let hadServiceWorkerController = !!navigator.serviceWorker.controller;'));
     assert.ok(html.includes('hadServiceWorkerController = true;'));
     assert.ok(html.includes('let updateRequestedByUser = false;'));
+    assert.ok(html.includes('let _versionMismatchDetected = false;'));
     assert.ok(html.includes('function refreshPwaUpdateState()'));
+    assert.ok(html.includes('function checkClientVersionMismatch()'));
+    assert.ok(html.includes("fetch('/api/version',"));
+    assert.ok(html.includes("cache: 'no-store'"));
+    assert.ok(html.includes('client-version-mismatch'));
+    assert.ok(html.includes('reportClientError({'));
+    assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
     assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));
     assert.ok(html.includes('if (_isInGame() && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('updateRequestedByUser = true;'));
+    assert.ok(html.includes('_forceVersionReload();'));
+    assert.ok(html.includes('caches.keys()'));
     assert.ok(mainSource.includes("if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();"));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="region" aria-labelledby="pwaUpdateMsg"'));
     assert.ok(html.includes('id="pwaUpdateMsg" aria-live="polite" aria-atomic="true"'));
@@ -1337,7 +1346,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="confirmMessage"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton"'));
     assert.ok(html.includes('id="onlineJoinSubmitButton"'));
-    assert.ok(html.includes("msg.textContent = '新しいバージョンがあります';"));
+    assert.ok(html.includes("msg.textContent = message || '新しいバージョンがあります';"));
     assert.ok(html.includes('btn.disabled = false;'));
     assert.ok(html.includes("btn.style.opacity = '';"));
     assert.ok(html.includes('data-ui-action="showRules"'));

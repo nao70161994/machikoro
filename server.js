@@ -651,6 +651,7 @@ app.get('/sw.js', (req, res) => {
 });
 
 app.get('/api/version', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({ hash: BUILD_HASH });
 });
 
