@@ -703,3 +703,29 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 - `safeRenderStep` は active game state の副次的な描画 step のみに適用し、`_render()` 全体・勝利処理・永続化の致命例外は従来どおり crash screen 経路へ残している。
 - render step 例外は console warn だけで終わらず、`reportClientError` から `/api/client-error` に送信されることを integration test で固定した。
 - 例外を意図的に起こす regression では、UI が操作可能なまま残ること、trace に step / stack / recoverable が残ること、client-error payload に `FLOW_TRACE` が含まれることを確認している。
+
+### Build freeze re-investigation: non-exception watchdog
+
+確認した内容:
+
+- 前回の render step 例外仮説だけでは、ntfy 通知が来ない実機フリーズを説明しきれない。`window.onerror` / `unhandledrejection` に届かない停止、つまり購入後の UI 操作不能、pending 待ち、CPU 待ち、online in-flight 停滞を別経路で捕捉する必要がある。
+- ローカル環境では `NTFY_TOPIC` は設定済み、`CLIENT_ERROR_SHARED_TOKEN` / `CLIENT_ERROR_TOKEN` は未設定だった。したがって少なくともこの環境では token gate が通知欠落の直接原因ではなく、例外が発生していないため `/api/client-error` が呼ばれていない可能性が高い。
+- ただし production で shared token を設定した場合、ブラウザ側 reporter は token header を送らないため 403 になる。今回 `reportClientError` の fetch start / complete / failed / suppressed を `machikoroLastClientCheckpoint` に残すようにし、実機で `/api/client-error` に到達したか、403/429 等で落ちたかを判別できるようにした。
+
+修正済み:
+
+- `markClientFlowCheckpoint()` を追加し、購入、skip、local/online action apply、render 後、CPU schedule の最後に通った処理を `machikoroLastClientCheckpoint` に保存する。
+- `startFreezeWatchdog()` を追加し、1秒ごとに phase / turn / pending / UI 状態を監視する。5秒以上同じ状態が続き、かつ「購入済み build で skip disabled / gameScreen inert / confirm modal 残留」など操作不能条件がある場合だけ `machikoroFreezeSnapshot` を保存して `freeze-watchdog` として `/api/client-error` へ送る。
+- 通常の「購入後にユーザーがターン終了を押すまで待っている」状態は freeze として扱わない。誤通知を避けるため、`builtThisTurn=true` だけでは report せず、UI block 条件を併用する。
+- CPU turn 停滞、online action in-flight 停滞、pending action 不整合も watchdog の分類対象にした。
+
+Regression:
+
+- 購入後に skip が有効な通常待機では freeze report が出ないことを integration test で固定した。
+- 購入後に skip が disabled のまま 5秒以上停滞した場合、`machikoroFreezeSnapshot` が保存され、`/api/client-error` に `freeze-watchdog` report が送られることを integration test で固定した。
+
+実機で見るキー:
+
+- `localStorage.machikoroLastClientCheckpoint`: 最後に通った処理、client-error fetch の開始/完了/失敗、HTTP status。
+- `localStorage.machikoroFreezeSnapshot`: watchdog が freeze と判定した時点の phase / pending / UI snapshot。
+- `localStorage.machikoroLastFlowTrace`: build/render trace の最新イベント。

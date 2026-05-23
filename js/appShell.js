@@ -3,12 +3,19 @@ const CLIENT_ERROR_REPORT_ENDPOINT = '/api/client-error';
 const CLIENT_ERROR_REPORT_STACK_LIMIT = 2400;
 const CLIENT_ERROR_REPORT_MESSAGE_LIMIT = 500;
 const CLIENT_ERROR_REPORT_SUPPRESS_MS = 10000;
+const FREEZE_WATCHDOG_INTERVAL_MS = 1000;
+const FREEZE_WATCHDOG_THRESHOLD_MS = 5000;
 let _clientErrorReportingBound = false;
 let _consoleErrorHooked = false;
 let _lastClientErrorReport = { key: '', time: 0 };
 let _onlineStatusHandlersBound = false;
 let _pwaInstallHandlersBound = false;
 let _mainViewResizeBound = false;
+let _freezeWatchdogBound = false;
+let _freezeWatchdogLastKey = '';
+let _freezeWatchdogLastChangedAt = 0;
+let _freezeWatchdogLastReportKey = '';
+let _freezeWatchdogLastReportAt = 0;
 
 function truncateClientErrorField(value, limit) {
     const text = String(value || '');
@@ -51,6 +58,69 @@ function safeClientErrorContext() {
     };
 }
 
+function safeElementSnapshot(id) {
+    const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+    if (!el) return null;
+    return {
+        display: el.style ? el.style.display || '' : '',
+        disabled: !!el.disabled,
+        inert: !!el.inert,
+        htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
+        text: typeof el.textContent === 'string' ? truncateClientErrorField(el.textContent, 120) : '',
+    };
+}
+
+function buildClientRuntimeSnapshot(reason = '') {
+    if (typeof buildRuntimeStateSnapshot === 'function') {
+        try { return buildRuntimeStateSnapshot(reason); } catch (_) {}
+    }
+    const hasGame = typeof game !== 'undefined' && !!game;
+    const currentPlayerIndex = hasGame ? game.currentPlayerIndex : null;
+    let isCpuTurn = false;
+    try { isCpuTurn = !!(hasGame && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]); } catch (_) {}
+    return {
+        reason,
+        timestamp: new Date().toISOString(),
+        phase: hasGame ? game.phase : '',
+        builtThisTurn: !!(hasGame && game.builtThisTurn),
+        turnCount: hasGame ? game.turnCount : null,
+        currentPlayerIndex,
+        isCpuTurn,
+        isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
+        isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
+        myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+        onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? !!onlineActionInFlight : null,
+        pendingFields: hasGame ? {
+            pendingTV: game.pendingTV || 0,
+            pendingBusiness: game.pendingBusiness || 0,
+            pendingCleaning: game.pendingCleaning || 0,
+            pendingMover: game.pendingMover || 0,
+            pendingRenovation: game.pendingRenovation || 0,
+            pendingIT: !!game.pendingIT,
+        } : null,
+        ui: {
+            gameScreen: safeElementSnapshot('gameScreen'),
+            pendingModal: safeElementSnapshot('pendingModal'),
+            pendingMenu: safeElementSnapshot('pendingMenu'),
+            buildMenu: safeElementSnapshot('buildMenu'),
+            btnSkip: safeElementSnapshot('btnSkip'),
+            confirmModal: safeElementSnapshot('confirmModal'),
+            btnRoll: safeElementSnapshot('btnRoll'),
+        },
+    };
+}
+
+function markClientFlowCheckpoint(event, details = {}) {
+    const checkpoint = { event, details, snapshot: buildClientRuntimeSnapshot(event), timestamp: new Date().toISOString() };
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('machikoroLastClientCheckpoint', JSON.stringify(checkpoint).slice(0, 5000));
+        }
+    } catch (_) {}
+    return checkpoint;
+}
+
+
 function buildClientErrorReport(input) {
     const source = input?.source || 'unknown';
     const error = input?.error;
@@ -71,23 +141,36 @@ function clientErrorReportKey(report) {
 }
 
 function reportClientError(input) {
-    if (typeof fetch !== 'function') return false;
+    if (typeof fetch !== 'function') {
+        markClientFlowCheckpoint('client-error-fetch-unavailable', { source: input?.source || 'unknown' });
+        return false;
+    }
     const report = buildClientErrorReport(input || {});
     const now = Date.now();
     const key = clientErrorReportKey(report);
     if (_lastClientErrorReport.key === key && now - _lastClientErrorReport.time < CLIENT_ERROR_REPORT_SUPPRESS_MS) {
+        markClientFlowCheckpoint('client-error-suppressed', { source: report.source, message: report.message });
         return false;
     }
     _lastClientErrorReport = { key, time: now };
     try {
-        fetch(CLIENT_ERROR_REPORT_ENDPOINT, {
+        markClientFlowCheckpoint('client-error-fetch-start', { source: report.source, message: report.message });
+        const request = fetch(CLIENT_ERROR_REPORT_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(report),
             keepalive: true,
-        }).catch(() => {});
+        });
+        if (request && typeof request.then === 'function') {
+            request.then(response => {
+                markClientFlowCheckpoint('client-error-fetch-complete', { source: report.source, ok: response && response.ok !== false, status: response && response.status });
+            }).catch(error => {
+                markClientFlowCheckpoint('client-error-fetch-failed', { source: report.source, message: error && error.message || String(error) });
+            });
+        }
         return true;
-    } catch {
+    } catch (error) {
+        markClientFlowCheckpoint('client-error-fetch-threw', { source: report.source, message: error && error.message || String(error) });
         return false;
     }
 }
@@ -262,6 +345,86 @@ function bindPwaInstallHandlers() {
     _pwaInstallHandlersBound = true;
 }
 
+function freezeWatchdogStateKey(snapshot) {
+    const pending = snapshot.pendingFields || {};
+    return [
+        snapshot.phase || '',
+        snapshot.turnCount ?? '',
+        snapshot.currentPlayerIndex ?? '',
+        snapshot.builtThisTurn ? 'built' : 'open',
+        pending.pendingTV || 0,
+        pending.pendingBusiness || 0,
+        pending.pendingCleaning || 0,
+        pending.pendingMover || 0,
+        pending.pendingRenovation || 0,
+        pending.pendingIT ? 1 : 0,
+        snapshot.onlineActionInFlight ? 1 : 0,
+    ].join('|');
+}
+
+function hasPendingWork(snapshot) {
+    const pending = snapshot.pendingFields || {};
+    return !!(pending.pendingTV || pending.pendingBusiness || pending.pendingCleaning || pending.pendingMover || pending.pendingRenovation || pending.pendingIT);
+}
+
+function classifyLikelyFreeze(snapshot) {
+    if (!snapshot || !snapshot.phase) return '';
+    const ui = snapshot.ui || {};
+    const isMyTurn = !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
+    const skipDisabled = !!(ui.btnSkip && ui.btnSkip.disabled);
+    const gameInert = !!(ui.gameScreen && ui.gameScreen.inert);
+    const confirmOpen = !!(ui.confirmModal && ui.confirmModal.display && ui.confirmModal.display !== 'none');
+    const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
+    if (snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || confirmOpen)) {
+        return 'post-build-ui-blocked';
+    }
+    if (pendingOpenWithoutContent) return 'pending-without-action';
+    if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight) return 'cpu-turn-stalled';
+    if (snapshot.onlineActionInFlight) return 'online-action-in-flight-stalled';
+    return '';
+}
+
+function checkFreezeWatchdog() {
+    const now = Date.now();
+    const snapshot = buildClientRuntimeSnapshot('freeze-watchdog');
+    markClientFlowCheckpoint('freeze-watchdog-tick', { phase: snapshot.phase, turnCount: snapshot.turnCount });
+    const key = freezeWatchdogStateKey(snapshot);
+    if (key !== _freezeWatchdogLastKey) {
+        _freezeWatchdogLastKey = key;
+        _freezeWatchdogLastChangedAt = now;
+        return;
+    }
+    if (!_freezeWatchdogLastChangedAt) _freezeWatchdogLastChangedAt = now;
+    if (now - _freezeWatchdogLastChangedAt < FREEZE_WATCHDOG_THRESHOLD_MS) return;
+    const freezeKind = classifyLikelyFreeze(snapshot);
+    if (!freezeKind) return;
+    const reportKey = freezeKind + '|' + key;
+    if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) return;
+    _freezeWatchdogLastReportKey = reportKey;
+    _freezeWatchdogLastReportAt = now;
+    const payload = { freezeKind, stagnantMs: now - _freezeWatchdogLastChangedAt, snapshot };
+    markClientFlowCheckpoint('freeze-watchdog-report', payload);
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('machikoroFreezeSnapshot', JSON.stringify(payload).slice(0, 7000));
+        }
+    } catch (_) {}
+    if (typeof reportClientError === 'function') {
+        reportClientError({
+            source: 'freeze-watchdog',
+            phase: snapshot.phase,
+            message: freezeKind + ' after ' + payload.stagnantMs + 'ms',
+            stack: 'FREEZE_SNAPSHOT ' + JSON.stringify(payload).slice(0, 1800),
+        });
+    }
+}
+
+function startFreezeWatchdog() {
+    if (_freezeWatchdogBound || typeof setInterval !== 'function') return;
+    _freezeWatchdogBound = true;
+    setInterval(checkFreezeWatchdog, FREEZE_WATCHDOG_INTERVAL_MS);
+}
+
 function initMainView() {
     loadSettings();
     renderOnlinePlayerSettings();
@@ -274,4 +437,5 @@ function initMainView() {
     bindCrashHandlers();
     bindOnlineStatusHandlers();
     bindPwaInstallHandlers();
+    startFreezeWatchdog();
 }

@@ -107,6 +107,74 @@ runTest('integration: 購入後もrender step例外で操作不能にならな�
     assert.ok(report.stack.includes('render-step-error'));
 });
 
+
+runTest('integration: 購入後watchdogは操作可能な通常待機をfreeze扱いしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeReports = rt.__test.fetchCalls
+        .filter(call => call.url === '/api/client-error')
+        .map(call => JSON.parse(call.options.body))
+        .filter(report => report.source === 'freeze-watchdog');
+    assert.strictEqual(freezeReports.length, 0);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+});
+
+runTest('integration: 購入後操作不能ならwatchdogがsnapshot保存と通知を行う', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+    rt.__test.elements.btnSkip.disabled = true;
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'post-build-ui-blocked');
+    assert.strictEqual(freezeSnapshot.snapshot.phase, rt.GAME_PHASES.BUILD);
+    assert.strictEqual(freezeSnapshot.snapshot.builtThisTurn, true);
+    assert.strictEqual(freezeSnapshot.snapshot.ui.btnSkip.disabled, true);
+
+    const reportCall = rt.__test.fetchCalls.find(call => {
+        if (call.url !== '/api/client-error') return false;
+        const report = JSON.parse(call.options.body);
+        return report.source === 'freeze-watchdog';
+    });
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.message.includes('post-build-ui-blocked'));
+    assert.ok(report.stack.includes('FREEZE_SNAPSHOT'));
+});
+
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

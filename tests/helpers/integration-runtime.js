@@ -51,14 +51,23 @@ function loadIntegrationRuntime(options = {}) {
         roomIdInput: makeElement({ value: 'ROOM01' }),
     };
     const timeouts = [];
+    const intervals = [];
     const eventHandlers = {};
     const socketHandlers = {};
     const socketEmits = [];
     const fetchCalls = [];
+    const dateState = { now: Date.now() };
+    class FakeDate extends Date {
+        constructor(...args) {
+            super(...(args.length ? args : [dateState.now]));
+        }
+        static now() { return dateState.now; }
+    }
     let socketDisconnected = false;
     const context = {
         console,
         Math,
+        Date: FakeDate,
         elements,
         storage,
         localStorage,
@@ -97,6 +106,11 @@ function loadIntegrationRuntime(options = {}) {
             return timeouts.length;
         },
         clearTimeout() {},
+        setInterval(fn) {
+            intervals.push(fn);
+            return intervals.length;
+        },
+        clearInterval() {},
         alert(message) { alerts.push(message); },
         showNotice(message) { alerts.push(message); },
         showConfirm(message, cb) { cb(); },
@@ -154,6 +168,7 @@ function loadIntegrationRuntime(options = {}) {
         elements,
         storage,
         timeouts,
+        intervals,
         eventHandlers,
         socketHandlers,
         socketEmits,
@@ -161,6 +176,8 @@ function loadIntegrationRuntime(options = {}) {
         alerts,
         isSocketDisconnected: () => socketDisconnected,
         flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
+        runIntervals: (count = 1) => { for (let i = 0; i < count; i++) intervals.slice().forEach(fn => fn()); },
+        advanceTime: ms => { dateState.now += ms; },
         setPlayerSettings(value) { context.__tmpPlayerSettings = value; vm.runInContext('playerSettings = __tmpPlayerSettings', context); delete context.__tmpPlayerSettings; },
         getGame() { return vm.runInContext('game', context); },
         setGame(value) { context.__tmpGame = value; vm.runInContext('game = __tmpGame', context); delete context.__tmpGame; },

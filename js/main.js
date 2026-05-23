@@ -286,14 +286,24 @@ function cpuDo(action, data, fallback) {
     scheduleCPU();
 }
 
+function markMainCheckpoint(event, details = {}) {
+    if (typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
+}
+
 function runLocalOrSendOnline(action, data, fallback) {
+    markMainCheckpoint('action-start', { action, isOnlineGame });
     if (isOnlineGame) {
-        return sendAction(action, data);
+        const sent = sendAction(action, data);
+        markMainCheckpoint('action-online-send', { action, sent });
+        return sent;
     }
     const result = fallback();
+    markMainCheckpoint('action-local-applied', { action, result });
     if (result === false) return false;
     render();
+    markMainCheckpoint('action-rendered', { action });
     scheduleCPU();
+    markMainCheckpoint('action-scheduleCPU-returned', { action });
     return true;
 }
 
@@ -562,22 +572,28 @@ const CPU_PHASE_HANDLERS = [
 ];
 
 function scheduleCPU() {
-    if (isReplaying) return;
-    if (isOnlineGame && !isRoomHost) return;
+    markMainCheckpoint('scheduleCPU-enter', {
+        isReplaying: typeof isReplaying !== 'undefined' ? isReplaying : null,
+        isOnlineGame: typeof isOnlineGame !== 'undefined' ? isOnlineGame : null,
+        isRoomHost: typeof isRoomHost !== 'undefined' ? isRoomHost : null,
+    });
+    if (isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return; }
+    if (isOnlineGame && !isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return; }
     if (isOnlineGame && (
         (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
         (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
         (typeof socket === 'undefined' || !socket || socket.connected === false)
-    )) return;
-    if (!game || game.checkWinner()) return;
+    )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : null }); return; }
+    if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return; }
     const ci = game.currentPlayerIndex;
-    if (!cpuPlayers[ci]) return;
+    if (!cpuPlayers[ci]) { markMainCheckpoint('scheduleCPU-skip-human-turn', { currentPlayerIndex: ci }); return; }
     const cpu = cpuPlayers[ci];
     const token = ++cpuScheduleToken;
     let stepIndex = 0;
 
     function runNextStep() {
-        if (token !== cpuScheduleToken) return;
+        markMainCheckpoint('scheduleCPU-step-enter', { token, stepIndex, currentToken: cpuScheduleToken });
+        if (token !== cpuScheduleToken) { markMainCheckpoint('scheduleCPU-step-stale', { token, currentToken: cpuScheduleToken }); return; }
         if (stepIndex >= CPU_PHASE_HANDLERS.length) {
             queueCPUStep(token, 500, () => { if (!game.checkWinner()) scheduleCPU(); });
             return;
@@ -593,7 +609,9 @@ function scheduleCPU() {
             )) return;
             if (!game || game.checkWinner()) return;
             if (!cpuPlayers[game.currentPlayerIndex]) return;
+            markMainCheckpoint('scheduleCPU-step-run', { step: step.name });
             const stepResult = step.run(cpu);
+            markMainCheckpoint('scheduleCPU-step-result', { step: step.name, stepResult });
             if (stepResult === false) return;
             runNextStep();
         });
@@ -978,7 +996,8 @@ function onBuildLandmark(name) {
 }
 
 function onSkip() {
-    if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN)) return;
+    markMainCheckpoint('skip-request');
+    if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN)) { markMainCheckpoint('skip-rejected-gate'); return; }
     let msg;
     if (game.builtThisTurn) {
         msg = "建設完了・ターン終了しますか？";
@@ -989,10 +1008,12 @@ function onSkip() {
     }
     const scheduledPlayerIndex = game.currentPlayerIndex;
     showConfirm(msg, () => {
-        if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN, scheduledPlayerIndex)) return;
+        markMainCheckpoint('skip-confirmed', { scheduledPlayerIndex });
+        if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN, scheduledPlayerIndex)) { markMainCheckpoint('skip-stale-action', { scheduledPlayerIndex }); return; }
         cancelAutoSkip();
         undoState = null;
-        runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
+        const result = runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
+        markMainCheckpoint('skip-nextTurn-returned', { result });
     });
 }
 

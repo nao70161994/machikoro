@@ -670,7 +670,9 @@ function buildRuntimeStateSnapshot(reason = '') {
         timestamp: new Date().toISOString(),
         phase: game && game.phase,
         builtThisTurn: !!(game && game.builtThisTurn),
+        turnCount: game && game.turnCount,
         currentPlayerIndex: game && game.currentPlayerIndex,
+        isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[game.currentPlayerIndex]),
         isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         pendingFields: game ? {
@@ -711,6 +713,7 @@ function recordFlowTrace(event, details = {}) {
     try {
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem('machikoroLastFlowTrace', JSON.stringify(trace).slice(0, 4000));
+            if (typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
         }
     } catch (_) {}
     return trace;
