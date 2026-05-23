@@ -417,6 +417,30 @@ runTest('main createCpuPlayer は live expert 未指定presetを v2simple 既定
     assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
 });
 
+runTest('main createCpuPlayer は live CPU（最強）を v2simple 凍結候補に固定する', () => {
+    const rt = loadMainRuntime();
+    const cpu = rt.createCpuPlayer('expert', {
+        expertPurpose: "live",
+    });
+
+    assert.strictEqual(cpu.options.expertPreset, "v2simple");
+    assert.strictEqual(cpu.options.expertDiceMode, "strongCrowdThreshold");
+    assert.strictEqual(cpu.options.expertRerollMode, "simple");
+    assert.strictEqual(cpu.options.expertBuildMode, "ev");
+    assert.strictEqual(cpu.options.expertInvestMode, "always");
+    assert.strictEqual(cpu.options.expertTvMode, "simple");
+    assert.strictEqual(cpu.options.expertBusinessMode, "simple");
+    assert.notStrictEqual(cpu.options.expertBusinessMode, "harmfulGift");
+    assert.strictEqual(cpu.options.expertCleaningMode, "simple");
+    assert.strictEqual(cpu.options.expertHarborMode, "simple");
+    assert.strictEqual(cpu.options.expertMoverMode, "simple");
+    assert.strictEqual(cpu.options.expertRenovationMode, "simple");
+    assert.strictEqual(cpu.options.expertComboMode, "core");
+    assert.strictEqual(cpu.options.expertBuildTempoWeight, 0.03);
+    assert.strictEqual(cpu.options.expertAirportSkipMode, "whenNoLandmark");
+    assert.notStrictEqual(cpu.options.expertAirportSkipMode, "never");
+});
+
 runTest('main createCpuPlayer は live v2simple の明示modeを上書きしない', () => {
     const rt = loadMainRuntime();
     const cpu = rt.createCpuPlayer('expert', {

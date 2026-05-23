@@ -29,6 +29,44 @@
 
 ランドマークを買える場合は原則ランドマークを優先します。ただし港 / ショッピングモールは `landmarkCardCompareTargets=harborMall` の比較対象で、カード購入が `landmarkCardMargin` 以上に上回る場合はカードを買います。ランドマークを買えない場合は build EV でカードを選びます。パス追加や広いカード禁止は採用しません。
 
+## 凍結候補サマリ（2026-05-23）
+
+現行 live `CPU（最強）` は `expertPreset: "v2simple"` を現時点の best rule-based preset として扱います。新しい探索は一旦止め、次の条件を満たすまで preset 変更ではなく診断/テスト追加を優先します。
+
+凍結候補として採用済みの変更:
+
+| item | adopted behavior | reason |
+| --- | --- | --- |
+| build tempo | `buildTempo=0.03` | 旧 `0.05` より low-tempo な残金温存を減らし、100-game seed 1 で strongWeighted / strongMin / allStrong4 を改善。 |
+| red opponent-turn EV | `redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` | 赤カードの相手ターン価値を薄く見る。0.30/0.32 などの強化は過剰で不採用。 |
+| Business Center | `business=simple` | harmful gift より安定。50-game seeds 1,2,3 で normalCrowd を壊さず strongWeighted / strongMin を改善。 |
+| late basic duplicate guard | mall 未建設かつ残りランドマーク <= 4 で、低EVの `コンビニ` / `ピザ屋` / `バーガーショップ` / `食品倉庫` 重複だけを軽く減点。`パン屋` は除外。 | allStrong4 / strongMin の弱い尾を改善し、normalCrowd を維持。 |
+
+主要 benchmark:
+
+| check | current result | note |
+| --- | ---: | --- |
+| 100-game seed 1 after buildTempo adoption | normalCrowd 57.0%, strongWeighted 57.5%, strongMin 38.0%, duel 87.0%, trio 78.0%, crowd 60.0%, allStrong4 38.0% | 旧 `buildTempo=0.05` から strongWeighted / strongMin / allStrong4 が改善。 |
+| Business Center simple 50-game seeds 1,2,3 | normalCrowd 53.3%, strongWeighted 55.1%, strongMin 42.0% | harmful gift より安定したため採用。 |
+| refined duplicate guard 50-game seeds 11,12,13 | normalCrowd 58.0%, strongWeighted 44.8%, strongMin 39.3%, crowd 52.0%, allStrong4 39.3% | 同条件 baseline から strongWeighted +1.5pt, strongMin/allStrong4 +2.0pt。 |
+| refined duplicate guard 100-game seed 11 | normalCrowd 60.0%, strongWeighted 52.3%, strongMin/allStrong4 36.0%, crowd 47.0% | normalCrowd を維持し allStrong4 +3.0pt。 |
+
+試したが不採用の主な方向:
+
+- duplicate guard の追加強化: quick gate で現行超えなし、または normalCrowd を壊す。
+- airport skip 無効化/例外: quick では改善しても 50-game confirmation で現行を超えない、または duel を落とす。
+- landmark pressure / TV denial / red crowd 補正: broad knob は発火不足または allStrong4 / strongWeighted を悪化。
+- Business Center harmful gift / broad scored exchange: crowd mean が上がる sample はあるが strongMin/allStrong4 を壊す。
+- portfolio/growth 一律加点、Cleaning value、special spend guard: loss signal が勝ち筋と絡み、安定改善にならない。
+
+今後再開する条件:
+
+- allStrong4/crowd の paired before/after trace で、1つの小ルールが複数seedの敗戦を反転し得る証拠がある。
+- normalCrowd の悪化原因を同時に説明できる。
+- 20-game quick の後、50-game multi-seed と必要なら100-game確認で strongWeighted 改善、strongMin 維持/改善、normalCrowd -2pt以内を満たす。
+
+この条件を満たさない広い係数調整は、当面 backlog / diagnostics only とします。
+
 ## 現行基準線
 
 2026-05-11 に、追加の手書き補正を止めた状態の `v2simple` を100戦で取り直しました。
@@ -54,10 +92,10 @@ npm run eval-expert-v2-benchmark -- --games 100 --seed 1 --expert-preset v2simpl
 - 赤カード相手ターン EV 補正
   - `redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` を build EV に薄く加点します。
   - 条件付き赤カードは、発火時の即時評価では相手の所持コインを上限にし、build EV では将来価値として評価します。
-- Business Center harmful gift 限定補正
-  - 通常は simple の既定どおり、一番いらない自分カードと一番欲しい相手カードを交換します。
-  - 貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ、交換全体のスコアが既定手を上回れば押し付け候補へ差し替えます。broad scored exchange には戻しません。
-  - 100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%` でした。
+- Business Center harmful gift 限定補正（後に simple へ置換）
+  - この時点では、通常は simple の既定どおり交換し、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ押し付け候補へ差し替える案を採用していました。
+  - その後の multi-seed 評価で `business=simple` の方が安定したため、現行 live v2simple では harmful gift 補正を既定から外しています。
+  - harmful gift 時点の 100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%` でした。
 
 ## 却下済み
 
@@ -172,7 +210,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 
 ## 方針
 
-現時点では、手書きの v2 build EV 強化は打ち止め寄りです。採用済みの赤カード相手ターン EV 補正と Business Center harmful gift 限定補正を除き、broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
+現時点では、手書きの v2 build EV 強化は打ち止め寄りです。採用済みの赤カード相手ターン EV 補正、Business Center simple 移行、refined late basic duplicate guard を除き、broad 補正や guard 系は、診断上の発火が薄いか、20-50戦評価で改善が安定しませんでした。今後は大きな手書き補正を増やすより、loss 診断で明確に集中した狭い仮説が出た場合だけ小さく検証します。
 
 2026-05-10 の追加診断では、loss-only 50戦で crowd が `expertWinRate=44.0%`、allStrong4 が `expertWinRate=36.0%` でした。build attribution はどちらも `portfolioMissedNear05` と `portfolioVsBasic` が目立ち、空港未購入時の見送りも多い一方、成長カード補正の実装 smoke は悪化しました。現段階では「成長カードを買わせる」より、「どの局面ならコンビニ即時収入を捨ててよいか」をさらに診断する段階です。
 
@@ -208,7 +246,7 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
 - Business Center scored exchange の broad 実装
   - harmful gift や交換価値差分は診断対象として残しますが、scored exchange 全体は strong 側悪化があったため採用しません。
 - Business Center broad delay / spend penalty
-  - harmful gift 限定補正は採用済みですが、Business Center を広く遅延扱いする補正は採用しません。
+  - harmful gift 限定補正は過去に採用しましたが、現行では `business=simple` へ置換済みです。Business Center を広く遅延扱いする補正は採用しません。
   - 2026-05-10 の50戦診断では `businessDelay delay=45/1530`, `specialSpend delayNames=ビジネスセンター:45` が出た一方、`businessDelay flip05=0`, `flip1=0` でした。軽い special spend / Business delay penalty では反転しないため、追加実装には進みません。
 
 ### 次に狭く検証する案
@@ -217,9 +255,9 @@ node scripts/eval-expert-v2-benchmark-pack.js --games 100 --suite all
    - `finishDelayExamples` の `reasonTags`, `scoreGapToBestNonDelay`, `opponentWinThreats`, `disruptionPreview` が同じカード/条件に集中する場合だけ、小さい補正候補にします。
 2. Business Center harmful gift の audit
    - `businessSimpleMissedHarmfulGift*` は regression / audit 用に残します。これは `business=simple` が見逃した候補を測る比較用カウンタであり、現行CPUが実際に見逃した回数としては扱いません。
-   - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装として採用しました。
+   - 追加診断では `missedHarmful` が crowd 6/60、allStrong4 5/62。内容は `改装屋->ブドウ園` に集中していたため、通常の simple 交換を維持したまま、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ差し替える限定実装を一度採用しました。
    - 限定実装の50戦 smoke は `strong crowd=44.0%`, `allStrong4=48.0%`, `normal crowd=62.0%`。100戦 full suite は `normalCrowd=61.0%`, `strongWeighted=55.2%`, `strongMin=45.0%`, `allStrong4=45.0%` でした。
-   - 今後は追加候補ではなく、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないかを見る audit として扱います。
+   - その後の multi-seed 評価で simple の方が安定したため、現行 live では harmful gift 限定実装を既定から外しています。今後は追加候補ではなく、貸金業/改装屋などへの集中が維持されているか、想定外のカード名へ広がっていないかを見る audit として扱います。
    - 2026-05-10 に、赤カードのショッピングモール加算を支払う側ではなく所有者側で見るよう修正し、コーン畑・青果市場・食品倉庫・ドリンク工場などの収入/依存評価を実ルールと同じカテゴリ参照へ寄せました。
    - 2026-05-11 の100戦 audit では `missedHarmful=22/265`, `crowd=8/130`, `allStrong4=14/135`。内容は全て `改装屋` で、`改装屋->ブドウ園:13`, `改装屋->鉱山:7`, `改装屋->高級フレンチ:2` でした。ただし `gapLt05=0` のため、小さい tie-breaker ではなく scored exchange 寄りの変更になります。
 3. roll/race の終盤例

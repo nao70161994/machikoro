@@ -119,8 +119,7 @@ npm run selfplay -- --games 20 expert strong strong normal
 - `airportSkip=whenNoLandmark`
 - `incomeCap=none`
 
-この設定の評価 CLI は既定で `mode=lite` の高速比較として動きます。現行100戦基準線は `normalCrowd=57.0%`, `strongWeighted=57.5%`, `strongMin=38.0%` です。
-strong profile は `duel=87.0%`, `trio=78.0%`, `crowd=60.0%`, `allStrong4=38.0%` で、詳細と停止判断は `docs/expert-v2-diagnostics.md` に集約します。
+この設定の評価 CLI は既定で `mode=lite` の高速比較として動きます。現行 `v2simple` は 2026-05-23 時点の best rule-based preset / 凍結候補です。基準線は、100戦 seed 1 の `normalCrowd=57.0%`, `strongWeighted=57.5%`, `strongMin=38.0%`, strong profile `duel=87.0%`, `trio=78.0%`, `crowd=60.0%`, `allStrong4=38.0%` と、refined duplicate guard 採用後の 50-game seeds 11,12,13 `normalCrowd=58.0%`, `strongWeighted=44.8%`, `strongMin=39.3%`, `crowd=52.0%`, `allStrong4=39.3%` を併記して見ます。詳細と停止判断は `docs/expert-v2-diagnostics.md` に集約します。
 
 `combo=core` は、将来コンボ先が未購入で在庫がある場合だけ、起点カードに薄い先行価値を足します。対象は `牧場 -> チーズ工場`、`森林/鉱山 -> 家具工場`、`花畑 -> フラワーショップ`、`ブドウ園 -> ワイナリー` です。補正係数は既定 `0.35` で、評価スクリプトでは `--combo-weight` で比較できます。`buildTempo=0.03` は購入後の残金評価を旧 `0.05` より少し弱め、低テンポな残金温存に寄りすぎないようにした採用値です。過去に試した `buildGuardMode` は悪化したため削除済みで、`incomeCap` 系は比較用に残していますが既定では使いません。
 
@@ -162,10 +161,16 @@ node scripts/diagnose-expert-v2-branches.js --games 20 --profiles duel,trio,crow
 この診断はサイコロ、リロール、港、テレビ局の僅差分岐に加えて、build EV 内の貸金業、清掃業、公園、combo payoff readiness、landmark-gated、mall-name、mall spend delay、mall basic low income、red-saturated、ITInvest、Business などの発火と flip 可能性を数えます。`mover` 行では引越し屋の対象選択について、harmful gift の取り逃しや leader 回避で反転し得る局面を確認できます。
 v2simple の診断履歴と採用/却下メモは [docs/expert-v2-diagnostics.md](docs/expert-v2-diagnostics.md) にまとめています。
 
-直近の v2simple 実験では、赤カード相手ターン EV 補正と Business Center harmful gift 限定補正を採用しています。`redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` で薄く加点し、条件付き赤カードは、ロール発火時の即時評価では相手の所持コインを上限にし、build EV の購入判断では将来価値として評価します。Business Center は通常の simple 交換を基準にしつつ、貸金業/改装屋の受け取り価値が相手にとって負になる場合だけ、交換全体のスコアが既定手を上回れば押し付け候補へ差し替えます。broad scored exchange は引き続き不採用です。一方で build EV への追加 red payment cap penalty、IT build bonus / ITInvest、高額紫早買い、RedSaturated、貸金業重複 penalty、Cleaning value bonus、Mover leader 回避、PARK bonus、combo payoff not-ready penalty は、発火不足または50戦評価悪化により棄却/診断のみとしています。landmark-gated 分解は `harbor=0` / `station=0` で実質ショッピングモール依存のみでしたが、カード名別でも基礎カード/赤カードが主因だったため、全体 penalty は不採用です。special spend 診断では20戦で `buildSpecialSpendWouldDelayLandmark=52/1404` ですが、`Penalty05=11/1404` と反転候補は少ないため、special 全体への penalty ではなく必要ならカード名別に見ます。
-redOneDie は5戦診断で反転 `0`、businessDelay も5戦 crowd/allStrong4 で `flip05=0` / `flip1=0` だったため、現時点では実装候補に進めません。
-mallBasic 診断では crowd/allStrong4 10戦で `chosen=74/295`, `lowIncome=10/295`、低EV増分は主に `ピザ屋:9` でした。ただしピザ屋限定 penalty 実験は normal50 が維持、strong50 が weighted `53.0%` / min `44.0%` で基準改善なしだったため棄却しています。
-CPU v2simple の build EV 手書き調整は、直近候補の診断/評価で費用対効果が低いため現採用セットで凍結中です。再開条件は、allStrong4/crowd で明確な `WouldFlip` が出る小変更に限ります。
+現行の v2simple 採用セットは次の小変更で凍結候補にしています。
+
+- `buildTempo=0.03`: 旧 `0.05` より残金温存を弱め、100戦 seed 1 で strongWeighted / strongMin / allStrong4 を改善。
+- 赤カード相手ターン EV 補正: `redOpponentTurnBonus = min(1, opponentTurnEv * 0.25)` で薄く加点。0.30/0.32 などの強化は過剰で不採用。
+- Business Center: 現在は `business=simple`。harmful gift / broad scored exchange は allStrong4 や strongMin を壊すため不採用。
+- late basic duplicate guard: ショッピングモール未建設かつ残りランドマーク4以下で、低EVの `コンビニ` / `ピザ屋` / `バーガーショップ` / `食品倉庫` 重複だけを軽く減点します。normalCrowd で勝ち筋になりやすい `パン屋` repeat は減点しません。
+
+試したが不採用の主な方向は、duplicate guard 追加強化、airport skip 無効化/例外、landmark pressure、TV denial、Business Center harmful gift、赤カード crowd 補正、portfolio/growth 一律加点、Cleaning value、special spend guard です。いずれも quick gate で現行を超えない、50/100戦で戻る、または normalCrowd / allStrong4 / strongMin を壊しました。
+
+今後 v2simple 探索を再開するなら、広い係数調整ではなく allStrong4/crowd の paired before/after trace で「1つの小ルールが複数seedの敗戦を反転し、normalCrowd を壊さない」と説明できる診断を先に作ってください。採用ゲートは 20-game quick の後、50-game multi-seed と必要なら100-game確認で strongWeighted 改善、strongMin 維持/改善、normalCrowd -2pt以内です。
 
 `CPU（最強）` の tuning 候補をこの基準で粗く探索する場合:
 
