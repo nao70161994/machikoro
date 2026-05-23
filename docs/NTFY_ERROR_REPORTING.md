@@ -116,3 +116,61 @@ A successful test returns `202` and sends a notification with `phase=test`, a ha
 ## Privacy notes
 
 Client reports can include player-visible names inside stack messages, raw room IDs in the server payload, origin/path URLs, user agent strings, and app version data. Browser reports intentionally strip query strings and hashes from URLs, and ntfy notification text hashes room IDs. Do not put public or shared topics into production. Rotate the topic if it leaks. Avoid adding localStorage contents, reconnect tokens, card inventories, or full game snapshots to this endpoint.
+
+## Optional game lifecycle notifications
+
+Client error reporting and lifecycle reporting are separate. Lifecycle notifications are intentionally opt-in and stay off by default.
+
+Enable them in a browser profile with localStorage:
+
+```js
+localStorage.setItem('machikoroLifecycleNotificationsEnabled', '1')
+// or from the console:
+window.__machikoroSetLifecycleNotificationsEnabled(true)
+```
+
+Disable them again with:
+
+```js
+localStorage.removeItem('machikoroLifecycleNotificationsEnabled')
+// or:
+window.__machikoroSetLifecycleNotificationsEnabled(false)
+```
+
+When enabled, the browser sends compact `POST /api/game-lifecycle` reports for:
+
+- `play-start`
+- `play-finish`
+
+The server publishes to the same `NTFY_TOPIC` only when that environment variable is configured. If `NTFY_TOPIC` is missing, the endpoint only logs a server-side warning and gameplay continues.
+
+Example start notification:
+
+```text
+Title: [Machikoro] Game Started
+mode=local
+players=4
+cpu=3
+```
+
+Example finish notification:
+
+```text
+Title: [Machikoro] Game Finished
+event=play-finish
+mode=local
+players=4
+cpu=3
+winner=CPU Strong
+turn=14
+```
+
+Lifecycle privacy constraints are stricter than client-error diagnostics. The lifecycle payload must not include player names, room codes, reconnect tokens, card inventories, detailed snapshots, or raw logs. It only includes event type, local/online mode, player count, CPU count, turn count, CPU winner difficulty when relevant, a random session id for dedupe, and optional app version.
+
+Spam controls:
+
+- Default is off per browser profile.
+- The client sends at most one start and one finish notification for the in-memory game session.
+- A short localStorage start suppression window prevents reload/start button repeats from sending multiple start notifications.
+- The server deduplicates identical lifecycle event/session pairs for several minutes and rate limits the endpoint per sender.
+- Self-play and CLI benchmark loops do not load the browser app shell, so they do not send lifecycle notifications.

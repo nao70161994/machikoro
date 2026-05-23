@@ -52,6 +52,8 @@ Android/TWA build workflow secrets:
 
 - Confirm `docs/NTFY_ERROR_REPORTING.md` is followed for topic naming, Android/iPhone subscription, Render setup, and privacy notes.
 - Use `/api/client-error-test` only with `CLIENT_ERROR_TEST_ENABLED=1` or non-production `NODE_ENV`.
+- Game lifecycle notifications are opt-in only. Confirm `localStorage.machikoroLifecycleNotificationsEnabled` is unset by default, and enable it only on the browser profiles used for production monitoring.
+- Lifecycle ntfy payloads must not include player names, room codes, reconnect tokens, card inventories, or full snapshots.
 - Do not leave a public or guessable `NTFY_TOPIC` in production.
 
 ## Ads Placeholder Safety

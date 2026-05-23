@@ -307,7 +307,12 @@ function renderWinnerState(winner) {
         resultAdSlot = '';
     }
     document.getElementById("status").innerHTML = `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${isCPUWinner ? '🤖 CPU' : '👤 人間'}プレイヤーが勝ちました　${game.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div>${resultAdSlot}</div>`;
-    if (!winSoundPlayed) { winSoundPlayed = true; playSound('win'); recordGameStats(winner, game, cpuPlayers); }
+    if (!winSoundPlayed) {
+        winSoundPlayed = true;
+        playSound('win');
+        recordGameStats(winner, game, cpuPlayers);
+        if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
+    }
     localStorage.removeItem('savedGame');
     clearOnlineSessionAfterWin();
     updateResumeButton();

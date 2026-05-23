@@ -18,6 +18,12 @@ const {
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
     CLIENT_ERROR_LIMITS,
+    GAME_LIFECYCLE_LIMITS,
+    normalizeGameLifecyclePayload,
+    formatNtfyGameLifecycleMessage,
+    notifyGameLifecycle,
+    handleGameLifecycleRequest,
+    isDuplicateGameLifecycle,
     resolveTrustProxySetting,
     normalizeClientErrorPayload,
     requestBaseOrigin,
@@ -480,6 +486,81 @@ runTest('client error test endpoint は無効時404、NTFY_TOPIC未設定時503�
     handleClientErrorTestRequest({}, missingTopicRes, { env: { NODE_ENV: 'development' } });
     assert.strictEqual(missingTopicRes.statusCode, 503);
     assert.strictEqual(missingTopicRes.body.error, 'missing_ntfy_topic');
+});
+
+runTest('game lifecycle payload は名前とroomなしの短い通知本文へ正規化する', () => {
+    const normalized = normalizeGameLifecyclePayload({
+        event: 'play-finish',
+        mode: 'online',
+        playerCount: 4,
+        cpuCount: 3,
+        turn: 14,
+        winnerKind: 'cpu',
+        winnerCpuDifficulty: 'strong',
+        sessionId: 'abc123',
+        playerName: 'Alice',
+        roomId: 'ABCD',
+    }, 1700000000000);
+
+    assert.strictEqual(normalized.ok, true);
+    assert.strictEqual(normalized.report.mode, 'online');
+    const message = formatNtfyGameLifecycleMessage(normalized.report);
+    assert.ok(message.includes('event=play-finish'));
+    assert.ok(message.includes('mode=online'));
+    assert.ok(message.includes('players=4'));
+    assert.ok(message.includes('cpu=3'));
+    assert.ok(message.includes('winner=CPU Strong'));
+    assert.ok(message.includes('turn=14'));
+    assert.ok(!message.includes('Alice'));
+    assert.ok(!message.includes('ABCD'));
+});
+
+runTest('notifyGameLifecycle は ntfy topic 設定時に軽量titleでPOSTする', async () => {
+    const calls = [];
+    const report = normalizeGameLifecyclePayload({ event: 'play-start', mode: 'local', playerCount: 4, cpuCount: 3, sessionId: 'start1' }, 1700000000000).report;
+    await notifyGameLifecycle(report, {
+        topic: 'machikoro-life-topic',
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-life-topic');
+    assert.strictEqual(calls[0].options.method, 'POST');
+    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Game Started');
+    assert.strictEqual(calls[0].options.headers.Priority, '2');
+    assert.ok(calls[0].options.body.includes('mode=local'));
+    assert.ok(calls[0].options.body.includes('players=4'));
+});
+
+runTest('game lifecycle endpoint は duplicate を抑止する', async () => {
+    const calls = [];
+    const cache = new Map();
+    const req = makeMockReq({ body: { event: 'play-start', mode: 'local', playerCount: 2, cpuCount: 1, sessionId: 'dupe-session' } });
+    const first = makeMockRes();
+    await handleGameLifecycleRequest(req, first, {
+        env: { NTFY_TOPIC: 'topic' },
+        now: 1700000000000,
+        dedupeCache: cache,
+        rateBuckets: new Map(),
+        notifyOptions: { topic: 'topic', fetchImpl(url, options) { calls.push({ url, options }); return { ok: true }; } },
+    });
+    const second = makeMockRes();
+    await handleGameLifecycleRequest(req, second, {
+        env: { NTFY_TOPIC: 'topic' },
+        now: 1700000001000,
+        dedupeCache: cache,
+        rateBuckets: new Map(),
+        notifyOptions: { topic: 'topic', fetchImpl(url, options) { calls.push({ url, options }); return { ok: true }; } },
+    });
+
+    assert.strictEqual(first.statusCode, 202);
+    assert.strictEqual(first.body.duplicate, false);
+    assert.strictEqual(second.statusCode, 202);
+    assert.strictEqual(second.body.duplicate, true);
+    assert.strictEqual(calls.length, 1);
 });
 
 runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で網羅される', () => {

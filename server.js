@@ -99,6 +99,14 @@ const CLIENT_ERROR_LIMITS = Object.freeze({
 });
 const clientErrorRateBuckets = new Map();
 const clientErrorDedupeCache = new Map();
+const GAME_LIFECYCLE_LIMITS = Object.freeze({
+    duplicateWindowMs: 5 * 60 * 1000,
+    rateLimitWindowMs: 60 * 1000,
+    rateLimitMax: 12,
+    rateLimitMaxBuckets: 1000,
+});
+const gameLifecycleRateBuckets = new Map();
+const gameLifecycleDedupeCache = new Map();
 const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 function resolveTrustProxySetting(env = process.env) {
@@ -417,6 +425,180 @@ async function handleClientErrorTestRequest(req, res, options = {}) {
     res.status(result.sent ? 202 : 503).json({ ok: result.sent, test: true, result });
 }
 
+function lifecycleEventTitle(event) {
+    if (event === 'play-start') return '[Machikoro] Game Started';
+    if (event === 'victory') return '[Machikoro] Victory';
+    return '[Machikoro] Game Finished';
+}
+
+function normalizeLifecycleMode(value) {
+    return value === 'online' ? 'online' : 'local';
+}
+
+function normalizeLifecycleInteger(value, min, max, fallback = 0) {
+    const number = Number(value);
+    if (!Number.isInteger(number)) return fallback;
+    return Math.max(min, Math.min(max, number));
+}
+
+function normalizeLifecycleSessionId(value) {
+    return String(value || '')
+        .trim()
+        .replace(/[^A-Za-z0-9._:-]/g, '')
+        .slice(0, 80);
+}
+
+function normalizeLifecycleCpuDifficulty(value) {
+    const text = String(value || '').trim();
+    return ['weak', 'normal', 'strong', 'expert', 'rl'].includes(text) ? text : '';
+}
+
+function lifecycleCpuDifficultyLabel(difficulty) {
+    if (difficulty === 'weak') return 'Weak';
+    if (difficulty === 'normal') return 'Normal';
+    if (difficulty === 'strong') return 'Strong';
+    if (difficulty === 'rl') return 'RL';
+    if (difficulty === 'expert') return 'Expert';
+    return '';
+}
+
+function normalizeGameLifecyclePayload(input, now = Date.now()) {
+    const payload = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+    const event = String(payload.event || '').trim();
+    if (!['play-start', 'play-finish', 'victory'].includes(event)) return { ok: false, reason: 'invalid_event' };
+    const playerCount = normalizeLifecycleInteger(payload.playerCount, 2, 10, 0);
+    if (playerCount < 2) return { ok: false, reason: 'invalid_player_count' };
+    const cpuCount = normalizeLifecycleInteger(payload.cpuCount, 0, playerCount, 0);
+    const winnerKind = ['human', 'cpu'].includes(payload.winnerKind) ? payload.winnerKind : '';
+    const winnerCpuDifficulty = winnerKind === 'cpu' ? normalizeLifecycleCpuDifficulty(payload.winnerCpuDifficulty) : '';
+    const sessionId = normalizeLifecycleSessionId(payload.sessionId);
+    if (!sessionId) return { ok: false, reason: 'invalid_session_id' };
+    return {
+        ok: true,
+        report: {
+            event,
+            mode: normalizeLifecycleMode(payload.mode),
+            playerCount,
+            cpuCount,
+            turn: normalizeLifecycleInteger(payload.turn, 0, 10000, 0),
+            winnerKind,
+            winnerCpuDifficulty,
+            sessionId,
+            appVersion: truncateText(payload.appVersion || '', 80),
+            timestamp: new Date(now).toISOString(),
+        },
+    };
+}
+
+function formatLifecycleWinner(report) {
+    if (!report.winnerKind) return '';
+    if (report.winnerKind === 'human') return 'Human';
+    const difficulty = lifecycleCpuDifficultyLabel(report.winnerCpuDifficulty);
+    return difficulty ? 'CPU ' + difficulty : 'CPU';
+}
+
+function formatNtfyGameLifecycleMessage(report) {
+    const lines = [
+        'event=' + report.event,
+        'mode=' + report.mode,
+        'players=' + report.playerCount,
+        'cpu=' + report.cpuCount,
+    ];
+    const winner = formatLifecycleWinner(report);
+    if (winner) lines.push('winner=' + winner);
+    if (report.turn) lines.push('turn=' + report.turn);
+    if (report.appVersion) lines.push('version=' + report.appVersion);
+    return lines.join('\n');
+}
+
+function gameLifecycleRateKey(req) {
+    return clientErrorRateKey(req);
+}
+
+function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecycleRateBuckets) {
+    for (const [bucketKey, bucket] of buckets.entries()) {
+        if (!bucket || now - bucket.windowStart >= GAME_LIFECYCLE_LIMITS.rateLimitWindowMs) buckets.delete(bucketKey);
+    }
+    if (buckets.size > GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets) {
+        for (const bucketKey of Array.from(buckets.keys()).slice(0, buckets.size - GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets)) buckets.delete(bucketKey);
+    }
+    const bucket = buckets.get(key);
+    if (!bucket) {
+        buckets.set(key, { windowStart: now, count: 1 });
+        return false;
+    }
+    bucket.count++;
+    return bucket.count > GAME_LIFECYCLE_LIMITS.rateLimitMax;
+}
+
+function gameLifecycleDedupeKey(report) {
+    return [report.event, report.sessionId].join('|');
+}
+
+function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
+    const key = gameLifecycleDedupeKey(report);
+    const previous = cache.get(key);
+    cache.set(key, now);
+    for (const [cachedKey, timestamp] of cache.entries()) {
+        if (now - timestamp > GAME_LIFECYCLE_LIMITS.duplicateWindowMs) cache.delete(cachedKey);
+    }
+    return previous !== undefined && now - previous < GAME_LIFECYCLE_LIMITS.duplicateWindowMs;
+}
+
+async function notifyGameLifecycle(report, options = {}) {
+    const topic = options.topic || process.env.NTFY_TOPIC;
+    if (!topic) {
+        console.warn('[game-lifecycle]', report.event, 'mode=' + report.mode, 'players=' + report.playerCount, 'cpu=' + report.cpuCount);
+        return { sent: false, reason: 'missing-topic' };
+    }
+    const fetchImpl = options.fetchImpl || global.fetch;
+    if (typeof fetchImpl !== 'function') {
+        console.warn('[game-lifecycle] fetch unavailable; ntfy notification skipped');
+        return { sent: false, reason: 'fetch-unavailable' };
+    }
+    try {
+        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic), {
+            method: 'POST',
+            headers: {
+                Title: lifecycleEventTitle(report.event),
+                Priority: '2',
+                Tags: 'video_game,white_check_mark',
+            },
+            body: formatNtfyGameLifecycleMessage(report),
+        });
+        if (response && response.ok === false) {
+            console.warn('[game-lifecycle] ntfy notification failed:', response.status || 'unknown');
+            return { sent: false, reason: 'ntfy-status' };
+        }
+        return { sent: true };
+    } catch (error) {
+        console.warn('[game-lifecycle] ntfy notification failed:', error?.message || error);
+        return { sent: false, reason: 'ntfy-error' };
+    }
+}
+
+async function handleGameLifecycleRequest(req, res, options = {}) {
+    const env = options.env || process.env;
+    if (!isClientErrorOriginAllowed(req, env) || isProductionNoOriginClientErrorBlocked(req, env)) {
+        res.status(403).json({ ok: false, error: 'forbidden_origin' });
+        return;
+    }
+    const now = options.now || Date.now();
+    if (isGameLifecycleRateLimited(gameLifecycleRateKey(req), now, options.rateBuckets || gameLifecycleRateBuckets)) {
+        res.status(429).json({ ok: false, error: 'rate_limited' });
+        return;
+    }
+    const normalized = normalizeGameLifecyclePayload(req.body, now);
+    if (!normalized.ok) {
+        res.status(400).json({ ok: false, error: normalized.reason });
+        return;
+    }
+    const duplicate = isDuplicateGameLifecycle(normalized.report, now, options.dedupeCache || gameLifecycleDedupeCache);
+    let result = { sent: false, reason: duplicate ? 'duplicate' : 'not-sent' };
+    if (!duplicate) result = await notifyGameLifecycle(normalized.report, options.notifyOptions || {});
+    res.status(202).json({ ok: true, duplicate, result });
+}
+
 
 function resolveBuildHash() {
     if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
@@ -485,6 +667,14 @@ app.post('/api/client-error-test', (req, res) => {
     handleClientErrorTestRequest(req, res).catch((error) => {
         console.warn('[client-error-test] handler failed:', error?.message || error);
         res.status(503).json({ ok: false, error: 'client_error_test_failed' });
+    });
+});
+
+app.use('/api/game-lifecycle', express.json({ limit: '8kb' }));
+app.post('/api/game-lifecycle', (req, res) => {
+    handleGameLifecycleRequest(req, res).catch((error) => {
+        console.warn('[game-lifecycle] handler failed:', error?.message || error);
+        res.status(202).json({ ok: true, notificationFailed: true });
     });
 });
 
@@ -1722,6 +1912,18 @@ module.exports = {
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
     CLIENT_ERROR_LIMITS,
+    GAME_LIFECYCLE_LIMITS,
+    normalizeGameLifecyclePayload,
+    formatNtfyGameLifecycleMessage,
+    notifyGameLifecycle,
+    handleGameLifecycleRequest,
+    isDuplicateGameLifecycle,
+    GAME_LIFECYCLE_LIMITS,
+    normalizeGameLifecyclePayload,
+    formatNtfyGameLifecycleMessage,
+    notifyGameLifecycle,
+    handleGameLifecycleRequest,
+    isDuplicateGameLifecycle,
     resolveTrustProxySetting,
     normalizeClientErrorPayload,
     requestHeader,

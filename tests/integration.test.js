@@ -536,6 +536,78 @@ runTest('integration: 正当なconfirmModal表示中はwatchdogが閉じない',
     assert.strictEqual(reportCall, undefined);
 });
 
+runTest('integration: lifecycle通知はopt-in無効時に送信しない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    rt.startGame();
+
+    assert.strictEqual(rt.__test.fetchCalls.some(call => call.url === '/api/game-lifecycle'), false);
+});
+
+runTest('integration: lifecycle通知は開始と終了を短いpayloadで送る', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.localStorage.setItem('machikoroLifecycleNotificationsEnabled', '1');
+    rt.changeCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'Alice' },
+        { type: 'cpu', difficulty: 'strong', name: 'CPU Secret' },
+        { type: 'cpu', difficulty: 'normal', name: 'CPU Other' },
+        { type: 'cpu', difficulty: 'weak', name: 'CPU Third' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.turnCount = 14;
+    const cpuPlayers = rt.__test.getCpuPlayers();
+    const winnerIndex = cpuPlayers.findIndex(cpu => cpu && cpu.difficulty === 'strong');
+    assert.ok(winnerIndex >= 0);
+    const winner = game.players[winnerIndex];
+    for (const landmark of rt.enabledLandmarks) winner.landmarks[landmark] = true;
+    rt.render();
+
+    const lifecycleCalls = rt.__test.fetchCalls.filter(call => call.url === '/api/game-lifecycle');
+    assert.strictEqual(lifecycleCalls.length, 2);
+    const startPayload = JSON.parse(lifecycleCalls[0].options.body);
+    const finishPayload = JSON.parse(lifecycleCalls[1].options.body);
+    assert.strictEqual(startPayload.event, 'play-start');
+    assert.strictEqual(startPayload.mode, 'local');
+    assert.strictEqual(startPayload.playerCount, 4);
+    assert.strictEqual(startPayload.cpuCount, 3);
+    assert.strictEqual(finishPayload.event, 'play-finish');
+    assert.strictEqual(finishPayload.turn, 14);
+    assert.strictEqual(finishPayload.winnerKind, 'cpu');
+    assert.strictEqual(finishPayload.winnerCpuDifficulty, 'strong');
+    assert.ok(!JSON.stringify(finishPayload).includes('Alice'));
+    assert.ok(!JSON.stringify(finishPayload).includes('CPU Secret'));
+    assert.ok(!JSON.stringify(finishPayload).includes('ROOM'));
+});
+
+runTest('integration: lifecycle開始通知は同一sessionとreload連打を抑止する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.localStorage.setItem('machikoroLifecycleNotificationsEnabled', '1');
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    rt.startGame();
+    rt.notifyGameLifecycleStart();
+
+    const lifecycleCalls = rt.__test.fetchCalls.filter(call => call.url === '/api/game-lifecycle');
+    assert.strictEqual(lifecycleCalls.length, 1);
+    assert.strictEqual(JSON.parse(lifecycleCalls[0].options.body).event, 'play-start');
+});
+
 runTest('integration: client側debug error reportを手動送信できる', () => {
     const rt = loadIntegrationRuntime();
     assert.strictEqual(typeof rt.window.__machikoroSendTestErrorReport, 'function');

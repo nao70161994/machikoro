@@ -472,6 +472,185 @@ function reportClientError(input) {
     }
 }
 
+// ===== ゲームライフサイクル通知 =====
+const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
+const GAME_LIFECYCLE_OPT_IN_KEY = 'machikoroLifecycleNotificationsEnabled';
+const GAME_LIFECYCLE_START_SENT_KEY = 'machikoroLifecycleStartSent';
+const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
+let _gameLifecycleSessionId = '';
+let _gameLifecycleStartSent = false;
+let _gameLifecycleFinishSent = false;
+
+function isGameLifecycleNotificationEnabled() {
+    try {
+        if (typeof localStorage === 'undefined') return false;
+        return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(localStorage.getItem(GAME_LIFECYCLE_OPT_IN_KEY) || '').toLowerCase());
+    } catch (_) {
+        return false;
+    }
+}
+
+function setGameLifecycleNotificationEnabled(enabled) {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            if (enabled) localStorage.setItem(GAME_LIFECYCLE_OPT_IN_KEY, '1');
+            else localStorage.removeItem(GAME_LIFECYCLE_OPT_IN_KEY);
+        }
+    } catch (_) {}
+    return isGameLifecycleNotificationEnabled();
+}
+
+function createGameLifecycleSessionId() {
+    const random = Math.random().toString(36).slice(2, 10);
+    return Date.now().toString(36) + '-' + random;
+}
+
+function gameLifecycleCpuCount() {
+    try {
+        return Array.isArray(cpuPlayers) ? cpuPlayers.filter(Boolean).length : 0;
+    } catch (_) {
+        return 0;
+    }
+}
+
+function gameLifecyclePlayerCount() {
+    try {
+        if (typeof game !== 'undefined' && game && Array.isArray(game.players)) return game.players.length;
+    } catch (_) {}
+    try {
+        return Number(selectedCount) || 0;
+    } catch (_) {
+        return 0;
+    }
+}
+
+function gameLifecycleMode() {
+    try {
+        return typeof isOnlineGame !== 'undefined' && isOnlineGame ? 'online' : 'local';
+    } catch (_) {
+        return 'local';
+    }
+}
+
+function gameLifecycleAppVersion() {
+    return typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION ? window.MACHIKORO_CLIENT_VERSION : '';
+}
+
+function gameLifecycleStartSignature() {
+    return [gameLifecycleMode(), gameLifecyclePlayerCount(), gameLifecycleCpuCount()].join('|');
+}
+
+function recentlySentGameLifecycleStart(signature, now = Date.now()) {
+    try {
+        if (typeof localStorage === 'undefined') return false;
+        const raw = localStorage.getItem(GAME_LIFECYCLE_START_SENT_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        return parsed && parsed.signature === signature && now - Number(parsed.timestamp || 0) < GAME_LIFECYCLE_START_SUPPRESS_MS;
+    } catch (_) {
+        return false;
+    }
+}
+
+function rememberGameLifecycleStart(signature, now = Date.now()) {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(GAME_LIFECYCLE_START_SENT_KEY, JSON.stringify({ signature, timestamp: now }).slice(0, 300));
+        }
+    } catch (_) {}
+}
+
+function cpuDifficultyForWinner(winner) {
+    try {
+        if (typeof game === 'undefined' || !game || !Array.isArray(game.players) || !Array.isArray(cpuPlayers)) return '';
+        const index = game.players.indexOf(winner);
+        const cpu = index >= 0 ? cpuPlayers[index] : null;
+        return cpu && cpu.difficulty ? String(cpu.difficulty) : '';
+    } catch (_) {
+        return '';
+    }
+}
+
+function buildGameLifecyclePayload(event, extra = {}) {
+    if (!_gameLifecycleSessionId) _gameLifecycleSessionId = createGameLifecycleSessionId();
+    const payload = {
+        event,
+        mode: gameLifecycleMode(),
+        playerCount: gameLifecyclePlayerCount(),
+        cpuCount: gameLifecycleCpuCount(),
+        sessionId: _gameLifecycleSessionId,
+        appVersion: gameLifecycleAppVersion(),
+    };
+    if (extra.turn !== undefined) payload.turn = extra.turn;
+    if (extra.winnerKind) payload.winnerKind = extra.winnerKind;
+    if (extra.winnerCpuDifficulty) payload.winnerCpuDifficulty = extra.winnerCpuDifficulty;
+    return payload;
+}
+
+function sendGameLifecycleNotification(event, extra = {}) {
+    if (!isGameLifecycleNotificationEnabled()) {
+        markClientFlowCheckpoint('game-lifecycle-disabled', { event });
+        return false;
+    }
+    if (typeof fetch !== 'function') {
+        markClientFlowCheckpoint('game-lifecycle-fetch-unavailable', { event });
+        return false;
+    }
+    const payload = buildGameLifecyclePayload(event, extra);
+    try {
+        markClientFlowCheckpoint('game-lifecycle-fetch-start', { event, mode: payload.mode, playerCount: payload.playerCount, cpuCount: payload.cpuCount });
+        const request = fetch(GAME_LIFECYCLE_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true,
+        });
+        if (request && typeof request.then === 'function') {
+            request.then(response => {
+                markClientFlowCheckpoint('game-lifecycle-fetch-complete', { event, ok: response && response.ok !== false, status: response && response.status });
+            }).catch(error => {
+                markClientFlowCheckpoint('game-lifecycle-fetch-failed', { event, message: error && error.message || String(error) });
+            });
+        }
+        return true;
+    } catch (error) {
+        markClientFlowCheckpoint('game-lifecycle-fetch-threw', { event, message: error && error.message || String(error) });
+        return false;
+    }
+}
+
+function notifyGameLifecycleStart() {
+    if (_gameLifecycleStartSent) return false;
+    const signature = gameLifecycleStartSignature();
+    const now = Date.now();
+    if (recentlySentGameLifecycleStart(signature, now)) {
+        markClientFlowCheckpoint('game-lifecycle-start-suppressed', { signature });
+        _gameLifecycleStartSent = true;
+        return false;
+    }
+    _gameLifecycleSessionId = createGameLifecycleSessionId();
+    _gameLifecycleStartSent = true;
+    _gameLifecycleFinishSent = false;
+    rememberGameLifecycleStart(signature, now);
+    return sendGameLifecycleNotification('play-start');
+}
+
+function notifyGameLifecycleFinish(winner) {
+    if (_gameLifecycleFinishSent) return false;
+    _gameLifecycleFinishSent = true;
+    const cpuDifficulty = cpuDifficultyForWinner(winner);
+    return sendGameLifecycleNotification('play-finish', {
+        turn: typeof game !== 'undefined' && game ? game.turnCount : 0,
+        winnerKind: cpuDifficulty ? 'cpu' : 'human',
+        winnerCpuDifficulty: cpuDifficulty,
+    });
+}
+
+if (typeof window !== 'undefined') {
+    window.__machikoroSetLifecycleNotificationsEnabled = setGameLifecycleNotificationEnabled;
+    window.__machikoroSendLifecycleNotification = sendGameLifecycleNotification;
+}
+
 // ===== クラッシュ回復 =====
 let _crashShown = false;
 
