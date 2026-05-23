@@ -865,3 +865,12 @@ Regression:
 
 - `tests/integration.test.js`: stale `confirmModal` after build with `btnSkip.disabled=false` and `ancestorBlocked=true` is reported and recovered, including local `myPlayerIndex=-1`.
 - `tests/integration.test.js`: active confirm dialog is not closed by the watchdog.
+
+### stale confirmModal follow-up cross-audit
+
+Follow-up review after the stale confirm fix found no evidence that active confirm dialogs are closed by recovery: `__machikoroConfirmModalOpen=true` now blocks `human-turn-ui-locked` and `post-build-ui-blocked` recovery. Reconnect / online blocked states also continue to suppress UI recovery, so stale local locks are not force-cleared while the client is reconnecting or waiting on an online action.
+
+Additional hardening:
+
+- `FREEZE_SUMMARY` now includes compact `gameScreen`, `confirmModal`, `bodyClassName`, and `expectedPrimaryActions` fields. This keeps ntfy payloads privacy-light while showing whether a visible confirm modal or ancestor lock caused the blocked button.
+- Added regression coverage that reconnecting online clients do not clear stale confirm locks, and that the summary contains the modal/root lock fields needed to diagnose post-build blocked input.
