@@ -5,6 +5,7 @@ const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
 const {
+    parseArgs,
     validateRegistry,
     bestEvalGames,
     modelTopCards,
@@ -13,6 +14,17 @@ const {
     summarizeEvalCoverage,
     summarizeTargetDiagnostics,
 } = require('../scripts/validate-rl-registry.js');
+
+runTest('validate-rl-registry parseArgs は npm script の --check-paths を registry path と誤認しない', () => {
+    assert.deepStrictEqual(parseArgs(['--check-paths']), {
+        registryPath: path.join(__dirname, '..', 'models', 'rl_model', 'registry.json'),
+        checkPaths: true,
+    });
+    assert.deepStrictEqual(parseArgs(['models/custom.json', '--check-paths']), {
+        registryPath: 'models/custom.json',
+        checkPaths: true,
+    });
+});
 
 runTest('validateRegistry は推奨モデルが台帳に存在することを検証する', () => {
     const result = validateRegistry({

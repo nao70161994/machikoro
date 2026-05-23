@@ -260,11 +260,23 @@ function printValidation(result) {
     for (const error of result.errors) console.error(`error: ${error}`);
 }
 
+function parseArgs(argv = []) {
+    const args = {
+        registryPath: path.join(__dirname, '..', 'models', 'rl_model', 'registry.json'),
+        checkPaths: false,
+    };
+    for (const arg of argv) {
+        if (arg === '--check-paths') args.checkPaths = true;
+        else if (!arg.startsWith('--')) args.registryPath = arg;
+    }
+    return args;
+}
+
 if (require.main === module) {
-    const registryPath = process.argv[2] || path.join(__dirname, '..', 'models', 'rl_model', 'registry.json');
-    const result = validateRegistry(loadRegistry(registryPath), {
+    const args = parseArgs(process.argv.slice(2));
+    const result = validateRegistry(loadRegistry(args.registryPath), {
         repoRoot: path.join(__dirname, '..'),
-        checkPaths: process.argv.includes('--check-paths'),
+        checkPaths: args.checkPaths,
     });
     printValidation(result);
     if (!result.ok) process.exit(1);
@@ -291,4 +303,5 @@ module.exports = {
     summarizeTargetDiagnostics,
     validateRegistry,
     printValidation,
+    parseArgs,
 };

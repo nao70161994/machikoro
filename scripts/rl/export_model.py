@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from .cards import NUM_CARDS
+from .encode import ACTION_SCHEMA_FLAT_V1, state_schema_for_dim
 from .network import CHECKPOINT_SCHEMA_VERSION
 
 
@@ -84,6 +85,8 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         "schemaVersion": schema_version,
         "exportedAt": datetime.now(timezone.utc).isoformat(),
         "stateDim": shared0["shape"]["input"],
+        "stateSchema": state_schema_for_dim(shared0["shape"]["input"]),
+        "actionSchema": ACTION_SCHEMA_FLAT_V1,
         "hiddenSize": shared0["shape"]["output"],
         "numActions": policy["shape"]["output"],
         "numCards": NUM_CARDS,

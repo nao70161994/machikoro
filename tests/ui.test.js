@@ -39,6 +39,7 @@ function loadUiRuntime() {
         localStorage,
         document: {
             activeElement: null,
+            body: makeElement(),
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];
@@ -131,6 +132,27 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     context.closeRules();
 
     assert.strictEqual(elements.rulesModal.style.display, 'none');
+});
+
+runTest('modal keydown handler はTab focus escapeをmodal内へ戻す', () => {
+    const { context, elements } = loadUiRuntime();
+    let prevented = false;
+    let focused = false;
+    elements.rulesModal.contains = () => false;
+    elements.rulesModal.querySelectorAll = () => [{
+        disabled: false,
+        getAttribute() { return null; },
+        focus() { focused = true; },
+    }];
+
+    context.showRules();
+    context.handleModalKeydown({
+        key: 'Tab',
+        preventDefault() { prevented = true; },
+    });
+
+    assert.strictEqual(prevented, true);
+    assert.strictEqual(focused, true);
 });
 
 runTest('modal keydown handler はEscapeで閉じる', () => {

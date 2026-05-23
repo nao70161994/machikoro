@@ -28,6 +28,10 @@ body {
     margin: 0 auto;
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
 /* ===== タイトル画面 ===== */
 #titleScreen {
     min-height: 100vh;

@@ -1138,6 +1138,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('refreshingByServiceWorker'));
     assert.ok(html.includes('let hadServiceWorkerController = !!navigator.serviceWorker.controller;'));
     assert.ok(html.includes('hadServiceWorkerController = true;'));
+    assert.ok(html.includes('if (_isInGame()) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner"'));
     assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
@@ -1184,6 +1185,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes(':focus-visible'));
     assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));
     assert.ok(css.includes('.notice-toast'));
+    assert.ok(css.includes('body.modal-open'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
     assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
     const indexScripts = [...html.matchAll(/<script src=\"(js\/[^\"]+)\"/g)].map(match => `/${match[1]}`);
@@ -1191,6 +1193,14 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     for (const script of indexScripts) {
         assert.ok(cachedAssets.includes(script), `${script} is missing from service worker cache`);
     }
+    const releaseGateIndex = workflow.indexOf('APK build 前リリースゲート');
+    const buildIndex = workflow.indexOf('bubblewrap build');
+    assert.ok(releaseGateIndex >= 0);
+    assert.ok(buildIndex >= 0);
+    assert.ok(releaseGateIndex < buildIndex);
+    assert.ok(workflow.includes('npm run test:static'));
+    assert.ok(workflow.includes('npm run test:pwa'));
+    assert.ok(workflow.includes('npm run test:release'));
     assert.ok(workflow.includes('test -s app-release-signed.apk'));
     assert.ok(workflow.includes('if-no-files-found: error'));
 });

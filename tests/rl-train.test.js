@@ -373,6 +373,8 @@ print(sorted(k for k in bundle["layers"].keys() if "TargetHead" in k))
         assert.deepStrictEqual(JSON.parse(lines[1].replace(/'/g, '"')), ['businessTargetHead', 'moverTargetHead', 'tvTargetHead']);
         const exported = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
         assert.strictEqual(exported.numTargetSlots, 3);
+        assert.strictEqual(exported.stateSchema, 'state-mp-v1');
+        assert.strictEqual(exported.actionSchema, 'action-flat-v1');
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
     }

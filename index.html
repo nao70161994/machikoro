@@ -366,6 +366,20 @@
           const gs = document.getElementById('gameScreen');
           return gs && gs.style.display !== 'none' && gs.style.display !== '';
         }
+        function _showPwaUpdateBanner() {
+          const banner = document.getElementById('pwaUpdateBanner');
+          const btn = document.getElementById('pwaUpdateBtn');
+          const msg = document.getElementById('pwaUpdateMsg');
+          msg.textContent = '新しいバージョンがあります';
+          btn.disabled = false;
+          btn.style.opacity = '';
+          if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
+            msg.textContent = '新バージョンあり（ゲーム終了後に再起動してください）';
+            btn.disabled = true;
+            btn.style.opacity = '0.4';
+          }
+          banner.style.display = 'block';
+        }
         function _handleWaitingSW(sw) {
           _waitingSW = sw;
           if (!_isInGame()) {
@@ -373,18 +387,7 @@
             sw.postMessage({ type: 'SKIP_WAITING' });
           } else {
             // ゲーム中：オンライン対戦中は更新ボタンを無効化して警告
-            const banner = document.getElementById('pwaUpdateBanner');
-            const btn = document.getElementById('pwaUpdateBtn');
-            const msg = document.getElementById('pwaUpdateMsg');
-            msg.textContent = '新しいバージョンがあります';
-            btn.disabled = false;
-            btn.style.opacity = '';
-            if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-              msg.textContent = '新バージョンあり（ゲーム終了後に再起動してください）';
-              btn.disabled = true;
-              btn.style.opacity = '0.4';
-            }
-            banner.style.display = 'block';
+            _showPwaUpdateBanner();
           }
         }
         let hadServiceWorkerController = !!navigator.serviceWorker.controller;
@@ -392,6 +395,10 @@
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!hadServiceWorkerController) {
             hadServiceWorkerController = true;
+            return;
+          }
+          if (_isInGame()) {
+            _showPwaUpdateBanner();
             return;
           }
           if (refreshingByServiceWorker) return;

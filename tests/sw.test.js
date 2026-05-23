@@ -159,6 +159,14 @@ async function dispatchFetch(runtime, request) {
         assert.strictEqual(runtime.context.self.clients.claimed, true);
     });
 
+    await runTest('PWA model loading docs はRLモデルJSONのnetwork-first fallback方針を記載する', async () => {
+        const docs = fs.readFileSync(path.join(__dirname, '..', 'docs', 'PWA_MODEL_LOADING.md'), 'utf8');
+
+        assert.ok(docs.includes('network-first'));
+        assert.ok(docs.includes('cached fallback'));
+        assert.ok(!docs.includes('cache-first で扱う'));
+    });
+
     await runTest('Service Worker はRLモデルJSONをruntime network-firstで更新する', async () => {
         const cached = makeResponse('cached-model');
         const network = makeResponse('network-model');

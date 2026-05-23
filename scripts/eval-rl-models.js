@@ -162,7 +162,7 @@ function buildSignature(summaries) {
     };
 }
 
-function summarizeModel(spec, entries) {
+function summarizeModel(spec, entries, evaluationConfig = {}) {
     const summaries = entries.map(summarizeEvaluationEntry);
     return {
         id: spec.id,
@@ -172,21 +172,36 @@ function summarizeModel(spec, entries) {
         path: spec.path,
         score: scoreSummaries(summaries),
         buildSignature: buildSignature(summaries),
+        evaluationConfig,
         summaries,
     };
 }
 
 function evaluateModelSpecs(specs, args, evaluator = evaluateRlVsJs) {
     assertRlModelLineupCompatible(null, args.lineups, 'eval-rl-models');
-    return specs.map((spec, index) => summarizeModel(spec, evaluator({
-        modelPath: spec.path,
-        games: args.games,
-        seed: args.independentSeeds ? args.seed + index * args.games * 10 : args.seed,
-        maxSteps: args.maxSteps,
-        opponents: args.opponents,
-        lineups: args.lineups,
-        sharedSeeds: !args.independentSeeds,
-    }))).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+    return specs.map((spec, index) => {
+        const seed = args.independentSeeds ? args.seed + index * args.games * 10 : args.seed;
+        const sharedSeeds = !args.independentSeeds;
+        const options = {
+            modelPath: spec.path,
+            games: args.games,
+            seed,
+            maxSteps: args.maxSteps,
+            opponents: args.opponents,
+            lineups: args.lineups,
+            sharedSeeds,
+        };
+        return summarizeModel(spec, evaluator(options), {
+            games: args.games,
+            seed,
+            baseSeed: args.seed,
+            maxSteps: args.maxSteps,
+            opponents: args.opponents,
+            lineups: args.lineups,
+            sharedSeeds,
+            independentSeeds: !!args.independentSeeds,
+        });
+    }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
 
 function renderText(results) {

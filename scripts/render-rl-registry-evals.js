@@ -70,6 +70,9 @@ function resultToRegistryEval(result, date) {
         gamesPerOpponent: summaries.length > 0 ? summaries[0].games : 0,
         opponents: {},
     };
+    if (result.evaluationConfig && typeof result.evaluationConfig === 'object') {
+        evalEntry.evaluationConfig = result.evaluationConfig;
+    }
     const checkpointRank = parseCheckpointRank(result.id);
     if (checkpointRank !== null) evalEntry.checkpointRank = checkpointRank;
 
@@ -95,6 +98,10 @@ function sameOpponentKeys(a, b) {
     return aKeys.length === bKeys.length && aKeys.every((key, index) => key === bKeys[index]);
 }
 
+function sameEvaluationConfig(a, b) {
+    return JSON.stringify(a || null) === JSON.stringify(b || null);
+}
+
 function isSameEval(a, b) {
     return a
         && b
@@ -102,6 +109,7 @@ function isSameEval(a, b) {
         && a.type === b.type
         && a.gamesPerOpponent === b.gamesPerOpponent
         && (a.checkpointRank || null) === (b.checkpointRank || null)
+        && sameEvaluationConfig(a.evaluationConfig, b.evaluationConfig)
         && sameOpponentKeys(a.opponents, b.opponents);
 }
 

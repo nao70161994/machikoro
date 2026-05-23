@@ -1,5 +1,6 @@
 // 紙吹雪
 let confettiInterval = null;
+let confettiTimeout = null;
 let confettiPieces = [];
 
 function prefersReducedMotion() {
@@ -33,6 +34,7 @@ function startConfetti() {
         spin: (Math.random() - 0.5) * 0.15,
     }));
     if (confettiInterval) clearInterval(confettiInterval);
+    if (confettiTimeout) clearTimeout(confettiTimeout);
     confettiInterval = setInterval(() => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (const p of confettiPieces) {
@@ -47,13 +49,17 @@ function startConfetti() {
             ctx.restore();
         }
     }, 16);
-    setTimeout(stopConfetti, 5000);
+    confettiTimeout = setTimeout(stopConfetti, 5000);
 }
 
 function stopConfetti() {
     if (confettiInterval) {
         clearInterval(confettiInterval);
         confettiInterval = null;
+    }
+    if (confettiTimeout) {
+        clearTimeout(confettiTimeout);
+        confettiTimeout = null;
     }
     const canvas = document.getElementById('confettiCanvas');
     if (canvas) {

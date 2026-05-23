@@ -1001,11 +1001,12 @@ function handleRecreateRoom(socket, payload = {}) {
             emitAppError(socket, '同じルームIDが既に使用されています');
             return;
         }
+        const existingReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
         const incomingCanReplace = isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
             !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
             Number.isInteger(playerIndex) &&
-            getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName) &&
-            hashReconnectToken(reconnectToken) === getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName) &&
+            existingReconnectTokenHash &&
+            hashReconnectToken(reconnectToken) === existingReconnectTokenHash &&
             (room.hostPlayerIndex === playerIndex || !isRoomHostConnected(room)) &&
             canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, actionLog);
         if (!incomingCanReplace) {

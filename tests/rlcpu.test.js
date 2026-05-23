@@ -399,6 +399,19 @@ runTest('RLCPU: schema mismatch guard は未対応action schemaとstate schema�
     assert.throws(() => new RLCPU(mismatchedStateModel), /state schema mismatch/);
 });
 
+runTest('RLCPU: runtime action/card count mismatch は既知schemaで早期拒否する', () => {
+    const context = loadRLRuntime();
+    const { RLCPU } = context;
+
+    const wrongActions = buildParityModel(context);
+    wrongActions.numActions = RLCPU.NUM_ACTIONS - 1;
+    assert.throws(() => new RLCPU(wrongActions), /action count mismatch/);
+
+    const wrongCards = buildParityModel(context);
+    wrongCards.numCards = context.CARDS.length - 1;
+    assert.throws(() => new RLCPU(wrongCards), /card count mismatch/);
+});
+
 runTest('RLCPU: forward は policy と value を返す', () => {
     const { RLCPU } = loadRLRuntime();
     const cpu = new RLCPU(buildTestModel());
@@ -454,14 +467,9 @@ runTest('RLCPU: numTargetSlots 欠落時はtarget head形状から推定する',
 });
 
 runTest('RLCPU: encodeGameState は 2人戦初期局面を 145 次元へ変換する', () => {
-    const { RLCPU, GameManager } = loadRLRuntime();
-    const cpu = new RLCPU(buildTestModel());
-    cpu.stateDim = 145;
-    const model = buildTestModel();
-    model.stateDim = 145;
-    model.hiddenSize = 2;
-    model.layers.shared[0].weights = Array.from({ length: 145 }, () => [0, 0]);
-    const encoderCpu = new RLCPU(model);
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager } = context;
+    const encoderCpu = new RLCPU(buildParityModelWithStateDim(context, 145));
     const game = new GameManager(2);
     const state = encoderCpu.encodeGameState(game);
     assert.strictEqual(state.length, 145);

@@ -10,10 +10,10 @@ function restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog) {
             if (Number.isInteger(entry?.seq)) logSeq = Math.max(logSeq, entry.seq);
         }
     }
-    const actionSeq = Math.max(0, gameStartSeq, snapshotSeq, logSeq);
+    const actionSeq = Math.max(0, snapshotSeq, logSeq);
     const source = actionSeq === logSeq && logSeq > 0
         ? 'actionLog'
-        : (actionSeq === snapshotSeq && snapshotSeq > 0 ? 'stateSnapshot' : 'gameStartPayload');
+        : (actionSeq === snapshotSeq && snapshotSeq > 0 ? 'stateSnapshot' : 'none');
     return {
         hostEpoch,
         actionSeq,

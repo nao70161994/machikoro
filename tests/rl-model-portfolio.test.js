@@ -78,7 +78,20 @@ runTest('RL model portfolio: adopted モデルは portfolio に存在し配布JS
         assert.ok(portfolioEntry, `${model.id} is adopted but missing from RL_MODEL_PORTFOLIO`);
         assert.strictEqual(portfolioEntry.path, model.path);
         const data = JSON.parse(fs.readFileSync(repoPath(portfolioEntry.path), 'utf8'));
-        assert.ok(data.stateDim || data.state_dim, `${model.id} has no state dimension`);
+        const stateDim = data.stateDim || data.state_dim;
+        assert.ok(stateDim, `${model.id} has no state dimension`);
+        if (portfolioEntry.maxPlayers && portfolioEntry.maxPlayers <= 2) {
+            assert.strictEqual(stateDim, 145, `${model.id} two-player model must use 145-dim state`);
+        }
+        if (portfolioEntry.minPlayers && portfolioEntry.minPlayers >= 3) {
+            assert.strictEqual(stateDim, 353, `${model.id} multiplayer model must use 353-dim state`);
+        }
+        if (data.stateSchema) {
+            assert.ok(['state-2p-v1', 'state-mp-v1'].includes(data.stateSchema), `${model.id} has unknown state schema`);
+        }
+        if (data.actionSchema) {
+            assert.strictEqual(data.actionSchema, 'action-flat-v1', `${model.id} has unsupported action schema`);
+        }
         assert.ok(data.layers, `${model.id} has no exported layers`);
     }
 });

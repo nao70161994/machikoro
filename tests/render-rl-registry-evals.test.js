@@ -34,6 +34,7 @@ runTest('render-rl-registry-evals は eval-rl-models 結果を registry 追記�
             id: 'model-top2',
             path: 'models/rl_model/runs/model/best_model.top2.browser.json',
             score: 0.45678912,
+            evaluationConfig: { seed: 7, sharedSeeds: true, independentSeeds: false, games: 20, maxSteps: 100 },
             summaries: [
                 {
                     opponent: 'weak',
@@ -54,6 +55,8 @@ runTest('render-rl-registry-evals は eval-rl-models 結果を registry 追記�
     assert.strictEqual(rendered[0].score, 0.456789);
     assert.strictEqual(rendered[0].eval.checkpointRank, 2);
     assert.strictEqual(rendered[0].eval.gamesPerOpponent, 20);
+    assert.strictEqual(rendered[0].eval.evaluationConfig.seed, 7);
+    assert.strictEqual(rendered[0].eval.evaluationConfig.sharedSeeds, true);
     assert.strictEqual(rendered[0].eval.opponents.weak.wins, 15);
     assert.strictEqual(rendered[0].eval.opponents.weak.avgTurns, 51.235);
     assert.strictEqual(rendered[0].eval.opponents.weak.passRate, 0.012346);
@@ -133,6 +136,41 @@ runTest('render-rl-registry-evals は registry eval を重複なしで追記す�
     assert.strictEqual(second.stats.skippedDuplicates, 1);
     assert.strictEqual(second.registry.models[0].evals.length, 1);
     assert.strictEqual(second.registry.models[0].lastEvalScore, 0.5);
+});
+
+runTest('render-rl-registry-evals はseed policyが違う同日評価を重複扱いしない', () => {
+    const registry = {
+        models: [
+            {
+                id: 'model-top2',
+                evals: [{
+                    date: '2026-04-20',
+                    type: 'js',
+                    gamesPerOpponent: 20,
+                    checkpointRank: 2,
+                    evaluationConfig: { seed: 1, sharedSeeds: true },
+                    opponents: { weak: { wins: 15 } },
+                }],
+            },
+        ],
+    };
+    const rendered = [{
+        id: 'model-top2',
+        score: 0.5,
+        eval: {
+            date: '2026-04-20',
+            type: 'js',
+            gamesPerOpponent: 20,
+            checkpointRank: 2,
+            evaluationConfig: { seed: 2, sharedSeeds: true },
+            opponents: { weak: { wins: 15 } },
+        },
+    }];
+
+    const merged = mergeRegistryEvals(registry, rendered);
+
+    assert.strictEqual(merged.stats.appended, 1);
+    assert.strictEqual(merged.registry.models[0].evals.length, 2);
 });
 
 runTest('render-rl-registry-evals は存在しない model id を拒否する', () => {

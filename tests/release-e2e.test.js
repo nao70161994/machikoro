@@ -387,11 +387,14 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
     }
 });
 
-runTest('release workflow は static safety gate を含む', () => {
+runTest('release workflow と checklist は static safety gate を含む', () => {
     const workflow = readRepoFile('.github/workflows/release-test.yml');
+    const checklist = readRepoFile('docs/RELEASE_CHECKLIST.md');
 
     assert.ok(workflow.includes('npm run test:static'));
     assert.ok(workflow.indexOf('npm run test:static') < workflow.indexOf('npm test'));
+    assert.ok(checklist.includes('npm run test:static'));
+    assert.ok(checklist.includes('npm run test:smoke'));
 });
 
 runTest('release shortened long-run smoke は 60分相当を短縮して snapshot roundtrip を繰り返す', () => {

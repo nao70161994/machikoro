@@ -169,7 +169,7 @@ runTest('eval-rl-models は複数モデルを同一seed scheduleで評価する'
     ];
     const calls = [];
 
-    evaluateModelSpecs(
+    const results = evaluateModelSpecs(
         specs,
         { games: 10, seed: 5, maxSteps: 100, opponents: ['normal'], lineups: [], independentSeeds: false },
         (options) => {
@@ -180,6 +180,8 @@ runTest('eval-rl-models は複数モデルを同一seed scheduleで評価する'
 
     assert.deepStrictEqual(calls.map(call => call.seed), [5, 5]);
     assert.deepStrictEqual(calls.map(call => call.sharedSeeds), [true, true]);
+    assert.deepStrictEqual(results.map(result => result.evaluationConfig.seed), [5, 5]);
+    assert.deepStrictEqual(results.map(result => result.evaluationConfig.sharedSeeds), [true, true]);
 });
 
 runTest('eval-rl-models は明示指定時だけモデルごとにseed windowを分ける', () => {

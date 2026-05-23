@@ -501,3 +501,26 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 - 大きな責務分離は引き続き小さな helper / test 先行で進める必要がある。
 - 実ブラウザ複数端末、長時間 sleep/reconnect、native PWA install UI は manual verification required。
 - host-supplied restore snapshot の完全な信頼境界強化は server-side signature または persisted canonical state の設計判断が必要。
+
+
+### Continuous review Cycle 7 restore/RL/PWA gate hardening
+
+確認した内容:
+
+- Cycle 2 全体再レビューで Critical は未検出。High として、既存 room replacement 認証が incoming payload の token hash を信頼していた点、restore rank が client-writable `gameStartPayload.actionSeq` を使っていた点、APK workflow が release gate を通らず artifact を作れる点、game 中 `controllerchange` reload の可能性、RL eval seed policy が成果物に残らない点を確認した。
+
+修正済み:
+
+- 既存 room replacement は既存 room 側の reconnect token で認証する。
+- replacement rank は replay-backed seq に限定する。
+- RL model runtime/export/schema validation と portfolio schema tests を強化した。
+- RL eval result / registry import に seed policy metadata を追加した。
+- APK workflow と release docs を release gate に揃えた。
+- game 中 SW update は reload せず banner 表示へ倒す。
+- modal focus / scroll と confetti timeout lifecycle を補強した。
+
+残リスク:
+
+- client duplicate action idempotency、restore snapshot conservation、canonical mismatch client surfacing は継続候補。
+- host-supplied snapshot への完全防御は server-signed snapshot または server persisted canonical state の設計判断が必要。
+- 実ブラウザ複数端末 / native PWA install / sleep-wake は manual verification required。

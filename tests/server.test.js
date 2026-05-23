@@ -2249,7 +2249,77 @@ runTest('handleRecreateRoom は接続中ホストがいる復元済みroomを非
     }
 });
 
-runTest('handleRecreateRoom は gameStartPayload.actionSeq だけ新しい復元payloadでも置き換える', () => {
+runTest('handleRecreateRoom は既存roomのtokenで復元置換を認証する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const realTokenAlice = 'token-alice-real';
+    const forgedTokenAlice = 'token-alice-forged';
+    const realReconnectTokenHashes = [
+        crypto.createHash('sha256').update(realTokenAlice).digest('hex'),
+        crypto.createHash('sha256').update('token-bob').digest('hex'),
+    ];
+    const oldPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes: realReconnectTokenHashes,
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+    };
+    const forgedPayload = Object.assign({}, oldPayload, {
+        reconnectTokenHashes: [
+            crypto.createHash('sha256').update(forgedTokenAlice).digest('hex'),
+            realReconnectTokenHashes[1],
+        ],
+        hostEpoch: 99,
+    });
+    __rooms.REPLACE_TOKEN = {
+        started: true,
+        restored: true,
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        players: [
+            { id: 'socket-alice-old', index: 0, name: 'Alice', reconnectTokenHash: realReconnectTokenHashes[0] },
+        ],
+        playerSettings: oldPayload.playerSettings,
+        maxPlayers: 2,
+        gameStartPayload: oldPayload,
+        stateSnapshot: makeSnapshot(),
+        actionLog: [],
+    };
+    const socket = {
+        id: 'socket-alice-forged',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        handleRecreateRoom(socket, {
+            roomId: 'REPLACE_TOKEN',
+            gameStartPayload: forgedPayload,
+            stateSnapshot: makeSnapshot({ actionSeq: 2 }),
+            actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 2 }],
+            playerIndex: 0,
+            playerName: 'Alice',
+            reconnectToken: forgedTokenAlice,
+        });
+
+        assert.deepStrictEqual(joined, []);
+        assert.strictEqual(__rooms.REPLACE_TOKEN.hostEpoch, 0);
+        assert.strictEqual(emitted[0].name, APP_ERROR_EVENT);
+        assert.strictEqual(emitted[0].payload, 'INVALID_TOKEN');
+    } finally {
+        delete __rooms.REPLACE_TOKEN;
+    }
+});
+
+runTest('handleRecreateRoom は gameStartPayload.actionSeq だけ新しい復元payloadでは置き換えない', () => {
     const crypto = require('crypto');
     const emitted = [];
     const joined = [];
@@ -2304,9 +2374,10 @@ runTest('handleRecreateRoom は gameStartPayload.actionSeq だけ新しい復元
         });
 
         assert.deepStrictEqual(joined, ['REPLACE_SEQ']);
-        assert.strictEqual(__rooms.REPLACE_SEQ.actionSeq, 5);
-        assert.strictEqual(__rooms.REPLACE_SEQ.gameStartPayload.actionSeq, 5);
-        assert.strictEqual(emitted[0].payload.gameStartPayload.actionSeq, 5);
+        assert.strictEqual(__rooms.REPLACE_SEQ.actionSeq, 1);
+        assert.strictEqual(__rooms.REPLACE_SEQ.gameStartPayload.actionSeq, 1);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.gameStartPayload.actionSeq, 1);
     } finally {
         delete __rooms.REPLACE_SEQ;
     }

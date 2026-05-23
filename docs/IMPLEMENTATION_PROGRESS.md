@@ -1457,6 +1457,19 @@
   - `git diff --check`
 - 残課題: 実ブラウザでの Service Worker 更新バナーと cache refresh は manual verification required。
 
+## Continuous review operating policy
+
+- 状態: active policy
+- 運用:
+  - 1 Cycle 完了後は commit / push と working tree clean 確認を行い、停止条件に当たらない限り即座に次 Cycle を開始する。
+  - 各 Cycle で前 Cycle の副作用確認とディレクトリ全体レビューを行う。
+  - Low / Medium backlog だけになっても、安全に自動対応できるものが残る限り停止しない。
+- 停止条件:
+  - テスト失敗を3回自己修正しても直らない。
+  - git conflict / push失敗。
+  - 破壊的変更、実機確認、hostless restore / server persisted canonical state など設計判断が必要。
+  - 自動で安全に対応できる指摘がなくなった。
+
 ## Continuous review Cycle 1 runtime/online safety
 
 - 状態: verified, full suite passed
@@ -1667,7 +1680,7 @@
 
 ## Continuous review Cycle 6 maintainability and runtime guards
 
-- 状態: implemented, targeted tests passed; full suite pending in Cycle verification.
+- 状態: implemented, full suite passed and pushed in commit 3494324.
 - 変更ファイル:
   - `js/online.js`, `tests/online.test.js`
   - `server.js`, `tests/server.test.js`
@@ -1687,3 +1700,28 @@
   - CPU.js / ui.js / server.js の大きな責務分離は、今回の Cycle では behavior guard と docs 整合を優先した。次回も helper 単位で進める。
   - host-supplied snapshot の署名 / server persisted canonical state は design decision required。
   - 実 iOS Safari / Android Chrome の長時間 online/PWA 確認は manual verification required。
+
+
+## Continuous review Cycle 7 restore/RL/PWA gate hardening
+
+- 状態: implemented, targeted tests passed; full suite pending in Cycle verification.
+- 変更ファイル:
+  - `server.js`, `server/restoreRank.js`, `tests/server.test.js`
+  - `js/RLCPU.js`, `scripts/rl/export_model.py`, `tests/rlcpu.test.js`, `tests/rl-model-portfolio.test.js`, `tests/rl-train.test.js`
+  - `scripts/eval-rl-models.js`, `scripts/render-rl-registry-evals.js`, `scripts/validate-rl-registry.js`, related tests
+  - `index.html`, `js/ui.js`, `js/confetti.js`, `style.css`, UI/PWA tests
+  - `.github/workflows/build-apk.yml`, release/PWA docs
+- 実装内容:
+  - 既存 room の `recreateRoom` replacement は、incoming payload 内の token hash ではなく既存 room に保存された reconnect token で認証するようにした。
+  - restore rank は replacement 判定で client-writable な `gameStartPayload.actionSeq` を進捗根拠にせず、snapshot/actionLog で replay-backed な seq だけを使う。
+  - RLCPU は既知 schema bundle で runtime の action/card count と不一致なら constructor で早期拒否する。Python export は `stateSchema` / `actionSchema` を明示する。
+  - `eval-rl-models` の結果に `evaluationConfig` を保存し、registry import の重複判定にも seed policy を含める。
+  - `validate-rl-registry -- --check-paths` が npm script 経由でも registry path と誤認しない parseArgs を追加した。
+  - game 中の Service Worker `controllerchange` は reload せず update banner に倒す。
+  - modal 表示中は body scroll を止め、Tab focus が modal 外へ逃げた場合は modal 内へ戻す。confetti timeout は restart/stop 時に整理する。
+  - Android/TWA APK workflow に Bubblewrap build 前の `npm ci` / `test:static` / `test:pwa` / `test:release` gate を追加した。
+  - PWA model loading / release checklist / AI handoff / progress docs を現状と継続運用方針へ同期した。
+- deferred:
+  - host-supplied snapshot の完全な署名 / server persisted canonical state は design decision required。
+  - client duplicate action idempotency と replay parity matrix は次 Cycle の安全な候補。
+  - 実機 iOS/Android の update/reconnect は manual verification required。

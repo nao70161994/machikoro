@@ -113,6 +113,14 @@ class RLCPU {
         if (this.schema.action !== RLCPU.ACTION_SCHEMAS.LEGACY_FLAT_V1) {
             throw new Error(`RLCPU unsupported action schema: ${this.schema.action}`);
         }
+        if (this.schema.state !== RLCPU.STATE_SCHEMAS.CUSTOM) {
+            if (this.numActions !== RLCPU.NUM_ACTIONS) {
+                throw new Error(`RLCPU action count mismatch: expected ${RLCPU.NUM_ACTIONS}, got ${this.numActions}`);
+            }
+            if (this.numCards !== CARDS.length) {
+                throw new Error(`RLCPU card count mismatch: expected ${CARDS.length}, got ${this.numCards}`);
+            }
+        }
     }
 
     _validateModel() {

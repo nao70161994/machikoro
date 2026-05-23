@@ -20,6 +20,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: APK build 前リリースゲート
+        run: |
+          npm run test:static
+          npm run test:pwa
+          npm run test:release
+
       - name: Bubblewrap インストール
         run: npm install -g @bubblewrap/cli
 

@@ -657,6 +657,7 @@ function openAccessibleModal(id) {
     if (!modal) return;
     if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
     activeModalId = id;
+    if (document.body && document.body.classList) document.body.classList.add('modal-open');
     modal.style.display = 'flex';
     if (typeof modal.setAttribute === 'function') {
         modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
@@ -669,6 +670,7 @@ function closeAccessibleModal(id, options = {}) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'none';
     if (activeModalId === id) activeModalId = null;
+    if (!activeModalId && document.body && document.body.classList) document.body.classList.remove('modal-open');
     if (options.restoreFocus !== false && lastModalFocus && typeof lastModalFocus.focus === 'function') {
         lastModalFocus.focus();
     }
@@ -692,6 +694,11 @@ function handleModalKeydown(event) {
         return;
     }
     if (event.key !== 'Tab') return;
+    if (typeof modal.contains === 'function' && !modal.contains(document.activeElement)) {
+        event.preventDefault();
+        focusModal(modal);
+        return;
+    }
     const focusable = getFocusableElements(modal);
     if (focusable.length === 0) {
         event.preventDefault();

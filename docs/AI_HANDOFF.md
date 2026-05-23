@@ -30,6 +30,13 @@
 - GameManager/Card metadata: 飲食店・商店 category group を `CARD_CATEGORY_GROUPS` に寄せ、該当効果のカテゴリ判定を helper 経由にした。
 - Server: restore rank / replacement 判定を `server/restoreRank.js` へ分離した。
 
+## Continuous review operating policy
+
+- Continuous review は Cycle 完了ごとに停止せず、停止条件に該当するまで Cycle 1, 2, 3... と自律継続する。
+- 各 Cycle は全体レビュー、修正、tests、docs 更新、commit / push、working tree clean 確認まで行い、直後に次 Cycle を開始する。
+- 「完了しました。次へ進めますか？」で止めない。停止してよいのは、テスト3回修正失敗、git conflict、push失敗、破壊的変更、実機確認必須、hostless restore / server persisted canonical state など設計判断必須、または自動で安全に対応できる指摘がなくなった場合のみ。
+- 次 Cycle では前 Cycle の副作用も含め、変更箇所だけでなく毎回ディレクトリ全体を再レビューする。
+
 ## 次に安全な作業候補
 
 - UI: pending 種別ごとの HTML helper 化は、HTML 出力の targeted assertion を追加してから小さく進める。
@@ -145,3 +152,13 @@ npm test
 - 採用理由: 100戦 full suite で旧 `0.05` 比 `strongWeighted 56.2% -> 57.5%`, `strongMin/allStrong4 36.0% -> 38.0%`、`normalCrowd 59.0% -> 57.0%` で -2pt 以内。
 - 不採用: `buildTempo=0.02` は strong 側を改善したが `normalCrowd=56.0%` で -3pt のため採用しない。
 - 次候補は、広い duplicate/growth/guard ではなく、loss 側に偏る狭い条件だけを見る。benchmark は `docs/expert-v2-diagnostics.md` の gate を優先する。
+
+
+## 2026-05-23 continuous review Cycle 7
+
+- restore replacement は既存 room の reconnect token で認証する。incoming `gameStartPayload.reconnectTokenHashes` は既存 room replacement の認証根拠にしない。
+- restore rank は replacement 判定で replay-backed seq（snapshot/actionLog）だけを使う。`gameStartPayload.actionSeq` は互換用 metadata として扱う。
+- RL export は `stateSchema` / `actionSchema` を明示し、runtime は既知 schema の action/card count mismatch を早期拒否する。
+- `eval-rl-models` result と registry import は `evaluationConfig` で seed policy を残す。
+- APK workflow は Bubblewrap build 前に `test:static`, `test:pwa`, `test:release` を通す。
+- game 中の Service Worker update / controllerchange は自動 reload せず banner 表示へ倒す。

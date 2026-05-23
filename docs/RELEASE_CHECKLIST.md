@@ -8,15 +8,17 @@ Run from a clean checkout:
 
 ```sh
 git diff --check
+npm run test:static
+npm run test:smoke
 npm test
-npm run test:release
-npm run test:pwa
 npm run test:online
+npm run test:pwa
+npm run test:release
 npm run test:cpu
 npm run test:rl
 ```
 
-CI also runs `npm test` and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch.
+CI also runs `npm run test:static`, `npm test`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`.
 
 ## Render Environment Variables
 
