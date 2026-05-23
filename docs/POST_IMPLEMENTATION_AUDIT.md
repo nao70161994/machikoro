@@ -582,3 +582,24 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - iOS Safari install guidance、PWA bottom safe-area spacer、trust-proxy 運用方針は実機/デプロイ判断待ち。
 - server persisted canonical state / signed restore snapshot は design decision required。
+
+### Continuous review Cycle 11 PWA/security/test tooling hardening
+
+確認した内容:
+
+- High/design: server restart 後の host-supplied snapshot と missing-room restore は署名または server persisted canonical state がない限り完全には信頼できない。これは trust boundary 設計判断が必要なため自動実装対象外。
+- High fixed: `runTest()` が Promise を返さず、`await runTest(...)` が非同期 test 完了を待てない問題を確認した。
+- Medium fixed: PWA update banner が install prompt を隠したまま再表示しない経路、trust proxy の既定有効、production no-origin client-error report、RL eval duplicate conflict の見落としを確認した。
+
+修正済み:
+
+- `runTest` の Promise chain を返し、回帰 test を追加した。
+- PWA install/update banner の再表示と body padding state を補強した。
+- client-error endpoint は production ntfy で no-origin/no-token を拒否し、trust proxy を env opt-in にした。
+- modal focus/inert 順序、close labels、pending modal viewport fallback を補強した。
+- RL registry/import tooling は同一条件 conflict を警告または拒否できるようにした。
+
+残課題:
+
+- Signed restore snapshot / server persisted canonical state、room secret による missing-room restore 認証は design decision required。
+- 実機 iOS Safari / Android Chrome の install/update/reconnect は manual verification required。

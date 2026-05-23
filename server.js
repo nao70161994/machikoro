@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const app = express();
-app.set('trust proxy', 1);
+app.set('trust proxy', resolveTrustProxySetting(process.env));
 const server = http.createServer(app);
 const io = new Server(server);
 const gameRuntime = loadGameRuntime();
@@ -93,6 +93,15 @@ const CLIENT_ERROR_LIMITS = Object.freeze({
 const clientErrorRateBuckets = new Map();
 const clientErrorDedupeCache = new Map();
 const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
+
+function resolveTrustProxySetting(env = process.env) {
+    const value = String(env.TRUST_PROXY || env.EXPRESS_TRUST_PROXY || '').trim();
+    if (!value) return false;
+    const lower = value.toLowerCase();
+    if (['0', 'false', 'no', 'off'].includes(lower)) return false;
+    if (['1', 'true', 'yes', 'on'].includes(lower)) return 1;
+    return value;
+}
 
 function truncateText(value, maxLength) {
     const text = String(value || '');
@@ -191,6 +200,14 @@ function isClientErrorOriginAllowed(req, env = process.env) {
     return allowed.includes(origin);
 }
 
+function isProductionNoOriginClientErrorBlocked(req, env = process.env) {
+    const hasOrigin = !!(normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer')));
+    if (hasOrigin) return false;
+    if (clientErrorSharedToken(env)) return false;
+    if (String(env.CLIENT_ERROR_ALLOW_NO_ORIGIN || '').trim()) return false;
+    return String(env.NODE_ENV || '').toLowerCase() === 'production' && !!String(env.NTFY_TOPIC || '').trim();
+}
+
 function clientErrorSharedToken(env = process.env) {
     return String(env.CLIENT_ERROR_SHARED_TOKEN || env.CLIENT_ERROR_TOKEN || '').trim();
 }
@@ -205,6 +222,7 @@ function requestClientErrorToken(req) {
 
 function authorizeClientErrorRequest(req, env = process.env) {
     if (!isClientErrorOriginAllowed(req, env)) return { ok: false, error: 'forbidden_origin' };
+    if (isProductionNoOriginClientErrorBlocked(req, env)) return { ok: false, error: 'forbidden_origin' };
     const expectedToken = clientErrorSharedToken(env);
     if (!expectedToken) return { ok: true };
     return requestClientErrorToken(req) === expectedToken
@@ -1615,12 +1633,14 @@ module.exports = {
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
     CLIENT_ERROR_LIMITS,
+    resolveTrustProxySetting,
     normalizeClientErrorPayload,
     requestHeader,
     requestBaseOrigin,
     clientErrorAllowedOrigins,
     isClientErrorOriginAllowed,
     clientErrorSharedToken,
+    isProductionNoOriginClientErrorBlocked,
     requestClientErrorToken,
     authorizeClientErrorRequest,
     handleClientErrorRequest,

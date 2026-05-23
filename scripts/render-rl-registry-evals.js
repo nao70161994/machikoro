@@ -124,6 +124,18 @@ function isSameEval(a, b) {
         && sameOpponentKeys(a.opponents, b.opponents);
 }
 
+function evalMetricsKey(evalEntry) {
+    return JSON.stringify(stableConfigValue({
+        opponents: evalEntry && evalEntry.opponents || {},
+        aggregate: evalEntry && evalEntry.aggregate || null,
+        winRate: evalEntry && evalEntry.winRate || null,
+    }));
+}
+
+function hasConflictingEvalMetrics(existing, incoming) {
+    return isSameEval(existing, incoming) && evalMetricsKey(existing) !== evalMetricsKey(incoming);
+}
+
 function mergeRegistryEvals(registry, renderedEvals) {
     const models = Array.isArray(registry.models) ? registry.models : [];
     const byId = new Map(models.map(model => [model.id, model]));
@@ -137,7 +149,11 @@ function mergeRegistryEvals(registry, renderedEvals) {
         const model = byId.get(rendered.id);
         if (!model) throw new Error(`registry に model id がありません: ${rendered.id}`);
         if (!Array.isArray(model.evals)) model.evals = [];
-        if (model.evals.some(existing => isSameEval(existing, rendered.eval))) {
+        const duplicate = model.evals.find(existing => isSameEval(existing, rendered.eval));
+        if (duplicate) {
+            if (hasConflictingEvalMetrics(duplicate, rendered.eval)) {
+                throw new Error(`registry eval conflict: ${rendered.id} ${rendered.eval.date || 'no-date'} ${rendered.eval.type || 'unknown'}`);
+            }
             stats.skippedDuplicates += 1;
             continue;
         }
@@ -180,5 +196,6 @@ module.exports = {
     resultToRegistryEval,
     renderRegistryEvals,
     isSameEval,
+    hasConflictingEvalMetrics,
     mergeRegistryEvals,
 };

@@ -752,6 +752,12 @@ function handleStaticUiClick(event) {
     else if (action === 'hidePwaUpdateBanner') {
         const banner = document.getElementById('pwaUpdateBanner');
         if (banner) banner.style.display = 'none';
+        if (typeof maybeShowPwaInstallBanner === 'function') maybeShowPwaInstallBanner();
+        else {
+            const installBanner = document.getElementById('pwaInstallBanner');
+            const stillVisible = installBanner && installBanner.style.display === 'block';
+            if (!stillVisible && document.body && document.body.classList) document.body.classList.remove('pwa-banner-open');
+        }
     }
     else if (action === 'pwaInstallPrompt') pwaInstallPrompt();
     else if (action === 'pwaInstallDismiss') pwaInstallDismiss();

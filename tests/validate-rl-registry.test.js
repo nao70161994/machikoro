@@ -19,10 +19,12 @@ runTest('validate-rl-registry parseArgs は npm script の --check-paths を reg
     assert.deepStrictEqual(parseArgs(['--check-paths']), {
         registryPath: path.join(__dirname, '..', 'models', 'rl_model', 'registry.json'),
         checkPaths: true,
+        strictWarnings: false,
     });
-    assert.deepStrictEqual(parseArgs(['models/custom.json', '--check-paths']), {
+    assert.deepStrictEqual(parseArgs(['models/custom.json', '--check-paths', '--strict-warnings']), {
         registryPath: 'models/custom.json',
         checkPaths: true,
+        strictWarnings: true,
     });
 });
 
@@ -69,7 +71,7 @@ runTest('validateRegistry は同一条件で結果だけ違うevalを警告す�
                 path: 'a.json',
                 evals: [
                     baseEval,
-                    { ...baseEval, lineups: { 'rl+normal+normal+strong': { winRate: 0.5 } } },
+                    { ...baseEval, date: '2026-05-08', lineups: { 'rl+normal+normal+strong': { winRate: 0.5 } } },
                 ],
             },
         ],
@@ -78,6 +80,31 @@ runTest('validateRegistry は同一条件で結果だけ違うevalを警告す�
 
     assert.strictEqual(result.ok, true);
     assert.ok(result.warnings.some(warning => warning.includes('同一条件の eval')));
+});
+
+runTest('validate-rl-registry CLI は strict-warnings で警告を失敗にできる', () => {
+    const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'machikoro-registry-strict-'));
+    try {
+        const registryPath = path.join(repoRoot, 'registry.json');
+        fs.writeFileSync(registryPath, JSON.stringify({
+            models: [{
+                id: 'a',
+                status: 'candidate',
+                path: 'a.json',
+                evals: [
+                    { type: 'js', gamesPerOpponent: 1, opponents: { strong: { wins: 1 } } },
+                    { type: 'js', gamesPerOpponent: 1, opponents: { strong: { wins: 0 } } },
+                ],
+            }],
+            portfolioPolicy: { recommendedActiveModels: [] },
+        }), 'utf8');
+        const result = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'validate-rl-registry.js'), registryPath, '--strict-warnings'], { encoding: 'utf8' });
+        assert.strictEqual(result.status, 1);
+        assert.ok((result.stdout || '').includes('warning:'));
+        assert.ok((result.stdout || '').includes('同一条件の eval'));
+    } finally {
+        fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
 });
 
 runTest('validateRegistry は active model の評価ゲーム数不足を警告する', () => {

@@ -31,6 +31,8 @@ Recommended for production observability:
 - `NTFY_TOPIC`: ntfy topic for browser error notification. Without it, client error reports only write `console.warn` on the server.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: comma-separated allowed origins, for example `https://machikoro-9jv2.onrender.com`. Same-origin reports are always accepted; cross-origin reports are rejected unless allowlisted.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token for `/api/client-error` and `/api/client-error-test`. Leave unset unless the client/test caller will send `X-Client-Error-Token` or `Authorization: Bearer`.
+- `TRUST_PROXY=1`: set only when deployed behind a trusted proxy and paired with `CLIENT_ERROR_ALLOWED_ORIGINS` for the public HTTPS origin. Leave unset for direct serving.
+- `CLIENT_ERROR_ALLOW_NO_ORIGIN`: leave unset in production unless a controlled non-browser diagnostic sender requires no-origin reports.
 
 Temporary / debug only:
 

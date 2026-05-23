@@ -6,14 +6,13 @@ function runTest(name, fn) {
     try {
         const result = fn();
         if (result && typeof result.then === 'function') {
-            result
+            return result
                 .then(() => console.log(`テスト成功: ${name}`))
                 .catch(error => {
                     console.error(`テスト失敗: ${name}`);
                     console.error(error && error.stack || error);
                     process.exitCode = 1;
                 });
-            return;
         }
         console.log(`テスト成功: ${name}`);
     } catch (error) {
@@ -25,6 +24,8 @@ function runTest(name, fn) {
 
 function makeElement(overrides = {}) {
     const attributes = new Map();
+    const classes = new Set(String(overrides.className || '').split(/\s+/).filter(Boolean));
+    function syncClassName(target) { target.className = Array.from(classes).join(' '); }
     const element = Object.assign({
         style: {},
         textContent: '',
@@ -34,9 +35,17 @@ function makeElement(overrides = {}) {
         disabled: false,
         className: '',
         classList: {
-            add() {},
-            remove() {},
-            toggle() {},
+            add(...values) { values.filter(Boolean).forEach(value => classes.add(String(value))); syncClassName(element); },
+            remove(...values) { values.filter(Boolean).forEach(value => classes.delete(String(value))); syncClassName(element); },
+            toggle(value, force) {
+                const name = String(value);
+                const shouldAdd = force === undefined ? !classes.has(name) : !!force;
+                if (shouldAdd) classes.add(name);
+                else classes.delete(name);
+                syncClassName(element);
+                return shouldAdd;
+            },
+            contains(value) { return classes.has(String(value)); },
         },
         setAttribute(name, value) { attributes.set(String(name), String(value)); },
         getAttribute(name) { return attributes.has(String(name)) ? attributes.get(String(name)) : null; },

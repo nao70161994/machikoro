@@ -144,6 +144,27 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
 });
 
+runTest('modal open は背景をaria-hiddenにする前にfocusをmodalへ移す', () => {
+    const { context, elements } = loadUiRuntime();
+    let hiddenWhileFocusedInTitle = false;
+    const opener = makeElement();
+    elements.titleScreen.contains = target => target === opener;
+    elements.rulesModal.focus = () => { context.document.activeElement = elements.rulesModal; };
+    context.document.activeElement = opener;
+    const originalSetAttribute = elements.titleScreen.setAttribute.bind(elements.titleScreen);
+    elements.titleScreen.setAttribute = (name, value) => {
+        if (name === 'aria-hidden' && elements.titleScreen.contains(context.document.activeElement)) {
+            hiddenWhileFocusedInTitle = true;
+        }
+        originalSetAttribute(name, value);
+    };
+
+    context.showRules();
+
+    assert.strictEqual(hiddenWhileFocusedInTitle, false);
+    assert.strictEqual(context.document.activeElement, elements.rulesModal);
+});
+
 runTest('modal keydown handler はTab focus escapeをmodal内へ戻す', () => {
     const { context, elements } = loadUiRuntime();
     let prevented = false;

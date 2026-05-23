@@ -135,9 +135,34 @@ function setPwaBannerVisible(id, visible) {
     if (!banner) return;
     if (id === 'pwaInstallBanner' && visible) {
         const updateBanner = document.getElementById('pwaUpdateBanner');
-        if (updateBanner && updateBanner.style.display === 'block') return;
+        if (updateBanner && updateBanner.style.display === 'block') {
+            updatePwaBannerBodyState();
+            return;
+        }
     }
     banner.style.display = visible ? 'block' : 'none';
+    updatePwaBannerBodyState();
+}
+
+function updatePwaBannerBodyState() {
+    if (typeof document === 'undefined' || !document.body || !document.body.classList) return;
+    const installBanner = document.getElementById('pwaInstallBanner');
+    const updateBanner = document.getElementById('pwaUpdateBanner');
+    const visible = (installBanner && installBanner.style.display === 'block') ||
+        (updateBanner && updateBanner.style.display === 'block');
+    document.body.classList.toggle('pwa-banner-open', !!visible);
+}
+
+function maybeShowPwaInstallBanner() {
+    if (!_pwaInstallEvent) {
+        updatePwaBannerBodyState();
+        return;
+    }
+    if (localStorage.getItem('pwaInstallDismissed')) {
+        updatePwaBannerBodyState();
+        return;
+    }
+    setPwaBannerVisible('pwaInstallBanner', true);
 }
 
 function pwaInstallPrompt() {
@@ -227,7 +252,7 @@ function bindPwaInstallHandlers() {
             return;
         }
         _pwaInstallEvent = e;
-        setPwaBannerVisible('pwaInstallBanner', true);
+        maybeShowPwaInstallBanner();
     });
     _pwaInstallHandlersBound = true;
 }

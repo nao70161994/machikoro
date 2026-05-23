@@ -76,6 +76,7 @@ function loadMainRuntime(options = {}) {
         fetchCalls,
         consoleErrors,
         document: {
+            body: makeElement(),
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];
@@ -995,10 +996,12 @@ runTest('appShell beforeinstallprompt は標準promptを止めてバナーから
     rt.__test.eventHandlers.beforeinstallprompt(event);
     assert.strictEqual(prevented, true);
     assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
+    assert.strictEqual(rt.document.body.classList.contains('pwa-banner-open'), true);
 
     rt.pwaInstallPrompt();
     assert.strictEqual(prompted, true);
     assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'none');
+    assert.strictEqual(rt.document.body.classList.contains('pwa-banner-open'), false);
 });
 
 runTest('appShell beforeinstallprompt は更新バナー表示中のinstallバナー重複を抑止する', () => {
@@ -1015,6 +1018,33 @@ runTest('appShell beforeinstallprompt は更新バナー表示中のinstallバ�
 
     assert.strictEqual(prevented, true);
     assert.notStrictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
+    assert.strictEqual(rt.document.body.classList.contains('pwa-banner-open'), true);
+});
+
+runTest('appShell hidePwaUpdateBanner は保留中のinstall promptを再表示する', () => {
+    const rt = loadMainRuntime();
+    let prompted = false;
+    const event = {
+        preventDefault() {},
+        prompt() { prompted = true; },
+        userChoice: { then(callback) { callback(); } },
+    };
+
+    rt.__test.elements.pwaUpdateBanner.style.display = 'block';
+    rt.__test.eventHandlers.beforeinstallprompt(event);
+    rt.__test.eventHandlers['document:click']({
+        target: {
+            disabled: false,
+            dataset: { uiAction: 'hidePwaUpdateBanner' },
+            closest(selector) { return selector === '[data-ui-action]' ? this : null; },
+        },
+        preventDefault() {},
+    });
+
+    assert.strictEqual(rt.__test.elements.pwaUpdateBanner.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
+    rt.pwaInstallPrompt();
+    assert.strictEqual(prompted, true);
 });
 
 runTest('appShell bindPwaInstallHandlers は standalone では購読しない', () => {
@@ -1193,6 +1223,9 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('updateRequestedByUser = true;'));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('aria-label="ルール説明を閉じる"'));
+    assert.ok(html.includes('aria-label="カード選択を閉じる"'));
+    assert.ok(html.includes('aria-label="カード詳細を閉じる"'));
     assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
     assert.ok(html.includes('id="pendingModal" class="pending-modal" role="region" aria-label="追加効果の選択" aria-live="polite"'));
     assert.ok(!html.includes('id="pendingModal" class="pending-modal" role="dialog" aria-modal="true"'));
@@ -1233,6 +1266,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('--z-modal: 1000;'));
     assert.ok(css.includes('#pwaUpdateBanner'));
     assert.ok(css.includes('z-index: var(--z-pwa-banner);'));
+    assert.ok(css.includes('body.pwa-banner-open #gameScreen'));
+    assert.ok(css.indexOf('max-height: min(calc(100vh - 24px), 70vh);') < css.indexOf('max-height: min(calc(100dvh - 24px), 70dvh);'));
     assert.ok(css.includes('calc(12px + env(safe-area-inset-bottom, 0px))'));
     assert.ok(css.includes('z-index: var(--z-modal);'));
     assert.ok(css.includes(':focus-visible'));

@@ -9,6 +9,8 @@ Set these environment variables on Render:
 - `NTFY_TOPIC`: ntfy topic name to publish client errors to.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, `POST /api/client-error` and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Leave unset to keep the browser reporter working without a token.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: optional comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
+- `TRUST_PROXY` / `EXPRESS_TRUST_PROXY`: optional Express proxy trust setting. Leave unset for direct serving; set `TRUST_PROXY=1` only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
+- `CLIENT_ERROR_ALLOW_NO_ORIGIN`: optional escape hatch for controlled diagnostics. In production with `NTFY_TOPIC`, no-origin/no-token reports are rejected by default.
 
 Example topic names:
 

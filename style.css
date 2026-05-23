@@ -855,6 +855,11 @@ body.modal-open #gameScreen {
     padding-bottom: 32px;
 }
 
+body.pwa-banner-open #titleScreen,
+body.pwa-banner-open #gameScreen {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+}
+
 .status {
     text-align: center;
     font-size: 15px;
@@ -1400,6 +1405,7 @@ button:not(:disabled):active {
     padding: 22px 20px 18px;
     width: 100%;
     max-width: 440px;
+    max-height: min(calc(100vh - 24px), 70vh);
     max-height: min(calc(100dvh - 24px), 70dvh);
     border: 2px solid rgba(233,69,96,0.55);
     box-shadow: 0 0 48px rgba(233,69,96,0.18), 0 12px 40px rgba(0,0,0,0.8);

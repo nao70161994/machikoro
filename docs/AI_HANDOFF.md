@@ -183,3 +183,12 @@ npm test
 - PWA update banner wins over install banner. Only suppress install when update banner is explicitly `display: block`; an absent/default display must not block `beforeinstallprompt`.
 - `normalizeClientErrorPayload` strips URL query/hash from stack and filename before ntfy formatting. Do not reintroduce raw room/session/token data into notification text.
 - `validate-rl-registry` warns on same-condition eval entries with conflicting metrics. Treat warnings as adoption-review blockers until the registry records a discriminator or removes the duplicate.
+
+## 2026-05-23 continuous review Cycle 11
+
+- Express `trust proxy` defaults to false. Set `TRUST_PROXY=1` or `EXPRESS_TRUST_PROXY` only when the deployment is actually behind a trusted proxy and `CLIENT_ERROR_ALLOWED_ORIGINS` covers the public HTTPS origin.
+- Production ntfy reporting rejects no-origin/no-token client-error requests by default. Use browser same-origin reports, `CLIENT_ERROR_SHARED_TOKEN`, or an explicit `CLIENT_ERROR_ALLOW_NO_ORIGIN` exception only for controlled diagnostics.
+- If `beforeinstallprompt` arrives while the PWA update banner is visible, the install event is retained and shown after update banner dismissal. Keep this arbitration when changing banner lifecycle.
+- `runTest()` returns async test promises. New async tests should either return/await `runTest(...)` or stay synchronous; do not rely on fire-and-forget promise handlers.
+- `validate-rl-registry --strict-warnings` fails on warnings for adoption review. `render-rl-registry-evals` rejects same-identity evals with conflicting metrics instead of silently skipping them.
+- Host-supplied restore snapshot signing / server persisted canonical state remains design decision required; do not implement partial trust-boundary changes without a design doc and migration plan.

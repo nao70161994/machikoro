@@ -51,6 +51,7 @@ const TEST_GROUPS = {
         'eval-rl-special-scenarios.test.js',
         'summarize-rl-metrics.test.js',
         'cli-args.test.js',
+        'test-utils.test.js',
     ],
     sim: [
         'selfplay.test.js',

@@ -183,7 +183,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="rulesModalTitle">📖 街コロ ルール説明</h2>
-                <button data-ui-action="closeRules">✕</button>
+                <button data-ui-action="closeRules" aria-label="ルール説明を閉じる">✕</button>
             </div>
             <div class="modal-body">
                 <div class="rules-section">
@@ -239,7 +239,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="cardSelectModalTitle">🃏 カード・ランドマーク選択</h2>
-                <button data-action="closeCardSelect">✕</button>
+                <button data-action="closeCardSelect" aria-label="カード選択を閉じる">✕</button>
             </div>
             <div class="modal-body">
                 <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">使用するカードとランドマークを選んでください（ランドマークは最低1つ必要です）</p>
@@ -281,7 +281,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="cardDetailTitle">カード詳細</h2>
-                <button data-ui-action="closeCardDetail">✕</button>
+                <button data-ui-action="closeCardDetail" aria-label="カード詳細を閉じる">✕</button>
             </div>
             <div class="modal-body" id="cardDetailBody"></div>
         </div>
@@ -381,6 +381,7 @@
             btn.style.opacity = '0.4';
           }
           banner.style.display = 'block';
+          if (document.body && document.body.classList) document.body.classList.add('pwa-banner-open');
         }
         function _handleWaitingSW(sw) {
           _waitingSW = sw;

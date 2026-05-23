@@ -1704,7 +1704,7 @@
 
 ## Continuous review Cycle 7 restore/RL/PWA gate hardening
 
-- 状態: implemented, targeted tests passed; full suite pending in Cycle verification.
+- 状態: implemented, full verification passed in later release gates.
 - 変更ファイル:
   - `server.js`, `server/restoreRank.js`, `tests/server.test.js`
   - `js/RLCPU.js`, `scripts/rl/export_model.py`, `tests/rlcpu.test.js`, `tests/rl-model-portfolio.test.js`, `tests/rl-train.test.js`
@@ -1768,7 +1768,7 @@
 
 ## Continuous review Cycle 10 reconnect ack / modal inert / release contract
 
-- 状態: implemented; full suite passed; commit/push pending.
+- 状態: implemented; full suite passed and pushed in `c9782ae`.
 - 変更ファイル:
   - `server.js`, `tests/server.test.js`
   - `js/ui.js`, `tests/ui.test.js`
@@ -1787,3 +1787,26 @@
   - iOS Safari 専用 install guidance と PWA bottom spacer は実機表示確認が必要。
   - client-error endpoint の trust proxy / no-origin production policy は deploy topology の設計判断が必要。
   - server persisted canonical state / signed restore snapshot は design decision required。
+
+
+## Continuous review Cycle 11 PWA/security/test tooling hardening
+
+- 状態: implemented; full verification passed; ready to commit/push.
+- 変更ファイル:
+  - `server.js`, `tests/server.test.js`
+  - `js/appShell.js`, `js/main.js`, `index.html`, `style.css`, `tests/main.test.js`
+  - `js/ui.js`, `tests/ui.test.js`
+  - `tests/helpers/test-utils.js`, `tests/test-utils.test.js`, `tests/run-all.js`
+  - `scripts/validate-rl-registry.js`, `scripts/render-rl-registry-evals.js`, related tests
+  - docs maintenance files
+- 実装内容:
+  - Express `trust proxy` を既定 false にし、`TRUST_PROXY` / `EXPRESS_TRUST_PROXY` で明示 opt-in にした。
+  - production + `NTFY_TOPIC` で origin/referrer も shared token もない client-error report を拒否する。
+  - PWA update banner が install prompt を一時的に隠した場合、update dismiss 後に保留中 install prompt を再表示する。banner 表示中は body class で下部余白を確保する。
+  - modal open は先に modal へ focus を移してから background roots を `aria-hidden` にする。modal close buttons に programmatic label を付けた。
+  - pending modal に `100vh` fallback を追加し、`100dvh` 非対応 Safari でも高さ制約が残るようにした。
+  - `runTest` は async Promise を返すようにし、`await runTest(...)` が実際に完了待ちできるようにした。
+  - RL registry validation は同一条件 eval の date 違い conflict も warning にし、`--strict-warnings` を追加した。registry eval import は同一条件で metrics だけ違う重複を拒否する。
+- deferred / design required:
+  - host-controlled restore snapshot / missing-room restore の署名付き検証、server persisted canonical state は設計判断が必要なため未実装。
+  - iOS Safari 専用 install guidance は実機UX確認待ち。

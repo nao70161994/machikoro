@@ -163,7 +163,9 @@
 
 ### H-12 UI が `innerHTML` + inline handler に強く依存
 
-- 問題点: HTML生成と action payload が混ざり、`onclick="onBuildCard('...')"` のような文字列埋め込みが多い。
+> Status note (2026-05-23): inline handler は主要HTML/JSで static test により再導入を禁止済み。残る負債は `innerHTML` による大きな描画断片と render helper の分離です。
+
+- 問題点: HTML生成と action payload が混ざり、以前は `onclick="onBuildCard('...')"` のような文字列埋め込みが多かった。
 - 原因: vanilla JS で簡潔に実装してきた。
 - 影響: escaping、関数名変更、カード名変更、スマホUI修正の差分が大きくなる。
 - 推奨改善: pending UI から `data-action` + delegated listener へ移行する。
@@ -173,7 +175,9 @@
 
 ### H-13 PWA update banner の CSS と overlay 階層が弱い
 
-- 問題点: `#pwaUpdateBanner` 用 CSS が不足し、`#pwaInstallBanner` は `z-index: 9999` で modal より前面に出る。
+> Status note (2026-05-23): z-index scale、install/update 共通 banner、game 中 update reload guard、banner body padding は実装済み。残る確認は実機 safe-area / native install UI です。
+
+- 問題点: 以前は `#pwaUpdateBanner` 用 CSS が不足し、`#pwaInstallBanner` が modal より前面に出る構造だった。
 - 原因: overlay z-index scale がない。
 - 影響: 更新/インストールバナーが pending modal や confirm を覆い、スマホで操作不能になる可能性。
 - 推奨改善: install/update 共通 `.pwa-banner` と z-index scale を導入する。

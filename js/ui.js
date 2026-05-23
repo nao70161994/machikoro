@@ -700,13 +700,13 @@ function openAccessibleModal(id) {
     if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
     activeModalId = id;
     if (document.body && document.body.classList) document.body.classList.add('modal-open');
-    setAppInertForModal(true);
     modal.style.display = 'flex';
     if (typeof modal.setAttribute === 'function') {
         modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
         modal.setAttribute('aria-modal', 'true');
     }
-    setTimeout(() => focusModal(modal), 0);
+    focusModal(modal);
+    setAppInertForModal(true);
 }
 
 function closeAccessibleModal(id, options = {}) {

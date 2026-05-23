@@ -71,11 +71,11 @@
 
 ### 5. UI, mobile, and PWA debt
 
-- UI は `innerHTML` と inline handler が中心。
+- UI は `innerHTML` の大きな描画断片が中心。inline handler は delegated handler へ移行済みで static test が再導入を防ぐ。
 - `render()` が描画以外の副作用を持つ。
 - `style.css` は巨大で media query がほぼない。
-- PWA install/update banner の overlay 階層が整理されていない。
-- Native `alert()` が残る。
+- PWA install/update banner の実機 safe-area / native install UI は manual verification required。
+- Native `alert()` はアプリ主要経路から除去済み。DOM 欠落時の fallback と test harness だけに残す。
 - 実ブラウザ複数タブ / スマホ / PWA の自動 smoke がない。
 
 推奨ロードマップ:

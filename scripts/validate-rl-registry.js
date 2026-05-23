@@ -86,7 +86,6 @@ function evalIdentityKey(entry) {
     const opponents = entry && entry.opponents ? Object.keys(entry.opponents).sort() : [];
     const lineups = entry && entry.lineups ? Object.keys(entry.lineups).sort() : [];
     return JSON.stringify({
-        date: entry && entry.date || '',
         type: entry && entry.type || '',
         gamesPerOpponent: entry && entry.gamesPerOpponent || 0,
         gamesPerLineup: entry && entry.gamesPerLineup || 0,
@@ -320,9 +319,11 @@ function parseArgs(argv = []) {
     const args = {
         registryPath: path.join(__dirname, '..', 'models', 'rl_model', 'registry.json'),
         checkPaths: false,
+        strictWarnings: false,
     };
     for (const arg of argv) {
         if (arg === '--check-paths') args.checkPaths = true;
+        else if (arg === '--strict-warnings') args.strictWarnings = true;
         else if (!arg.startsWith('--')) args.registryPath = arg;
     }
     return args;
@@ -335,7 +336,7 @@ if (require.main === module) {
         checkPaths: args.checkPaths,
     });
     printValidation(result);
-    if (!result.ok) process.exit(1);
+    if (!result.ok || (args.strictWarnings && result.warnings.length > 0)) process.exit(1);
 }
 
 module.exports = {

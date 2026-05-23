@@ -15,10 +15,12 @@ const {
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
     CLIENT_ERROR_LIMITS,
+    resolveTrustProxySetting,
     normalizeClientErrorPayload,
     requestBaseOrigin,
     clientErrorAllowedOrigins,
     isClientErrorOriginAllowed,
+    isProductionNoOriginClientErrorBlocked,
     requestClientErrorToken,
     authorizeClientErrorRequest,
     handleClientErrorRequest,
@@ -293,6 +295,13 @@ runTest('client error rate limit と duplicate suppression は短時間の連投
     assert.strictEqual(isDuplicateClientError(report, now + CLIENT_ERROR_LIMITS.duplicateWindowMs + 1001, cache), false);
 });
 
+runTest('trust proxy は明示設定時だけ有効化する', () => {
+    assert.strictEqual(resolveTrustProxySetting({}), false);
+    assert.strictEqual(resolveTrustProxySetting({ TRUST_PROXY: '0' }), false);
+    assert.strictEqual(resolveTrustProxySetting({ TRUST_PROXY: '1' }), 1);
+    assert.strictEqual(resolveTrustProxySetting({ EXPRESS_TRUST_PROXY: 'loopback' }), 'loopback');
+});
+
 function makeMockReq({ headers = {}, body = {}, protocol = 'https', ip = '127.0.0.1' } = {}) {
     const normalizedHeaders = Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]));
     return {
@@ -339,6 +348,20 @@ runTest('client error auth は same-origin を許可し cross-origin と不正to
     assert.strictEqual(requestClientErrorToken(tokenReq), 'secret-token');
     assert.deepStrictEqual(authorizeClientErrorRequest(tokenReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
     assert.strictEqual(authorizeClientErrorRequest(sameOriginReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }).error, 'invalid_client_error_token');
+});
+
+runTest('client error auth は production ntfy の no-origin 無tokenを拒否する', () => {
+    const noOriginReq = makeMockReq({ headers: { host: 'example.com' } });
+    const env = { NODE_ENV: 'production', NTFY_TOPIC: 'topic' };
+
+    assert.strictEqual(isProductionNoOriginClientErrorBlocked(noOriginReq, env), true);
+    assert.strictEqual(authorizeClientErrorRequest(noOriginReq, env).error, 'forbidden_origin');
+
+    const sameOriginReq = makeMockReq({ headers: { host: 'example.com', origin: 'https://example.com' } });
+    assert.deepStrictEqual(authorizeClientErrorRequest(sameOriginReq, env), { ok: true });
+
+    const tokenReq = makeMockReq({ headers: { host: 'example.com', authorization: 'Bearer secret-token' } });
+    assert.deepStrictEqual(authorizeClientErrorRequest(tokenReq, { ...env, CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
 });
 
 runTest('client error request は auth gate で通知前に拒否する', () => {
