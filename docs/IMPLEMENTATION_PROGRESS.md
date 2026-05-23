@@ -1832,3 +1832,28 @@
 - deferred / design required:
   - signed restore snapshot / server persisted canonical state / missing-room restore signature は引き続き design decision required。
   - non-host hostless restore 本実装、iOS Safari install guidance、実機複数端末の長時間 online/PWA 回帰は manual/design required。
+
+
+## Continuous review Cycle 13 restore boundary / accessibility / pending queue hardening
+
+- 状態: completed; full verification passed; commit/push pending.
+- 変更ファイル:
+  - `server.js`, `tests/server.test.js`
+  - `js/online.js`, `tests/online.test.js`
+  - `index.html`, `js/appShell.js`, `js/ui.js`, `tests/main.test.js`, `tests/ui.test.js`
+  - `js/GameManager.js`, `js/CPU.js`, `scripts/selfplay.js`, `tests/gamemanager.test.js`, `tests/cpu.test.js`
+  - `scripts/rl/game_env.py`, `scripts/rl/train.py`, `tests/rl-train.test.js`
+  - `tests/rl-model-portfolio.test.js`, docs maintenance files
+- 実装内容:
+  - 既存roomを `recreateRoom` で復元置換できるのは現在の hostPlayerIndex 本人だけに限定した。非ホストは従来どおり rejoin + host再選出は可能だが、canonical state replacement はできない。
+  - room 作成/復元時に `roomId` を room object へ保持し、canonical mirror mismatch diagnostics の room identity を失わないようにした。
+  - 未使用の `handleRemoteAction` helper を削除し、remote/replay 経路を `applyReplayedAction` に集約した。
+  - `onlinePendingAction` に保存時の `roomId` を含め、`appError` 経由の pending cleanup は現在roomに属する action だけを消すようにした。
+  - crash overlay を `alertdialog` 化して focus を回復操作へ移し、offline notice / tabs / online sub-tabs / icon-only controls / card detail / Business Center chip の accessibility metadata を補強した。
+  - `GameManager.clearPendingField` を追加し、fallback で pending field を消す場合も `pendingActionQueue` の残り順序を保持するようにした。CPU fallback と selfplay fallback はこの helper を使う。
+  - Python RL target-head training は raw pending count ではなく pending queue 先頭fieldから target kind を決めるようにした。
+  - online RL CPU factory と RL portfolio XHR/cache/runtime loading の positive path test を追加した。
+- deferred / design required:
+  - pending action key の完全な per-tab/per-session namespacing は保存schema変更が大きいため未実装。
+  - signed restore snapshot / server persisted canonical state は引き続き design decision required。
+  - iOS/Android 実機の crash overlay focus, tab announcement, PWA install/update/reconnect は manual verification required。

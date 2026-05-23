@@ -75,6 +75,11 @@ function loadOnlineRuntime(options = {}) {
         function clearTimeout(id) {
             if (Number.isInteger(id) && timeoutHandlers[id - 1]) timeoutHandlers[id - 1].cleared = true;
         }
+        let createdCpuPlayerCalls = [];
+        function createCpuPlayer(difficulty, options = {}) {
+            createdCpuPlayerCalls.push({ difficulty, options });
+            return new CPU(difficulty, options);
+        }
         const CPU = class {
             constructor(difficulty, options = {}) {
                 this.difficulty = difficulty;
@@ -117,6 +122,7 @@ function loadOnlineRuntime(options = {}) {
         this.setGame = (g) => { game = g; };
         this.getShopStock = () => SHOP_STOCK;
         this.getCpuPlayers = () => cpuPlayers;
+        this.getCreatedCpuPlayerCalls = () => createdCpuPlayerCalls;
         this.setEnabledCards = (s) => { enabledCards = s; };
         this.setEnabledLandmarks = (s) => { enabledLandmarks = s; };
         this.getStatsResetCount = () => statsResetCount;
@@ -193,6 +199,11 @@ runTest('GAME_ACTION_REGISTRY は client applyAction で網羅される', () => 
 
     const clientActions = actions.filter(action => registry[action].clientApply);
     assert.deepStrictEqual(extractSwitchActionCases(extractFunctionBody(source, 'applyAction')), clientActions);
+});
+
+runTest('online.js は未使用 remote action helper を残さない', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.ok(!source.includes('function handleRemoteAction'));
 });
 
 runTest('getClientVersion はindexへ注入されたビルドハッシュを使う', () => {
@@ -376,6 +387,9 @@ runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もrlとして生�
     assert.strictEqual(cpuPlayers[1].difficulty, 'rl');
     assert.strictEqual(cpuPlayers[1].options.playerCount, 5);
     assert.strictEqual(cpuPlayers[1].options.rlModelId, 'fixed-rl');
+    assert.deepStrictEqual(Array.from(rt.getCreatedCpuPlayerCalls().map(call => call.difficulty)), ['strong', 'rl']);
+    assert.strictEqual(rt.getCreatedCpuPlayerCalls()[1].options.rlModelId, 'fixed-rl');
+    assert.strictEqual(rt.getCreatedCpuPlayerCalls()[1].options.playerCount, 5);
     assert.deepStrictEqual(Array.from(cpuPlayers[0].options.expertOpponentDifficulties), ['strong', 'rl', 'human', 'human', 'human']);
     assert.strictEqual(cpuPlayers[2], null);
 });
@@ -1690,6 +1704,48 @@ runTest('buildOnlineSnapshot は建設後のUndo状態を保持する', () => {
 
     assert.ok(snapshot.undoState);
     assert.deepStrictEqual(snapshot.undoState.playerCoins, [4, 3]);
+});
+
+runTest('handleAppError は別roomのpending actionを消さない', () => {
+    const rt = loadOnlineRuntime();
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ACTIVE1',
+        seq: 3,
+        clientActionId: 'active-action',
+    }));
+    rt.setOnlineState({
+        myRoomId: 'STALE1',
+        myOriginalPlayerIndex: 0,
+        isReconnectingOnline: false,
+    });
+
+    rt.handleAppError('古いタブのエラー');
+
+    assert.strictEqual(rt._readPendingOutboundAction().clientActionId, 'active-action');
+});
+
+runTest('handleAppError は現在roomのpending actionを消す', () => {
+    const rt = loadOnlineRuntime();
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 3,
+        clientActionId: 'current-action',
+    }));
+    rt.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        isReconnectingOnline: false,
+    });
+
+    rt.handleAppError('現在タブのエラー');
+
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
 });
 
 runTest('handleAppError は再接続中にオンラインセッションを破棄して切断する', () => {

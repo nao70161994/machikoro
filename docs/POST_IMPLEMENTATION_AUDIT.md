@@ -624,3 +624,21 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - server restart 後の host-supplied restore snapshot を完全に信頼可能にするには signed snapshot または persisted canonical state が必要。これは設計判断とmigrationが必要なため未実装。
 - hostless restore、実機 iOS/Android PWA install/update/reconnect は manual verification required。
+
+
+### Continuous review Cycle 13 restore boundary / accessibility / pending queue hardening
+
+確認した内容:
+
+- High fixed: 既存 restored room の host が切断中なら非ホスト payload でも `recreateRoom` replacement を試せる余地があり、hostless restore 未実装の境界と矛盾していた。置換は現在の hostPlayerIndex 本人だけに限定した。
+- Medium fixed: `onlinePendingAction` は共有localStorage keyのため、別タブ・旧roomの `appError` が現行roomの未ack actionを消す可能性があった。保存entryへ `roomId` を追加し、エラー時cleanupを現在roomに限定した。
+- Medium fixed: fallback pending clear が raw field だけを消すと `pendingActionQueue` の順序が再構築順へ崩れる可能性があった。`GameManager.clearPendingField` で対象fieldのみqueueから除くようにした。
+- Medium fixed: Python RL target-head training が queue 先頭ではなく raw pending count で target kind を決めていたため、混在pendingで JS/Env の次actionとズレる可能性があった。
+- Low fixed: `handleRemoteAction` は未使用で、将来再利用された場合に `applyReplayedAction` の undo snapshot 処理を迂回するAI保守性リスクだったため削除した。
+- Low fixed: crash overlay, offline notice, tabs, online tabs, icon-only controls, card detail, Business Center chip の accessibility metadata を補強した。
+
+残課題:
+
+- pending action の完全な per-tab namespacing は既存restore schemaとUXに影響するため、設計判断が必要。
+- server restart restore の署名付き検証や server persisted canonical state は引き続き design required。
+- iOS/Android 実機での accessibility/PWA/reconnect 長時間確認は manual verification required。

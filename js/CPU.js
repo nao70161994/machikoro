@@ -4326,7 +4326,14 @@ class CPU {
 
     static _clearPendingField(game, field) {
         if (!game || !field) return;
+        if (typeof game.clearPendingField === "function") {
+            game.clearPendingField(field);
+            return;
+        }
         game[field] = 0;
+        if (Array.isArray(game.pendingActionQueue)) {
+            game.pendingActionQueue = game.pendingActionQueue.filter(entry => entry && entry.field !== field);
+        }
         if (typeof game._checkPending === "function") game._checkPending();
     }
 
@@ -4449,7 +4456,7 @@ class CPU {
                 if (game.pendingCleaning > 0) {
                     const cardName = cpu.chooseCleaningTarget(game);
                     if (cardName) game.resolveCleaning(cardName);
-                    else { game.pendingCleaning = 0; game._checkPending(); }
+                    else CPU._clearPendingField(game, 'pendingCleaning');
                     return;
                 }
                 game.phase = GAME_PHASES.BUILD;

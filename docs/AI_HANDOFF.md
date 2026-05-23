@@ -201,3 +201,14 @@ npm test
 - RL portfolio browser JSONs now carry explicit `stateSchema` / `actionSchema`; adopted/active portfolio additions should include these fields.
 - Async tests should return/await `runTest(...)`; release async cases use `runAsyncTest(...)` and `tests/test-utils.test.js` guards against direct async fire-and-forget patterns.
 - Signed restore snapshots / server persisted canonical state remain design-required; do not patch around that with partial trust changes.
+
+
+## 2026-05-23 continuous review Cycle 13
+
+- Remote/replay application should continue through `applyReplayedAction`; do not reintroduce `handleRemoteAction` or a second direct `applyAction + render + scheduleCPU` replay path.
+- `onlinePendingAction` entries now carry `roomId`. Generic app-error cleanup should only remove pending actions that belong to the current room; this avoids stale-tab errors deleting a live tab's unacked action.
+- Existing-room `recreateRoom` replacement is host-only. Non-hosts may rejoin and become host for live actions, but must not replace canonical restored state until hostless restore has a separate design.
+- Use `GameManager.clearPendingField(field)` when fallback logic needs to drop a pending kind; raw `game.pendingX = 0` can reorder `pendingActionQueue`.
+- Python RL target-head code must use pending queue order, not raw pending counts, when selecting pending target kind.
+- Crash/offline/tab/Business Center accessibility metadata is now covered by static/unit tests; preserve aria-selected/aria-pressed/live-region contracts when editing UI.
+- Full per-tab/per-session pending-key namespacing and signed restore snapshots remain larger restore-schema design items.

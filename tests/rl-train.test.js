@@ -468,6 +468,27 @@ print(env._next_pending_field())
     assert.deepStrictEqual(lines, ['False', 'True', '0', '1', 'pendingTV']);
 });
 
+runTest('rl train: target head kind は pending queue 先頭fieldを使う', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING
+from scripts.rl.train import _pending_target_kind
+
+env = MachikoroEnv(player_count=4)
+env.phase = PHASE_PENDING
+env.pending_tv = 1
+env.pending_biz = 1
+env.pending_mover = 1
+env.pending_action_queue = ["pendingBusiness", "pendingTV", "pendingMover"]
+print(env._pending_target_kind())
+print(_pending_target_kind(env))
+env.pending_biz = 0
+print(env._pending_target_kind())
+print(_pending_target_kind(env))
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(lines, ['business', 'bc', 'tv', 'tv']);
+});
+
 runTest('rl train: JS CPU oracle state は pending queue を渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_oracle.py'), 'utf8');
     const oracleSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_action_oracle.js'), 'utf8');

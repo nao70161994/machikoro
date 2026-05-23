@@ -15,6 +15,10 @@ function loadUiRuntime() {
         tabLocal: makeElement(),
         tabOnline: makeElement(),
         tabStats: makeElement(),
+        onlineCreate: makeElement(),
+        onlineJoin: makeElement(),
+        onlineTabCreate: makeElement(),
+        onlineTabJoin: makeElement(),
         status: makeElement(),
         btnRoll: makeElement(),
         btnSkip: makeElement(),
@@ -212,7 +216,7 @@ runTest('modal close は背景の既存aria-hiddenを復元する', () => {
     assert.strictEqual(elements.gameScreen.getAttribute('aria-hidden'), 'false');
 });
 
-runTest('switchTab は stats タブ表示時に renderStats を呼ぶ', () => {
+runTest('switchTab は stats タブ表示時に renderStats とaria-selectedを更新する', () => {
     const { context, elements } = loadUiRuntime();
 
     context.switchTab('stats');
@@ -221,6 +225,20 @@ runTest('switchTab は stats タブ表示時に renderStats を呼ぶ', () => {
     assert.strictEqual(elements.tabContentOnline.style.display, 'none');
     assert.strictEqual(elements.tabContentStats.style.display, 'block');
     assert.strictEqual(context.renderStatsCalls, 1);
+    assert.strictEqual(elements.tabLocal.getAttribute('aria-selected'), 'false');
+    assert.strictEqual(elements.tabOnline.getAttribute('aria-selected'), 'false');
+    assert.strictEqual(elements.tabStats.getAttribute('aria-selected'), 'true');
+});
+
+runTest('switchOnlineTab は online tab のaria-selectedを更新する', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.switchOnlineTab('join');
+
+    assert.strictEqual(elements.onlineCreate.style.display, 'none');
+    assert.strictEqual(elements.onlineJoin.style.display, 'block');
+    assert.strictEqual(elements.onlineTabCreate.getAttribute('aria-selected'), 'false');
+    assert.strictEqual(elements.onlineTabJoin.getAttribute('aria-selected'), 'true');
 });
 
 runTest('render helper は勝利・通常描画・保存境界へ分かれている', () => {
@@ -385,6 +403,8 @@ runTest('renderPending は Business Center chip を data-action で描画する'
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="selectBusinessCard"'));
     assert.ok(elements.pendingMenu.innerHTML.includes('data-input-id="myCardSelect"'));
     assert.ok(elements.pendingMenu.innerHTML.includes('data-input-id="theirCardSelect_1"'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('aria-pressed="true"'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('aria-pressed="false"'));
     assert.ok(!elements.pendingMenu.innerHTML.includes('bcSelectCard('));
 });
 
@@ -487,6 +507,7 @@ runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成
 
     assert.ok(html.includes('card-color-blue'));
     assert.ok(html.includes('data-action="buildCard"'));
+    assert.ok(html.includes('aria-label="麦畑の詳細を開く"'));
     assert.ok(html.includes('data-card-name="麦畑"'));
     assert.ok(!html.includes('onBuildCard('));
     assert.ok(html.includes('残り6枚'));
@@ -500,6 +521,7 @@ runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生
 
     assert.ok(html.includes('card-color-landmark'));
     assert.ok(html.includes('data-action="buildLandmark"'));
+    assert.ok(html.includes('aria-label="駅の詳細を開く"'));
     assert.ok(html.includes('data-landmark-name="駅"'));
     assert.ok(!html.includes('onBuildLandmark('));
     assert.ok(html.includes('✅済'));

@@ -13,9 +13,12 @@ function loadMainRuntime(options = {}) {
         resumeSection: makeElement(),
         onlineResumeSection: makeElement(),
         cityCanvas: makeElement(),
-        crashScreen: makeElement(),
+        crashScreen: makeElement({
+            querySelector(selector) { return selector === '[data-ui-action="reloadPage"]' ? elements.crashReloadBtn : null; },
+        }),
         crashMessage: makeElement(),
         crashResumeBtn: makeElement(),
+        crashReloadBtn: makeElement(),
         tabOnline: makeElement(),
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
@@ -136,8 +139,12 @@ function loadMainRuntime(options = {}) {
         showNotice(message) { alerts.push(message); },
         bcSelectCard(btn, inputId) {
             const group = btn.closest('.bc-chip-group');
-            if (group) group.querySelectorAll('.bc-chip').forEach(b => b.classList.remove('selected'));
+            if (group) group.querySelectorAll('.bc-chip').forEach(b => {
+                b.classList.remove('selected');
+                if (typeof b.setAttribute === 'function') b.setAttribute('aria-pressed', 'false');
+            });
             btn.classList.add('selected');
+            if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', 'true');
             context.document.getElementById(inputId).value = btn.dataset.idx;
         },
         fetch(url, options) {
@@ -734,6 +741,7 @@ runTest('main showCrashScreen はクラッシュ表示と保存データ復帰�
     assert.strictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
     assert.ok(rt.__test.elements.crashMessage.textContent.includes('boom'));
     assert.strictEqual(rt.__test.elements.crashResumeBtn.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.crashResumeBtn.focused, true);
     assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
 });
 
@@ -897,11 +905,16 @@ runTest('main delegated handler は Business Center chip 選択を hidden input 
     const rt = loadMainRuntime();
     const removed = [];
     const added = [];
-    const sibling = { classList: { remove(value) { removed.push(value); } } };
+    const ariaUpdates = [];
+    const sibling = {
+        classList: { remove(value) { removed.push(value); } },
+        setAttribute(name, value) { ariaUpdates.push({ target: 'sibling', name, value }); },
+    };
     const button = {
         disabled: false,
         dataset: { action: 'selectBusinessCard', idx: '2', inputId: 'myCardSelect' },
         classList: { add(value) { added.push(value); } },
+        setAttribute(name, value) { ariaUpdates.push({ target: 'button', name, value }); },
         closest(selector) {
             if (selector === '[data-action]') return this;
             if (selector === '.bc-chip-group') return { querySelectorAll() { return [sibling]; } };
@@ -914,6 +927,10 @@ runTest('main delegated handler は Business Center chip 選択を hidden input 
 
     assert.deepStrictEqual(removed, ['selected']);
     assert.deepStrictEqual(added, ['selected']);
+    assert.deepStrictEqual(ariaUpdates, [
+        { target: 'sibling', name: 'aria-pressed', value: 'false' },
+        { target: 'button', name: 'aria-pressed', value: 'true' },
+    ]);
     assert.strictEqual(rt.__test.elements.myCardSelect.value, '2');
 });
 
@@ -1261,6 +1278,16 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('for="playerNameInput"'));
     assert.ok(html.includes('for="roomIdInput"'));
     assert.ok(html.includes('aria-label="保存データを削除"'));
+    assert.ok(html.includes('aria-label="オンライン再接続データを削除"'));
+    assert.ok(html.includes('id="offlineNotice" class="offline-notice" role="status" aria-live="polite"'));
+    assert.ok(html.includes('id="crashScreen" role="alertdialog" aria-modal="true" aria-labelledby="crashTitle" tabindex="-1"'));
+    assert.ok(html.includes('id="crashTitle" class="crash-title"'));
+    assert.ok(html.includes('class="tab-bar" role="tablist" aria-label="ゲームモード"'));
+    assert.ok(html.includes('id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal"'));
+    assert.ok(html.includes('id="tabContentLocal" class="tab-content" role="tabpanel" aria-labelledby="tabLocal"'));
+    assert.ok(html.includes('class="online-tabs" role="tablist" aria-label="オンライン操作"'));
+    assert.ok(html.includes('id="onlineTabCreate" role="tab" aria-selected="true" aria-controls="onlineCreate"'));
+    assert.ok(html.includes('id="onlineCreate" role="tabpanel" aria-labelledby="onlineTabCreate"'));
     assert.ok(html.includes('aria-label="更新通知を閉じる"'));
     assert.ok(html.includes('aria-label="インストール案内を閉じる"'));
     assert.ok(html.includes('aria-label="チュートリアル表示を切り替える"'));

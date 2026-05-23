@@ -252,6 +252,7 @@ function _savePendingOutboundAction(action, data) {
         action,
         data,
         playerIndex: myOriginalPlayerIndex,
+        roomId: myRoomId,
         seq: _nextOnlineActionSeq(),
         clientActionId: _createOnlineClientActionId(),
     };
@@ -334,6 +335,7 @@ function _readPendingOutboundAction() {
     if (!entry || typeof entry.action !== 'string') return null;
     const normalized = { action: entry.action, data: entry.data || {} };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+    if (typeof entry.roomId === 'string') normalized.roomId = entry.roomId;
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
     if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
     return normalized;
@@ -341,6 +343,20 @@ function _readPendingOutboundAction() {
 
 function _clearPendingOutboundAction() {
     try { _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction); } catch (e) {}
+}
+
+function _pendingOutboundActionBelongsToCurrentSession(entry) {
+    if (!entry) return true;
+    if (typeof entry.roomId !== 'string') return true;
+    if (!myRoomId) return false;
+    return entry.roomId === myRoomId;
+}
+
+function _clearPendingOutboundActionForCurrentSession() {
+    const entry = _readPendingOutboundAction();
+    if (_pendingOutboundActionBelongsToCurrentSession(entry)) {
+        _clearPendingOutboundAction();
+    }
 }
 
 function _sameOnlineActionEntry(a, b) {
@@ -719,7 +735,7 @@ function handleAppError(msg) {
         }
         return;
     }
-    _clearPendingOutboundAction();
+    _clearPendingOutboundActionForCurrentSession();
     if (msg === '無効な操作です' && isOnlineGame && socket && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
         isReconnectingOnline = true;
         cpuScheduleToken++;
@@ -890,11 +906,6 @@ function restoreOnlineSnapshot(state) {
     undoState = state.undoState || null;
 }
 
-function handleRemoteAction(action, data) {
-    applyAction(action, data);
-    render();
-    scheduleCPU();
-}
 
 function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {

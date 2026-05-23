@@ -748,6 +748,7 @@ io.on('connection', (socket) => {
         markCreateRoomForSocket(socket, now);
         markCreateRoomForRateKey(createRoomRateKeyForSocket(socket), now);
         rooms[roomId] = {
+            roomId,
             createdAt: now,
             lastTouchedAt: now,
             enabledCards: selectedCards,
@@ -1100,7 +1101,7 @@ function handleRecreateRoom(socket, payload = {}) {
             Number.isInteger(playerIndex) &&
             existingReconnectTokenHash &&
             hashReconnectToken(reconnectToken) === existingReconnectTokenHash &&
-            (room.hostPlayerIndex === playerIndex || !isRoomHostConnected(room)) &&
+            room.hostPlayerIndex === playerIndex &&
             canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, actionLog);
         if (!incomingCanReplace) {
             const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
@@ -1193,6 +1194,7 @@ function handleRecreateRoom(socket, payload = {}) {
     gameStartPayload.hostEpoch = restoredRank.hostEpoch;
     gameStartPayload.actionSeq = restoredRank.actionSeq;
     const restoredRoom = {
+        roomId,
         players: restoredPlayers,
         playerSettings: gameStartPayload.playerSettings,
         maxPlayers: playerNames.length,

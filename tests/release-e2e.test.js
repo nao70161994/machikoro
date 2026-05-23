@@ -400,7 +400,10 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
 
         assert.strictEqual(__rooms[roomId].hostPlayerIndex, 1);
         assert.strictEqual(__rooms[roomId].hostEpoch, 1);
-        assert.strictEqual(__rooms[roomId].actionSeq, 1);
+        assert.strictEqual(__rooms[roomId].actionSeq, 0);
+        assert.notStrictEqual(__rooms[roomId].stateSnapshot.actionSeq, 1);
+        assert.strictEqual(emitted[1].name, 'rejoinData');
+        assert.strictEqual(emitted[1].payload.gameStartPayload, gameStartPayload);
     } finally {
         delete __rooms[roomId];
     }

@@ -303,6 +303,33 @@ runTest('pendingActions queue は互換fieldとdual-writeされる', () => {
     ]);
 });
 
+runTest('clearPendingField は対象fieldだけをqueueから除き残り順序を保つ', () => {
+    const plain = value => JSON.parse(JSON.stringify(value));
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingActionQueue = [
+        { action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' },
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_MOVER, field: 'pendingMover' },
+    ];
+    game.pendingBusiness = 1;
+    game.pendingTV = 1;
+    game.pendingMover = 1;
+
+    assert.strictEqual(game.clearPendingField('pendingBusiness'), true);
+
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.strictEqual(game.phase, GAME_PHASES.PENDING);
+    assert.deepStrictEqual(plain(game.pendingActionQueue), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV' },
+        { action: GAME_ACTIONS.RESOLVE_MOVER, field: 'pendingMover' },
+    ]);
+    assert.deepStrictEqual(plain(game.pendingActions()), [
+        { action: GAME_ACTIONS.RESOLVE_TV, field: 'pendingTV', count: 1 },
+        { action: GAME_ACTIONS.RESOLVE_MOVER, field: 'pendingMover', count: 1 },
+    ]);
+});
+
 runTest('pendingActions queue は先頭のpendingだけを解決可能にする', () => {
     const game = new GameManager(2);
     game.phase = GAME_PHASES.PENDING;

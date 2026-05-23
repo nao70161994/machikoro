@@ -65,11 +65,12 @@ def _encode_for_agent(env: MachikoroEnv, agent: RLAgent) -> np.ndarray:
 def _pending_target_kind(env: MachikoroEnv):
     if env.phase != "pending" or len(env.players) <= 2:
         return None
-    if env.pending_tv > 0:
+    field = env._next_pending_field()
+    if field == "pendingTV":
         return "tv"
-    if env.pending_biz > 0:
+    if field == "pendingBusiness":
         return "bc"
-    if env.pending_mover > 0:
+    if field == "pendingMover":
         return "mover"
     return None
 

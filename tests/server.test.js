@@ -2214,7 +2214,7 @@ runTest('handleRecreateRoom は旧ホスト不在なら再接続者をホスト�
         actionLog: [],
     };
     const socket = {
-        id: 'socket-bob-new',
+        id: 'socket-alice-new',
         emit(name, payload) { emitted.push({ name, payload }); },
         join(roomId) { joined.push(roomId); },
     };
@@ -2263,7 +2263,7 @@ runTest('handleRecreateRoom はより新しい hostEpoch の復元payloadで古�
         actionSeq: 0,
     };
     const newPayload = Object.assign({}, oldPayload, {
-        hostPlayerIndex: 1,
+        hostPlayerIndex: 0,
         hostEpoch: 1,
         actionSeq: 1,
     });
@@ -2294,20 +2294,88 @@ runTest('handleRecreateRoom はより新しい hostEpoch の復元payloadで古�
             gameStartPayload: newPayload,
             stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build' }),
             actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }],
+            playerIndex: 0,
+            playerName: 'Alice',
+            reconnectToken: tokenAlice,
+        });
+
+        assert.deepStrictEqual(joined, ['REPLACE01']);
+        assert.strictEqual(__rooms.REPLACE01.roomId, 'REPLACE01');
+        assert.strictEqual(__rooms.REPLACE01.hostPlayerIndex, 0);
+        assert.strictEqual(__rooms.REPLACE01.hostEpoch, 1);
+        assert.strictEqual(__rooms.REPLACE01.actionSeq, 1);
+        assert.strictEqual(emitted[0].payload.hostPlayerIndex, 0);
+        assert.strictEqual(emitted[0].payload.hostEpoch, 1);
+        assert.strictEqual(emitted[0].payload.gameStartPayload.hostPlayerIndex, 0);
+    } finally {
+        delete __rooms.REPLACE01;
+    }
+});
+
+runTest('handleRecreateRoom は切断中ホストがいても非ホストpayloadで復元置換しない', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const reconnectTokenHashes = [
+        crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+        crypto.createHash('sha256').update(tokenBob).digest('hex'),
+    ];
+    const payload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes,
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+    };
+    __rooms.REPLACE_NON_HOST = {
+        started: true,
+        restored: true,
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        players: [
+            { id: null, index: 0, name: 'Alice', reconnectTokenHash: reconnectTokenHashes[0] },
+            { id: null, index: 1, name: 'Bob', reconnectTokenHash: reconnectTokenHashes[1] },
+        ],
+        playerSettings: payload.playerSettings,
+        maxPlayers: 2,
+        gameStartPayload: payload,
+        stateSnapshot: makeSnapshot(),
+        actionLog: [],
+    };
+    const socket = {
+        id: 'socket-bob-new',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        handleRecreateRoom(socket, {
+            roomId: 'REPLACE_NON_HOST',
+            gameStartPayload: Object.assign({}, payload, { hostPlayerIndex: 1, hostEpoch: 2, actionSeq: 10 }),
+            stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build', actionSeq: 10 }),
+            actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 10 }],
             playerIndex: 1,
             playerName: 'Bob',
             reconnectToken: tokenBob,
         });
 
-        assert.deepStrictEqual(joined, ['REPLACE01']);
-        assert.strictEqual(__rooms.REPLACE01.hostPlayerIndex, 1);
-        assert.strictEqual(__rooms.REPLACE01.hostEpoch, 1);
-        assert.strictEqual(__rooms.REPLACE01.actionSeq, 1);
-        assert.strictEqual(emitted[0].payload.hostPlayerIndex, 1);
-        assert.strictEqual(emitted[0].payload.hostEpoch, 1);
-        assert.strictEqual(emitted[0].payload.gameStartPayload.hostPlayerIndex, 1);
+        assert.deepStrictEqual(joined, ['REPLACE_NON_HOST']);
+        assert.strictEqual(__rooms.REPLACE_NON_HOST.hostPlayerIndex, 1);
+        assert.strictEqual(__rooms.REPLACE_NON_HOST.hostEpoch, 1);
+        assert.notStrictEqual(__rooms.REPLACE_NON_HOST.actionSeq, 10);
+        assert.notStrictEqual(__rooms.REPLACE_NON_HOST.stateSnapshot.actionSeq, 10);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.gameStartPayload, payload);
     } finally {
-        delete __rooms.REPLACE01;
+        delete __rooms.REPLACE_NON_HOST;
     }
 });
 
@@ -2677,7 +2745,7 @@ runTest('handleRecreateRoom は新しい復元payloadが壊れていれば既存
         enabledLandmarks: ['駅'],
         cpuSpeed: 1500,
         playerOrder: [0, 1],
-        hostPlayerIndex: 0,
+        hostPlayerIndex: 1,
         hostEpoch: 0,
         actionSeq: 0,
     };
@@ -2689,11 +2757,11 @@ runTest('handleRecreateRoom は新しい復元payloadが壊れていれば既存
     const originalRoom = {
         started: true,
         restored: true,
-        hostPlayerIndex: 0,
+        hostPlayerIndex: 1,
         hostEpoch: 0,
         actionSeq: 0,
         players: [
-            { id: 'socket-alice-old', index: 0, name: 'Alice', reconnectTokenHash: reconnectTokenHashes[0] },
+            { id: 'socket-bob-old', index: 1, name: 'Bob', reconnectTokenHash: reconnectTokenHashes[1] },
         ],
         playerSettings: oldPayload.playerSettings,
         maxPlayers: 2,

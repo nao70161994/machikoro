@@ -4,8 +4,8 @@ const path = require('path');
 const vm = require('vm');
 const { loadScript, runTest } = require('./helpers/test-utils');
 
-function loadPortfolio() {
-    const context = { console, Math: Object.create(Math) };
+function loadPortfolio(overrides = {}) {
+    const context = Object.assign({ console, Math: Object.create(Math) }, overrides);
     vm.createContext(context);
     loadScript(context, 'js/RLModelPortfolio.js');
     vm.runInContext(
@@ -49,6 +49,38 @@ runTest('RL model portfolio: 明示model idが不正ならランダムへfallbac
     const { RLModelPortfolio } = loadPortfolio();
     assert.throws(() => RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'unknown-model' }), /not available/);
 });
+
+runTest('RL model portfolio: runtime load はXHRを一度だけ使いRLCPUを返す', () => {
+    const requests = [];
+    class FakeXHR {
+        open(method, url, async) { this.method = method; this.url = url; this.async = async; }
+        send() {
+            requests.push({ method: this.method, url: this.url, async: this.async });
+            this.status = 200;
+            this.responseText = JSON.stringify({ stateDim: 145, actionSchema: 'action-flat-v1', layers: [] });
+        }
+    }
+    class FakeRLCPU {
+        constructor(modelData) { this.modelData = modelData; }
+    }
+    const { RLModelPortfolio } = loadPortfolio({ XMLHttpRequest: FakeXHR, RLCPU: FakeRLCPU });
+
+    const first = RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' });
+    const second = RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' });
+
+    assert.strictEqual(requests.length, 1);
+    assert.deepStrictEqual(requests[0], {
+        method: 'GET',
+        url: 'models/rl_model/portfolio/seed71-top3.browser.json',
+        async: false,
+    });
+    assert.strictEqual(first.difficulty, 'rl');
+    assert.strictEqual(first.modelId, 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3');
+    assert.strictEqual(first.modelLabel, 'RL（農業・ワイナリー）');
+    assert.strictEqual(first.modelData.stateDim, 145);
+    assert.strictEqual(second.modelId, first.modelId);
+});
+
 
 runTest('RL model portfolio: entries は外部から重みを書き換えられない', () => {
     const { RLModelPortfolio } = loadPortfolio();

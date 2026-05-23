@@ -416,13 +416,13 @@ function renderPending() {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         const myDefaultIdx = myCards[0]?.index ?? 0;
         const myChips = myCards.map(({ card, index }, j) =>
-            `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="myCardSelect">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
+            `<button class="bc-chip${j === 0 ? ' selected' : ''}" aria-pressed="${j === 0 ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="myCardSelect">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
         ).join("");
         const othersHtml = others.map(({ p, i }) => {
             const theirCards = p.getMinorCards().map(card => ({ card, index: p.cards.indexOf(card) }));
             const theirDefaultIdx = theirCards[0]?.index ?? 0;
             const theirChips = theirCards.map(({ card, index }, j) =>
-                `<button class="bc-chip${j === 0 ? ' selected' : ''}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="theirCardSelect_${i}">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
+                `<button class="bc-chip${j === 0 ? ' selected' : ''}" aria-pressed="${j === 0 ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="theirCardSelect_${i}">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
             ).join("");
             return `<p class="bc-label">${escapeHtml(p.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="theirCardSelect_${i}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${i}">⇄ ${escapeHtml(p.name)}と交換</button>`;
         }).join("");
@@ -498,12 +498,12 @@ function getLandmarkEmoji(name) {
 
 function renderBuildCardButton(card, stock, canBuildThis) {
     const safeName = escapeHtml(card.name);
-    return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}">ℹ</button></div>`;
+    return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
 }
 
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
     const safeName = escapeHtml(name);
-    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}">ℹ</button></div>`;
+    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
 }
 
 function renderBuildMenu() {
@@ -542,8 +542,14 @@ function setCardFilter(color) {
 function bcSelectCard(btn, inputId) {
     if (!btn) return false;
     const group = typeof btn.closest === 'function' ? btn.closest('.bc-chip-group') : null;
-    if (group && typeof group.querySelectorAll === 'function') group.querySelectorAll('.bc-chip').forEach(b => b.classList.remove('selected'));
+    if (group && typeof group.querySelectorAll === 'function') {
+        group.querySelectorAll('.bc-chip').forEach(b => {
+            if (b.classList && typeof b.classList.remove === 'function') b.classList.remove('selected');
+            if (typeof b.setAttribute === 'function') b.setAttribute('aria-pressed', 'false');
+        });
+    }
     if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('selected');
+    if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', 'true');
     const input = document.getElementById(inputId);
     if (!input) return false;
     input.value = btn.dataset?.idx ?? '';
@@ -575,6 +581,9 @@ function switchTab(tab) {
     document.getElementById("tabLocal").className  = `tab-btn ${tab === "local"  ? "active" : ""}`;
     document.getElementById("tabOnline").className = `tab-btn ${tab === "online" ? "active" : ""}`;
     document.getElementById("tabStats").className  = `tab-btn ${tab === "stats"  ? "active" : ""}`;
+    document.getElementById("tabLocal").setAttribute("aria-selected", tab === "local" ? "true" : "false");
+    document.getElementById("tabOnline").setAttribute("aria-selected", tab === "online" ? "true" : "false");
+    document.getElementById("tabStats").setAttribute("aria-selected", tab === "stats" ? "true" : "false");
     if (tab === "stats") renderStats();
 }
 
@@ -583,6 +592,8 @@ function switchOnlineTab(tab) {
     document.getElementById("onlineJoin").style.display = tab === "join" ? "block" : "none";
     document.getElementById("onlineTabCreate").className = `online-tab-btn ${tab === "create" ? "active" : ""}`;
     document.getElementById("onlineTabJoin").className = `online-tab-btn ${tab === "join" ? "active" : ""}`;
+    document.getElementById("onlineTabCreate").setAttribute("aria-selected", tab === "create" ? "true" : "false");
+    document.getElementById("onlineTabJoin").setAttribute("aria-selected", tab === "join" ? "true" : "false");
 }
 
 function showRules() {

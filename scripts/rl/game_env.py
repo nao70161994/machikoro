@@ -782,11 +782,12 @@ class MachikoroEnv:
         return score
 
     def _pending_target_kind(self) -> str | None:
-        if self.pending_tv > 0:
+        field = self._next_pending_field()
+        if field == "pendingTV":
             return "tv"
-        if self.pending_biz > 0:
+        if field == "pendingBusiness":
             return "business"
-        if self.pending_mover > 0:
+        if field == "pendingMover":
             return "mover"
         return None
 

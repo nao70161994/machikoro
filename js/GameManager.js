@@ -334,6 +334,21 @@ class GameManager {
         return true;
     }
 
+    clearPendingField(field) {
+        const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
+        if (!spec) return false;
+        this[field] = 0;
+        if (Array.isArray(this.pendingActionQueue)) {
+            this.pendingActionQueue = this.pendingActionQueue
+                .filter(entry => entry && entry.field !== spec.field && entry.action !== spec.action)
+                .map(entry => ({ action: entry.action, field: entry.field }));
+        } else {
+            this.rebuildPendingActionsFromFields();
+        }
+        this._checkPending();
+        return true;
+    }
+
     // Returns action names allowed by phase/pending state only. Payload legality is validated separately.
     static allowedActionsFor(game) {
         if (!game) return new Set();

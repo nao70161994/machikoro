@@ -106,6 +106,11 @@ function showCrashScreen(err) {
     const resumeBtn = document.getElementById('crashResumeBtn');
     if (resumeBtn) resumeBtn.style.display = localStorage.getItem('savedGame') ? 'block' : 'none';
     el.style.display = 'flex';
+    const focusTarget = resumeBtn && resumeBtn.style.display !== 'none'
+        ? resumeBtn
+        : el.querySelector && el.querySelector('[data-ui-action="reloadPage"]');
+    if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
+    else if (typeof el.focus === 'function') el.focus();
 }
 
 function crashResume() {
@@ -242,7 +247,7 @@ function bindOnlineStatusHandlers() {
 
 function bindPwaInstallHandlers() {
     if (_pwaInstallHandlersBound) return;
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
         _pwaInstallHandlersBound = true;
         return;
     }

@@ -85,7 +85,7 @@ native `alert` は AGENTS 方針の custom modal とずれます。すぐ削除�
 | Candidate | Location | Why suspicious | Safe next step |
 | --- | --- | --- | --- |
 | `CPU.takeTurn(game, shopStock)` | `js/CPU.js:554` | 空実装で、CPU execution は `main.js` の phase handler が担っている。 | 参照確認テスト後、deprecated コメントまたは削除 PR。 |
-| `handleRemoteAction(action, data)` | `js/online.js:789` | grep 上は定義だけで、現行 socket handler は `applyReplayedAction` を直接呼ぶ。 | tests で参照がないことを確認し、削除候補 PR に分離。 |
+| `handleRemoteAction(action, data)` | removed in Cycle 13 | 現行 socket handler は `applyReplayedAction` を直接呼び、未使用helperは将来の undo-state 誤用を避けるため削除済み。 | 再導入しない。remote/replay 経路は `applyReplayedAction` を使う。 |
 | native `alert` paths | `js/main.js`, `js/storage.js`, `js/online.js` | custom modal 方針とずれる。 | `showNotice` helper を作って置換。 |
 
 ## Duplicate logic hotspots
@@ -134,4 +134,4 @@ native `alert` は AGENTS 方針の custom modal とずれます。すぐ削除�
    出力内容は維持し、server runtime logs を一箇所に集める。
 
 5. `refactor: unused candidate を削除または deprecated 化`
-   `handleRemoteAction` など、参照確認済みのものだけ小さく扱う。
+   `handleRemoteAction` は Cycle 13 で削除済み。残る候補は参照確認済みのものだけ小さく扱う。

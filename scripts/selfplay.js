@@ -564,12 +564,24 @@ function collectBuildDiagnostics(runtime, game, shopStock, cpu) {
     };
 }
 
+function clearPendingField(game, field) {
+    if (!game || !field) return;
+    if (typeof game.clearPendingField === 'function') {
+        game.clearPendingField(field);
+        return;
+    }
+    game[field] = 0;
+    if (Array.isArray(game.pendingActionQueue)) {
+        game.pendingActionQueue = game.pendingActionQueue.filter(entry => entry && entry.field !== field);
+    }
+    if (typeof game._checkPending === 'function') game._checkPending();
+}
+
 function fallbackBusiness(game) {
     const current = game.currentPlayer();
     const myCardIndex = current.cards.findIndex(card => card.category !== '大施設');
     if (myCardIndex < 0) {
-        game.pendingBusiness = 0;
-        game._checkPending();
+        clearPendingField(game, 'pendingBusiness');
         return;
     }
     for (let i = 0; i < game.players.length; i++) {
@@ -580,8 +592,7 @@ function fallbackBusiness(game) {
             return;
         }
     }
-    game.pendingBusiness = 0;
-    game._checkPending();
+    clearPendingField(game, 'pendingBusiness');
 }
 
 function resolveBusinessMoveCards(game, move) {
@@ -607,16 +618,14 @@ function fallbackCleaning(game) {
             return;
         }
     }
-    game.pendingCleaning = 0;
-    game._checkPending();
+    clearPendingField(game, 'pendingCleaning');
 }
 
 function fallbackMover(game) {
     const current = game.currentPlayer();
     const cardIndex = current.cards.findIndex(card => card.category !== '大施設');
     if (cardIndex < 0) {
-        game.pendingMover = 0;
-        game._checkPending();
+        clearPendingField(game, 'pendingMover');
         return;
     }
     for (let i = 0; i < game.players.length; i++) {
@@ -624,8 +633,7 @@ function fallbackMover(game) {
         game.resolveMover(cardIndex, i);
         return;
     }
-    game.pendingMover = 0;
-    game._checkPending();
+    clearPendingField(game, 'pendingMover');
 }
 
 function fallbackRenovation(game) {
@@ -636,8 +644,7 @@ function fallbackRenovation(game) {
         game.resolveRenovation(name[0]);
         return;
     }
-    game.pendingRenovation = 0;
-    game._checkPending();
+    clearPendingField(game, 'pendingRenovation');
 }
 
 function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, traceEntries, actions) {
