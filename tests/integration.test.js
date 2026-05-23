@@ -501,6 +501,42 @@ runTest('integration: title screenではorphan gameScreen displayを勝手に復
     assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
 });
 
+runTest('integration: restart後の未開始title状態をwatchdogがUI lock扱いしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.document.getElementById('confirmModal').style.display = 'flex';
+    rt.document.body.classList.add('modal-open');
+    rt.localStorage.setItem('machikoroFreezeSnapshot', 'old-freeze');
+
+    rt.restartGame();
+    assert.strictEqual(typeof rt.__test.elements.confirmOkBtn.onclick, 'function');
+    rt.__test.elements.confirmOkBtn.onclick();
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    assert.strictEqual(rt.__test.getGame(), null);
+    assert.strictEqual(rt.__test.elements.titleScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.document.getElementById('confirmModal').style.display, 'none');
+    assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
+    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.strictEqual(reportCall, undefined);
+});
+
 runTest('integration: active modal表示中はgameScreen display復旧を走らせない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

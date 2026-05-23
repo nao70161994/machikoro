@@ -909,3 +909,22 @@ Fix:
 - The recovery is guarded by active game phase, valid current player, allowed actions, and no active blocking modal, so the title/start screen and legitimate modal interactions do not force the game screen open.
 - The freeze classifier now treats a hidden `gameScreen` as a post-build UI block, and button ancestor diagnostics consider hidden `gameScreen` a blocking ancestor.
 - Regression coverage recreates the real notification shape: local game, build phase, `nextTurn` allowed, no visible modals, `gameScreen.display='none'`, `gameScreen.inert=true`, and enabled skip button blocked by its parent.
+
+### restartGame stale runtime / UI lock reset fix
+
+Observed reports after pressing 「最初からやり直す」 pointed to a different failure mode from post-build recovery: the restart path returned to the title screen while old runtime state and shell locks could remain alive. In reduced integration/runtime shapes, `restartGame()` could also call `resetOnlineState()` without checking that the online module was loaded, producing a direct error before cleanup completed.
+
+Root cause:
+- `restartGame()` hid `gameScreen` and showed `titleScreen`, but left the previous `game` object in memory. The freeze watchdog could still see an active phase/allowed actions after the user was back on the title screen.
+- Modal-driven restart could restore a previous `gameScreen.inert` / `aria-hidden` state, and the next `startGame()` only set `display='block'`, so stale root locks could be inherited into the new game.
+- Lifecycle start state was not reset on manual restart, so an immediate new game could suppress the next play-start notification as if it were a duplicate reload.
+
+Fixes:
+- Added `resetUiLocksForGameReset()` in `appShell.js` to close shell modals, clear root `inert` / `aria-hidden` / pointer locks, remove `modal-open`, clear the stored freeze snapshot, and reset watchdog state.
+- Added `resetGameLifecycleForRestart()` so a deliberate restart starts a fresh lifecycle session without duplicate finish/start state leakage.
+- `restartGame()` now records flow checkpoints, cancels delayed/autoskip work, guards optional online reset, sets `game = null`, clears runtime turn/log state, and then returns to the title screen.
+- `startGame()` now clears stale shell locks before showing `gameScreen`, preventing a hidden/inert root from being inherited into the new game.
+
+Regression coverage:
+- `tests/main.test.js`: restart clears saved/online session state, modal/root locks, freeze snapshot, autoskip, game runtime, and allows the next start notification to be sent again.
+- `tests/integration.test.js`: after confirming restart and returning to title, watchdog does not classify the未開始 title state as a UI lock and does not send a client-error report.

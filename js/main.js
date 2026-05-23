@@ -201,6 +201,7 @@ function startGame() {
     cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
     saveSettings();
     resetStatsRecorded();
+    if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('start-game-reset-ui-locks');
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
     init(selectedCount);
@@ -209,12 +210,24 @@ function startGame() {
 
 function restartGame() {
     showConfirm("最初からやり直しますか？\n現在のゲームは終了します", () => {
+        markMainCheckpoint('restart-game-confirmed-start');
         localStorage.removeItem('savedGame');
         if (typeof clearOnlineSessionStorage === 'function') clearOnlineSessionStorage();
         else localStorage.removeItem('onlineSession');
         cpuScheduleToken++;
         cancelDelayedHumanAction();
-        resetOnlineState();
+        cancelAutoSkip();
+        if (typeof resetOnlineState === 'function') resetOnlineState();
+        else {
+            try { isOnlineGame = false; } catch (_) {}
+        }
+        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('restart-game-reset-ui-locks');
+        if (typeof resetGameLifecycleForRestart === 'function') resetGameLifecycleForRestart('restart-game-lifecycle-reset');
+        game = null;
+        prevCoins = null;
+        winSoundPlayed = false;
+        undoState = null;
+        resetFullLog();
         document.getElementById("gameScreen").style.display = "none";
         document.getElementById("titleScreen").style.display = "block";
         selectedCount = 2;
@@ -225,6 +238,7 @@ function restartGame() {
         updateResumeButton();
         drawCitySkyline();
         if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
+        markMainCheckpoint('restart-game-confirmed-complete');
     });
 }
 

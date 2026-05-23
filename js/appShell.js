@@ -254,6 +254,46 @@ function resetAccessibleModalStateForRecovery() {
     try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
 }
 
+function resetFreezeWatchdogState(reason = 'watchdog-reset') {
+    _freezeWatchdogLastKey = '';
+    _freezeWatchdogLastChangedAt = 0;
+    _freezeWatchdogLastReportKey = '';
+    _freezeWatchdogLastReportAt = 0;
+    try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('machikoroFreezeSnapshot');
+    } catch (_) {}
+    markClientFlowCheckpoint(reason);
+}
+
+function clearShellElementLock(id) {
+    const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+    if (!el) return false;
+    let changed = clearElementModalLock(id);
+    if (el.hidden) {
+        el.hidden = false;
+        changed = true;
+    }
+    return changed;
+}
+
+function resetUiLocksForGameReset(reason = 'game-reset') {
+    resetAccessibleModalStateForRecovery();
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) root.__machikoroConfirmModalOpen = false;
+    } catch (_) {}
+    ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal'].forEach(id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (el && el.style) el.style.display = 'none';
+    });
+    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(clearShellElementLock);
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('modal-open');
+    }
+    resetFreezeWatchdogState(reason + '-watchdog');
+    markClientFlowCheckpoint(reason, { recovery: 'game-reset-ui-locks' });
+}
+
 function modalSnapshotFromRuntime(snapshot, id) {
     if (snapshot && snapshot.ui) {
         if (id === 'confirmModal') return snapshot.ui.confirmModal;
@@ -695,6 +735,16 @@ function notifyGameLifecycleFinish(winner) {
         winnerKind: cpuDifficulty ? 'cpu' : 'human',
         winnerCpuDifficulty: cpuDifficulty,
     });
+}
+
+function resetGameLifecycleForRestart(reason = 'game-restart') {
+    _gameLifecycleSessionId = '';
+    _gameLifecycleStartSent = false;
+    _gameLifecycleFinishSent = false;
+    try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(GAME_LIFECYCLE_START_SENT_KEY);
+    } catch (_) {}
+    markClientFlowCheckpoint(reason, { lifecycle: 'reset' });
 }
 
 if (typeof window !== 'undefined') {

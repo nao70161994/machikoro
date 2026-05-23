@@ -401,6 +401,67 @@ runTest('main formatCpuSpeedLabel は超高速値を専用ラベルにする', (
     assert.strictEqual(rt.formatCpuSpeedLabel(500), '0.5秒');
 });
 
+runTest('main restartGame はゲーム状態とUI lockを未開始状態へ完全リセットする', () => {
+    const rt = loadMainRuntime();
+    rt.startGame();
+    assert.ok(rt.__test.getGame());
+
+    rt.localStorage.setItem('savedGame', 'old');
+    rt.localStorage.setItem('onlineSession', 'old-online');
+    rt.localStorage.setItem('machikoroFreezeSnapshot', 'old-freeze');
+    rt.localStorage.setItem('machikoroLifecycleStartSent', JSON.stringify({ signature: 'local|2|0', timestamp: Date.now() }));
+    rt.__test.elements.gameScreen.style.display = 'block';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.titleScreen.inert = true;
+    rt.__test.elements.titleScreen.setAttribute('aria-hidden', 'true');
+    rt.document.getElementById('confirmModal').style.display = 'flex';
+    rt.document.getElementById('pendingModal').style.display = 'flex';
+    rt.document.body.classList.add('modal-open');
+    rt.__test.setAutoSkipState(true, 123);
+    const tokenBefore = rt.__test.getCpuScheduleToken();
+
+    rt.restartGame();
+
+    assert.strictEqual(rt.__test.getGame(), null);
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    assert.strictEqual(rt.localStorage.getItem('machikoroLifecycleStartSent'), null);
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.__test.elements.titleScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.titleScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.titleScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.document.getElementById('confirmModal').style.display, 'none');
+    assert.strictEqual(rt.document.getElementById('pendingModal').style.display, 'none');
+    assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
+    assert.strictEqual(rt.__test.getAutoSkipPending(), false);
+    assert.ok(rt.__test.getCpuScheduleToken() > tokenBefore);
+});
+
+runTest('main restart後のstartGameは古いgameScreen lockを引き継がず開始通知を再送できる', () => {
+    const rt = loadMainRuntime();
+    rt.startGame();
+    assert.strictEqual(rt.fetchCalls.filter(call => call.url === '/api/game-lifecycle').length, 1);
+
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.localStorage.setItem('machikoroFreezeSnapshot', 'old-freeze');
+    rt.restartGame();
+    rt.startGame();
+
+    assert.ok(rt.__test.getGame());
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.__test.elements.titleScreen.style.display, 'none');
+    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    assert.strictEqual(rt.fetchCalls.filter(call => call.url === '/api/game-lifecycle').length, 2);
+});
+
 runTest('main createCpuPlayer は live v2simple 明示時も v2 既定modeを補う', () => {
     const rt = loadMainRuntime();
     const cpu = rt.createCpuPlayer('expert', {
