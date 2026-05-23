@@ -958,6 +958,12 @@ function isActiveRoomSocket(room, socket) {
     return !!player && player.id === socket.id;
 }
 
+function isRoomHostConnected(room) {
+    if (!room || !Array.isArray(room.players) || !Number.isInteger(room.hostPlayerIndex)) return false;
+    const hostPlayer = room.players.find(p => p.index === room.hostPlayerIndex);
+    return !!(hostPlayer?.id && io.sockets.sockets.has(hostPlayer.id));
+}
+
 function getExpectedReconnectTokenHash(room, playerIndex, playerName) {
     const player = room.players.find(p => p.index === playerIndex && p.name === playerName);
     if (player?.reconnectTokenHash) return player.reconnectTokenHash;
@@ -1000,6 +1006,7 @@ function handleRecreateRoom(socket, payload = {}) {
             Number.isInteger(playerIndex) &&
             getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName) &&
             hashReconnectToken(reconnectToken) === getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName) &&
+            (room.hostPlayerIndex === playerIndex || !isRoomHostConnected(room)) &&
             canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, actionLog);
         if (!incomingCanReplace) {
             const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
@@ -1016,8 +1023,7 @@ function handleRecreateRoom(socket, payload = {}) {
             socket.join(roomId);
             socket.roomId = roomId;
             socket.playerIndex = playerIndex;
-            const hostPlayer = room.players.find(p => p.index === room.hostPlayerIndex);
-            if (!hostPlayer?.id || !io.sockets.sockets.has(hostPlayer.id)) {
+            if (!isRoomHostConnected(room)) {
                 setRoomHostPlayerIndex(room, playerIndex);
                 io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex, hostEpoch: room.hostEpoch || 0 });
                 console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
@@ -1636,4 +1642,5 @@ module.exports = {
     getAllowedActions,
     checkGameStart,
     loadGameRuntime,
+    __io: io,
 };

@@ -35,6 +35,7 @@ function parseArgs(argv) {
         output: '',
         csv: '',
         markdown: '',
+        independentSeeds: false,
     };
 
     for (let i = 0; i < argv.length; i++) {
@@ -54,6 +55,7 @@ function parseArgs(argv) {
         else if (arg === '--output') args.output = argv[++i] || '';
         else if (arg === '--csv') args.csv = argv[++i] || '';
         else if (arg === '--markdown') args.markdown = argv[++i] || '';
+        else if (arg === '--independent-seeds') args.independentSeeds = true;
     }
     return args;
 }
@@ -179,10 +181,11 @@ function evaluateModelSpecs(specs, args, evaluator = evaluateRlVsJs) {
     return specs.map((spec, index) => summarizeModel(spec, evaluator({
         modelPath: spec.path,
         games: args.games,
-        seed: args.seed + index * args.games * 10,
+        seed: args.independentSeeds ? args.seed + index * args.games * 10 : args.seed,
         maxSteps: args.maxSteps,
         opponents: args.opponents,
         lineups: args.lineups,
+        sharedSeeds: !args.independentSeeds,
     }))).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
 

@@ -2,8 +2,22 @@
 let confettiInterval = null;
 let confettiPieces = [];
 
+function prefersReducedMotion() {
+    try {
+        return typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+        return false;
+    }
+}
+
 function startConfetti() {
     const canvas = document.getElementById('confettiCanvas');
+    if (!canvas) return;
+    if (prefersReducedMotion()) {
+        canvas.style.display = 'none';
+        return;
+    }
     canvas.style.display = 'block';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;

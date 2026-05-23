@@ -7,10 +7,11 @@
 
 1. `README.md`: 起動方法、テスト、主要機能。
 2. `docs/ARCHITECTURE.md`: 責務境界、phase/action map、壊してはいけない不変条件。
-3. `docs/REFACTOR_PLAN.md`: Phase 1〜6 の方針と実施済みログ。
-4. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
-5. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
-6. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
+3. `docs/AI_MAINTENANCE_ISSUES.md`: AI が誤読しやすい不変条件、stop conditions、grep 入口。
+4. `docs/REFACTOR_PLAN.md`: Phase 1〜6 の方針と実施済みログ。
+5. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
+6. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
+7. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
 ## 2026-05-16 時点の実施済み範囲
 

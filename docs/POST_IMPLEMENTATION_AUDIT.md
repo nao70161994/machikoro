@@ -478,3 +478,26 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 
 - 実ブラウザの描画、OS install prompt、iOS Safari の keyboard/safe-area 挙動、Android TWA/WebView 差分、実ネットワークでの sleep/reconnect は manual only。
 - 将来 Playwright を導入できる環境になった場合は、この `release` group に browser-backed spec を追加する。
+
+
+### Continuous review Cycle 6 maintainability and runtime guards
+
+確認した内容:
+
+- Critical は未検出。High として、Socket.IO script 未読込時の online 初期化、復元済み room の非ホスト置換、RL モデル比較 seed schedule の不公平性、release CI と docs の gate 不一致を確認した。
+- Medium/Low として、SW activate lifecycle、RL model runtime cache、reduced motion、SW/index asset drift、docs stale status を確認した。
+
+修正済み:
+
+- `initSocket()` は `io` 未定義時に notice を出して return し、socket handler や online state を作らない。
+- 復元済み room replacement は、現ホストが接続中なら非ホスト payload による置換を拒み、通常 rejoin に落とす。
+- SW は activate の claim を waitUntil に含め、RL model JSON を network-first runtime cache にした。
+- confetti は reduced motion で interval を開始しない。
+- `eval-rl-models` は既定でモデル間の seed schedule を共有する。
+- release workflow は static gate を含み、docs / README / AI handoff の古い test group 記述を更新した。
+
+残リスク:
+
+- 大きな責務分離は引き続き小さな helper / test 先行で進める必要がある。
+- 実ブラウザ複数端末、長時間 sleep/reconnect、native PWA install UI は manual verification required。
+- host-supplied restore snapshot の完全な信頼境界強化は server-side signature または persisted canonical state の設計判断が必要。

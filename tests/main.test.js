@@ -1118,6 +1118,17 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
     }
 });
 
+runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期している', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+    const scriptAssets = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)]
+        .map(match => '/' + match[1]);
+
+    for (const asset of scriptAssets) {
+        assert.ok(sw.includes(`'${asset}'`), `missing STATIC_ASSETS entry: ${asset}`);
+    }
+});
+
 runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');

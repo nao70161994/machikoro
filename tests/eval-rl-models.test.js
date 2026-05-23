@@ -52,6 +52,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
         '--lineups', 'rl,weak,normal;rl,normal,strong',
         '--csv', 'out.csv',
         '--markdown', 'out.md',
+        '--independent-seeds',
     ]);
     assert.deepStrictEqual(args.models, ['a', 'b']);
     assert.deepStrictEqual(args.runLabels, ['run1', 'run2']);
@@ -63,6 +64,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     assert.deepStrictEqual(args.lineups, [['rl', 'weak', 'normal'], ['rl', 'normal', 'strong']]);
     assert.strictEqual(args.csv, 'out.csv');
     assert.strictEqual(args.markdown, 'out.md');
+    assert.strictEqual(args.independentSeeds, true);
 });
 
 runTest('eval-rl-models parseArgs は数値 CLI の 0 指定を保持する', () => {
@@ -158,6 +160,46 @@ runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
     assert.deepStrictEqual(results.map(result => result.id), ['high', 'low']);
     assert.strictEqual(results[0].summaries.length, 3);
     assert.strictEqual(results[0].buildSignature.cardKey, 'パン屋');
+});
+
+runTest('eval-rl-models は複数モデルを同一seed scheduleで評価する', () => {
+    const specs = [
+        { id: 'a', label: 'a', path: 'a.json', source: 'test', status: '' },
+        { id: 'b', label: 'b', path: 'b.json', source: 'test', status: '' },
+    ];
+    const calls = [];
+
+    evaluateModelSpecs(
+        specs,
+        { games: 10, seed: 5, maxSteps: 100, opponents: ['normal'], lineups: [], independentSeeds: false },
+        (options) => {
+            calls.push(options);
+            return [entry('normal', options.modelPath === 'a.json' ? 0.6 : 0.5)];
+        }
+    );
+
+    assert.deepStrictEqual(calls.map(call => call.seed), [5, 5]);
+    assert.deepStrictEqual(calls.map(call => call.sharedSeeds), [true, true]);
+});
+
+runTest('eval-rl-models は明示指定時だけモデルごとにseed windowを分ける', () => {
+    const specs = [
+        { id: 'a', label: 'a', path: 'a.json', source: 'test', status: '' },
+        { id: 'b', label: 'b', path: 'b.json', source: 'test', status: '' },
+    ];
+    const calls = [];
+
+    evaluateModelSpecs(
+        specs,
+        { games: 10, seed: 5, maxSteps: 100, opponents: ['normal'], lineups: [], independentSeeds: true },
+        (options) => {
+            calls.push(options);
+            return [entry('normal', 0.5)];
+        }
+    );
+
+    assert.deepStrictEqual(calls.map(call => call.seed), [5, 105]);
+    assert.deepStrictEqual(calls.map(call => call.sharedSeeds), [false, false]);
 });
 
 runTest('eval-rl-models は5人以上のlineupを評価へ渡せる', () => {

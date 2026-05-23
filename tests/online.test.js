@@ -29,7 +29,7 @@ function extractSwitchActionCases(functionBody) {
     return [...functionBody.matchAll(/case ['"]([^'"]+)['"]:/g)].map(match => match[1]).sort();
 }
 
-function loadOnlineRuntime() {
+function loadOnlineRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
     const elements = {};
     const context = {
@@ -47,6 +47,8 @@ function loadOnlineRuntime() {
 
     // ゲームロジック本体をロード
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js']);
+
+    context.__onlineRuntimeOptions = options;
 
     // online.js が参照するグローバルをモック
     vm.runInContext(`
@@ -85,11 +87,14 @@ function loadOnlineRuntime() {
         function resetStatsRecorded() { statsResetCount++; }
         function restoreUndoSnapshot(state) { game = state.game; }
         function updateResumeButton() {}
-        const io = () => ({
-            on(name, handler) { socketHandlers[name] = handler; },
-            emit(name, payload) { socketEmits.push({ name, payload }); },
-            disconnect() { socketDisconnected = true; },
-        });
+        let io;
+        if (!__onlineRuntimeOptions.withoutIo) {
+            io = () => ({
+                on(name, handler) { socketHandlers[name] = handler; },
+                emit(name, payload) { socketEmits.push({ name, payload }); },
+                disconnect() { socketDisconnected = true; },
+            });
+        }
         const alert = () => {};
         const showNotice = () => {};
     `, context);
@@ -197,6 +202,15 @@ runTest('getClientVersion はindexへ注入されたビルドハッシュを使�
     localRt.window.MACHIKORO_CLIENT_VERSION = 'build-123';
 
     assert.strictEqual(localRt.getClientVersion(), 'build-123');
+});
+
+runTest('initSocket はSocket.IO script未読込時に状態を変更しない', () => {
+    const localRt = loadOnlineRuntime({ withoutIo: true });
+
+    localRt.initSocket();
+
+    assert.strictEqual(localRt.getOnlineState().socket, null);
+    assert.deepStrictEqual(Object.keys(localRt.getSocketHandlers()), []);
 });
 
 runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', () => {

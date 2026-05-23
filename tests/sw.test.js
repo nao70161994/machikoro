@@ -118,6 +118,16 @@ async function dispatchInstall(runtime) {
     await waitPromise;
 }
 
+async function dispatchActivate(runtime) {
+    let waitPromise = Promise.resolve();
+    runtime.listeners.activate({
+        waitUntil(promise) {
+            waitPromise = promise;
+        },
+    });
+    await waitPromise;
+}
+
 async function dispatchFetch(runtime, request) {
     let responsePromise = null;
     runtime.listeners.fetch({
@@ -141,24 +151,41 @@ async function dispatchFetch(runtime, request) {
         assert.deepStrictEqual(runtime.addCalls, []);
     });
 
-    await runTest('Service Worker はRLモデルJSONをruntime cache-firstで返す', async () => {
-        const cached = makeResponse('cached-model');
-        const request = makeRequest('https://example.test/models/rl_model/portfolio/seed103-4p.browser.json');
-        const runtime = loadServiceWorker({ cacheEntries: [[request.url, cached]] });
-        const response = await dispatchFetch(runtime, request);
-        assert.strictEqual(response, cached);
-        assert.strictEqual(runtime.fetchCalls.length, 0);
+    await runTest('Service Worker activate はclients.claimをwaitUntil内で完了する', async () => {
+        const runtime = loadServiceWorker();
+        await dispatchActivate(runtime);
+
+        assert.deepStrictEqual(runtime.deletedCaches, ['machikoro-v3']);
+        assert.strictEqual(runtime.context.self.clients.claimed, true);
     });
 
-    await runTest('Service Worker は未cacheのRLモデルJSONを取得して保存する', async () => {
-        const request = makeRequest('https://example.test/models/rl_model/portfolio/seed71-top3.browser.json');
+    await runTest('Service Worker はRLモデルJSONをruntime network-firstで更新する', async () => {
+        const cached = makeResponse('cached-model');
         const network = makeResponse('network-model');
-        const runtime = loadServiceWorker({ fetchResponse: () => network });
+        const request = makeRequest('https://example.test/models/rl_model/portfolio/seed103-4p.browser.json');
+        const runtime = loadServiceWorker({
+            cacheEntries: [[request.url, cached]],
+            fetchResponse: () => network,
+        });
         const response = await dispatchFetch(runtime, request);
+
         assert.strictEqual(response, network);
         assert.strictEqual(runtime.fetchCalls.length, 1);
         assert.strictEqual(runtime.putCalls.length, 1);
         assert.strictEqual(runtime.putCalls[0].request, request);
+    });
+
+    await runTest('Service Worker はoffline時にcached RLモデルJSONへfallbackする', async () => {
+        const cached = makeResponse('cached-model');
+        const request = makeRequest('https://example.test/models/rl_model/portfolio/seed71-top3.browser.json');
+        const runtime = loadServiceWorker({
+            cacheEntries: [[request.url, cached]],
+            fetchReject: true,
+        });
+        const response = await dispatchFetch(runtime, request);
+
+        assert.strictEqual(response, cached);
+        assert.strictEqual(runtime.fetchCalls.length, 1);
     });
 
     await runTest('Service Worker はHTML requestをoffline時にshellへfallbackする', async () => {

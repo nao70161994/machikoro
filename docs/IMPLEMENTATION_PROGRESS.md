@@ -1580,7 +1580,7 @@
 
 ## Continuous review Cycle 3 pendingActions schema hardening
 
-- 状態: implemented, targeted tests pending full suite
+- 状態: implemented, targeted tests passed; full suite covered by later release gates
 - 実装内容:
   - snapshot `pendingActions` の action/field 固定対応と legacy pending count 一致を server mirror で検証するようにした。
   - client-side queue 正規化は action/field 不一致 entry を採用せず、count 不一致時は legacy pending fields から補修する。
@@ -1619,7 +1619,7 @@
 
 ## Continuous review Cycle 5 RL eval simulator guard
 
-- 状態: implemented, targeted tests pending
+- 状態: implemented, targeted tests passed
 - 変更ファイル:
   - `scripts/eval-rl-vs-js.js`
   - `tests/eval-rl-vs-js.test.js`
@@ -1629,7 +1629,7 @@
 
 ## Continuous review Cycle 5 accessibility label pass
 
-- 状態: implemented, targeted tests pending
+- 状態: implemented, targeted tests passed
 - 変更ファイル:
   - `index.html`
   - `tests/main.test.js`
@@ -1640,7 +1640,7 @@
 
 ## Continuous review Cycle 5 diagnostics helper split
 
-- 状態: implemented, targeted tests pending
+- 状態: implemented, targeted tests passed
 - 変更ファイル:
   - `scripts/diagnostics/expert-v2-branch-counters.js`
   - `scripts/diagnose-expert-v2-branches.js`
@@ -1651,7 +1651,7 @@
 
 ## Automated release pseudo-E2E gate
 
-- 状態: implemented, targeted tests pending
+- 状態: implemented, targeted tests passed
 - 変更ファイル:
   - `tests/release-e2e.test.js`
   - `tests/run-all.js`
@@ -1663,3 +1663,27 @@
   - `docs/AUTOMATED_RELEASE_TEST.md` に automated / partial / manual only の分類と release command set を追加した。
 - manual only:
   - 実 iOS Safari / Android Chrome の rendering、native install UI、multi-tab SW update、実 ntfy delivery、実ネットワークでの複数端末 reconnect は手動確認が必要。
+
+
+## Continuous review Cycle 6 maintainability and runtime guards
+
+- 状態: implemented, targeted tests passed; full suite pending in Cycle verification.
+- 変更ファイル:
+  - `js/online.js`, `tests/online.test.js`
+  - `server.js`, `tests/server.test.js`
+  - `sw.js`, `tests/sw.test.js`
+  - `js/confetti.js`, `tests/confetti.test.js`, `tests/run-all.js`
+  - `scripts/eval-rl-models.js`, `tests/eval-rl-models.test.js`
+  - `.github/workflows/release-test.yml`, `tests/release-e2e.test.js`
+  - docs maintenance files
+- 実装内容:
+  - Socket.IO script 未読込時の `initSocket()` を早期 return にし、online state を半端に初期化しないようにした。
+  - 接続中の現ホストがいる復元済み room は、非ホストが高い `hostEpoch` を名乗っても置き換えない。現ホスト不在時の既存 fallback は維持した。
+  - Service Worker activate の `clients.claim()` を `waitUntil` 内へ入れ、RL model JSON は network-first + cached fallback にした。
+  - `prefers-reduced-motion` 時は confetti interval を開始しない。
+  - release CI に `npm run test:static` を追加し、release pseudo-E2E test で gate 順序を固定した。
+  - `eval-rl-models` は既定で全モデルを同じ seed schedule / `sharedSeeds` で比較し、必要時だけ `--independent-seeds` で従来の分離 seed window を使う。
+- deferred:
+  - CPU.js / ui.js / server.js の大きな責務分離は、今回の Cycle では behavior guard と docs 整合を優先した。次回も helper 単位で進める。
+  - host-supplied snapshot の署名 / server persisted canonical state は design decision required。
+  - 実 iOS Safari / Android Chrome の長時間 online/PWA 確認は manual verification required。

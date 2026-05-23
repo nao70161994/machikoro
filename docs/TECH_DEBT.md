@@ -88,19 +88,18 @@
 
 ### 6. Test and tooling debt
 
-- `test:static` は Python を見ない。
-- `test:smoke` は CPU停止系と PWA を見ない。
+- `test:static` は Python compile check まで含む。今後の課題は docs 内コマンドとの同期検査を強めること。
+- `test:smoke` は cpu-smoke を含む。PWA の詳細は `test:pwa` / `test:release` 側で見る。
 - malformed replay payload matrix / snapshot roundtrip が不足。
 - docs 内コマンドと `package.json` scripts の同期検査が弱い。
 - 実ブラウザ multi-client smoke が手動依存。
 
 推奨ロードマップ:
 
-1. `test:static` に Python compile check を追加する。
-2. `test:smoke` へ軽量 CPU pending test を追加する。
-3. action schema coverage test を追加する。
-4. docs の `npm run ...` 参照が存在するか検査する。
-5. Playwright 導入前に、手動 smoke checklist を短く機械表示できる script を作る。
+1. docs の `npm run ...` 参照が存在するか検査する。
+2. action schema coverage test をさらに restore/replay edge へ広げる。
+3. PWA の実ブラウザ差分を手動 checklist から browser-backed spec へ移す。
+4. Playwright 導入前に、手動 smoke checklist を短く機械表示できる script を作る。
 
 ## Suggested Priority
 

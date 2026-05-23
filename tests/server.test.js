@@ -85,6 +85,7 @@ const {
     buildPlayerList,
     checkGameStart,
     __rooms,
+    __io,
 } = require('../server');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
@@ -2172,6 +2173,79 @@ runTest('handleRecreateRoom はより新しい hostEpoch の復元payloadで古�
         assert.strictEqual(emitted[0].payload.gameStartPayload.hostPlayerIndex, 1);
     } finally {
         delete __rooms.REPLACE01;
+    }
+});
+
+runTest('handleRecreateRoom は接続中ホストがいる復元済みroomを非ホストpayloadで置き換えない', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const reconnectTokenHashes = [
+        crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+        crypto.createHash('sha256').update(tokenBob).digest('hex'),
+    ];
+    const oldPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes,
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+    };
+    const forgedPayload = Object.assign({}, oldPayload, {
+        hostPlayerIndex: 1,
+        hostEpoch: 999,
+        actionSeq: 999,
+    });
+    __rooms.REPLACE02 = {
+        started: true,
+        restored: true,
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        players: [
+            { id: 'socket-alice-connected', index: 0, name: 'Alice', reconnectTokenHash: reconnectTokenHashes[0] },
+        ],
+        playerSettings: oldPayload.playerSettings,
+        maxPlayers: 2,
+        gameStartPayload: oldPayload,
+        stateSnapshot: makeSnapshot(),
+        actionLog: [],
+    };
+    const socket = {
+        id: 'socket-bob-new',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    __io.sockets.sockets.set('socket-alice-connected', { id: 'socket-alice-connected' });
+
+    try {
+        handleRecreateRoom(socket, {
+            roomId: 'REPLACE02',
+            gameStartPayload: forgedPayload,
+            stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build' }),
+            actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 999 }],
+            playerIndex: 1,
+            playerName: 'Bob',
+            reconnectToken: tokenBob,
+        });
+
+        assert.deepStrictEqual(joined, ['REPLACE02']);
+        assert.strictEqual(__rooms.REPLACE02.hostPlayerIndex, 0);
+        assert.strictEqual(__rooms.REPLACE02.hostEpoch, 0);
+        assert.strictEqual(__rooms.REPLACE02.actionSeq, 0);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.hostPlayerIndex, 0);
+        assert.strictEqual(emitted[0].payload.gameStartPayload.hostPlayerIndex, 0);
+    } finally {
+        __io.sockets.sockets.delete('socket-alice-connected');
+        delete __rooms.REPLACE02;
     }
 });
 

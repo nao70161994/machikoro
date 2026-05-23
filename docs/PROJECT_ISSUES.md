@@ -191,15 +191,11 @@
 - 関連ファイル: `js/ui.js`, `js/storage.js`, `tests/ui.test.js`
 - 将来的リスク: オンライン終了時やクラッシュ復帰時だけ状態が壊れる。
 
-### H-15 `test:smoke` に CPU停止系が入っていない
+### H-15 `test:smoke` に CPU停止系が入っていない（resolved）
 
-- 問題点: smoke は static/core/online で、CPU pending/loop 回帰が漏れる。
-- 原因: CPU系を重くしないため分離している。
-- 影響: Termuxで普段回す確認からCPU退行を見逃す。
-- 推奨改善: `node tests/cpu.test.js` の軽量 subset か pending fallback 専用テストを smoke に含める。
-- 修正難易度: 小。
+- 状態: resolved。`package.json` の `test:smoke` は `node tests/run-all.js cpu-smoke` を含む。
+- 残課題: PWA / 実ブラウザ multi-client は `test:pwa` / `test:release` / manual checklist で分けて確認する。
 - 関連ファイル: `package.json`, `tests/run-all.js`, `tests/cpu.test.js`
-- 将来的リスク: CPUが建設しない/止まる問題が再発する。
 
 ## Medium
 

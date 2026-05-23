@@ -466,6 +466,10 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
 // オンライン対戦（Socket.IO）
 function initSocket() {
     if (socket) return;
+    if (typeof io !== 'function') {
+        showNotice('オンライン機能を読み込めませんでした。通信状態を確認して再読み込みしてください。');
+        return;
+    }
     socket = io();
 
     socket.on('roomCreated', ({ roomId, playerIndex, reconnectToken: token }) => {

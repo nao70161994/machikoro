@@ -55,6 +55,7 @@ npm run test:all
 npm run test:core
 npm run test:online
 npm run test:pwa
+npm run test:release
 npm run test:cpu
 npm run test:rl
 ```
@@ -72,8 +73,9 @@ npm run test:smoke
 npm run test:release
 ```
 
-- `test:static`: JS / JSON / shell の構文・parse 確認をまとめて実行します。
-- `test:smoke`: static に加えて core / online の主要回帰を実行します。
+- `test:static`: JS / JSON / shell / Python の構文・parse 確認をまとめて実行します。
+- `test:smoke`: static に加えて core / online / cpu-smoke の主要回帰を実行します。
+- `test:release`: mobile profile / PWA update / ntfy / restore / long-run snapshot の疑似E2Eを実行します。
 
 編集後の構文確認:
 
@@ -438,7 +440,7 @@ RL スクリプト / モデル:
 
 テスト:
 
-- `tests/run-all.js`: `unit`, `sim`, `all`, `core`, `online`, `pwa`, `cpu`, `rl` のテストグループを管理します。実行入口は `npm test` と `npm run test:*` を使ってください。
+- `tests/run-all.js`: `unit`, `sim`, `all`, `core`, `online`, `pwa`, `release`, `cpu-smoke`, `cpu`, `rl` のテストグループを管理します。実行入口は `npm test` と `npm run test:*` を使ってください。
 - `tests/*.test.js`: ルール、サーバー、オンライン、保存、UI、CPU、RL runtime / registry / evaluation scripts を対象別に分けています。新規テストを追加したら `tests/run-all.js` の該当グループにも登録してください。
 
 ## オンライン復元の要点
