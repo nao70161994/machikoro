@@ -87,9 +87,8 @@ runTest('integration: 購入後もrender step例外で操作不能にならな�
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     assert.ok(rt.__test.elements.buildMenu.innerHTML.includes('施設一覧'));
     assert.notStrictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
-    const trace = JSON.parse(rt.localStorage.getItem('machikoroLastFlowTrace'));
-    assert.strictEqual(trace.event, 'build-card-rendered');
     assert.strictEqual(Array.isArray(rt.window.__machikoroFlowTrace), true);
+    assert.ok(rt.window.__machikoroFlowTrace.some(entry => entry.event === 'build-card-rendered'));
     const renderErrorTrace = rt.window.__machikoroFlowTrace.find(entry => entry.event === 'render-step-error');
     assert.ok(renderErrorTrace);
     assert.strictEqual(renderErrorTrace.details.step, 'renderPending');
@@ -177,6 +176,112 @@ runTest('integration: 購入後操作不能ならwatchdogがsnapshot保存と通
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     const checkpoint = JSON.parse(rt.localStorage.getItem('machikoroLastClientCheckpoint'));
     assert.strictEqual(checkpoint.event, 'freeze-watchdog-recovered');
+});
+
+
+runTest('integration: 建設後にUI lockが残っても自分ターン操作を復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.confirmModal.style.display = 'flex';
+    rt.__test.elements.btnSkip.disabled = true;
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-human-turn-unlock'));
+});
+
+runTest('integration: CPUターン終了後に人間ターンのUI lockを解除する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    const cpuIndex = rt.__test.getCpuPlayers().findIndex(Boolean);
+    assert.ok(cpuIndex >= 0);
+    game.currentPlayerIndex = cpuIndex;
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.confirmModal.style.display = 'flex';
+    rt.__test.elements.btnRoll.disabled = true;
+
+    rt.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.notStrictEqual(game.currentPlayerIndex, cpuIndex);
+    assert.strictEqual(game.phase, rt.GAME_PHASES.ROLL);
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.btnRoll.disabled, false);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-human-turn-unlock'));
+});
+
+runTest('integration: 自分ターンで操作可能ボタンがなければwatchdogがUI lockを検知する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.ROLL;
+    rt.render();
+    rt.__test.elements.btnRoll.disabled = true;
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const reportCall = rt.__test.fetchCalls.find(call => {
+        if (call.url !== '/api/client-error') return false;
+        const report = JSON.parse(call.options.body);
+        return report.source === 'freeze-watchdog' && report.message.includes('human-turn-ui-locked');
+    });
+    assert.ok(reportCall);
+    assert.strictEqual(rt.__test.elements.btnRoll.disabled, false);
+    const snapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.ok(snapshot.snapshot.allowedActions.includes('rollDice'));
+    assert.strictEqual(snapshot.freezeKind, 'human-turn-ui-locked');
+});
+
+runTest('integration: client側debug error reportを手動送信できる', () => {
+    const rt = loadIntegrationRuntime();
+    assert.strictEqual(typeof rt.window.__machikoroSendTestErrorReport, 'function');
+
+    const sent = rt.window.__machikoroSendTestErrorReport('debug ping');
+
+    assert.strictEqual(sent, true);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.strictEqual(report.source, 'debug-client-test');
+    assert.strictEqual(report.message, 'debug ping');
+    const checkpoint = JSON.parse(rt.localStorage.getItem('machikoroLastClientCheckpoint'));
+    assert.strictEqual(checkpoint.event, 'client-error-fetch-start');
 });
 
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {

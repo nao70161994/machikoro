@@ -61,19 +61,83 @@ function safeClientErrorContext() {
 function safeElementSnapshot(id) {
     const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
     if (!el) return null;
+    let computedPointerEvents = '';
+    let computedDisplay = '';
+    let computedVisibility = '';
+    try {
+        if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+            const style = window.getComputedStyle(el);
+            computedPointerEvents = style && style.pointerEvents || '';
+            computedDisplay = style && style.display || '';
+            computedVisibility = style && style.visibility || '';
+        }
+    } catch (_) {}
     return {
         display: el.style ? el.style.display || '' : '',
+        computedDisplay,
+        visibility: el.style ? el.style.visibility || '' : '',
+        computedVisibility,
+        pointerEvents: el.style ? el.style.pointerEvents || '' : '',
+        computedPointerEvents,
         disabled: !!el.disabled,
+        hidden: !!el.hidden,
         inert: !!el.inert,
+        ariaHidden: typeof el.getAttribute === 'function' ? el.getAttribute('aria-hidden') : null,
+        className: el.className || '',
         htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
         text: typeof el.textContent === 'string' ? truncateClientErrorField(el.textContent, 120) : '',
     };
 }
 
+function visibleElement(id) {
+    const snapshot = safeElementSnapshot(id);
+    if (!snapshot) return false;
+    return snapshot.display !== 'none' && snapshot.computedDisplay !== 'none' && snapshot.visibility !== 'hidden' && snapshot.computedVisibility !== 'hidden' && !snapshot.hidden;
+}
+
+function visibleModalIds() {
+    return ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal']
+        .filter(id => visibleElement(id));
+}
+
+function classListText(el) {
+    if (!el) return '';
+    if (typeof el.className === 'string') return el.className;
+    if (el.classList && typeof el.classList.value === 'string') return el.classList.value;
+    return '';
+}
+
+function allowedActionListForSnapshot() {
+    if (typeof game === 'undefined' || !game) return [];
+    try {
+        if (typeof game.allowedActions === 'function') return Array.from(game.allowedActions());
+        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return Array.from(GameManager.allowedActionsFor(game));
+    } catch (_) {}
+    return [];
+}
+
+function isElementUsablyEnabled(snapshot) {
+    if (!snapshot) return false;
+    if (snapshot.disabled || snapshot.hidden || snapshot.inert) return false;
+    if (snapshot.display === 'none' || snapshot.computedDisplay === 'none') return false;
+    if (snapshot.visibility === 'hidden' || snapshot.computedVisibility === 'hidden') return false;
+    if (snapshot.pointerEvents === 'none' || snapshot.computedPointerEvents === 'none') return false;
+    return true;
+}
+
+function primaryActionButtonStates() {
+    const buttons = {
+        btnRoll: safeElementSnapshot('btnRoll'),
+        btnSkip: safeElementSnapshot('btnSkip'),
+        btnReroll: safeElementSnapshot('btnReroll'),
+    };
+    const enabled = Object.entries(buttons)
+        .filter(([, snapshot]) => isElementUsablyEnabled(snapshot))
+        .map(([id]) => id);
+    return { buttons, enabled };
+}
+
 function buildClientRuntimeSnapshot(reason = '') {
-    if (typeof buildRuntimeStateSnapshot === 'function') {
-        try { return buildRuntimeStateSnapshot(reason); } catch (_) {}
-    }
     const hasGame = typeof game !== 'undefined' && !!game;
     const currentPlayerIndex = hasGame ? game.currentPlayerIndex : null;
     let isCpuTurn = false;
@@ -90,6 +154,22 @@ function buildClientRuntimeSnapshot(reason = '') {
         isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? !!onlineActionInFlight : null,
+        allowedActions: allowedActionListForSnapshot(),
+        activeElement: typeof document !== 'undefined' && document.activeElement ? {
+            id: document.activeElement.id || '',
+            tagName: document.activeElement.tagName || '',
+            className: document.activeElement.className || '',
+        } : null,
+        bodyClassName: typeof document !== 'undefined' && document.body ? classListText(document.body) : '',
+        visibleModals: visibleModalIds(),
+        overlays: {
+            noticeToast: safeElementSnapshot('noticeToast'),
+            pwaUpdateBanner: safeElementSnapshot('pwaUpdateBanner'),
+            pwaInstallBanner: safeElementSnapshot('pwaInstallBanner'),
+            turnAnnouncer: safeElementSnapshot('turnAnnouncer'),
+            crashScreen: safeElementSnapshot('crashScreen'),
+        },
+        actionButtons: primaryActionButtonStates(),
         pendingFields: hasGame ? {
             pendingTV: game.pendingTV || 0,
             pendingBusiness: game.pendingBusiness || 0,
@@ -110,8 +190,66 @@ function buildClientRuntimeSnapshot(reason = '') {
     };
 }
 
+function isHumanTurnSnapshot(snapshot) {
+    if (!snapshot || !snapshot.phase || snapshot.isCpuTurn) return false;
+    return !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
+}
+
+function expectedPrimaryActions(snapshot) {
+    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+    return allowed.filter(action => ['rollDice', 'nextTurn'].includes(action));
+}
+
+function hasUsablePrimaryAction(snapshot) {
+    const enabled = snapshot && snapshot.actionButtons && Array.isArray(snapshot.actionButtons.enabled)
+        ? snapshot.actionButtons.enabled
+        : [];
+    return enabled.length > 0;
+}
+
+function closeStaleBlockingModals() {
+    ['confirmModal', 'cardSelectModal', 'cardDetailModal', 'rulesModal'].forEach(id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (el && el.style) el.style.display = 'none';
+    });
+    const pendingModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingModal') : null;
+    const pendingMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingMenu') : null;
+    if (pendingModal && pendingModal.style && pendingMenu && !pendingMenu.innerHTML) pendingModal.style.display = 'none';
+}
+
+function clearUiLocks(reason = 'ui-unlock') {
+    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
+        if (!el) return;
+        el.inert = false;
+        if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
+        if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
+    });
+    if (typeof document !== 'undefined' && document.body && document.body.classList) document.body.classList.remove('modal-open');
+    closeStaleBlockingModals();
+    markClientFlowCheckpoint(reason);
+}
+
+function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
+    const snapshot = buildClientRuntimeSnapshot(reason);
+    if (!isHumanTurnSnapshot(snapshot)) return false;
+    if (!expectedPrimaryActions(snapshot).length && !hasPendingWork(snapshot)) return false;
+    clearUiLocks(reason);
+    try { if (typeof render === 'function') render(); } catch (_) {}
+    return true;
+}
+
 function markClientFlowCheckpoint(event, details = {}) {
     const checkpoint = { event, details, snapshot: buildClientRuntimeSnapshot(event), timestamp: new Date().toISOString() };
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) {
+            const list = Array.isArray(root.__machikoroClientCheckpoints) ? root.__machikoroClientCheckpoints : [];
+            list.push(checkpoint);
+            while (list.length > 80) list.shift();
+            root.__machikoroClientCheckpoints = list;
+        }
+    } catch (_) {}
     try {
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem('machikoroLastClientCheckpoint', JSON.stringify(checkpoint).slice(0, 5000));
@@ -375,9 +513,12 @@ function classifyLikelyFreeze(snapshot) {
     const gameInert = !!(ui.gameScreen && ui.gameScreen.inert);
     const confirmOpen = !!(ui.confirmModal && ui.confirmModal.display && ui.confirmModal.display !== 'none');
     const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
-    if (snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || confirmOpen)) {
+    const expectedActions = expectedPrimaryActions(snapshot);
+    const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
+    if (snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || confirmOpen || noUsablePrimaryAction)) {
         return 'post-build-ui-blocked';
     }
+    if (noUsablePrimaryAction) return 'human-turn-ui-locked';
     if (pendingOpenWithoutContent) return 'pending-without-action';
     if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight) return 'cpu-turn-stalled';
     if (snapshot.onlineActionInFlight) return 'online-action-in-flight-stalled';
@@ -436,12 +577,26 @@ function checkFreezeWatchdog() {
         });
     }
     if (freezeKind === 'post-build-ui-blocked') recoverPostBuildUiFreeze(snapshot);
+    else if (freezeKind === 'human-turn-ui-locked') unlockUiForHumanTurn('freeze-watchdog-human-turn-unlock');
 }
 
 function startFreezeWatchdog() {
     if (_freezeWatchdogBound || typeof setInterval !== 'function') return;
     _freezeWatchdogBound = true;
     setInterval(checkFreezeWatchdog, FREEZE_WATCHDOG_INTERVAL_MS);
+}
+
+function sendDebugClientErrorReport(message = 'manual client error test') {
+    markClientFlowCheckpoint('debug-client-error-report-start', { message });
+    return reportClientError({
+        source: 'debug-client-test',
+        message,
+        stack: 'Manual client-side debug report; no real error occurred. ' + JSON.stringify(buildClientRuntimeSnapshot('debug-client-test')).slice(0, 1600),
+    });
+}
+
+if (typeof window !== 'undefined') {
+    window.__machikoroSendTestErrorReport = sendDebugClientErrorReport;
 }
 
 function initMainView() {

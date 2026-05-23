@@ -729,3 +729,30 @@ Regression:
 - `localStorage.machikoroLastClientCheckpoint`: 最後に通った処理、client-error fetch の開始/完了/失敗、HTTP status。
 - `localStorage.machikoroFreezeSnapshot`: watchdog が freeze と判定した時点の phase / pending / UI snapshot。
 - `localStorage.machikoroLastFlowTrace`: build/render trace の最新イベント。
+
+### Build freeze re-investigation: UI lock / action gate
+
+分類:
+
+- 今回の症状は「例外」や「完全停止」ではなく、画面更新は続くが `inert` / modal / disabled button / overlay / action gate のどれかが残って操作できない UI lock として扱う。
+- 前回の freeze watchdog は phase/turn 停滞を主に見ていたため、敵ターン終了後に自分ターンへ戻っていても主要ボタンが disabled のまま、または stale modal/inert が残るケースを検出しきれなかった。
+
+原因として固定した経路:
+
+- `showConfirm()` は modal open 時に `gameScreen` を inert にする。通常は close で戻るが、実機タイミングや stale modal 状態で `modalInertRestore` / `activeModalId` / button disabled が残ると、`allowedActionsFor()` は正しくても UI だけ押せない状態になり得る。
+- CPU ターン終了後は `scheduleCPU()` が人間ターンに戻った時点で処理を止めるため、そのタイミングで stale UI lock を明示的に解除する必要がある。
+
+修正済み:
+
+- UI lock snapshot を `buildClientRuntimeSnapshot()` に追加した。`allowedActions`, active element, body class, visible modal list, overlay state,主要ボタンの disabled / hidden / pointer-events / inert / aria-hidden を保存する。
+- watchdog に「自分のターンで `rollDice` / `nextTurn` が許可されているのに、操作可能な主要ボタンが1つもない」条件を追加した。phase が進んでいるケースでも `human-turn-ui-locked` として検出する。
+- `unlockUiForHumanTurn()` / `clearUiLocks()` を追加し、自分のターン復帰時に stale `inert`, `aria-hidden`, `pointer-events`, stale confirm/card/rules modal, body `modal-open` を解除して `render()` でボタン状態を再評価する。
+- build card / build landmark 後と、CPU schedule が人間ターンへ戻った地点で UI unlock checkpoint を残す。
+- `window.__machikoroSendTestErrorReport()` を追加した。実機コンソールから client 側 `/api/client-error` を強制送信でき、fetch start / complete / failed / status は `machikoroLastClientCheckpoint` と `window.__machikoroClientCheckpoints` に残る。
+
+Regression:
+
+- 建設後に stale inert / confirm modal / disabled skip が残っても、人間ターンなら解除され skip が押せる状態になる。
+- CPU ターン終了後に人間ターンへ戻った時、stale UI lock が解除され roll button が有効になる。
+- 自分ターンで allowed action があるのに操作可能ボタンがない場合、watchdog が `human-turn-ui-locked` として snapshot / client-error report を残し、UI unlock を実行する。
+- debug client error report function が `/api/client-error` を実際に呼び、送信開始checkpointを残す。

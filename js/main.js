@@ -586,7 +586,11 @@ function scheduleCPU() {
     )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : null }); return; }
     if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return; }
     const ci = game.currentPlayerIndex;
-    if (!cpuPlayers[ci]) { markMainCheckpoint('scheduleCPU-skip-human-turn', { currentPlayerIndex: ci }); return; }
+    if (!cpuPlayers[ci]) {
+        markMainCheckpoint('scheduleCPU-skip-human-turn', { currentPlayerIndex: ci });
+        if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn('scheduleCPU-human-turn-unlock');
+        return;
+    }
     const cpu = cpuPlayers[ci];
     const token = ++cpuScheduleToken;
     let stepIndex = 0;
@@ -965,6 +969,7 @@ function onBuildCard(name) {
             playSound('build');
             render();
             traceBuildFlow('card-rendered', { cardName: name });
+            if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn('build-card-human-turn-unlock');
             scheduleCPU();
         }
     });
@@ -990,6 +995,7 @@ function onBuildLandmark(name) {
             playSound('build');
             render();
             traceBuildFlow('landmark-rendered', { landmarkName: name });
+            if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn('build-landmark-human-turn-unlock');
             scheduleCPU();
         }
     });
