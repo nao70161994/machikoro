@@ -1999,6 +1999,32 @@ runTest('build は建設成功なら true、建設済みなら null を返す', 
     assert.strictEqual(cpu.build(game, stock), null);
 });
 
+runTest('_onlineBuildBlocked はオンライン建設の共通gateを判定する', () => {
+    const cpu = new CPU('weak');
+
+    assert.strictEqual(cpu._onlineBuildBlocked(), false);
+    runtime.isOnlineGame = true;
+    runtime.isRoomHost = false;
+    runtime.isReconnectingOnline = false;
+    runtime.socket = { connected: true };
+
+    try {
+        assert.strictEqual(cpu._onlineBuildBlocked(), true);
+        runtime.isRoomHost = true;
+        assert.strictEqual(cpu._onlineBuildBlocked(), false);
+        runtime.isReconnectingOnline = true;
+        assert.strictEqual(cpu._onlineBuildBlocked(), true);
+        runtime.isReconnectingOnline = false;
+        runtime.socket.connected = false;
+        assert.strictEqual(cpu._onlineBuildBlocked(), true);
+    } finally {
+        delete runtime.isOnlineGame;
+        delete runtime.isRoomHost;
+        delete runtime.isReconnectingOnline;
+        delete runtime.socket;
+    }
+});
+
 runTest('build は online buildCard の送信失敗を false で返す', () => {
     const cpu = new CPU('weak');
     const game = new GameManager(2);

@@ -2669,11 +2669,16 @@ class CPU {
         return result;
     }
 
+    _onlineBuildBlocked() {
+        if (typeof isOnlineGame === 'undefined' || !isOnlineGame) return false;
+        if (typeof isRoomHost !== 'undefined' && !isRoomHost) return true;
+        if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return true;
+        return typeof socket !== 'undefined' && socket && socket.connected === false;
+    }
+
     _buyCard(card, game, shopStock) {
         if (!game || game.builtThisTurn || !card) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof socket !== 'undefined' && socket && socket.connected === false) return this._setBuildActionResult(false);
+        if (this._onlineBuildBlocked()) return this._setBuildActionResult(false);
         if (!shopStock || (shopStock[card.name] || 0) <= 0) return this._setBuildActionResult(false);
         if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
             return this._setBuildActionResult(typeof sendAction === 'function' && sendAction('buildCard', { cardName: card.name }) === true);
@@ -2687,9 +2692,7 @@ class CPU {
 
     _buyLandmark(name, game) {
         if (!game || game.builtThisTurn || !name) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof socket !== 'undefined' && socket && socket.connected === false) return this._setBuildActionResult(false);
+        if (this._onlineBuildBlocked()) return this._setBuildActionResult(false);
         if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
             return this._setBuildActionResult(typeof sendAction === 'function' && sendAction('buildLandmark', { name }) === true);
         }

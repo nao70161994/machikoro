@@ -2565,3 +2565,15 @@
 - コード挙動: accepted action log の canonical payload は既存と同じ。switch 直書きだけを table-driven helper へ寄せた。
 - 残課題:
   - server validation helper の payload validator registry 化は継続 backlog。
+
+## Backlog cleanup - CPU online build gate helper
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU / UI / server の小さな helper 分離のうち CPU execution gate 周辺。
+- 修正中:
+  - `_buyCard()` と `_buyLandmark()` に重複していた online build block 条件を `_onlineBuildBlocked()` helper へ集約した。
+  - 非ホスト、再接続中、socket disconnected の build 抑止条件は既存と同じまま維持した。
+  - `tests/cpu.test.js` に helper の gate contract を追加した。
+- コード挙動: CPU build の送信/ローカル適用条件は変更なし。online build の入口判定だけを共通 helper に寄せた。
+- 残課題:
+  - CPU execution と diagnostics のさらなる module 分離は継続 backlog。
