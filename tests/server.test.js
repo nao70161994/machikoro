@@ -82,6 +82,7 @@ const {
     roomClientVersions,
     roomReconnectTokenHashes,
     buildGameStartPayload,
+    markRoomGameStarted,
     resolveRejoinPlayer,
     handleSocketDisconnect,
     handleRecreateRoom,
@@ -3919,6 +3920,32 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     assert.ok(payload.reconnectTokenHashes[2]);
     assert.strictEqual(payload.hostEpoch, 4);
     assert.strictEqual(payload.actionSeq, 8);
+});
+
+runTest('markRoomGameStarted は開始時の復元状態を初期化する', () => {
+    const room = {
+        started: false,
+        gameStartPayload: null,
+        stateSnapshot: { actionSeq: 4 },
+        actionLog: [{ action: 'rollDice' }],
+        lastUndoState: { state: {} },
+        canonicalMirror: { stale: true },
+        lastTouchedAt: 0,
+    };
+    const payload = { playerNames: ['Alice', 'CPU1'], actionSeq: 0 };
+
+    markRoomGameStarted(room, payload, 12345);
+
+    assert.strictEqual(room.started, true);
+    assert.strictEqual(room.gameStartPayload, payload);
+    assert.strictEqual(room.stateSnapshot, null);
+    assert.deepStrictEqual(room.actionLog, []);
+    assert.strictEqual(room.lastUndoState, null);
+    assert.ok(room.canonicalMirror);
+    assert.strictEqual(room.canonicalMirror.game.players.length, 2);
+    assert.strictEqual(room.canonicalMirrorActionSeq, 0);
+    assert.strictEqual(room.canonicalMirrorActionLogLength, 0);
+    assert.strictEqual(room.lastTouchedAt, 12345);
 });
 
 runTest('checkGameStart は人間枠が揃うと gameStart を送る', () => {

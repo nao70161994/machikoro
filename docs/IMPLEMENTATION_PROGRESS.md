@@ -2645,3 +2645,14 @@
 - コード挙動: Business Center pending UI の表示内容、選択状態、交換 button の data 属性は既存と同じ。inline handler は引き続き使わない。
 - 残課題:
   - build menu / card select 周辺の UI helper 分離は継続 backlog。
+
+## Backlog cleanup - server game start lifecycle helper
+
+- 状態: completed; full verification passed before commit.
+- 対象: server room lifecycle の小さな helper 分離。
+- 修正中:
+  - `checkGameStart()` の開始時状態初期化を `markRoomGameStarted()` helper へ分離した。
+  - `tests/server.test.js` で game start 時に `stateSnapshot`, `actionLog`, `lastUndoState`, canonical mirror, `lastTouchedAt` が初期化される契約を固定した。
+- コード挙動: gameStart payload の生成、emit、開始条件は既存と同じ。開始時の room 状態更新だけを helper に寄せた。
+- 残課題:
+  - restore replacement / disconnect 周辺のさらなる lifecycle helper 分離は継続 backlog。

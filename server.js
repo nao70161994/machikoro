@@ -1862,19 +1862,23 @@ function validateGameAction(room, socket, action, data) {
 }
 
 
+function markRoomGameStarted(room, gameStartPayload, now = Date.now()) {
+    room.started = true;
+    room.gameStartPayload = gameStartPayload;
+    room.stateSnapshot = null;
+    room.actionLog = [];
+    room.lastUndoState = null;
+    resetRoomCanonicalMirror(room);
+    room.lastTouchedAt = now;
+}
+
 function checkGameStart(io, roomId) {
     const room = rooms[roomId];
     if (!room || room.started) return;
 
     if (room.players.length >= countRoomHumanSlots(room)) {
-        room.started = true;
         const gameStartPayload = buildGameStartPayload(io, room);
-        rooms[roomId].gameStartPayload = gameStartPayload;
-        rooms[roomId].stateSnapshot = null;
-        rooms[roomId].actionLog = [];
-        rooms[roomId].lastUndoState = null;
-        resetRoomCanonicalMirror(rooms[roomId]);
-        rooms[roomId].lastTouchedAt = Date.now();
+        markRoomGameStarted(room, gameStartPayload);
         io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${gameStartPayload.playerNames.join(', ')}`);
     }
@@ -1978,6 +1982,7 @@ module.exports = {
     roomClientVersions,
     roomReconnectTokenHashes,
     buildGameStartPayload,
+    markRoomGameStarted,
     buildPlayerList,
     resolveRejoinPlayer,
     handleSocketDisconnect,
