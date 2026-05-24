@@ -2163,3 +2163,15 @@
 - 残課題:
   - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - online room key contract
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場補強。
+- 修正済み:
+  - `_onlineRoomStorageKey()` を idempotent にし、既に scoped key の場合は二重に `:room:` suffix を付けないようにした。
+  - room id の trim / uppercase 正規化、空 roomId fallback、二重scoping防止を `tests/online.test.js` で固定した。
+- コード挙動: scoped read migration は未実施。既存の legacy key 読み取り正本は維持。
+- 残課題:
+  - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。

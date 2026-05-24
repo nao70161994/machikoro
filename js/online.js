@@ -114,6 +114,7 @@ const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 
 function _onlineRoomStorageKey(key, roomId = myRoomId) {
     if (typeof key !== 'string' || key === '') return key;
+    if (key.includes(ONLINE_ROOM_STORAGE_KEY_SEPARATOR)) return key;
     if (typeof roomId !== 'string' || roomId.trim() === '') return key;
     return `${key}${ONLINE_ROOM_STORAGE_KEY_SEPARATOR}${roomId.trim().toUpperCase()}`;
 }

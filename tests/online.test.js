@@ -217,6 +217,13 @@ runTest('getClientVersion はindexへ注入されたビルドハッシュを使�
     assert.strictEqual(localRt.getClientVersion(), 'build-123');
 });
 
+runTest('_onlineRoomStorageKey はroom idを正規化し二重scopingしない', () => {
+    const rt = loadOnlineRuntime();
+    assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ' room01 '), 'onlinePendingAction:room:ROOM01');
+    assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ''), 'onlinePendingAction');
+    assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction:room:ROOM01', 'ROOM02'), 'onlinePendingAction:room:ROOM01');
+});
+
 runTest('initSocket はSocket.IO script未読込時に状態を変更しない', () => {
     const localRt = loadOnlineRuntime({ withoutIo: true });
 
