@@ -2024,3 +2024,22 @@
   - modal stack/deny-nesting policy と action container 内 enabled descendant 診断は、仕様影響を抑えて別Cycleで検討する。
   - hostless restore / signed or server-persisted canonical state は design decision required。
   - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。
+
+## Maintainability continuation Cycle 3 - UI container child diagnostics
+
+- 状態: completed; full verification passed before commit.
+- 新規指摘:
+  - Medium: `buildMenu` / `pendingMenu` / `diceChoose` のようなコンテナ型 action UI は、コンテナが表示されているだけでクリック可能扱いになり、実DOM上の子ボタンが全 disabled/hidden/pointer-events none の場合を見落とす余地があった。
+  - Medium: freeze snapshot の localStorage 保存は長い payload を `slice(0, 7000)` しており、診断情報が増えた時に invalid JSON を残す潜在リスクがあった。
+- 修正済み:
+  - `safeElementSnapshot()` に interactive child の総数/usable数を追加し、allowed action container が子操作を1つも押せない場合は `child-not-clickable` として検出するようにした。
+  - localStorage 用 freeze snapshot は full payload が長い場合に compact payload へ縮約し、保存値が常に parse 可能な JSON になるようにした。
+  - integration test に disabled child button の検出回帰を追加した。
+- rollback: なし。
+- regressions: なし。targeted integration test と full verification は全通過。
+- benchmark影響: なし。
+- 実行テスト: `git diff --check`, `node --check js/*.js`, `node --check server.js`, `python3 -m py_compile scripts/rl/*.py`, `npm run test:static`, `npm run test:smoke`, `npm test`, `npm run test:online`, `npm run test:release`, `npm run test:pwa`, `npm run test:cpu`, `npm run test:rl`.
+- 残課題:
+  - modal stack/deny-nesting policy は UI 仕様判断が必要。
+  - hostless restore / signed or server-persisted canonical state は design decision required。
+  - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。

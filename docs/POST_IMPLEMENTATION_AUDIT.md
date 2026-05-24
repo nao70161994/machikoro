@@ -996,3 +996,16 @@ Fix:
 
 Regression coverage:
 - `tests/online.test.js` now verifies generic app errors preserve current-room pending actions, while `無効な操作です` clears the pending record and emits `rejoinRoom`.
+
+### Maintainability continuation Cycle 3 - UI container child diagnostics
+
+Reviewing the UI interactability invariant found one remaining blind spot: container-level controls could be considered usable when the container itself was visible and enabled, even if every actionable child inside it was disabled or otherwise non-clickable. This matters for dice choices, pending menus, and build menus, where the user interacts with generated child buttons rather than the container itself.
+
+Fix:
+- Runtime snapshots now include `totalInteractiveChildren` and `usableInteractiveChildren` for each tracked element.
+- `validateUiInteractability()` treats allowed action containers with interactive children but zero usable children as `child-not-clickable`.
+- Freeze snapshot storage now compacts oversized payloads instead of truncating raw JSON, so localStorage diagnostics remain parseable as the snapshot schema grows.
+
+Regression coverage:
+- `tests/integration.test.js` covers a select-dice container whose only child action is disabled and verifies the new `child-not-clickable` diagnosis.
+- Existing freeze snapshot tests continue to parse saved diagnostics after compaction.

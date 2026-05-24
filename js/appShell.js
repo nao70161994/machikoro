@@ -70,6 +70,40 @@ function elementHasBlockingAncestor(id, el) {
     return false;
 }
 
+function childInteractiveState(el) {
+    if (!el || typeof el.querySelectorAll !== 'function') return { total: 0, usable: 0 };
+    let children = [];
+    try {
+        children = Array.from(el.querySelectorAll('button, [role="button"], [data-action], [data-ui-action], input, select, textarea, a[href]') || []);
+    } catch (_) {
+        return { total: 0, usable: 0 };
+    }
+    let usable = 0;
+    children.forEach(child => {
+        if (!child || child.disabled || child.hidden || child.inert) return;
+        const style = child.style || {};
+        let computedDisplay = '';
+        let computedVisibility = '';
+        let computedPointerEvents = '';
+        try {
+            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+                const computed = window.getComputedStyle(child);
+                computedDisplay = computed && computed.display || '';
+                computedVisibility = computed && computed.visibility || '';
+                computedPointerEvents = computed && computed.pointerEvents || '';
+            }
+        } catch (_) {}
+        if (style.display === 'none' || computedDisplay === 'none') return;
+        if (style.visibility === 'hidden' || computedVisibility === 'hidden') return;
+        if (style.pointerEvents === 'none' || computedPointerEvents === 'none') return;
+        try {
+            if (typeof child.closest === 'function' && child.closest('[inert], [aria-hidden="true"]')) return;
+        } catch (_) {}
+        usable++;
+    });
+    return { total: children.length, usable };
+}
+
 function safeElementSnapshot(id) {
     const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
     if (!el) return null;
@@ -85,6 +119,7 @@ function safeElementSnapshot(id) {
         }
     } catch (_) {}
     const ancestorBlocked = elementHasBlockingAncestor(id, el);
+    const childState = childInteractiveState(el);
     return {
         id,
         display: el.style ? el.style.display || '' : '',
@@ -100,6 +135,8 @@ function safeElementSnapshot(id) {
         ariaHidden: typeof el.getAttribute === 'function' ? el.getAttribute('aria-hidden') : null,
         className: el.className || '',
         htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
+        totalInteractiveChildren: childState.total,
+        usableInteractiveChildren: childState.usable,
         text: typeof el.textContent === 'string' ? truncateClientErrorField(el.textContent, 120) : '',
     };
 }
@@ -152,6 +189,7 @@ function uiLockReasonForElement(state) {
     if (state.pointerEvents === 'none' || state.computedPointerEvents === 'none') return 'pointer-events-none';
     if (state.hidden || state.visibility === 'hidden' || state.computedVisibility === 'hidden') return 'hidden-mismatch';
     if (state.disabled) return 'disabled-mismatch';
+    if (state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return 'child-not-clickable';
     return 'not-clickable';
 }
 
@@ -171,6 +209,7 @@ function isActionUiUsable(snapshot, action) {
     const state = snapshotElementForAction(snapshot, action);
     if (!state) return false;
     if ((action === 'selectDice' || action === 'resolveHarbor' || action === 'buildCard' || action === 'buildLandmark' || action === 'undoBuild' || (action && action.startsWith('resolve'))) && state.htmlLength <= 0) return false;
+    if ((action === 'selectDice' || action === 'resolveHarbor' || action === 'buildCard' || action === 'buildLandmark' || action === 'undoBuild' || (action && action.startsWith('resolve'))) && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
     return isElementUsablyEnabled(state);
 }
 
@@ -1184,6 +1223,90 @@ function recoverUiInteractability(snapshot) {
     return false;
 }
 
+function compactElementSnapshotForStorage(state) {
+    if (!state) return null;
+    return {
+        id: state.id || '',
+        display: state.display || '',
+        computedDisplay: state.computedDisplay || '',
+        visibility: state.visibility || '',
+        computedVisibility: state.computedVisibility || '',
+        pointerEvents: state.pointerEvents || '',
+        computedPointerEvents: state.computedPointerEvents || '',
+        disabled: !!state.disabled,
+        hidden: !!state.hidden,
+        inert: !!state.inert,
+        ancestorBlocked: !!state.ancestorBlocked,
+        ariaHidden: state.ariaHidden || null,
+        htmlLength: state.htmlLength || 0,
+        totalInteractiveChildren: state.totalInteractiveChildren || 0,
+        usableInteractiveChildren: state.usableInteractiveChildren || 0,
+    };
+}
+
+function compactFreezePayloadForStorage(payload) {
+    const snapshot = payload && payload.snapshot || {};
+    const ui = snapshot.ui || {};
+    const buttons = snapshot.actionButtons && snapshot.actionButtons.buttons || {};
+    return {
+        freezeKind: payload && payload.freezeKind,
+        stagnantMs: payload && payload.stagnantMs,
+        snapshot: {
+            reason: snapshot.reason || '',
+            timestamp: snapshot.timestamp || '',
+            phase: snapshot.phase || '',
+            builtThisTurn: !!snapshot.builtThisTurn,
+            turnCount: snapshot.turnCount,
+            currentPlayerIndex: snapshot.currentPlayerIndex,
+            isCpuTurn: !!snapshot.isCpuTurn,
+            isOnlineGame: snapshot.isOnlineGame,
+            isRoomHost: snapshot.isRoomHost,
+            myPlayerIndex: snapshot.myPlayerIndex,
+            onlineActionInFlight: snapshot.onlineActionInFlight,
+            isReconnectingOnline: snapshot.isReconnectingOnline,
+            socketConnected: snapshot.socketConnected,
+            allowedActions: Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [],
+            visibleModals: Array.isArray(snapshot.visibleModals) ? snapshot.visibleModals : [],
+            bodyClassName: snapshot.bodyClassName || '',
+            pendingFields: snapshot.pendingFields || null,
+            ui: {
+                gameScreen: compactElementSnapshotForStorage(ui.gameScreen),
+                pendingModal: compactElementSnapshotForStorage(ui.pendingModal),
+                pendingMenu: compactElementSnapshotForStorage(ui.pendingMenu),
+                buildMenu: compactElementSnapshotForStorage(ui.buildMenu),
+                btnSkip: compactElementSnapshotForStorage(ui.btnSkip),
+                confirmModal: compactElementSnapshotForStorage(ui.confirmModal),
+                btnRoll: compactElementSnapshotForStorage(ui.btnRoll),
+                btnReroll: compactElementSnapshotForStorage(ui.btnReroll),
+                diceChoose: compactElementSnapshotForStorage(ui.diceChoose),
+                cardDetailModal: compactElementSnapshotForStorage(ui.cardDetailModal),
+                cardSelectModal: compactElementSnapshotForStorage(ui.cardSelectModal),
+                rulesModal: compactElementSnapshotForStorage(ui.rulesModal),
+            },
+            actionButtons: {
+                enabled: snapshot.actionButtons && Array.isArray(snapshot.actionButtons.enabled) ? snapshot.actionButtons.enabled : [],
+                buttons: Object.fromEntries(Object.entries(buttons).map(([id, state]) => [id, compactElementSnapshotForStorage(state)])),
+            },
+        },
+    };
+}
+
+function freezePayloadStorageJson(payload) {
+    const full = JSON.stringify(payload);
+    if (full.length <= 7000) return full;
+    const compact = JSON.stringify(compactFreezePayloadForStorage(payload));
+    if (compact.length <= 7000) return compact;
+    return JSON.stringify({
+        freezeKind: payload && payload.freezeKind,
+        stagnantMs: payload && payload.stagnantMs,
+        snapshot: {
+            phase: payload && payload.snapshot && payload.snapshot.phase || '',
+            allowedActions: payload && payload.snapshot && payload.snapshot.allowedActions || [],
+            visibleModals: payload && payload.snapshot && payload.snapshot.visibleModals || [],
+        },
+    });
+}
+
 function buildFreezeReportStack(payload) {
     const snapshot = payload && payload.snapshot || {};
     const ui = snapshot.ui || {};
@@ -1238,7 +1361,7 @@ function checkFreezeWatchdog() {
     markClientFlowCheckpoint('freeze-watchdog-report', payload);
     try {
         if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('machikoroFreezeSnapshot', JSON.stringify(payload).slice(0, 7000));
+            localStorage.setItem('machikoroFreezeSnapshot', freezePayloadStorageJson(payload));
         }
     } catch (_) {}
     if (typeof reportClientError === 'function') {

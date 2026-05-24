@@ -314,3 +314,8 @@ Test index:
 
 - `handleAppError()` should not clear `onlinePendingAction` for generic app errors. Keep pending clear scoped to explicit invalid-action resync or full reconnect/session teardown.
 - When adding new server appError messages, decide whether they are action rejection, session teardown, or status-only; update `tests/online.test.js` for pending ownership semantics.
+
+## Maintainability continuation Cycle 3 handoff
+
+- UI interactability checks for container controls must verify generated child actions when the DOM exposes them. A container with `htmlLength > 0` but `totalInteractiveChildren > 0` and `usableInteractiveChildren === 0` is not clickable.
+- Do not store freeze watchdog snapshots by slicing JSON strings. Use `freezePayloadStorageJson()` so localStorage keeps valid JSON even when diagnostics grow.

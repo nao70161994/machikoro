@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { runTest } = require('./helpers/test-utils');
+const { makeElement, runTest } = require('./helpers/test-utils');
 const { loadIntegrationRuntime } = require('./helpers/integration-runtime');
 
 function hideAllTestModals(rt) {
@@ -601,6 +601,37 @@ runTest('integration: selectDice中のgameScreen lockをwatchdogが復旧する'
     assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+});
+
+runTest('integration: allowed action container は子ボタン全disabledをクリック不能として診断する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    game.players[game.currentPlayerIndex].landmarks['駅'] = true;
+    hideAllTestModals(rt);
+    rt.render();
+    const disabledChoice = makeElement({ disabled: true });
+    disabledChoice.setAttribute('data-action', 'selectDiceCount');
+    rt.__test.elements.diceChoose.querySelectorAll = () => [disabledChoice];
+
+    const snapshot = rt.collectUiLockSnapshot('test-disabled-action-child');
+    const issues = rt.validateUiInteractability(snapshot);
+
+    assert.ok(snapshot.allowedActions.includes('selectDice'));
+    const issue = issues.find(item => item.action === 'selectDice');
+    assert.ok(issue);
+    assert.strictEqual(issue.kind, 'allowed-primary-not-clickable');
+    assert.strictEqual(issue.reason, 'child-not-clickable');
+    assert.strictEqual(snapshot.actionButtons.buttons.diceChoose.totalInteractiveChildren, 1);
+    assert.strictEqual(snapshot.actionButtons.buttons.diceChoose.usableInteractiveChildren, 0);
 });
 
 runTest('integration: gameScreen display none と inert が残ったpost-build lockをwatchdogが復旧する', () => {
