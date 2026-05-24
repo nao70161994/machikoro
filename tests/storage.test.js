@@ -246,6 +246,11 @@ runTest('storage deleteOnlineSession は確認後に onlineSession と復元bund
     rt.localStorage.setItem('onlineActionLog', '[]');
     rt.localStorage.setItem('onlineStateSnapshot', '{"ok":true}');
     rt.localStorage.setItem('onlinePendingAction', '{"ok":true}');
+    rt.localStorage.setItem('onlineGameStart:room:ROOM01', '{"ok":true}');
+    rt.localStorage.setItem('onlineActionLog:room:ROOM01', '[]');
+    rt.localStorage.setItem('onlineStateSnapshot:room:ROOM01', '{"ok":true}');
+    rt.localStorage.setItem('onlinePendingAction:room:ROOM01', '{"ok":true}');
+    rt.localStorage.setItem('onlineGameStart:room:ROOM02', '{"ok":true}');
 
     rt.deleteOnlineSession();
 
@@ -254,6 +259,11 @@ runTest('storage deleteOnlineSession は確認後に onlineSession と復元bund
     assert.strictEqual(rt.localStorage.getItem('onlineActionLog'), null);
     assert.strictEqual(rt.localStorage.getItem('onlineStateSnapshot'), null);
     assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart:room:ROOM01'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineActionLog:room:ROOM01'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineStateSnapshot:room:ROOM01'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction:room:ROOM01'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart:room:ROOM02'), null);
     assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'none');
 });
 

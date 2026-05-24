@@ -2541,3 +2541,15 @@
 - コード挙動: product code の変更なし。server action log の既存canonicalize挙動をテストで固定した。
 - 残課題:
   - `canonicalizeActionData()` の table 化や server validation helper 分離は継続 backlog。
+
+## Backlog cleanup - online restore scoped storage cleanup
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場。
+- 修正中:
+  - `storage.js` の online restore bundle 削除処理を legacy key だけでなく `:room:` scoped copy も掃除する形へ拡張した。
+  - `online.js` が未読込、または `myRoomId` が未復元の title/restart/delete flow でも古い room-scoped restore data を残しにくくした。
+  - test 用 storage mock に browser Storage と同じ `length` / `key(index)` を追加し、scoped key cleanup を検証可能にした。
+- コード挙動: 復元bundle削除時の掃除範囲のみ拡張。restore/read の優先順や online action flow は変更なし。
+- 残課題:
+  - restore bundle の完全な per-room index 化は設計判断が必要なため継続 backlog。

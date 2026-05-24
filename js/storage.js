@@ -5,13 +5,28 @@ const ONLINE_RESTORE_BUNDLE_KEYS = Object.freeze([
     'onlinePendingAction',
 ]);
 
+function removeOnlineRestoreBundleStorageKeyVariants(key) {
+    localStorage.removeItem(key);
+    try {
+        if (typeof localStorage.length !== 'number' || typeof localStorage.key !== 'function') return;
+        const scopedPrefix = `${key}:room:`;
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const storageKey = localStorage.key(i);
+            if (typeof storageKey === 'string' && storageKey.startsWith(scopedPrefix)) {
+                keysToRemove.push(storageKey);
+            }
+        }
+        keysToRemove.forEach(storageKey => localStorage.removeItem(storageKey));
+    } catch (e) {}
+}
+
 function clearOnlineRestoreBundleStorage() {
     if (typeof _clearOnlineRestoreBundle === 'function') {
         _clearOnlineRestoreBundle();
-        return;
     }
     for (const key of ONLINE_RESTORE_BUNDLE_KEYS) {
-        localStorage.removeItem(key);
+        removeOnlineRestoreBundleStorageKeyVariants(key);
     }
 }
 

@@ -79,6 +79,8 @@ function createStorage() {
     return {
         storage,
         localStorage: {
+            get length() { return storage.size; },
+            key(index) { return Array.from(storage.keys())[index] || null; },
             getItem(key) { return storage.has(key) ? storage.get(key) : null; },
             setItem(key, value) { storage.set(key, String(value)); },
             removeItem(key) { storage.delete(key); },
