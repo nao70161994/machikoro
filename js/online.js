@@ -110,6 +110,24 @@ const ONLINE_STORAGE_KEYS = Object.freeze({
     pendingAction: 'onlinePendingAction',
 });
 
+const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
+
+function _onlineRoomStorageKey(key, roomId = myRoomId) {
+    if (typeof key !== 'string' || key === '') return key;
+    if (typeof roomId !== 'string' || roomId.trim() === '') return key;
+    return `${key}${ONLINE_ROOM_STORAGE_KEY_SEPARATOR}${roomId.trim().toUpperCase()}`;
+}
+
+function _writeOnlineRoomStorageJson(key, value, roomId = myRoomId) {
+    const scopedKey = _onlineRoomStorageKey(key, roomId);
+    if (scopedKey !== key) _writeOnlineStorageJson(scopedKey, value);
+}
+
+function _removeOnlineRoomStorageItem(key, roomId = myRoomId) {
+    const scopedKey = _onlineRoomStorageKey(key, roomId);
+    if (scopedKey !== key) _removeOnlineStorageItem(scopedKey);
+}
+
 function _readOnlineStorageJson(key, fallback = null) {
     try {
         const raw = localStorage.getItem(key);
@@ -259,6 +277,7 @@ function _savePendingOutboundAction(action, data) {
     };
     try {
         _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry);
+        _writeOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry, entry.roomId);
     } catch (e) {}
     return entry;
 }
@@ -348,7 +367,10 @@ function _readPendingOutboundAction() {
 }
 
 function _clearPendingOutboundAction() {
-    try { _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction); } catch (e) {}
+    try {
+        _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
+        _removeOnlineRoomStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
+    } catch (e) {}
 }
 
 function _pendingOutboundActionBelongsToCurrentSession(entry, options = {}) {

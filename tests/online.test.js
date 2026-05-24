@@ -142,6 +142,7 @@ function loadOnlineRuntime(options = {}) {
         this._saveActionLog = _saveActionLog;
         this._readOnlineActionLog = _readOnlineActionLog;
         this._readPendingOutboundAction = _readPendingOutboundAction;
+        this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRestoreRank = _onlineRestoreRank;
         this._tryRestoreRoom = _tryRestoreRoom;
         this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
@@ -1260,6 +1261,33 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
         playerName: 'Alice',
         reconnectToken: 'token',
     });
+});
+
+runTest('sendAction は pending outbound を room-scoped key にも保存して消す', () => {
+    const rt = loadOnlineRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.setGame(game);
+    rt.initSocket();
+    rt.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const legacyPending = JSON.parse(rt.localStorage.getItem('onlinePendingAction'));
+    const scopedKey = rt._onlineRoomStorageKey('onlinePendingAction', 'ROOM01');
+    const scopedPending = JSON.parse(rt.localStorage.getItem(scopedKey));
+    assert.strictEqual(scopedKey, 'onlinePendingAction:room:ROOM01');
+    assert.deepStrictEqual(scopedPending, legacyPending);
+
+    rt.getSocketHandlers().actionAccepted({ action: 'nextTurn', data: {}, playerIndex: 0, clientActionId: legacyPending.clientActionId });
+
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
+    assert.strictEqual(rt.localStorage.getItem(scopedKey), null);
 });
 
 runTest('sendAction は未ackアクションを復元用に保存し actionAccepted で消す', () => {

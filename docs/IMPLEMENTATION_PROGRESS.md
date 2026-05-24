@@ -2098,3 +2098,17 @@
 - 残課題:
   - online storage の per-room namespace 化の足場は継続 backlog。
   - CPU / UI / server の小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - online room-scoped storage footing
+
+- 状態: completed; targeted verification in progress before commit.
+- 対象: online storage の per-room namespace 化の調査・小さな足場。
+- 修正済み:
+  - `onlinePendingAction` の room-scoped key を作る `_onlineRoomStorageKey()` helper を追加した。
+  - 未ack outbound action は従来の `onlinePendingAction` を正本として維持しつつ、`onlinePendingAction:room:<ROOM>` にも dual-write する足場を追加した。
+  - `actionAccepted` 等の pending cleanup では current room の scoped copy も削除するようにした。
+  - `tests/online.test.js` に room-scoped pending copy の保存・削除回帰テストを追加した。
+- コード挙動: 既存の復元 / 再送は従来 key を読み続ける。per-room key は移行前の補助コピーで、UI再開導線や互換 migration は未変更。
+- 残課題:
+  - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の scoped dual-write、scoped read migration、旧key pruning は設計を小さく分けて継続 backlog。
+  - CPU / UI / server の小さな helper 分離は継続 backlog。
