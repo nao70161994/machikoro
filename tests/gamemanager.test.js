@@ -172,6 +172,18 @@ runTest('GAME_PHASE_ACTIONS は単純フェーズの許可actionを定義する'
     assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.BUILD]], [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]);
 });
 
+runTest('GAME_ACTION metadata tables は外部変更できない frozen contract を持つ', () => {
+    assert.ok(Object.isFrozen(GAME_ACTIONS), 'GAME_ACTIONS must be frozen');
+    assert.ok(Object.isFrozen(GAME_PHASE_ACTIONS), 'GAME_PHASE_ACTIONS must be frozen');
+    assert.ok(Object.isFrozen(GAME_ACTION_REGISTRY), 'GAME_ACTION_REGISTRY must be frozen');
+    for (const [phase, actions] of Object.entries(GAME_PHASE_ACTIONS)) {
+        assert.ok(Object.isFrozen(actions), `${phase} phase action list must be frozen`);
+    }
+    for (const [action, entry] of Object.entries(GAME_ACTION_REGISTRY)) {
+        assert.ok(Object.isFrozen(entry), `${action} registry entry must be frozen`);
+    }
+});
+
 runTest('GAME_ACTION_REGISTRY の phase metadata は allowed action contract と同期する', () => {
     const actions = Object.values(GAME_ACTIONS);
     assert.deepStrictEqual(Object.keys(GAME_ACTION_REGISTRY).sort(), actions.slice().sort());

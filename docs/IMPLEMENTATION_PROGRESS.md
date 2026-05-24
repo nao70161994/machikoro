@@ -2415,3 +2415,14 @@
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
   - server / UI / CPU のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - action metadata frozen contract test
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test。
+- 修正済み:
+  - `tests/gamemanager.test.js` に `GAME_ACTIONS` / `GAME_PHASE_ACTIONS` / `GAME_ACTION_REGISTRY` と各 phase action list / registry entry が frozen であることを固定する contract test を追加した。
+- コード挙動: 実装変更なし。既存の metadata table を外部変更不可な編集契約としてテストで明文化した。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+  - server / UI / CPU のさらなる小さな helper 分離は継続 backlog。
