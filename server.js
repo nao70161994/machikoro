@@ -1735,6 +1735,67 @@ function buildPlayerList(room) {
     });
 }
 
+function countRoomHumanSlots(room) {
+    return room.playerSettings.length > 0
+        ? room.playerSettings.filter(s => s.type === "human").length
+        : room.maxPlayers;
+}
+
+function buildGameStartPlayerNames(room) {
+    if (room.playerSettings.length === 0) return room.players.map(p => p.name);
+    let cpuCount = 0;
+    return room.playerSettings.map((s, i) => {
+        if (s.type === "cpu") {
+            cpuCount++;
+            const diffLabel = cpuDifficultyLabel(s.difficulty);
+            return `CPU${cpuCount}（${diffLabel}）`;
+        }
+        const p = room.players.find(p => p.index === i);
+        if (p) return p.name;
+        return "不明";
+    });
+}
+
+function shuffledPlayerOrder(playerNames, randomFn = Math.random) {
+    const playerOrder = playerNames.map((_, i) => i);
+    for (let i = playerOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(randomFn() * (i + 1));
+        [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
+    }
+    return playerOrder;
+}
+
+function roomClientVersions(io, room) {
+    return room.players.map(p => {
+        const s = io.sockets.sockets.get(p.id);
+        return s ? (s.clientVersion || 'unknown') : 'unknown';
+    });
+}
+
+function roomReconnectTokenHashes(room, playerNames) {
+    return playerNames.map((_, index) => {
+        const player = room.players.find(p => p.index === index);
+        return player?.reconnectToken ? hashReconnectToken(player.reconnectToken) : '';
+    });
+}
+
+function buildGameStartPayload(io, room, randomFn = Math.random) {
+    const playerNames = buildGameStartPlayerNames(room);
+    return {
+        enabledCards: room.enabledCards,
+        enabledLandmarks: room.enabledLandmarks,
+        playerNames,
+        playerSettings: room.playerSettings,
+        cpuSpeed: room.cpuSpeed,
+        playerOrder: shuffledPlayerOrder(playerNames, randomFn),
+        hostPlayerIndex: room.hostPlayerIndex,
+        hostEpoch: room.hostEpoch || 0,
+        actionSeq: room.actionSeq || 0,
+        versions: roomClientVersions(io, room),
+        reconnectTokenHashes: roomReconnectTokenHashes(room, playerNames),
+    };
+}
+
 // ===== Mirror replay =====
 function loadGameRuntime() {
     const context = { console };
@@ -1833,54 +1894,9 @@ function checkGameStart(io, roomId) {
     const room = rooms[roomId];
     if (!room || room.started) return;
 
-    // 人間枠が全員揃ったか確認
-    const humanSlots = room.playerSettings.length > 0
-        ? room.playerSettings.filter(s => s.type === "human").length
-        : room.maxPlayers;
-
-    if (room.players.length >= humanSlots) {
+    if (room.players.length >= countRoomHumanSlots(room)) {
         room.started = true;
-        let cpuCount = 0;
-        const playerNames = room.playerSettings.length > 0
-            ? room.playerSettings.map((s, i) => {
-                if (s.type === "cpu") {
-                    cpuCount++;
-                    const diffLabel = cpuDifficultyLabel(s.difficulty);
-                    return `CPU${cpuCount}（${diffLabel}）`;
-                }
-                const p = room.players.find(p => p.index === i);
-                if (p) return p.name;
-                return "不明";
-            })
-            : room.players.map(p => p.name);
-
-        // ターン順をランダムにシャッフル
-        const playerOrder = playerNames.map((_, i) => i);
-        for (let i = playerOrder.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
-        }
-
-        const versions = room.players.map(p => {
-            const s = io.sockets.sockets.get(p.id);
-            return s ? (s.clientVersion || 'unknown') : 'unknown';
-        });
-        const gameStartPayload = {
-            enabledCards: room.enabledCards,
-            enabledLandmarks: room.enabledLandmarks,
-            playerNames,
-            playerSettings: room.playerSettings,
-            cpuSpeed: room.cpuSpeed,
-            playerOrder,
-            hostPlayerIndex: room.hostPlayerIndex,
-            hostEpoch: room.hostEpoch || 0,
-            actionSeq: room.actionSeq || 0,
-            versions,
-            reconnectTokenHashes: playerNames.map((_, index) => {
-                const player = room.players.find(p => p.index === index);
-                return player?.reconnectToken ? hashReconnectToken(player.reconnectToken) : '';
-            })
-        };
+        const gameStartPayload = buildGameStartPayload(io, room);
         rooms[roomId].gameStartPayload = gameStartPayload;
         rooms[roomId].stateSnapshot = null;
         rooms[roomId].actionLog = [];
@@ -1888,7 +1904,7 @@ function checkGameStart(io, roomId) {
         resetRoomCanonicalMirror(rooms[roomId]);
         rooms[roomId].lastTouchedAt = Date.now();
         io.to(roomId).emit('gameStart', gameStartPayload);
-        console.log(`ゲーム開始: ${roomId} プレイヤー: ${playerNames.join(', ')}`);
+        console.log(`ゲーム開始: ${roomId} プレイヤー: ${gameStartPayload.playerNames.join(', ')}`);
     }
 }
 
@@ -1977,6 +1993,12 @@ module.exports = {
     restorePayloadRank,
     restorePayloadRankDetails,
     isRestoreRankAction,
+    countRoomHumanSlots,
+    buildGameStartPlayerNames,
+    shuffledPlayerOrder,
+    roomClientVersions,
+    roomReconnectTokenHashes,
+    buildGameStartPayload,
     buildPlayerList,
     resolveRejoinPlayer,
     handleSocketDisconnect,

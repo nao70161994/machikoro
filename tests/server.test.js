@@ -69,6 +69,12 @@ const {
     restorePayloadRank,
     restorePayloadRankDetails,
     isRestoreRankAction,
+    countRoomHumanSlots,
+    buildGameStartPlayerNames,
+    shuffledPlayerOrder,
+    roomClientVersions,
+    roomReconnectTokenHashes,
+    buildGameStartPayload,
     resolveRejoinPlayer,
     handleSocketDisconnect,
     handleRecreateRoom,
@@ -3699,6 +3705,50 @@ runTest('buildPlayerList は設定がないルームで参加者名をそのま�
         players: [{ name: 'Alice' }, { name: 'Bob' }],
     };
     assert.deepStrictEqual(buildPlayerList(room), ['Alice', 'Bob']);
+});
+
+runTest('buildGameStartPayload は開始payloadの名前・順番・version・token hashを組み立てる', () => {
+    const io = {
+        sockets: {
+            sockets: new Map([
+                ['s1', { clientVersion: 'v-host' }],
+                ['s2', { clientVersion: '' }],
+            ]),
+        },
+    };
+    const room = {
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        players: [
+            { id: 's1', index: 1, name: 'Alice', reconnectToken: 'token-a' },
+            { id: 's2', index: 2, name: 'Bob', reconnectToken: 'token-b' },
+        ],
+        hostPlayerIndex: 1,
+        hostEpoch: 4,
+        actionSeq: 8,
+        maxPlayers: 3,
+        playerSettings: [
+            { type: 'cpu', difficulty: 'normal' },
+            { type: 'human', difficulty: 'normal' },
+            { type: 'human', difficulty: 'normal' },
+        ],
+        cpuSpeed: 1200,
+    };
+
+    assert.strictEqual(countRoomHumanSlots(room), 2);
+    assert.deepStrictEqual(buildGameStartPlayerNames(room), ['CPU1（普）', 'Alice', 'Bob']);
+    assert.deepStrictEqual(shuffledPlayerOrder(['A', 'B', 'C'], () => 0), [1, 2, 0]);
+    assert.deepStrictEqual(roomClientVersions(io, room), ['v-host', 'unknown']);
+
+    const payload = buildGameStartPayload(io, room, () => 0);
+    assert.deepStrictEqual(payload.playerNames, ['CPU1（普）', 'Alice', 'Bob']);
+    assert.deepStrictEqual(payload.playerOrder, [1, 2, 0]);
+    assert.deepStrictEqual(payload.versions, ['v-host', 'unknown']);
+    assert.strictEqual(payload.reconnectTokenHashes[0], '');
+    assert.ok(payload.reconnectTokenHashes[1]);
+    assert.ok(payload.reconnectTokenHashes[2]);
+    assert.strictEqual(payload.hostEpoch, 4);
+    assert.strictEqual(payload.actionSeq, 8);
 });
 
 runTest('checkGameStart は人間枠が揃うと gameStart を送る', () => {

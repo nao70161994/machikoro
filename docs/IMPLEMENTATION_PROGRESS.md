@@ -2201,3 +2201,16 @@
 - 残課題:
   - CPU / server のさらなる小さな helper 分離は継続 backlog。
   - modal stack / deny-nesting policy、hostless restore、signed restore、server-persisted canonical state は対象外 / design required。
+
+## Backlog cleanup - server gameStart payload helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離。
+- 修正済み:
+  - `checkGameStart()` から人間枠数、開始時プレイヤー名、シャッフル順、client version、reconnect token hash、開始payload生成を helper へ分離した。
+  - `buildGameStartPayload()` は既存の payload shape を維持し、`checkGameStart()` は lifecycle 更新と emit に集中する形へ整理した。
+  - `tests/server.test.js` に開始payload helper の名前・順番・version・token hash contract を追加した。
+- コード挙動: 既存の `checkGameStart()` 開始条件、emit payload、room lifecycle reset は維持。
+- 残課題:
+  - CPU のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore migration / pruning / 複数room resume UI は design required として維持。
