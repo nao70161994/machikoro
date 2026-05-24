@@ -985,3 +985,14 @@ Regression coverage:
 - Integration tests cover duplicate-report-suppressed recovery, stale pending modal recovery, and prior UI lock cases.
 - UI tests cover modal pointer-events fallback and restoration of pre-existing pointer style.
 - Online tests cover mismatched `actionAccepted.clientActionId` and high snapshot actionSeq without accepted client id.
+
+### Maintainability continuation Cycle 2 - appError pending ownership
+
+Online review found that `handleAppError()` cleared current-room `onlinePendingAction` before distinguishing rejected actions from generic session/app errors. That was safe for explicit invalid-action rejection, but too broad for stale-session style errors where the pending record may still be needed for reconnect/restore replay.
+
+Fix:
+- `onlinePendingAction` is now cleared on the explicit invalid-operation recovery path and when reconnect failure tears down the online session.
+- Generic current-room app errors no longer erase the pending action record; they only update the visible status.
+
+Regression coverage:
+- `tests/online.test.js` now verifies generic app errors preserve current-room pending actions, while `無効な操作です` clears the pending record and emits `rejoinRoom`.

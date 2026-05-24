@@ -2006,3 +2006,21 @@
   - modal manager の stack 化、action container 内の enabled descendant 診断強化、`INVALID_SESSION` / `ROOM_REPLACED` 時の tab nonce 付き pending clear は次Cycle候補。
   - hostless restore / signed or server-persisted canonical state は design decision required。
   - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。
+
+## Maintainability continuation Cycle 2 - appError pending ownership
+
+- 状態: completed; full verification passed before commit.
+- 新規指摘:
+  - Medium: `handleAppError()` が一般的な current-room appError でも `onlinePendingAction` を消しており、`INVALID_SESSION` / `ROOM_REPLACED` / stale tab 由来エラーで active pending を失う余地があった。
+- 修正済み:
+  - pending clear を明示的な `無効な操作です` の再同期パスと、再接続失敗でセッションを破棄するパスへ限定した。
+  - 一般 appError は status 表示だけにし、pending restore/resend record を保持する。
+  - online tests に一般エラーで pending を保持し、無効操作では pending を clear して rejoin する assertion を追加した。
+- rollback: なし。
+- regressions: なし。targeted online test と full verification は全通過。
+- benchmark影響: なし。
+- 実行テスト: `git diff --check`, `node --check js/*.js`, `node --check server.js`, `python3 -m py_compile scripts/rl/*.py`, `npm run test:static`, `npm run test:smoke`, `npm test`, `npm run test:online`, `npm run test:release`, `npm run test:pwa`, `npm run test:cpu`, `npm run test:rl`.
+- 残課題:
+  - modal stack/deny-nesting policy と action container 内 enabled descendant 診断は、仕様影響を抑えて別Cycleで検討する。
+  - hostless restore / signed or server-persisted canonical state は design decision required。
+  - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。

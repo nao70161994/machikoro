@@ -1983,7 +1983,7 @@ runTest('handleAppError は別roomのpending actionを消さない', () => {
     assert.strictEqual(rt._readPendingOutboundAction().clientActionId, 'active-action');
 });
 
-runTest('handleAppError は現在roomのpending actionを消す', () => {
+runTest('handleAppError は一般エラーでは現在roomのpending actionを消さない', () => {
     const rt = loadOnlineRuntime();
     rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
         action: 'nextTurn',
@@ -2001,7 +2001,7 @@ runTest('handleAppError は現在roomのpending actionを消す', () => {
 
     rt.handleAppError('現在タブのエラー');
 
-    assert.strictEqual(rt._readPendingOutboundAction(), null);
+    assert.strictEqual(rt._readPendingOutboundAction().clientActionId, 'current-action');
 });
 
 runTest('handleAppError は再接続中にオンラインセッションを破棄して切断する', () => {
@@ -2033,8 +2033,18 @@ runTest('handleAppError は無効操作時にオンライン状態を再同期�
         reconnectToken = 'token-1';
     `, rt);
 
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 1,
+        roomId: 'ROOM01',
+        seq: 4,
+        clientActionId: 'invalid-action',
+    }));
+
     rt.handleAppError('無効な操作です');
 
+    assert.strictEqual(rt._readPendingOutboundAction(), null);
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(emits.length, 1);
     assert.strictEqual(emits[0].name, 'rejoinRoom');

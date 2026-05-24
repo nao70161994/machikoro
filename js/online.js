@@ -759,8 +759,8 @@ function handleAppError(msg) {
         }
         return;
     }
-    _clearPendingOutboundActionForCurrentSession();
     if (msg === '無効な操作です' && isOnlineGame && socket && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
+        _clearPendingOutboundActionForCurrentSession();
         isReconnectingOnline = true;
         cpuScheduleToken++;
         document.getElementById("onlineStatus").textContent = '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...';
@@ -768,6 +768,7 @@ function handleAppError(msg) {
         return;
     }
     if (isReconnectingOnline) {
+        _clearPendingOutboundActionForCurrentSession();
         isReconnectingOnline = false;
         localStorage.removeItem('onlineSession');
         _clearOnlineRestoreBundle();

@@ -309,3 +309,8 @@ Test index:
 - Stale `pendingModal` is not a legitimate blocking modal when no pending resolver is allowed or the pending menu is empty. Preserve `stale-modal-ui-locked` recovery unless a stricter pending modal lifecycle replaces it.
 - Online pending action cleanup is clientActionId-first. For modern pending entries, do not clear `onlinePendingAction` from actionSeq alone or from an ack without matching `clientActionId`. Seq-only fallback is only for legacy entries that lack ids.
 - Next safe follow-ups: modal stack/deny-nesting policy, enabled descendant checks inside action containers, and appError pending clear hardening for `INVALID_SESSION` / `ROOM_REPLACED` with a tab/socket nonce.
+
+## Maintainability continuation Cycle 2 handoff
+
+- `handleAppError()` should not clear `onlinePendingAction` for generic app errors. Keep pending clear scoped to explicit invalid-action resync or full reconnect/session teardown.
+- When adding new server appError messages, decide whether they are action rejection, session teardown, or status-only; update `tests/online.test.js` for pending ownership semantics.
