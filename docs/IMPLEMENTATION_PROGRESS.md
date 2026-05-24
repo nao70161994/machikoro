@@ -2634,3 +2634,14 @@
 - コード挙動: pending queue の先頭 action を解決する既存順序、Cleaning/IT をこの helper で処理しない境界、fallback clear 方針は維持。
 - 残課題:
   - CPU diagnostics / scoring / build execution 周辺のさらなる helper 分離は継続 backlog。
+
+## Backlog cleanup - Business Center pending HTML helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: pending 種別 HTML helper 化 / UI の小さな helper 分離。
+- 修正中:
+  - `buildPendingBusinessHtml()` に混ざっていたカード候補抽出、chip group、相手別交換ブロックを `businessCardOptionsForPlayer()`, `buildBusinessCardChipGroupHtml()`, `buildBusinessTargetExchangeHtml()` へ分離した。
+  - `tests/ui.test.js` で Business Center helper が delegated handler 用 `data-action` と hidden input contract を維持することを固定した。
+- コード挙動: Business Center pending UI の表示内容、選択状態、交換 button の data 属性は既存と同じ。inline handler は引き続き使わない。
+- 残課題:
+  - build menu / card select 周辺の UI helper 分離は継続 backlog。

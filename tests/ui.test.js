@@ -766,6 +766,26 @@ runTest('renderPending は Business Center chip を data-action で描画する'
     assert.ok(!elements.pendingMenu.innerHTML.includes('bcSelectCard('));
 });
 
+runTest('Business Center helper は相手ごとのchipと交換buttonを組み立てる', () => {
+    const { context } = loadUiRuntime();
+    const player = {
+        name: 'Bob',
+        cards: [{ name: '牧場' }, { name: 'パン屋' }],
+        getMinorCards() { return this.cards; },
+        isDormant(card) { return card.name === 'パン屋'; },
+    };
+
+    const html = context.buildBusinessTargetExchangeHtml(player, 2);
+
+    assert.ok(html.includes('id="theirCardSelect_2" value="0"'));
+    assert.ok(html.includes('data-input-id="theirCardSelect_2"'));
+    assert.ok(html.includes('data-action="selectBusinessCard"'));
+    assert.ok(html.includes('data-action="resolveBusiness"'));
+    assert.ok(html.includes('data-target-index="2"'));
+    assert.ok(html.includes('パン屋 💤'));
+    assert.ok(!html.includes('bcSelectCard('));
+});
+
 runTest('renderPending は pending queue の先頭panelだけを描画する', () => {
     const { context, elements } = loadUiRuntime();
     const makePlayer = (name, cardNames) => ({

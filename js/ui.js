@@ -480,22 +480,31 @@ function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
     return `<button class="bc-chip${isSelected ? ' selected' : ''}" aria-pressed="${isSelected ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="${inputId}">${escapeHtml(card.name)}${player.isDormant(card) ? ' 💤' : ''}</button>`;
 }
 
+function businessCardOptionsForPlayer(player) {
+    return player.getMinorCards().map(card => ({ card, index: player.cards.indexOf(card) }));
+}
+
+function buildBusinessCardChipGroupHtml(player, cards, inputId) {
+    return cards.map(({ card, index }, j) =>
+        buildBusinessCardChipHtml(player, card, index, inputId, j === 0)
+    ).join("");
+}
+
+function buildBusinessTargetExchangeHtml(player, playerIndex) {
+    const inputId = `theirCardSelect_${playerIndex}`;
+    const theirCards = businessCardOptionsForPlayer(player);
+    const theirDefaultIdx = theirCards[0]?.index ?? 0;
+    const theirChips = buildBusinessCardChipGroupHtml(player, theirCards, inputId);
+    return `<p class="bc-label">${escapeHtml(player.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="${inputId}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${playerIndex}">⇄ ${escapeHtml(player.name)}と交換</button>`;
+}
+
 function buildPendingBusinessHtml(game) {
     const current = game.currentPlayer();
-    const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
+    const myCards = businessCardOptionsForPlayer(current);
     const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
     const myDefaultIdx = myCards[0]?.index ?? 0;
-    const myChips = myCards.map(({ card, index }, j) =>
-        buildBusinessCardChipHtml(current, card, index, 'myCardSelect', j === 0)
-    ).join("");
-    const othersHtml = others.map(({ p, i }) => {
-        const theirCards = p.getMinorCards().map(card => ({ card, index: p.cards.indexOf(card) }));
-        const theirDefaultIdx = theirCards[0]?.index ?? 0;
-        const theirChips = theirCards.map(({ card, index }, j) =>
-            buildBusinessCardChipHtml(p, card, index, `theirCardSelect_${i}`, j === 0)
-        ).join("");
-        return `<p class="bc-label">${escapeHtml(p.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="theirCardSelect_${i}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${i}">⇄ ${escapeHtml(p.name)}と交換</button>`;
-    }).join("");
+    const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect');
+    const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i)).join("");
     return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
 }
 
