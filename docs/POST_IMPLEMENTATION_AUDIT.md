@@ -956,3 +956,17 @@ Fix:
 - `renderPending()` now normalizes populated pending UI to `pendingModal.style.pointerEvents='auto'` and `pendingMenu.style.pointerEvents='auto'`, and resets those inline values when the pending UI is hidden.
 - `recoverPendingUiLock()` now restores pending pointer interaction to `auto` when a pending resolver is expected and the menu has content, instead of merely removing inline `none`.
 - Regression tests cover Business Center and TV pending UI, watchdog recovery from `pointer-events:none`, and an iPhone Safari release-style pending modal check.
+
+### UI clickability cross-check cycle
+
+A horizontal review of recent UI lock failures found that the previous watchdog still had action-specific checks: primary buttons and pending resolver checks were separate, while `buildMenu` and visible non-pending modals were not part of a common invariant. This left the same class of bug possible under different surfaces, for example `buildMenu` with stale `pointer-events:none`, or a visible rules/card modal whose root became non-interactive.
+
+Fix:
+- Added `collectUiLockSnapshot()`, `validateUiInteractability()`, and `recoverUiInteractability()` as the shared UI clickability contract in `appShell.js`.
+- The checker classifies allowed-but-unclickable UI by cause: `parent-display-none`, `parent-inert`, `pointer-events-none`, `disabled-mismatch`, `hidden-mismatch`, `ancestor-blocked`, `stale-modal`, and `missing-handler`.
+- Watchdog classification now consumes the shared invariant instead of only checking primary/pending booleans. Reports include `interactabilityIssues` in the freeze summary so future ntfy logs show the exact broken surface and reason.
+- Recovery now covers human-turn surfaces (`gameScreen`, primary buttons, `buildMenu`, stale body locks), pending resolver surfaces (`pendingModal` / `pendingMenu`), and visible modal pointer/inert issues without unlocking legitimate background locks.
+
+Regression coverage:
+- Added tests for `buildMenu pointer-events:none`, visible modal `pointer-events:none`, pending modal/menu pointer restoration, title-screen false positives, and active-modal false positives.
+- Existing post-build, orphan `gameScreen`, stale confirm, dice choice, and Safari pending tests now run through the shared invariant path.

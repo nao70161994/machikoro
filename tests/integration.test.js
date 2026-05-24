@@ -379,6 +379,70 @@ runTest('integration: Business Center pending modal の pointer-events none をw
     assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, 'auto');
 });
 
+runTest('integration: buildMenu pointer-events none を共通UI invariantで検知して復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+    hideAllTestModals(rt);
+    rt.render();
+    assert.ok(rt.__test.elements.buildMenu.innerHTML.length > 0);
+    rt.__test.elements.buildMenu.style.pointerEvents = 'none';
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'human-turn-ui-locked');
+    assert.ok(freezeSnapshot.snapshot.allowedActions.includes('buildCard'));
+    assert.ok(freezeSnapshot.snapshot.ui.buildMenu.pointerEvents === 'none');
+    assert.strictEqual(rt.__test.elements.buildMenu.style.pointerEvents, '');
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.stack.includes('allowed-build-not-clickable'));
+    assert.ok(report.stack.includes('pointer-events-none'));
+});
+
+runTest('integration: visible modal pointer-events none を共通UI invariantで検知して復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.render();
+    rt.__test.elements.rulesModal.style.display = 'flex';
+    rt.__test.elements.rulesModal.style.pointerEvents = 'none';
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.ok(freezeSnapshot.freezeKind.startsWith('modal-ui-locked'));
+    assert.strictEqual(rt.__test.elements.rulesModal.style.pointerEvents, 'auto');
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.message.includes('modal-ui-locked'));
+    assert.ok(report.stack.includes('visible-modal-pointer-events-none'));
+});
+
 runTest('integration: stale confirmModal が post-build の親lockを残してもwatchdogが復旧する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

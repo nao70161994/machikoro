@@ -288,3 +288,16 @@ Test index:
 - `initOnlineGame()` is responsible for transient async reset: CPU schedule token, delayed human action, autoskip, `prevCoins`, and `undoState`. Keep it aligned with local `init()` for async safety.
 - Local CPU build failure is pass-through to `nextTurn`; online send failure remains a hard stop. Preserve this distinction when editing CPU execution.
 - Online lifecycle `play-start` is sent on fresh `gameStart`, not on `rejoinData`. Payload must stay privacy-light: no room id, reconnect token, or player names.
+
+## UI interactability contract
+
+- Any visible and expected interaction must be both logically allowed and physically clickable. The runtime contract is now represented by `collectUiLockSnapshot()`, `validateUiInteractability()`, and `recoverUiInteractability()` in `js/appShell.js`.
+- When adding an action surface, add it to the interactability mapping if it is driven by `allowedActionsFor()`: primary buttons (`btnRoll`, `btnSkip`, `btnReroll`), choice containers (`diceChoose`), `buildMenu`, or pending resolver roots (`pendingModal` / `pendingMenu`).
+- Do not treat `disabled=false` as sufficient. Check parent/root state too: `display:none`, `hidden`, `inert`, `aria-hidden`, `pointer-events:none`, and `ancestorBlocked` all make a visible control unusable.
+- Active modals are allowed to lock the background, but the visible modal itself must remain interactive. `pendingModal` is special: it is validated by pending resolver rules so populated pending UI must have `pendingModal` and `pendingMenu` pointer interaction restored to `auto`.
+- Title/reset screens must not be auto-restored into `gameScreen`. `recoverUiInteractability()` should only be used with active game snapshots and must preserve the existing active-modal guard.
+
+Test index:
+
+- `tests/integration.test.js`: root `gameScreen` display/inert locks, stale confirm/body locks, pending pointer locks, buildMenu pointer locks, visible modal pointer locks, title/active-modal false positives.
+- `tests/release-e2e.test.js`: iPhone Safari pending pointer state approximation.
