@@ -429,6 +429,16 @@ function shouldShowPendingForCurrentPlayer() {
     return isCurrentHumanUiTurn();
 }
 
+function normalizePendingModalInteraction(el, modal, hasContent) {
+    if (modal && modal.style) {
+        modal.style.display = hasContent ? "flex" : "none";
+        modal.style.pointerEvents = hasContent ? "auto" : "";
+    }
+    if (el && el.style) {
+        el.style.pointerEvents = hasContent ? "auto" : "";
+    }
+}
+
 function updatePendingModalContent(el, modal, html) {
     if (!el || !modal) return false;
     if (isUpdatingPendingModalContent) return false;
@@ -436,7 +446,7 @@ function updatePendingModalContent(el, modal, html) {
     try {
         const nextHtml = html || "";
         if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
-        if (modal.style) modal.style.display = nextHtml ? "flex" : "none";
+        normalizePendingModalInteraction(el, modal, !!nextHtml);
         return true;
     } finally {
         isUpdatingPendingModalContent = false;

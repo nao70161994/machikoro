@@ -373,11 +373,15 @@ runTest('renderPending は allowedActionsFor の先頭pending actionだけを表
 
     context.renderPending();
     assert.strictEqual(elements.pendingModal.style.display, 'none');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, '');
+    assert.strictEqual(elements.pendingMenu.style.pointerEvents, '');
     assert.strictEqual(elements.pendingMenu.innerHTML, '');
 
     context.game.allowed = ['resolveTV'];
     context.renderPending();
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
     assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
 });
@@ -720,6 +724,8 @@ runTest('renderPending は Business Center chip を data-action で描画する'
     context.renderPending();
 
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="selectBusinessCard"'));
     assert.ok(elements.pendingMenu.innerHTML.includes('data-input-id="myCardSelect"'));
     assert.ok(elements.pendingMenu.innerHTML.includes('data-input-id="theirCardSelect_1"'));

@@ -991,12 +991,14 @@ function recoverPostBuildUiFreeze(snapshot) {
 
 function recoverPendingUiLock(snapshot) {
     if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    const expectedPending = expectedPendingActions(snapshot);
+    const shouldEnablePending = expectedPending.length > 0 && !!(snapshot.ui && snapshot.ui.pendingMenu && snapshot.ui.pendingMenu.htmlLength > 0);
     ['pendingModal', 'pendingMenu'].forEach(id => {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
         if (!el) return;
         el.inert = false;
         if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
-        if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
+        if (el.style) el.style.pointerEvents = shouldEnablePending ? 'auto' : '';
     });
     try {
         if (typeof render === 'function') render();

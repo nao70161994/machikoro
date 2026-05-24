@@ -942,3 +942,17 @@ Fixes:
 - Autoskip now considers 0-cost cards as buildable when stock and duplicate rules allow them.
 
 Regression coverage was added for dice choice watchdog recovery, online start/rejoin modal lock cleanup, resume reset boundaries, restart restore-bundle cleanup, and local CPU build failure pass.
+
+### cedbf74 pending modal pointer lock fix
+
+The `version=cedbf74` iPhone Safari notification reported `freezeKind=pending-ui-locked` with `phase=pending`, `allowedActions=["resolveBusiness"]`, `visibleModals=["pendingModal"]`, populated `pendingMenu`, and `pendingModal pointerEvents=none`. This is separate from the earlier root `gameScreen` lock fixes: the pending resolver itself was visible, but Safari could leave the pending overlay in a non-interactive pointer state.
+
+Root cause:
+- `.pending-modal` is normally styled with `pointer-events: none` while the inner content receives `pointer-events: auto`.
+- The watchdog only cleared inline `pointer-events: none`, which can still leave the computed parent overlay non-interactive on Safari.
+- `renderPending()` did not explicitly normalize pointer interaction when showing populated pending UI, so a stale inline style or Safari parent handling could keep Business Center / TV resolver controls unclickable.
+
+Fix:
+- `renderPending()` now normalizes populated pending UI to `pendingModal.style.pointerEvents='auto'` and `pendingMenu.style.pointerEvents='auto'`, and resets those inline values when the pending UI is hidden.
+- `recoverPendingUiLock()` now restores pending pointer interaction to `auto` when a pending resolver is expected and the menu has content, instead of merely removing inline `none`.
+- Regression tests cover Business Center and TV pending UI, watchdog recovery from `pointer-events:none`, and an iPhone Safari release-style pending modal check.

@@ -321,6 +321,7 @@ runTest('integration: pending操作不能ならwatchdogが縮約通知してrend
     game.pendingTV = 1;
     rt.render();
     assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('テレビ局'));
+    rt.__test.elements.pendingModal.style.pointerEvents = 'none';
     rt.__test.elements.pendingMenu.style.pointerEvents = 'none';
 
     rt.__test.runIntervals(1);
@@ -337,10 +338,45 @@ runTest('integration: pending操作不能ならwatchdogが縮約通知してrend
     assert.ok(report.stack.includes('FREEZE_SUMMARY'));
     assert.ok(!report.stack.includes('FREEZE_SNAPSHOT'));
     assert.ok(!report.stack.includes('Alice'));
-    assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, '');
+    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('テレビ局'));
     const snapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
     assert.strictEqual(snapshot.freezeKind, 'pending-ui-locked');
+});
+
+runTest('integration: Business Center pending modal の pointer-events none をwatchdogが復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.players[0].addCard(rt.createCardByName('パン屋'));
+    game.players[1].addCard(rt.createCardByName('牧場'));
+    rt.render();
+    assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('ビジネスセンター'));
+    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto');
+
+    rt.__test.elements.pendingModal.style.pointerEvents = 'none';
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const reportCall = rt.__test.fetchCalls.find(call => {
+        if (call.url !== '/api/client-error') return false;
+        const report = JSON.parse(call.options.body);
+        return report.source === 'freeze-watchdog' && report.message.includes('pending-ui-locked');
+    });
+    assert.ok(reportCall);
+    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, 'auto');
 });
 
 runTest('integration: stale confirmModal が post-build の親lockを残してもwatchdogが復旧する', () => {

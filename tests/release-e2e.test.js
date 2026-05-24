@@ -146,6 +146,8 @@ function loadUiModalRuntime() {
         rulesModal: makeElement({
             querySelectorAll() { return [first, last]; },
         }),
+        pendingModal: makeElement(),
+        pendingMenu: makeElement(),
     };
     const context = {
         console,
@@ -168,10 +170,10 @@ function loadUiModalRuntime() {
         fullLog: [],
         announcerTimer: null,
         cardFilter: '',
-        cpuPlayers: [],
+        cpuPlayers: [null, null],
         game: null,
         LOG_TYPES: {},
-        GAME_PHASES: {},
+        GAME_PHASES: { PENDING: 'pending' },
     };
     opener.focus = () => { opener.focused = true; context.document.activeElement = opener; };
     first.focus = () => { first.focused = true; context.document.activeElement = first; };
@@ -306,6 +308,39 @@ runTest('release modal/toast は non-blocking 表示、focus trap、Esc close、
     context.handleModalKeydown({ key: 'Escape', preventDefault() { prevented++; } });
     assert.strictEqual(elements.rulesModal.style.display, 'none');
     assert.strictEqual(context.document.activeElement, opener);
+});
+
+runTest('release iPhone Safari pending UI は pointer-events none 残留を正規化する', () => {
+    const { context, elements } = loadUiModalRuntime();
+    const makePlayer = (name, cardNames) => ({
+        name,
+        coins: 3,
+        cards: cardNames.map(cardName => ({ name: cardName, color: 'blue' })),
+        getMinorCards() { return this.cards; },
+        isDormant() { return false; },
+    });
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        pendingTV: 0,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        allowedActions() { return new Set(['resolveBusiness']); },
+        players: [makePlayer('Alice', ['パン屋']), makePlayer('Bob', ['牧場'])],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+    elements.pendingModal.style.pointerEvents = 'none';
+    elements.pendingMenu.style.pointerEvents = 'none';
+
+    context.renderPending();
+
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(elements.pendingMenu.style.pointerEvents, 'auto');
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
 });
 
 runAsyncTest('release PWA install/update と Service Worker lifecycle を疑似実行する', async () => {
