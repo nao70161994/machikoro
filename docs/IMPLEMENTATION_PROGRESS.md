@@ -2679,3 +2679,14 @@
 - コード挙動: stable/progress income の計算対象は既存と同じ。重複条件だけを helper に寄せた。
 - 残課題:
   - CPU build scoring / diagnostics のさらなる helper 分離は継続 backlog。
+
+## Backlog cleanup - server disconnect lifecycle helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server room lifecycle の小さな helper 分離。
+- 修正中:
+  - `handleSocketDisconnect()` の待機room削除と開始済みroom切断処理を `removeWaitingRoomSocket()` / `handleStartedRoomSocketDisconnect()` へ分離した。
+  - `tests/server.test.js` で待機room最後のsocket削除、開始済みhost切断時のhost移譲、遅延disconnect無視の契約を固定した。
+- コード挙動: disconnect event のemit内容、hostChanged payload、古いsocketを無視する挙動は既存と同じ。
+- 残課題:
+  - restore replacement 周辺のさらなる helper 分離は継続 backlog。

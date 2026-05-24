@@ -120,6 +120,8 @@ const {
     applyAcceptedActionToRoomCanonicalMirror,
     getAllowedActions,
     buildPlayerList,
+    removeWaitingRoomSocket,
+    handleStartedRoomSocketDisconnect,
     checkGameStart,
     __rooms,
     __io,
@@ -3581,6 +3583,49 @@ runTest('getRemainingConnectedPlayers は切断済み・幽霊プレイヤーを
 
     const remaining = getRemainingConnectedPlayers(room, sockets, 'socket-host');
     assert.deepStrictEqual(remaining.map(p => p.index), [2]);
+});
+
+runTest('disconnect lifecycle helpers は待機room削除と開始済みhost移譲を分離する', () => {
+    const waitingRoomId = 'WAIT_HELPER';
+    __rooms[waitingRoomId] = {
+        started: false,
+        playerSettings: [{ type: 'human' }],
+        players: [{ id: 'socket-wait', index: 0, name: 'Alice' }],
+    };
+    const waitingIo = { to() { return { emit() {} }; } };
+    const waitingResult = removeWaitingRoomSocket(waitingIo, waitingRoomId, __rooms[waitingRoomId], { id: 'socket-wait' });
+    assert.deepStrictEqual(waitingResult, { removedRoom: true });
+    assert.strictEqual(__rooms[waitingRoomId], undefined);
+
+    const emitted = [];
+    const room = {
+        started: true,
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        players: [
+            { id: 'socket-host', index: 0, name: 'Host' },
+            { id: 'socket-next', index: 1, name: 'Next' },
+        ],
+    };
+    const io = {
+        sockets: { sockets: new Map([['socket-next', {}]]) },
+        to(roomId) {
+            return {
+                emit(name, payload) { emitted.push({ roomId, name, payload }); },
+            };
+        },
+    };
+
+    const result = handleStartedRoomSocketDisconnect(io, 'STARTED_HELPER', room, { id: 'socket-host', playerIndex: 0 });
+
+    assert.deepStrictEqual(result, { ignored: false, hostChanged: true, playerIndex: 0 });
+    assert.strictEqual(room.players[0].id, null);
+    assert.strictEqual(room.hostPlayerIndex, 1);
+    assert.strictEqual(room.hostEpoch, 2);
+    assert.deepStrictEqual(emitted, [
+        { roomId: 'STARTED_HELPER', name: 'playerDisconnected', payload: { playerIndex: 0, playerName: 'Host' } },
+        { roomId: 'STARTED_HELPER', name: 'hostChanged', payload: { newHostPlayerIndex: 1, hostEpoch: 2 } },
+    ]);
 });
 
 runTest('handleSocketDisconnect は古いsocketの遅延disconnectで再接続済みplayerを消さない', () => {
