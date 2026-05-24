@@ -1036,6 +1036,23 @@ runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生
     assert.ok(html.includes('disabled'));
 });
 
+runTest('card select toggle HTML helpers は data-action と aria-pressed を生成する', () => {
+    const { context } = loadUiRuntime();
+
+    const cardOn = context.buildCardSelectToggleButtonHtml('麦畑', true);
+    assert.ok(cardOn.includes('class="card-toggle-btn on"'));
+    assert.ok(cardOn.includes('data-action="toggleCard"'));
+    assert.ok(cardOn.includes('data-card-name="麦畑"'));
+    assert.ok(cardOn.includes('id="cardToggle_麦畑"'));
+    assert.ok(cardOn.includes('aria-pressed="true"'));
+
+    const landmarkOff = context.buildLandmarkSelectToggleButtonHtml('港', false);
+    assert.ok(landmarkOff.includes('class="card-toggle-btn off"'));
+    assert.ok(landmarkOff.includes('data-action="toggleLandmark"'));
+    assert.ok(landmarkOff.includes('data-landmark-name="港"'));
+    assert.ok(landmarkOff.includes('aria-pressed="false"'));
+});
+
 runTest('card select modal handler はカードとランドマークを data-action で切り替える', () => {
     const { context, elements } = loadUiRuntime();
 

@@ -2426,3 +2426,15 @@
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
   - server / UI / CPU のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - card select toggle HTML helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: UI の小さな helper 分離 / card select 周辺。
+- 修正済み:
+  - `js/ui.js` の card select modal で、カード toggle とランドマーク toggle の HTML 生成を `buildCardSelectToggleButtonHtml()` / `buildLandmarkSelectToggleButtonHtml()` に分離した。
+  - `tests/ui.test.js` に data-action / target data / aria-pressed を固定する helper contract test を追加した。
+- コード挙動: 既存の delegated handler と表示順を維持。HTML 文字列生成だけを小さく分離した。
+- 残課題:
+  - server / CPU のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

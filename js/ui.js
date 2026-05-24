@@ -1108,16 +1108,24 @@ function closeCardSelect() {
     closeAccessibleModal("cardSelectModal");
 }
 
+function buildCardSelectToggleButtonHtml(name, enabled) {
+    const safeName = escapeHtml(name);
+    return `<button class="card-toggle-btn ${enabled ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}" aria-pressed="${enabled ? 'true' : 'false'}">${safeName}</button>`;
+}
+
+function buildLandmarkSelectToggleButtonHtml(name, enabled) {
+    const safeName = escapeHtml(name);
+    return `<button class="card-toggle-btn ${enabled ? 'on' : 'off'}" data-action="toggleLandmark" data-landmark-name="${safeName}" aria-pressed="${enabled ? 'true' : 'false'}">${getLandmarkEmoji(name)} ${safeName}</button>`;
+}
+
 function renderCardSelectModal() {
     for (const [set, cards] of Object.entries(CARD_SETS)) {
         const suffix = set.charAt(0).toUpperCase() + set.slice(1);
         const el = document.getElementById(`cardList${suffix}`);
         if (el) {
-            el.innerHTML = [...cards].sort(compareCardNamesForDisplay).map(name => {
-                const on = enabledCards.has(name);
-                const safeName = escapeHtml(name);
-                return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}" aria-pressed="${on ? 'true' : 'false'}">${safeName}</button>`;
-            }).join("");
+            el.innerHTML = [...cards].sort(compareCardNamesForDisplay)
+                .map(name => buildCardSelectToggleButtonHtml(name, enabledCards.has(name)))
+                .join("");
         }
         const allOn = cards.every(n => enabledCards.has(n));
         const btn = document.getElementById(`btnSet${suffix}`);
@@ -1129,11 +1137,9 @@ function renderCardSelectModal() {
     }
     const landmarkList = document.getElementById("landmarkList");
     if (landmarkList) {
-        landmarkList.innerHTML = Player.landmarkNames().map(name => {
-            const on = enabledLandmarks.has(name);
-            const safeName = escapeHtml(name);
-            return `<button class="card-toggle-btn ${on ? 'on' : 'off'}" data-action="toggleLandmark" data-landmark-name="${safeName}" aria-pressed="${on ? 'true' : 'false'}">${getLandmarkEmoji(name)} ${safeName}</button>`;
-        }).join("");
+        landmarkList.innerHTML = Player.landmarkNames()
+            .map(name => buildLandmarkSelectToggleButtonHtml(name, enabledLandmarks.has(name)))
+            .join("");
     }
 }
 
