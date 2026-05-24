@@ -224,17 +224,10 @@ function setStatsPlayerFilter(playerName) {
     renderStats();
 }
 
-function renderStats() {
-    const el = document.getElementById('tabContentStats');
-    if (!el) return;
-    bindStatsHandlers(el);
-
-    const stats = loadStats();
+function buildStatsFilterTabsHtml(stats) {
     const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
     const cpuLabels = Object.keys(stats.cpuTypes).sort((a, b) => a.localeCompare(b, 'ja'));
-    const bucket = _statsPlayerFilter ? getFilteredStatsBucket(stats, _statsPlayerFilter) : getCurrentStatsBucket(stats, _statsViewMode);
-    const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
-    const filterTabsHtml = `
+    return `
         <div class="stats-filter-tabs">
             <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'all' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all">全体</button>
             <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'local' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="local">ローカル</button>
@@ -248,6 +241,52 @@ function renderStats() {
         </div>` : ''}
         ${_statsPlayerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" data-action="setStatsPlayerFilter" data-player-name="">解除</button></div>` : ''}
     `;
+}
+
+function buildStatsCardRowsHtml(bucket) {
+    const cardEntries = Object.entries(bucket.cardStats)
+        .map(([name, s]) => {
+            const total = s.winWith + s.loseWith;
+            return { name, total, rate: total > 0 ? s.winWith / total : 0 };
+        })
+        .filter(e => e.total >= 3)
+        .sort((a, b) => b.rate - a.rate);
+
+    return cardEntries.slice(0, 15).map((e, i) => {
+        const pct = Math.round(e.rate * 100);
+        return `<div class="stats-card-row">
+            <span class="stats-rank">${i + 1}</span>
+            <span class="stats-card-name">${escapeHtml(e.name)}</span>
+            <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
+            <span class="stats-pct">${pct}%</span>
+            <span class="stats-count">${e.total}戦</span>
+        </div>`;
+    }).join('') || '<div class="stats-empty">3戦以上のデータがまだありません</div>';
+}
+
+function buildStatsLandmarkRowsHtml(bucket) {
+    return Object.entries(bucket.landmarkStats)
+        .map(([name, s]) => {
+            const total = s.winWith + s.loseWith;
+            const pct = total > 0 ? Math.round(s.winWith / total * 100) : 0;
+            return `<div class="stats-card-row">
+                <span class="stats-card-name">${escapeHtml(name)}</span>
+                <div class="stats-bar-wrap"><div class="stats-bar stats-bar-lm" style="width:${pct}%"></div></div>
+                <span class="stats-pct">${pct}%</span>
+                <span class="stats-count">${total}戦</span>
+            </div>`;
+        }).join('');
+}
+
+function renderStats() {
+    const el = document.getElementById('tabContentStats');
+    if (!el) return;
+    bindStatsHandlers(el);
+
+    const stats = loadStats();
+    const bucket = _statsPlayerFilter ? getFilteredStatsBucket(stats, _statsPlayerFilter) : getCurrentStatsBucket(stats, _statsViewMode);
+    const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
+    const filterTabsHtml = buildStatsFilterTabsHtml(stats);
 
     if (bucket.totalGames === 0) {
         el.innerHTML = `
@@ -259,37 +298,8 @@ function renderStats() {
 
     const winRate = Math.round(bucket.wins / bucket.totalGames * 100);
     const avgTurns = Math.round(bucket.totalTurns / bucket.totalGames);
-
-    const cardEntries = Object.entries(bucket.cardStats)
-        .map(([name, s]) => {
-            const total = s.winWith + s.loseWith;
-            return { name, total, rate: total > 0 ? s.winWith / total : 0 };
-        })
-        .filter(e => e.total >= 3)
-        .sort((a, b) => b.rate - a.rate);
-
-    const cardRows = cardEntries.slice(0, 15).map((e, i) => {
-        const pct = Math.round(e.rate * 100);
-        return `<div class="stats-card-row">
-            <span class="stats-rank">${i + 1}</span>
-            <span class="stats-card-name">${escapeHtml(e.name)}</span>
-            <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
-            <span class="stats-pct">${pct}%</span>
-            <span class="stats-count">${e.total}戦</span>
-        </div>`;
-    }).join('') || '<div class="stats-empty">3戦以上のデータがまだありません</div>';
-
-    const lmRows = Object.entries(bucket.landmarkStats)
-        .map(([name, s]) => {
-            const total = s.winWith + s.loseWith;
-            const pct = total > 0 ? Math.round(s.winWith / total * 100) : 0;
-            return `<div class="stats-card-row">
-                <span class="stats-card-name">${escapeHtml(name)}</span>
-                <div class="stats-bar-wrap"><div class="stats-bar stats-bar-lm" style="width:${pct}%"></div></div>
-                <span class="stats-pct">${pct}%</span>
-                <span class="stats-count">${total}戦</span>
-            </div>`;
-        }).join('');
+    const cardRows = buildStatsCardRowsHtml(bucket);
+    const lmRows = buildStatsLandmarkRowsHtml(bucket);
 
     el.innerHTML = `
         ${filterTabsHtml}

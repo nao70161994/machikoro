@@ -120,6 +120,28 @@ runTest('renderStats は統計モード切替ボタンを表示する', () => {
     assert.ok(!rt.__test.statsEl.innerHTML.includes('setStatsViewMode('));
 });
 
+runTest('stats HTML helpers は filter とランキング行を生成する', () => {
+    const rt = loadStatsRuntime();
+    const stats = rt.createDefaultStats();
+    stats.players.Alice = rt.createEmptyStatsBucket();
+    stats.cpuTypes['CPU（強）'] = rt.createEmptyStatsBucket();
+    const filterHtml = rt.buildStatsFilterTabsHtml(stats);
+    assert.ok(filterHtml.includes('data-action="setStatsViewMode"'));
+    assert.ok(filterHtml.includes('data-player-name="Alice"'));
+    assert.ok(filterHtml.includes('data-player-name="CPU（強）"'));
+
+    const bucket = rt.createEmptyStatsBucket();
+    bucket.cardStats = { 麦畑: { winWith: 2, loseWith: 1 }, パン屋: { winWith: 1, loseWith: 1 } };
+    bucket.landmarkStats = { 駅: { winWith: 3, loseWith: 1 } };
+    const cardRows = rt.buildStatsCardRowsHtml(bucket);
+    const landmarkRows = rt.buildStatsLandmarkRowsHtml(bucket);
+    assert.ok(cardRows.includes('麦畑'));
+    assert.ok(cardRows.includes('67%'));
+    assert.ok(!cardRows.includes('パン屋'));
+    assert.ok(landmarkRows.includes('駅'));
+    assert.ok(landmarkRows.includes('75%'));
+});
+
 runTest('renderStats はプレイヤー別フィルタを表示する', () => {
     const rt = loadStatsRuntime();
     const game = makeGame();

@@ -2352,3 +2352,16 @@
   - build menu / card select / stats 周辺のさらなる小さな UI helper 分離は継続 backlog。
   - CPU / server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - stats HTML helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: UI の小さな helper 分離。
+- 修正済み:
+  - `js/stats.js` の `renderStats()` から filter tabs / card ranking rows / landmark rows の HTML 生成を `buildStatsFilterTabsHtml()` / `buildStatsCardRowsHtml()` / `buildStatsLandmarkRowsHtml()` に分離した。
+  - `tests/stats.test.js` に helper が delegated `data-action` とランキング行の閾値・比率表示を維持する回帰テストを追加した。
+- コード挙動: 統計記録、filter state、delegated click handler、表示文言は維持。HTML 生成責務だけを小さく分離。
+- 残課題:
+  - build menu / card select 周辺のさらなる小さな UI helper 分離は継続 backlog。
+  - CPU / server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
