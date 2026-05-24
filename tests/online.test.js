@@ -144,6 +144,7 @@ function loadOnlineRuntime(options = {}) {
         this._readOnlineGameStartPayload = _readOnlineGameStartPayload;
         this._readOnlineStateSnapshot = _readOnlineStateSnapshot;
         this._readPendingOutboundAction = _readPendingOutboundAction;
+        this._readPendingOutboundActionForCurrentSession = _readPendingOutboundActionForCurrentSession;
         this._clearOnlineRestoreBundle = _clearOnlineRestoreBundle;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRoomStorageKeys = _onlineRoomStorageKeys;
@@ -1407,6 +1408,35 @@ runTest('_readPendingOutboundAction は scoped pending がなければ legacy pe
 
     const pending = rt._readPendingOutboundAction();
     assert.strictEqual(pending.clientActionId, 'legacy-fallback');
+});
+
+runTest('_readPendingOutboundActionForCurrentSession は別roomのlegacy pendingを除外する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 1,
+        clientActionId: 'legacy-other-room',
+    }));
+
+    assert.strictEqual(rt._readPendingOutboundActionForCurrentSession({ requireRoomId: true }), null);
+});
+
+runTest('_readPendingOutboundActionForCurrentSession はroomIdなしlegacy pendingを復元対象にしない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: 'legacy-roomless',
+    }));
+
+    assert.strictEqual(rt._readPendingOutboundActionForCurrentSession({ requireRoomId: true }), null);
 });
 
 runTest('sendAction は pending outbound を room-scoped key にも保存して消す', () => {

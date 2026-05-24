@@ -2402,3 +2402,16 @@
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
   - UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - legacy pending outbound session reader
+
+- 状態: completed; full verification passed before commit.
+- 対象: legacy pending outbound の room gate 強化。
+- 修正済み:
+  - `js/online.js` に `_readPendingOutboundActionForCurrentSession()` を追加し、復元ログへ混ぜる経路では current room の明示 `roomId` を持つ pending だけを扱うようにした。
+  - `_tryRestoreRoom()` / `_readLocalRestoreBundle()` は同 helper 経由で pending outbound を読むようにした。
+  - `tests/online.test.js` に別room legacy pending と roomIdなし legacy pending が復元対象にならない contract test を追加した。
+- コード挙動: `_readPendingOutboundAction()` の legacy fallback は互換性のため維持し、復元・再送判断だけを current session gate へ寄せた。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+  - server / UI / CPU のさらなる小さな helper 分離は継続 backlog。

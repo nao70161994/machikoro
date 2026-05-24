@@ -395,6 +395,14 @@ function _readPendingOutboundAction() {
     return normalized;
 }
 
+function _readPendingOutboundActionForCurrentSession(options = {}) {
+    const entry = _readPendingOutboundAction();
+    const gateOptions = options.requireRoomId
+        ? Object.assign({}, options, { requireExplicitRoomId: true })
+        : options;
+    return _pendingOutboundActionBelongsToCurrentSession(entry, gateOptions) ? entry : null;
+}
+
 function _clearPendingOutboundAction(roomId = myRoomId) {
     try {
         _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
@@ -1018,7 +1026,7 @@ function _tryRestoreRoom() {
         }
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
-        _appendPendingForRestore(actionLog, _readPendingOutboundAction());
+        _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,
@@ -1041,7 +1049,7 @@ function _readLocalRestoreBundle() {
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
-        _appendPendingForRestore(actionLog, _readPendingOutboundAction());
+        _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
         return { gameStartPayload, stateSnapshot, actionLog };
     } catch (_) {
         return null;
