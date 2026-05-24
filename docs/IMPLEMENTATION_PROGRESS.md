@@ -1978,8 +1978,31 @@
   - restart の restore bundle cleanup と stopConfetti。
   - local CPU build failure pass。
 - rollback: なし。
-- regressions: targeted tests passed; full verification pending.
+- regressions: full verification passed; no rollback.
+- 実行テスト: `git diff --check`, `npm run test:static`, `npm run test:smoke`, `npm test`, `npm run test:online`, `npm run test:release`, `npm run test:pwa`, `npm run test:cpu`, `npm run test:rl`, `node --check js/*.js`, `node --check server.js`, `python3 -m py_compile scripts/rl/*.py`.
 - benchmark影響: CPU preset/RL model は未変更。CPU build failure の fallback 挙動だけ、停止より pass を優先する安定化。
 - 残課題:
   - PWA version mismatch inline flow は引き続き source-level/release approximation 中心で、実ブラウザ cache/controller timing は manual verification required。
   - online storage の per-room namespace 化、hostless restore、signed/server persisted canonical state は design required。
+
+## Maintainability continuation Cycle 1 - UI/online resilience
+
+- 状態: completed; full verification passed before commit.
+- 新規指摘:
+  - High: freeze watchdog の duplicate report suppression が同じ state key の再発時に recovery まで抑止し、通知spamは防げても UI lock が残る可能性があった。
+  - High: Safari / older WebView では `inert` fallback が不十分な場合、modal open 中に背景 root が pointer 操作を受ける余地があった。
+  - High: `pendingModal` が stale 表示されたまま pending action が無い状態は active modal として扱われ、既存 stale cleanup に到達しない可能性があった。
+  - High: online reconnect の pending action 判定が `stateSnapshot.actionSeq >= pending.seq` だけで clientActionId 付き未ack action を受理済み扱いし得た。
+  - High: `actionAccepted` が ack の `clientActionId` を見ずに `onlinePendingAction` を消し、遅延ack / stale tab 由来の localStorage 干渉で active pending を失う可能性があった。
+- 修正済み:
+  - duplicate freeze report は引き続き通知抑止するが、`recoverUiInteractability()` は毎回実行するようにした。
+  - modal background lock は `inert` / `aria-hidden` に加え、既存値を保存したうえで `pointer-events:none` を付与・復元する。
+  - stale `pendingModal` を `stale-modal-ui-locked` として分類し、watchdog recovery で閉じる。
+  - online pending は clientActionId がある場合、replay log / acceptedClientActions / matching actionAccepted id でのみ clear する。seq-only compact fallback は legacy pending のみに限定した。
+- rollback: なし。
+- regressions: targeted tests passed; full verification pending.
+- benchmark影響: CPU preset / RL model / gameplay scoring は未変更。online restore の未ack保持が厳密になるため、二重消失より再送安全性を優先。
+- 残課題:
+  - modal manager の stack 化、action container 内の enabled descendant 診断強化、`INVALID_SESSION` / `ROOM_REPLACED` 時の tab nonce 付き pending clear は次Cycle候補。
+  - hostless restore / signed or server-persisted canonical state は design decision required。
+  - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。

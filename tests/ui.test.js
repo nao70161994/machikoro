@@ -146,6 +146,8 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     assert.strictEqual(elements.titleScreen.inert, true);
     assert.strictEqual(elements.gameScreen.inert, true);
     assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), 'true');
+    assert.strictEqual(elements.titleScreen.style.pointerEvents, 'none');
+    assert.strictEqual(elements.gameScreen.style.pointerEvents, 'none');
 
     context.closeRules();
 
@@ -153,6 +155,19 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     assert.strictEqual(elements.titleScreen.inert, undefined);
     assert.strictEqual(elements.gameScreen.inert, undefined);
     assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(elements.titleScreen.style.pointerEvents, '');
+    assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
+});
+
+runTest('modal helpers は既存の背景 pointer-events を復元する', () => {
+    const { context, elements } = loadUiRuntime();
+    elements.titleScreen.style.pointerEvents = 'auto';
+
+    context.showRules();
+    assert.strictEqual(elements.titleScreen.style.pointerEvents, 'none');
+
+    context.closeRules();
+    assert.strictEqual(elements.titleScreen.style.pointerEvents, 'auto');
 });
 
 runTest('modal open は背景をaria-hiddenにする前にfocusをmodalへ移す', () => {

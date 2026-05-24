@@ -306,6 +306,38 @@ runTest('integration: 自分ターンで操作可能ボタンがなければwatc
     assert.strictEqual(snapshot.freezeKind, 'human-turn-ui-locked');
 });
 
+runTest('integration: watchdogは重複通知を抑止しても同種UI lockを再復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.ROLL;
+    rt.render();
+    rt.__test.elements.btnRoll.disabled = true;
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+    assert.strictEqual(rt.__test.elements.btnRoll.disabled, false);
+    const firstReports = rt.__test.fetchCalls.filter(call => call.url === '/api/client-error');
+    assert.strictEqual(firstReports.length, 1);
+
+    rt.__test.elements.btnRoll.disabled = true;
+    rt.__test.advanceTime(1000);
+    rt.__test.runIntervals(1);
+
+    const reports = rt.__test.fetchCalls.filter(call => call.url === '/api/client-error');
+    assert.strictEqual(reports.length, 1);
+    assert.strictEqual(rt.__test.elements.btnRoll.disabled, false);
+    assert.ok(rt.window.__machikoroClientCheckpoints.filter(entry => entry.event === 'freeze-watchdog-recovered').length >= 2);
+});
+
 runTest('integration: pending操作不能ならwatchdogが縮約通知してrender復旧する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -669,6 +701,36 @@ runTest('integration: restart後の未開始title状態をwatchdogがUI lock扱�
     assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
     const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
     assert.strictEqual(reportCall, undefined);
+});
+
+runTest('integration: stale pendingModal が通常操作を塞いだらwatchdogが閉じて復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.ROLL;
+    rt.render();
+    rt.__test.elements.pendingModal.style.display = 'flex';
+    rt.__test.elements.pendingMenu.innerHTML = '';
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'stale-modal-ui-locked');
+    assert.strictEqual(rt.__test.elements.pendingModal.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.btnRoll.disabled, false);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.message.includes('stale-modal-ui-locked'));
 });
 
 runTest('integration: active modal表示中はgameScreen display復旧を走らせない', () => {

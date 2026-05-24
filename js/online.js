@@ -379,6 +379,15 @@ function _acceptedClientActionMatchesPending(ref, pending) {
         Number.isInteger(ref.playerIndex) && ref.playerIndex === pending.playerIndex);
 }
 
+function _shouldClearPendingForAcceptedAction(accepted, pending) {
+    if (!pending) return false;
+    if (typeof pending.clientActionId === 'string') {
+        return typeof accepted?.clientActionId === 'string' && _sameOnlineActionEntry(accepted, pending);
+    }
+    return _sameOnlineActionEntry(accepted, pending);
+}
+
+
 function _appendPendingForRestore(actionLog, pending) {
     if (!pending) return actionLog;
     if (!_pendingOutboundActionBelongsToCurrentSession(pending, { requireRoomId: true })) return actionLog;
@@ -581,7 +590,10 @@ function initSocket() {
 
     socket.on('actionAccepted', ({ action, data, playerIndex, seq, clientActionId }) => {
         _setOnlineActionInFlight(false);
-        _clearPendingOutboundAction();
+        const pendingBeforeAccept = _readPendingOutboundAction();
+        if (_shouldClearPendingForAcceptedAction({ action, data, playerIndex, seq, clientActionId }, pendingBeforeAccept)) {
+            _clearPendingOutboundAction();
+        }
         applyReplayedAction(action, data);
         render();
         _saveActionLog(action, data, { alreadyApplied: true, playerIndex, seq, clientActionId });
@@ -609,6 +621,7 @@ function initSocket() {
         const pendingBeforeRejoin = _readPendingOutboundAction();
         const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
         const pendingCompactedIntoSnapshot = pendingBeforeRejoin &&
+            typeof pendingBeforeRejoin.clientActionId !== 'string' &&
             Number.isInteger(pendingBeforeRejoin.seq) &&
             Number.isInteger(stateSnapshot?.actionSeq) &&
             stateSnapshot.actionSeq >= pendingBeforeRejoin.seq;

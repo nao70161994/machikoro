@@ -301,3 +301,11 @@ Test index:
 
 - `tests/integration.test.js`: root `gameScreen` display/inert locks, stale confirm/body locks, pending pointer locks, buildMenu pointer locks, visible modal pointer locks, title/active-modal false positives.
 - `tests/release-e2e.test.js`: iPhone Safari pending pointer state approximation.
+
+## Maintainability continuation Cycle 1 handoff
+
+- Freeze watchdog duplicate suppression must only suppress reports, not recovery. Keep the `recoverUiInteractability(snapshot)` call inside the duplicate-report branch.
+- Modal background locking now uses pointer-events as an inert fallback. When changing modal roots, update `MODAL_INERT_ROOT_IDS`, `setAppInertForModal()`, and the modal helper tests together.
+- Stale `pendingModal` is not a legitimate blocking modal when no pending resolver is allowed or the pending menu is empty. Preserve `stale-modal-ui-locked` recovery unless a stricter pending modal lifecycle replaces it.
+- Online pending action cleanup is clientActionId-first. For modern pending entries, do not clear `onlinePendingAction` from actionSeq alone or from an ack without matching `clientActionId`. Seq-only fallback is only for legacy entries that lack ids.
+- Next safe follow-ups: modal stack/deny-nesting policy, enabled descendant checks inside action containers, and appError pending clear hardening for `INVALID_SESSION` / `ROOM_REPLACED` with a tab/socket nonce.

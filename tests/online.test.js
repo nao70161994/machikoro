@@ -560,6 +560,7 @@ runTest('rejoinData は snapshot に畳み込まれた未ackアクションを�
         },
         stateSnapshot,
         actionLog: [],
+        acceptedClientActions: [{ playerIndex: pending.playerIndex, clientActionId: pending.clientActionId, seq: pending.seq }],
         playerIndex: 0,
         hostPlayerIndex: 0,
     });
@@ -701,6 +702,53 @@ runTest('rejoinData はホスト移譲後の旧ホストCPU pending actionを再
     assert.strictEqual(rt.getSocketEmits().length, 0);
     assert.strictEqual(rt._readPendingOutboundAction(), null);
     assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+});
+
+runTest('rejoinData は stateSnapshot actionSeq だけ高い場合もclientActionId付きpendingを受理済みにしない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    rt.sendAction('nextTurn', {});
+    const pending = rt._readPendingOutboundAction();
+    const beforeEmitCount = rt.getSocketEmits().length;
+    const stateSnapshot = rt.buildOnlineSnapshot();
+    stateSnapshot.actionSeq = pending.seq + 10;
+
+    handlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            actionSeq: pending.seq + 10,
+        },
+        stateSnapshot,
+        actionLog: [],
+        acceptedClientActions: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt._readPendingOutboundAction().clientActionId, pending.clientActionId);
+    assert.strictEqual(rt.getSocketEmits().length, beforeEmitCount + 1);
+    assert.strictEqual(rt.getSocketEmits()[rt.getSocketEmits().length - 1].payload.clientActionId, pending.clientActionId);
 });
 
 runTest('rejoinData は actionSeq だけ高い場合は未ackアクションを受理済みにしない', () => {
@@ -1239,9 +1287,37 @@ runTest('sendAction は未ackアクションを復元用に保存し actionAccep
     const emitted = rt.getSocketEmits().filter(e => e.name === 'gameAction').pop();
     assert.strictEqual(emitted.payload.clientActionId, pending.clientActionId);
 
-    rt.getSocketHandlers().actionAccepted({ action: 'nextTurn', data: {}, playerIndex: 0 });
+    rt.getSocketHandlers().actionAccepted({ action: 'nextTurn', data: {}, playerIndex: 0, clientActionId: pending.clientActionId });
 
     assert.strictEqual(rt._readPendingOutboundAction(), null);
+});
+
+runTest('actionAccepted は別clientActionIdのackでpending actionを消さない', () => {
+    const rt = loadOnlineRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.setGame(game);
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+        myRoomId: 'ROOM01',
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    vm.runInContext('isOnlineGame = true;', rt);
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const pending = rt._readPendingOutboundAction();
+
+    rt.getSocketHandlers().actionAccepted({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: pending.seq,
+        clientActionId: 'other-client-action',
+    });
+
+    assert.strictEqual(rt._readPendingOutboundAction().clientActionId, pending.clientActionId);
 });
 
 runTest('actionAccepted は clientActionId を復元ログへ保存する', () => {

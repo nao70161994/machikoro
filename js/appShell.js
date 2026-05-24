@@ -439,6 +439,13 @@ function hasActiveBlockingModal(snapshot) {
     return activeBlockingModalIds(snapshot).length > 0;
 }
 
+function isStalePendingModalSnapshot(snapshot) {
+    if (!snapshot || !explicitModalOpenFromSnapshot(snapshot, 'pendingModal')) return false;
+    const expectedPending = expectedPendingActions(snapshot);
+    const pendingMenu = snapshot.ui && snapshot.ui.pendingMenu;
+    return expectedPending.length === 0 || !pendingMenu || pendingMenu.htmlLength <= 0;
+}
+
 function clearElementModalLock(id) {
     const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
     if (!el) return false;
@@ -536,8 +543,9 @@ function closeStaleBlockingModals(snapshot, reason = 'ui-unlock') {
     let closed = closeStaleConfirmModal(snapshot, reason + '-confirm');
     const pendingModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingModal') : null;
     const pendingMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingMenu') : null;
-    if (pendingModal && pendingModal.style && pendingMenu && !pendingMenu.innerHTML) {
+    if (pendingModal && pendingModal.style && isStalePendingModalSnapshot(snapshot)) {
         pendingModal.style.display = 'none';
+        if (pendingMenu && pendingMenu.style) pendingMenu.style.pointerEvents = '';
         closed = true;
     }
     if (closed) resetAccessibleModalStateForRecovery();
@@ -1055,6 +1063,7 @@ function classifyLikelyFreeze(snapshot) {
     const activeBlockingModalOpen = hasActiveBlockingModal(snapshot);
     const onlineBlocked = isOnlineUiBlockedSnapshot(snapshot);
     const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
+    const stalePendingOpen = isStalePendingModalSnapshot(snapshot);
     const expectedActions = expectedPrimaryActions(snapshot);
     const expectedPending = expectedPendingActions(snapshot);
     const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
@@ -1064,6 +1073,7 @@ function classifyLikelyFreeze(snapshot) {
     const pendingIssue = interactabilityIssues.find(issue => issue.freezeKind === 'pending-ui-locked');
     const humanIssue = interactabilityIssues.find(issue => issue.freezeKind === 'human-turn-ui-locked');
     if (modalIssue) return modalIssue.freezeKind + ':' + modalIssue.reason;
+    if (stalePendingOpen && isMyTurn && !snapshot.isCpuTurn && !onlineBlocked) return 'stale-modal-ui-locked';
     if ((confirmOpen && !staleConfirmOpen) || (activeBlockingModalOpen && !expectedPending.length)) return '';
     if (!activeBlockingModalOpen && !onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || gameScreenHidden || staleConfirmOpen || noUsablePrimaryAction || humanIssue)) {
         return 'post-build-ui-blocked';
@@ -1152,12 +1162,24 @@ function recoverModalUiLock(snapshot) {
     return changed;
 }
 
+function recoverStaleModalUiLock(snapshot) {
+    const closed = closeStaleBlockingModals(snapshot, 'freeze-watchdog-stale-modal');
+    if (!closed) return false;
+    clearUiLocks('freeze-watchdog-stale-modal-unlock', snapshot);
+    try {
+        if (typeof render === 'function') render();
+    } catch (_) {}
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'stale-modal-ui-locked' });
+    return true;
+}
+
 function recoverUiInteractability(snapshot) {
     const freezeKind = classifyLikelyFreeze(snapshot);
     if (!freezeKind) return false;
     if (freezeKind === 'post-build-ui-blocked') return recoverPostBuildUiFreeze(snapshot);
     if (freezeKind === 'human-turn-ui-locked') return recoverHumanUiLock(snapshot);
     if (freezeKind === 'pending-ui-locked') return recoverPendingUiLock(snapshot);
+    if (freezeKind === 'stale-modal-ui-locked') return recoverStaleModalUiLock(snapshot);
     if (freezeKind.startsWith('modal-ui-locked')) return recoverModalUiLock(snapshot);
     return false;
 }
@@ -1206,7 +1228,10 @@ function checkFreezeWatchdog() {
     const freezeKind = classifyLikelyFreeze(snapshot);
     if (!freezeKind) return;
     const reportKey = freezeKind + '|' + key;
-    if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) return;
+    if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) {
+        recoverUiInteractability(snapshot);
+        return;
+    }
     _freezeWatchdogLastReportKey = reportKey;
     _freezeWatchdogLastReportAt = now;
     const payload = { freezeKind, stagnantMs: now - _freezeWatchdogLastChangedAt, snapshot };

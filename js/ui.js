@@ -902,6 +902,7 @@ function setAppInertForModal(enabled) {
             else { try { delete el.inert; } catch (_) { el.inert = false; } }
             if (entry.ariaHidden === null) el.removeAttribute && el.removeAttribute('aria-hidden');
             else el.setAttribute && el.setAttribute('aria-hidden', entry.ariaHidden);
+            if (el.style) el.style.pointerEvents = entry.pointerEvents || '';
         }
         modalInertRestore = [];
         return;
@@ -915,10 +916,12 @@ function setAppInertForModal(enabled) {
             hadInert: Object.prototype.hasOwnProperty.call(el, 'inert'),
             inert: el.inert,
             ariaHidden: el.getAttribute ? el.getAttribute('aria-hidden') : null,
+            pointerEvents: el.style ? el.style.pointerEvents || '' : '',
         }));
     for (const { el } of modalInertRestore) {
         el.inert = true;
         if (el.setAttribute) el.setAttribute('aria-hidden', 'true');
+        if (el.style) el.style.pointerEvents = 'none';
     }
 }
 

@@ -970,3 +970,18 @@ Fix:
 Regression coverage:
 - Added tests for `buildMenu pointer-events:none`, visible modal `pointer-events:none`, pending modal/menu pointer restoration, title-screen false positives, and active-modal false positives.
 - Existing post-build, orphan `gameScreen`, stale confirm, dice choice, and Safari pending tests now run through the shared invariant path.
+
+### Maintainability continuation Cycle 1 - UI/online resilience
+
+Whole-project review after the UI interactability contract found two repeat classes that were not yet fully covered: recovery suppression and stale modal/pending ownership.
+
+Fixes:
+- The freeze watchdog still suppresses duplicate ntfy/client-error reports for the same frozen state, but it now runs `recoverUiInteractability()` even while the report is suppressed. This prevents a same-turn recurring UI lock from staying blocked solely because notification spam protection fired.
+- Accessible modal background locking now stores and restores root `pointer-events` and sets the background roots to `pointer-events:none` while the modal is open. This is a Safari/older WebView fallback for cases where `inert` / `aria-hidden` alone do not reliably block pointer input.
+- Visible `pendingModal` with no expected pending action or empty `pendingMenu` is now classified as `stale-modal-ui-locked` and closed by the shared recovery path instead of being treated as a legitimate active modal forever.
+- Online pending-action cleanup now requires modern `clientActionId` confirmation. `actionAccepted` only clears the stored pending action when the ack id matches, and reconnect no longer treats `stateSnapshot.actionSeq >= pending.seq` as accepted for clientActionId-tagged actions. Seq-only compaction remains as a legacy fallback for old pending entries without ids.
+
+Regression coverage:
+- Integration tests cover duplicate-report-suppressed recovery, stale pending modal recovery, and prior UI lock cases.
+- UI tests cover modal pointer-events fallback and restoration of pre-existing pointer style.
+- Online tests cover mismatched `actionAccepted.clientActionId` and high snapshot actionSeq without accepted client id.
