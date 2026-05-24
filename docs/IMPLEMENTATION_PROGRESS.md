@@ -2497,3 +2497,14 @@
 - 残課題:
   - server room lifecycle / restore validation 周辺のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - pending action spec contract test
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test。
+- 修正済み:
+  - `tests/helpers/runtime-loaders.js` で `PENDING_ACTION_SPECS` / field map / action map を test runtime へ公開した。
+  - `tests/gamemanager.test.js` に pending action spec の順序、双方向map、registry phase/payloadKind、IT queue policy との同期 contract test を追加した。
+- コード挙動: product runtime の挙動変更なし。pending action 追加時に `PENDING_ACTION_SPECS` と `GAME_ACTION_REGISTRY` の drift を検出しやすくした。
+- 残課題:
+  - server / online 側の action metadata 利用範囲を広げる小分離は継続 backlog。

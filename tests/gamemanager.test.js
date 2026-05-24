@@ -23,6 +23,9 @@ const GAME_ACTIONS = runtime.GAME_ACTIONS;
 const LOG_TYPES = runtime.LOG_TYPES;
 const GAME_PHASE_ACTIONS = runtime.GAME_PHASE_ACTIONS;
 const GAME_ACTION_REGISTRY = runtime.GAME_ACTION_REGISTRY;
+const PENDING_ACTION_SPECS = runtime.PENDING_ACTION_SPECS;
+const PENDING_ACTION_SPEC_BY_FIELD = runtime.PENDING_ACTION_SPEC_BY_FIELD;
+const PENDING_ACTION_SPEC_BY_ACTION = runtime.PENDING_ACTION_SPEC_BY_ACTION;
 const PENDING_IT_QUEUE_POLICY = runtime.PENDING_IT_QUEUE_POLICY;
 
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
@@ -212,6 +215,39 @@ runTest('GAME_ACTION_REGISTRY の phase metadata は allowed action contract と
         if (pendingActions.includes(action)) continue;
         assert.ok(nonPendingPhaseActions.has(action), `${action} must be listed in GAME_PHASE_ACTIONS or pending action list`);
     }
+});
+
+runTest('PENDING_ACTION_SPECS は pending action registry と双方向に同期する', () => {
+    const expectedFields = [
+        'pendingTV',
+        'pendingBusiness',
+        'pendingCleaning',
+        'pendingMover',
+        'pendingRenovation',
+    ];
+    const expectedActions = [
+        GAME_ACTIONS.RESOLVE_TV,
+        GAME_ACTIONS.RESOLVE_BUSINESS,
+        GAME_ACTIONS.RESOLVE_CLEANING,
+        GAME_ACTIONS.RESOLVE_MOVER,
+        GAME_ACTIONS.RESOLVE_RENOVATION,
+    ];
+
+    assert.ok(Object.isFrozen(PENDING_ACTION_SPECS), 'PENDING_ACTION_SPECS must be frozen');
+    assert.deepStrictEqual(Array.from(PENDING_ACTION_SPECS, spec => spec.field), expectedFields);
+    assert.deepStrictEqual(Array.from(PENDING_ACTION_SPECS, spec => spec.action), expectedActions);
+    for (const spec of PENDING_ACTION_SPECS) {
+        assert.ok(Object.isFrozen(spec), `${spec.field} pending action spec must be frozen`);
+        assert.strictEqual(PENDING_ACTION_SPEC_BY_FIELD[spec.field], spec, `${spec.field} field map must point to the same spec`);
+        assert.strictEqual(PENDING_ACTION_SPEC_BY_ACTION[spec.action], spec, `${spec.action} action map must point to the same spec`);
+        assert.strictEqual(GAME_ACTION_REGISTRY[spec.action].phase, GAME_PHASES.PENDING, `${spec.action} registry phase must be pending`);
+        assert.strictEqual(GAME_ACTION_REGISTRY[spec.action].payloadKind, spec.action, `${spec.action} payload kind must match action`);
+    }
+    assert.deepStrictEqual(Object.keys(PENDING_ACTION_SPEC_BY_FIELD), expectedFields);
+    assert.deepStrictEqual(Object.keys(PENDING_ACTION_SPEC_BY_ACTION), expectedActions);
+    assert.strictEqual(PENDING_IT_QUEUE_POLICY.action, GAME_ACTIONS.RESOLVE_IT);
+    assert.strictEqual(PENDING_IT_QUEUE_POLICY.field, 'pendingIT');
+    assert.strictEqual(GAME_ACTION_REGISTRY[PENDING_IT_QUEUE_POLICY.action].phase, GAME_PHASES.PENDING);
 });
 
 runTest('GAME_ACTION_REGISTRY entries は余分なmetadata keyを持たない', () => {
