@@ -961,6 +961,25 @@ runTest('renderPlayers は human の playerSettings 欠落時も落ちない', (
     assert.strictEqual(trace.details.fallbackDifficulty, 'human');
 });
 
+runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組み立てる', () => {
+    const { context } = loadUiRuntime();
+    context.game = { builtThisTurn: false };
+    const current = {
+        coins: 10,
+        landmarks: { '駅': false, 'ショッピングモール': false },
+        countCardIncludingDormant() { return 0; },
+    };
+
+    const html = context.buildBuildMenuHtml(current, true, true);
+
+    assert.ok(html.includes('建設する施設を選んでください'));
+    assert.ok(html.includes('施設カード'));
+    assert.ok(html.includes('ランドマーク'));
+    assert.ok(html.includes('data-action="setCardFilter"'));
+    assert.ok(html.includes('data-action="showCardDetail"'));
+    assert.ok(html.includes('data-action="showLandmarkDetail"'));
+});
+
 runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成する', () => {
     const { context } = loadUiRuntime();
     const card = context.createCardByName('麦畑');

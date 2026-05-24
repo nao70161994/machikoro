@@ -2188,3 +2188,16 @@
 - 残課題:
   - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の scoped read migration、旧key pruning、複数room resume UI は継続 backlog / design required。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - build menu HTML helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: ui.js の小さな helper 分離。
+- 修正済み:
+  - `renderBuildMenu()` 内のカードフィルタ、カード一覧、ランドマーク一覧、undo button、全体HTML生成を `buildCardFilterBarHtml()` / `buildVisibleCardButtonsHtml()` / `buildLandmarkButtonsHtml()` / `buildUndoBuildButtonHtml()` / `buildBuildMenuHtml()` へ分離した。
+  - action gate と描画タイミングは既存の `renderBuildMenu()` に残し、HTML組み立てのみ helper 化した。
+  - `tests/ui.test.js` に `buildBuildMenuHtml()` のカード/ランドマーク/フィルタ出力 contract を追加した。
+- コード挙動: build menu の表示内容と delegated handler 用 `data-action` は維持。
+- 残課題:
+  - CPU / server のさらなる小さな helper 分離は継続 backlog。
+  - modal stack / deny-nesting policy、hostless restore、signed restore、server-persisted canonical state は対象外 / design required。
