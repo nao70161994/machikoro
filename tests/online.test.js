@@ -144,6 +144,7 @@ function loadOnlineRuntime(options = {}) {
         this._readOnlineGameStartPayload = _readOnlineGameStartPayload;
         this._readOnlineStateSnapshot = _readOnlineStateSnapshot;
         this._readPendingOutboundAction = _readPendingOutboundAction;
+        this._clearOnlineRestoreBundle = _clearOnlineRestoreBundle;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRestoreRank = _onlineRestoreRank;
         this._tryRestoreRoom = _tryRestoreRoom;
@@ -1321,6 +1322,33 @@ runTest('resetOnlineState は room-scoped pending outbound copy も消す', () =
     }));
 
     rt.resetOnlineState();
+
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
+    assert.strictEqual(rt.localStorage.getItem(scopedKey), null);
+});
+
+runTest('_clearOnlineRestoreBundle は room-scoped pending outbound copy も消す', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM01' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 8,
+        clientActionId: 'pending-clear-bundle',
+    }));
+    const scopedKey = rt._onlineRoomStorageKey('onlinePendingAction', 'ROOM01');
+    rt.localStorage.setItem(scopedKey, JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 8,
+        clientActionId: 'pending-clear-bundle',
+    }));
+
+    rt._clearOnlineRestoreBundle();
 
     assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
     assert.strictEqual(rt.localStorage.getItem(scopedKey), null);

@@ -170,7 +170,7 @@ function _clearOnlineRestoreBundle() {
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.gameStart);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.actionLog);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
-    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
+    _clearPendingOutboundAction();
 }
 
 function _readOnlineStateSnapshot() {

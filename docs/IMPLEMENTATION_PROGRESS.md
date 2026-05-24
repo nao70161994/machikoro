@@ -2315,3 +2315,15 @@
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - clear restore bundle scoped pending
+
+- 状態: completed; full verification passed before commit.
+- 対象: legacy pending outbound の room gate / online storage per-room namespace 化の小さな補強。
+- 修正済み:
+  - `_clearOnlineRestoreBundle()` が legacy `onlinePendingAction` だけでなく current room の `onlinePendingAction:room:<ROOM>` も削除するよう、既存の `_clearPendingOutboundAction()` helper 経由に統一した。
+  - `tests/online.test.js` に `_clearOnlineRestoreBundle()` が room-scoped pending outbound copy を残さない回帰テストを追加した。
+- コード挙動: restore bundle 破棄時の pending cleanup 範囲を current room scoped copy まで拡張。別room scoped copy の pruning / 複数room resume UI は設計判断が必要なため未変更。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
