@@ -31,7 +31,7 @@ function clearOnlineRestoreBundleStorage() {
 }
 
 function clearOnlineSessionStorage() {
-    localStorage.removeItem('onlineSession');
+    removeOnlineRestoreBundleStorageKeyVariants('onlineSession');
     clearOnlineRestoreBundleStorage();
 }
 

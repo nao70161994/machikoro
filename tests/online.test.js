@@ -151,6 +151,8 @@ function loadOnlineRuntime(options = {}) {
         this._isKnownOnlineGameAction = _isKnownOnlineGameAction;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRoomStorageKeys = _onlineRoomStorageKeys;
+        this._writeOnlineSessionStorageJson = _writeOnlineSessionStorageJson;
+        this._removeOnlineSessionStorageItem = _removeOnlineSessionStorageItem;
         this._onlineRestoreRank = _onlineRestoreRank;
         this._tryRestoreRoom = _tryRestoreRoom;
         this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
@@ -267,6 +269,21 @@ runTest('_normalizePendingOutboundAction は保存済みpending actionを最小�
         seq: -1.2,
         clientActionId: 456,
     })), { action: 'nextTurn', data: {} });
+});
+
+runTest('onlineSession storage helper は legacy と room-scoped copy を同期する', () => {
+    const rt = loadOnlineRuntime();
+    const session = { roomId: ' room01 ', playerIndex: 0, playerName: 'Alice', reconnectToken: 'token' };
+
+    rt._writeOnlineSessionStorageJson(session, session.roomId);
+
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineSession')), session);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineSession:room:ROOM01')), session);
+
+    rt._removeOnlineSessionStorageItem(' room01 ');
+
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession:room:ROOM01'), null);
 });
 
 runTest('_onlineRoomStorageKeys は legacy と scoped restore key を同じ順序で返す', () => {

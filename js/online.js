@@ -103,6 +103,7 @@ const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
 const ONLINE_ACTION_ACK_TIMEOUT_MS = 15000;
 const ONLINE_RESTORE_SCHEMA_VERSION = 2;
+const ONLINE_SESSION_STORAGE_KEY = 'onlineSession';
 const ONLINE_STORAGE_KEYS = Object.freeze({
     gameStart: 'onlineGameStart',
     actionLog: 'onlineActionLog',
@@ -156,6 +157,18 @@ function _removeOnlineRestoreStorageItem(key, roomId = myRoomId) {
     for (const storageKey of _onlineRoomStorageKeys(key, roomId)) {
         _removeOnlineStorageItem(storageKey);
     }
+}
+
+function _writeOnlineSessionStorageJson(value, roomId = myRoomId) {
+    _writeOnlineStorageJson(ONLINE_SESSION_STORAGE_KEY, value);
+    const scopedKey = _onlineRoomStorageKey(ONLINE_SESSION_STORAGE_KEY, roomId);
+    if (scopedKey !== ONLINE_SESSION_STORAGE_KEY) _writeOnlineStorageJson(scopedKey, value);
+}
+
+function _removeOnlineSessionStorageItem(roomId = myRoomId) {
+    _removeOnlineStorageItem(ONLINE_SESSION_STORAGE_KEY);
+    const scopedKey = _onlineRoomStorageKey(ONLINE_SESSION_STORAGE_KEY, roomId);
+    if (scopedKey !== ONLINE_SESSION_STORAGE_KEY) _removeOnlineStorageItem(scopedKey);
 }
 
 function _readOnlineStorageJson(key, fallback = null) {
@@ -544,13 +557,13 @@ function buildOnlineUndoSnapshot() {
 function saveOnlineSession() {
     if (!myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return;
     try {
-        localStorage.setItem('onlineSession', JSON.stringify({
+        _writeOnlineSessionStorageJson({
             roomId: myRoomId,
             playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,
             reconnectToken,
             isRoomHost,
-        }));
+        });
         updateResumeButton();
     } catch (e) {}
 }
@@ -580,7 +593,7 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
             const s = JSON.parse(raw);
             s.isRoomHost = isRoomHost;
             s.reconnectToken = reconnectToken || s.reconnectToken || '';
-            localStorage.setItem('onlineSession', JSON.stringify(s));
+            _writeOnlineSessionStorageJson(s, s.roomId || myRoomId);
         } catch (_) {}
     }
     try {
@@ -849,7 +862,7 @@ function handleAppError(msg) {
     if (isReconnectingOnline) {
         _clearPendingOutboundActionForCurrentSession();
         isReconnectingOnline = false;
-        localStorage.removeItem('onlineSession');
+        _removeOnlineSessionStorageItem();
         _clearOnlineRestoreBundle();
         updateResumeButton();
         if (socket) {

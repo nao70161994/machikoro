@@ -2656,3 +2656,15 @@
 - コード挙動: gameStart payload の生成、emit、開始条件は既存と同じ。開始時の room 状態更新だけを helper に寄せた。
 - 残課題:
   - restore replacement / disconnect 周辺のさらなる lifecycle helper 分離は継続 backlog。
+
+## Backlog cleanup - onlineSession room-scoped storage footing
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場。
+- 修正中:
+  - `onlineSession` の保存/削除を `_writeOnlineSessionStorageJson()` / `_removeOnlineSessionStorageItem()` helper に寄せ、legacy key を正本に維持したまま `onlineSession:room:<ROOM>` へ dual-write する足場を追加した。
+  - `storage.js` の online session 削除でも room-scoped `onlineSession:*` variants を削除するよう cleanup を揃えた。
+  - `tests/online.test.js` / `tests/storage.test.js` で dual-write と削除 contract を固定した。
+- コード挙動: 再接続 UI の読み取りは従来通り legacy `onlineSession`。room-scoped copy は将来の複数room候補管理用の補助で、現在の UX は変えない。
+- 残課題:
+  - 複数 room セッション一覧や indexed restore bundle 管理は設計範囲が広いため対象外 / design backlog。

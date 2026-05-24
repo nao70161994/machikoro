@@ -242,6 +242,7 @@ runTest('storage deleteSavedGame は確認後に savedGame を削除する', () 
 runTest('storage deleteOnlineSession は確認後に onlineSession と復元bundleを削除する', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('onlineSession', '{"ok":true}');
+    rt.localStorage.setItem('onlineSession:room:ROOM01', '{"ok":true}');
     rt.localStorage.setItem('onlineGameStart', '{"ok":true}');
     rt.localStorage.setItem('onlineActionLog', '[]');
     rt.localStorage.setItem('onlineStateSnapshot', '{"ok":true}');
@@ -255,6 +256,7 @@ runTest('storage deleteOnlineSession は確認後に onlineSession と復元bund
     rt.deleteOnlineSession();
 
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession:room:ROOM01'), null);
     assert.strictEqual(rt.localStorage.getItem('onlineGameStart'), null);
     assert.strictEqual(rt.localStorage.getItem('onlineActionLog'), null);
     assert.strictEqual(rt.localStorage.getItem('onlineStateSnapshot'), null);
