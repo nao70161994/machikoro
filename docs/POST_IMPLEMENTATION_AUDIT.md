@@ -1009,3 +1009,15 @@ Fix:
 Regression coverage:
 - `tests/integration.test.js` covers a select-dice container whose only child action is disabled and verifies the new `child-not-clickable` diagnosis.
 - Existing freeze snapshot tests continue to parse saved diagnostics after compaction.
+
+### Maintainability continuation Cycle 4 - docs drift cleanup
+
+Docs review after Cycle 3 found stale follow-up wording that still listed appError pending hardening and action-container enabled-descendant diagnostics as future work. Those items are now covered by Cycle 2 and Cycle 3 respectively.
+
+Fix:
+- Updated AI handoff/progress notes so future agents see only the remaining design/manual items as active follow-ups.
+
+Remaining:
+- Modal stack/deny-nesting policy needs UI behavior design.
+- Hostless/signed restore remains a trust-boundary design decision.
+- Real-device long-run iOS/Android online/PWA/accessibility checks remain manual verification required.

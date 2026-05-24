@@ -2021,7 +2021,7 @@
 - benchmark影響: なし。
 - 実行テスト: `git diff --check`, `node --check js/*.js`, `node --check server.js`, `python3 -m py_compile scripts/rl/*.py`, `npm run test:static`, `npm run test:smoke`, `npm test`, `npm run test:online`, `npm run test:release`, `npm run test:pwa`, `npm run test:cpu`, `npm run test:rl`.
 - 残課題:
-  - modal stack/deny-nesting policy と action container 内 enabled descendant 診断は、仕様影響を抑えて別Cycleで検討する。
+  - modal stack/deny-nesting policy は UI 仕様判断が必要。action container 内 enabled descendant 診断は Cycle 3 で対応済み。
   - hostless restore / signed or server-persisted canonical state は design decision required。
   - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。
 
@@ -2039,6 +2039,23 @@
 - regressions: なし。targeted integration test と full verification は全通過。
 - benchmark影響: なし。
 - 実行テスト: `git diff --check`, `node --check js/*.js`, `node --check server.js`, `python3 -m py_compile scripts/rl/*.py`, `npm run test:static`, `npm run test:smoke`, `npm test`, `npm run test:online`, `npm run test:release`, `npm run test:pwa`, `npm run test:cpu`, `npm run test:rl`.
+- 残課題:
+  - modal stack/deny-nesting policy は UI 仕様判断が必要。
+  - hostless restore / signed or server-persisted canonical state は design decision required。
+  - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。
+
+## Maintainability continuation Cycle 4 - docs drift cleanup
+
+- 状態: completed; docs-only verification passed before commit.
+- 新規指摘:
+  - Low: Cycle 2/3 で対応済みの appError pending ownership と action container child diagnostics が、handoff/progress の follow-up 文言に残っていた。
+- 修正済み:
+  - `docs/AI_HANDOFF.md` の next follow-up を、残る design/manual 項目だけへ更新した。
+  - `docs/IMPLEMENTATION_PROGRESS.md` の Cycle 2 残課題から、Cycle 3 対応済みの action container 診断を除外した。
+- rollback: なし。
+- regressions: なし。docs-only。
+- benchmark影響: なし。
+- 実行テスト: `git diff --check`。直前の Cycle 3 で full verification 済み。
 - 残課題:
   - modal stack/deny-nesting policy は UI 仕様判断が必要。
   - hostless restore / signed or server-persisted canonical state は design decision required。
