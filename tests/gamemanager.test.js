@@ -214,6 +214,17 @@ runTest('GAME_ACTION_REGISTRY の phase metadata は allowed action contract と
     }
 });
 
+runTest('GAME_ACTION_REGISTRY entries は余分なmetadata keyを持たない', () => {
+    const actionValues = Object.values(GAME_ACTIONS);
+    assert.strictEqual(new Set(actionValues).size, actionValues.length, 'GAME_ACTIONS values must be unique');
+
+    const allowedEntryKeys = ['action', 'phase', 'payloadKind', 'serverPayload', 'serverReplay', 'clientApply'];
+    for (const [key, entry] of Object.entries(GAME_ACTION_REGISTRY)) {
+        assert.strictEqual(entry.action, key, `${key} registry key/action mismatch`);
+        assert.deepStrictEqual(Object.keys(entry), allowedEntryKeys, `${key} registry metadata keys changed`);
+    }
+});
+
 runTest('GAME_ACTION_REGISTRY の payload metadata は固定schemaに従う', () => {
     const knownPayloadKinds = new Set([
         'rollDice',

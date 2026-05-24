@@ -2474,3 +2474,14 @@
 - 残課題:
   - server restore validation / room lifecycle 周辺のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - action registry metadata key contract
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test。
+- 修正済み:
+  - `tests/gamemanager.test.js` に `GAME_ACTIONS` 値の一意性と `GAME_ACTION_REGISTRY` entry の許可 metadata key を固定する test を追加した。
+- コード挙動: test-only。ゲーム実装・metadata 本体の変更なし。
+- 残課題:
+  - 追加の action metadata migration は、実際に新 action / payload kind を増やす時に registry / server / client / replay test と同時に行う。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
