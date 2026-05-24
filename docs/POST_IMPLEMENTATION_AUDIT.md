@@ -1021,3 +1021,23 @@ Remaining:
 - Modal stack/deny-nesting policy needs UI behavior design.
 - Hostless/signed restore remains a trust-boundary design decision.
 - Real-device long-run iOS/Android online/PWA/accessibility checks remain manual verification required.
+
+### version=5d058cb rerollConfirm human-turn-ui-locked
+
+Observed log:
+- phase: `rerollConfirm`
+- allowedActions: `rerollDice`, `skipReroll`
+- visibleModals: none
+- UI issue: `allowed-primary-not-clickable` targeting `btnReroll` with `parent-display-none`
+
+Cause:
+- The actual reroll confirmation controls are rendered into `diceChoose`, while the interactability target map still treated `rerollDice` / `skipReroll` as the legacy `btnReroll`. Since `btnReroll` is intentionally hidden by active render, the watchdog diagnosed the wrong element and could not reliably recover the visible reroll choice container.
+
+Fix:
+- `renderDiceChoose()` now explicitly shows `diceChoose` for `selectDice`, `rerollConfirm`, and `harborChoice`, and hides it when no allowed choice action is present.
+- `validateUiInteractability()` maps `rerollDice` and `skipReroll` to `diceChoose` and records `actionTarget` so the action remains distinguishable even when multiple actions share the same container.
+- Human-turn recovery clears stale `display:none` on non-root action targets before re-rendering; `gameScreen` display recovery remains handled by the game-screen recovery helper.
+
+Regression coverage:
+- `tests/ui.test.js` covers reroll/harbor/select dice choice visibility synced to allowed actions.
+- `tests/integration.test.js` covers rerollConfirm recovery from `diceChoose.style.display = 'none'` and verifies the snapshot target/actionTarget pair.

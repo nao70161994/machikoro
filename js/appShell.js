@@ -198,18 +198,28 @@ function snapshotElementForAction(snapshot, action) {
     const buttons = snapshot && snapshot.actionButtons && snapshot.actionButtons.buttons || {};
     if (action === 'rollDice') return buttons.btnRoll || ui.btnRoll;
     if (action === 'nextTurn') return buttons.btnSkip || ui.btnSkip;
-    if (action === 'rerollDice' || action === 'skipReroll') return buttons.btnReroll || ui.btnReroll;
-    if (action === 'selectDice' || action === 'resolveHarbor') return buttons.diceChoose || ui.diceChoose;
+    if (action === 'selectDice' || action === 'rerollDice' || action === 'skipReroll' || action === 'resolveHarbor') return buttons.diceChoose || ui.diceChoose;
     if (action === 'buildCard' || action === 'buildLandmark' || action === 'undoBuild') return ui.buildMenu;
     if (action && action.startsWith('resolve')) return ui.pendingMenu;
     return null;
 }
 
+function isContainerAction(action) {
+    return action === 'selectDice'
+        || action === 'rerollDice'
+        || action === 'skipReroll'
+        || action === 'resolveHarbor'
+        || action === 'buildCard'
+        || action === 'buildLandmark'
+        || action === 'undoBuild'
+        || (action && action.startsWith('resolve'));
+}
+
 function isActionUiUsable(snapshot, action) {
     const state = snapshotElementForAction(snapshot, action);
     if (!state) return false;
-    if ((action === 'selectDice' || action === 'resolveHarbor' || action === 'buildCard' || action === 'buildLandmark' || action === 'undoBuild' || (action && action.startsWith('resolve'))) && state.htmlLength <= 0) return false;
-    if ((action === 'selectDice' || action === 'resolveHarbor' || action === 'buildCard' || action === 'buildLandmark' || action === 'undoBuild' || (action && action.startsWith('resolve'))) && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
+    if (isContainerAction(action) && state.htmlLength <= 0) return false;
+    if (isContainerAction(action) && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
     return isElementUsablyEnabled(state);
 }
 
@@ -238,19 +248,19 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
     for (const action of expectedPrimary) {
         if (!isActionUiUsable(snapshot, action)) {
             const state = snapshotElementForAction(snapshot, action);
-            issues.push({ kind: 'allowed-primary-not-clickable', action, target: state && state.id || '', reason: uiLockReasonForElement(state), freezeKind: 'human-turn-ui-locked' });
+            issues.push({ kind: 'allowed-primary-not-clickable', action, target: state && state.id || '', actionTarget: action, reason: uiLockReasonForElement(state), freezeKind: 'human-turn-ui-locked' });
         }
     }
     for (const action of expectedBuild) {
         if (!isActionUiUsable(snapshot, action)) {
             const state = snapshotElementForAction(snapshot, action);
-            issues.push({ kind: 'allowed-build-not-clickable', action, target: state && state.id || 'buildMenu', reason: uiLockReasonForElement(state), freezeKind: 'human-turn-ui-locked' });
+            issues.push({ kind: 'allowed-build-not-clickable', action, target: state && state.id || 'buildMenu', actionTarget: action, reason: uiLockReasonForElement(state), freezeKind: 'human-turn-ui-locked' });
         }
     }
     for (const action of expectedPending) {
         if (!isActionUiUsable(snapshot, action) || !hasUsablePendingAction(snapshot)) {
             const state = snapshotElementForAction(snapshot, action);
-            issues.push({ kind: 'allowed-pending-not-clickable', action, target: state && state.id || 'pendingMenu', reason: uiLockReasonForElement(state), freezeKind: 'pending-ui-locked' });
+            issues.push({ kind: 'allowed-pending-not-clickable', action, target: state && state.id || 'pendingMenu', actionTarget: action, reason: uiLockReasonForElement(state), freezeKind: 'pending-ui-locked' });
         }
     }
 
@@ -1164,6 +1174,10 @@ function clearUiInteractabilityIssueTargets(issues) {
         if (el.inert) { el.inert = false; changed = true; }
         if (typeof el.removeAttribute === 'function' && el.getAttribute && el.getAttribute('aria-hidden') !== null) {
             el.removeAttribute('aria-hidden');
+            changed = true;
+        }
+        if (issue.target !== 'gameScreen' && el.style && (issue.reason === 'parent-display-none' || el.style.display === 'none')) {
+            el.style.display = '';
             changed = true;
         }
         if (el.style && el.style.pointerEvents === 'none') {

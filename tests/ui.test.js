@@ -347,6 +347,20 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     context.game.allowed = ['selectDice'];
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="selectDiceCount"'));
+    assert.strictEqual(elements.diceChoose.style.display, 'block');
+
+    context.game.phase = 'rerollConfirm';
+    context.game.allowed = ['rerollDice', 'skipReroll'];
+    elements.diceChoose.style.display = 'none';
+    context.renderDiceChoose();
+    assert.ok(elements.diceChoose.innerHTML.includes('data-action="rerollDice"'));
+    assert.ok(elements.diceChoose.innerHTML.includes('data-action="skipReroll"'));
+    assert.strictEqual(elements.diceChoose.style.display, 'block');
+
+    context.game.allowed = [];
+    context.renderDiceChoose();
+    assert.strictEqual(elements.diceChoose.innerHTML, '');
+    assert.strictEqual(elements.diceChoose.style.display, 'none');
 
     context.game.phase = 'harborChoice';
     context.game.allowed = ['selectDice'];
@@ -354,9 +368,11 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     assert.strictEqual(elements.diceChoose.innerHTML, '');
 
     context.game.allowed = ['resolveHarbor'];
+    elements.diceChoose.style.display = 'none';
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="resolveHarbor"'));
     assert.ok(!elements.diceChoose.innerHTML.includes(' disabled'));
+    assert.strictEqual(elements.diceChoose.style.display, 'block');
 });
 
 runTest('renderPending は allowedActionsFor の先頭pending actionだけを表示する', () => {

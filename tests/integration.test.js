@@ -603,6 +603,45 @@ runTest('integration: selectDice中のgameScreen lockをwatchdogが復旧する'
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
 });
 
+runTest('integration: rerollConfirm中のdiceChoose display noneをwatchdogが復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.REROLL_CONFIRM;
+    game.lastDiceResult = 6;
+    hideAllTestModals(rt);
+    rt.render();
+    assert.ok(rt.__test.elements.diceChoose.innerHTML.includes('rerollDice'));
+    assert.strictEqual(rt.__test.elements.diceChoose.style.display, 'block');
+    rt.__test.elements.diceChoose.style.display = 'none';
+
+    const before = rt.collectUiLockSnapshot('reroll-before-recovery');
+    const beforeIssue = rt.validateUiInteractability(before).find(item => item.action === 'rerollDice');
+    assert.ok(beforeIssue);
+    assert.strictEqual(beforeIssue.target, 'diceChoose');
+    assert.strictEqual(beforeIssue.actionTarget, 'rerollDice');
+    assert.strictEqual(beforeIssue.reason, 'parent-display-none');
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'human-turn-ui-locked');
+    assert.ok(freezeSnapshot.snapshot.allowedActions.includes('rerollDice'));
+    assert.ok(freezeSnapshot.snapshot.allowedActions.includes('skipReroll'));
+    assert.strictEqual(freezeSnapshot.snapshot.actionButtons.buttons.diceChoose.display, 'none');
+    assert.strictEqual(rt.__test.elements.diceChoose.style.display, 'block');
+    assert.ok(rt.__test.elements.diceChoose.innerHTML.includes('skipReroll'));
+});
+
 runTest('integration: allowed action container は子ボタン全disabledをクリック不能として診断する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
