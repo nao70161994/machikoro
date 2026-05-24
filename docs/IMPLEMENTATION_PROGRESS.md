@@ -2438,3 +2438,15 @@
 - 残課題:
   - server / CPU のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - server current action gate helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離 / validateGameAction 周辺。
+- 修正済み:
+  - `validateGameAction()` に埋まっていた playerOrder 変換と CPU ターンのホスト代理判定を `originalPlayerIndexForGamePosition()` / `canSocketSubmitCurrentAction()` に分離した。
+  - `tests/server.test.js` に helper contract test を追加し、human turn の playerOrder 判定と CPU turn の host-only 判定を固定した。
+- コード挙動: 既存の allowed action / payload validation / mirror 更新は変更なし。送信者 gate の条件だけを同じ判定の helper に移した。
+- 残課題:
+  - server の room lifecycle / restore 周辺のさらなる helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

@@ -103,6 +103,8 @@ const {
     applyActionToMirror,
     restoreUndoMirror,
     makeServerDiceActionData,
+    originalPlayerIndexForGamePosition,
+    canSocketSubmitCurrentAction,
     stableStateHash,
     canonicalMirrorStateHash,
     resetRoomCanonicalMirror,
@@ -1800,6 +1802,22 @@ runTest('validateGameAction は resolveTV の不正payloadを例外にせず拒�
 
     const result = validateGameAction(room, { playerIndex: 0 }, 'resolveTV', null);
     assert.strictEqual(result.ok, false);
+});
+
+runTest('canSocketSubmitCurrentAction は playerOrder と CPUホスト代理を判定する', () => {
+    const room = {
+        hostPlayerIndex: 2,
+        gameStartPayload: { playerOrder: [3, 2, 4, 0, 1] },
+    };
+    const humanTurnGame = { currentPlayerIndex: 1 };
+    assert.strictEqual(originalPlayerIndexForGamePosition(room, 1), 2);
+    assert.strictEqual(canSocketSubmitCurrentAction(room, { playerIndex: 2 }, humanTurnGame, []), true);
+    assert.strictEqual(canSocketSubmitCurrentAction(room, { playerIndex: 1 }, humanTurnGame, []), false);
+
+    const cpuTurnGame = { currentPlayerIndex: 0 };
+    const cpuPlayers = [{ difficulty: 'normal' }];
+    assert.strictEqual(canSocketSubmitCurrentAction(room, { playerIndex: 2 }, cpuTurnGame, cpuPlayers), true);
+    assert.strictEqual(canSocketSubmitCurrentAction(room, { playerIndex: 3 }, cpuTurnGame, cpuPlayers), false);
 });
 
 runTest('validateGameAction はCPUターン中にホストのアクションを許可し非ホストを拒否する', () => {

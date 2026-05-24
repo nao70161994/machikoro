@@ -1826,24 +1826,27 @@ function normalizeClientActionId(clientActionId) {
     return /^[A-Za-z0-9:_-]{1,120}$/.test(clientActionId) ? clientActionId : '';
 }
 
+function originalPlayerIndexForGamePosition(room, gamePosition) {
+    const playerOrder = room?.gameStartPayload?.playerOrder;
+    return Array.isArray(playerOrder) ? playerOrder[gamePosition] : gamePosition;
+}
+
+function canSocketSubmitCurrentAction(room, socket, game, cpuPlayers) {
+    if (!room || !socket || !game) return false;
+    const currentIndex = game.currentPlayerIndex;
+    const currentIsCpu = !!cpuPlayers?.[currentIndex];
+    if (currentIsCpu) return socket.playerIndex === room.hostPlayerIndex;
+
+    // playerOrderシャッフル後のゲーム内位置→元のプレイヤーインデックスに変換
+    return socket.playerIndex === originalPlayerIndexForGamePosition(room, currentIndex);
+}
+
 function validateGameAction(room, socket, action, data) {
     const mirror = getRoomCanonicalMirror(room);
     if (!mirror) return { ok: false };
     const { game, cpuPlayers, shopStock } = mirror;
     if (game.checkWinner && game.checkWinner()) return { ok: false };
-    const currentIndex = game.currentPlayerIndex;
-    const currentIsCpu = !!cpuPlayers[currentIndex];
-    const hostPlayerIndex = room.hostPlayerIndex;
-
-    // playerOrderシャッフル後のゲーム内位置→元のプレイヤーインデックスに変換
-    const playerOrder = room.gameStartPayload?.playerOrder;
-    const originalCurrentIndex = playerOrder ? playerOrder[currentIndex] : currentIndex;
-
-    if (currentIsCpu) {
-        if (socket.playerIndex !== hostPlayerIndex) return { ok: false };
-    } else if (socket.playerIndex !== originalCurrentIndex) {
-        return { ok: false };
-    }
+    if (!canSocketSubmitCurrentAction(room, socket, game, cpuPlayers)) return { ok: false };
 
     const allowed = getAllowedActions(game);
     if (!allowed.has(action)) return { ok: false };
@@ -1985,6 +1988,8 @@ module.exports = {
     makeUndoStateFromMirror,
     rollServerDie,
     makeServerDiceActionData,
+    originalPlayerIndexForGamePosition,
+    canSocketSubmitCurrentAction,
     stableStateHash,
     canonicalMirrorStateHash,
     resetRoomCanonicalMirror,
