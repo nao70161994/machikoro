@@ -1324,6 +1324,47 @@ runTest('resetOnlineState は room-scoped pending outbound copy も消す', () =
     assert.strictEqual(rt.localStorage.getItem(scopedKey), null);
 });
 
+runTest('_readPendingOutboundAction は current room の scoped pending を legacy より優先する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: { legacy: true },
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 1,
+        clientActionId: 'legacy-pending',
+    }));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlinePendingAction', 'ROOM02'), JSON.stringify({
+        action: 'buildCard',
+        data: { cardName: '牧場' },
+        playerIndex: 1,
+        roomId: 'ROOM02',
+        seq: 3,
+        clientActionId: 'scoped-pending',
+    }));
+
+    const pending = rt._readPendingOutboundAction();
+    assert.strictEqual(pending.clientActionId, 'scoped-pending');
+    assert.strictEqual(pending.roomId, 'ROOM02');
+});
+
+runTest('_readPendingOutboundAction は scoped pending がなければ legacy pending を読む', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 1,
+        clientActionId: 'legacy-fallback',
+    }));
+
+    const pending = rt._readPendingOutboundAction();
+    assert.strictEqual(pending.clientActionId, 'legacy-fallback');
+});
+
 runTest('sendAction は pending outbound を room-scoped key にも保存して消す', () => {
     const rt = loadOnlineRuntime();
     const game = new rt.GameManager(2);

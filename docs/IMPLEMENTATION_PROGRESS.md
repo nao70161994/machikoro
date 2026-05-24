@@ -2175,3 +2175,16 @@
 - 残課題:
   - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - online pending scoped read
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場補強。
+- 修正済み:
+  - `_readOnlineRoomStorageJson()` を追加し、current room の scoped storage がある場合は legacy key より優先して読めるようにした。
+  - `_readPendingOutboundAction()` は current room の scoped pending を優先し、scoped copy が無い場合は従来通り legacy pending へ fallback する。
+  - 別roomの legacy pending と current room の scoped pending が共存するケース、scoped 未作成時の legacy fallback を `tests/online.test.js` で固定した。
+- コード挙動: restore bundle の scoped read migration は未実施。pending outbound の小さな読み取り足場に限定。
+- 残課題:
+  - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の scoped read migration、旧key pruning、複数room resume UI は継続 backlog / design required。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。

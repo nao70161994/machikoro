@@ -111,6 +111,7 @@ const ONLINE_STORAGE_KEYS = Object.freeze({
 });
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
+const ONLINE_STORAGE_MISSING = Symbol('onlineStorageMissing');
 
 function _onlineRoomStorageKey(key, roomId = myRoomId) {
     if (typeof key !== 'string' || key === '') return key;
@@ -146,6 +147,15 @@ function _readOnlineStorageJson(key, fallback = null) {
     } catch (e) {
         return fallback;
     }
+}
+
+function _readOnlineRoomStorageJson(key, fallback = null, roomId = myRoomId) {
+    const scopedKey = _onlineRoomStorageKey(key, roomId);
+    if (scopedKey !== key) {
+        const scopedValue = _readOnlineStorageJson(scopedKey, ONLINE_STORAGE_MISSING);
+        if (scopedValue !== ONLINE_STORAGE_MISSING) return scopedValue;
+    }
+    return _readOnlineStorageJson(key, fallback);
 }
 
 function _writeOnlineStorageJson(key, value) {
@@ -368,7 +378,7 @@ function _nextOnlineActionSeq(log = null) {
 }
 
 function _readPendingOutboundAction() {
-    const entry = _readOnlineStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null);
+    const entry = _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null);
     if (!entry || typeof entry.action !== 'string') return null;
     const normalized = { action: entry.action, data: entry.data || {} };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
