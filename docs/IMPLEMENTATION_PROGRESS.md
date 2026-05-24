@@ -2690,3 +2690,15 @@
 - コード挙動: disconnect event のemit内容、hostChanged payload、古いsocketを無視する挙動は既存と同じ。
 - 残課題:
   - restore replacement 周辺のさらなる helper 分離は継続 backlog。
+
+## Backlog cleanup - server restored human players helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server restore 周辺の小さな helper 分離。
+- 修正中:
+  - `handleRecreateRoom()` 内の復元用 human player 配列生成を `buildRestoredHumanPlayers()` helper へ分離した。
+  - `tests/server.test.js` で CPU 席を復元接続対象から除外し、再接続者だけ socket id を持つ契約を固定した。
+- コード挙動: hostless restore、room replacement 判定、token 検証、canonical mirror 復元には触れず、既存の復元 player 構築ロジックだけを helper に寄せた。
+- 残課題:
+  - restore replacement の判定本体や scoped read migration は設計範囲が広いため継続 backlog / design required。
+  - CPU のさらなる小さな helper 分離は継続 backlog。

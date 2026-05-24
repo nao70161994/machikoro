@@ -67,6 +67,7 @@ const {
     buildRejoinDataPayload,
     generateRoomId,
     isValidRoomId,
+    buildRestoredHumanPlayers,
     CANONICAL_ACTION_PAYLOAD_KEYS,
     canonicalizeActionData,
     normalizeClientActionId,
@@ -2420,6 +2421,24 @@ runTest('handleRecreateRoom は playerIndex なし actionLog の復元を拒否�
     } finally {
         delete __rooms.REST_LEGACY_LOG;
     }
+});
+
+runTest('buildRestoredHumanPlayers はCPU席を除外し再接続者だけsocket idを持たせる', () => {
+    const payload = {
+        playerNames: ['Alice', 'CPU1', 'Bob', 'CPU2'],
+        playerSettings: [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'normal' },
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'rl' },
+        ],
+        reconnectTokenHashes: ['hash-a', '', 'hash-b', ''],
+    };
+
+    assert.deepStrictEqual(buildRestoredHumanPlayers(payload, 2, 'socket-bob'), [
+        { id: null, index: 0, name: 'Alice', reconnectToken: '', reconnectTokenHash: 'hash-a' },
+        { id: 'socket-bob', index: 2, name: 'Bob', reconnectToken: '', reconnectTokenHash: 'hash-b' },
+    ]);
 });
 
 runTest('handleRecreateRoom は playerSettings 空配列の全員人間ルームを復元できる', () => {

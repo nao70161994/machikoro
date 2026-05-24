@@ -1351,21 +1351,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
-    const reconnectTokenHashes = Array.isArray(gameStartPayload.reconnectTokenHashes) ? gameStartPayload.reconnectTokenHashes : [];
-    const restoredPlayers = playerNames
-        .map((name, index) => {
-            const setting = gameStartPayload.playerSettings?.[index];
-            const reconnectTokenHash = reconnectTokenHashes[index];
-            if (setting?.type === 'cpu' || !reconnectTokenHash) return null;
-            return {
-                id: index === playerIndex ? socket.id : null,
-                index,
-                name,
-                reconnectToken: '',
-                reconnectTokenHash,
-            };
-        })
-        .filter(Boolean);
+    const restoredPlayers = buildRestoredHumanPlayers(gameStartPayload, playerIndex, socket.id);
     const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot);
     if (!sanitizedActionLog) {
         emitAppError(socket, '復元データが壊れています');
@@ -1501,6 +1487,26 @@ function isValidRestoreReconnectTokenHashes(gameStartPayload) {
         }
     }
     return true;
+}
+
+function buildRestoredHumanPlayers(gameStartPayload, reconnectingPlayerIndex, socketId) {
+    const playerNames = Array.isArray(gameStartPayload?.playerNames) ? gameStartPayload.playerNames : [];
+    const playerSettings = Array.isArray(gameStartPayload?.playerSettings) ? gameStartPayload.playerSettings : [];
+    const reconnectTokenHashes = Array.isArray(gameStartPayload?.reconnectTokenHashes) ? gameStartPayload.reconnectTokenHashes : [];
+    return playerNames
+        .map((name, index) => {
+            const setting = playerSettings[index];
+            const reconnectTokenHash = reconnectTokenHashes[index];
+            if (setting?.type === 'cpu' || !reconnectTokenHash) return null;
+            return {
+                id: index === reconnectingPlayerIndex ? socketId : null,
+                index,
+                name,
+                reconnectToken: '',
+                reconnectTokenHash,
+            };
+        })
+        .filter(Boolean);
 }
 
 function restoreSnapshotActionSeq(stateSnapshot) {
@@ -1978,6 +1984,7 @@ module.exports = {
     buildRejoinDataPayload,
     generateRoomId,
     isValidRoomId,
+    buildRestoredHumanPlayers,
     CANONICAL_ACTION_PAYLOAD_KEYS,
     canonicalizeActionData,
     normalizeClientActionId,
