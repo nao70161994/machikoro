@@ -113,11 +113,16 @@ const ONLINE_STORAGE_KEYS = Object.freeze({
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const ONLINE_STORAGE_MISSING = Symbol('onlineStorageMissing');
 
+function _normalizeOnlineRoomId(roomId) {
+    return typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
+}
+
 function _onlineRoomStorageKey(key, roomId = myRoomId) {
     if (typeof key !== 'string' || key === '') return key;
     if (key.includes(ONLINE_ROOM_STORAGE_KEY_SEPARATOR)) return key;
-    if (typeof roomId !== 'string' || roomId.trim() === '') return key;
-    return `${key}${ONLINE_ROOM_STORAGE_KEY_SEPARATOR}${roomId.trim().toUpperCase()}`;
+    const normalizedRoomId = _normalizeOnlineRoomId(roomId);
+    if (!normalizedRoomId) return key;
+    return `${key}${ONLINE_ROOM_STORAGE_KEY_SEPARATOR}${normalizedRoomId}`;
 }
 
 function _onlineRoomStorageKeys(key, roomId = myRoomId) {
@@ -388,7 +393,8 @@ function _normalizePendingOutboundAction(entry) {
     if (!entry || typeof entry.action !== 'string') return null;
     const normalized = { action: entry.action, data: entry.data || {} };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-    if (typeof entry.roomId === 'string') normalized.roomId = entry.roomId;
+    const normalizedRoomId = _normalizeOnlineRoomId(entry.roomId);
+    if (normalizedRoomId) normalized.roomId = normalizedRoomId;
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
     if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
     return normalized;
@@ -415,12 +421,14 @@ function _clearPendingOutboundAction(roomId = myRoomId) {
 
 function _pendingOutboundActionBelongsToCurrentSession(entry, options = {}) {
     if (!entry) return true;
-    if (typeof entry.roomId !== 'string') {
+    const currentRoomId = _normalizeOnlineRoomId(myRoomId);
+    const entryRoomId = _normalizeOnlineRoomId(entry.roomId);
+    if (!entryRoomId) {
         if (options.requireExplicitRoomId) return false;
-        return !options.requireRoomId || !myRoomId || Number.isInteger(entry.seq);
+        return !options.requireRoomId || !currentRoomId || Number.isInteger(entry.seq);
     }
-    if (!myRoomId) return false;
-    return entry.roomId === myRoomId;
+    if (!currentRoomId) return false;
+    return entryRoomId === currentRoomId;
 }
 
 function _clearPendingOutboundActionForCurrentSession(options = {}) {

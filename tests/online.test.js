@@ -147,6 +147,7 @@ function loadOnlineRuntime(options = {}) {
         this._readPendingOutboundAction = _readPendingOutboundAction;
         this._readPendingOutboundActionForCurrentSession = _readPendingOutboundActionForCurrentSession;
         this._clearOnlineRestoreBundle = _clearOnlineRestoreBundle;
+        this._normalizeOnlineRoomId = _normalizeOnlineRoomId;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRoomStorageKeys = _onlineRoomStorageKeys;
         this._onlineRestoreRank = _onlineRestoreRank;
@@ -225,6 +226,8 @@ runTest('getClientVersion はindexへ注入されたビルドハッシュを使�
 
 runTest('_onlineRoomStorageKey はroom idを正規化し二重scopingしない', () => {
     const rt = loadOnlineRuntime();
+    assert.strictEqual(rt._normalizeOnlineRoomId(' room01 '), 'ROOM01');
+    assert.strictEqual(rt._normalizeOnlineRoomId(123), '');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ' room01 '), 'onlinePendingAction:room:ROOM01');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ''), 'onlinePendingAction');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction:room:ROOM01', 'ROOM02'), 'onlinePendingAction:room:ROOM01');
@@ -240,7 +243,7 @@ runTest('_normalizePendingOutboundAction は保存済みpending actionを最小�
         action: 'buildCard',
         data: { cardName: '麦畑' },
         playerIndex: 0,
-        roomId: 'ROOM01',
+        roomId: ' room01 ',
         seq: 7,
         clientActionId: 'client-7',
         extra: 'ignored',
@@ -1441,6 +1444,23 @@ runTest('_readPendingOutboundAction は scoped pending がなければ legacy pe
 
     const pending = rt._readPendingOutboundAction();
     assert.strictEqual(pending.clientActionId, 'legacy-fallback');
+});
+
+runTest('_readPendingOutboundActionForCurrentSession はlegacy pendingのroomId表記ゆれを同一roomとして扱う', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: ' room02 ',
+        seq: 1,
+        clientActionId: 'legacy-same-room-normalized',
+    }));
+
+    const pending = rt._readPendingOutboundActionForCurrentSession({ requireRoomId: true });
+    assert.strictEqual(pending.clientActionId, 'legacy-same-room-normalized');
+    assert.strictEqual(pending.roomId, 'ROOM02');
 });
 
 runTest('_readPendingOutboundActionForCurrentSession は別roomのlegacy pendingを除外する', () => {

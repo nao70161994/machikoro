@@ -2589,3 +2589,15 @@
 - コード挙動: payload validator の分岐入口だけを table-driven に変更。個別 validator と validate result は既存と同じ。
 - 残課題:
   - room lifecycle / restore validation 周辺のさらなる小 helper 分離は継続 backlog。
+
+## Backlog cleanup - legacy pending outbound room gate
+
+- 状態: completed; full verification passed before commit.
+- 対象: legacy pending outbound の room gate 強化 / online storage per-room namespace の小さな足場。
+- 修正中:
+  - `online.js` に `_normalizeOnlineRoomId()` を追加し、room-scoped storage key と pending outbound の room 比較で同じ正規化を使うようにした。
+  - 保存済み legacy pending の `roomId` が空白・小文字混じりでも current room と同一なら復元対象として扱い、別 room は従来通り除外する。
+  - `tests/online.test.js` で roomId 表記ゆれの正規化と legacy pending gate を固定した。
+- コード挙動: roomId の比較前正規化のみ。roomId なし legacy pending の requireRoomId gate と別 room 除外は維持。
+- 残課題:
+  - restore bundle 全体の per-room index 化は設計範囲が広いため継続 backlog / design 寄り。
