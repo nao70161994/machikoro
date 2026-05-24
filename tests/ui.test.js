@@ -797,6 +797,47 @@ runTest('renderPending は pending queue の先頭panelだけを描画する', (
     assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
 });
 
+runTest('buildPendingMenuHtml は pending 種別ごとのHTML生成と先頭pending gateを共有する', () => {
+    const { context } = loadUiRuntime();
+    const makePlayer = (name, cardNames) => ({
+        name,
+        coins: 3,
+        cards: cardNames.map(cardName => ({ name: cardName, color: 'blue' })),
+        landmarks: { 駅: true, 役所: true, 空港: false },
+        itVentureCoins: 2,
+        getMinorCards() { return this.cards; },
+        isDormant() { return false; },
+    });
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 1,
+        pendingMover: 1,
+        pendingRenovation: 1,
+        pendingIT: true,
+        players: [makePlayer('Alice', ['麦畑', 'パン屋']), makePlayer('Bob', ['牧場'])],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+
+    const allHtml = context.buildPendingMenuHtml(context.game, new Set(['resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']), null);
+    assert.ok(allHtml.includes('data-action="resolveCleaning"'));
+    assert.ok(allHtml.includes('data-action="resolveMover"'));
+    assert.ok(allHtml.includes('data-action="resolveRenovation"'));
+    assert.ok(allHtml.includes('data-action="resolveIT"'));
+
+    const moverOnlyHtml = context.buildPendingMenuHtml(
+        context.game,
+        new Set(['resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']),
+        { action: 'resolveMover', field: 'pendingMover', count: 1 }
+    );
+    assert.ok(moverOnlyHtml.includes('data-action="resolveMover"'));
+    assert.ok(!moverOnlyHtml.includes('data-action="resolveCleaning"'));
+    assert.ok(!moverOnlyHtml.includes('data-action="resolveRenovation"'));
+    assert.ok(!moverOnlyHtml.includes('data-action="resolveIT"'));
+});
+
 runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示する', () => {
     const { context, elements } = loadUiRuntime();
     context.game = {

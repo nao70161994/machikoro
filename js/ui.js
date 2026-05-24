@@ -463,59 +463,98 @@ function hidePendingModalContent(el, modal) {
     updatePendingModalContent(el, modal, "");
 }
 
+function shouldRenderPendingField(nextPending, allowedActions, field, action) {
+    return (!nextPending || nextPending.field === field) && allowedActions.has(action);
+}
+
+function pendingInspectHintHtml() {
+    return `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
+}
+
+function buildPendingTvHtml(game) {
+    const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
+    return `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${pendingInspectHintHtml()}${others.map(({ p, i }) => `<button data-action="resolveTV" data-target-index="${i}">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
+}
+
+function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
+    return `<button class="bc-chip${isSelected ? ' selected' : ''}" aria-pressed="${isSelected ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="${inputId}">${escapeHtml(card.name)}${player.isDormant(card) ? ' 💤' : ''}</button>`;
+}
+
+function buildPendingBusinessHtml(game) {
+    const current = game.currentPlayer();
+    const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
+    const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
+    const myDefaultIdx = myCards[0]?.index ?? 0;
+    const myChips = myCards.map(({ card, index }, j) =>
+        buildBusinessCardChipHtml(current, card, index, 'myCardSelect', j === 0)
+    ).join("");
+    const othersHtml = others.map(({ p, i }) => {
+        const theirCards = p.getMinorCards().map(card => ({ card, index: p.cards.indexOf(card) }));
+        const theirDefaultIdx = theirCards[0]?.index ?? 0;
+        const theirChips = theirCards.map(({ card, index }, j) =>
+            buildBusinessCardChipHtml(p, card, index, `theirCardSelect_${i}`, j === 0)
+        ).join("");
+        return `<p class="bc-label">${escapeHtml(p.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="theirCardSelect_${i}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${i}">⇄ ${escapeHtml(p.name)}と交換</button>`;
+    }).join("");
+    return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
+}
+
+function buildPendingCleaningHtml(game) {
+    const allCardNames = [...new Set(game.players.flatMap(p => p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
+    return `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div>`;
+}
+
+function buildPendingMoverHtml(game) {
+    const current = game.currentPlayer();
+    const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
+    const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
+    return `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
+}
+
+function buildPendingRenovationHtml(game) {
+    const current = game.currentPlayer();
+    const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO).map(([name]) => name);
+    return `<div class="pending-box"><p>🔨 改装屋：取り壊すランドマークを選んでください（+8コイン）</p>${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button data-action="resolveRenovation" data-landmark-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
+}
+
+function buildPendingItHtml(game) {
+    const cur = game.currentPlayer();
+    const canSave = cur.coins >= 1;
+    return `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button data-action="resolveIT" data-do-save="true" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button data-action="resolveIT" data-do-save="false">スキップ</button></div>`;
+}
+
+function buildPendingMenuHtml(game, allowedActions, nextPending) {
+    let html = "";
+    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingTV', 'resolveTV') && game.pendingTV > 0) {
+        html += buildPendingTvHtml(game);
+    }
+    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingBusiness', 'resolveBusiness') && game.pendingBusiness > 0) {
+        html += buildPendingBusinessHtml(game);
+    }
+    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingCleaning', 'resolveCleaning') && game.pendingCleaning > 0) {
+        html += buildPendingCleaningHtml(game);
+    }
+    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingMover', 'resolveMover') && game.pendingMover > 0) {
+        html += buildPendingMoverHtml(game);
+    }
+    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingRenovation', 'resolveRenovation') && game.pendingRenovation > 0) {
+        html += buildPendingRenovationHtml(game);
+    }
+    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingIT', 'resolveIT') && game.pendingIT) {
+        html += buildPendingItHtml(game);
+    }
+    return html;
+}
+
 function renderPending() {
     const el = document.getElementById("pendingMenu");
     const modal = document.getElementById("pendingModal");
     if (!shouldShowPendingForCurrentPlayer()) { hidePendingModalContent(el, modal); return; }
-    let html = "";
     const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
         ? GameManager.nextPendingActionFor(game)
         : null;
     const allowedActions = currentUiAllowedActions();
-    const shouldRenderPendingField = (field, action) => (!nextPending || nextPending.field === field) && allowedActions.has(action);
-    const inspectHint = `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
-    if (shouldRenderPendingField('pendingTV', 'resolveTV') && game.pendingTV > 0) {
-        const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        html += `<div class="pending-box"><p>📺 テレビ局：コインを奪う相手を選んでください</p>${inspectHint}${others.map(({ p, i }) => `<button data-action="resolveTV" data-target-index="${i}">${escapeHtml(p.name)}（🪙${p.coins}）</button>`).join("")}</div>`;
-    }
-    if (shouldRenderPendingField('pendingBusiness', 'resolveBusiness') && game.pendingBusiness > 0) {
-        const current = game.currentPlayer();
-        const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
-        const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        const myDefaultIdx = myCards[0]?.index ?? 0;
-        const myChips = myCards.map(({ card, index }, j) =>
-            `<button class="bc-chip${j === 0 ? ' selected' : ''}" aria-pressed="${j === 0 ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="myCardSelect">${escapeHtml(card.name)}${current.isDormant(card) ? ' 💤' : ''}</button>`
-        ).join("");
-        const othersHtml = others.map(({ p, i }) => {
-            const theirCards = p.getMinorCards().map(card => ({ card, index: p.cards.indexOf(card) }));
-            const theirDefaultIdx = theirCards[0]?.index ?? 0;
-            const theirChips = theirCards.map(({ card, index }, j) =>
-                `<button class="bc-chip${j === 0 ? ' selected' : ''}" aria-pressed="${j === 0 ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="theirCardSelect_${i}">${escapeHtml(card.name)}${p.isDormant(card) ? ' 💤' : ''}</button>`
-            ).join("");
-            return `<p class="bc-label">${escapeHtml(p.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="theirCardSelect_${i}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${i}">⇄ ${escapeHtml(p.name)}と交換</button>`;
-        }).join("");
-        html += `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
-    }
-    if (shouldRenderPendingField('pendingCleaning', 'resolveCleaning') && game.pendingCleaning > 0) {
-        const allCardNames = [...new Set(game.players.flatMap(p => p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
-        html += `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div>`;
-    }
-    if (shouldRenderPendingField('pendingMover', 'resolveMover') && game.pendingMover > 0) {
-        const current = game.currentPlayer();
-        const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
-        const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        html += `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
-    }
-    if (shouldRenderPendingField('pendingRenovation', 'resolveRenovation') && game.pendingRenovation > 0) {
-        const current = game.currentPlayer();
-        const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO).map(([name]) => name);
-        html += `<div class="pending-box"><p>🔨 改装屋：取り壊すランドマークを選んでください（+8コイン）</p>${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button data-action="resolveRenovation" data-landmark-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
-    }
-    if (shouldRenderPendingField('pendingIT', 'resolveIT') && game.pendingIT) {
-        const cur = game.currentPlayer();
-        const canSave = cur.coins >= 1;
-        html += `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button data-action="resolveIT" data-do-save="true" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button data-action="resolveIT" data-do-save="false">スキップ</button></div>`;
-    }
+    const html = buildPendingMenuHtml(game, allowedActions, nextPending);
     updatePendingModalContent(el, modal, html);
 }
 

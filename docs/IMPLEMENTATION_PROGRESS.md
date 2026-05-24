@@ -2085,3 +2085,16 @@
 - 残課題:
   - online storage の per-room namespace 化の実移行は、互換 migration とUI再開導線の設計が必要なため継続 backlog。
   - 小さな helper 分離、pending 種別 HTML helper 化は継続 backlog。
+
+## Backlog cleanup - pending HTML helper split
+
+- 状態: completed; targeted verification in progress before commit.
+- 対象: pending 種別 HTML helper 化。
+- 修正済み:
+  - `renderPending()` 内に直書きされていた pending 種別ごとの HTML 生成を `buildPendingMenuHtml()` と `buildPending*Html()` helper に分離した。
+  - pending queue 先頭 gate / `allowedActions` gate は `shouldRenderPendingField()` に集約し、種別追加時の条件ずれを見つけやすくした。
+  - `tests/ui.test.js` に cleaning / mover / renovation / IT の helper 出力と先頭 pending gate の回帰テストを追加した。
+- コード挙動: pending modal の表示制御、pointer-events 正規化、delegated handler の data-action は維持。
+- 残課題:
+  - online storage の per-room namespace 化の足場は継続 backlog。
+  - CPU / UI / server の小さな helper 分離は継続 backlog。
