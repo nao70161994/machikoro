@@ -384,8 +384,7 @@ function _nextOnlineActionSeq(log = null) {
     return seq;
 }
 
-function _readPendingOutboundAction() {
-    const entry = _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null);
+function _normalizePendingOutboundAction(entry) {
     if (!entry || typeof entry.action !== 'string') return null;
     const normalized = { action: entry.action, data: entry.data || {} };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
@@ -393,6 +392,10 @@ function _readPendingOutboundAction() {
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
     if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
     return normalized;
+}
+
+function _readPendingOutboundAction() {
+    return _normalizePendingOutboundAction(_readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null));
 }
 
 function _readPendingOutboundActionForCurrentSession(options = {}) {

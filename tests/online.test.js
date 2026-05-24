@@ -143,6 +143,7 @@ function loadOnlineRuntime(options = {}) {
         this._readOnlineActionLog = _readOnlineActionLog;
         this._readOnlineGameStartPayload = _readOnlineGameStartPayload;
         this._readOnlineStateSnapshot = _readOnlineStateSnapshot;
+        this._normalizePendingOutboundAction = _normalizePendingOutboundAction;
         this._readPendingOutboundAction = _readPendingOutboundAction;
         this._readPendingOutboundActionForCurrentSession = _readPendingOutboundActionForCurrentSession;
         this._clearOnlineRestoreBundle = _clearOnlineRestoreBundle;
@@ -227,6 +228,38 @@ runTest('_onlineRoomStorageKey はroom idを正規化し二重scopingしない',
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ' room01 '), 'onlinePendingAction:room:ROOM01');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ''), 'onlinePendingAction');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction:room:ROOM01', 'ROOM02'), 'onlinePendingAction:room:ROOM01');
+});
+
+runTest('_normalizePendingOutboundAction は保存済みpending actionを最小形へ正規化する', () => {
+    const rt = loadOnlineRuntime();
+    assert.strictEqual(rt._normalizePendingOutboundAction(null), null);
+    assert.strictEqual(rt._normalizePendingOutboundAction({ data: {} }), null);
+
+    const normalizeForAssert = value => JSON.parse(JSON.stringify(value));
+    assert.deepStrictEqual(normalizeForAssert(rt._normalizePendingOutboundAction({
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 7,
+        clientActionId: 'client-7',
+        extra: 'ignored',
+    })), {
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 7,
+        clientActionId: 'client-7',
+    });
+    assert.deepStrictEqual(normalizeForAssert(rt._normalizePendingOutboundAction({
+        action: 'nextTurn',
+        data: null,
+        playerIndex: 1.5,
+        roomId: 123,
+        seq: -1.2,
+        clientActionId: 456,
+    })), { action: 'nextTurn', data: {} });
 });
 
 runTest('_onlineRoomStorageKeys は legacy と scoped restore key を同じ順序で返す', () => {

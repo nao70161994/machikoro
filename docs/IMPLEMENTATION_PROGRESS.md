@@ -2519,3 +2519,14 @@
 - コード挙動: 評価式は既存式の移動のみ。expert tuning / v2simple の係数や分岐は変更なし。
 - 残課題:
   - CPU diagnostics / pending target scoring / execution flow のさらなる helper 分離は継続 backlog。
+
+## Backlog cleanup - online pending outbound normalize helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の足場 / legacy pending outbound room gate 周辺の小 helper 分離。
+- 修正済み:
+  - `js/online.js` の pending outbound 読み取り正規化を `_normalizePendingOutboundAction()` に分離した。
+  - `tests/online.test.js` に、保存済み pending action の最小正規化と余分な field 除去の contract test を追加した。
+- コード挙動: `_readPendingOutboundAction()` の既存正規化条件を helper に移動しただけで、scoped/legacy key の読み取り優先度や room gate 条件は変更なし。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
