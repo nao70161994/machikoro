@@ -2138,3 +2138,16 @@
 - 残課題:
   - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
   - CPU / UI / server の小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - server hostChanged helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離。
+- 修正済み:
+  - host migration 時の `hostChanged` payload 生成を `roomHostChangedPayload()` に集約した。
+  - `emitRoomHostChanged()` を追加し、disconnect 時と restore/recreate 時の通知形を同じ helper 経由にした。
+  - `tests/server.test.js` に hostChanged payload / emit contract の回帰テストを追加した。
+- コード挙動: host migration の条件や hostEpoch 更新処理は変更なし。通知 payload 生成だけを共通化。
+- 残課題:
+  - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。

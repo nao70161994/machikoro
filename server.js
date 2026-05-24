@@ -1157,7 +1157,7 @@ function handleSocketDisconnect(io, socket) {
                     const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
                     if (remaining.length > 0) {
                         setRoomHostPlayerIndex(room, remaining[0].index);
-                        io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex, hostEpoch: room.hostEpoch || 0 });
+                        emitRoomHostChanged(roomId, room);
                         console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
                     }
                 }
@@ -1179,6 +1179,17 @@ function setRoomHostPlayerIndex(room, hostPlayerIndex) {
         room.gameStartPayload.hostPlayerIndex = hostPlayerIndex;
         room.gameStartPayload.hostEpoch = room.hostEpoch || 0;
     }
+}
+
+function roomHostChangedPayload(room) {
+    return {
+        newHostPlayerIndex: room?.hostPlayerIndex,
+        hostEpoch: Number.isInteger(room?.hostEpoch) ? room.hostEpoch : 0,
+    };
+}
+
+function emitRoomHostChanged(roomId, room, ioInstance = io) {
+    ioInstance.to(roomId).emit('hostChanged', roomHostChangedPayload(room));
 }
 
 function nextRoomActionSeq(room) {
@@ -1314,7 +1325,7 @@ function handleRecreateRoom(socket, payload = {}) {
             socket.playerIndex = playerIndex;
             if (!isRoomHostConnected(room)) {
                 setRoomHostPlayerIndex(room, playerIndex);
-                io.to(roomId).emit('hostChanged', { newHostPlayerIndex: room.hostPlayerIndex, hostEpoch: room.hostEpoch || 0 });
+                emitRoomHostChanged(roomId, room);
                 console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
             }
             room.lastTouchedAt = Date.now();
@@ -1967,6 +1978,8 @@ module.exports = {
     canonicalizeActionData,
     normalizeClientActionId,
     nextRoomActionSeq,
+    roomHostChangedPayload,
+    emitRoomHostChanged,
     restorePayloadRank,
     restorePayloadRankDetails,
     isRestoreRankAction,

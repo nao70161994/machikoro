@@ -64,6 +64,8 @@ const {
     canonicalizeActionData,
     normalizeClientActionId,
     nextRoomActionSeq,
+    roomHostChangedPayload,
+    emitRoomHostChanged,
     restorePayloadRank,
     restorePayloadRankDetails,
     isRestoreRankAction,
@@ -3349,6 +3351,29 @@ runTest('nextRoomActionSeq は未compact actionで stateSnapshot.actionSeq を�
     assert.strictEqual(room.actionSeq, 11);
     assert.strictEqual(room.gameStartPayload.actionSeq, 11);
     assert.strictEqual(room.stateSnapshot.actionSeq, 8);
+});
+
+runTest('roomHostChanged helper は hostChanged payload を一箇所で組み立てる', () => {
+    const room = { hostPlayerIndex: 2, hostEpoch: 5 };
+    assert.deepStrictEqual(roomHostChangedPayload(room), {
+        newHostPlayerIndex: 2,
+        hostEpoch: 5,
+    });
+
+    const emitted = [];
+    const fakeIo = {
+        to(roomId) {
+            return {
+                emit(event, payload) { emitted.push({ roomId, event, payload }); },
+            };
+        },
+    };
+    emitRoomHostChanged('ROOM01', room, fakeIo);
+    assert.deepStrictEqual(emitted, [{
+        roomId: 'ROOM01',
+        event: 'hostChanged',
+        payload: { newHostPlayerIndex: 2, hostEpoch: 5 },
+    }]);
 });
 
 runTest('getRemainingConnectedPlayers は切断済み・幽霊プレイヤーをホスト候補から除外する', () => {
