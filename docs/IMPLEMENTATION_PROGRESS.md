@@ -2553,3 +2553,15 @@
 - コード挙動: 復元bundle削除時の掃除範囲のみ拡張。restore/read の優先順や online action flow は変更なし。
 - 残課題:
   - restore bundle の完全な per-room index 化は設計判断が必要なため継続 backlog。
+
+## Backlog cleanup - server canonical payload table
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU / UI / server の小さな helper 分離のうち server action canonicalize 周辺。
+- 修正中:
+  - `server.js` の `canonicalizeActionData()` を action ごとの `CANONICAL_ACTION_PAYLOAD_KEYS` table + `pickCanonicalPayloadKeys()` helper へ分離した。
+  - `resolveMover` の `cardIndex` 優先互換挙動は特例として維持し、既存 action log payload shape は変えていない。
+  - `tests/server.test.js` で canonical payload table が `GAME_ACTIONS` 全体を網羅することを追加で固定した。
+- コード挙動: accepted action log の canonical payload は既存と同じ。switch 直書きだけを table-driven helper へ寄せた。
+- 残課題:
+  - server validation helper の payload validator registry 化は継続 backlog。

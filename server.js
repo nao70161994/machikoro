@@ -1785,43 +1785,38 @@ function loadGameRuntime() {
 }
 
 // ===== Validation =====
+const CANONICAL_ACTION_PAYLOAD_KEYS = Object.freeze({
+    rollDice: Object.freeze(['forceDice', 'tunaDice']),
+    selectDice: Object.freeze(['useTwo', 'diceCount', 'd1', 'd2', 'tunaDice']),
+    rerollDice: Object.freeze(['forceDice', 'tunaDice']),
+    skipReroll: Object.freeze([]),
+    resolveHarbor: Object.freeze(['useBonus']),
+    resolveTV: Object.freeze(['targetIndex']),
+    resolveBusiness: Object.freeze(['myCard', 'targetIndex', 'theirCard']),
+    resolveCleaning: Object.freeze(['cardName']),
+    resolveMover: Object.freeze(['cardName', 'targetIndex']),
+    resolveRenovation: Object.freeze(['landmarkName']),
+    resolveIT: Object.freeze(['doSave']),
+    buildCard: Object.freeze(['cardName']),
+    buildLandmark: Object.freeze(['name']),
+    undoBuild: Object.freeze([]),
+    nextTurn: Object.freeze([]),
+});
+
+function pickCanonicalPayloadKeys(data, keys) {
+    const result = {};
+    for (const key of keys) {
+        result[key] = data[key];
+    }
+    return result;
+}
+
 function canonicalizeActionData(action, data) {
     if (!isPlainObject(data)) return {};
-    switch (action) {
-        case 'rollDice':
-            return { forceDice: data.forceDice, tunaDice: data.tunaDice };
-        case 'selectDice':
-            return { useTwo: data.useTwo, diceCount: data.diceCount, d1: data.d1, d2: data.d2, tunaDice: data.tunaDice };
-        case 'rerollDice':
-            return { forceDice: data.forceDice, tunaDice: data.tunaDice };
-        case 'skipReroll':
-        case 'nextTurn':
-            return {};
-        case 'resolveHarbor':
-            return { useBonus: data.useBonus };
-        case 'resolveTV':
-            return { targetIndex: data.targetIndex };
-        case 'resolveBusiness':
-            return { myCard: data.myCard, targetIndex: data.targetIndex, theirCard: data.theirCard };
-        case 'resolveCleaning':
-            return { cardName: data.cardName };
-        case 'resolveMover':
-            return Number.isInteger(data.cardIndex)
-                ? { cardIndex: data.cardIndex, targetIndex: data.targetIndex }
-                : { cardName: data.cardName, targetIndex: data.targetIndex };
-        case 'resolveRenovation':
-            return { landmarkName: data.landmarkName };
-        case 'resolveIT':
-            return { doSave: data.doSave };
-        case 'buildCard':
-            return { cardName: data.cardName };
-        case 'buildLandmark':
-            return { name: data.name };
-        case 'undoBuild':
-            return {};
-        default:
-            return {};
+    if (action === 'resolveMover' && Number.isInteger(data.cardIndex)) {
+        return { cardIndex: data.cardIndex, targetIndex: data.targetIndex };
     }
+    return pickCanonicalPayloadKeys(data, CANONICAL_ACTION_PAYLOAD_KEYS[action] || []);
 }
 
 function normalizeClientActionId(clientActionId) {
@@ -1967,6 +1962,7 @@ module.exports = {
     buildRejoinDataPayload,
     generateRoomId,
     isValidRoomId,
+    CANONICAL_ACTION_PAYLOAD_KEYS,
     canonicalizeActionData,
     normalizeClientActionId,
     nextRoomActionSeq,
