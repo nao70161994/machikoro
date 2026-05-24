@@ -353,14 +353,17 @@ function _clearPendingOutboundAction() {
 
 function _pendingOutboundActionBelongsToCurrentSession(entry, options = {}) {
     if (!entry) return true;
-    if (typeof entry.roomId !== 'string') return !options.requireRoomId || !myRoomId || Number.isInteger(entry.seq);
+    if (typeof entry.roomId !== 'string') {
+        if (options.requireExplicitRoomId) return false;
+        return !options.requireRoomId || !myRoomId || Number.isInteger(entry.seq);
+    }
     if (!myRoomId) return false;
     return entry.roomId === myRoomId;
 }
 
-function _clearPendingOutboundActionForCurrentSession() {
+function _clearPendingOutboundActionForCurrentSession(options = {}) {
     const entry = _readPendingOutboundAction();
-    if (_pendingOutboundActionBelongsToCurrentSession(entry)) {
+    if (_pendingOutboundActionBelongsToCurrentSession(entry, options)) {
         _clearPendingOutboundAction();
     }
 }
@@ -760,7 +763,7 @@ function handleAppError(msg) {
         return;
     }
     if (msg === '無効な操作です' && isOnlineGame && socket && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
-        _clearPendingOutboundActionForCurrentSession();
+        _clearPendingOutboundActionForCurrentSession({ requireExplicitRoomId: true });
         isReconnectingOnline = true;
         cpuScheduleToken++;
         document.getElementById("onlineStatus").textContent = '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...';

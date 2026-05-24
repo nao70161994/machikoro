@@ -2072,3 +2072,16 @@
 - 残課題:
   - online storage の per-room namespace 化の足場、legacy pending outbound room gate 強化、小さな helper 分離、pending 種別 HTML helper 化は継続 backlog。
   - modal stack / hostless restore / signed restore / server-persisted canonical state / production origin-token policy / 実機確認項目は対象外。
+
+## Backlog cleanup - legacy pending outbound room gate
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: legacy pending outbound の room gate 強化。
+- 修正済み:
+  - `_clearPendingOutboundActionForCurrentSession()` が explicit roomId 必須 option を受け取り、無効操作エラー時は roomId 付きの current-room pending だけを即削除するようにした。
+  - roomId なし legacy pending は無効操作エラーだけでは現在room所属とみなさず、rejoinData の既存 canonical 判定 / resend gate に処理を任せる。
+  - `tests/online.test.js` に roomId なし legacy pending が invalid-action resync 開始時に即削除されない回帰テストを追加した。
+- コード挙動: current-room pending の invalid-action clear は維持。legacy roomless pending の扱いだけをより保守的にした。
+- 残課題:
+  - online storage の per-room namespace 化の実移行は、互換 migration とUI再開導線の設計が必要なため継続 backlog。
+  - 小さな helper 分離、pending 種別 HTML helper 化は継続 backlog。

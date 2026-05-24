@@ -2019,6 +2019,36 @@ runTest('handleAppError は再接続中にオンラインセッションを破�
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
 });
 
+runTest('handleAppError は無効操作時もroomIdなしlegacy pendingを即削除しない', () => {
+    const rt = loadOnlineRuntime();
+    const emits = [];
+    rt.setOnlineState({
+        socket: { emit(name, payload) { emits.push({ name, payload }); } },
+    });
+    vm.runInContext(`
+        isOnlineGame = true;
+        myRoomId = 'ROOM01';
+        myOriginalPlayerIndex = 1;
+        myPlayerName = 'Alice';
+        reconnectToken = 'token-1';
+    `, rt);
+
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 1,
+        seq: 4,
+        clientActionId: 'legacy-roomless-invalid',
+    }));
+
+    rt.handleAppError('無効な操作です');
+
+    assert.strictEqual(rt._readPendingOutboundAction().clientActionId, 'legacy-roomless-invalid');
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(emits.length, 1);
+    assert.strictEqual(emits[0].name, 'rejoinRoom');
+});
+
 runTest('handleAppError は無効操作時にオンライン状態を再同期する', () => {
     const rt = loadOnlineRuntime();
     const emits = [];
