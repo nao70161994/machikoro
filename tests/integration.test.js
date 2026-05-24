@@ -441,7 +441,7 @@ runTest('integration: buildMenu pointer-events none を共通UI invariantで検�
     const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
     assert.ok(reportCall);
     const report = JSON.parse(reportCall.options.body);
-    assert.ok(report.stack.includes('allowed-build-not-clickable'));
+    assert.ok(report.stack.includes('allowed-action-container-not-clickable'));
     assert.ok(report.stack.includes('pointer-events-none'));
 });
 
@@ -642,6 +642,80 @@ runTest('integration: rerollConfirm中のdiceChoose display noneをwatchdogが�
     assert.ok(rt.__test.elements.diceChoose.innerHTML.includes('skipReroll'));
 });
 
+runTest('integration: primary action registry は各phaseのhidden/inert/pointer-blocked containerを復旧する', () => {
+    const cases = [
+        {
+            name: 'roll pointer-blocked',
+            action: 'rollDice',
+            targetId: 'btnRoll',
+            corrupt(el) { el.style.pointerEvents = 'none'; },
+            assertRecovered(el) { assert.notStrictEqual(el.style.pointerEvents, 'none'); },
+            setup(rt, game) { game.phase = rt.GAME_PHASES.ROLL; },
+        },
+        {
+            name: 'rerollConfirm hidden',
+            action: 'rerollDice',
+            targetId: 'diceChoose',
+            corrupt(el) { el.style.display = 'none'; },
+            assertRecovered(el) { assert.strictEqual(el.style.display, 'block'); },
+            setup(rt, game) { game.phase = rt.GAME_PHASES.REROLL_CONFIRM; game.lastDiceResult = 6; },
+        },
+        {
+            name: 'harborChoice inert',
+            action: 'resolveHarbor',
+            targetId: 'diceChoose',
+            corrupt(el) { el.inert = true; el.setAttribute('aria-hidden', 'true'); },
+            assertRecovered(el) { assert.strictEqual(el.inert, false); assert.strictEqual(el.getAttribute('aria-hidden'), null); },
+            setup(rt, game) { game.phase = rt.GAME_PHASES.HARBOR_CHOICE; game.lastDiceResult = 10; },
+        },
+        {
+            name: 'pending resolveBusiness pointer-blocked',
+            action: 'resolveBusiness',
+            targetId: 'pendingMenu',
+            corrupt(el, rt) { rt.__test.elements.pendingModal.style.pointerEvents = 'none'; el.style.pointerEvents = 'none'; },
+            assertRecovered(el, rt) { assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto'); assert.strictEqual(el.style.pointerEvents, 'auto'); },
+            setup(rt, game) { game.phase = rt.GAME_PHASES.PENDING; game.pendingBusiness = 1; },
+        },
+        {
+            name: 'build nextTurn inert',
+            action: 'nextTurn',
+            targetId: 'btnSkip',
+            corrupt(el) { el.inert = true; },
+            assertRecovered(el) { assert.strictEqual(el.inert, false); },
+            setup(rt, game) { game.phase = rt.GAME_PHASES.BUILD; game.builtThisTurn = true; },
+        },
+    ];
+
+    for (const testCase of cases) {
+        const rt = loadIntegrationRuntime();
+        rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+        rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+        rt.__test.setPlayerSettings([
+            { type: 'human', difficulty: 'normal' },
+            { type: 'human', difficulty: 'normal' },
+        ]);
+        rt.startGame();
+        const game = rt.__test.getGame();
+        hideAllTestModals(rt);
+        testCase.setup(rt, game);
+        rt.render();
+        assert.ok(rt.collectUiLockSnapshot(testCase.name).allowedActions.includes(testCase.action), testCase.name);
+        const target = rt.__test.elements[testCase.targetId];
+        assert.ok(target, testCase.name + ' target');
+        assert.ok(target.innerHTML.length > 0 || testCase.targetId !== 'diceChoose' && testCase.targetId !== 'pendingMenu', testCase.name + ' content');
+        testCase.corrupt(target, rt);
+
+        const before = rt.collectUiLockSnapshot(testCase.name + '-before');
+        const issue = rt.validateUiInteractability(before).find(item => item.action === testCase.action);
+        assert.ok(issue, testCase.name + ' issue');
+        assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');
+        assert.strictEqual(issue.freezeKind, 'human-turn-ui-locked');
+
+        assert.strictEqual(rt.recoverUiInteractability(before), true, testCase.name + ' recovery');
+        testCase.assertRecovered(target, rt);
+    }
+});
+
 runTest('integration: allowed action container は子ボタン全disabledをクリック不能として診断する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -667,7 +741,7 @@ runTest('integration: allowed action container は子ボタン全disabledをク�
     assert.ok(snapshot.allowedActions.includes('selectDice'));
     const issue = issues.find(item => item.action === 'selectDice');
     assert.ok(issue);
-    assert.strictEqual(issue.kind, 'allowed-primary-not-clickable');
+    assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');
     assert.strictEqual(issue.reason, 'child-not-clickable');
     assert.strictEqual(snapshot.actionButtons.buttons.diceChoose.totalInteractiveChildren, 1);
     assert.strictEqual(snapshot.actionButtons.buttons.diceChoose.usableInteractiveChildren, 0);

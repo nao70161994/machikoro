@@ -42,6 +42,20 @@ Server-side ntfy client error notifications now include a `classification=` line
 
 Unknown notifications are the only high-priority browser error class. Known/stale notifications still matter, but they should not interrupt unless they repeat on the current deployed version.
 
+### `human-turn-ui-locked` as a state-machine mismatch
+
+Treat current-version `human-turn-ui-locked` as a mismatch between `GameManager.allowedActionsFor(game)` and the physical UI container state, not as a phase-specific one-off. The app now keeps a primary action container registry in `js/appShell.js`:
+
+| Phase | Allowed action family | Primary container |
+| --- | --- | --- |
+| `roll` | `rollDice` | `btnRoll` |
+| `selectDice` / `rerollConfirm` / `harborChoice` | dice/reroll/harbor actions | `diceChoose` |
+| `pending` | `resolve*` pending actions | `pendingModal` / `pendingMenu` |
+| `build` | `buildCard` / `buildLandmark` / `undoBuild` | `buildMenu` |
+| `build` | `nextTurn` | `btnSkip` |
+
+If an allowed action exists but its container is hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, or has no usable child actions, `validateUiInteractability()` reports a registry-based `allowed-action-container-not-clickable` issue and `recoverUiInteractability()` clears the same registry target before re-rendering. Add new gameplay action surfaces to that registry first, then add a regression test.
+
 ## Known Fixed Client Versions
 
 The current stale-client prefixes are maintained in `server.js` as `STALE_CLIENT_ERROR_VERSION_PREFIXES` and should be updated only when a production notification identifies a bug fixed in a later commit.

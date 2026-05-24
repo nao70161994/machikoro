@@ -193,44 +193,68 @@ function uiLockReasonForElement(state) {
     return 'not-clickable';
 }
 
-function snapshotElementForAction(snapshot, action) {
-    const ui = snapshot && snapshot.ui || {};
-    const buttons = snapshot && snapshot.actionButtons && snapshot.actionButtons.buttons || {};
-    if (action === 'rollDice') return buttons.btnRoll || ui.btnRoll;
-    if (action === 'nextTurn') return buttons.btnSkip || ui.btnSkip;
-    if (action === 'selectDice' || action === 'rerollDice' || action === 'skipReroll' || action === 'resolveHarbor') return buttons.diceChoose || ui.diceChoose;
-    if (action === 'buildCard' || action === 'buildLandmark' || action === 'undoBuild') return ui.buildMenu;
-    if (action && action.startsWith('resolve')) return ui.pendingMenu;
-    return null;
+const PRIMARY_ACTION_CONTAINER_REGISTRY = Object.freeze([
+    Object.freeze({ phase: 'roll', actions: Object.freeze(['rollDice']), targetId: 'btnRoll', targetSource: 'actionButtons', requiresContent: false }),
+    Object.freeze({ phase: 'selectDice', actions: Object.freeze(['selectDice']), targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true }),
+    Object.freeze({ phase: 'rerollConfirm', actions: Object.freeze(['rerollDice', 'skipReroll']), targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true }),
+    Object.freeze({ phase: 'harborChoice', actions: Object.freeze(['resolveHarbor']), targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true }),
+    Object.freeze({ phase: 'pending', actions: Object.freeze(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']), targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true }),
+    Object.freeze({ phase: 'build', actions: Object.freeze(['buildCard', 'buildLandmark', 'undoBuild']), targetId: 'buildMenu', requiresContent: true }),
+    Object.freeze({ phase: 'build', actions: Object.freeze(['nextTurn']), targetId: 'btnSkip', targetSource: 'actionButtons', requiresContent: false }),
+]);
+
+function actionContainerSpecForAction(snapshot, action) {
+    const phase = String(snapshot && snapshot.phase || '');
+    return PRIMARY_ACTION_CONTAINER_REGISTRY.find(spec =>
+        (!spec.phase || spec.phase === phase) && spec.actions.includes(action)
+    ) || null;
 }
 
-function isContainerAction(action) {
-    return action === 'selectDice'
-        || action === 'rerollDice'
-        || action === 'skipReroll'
-        || action === 'resolveHarbor'
-        || action === 'buildCard'
-        || action === 'buildLandmark'
-        || action === 'undoBuild'
-        || (action && action.startsWith('resolve'));
+function expectedActionContainerEntries(snapshot) {
+    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+    return allowed
+        .map(action => ({ action, spec: actionContainerSpecForAction(snapshot, action) }))
+        .filter(entry => !!entry.spec);
+}
+
+function snapshotStateById(snapshot, id, targetSource = '') {
+    const ui = snapshot && snapshot.ui || {};
+    const buttons = snapshot && snapshot.actionButtons && snapshot.actionButtons.buttons || {};
+    if (targetSource === 'actionButtons') return buttons[id] || ui[id];
+    return ui[id] || buttons[id];
+}
+
+function snapshotElementForAction(snapshot, action) {
+    const spec = actionContainerSpecForAction(snapshot, action);
+    return spec ? snapshotStateById(snapshot, spec.targetId, spec.targetSource) : null;
+}
+
+function isActionContainerUiUsable(snapshot, entry) {
+    const spec = entry && entry.spec;
+    if (!spec) return false;
+    const state = snapshotStateById(snapshot, spec.targetId, spec.targetSource);
+    if (!state) return false;
+    if (spec.requiresContent && state.htmlLength <= 0) return false;
+    if (spec.requiresContent && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
+    if (!isElementUsablyEnabled(state)) return false;
+    if (spec.modalId) {
+        const modal = snapshotStateById(snapshot, spec.modalId);
+        if (modal && !isElementUsablyEnabled(modal)) return false;
+    }
+    return true;
 }
 
 function isActionUiUsable(snapshot, action) {
-    const state = snapshotElementForAction(snapshot, action);
-    if (!state) return false;
-    if (isContainerAction(action) && state.htmlLength <= 0) return false;
-    if (isContainerAction(action) && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
-    return isElementUsablyEnabled(state);
+    const spec = actionContainerSpecForAction(snapshot, action);
+    return isActionContainerUiUsable(snapshot, { action, spec });
 }
 
 function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
     const issues = [];
     if (!snapshot || !snapshot.phase) return issues;
     const ui = snapshot.ui || {};
-    const expectedPrimary = expectedPrimaryActions(snapshot);
+    const expectedContainers = expectedActionContainerEntries(snapshot);
     const expectedPending = expectedPendingActions(snapshot);
-    const expectedBuild = (Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [])
-        .filter(action => ['buildCard', 'buildLandmark', 'undoBuild'].includes(action));
     const isMyTurn = isHumanTurnSnapshot(snapshot) && !isOnlineUiBlockedSnapshot(snapshot);
     const activeModals = activeBlockingModalIds(snapshot);
 
@@ -245,29 +269,29 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
     if (!isMyTurn) return issues;
     if (activeModals.length && !expectedPending.length) return issues;
 
-    for (const action of expectedPrimary) {
-        if (!isActionUiUsable(snapshot, action)) {
-            const state = snapshotElementForAction(snapshot, action);
-            issues.push({ kind: 'allowed-primary-not-clickable', action, target: state && state.id || '', actionTarget: action, reason: uiLockReasonForElement(state), freezeKind: 'human-turn-ui-locked' });
+    for (const entry of expectedContainers) {
+        if (isActionContainerUiUsable(snapshot, entry)) continue;
+        const state = snapshotStateById(snapshot, entry.spec.targetId, entry.spec.targetSource);
+        let reason = uiLockReasonForElement(state);
+        if (entry.spec.modalId) {
+            const modal = snapshotStateById(snapshot, entry.spec.modalId);
+            if (modal && !isElementUsablyEnabled(modal)) reason = uiLockReasonForElement(modal);
         }
-    }
-    for (const action of expectedBuild) {
-        if (!isActionUiUsable(snapshot, action)) {
-            const state = snapshotElementForAction(snapshot, action);
-            issues.push({ kind: 'allowed-build-not-clickable', action, target: state && state.id || 'buildMenu', actionTarget: action, reason: uiLockReasonForElement(state), freezeKind: 'human-turn-ui-locked' });
-        }
-    }
-    for (const action of expectedPending) {
-        if (!isActionUiUsable(snapshot, action) || !hasUsablePendingAction(snapshot)) {
-            const state = snapshotElementForAction(snapshot, action);
-            issues.push({ kind: 'allowed-pending-not-clickable', action, target: state && state.id || 'pendingMenu', actionTarget: action, reason: uiLockReasonForElement(state), freezeKind: 'pending-ui-locked' });
-        }
+        issues.push({
+            kind: 'allowed-action-container-not-clickable',
+            action: entry.action,
+            target: state && state.id || entry.spec.targetId,
+            actionTarget: entry.action,
+            phase: entry.spec.phase || snapshot.phase,
+            reason,
+            freezeKind: 'human-turn-ui-locked',
+        });
     }
 
-    if (!activeModals.length && ui.gameScreen && (ui.gameScreen.inert || ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none') && (expectedPrimary.length || expectedPending.length || expectedBuild.length)) {
+    if (!activeModals.length && ui.gameScreen && (ui.gameScreen.inert || ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none') && expectedContainers.length) {
         issues.push({ kind: 'orphan-game-screen-lock', target: 'gameScreen', reason: ui.gameScreen.inert ? 'parent-inert' : 'parent-display-none', freezeKind: 'human-turn-ui-locked' });
     }
-    if (!activeModals.length && snapshot.bodyClassName && /modal-open/.test(snapshot.bodyClassName) && (expectedPrimary.length || expectedPending.length || expectedBuild.length)) {
+    if (!activeModals.length && snapshot.bodyClassName && /modal-open/.test(snapshot.bodyClassName) && expectedContainers.length) {
         issues.push({ kind: 'stale-modal-body-lock', target: 'body', reason: 'stale-modal', freezeKind: 'human-turn-ui-locked' });
     }
     return issues;
@@ -360,15 +384,15 @@ function isHumanTurnSnapshot(snapshot) {
 }
 
 function expectedPrimaryActions(snapshot) {
-    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
-    return allowed.filter(action => ['rollDice', 'nextTurn', 'selectDice', 'rerollDice', 'skipReroll', 'resolveHarbor'].includes(action));
+    return expectedActionContainerEntries(snapshot)
+        .filter(entry => ['rollDice', 'nextTurn', 'selectDice', 'rerollDice', 'skipReroll', 'resolveHarbor'].includes(entry.action))
+        .map(entry => entry.action);
 }
 
 function hasUsablePrimaryAction(snapshot) {
-    const enabled = snapshot && snapshot.actionButtons && Array.isArray(snapshot.actionButtons.enabled)
-        ? snapshot.actionButtons.enabled
-        : [];
-    return enabled.length > 0;
+    return expectedActionContainerEntries(snapshot)
+        .filter(entry => !entry.action.startsWith('resolve'))
+        .some(entry => isActionContainerUiUsable(snapshot, entry));
 }
 
 function expectedPendingActions(snapshot) {
@@ -378,14 +402,9 @@ function expectedPendingActions(snapshot) {
 }
 
 function hasUsablePendingAction(snapshot) {
-    if (!snapshot) return false;
-    const ui = snapshot.ui || {};
-    const pendingMenu = ui.pendingMenu;
-    const pendingModal = ui.pendingModal;
-    if (!pendingMenu || pendingMenu.htmlLength <= 0) return false;
-    if (!isElementUsablyEnabled(pendingMenu)) return false;
-    if (pendingModal && !isElementUsablyEnabled(pendingModal)) return false;
-    return true;
+    return expectedActionContainerEntries(snapshot)
+        .filter(entry => entry.action.startsWith('resolve'))
+        .some(entry => isActionContainerUiUsable(snapshot, entry));
 }
 
 function isOnlineUiBlockedSnapshot(snapshot) {
@@ -1138,7 +1157,9 @@ function classifyLikelyFreeze(snapshot) {
 function recoverPostBuildUiFreeze(snapshot) {
     if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
     clearUiLocks('freeze-watchdog-post-build-unlock', snapshot);
+    recoverAllowedActionContainers(snapshot, issues);
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
@@ -1146,22 +1167,54 @@ function recoverPostBuildUiFreeze(snapshot) {
     return true;
 }
 
-function recoverPendingUiLock(snapshot) {
-    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    const expectedPending = expectedPendingActions(snapshot);
-    const shouldEnablePending = expectedPending.length > 0 && !!(snapshot.ui && snapshot.ui.pendingMenu && snapshot.ui.pendingMenu.htmlLength > 0);
-    ['pendingModal', 'pendingMenu'].forEach(id => {
+function clearActionContainerForRecovery(spec) {
+    if (!spec || !spec.targetId) return false;
+    let changed = false;
+    [spec.modalId, spec.targetId].filter(Boolean).forEach(id => {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
         if (!el) return;
-        el.inert = false;
-        if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
-        if (el.style) el.style.pointerEvents = shouldEnablePending ? 'auto' : '';
+        if (el.hidden) { el.hidden = false; changed = true; }
+        if (el.inert) { el.inert = false; changed = true; }
+        if (typeof el.removeAttribute === 'function' && el.getAttribute && el.getAttribute('aria-hidden') !== null) {
+            el.removeAttribute('aria-hidden');
+            changed = true;
+        }
+        if (el.style && el.style.display === 'none') {
+            el.style.display = id === 'diceChoose' ? 'block' : '';
+            changed = true;
+        }
+        if (el.style && el.style.pointerEvents === 'none') {
+            el.style.pointerEvents = id === 'pendingModal' || id === 'pendingMenu' ? 'auto' : '';
+            changed = true;
+        }
     });
+    return changed;
+}
+
+function recoverAllowedActionContainers(snapshot, issues = null) {
+    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
+    const issueActions = new Set((issues || [])
+        .filter(issue => issue && issue.kind === 'allowed-action-container-not-clickable' && issue.action)
+        .map(issue => issue.action));
+    let changed = false;
+    for (const entry of expectedActionContainerEntries(snapshot)) {
+        if (issueActions.size && !issueActions.has(entry.action)) continue;
+        if (isActionContainerUiUsable(snapshot, entry)) continue;
+        changed = clearActionContainerForRecovery(entry.spec) || changed;
+    }
+    return changed || issueActions.size > 0;
+}
+
+function recoverPendingUiLock(snapshot) {
+    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    const issues = validateUiInteractability(snapshot).filter(issue => issue.action && issue.action.startsWith('resolve'));
+    const changed = recoverAllowedActionContainers(snapshot, issues);
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'pending-ui-locked' });
-    return true;
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'pending-ui-locked', issues });
+    return changed;
 }
 
 function clearUiInteractabilityIssueTargets(issues) {
@@ -1190,9 +1243,9 @@ function clearUiInteractabilityIssueTargets(issues) {
 
 function recoverHumanUiLock(snapshot) {
     if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    if (hasActiveBlockingModal(snapshot)) return false;
+    if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
     const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
-    const changed = clearUiInteractabilityIssueTargets(issues);
+    const changed = recoverAllowedActionContainers(snapshot, issues) || clearUiInteractabilityIssueTargets(issues);
     clearUiLocks('freeze-watchdog-human-turn-unlock', snapshot);
     try {
         if (typeof render === 'function') render();
@@ -1235,6 +1288,15 @@ function recoverUiInteractability(snapshot) {
     if (freezeKind === 'stale-modal-ui-locked') return recoverStaleModalUiLock(snapshot);
     if (freezeKind.startsWith('modal-ui-locked')) return recoverModalUiLock(snapshot);
     return false;
+}
+
+function freezeIssueDedupeSignature(snapshot) {
+    const issues = validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind);
+    if (!issues.length) return freezeWatchdogStateKey(snapshot);
+    return issues
+        .map(issue => [issue.freezeKind, issue.kind, issue.phase || '', issue.action || '', issue.target || '', issue.reason || ''].join(':'))
+        .sort()
+        .join('|');
 }
 
 function compactElementSnapshotForStorage(state) {
@@ -1364,7 +1426,7 @@ function checkFreezeWatchdog() {
     if (now - _freezeWatchdogLastChangedAt < FREEZE_WATCHDOG_THRESHOLD_MS) return;
     const freezeKind = classifyLikelyFreeze(snapshot);
     if (!freezeKind) return;
-    const reportKey = freezeKind + '|' + key;
+    const reportKey = freezeKind + '|' + freezeIssueDedupeSignature(snapshot);
     if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) {
         recoverUiInteractability(snapshot);
         return;

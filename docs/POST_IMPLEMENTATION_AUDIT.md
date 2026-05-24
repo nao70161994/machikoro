@@ -1041,3 +1041,18 @@ Fix:
 Regression coverage:
 - `tests/ui.test.js` covers reroll/harbor/select dice choice visibility synced to allowed actions.
 - `tests/integration.test.js` covers rerollConfirm recovery from `diceChoose.style.display = 'none'` and verifies the snapshot target/actionTarget pair.
+
+### UI state machine registry for human-turn-ui-locked
+
+Observation:
+- Recent `human-turn-ui-locked` reports were all the same class at the UI contract level: `allowedActionsFor(game)` allowed a human action, but the physical action container was hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, or had no usable child action.
+- Prior fixes handled several phase surfaces individually (`build`, `rerollConfirm`, `pending`, root `gameScreen`), which made future action surfaces easy to miss.
+
+Fix:
+- `js/appShell.js` now defines `PRIMARY_ACTION_CONTAINER_REGISTRY`, mapping allowed actions to their phase-owned primary containers: `btnRoll`, `diceChoose`, `pendingModal`/`pendingMenu`, `buildMenu`, and `btnSkip`.
+- `validateUiInteractability()` uses that registry for all allowed action container checks and reports `allowed-action-container-not-clickable` as a UI state-machine mismatch.
+- `recoverUiInteractability()` uses the same registry to clear hidden/inert/aria-hidden/pointer-blocked targets before re-rendering, instead of adding another phase-specific patch.
+- Freeze duplicate suppression now keys off the normalized interactability issue signature, so same-family UI lock reports are suppressed while recovery still runs.
+
+Regression coverage:
+- `tests/integration.test.js` covers registry recovery for `roll`, `rerollConfirm`, `harborChoice`, `pending resolveBusiness`, and `build nextTurn` from hidden/inert/pointer-blocked container states.
