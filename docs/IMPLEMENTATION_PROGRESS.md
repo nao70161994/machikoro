@@ -2304,3 +2304,14 @@
 - 残課題:
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
   - modal stack / hostless restore / signed restore は対象外または design required として維持。
+
+## Backlog cleanup - scoped restore corrupt fallback test
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場。
+- 修正済み:
+  - `tests/online.test.js` に、current room の scoped restore bundle copy が壊れた JSON の場合でも legacy `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` へ fallback する contract test を追加した。
+- コード挙動: 実装変更なし。scoped read migration の互換 fallback を regression test で固定。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
