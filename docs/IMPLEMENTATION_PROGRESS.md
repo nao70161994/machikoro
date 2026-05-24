@@ -2125,3 +2125,16 @@
 - 残課題:
   - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
   - CPU / UI / server の小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - online pending reset scoped cleanup
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化に伴う pending outbound cleanup の小さな補強。
+- 修正済み:
+  - `resetOnlineState()` が `myRoomId` を消す前の roomId を保持し、legacy `onlinePendingAction` と `onlinePendingAction:room:<ROOM>` の両方を消せるようにした。
+  - `_clearPendingOutboundAction()` に roomId 引数を追加し、既存呼び出しは current room のまま維持した。
+  - `tests/online.test.js` に reset 時の room-scoped pending copy 削除回帰テストを追加した。
+- コード挙動: pending の読み取り正本は従来keyのまま。複数room resume UI と scoped read migration は未変更。
+- 残課題:
+  - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
+  - CPU / UI / server の小さな helper 分離は継続 backlog。

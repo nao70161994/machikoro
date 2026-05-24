@@ -215,6 +215,7 @@ function _handleOnlineActionTimeout() {
 }
 
 function resetOnlineState() {
+    const roomIdBeforeReset = myRoomId;
     cpuScheduleToken++;
     if (socket) { socket.disconnect(); socket = null; }
     isOnlineGame = false;
@@ -226,7 +227,7 @@ function resetOnlineState() {
     isReplaying = false;
     isReconnectingOnline = false;
     _setOnlineActionInFlight(false);
-    _clearPendingOutboundAction();
+    _clearPendingOutboundAction(roomIdBeforeReset);
     _clearRejoinRetry();
 }
 
@@ -376,10 +377,10 @@ function _readPendingOutboundAction() {
     return normalized;
 }
 
-function _clearPendingOutboundAction() {
+function _clearPendingOutboundAction(roomId = myRoomId) {
     try {
         _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
-        _removeOnlineRoomStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
+        _removeOnlineRoomStorageItem(ONLINE_STORAGE_KEYS.pendingAction, roomId);
     } catch (e) {}
 }
 

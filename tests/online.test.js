@@ -150,6 +150,7 @@ function loadOnlineRuntime(options = {}) {
         this.getTimeoutHandlers = () => timeoutHandlers;
         this.buildOnlineSnapshot = buildOnlineSnapshot;
         this.handleAppError = handleAppError;
+        this.resetOnlineState = resetOnlineState;
         this.sendAction = sendAction;
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
@@ -1287,6 +1288,33 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
         playerName: 'Alice',
         reconnectToken: 'token',
     });
+});
+
+runTest('resetOnlineState は room-scoped pending outbound copy も消す', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM01' });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 7,
+        clientActionId: 'pending-reset',
+    }));
+    const scopedKey = rt._onlineRoomStorageKey('onlinePendingAction', 'ROOM01');
+    rt.localStorage.setItem(scopedKey, JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 7,
+        clientActionId: 'pending-reset',
+    }));
+
+    rt.resetOnlineState();
+
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
+    assert.strictEqual(rt.localStorage.getItem(scopedKey), null);
 });
 
 runTest('sendAction は pending outbound を room-scoped key にも保存して消す', () => {
