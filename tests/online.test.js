@@ -146,6 +146,7 @@ function loadOnlineRuntime(options = {}) {
         this._readPendingOutboundAction = _readPendingOutboundAction;
         this._clearOnlineRestoreBundle = _clearOnlineRestoreBundle;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
+        this._onlineRoomStorageKeys = _onlineRoomStorageKeys;
         this._onlineRestoreRank = _onlineRestoreRank;
         this._tryRestoreRoom = _tryRestoreRoom;
         this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
@@ -225,6 +226,19 @@ runTest('_onlineRoomStorageKey はroom idを正規化し二重scopingしない',
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ' room01 '), 'onlinePendingAction:room:ROOM01');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction', ''), 'onlinePendingAction');
     assert.strictEqual(rt._onlineRoomStorageKey('onlinePendingAction:room:ROOM01', 'ROOM02'), 'onlinePendingAction:room:ROOM01');
+});
+
+runTest('_onlineRoomStorageKeys は legacy と scoped restore key を同じ順序で返す', () => {
+    const rt = loadOnlineRuntime();
+    assert.deepStrictEqual(
+        Array.from(rt._onlineRoomStorageKeys('onlineGameStart', ' room01 ')),
+        ['onlineGameStart', 'onlineGameStart:room:ROOM01']
+    );
+    assert.deepStrictEqual(Array.from(rt._onlineRoomStorageKeys('onlineGameStart', '')), ['onlineGameStart']);
+    assert.deepStrictEqual(
+        Array.from(rt._onlineRoomStorageKeys('onlineGameStart:room:ROOM01', 'ROOM02')),
+        ['onlineGameStart:room:ROOM01']
+    );
 });
 
 runTest('initSocket はSocket.IO script未読込時に状態を変更しない', () => {

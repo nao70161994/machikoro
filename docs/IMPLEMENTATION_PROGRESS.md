@@ -2389,3 +2389,16 @@
 - 残課題:
   - online storage の scoped read migration / 旧key pruning / 複数room resume UI は design required として維持。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - online restore storage key list helper
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場。
+- 修正済み:
+  - `js/online.js` に `_onlineRoomStorageKeys()` を追加し、legacy key と room-scoped key を同じ順序で扱う restore storage contract を明示した。
+  - `_writeOnlineRestoreStorageJson()` / `_removeOnlineRestoreStorageItem()` は同 helper 経由で legacy + scoped copy を更新・削除するようにした。
+  - `tests/online.test.js` に key list helper の正規化・二重scoping回避・room未指定fallbackを固定するテストを追加した。
+- コード挙動: restore bundle の legacy copy と scoped copy を維持する既存挙動を保持。旧key pruning / 複数room resume UI には未着手。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+  - UI / server のさらなる小さな helper 分離は継続 backlog。

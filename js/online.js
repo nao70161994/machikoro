@@ -120,6 +120,11 @@ function _onlineRoomStorageKey(key, roomId = myRoomId) {
     return `${key}${ONLINE_ROOM_STORAGE_KEY_SEPARATOR}${roomId.trim().toUpperCase()}`;
 }
 
+function _onlineRoomStorageKeys(key, roomId = myRoomId) {
+    const scopedKey = _onlineRoomStorageKey(key, roomId);
+    return scopedKey === key ? [key] : [key, scopedKey];
+}
+
 function _writeOnlineRoomStorageJson(key, value, roomId = myRoomId) {
     const scopedKey = _onlineRoomStorageKey(key, roomId);
     if (scopedKey !== key) _writeOnlineStorageJson(scopedKey, value);
@@ -131,13 +136,15 @@ function _removeOnlineRoomStorageItem(key, roomId = myRoomId) {
 }
 
 function _writeOnlineRestoreStorageJson(key, value, roomId = myRoomId) {
-    _writeOnlineStorageJson(key, value);
-    _writeOnlineRoomStorageJson(key, value, roomId);
+    for (const storageKey of _onlineRoomStorageKeys(key, roomId)) {
+        _writeOnlineStorageJson(storageKey, value);
+    }
 }
 
 function _removeOnlineRestoreStorageItem(key, roomId = myRoomId) {
-    _removeOnlineStorageItem(key);
-    _removeOnlineRoomStorageItem(key, roomId);
+    for (const storageKey of _onlineRoomStorageKeys(key, roomId)) {
+        _removeOnlineStorageItem(storageKey);
+    }
 }
 
 function _readOnlineStorageJson(key, fallback = null) {
