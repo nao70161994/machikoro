@@ -2378,3 +2378,14 @@
   - build menu / card select 周辺のさらなる小さな UI helper 分離は継続 backlog。
   - server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - action metadata payloadKind contract test
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test。
+- 修正済み:
+  - `tests/gamemanager.test.js` に、`GAME_ACTION_REGISTRY` の `payloadKind` が `emptyObject` 以外では action 名と一致する contract test を追加した。
+- コード挙動: 実装変更なし。server validator / client apply / replay routing が action 名ベースで共有している暗黙契約をテストで固定。
+- 残課題:
+  - online storage の scoped read migration / 旧key pruning / 複数room resume UI は design required として維持。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。

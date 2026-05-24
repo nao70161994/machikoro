@@ -235,6 +235,14 @@ runTest('GAME_ACTION_REGISTRY の payload metadata は固定schemaに従う', ()
     }
 });
 
+runTest('GAME_ACTION_REGISTRY の payloadKind は空payload以外action名と一致する', () => {
+    for (const action of Object.values(GAME_ACTIONS)) {
+        const entry = GAME_ACTION_REGISTRY[action];
+        if (entry.payloadKind === 'emptyObject') continue;
+        assert.strictEqual(entry.payloadKind, action, `${action} payloadKind should match action for shared validator/apply routing`);
+    }
+});
+
 runTest('GameManager は不正カードと未知ランドマーク建設を拒否する', () => {
     const game = new GameManager(2);
     game.phase = GAME_PHASES.BUILD;
