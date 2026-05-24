@@ -40,6 +40,9 @@ const {
     pruneRateBuckets,
     pruneClientErrorRateBuckets,
     isDuplicateClientError,
+    extractClientErrorFreezeKind,
+    isStaleClientErrorVersion,
+    classifyClientErrorReport,
     formatNtfyClientErrorMessage,
     redactedClientErrorRoomId,
     notifyClientError,
@@ -459,7 +462,7 @@ runTest('client error request は auth gate で通知前に拒否する', () => 
     assert.strictEqual(res.body.error, 'invalid_client_error_token');
 });
 
-runTest('ntfy client error message は phase/room/UA と本文を含む', () => {
+runTest('ntfy client error message は classification/phase/room/UA と本文を含む', () => {
     const report = normalizeClientErrorPayload({
         message: 'updatePendingModalContent recursion',
         stack: 'stack line',
@@ -471,6 +474,8 @@ runTest('ntfy client error message は phase/room/UA と本文を含む', () => 
     }, 1700000000000).report;
     const message = formatNtfyClientErrorMessage(report);
 
+    assert.ok(message.includes('classification=known-pattern'));
+    assert.ok(message.includes('pattern=pending-render-recovery'));
     assert.ok(message.includes('phase=build'));
     assert.ok(message.includes('room=' + redactedClientErrorRoomId('ABCD')));
     assert.ok(!message.includes('room=ABCD'));
@@ -480,10 +485,35 @@ runTest('ntfy client error message は phase/room/UA と本文を含む', () => 
     assert.ok(message.includes('updatePendingModalContent recursion'));
 });
 
-runTest('notifyClientError は ntfy topic 設定時に title/priority/tags 付きでPOSTする', () => {
+runTest('client error classification は stale client と未知通知を分ける', () => {
+    const stale = normalizeClientErrorPayload({
+        message: 'post-build-ui-blocked after 5000ms',
+        stack: 'FREEZE_SUMMARY {"freezeKind":"post-build-ui-blocked"}',
+        appVersion: '86136c7',
+    }, 1700000000000).report;
+    assert.strictEqual(extractClientErrorFreezeKind(stale), 'post-build-ui-blocked');
+    assert.strictEqual(isStaleClientErrorVersion('86136c7'), true);
+    assert.deepStrictEqual(classifyClientErrorReport(stale), {
+        classification: 'stale-client',
+        priority: '2',
+        tags: 'hourglass,known,stale_client',
+        freezeKind: 'post-build-ui-blocked',
+        knownPatternId: 'fixed-version-prefix',
+    });
+
+    const unknown = normalizeClientErrorPayload({
+        message: 'new unrecovered crash',
+        stack: 'new stack',
+        appVersion: 'current-build',
+    }, 1700000000000).report;
+    assert.strictEqual(classifyClientErrorReport(unknown).classification, 'unknown');
+    assert.strictEqual(classifyClientErrorReport(unknown).priority, '5');
+});
+
+runTest('notifyClientError は未知だけ高優先度にし既知UI lockは低めにPOSTする', () => {
     const calls = [];
-    const report = normalizeClientErrorPayload({ message: 'boom', phase: 'build', roomId: 'ABCD' }, 1700000000000).report;
-    notifyClientError(report, {
+    const unknown = normalizeClientErrorPayload({ message: 'boom', phase: 'build', roomId: 'ABCD' }, 1700000000000).report;
+    notifyClientError(unknown, {
         topic: 'machikoro-test-topic',
         fetchImpl(url, options) {
             calls.push({ url, options });
@@ -494,10 +524,22 @@ runTest('notifyClientError は ntfy topic 設定時に title/priority/tags 付�
     assert.strictEqual(calls.length, 1);
     assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-test-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Client Error');
-    assert.strictEqual(calls[0].options.headers.Priority, '4');
-    assert.ok(calls[0].options.headers.Tags.includes('warning'));
-    assert.ok(calls[0].options.body.includes('phase=build'));
+    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Unknown Client Error');
+    assert.strictEqual(calls[0].options.headers.Priority, '5');
+    assert.ok(calls[0].options.headers.Tags.includes('unknown'));
+    assert.ok(calls[0].options.body.includes('classification=unknown'));
+
+    const known = normalizeClientErrorPayload({ message: 'pending-ui-locked after 5000ms', stack: 'FREEZE_SUMMARY {"freezeKind":"pending-ui-locked"}' }, 1700000000000).report;
+    notifyClientError(known, {
+        topic: 'machikoro-test-topic',
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+    assert.strictEqual(calls[1].options.headers.Title, '[Machikoro] Client Error');
+    assert.strictEqual(calls[1].options.headers.Priority, '3');
+    assert.ok(calls[1].options.headers.Tags.includes('known'));
 });
 
 

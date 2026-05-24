@@ -18,7 +18,7 @@ npm run test:cpu
 npm run test:rl
 ```
 
-CI also runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`.
+CI also runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. Nightly regression runs `npm run test:release`, `npm run test:pwa`, and `npm run test:online` from `.github/workflows/nightly-release-test.yml`. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`.
 
 ## Render Environment Variables
 
@@ -56,7 +56,8 @@ Android/TWA build workflow secrets:
 - Game lifecycle notifications are default ON. Confirm `window.__machikoroLifecycleNotifyState()` reports `enabled: true` when `localStorage.machikoroLifecycleNotifyEnabled` is unset. Use `localStorage.setItem('machikoroLifecycleNotifyEnabled', 'false')` only to opt out noisy browser profiles.
 - Lifecycle ntfy payloads must not include player names, room codes, reconnect tokens, card inventories, or full snapshots.
 - Do not leave a public or guessable `NTFY_TOPIC` in production.
-- If CI failure notifications are needed, set GitHub Secret `NTFY_CI_TOPIC` to a separate hard-to-guess topic. The workflow posts only on failure and includes workflow name, branch, short commit, failed job, and the Actions run URL.
+- If CI failure notifications are needed, set GitHub Secret `NTFY_CI_TOPIC` to a separate hard-to-guess topic. The release/APK/nightly workflows post only on failure and include workflow name, branch, short commit, failed job, and the Actions run URL.
+- Use `docs/OPERATIONS.md` to classify ntfy browser reports as `unknown`, `known-pattern`, or `stale-client`; only `unknown` client errors should page at high priority.
 
 ## Ads Placeholder Safety
 
@@ -121,6 +122,7 @@ Regression test index:
 
 ## Documentation Entrypoints
 
+- Operations / nightly regression / ntfy triage: `docs/OPERATIONS.md`
 - Release pseudo E2E and CI: `docs/AUTOMATED_RELEASE_TEST.md`
 - ntfy browser error notification: `docs/NTFY_ERROR_REPORTING.md`
 - AdSense public URL setup: `docs/ADSENSE_SETUP.md`

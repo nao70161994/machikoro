@@ -448,20 +448,31 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
     }
 });
 
-runTest('release workflow と checklist は static safety gate を含む', () => {
+runTest('release workflow と checklist は static safety gate と nightly gate を含む', () => {
     const workflow = readRepoFile('.github/workflows/release-test.yml');
+    const nightlyWorkflow = readRepoFile('.github/workflows/nightly-release-test.yml');
     const apkWorkflow = readRepoFile('.github/workflows/build-apk.yml');
     const checklist = readRepoFile('docs/RELEASE_CHECKLIST.md');
+    const operations = readRepoFile('docs/OPERATIONS.md');
 
     assert.ok(workflow.includes('npm run test:static'));
     assert.ok(workflow.includes('npm run test:pwa'));
     assert.ok(workflow.indexOf('npm run test:static') < workflow.indexOf('npm test'));
     assert.ok(workflow.indexOf('npm test') < workflow.indexOf('npm run test:pwa'));
     assert.ok(workflow.indexOf('npm run test:pwa') < workflow.indexOf('npm run test:release'));
+    assert.ok(nightlyWorkflow.includes('schedule:'));
+    assert.ok(nightlyWorkflow.includes('npm run test:release'));
+    assert.ok(nightlyWorkflow.includes('npm run test:pwa'));
+    assert.ok(nightlyWorkflow.includes('npm run test:online'));
+    assert.ok(nightlyWorkflow.includes('NTFY_CI_TOPIC'));
+    assert.ok(nightlyWorkflow.includes('failure()'));
     assert.ok(checklist.includes('npm run test:static'));
     assert.ok(checklist.includes('npm run test:smoke'));
     assert.ok(checklist.includes('CI also runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`'));
-    assert.ok(checklist.includes('Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release`'));
+    assert.ok(checklist.includes('Nightly regression runs `npm run test:release`, `npm run test:pwa`, and `npm run test:online`'));
+    assert.ok(checklist.includes('docs/OPERATIONS.md'));
+    assert.ok(operations.includes('classification=unknown'));
+    assert.ok(operations.includes('stale-client'));
     assert.ok(apkWorkflow.includes('npm run test:static'));
     assert.ok(apkWorkflow.includes('npm test'));
     assert.ok(apkWorkflow.indexOf('npm run test:static') < apkWorkflow.indexOf('npm test'));

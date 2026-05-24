@@ -310,8 +310,88 @@ function redactedClientErrorRoomId(roomId) {
     return 'hash:' + crypto.createHash('sha256').update(text).digest('hex').slice(0, 8);
 }
 
+const STALE_CLIENT_ERROR_VERSION_PREFIXES = Object.freeze([
+    'd1eb530',
+    'f6ce626',
+    '86136c7',
+    'cedbf74',
+    '5d058cb',
+]);
+
+const KNOWN_CLIENT_ERROR_FREEZE_KINDS = Object.freeze(new Set([
+    'post-build-ui-blocked',
+    'human-turn-ui-locked',
+    'pending-ui-locked',
+    'modal-ui-locked',
+    'stale-modal-ui-locked',
+]));
+
+const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
+    Object.freeze({ id: 'manual-test-endpoint', pattern: 'Machikoro ntfy test notification' }),
+    Object.freeze({ id: 'renderPlayers-playerSettings-fallback', pattern: 'difficulty' }),
+    Object.freeze({ id: 'pending-render-recovery', pattern: 'updatePendingModalContent recursion' }),
+]);
+
+function extractClientErrorFreezeKind(report) {
+    const message = String(report?.message || '');
+    const messageMatch = message.match(/^([a-z0-9-]+) after \d+ms$/i);
+    if (messageMatch) return messageMatch[1];
+    const stack = String(report?.stack || '');
+    const stackMatch = stack.match(/"freezeKind"\s*:\s*"([^"]+)"/);
+    return stackMatch ? stackMatch[1] : '';
+}
+
+function isStaleClientErrorVersion(appVersion, stalePrefixes = STALE_CLIENT_ERROR_VERSION_PREFIXES) {
+    const version = String(appVersion || '').trim().toLowerCase();
+    if (!version) return false;
+    return stalePrefixes.some(prefix => version.startsWith(String(prefix).toLowerCase()));
+}
+
+function classifyClientErrorReport(report) {
+    const freezeKind = extractClientErrorFreezeKind(report);
+    if (isStaleClientErrorVersion(report?.appVersion)) {
+        return {
+            classification: 'stale-client',
+            priority: '2',
+            tags: 'hourglass,known,stale_client',
+            freezeKind,
+            knownPatternId: 'fixed-version-prefix',
+        };
+    }
+    if (freezeKind && KNOWN_CLIENT_ERROR_FREEZE_KINDS.has(freezeKind)) {
+        return {
+            classification: 'known-pattern',
+            priority: '3',
+            tags: 'warning,known,ui_lock',
+            freezeKind,
+            knownPatternId: freezeKind,
+        };
+    }
+    const combined = [report?.message, report?.stack].map(value => String(value || '')).join('\n');
+    const matched = KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS.find(entry => combined.includes(entry.pattern));
+    if (matched) {
+        return {
+            classification: 'known-pattern',
+            priority: '3',
+            tags: 'warning,known,computer',
+            freezeKind,
+            knownPatternId: matched.id,
+        };
+    }
+    return {
+        classification: 'unknown',
+        priority: '5',
+        tags: 'rotating_light,unknown,computer',
+        freezeKind,
+        knownPatternId: '',
+    };
+}
+
 function formatNtfyClientErrorMessage(report) {
+    const classification = classifyClientErrorReport(report);
     const lines = [
+        'classification=' + classification.classification,
+        'pattern=' + (classification.knownPatternId || '-'),
         'phase=' + (report.phase || 'unknown'),
         'room=' + redactedClientErrorRoomId(report.roomId),
         'player=' + (report.playerIndex ?? '-'),
@@ -325,12 +405,13 @@ function formatNtfyClientErrorMessage(report) {
 }
 
 async function notifyClientError(report, options = {}) {
+    const classification = classifyClientErrorReport(report);
     return postNtfyNotification({
         topic: options.topic || process.env.NTFY_TOPIC,
         fetchImpl: options.fetchImpl || global.fetch,
-        title: '[Machikoro] Client Error',
-        priority: '4',
-        tags: 'warning,computer',
+        title: classification.classification === 'unknown' ? '[Machikoro] Unknown Client Error' : '[Machikoro] Client Error',
+        priority: classification.priority,
+        tags: classification.tags,
         body: formatNtfyClientErrorMessage(report),
         onMissingTopic() {
             console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + redactedClientErrorRoomId(report.roomId));
@@ -1957,6 +2038,9 @@ module.exports = {
     pruneRateBuckets,
     pruneClientErrorRateBuckets,
     isDuplicateClientError,
+    extractClientErrorFreezeKind,
+    isStaleClientErrorVersion,
+    classifyClientErrorReport,
     formatNtfyClientErrorMessage,
     redactedClientErrorRoomId,
     notifyClientError,

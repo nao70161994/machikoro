@@ -67,14 +67,24 @@ Included fields:
 Example ntfy message:
 
 ```
+classification=unknown
+pattern=-
 phase=build
 room=hash:e12e115a
 player=1
 version=89bdf41
 Safari iPhone
-updatePendingModalContent recursion
+new unrecovered crash
 js/ui.js:381:5
 ```
+
+Classification is server-side:
+
+- `unknown`: priority 5, new pattern; investigate first.
+- `known-pattern`: priority 3, recognized freeze/UI-lock/message pattern.
+- `stale-client`: priority 2, report came from a known fixed version prefix; update/clear the client cache before debugging.
+
+See `docs/OPERATIONS.md` for the current known fixed version table and triage flow.
 
 
 ## Test notification
@@ -196,7 +206,7 @@ Setup:
 3. Add `NTFY_CI_TOPIC` with a hard-to-guess topic name, ideally separate from `NTFY_TOPIC`.
 4. Subscribe to that topic in the ntfy app or web UI.
 
-The workflows in `.github/workflows/` post only when `failure()` is true. If `NTFY_CI_TOPIC` is unset, the notify step is skipped. Successful runs do not notify.
+The workflows in `.github/workflows/` post only when `failure()` is true. If `NTFY_CI_TOPIC` is unset, the notify step is skipped. Successful runs do not notify. `.github/workflows/nightly-release-test.yml` runs the release/PWA/online regression set on a daily schedule and uses the same failure-only topic.
 
 CI failure notifications include only compact build metadata:
 
