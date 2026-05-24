@@ -120,32 +120,11 @@ class CPU {
     }
 
     _rollEvaluationSignature(game) {
-        const enabled = game && game.enabledLandmarks ? [...game.enabledLandmarks].sort().join(',') : '';
-        const players = game.players.map(player => {
-            const landmarks = Player.landmarkNames().map(name => player.landmarks[name] ? '1' : '0').join('');
-            const cards = player.cards.map((card, index) => `${card.name}:${player.isDormant(card) ? 1 : 0}:${index}`).join('|');
-            return `${player.coins}/${player.itVentureCoins}/${landmarks}/${cards}`;
-        }).join('||');
-        return `${game.currentPlayerIndex}|${game.phase}|${enabled}|${players}`;
+        return CPUEvaluationCache.signature(game);
     }
 
     _signatureCache(cacheKey, game, factory) {
-        const signature = this._rollEvaluationSignature(game);
-        let store = this[cacheKey];
-        if (!store) {
-            store = new Map();
-            this[cacheKey] = store;
-        }
-        let entry = store.get(signature);
-        if (!entry) {
-            entry = factory(signature);
-            store.set(signature, entry);
-            if (store.size > 16) {
-                const oldestKey = store.keys().next().value;
-                if (oldestKey !== undefined) store.delete(oldestKey);
-            }
-        }
-        return entry;
+        return CPUEvaluationCache.entry(this, cacheKey, game, factory);
     }
 
     _rollEvaluationCache(game) {

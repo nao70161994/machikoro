@@ -37,6 +37,32 @@ runTest('CPU tuning scaffold は外部tableからexpert presetと既定optionを
     assert.strictEqual(cpu.expertAirportSkipMode, 'whenNoLandmark');
 });
 
+runTest('CPU evaluation cache helper はsignatureごとにentryを再利用し上限で古いentryを捨てる', () => {
+    assert.ok(runtime.CPUEvaluationCache);
+    assert.strictEqual(runtime.CPU_EVALUATION_CACHE_LIMIT, 16);
+
+    const cpu = new CPU('expert');
+    const game = new GameManager(2);
+    let calls = 0;
+
+    const first = cpu._signatureCache('_testCache', game, signature => ({ signature, calls: ++calls }));
+    const second = cpu._signatureCache('_testCache', game, signature => ({ signature, calls: ++calls }));
+    assert.strictEqual(first, second);
+    assert.strictEqual(calls, 1);
+
+    game.currentPlayer().coins += 1;
+    const third = cpu._signatureCache('_testCache', game, signature => ({ signature, calls: ++calls }));
+    assert.notStrictEqual(third, first);
+    assert.strictEqual(calls, 2);
+
+    const pruneCpu = new CPU('expert');
+    for (let coins = 0; coins < runtime.CPU_EVALUATION_CACHE_LIMIT + 2; coins++) {
+        game.currentPlayer().coins = coins;
+        pruneCpu._signatureCache('_pruneCache', game, signature => ({ signature }));
+    }
+    assert.strictEqual(pruneCpu._pruneCache.size, runtime.CPU_EVALUATION_CACHE_LIMIT);
+});
+
 runTest('CPU smoke: pending actions resolve without staying in pending phase', () => {
     const makeBaseGame = () => {
         const game = new GameManager(2);

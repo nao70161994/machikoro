@@ -12,7 +12,7 @@ function loadRuntime(options = {}) {
         Math: Object.create(Math),
     };
     vm.createContext(context);
-    const runtimeFiles = ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/cpuTuning.js', 'js/cpuDiagnostics.js', 'js/CPU.js'];
+    const runtimeFiles = ['js/Card.js', 'js/Player.js', 'js/GameManager.js', 'js/cpuTuning.js', 'js/cpuDiagnostics.js', 'js/cpuEvaluationCache.js', 'js/CPU.js'];
     if (options.includeRL !== false) runtimeFiles.push('js/RLCPU.js');
     for (const file of runtimeFiles) {
         const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -20,12 +20,12 @@ function loadRuntime(options = {}) {
     }
     if (options.includeRL !== false) {
         vm.runInContext(
-            'this.CPU = CPU; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+            'this.CPU = CPU; this.CPUEvaluationCache = CPUEvaluationCache; this.CPU_EVALUATION_CACHE_LIMIT = CPU_EVALUATION_CACHE_LIMIT; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
             context
         );
     } else {
         vm.runInContext(
-            'this.CPU = CPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+            'this.CPU = CPU; this.CPUEvaluationCache = CPUEvaluationCache; this.CPU_EVALUATION_CACHE_LIMIT = CPU_EVALUATION_CACHE_LIMIT; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
             context
         );
     }

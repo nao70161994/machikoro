@@ -149,6 +149,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/GameManager.js',
         'js/cpuTuning.js',
         'js/cpuDiagnostics.js',
+        'js/cpuEvaluationCache.js',
         'js/CPU.js',
         'js/appShell.js',
         'js/storage.js',

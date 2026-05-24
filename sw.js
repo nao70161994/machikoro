@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   '/js/GameManager.js',
   '/js/cpuTuning.js',
   '/js/cpuDiagnostics.js',
+  '/js/cpuEvaluationCache.js',
   '/js/CPU.js',
   '/js/RLCPU.js',
   '/js/RLModelPortfolio.js',

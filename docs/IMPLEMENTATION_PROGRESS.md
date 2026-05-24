@@ -2214,3 +2214,17 @@
 - 残課題:
   - CPU のさらなる小さな helper 分離は継続 backlog。
   - scoped restore migration / pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - CPU evaluation cache helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU.js の小さな helper 分離。
+- 修正済み:
+  - roll/state 評価キャッシュの signature 生成と上限制御を `js/cpuEvaluationCache.js` へ分離した。
+  - `CPU.js` 側は既存の `_rollEvaluationSignature()` / `_signatureCache()` public-ish method を維持し、helper へ委譲するだけにした。
+  - browser script order、Service Worker precache、Node/vm test runtime、selfplay/eval runtime の読み込み順を `cpuEvaluationCache.js` 追加に合わせた。
+  - `tests/cpu.test.js` に signature ごとの entry 再利用と 16 件上限 pruning の contract を追加した。
+- コード挙動: CPU の評価式、行動選択、購入判断は変更なし。キャッシュ管理だけを helper 化。
+- 残課題:
+  - CPU evaluation / execution の本格分離は挙動影響が大きいため、さらに targeted test を追加してから関数単位で進める。
+  - scoped restore migration / pruning / 複数room resume UI は design required として維持。
