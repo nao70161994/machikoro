@@ -128,6 +128,16 @@ function _removeOnlineRoomStorageItem(key, roomId = myRoomId) {
     if (scopedKey !== key) _removeOnlineStorageItem(scopedKey);
 }
 
+function _writeOnlineRestoreStorageJson(key, value, roomId = myRoomId) {
+    _writeOnlineStorageJson(key, value);
+    _writeOnlineRoomStorageJson(key, value, roomId);
+}
+
+function _removeOnlineRestoreStorageItem(key, roomId = myRoomId) {
+    _removeOnlineStorageItem(key);
+    _removeOnlineRoomStorageItem(key, roomId);
+}
+
 function _readOnlineStorageJson(key, fallback = null) {
     try {
         const raw = localStorage.getItem(key);
@@ -146,9 +156,9 @@ function _removeOnlineStorageItem(key) {
 }
 
 function _clearOnlineRestoreBundle() {
-    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.gameStart);
-    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.actionLog);
-    _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.gameStart);
+    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.actionLog);
+    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
     _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
 }
 
@@ -230,10 +240,10 @@ function _saveActionLog(action, data, options = {}) {
         if (log.length >= ONLINE_ACTION_LOG_LIMIT && game) {
             const snapshot = buildOnlineSnapshot();
             if (snapshot) {
-                _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, snapshot);
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, snapshot);
                 log = [];
                 if (options.alreadyApplied) {
-                    _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
+                    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
                     return;
                 }
             }
@@ -246,7 +256,7 @@ function _saveActionLog(action, data, options = {}) {
         if (typeof options.clientActionId === 'string') entry.clientActionId = options.clientActionId;
         entry.seq = seq;
         log.push(entry);
-        _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
+        _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
     } catch(e) {}
 }
 
@@ -298,7 +308,7 @@ function _writeOnlineGameStartPatch(patch) {
         const payload = _readOnlineGameStartPayload();
         if (!payload) return;
         Object.assign(payload, patch);
-        _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, payload);
+        _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, payload);
     } catch (e) {}
 }
 
@@ -538,7 +548,7 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
             gameStartPayload.hostEpoch = Number.isInteger(hostEpoch)
                 ? hostEpoch
                 : (Number.isInteger(gameStartPayload.hostEpoch) ? gameStartPayload.hostEpoch + 1 : 1);
-            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
         }
     } catch (_) {}
 }
@@ -586,9 +596,9 @@ function initSocket() {
         // ゲーム開始データとアクションログをlocalStorageに保存（サーバー再起動後の復元用）
         try {
             const gameStartPayload = _applyOnlineHostPayload({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }, hostPlayerIndex, hostEpoch);
-            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
-            _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
-            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, []);
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+            _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, []);
             _clearPendingOutboundAction();
         } catch(e) {}
         saveOnlineSession();
@@ -668,13 +678,13 @@ function initSocket() {
         myPlayerIndex = playerIndex;
         _setOnlineHostState(hostPlayerIndex);
         try {
-            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
             if (stateSnapshot) {
-                _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
             } else {
-                _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
             }
-            _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
         } catch(e) {}
         saveOnlineSession();
         cpuScheduleToken++;

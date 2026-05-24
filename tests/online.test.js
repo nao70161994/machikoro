@@ -477,6 +477,32 @@ runTest('rejoinData は build action replay から undoState を復元する', (
     assert.strictEqual(undoState.shopStock['カフェ'], 6);
 });
 
+runTest('gameStart は restore bundle を room-scoped key にも保存する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    rt.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0 });
+
+    rt.getSocketHandlers().gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['a'],
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+
+    const scopedGameStart = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM01')));
+    const scopedActionLog = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineActionLog', 'ROOM01')));
+    assert.strictEqual(scopedGameStart.hostPlayerIndex, 0);
+    assert.strictEqual(scopedGameStart.actionSeq, 0);
+    assert.deepStrictEqual(scopedActionLog, []);
+});
+
 runTest('rejoinData は canonical に受理済みの未ackアクションを破棄する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
@@ -1869,6 +1895,29 @@ runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', (
     assert.strictEqual(log.length, 1);
     assert.strictEqual(log[0].action, 'buildLandmark');
     assert.strictEqual(snapshot.players[0].coins, 9);
+});
+
+runTest('_saveActionLog は restore bundle 更新を room-scoped key にも保存する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.setOnlineState({ myRoomId: 'ROOM01' });
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({ actionSeq: 0 }));
+    const game = rt.getGame();
+    game.currentPlayer().coins = 9;
+    for (let i = 1; i <= 200; i++) {
+        rt._saveActionLog('nextTurn', {}, { seq: i, playerIndex: 0 });
+    }
+    rt._saveActionLog('buildLandmark', { name: '駅' }, { seq: 201, playerIndex: 0 });
+
+    const scopedGameStart = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM01')));
+    const scopedActionLog = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineActionLog', 'ROOM01')));
+    const scopedSnapshot = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineStateSnapshot', 'ROOM01')));
+    assert.strictEqual(scopedGameStart.actionSeq, 201);
+    assert.strictEqual(scopedActionLog.length, 1);
+    assert.strictEqual(scopedActionLog[0].seq, 201);
+    assert.strictEqual(scopedSnapshot.players[0].coins, 9);
 });
 
 runTest('_saveActionLog は未適用の受信actionをsnapshotのactionSeqに含めない', () => {

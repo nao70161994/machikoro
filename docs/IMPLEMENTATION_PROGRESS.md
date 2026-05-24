@@ -2110,5 +2110,18 @@
   - `tests/online.test.js` に room-scoped pending copy の保存・削除回帰テストを追加した。
 - コード挙動: 既存の復元 / 再送は従来 key を読み続ける。per-room key は移行前の補助コピーで、UI再開導線や互換 migration は未変更。
 - 残課題:
-  - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の scoped dual-write、scoped read migration、旧key pruning は設計を小さく分けて継続 backlog。
+  - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の scoped read migration、旧key pruning は設計を小さく分けて継続 backlog。
+  - CPU / UI / server の小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - online restore bundle scoped copy
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場拡張。
+- 修正済み:
+  - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の restore bundle 更新を `_writeOnlineRestoreStorageJson()` に集約し、従来keyへ書きつつ room-scoped key にも dual-write するようにした。
+  - restore bundle の削除を `_removeOnlineRestoreStorageItem()` に集約し、従来keyと current room の scoped key を一緒に削除するようにした。
+  - `tests/online.test.js` に `gameStart` と `_saveActionLog()` 圧縮時の scoped bundle 保存回帰テストを追加した。
+- コード挙動: 読み取り正本は従来keyのまま維持。room-scoped copy は次段階の read migration / pruning 用の足場。
+- 残課題:
+  - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
   - CPU / UI / server の小さな helper 分離は継続 backlog。
