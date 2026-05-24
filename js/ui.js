@@ -523,27 +523,24 @@ function buildPendingItHtml(game) {
     return `<div class="pending-box"><p>💻 ITベンチャー：1コイン積立しますか？</p><p>現在の積立：${cur.itVentureCoins}コイン　所持：🪙${cur.coins}</p><button data-action="resolveIT" data-do-save="true" ${canSave ? "" : "disabled"}>積立する（→積立${cur.itVentureCoins + 1}コイン）</button><button data-action="resolveIT" data-do-save="false">スキップ</button></div>`;
 }
 
+const PENDING_MENU_RENDERERS = Object.freeze([
+    Object.freeze({ field: 'pendingTV', action: 'resolveTV', isActive: game => game.pendingTV > 0, buildHtml: buildPendingTvHtml }),
+    Object.freeze({ field: 'pendingBusiness', action: 'resolveBusiness', isActive: game => game.pendingBusiness > 0, buildHtml: buildPendingBusinessHtml }),
+    Object.freeze({ field: 'pendingCleaning', action: 'resolveCleaning', isActive: game => game.pendingCleaning > 0, buildHtml: buildPendingCleaningHtml }),
+    Object.freeze({ field: 'pendingMover', action: 'resolveMover', isActive: game => game.pendingMover > 0, buildHtml: buildPendingMoverHtml }),
+    Object.freeze({ field: 'pendingRenovation', action: 'resolveRenovation', isActive: game => game.pendingRenovation > 0, buildHtml: buildPendingRenovationHtml }),
+    Object.freeze({ field: 'pendingIT', action: 'resolveIT', isActive: game => !!game.pendingIT, buildHtml: buildPendingItHtml }),
+]);
+
+function shouldRenderPendingMenuSpec(spec, game, allowedActions, nextPending) {
+    return shouldRenderPendingField(nextPending, allowedActions, spec.field, spec.action) && spec.isActive(game);
+}
+
 function buildPendingMenuHtml(game, allowedActions, nextPending) {
-    let html = "";
-    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingTV', 'resolveTV') && game.pendingTV > 0) {
-        html += buildPendingTvHtml(game);
-    }
-    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingBusiness', 'resolveBusiness') && game.pendingBusiness > 0) {
-        html += buildPendingBusinessHtml(game);
-    }
-    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingCleaning', 'resolveCleaning') && game.pendingCleaning > 0) {
-        html += buildPendingCleaningHtml(game);
-    }
-    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingMover', 'resolveMover') && game.pendingMover > 0) {
-        html += buildPendingMoverHtml(game);
-    }
-    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingRenovation', 'resolveRenovation') && game.pendingRenovation > 0) {
-        html += buildPendingRenovationHtml(game);
-    }
-    if (shouldRenderPendingField(nextPending, allowedActions, 'pendingIT', 'resolveIT') && game.pendingIT) {
-        html += buildPendingItHtml(game);
-    }
-    return html;
+    return PENDING_MENU_RENDERERS
+        .filter(spec => shouldRenderPendingMenuSpec(spec, game, allowedActions, nextPending))
+        .map(spec => spec.buildHtml(game))
+        .join("");
 }
 
 function renderPending() {

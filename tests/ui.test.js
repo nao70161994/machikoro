@@ -826,6 +826,9 @@ runTest('buildPendingMenuHtml は pending 種別ごとのHTML生成と先頭pend
     assert.ok(allHtml.includes('data-action="resolveMover"'));
     assert.ok(allHtml.includes('data-action="resolveRenovation"'));
     assert.ok(allHtml.includes('data-action="resolveIT"'));
+    assert.ok(allHtml.indexOf('data-action="resolveCleaning"') < allHtml.indexOf('data-action="resolveMover"'));
+    assert.ok(allHtml.indexOf('data-action="resolveMover"') < allHtml.indexOf('data-action="resolveRenovation"'));
+    assert.ok(allHtml.indexOf('data-action="resolveRenovation"') < allHtml.indexOf('data-action="resolveIT"'));
 
     const moverOnlyHtml = context.buildPendingMenuHtml(
         context.game,

@@ -2292,3 +2292,15 @@
 - 残課題:
   - online storage の旧key pruning / 複数room resume UI は design required として維持。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - pending menu renderer registry
+
+- 状態: completed; full verification passed before commit.
+- 対象: pending 種別 HTML helper 化の継続。
+- 修正済み:
+  - `buildPendingMenuHtml()` の pending 種別 if 連鎖を `PENDING_MENU_RENDERERS` registry に寄せ、`field` / `action` / active 判定 / HTML helper を同じ entry で追えるようにした。
+  - `tests/ui.test.js` の pending HTML contract に renderer 順序 assertion を追加した。
+- コード挙動: 既存の pending 表示順、先頭pending gate、allowedActions gate、各 pending HTML は維持。
+- 残課題:
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+  - modal stack / hostless restore / signed restore は対象外または design required として維持。
