@@ -174,6 +174,39 @@ runTest('choosePendingResolution は pending 順と fallback move を共有す�
     assert.ok(game.currentPlayer().cards.some(card => card.name === '森林'));
 });
 
+runTest('choosePendingResolution helper は TV/Mover/Renovation のfallbackを共有する', () => {
+    const cpu = new CPU('normal');
+
+    const tvGame = new GameManager(2);
+    tvGame.phase = runtime.GAME_PHASES.PENDING;
+    tvGame.pendingTV = 1;
+    tvGame.currentPlayer().coins = 0;
+    tvGame.players[1].coins = 4;
+    cpu.chooseTVTarget = () => 99;
+    const tvResolution = CPU.choosePendingResolution(tvGame, cpu);
+    assert.strictEqual(tvResolution.action, 'resolveTV');
+    assert.strictEqual(tvResolution.payload.targetIndex, 1);
+
+    const moverGame = new GameManager(2);
+    moverGame.phase = runtime.GAME_PHASES.PENDING;
+    moverGame.pendingMover = 1;
+    moverGame.currentPlayer().cards = [createCardByName('引越し屋'), createCardByName('麦畑')];
+    cpu.chooseMoverMove = () => ({ cardIndex: 99, targetIndex: 99 });
+    const moverResolution = CPU.choosePendingResolution(moverGame, cpu);
+    assert.strictEqual(moverResolution.action, 'resolveMover');
+    assert.strictEqual(moverResolution.payload.cardIndex, 0);
+    assert.strictEqual(moverResolution.payload.targetIndex, 1);
+
+    const renovationGame = new GameManager(2);
+    renovationGame.phase = runtime.GAME_PHASES.PENDING;
+    renovationGame.pendingRenovation = 1;
+    renovationGame.currentPlayer().landmarks['駅'] = true;
+    cpu.chooseRenovationTarget = () => '';
+    const renovationResolution = CPU.choosePendingResolution(renovationGame, cpu);
+    assert.strictEqual(renovationResolution.action, 'resolveRenovation');
+    assert.strictEqual(renovationResolution.payload.landmarkName, '駅');
+});
+
 runTest('choosePendingResolution は未対応pendingを飛ばして後続pendingを処理しない', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);

@@ -2623,3 +2623,14 @@
 - コード挙動: pending HTML の生成内容・表示条件は変更なし。renderer registry の contract visibility だけを追加。
 - 残課題:
   - build menu / card select 周辺の UI helper 分離、CPU / server の小 helper 分離は継続 backlog。
+
+## Backlog cleanup - CPU pending resolution helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU / UI / server の小さな helper 分離のうち CPU pending execution 周辺。
+- 修正中:
+  - `CPU.choosePendingResolution()` の各 pending action 解決を `_choosePendingTvResolution()`, `_choosePendingBusinessResolution()`, `_choosePendingMoverResolution()`, `_choosePendingRenovationResolution()` へ分離した。
+  - `tests/cpu.test.js` で TV / Mover / Renovation の fallback 解決が分離後も維持されることを固定した。
+- コード挙動: pending queue の先頭 action を解決する既存順序、Cleaning/IT をこの helper で処理しない境界、fallback clear 方針は維持。
+- 残課題:
+  - CPU diagnostics / scoring / build execution 周辺のさらなる helper 分離は継続 backlog。

@@ -4338,68 +4338,80 @@ class CPU {
         };
     }
 
+    static _choosePendingTvResolution(game, cpu, options = {}) {
+        let targetIndex = cpu.chooseTVTarget(game);
+        const fallback = options.fallbackTvTarget || CPU._fallbackCpuOpponentIndex;
+        if (!CPU._isCpuOpponentIndex(game, targetIndex)) targetIndex = fallback(game, cpu);
+        if (!CPU._isCpuOpponentIndex(game, targetIndex)) return null;
+        return {
+            action: 'resolveTV',
+            payload: { targetIndex },
+            targetIndex,
+            apply: () => game.resolveTV(targetIndex),
+        };
+    }
+
+    static _choosePendingBusinessResolution(game, cpu, options = {}) {
+        let move = cpu.chooseBusinessMove(game);
+        const fallback = options.fallbackBusinessMove || CPU._fallbackCpuBusinessMove;
+        if (!CPU._isCpuBusinessMove(game, move)) move = fallback(game, cpu);
+        if (!CPU._isCpuBusinessMove(game, move)) {
+            return CPU._pendingFallback(game, 'resolveBusiness', 'pendingBusiness', options.fallbackBusiness, options);
+        }
+        return {
+            action: 'resolveBusiness',
+            payload: move,
+            move,
+            apply: () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard),
+        };
+    }
+
+    static _choosePendingMoverResolution(game, cpu, options = {}) {
+        let move = cpu.chooseMoverMove(game);
+        const fallback = options.fallbackMoverMove || CPU._fallbackCpuMoverMove;
+        if (!CPU._isCpuMoverMove(game, move)) move = fallback(game, cpu);
+        if (!CPU._isCpuMoverMove(game, move)) {
+            return CPU._pendingFallback(game, 'resolveMover', 'pendingMover', options.fallbackMover, options);
+        }
+        return {
+            action: 'resolveMover',
+            payload: move,
+            move,
+            apply: () => game.resolveMover(move.cardIndex, move.targetIndex),
+        };
+    }
+
+    static _choosePendingRenovationResolution(game, cpu, options = {}) {
+        let landmarkName = cpu.chooseRenovationTarget(game);
+        const fallback = options.fallbackRenovationTarget || CPU._fallbackCpuRenovationTarget;
+        if (!landmarkName) landmarkName = fallback(game, cpu);
+        if (!landmarkName) {
+            return CPU._pendingFallback(game, 'resolveRenovation', 'pendingRenovation', options.fallbackRenovation, options);
+        }
+        return {
+            action: 'resolveRenovation',
+            payload: { landmarkName },
+            landmarkName,
+            apply: () => game.resolveRenovation(landmarkName),
+        };
+    }
+
     static choosePendingResolution(game, cpu, options = {}) {
         if (!game || !cpu || game.phase !== GAME_PHASES.PENDING) return null;
         const descriptors = CPU._pendingActionDescriptors(game);
         for (const descriptor of descriptors) {
             switch (descriptor.action) {
-                case 'resolveTV': {
-                    let targetIndex = cpu.chooseTVTarget(game);
-                    const fallback = options.fallbackTvTarget || CPU._fallbackCpuOpponentIndex;
-                    if (!CPU._isCpuOpponentIndex(game, targetIndex)) targetIndex = fallback(game, cpu);
-                    if (!CPU._isCpuOpponentIndex(game, targetIndex)) return null;
-                    return {
-                        action: 'resolveTV',
-                        payload: { targetIndex },
-                        targetIndex,
-                        apply: () => game.resolveTV(targetIndex),
-                    };
-                }
-                case 'resolveBusiness': {
-                    let move = cpu.chooseBusinessMove(game);
-                    const fallback = options.fallbackBusinessMove || CPU._fallbackCpuBusinessMove;
-                    if (!CPU._isCpuBusinessMove(game, move)) move = fallback(game, cpu);
-                    if (!CPU._isCpuBusinessMove(game, move)) {
-                        return CPU._pendingFallback(game, 'resolveBusiness', 'pendingBusiness', options.fallbackBusiness, options);
-                    }
-                    return {
-                        action: 'resolveBusiness',
-                        payload: move,
-                        move,
-                        apply: () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard),
-                    };
-                }
+                case 'resolveTV':
+                    return CPU._choosePendingTvResolution(game, cpu, options);
+                case 'resolveBusiness':
+                    return CPU._choosePendingBusinessResolution(game, cpu, options);
                 case 'resolveCleaning':
                 case 'resolveIT':
                     return null;
-                case 'resolveMover': {
-                    let move = cpu.chooseMoverMove(game);
-                    const fallback = options.fallbackMoverMove || CPU._fallbackCpuMoverMove;
-                    if (!CPU._isCpuMoverMove(game, move)) move = fallback(game, cpu);
-                    if (!CPU._isCpuMoverMove(game, move)) {
-                        return CPU._pendingFallback(game, 'resolveMover', 'pendingMover', options.fallbackMover, options);
-                    }
-                    return {
-                        action: 'resolveMover',
-                        payload: move,
-                        move,
-                        apply: () => game.resolveMover(move.cardIndex, move.targetIndex),
-                    };
-                }
-                case 'resolveRenovation': {
-                    let landmarkName = cpu.chooseRenovationTarget(game);
-                    const fallback = options.fallbackRenovationTarget || CPU._fallbackCpuRenovationTarget;
-                    if (!landmarkName) landmarkName = fallback(game, cpu);
-                    if (!landmarkName) {
-                        return CPU._pendingFallback(game, 'resolveRenovation', 'pendingRenovation', options.fallbackRenovation, options);
-                    }
-                    return {
-                        action: 'resolveRenovation',
-                        payload: { landmarkName },
-                        landmarkName,
-                        apply: () => game.resolveRenovation(landmarkName),
-                    };
-                }
+                case 'resolveMover':
+                    return CPU._choosePendingMoverResolution(game, cpu, options);
+                case 'resolveRenovation':
+                    return CPU._choosePendingRenovationResolution(game, cpu, options);
                 default:
                     return null;
             }
