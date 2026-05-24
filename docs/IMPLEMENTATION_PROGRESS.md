@@ -2612,3 +2612,14 @@
 - コード挙動: 正常な既知 action は従来通り。localStorage に残った壊れた未知 action だけを読み取り時に破棄する。
 - 残課題:
   - action metadata を server/client 全経路の dispatch table へさらに寄せる作業は継続 backlog。
+
+## Backlog cleanup - pending renderer spec contract test
+
+- 状態: completed; full verification passed before commit.
+- 対象: pending 種別 HTML helper 化の追加 contract test。
+- 修正中:
+  - `ui.js` に `pendingMenuRendererSpecs()` を追加し、`PENDING_MENU_RENDERERS` の field/action contract をテストから参照できるようにした。
+  - `tests/ui.test.js` で `PENDING_ACTION_SPECS` と `PENDING_IT_QUEUE_POLICY` が UI renderer registry と同期していることを固定した。
+- コード挙動: pending HTML の生成内容・表示条件は変更なし。renderer registry の contract visibility だけを追加。
+- 残課題:
+  - build menu / card select 周辺の UI helper 分離、CPU / server の小 helper 分離は継続 backlog。

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const vm = require('vm');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function loadUiRuntime() {
     const { localStorage } = createStorage();
@@ -795,6 +796,22 @@ runTest('renderPending は pending queue の先頭panelだけを描画する', (
 
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
     assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
+});
+
+runTest('pendingMenuRendererSpecs は GameManager の pending action spec と同期する', () => {
+    const { context } = loadUiRuntime();
+    const gameRuntime = loadGameRuntime();
+    const expected = gameRuntime.PENDING_ACTION_SPECS
+        .map(spec => ({ field: spec.field, action: spec.action }))
+        .concat([{
+            field: gameRuntime.PENDING_IT_QUEUE_POLICY.field,
+            action: gameRuntime.PENDING_IT_QUEUE_POLICY.action,
+        }]);
+
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(context.pendingMenuRendererSpecs())),
+        JSON.parse(JSON.stringify(expected))
+    );
 });
 
 runTest('buildPendingMenuHtml は pending 種別ごとのHTML生成と先頭pending gateを共有する', () => {

@@ -532,6 +532,10 @@ const PENDING_MENU_RENDERERS = Object.freeze([
     Object.freeze({ field: 'pendingIT', action: 'resolveIT', isActive: game => !!game.pendingIT, buildHtml: buildPendingItHtml }),
 ]);
 
+function pendingMenuRendererSpecs() {
+    return PENDING_MENU_RENDERERS.map(spec => ({ field: spec.field, action: spec.action }));
+}
+
 function shouldRenderPendingMenuSpec(spec, game, allowedActions, nextPending) {
     return shouldRenderPendingField(nextPending, allowedActions, spec.field, spec.action) && spec.isActive(game);
 }
