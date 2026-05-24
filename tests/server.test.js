@@ -17,6 +17,9 @@ const {
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
+    restoreSnapshotActionSeq,
+    sanitizeRestoreActionLogEntry,
+    sanitizeRestoreActionLog,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
     normalizeGameLifecyclePayload,
@@ -2055,6 +2058,31 @@ runTest('validateRestorePayloadLimits は復元payloadの件数とサイズ上�
             players: [{ cards: Array.from({ length: RESTORE_PAYLOAD_LIMITS.maxPlayerCardRefs + 1 }, () => '麦畑') }],
         },
     }).reason, 'content-size');
+});
+
+runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共有する', () => {
+    assert.strictEqual(restoreSnapshotActionSeq({ actionSeq: 3 }), 3);
+    assert.strictEqual(restoreSnapshotActionSeq({ actionSeq: -1 }), 0);
+    assert.strictEqual(restoreSnapshotActionSeq(null), 0);
+
+    assert.deepStrictEqual(
+        sanitizeRestoreActionLogEntry({ action: 'nextTurn', data: {}, seq: 4, playerIndex: 0, clientActionId: 'client-1' }, 'ROOM1', 3),
+        { entry: { action: 'nextTurn', data: {}, playerIndex: 0, seq: 4, clientActionId: 'client-1' } }
+    );
+    assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn', seq: 3 }, 'ROOM1', 3), { skip: true });
+    assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn' }, 'ROOM1', 3), { skip: true });
+    assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn', roomId: 'OTHER', seq: 4 }, 'ROOM1', 3), { invalid: true });
+
+    const sanitized = sanitizeRestoreActionLog([
+        { action: 'nextTurn', data: {}, seq: 2, playerIndex: 0 },
+        { action: 'buildCard', data: { cardName: '麦畑' }, seq: 4, playerIndex: 0, clientActionId: 'bad space' },
+        { action: 'nextTurn', data: {}, seq: 5, playerIndex: 0, clientActionId: 'ok-5' },
+    ], 'ROOM1', { actionSeq: 3 });
+    assert.deepStrictEqual(sanitized, [
+        { action: 'buildCard', data: { cardName: '麦畑' }, playerIndex: 0, seq: 4 },
+        { action: 'nextTurn', data: {}, playerIndex: 0, seq: 5, clientActionId: 'ok-5' },
+    ]);
+    assert.strictEqual(sanitizeRestoreActionLog([{ action: 'nextTurn', roomId: 'OTHER', seq: 4 }], 'ROOM1', { actionSeq: 3 }), null);
 });
 
 runTest('handleRecreateRoom は過大な復元payloadを早期拒否する', () => {

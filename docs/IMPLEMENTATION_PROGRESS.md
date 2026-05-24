@@ -2485,3 +2485,15 @@
 - 残課題:
   - 追加の action metadata migration は、実際に新 action / payload kind を増やす時に registry / server / client / replay test と同時に行う。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - restore action log sanitizer helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離 / restore validation 周辺。
+- 修正済み:
+  - `sanitizeRestoreActionLog()` 内の snapshot seq 算出と 1 entry 正規化を `restoreSnapshotActionSeq()` / `sanitizeRestoreActionLogEntry()` に分離した。
+  - `tests/server.test.js` に snapshot 以前ログ除外、roomId gate、clientActionId 正規化の helper contract test を追加した。
+- コード挙動: sanitize 条件は既存条件の移動のみ。復元rank、mirror replay、room replacement の判断は変更なし。
+- 残課題:
+  - server room lifecycle / restore validation 周辺のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

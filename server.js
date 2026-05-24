@@ -1491,26 +1491,36 @@ function isValidRestoreReconnectTokenHashes(gameStartPayload) {
     return true;
 }
 
-function sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot) {
-    if (!Array.isArray(actionLog)) return [];
-    const snapshotSeq = isPlainObject(stateSnapshot) && Number.isInteger(stateSnapshot.actionSeq) && stateSnapshot.actionSeq >= 0
+function restoreSnapshotActionSeq(stateSnapshot) {
+    return isPlainObject(stateSnapshot) && Number.isInteger(stateSnapshot.actionSeq) && stateSnapshot.actionSeq >= 0
         ? stateSnapshot.actionSeq
         : 0;
+}
+
+function sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq) {
+    if (!entry || typeof entry.action !== 'string') return { skip: true };
+    if (typeof entry.roomId === 'string' && entry.roomId !== roomId) return { invalid: true };
+    if (Number.isInteger(entry.seq)) {
+        if (entry.seq <= snapshotSeq) return { skip: true };
+    } else if (snapshotSeq > 0) {
+        return { skip: true };
+    }
+    const normalized = { action: entry.action, data: entry.data || {} };
+    if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+    if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+    const safeClientActionId = normalizeClientActionId(entry.clientActionId);
+    if (safeClientActionId) normalized.clientActionId = safeClientActionId;
+    return { entry: normalized };
+}
+
+function sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot) {
+    if (!Array.isArray(actionLog)) return [];
+    const snapshotSeq = restoreSnapshotActionSeq(stateSnapshot);
     const sanitized = [];
     for (const entry of actionLog) {
-        if (!entry || typeof entry.action !== 'string') continue;
-        if (typeof entry.roomId === 'string' && entry.roomId !== roomId) return null;
-        if (Number.isInteger(entry.seq)) {
-            if (entry.seq <= snapshotSeq) continue;
-        } else if (snapshotSeq > 0) {
-            continue;
-        }
-        const normalized = { action: entry.action, data: entry.data || {} };
-        if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-        if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
-        const safeClientActionId = normalizeClientActionId(entry.clientActionId);
-        if (safeClientActionId) normalized.clientActionId = safeClientActionId;
-        sanitized.push(normalized);
+        const result = sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq);
+        if (result.invalid) return null;
+        if (result.entry) sanitized.push(result.entry);
     }
     return sanitized;
 }
@@ -1905,6 +1915,9 @@ module.exports = {
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
+    restoreSnapshotActionSeq,
+    sanitizeRestoreActionLogEntry,
+    sanitizeRestoreActionLog,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
     normalizeGameLifecyclePayload,
