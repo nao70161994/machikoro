@@ -148,6 +148,7 @@ function loadOnlineRuntime(options = {}) {
         this._readPendingOutboundActionForCurrentSession = _readPendingOutboundActionForCurrentSession;
         this._clearOnlineRestoreBundle = _clearOnlineRestoreBundle;
         this._normalizeOnlineRoomId = _normalizeOnlineRoomId;
+        this._isKnownOnlineGameAction = _isKnownOnlineGameAction;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRoomStorageKeys = _onlineRoomStorageKeys;
         this._onlineRestoreRank = _onlineRestoreRank;
@@ -237,6 +238,9 @@ runTest('_normalizePendingOutboundAction は保存済みpending actionを最小�
     const rt = loadOnlineRuntime();
     assert.strictEqual(rt._normalizePendingOutboundAction(null), null);
     assert.strictEqual(rt._normalizePendingOutboundAction({ data: {} }), null);
+    assert.strictEqual(rt._normalizePendingOutboundAction({ action: 'unknownAction', data: {}, roomId: 'ROOM01' }), null);
+    assert.strictEqual(rt._isKnownOnlineGameAction('buildCard'), true);
+    assert.strictEqual(rt._isKnownOnlineGameAction('unknownAction'), false);
 
     const normalizeForAssert = value => JSON.parse(JSON.stringify(value));
     assert.deepStrictEqual(normalizeForAssert(rt._normalizePendingOutboundAction({

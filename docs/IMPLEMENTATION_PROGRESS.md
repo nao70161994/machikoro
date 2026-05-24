@@ -2601,3 +2601,14 @@
 - コード挙動: roomId の比較前正規化のみ。roomId なし legacy pending の requireRoomId gate と別 room 除外は維持。
 - 残課題:
   - restore bundle 全体の per-room index 化は設計範囲が広いため継続 backlog / design 寄り。
+
+## Backlog cleanup - pending outbound action metadata gate
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test / legacy pending outbound の安全化。
+- 修正中:
+  - `online.js` に `_isKnownOnlineGameAction()` を追加し、保存済み pending outbound の action を `GAME_ACTION_REGISTRY` に存在するものへ限定した。
+  - `tests/online.test.js` で未知 action の pending outbound が復元・再送候補に残らないことを固定した。
+- コード挙動: 正常な既知 action は従来通り。localStorage に残った壊れた未知 action だけを読み取り時に破棄する。
+- 残課題:
+  - action metadata を server/client 全経路の dispatch table へさらに寄せる作業は継続 backlog。

@@ -117,6 +117,12 @@ function _normalizeOnlineRoomId(roomId) {
     return typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
 }
 
+function _isKnownOnlineGameAction(action) {
+    if (typeof action !== 'string') return false;
+    if (typeof GAME_ACTION_REGISTRY === 'undefined') return true;
+    return !!GAME_ACTION_REGISTRY[action];
+}
+
 function _onlineRoomStorageKey(key, roomId = myRoomId) {
     if (typeof key !== 'string' || key === '') return key;
     if (key.includes(ONLINE_ROOM_STORAGE_KEY_SEPARATOR)) return key;
@@ -390,7 +396,7 @@ function _nextOnlineActionSeq(log = null) {
 }
 
 function _normalizePendingOutboundAction(entry) {
-    if (!entry || typeof entry.action !== 'string') return null;
+    if (!entry || !_isKnownOnlineGameAction(entry.action)) return null;
     const normalized = { action: entry.action, data: entry.data || {} };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
     const normalizedRoomId = _normalizeOnlineRoomId(entry.roomId);
