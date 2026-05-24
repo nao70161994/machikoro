@@ -141,6 +141,8 @@ function loadOnlineRuntime(options = {}) {
         this.setOnlinePlayerSettings = (value) => { onlinePlayerSettings = value; };
         this._saveActionLog = _saveActionLog;
         this._readOnlineActionLog = _readOnlineActionLog;
+        this._readOnlineGameStartPayload = _readOnlineGameStartPayload;
+        this._readOnlineStateSnapshot = _readOnlineStateSnapshot;
         this._readPendingOutboundAction = _readPendingOutboundAction;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRestoreRank = _onlineRestoreRank;
@@ -1953,6 +1955,38 @@ runTest('_readOnlineActionLog は不正形を空配列へ正規化する', () =>
     assert.strictEqual(log.length, 1);
     assert.strictEqual(log[0].action, 'nextTurn');
     assert.strictEqual(Object.keys(log[0].data).length, 0);
+});
+
+runTest('restore bundle read は current room の scoped copy を legacy より優先する', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({ roomMarker: 'legacy', actionSeq: 1 }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'nextTurn', seq: 1 }]));
+    rt.localStorage.setItem('onlineStateSnapshot', JSON.stringify({ roomMarker: 'legacy', actionSeq: 1 }));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM02'), JSON.stringify({ roomMarker: 'scoped', actionSeq: 8 }));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineActionLog', 'ROOM02'), JSON.stringify([{ action: 'buildLandmark', data: { name: '駅' }, seq: 8 }]));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineStateSnapshot', 'ROOM02'), JSON.stringify({ roomMarker: 'scoped', actionSeq: 7 }));
+
+    assert.strictEqual(rt._readOnlineGameStartPayload().roomMarker, 'scoped');
+    assert.strictEqual(rt._readOnlineStateSnapshot().roomMarker, 'scoped');
+    const actionLog = rt._readOnlineActionLog();
+    assert.strictEqual(actionLog.length, 1);
+    assert.strictEqual(actionLog[0].action, 'buildLandmark');
+    assert.strictEqual(actionLog[0].seq, 8);
+});
+
+runTest('restore bundle read は scoped copy がなければ legacy へfallbackする', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM02' });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({ roomMarker: 'legacy', actionSeq: 1 }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([{ action: 'nextTurn', seq: 1 }]));
+    rt.localStorage.setItem('onlineStateSnapshot', JSON.stringify({ roomMarker: 'legacy', actionSeq: 1 }));
+
+    assert.strictEqual(rt._readOnlineGameStartPayload().roomMarker, 'legacy');
+    assert.strictEqual(rt._readOnlineStateSnapshot().roomMarker, 'legacy');
+    const actionLog = rt._readOnlineActionLog();
+    assert.strictEqual(actionLog.length, 1);
+    assert.strictEqual(actionLog[0].action, 'nextTurn');
 });
 
 runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', () => {

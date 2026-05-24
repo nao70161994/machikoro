@@ -174,7 +174,7 @@ function _clearOnlineRestoreBundle() {
 }
 
 function _readOnlineStateSnapshot() {
-    return _readOnlineStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, null);
+    return _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, null);
 }
 
 function _clearRejoinRetry() {
@@ -285,7 +285,7 @@ function _normalizeOnlineActionLog(value) {
 }
 
 function _readOnlineActionLog() {
-    return _normalizeOnlineActionLog(_readOnlineStorageJson(ONLINE_STORAGE_KEYS.actionLog, []));
+    return _normalizeOnlineActionLog(_readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.actionLog, []));
 }
 
 function _savePendingOutboundAction(action, data) {
@@ -312,7 +312,7 @@ function _createOnlineClientActionId() {
 }
 
 function _readOnlineGameStartPayload() {
-    return _readOnlineStorageJson(ONLINE_STORAGE_KEYS.gameStart, null);
+    return _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.gameStart, null);
 }
 
 function _writeOnlineGameStartPatch(patch) {

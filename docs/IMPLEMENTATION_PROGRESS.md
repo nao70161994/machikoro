@@ -2228,3 +2228,16 @@
 - 残課題:
   - CPU evaluation / execution の本格分離は挙動影響が大きいため、さらに targeted test を追加してから関数単位で進める。
   - scoped restore migration / pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - online restore scoped read
+
+- 状態: completed; full verification passed before commit.
+- 対象: online storage の per-room namespace 化の小さな足場補強。
+- 修正済み:
+  - `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` の読み取りを `_readOnlineRoomStorageJson()` 経由にし、current room の scoped copy がある場合は legacy key より優先するようにした。
+  - scoped copy が存在しない場合は従来通り legacy key へ fallback するため、既存保存データ互換を維持した。
+  - `tests/online.test.js` に restore bundle read の scoped 優先と legacy fallback contract を追加した。
+- コード挙動: 書き込み済みの dual-write 境界は維持。旧key pruning、複数room resume UI、hostless restore は未変更。
+- 残課題:
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
