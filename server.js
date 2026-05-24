@@ -28,6 +28,7 @@ const {
     validateResolveTVPayload,
     validateBuildCardPayload,
     validateBuildLandmarkPayload,
+    ACTION_PAYLOAD_VALIDATORS,
     validateActionPayloadForState,
     getAllowedActions,
 } = require('./server/actionValidation')({ gameRuntime });
@@ -2011,6 +2012,7 @@ module.exports = {
     validateResolveTVPayload,
     validateBuildCardPayload,
     validateBuildLandmarkPayload,
+    ACTION_PAYLOAD_VALIDATORS,
     validateActionPayloadForState,
     validateGameAction,
     getAllowedActions,

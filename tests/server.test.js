@@ -103,6 +103,7 @@ const {
     validateResolveTVPayload,
     validateBuildCardPayload,
     validateBuildLandmarkPayload,
+    ACTION_PAYLOAD_VALIDATORS,
     validateActionPayloadForState,
     makeUndoStateFromMirror,
     applyActionToMirror,
@@ -644,13 +645,18 @@ runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で�
         assert.strictEqual(entry.serverReplay, true);
     }
 
-    const validatorActions = extractActionValidatorBranches(extractFunctionBody(validationSource, 'validateActionPayloadForState'));
+    const validatorActions = Object.keys(ACTION_PAYLOAD_VALIDATORS).sort();
     const mirrorActions = extractSwitchActionCases(extractFunctionBody(mirrorSource, 'applyActionToMirror'));
     const serverPayloadActions = actions.filter(action => registry[action].serverPayload);
     const serverReplayActions = actions.filter(action => registry[action].serverReplay);
 
     assert.deepStrictEqual(validatorActions, serverPayloadActions);
+    assert.ok(Object.isFrozen(ACTION_PAYLOAD_VALIDATORS));
+    for (const action of validatorActions) {
+        assert.strictEqual(typeof ACTION_PAYLOAD_VALIDATORS[action], 'function', `${action} validator missing`);
+    }
     assert.deepStrictEqual(mirrorActions, serverReplayActions);
+    assert.ok(validationSource.includes('ACTION_PAYLOAD_VALIDATORS'));
 });
 
 runTest('server validateBusinessPayload はカードindex指定を許可する', () => {

@@ -2577,3 +2577,15 @@
 - コード挙動: CPU build の送信/ローカル適用条件は変更なし。online build の入口判定だけを共通 helper に寄せた。
 - 残課題:
   - CPU execution と diagnostics のさらなる module 分離は継続 backlog。
+
+## Backlog cleanup - server action payload validator registry
+
+- 状態: completed; full verification passed before commit.
+- 対象: server validation helper の小さな分離 / action metadata contract の追加 test。
+- 修正中:
+  - `server/actionValidation.js` の `validateActionPayloadForState()` を `ACTION_PAYLOAD_VALIDATORS` registry 経由へ寄せた。
+  - actor authority / phase gate は従来通り caller (`validateGameAction`, replay caller) 側に残し、payload-only contract は維持した。
+  - `tests/server.test.js` で `ACTION_PAYLOAD_VALIDATORS` が `GAME_ACTION_REGISTRY.serverPayload` action を網羅し、frozen registry であることを固定した。
+- コード挙動: payload validator の分岐入口だけを table-driven に変更。個別 validator と validate result は既存と同じ。
+- 残課題:
+  - room lifecycle / restore validation 周辺のさらなる小 helper 分離は継続 backlog。

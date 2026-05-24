@@ -147,28 +147,32 @@ function makeActionValidation({ gameRuntime }) {
             current.coins >= cost;
     }
 
+    const ACTION_PAYLOAD_VALIDATORS = Object.freeze({
+        rollDice: (room, game, shopStock, data) => validateRollDicePayload(data, game),
+        selectDice: (room, game, shopStock, data) => validateSelectDicePayload(data),
+        rerollDice: (room, game, shopStock, data) => validateRerollDicePayload(data),
+        skipReroll: (room, game, shopStock, data) => isPlainObject(data),
+        resolveHarbor: (room, game, shopStock, data) => validateResolveHarborPayload(data),
+        resolveTV: (room, game, shopStock, data) => validateResolveTVPayload(game, data),
+        resolveBusiness: (room, game, shopStock, data) => validateBusinessPayload(game, data),
+        resolveCleaning: (room, game, shopStock, data) => validateCleaningPayload(game, data),
+        resolveMover: (room, game, shopStock, data) => validateMoverPayload(game, data),
+        resolveRenovation: (room, game, shopStock, data) => validateRenovationPayload(game, data),
+        resolveIT: (room, game, shopStock, data) => validateResolveITPayload(data),
+        buildCard: (room, game, shopStock, data) => validateBuildCardPayload(room, game, shopStock, data),
+        buildLandmark: (room, game, shopStock, data) => validateBuildLandmarkPayload(room, game, data),
+        undoBuild: (room, game, shopStock, data, options = {}) => !!options.undoState &&
+            game.builtThisTurn &&
+            (!options.requireUndoPayload || isPlainObject(data)),
+        nextTurn: (room, game, shopStock, data) => isPlainObject(data),
+    });
+
     // Payload-only validator. Actor authority and phase/action allowance must be checked by the caller.
     function validateActionPayloadForState(room, game, shopStock, action, data, options = {}) {
-        if (action === 'rollDice') return validateRollDicePayload(data, game);
-        if (action === 'selectDice') return validateSelectDicePayload(data);
-        if (action === 'rerollDice') return validateRerollDicePayload(data);
-        if (action === 'skipReroll') return isPlainObject(data);
-        if (action === 'resolveHarbor') return validateResolveHarborPayload(data);
-        if (action === 'resolveTV') return validateResolveTVPayload(game, data);
-        if (action === 'resolveBusiness') return validateBusinessPayload(game, data);
-        if (action === 'resolveCleaning') return validateCleaningPayload(game, data);
-        if (action === 'resolveMover') return validateMoverPayload(game, data);
-        if (action === 'resolveRenovation') return validateRenovationPayload(game, data);
-        if (action === 'resolveIT') return validateResolveITPayload(data);
-        if (action === 'buildCard') return validateBuildCardPayload(room, game, shopStock, data);
-        if (action === 'buildLandmark') return validateBuildLandmarkPayload(room, game, data);
-        if (action === 'undoBuild') {
-            return !!options.undoState &&
-                game.builtThisTurn &&
-                (!options.requireUndoPayload || isPlainObject(data));
-        }
-        if (action === 'nextTurn') return isPlainObject(data);
-        return false;
+        const validator = ACTION_PAYLOAD_VALIDATORS[action];
+        return typeof validator === 'function'
+            ? validator(room, game, shopStock, data, options)
+            : false;
     }
 
     function getAllowedActions(game) {
@@ -194,6 +198,7 @@ function makeActionValidation({ gameRuntime }) {
         validateResolveTVPayload,
         validateBuildCardPayload,
         validateBuildLandmarkPayload,
+        ACTION_PAYLOAD_VALIDATORS,
         validateActionPayloadForState,
         getAllowedActions,
     };
