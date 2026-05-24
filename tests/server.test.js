@@ -42,6 +42,7 @@ const {
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,
+    postNtfyNotification,
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,
     isPublicRootFile,
@@ -476,6 +477,30 @@ runTest('notifyClientError は ntfy topic 設定時に title/priority/tags 付�
     assert.strictEqual(calls[0].options.headers.Priority, '4');
     assert.ok(calls[0].options.headers.Tags.includes('warning'));
     assert.ok(calls[0].options.body.includes('phase=build'));
+});
+
+
+runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み立てる', () => {
+    const calls = [];
+    postNtfyNotification({
+        topic: 'helper-topic',
+        title: '[Machikoro] Helper Test',
+        priority: '5',
+        tags: 'test,gear',
+        body: 'hello',
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].url, 'https://ntfy.sh/helper-topic');
+    assert.strictEqual(calls[0].options.method, 'POST');
+    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Helper Test');
+    assert.strictEqual(calls[0].options.headers.Priority, '5');
+    assert.strictEqual(calls[0].options.headers.Tags, 'test,gear');
+    assert.strictEqual(calls[0].options.body, 'hello');
 });
 
 runTest('client error test endpoint helper は production 既定で無効、dev/debug で有効になる', () => {

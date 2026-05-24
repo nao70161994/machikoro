@@ -2241,3 +2241,16 @@
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - server ntfy notifier helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離。
+- 修正済み:
+  - client error 通知と game lifecycle 通知で重複していた ntfy POST 処理を `server/ntfyNotifier.js` の `postNtfyNotification()` へ切り出した。
+  - 既存の title / priority / tags / body / missing topic / fetch unavailable / ntfy failure の挙動は呼び出し側の options で維持した。
+  - `tests/server.test.js` に helper の POST option contract を追加した。
+- コード挙動: `/api/client-error`、`/api/client-error-test`、`/api/game-lifecycle` の公開挙動は変更しない。
+- 残課題:
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

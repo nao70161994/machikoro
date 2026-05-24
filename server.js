@@ -6,6 +6,7 @@ const fs = require('fs');
 const vm = require('vm');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
+const { postNtfyNotification } = require('./server/ntfyNotifier');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -319,35 +320,20 @@ function formatNtfyClientErrorMessage(report) {
 }
 
 async function notifyClientError(report, options = {}) {
-    const topic = options.topic || process.env.NTFY_TOPIC;
-    if (!topic) {
-        console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + redactedClientErrorRoomId(report.roomId));
-        return { sent: false, reason: 'missing-topic' };
-    }
-    const fetchImpl = options.fetchImpl || global.fetch;
-    if (typeof fetchImpl !== 'function') {
-        console.warn('[client-error] fetch unavailable; ntfy notification skipped');
-        return { sent: false, reason: 'fetch-unavailable' };
-    }
-    try {
-        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic), {
-            method: 'POST',
-            headers: {
-                Title: '[Machikoro] Client Error',
-                Priority: '4',
-                Tags: 'warning,computer',
-            },
-            body: formatNtfyClientErrorMessage(report),
-        });
-        if (response && response.ok === false) {
-            console.warn('[client-error] ntfy notification failed:', response.status || 'unknown');
-            return { sent: false, reason: 'ntfy-status' };
-        }
-        return { sent: true };
-    } catch (error) {
-        console.warn('[client-error] ntfy notification failed:', error?.message || error);
-        return { sent: false, reason: 'ntfy-error' };
-    }
+    return postNtfyNotification({
+        topic: options.topic || process.env.NTFY_TOPIC,
+        fetchImpl: options.fetchImpl || global.fetch,
+        title: '[Machikoro] Client Error',
+        priority: '4',
+        tags: 'warning,computer',
+        body: formatNtfyClientErrorMessage(report),
+        onMissingTopic() {
+            console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + redactedClientErrorRoomId(report.roomId));
+        },
+        fetchUnavailableMessage: '[client-error] fetch unavailable; ntfy notification skipped',
+        statusFailureMessage: '[client-error] ntfy notification failed:',
+        errorFailureMessage: '[client-error] ntfy notification failed:',
+    });
 }
 
 async function handleClientErrorRequest(req, res, options = {}) {
@@ -546,35 +532,20 @@ function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycl
 }
 
 async function notifyGameLifecycle(report, options = {}) {
-    const topic = options.topic || process.env.NTFY_TOPIC;
-    if (!topic) {
-        console.warn('[game-lifecycle]', report.event, 'mode=' + report.mode, 'players=' + report.playerCount, 'cpu=' + report.cpuCount);
-        return { sent: false, reason: 'missing-topic' };
-    }
-    const fetchImpl = options.fetchImpl || global.fetch;
-    if (typeof fetchImpl !== 'function') {
-        console.warn('[game-lifecycle] fetch unavailable; ntfy notification skipped');
-        return { sent: false, reason: 'fetch-unavailable' };
-    }
-    try {
-        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic), {
-            method: 'POST',
-            headers: {
-                Title: lifecycleEventTitle(report.event),
-                Priority: '2',
-                Tags: 'video_game,white_check_mark',
-            },
-            body: formatNtfyGameLifecycleMessage(report),
-        });
-        if (response && response.ok === false) {
-            console.warn('[game-lifecycle] ntfy notification failed:', response.status || 'unknown');
-            return { sent: false, reason: 'ntfy-status' };
-        }
-        return { sent: true };
-    } catch (error) {
-        console.warn('[game-lifecycle] ntfy notification failed:', error?.message || error);
-        return { sent: false, reason: 'ntfy-error' };
-    }
+    return postNtfyNotification({
+        topic: options.topic || process.env.NTFY_TOPIC,
+        fetchImpl: options.fetchImpl || global.fetch,
+        title: lifecycleEventTitle(report.event),
+        priority: '2',
+        tags: 'video_game,white_check_mark',
+        body: formatNtfyGameLifecycleMessage(report),
+        onMissingTopic() {
+            console.warn('[game-lifecycle]', report.event, 'mode=' + report.mode, 'players=' + report.playerCount, 'cpu=' + report.cpuCount);
+        },
+        fetchUnavailableMessage: '[game-lifecycle] fetch unavailable; ntfy notification skipped',
+        statusFailureMessage: '[game-lifecycle] ntfy notification failed:',
+        errorFailureMessage: '[game-lifecycle] ntfy notification failed:',
+    });
 }
 
 async function handleGameLifecycleRequest(req, res, options = {}) {
@@ -1966,6 +1937,7 @@ module.exports = {
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,
+    postNtfyNotification,
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,
     isPublicRootFile,
