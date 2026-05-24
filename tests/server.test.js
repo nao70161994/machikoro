@@ -34,6 +34,7 @@ const {
     authorizeClientErrorRequest,
     handleClientErrorRequest,
     isClientErrorRateLimited,
+    pruneRateBuckets,
     pruneClientErrorRateBuckets,
     isDuplicateClientError,
     formatNtfyClientErrorMessage,
@@ -352,6 +353,14 @@ runTest('client error rate limit と duplicate suppression は短時間の連投
     buckets.set('stale-ip', { windowStart: now - CLIENT_ERROR_LIMITS.rateLimitWindowMs - 1, count: 1 });
     pruneClientErrorRateBuckets(now, buckets);
     assert.strictEqual(buckets.has('stale-ip'), false);
+
+    const overflowBuckets = new Map([
+        ['oldest', { windowStart: now, count: 1 }],
+        ['middle', { windowStart: now, count: 1 }],
+        ['newest', { windowStart: now, count: 1 }],
+    ]);
+    pruneRateBuckets(now, overflowBuckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, 2);
+    assert.deepStrictEqual([...overflowBuckets.keys()], ['middle', 'newest']);
 
     const report = normalizeClientErrorPayload({ message: 'same', stack: 'stack', phase: 'build' }, now).report;
     assert.strictEqual(isDuplicateClientError(report, now, cache), false);

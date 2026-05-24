@@ -246,13 +246,17 @@ function authorizeClientErrorRequest(req, env = process.env) {
         : { ok: false, error: 'invalid_client_error_token' };
 }
 
-function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
+function pruneRateBuckets(now, buckets, windowMs, maxBuckets) {
     for (const [bucketKey, bucket] of buckets.entries()) {
-        if (!bucket || now - bucket.windowStart >= CLIENT_ERROR_LIMITS.rateLimitWindowMs) buckets.delete(bucketKey);
+        if (!bucket || now - bucket.windowStart >= windowMs) buckets.delete(bucketKey);
     }
-    if (buckets.size <= CLIENT_ERROR_LIMITS.rateLimitMaxBuckets) return;
-    const overflow = buckets.size - CLIENT_ERROR_LIMITS.rateLimitMaxBuckets;
+    if (buckets.size <= maxBuckets) return;
+    const overflow = buckets.size - maxBuckets;
     for (const bucketKey of Array.from(buckets.keys()).slice(0, overflow)) buckets.delete(bucketKey);
+}
+
+function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
+    pruneRateBuckets(now, buckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, CLIENT_ERROR_LIMITS.rateLimitMaxBuckets);
 }
 
 function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
@@ -502,12 +506,7 @@ function gameLifecycleRateKey(req) {
 }
 
 function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecycleRateBuckets) {
-    for (const [bucketKey, bucket] of buckets.entries()) {
-        if (!bucket || now - bucket.windowStart >= GAME_LIFECYCLE_LIMITS.rateLimitWindowMs) buckets.delete(bucketKey);
-    }
-    if (buckets.size > GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets) {
-        for (const bucketKey of Array.from(buckets.keys()).slice(0, buckets.size - GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets)) buckets.delete(bucketKey);
-    }
+    pruneRateBuckets(now, buckets, GAME_LIFECYCLE_LIMITS.rateLimitWindowMs, GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets);
     const bucket = buckets.get(key);
     if (!bucket) {
         buckets.set(key, { windowStart: now, count: 1 });
@@ -1929,6 +1928,7 @@ module.exports = {
     authorizeClientErrorRequest,
     handleClientErrorRequest,
     isClientErrorRateLimited,
+    pruneRateBuckets,
     pruneClientErrorRateBuckets,
     isDuplicateClientError,
     formatNtfyClientErrorMessage,

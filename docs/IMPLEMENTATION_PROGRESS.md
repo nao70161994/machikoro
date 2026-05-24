@@ -2327,3 +2327,15 @@
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - server rate bucket helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離。
+- 修正済み:
+  - client error と game lifecycle notification の rate bucket pruning を `pruneRateBuckets()` に集約した。
+  - `tests/server.test.js` に overflow bucket pruning の contract assertion を追加し、古い順に過剰bucketを落とす挙動を固定した。
+- コード挙動: rate limit window / max bucket / duplicate suppression の既存値と判定順は維持。重複していた pruning 処理だけを共通化。
+- 残課題:
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
