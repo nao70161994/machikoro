@@ -2462,3 +2462,15 @@
 - 残課題:
   - CPU diagnostics / scoring 周辺のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - server rejoinData payload helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな helper 分離 / reconnect-restore payload 組み立て。
+- 修正済み:
+  - 通常再接続、既存room復帰、復元room作成で重複していた `rejoinData` payload 組み立てを `buildRejoinDataPayload()` に集約した。
+  - `tests/server.test.js` に accepted action refs / host metadata / override の helper contract test を追加した。
+- コード挙動: socket join、host再選出、restore replay、accepted action refs の内容は変更なし。emit payload 形状だけを同一helper経由にした。
+- 残課題:
+  - server restore validation / room lifecycle 周辺のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

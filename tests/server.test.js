@@ -61,6 +61,7 @@ const {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    buildRejoinDataPayload,
     generateRoomId,
     isValidRoomId,
     canonicalizeActionData,
@@ -1180,7 +1181,41 @@ runTest('acceptedClientActionRefs は reconnect ack metadata 用の最小refを�
     assert.deepStrictEqual(acceptedClientActionRefs(room), [{ playerIndex: 1, clientActionId: 'client-action-ref', seq: 11 }]);
     const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
     const occurrences = source.match(/acceptedClientActions: acceptedClientActionRefs/g) || [];
-    assert.ok(occurrences.length >= 3);
+    assert.strictEqual(occurrences.length, 1);
+    assert.ok(source.includes('buildRejoinDataPayload(room, playerIndex)'));
+});
+
+runTest('buildRejoinDataPayload は reconnect payload metadata を一箇所で組み立てる', () => {
+    const room = makeRoom();
+    room.gameStartPayload = { playerNames: ['Alice', 'Bob'] };
+    room.stateSnapshot = { actionSeq: 3 };
+    room.actionLog = [{ action: 'nextTurn', data: {}, seq: 4 }];
+    room.hostPlayerIndex = 1;
+    room.hostEpoch = 2;
+    room.acceptedClientActions = {};
+    rememberAcceptedClientAction(room, {
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        playerIndex: 0,
+        seq: 5,
+        clientActionId: 'ack-1',
+    });
+
+    const payload = buildRejoinDataPayload(room, 0);
+
+    assert.strictEqual(payload.gameStartPayload, room.gameStartPayload);
+    assert.strictEqual(payload.stateSnapshot, room.stateSnapshot);
+    assert.strictEqual(payload.actionLog, room.actionLog);
+    assert.deepStrictEqual(payload.acceptedClientActions, [{ playerIndex: 0, clientActionId: 'ack-1', seq: 5 }]);
+    assert.strictEqual(payload.playerIndex, 0);
+    assert.strictEqual(payload.hostPlayerIndex, 1);
+    assert.strictEqual(payload.hostEpoch, 2);
+
+    const overridePayload = buildRejoinDataPayload(room, 1, { stateSnapshot: null, actionLog: [], hostPlayerIndex: 0, hostEpoch: 9 });
+    assert.strictEqual(overridePayload.stateSnapshot, null);
+    assert.strictEqual(overridePayload.actionLog.length, 0);
+    assert.strictEqual(overridePayload.hostPlayerIndex, 0);
+    assert.strictEqual(overridePayload.hostEpoch, 9);
 });
 
 runTest('accepted clientActionId はactionLog内の既存entryからも見つけられる', () => {

@@ -851,6 +851,18 @@ function acceptedClientActionRefs(room) {
         });
 }
 
+function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
+    return {
+        gameStartPayload: overrides.gameStartPayload || room.gameStartPayload,
+        stateSnapshot: overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null),
+        actionLog: overrides.actionLog || room.actionLog || [],
+        acceptedClientActions: acceptedClientActionRefs(room),
+        playerIndex,
+        hostPlayerIndex: overrides.hostPlayerIndex !== undefined ? overrides.hostPlayerIndex : room.hostPlayerIndex,
+        hostEpoch: Number.isInteger(overrides.hostEpoch) ? overrides.hostEpoch : (room.hostEpoch || 0),
+    };
+}
+
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 const roomGcInterval = setInterval(() => {
@@ -1078,15 +1090,7 @@ io.on('connection', (socket) => {
         socket.playerIndex = playerIndex;
         room.lastTouchedAt = Date.now();
 
-        socket.emit('rejoinData', {
-            gameStartPayload: room.gameStartPayload,
-            stateSnapshot: room.stateSnapshot || null,
-            actionLog: room.actionLog || [],
-            acceptedClientActions: acceptedClientActionRefs(room),
-            playerIndex,
-            hostPlayerIndex: room.hostPlayerIndex,
-            hostEpoch: room.hostEpoch || 0,
-        });
+        socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
         io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
         console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
     });
@@ -1299,15 +1303,7 @@ function handleRecreateRoom(socket, payload = {}) {
                 console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
             }
             room.lastTouchedAt = Date.now();
-            socket.emit('rejoinData', {
-                gameStartPayload: room.gameStartPayload,
-                stateSnapshot: room.stateSnapshot || null,
-                actionLog: room.actionLog || [],
-                acceptedClientActions: acceptedClientActionRefs(room),
-                playerIndex,
-                hostPlayerIndex: room.hostPlayerIndex,
-                hostEpoch: room.hostEpoch || 0,
-            });
+            socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
             io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
             return;
         }
@@ -1409,15 +1405,12 @@ function handleRecreateRoom(socket, payload = {}) {
     socket.join(roomId);
     socket.roomId = roomId;
     socket.playerIndex = playerIndex;
-    socket.emit('rejoinData', {
+    socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
         gameStartPayload,
         stateSnapshot: restoredRoom.stateSnapshot,
         actionLog: restoredRoom.actionLog,
-        acceptedClientActions: acceptedClientActionRefs(restoredRoom),
-        playerIndex,
         hostPlayerIndex: playerIndex,
-        hostEpoch: restoredRoom.hostEpoch || 0,
-    });
+    }));
     console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
 }
 
@@ -1958,6 +1951,7 @@ module.exports = {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    buildRejoinDataPayload,
     generateRoomId,
     isValidRoomId,
     canonicalizeActionData,
