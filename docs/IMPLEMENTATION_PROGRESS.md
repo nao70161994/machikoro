@@ -2267,3 +2267,15 @@
 - 残課題:
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - card detail HTML helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: ui.js の小さな helper 分離。
+- 修正済み:
+  - `showCardDetail()` に直書きされていた施設カード詳細とランドマーク詳細の HTML 生成を `buildCardDetailContent()` / `buildLandmarkDetailContent()` へ分離した。
+  - `tests/ui.test.js` に両 helper の contract test を追加した。
+- コード挙動: card detail modal の表示、focus/modal lifecycle、既存の説明文・コスト・色表示は維持。
+- 残課題:
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

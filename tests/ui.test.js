@@ -961,6 +961,30 @@ runTest('renderPlayers は human の playerSettings 欠落時も落ちない', (
     assert.strictEqual(trace.details.fallbackDifficulty, 'human');
 });
 
+runTest('buildCardDetailContent は施設カード詳細HTMLを生成する', () => {
+    const { context } = loadUiRuntime();
+    const card = context.createCardByName('麦畑');
+
+    const content = context.buildCardDetailContent(card);
+
+    assert.strictEqual(content.title, '麦畑');
+    assert.ok(content.html.includes('コスト'));
+    assert.ok(content.html.includes('🎲 [1]'));
+    assert.ok(content.html.includes('color-badge blue-badge'));
+    assert.ok(content.html.includes('card-detail-effect'));
+});
+
+runTest('buildLandmarkDetailContent はランドマーク詳細HTMLを生成する', () => {
+    const { context } = loadUiRuntime();
+
+    const content = context.buildLandmarkDetailContent('駅');
+
+    assert.ok(content.title.includes('駅'));
+    assert.ok(content.html.includes('ランドマーク'));
+    assert.ok(content.html.includes('💰 4'));
+    assert.ok(content.html.includes('サイコロ'));
+});
+
 runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組み立てる', () => {
     const { context } = loadUiRuntime();
     context.game = { builtThisTurn: false };

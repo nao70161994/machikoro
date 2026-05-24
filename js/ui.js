@@ -1186,25 +1186,40 @@ function toggleLog() {
     return true;
 }
 
+function buildLandmarkDetailContent(name) {
+    const emoji = getLandmarkEmoji(name);
+    const cost = Player.landmarkCost(name);
+    const effect = getLandmarkEffectText(name);
+    return {
+        title: `${emoji} ${name}`,
+        html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`,
+    };
+}
+
+function buildCardDetailContent(card) {
+    const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
+    const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
+    return {
+        title: card.name,
+        html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[card.color]}">${colorNames[card.color]}</span> ${card.category}</span></div></div><div class="card-detail-effect">${getEffectText(card)}</div>`,
+    };
+}
+
 function showCardDetail(name, isLandmark = false) {
     const modal = document.getElementById('cardDetailModal');
     const title = document.getElementById('cardDetailTitle');
     const body = document.getElementById('cardDetailBody');
     if (!modal || !title || !body) return false;
+    let content;
     if (isLandmark) {
-        const emoji = getLandmarkEmoji(name);
-        const cost = Player.landmarkCost(name);
-        const effect = getLandmarkEffectText(name);
-        title.textContent = `${emoji} ${name}`;
-        body.innerHTML = `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`;
+        content = buildLandmarkDetailContent(name);
     } else {
         const card = CARDS.find(c => c.name === name);
         if (!card) return false;
-        const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
-        const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
-        title.textContent = card.name;
-        body.innerHTML = `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[card.color]}">${colorNames[card.color]}</span> ${card.category}</span></div></div><div class="card-detail-effect">${getEffectText(card)}</div>`;
+        content = buildCardDetailContent(card);
     }
+    title.textContent = content.title;
+    body.innerHTML = content.html;
     openAccessibleModal('cardDetailModal');
 }
 
