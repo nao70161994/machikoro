@@ -185,6 +185,20 @@ function makeSnapshot(overrides = {}) {
     return Object.assign(serializeMirrorState(game, { 麦畑: 6, パン屋: 0, カフェ: 0, ビジネスセンター: 0, 引越し屋: 0 }), overrides);
 }
 
+runTest('server module.exports は重複した公開名を持たない', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const match = source.match(/module\.exports\s*=\s*\{([\s\S]*?)\n\};/);
+    assert.ok(match, 'module.exports block not found');
+    const names = match[1]
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('//'))
+        .map(line => line.replace(/,$/, '').split(':')[0].trim())
+        .filter(Boolean);
+    const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+    assert.deepStrictEqual(duplicates, []);
+});
+
 runTest('generateRoomId は紛らわしい文字を含まない6文字IDを生成する', () => {
     for (let i = 0; i < 200; i++) {
         const roomId = generateRoomId();

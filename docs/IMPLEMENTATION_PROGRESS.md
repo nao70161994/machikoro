@@ -2151,3 +2151,15 @@
 - 残課題:
   - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - server export contract cleanup
+
+- 状態: completed; full verification passed before commit.
+- 対象: server.js の小さな保守性改善。
+- 修正済み:
+  - `module.exports` に重複していた game lifecycle 系 export 名を整理した。
+  - `tests/server.test.js` に `module.exports` の公開名重複を検出する静的回帰テストを追加した。
+- コード挙動: 公開値自体は同じで、重複定義の削除のみ。
+- 残課題:
+  - scoped read migration、旧key pruning、複数room resume UI の扱いは継続 backlog。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
