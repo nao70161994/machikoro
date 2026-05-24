@@ -2060,3 +2060,15 @@
   - modal stack/deny-nesting policy は UI 仕様判断が必要。
   - hostless restore / signed or server-persisted canonical state は design decision required。
   - 実機 iOS/Android の長時間 online/PWA/accessibility 回帰は manual verification required。
+
+## Backlog cleanup - action metadata contract tests
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: action metadata contract の追加 test。
+- 修正済み:
+  - `GAME_ACTION_REGISTRY` の `phase` metadata が `GAME_PHASE_ACTIONS` と pending resolver action 群からずれないことを `tests/gamemanager.test.js` に追加した。
+  - pending resolver action は `phase: pending` かつ `payloadKind: resolve*` に固定し、新 action 追加時に registry / allowed action contract の更新漏れを検出しやすくした。
+- コード挙動: 変更なし。テストとdocsのみ。
+- 残課題:
+  - online storage の per-room namespace 化の足場、legacy pending outbound room gate 強化、小さな helper 分離、pending 種別 HTML helper 化は継続 backlog。
+  - modal stack / hostless restore / signed restore / server-persisted canonical state / production origin-token policy / 実機確認項目は対象外。

@@ -22,6 +22,7 @@ const GAME_PHASES = runtime.GAME_PHASES;
 const GAME_ACTIONS = runtime.GAME_ACTIONS;
 const LOG_TYPES = runtime.LOG_TYPES;
 const GAME_PHASE_ACTIONS = runtime.GAME_PHASE_ACTIONS;
+const GAME_ACTION_REGISTRY = runtime.GAME_ACTION_REGISTRY;
 const PENDING_IT_QUEUE_POLICY = runtime.PENDING_IT_QUEUE_POLICY;
 
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
@@ -169,6 +170,36 @@ runTest('GAME_PHASE_ACTIONS は単純フェーズの許可actionを定義する'
     assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.REROLL_CONFIRM]], [GAME_ACTIONS.REROLL_DICE, GAME_ACTIONS.SKIP_REROLL]);
     assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.HARBOR_CHOICE]], [GAME_ACTIONS.RESOLVE_HARBOR]);
     assert.deepStrictEqual([...GAME_PHASE_ACTIONS[GAME_PHASES.BUILD]], [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD]);
+});
+
+runTest('GAME_ACTION_REGISTRY の phase metadata は allowed action contract と同期する', () => {
+    const actions = Object.values(GAME_ACTIONS);
+    assert.deepStrictEqual(Object.keys(GAME_ACTION_REGISTRY).sort(), actions.slice().sort());
+
+    for (const [phase, phaseActions] of Object.entries(GAME_PHASE_ACTIONS)) {
+        for (const action of phaseActions) {
+            assert.strictEqual(GAME_ACTION_REGISTRY[action].phase, phase, `${action} phase metadata mismatch`);
+        }
+    }
+
+    const pendingActions = [
+        GAME_ACTIONS.RESOLVE_TV,
+        GAME_ACTIONS.RESOLVE_BUSINESS,
+        GAME_ACTIONS.RESOLVE_CLEANING,
+        GAME_ACTIONS.RESOLVE_MOVER,
+        GAME_ACTIONS.RESOLVE_RENOVATION,
+        GAME_ACTIONS.RESOLVE_IT,
+    ];
+    for (const action of pendingActions) {
+        assert.strictEqual(GAME_ACTION_REGISTRY[action].phase, GAME_PHASES.PENDING, `${action} must remain pending phase`);
+        assert.ok(GAME_ACTION_REGISTRY[action].payloadKind.startsWith('resolve'), `${action} pending payload kind must be resolve*`);
+    }
+
+    const nonPendingPhaseActions = new Set(Object.values(GAME_PHASE_ACTIONS).flat());
+    for (const action of actions) {
+        if (pendingActions.includes(action)) continue;
+        assert.ok(nonPendingPhaseActions.has(action), `${action} must be listed in GAME_PHASE_ACTIONS or pending action list`);
+    }
 });
 
 runTest('GameManager は不正カードと未知ランドマーク建設を拒否する', () => {
