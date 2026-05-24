@@ -3165,6 +3165,30 @@ runTest('buildExpert: 4人戦expertは中盤以降に港をカードより優先
     assert.strictEqual(current.landmarks[LANDMARK_NAMES.HARBOR], true);
 });
 
+runTest('expert v2 simple affordable option helpers は build候補gateを固定する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const stock = {};
+    for (const card of CARDS) stock[card.name] = 0;
+    stock['カフェ'] = 1;
+    stock['ビジネスセンター'] = 1;
+
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION, LANDMARK_NAMES.HARBOR]);
+    current.coins = 20;
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    current.cards = [createCardByName('ビジネスセンター')];
+    current.dormantCards = [];
+
+    const landmarks = cpu._listExpertV2SimpleAffordableLandmarks(current, game).map(option => option.name);
+    assert.strictEqual(JSON.stringify(landmarks), JSON.stringify([LANDMARK_NAMES.HARBOR]));
+
+    const cards = cpu._listExpertV2SimpleAffordableCards(current, stock).map(option => option.card.name);
+    assert.ok(cards.includes('カフェ'));
+    assert.ok(!cards.includes('ビジネスセンター'));
+    assert.ok(!cards.includes('麦畑'));
+});
+
 runTest('buildExpert: expert v2 simple は買えるランドマークをカードより優先する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);

@@ -2450,3 +2450,15 @@
 - 残課題:
   - server の room lifecycle / restore 周辺のさらなる helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - CPU v2simple affordable option helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU.js の小さな helper 分離 / expert v2simple build 候補列挙。
+- 修正済み:
+  - `_buildExpertV2Simple()` 内の買えるランドマーク / カード候補列挙を `_listExpertV2SimpleAffordableLandmarks()` / `_listExpertV2SimpleAffordableCards()` に分離した。
+  - `tests/cpu.test.js` に、無効ランドマーク・建設済みランドマーク・在庫切れカード・紫カード重複の候補 gate を固定する helper contract test を追加した。
+- コード挙動: 候補列挙条件は既存条件の移動のみ。スコアリング、選択、購入処理は変更なし。
+- 残課題:
+  - CPU diagnostics / scoring 周辺のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

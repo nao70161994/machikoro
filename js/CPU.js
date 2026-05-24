@@ -3053,21 +3053,28 @@ class CPU {
         return true;
     }
 
-    _buildExpertV2Simple(current, game, shopStock) {
-        this._traceV2Simple('buildCalls');
-        const affordableLandmarks = Player.landmarkNames()
+    _listExpertV2SimpleAffordableLandmarks(current, game) {
+        return Player.landmarkNames()
             .filter(name =>
                 (!game.enabledLandmarks || game.enabledLandmarks.has(name)) &&
                 !current.landmarks[name] &&
                 current.coins >= Player.landmarkCost(name)
             )
             .map(name => ({ type: 'landmark', name }));
+    }
 
-        const affordableCards = CARDS.filter(card =>
+    _listExpertV2SimpleAffordableCards(current, shopStock) {
+        return CARDS.filter(card =>
             shopStock[card.name] > 0 &&
             current.coins >= card.cost &&
             !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
         ).map(card => ({ type: 'card', card }));
+    }
+
+    _buildExpertV2Simple(current, game, shopStock) {
+        this._traceV2Simple('buildCalls');
+        const affordableLandmarks = this._listExpertV2SimpleAffordableLandmarks(current, game);
+        const affordableCards = this._listExpertV2SimpleAffordableCards(current, shopStock);
 
         if (this._buyWinningLandmark(current, game)) {
             this._traceV2Simple('buildLandmarkChoices');
