@@ -1994,16 +1994,20 @@ class CPU {
         return this._doubleDiceFreq(diceNums);
     }
 
+    _baseCardEfficiency(card, game, player) {
+        return this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / Math.max(card.cost, 1);
+    }
+
     // 購入可能カードをスコア順にソート（ダイス確率を加味）
     sortAffordable(cards, game, player) {
         return cards.map(card => ({
             card,
-            score: this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / Math.max(card.cost, 1)
+            score: this._baseCardEfficiency(card, game, player)
         })).sort((a, b) => b.score - a.score);
     }
 
     _scoreExpertCardCandidate(card, game, player) {
-        let score = this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / Math.max(card.cost, 1);
+        let score = this._baseCardEfficiency(card, game, player);
         score -= this._scoreExpertRollCapPenalty(card, game, player);
         if (this.difficulty !== "expert" || !game || !player || game.players.length < 4) return score;
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;

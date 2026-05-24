@@ -2508,3 +2508,14 @@
 - コード挙動: product runtime の挙動変更なし。pending action 追加時に `PENDING_ACTION_SPECS` と `GAME_ACTION_REGISTRY` の drift を検出しやすくした。
 - 残課題:
   - server / online 側の action metadata 利用範囲を広げる小分離は継続 backlog。
+
+## Backlog cleanup - CPU base card efficiency helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU.js の小さな helper 分離。
+- 修正済み:
+  - `sortAffordable()` と `_scoreExpertCardCandidate()` が共有する基礎効率式を `_baseCardEfficiency()` に分離した。
+  - `tests/cpu.test.js` に helper と sortAffordable のスコア式が一致する contract test を追加した。
+- コード挙動: 評価式は既存式の移動のみ。expert tuning / v2simple の係数や分岐は変更なし。
+- 残課題:
+  - CPU diagnostics / pending target scoring / execution flow のさらなる helper 分離は継続 backlog。

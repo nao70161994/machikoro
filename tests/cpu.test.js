@@ -1832,6 +1832,19 @@ runTest('_landmarkUrgency: 4人戦は2人戦以上にランドマークを急ぐ
 
 // ===== sortAffordable =====
 
+runTest('CPU base card efficiency helper は sort/expert 候補の共通式を返す', () => {
+    const cpu = new CPU("expert");
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    const bakery = createCardByName('パン屋');
+
+    const expected = cpu.evalCard(bakery, game, player) *
+        cpu._cardDiceFreq(bakery, game, player) /
+        Math.max(bakery.cost, 1);
+    assert.strictEqual(cpu._baseCardEfficiency(bakery, game, player), expected);
+    assert.strictEqual(cpu.sortAffordable([bakery], game, player)[0].score, expected);
+});
+
 runTest('sortAffordable: ダイス確率を加味したスコア順にソートされる', () => {
     const cpu = new CPU("normal");
     const game = new GameManager(2);
