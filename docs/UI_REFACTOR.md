@@ -25,4 +25,4 @@ UI は browser-global のまま維持する。大規模な framework 化や全�
 
 ## 次に触る順序
 
-1. renderPending の pending 種別ごとの helper 分離。
+1. build/card select など周辺 HTML helper の小分割。

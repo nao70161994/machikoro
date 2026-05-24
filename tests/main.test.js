@@ -1530,6 +1530,20 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('index.html'));
 });
 
+runTest('docs は pending HTML helper 化の現在地を記載している', () => {
+    const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
+    const audit = fs.readFileSync(path.join(__dirname, '..', 'docs/POST_IMPLEMENTATION_AUDIT.md'), 'utf8');
+    const uiRefactor = fs.readFileSync(path.join(__dirname, '..', 'docs/UI_REFACTOR.md'), 'utf8');
+
+    for (const doc of [handoff, audit]) {
+        assert.ok(doc.includes('PENDING_MENU_RENDERERS'));
+        assert.ok(doc.includes('pending 種別 HTML'));
+        assert.ok(!doc.includes('pending 種別 HTML の分割は targeted HTML assertion 追加後に行う'));
+        assert.ok(!doc.includes('pending 種別ごとの HTML helper 化は未完了'));
+    }
+    assert.ok(!uiRefactor.includes('renderPending の pending 種別ごとの helper 分離。'));
+});
+
 runTest('docs は live v2simple の実装済み既定値を記載している', () => {
     const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
     const claude = fs.readFileSync(path.join(__dirname, '..', 'CLAUDE.md'), 'utf8');

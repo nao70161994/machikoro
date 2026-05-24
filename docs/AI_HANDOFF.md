@@ -25,7 +25,7 @@
 ## 2026-05-19 時点の追加実施済み範囲
 
 - UI: dice / Business Center / card select / stats / static shell / player settings の inline handler を delegated handler へ移行した。既知の `onclick=` / `onchange=` / `oninput=` は解消済み。
-- UI: `renderPending()` の表示可否と modal content 更新を helper 化した。pending 種別 HTML の分割は targeted HTML assertion 追加後に行う。
+- UI: `renderPending()` の表示可否、modal content 更新、pending 種別 HTML 生成を helper / `PENDING_MENU_RENDERERS` registry に分離した。pending 追加時は renderer registry と HTML assertion を一緒に更新する。
 - CPU: 診断系 profile / trace 集計を `js/cpuDiagnostics.js` へ分離した。評価式と行動選択は未変更。
 - GameManager/Card metadata: 飲食店・商店 category group を `CARD_CATEGORY_GROUPS` に寄せ、該当効果のカテゴリ判定を helper 経由にした。
 - Server: restore rank / replacement 判定を `server/restoreRank.js` へ分離した。
@@ -39,7 +39,7 @@
 
 ## 次に安全な作業候補
 
-- UI: pending 種別ごとの HTML helper 化は、HTML 出力の targeted assertion を追加してから小さく進める。
+- UI: pending 種別 HTML helper は導入済み。次の安全な作業は renderer registry の契約 test 追加や、build/card select など周辺 HTML helper の小分割。
 - CPU: evaluation / execution の分離は、同等性を固定する targeted tests を先に追加してから関数単位で進める。
 - GameManager: pending / steal / redistribute の dispatch registry 化は、発火順とログ文言 test を増やしてから効果単位で進める。
 - Server: socket handler / validation のさらなる分割は、room lifecycle と restore manual regression の影響範囲を docs に固定してから小さく進める。

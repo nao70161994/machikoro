@@ -2339,3 +2339,16 @@
 - 残課題:
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - pending helper docs consistency
+
+- 状態: completed; full verification passed before commit.
+- 対象: pending 種別 HTML helper 化 / AI保守性 docs 整合性。
+- 修正済み:
+  - `docs/AI_HANDOFF.md`, `docs/POST_IMPLEMENTATION_AUDIT.md`, `docs/UI_REFACTOR.md` の古い「pending HTML helper 未完了」記述を、`PENDING_MENU_RENDERERS` registry 導入済みの現在地へ更新した。
+  - `tests/main.test.js` に docs が pending HTML helper 化済みであること、古い未完了文言を再導入しないことを固定する静的テストを追加した。
+- コード挙動: 変更なし。docs と regression test のみ。
+- 残課題:
+  - build menu / card select / stats 周辺のさらなる小さな UI helper 分離は継続 backlog。
+  - CPU / server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

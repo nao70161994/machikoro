@@ -217,11 +217,11 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 確認した内容:
 
 - `renderPending()` の表示可否判定と modal content 更新を helper に分離した。
-- pending 種別 HTML の全面再構成は、テンプレート文字列差分が大きくなるため今回の自動対応からは外した。
+- pending 種別 HTML は `buildPendingMenuHtml()` / `buildPending*Html()` / `PENDING_MENU_RENDERERS` に分離済み。種別追加時は renderer entry と HTML assertion を一緒に更新する。
 
 残リスク:
 
-- pending 種別ごとの HTML helper 化は未完了。HTML 出力の targeted assertion を増やしてから小さく進める。
+- pending 種別ごとの HTML helper 化は完了。残る低リスク対象は build menu / card select / stats 周辺の小さな helper 分離。
 
 
 ### Phase D CPU diagnostics split
