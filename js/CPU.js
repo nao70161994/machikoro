@@ -3638,6 +3638,20 @@ class CPU {
         ).length;
     }
 
+    _isProgressIncomeCard(card, player) {
+        if (!card || !player || player.isDormant(card)) return false;
+        if (card.color !== "blue" && card.color !== "green") return false;
+        return ![
+            CARD_EFFECTS.LOAN,
+            CARD_EFFECTS.RENOVATION,
+            CARD_EFFECTS.ITSTARTUP,
+            CARD_EFFECTS.PARK,
+            CARD_EFFECTS.BUSINESS,
+            CARD_EFFECTS.CLEANING,
+            CARD_EFFECTS.MOVER,
+        ].includes(card.effect);
+    }
+
     _estimateStableIncome(game, player) {
         const playerIndex = game && game.players ? game.players.indexOf(player) : -1;
         if (playerIndex >= 0) {
@@ -3645,17 +3659,7 @@ class CPU {
             if (playerIndex in cache.stableIncomes) return cache.stableIncomes[playerIndex];
             let total = 0;
             for (const card of player.cards) {
-                if (player.isDormant(card)) continue;
-                if (card.color !== "blue" && card.color !== "green") continue;
-                if ([
-                    CARD_EFFECTS.LOAN,
-                    CARD_EFFECTS.RENOVATION,
-                    CARD_EFFECTS.ITSTARTUP,
-                    CARD_EFFECTS.PARK,
-                    CARD_EFFECTS.BUSINESS,
-                    CARD_EFFECTS.CLEANING,
-                    CARD_EFFECTS.MOVER,
-                ].includes(card.effect)) continue;
+                if (!this._isProgressIncomeCard(card, player)) continue;
                 total += this._ownedCardValue(card, game, player);
             }
             cache.stableIncomes[playerIndex] = total;
@@ -3663,17 +3667,7 @@ class CPU {
         }
         let total = 0;
         for (const card of player.cards) {
-            if (player.isDormant(card)) continue;
-            if (card.color !== "blue" && card.color !== "green") continue;
-            if ([
-                CARD_EFFECTS.LOAN,
-                CARD_EFFECTS.RENOVATION,
-                CARD_EFFECTS.ITSTARTUP,
-                CARD_EFFECTS.PARK,
-                CARD_EFFECTS.BUSINESS,
-                CARD_EFFECTS.CLEANING,
-                CARD_EFFECTS.MOVER,
-            ].includes(card.effect)) continue;
+            if (!this._isProgressIncomeCard(card, player)) continue;
             total += this._ownedCardValue(card, game, player);
         }
         return total;
@@ -3687,17 +3681,7 @@ class CPU {
             if (playerIndex in cache.progressIncomes) return cache.progressIncomes[playerIndex];
             let total = 0;
             for (const card of player.cards) {
-                if (!card || player.isDormant(card)) continue;
-                if (card.color !== "blue" && card.color !== "green") continue;
-                if ([
-                    CARD_EFFECTS.LOAN,
-                    CARD_EFFECTS.RENOVATION,
-                    CARD_EFFECTS.ITSTARTUP,
-                    CARD_EFFECTS.PARK,
-                    CARD_EFFECTS.BUSINESS,
-                    CARD_EFFECTS.CLEANING,
-                    CARD_EFFECTS.MOVER,
-                ].includes(card.effect)) continue;
+                if (!this._isProgressIncomeCard(card, player)) continue;
                 total += this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6;
             }
             cache.progressIncomes[playerIndex] = total;
@@ -3705,17 +3689,7 @@ class CPU {
         }
         let total = 0;
         for (const card of player.cards) {
-            if (!card || player.isDormant(card)) continue;
-            if (card.color !== "blue" && card.color !== "green") continue;
-            if ([
-                CARD_EFFECTS.LOAN,
-                CARD_EFFECTS.RENOVATION,
-                CARD_EFFECTS.ITSTARTUP,
-                CARD_EFFECTS.PARK,
-                CARD_EFFECTS.BUSINESS,
-                CARD_EFFECTS.CLEANING,
-                CARD_EFFECTS.MOVER,
-            ].includes(card.effect)) continue;
+            if (!this._isProgressIncomeCard(card, player)) continue;
             total += this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6;
         }
         return total;

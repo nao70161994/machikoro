@@ -81,6 +81,25 @@ runTest('CPU evaluation cache helper はsignatureごとにentryを再利用し�
     assert.strictEqual(pruneCpu._pruneCache.size, runtime.CPU_EVALUATION_CACHE_LIMIT);
 });
 
+runTest('CPU progress income helper は休業カードと特殊pending系を除外する', () => {
+    const cpu = new CPU('expert');
+    const game = new GameManager(2);
+    const player = game.currentPlayer();
+    const wheat = createCardByName('麦畑');
+    const cafe = createCardByName('カフェ');
+    const loan = createCardByName('貸金業');
+    const business = createCardByName('ビジネスセンター');
+    player.cards = [wheat, cafe, loan, business];
+
+    assert.strictEqual(cpu._isProgressIncomeCard(wheat, player), true);
+    assert.strictEqual(cpu._isProgressIncomeCard(cafe, player), false);
+    assert.strictEqual(cpu._isProgressIncomeCard(loan, player), false);
+    assert.strictEqual(cpu._isProgressIncomeCard(business, player), false);
+
+    player.dormantCards = [wheat];
+    assert.strictEqual(cpu._isProgressIncomeCard(wheat, player), false);
+});
+
 runTest('CPU smoke: pending actions resolve without staying in pending phase', () => {
     const makeBaseGame = () => {
         const game = new GameManager(2);

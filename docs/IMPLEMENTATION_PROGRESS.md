@@ -2668,3 +2668,14 @@
 - コード挙動: 再接続 UI の読み取りは従来通り legacy `onlineSession`。room-scoped copy は将来の複数room候補管理用の補助で、現在の UX は変えない。
 - 残課題:
   - 複数 room セッション一覧や indexed restore bundle 管理は設計範囲が広いため対象外 / design backlog。
+
+## Backlog cleanup - CPU progress income card helper
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU の小さな helper 分離。
+- 修正中:
+  - `_estimateStableIncome()` と `_estimateProgressIncome()` に重複していた「収入進捗に数えるカード」判定を `_isProgressIncomeCard()` へ分離した。
+  - `tests/cpu.test.js` で青/緑の通常収入カードだけを対象にし、赤カード、休業カード、pending/特殊系効果を除外する契約を固定した。
+- コード挙動: stable/progress income の計算対象は既存と同じ。重複条件だけを helper に寄せた。
+- 残課題:
+  - CPU build scoring / diagnostics のさらなる helper 分離は継続 backlog。
