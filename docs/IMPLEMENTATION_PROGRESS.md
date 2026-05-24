@@ -2530,3 +2530,14 @@
 - コード挙動: `_readPendingOutboundAction()` の既存正規化条件を helper に移動しただけで、scoped/legacy key の読み取り優先度や room gate 条件は変更なし。
 - 残課題:
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - server canonical action payload contract test
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test / server validation 周辺の保守性。
+- 修正済み:
+  - `tests/server.test.js` に `GAME_ACTIONS` 全体の `canonicalizeActionData()` payload key contract を追加した。
+  - action log へ残す canonical payload shape を action ごとに固定し、新 action 追加時の sanitize 漏れを検出しやすくした。
+- コード挙動: product code の変更なし。server action log の既存canonicalize挙動をテストで固定した。
+- 残課題:
+  - `canonicalizeActionData()` の table 化や server validation helper 分離は継続 backlog。

@@ -1143,6 +1143,50 @@ runTest('canonicalizeActionData は action log に余分なpayload keyを残さ�
     assert.deepStrictEqual(canonicalizeActionData('resolveMover', { cardName: '麦畑', targetIndex: 2, extra: true }), { cardName: '麦畑', targetIndex: 2 });
 });
 
+runTest('canonicalizeActionData は GAME_ACTIONS 全体のpayload shapeを固定する', () => {
+    const { GAME_ACTIONS } = loadGameRuntime();
+    const noisyPayload = {
+        forceDice: 3,
+        tunaDice: [1, 2],
+        useTwo: true,
+        diceCount: 2,
+        d1: 3,
+        d2: 4,
+        useBonus: true,
+        targetIndex: 1,
+        myCard: 0,
+        theirCard: 2,
+        cardName: '麦畑',
+        cardIndex: 5,
+        landmarkName: '駅',
+        doSave: false,
+        name: '港',
+        extra: 'drop',
+    };
+    const expectedKeysByAction = {
+        [GAME_ACTIONS.ROLL_DICE]: ['forceDice', 'tunaDice'],
+        [GAME_ACTIONS.SELECT_DICE]: ['useTwo', 'diceCount', 'd1', 'd2', 'tunaDice'],
+        [GAME_ACTIONS.REROLL_DICE]: ['forceDice', 'tunaDice'],
+        [GAME_ACTIONS.SKIP_REROLL]: [],
+        [GAME_ACTIONS.RESOLVE_HARBOR]: ['useBonus'],
+        [GAME_ACTIONS.RESOLVE_TV]: ['targetIndex'],
+        [GAME_ACTIONS.RESOLVE_BUSINESS]: ['myCard', 'targetIndex', 'theirCard'],
+        [GAME_ACTIONS.RESOLVE_CLEANING]: ['cardName'],
+        [GAME_ACTIONS.RESOLVE_MOVER]: ['cardIndex', 'targetIndex'],
+        [GAME_ACTIONS.RESOLVE_RENOVATION]: ['landmarkName'],
+        [GAME_ACTIONS.RESOLVE_IT]: ['doSave'],
+        [GAME_ACTIONS.BUILD_CARD]: ['cardName'],
+        [GAME_ACTIONS.BUILD_LANDMARK]: ['name'],
+        [GAME_ACTIONS.UNDO_BUILD]: [],
+        [GAME_ACTIONS.NEXT_TURN]: [],
+    };
+
+    assert.deepStrictEqual(Object.keys(expectedKeysByAction).sort(), Object.values(GAME_ACTIONS).sort());
+    for (const action of Object.values(GAME_ACTIONS)) {
+        assert.deepStrictEqual(Object.keys(canonicalizeActionData(action, noisyPayload)), expectedKeysByAction[action], `${action} canonical payload keys changed`);
+    }
+});
+
 runTest('normalizeClientActionId は長すぎる値と危険文字を落とす', () => {
     assert.strictEqual(normalizeClientActionId('client-action_1:2'), 'client-action_1:2');
     assert.strictEqual(normalizeClientActionId('x'.repeat(121)), '');
