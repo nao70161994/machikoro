@@ -202,6 +202,39 @@ runTest('GAME_ACTION_REGISTRY の phase metadata は allowed action contract と
     }
 });
 
+runTest('GAME_ACTION_REGISTRY の payload metadata は固定schemaに従う', () => {
+    const knownPayloadKinds = new Set([
+        'rollDice',
+        'selectDice',
+        'rerollDice',
+        'emptyObject',
+        'resolveHarbor',
+        'resolveTV',
+        'resolveBusiness',
+        'resolveCleaning',
+        'resolveMover',
+        'resolveRenovation',
+        'resolveIT',
+        'buildCard',
+        'buildLandmark',
+        'undoBuild',
+    ]);
+    const emptyPayloadActions = new Set([GAME_ACTIONS.SKIP_REROLL, GAME_ACTIONS.NEXT_TURN]);
+
+    for (const action of Object.values(GAME_ACTIONS)) {
+        const entry = GAME_ACTION_REGISTRY[action];
+        assert.ok(Object.isFrozen(entry), `${action} registry entry must be frozen`);
+        assert.strictEqual(entry.action, action, `${action} registry action must match key`);
+        assert.ok(knownPayloadKinds.has(entry.payloadKind), `${action} unknown payloadKind: ${entry.payloadKind}`);
+        assert.strictEqual(entry.serverPayload, true, `${action} serverPayload contract must be explicit`);
+        assert.strictEqual(entry.serverReplay, true, `${action} serverReplay contract must be explicit`);
+        assert.strictEqual(entry.clientApply, true, `${action} clientApply contract must be explicit`);
+        if (entry.payloadKind === 'emptyObject') {
+            assert.ok(emptyPayloadActions.has(action), `${action} is not allowed to use emptyObject payload metadata`);
+        }
+    }
+});
+
 runTest('GameManager は不正カードと未知ランドマーク建設を拒否する', () => {
     const game = new GameManager(2);
     game.phase = GAME_PHASES.BUILD;

@@ -2279,3 +2279,16 @@
 - 残課題:
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - action metadata payload contract test
+
+- 状態: completed; full verification passed before commit.
+- 対象: action metadata contract の追加 test。
+- 修正済み:
+  - `tests/gamemanager.test.js` に `GAME_ACTION_REGISTRY` の payload metadata 固定schema test を追加した。
+  - 各 action entry が frozen であること、`entry.action` が key と一致すること、既知 `payloadKind` だけを使うこと、server/client contract flags が明示 true であることを固定した。
+  - `emptyObject` payload は `skipReroll` / `nextTurn` のみに限定し、将来の action 追加時に payload validation の抜けを検出しやすくした。
+- コード挙動: 実装変更なし。metadata drift の検出だけを追加。
+- 残課題:
+  - online storage の旧key pruning / 複数room resume UI は design required として維持。
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
