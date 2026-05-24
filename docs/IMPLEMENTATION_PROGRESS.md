@@ -2365,3 +2365,16 @@
   - build menu / card select 周辺のさらなる小さな UI helper 分離は継続 backlog。
   - CPU / server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - CPU finite option helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: CPU の小さな helper 分離。
+- 修正済み:
+  - `js/CPU.js` の expert 数値 option fallback 判定を `CPU._finiteOption()` に集約した。
+  - `tests/cpu.test.js` に `0` を有効値として保持し、`Infinity` / 欠落だけ fallback する contract test を追加した。
+- コード挙動: expert preset / tuning / benchmark heuristic は変更なし。constructor 内の重複した `Number.isFinite` 判定だけを helper 化。
+- 残課題:
+  - build menu / card select 周辺のさらなる小さな UI helper 分離は継続 backlog。
+  - server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。

@@ -25,38 +25,24 @@ class CPU {
         this.expertBusinessMode = options.expertBusinessMode || expertDefaults.expertBusinessMode;
         this.expertCleaningMode = options.expertCleaningMode || expertDefaults.expertCleaningMode;
         this.expertHarborMode = options.expertHarborMode || expertDefaults.expertHarborMode;
-        this.expertHarborMargin = Number.isFinite(options.expertHarborMargin)
-            ? options.expertHarborMargin
-            : 0;
+        this.expertHarborMargin = CPU._finiteOption(options, 'expertHarborMargin', 0);
         this.expertMoverMode = options.expertMoverMode || expertDefaults.expertMoverMode;
         this.expertRenovationMode = options.expertRenovationMode || expertDefaults.expertRenovationMode;
-        this.expertRerollMargin = Number.isFinite(options.expertRerollMargin)
-            ? options.expertRerollMargin
-            : 0;
+        this.expertRerollMargin = CPU._finiteOption(options, 'expertRerollMargin', 0);
         this.expertIncomeCapMode = options.expertIncomeCapMode || expertDefaults.expertIncomeCapMode;
         this.expertComboMode = options.expertComboMode || expertDefaults.expertComboMode;
-        this.expertComboWeight = Number.isFinite(options.expertComboWeight) ? options.expertComboWeight : 0.35;
-        this.expertBuildTempoWeight = Number.isFinite(options.expertBuildTempoWeight) ? options.expertBuildTempoWeight : 0;
+        this.expertComboWeight = CPU._finiteOption(options, 'expertComboWeight', 0.35);
+        this.expertBuildTempoWeight = CPU._finiteOption(options, 'expertBuildTempoWeight', 0);
         this.expertRollRiskMode = options.expertRollRiskMode || expertDefaults.expertRollRiskMode;
-        this.expertRollRedRiskWeight = Number.isFinite(options.expertRollRedRiskWeight)
-            ? options.expertRollRedRiskWeight
-            : 0;
+        this.expertRollRedRiskWeight = CPU._finiteOption(options, 'expertRollRedRiskWeight', 0);
         this.expertAirportSkipMode = options.expertAirportSkipMode || expertDefaults.expertAirportSkipMode;
-        this.expertLandmarkCardMargin = Number.isFinite(options.expertLandmarkCardMargin)
-            ? options.expertLandmarkCardMargin
-            : 25;
+        this.expertLandmarkCardMargin = CPU._finiteOption(options, 'expertLandmarkCardMargin', 25);
         this.expertLandmarkCardCompareMode = options.expertLandmarkCardCompareMode || expertDefaults.expertLandmarkCardCompareMode;
         this.expertLandmarkCardCompareTargets = options.expertLandmarkCardCompareTargets || expertDefaults.expertLandmarkCardCompareTargets;
         this.expertLandmarkCardPenaltyMode = options.expertLandmarkCardPenaltyMode || expertDefaults.expertLandmarkCardPenaltyMode;
-        this.expertHarborLandmarkBaseBonus = Number.isFinite(options.expertHarborLandmarkBaseBonus)
-            ? options.expertHarborLandmarkBaseBonus
-            : 2.5;
-        this.expertLandmarkProgressRemaining = Number.isFinite(options.expertLandmarkProgressRemaining)
-            ? options.expertLandmarkProgressRemaining
-            : 3;
-        this.expertLandmarkCostWeight = Number.isFinite(options.expertLandmarkCostWeight)
-            ? options.expertLandmarkCostWeight
-            : 0.12;
+        this.expertHarborLandmarkBaseBonus = CPU._finiteOption(options, 'expertHarborLandmarkBaseBonus', 2.5);
+        this.expertLandmarkProgressRemaining = CPU._finiteOption(options, 'expertLandmarkProgressRemaining', 3);
+        this.expertLandmarkCostWeight = CPU._finiteOption(options, 'expertLandmarkCostWeight', 0.12);
         this.expertTraceStats = options.expertTraceStats || null;
         this.expertOpponentDifficulties = Array.isArray(options.expertOpponentDifficulties)
             ? options.expertOpponentDifficulties.slice()
@@ -75,6 +61,10 @@ class CPU {
         );
         this.activeExpertPreset = this.expertPreset;
         this.expertTuning = Object.assign({}, this.baseExpertTuning);
+    }
+
+    static _finiteOption(options, key, fallback) {
+        return Number.isFinite(options && options[key]) ? options[key] : fallback;
     }
 
     _expertFlagEnabled(name) {

@@ -37,6 +37,24 @@ runTest('CPU tuning scaffold は外部tableからexpert presetと既定optionを
     assert.strictEqual(cpu.expertAirportSkipMode, 'whenNoLandmark');
 });
 
+runTest('CPU finite option helper は0を保持し非数値だけfallbackする', () => {
+    assert.strictEqual(CPU._finiteOption({ value: 0 }, 'value', 9), 0);
+    assert.strictEqual(CPU._finiteOption({ value: 0.25 }, 'value', 9), 0.25);
+    assert.strictEqual(CPU._finiteOption({ value: Infinity }, 'value', 9), 9);
+    assert.strictEqual(CPU._finiteOption({}, 'value', 9), 9);
+
+    const cpu = new CPU('expert', {
+        expertComboWeight: 0,
+        expertBuildTempoWeight: 0,
+        expertHarborMargin: 0,
+        expertLandmarkCostWeight: Infinity,
+    });
+    assert.strictEqual(cpu.expertComboWeight, 0);
+    assert.strictEqual(cpu.expertBuildTempoWeight, 0);
+    assert.strictEqual(cpu.expertHarborMargin, 0);
+    assert.strictEqual(cpu.expertLandmarkCostWeight, 0.12);
+});
+
 runTest('CPU evaluation cache helper はsignatureごとにentryを再利用し上限で古いentryを捨てる', () => {
     assert.ok(runtime.CPUEvaluationCache);
     assert.strictEqual(runtime.CPU_EVALUATION_CACHE_LIMIT, 16);
