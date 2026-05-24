@@ -154,6 +154,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/appShell.js',
         'js/storage.js',
         'js/stats.js',
+        'js/uiNotice.js',
         'js/ui.js',
     ];
     if (options.includeOnline) files.push('js/online.js');

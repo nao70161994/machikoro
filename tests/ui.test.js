@@ -119,7 +119,7 @@ function loadUiRuntime() {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/ui.js']);
     return { context, elements };
 }
 

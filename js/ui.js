@@ -794,7 +794,6 @@ let cardFilter = '';
 let activeModalId = null;
 let lastModalFocus = null;
 let modalInertRestore = [];
-let noticeTimer = null;
 
 const MODAL_INERT_ROOT_IDS = Object.freeze(['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']);
 const MODAL_CLOSE_HANDLERS = Object.freeze({
@@ -1222,31 +1221,6 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-function hideNotice() {
-    const toast = document.getElementById('noticeToast');
-    if (noticeTimer) {
-        clearTimeout(noticeTimer);
-        noticeTimer = null;
-    }
-    if (toast) toast.style.display = 'none';
-}
-
-function showNotice(message) {
-    const text = String(message || '');
-    const toast = document.getElementById('noticeToast');
-    const body = document.getElementById('noticeToastMessage');
-    if (!toast || !body) {
-        if (typeof alert === 'function') alert(text);
-        return;
-    }
-    body.textContent = text;
-    toast.style.display = 'flex';
-    if (noticeTimer) clearTimeout(noticeTimer);
-    noticeTimer = setTimeout(() => {
-        toast.style.display = 'none';
-        noticeTimer = null;
-    }, 4500);
-}
 
 function showConfirm(message, onOk) {
     const modal = document.getElementById('confirmModal');

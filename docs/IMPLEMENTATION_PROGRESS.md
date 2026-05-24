@@ -2254,3 +2254,16 @@
 - 残課題:
   - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
   - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
+
+## Backlog cleanup - UI notice helper split
+
+- 状態: completed; full verification passed before commit.
+- 対象: ui.js の小さな helper 分離。
+- 修正済み:
+  - notice/toast の `showNotice()` / `hideNotice()` と timer state を `js/uiNotice.js` へ切り出した。
+  - `index.html`、`sw.js`、UI/integration test runtime の script 読み込み順を同期した。
+  - 既存の non-blocking toast と alert fallback の挙動は維持した。
+- コード挙動: modal / pending / build menu / action gate は未変更。notice 表示責務だけを分離。
+- 残課題:
+  - CPU / UI / server のさらなる小さな helper 分離は継続 backlog。
+  - scoped restore の旧key pruning / 複数room resume UI は design required として維持。
