@@ -320,3 +320,11 @@ Test index:
 
 - UI interactability checks for container controls must verify generated child actions when the DOM exposes them. A container with `htmlLength > 0` but `totalInteractiveChildren > 0` and `usableInteractiveChildren === 0` is not clickable.
 - Do not store freeze watchdog snapshots by slicing JSON strings. Use `freezePayloadStorageJson()` so localStorage keeps valid JSON even when diagnostics grow.
+
+## Cross-design decision index
+
+- `docs/IMPLEMENTATION_DECISIONS.md` is the current index for deferred design items. Check it before implementing modal stack/deny-nesting, hostless restore, signed restore, server-persisted canonical state, multiple-room resume UI, production client-error auth, per-room restore namespace, or room replacement migration.
+- Modal policy is accepted as deny-by-default with no initial nested blocking modal exceptions. Keep `recoverUiInteractability()` as fallback recovery only; it must not become a gameplay-action executor.
+- Restore trust priority is server-persisted canonical state first, signed snapshot/action metadata second, hostless restore last. Existing-room replacement remains host-only until a separate hostless/provisional design is implemented.
+- Multiple room resume UI must wait for per-room restore index and pruning policy. Do not build a picker on global restore keys.
+- Production client-error hardening should use same-origin browser reports plus `CLIENT_ERROR_ALLOWED_ORIGINS` and, for scripted/no-origin diagnostics, `CLIENT_ERROR_SHARED_TOKEN` or a temporary controlled exception. Do not set a shared token for normal browser reports unless the browser can provide it.

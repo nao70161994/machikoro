@@ -17,6 +17,7 @@ Vanilla JS / browser-global 構成は維持しつつ、既存 UI を小さく安
 
 - 確認や警告は native `confirm()` / `alert()` を直接呼ばず、`showConfirm()` / `showNotice()` を使う。
 - 閉じられる modal は共通 helper で開閉する。
+- blocking modal は deny-by-default 方針に従い、別の blocking modal が見えている間に開かない。必要な補助情報は inline detail か `showNotice()` を優先し、例外は modal registry / tests / mobile manual verification とセットで設計する。
 - ゲーム進行上閉じてはいけない pending modal は Esc close 対象にしない。
 - 状態を持つ button は、可能な範囲で `aria-pressed` や `aria-selected` を更新する。
 - クリック専用の `<div onclick>` を増やさない。操作要素は `button` か keyboard handler 付きにする。

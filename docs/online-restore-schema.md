@@ -23,6 +23,19 @@
 | `onlinePendingAction` | client | 送信済みだが ack 前の action。再接続時に canonical log/snapshot または `rejoinData.acceptedClientActions` と照合し、重複しない場合だけ再送する。 | ack、reset、schema mismatch |
 | `onlineSession` | client | タイトル画面の再接続 UI 用 session 情報。 | reconnect failure、明示削除 |
 
+### Room-scoped restore keys
+
+Modern clients prefer room-scoped restore keys before legacy global keys:
+
+| legacy key | scoped key pattern | read/write policy |
+| --- | --- | --- |
+| `onlineGameStart` | `onlineGameStart:room:<ROOMID>` | scoped-first read, legacy fallback, dual-write while compatibility is required |
+| `onlineActionLog` | `onlineActionLog:room:<ROOMID>` | scoped-first read, legacy fallback, dual-write while compatibility is required |
+| `onlineStateSnapshot` | `onlineStateSnapshot:room:<ROOMID>` | scoped-first read, legacy fallback, dual-write while compatibility is required |
+| `onlinePendingAction` | current-room scoped copy where available | roomId gate is required before append, resend, or cleanup |
+
+Scoped reads are already the preferred path for restore bundles when a current room id is known. Legacy global keys remain a compatibility fallback so old saved rooms are not lost immediately. The remaining design work is a per-room index for visible multi-room resume UI and a safe pruning policy for stale legacy/global keys. Do not prune legacy keys before the current-room and stale-room UX is explicit.
+
 ## `onlineGameStart`
 
 現在の schema は `schemaVersion: 2` です。`js/online.js` の `ONLINE_RESTORE_SCHEMA_VERSION` を更新する場合、古い保存データの破棄または migration 方針を同時に決めてください。

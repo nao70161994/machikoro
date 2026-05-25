@@ -2,7 +2,7 @@
 
 Date: 2026-05-24
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 
@@ -161,12 +161,12 @@ Persist canonical state server-side for primary recovery, and sign exported snap
 - Too large for an incremental stability pass.
 - Easy to break existing reconnect/server restart restore unless staged behind feature flags.
 
-## Recommended Decision
+## Decision
 
 For the current project stage, keep Option A as the active implementation and document Option D as the preferred long-term direction for stronger trust. Do not implement hostless restore until the project either:
 
 - accepts a lower-trust provisional recovery mode explicitly, or
-- has signed/server-persisted canonical state available to bound candidate tampering.
+- has server-persisted canonical state available, with signed snapshot/action metadata only as fallback/audit support unless client-carried signed state is explicitly accepted as the product authority model.
 
 Recommended staged path:
 

@@ -2700,7 +2700,8 @@
   - `tests/server.test.js` で CPU 席を復元接続対象から除外し、再接続者だけ socket id を持つ契約を固定した。
 - コード挙動: hostless restore、room replacement 判定、token 検証、canonical mirror 復元には触れず、既存の復元 player 構築ロジックだけを helper に寄せた。
 - 残課題:
-  - restore replacement の判定本体や scoped read migration は設計範囲が広いため継続 backlog / design required。
+  - restore replacement の判定本体は設計範囲が広いため継続 backlog / design required。
+  - scoped restore read migration は実装済み。残りは per-room index、複数room resume UI、旧key pruning。
   - CPU のさらなる小さな helper 分離は継続 backlog。
 
 ## Backlog cleanup - server authoritative dice action table
@@ -2719,8 +2720,8 @@
 - 状態: active backlog summary; design/manual items are intentionally not auto-implemented.
 - Design required:
   - hostless restore, signed restore snapshot, server-persisted canonical state.
-  - restore replacement 判定本体、scoped restore read migration、完全な per-room indexed restore bundle。
-  - 複数 room resume UI、modal stack / deny-nesting policy。
+  - restore replacement 判定本体、per-room restore index、旧key pruning、複数 room resume UI。
+  - modal stack / deny-nesting policy。
 - Manual verification required:
   - iPhone Safari / Android Chrome の長時間 UI lock / PWA update / reconnect / host migration 回帰。
 - Safe incremental backlog:
@@ -2728,6 +2729,21 @@
   - server restore/lifecycle/API reporting の小 helper 分離。
   - action metadata を server/client dispatch table へさらに寄せる contract test。
   - script load order / storage key / release pseudo-E2E の drift detection 強化。
+
+## Design decision review - deferred architecture index
+
+- 状態: completed; docs-only design review.
+- 対象: modal stack / deny-nesting、hostless restore、signed restore、server-persisted canonical state、複数room resume UI、production client-error origin/token、restore namespace/pruning、room replacement。
+- 決定:
+  - modal policy は deny-by-default、初期の nested blocking modal 例外なし。
+  - restore trust は server-persisted canonical state を優先し、signed restore は fallback/audit、hostless restore は最後に再評価。
+  - scoped restore read は実装済みとして扱い、残りを per-room index、multi-room resume UI、legacy pruning に分解。
+  - production client-error は same-origin browser reporting を壊さず、token は scripted/no-origin diagnostics 用として扱う。
+- 成果物:
+  - `docs/IMPLEMENTATION_DECISIONS.md` を追加。
+  - `docs/ADR_MODAL_STACK_POLICY.md` と `docs/ADR_RESTORE_TRUST_BOUNDARY.md` を Accepted に更新。
+  - `docs/AI_HANDOFF.md` / `docs/OPERATIONS.md` / `docs/ACCESSIBILITY_GUIDE.md` に参照と運用上の注意を追記。
+- 今回コード変更なし。
 
 ## Backlog cleanup - Service Worker SKIP_WAITING contract
 

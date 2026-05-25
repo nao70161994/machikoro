@@ -2,7 +2,7 @@
 
 Date: 2026-05-24
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 
@@ -97,9 +97,9 @@ Deny nested blocking modals by default. Permit only documented exceptions with a
 - Registry drift if modal open/close helpers bypass it.
 - Incomplete exception tests could leave Safari-only pointer-event or focus bugs.
 
-## Recommended Decision
+## Decision
 
-Adopt Option C: hybrid deny-by-default with explicit stack exceptions.
+Adopt Option C, narrowed for the current implementation stage: deny nested blocking modals by default, with no initial nested blocking modal exceptions. Future exceptions require a registry entry, targeted tests, and manual mobile verification.
 
 Default policy:
 

@@ -189,7 +189,7 @@ Lifecycle privacy constraints are stricter than client-error diagnostics. The li
 
 Spam controls:
 
-- Default is off per browser profile.
+- Default is on per browser profile unless explicitly disabled.
 - The client sends at most one start and one finish notification for the in-memory game session.
 - A short localStorage start suppression window prevents reload/start button repeats from sending multiple start notifications.
 - The server deduplicates identical lifecycle event/session pairs for several minutes and rate limits the endpoint per sender.
