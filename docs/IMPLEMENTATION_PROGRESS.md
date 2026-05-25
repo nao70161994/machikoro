@@ -2773,3 +2773,12 @@
   - `tests/ui.test.js` に `showConfirm()` の OK / Cancel / Escape contract test を追加した。
   - confirm modal close 後に awaiting flag と title/game screen lock が解除されることを固定した。
 - コード挙動: `ui.js` の実装は変更なし。既存 confirm modal lifecycle の test coverage を補強しただけ。
+
+## Backlog cleanup - RLCPU online build gate contract
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: RLCPU online input block / local mutation safety。
+- 修正済み:
+  - `tests/rlcpu.test.js` に非ホスト・再接続中・socket切断中の online build gate contract を追加した。
+  - gate block 時に `sendAction` を呼ばず、カード追加や shopStock 減少も起こさないことを固定した。
+- コード挙動: `RLCPU.js` の実装は変更なし。既存 gate の regression coverage を補強しただけ。

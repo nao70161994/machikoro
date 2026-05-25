@@ -1149,6 +1149,41 @@ runTest('RLCPU: business/mover は同名カード混在時に具体的なカー�
     assert.strictEqual(moverMove.cardIndex, 1);
 });
 
+runTest('RLCPU: online build gate は非ホスト・再接続・切断中に送信もローカル適用もしない', () => {
+    const cases = [
+        ['non-host', { isRoomHost: false, isReconnectingOnline: false, socket: { connected: true } }],
+        ['reconnecting', { isRoomHost: true, isReconnectingOnline: true, socket: { connected: true } }],
+        ['disconnected', { isRoomHost: true, isReconnectingOnline: false, socket: { connected: false } }],
+    ];
+
+    for (const [label, gateState] of cases) {
+        const context = loadRLRuntime();
+        const { RLCPU, GameManager, GAME_PHASES } = context;
+        const model = buildParityModelWithStateDim(context, 353);
+        const cardIndex = context.CARDS.findIndex(card => card.name === '森林');
+        model.layers.policyHead.bias[RLCPU.ACTIONS.BUY_CARD_BASE + cardIndex] = 10;
+        const cpu = new RLCPU(model);
+        const game = new GameManager(2);
+        const shopStock = createDefaultShopStock(context);
+        const sent = [];
+        game.phase = GAME_PHASES.BUILD;
+        game.currentPlayer().coins = 10;
+        context.isOnlineGame = true;
+        context.isRoomHost = gateState.isRoomHost;
+        context.isReconnectingOnline = gateState.isReconnectingOnline;
+        context.socket = gateState.socket;
+        context.sendAction = (action, data) => {
+            sent.push({ action, data });
+            return true;
+        };
+
+        assert.strictEqual(cpu.build(game, shopStock), false, label);
+        assert.strictEqual(sent.length, 0, label);
+        assert.strictEqual(game.currentPlayer().cards.some(card => card.name === '森林'), false, label);
+        assert.strictEqual(shopStock['森林'], 6, label);
+    }
+});
+
 runTest('RLCPU: online build はローカル適用せず sendAction へ送る', () => {
     const context = loadRLRuntime();
     const { RLCPU, GameManager, GAME_PHASES, Player } = context;
