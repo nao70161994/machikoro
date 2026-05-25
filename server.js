@@ -316,12 +316,14 @@ const STALE_CLIENT_ERROR_VERSION_PREFIXES = Object.freeze([
     '86136c7',
     'cedbf74',
     '5d058cb',
+    '9cd909f',
 ]);
 
 const KNOWN_CLIENT_ERROR_FREEZE_KINDS = Object.freeze(new Set([
     'post-build-ui-blocked',
     'human-turn-ui-locked',
     'pending-ui-locked',
+    'cpu-turn-stalled',
     'modal-ui-locked',
     'stale-modal-ui-locked',
 ]));

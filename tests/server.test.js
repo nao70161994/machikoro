@@ -501,6 +501,19 @@ runTest('client error classification は stale client と未知通知を分け�
         knownPatternId: 'fixed-version-prefix',
     });
 
+    const currentCpuStall = normalizeClientErrorPayload({
+        message: 'cpu-turn-stalled after 275000ms',
+        stack: 'FREEZE_SUMMARY {"freezeKind":"cpu-turn-stalled","phase":"pending","allowedActions":["resolveIT"]}',
+        appVersion: 'current-build',
+    }, 1700000000000).report;
+    assert.deepStrictEqual(classifyClientErrorReport(currentCpuStall), {
+        classification: 'known-pattern',
+        priority: '3',
+        tags: 'warning,known,ui_lock',
+        freezeKind: 'cpu-turn-stalled',
+        knownPatternId: 'cpu-turn-stalled',
+    });
+
     const unknown = normalizeClientErrorPayload({
         message: 'new unrecovered crash',
         stack: 'new stack',

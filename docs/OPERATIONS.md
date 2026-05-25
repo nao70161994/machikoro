@@ -56,6 +56,10 @@ Treat current-version `human-turn-ui-locked` as a mismatch between `GameManager.
 
 If an allowed action exists but its container is hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, or has no usable child actions, `validateUiInteractability()` reports a registry-based `allowed-action-container-not-clickable` issue and `recoverUiInteractability()` clears the same registry target before re-rendering. Add new gameplay action surfaces to that registry first, then add a regression test.
 
+### `cpu-turn-stalled` during pending CPU turns
+
+Treat current-version `cpu-turn-stalled` with `phase=pending` as a CPU action pipeline issue, not a UI lock. When `allowedActions=["resolveIT"]` and the current player is CPU, the live CPU scheduler must resolve IT through the same pending resolver path used for TV/Business/Mover/Renovation. `pendingIT` remains queue-external and priority-first by design, so it should be resolved before any queued pending action. If this repeats on a current version, inspect `scheduleCPU-pending-resolution` checkpoints before adding watchdog recovery.
+
 ## Known Fixed Client Versions
 
 The current stale-client prefixes are maintained in `server.js` as `STALE_CLIENT_ERROR_VERSION_PREFIXES` and should be updated only when a production notification identifies a bug fixed in a later commit.
@@ -67,6 +71,7 @@ The current stale-client prefixes are maintained in `server.js` as `STALE_CLIENT
 | `86136c7` | post-build `gameScreen.display=none` + inert lock | stale client if reported again |
 | `cedbf74` | iPhone Safari pending modal `pointer-events:none` | stale client if reported again |
 | `5d058cb` | rerollConfirm parent container hidden while reroll actions are allowed | stale client if reported again |
+| `9cd909f` | CPU turn `pendingIT` / `resolveIT` remained in pending long enough to report `cpu-turn-stalled` | stale client if reported again |
 
 When adding a version here, also add or update a regression test that proves the fix. Do not add a prefix just to hide an unknown current-version report.
 

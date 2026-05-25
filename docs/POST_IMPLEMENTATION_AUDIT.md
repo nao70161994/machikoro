@@ -1056,3 +1056,28 @@ Fix:
 
 Regression coverage:
 - `tests/integration.test.js` covers registry recovery for `roll`, `rerollConfirm`, `harborChoice`, `pending resolveBusiness`, and `build nextTurn` from hidden/inert/pointer-blocked container states.
+
+### version=9cd909f cpu-turn-stalled / pending resolveIT
+
+Observed notification:
+- classification: `unknown`
+- freezeKind: `cpu-turn-stalled`
+- phase: `pending`
+- allowedActions: `["resolveIT"]`
+- local CPU turn with empty pending UI and `gameScreen.inert=true`
+
+Cause:
+- This was not a human UI lock. `pendingIT` is intentionally outside `pendingActionQueue` and has priority over queued pending actions, but the live CPU pending resolver returned `null` for `resolveIT` and relied on a later standalone `resolveIT` phase handler in the CPU scheduler table. That left a CPU pending turn observable as stalled while the scheduler walked unrelated phase handlers or browser timers were delayed.
+
+Fix:
+- `CPU.choosePendingResolution()` now returns a `resolveIT` resolution for `pendingIT`, preserving its queue-external priority.
+- `scheduleCPU()` records `scheduleCPU-pending-resolution` checkpoints and resolves CPU `pendingIT` from the pending handler path, matching other CPU pending actions.
+- `cpu-turn-stalled` is now a known freeze kind for notification classification; reports from `9cd909f` are stale-client after this fix.
+
+Regression coverage:
+- `tests/cpu.test.js` verifies `pendingIT` resolves before queued pending actions through `choosePendingResolution()`.
+- `tests/main.test.js` verifies live local CPU `pendingIT` is resolved by the pending handler and does not reach build.
+- `tests/server.test.js` verifies `cpu-turn-stalled` is classified as a known pattern.
+
+Related maintained contract:
+- Pending UI HTML remains split through the `PENDING_MENU_RENDERERS` registry. When adding a pending kind, update the renderer entry and the pending 種別 HTML assertions together.

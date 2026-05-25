@@ -240,6 +240,25 @@ runTest('choosePendingResolution は未対応pendingを飛ばして後続pending
     assert.strictEqual(game.pendingMover, 1);
 });
 
+runTest('choosePendingResolution は pendingIT を先頭優先で resolveIT にする', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingIT = true;
+    game.pendingBusiness = 1;
+    game.currentPlayer().coins = 3;
+    game.currentPlayer().cards = [createCardByName('ITベンチャー'), createCardByName('ビジネスセンター'), createCardByName('麦畑')];
+    game.players[1].cards = [createCardByName('森林')];
+    cpu.chooseITInvest = () => true;
+
+    const resolution = CPU.choosePendingResolution(game, cpu);
+
+    assert.strictEqual(resolution.action, 'resolveIT');
+    assert.strictEqual(resolution.payload.doSave, true);
+    resolution.apply();
+    assert.strictEqual(game.pendingIT, false);
+});
+
 runTest('_runSimulationStep は pendingIT を PENDING フェーズで解決する', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);

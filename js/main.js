@@ -481,6 +481,14 @@ function chooseCpuPendingResolution(cpu) {
             };
         }
     }
+    if (pendingAction === GAME_ACTIONS.RESOLVE_IT) {
+        const doSave = cpu.chooseITInvest(game);
+        return {
+            action: 'resolveIT',
+            payload: { doSave },
+            apply: () => game.resolveIT(doSave),
+        };
+    }
     if (pendingAction === GAME_ACTIONS.RESOLVE_CLEANING) return null;
     if (pendingAction === GAME_ACTIONS.RESOLVE_MOVER) {
         let move = cpu.chooseMoverMove(game);
@@ -557,6 +565,11 @@ const CPU_PHASE_HANDLERS = [
             if (game.phase !== GAME_PHASES.PENDING) return;
             const pendingResolution = chooseCpuPendingResolution(cpu);
             if (pendingResolution) {
+                markMainCheckpoint('scheduleCPU-pending-resolution', {
+                    action: pendingResolution.action,
+                    pendingIT: !!game.pendingIT,
+                    pendingAction: GameManager.nextPendingActionFor(game),
+                });
                 cpuDo(pendingResolution.action, pendingResolution.payload, () => pendingResolution.apply());
                 return;
             }

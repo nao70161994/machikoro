@@ -706,6 +706,49 @@ runTest('main fallback pending は queue 先頭actionだけを見る', () => {
     assert.ok(!source.includes('pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)'));
 });
 
+runTest('main scheduleCPU はCPUターンの pendingIT をpending handlerで自動解決する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingIT = true;
+    game.pendingBusiness = 1;
+    game.players[0].coins = 3;
+    game.players[0].cards = [{ name: 'ITベンチャー', effect: 'itstartup' }];
+    game.resolveIT = (doSave) => {
+        game.resolvedIT = doSave;
+        game.pendingIT = false;
+        game.currentPlayerIndex = 1;
+        game.phase = rt.GAME_PHASES.ROLL;
+        return true;
+    };
+    let chooseITInvestCalls = 0;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return 1; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { chooseITInvestCalls++; return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { throw new Error('pendingIT should resolve before build'); },
+    }, null]);
+    rt.isOnlineGame = false;
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(chooseITInvestCalls, 1);
+    assert.strictEqual(game.pendingIT, false);
+    assert.strictEqual(game.resolvedIT, false);
+    assert.strictEqual(game.pendingBusiness, 1);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-pending-resolution' && entry.details.action === 'resolveIT'));
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
 runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTurnへ進める', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);

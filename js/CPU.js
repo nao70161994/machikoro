@@ -4209,6 +4209,7 @@ class CPU {
         const add = (field, action) => {
             if ((game[field] || 0) > 0) descriptors.push({ field, action, count: game[field] || 0 });
         };
+        if (game.pendingIT) descriptors.push({ field: 'pendingIT', action: 'resolveIT', count: 1 });
         add('pendingTV', 'resolveTV');
         add('pendingBusiness', 'resolveBusiness');
         add('pendingCleaning', 'resolveCleaning');
@@ -4370,6 +4371,16 @@ class CPU {
         };
     }
 
+    static _choosePendingItResolution(game, cpu) {
+        const doSave = cpu.chooseITInvest(game);
+        return {
+            action: 'resolveIT',
+            payload: { doSave },
+            doSave,
+            apply: () => game.resolveIT(doSave),
+        };
+    }
+
     static choosePendingResolution(game, cpu, options = {}) {
         if (!game || !cpu || game.phase !== GAME_PHASES.PENDING) return null;
         const descriptors = CPU._pendingActionDescriptors(game);
@@ -4380,8 +4391,9 @@ class CPU {
                 case 'resolveBusiness':
                     return CPU._choosePendingBusinessResolution(game, cpu, options);
                 case 'resolveCleaning':
-                case 'resolveIT':
                     return null;
+                case 'resolveIT':
+                    return CPU._choosePendingItResolution(game, cpu);
                 case 'resolveMover':
                     return CPU._choosePendingMoverResolution(game, cpu, options);
                 case 'resolveRenovation':
@@ -4413,10 +4425,6 @@ class CPU {
                 game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
                 return;
             case GAME_PHASES.PENDING:
-                if (game.pendingIT) {
-                    game.resolveIT(cpu.chooseITInvest(game));
-                    return;
-                }
                 const pendingResolution = CPU.choosePendingResolution(game, cpu);
                 if (pendingResolution) {
                     pendingResolution.apply();
