@@ -2737,3 +2737,12 @@
   - `tests/sw.test.js` に `SKIP_WAITING` message が `self.skipWaiting()` を呼ぶ contract test を追加した。
   - 未知 message では skipWaiting しないことも固定し、更新導線の誤作動を検出しやすくした。
 - コード挙動: `sw.js` の実装は変更なし。既存の更新ボタン用 message contract を test で固定しただけ。
+
+## Backlog cleanup - CPU online landmark send failure contract
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: CPU online build execution の regression gap 補強。
+- 修正済み:
+  - `tests/cpu.test.js` に online `buildLandmark` 送信失敗時の contract test を追加した。
+  - 送信失敗時に `builtThisTurn`、coins、landmark state をローカル mutate しないことを固定した。
+- コード挙動: `CPU.js` の実装は変更なし。既存の `_buyLandmark()` online failure fallback を test で固定しただけ。

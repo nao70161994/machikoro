@@ -2130,6 +2130,40 @@ runTest('build は online buildCard の送信失敗を false で返す', () => {
     }
 });
 
+runTest('_buyLandmark は online buildLandmark の送信失敗でローカル状態を変えない', () => {
+    const cpu = new CPU('weak');
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = Player.landmarkCost(LANDMARK_NAMES.STATION);
+    const sent = [];
+    runtime.isOnlineGame = true;
+    runtime.isRoomHost = true;
+    runtime.isReconnectingOnline = false;
+    runtime.socket = { connected: true };
+    runtime.sendAction = (action, data) => {
+        sent.push({ action, data });
+        return false;
+    };
+
+    try {
+        const result = cpu._buyLandmark(LANDMARK_NAMES.STATION, game);
+
+        assert.strictEqual(result, false);
+        assert.strictEqual(game.builtThisTurn, false);
+        assert.strictEqual(current.coins, Player.landmarkCost(LANDMARK_NAMES.STATION));
+        assert.strictEqual(current.landmarks[LANDMARK_NAMES.STATION], false);
+        assert.strictEqual(sent.length, 1);
+        assert.strictEqual(sent[0].action, 'buildLandmark');
+        assert.strictEqual(sent[0].data.name, LANDMARK_NAMES.STATION);
+    } finally {
+        delete runtime.isOnlineGame;
+        delete runtime.isRoomHost;
+        delete runtime.isReconnectingOnline;
+        delete runtime.socket;
+        delete runtime.sendAction;
+    }
+});
+
 runTest('chooseTVTarget: 勝利に近い相手を優先して狙う', () => {
     const cpu = new CPU("strong");
     const game = new GameManager(3);
