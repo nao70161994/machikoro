@@ -1081,3 +1081,19 @@ Regression coverage:
 
 Related maintained contract:
 - Pending UI HTML remains split through the `PENDING_MENU_RENDERERS` registry. When adding a pending kind, update the renderer entry and the pending 種別 HTML assertions together.
+
+### Render-time prevention for human-turn-ui-locked / post-build-ui-blocked
+
+Observed pattern:
+- Recent current-version `human-turn-ui-locked` and `post-build-ui-blocked` reports completed after watchdog recovery, but that still meant normal render had allowed an invalid physical UI state to reach the user.
+- The common build-phase failure mode was `allowedActionsFor(game)` permitting `nextTurn` while a parent or action container still had stale `display:none`, `inert`, `aria-hidden`, or `pointer-events:none` from a prior modal/render path.
+
+Root-cause fix:
+- `renderActiveGameState()` now calls `syncUiInteractabilityAfterRender()` after phase-owned containers are rendered and before auto-skip. This checks the same registry-backed invariant as the watchdog and normalizes stale root/container locks during render, before `FREEZE_SUMMARY` / ntfy recovery is needed.
+- The sync path is guarded by active human turn, online input block, and active modal checks, so it does not reveal `gameScreen` on title/rules/settings screens or break legitimate modal locks.
+- `recoverUiInteractability()` remains as fallback, but now records `ui-interactability-recovery-fired` with compact before/after state, issues, root-cause classification, and recent render/modal/build/CPU checkpoints. A recovery firing is diagnostic evidence, not success.
+
+Regression coverage:
+- `tests/integration.test.js` verifies normal render produces no `human-turn-ui-locked` issue and no watchdog recovery for `roll`, `rerollConfirm`, `harborChoice`, `pending resolveBusiness`, and `build nextTurn`.
+- `tests/integration.test.js` verifies stale build-phase `gameScreen` / `btnSkip` / `buildMenu` locks are synchronized by render before watchdog notification.
+- `tests/integration.test.js` verifies fallback recovery trace includes before/after diagnostics when recovery is still invoked.

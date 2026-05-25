@@ -1126,6 +1126,130 @@ runTest('integration: client側debug error reportを手動送信できる', () =
     assert.ok(checkpoint);
 });
 
+runTest('integration: 通常renderは主要action containerをrecoveryなしで操作可能にする', () => {
+    const cases = [
+        {
+            name: 'roll',
+            action: 'rollDice',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.ROLL; },
+        },
+        {
+            name: 'rerollConfirm',
+            action: 'rerollDice',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.REROLL_CONFIRM; game.lastDiceResult = 6; },
+        },
+        {
+            name: 'harborChoice',
+            action: 'resolveHarbor',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.HARBOR_CHOICE; game.lastDiceResult = 10; },
+        },
+        {
+            name: 'pending resolveBusiness',
+            action: 'resolveBusiness',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingBusiness = 1;
+                game.currentPlayer().cards.push(rt.createCardByName('ビジネスセンター'));
+                game.players[1].cards.push(rt.createCardByName('森林'));
+            },
+        },
+        {
+            name: 'build nextTurn',
+            action: 'nextTurn',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.BUILD; game.builtThisTurn = true; },
+        },
+    ];
+
+    for (const testCase of cases) {
+        const rt = loadIntegrationRuntime();
+        rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+        rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+        rt.__test.setPlayerSettings([
+            { type: 'human', difficulty: 'normal' },
+            { type: 'human', difficulty: 'normal' },
+        ]);
+        rt.startGame();
+        const game = rt.__test.getGame();
+        hideAllTestModals(rt);
+        testCase.setup(rt, game);
+        rt.render();
+
+        const snapshot = rt.collectUiLockSnapshot(testCase.name);
+        assert.ok(snapshot.allowedActions.includes(testCase.action), testCase.name + ' allowed');
+        assert.strictEqual(rt.validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked').length, 0, testCase.name + ' no human lock');
+        assert.strictEqual(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'), false, testCase.name + ' no watchdog recovery');
+    }
+});
+
+runTest('integration: build phase render はstale root/container lockをwatchdog前に同期する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    hideAllTestModals(rt);
+    rt.render();
+
+    rt.__test.elements.gameScreen.style.display = 'none';
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.btnSkip.inert = true;
+    rt.__test.elements.btnSkip.style.pointerEvents = 'none';
+    rt.__test.elements.buildMenu.style.pointerEvents = 'none';
+
+    rt.render();
+
+    const snapshot = rt.collectUiLockSnapshot('post-render-sync');
+    assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
+    assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
+    assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.__test.elements.btnSkip.inert, false);
+    assert.notStrictEqual(rt.__test.elements.btnSkip.style.pointerEvents, 'none');
+    assert.notStrictEqual(rt.__test.elements.buildMenu.style.pointerEvents, 'none');
+    assert.strictEqual(rt.validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked').length, 0);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'ui-render-interactability-sync'));
+    assert.strictEqual(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'), false);
+    assert.strictEqual(rt.__test.fetchCalls.find(call => call.url === '/api/client-error'), undefined);
+});
+
+runTest('integration: watchdog recovery 発火時はbefore/after診断をtraceに残す', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    hideAllTestModals(rt);
+    rt.render();
+    rt.__test.elements.gameScreen.inert = true;
+    rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.btnSkip.disabled = false;
+
+    const before = rt.collectUiLockSnapshot('manual-recovery-trace');
+    assert.strictEqual(rt.recoverUiInteractability(before), true);
+
+    const trace = rt.window.__machikoroClientCheckpoints.find(entry => entry.event === 'ui-interactability-recovery-fired');
+    assert.ok(trace);
+    assert.ok(trace.details.before);
+    assert.ok(trace.details.after);
+    assert.ok(Array.isArray(trace.details.issues));
+    assert.ok(trace.details.issues.some(issue => issue.target === 'gameScreen' || issue.target === 'btnSkip'));
+    assert.ok(Array.isArray(trace.details.recentCheckpoints));
+});
+
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

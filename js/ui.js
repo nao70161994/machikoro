@@ -362,6 +362,9 @@ function renderActiveGameState(current) {
         prevCoins = game.players.map(p => p.coins);
     });
     safeRenderStep('renderBuildMenu', () => renderBuildMenu());
+    safeRenderStep('syncUiInteractabilityAfterRender', () => {
+        if (typeof syncUiInteractabilityAfterRender === 'function') syncUiInteractabilityAfterRender('render-active-game-state');
+    });
     safeRenderStep('checkAutoSkip', () => checkAutoSkip());
 }
 

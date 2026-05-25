@@ -54,7 +54,7 @@ Treat current-version `human-turn-ui-locked` as a mismatch between `GameManager.
 | `build` | `buildCard` / `buildLandmark` / `undoBuild` | `buildMenu` |
 | `build` | `nextTurn` | `btnSkip` |
 
-If an allowed action exists but its container is hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, or has no usable child actions, `validateUiInteractability()` reports a registry-based `allowed-action-container-not-clickable` issue and `recoverUiInteractability()` clears the same registry target before re-rendering. Add new gameplay action surfaces to that registry first, then add a regression test.
+If an allowed action exists but its container is hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, or has no usable child actions, `validateUiInteractability()` reports a registry-based `allowed-action-container-not-clickable` issue. Normal render now runs `syncUiInteractabilityAfterRender()` to make allowed containers physically clickable before the watchdog fires. `recoverUiInteractability()` remains the final fallback and records before/after diagnostics, but a recovery firing on a current version should still be treated as a regression. Add new gameplay action surfaces to the registry first, then add both a normal-render no-recovery test and a fallback recovery test.
 
 ### `cpu-turn-stalled` during pending CPU turns
 

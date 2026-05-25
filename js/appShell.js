@@ -1154,6 +1154,106 @@ function classifyLikelyFreeze(snapshot) {
     return '';
 }
 
+function compactIssueForTrace(issue) {
+    if (!issue) return null;
+    return {
+        kind: issue.kind || '',
+        action: issue.action || '',
+        actionTarget: issue.actionTarget || '',
+        target: issue.target || '',
+        phase: issue.phase || '',
+        reason: issue.reason || '',
+        freezeKind: issue.freezeKind || '',
+    };
+}
+
+function compactSnapshotForUiTrace(snapshot) {
+    const ui = snapshot && snapshot.ui || {};
+    return {
+        phase: snapshot && snapshot.phase || '',
+        builtThisTurn: !!(snapshot && snapshot.builtThisTurn),
+        currentPlayerIndex: snapshot && snapshot.currentPlayerIndex,
+        myPlayerIndex: snapshot && snapshot.myPlayerIndex,
+        isCpuTurn: !!(snapshot && snapshot.isCpuTurn),
+        isOnlineGame: snapshot && snapshot.isOnlineGame,
+        onlineActionInFlight: snapshot && snapshot.onlineActionInFlight,
+        allowedActions: Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [],
+        visibleModals: Array.isArray(snapshot && snapshot.visibleModals) ? snapshot.visibleModals : [],
+        bodyClassName: snapshot && snapshot.bodyClassName || '',
+        gameScreen: compactElementSnapshotForStorage(ui.gameScreen),
+        buildMenu: compactElementSnapshotForStorage(ui.buildMenu),
+        btnSkip: compactElementSnapshotForStorage(ui.btnSkip),
+        btnRoll: compactElementSnapshotForStorage(ui.btnRoll),
+        diceChoose: compactElementSnapshotForStorage(ui.diceChoose),
+        pendingModal: compactElementSnapshotForStorage(ui.pendingModal),
+        pendingMenu: compactElementSnapshotForStorage(ui.pendingMenu),
+        confirmModal: compactElementSnapshotForStorage(ui.confirmModal),
+    };
+}
+
+function recentClientCheckpointsForTrace(limit = 8) {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        const list = root && Array.isArray(root.__machikoroClientCheckpoints) ? root.__machikoroClientCheckpoints : [];
+        return list.slice(Math.max(0, list.length - limit)).map(entry => ({
+            event: entry && entry.event || '',
+            timestamp: entry && entry.timestamp || '',
+            details: entry && entry.details || {},
+            phase: entry && entry.snapshot && entry.snapshot.phase || '',
+            allowedActions: entry && entry.snapshot && Array.isArray(entry.snapshot.allowedActions) ? entry.snapshot.allowedActions : [],
+        }));
+    } catch (_) {
+        return [];
+    }
+}
+
+function classifyUiInteractabilityCause(issue, snapshot) {
+    if (!issue) return 'unknown';
+    if (issue.reason === 'stale-modal' || issue.target === 'body') return 'modal-close-lock-leftover';
+    if (issue.target === 'gameScreen' && (issue.reason === 'parent-inert' || issue.reason === 'parent-display-none')) return 'screen-lock-leftover';
+    if (issue.reason === 'pointer-events-none') return 'inline-style-leftover';
+    if (issue.reason === 'parent-display-none' || issue.reason === 'hidden-mismatch') return 'render-container-hidden';
+    if (issue.reason === 'child-not-clickable' || issue.reason === 'disabled-mismatch') return 'allowed-actions-render-state-mismatch';
+    if (snapshot && snapshot.phase === 'build' && issue.action === 'nextTurn') return 'build-after-action-display-sync';
+    return 'allowed-actions-render-state-mismatch';
+}
+
+function syncAllowedActionContainersForRender(snapshot, issues = null) {
+    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
+    const issueActions = new Set((issues || [])
+        .filter(issue => issue && issue.kind === 'allowed-action-container-not-clickable' && issue.action)
+        .map(issue => issue.action));
+    let changed = false;
+    for (const entry of expectedActionContainerEntries(snapshot)) {
+        if (issueActions.size && !issueActions.has(entry.action)) continue;
+        if (isActionContainerUiUsable(snapshot, entry)) continue;
+        changed = clearActionContainerForRecovery(entry.spec) || changed;
+    }
+    return changed;
+}
+
+function syncUiInteractabilityAfterRender(reason = 'render-sync') {
+    const before = buildClientRuntimeSnapshot(reason);
+    if (!isHumanTurnSnapshot(before) || isOnlineUiBlockedSnapshot(before)) return false;
+    if (hasActiveBlockingModal(before) && !expectedPendingActions(before).length) return false;
+    const issues = validateUiInteractability(before).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    if (!issues.length) return false;
+    let changed = clearGameScreenLockIfNoActiveModal(before, reason + '-game-screen');
+    changed = syncAllowedActionContainersForRender(before, issues) || changed;
+    changed = clearUiInteractabilityIssueTargets(issues) || changed;
+    const after = buildClientRuntimeSnapshot(reason + '-after');
+    markClientFlowCheckpoint('ui-render-interactability-sync', {
+        reason,
+        changed,
+        rootCauses: issues.map(issue => classifyUiInteractabilityCause(issue, before)),
+        issues: issues.map(compactIssueForTrace),
+        before: compactSnapshotForUiTrace(before),
+        after: compactSnapshotForUiTrace(after),
+    });
+    return changed;
+}
+
 function recoverPostBuildUiFreeze(snapshot) {
     if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
@@ -1280,14 +1380,28 @@ function recoverStaleModalUiLock(snapshot) {
 }
 
 function recoverUiInteractability(snapshot) {
-    const freezeKind = classifyLikelyFreeze(snapshot);
+    const before = snapshot || buildClientRuntimeSnapshot('ui-recovery-before');
+    const freezeKind = classifyLikelyFreeze(before);
     if (!freezeKind) return false;
-    if (freezeKind === 'post-build-ui-blocked') return recoverPostBuildUiFreeze(snapshot);
-    if (freezeKind === 'human-turn-ui-locked') return recoverHumanUiLock(snapshot);
-    if (freezeKind === 'pending-ui-locked') return recoverPendingUiLock(snapshot);
-    if (freezeKind === 'stale-modal-ui-locked') return recoverStaleModalUiLock(snapshot);
-    if (freezeKind.startsWith('modal-ui-locked')) return recoverModalUiLock(snapshot);
-    return false;
+    const issues = validateUiInteractability(before).filter(issue => issue && issue.freezeKind);
+    let recovered = false;
+    if (freezeKind === 'post-build-ui-blocked') recovered = recoverPostBuildUiFreeze(before);
+    else if (freezeKind === 'human-turn-ui-locked') recovered = recoverHumanUiLock(before);
+    else if (freezeKind === 'pending-ui-locked') recovered = recoverPendingUiLock(before);
+    else if (freezeKind === 'stale-modal-ui-locked') recovered = recoverStaleModalUiLock(before);
+    else if (freezeKind.startsWith('modal-ui-locked')) recovered = recoverModalUiLock(before);
+    if (recovered) {
+        const after = buildClientRuntimeSnapshot('ui-recovery-after');
+        markClientFlowCheckpoint('ui-interactability-recovery-fired', {
+            freezeKind,
+            rootCauses: issues.map(issue => classifyUiInteractabilityCause(issue, before)),
+            issues: issues.map(compactIssueForTrace),
+            before: compactSnapshotForUiTrace(before),
+            after: compactSnapshotForUiTrace(after),
+            recentCheckpoints: recentClientCheckpointsForTrace(),
+        });
+    }
+    return recovered;
 }
 
 function freezeIssueDedupeSignature(snapshot) {
