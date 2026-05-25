@@ -102,7 +102,7 @@ Keep these as explicit manual/design items rather than treating nightly green as
 Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Operationally important outcomes:
 
 - Public production client-error reporting should set `CLIENT_ERROR_ALLOWED_ORIGINS` and keep `NTFY_TOPIC` private. Scripted/no-origin diagnostics should use `CLIENT_ERROR_SHARED_TOKEN` or a temporary `CLIENT_ERROR_ALLOW_NO_ORIGIN` exception.
-- Do not set `CLIENT_ERROR_SHARED_TOKEN` for normal browser reporting unless the browser is intentionally configured to send the token; otherwise real-device reports will be rejected.
+- Do not set `CLIENT_ERROR_SHARED_TOKEN` for normal `/api/client-error` browser reporting unless the browser is intentionally configured to send the token; otherwise real-device error reports will be rejected. `/api/game-lifecycle` keeps same-origin browser reports tokenless, but no-origin scripted lifecycle diagnostics require the token when it is configured.
 - Stale-client classification is diagnostic. It must not automatically clear restore bundles, reject reconnect, or reload during an active game.
 - Server restart restore remains host-only for casual play. Hostless restore and server-persisted canonical state are design/implementation projects, not operational toggles.
 - Multiple room resume UI should not be enabled until restore bundles have a per-room index and stale bundles have a safe pruning policy.

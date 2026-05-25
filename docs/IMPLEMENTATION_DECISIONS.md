@@ -13,7 +13,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 | Signed restore snapshot / action log | Do not implement as a partial security patch. Use only as a fallback/audit layer after schema and key policy are designed. | After or alongside server-persisted canonical state, or as an explicitly temporary compatibility bridge. | Canonical serialization, key rotation, legacy-bundle policy. |
 | Hostless restore | Defer. Non-host bundles must not become canonical under the current trust model. | Re-evaluate after server-persisted canonical state, or behind an explicit provisional-quorum design. | Candidate hash/rank fixtures, grace window, replacement policy, multi-device manual tests. |
 | Multiple room resume UI | Defer until restore storage has a per-room index. | After scoped restore reads, room index, and stale-bundle policy are stable. | Restore bundle store helper, stale-key pruning, UX for room selection. |
-| Production client-error origin/token | Strengthen before public production operation. Keep current optional token/debug behavior for controlled diagnostics. | Before exposing a public deployment or sharing the ntfy topic broadly. | Render env configuration, same-origin browser reporting, documented curl/test flow. |
+| Production client-error origin/token | Same-origin browser reporting stays tokenless; scripted/no-origin diagnostics require token when configured. | Revisit only if a deliberate browser token delivery model is added. | Render env configuration, same-origin browser reporting, documented curl/test flow. |
 | Restore bundle per-room namespace / pruning | Scoped-first reads already exist; remaining work is per-room index, visible resume UI, and legacy/global pruning policy. | Next online storage cleanup pass. | Old-key compatibility, storage tests, stale-bundle retention policy. |
 | Room replacement migration | Keep separate from hostless restore. Existing restored room replacement remains host-only. | Before hostless restore or broad replacement UX changes. | Current-room gates, token/rank tests, stale room diagnostics. |
 
@@ -80,7 +80,7 @@ Token/origin hardening should not break real browser reports:
 - Same-origin browser reports should keep working without requiring a client-side secret.
 - For `/api/client-error` and `/api/client-error-test`, scripted or no-origin debug reports should use `CLIENT_ERROR_SHARED_TOKEN`, or a temporary `CLIENT_ERROR_ALLOW_NO_ORIGIN` exception only during controlled testing.
 - `/api/client-error-test` stays disabled by default outside development/test unless explicitly enabled.
-- `/api/game-lifecycle` has a stricter payload and separate privacy contract; do not assume client-error token guidance automatically changes lifecycle authentication without a dedicated endpoint review.
+- `/api/game-lifecycle` has a stricter payload and separate privacy contract. Same-origin browser lifecycle reports remain tokenless, while no-origin scripted lifecycle diagnostics require `CLIENT_ERROR_SHARED_TOKEN` when it is configured.
 
 ### Stale client detection vs restore/reconnect
 

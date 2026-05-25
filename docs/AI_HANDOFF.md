@@ -335,3 +335,8 @@ Test index:
 - `showConfirm()` must not install callbacks or set `__machikoroConfirmModalOpen` when a blocking modal open is denied. Preserve this contract when changing confirm flows.
 - `pendingModal` is guarded separately from `openAccessibleModal()`: populated pending UI must not open while another blocking modal is visible.
 - Nested blocking modal states are diagnostics (`nested-blocking-modal-policy-violation`), not an invitation for recovery to auto-close valid modals.
+
+## Client-error / lifecycle auth boundary
+
+- Same-origin browser `/api/client-error` and `/api/game-lifecycle` reports should keep working without exposing a shared token. Do not make normal browser reports depend on `CLIENT_ERROR_SHARED_TOKEN` unless a deliberate browser token delivery model is added.
+- No-origin scripted diagnostics are stricter: `/api/client-error` and `/api/client-error-test` use the existing client-error auth gate, and `/api/game-lifecycle` requires `CLIENT_ERROR_SHARED_TOKEN` when that token is configured.

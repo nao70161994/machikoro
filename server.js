@@ -210,6 +210,10 @@ function clientErrorAllowedOrigins(req, env = process.env) {
     return Array.from(new Set(configured));
 }
 
+function hasClientReportOrigin(req) {
+    return !!(normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer')));
+}
+
 function isClientErrorOriginAllowed(req, env = process.env) {
     const origin = normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer'));
     if (!origin) return true;
@@ -218,7 +222,7 @@ function isClientErrorOriginAllowed(req, env = process.env) {
 }
 
 function isProductionNoOriginClientErrorBlocked(req, env = process.env) {
-    const hasOrigin = !!(normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer')));
+    const hasOrigin = hasClientReportOrigin(req);
     if (hasOrigin) return false;
     if (clientErrorSharedToken(env)) return false;
     if (String(env.CLIENT_ERROR_ALLOW_NO_ORIGIN || '').trim()) return false;
@@ -635,6 +639,11 @@ async function handleGameLifecycleRequest(req, res, options = {}) {
     const env = options.env || process.env;
     if (!isClientErrorOriginAllowed(req, env) || isProductionNoOriginClientErrorBlocked(req, env)) {
         res.status(403).json({ ok: false, error: 'forbidden_origin' });
+        return;
+    }
+    const expectedToken = clientErrorSharedToken(env);
+    if (!hasClientReportOrigin(req) && expectedToken && requestClientErrorToken(req) !== expectedToken) {
+        res.status(403).json({ ok: false, error: 'invalid_client_error_token' });
         return;
     }
     const now = options.now || Date.now();
@@ -2039,6 +2048,7 @@ module.exports = {
     normalizeClientErrorPayload,
     requestHeader,
     requestBaseOrigin,
+    hasClientReportOrigin,
     clientErrorAllowedOrigins,
     isClientErrorOriginAllowed,
     clientErrorSharedToken,

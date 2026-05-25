@@ -2760,6 +2760,19 @@
 - 残課題:
   - card detail inside card select のような将来 UX は、inline detail か registry 例外として別途設計・実機確認が必要。
 
+
+## Phase 2 - production client-error auth hardening
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の production client-error origin/token 方針。
+- 修正済み:
+  - `/api/game-lifecycle` は same-origin browser reports を tokenless のまま維持しつつ、`CLIENT_ERROR_SHARED_TOKEN` 設定時の no-origin scripted request には token を要求するようにした。
+  - `tests/server.test.js` に no-origin lifecycle token required / token accepted / same-origin tokenless accepted の contract を追加した。
+  - `docs/NTFY_ERROR_REPORTING.md` / `docs/OPERATIONS.md` / `docs/IMPLEMENTATION_DECISIONS.md` に lifecycle と client-error の auth 境界を明記した。
+- コード挙動: 通常の browser client-error と lifecycle 通知は same-origin なら既存どおり。no-origin scripted diagnostics だけを本番寄りに強化。
+- 残課題:
+  - 本番公開前に Render の `CLIENT_ERROR_ALLOWED_ORIGINS`、`NTFY_TOPIC`、必要時の `CLIENT_ERROR_SHARED_TOKEN` を実環境で確認する。
+
 ## Backlog cleanup - Service Worker SKIP_WAITING contract
 
 - 状態: completed; targeted verification passed before commit.

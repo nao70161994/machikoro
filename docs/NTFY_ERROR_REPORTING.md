@@ -164,6 +164,8 @@ When not explicitly disabled, the browser sends compact `POST /api/game-lifecycl
 
 The server publishes to the same `NTFY_TOPIC` only when that environment variable is configured. If `NTFY_TOPIC` is missing, the endpoint only logs a server-side warning and gameplay continues.
 
+For `/api/game-lifecycle`, same-origin browser reports stay tokenless so normal play-start/play-finish reporting does not require exposing a shared secret. Scripted/no-origin lifecycle diagnostics must send `X-Client-Error-Token` or `Authorization: Bearer` when `CLIENT_ERROR_SHARED_TOKEN` is configured.
+
 Example start notification:
 
 ```text

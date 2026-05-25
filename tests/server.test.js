@@ -30,6 +30,7 @@ const {
     resolveTrustProxySetting,
     normalizeClientErrorPayload,
     requestBaseOrigin,
+    hasClientReportOrigin,
     clientErrorAllowedOrigins,
     isClientErrorOriginAllowed,
     isProductionNoOriginClientErrorBlocked,
@@ -658,6 +659,30 @@ runTest('notifyGameLifecycle は ntfy topic 設定時に軽量titleでPOSTする
     assert.strictEqual(calls[0].options.headers.Priority, '2');
     assert.ok(calls[0].options.body.includes('mode=local'));
     assert.ok(calls[0].options.body.includes('players=4'));
+});
+
+
+runTest('game lifecycle endpoint は no-origin scripted request にtokenを要求しsame-origin browserを壊さない', async () => {
+    const env = { NODE_ENV: 'production', NTFY_TOPIC: 'topic', CLIENT_ERROR_SHARED_TOKEN: 'life-secret' };
+    const body = { event: 'play-start', mode: 'local', playerCount: 2, cpuCount: 1, sessionId: 'life-auth' };
+
+    const noOrigin = makeMockReq({ headers: { host: 'example.com' }, body });
+    assert.strictEqual(hasClientReportOrigin(noOrigin), false);
+    const blocked = makeMockRes();
+    await handleGameLifecycleRequest(noOrigin, blocked, { env, rateBuckets: new Map(), dedupeCache: new Map() });
+    assert.strictEqual(blocked.statusCode, 403);
+    assert.strictEqual(blocked.body.error, 'invalid_client_error_token');
+
+    const tokenReq = makeMockReq({ headers: { host: 'example.com', 'x-client-error-token': 'life-secret' }, body: { ...body, sessionId: 'life-auth-token' } });
+    const tokenRes = makeMockRes();
+    await handleGameLifecycleRequest(tokenReq, tokenRes, { env, rateBuckets: new Map(), dedupeCache: new Map(), notifyOptions: { topic: 'topic', fetchImpl() { return { ok: true }; } } });
+    assert.strictEqual(tokenRes.statusCode, 202);
+
+    const sameOrigin = makeMockReq({ headers: { host: 'example.com', origin: 'https://example.com' }, body: { ...body, sessionId: 'life-auth-browser' } });
+    assert.strictEqual(hasClientReportOrigin(sameOrigin), true);
+    const sameOriginRes = makeMockRes();
+    await handleGameLifecycleRequest(sameOrigin, sameOriginRes, { env, rateBuckets: new Map(), dedupeCache: new Map(), notifyOptions: { topic: 'topic', fetchImpl() { return { ok: true }; } } });
+    assert.strictEqual(sameOriginRes.statusCode, 202);
 });
 
 runTest('game lifecycle endpoint は duplicate を抑止する', async () => {
