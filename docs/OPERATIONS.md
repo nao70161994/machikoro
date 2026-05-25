@@ -112,3 +112,9 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 - Clients keep `onlineRestoreRoomIndex` as a lightweight localStorage index of room-scoped restore bundles. It helps future diagnostics/resume UI find candidate rooms without scanning every key.
 - The index is not authoritative and must not override server canonical state, host restore rank, or scoped restore reads. Stale index pruning removes index rows only.
 - Do not enable multiple-room resume UI or destructive legacy key pruning until stale/expired/completed room UX and retention policy are explicit.
+
+## Restore Audit Metadata
+
+- `restoreAudit` is optional metadata for future signed restore diagnostics. Current deployments do not verify signatures and must not describe restore bundles as trusted because this field exists.
+- Invalid audit metadata is rejected to prevent silently accepting poisoned or room-mismatched audit claims. Missing metadata remains compatible with existing clients.
+- Real signed restore requires a canonical serialization format, key rotation procedure, freshness limits, and explicit behavior for legacy unsigned bundles.

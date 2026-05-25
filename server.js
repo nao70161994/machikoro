@@ -65,6 +65,10 @@ const {
     buildCanonicalStateRecord,
 } = require('./server/canonicalStateStore');
 const {
+    validateRestoreAuditRecord,
+    buildUnsignedRestoreAuditRecord,
+} = require('./server/restoreAudit');
+const {
     roomTimestamp,
     isRoomExpired,
     cleanupExpiredRooms,
@@ -1388,6 +1392,11 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
+    const restoreAuditValidation = validateRestoreAuditRecord(payload.restoreAudit, { roomId });
+    if (!restoreAuditValidation.ok) {
+        emitAppError(socket, '復元署名メタデータが無効です');
+        return;
+    }
     if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
         if (!room.started) {
@@ -2054,6 +2063,8 @@ module.exports = {
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
+    validateRestoreAuditRecord,
+    buildUnsignedRestoreAuditRecord,
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
     sanitizeRestoreActionLog,

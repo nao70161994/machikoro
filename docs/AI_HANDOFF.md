@@ -352,3 +352,9 @@ Test index:
 - `js/online.js` maintains `onlineRestoreRoomIndex` from room-scoped `onlineSession`, `onlineGameStart`, `onlineActionLog`, `onlineStateSnapshot`, and `onlinePendingAction` copies. It is an index for future UX and diagnostics, not a new restore authority.
 - Scoped restore reads still prefer `*:room:<ROOM>` keys and fall back to legacy global keys for compatibility. Do not remove legacy keys destructively until a retention policy and multiple-room resume UX are explicit.
 - `_pruneOnlineRestoreRoomIndex()` prunes stale index rows only; it must not delete restore bundles. Multiple-room resume UI should use this index only after stale/live/completed bundle states are documented and tested.
+
+## Restore audit metadata footing
+
+- `server/restoreAudit.js` validates optional `restoreAudit` metadata on `recreateRoom` payloads. It accepts absent metadata and explicit unsigned audit records, but rejects malformed room-mismatched or internally inconsistent records.
+- This is not signed restore. Unsigned audit records must never increase restore rank, bypass host-only restore, or override server-persisted canonical state. Real signing still needs canonical serialization, key rotation, freshness policy, and legacy-bundle behavior.
+- Future signed restore work should add verification as a separate layer and keep `server-persisted canonical state` higher priority in the trust model.

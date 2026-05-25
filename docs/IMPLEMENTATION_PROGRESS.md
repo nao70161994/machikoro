@@ -2852,3 +2852,15 @@
 - コード挙動: 複数 room resume UI はまだ実装しない。index は将来の picker / diagnostics 用の足場で、restore authority は変えない。
 - 残課題:
   - stale/expired/completed bundle の表示方針、destructive legacy pruning、複数room resume picker は追加UX設計と実機確認が必要。
+
+## Phase 5 - signed restore fallback/audit footing
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の signed restore fallback/audit 足場。
+- 修正済み:
+  - `server/restoreAudit.js` を追加し、任意の `restoreAudit` metadata schema、unsigned audit record、署名metadataの基本整合性検証を定義した。
+  - `handleRecreateRoom()` は `restoreAudit` が付いている場合だけ room mismatch / schema mismatch / signed flag 不整合を拒否する。metadata が無い既存restore payloadは従来どおり。
+  - `tests/server.test.js` で unsigned audit 許容、不正metadata拒否、room mismatch拒否を固定した。
+- コード挙動: 本格署名・鍵管理・rank加点は未実装。audit metadata は trust boundary を上げず、復元正本も変えない。
+- 残課題:
+  - canonical serialization、key rotation、freshness/expiry、legacy unsigned bundle policy は追加設計判断が必要。

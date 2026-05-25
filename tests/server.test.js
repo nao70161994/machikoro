@@ -17,6 +17,8 @@ const {
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
+    validateRestoreAuditRecord,
+    buildUnsignedRestoreAuditRecord,
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
     sanitizeRestoreActionLog,
@@ -2259,6 +2261,43 @@ runTest('validateRestorePayloadLimits は復元payloadの件数とサイズ上�
             players: [{ cards: Array.from({ length: RESTORE_PAYLOAD_LIMITS.maxPlayerCardRefs + 1 }, () => '麦畑') }],
         },
     }).reason, 'content-size');
+});
+
+runTest('restore audit schema はoptional署名メタデータを検証し未署名auditを許容する', () => {
+    const unsigned = buildUnsignedRestoreAuditRecord(' room01 ', { now: 1700000000000, source: 'test' });
+    assert.strictEqual(unsigned.roomId, 'ROOM01');
+    assert.strictEqual(unsigned.signed, false);
+    assert.strictEqual(validateRestoreAuditRecord(null, { roomId: 'ROOM01' }).ok, true);
+
+    const validation = validateRestoreAuditRecord(unsigned, { roomId: 'ROOM01' });
+    assert.strictEqual(validation.ok, true);
+    assert.strictEqual(validation.record.roomId, 'ROOM01');
+    assert.strictEqual(validation.record.algorithm, 'unsigned');
+
+    assert.strictEqual(validateRestoreAuditRecord(Object.assign({}, unsigned, { roomId: 'ROOM02' }), { roomId: 'ROOM01' }).reason, 'room-mismatch');
+    assert.strictEqual(validateRestoreAuditRecord(Object.assign({}, unsigned, { signed: true }), { roomId: 'ROOM01' }).reason, 'signed-unsigned');
+    assert.strictEqual(validateRestoreAuditRecord(Object.assign({}, unsigned, { canonicalHash: 'bad-hash' }), { roomId: 'ROOM01' }).reason, 'canonical-hash');
+});
+
+runTest('handleRecreateRoom は不正な restore audit metadata を拒否する', () => {
+    const emitted = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, body) { emitted.push({ name, body }); },
+        join() { throw new Error('join should not be called'); },
+    };
+
+    handleRecreateRoom(socket, {
+        roomId: 'REST_AUDIT',
+        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token-host',
+        restoreAudit: { schemaVersion: 1, roomId: 'OTHER', signed: false, algorithm: 'unsigned' },
+    });
+
+    assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '復元署名メタデータが無効です' }]);
 });
 
 runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共有する', () => {
