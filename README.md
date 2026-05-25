@@ -35,6 +35,15 @@ node server.js
 - `AI（深層学習・ランダム）` は v2simple とは別CPUとして扱います。3人以上のRLは現行 `self-only-4p-h256-lr1e5-5000-seed103` を使い、5人以上では脅威度上位3人の相手へ射影して判断します。50戦未満の短期評価は smoke / 足切り専用です。
 - ルールベース CPU と RL CPU は5人以上でも対応します。5人以上のRLは動作対応済みで、5p / 10p の軽量 lineup 評価も registry に記録済みです。追加採用判断では 2p / 3p / 4p / 5p / 10p を分けて確認します。
 
+## 運用ドキュメント
+
+運用フェーズの入口は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) です。ntfy 通知分類、CI失敗時の対応、PWA stale client 対応、Render 環境変数、公開前確認、Codex へ投げる障害対応テンプレをまとめています。
+
+- 公開前チェック: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
+- ntfy / client error / lifecycle 通知: [`docs/NTFY_ERROR_REPORTING.md`](./docs/NTFY_ERROR_REPORTING.md)
+- PWA 更新と stale client: [`docs/PWA_MODEL_LOADING.md`](./docs/PWA_MODEL_LOADING.md)
+- AI / Codex 引き継ぎ: [`docs/AI_HANDOFF.md`](./docs/AI_HANDOFF.md)
+
 ## テスト
 
 既定の自動テスト:

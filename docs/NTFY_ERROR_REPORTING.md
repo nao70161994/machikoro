@@ -7,7 +7,7 @@ Machikoro can forward real browser errors to ntfy so iPhone Safari / Android Chr
 Set these environment variables on Render:
 
 - `NTFY_TOPIC`: ntfy topic name to publish client errors to.
-- `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, `POST /api/client-error` and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Leave unset to keep the browser reporter working without a token.
+- `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, no-origin/scripted diagnostics and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Same-origin browser `/api/client-error` reports stay tokenless so real browser reporting is not broken.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: optional comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
 - `TRUST_PROXY` / `EXPRESS_TRUST_PROXY`: optional Express proxy trust setting. Leave unset for direct serving; set `TRUST_PROXY=1` only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
 - `CLIENT_ERROR_ALLOW_NO_ORIGIN`: optional escape hatch for controlled diagnostics. In production with `NTFY_TOPIC`, no-origin/no-token reports are rejected by default.
@@ -86,6 +86,18 @@ Classification is server-side:
 
 See `docs/OPERATIONS.md` for the current known fixed version table and triage flow.
 
+## Notification operation policy
+
+Use separate topics and priorities so routine activity does not hide urgent failures:
+
+- `play-start` / `play-finish`: lifecycle heartbeat on `NTFY_TOPIC`; useful for confirming real usage and deploy health, not an incident by itself.
+- `unknown`: browser client-error on `NTFY_TOPIC`; highest priority and should be investigated immediately.
+- `known-pattern`: browser client-error on `NTFY_TOPIC`; inspect version and frequency. Current-version repeats are regressions.
+- `stale-client`: browser client-error on `NTFY_TOPIC`; guide the device through PWA update/cache clearing before debugging code.
+- CI failed: GitHub Actions failure on `NTFY_CI_TOPIC`; release blocker until the failed command is green.
+
+Keep `NTFY_TOPIC` and `NTFY_CI_TOPIC` different. Browser topics may include runtime details such as phase/version/user agent; CI topics include repository workflow metadata. Both should be hard to guess and rotated if leaked.
+
 
 ## Test notification
 
@@ -120,7 +132,7 @@ A successful test returns `202` and sends a notification with `phase=test`, a ha
 - Duplicate reports are suppressed for a short window.
 - Per-IP reports are rate limited.
 - Browser reports with a cross-origin `Origin` / `Referer` are rejected unless explicitly allowlisted.
-- `CLIENT_ERROR_SHARED_TOKEN` can require a shared token for report and test endpoints.
+- `CLIENT_ERROR_SHARED_TOKEN` can require a shared token for scripted/no-origin reports and test endpoints; same-origin browser reports remain tokenless.
 - ntfy failures are logged and do not block gameplay.
 
 ## Privacy notes

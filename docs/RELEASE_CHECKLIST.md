@@ -31,7 +31,7 @@ Recommended for production observability:
 - `NTFY_TOPIC`: ntfy topic for browser error notification. Without it, client error reports only write `console.warn` on the server.
 - GitHub Secret `NTFY_CI_TOPIC`: optional topic for GitHub Actions failure notifications. Set it in GitHub repository `Settings > Secrets and variables > Actions > Repository secrets`; success runs do not notify, and unset secrets skip the notification step.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: comma-separated allowed origins, for example `https://machikoro-9jv2.onrender.com`. Same-origin reports are always accepted; cross-origin reports are rejected unless allowlisted.
-- `CLIENT_ERROR_SHARED_TOKEN`: optional shared token for `/api/client-error` and `/api/client-error-test`. Leave unset unless the client/test caller will send `X-Client-Error-Token` or `Authorization: Bearer`.
+- `CLIENT_ERROR_SHARED_TOKEN`: optional shared token for scripted/no-origin diagnostics and `/api/client-error-test`. Same-origin browser `/api/client-error` stays tokenless; leave unset unless a test caller or non-browser sender will send `X-Client-Error-Token` or `Authorization: Bearer`.
 - `TRUST_PROXY=1`: set only when deployed behind a trusted proxy and paired with `CLIENT_ERROR_ALLOWED_ORIGINS` for the public HTTPS origin. Leave unset for direct serving.
 - `CLIENT_ERROR_ALLOW_NO_ORIGIN`: leave unset in production unless a controlled non-browser diagnostic sender requires no-origin reports.
 
@@ -130,6 +130,18 @@ Regression test index:
 - PWA model loading: `docs/PWA_MODEL_LOADING.md`
 - Online restore/recovery: `docs/ONLINE_RECOVERY.md`, `docs/online-restore-schema.md`
 - Maintenance checks by change type: `docs/maintenance-checklists.md`
+
+## Public Preflight Summary
+
+Before public traffic, AdSense review, or broader PWA install testing, confirm this short list in addition to the automated gate:
+
+- `privacy.html` and `rules.html` are reachable from the title screen and mention local storage / online room data / client error reporting / ad provider data as applicable.
+- AdSense placeholders are still limited to title, rules, and result surfaces; no slot is near dice, build, pending, Undo, reconnect, or update controls.
+- `NTFY_TOPIC` receives a controlled `/api/client-error-test` notification, then `CLIENT_ERROR_TEST_ENABLED` is removed again.
+- `NTFY_CI_TOPIC` is configured as a GitHub Actions secret if CI failure paging is desired.
+- `/api/version` matches the intended deploy commit, and a browser with stale `window.MACHIKORO_CLIENT_VERSION` shows the PWA update banner.
+- PWA install and update behavior has been checked on at least one real mobile browser before relying on it publicly.
+- CI is green on the exact commit being deployed.
 
 ## Final State
 

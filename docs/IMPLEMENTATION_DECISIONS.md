@@ -35,7 +35,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 3. **Operations/security track**
    - For private diagnostics, current `NTFY_TOPIC` with optional `CLIENT_ERROR_SHARED_TOKEN` is acceptable.
    - For public production, require `CLIENT_ERROR_ALLOWED_ORIGINS`, a hard-to-guess topic, and either same-origin browser reporting or a deliberate token delivery model.
-   - Do not set `CLIENT_ERROR_SHARED_TOKEN` for normal browser reporting unless the browser can provide the matching token; otherwise real reports will be rejected.
+   - `CLIENT_ERROR_SHARED_TOKEN` is for scripted/no-origin diagnostics and `/api/client-error-test`; same-origin browser reports remain tokenless. Do not expose the token to normal browser code unless a deliberate browser token model is added.
    - Do not add raw room ids, reconnect tokens, localStorage dumps, or full snapshots to ntfy text.
 
 4. **Resume UX track**

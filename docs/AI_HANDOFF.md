@@ -327,7 +327,7 @@ Test index:
 - Modal policy is accepted as deny-by-default with no initial nested blocking modal exceptions. Keep `recoverUiInteractability()` as fallback recovery only; it must not become a gameplay-action executor.
 - Restore trust priority is server-persisted canonical state first, signed snapshot/action metadata second, hostless restore last. Existing-room replacement remains host-only until a separate hostless/provisional design is implemented.
 - Multiple room resume UI must use the existing per-room restore index only as a locator and still waits for candidate classification, retention/pruning policy, and mobile UX tests. Do not build a picker on global restore keys.
-- Production client-error hardening should use same-origin browser reports plus `CLIENT_ERROR_ALLOWED_ORIGINS` and, for scripted/no-origin diagnostics, `CLIENT_ERROR_SHARED_TOKEN` or a temporary controlled exception. Do not set a shared token for normal browser reports unless the browser can provide it.
+- Production client-error hardening should use same-origin browser reports plus `CLIENT_ERROR_ALLOWED_ORIGINS`; `CLIENT_ERROR_SHARED_TOKEN` is for scripted/no-origin diagnostics and `/api/client-error-test`. Same-origin browser reports remain tokenless, so do not expose the shared token to normal browser code unless a deliberate browser token model is added.
 
 ## Modal deny-nesting implementation
 
@@ -338,8 +338,11 @@ Test index:
 
 ## Client-error / lifecycle auth boundary
 
+- Operational runbooks live in `docs/OPERATIONS.md`. For production incidents, start there before changing code.
+- ntfy categories are intentionally separated: lifecycle `play-start/play-finish` is a heartbeat, `unknown` is urgent, `known-pattern` is a regression only on current versions or high frequency, `stale-client` means update guidance, and CI failures use `NTFY_CI_TOPIC`.
+
 - Same-origin browser `/api/client-error` and `/api/game-lifecycle` reports should keep working without exposing a shared token. Do not make normal browser reports depend on `CLIENT_ERROR_SHARED_TOKEN` unless a deliberate browser token delivery model is added.
-- No-origin scripted diagnostics are stricter: `/api/client-error` and `/api/client-error-test` use the existing client-error auth gate, and `/api/game-lifecycle` requires `CLIENT_ERROR_SHARED_TOKEN` when that token is configured.
+- No-origin scripted diagnostics are stricter: `/api/client-error` requires the shared token when configured, `/api/client-error-test` always requires it when configured even from same-origin, and `/api/game-lifecycle` requires it for no-origin scripted lifecycle diagnostics when configured.
 
 ## Canonical state store footing
 
