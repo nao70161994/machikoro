@@ -106,3 +106,9 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 - Stale-client classification is diagnostic. It must not automatically clear restore bundles, reject reconnect, or reload during an active game.
 - Server restart restore remains host-only for casual play. Hostless restore and server-persisted canonical state are design/implementation projects, not operational toggles.
 - Multiple room resume UI should not be enabled until restore bundles have a per-room index and stale bundles have a safe pruning policy.
+
+## Online Restore Room Index
+
+- Clients keep `onlineRestoreRoomIndex` as a lightweight localStorage index of room-scoped restore bundles. It helps future diagnostics/resume UI find candidate rooms without scanning every key.
+- The index is not authoritative and must not override server canonical state, host restore rank, or scoped restore reads. Stale index pruning removes index rows only.
+- Do not enable multiple-room resume UI or destructive legacy key pruning until stale/expired/completed room UX and retention policy are explicit.

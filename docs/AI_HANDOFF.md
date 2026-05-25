@@ -346,3 +346,9 @@ Test index:
 - `server/canonicalStateStore.js` is a schema/adapter footing only. Default mode is noop; `CANONICAL_STATE_STORE=memory` is not durable and does not solve server restart restore.
 - `persistRoomCanonicalState()` is called after game start, accepted actions, and server restart restore, but server-persisted canonical authority remains deferred until a durable adapter and retention/locking policy are designed.
 - Do not let client restore bundles lose to or win over a future store implicitly. When durable storage is added, server-loaded canonical state must explicitly outrank client `recreateRoom` bundles and tests must cover that boundary.
+
+## Online restore room index footing
+
+- `js/online.js` maintains `onlineRestoreRoomIndex` from room-scoped `onlineSession`, `onlineGameStart`, `onlineActionLog`, `onlineStateSnapshot`, and `onlinePendingAction` copies. It is an index for future UX and diagnostics, not a new restore authority.
+- Scoped restore reads still prefer `*:room:<ROOM>` keys and fall back to legacy global keys for compatibility. Do not remove legacy keys destructively until a retention policy and multiple-room resume UX are explicit.
+- `_pruneOnlineRestoreRoomIndex()` prunes stale index rows only; it must not delete restore bundles. Multiple-room resume UI should use this index only after stale/live/completed bundle states are documented and tested.

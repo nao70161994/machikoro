@@ -3,6 +3,7 @@ const ONLINE_RESTORE_BUNDLE_KEYS = Object.freeze([
     'onlineActionLog',
     'onlineStateSnapshot',
     'onlinePendingAction',
+    'onlineRestoreRoomIndex',
 ]);
 
 function removeOnlineRestoreBundleStorageKeyVariants(key) {

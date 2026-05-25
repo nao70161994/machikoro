@@ -152,6 +152,10 @@ function loadOnlineRuntime(options = {}) {
         this._isKnownOnlineGameAction = _isKnownOnlineGameAction;
         this._onlineRoomStorageKey = _onlineRoomStorageKey;
         this._onlineRoomStorageKeys = _onlineRoomStorageKeys;
+        this._readOnlineRestoreRoomIndex = _readOnlineRestoreRoomIndex;
+        this._refreshOnlineRestoreRoomIndex = _refreshOnlineRestoreRoomIndex;
+        this._pruneOnlineRestoreRoomIndex = _pruneOnlineRestoreRoomIndex;
+        this._buildOnlineRestoreRoomIndexEntry = _buildOnlineRestoreRoomIndexEntry;
         this._writeOnlineSessionStorageJson = _writeOnlineSessionStorageJson;
         this._removeOnlineSessionStorageItem = _removeOnlineSessionStorageItem;
         this._onlineRestoreRank = _onlineRestoreRank;
@@ -298,6 +302,44 @@ runTest('_onlineRoomStorageKeys は legacy と scoped restore key を同じ順�
         Array.from(rt._onlineRoomStorageKeys('onlineGameStart:room:ROOM01', 'ROOM02')),
         ['onlineGameStart:room:ROOM01']
     );
+});
+
+runTest('restore room index は scoped bundle 更新をroom単位で追跡する', () => {
+    const rt = loadOnlineRuntime();
+    const session = { roomId: ' room01 ', playerIndex: 0, playerName: 'Alice', reconnectToken: 'token' };
+
+    rt._writeOnlineSessionStorageJson(session, session.roomId);
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM01'), JSON.stringify({ actionSeq: 2 }));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineActionLog', 'ROOM01'), JSON.stringify([{ action: 'nextTurn', seq: 4 }]));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineStateSnapshot', 'ROOM01'), JSON.stringify({ actionSeq: 3 }));
+    rt._refreshOnlineRestoreRoomIndex('ROOM01', 1700000000000);
+
+    const index = rt._readOnlineRestoreRoomIndex();
+    assert.strictEqual(index.length, 1);
+    assert.strictEqual(index[0].roomId, 'ROOM01');
+    assert.strictEqual(index[0].playerName, 'Alice');
+    assert.strictEqual(index[0].playerIndex, 0);
+    assert.strictEqual(index[0].actionSeq, 4);
+    assert.strictEqual(index[0].hasGameStart, true);
+    assert.strictEqual(index[0].hasActionLog, true);
+    assert.strictEqual(index[0].hasStateSnapshot, true);
+});
+
+runTest('restore room index pruning は実体のない stale entry だけを落とす', () => {
+    const rt = loadOnlineRuntime();
+    rt.localStorage.setItem('onlineRestoreRoomIndex', JSON.stringify([
+        { roomId: 'ROOM01', updatedAt: 2, hasGameStart: true },
+        { roomId: 'ROOM02', updatedAt: 1, hasGameStart: true },
+    ]));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM02'), JSON.stringify({ actionSeq: 1 }));
+
+    const pruned = rt._pruneOnlineRestoreRoomIndex();
+
+    assert.strictEqual(pruned.length, 1);
+    assert.strictEqual(pruned[0].roomId, 'ROOM02');
+    const index = rt._readOnlineRestoreRoomIndex();
+    assert.strictEqual(index.length, 1);
+    assert.strictEqual(index[0].roomId, 'ROOM02');
 });
 
 runTest('initSocket はSocket.IO script未読込時に状態を変更しない', () => {

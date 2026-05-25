@@ -2840,3 +2840,15 @@
   - `tests/rlcpu.test.js` に非ホスト・再接続中・socket切断中の online build gate contract を追加した。
   - gate block 時に `sendAction` を呼ばず、カード追加や shopStock 減少も起こさないことを固定した。
 - コード挙動: `RLCPU.js` の実装は変更なし。既存 gate の regression coverage を補強しただけ。
+
+## Phase 4 - restore per-room index footing
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の restore bundle per-room namespace / pruning 足場。
+- 修正済み:
+  - `js/online.js` に `onlineRestoreRoomIndex` を追加し、room-scoped session / gameStart / actionLog / stateSnapshot / pendingAction の存在、playerName、playerIndex、actionSeq、updatedAt を room 単位で追跡するようにした。
+  - scoped restore read は既存どおり legacy global key fallback を維持する。今回の pruning は stale index row の削除だけで、restore bundle 本体は削除しない。
+  - `tests/online.test.js` で index 更新と stale index pruning を固定し、`tests/storage.test.js` で online session 削除時に index も消すことを確認した。
+- コード挙動: 複数 room resume UI はまだ実装しない。index は将来の picker / diagnostics 用の足場で、restore authority は変えない。
+- 残課題:
+  - stale/expired/completed bundle の表示方針、destructive legacy pruning、複数room resume picker は追加UX設計と実機確認が必要。
