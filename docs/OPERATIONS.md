@@ -118,3 +118,8 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 - `restoreAudit` is optional metadata for future signed restore diagnostics. Current deployments do not verify signatures and must not describe restore bundles as trusted because this field exists.
 - Invalid audit metadata is rejected to prevent silently accepting poisoned or room-mismatched audit claims. Missing metadata remains compatible with existing clients.
 - Real signed restore requires a canonical serialization format, key rotation procedure, freshness limits, and explicit behavior for legacy unsigned bundles.
+
+## Multiple Room Resume UI
+
+- Visible multiple-room resume UI is not enabled. Operators should still expect the existing single online resume affordance.
+- Future UI must classify indexed bundles before offering actions. See `docs/MULTI_ROOM_RESUME_DESIGN.md` for candidate states and test requirements.

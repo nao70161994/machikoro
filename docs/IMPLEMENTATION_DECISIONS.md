@@ -12,7 +12,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 | Server-persisted canonical state | Minimal no-op/memory adapter footing exists; durable restart restore is not implemented. | Choose durable storage before enabling authoritative restart recovery. | Durable store choice, retention policy, atomic snapshot/log persistence. |
 | Signed restore snapshot / action log | Optional restore audit schema exists; real signature verification remains deferred. Do not treat unsigned audit metadata as trust. | After canonical serialization and key policy are designed. | Canonical serialization, key rotation, legacy-bundle policy. |
 | Hostless restore | Defer. Non-host bundles must not become canonical under the current trust model. | Re-evaluate after server-persisted canonical state, or behind an explicit provisional-quorum design. | Candidate hash/rank fixtures, grace window, replacement policy, multi-device manual tests. |
-| Multiple room resume UI | Defer until restore storage has a per-room index. | After scoped restore reads, room index, and stale-bundle policy are stable. | Restore bundle store helper, stale-key pruning, UX for room selection. |
+| Multiple room resume UI | Design footing documented; visible picker remains deferred until stale/live/completed candidate policy is implemented. | After candidate classification, retention policy, and mobile UX tests. | Restore bundle index, stale-key pruning policy, UX for room selection. |
 | Production client-error origin/token | Same-origin browser reporting stays tokenless; scripted/no-origin diagnostics require token when configured. | Revisit only if a deliberate browser token delivery model is added. | Render env configuration, same-origin browser reporting, documented curl/test flow. |
 | Restore bundle per-room namespace / pruning | Scoped-first reads and a per-room restore index exist; visible resume UI and destructive legacy/global pruning remain deferred. | Add UI only after stale-bundle UX and retention policy are explicit. | Old-key compatibility, storage tests, stale-bundle retention policy. |
 | Room replacement migration | Keep separate from hostless restore. Existing restored room replacement remains host-only. | Before hostless restore or broad replacement UX changes. | Current-room gates, token/rank tests, stale room diagnostics. |
@@ -41,7 +41,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 4. **Resume UX track**
    - Do not build multiple room resume UI on top of global restore keys.
    - First maintain a per-room index of scoped restore bundles.
-   - Then expose a resume picker that clearly distinguishes live reconnect, server restart restore candidate, stale expired bundle, and completed game.
+   - Then expose a resume picker that clearly distinguishes live reconnect, server restart restore candidate, stale expired bundle, and completed game. See `docs/MULTI_ROOM_RESUME_DESIGN.md`.
    - Prune legacy/global keys only after scoped UI and compatibility behavior are explicit.
 
 ## Cross-Design Consistency

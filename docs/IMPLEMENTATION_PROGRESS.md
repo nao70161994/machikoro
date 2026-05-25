@@ -2864,3 +2864,15 @@
 - コード挙動: 本格署名・鍵管理・rank加点は未実装。audit metadata は trust boundary を上げず、復元正本も変えない。
 - 残課題:
   - canonical serialization、key rotation、freshness/expiry、legacy unsigned bundle policy は追加設計判断が必要。
+
+## Phase 6 - multiple room resume UI design footing
+
+- 状態: completed; docs/test verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の複数 room resume UI 設計足場。
+- 修正済み:
+  - `docs/MULTI_ROOM_RESUME_DESIGN.md` を追加し、候補状態、indexの扱い、UI契約、テスト方針を整理した。
+  - `docs/IMPLEMENTATION_DECISIONS.md` / `docs/AI_HANDOFF.md` に、visible picker は未実装で、`onlineRestoreRoomIndex` は locator に留める方針を明記した。
+  - `tests/main.test.js` に設計docの必須契約を固定する docs regression test を追加した。
+- コード挙動: UI本実装なし。既存の単一 online resume button の挙動は変更しない。
+- 残課題:
+  - candidate classification helper、visible picker、stale/completed retention policy、mobile実機確認は追加設計と手動確認が必要。

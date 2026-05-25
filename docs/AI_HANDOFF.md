@@ -358,3 +358,9 @@ Test index:
 - `server/restoreAudit.js` validates optional `restoreAudit` metadata on `recreateRoom` payloads. It accepts absent metadata and explicit unsigned audit records, but rejects malformed room-mismatched or internally inconsistent records.
 - This is not signed restore. Unsigned audit records must never increase restore rank, bypass host-only restore, or override server-persisted canonical state. Real signing still needs canonical serialization, key rotation, freshness policy, and legacy-bundle behavior.
 - Future signed restore work should add verification as a separate layer and keep `server-persisted canonical state` higher priority in the trust model.
+
+## Multiple room resume design footing
+
+- `docs/MULTI_ROOM_RESUME_DESIGN.md` defines the future picker states and test plan. No visible multi-room resume UI exists yet.
+- Do not build resume selection from legacy global restore keys. Use `onlineRestoreRoomIndex` only as a locator, then re-read and validate scoped room data before any action.
+- A future picker must keep non-host candidates out of authoritative restore paths until hostless restore is explicitly redesigned and accepted.

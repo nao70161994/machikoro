@@ -1614,6 +1614,19 @@ runTest('docs は pending HTML helper 化の現在地を記載している', () 
     assert.ok(!uiRefactor.includes('renderPending の pending 種別ごとの helper 分離。'));
 });
 
+runTest('docs は multiple room resume の設計足場を記載している', () => {
+    const design = fs.readFileSync(path.join(__dirname, '..', 'docs/MULTI_ROOM_RESUME_DESIGN.md'), 'utf8');
+    const decisions = fs.readFileSync(path.join(__dirname, '..', 'docs/IMPLEMENTATION_DECISIONS.md'), 'utf8');
+    const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
+
+    assert.ok(design.includes('onlineRestoreRoomIndex'));
+    assert.ok(design.includes('live-reconnect'));
+    assert.ok(design.includes('restart-restore-candidate'));
+    assert.ok(design.includes('non-host bundle'));
+    assert.ok(decisions.includes('docs/MULTI_ROOM_RESUME_DESIGN.md'));
+    assert.ok(handoff.includes('Multiple room resume design footing'));
+});
+
 runTest('docs は live v2simple の実装済み既定値を記載している', () => {
     const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
     const claude = fs.readFileSync(path.join(__dirname, '..', 'CLAUDE.md'), 'utf8');
