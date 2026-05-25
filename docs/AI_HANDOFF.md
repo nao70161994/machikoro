@@ -328,3 +328,10 @@ Test index:
 - Restore trust priority is server-persisted canonical state first, signed snapshot/action metadata second, hostless restore last. Existing-room replacement remains host-only until a separate hostless/provisional design is implemented.
 - Multiple room resume UI must wait for per-room restore index and pruning policy. Do not build a picker on global restore keys.
 - Production client-error hardening should use same-origin browser reports plus `CLIENT_ERROR_ALLOWED_ORIGINS` and, for scripted/no-origin diagnostics, `CLIENT_ERROR_SHARED_TOKEN` or a temporary controlled exception. Do not set a shared token for normal browser reports unless the browser can provide it.
+
+## Modal deny-nesting implementation
+
+- Blocking modal open is now deny-by-default through `MODAL_POLICY_REGISTRY` in `js/ui.js`; `MODAL_STACK_EXCEPTION_REGISTRY` is intentionally empty. Do not add exceptions without tests and mobile manual verification.
+- `showConfirm()` must not install callbacks or set `__machikoroConfirmModalOpen` when a blocking modal open is denied. Preserve this contract when changing confirm flows.
+- `pendingModal` is guarded separately from `openAccessibleModal()`: populated pending UI must not open while another blocking modal is visible.
+- Nested blocking modal states are diagnostics (`nested-blocking-modal-policy-violation`), not an invitation for recovery to auto-close valid modals.

@@ -368,6 +368,15 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
     const isMyTurn = isHumanTurnSnapshot(snapshot) && !isOnlineUiBlockedSnapshot(snapshot);
     const activeModals = activeBlockingModalIds(snapshot);
 
+    if (activeModals.length > 1) {
+        issues.push({
+            kind: 'nested-blocking-modal-policy-violation',
+            reason: 'nested-blocking-modal',
+            target: activeModals.join(','),
+            freezeKind: 'modal-ui-locked',
+        });
+    }
+
     for (const id of activeModals) {
         if (id === 'pendingModal') continue;
         const modal = modalSnapshotFromRuntime(snapshot, id) || ui[id];

@@ -2745,6 +2745,21 @@
   - `docs/AI_HANDOFF.md` / `docs/OPERATIONS.md` / `docs/ACCESSIBILITY_GUIDE.md` に参照と運用上の注意を追記。
 - 今回コード変更なし。
 
+
+## Phase 1 - modal deny-by-default implementation
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の modal stack / deny-nesting 方針。
+- 修正済み:
+  - `js/ui.js` に `MODAL_POLICY_REGISTRY` と空の `MODAL_STACK_EXCEPTION_REGISTRY` を追加し、blocking modal の二重 open を deny-by-default にした。
+  - `showConfirm()` は deny 時に message / callback / `__machikoroConfirmModalOpen` を書き換えない。
+  - `pendingModal` は blocking modal 表示中に新しい pending content を表示しない。
+  - `validateUiInteractability()` は nested blocking modal を `modal-ui-locked` 診断として検出する。
+  - `tests/ui.test.js` / `tests/integration.test.js` に deny、pending guard、non-blocking notice、nested modal diagnostics の contract を追加した。
+- コード挙動: 既存の単独 modal、confirm OK/Cancel/Esc、pending recovery、UI interactability recovery は維持。nested blocking modal 例外はまだ登録しない。
+- 残課題:
+  - card detail inside card select のような将来 UX は、inline detail か registry 例外として別途設計・実機確認が必要。
+
 ## Backlog cleanup - Service Worker SKIP_WAITING contract
 
 - 状態: completed; targeted verification passed before commit.

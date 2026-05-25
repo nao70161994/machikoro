@@ -901,6 +901,31 @@ runTest('integration: stale pendingModal が通常操作を塞いだらwatchdog�
     assert.ok(report.message.includes('stale-modal-ui-locked'));
 });
 
+
+runTest('integration: nested blocking modal はinteractability診断で検出する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+    rt.render();
+    hideAllTestModals(rt);
+
+    rt.__test.elements.confirmModal.style.display = 'flex';
+    rt.window.__machikoroConfirmModalOpen = true;
+    rt.__test.elements.cardDetailModal.style.display = 'flex';
+    const snapshot = rt.collectUiLockSnapshot('nested-modal-test');
+    const issues = rt.validateUiInteractability(snapshot);
+
+    assert.ok(issues.some(issue => issue.kind === 'nested-blocking-modal-policy-violation'));
+});
+
 runTest('integration: active modal表示中はgameScreen display復旧を走らせない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

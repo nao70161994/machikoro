@@ -8,7 +8,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 
 | Area | Decision | When to implement | Depends on |
 | --- | --- | --- | --- |
-| Modal stack / deny-nesting | Deny nested blocking modals by default. No nested blocking modal exceptions are currently accepted. | Next dedicated UI behavior pass. | UI interactability contract, modal tests, mobile manual checks. |
+| Modal stack / deny-nesting | Implemented deny-by-default with no nested blocking modal exceptions. Future exceptions require registry/tests/manual mobile verification. | Extend only when a concrete UX cannot use inline detail or non-blocking notice. | UI interactability contract, modal tests, mobile manual checks. |
 | Server-persisted canonical state | Preferred long-term authority for stronger restart restore. | Before hostless restore or competitive/public trust claims. | Durable store choice, retention policy, atomic snapshot/log persistence. |
 | Signed restore snapshot / action log | Do not implement as a partial security patch. Use only as a fallback/audit layer after schema and key policy are designed. | After or alongside server-persisted canonical state, or as an explicitly temporary compatibility bridge. | Canonical serialization, key rotation, legacy-bundle policy. |
 | Hostless restore | Defer. Non-host bundles must not become canonical under the current trust model. | Re-evaluate after server-persisted canonical state, or behind an explicit provisional-quorum design. | Candidate hash/rank fixtures, grace window, replacement policy, multi-device manual tests. |

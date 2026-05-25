@@ -264,6 +264,62 @@ runTest('showConfirm はCancelとEscapeでcallbackを呼ばずmodal lockを解�
     assert.strictEqual(elements.gameScreen.inert, undefined);
 });
 
+
+runTest('blocking modal はdeny-by-defaultで二重openを拒否する', () => {
+    const { context, elements } = loadUiRuntime();
+    let okCount = 0;
+    let oldHandlerCalled = 0;
+    elements.confirmOkBtn.onclick = () => { oldHandlerCalled++; };
+
+    assert.strictEqual(context.showRules(), true);
+    assert.strictEqual(context.showConfirm('二重確認', () => { okCount++; }), false);
+
+    assert.strictEqual(elements.rulesModal.style.display, 'flex');
+    assert.notStrictEqual(elements.confirmModal.style.display, 'flex');
+    assert.strictEqual(context.__machikoroConfirmModalOpen, undefined);
+    assert.strictEqual(okCount, 0);
+    assert.strictEqual(context.__machikoroModalPolicyViolations.length, 1);
+    assert.strictEqual(context.__machikoroModalPolicyViolations[0].type, 'nested-blocking-modal-denied');
+    elements.confirmOkBtn.onclick();
+    assert.strictEqual(oldHandlerCalled, 1);
+});
+
+runTest('card detail/select modal はactive blocking modal中に開かない', () => {
+    const { context, elements } = loadUiRuntime();
+
+    assert.strictEqual(context.showRules(), true);
+    assert.strictEqual(context.showCardDetail('麦畑'), false);
+    assert.strictEqual(context.showCardSelect(), false);
+
+    assert.strictEqual(elements.rulesModal.style.display, 'flex');
+    assert.notStrictEqual(elements.cardDetailModal.style.display, 'flex');
+    assert.notStrictEqual(elements.cardSelectModal.style.display, 'flex');
+    assert.strictEqual(context.__machikoroModalPolicyViolations.length, 2);
+});
+
+runTest('pending modal はblocking modal中に表示されない', () => {
+    const { context, elements } = loadUiRuntime();
+
+    assert.strictEqual(context.showRules(), true);
+    assert.strictEqual(context.updatePendingModalContent(elements.pendingMenu, elements.pendingModal, '<button data-action="resolveTV">A</button>'), false);
+
+    assert.strictEqual(elements.rulesModal.style.display, 'flex');
+    assert.notStrictEqual(elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(elements.pendingMenu.innerHTML, '');
+    assert.strictEqual(context.__machikoroModalPolicyViolations[0].type, 'pending-modal-open-denied');
+});
+
+runTest('non-blocking notice はblocking modal中も表示できる', () => {
+    const { context, elements } = loadUiRuntime();
+
+    assert.strictEqual(context.showRules(), true);
+    context.showNotice('補助通知');
+
+    assert.strictEqual(elements.rulesModal.style.display, 'flex');
+    assert.strictEqual(elements.noticeToast.style.display, 'flex');
+    assert.strictEqual(elements.noticeToastMessage.textContent, '補助通知');
+});
+
 runTest('modal close は背景の既存aria-hiddenを復元する', () => {
     const { context, elements } = loadUiRuntime();
     elements.gameScreen.setAttribute('aria-hidden', 'false');

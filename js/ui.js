@@ -451,9 +451,16 @@ function normalizePendingModalInteraction(el, modal, hasContent) {
 function updatePendingModalContent(el, modal, html) {
     if (!el || !modal) return false;
     if (isUpdatingPendingModalContent) return false;
+    const nextHtml = html || "";
+    if (nextHtml) {
+        const blockingIds = visibleBlockingModalIds();
+        if (blockingIds.length > 0) {
+            recordModalPolicyViolation('pending-modal-open-denied', { parentModalId: blockingIds[0], childModalId: 'pendingModal', visibleBlockingModalIds: blockingIds });
+            return false;
+        }
+    }
     isUpdatingPendingModalContent = true;
     try {
-        const nextHtml = html || "";
         if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
         normalizePendingModalInteraction(el, modal, !!nextHtml);
         return true;
@@ -784,7 +791,7 @@ function switchOnlineTab(tab) {
 }
 
 function showRules() {
-    openAccessibleModal("rulesModal");
+    return openAccessibleModal("rulesModal");
 }
 
 function closeRules() {
@@ -809,6 +816,17 @@ let lastModalFocus = null;
 let modalInertRestore = [];
 
 const MODAL_INERT_ROOT_IDS = Object.freeze(['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']);
+const MODAL_POLICY_REGISTRY = Object.freeze({
+    rulesModal: Object.freeze({ blocking: true }),
+    cardSelectModal: Object.freeze({ blocking: true }),
+    cardDetailModal: Object.freeze({ blocking: true }),
+    confirmModal: Object.freeze({ blocking: true }),
+    pendingModal: Object.freeze({ blocking: false, gameCritical: true }),
+    noticeToast: Object.freeze({ blocking: false }),
+    pwaUpdateBanner: Object.freeze({ blocking: false }),
+    pwaInstallBanner: Object.freeze({ blocking: false }),
+});
+const MODAL_STACK_EXCEPTION_REGISTRY = Object.freeze({});
 const MODAL_CLOSE_HANDLERS = Object.freeze({
     rulesModal: closeRules,
     cardSelectModal: closeCardSelect,
@@ -1004,9 +1022,82 @@ function setAppInertForModal(enabled) {
     }
 }
 
+function modalPolicyFor(id) {
+    return MODAL_POLICY_REGISTRY[id] || Object.freeze({ blocking: true });
+}
+
+function isModalVisibleById(id) {
+    if (!id || typeof document === 'undefined' || typeof document.getElementById !== 'function') return false;
+    const modal = document.getElementById(id);
+    if (!modal || modal.hidden) return false;
+    const inlineDisplay = modal.style ? modal.style.display || '' : '';
+    if (inlineDisplay === 'none') return false;
+    if (inlineDisplay) return true;
+    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+        const style = window.getComputedStyle(modal);
+        return !!(style && style.display !== 'none' && style.visibility !== 'hidden');
+    }
+    return false;
+}
+
+function modalStackExceptionKey(parentId, childId) {
+    return `${parentId || ''}->${childId || ''}`;
+}
+
+function hasRegisteredModalStackException(parentId, childId) {
+    return !!MODAL_STACK_EXCEPTION_REGISTRY[modalStackExceptionKey(parentId, childId)];
+}
+
+function recordModalPolicyViolation(type, details = {}) {
+    const entry = {
+        type,
+        timestamp: new Date().toISOString(),
+        activeModalId,
+        ...details,
+    };
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        if (root) {
+            const list = Array.isArray(root.__machikoroModalPolicyViolations) ? root.__machikoroModalPolicyViolations : [];
+            list.push(entry);
+            while (list.length > 20) list.shift();
+            root.__machikoroModalPolicyViolations = list;
+        }
+    } catch (_) {}
+    try {
+        if (typeof recordFlowTrace === 'function') recordFlowTrace('modal-policy-violation', entry);
+    } catch (_) {}
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[machikoro-modal-policy]', type, entry);
+    }
+    return entry;
+}
+
+function visibleBlockingModalIds() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return [];
+    return Object.keys(MODAL_POLICY_REGISTRY)
+        .filter(id => modalPolicyFor(id).blocking && isModalVisibleById(id));
+}
+
+function canOpenBlockingModal(id) {
+    const policy = modalPolicyFor(id);
+    if (!policy.blocking) return true;
+    const blockingIds = visibleBlockingModalIds().filter(modalId => modalId !== id);
+    const parentId = activeModalId && activeModalId !== id && isModalVisibleById(activeModalId)
+        ? activeModalId
+        : blockingIds[0];
+    if (!parentId) return true;
+    const activePolicy = modalPolicyFor(parentId);
+    if (!activePolicy.blocking) return true;
+    if (hasRegisteredModalStackException(parentId, id)) return true;
+    recordModalPolicyViolation('nested-blocking-modal-denied', { parentModalId: parentId, childModalId: id, visibleBlockingModalIds: blockingIds });
+    return false;
+}
+
 function openAccessibleModal(id) {
     const modal = document.getElementById(id);
-    if (!modal) return;
+    if (!modal) return false;
+    if (!canOpenBlockingModal(id)) return false;
     if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
     activeModalId = id;
     if (document.body && document.body.classList) document.body.classList.add('modal-open');
@@ -1017,6 +1108,7 @@ function openAccessibleModal(id) {
     }
     focusModal(modal);
     setAppInertForModal(true);
+    return true;
 }
 
 function closeAccessibleModal(id, options = {}) {
@@ -1115,9 +1207,10 @@ function bindCardSelectModalHandlers() {
 }
 
 function showCardSelect() {
+    if (!canOpenBlockingModal("cardSelectModal")) return false;
     bindCardSelectModalHandlers();
     renderCardSelectModal();
-    openAccessibleModal("cardSelectModal");
+    return openAccessibleModal("cardSelectModal");
 }
 
 function closeCardSelect() {
@@ -1237,9 +1330,10 @@ function showCardDetail(name, isLandmark = false) {
         if (!card) return false;
         content = buildCardDetailContent(card);
     }
+    if (!canOpenBlockingModal('cardDetailModal')) return false;
     title.textContent = content.title;
     body.innerHTML = content.html;
-    openAccessibleModal('cardDetailModal');
+    return openAccessibleModal('cardDetailModal');
 }
 
 function closeCardDetail() {
@@ -1265,8 +1359,9 @@ function showConfirm(message, onOk) {
         showNotice('確認ダイアログを表示できません');
         return false;
     }
+    if (!canOpenBlockingModal('confirmModal')) return false;
     messageEl.textContent = message;
-    openAccessibleModal('confirmModal');
+    if (!openAccessibleModal('confirmModal')) return false;
     setConfirmModalAwaitingChoice(true);
     okBtn.onclick = () => {
         closeConfirmModal(true);
