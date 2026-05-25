@@ -2764,3 +2764,12 @@
   - `tests/main.test.js` に `index.html` の主要 script 読み込み順 contract を追加した。
   - `Card/Player -> GameManager -> CPU/RL -> online/ui/storage/appShell/main` の依存順が崩れた場合に static test で検出できるようにした。
 - コード挙動: 実行コードは変更なし。bundler なし構成の暗黙依存を test で明示しただけ。
+
+## Backlog cleanup - confirm modal contract tests
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: UI modal lifecycle / stale lock regression gap。
+- 修正済み:
+  - `tests/ui.test.js` に `showConfirm()` の OK / Cancel / Escape contract test を追加した。
+  - confirm modal close 後に awaiting flag と title/game screen lock が解除されることを固定した。
+- コード挙動: `ui.js` の実装は変更なし。既存 confirm modal lifecycle の test coverage を補強しただけ。

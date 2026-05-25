@@ -227,6 +227,43 @@ runTest('modal keydown handler はEscapeで閉じる', () => {
     assert.strictEqual(elements.rulesModal.style.display, 'none');
 });
 
+runTest('showConfirm はOKでcallbackを一度だけ呼びmodal lockを解除する', () => {
+    const { context, elements } = loadUiRuntime();
+    let okCount = 0;
+
+    assert.strictEqual(context.showConfirm('本当に実行しますか', () => { okCount++; }), true);
+    assert.strictEqual(elements.confirmModal.style.display, 'flex');
+    assert.strictEqual(elements.confirmMessage.textContent, '本当に実行しますか');
+    assert.strictEqual(context.__machikoroConfirmModalOpen, true);
+
+    elements.confirmOkBtn.onclick();
+
+    assert.strictEqual(okCount, 1);
+    assert.strictEqual(elements.confirmModal.style.display, 'none');
+    assert.strictEqual(context.__machikoroConfirmModalOpen, false);
+    assert.strictEqual(elements.titleScreen.inert, undefined);
+    assert.strictEqual(elements.gameScreen.inert, undefined);
+});
+
+runTest('showConfirm はCancelとEscapeでcallbackを呼ばずmodal lockを解除する', () => {
+    const { context, elements } = loadUiRuntime();
+    let okCount = 0;
+
+    context.showConfirm('キャンセル確認', () => { okCount++; });
+    elements.confirmCancelBtn.onclick();
+    assert.strictEqual(okCount, 0);
+    assert.strictEqual(elements.confirmModal.style.display, 'none');
+    assert.strictEqual(context.__machikoroConfirmModalOpen, false);
+
+    context.showConfirm('Esc確認', () => { okCount++; });
+    context.handleModalKeydown({ key: 'Escape', preventDefault() {} });
+    assert.strictEqual(okCount, 0);
+    assert.strictEqual(elements.confirmModal.style.display, 'none');
+    assert.strictEqual(context.__machikoroConfirmModalOpen, false);
+    assert.strictEqual(elements.titleScreen.inert, undefined);
+    assert.strictEqual(elements.gameScreen.inert, undefined);
+});
+
 runTest('modal close は背景の既存aria-hiddenを復元する', () => {
     const { context, elements } = loadUiRuntime();
     elements.gameScreen.setAttribute('aria-hidden', 'false');
