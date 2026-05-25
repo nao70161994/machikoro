@@ -140,6 +140,11 @@ PR-031〜PR-033 の experimental 足場は、現行の自動テスト範囲で�
 3. RL schema v2 本体は既存 portfolio と別 lineage にして、新次元 / factored action head / registry 更新を分けて試す。
 
 
+
+### Historical note: delegated handler residuals
+
+Older Phase D audit entries mention remaining inline handlers around Business Center, card / landmark toggles, stats UI, and player settings. Those notes are historical: later delegated-handler cleanup removed the known `onclick=` / `onchange=` / `oninput=` handlers, and static tests now guard against reintroducing them. Treat any remaining inline-handler mention before this note as superseded unless a current static test fails.
+
 ### Phase D dice choice delegated handler
 
 確認した内容:

@@ -39,10 +39,10 @@
 
 ## 次に安全な作業候補
 
-- UI: pending 種別 HTML helper は導入済み。次の安全な作業は renderer registry の契約 test 追加や、build/card select など周辺 HTML helper の小分割。
-- CPU: evaluation / execution の分離は、同等性を固定する targeted tests を先に追加してから関数単位で進める。
-- GameManager: pending / steal / redistribute の dispatch registry 化は、発火順とログ文言 test を増やしてから効果単位で進める。
-- Server: socket handler / validation のさらなる分割は、room lifecycle と restore manual regression の影響範囲を docs に固定してから小さく進める。
+- UI: 既知の inline handler / pending renderer / build menu / card select / stats helper 化は実施済み。新しい UI surface が見つかった場合は、`PRIMARY_ACTION_CONTAINER_REGISTRY`、通常 render no-recovery test、fallback recovery test を同時に追加する。modal stack / deny-nesting policy は design required。
+- CPU: heuristic の強さを変えず、diagnostics / scoring / execution flow を targeted tests で固定してから helper 単位で分離する。
+- GameManager / Server / Online: action metadata を dispatch / canonical payload / online apply の contract test へさらに寄せる。hostless restore、signed restore、server-persisted canonical state、複数 room resume UI は design required。
+- Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection を小さく追加する。
 
 ## 変更時の最低確認
 

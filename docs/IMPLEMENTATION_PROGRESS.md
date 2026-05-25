@@ -2546,7 +2546,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: online storage の per-room namespace 化の小さな足場。
-- 修正中:
+- 修正済み:
   - `storage.js` の online restore bundle 削除処理を legacy key だけでなく `:room:` scoped copy も掃除する形へ拡張した。
   - `online.js` が未読込、または `myRoomId` が未復元の title/restart/delete flow でも古い room-scoped restore data を残しにくくした。
   - test 用 storage mock に browser Storage と同じ `length` / `key(index)` を追加し、scoped key cleanup を検証可能にした。
@@ -2558,7 +2558,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: CPU / UI / server の小さな helper 分離のうち server action canonicalize 周辺。
-- 修正中:
+- 修正済み:
   - `server.js` の `canonicalizeActionData()` を action ごとの `CANONICAL_ACTION_PAYLOAD_KEYS` table + `pickCanonicalPayloadKeys()` helper へ分離した。
   - `resolveMover` の `cardIndex` 優先互換挙動は特例として維持し、既存 action log payload shape は変えていない。
   - `tests/server.test.js` で canonical payload table が `GAME_ACTIONS` 全体を網羅することを追加で固定した。
@@ -2570,7 +2570,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: CPU / UI / server の小さな helper 分離のうち CPU execution gate 周辺。
-- 修正中:
+- 修正済み:
   - `_buyCard()` と `_buyLandmark()` に重複していた online build block 条件を `_onlineBuildBlocked()` helper へ集約した。
   - 非ホスト、再接続中、socket disconnected の build 抑止条件は既存と同じまま維持した。
   - `tests/cpu.test.js` に helper の gate contract を追加した。
@@ -2582,7 +2582,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: server validation helper の小さな分離 / action metadata contract の追加 test。
-- 修正中:
+- 修正済み:
   - `server/actionValidation.js` の `validateActionPayloadForState()` を `ACTION_PAYLOAD_VALIDATORS` registry 経由へ寄せた。
   - actor authority / phase gate は従来通り caller (`validateGameAction`, replay caller) 側に残し、payload-only contract は維持した。
   - `tests/server.test.js` で `ACTION_PAYLOAD_VALIDATORS` が `GAME_ACTION_REGISTRY.serverPayload` action を網羅し、frozen registry であることを固定した。
@@ -2594,7 +2594,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: legacy pending outbound の room gate 強化 / online storage per-room namespace の小さな足場。
-- 修正中:
+- 修正済み:
   - `online.js` に `_normalizeOnlineRoomId()` を追加し、room-scoped storage key と pending outbound の room 比較で同じ正規化を使うようにした。
   - 保存済み legacy pending の `roomId` が空白・小文字混じりでも current room と同一なら復元対象として扱い、別 room は従来通り除外する。
   - `tests/online.test.js` で roomId 表記ゆれの正規化と legacy pending gate を固定した。
@@ -2606,7 +2606,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: action metadata contract の追加 test / legacy pending outbound の安全化。
-- 修正中:
+- 修正済み:
   - `online.js` に `_isKnownOnlineGameAction()` を追加し、保存済み pending outbound の action を `GAME_ACTION_REGISTRY` に存在するものへ限定した。
   - `tests/online.test.js` で未知 action の pending outbound が復元・再送候補に残らないことを固定した。
 - コード挙動: 正常な既知 action は従来通り。localStorage に残った壊れた未知 action だけを読み取り時に破棄する。
@@ -2617,7 +2617,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: pending 種別 HTML helper 化の追加 contract test。
-- 修正中:
+- 修正済み:
   - `ui.js` に `pendingMenuRendererSpecs()` を追加し、`PENDING_MENU_RENDERERS` の field/action contract をテストから参照できるようにした。
   - `tests/ui.test.js` で `PENDING_ACTION_SPECS` と `PENDING_IT_QUEUE_POLICY` が UI renderer registry と同期していることを固定した。
 - コード挙動: pending HTML の生成内容・表示条件は変更なし。renderer registry の contract visibility だけを追加。
@@ -2628,7 +2628,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: CPU / UI / server の小さな helper 分離のうち CPU pending execution 周辺。
-- 修正中:
+- 修正済み:
   - `CPU.choosePendingResolution()` の各 pending action 解決を `_choosePendingTvResolution()`, `_choosePendingBusinessResolution()`, `_choosePendingMoverResolution()`, `_choosePendingRenovationResolution()` へ分離した。
   - `tests/cpu.test.js` で TV / Mover / Renovation の fallback 解決が分離後も維持されることを固定した。
 - コード挙動: pending queue の先頭 action を解決する既存順序、Cleaning/IT をこの helper で処理しない境界、fallback clear 方針は維持。
@@ -2639,7 +2639,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: pending 種別 HTML helper 化 / UI の小さな helper 分離。
-- 修正中:
+- 修正済み:
   - `buildPendingBusinessHtml()` に混ざっていたカード候補抽出、chip group、相手別交換ブロックを `businessCardOptionsForPlayer()`, `buildBusinessCardChipGroupHtml()`, `buildBusinessTargetExchangeHtml()` へ分離した。
   - `tests/ui.test.js` で Business Center helper が delegated handler 用 `data-action` と hidden input contract を維持することを固定した。
 - コード挙動: Business Center pending UI の表示内容、選択状態、交換 button の data 属性は既存と同じ。inline handler は引き続き使わない。
@@ -2650,7 +2650,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: server room lifecycle の小さな helper 分離。
-- 修正中:
+- 修正済み:
   - `checkGameStart()` の開始時状態初期化を `markRoomGameStarted()` helper へ分離した。
   - `tests/server.test.js` で game start 時に `stateSnapshot`, `actionLog`, `lastUndoState`, canonical mirror, `lastTouchedAt` が初期化される契約を固定した。
 - コード挙動: gameStart payload の生成、emit、開始条件は既存と同じ。開始時の room 状態更新だけを helper に寄せた。
@@ -2661,7 +2661,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: online storage の per-room namespace 化の小さな足場。
-- 修正中:
+- 修正済み:
   - `onlineSession` の保存/削除を `_writeOnlineSessionStorageJson()` / `_removeOnlineSessionStorageItem()` helper に寄せ、legacy key を正本に維持したまま `onlineSession:room:<ROOM>` へ dual-write する足場を追加した。
   - `storage.js` の online session 削除でも room-scoped `onlineSession:*` variants を削除するよう cleanup を揃えた。
   - `tests/online.test.js` / `tests/storage.test.js` で dual-write と削除 contract を固定した。
@@ -2673,7 +2673,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: CPU の小さな helper 分離。
-- 修正中:
+- 修正済み:
   - `_estimateStableIncome()` と `_estimateProgressIncome()` に重複していた「収入進捗に数えるカード」判定を `_isProgressIncomeCard()` へ分離した。
   - `tests/cpu.test.js` で青/緑の通常収入カードだけを対象にし、赤カード、休業カード、pending/特殊系効果を除外する契約を固定した。
 - コード挙動: stable/progress income の計算対象は既存と同じ。重複条件だけを helper に寄せた。
@@ -2684,7 +2684,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: server room lifecycle の小さな helper 分離。
-- 修正中:
+- 修正済み:
   - `handleSocketDisconnect()` の待機room削除と開始済みroom切断処理を `removeWaitingRoomSocket()` / `handleStartedRoomSocketDisconnect()` へ分離した。
   - `tests/server.test.js` で待機room最後のsocket削除、開始済みhost切断時のhost移譲、遅延disconnect無視の契約を固定した。
 - コード挙動: disconnect event のemit内容、hostChanged payload、古いsocketを無視する挙動は既存と同じ。
@@ -2695,7 +2695,7 @@
 
 - 状態: completed; full verification passed before commit.
 - 対象: server restore 周辺の小さな helper 分離。
-- 修正中:
+- 修正済み:
   - `handleRecreateRoom()` 内の復元用 human player 配列生成を `buildRestoredHumanPlayers()` helper へ分離した。
   - `tests/server.test.js` で CPU 席を復元接続対象から除外し、再接続者だけ socket id を持つ契約を固定した。
 - コード挙動: hostless restore、room replacement 判定、token 検証、canonical mirror 復元には触れず、既存の復元 player 構築ロジックだけを helper に寄せた。
@@ -2713,3 +2713,18 @@
 - コード挙動: server dice の生成、駅あり `rollDice` の `forceDice:null` 維持、select/reroll の deterministic roller 挙動は変更なし。
 - 残課題:
   - action metadata を server/client 全経路の dispatch table へさらに寄せる作業は継続 backlog。
+
+## Current maintainability backlog
+
+- 状態: active backlog summary; design/manual items are intentionally not auto-implemented.
+- Design required:
+  - hostless restore, signed restore snapshot, server-persisted canonical state.
+  - restore replacement 判定本体、scoped restore read migration、完全な per-room indexed restore bundle。
+  - 複数 room resume UI、modal stack / deny-nesting policy。
+- Manual verification required:
+  - iPhone Safari / Android Chrome の長時間 UI lock / PWA update / reconnect / host migration 回帰。
+- Safe incremental backlog:
+  - CPU build scoring / diagnostics / execution flow の小 helper 分離。
+  - server restore/lifecycle/API reporting の小 helper 分離。
+  - action metadata を server/client dispatch table へさらに寄せる contract test。
+  - script load order / storage key / release pseudo-E2E の drift detection 強化。
