@@ -137,6 +137,7 @@ function loadOnlineRuntime(options = {}) {
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this.getClientVersion = getClientVersion;
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
+        this.showCreateRoom = showCreateRoom;
         this.setOnlineSelectedCount = (value) => { onlineSelectedCount = value; };
         this.setOnlinePlayerSettings = (value) => { onlinePlayerSettings = value; };
         this._saveActionLog = _saveActionLog;
@@ -444,6 +445,32 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     assert.strictEqual(cpuPlayers[0], null);
     assert.ok(cpuPlayers[1] !== null);
     assert.deepStrictEqual(Array.from(cpuPlayers[1].options.expertOpponentDifficulties), ['human', 'normal']);
+});
+
+runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.RLModelPortfolio = {
+        selectRandomModel(playerCount) {
+            assert.strictEqual(playerCount, 3);
+            return { id: 'frozen-online-rl' };
+        },
+    };
+    runtime.document.getElementById('playerNameInput').value = 'Alice';
+    runtime.document.getElementById('onlineCpuSpeed').value = '1500';
+    runtime.setOnlineSelectedCount(3);
+    runtime.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    runtime.showCreateRoom();
+
+    const emitted = runtime.getSocketEmits().filter(event => event.name === 'createRoom').pop();
+    assert.ok(emitted, 'createRoom emit should exist');
+    assert.strictEqual(emitted.payload.playerSettings[1].difficulty, 'rl');
+    assert.strictEqual(emitted.payload.playerSettings[1].rlModelId, 'frozen-online-rl');
+    assert.strictEqual(emitted.payload.playerSettings[2].difficulty, 'strong');
 });
 
 runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もrlとして生成する', () => {

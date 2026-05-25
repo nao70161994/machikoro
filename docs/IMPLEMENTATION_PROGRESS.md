@@ -2746,3 +2746,12 @@
   - `tests/cpu.test.js` に online `buildLandmark` 送信失敗時の contract test を追加した。
   - 送信失敗時に `builtThisTurn`、coins、landmark state をローカル mutate しないことを固定した。
 - コード挙動: `CPU.js` の実装は変更なし。既存の `_buyLandmark()` online failure fallback を test で固定しただけ。
+
+## Backlog cleanup - online RL model freeze contract
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: online room creation payload の RL model lifecycle contract。
+- 修正済み:
+  - `tests/online.test.js` で `showCreateRoom()` が RL CPU の `rlModelId` を作成payload内に固定することを追加で検証した。
+  - test harness から `showCreateRoom` を直接呼べるようにし、送信payloadの `playerSettings` を確認できるようにした。
+- コード挙動: `online.js` の実装は変更なし。既存の `freezeOnlinePlayerSettings()` contract を room creation 経路で固定しただけ。
