@@ -226,3 +226,13 @@ Until then:
 - Do not use client-writable `gameStartPayload.actionSeq` or raw action log seq as freshness authority.
 - Keep restore rank based on replay-backed snapshot/action log progress.
 - Keep docs clear that server restart restore is not a full anti-tamper boundary.
+
+## Update: 2026-05-26 Footings
+
+The following implementation footings now exist but do not change the accepted trust boundary:
+
+- Canonical state store adapter: default noop, memory adapter for tests/development only, no durable restart authority.
+- Restore room index: local client locator for scoped bundles, not a server authority.
+- Restore audit metadata: optional schema validation, no signature verification or trust elevation.
+
+Therefore Option A remains the active implementation. Option D remains the preferred long-term authority before hostless restore. Option C remains fallback/audit support only until canonical serialization and key policy are accepted.

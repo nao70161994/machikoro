@@ -46,3 +46,21 @@ hostless restore 実装前でも、次を確認対象にします。
 - host が復元できない場合、非 host は待機し続けるがクラッシュしない。
 - host が戻った後、非 host が正しい状態へ追従する。
 - 古い `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` が削除操作後に残らない。
+
+## 2026-05-26 Re-evaluation Gate
+
+The current implementation still does not meet the bar for hostless restore. The new footings change the prerequisites, not the decision:
+
+- `server/canonicalStateStore.js` exists, but the default is noop and `CANONICAL_STATE_STORE=memory` is non-durable. Hostless restore must wait for a durable authoritative store or an explicitly accepted provisional quorum mode.
+- `onlineRestoreRoomIndex` exists, but it is only a locator for scoped client bundles. It must not promote non-host bundles to canonical state.
+- `restoreAudit` metadata exists, but unsigned audit records do not add trust, freshness, or authority.
+
+Hostless restore can be reconsidered only after all of the following are true:
+
+1. Durable server-persisted canonical state exists, or the product explicitly accepts lower-trust provisional restore.
+2. Candidate comparison fixtures cover canonical hash, replay-backed rank, host epoch, player order, and reconnect token hash consistency.
+3. Replacement rules define what happens when a host candidate arrives before, during, or after a provisional restore.
+4. Multi-device manual tests cover host disappearance, host migration, server restart, stale client cache, and mobile background/resume.
+5. User-facing diagnostics clearly label provisional recovery and do not present it as authoritative.
+
+Until those gates are met, non-host clients should keep retrying or reconnecting, and restored room replacement remains host-only.

@@ -1614,6 +1614,19 @@ runTest('docs は pending HTML helper 化の現在地を記載している', () 
     assert.ok(!uiRefactor.includes('renderPending の pending 種別ごとの helper 分離。'));
 });
 
+runTest('docs は hostless restore の再評価gateを記載している', () => {
+    const hostless = fs.readFileSync(path.join(__dirname, '..', 'docs/HOSTLESS_RESTORE_DESIGN.md'), 'utf8');
+    const adr = fs.readFileSync(path.join(__dirname, '..', 'docs/ADR_RESTORE_TRUST_BOUNDARY.md'), 'utf8');
+    const decisions = fs.readFileSync(path.join(__dirname, '..', 'docs/IMPLEMENTATION_DECISIONS.md'), 'utf8');
+
+    assert.ok(hostless.includes('2026-05-26 Re-evaluation Gate'));
+    assert.ok(hostless.includes('onlineRestoreRoomIndex'));
+    assert.ok(hostless.includes('restoreAudit'));
+    assert.ok(hostless.includes('restored room replacement remains host-only'));
+    assert.ok(adr.includes('Option A remains the active implementation'));
+    assert.ok(decisions.includes('Still deferred after 2026-05-26 footing review'));
+});
+
 runTest('docs は multiple room resume の設計足場を記載している', () => {
     const design = fs.readFileSync(path.join(__dirname, '..', 'docs/MULTI_ROOM_RESUME_DESIGN.md'), 'utf8');
     const decisions = fs.readFileSync(path.join(__dirname, '..', 'docs/IMPLEMENTATION_DECISIONS.md'), 'utf8');

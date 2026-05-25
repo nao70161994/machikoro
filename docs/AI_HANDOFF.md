@@ -364,3 +364,9 @@ Test index:
 - `docs/MULTI_ROOM_RESUME_DESIGN.md` defines the future picker states and test plan. No visible multi-room resume UI exists yet.
 - Do not build resume selection from legacy global restore keys. Use `onlineRestoreRoomIndex` only as a locator, then re-read and validate scoped room data before any action.
 - A future picker must keep non-host candidates out of authoritative restore paths until hostless restore is explicitly redesigned and accepted.
+
+## Hostless restore re-evaluation
+
+- `docs/HOSTLESS_RESTORE_DESIGN.md` now lists the concrete gates for re-evaluation. The 2026-05-26 footings do not authorize hostless restore.
+- Keep `recreateRoom` replacement host-only. `onlineRestoreRoomIndex` and `restoreAudit` are supporting diagnostics/locators, not authority.
+- Stop before implementation if the next step requires provisional quorum, durable storage selection, replacement timing rules, or multi-device manual verification.

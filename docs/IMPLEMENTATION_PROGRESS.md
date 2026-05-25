@@ -2876,3 +2876,16 @@
 - コード挙動: UI本実装なし。既存の単一 online resume button の挙動は変更しない。
 - 残課題:
   - candidate classification helper、visible picker、stale/completed retention policy、mobile実機確認は追加設計と手動確認が必要。
+
+## Phase 7 - hostless restore re-evaluation docs
+
+- 状態: completed; docs/test verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の hostless restore 再評価。
+- 修正済み:
+  - `docs/HOSTLESS_RESTORE_DESIGN.md` に 2026-05-26 時点の再評価gateを追加した。
+  - `docs/ADR_RESTORE_TRUST_BOUNDARY.md` に canonical state store / restore room index / restore audit metadata の足場が trust boundary を変えないことを追記した。
+  - `docs/IMPLEMENTATION_DECISIONS.md` / `docs/AI_HANDOFF.md` に hostless restore は引き続き deferred であることを同期した。
+  - `tests/main.test.js` に hostless restore 再評価docsの必須文言を固定した。
+- コード挙動: 実装変更なし。`recreateRoom` の room replacement は host-only のまま。
+- 残課題:
+  - durable server storage、provisional quorum、replacement timing、multi-device manual verification は追加設計判断が必要。
