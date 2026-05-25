@@ -2773,6 +2773,20 @@
 - 残課題:
   - 本番公開前に Render の `CLIENT_ERROR_ALLOWED_ORIGINS`、`NTFY_TOPIC`、必要時の `CLIENT_ERROR_SHARED_TOKEN` を実環境で確認する。
 
+
+## Phase 3 - server-persisted canonical state footing
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: `docs/IMPLEMENTATION_DECISIONS.md` の server-persisted canonical state 最小足場。
+- 修正済み:
+  - `server/canonicalStateStore.js` を追加し、canonical room record schema、noop store、memory store、env mode 判定を定義した。
+  - `server.js` は game start / accepted action / server restart restore 後に `persistRoomCanonicalState()` を呼ぶ足場を持つ。既定 store は noop なので既存運用の authority は変えない。
+  - `tests/server.test.js` で record validation、noop/memory adapter clone保存、store failure isolation を固定した。
+  - `docs/ONLINE_SYNC.md` / `docs/IMPLEMENTATION_DECISIONS.md` に「durable restart restore は未実装」と明記した。
+- コード挙動: デフォルトでは永続化なし。`CANONICAL_STATE_STORE=memory` は開発/test用で、server restart 耐性を提供しない。
+- 残課題:
+  - durable store 選定、atomic write、retention/delete policy、multi-instance locking は追加設計判断が必要。
+
 ## Backlog cleanup - Service Worker SKIP_WAITING contract
 
 - 状態: completed; targeted verification passed before commit.

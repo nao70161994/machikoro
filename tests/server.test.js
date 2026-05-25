@@ -69,6 +69,7 @@ const {
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
     buildRejoinDataPayload,
+    persistRoomCanonicalState,
     generateRoomId,
     isValidRoomId,
     buildRestoredHumanPlayers,
@@ -133,6 +134,14 @@ const {
     __rooms,
     __io,
 } = require('../server');
+const {
+    CANONICAL_STATE_STORE_MODES,
+    canonicalStateStoreMode,
+    buildCanonicalStateRecord,
+    validateCanonicalStateRecord,
+    createNoopCanonicalStateStore,
+    createMemoryCanonicalStateStore,
+} = require('../server/canonicalStateStore');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
     makeSeqRankUsesMaxFieldsFixture,
@@ -210,6 +219,47 @@ function makeSnapshot(overrides = {}) {
     game.players[1].name = 'B';
     return Object.assign(serializeMirrorState(game, { 麦畑: 6, パン屋: 0, カフェ: 0, ビジネスセンター: 0, 引越し屋: 0 }), overrides);
 }
+
+
+runTest('canonical state store は既定noopでmemory adapterはrecordをclone保存する', () => {
+    assert.strictEqual(canonicalStateStoreMode({}), CANONICAL_STATE_STORE_MODES.NOOP);
+    assert.strictEqual(canonicalStateStoreMode({ CANONICAL_STATE_STORE: 'memory' }), CANONICAL_STATE_STORE_MODES.MEMORY);
+
+    const room = {
+        gameStartPayload: { playerNames: ['A', 'B'], reconnectTokenHashes: ['h1', 'h2'] },
+        stateSnapshot: { actionSeq: 3, players: [] },
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 4, clientActionId: 'c1' }],
+        acceptedClientActions: { key: { playerIndex: 0, clientActionId: 'c1', seq: 4 } },
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+        actionSeq: 4,
+        lastTouchedAt: 1700000000000,
+    };
+    const record = buildCanonicalStateRecord('ROOM01', room, { reason: 'test', now: 1700000001000 });
+    assert.deepStrictEqual(validateCanonicalStateRecord(record), { ok: true });
+    assert.strictEqual(record.reason, 'test');
+    assert.strictEqual(record.acceptedClientActions.length, 1);
+
+    const noop = createNoopCanonicalStateStore();
+    assert.deepStrictEqual(noop.save(record), { ok: true, skipped: true });
+    assert.strictEqual(noop.load('ROOM01'), null);
+
+    const memory = createMemoryCanonicalStateStore();
+    assert.deepStrictEqual(memory.save(record), { ok: true });
+    record.actionLog.push({ action: 'rollDice' });
+    const loaded = memory.load('ROOM01');
+    assert.strictEqual(loaded.actionLog.length, 1);
+    loaded.actionLog.push({ action: 'rollDice' });
+    assert.strictEqual(memory.load('ROOM01').actionLog.length, 1);
+    assert.strictEqual(memory.list().length, 1);
+});
+
+runTest('persistRoomCanonicalState はstore失敗をゲーム進行から分離する', () => {
+    const room = { roomId: 'ROOM02', gameStartPayload: {}, actionLog: [], acceptedClientActions: {}, hostEpoch: 0, actionSeq: 0 };
+    const result = persistRoomCanonicalState('ROOM02', room, 'test', 1700000000000, { save() { throw new Error('disk down'); } });
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.reason, 'save-failed');
+});
 
 runTest('server module.exports は重複した公開名を持たない', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');

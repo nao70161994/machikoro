@@ -340,3 +340,9 @@ Test index:
 
 - Same-origin browser `/api/client-error` and `/api/game-lifecycle` reports should keep working without exposing a shared token. Do not make normal browser reports depend on `CLIENT_ERROR_SHARED_TOKEN` unless a deliberate browser token delivery model is added.
 - No-origin scripted diagnostics are stricter: `/api/client-error` and `/api/client-error-test` use the existing client-error auth gate, and `/api/game-lifecycle` requires `CLIENT_ERROR_SHARED_TOKEN` when that token is configured.
+
+## Canonical state store footing
+
+- `server/canonicalStateStore.js` is a schema/adapter footing only. Default mode is noop; `CANONICAL_STATE_STORE=memory` is not durable and does not solve server restart restore.
+- `persistRoomCanonicalState()` is called after game start, accepted actions, and server restart restore, but server-persisted canonical authority remains deferred until a durable adapter and retention/locking policy are designed.
+- Do not let client restore bundles lose to or win over a future store implicitly. When durable storage is added, server-loaded canonical state must explicitly outrank client `recreateRoom` bundles and tests must cover that boundary.

@@ -61,6 +61,10 @@ const ROOM_LIFECYCLE_LIMITS = Object.freeze({
 });
 const rooms = Object.create(null);
 const {
+    createCanonicalStateStoreFromEnv,
+    buildCanonicalStateRecord,
+} = require('./server/canonicalStateStore');
+const {
     roomTimestamp,
     isRoomExpired,
     cleanupExpiredRooms,
@@ -110,6 +114,7 @@ const GAME_LIFECYCLE_LIMITS = Object.freeze({
 const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
 const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
+const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
 
 function resolveTrustProxySetting(env = process.env) {
     const value = String(env.TRUST_PROXY || env.EXPRESS_TRUST_PROXY || '').trim();
@@ -956,6 +961,18 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
     };
 }
 
+function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
+    if (!store || typeof store.save !== 'function') return { ok: true, skipped: true };
+    const record = buildCanonicalStateRecord(roomId, room, { reason, now });
+    if (!record) return { ok: false, reason: 'invalid-record' };
+    try {
+        return store.save(record);
+    } catch (error) {
+        console.warn('[canonical-state-store] save failed:', error && error.message || error);
+        return { ok: false, reason: 'save-failed' };
+    }
+}
+
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 const roomGcInterval = setInterval(() => {
@@ -1156,6 +1173,7 @@ io.on('connection', (socket) => {
             compactRoomActionLog(room);
             markRoomCanonicalMirrorCurrent(room);
             room.lastTouchedAt = Date.now();
+            persistRoomCanonicalState(roomId, room, 'accepted-action');
         }
         socket.to(roomId).emit('gameAction', actionEntry);
         socket.emit('actionAccepted', actionEntry);
@@ -1492,6 +1510,7 @@ function handleRecreateRoom(socket, payload = {}) {
         delete rooms[roomId];
     }
     rooms[roomId] = restoredRoom;
+    persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
     socket.join(roomId);
     socket.roomId = roomId;
     socket.playerIndex = playerIndex;
@@ -1989,6 +2008,7 @@ function markRoomGameStarted(room, gameStartPayload, now = Date.now()) {
     room.lastUndoState = null;
     resetRoomCanonicalMirror(room);
     room.lastTouchedAt = now;
+    persistRoomCanonicalState(room.roomId, room, 'game-start', now);
 }
 
 function checkGameStart(io, roomId) {
@@ -2088,6 +2108,7 @@ module.exports = {
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
     buildRejoinDataPayload,
+    persistRoomCanonicalState,
     generateRoomId,
     isValidRoomId,
     buildRestoredHumanPlayers,

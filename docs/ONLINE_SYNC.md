@@ -147,6 +147,13 @@ Keep these definitions aligned. A future cleanup should move this comparison int
 
 ## Server canonical mirror
 
+### Canonical state store footing
+
+The server now has a small `server/canonicalStateStore.js` adapter contract. The default mode is `noop`, so current deployments still rely on live in-memory room state and host-provided restart restore exactly as before. `CANONICAL_STATE_STORE=memory` is a test/development adapter only; it is not durable across process restarts and must not be described as server-persisted restore.
+
+The stored record shape is intentionally limited to canonical server fields: `gameStartPayload`, compacted `stateSnapshot`, residual `actionLog`, accepted client-action refs, host metadata, action sequence, and timestamps. A future durable adapter must write atomically after accepted actions and compaction, load server state before accepting client `recreateRoom`, and make server state outrank every client restore bundle.
+
+
 Live rooms keep an in-memory `canonicalMirror` after game start or server-side restore. The mirror is not serialized to clients and is safe to discard: if it is missing or stale, server validation rebuilds it from `stateSnapshot + actionLog`.
 
 Staleness is tracked by the restore rank actionSeq and the current actionLog length. This keeps tests and restore paths that replace `actionLog` or `stateSnapshot` from accidentally validating against an old in-memory mirror.
