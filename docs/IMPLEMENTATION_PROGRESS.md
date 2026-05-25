@@ -2728,3 +2728,12 @@
   - server restore/lifecycle/API reporting の小 helper 分離。
   - action metadata を server/client dispatch table へさらに寄せる contract test。
   - script load order / storage key / release pseudo-E2E の drift detection 強化。
+
+## Backlog cleanup - Service Worker SKIP_WAITING contract
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: PWA update flow の test gap 補強。
+- 修正済み:
+  - `tests/sw.test.js` に `SKIP_WAITING` message が `self.skipWaiting()` を呼ぶ contract test を追加した。
+  - 未知 message では skipWaiting しないことも固定し、更新導線の誤作動を検出しやすくした。
+- コード挙動: `sw.js` の実装は変更なし。既存の更新ボタン用 message contract を test で固定しただけ。

@@ -145,6 +145,10 @@ async function dispatchFetch(runtime, request) {
     return { response, waitUntilPromises };
 }
 
+function dispatchMessage(runtime, data) {
+    runtime.listeners.message({ data });
+}
+
 (async () => {
     await runTest('Service Worker install はRLモデルをprecacheしない', async () => {
         const runtime = loadServiceWorker();
@@ -163,6 +167,20 @@ async function dispatchFetch(runtime, request) {
 
         assert.deepStrictEqual(runtime.deletedCaches, ['machikoro-v3']);
         assert.strictEqual(runtime.context.self.clients.claimed, true);
+    });
+
+    await runTest('Service Worker はSKIP_WAITING messageでskipWaitingする', async () => {
+        const runtime = loadServiceWorker();
+        dispatchMessage(runtime, { type: 'SKIP_WAITING' });
+
+        assert.strictEqual(runtime.context.self.skipWaitingCalled, true);
+    });
+
+    await runTest('Service Worker は未知messageでskipWaitingしない', async () => {
+        const runtime = loadServiceWorker();
+        dispatchMessage(runtime, { type: 'UNKNOWN_MESSAGE' });
+
+        assert.strictEqual(runtime.context.self.skipWaitingCalled, false);
     });
 
     await runTest('PWA model loading docs はRLモデルJSONのnetwork-first fallback方針を記載する', async () => {
