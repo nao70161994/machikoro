@@ -1403,6 +1403,33 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
     }
 });
 
+runTest('index.html のbrowser-global script orderは主要依存順を維持する', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const scripts = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(match => match[1]);
+    const indexOf = (script) => {
+        const index = scripts.indexOf(script);
+        assert.ok(index >= 0, `missing script: ${script}`);
+        return index;
+    };
+    const assertBefore = (before, after) => {
+        assert.ok(indexOf(before) < indexOf(after), `${before} must load before ${after}`);
+    };
+
+    assertBefore('js/Card.js', 'js/GameManager.js');
+    assertBefore('js/Player.js', 'js/GameManager.js');
+    assertBefore('js/GameManager.js', 'js/CPU.js');
+    assertBefore('js/cpuTuning.js', 'js/CPU.js');
+    assertBefore('js/cpuDiagnostics.js', 'js/CPU.js');
+    assertBefore('js/cpuEvaluationCache.js', 'js/CPU.js');
+    assertBefore('js/CPU.js', 'js/RLCPU.js');
+    assertBefore('js/RLModelPortfolio.js', 'js/online.js');
+    assertBefore('js/uiNotice.js', 'js/ui.js');
+    assertBefore('js/ui.js', 'js/storage.js');
+    assertBefore('js/storage.js', 'js/appShell.js');
+    assertBefore('js/appShell.js', 'js/main.js');
+    assertBefore('js/stats.js', 'js/main.js');
+});
+
 runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期している', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');

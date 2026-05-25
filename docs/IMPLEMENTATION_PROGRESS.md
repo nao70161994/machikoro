@@ -2755,3 +2755,12 @@
   - `tests/online.test.js` で `showCreateRoom()` が RL CPU の `rlModelId` を作成payload内に固定することを追加で検証した。
   - test harness から `showCreateRoom` を直接呼べるようにし、送信payloadの `playerSettings` を確認できるようにした。
 - コード挙動: `online.js` の実装は変更なし。既存の `freezeOnlinePlayerSettings()` contract を room creation 経路で固定しただけ。
+
+## Backlog cleanup - browser script order invariant
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: browser-global 構成の AI 保守性 / drift detection。
+- 修正済み:
+  - `tests/main.test.js` に `index.html` の主要 script 読み込み順 contract を追加した。
+  - `Card/Player -> GameManager -> CPU/RL -> online/ui/storage/appShell/main` の依存順が崩れた場合に static test で検出できるようにした。
+- コード挙動: 実行コードは変更なし。bundler なし構成の暗黙依存を test で明示しただけ。
