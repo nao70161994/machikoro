@@ -1678,8 +1678,18 @@ function rollServerDie() {
     return crypto.randomInt(1, 7);
 }
 
+const SERVER_AUTHORITATIVE_DICE_ACTIONS = Object.freeze({
+    rollDice: true,
+    selectDice: true,
+    rerollDice: true,
+});
+
+function isServerAuthoritativeDiceAction(action) {
+    return !!SERVER_AUTHORITATIVE_DICE_ACTIONS[action];
+}
+
 function makeServerDiceActionData(game, action, data, rollDie = rollServerDie) {
-    if (!isPlainObject(data)) return data;
+    if (!isPlainObject(data) || !isServerAuthoritativeDiceAction(action)) return data;
     const tunaDice = () => [rollDie(), rollDie()];
     if (action === 'rollDice') {
         if (game.currentPlayer().landmarks[gameRuntime.LANDMARK_NAMES.STATION]) {
@@ -2102,6 +2112,8 @@ module.exports = {
     restoreUndoMirror,
     makeUndoStateFromMirror,
     rollServerDie,
+    SERVER_AUTHORITATIVE_DICE_ACTIONS,
+    isServerAuthoritativeDiceAction,
     makeServerDiceActionData,
     originalPlayerIndexForGamePosition,
     canSocketSubmitCurrentAction,

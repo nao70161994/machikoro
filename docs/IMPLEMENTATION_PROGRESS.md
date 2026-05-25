@@ -2702,3 +2702,14 @@
 - 残課題:
   - restore replacement の判定本体や scoped read migration は設計範囲が広いため継続 backlog / design required。
   - CPU のさらなる小さな helper 分離は継続 backlog。
+
+## Backlog cleanup - server authoritative dice action table
+
+- 状態: completed; targeted verification passed before commit.
+- 対象: server action metadata 利用範囲拡大 / dice payload authority の明示化。
+- 修正済み:
+  - `server.js` の `makeServerDiceActionData()` が対象にする `rollDice` / `selectDice` / `rerollDice` を `SERVER_AUTHORITATIVE_DICE_ACTIONS` table と `isServerAuthoritativeDiceAction()` helper へ分離した。
+  - `tests/server.test.js` でサーバーが出目を書き換える action が `GAME_ACTIONS` の dice 系3種だけであることを固定した。
+- コード挙動: server dice の生成、駅あり `rollDice` の `forceDice:null` 維持、select/reroll の deterministic roller 挙動は変更なし。
+- 残課題:
+  - action metadata を server/client 全経路の dispatch table へさらに寄せる作業は継続 backlog。

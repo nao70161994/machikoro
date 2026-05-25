@@ -113,6 +113,8 @@ const {
     makeUndoStateFromMirror,
     applyActionToMirror,
     restoreUndoMirror,
+    SERVER_AUTHORITATIVE_DICE_ACTIONS,
+    isServerAuthoritativeDiceAction,
     makeServerDiceActionData,
     originalPlayerIndexForGamePosition,
     canSocketSubmitCurrentAction,
@@ -1820,6 +1822,16 @@ runTest('validateGameAction は駅なし online rollDice の client dice を ser
     assert.ok(result.data.forceDice >= 1 && result.data.forceDice <= 6);
     assert.ok(Array.isArray(result.data.tunaDice));
     assert.strictEqual(result.data.tunaDice.length, 2);
+});
+
+runTest('SERVER_AUTHORITATIVE_DICE_ACTIONS はサーバーが出目を書き換えるactionだけを明示する', () => {
+    const runtime = loadGameRuntime();
+    const expected = [runtime.GAME_ACTIONS.ROLL_DICE, runtime.GAME_ACTIONS.SELECT_DICE, runtime.GAME_ACTIONS.REROLL_DICE].sort();
+    assert.deepStrictEqual(Object.keys(SERVER_AUTHORITATIVE_DICE_ACTIONS).sort(), expected);
+    assert.ok(Object.isFrozen(SERVER_AUTHORITATIVE_DICE_ACTIONS));
+    for (const action of Object.values(runtime.GAME_ACTIONS)) {
+        assert.strictEqual(isServerAuthoritativeDiceAction(action), expected.includes(action), `${action} dice authority flag`);
+    }
 });
 
 runTest('makeServerDiceActionData は select/reroll の出目を deterministic roller で生成する', () => {
