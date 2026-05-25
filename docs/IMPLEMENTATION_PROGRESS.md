@@ -2889,3 +2889,17 @@
 - コード挙動: 実装変更なし。`recreateRoom` の room replacement は host-only のまま。
 - 残課題:
   - durable server storage、provisional quorum、replacement timing、multi-device manual verification は追加設計判断が必要。
+
+
+## Phase 1-7 cross-audit follow-up
+
+- 状態: completed; targeted verification passed.
+- 対象: modal policy / client-error auth / canonical state store / restore room index / restore audit / multi-room resume design / hostless restore docs の横断整合性。
+- 修正済み:
+  - `docs/IMPLEMENTATION_DECISIONS.md` / `docs/AI_HANDOFF.md` / `docs/ADR_MODAL_STACK_POLICY.md` の stale wording を更新し、modal deny-by-default と per-room restore index が実装済みの足場であることを揃えた。
+  - `docs/ONLINE_SYNC.md` の anti-tamper prerequisites を更新し、live dice / in-memory canonical mirror は導入済み、残りは durable/signed restore authority と永続 state/hash 運用であることを明確化した。
+  - `/api/client-error` は `CLIENT_ERROR_SHARED_TOKEN` 設定時も same-origin browser report を tokenless に維持し、`/api/client-error-test` は same-origin でも token を要求する境界を test で固定した。
+  - signed-looking `restoreAudit` metadata が syntactic metadata に留まり、復元 rank / replacement authority を上げないことを `tests/server.test.js` で固定した。
+  - restore room index pruning が bundle 本体を削除しないことを `tests/online.test.js` で固定した。
+- 残課題:
+  - durable canonical store、real signed restore verification、visible multi-room picker、hostless restore は引き続き design/manual scoped。

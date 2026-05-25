@@ -490,7 +490,10 @@ runTest('client error auth は same-origin を許可し cross-origin と不正to
     });
     assert.strictEqual(requestClientErrorToken(tokenReq), 'secret-token');
     assert.deepStrictEqual(authorizeClientErrorRequest(tokenReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
-    assert.strictEqual(authorizeClientErrorRequest(sameOriginReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }).error, 'invalid_client_error_token');
+    assert.deepStrictEqual(authorizeClientErrorRequest(sameOriginReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
+
+    const noOriginTokenlessReq = makeMockReq({ headers: { host: 'example.com' } });
+    assert.strictEqual(authorizeClientErrorRequest(noOriginTokenlessReq, { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }).error, 'invalid_client_error_token');
 });
 
 runTest('client error auth は production ntfy の no-origin 無tokenを拒否する', () => {
@@ -507,14 +510,28 @@ runTest('client error auth は production ntfy の no-origin 無tokenを拒否�
     assert.deepStrictEqual(authorizeClientErrorRequest(tokenReq, { ...env, CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
 });
 
-runTest('client error request は auth gate で通知前に拒否する', () => {
+runTest('client error request は no-origin tokenなしなら通知前に拒否する', () => {
     const res = makeMockRes();
     handleClientErrorRequest(makeMockReq({
-        headers: { host: 'example.com', origin: 'https://example.com' },
+        headers: { host: 'example.com' },
         body: { message: 'boom' },
     }), res, { env: { CLIENT_ERROR_SHARED_TOKEN: 'secret-token' } });
     assert.strictEqual(res.statusCode, 403);
     assert.strictEqual(res.body.error, 'invalid_client_error_token');
+});
+
+runTest('client error test endpoint は shared token 設定時 same-origin でも token を要求する', async () => {
+    const env = { NODE_ENV: 'test', NTFY_TOPIC: 'topic', CLIENT_ERROR_SHARED_TOKEN: 'secret-token' };
+    const sameOrigin = makeMockReq({ headers: { host: 'example.com', origin: 'https://example.com' } });
+    const blocked = makeMockRes();
+    await handleClientErrorTestRequest(sameOrigin, blocked, { env });
+    assert.strictEqual(blocked.statusCode, 403);
+    assert.strictEqual(blocked.body.error, 'invalid_client_error_token');
+
+    const tokenReq = makeMockReq({ headers: { host: 'example.com', origin: 'https://example.com', 'x-client-error-token': 'secret-token' } });
+    const accepted = makeMockRes();
+    await handleClientErrorTestRequest(tokenReq, accepted, { env, notifyOptions: { topic: 'topic', fetchImpl() { return { ok: true }; } } });
+    assert.strictEqual(accepted.statusCode, 202);
 });
 
 runTest('ntfy client error message は classification/phase/room/UA と本文を含む', () => {
@@ -2838,6 +2855,84 @@ runTest('handleRecreateRoom はより新しい hostEpoch の復元payloadで古�
         assert.strictEqual(emitted[0].payload.gameStartPayload.hostPlayerIndex, 0);
     } finally {
         delete __rooms.REPLACE01;
+    }
+});
+
+runTest('handleRecreateRoom は signed-looking restore audit metadata で復元rankを上げない', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const reconnectTokenHashes = [
+        crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+        crypto.createHash('sha256').update(tokenBob).digest('hex'),
+    ];
+    const existingPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes,
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 5,
+    };
+    const incomingPayload = Object.assign({}, existingPayload, {
+        hostEpoch: 1,
+        actionSeq: 1,
+    });
+    __rooms.REST_SIGN = {
+        started: true,
+        restored: true,
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 5,
+        players: [
+            { id: 'socket-alice-old', index: 0, name: 'Alice', reconnectTokenHash: reconnectTokenHashes[0] },
+        ],
+        playerSettings: existingPayload.playerSettings,
+        maxPlayers: 2,
+        gameStartPayload: existingPayload,
+        stateSnapshot: makeSnapshot({ actionSeq: 5 }),
+        actionLog: [],
+    };
+    const socket = {
+        id: 'socket-alice-new',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        handleRecreateRoom(socket, {
+            roomId: 'REST_SIGN',
+            gameStartPayload: incomingPayload,
+            stateSnapshot: makeSnapshot({ actionSeq: 1 }),
+            actionLog: [],
+            playerIndex: 0,
+            playerName: 'Alice',
+            reconnectToken: tokenAlice,
+            restoreAudit: {
+                schemaVersion: 1,
+                roomId: 'REST_SIGN',
+                signed: true,
+                algorithm: 'hmac-sha256',
+                keyId: 'test-key',
+                signature: 'syntactic-signature-only',
+                canonicalHash: 'aaaaaaaaaaaaaaaa',
+                payloadHash: 'bbbbbbbbbbbbbbbb',
+                createdAt: 999999999999,
+            },
+        });
+
+        assert.deepStrictEqual(joined, ['REST_SIGN']);
+        assert.strictEqual(__rooms.REST_SIGN.actionSeq, 5);
+        assert.strictEqual(__rooms.REST_SIGN.hostEpoch, 1);
+        assert.strictEqual(emitted.some(event => event.name === 'rejoinData'), true);
+    } finally {
+        delete __rooms.REST_SIGN;
     }
 });
 

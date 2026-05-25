@@ -39,7 +39,7 @@
 
 ## 次に安全な作業候補
 
-- UI: 既知の inline handler / pending renderer / build menu / card select / stats helper 化は実施済み。新しい UI surface が見つかった場合は、`PRIMARY_ACTION_CONTAINER_REGISTRY`、通常 render no-recovery test、fallback recovery test を同時に追加する。modal stack / deny-nesting policy は design required。
+- UI: 既知の inline handler / pending renderer / build menu / card select / stats helper 化は実施済み。新しい UI surface が見つかった場合は、`PRIMARY_ACTION_CONTAINER_REGISTRY`、通常 render no-recovery test、fallback recovery test を同時に追加する。modal deny-by-default は実装済みで、将来の nested blocking modal 例外や新しい modal UX だけ design / manual verification required。
 - CPU: heuristic の強さを変えず、diagnostics / scoring / execution flow を targeted tests で固定してから helper 単位で分離する。
 - GameManager / Server / Online: action metadata を dispatch / canonical payload / online apply の contract test へさらに寄せる。hostless restore、signed restore、server-persisted canonical state、複数 room resume UI は design required。
 - Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection を小さく追加する。
@@ -309,7 +309,7 @@ Test index:
 - Modal background locking now uses pointer-events as an inert fallback. When changing modal roots, update `MODAL_INERT_ROOT_IDS`, `setAppInertForModal()`, and the modal helper tests together.
 - Stale `pendingModal` is not a legitimate blocking modal when no pending resolver is allowed or the pending menu is empty. Preserve `stale-modal-ui-locked` recovery unless a stricter pending modal lifecycle replaces it.
 - Online pending action cleanup is clientActionId-first. For modern pending entries, do not clear `onlinePendingAction` from actionSeq alone or from an ack without matching `clientActionId`. Seq-only fallback is only for legacy entries that lack ids.
-- Remaining follow-ups are no longer simple automatic fixes: modal stack/deny-nesting policy needs UI behavior design, and hostless/signed restore needs trust-boundary design. Enabled descendant checks and generic appError pending ownership were handled in continuation Cycles 2-3.
+- Remaining follow-ups are no longer simple automatic fixes: nested modal stack exceptions need UI behavior design/manual mobile verification, and hostless/signed restore needs trust-boundary design. Enabled descendant checks and generic appError pending ownership were handled in continuation Cycles 2-3.
 
 ## Maintainability continuation Cycle 2 handoff
 
@@ -326,7 +326,7 @@ Test index:
 - `docs/IMPLEMENTATION_DECISIONS.md` is the current index for deferred design items. Check it before implementing modal stack/deny-nesting, hostless restore, signed restore, server-persisted canonical state, multiple-room resume UI, production client-error auth, per-room restore namespace, or room replacement migration.
 - Modal policy is accepted as deny-by-default with no initial nested blocking modal exceptions. Keep `recoverUiInteractability()` as fallback recovery only; it must not become a gameplay-action executor.
 - Restore trust priority is server-persisted canonical state first, signed snapshot/action metadata second, hostless restore last. Existing-room replacement remains host-only until a separate hostless/provisional design is implemented.
-- Multiple room resume UI must wait for per-room restore index and pruning policy. Do not build a picker on global restore keys.
+- Multiple room resume UI must use the existing per-room restore index only as a locator and still waits for candidate classification, retention/pruning policy, and mobile UX tests. Do not build a picker on global restore keys.
 - Production client-error hardening should use same-origin browser reports plus `CLIENT_ERROR_ALLOWED_ORIGINS` and, for scripted/no-origin diagnostics, `CLIENT_ERROR_SHARED_TOKEN` or a temporary controlled exception. Do not set a shared token for normal browser reports unless the browser can provide it.
 
 ## Modal deny-nesting implementation

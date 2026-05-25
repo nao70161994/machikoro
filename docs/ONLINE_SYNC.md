@@ -56,7 +56,7 @@ live room では、次は server 由来です。
 - server restart 後の `recreateRoom` restore bundle。サーバーは token、host、rank、schema、size、mirror replay を検証しますが、host の local snapshot を復元材料として受け取ります。過去log内のdice値は replay 互換のため検証対象であり、live room の新規dice発行とは別扱いです。
 - UI 上の player order 表示。検証では server 側の original player index / shuffled order を区別して扱います。
 
-そのため、公開部屋、ランク戦、賞品付き対戦、恒久的な戦績保存、観戦/replay配信のように不正耐性が必要な運用へ進む場合は、現行設計を server authoritative とみなしてはいけません。先に server-side dice、server seed または commit-reveal、room 内 canonical mirror、action/state hash、復元 snapshot の保全チェックを設計してください。
+そのため、公開部屋、ランク戦、賞品付き対戦、恒久的な戦績保存、観戦/replay配信のように不正耐性が必要な運用へ進む場合は、現行設計を完全な server authoritative とみなしてはいけません。live dice と in-memory canonical mirror は導入済みですが、durable/signed restore authority、永続 canonical state、action/state hash の運用、必要なら commit-reveal/server seed 方針、復元 snapshot の保全チェックを先に設計してください。
 
 短期変更では、この casual trust model を壊さないことを優先します。つまり、サーバー検証を強化するときも、既存の再接続、host handoff、server restart restore、snapshot compaction が同じ action log を再生できることをテストで確認してください。
 

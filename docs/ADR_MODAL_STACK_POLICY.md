@@ -121,7 +121,7 @@ Exception policy:
 
 ## Test Policy
 
-Before implementation, add tests around the selected behavior:
+Current tests cover the implemented base policy, and future exception tests must cover:
 
 - Opening a second unregistered blocking modal is denied and leaves the first modal interactive.
 - Closing the active modal restores background state only when no registered child remains open.
@@ -136,12 +136,13 @@ Manual verification remains required for:
 - Android Chrome/PWA standalone mode.
 - Long pending resolver flows with card detail/rules interaction.
 
-## Why Not Implement Now
+## Implementation Status
 
-This ADR intentionally does not change code. The current app has just been stabilized around UI interactability recovery, and a modal policy migration changes the ownership model for inert, pointer-events, aria-hidden, focus trap, and close ordering. Implementing it safely requires a dedicated UI behavior pass with targeted tests and manual mobile verification.
+The base policy is implemented: blocking modal opens are deny-by-default through `MODAL_POLICY_REGISTRY`, and `MODAL_STACK_EXCEPTION_REGISTRY` is intentionally empty. Denied opens are diagnostics, and `recoverUiInteractability()` remains a fallback for stale locks rather than a modal stack unwinder.
 
-Until then:
+Future work is limited to explicit exceptions or new modal UX:
 
 - Keep new blocking modal flows simple.
-- Do not add nested modal behavior without a registry and tests.
+- Do not add nested modal behavior without a registry entry, targeted tests, and mobile manual verification.
 - Prefer inline detail or non-blocking notices for secondary information.
+- If an exception is accepted later, document close order, focus restore, Esc behavior, and background lock ownership before implementing it.

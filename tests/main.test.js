@@ -1614,6 +1614,27 @@ runTest('docs は pending HTML helper 化の現在地を記載している', () 
     assert.ok(!uiRefactor.includes('renderPending の pending 種別ごとの helper 分離。'));
 });
 
+runTest('docs は Phase 1〜7 実装後の設計状態と矛盾しない', () => {
+    const decisions = fs.readFileSync(path.join(__dirname, '..', 'docs/IMPLEMENTATION_DECISIONS.md'), 'utf8');
+    const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
+    const modalAdr = fs.readFileSync(path.join(__dirname, '..', 'docs/ADR_MODAL_STACK_POLICY.md'), 'utf8');
+    const onlineSync = fs.readFileSync(path.join(__dirname, '..', 'docs/ONLINE_SYNC.md'), 'utf8');
+
+    assert.ok(decisions.includes('Future nested blocking modal exceptions'));
+    assert.ok(decisions.includes('Durable canonical state adapter'));
+    assert.ok(decisions.includes('Scoped reads prefer'));
+    assert.ok(!decisions.includes('Modal registry and deny-by-default implementation.'));
+    assert.ok(!decisions.includes('Per-room restore index and visible multi-room resume UI.'));
+    assert.ok(!decisions.includes('Old global keys are read only through scoped migration.'));
+    assert.ok(handoff.includes('modal deny-by-default は実装済み'));
+    assert.ok(handoff.includes('existing per-room restore index only as a locator'));
+    assert.ok(!handoff.includes('modal stack / deny-nesting policy は design required'));
+    assert.ok(modalAdr.includes('## Implementation Status'));
+    assert.ok(modalAdr.includes('MODAL_STACK_EXCEPTION_REGISTRY'));
+    assert.ok(!modalAdr.includes('This ADR intentionally does not change code'));
+    assert.ok(onlineSync.includes('live dice と in-memory canonical mirror は導入済み'));
+});
+
 runTest('docs は hostless restore の再評価gateを記載している', () => {
     const hostless = fs.readFileSync(path.join(__dirname, '..', 'docs/HOSTLESS_RESTORE_DESIGN.md'), 'utf8');
     const adr = fs.readFileSync(path.join(__dirname, '..', 'docs/ADR_RESTORE_TRUST_BOUNDARY.md'), 'utf8');

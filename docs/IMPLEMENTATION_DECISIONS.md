@@ -27,7 +27,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 
 2. **Restore trust track**
    - Keep current host-only server restart restore for casual play.
-   - Finish per-room restore storage index and scoped read/write cleanup before resume UI.
+   - Keep the existing per-room restore index and scoped read/write cleanup as the footing before resume UI.
    - Add durable server-persisted canonical state behind an operational storage decision.
    - Only then reconsider hostless restore. If implemented before server persistence, it must be explicitly provisional and quorum/hash based.
    - Signed snapshots/action logs are not a replacement for server persistence unless the project accepts client-carried signed state as the explicit product model.
@@ -92,16 +92,16 @@ Stale client detection is diagnostic only. It must not delete restore bundles, r
 
 - Documentation alignment and ADR status cleanup.
 - Tests/fixtures for future decisions that do not change runtime authority.
-- Per-room restore index design and compatibility tests, if kept separate from UI changes.
+- Per-room restore index compatibility tests and non-authoritative locator docs.
 - Client-error production environment runbook updates.
 
 ### Later
 
-- Modal registry and deny-by-default implementation.
-- Per-room restore index and visible multi-room resume UI.
+- Future nested blocking modal exceptions, only with registry entries, targeted tests, and mobile manual verification.
+- Candidate classification, visible multi-room resume picker, and retention/stale/completed policy.
 - Legacy/global restore key pruning after compatibility policy is settled.
-- Server-persisted canonical state proof of concept behind a feature flag.
-- Signed restore schema only with key/version/migration policy.
+- Durable canonical state adapter behind an operational storage decision.
+- Real signed restore verification only with canonical serialization, key/version/migration policy.
 - Hostless restore only after authority model is settled.
 
 ### Do Not Do
@@ -133,8 +133,8 @@ Restore trust:
 Storage namespace:
 
 - New per-room keys and index entries are written.
-- Old global keys are read only through scoped migration.
-- Stale/completed bundles are pruned without deleting the current room pending action.
+- Scoped reads prefer `*:room:<ROOM>` keys and fall back to legacy global keys for compatibility; future picker actions must re-read scoped room data and must not select candidates from global keys.
+- Stale index rows are pruned without deleting restore bundles; stale/completed bundle deletion remains behind a retention policy.
 - Existing `onlinePendingAction.roomId` gates remain enforced.
 
 Operations/security:

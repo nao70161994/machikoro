@@ -250,11 +250,12 @@ function requestClientErrorToken(req) {
     return match ? match[1].trim() : '';
 }
 
-function authorizeClientErrorRequest(req, env = process.env) {
+function authorizeClientErrorRequest(req, env = process.env, authOptions = {}) {
     if (!isClientErrorOriginAllowed(req, env)) return { ok: false, error: 'forbidden_origin' };
     if (isProductionNoOriginClientErrorBlocked(req, env)) return { ok: false, error: 'forbidden_origin' };
     const expectedToken = clientErrorSharedToken(env);
     if (!expectedToken) return { ok: true };
+    if (authOptions.allowSameOriginWithoutToken !== false && hasClientReportOrigin(req)) return { ok: true };
     return requestClientErrorToken(req) === expectedToken
         ? { ok: true }
         : { ok: false, error: 'invalid_client_error_token' };
@@ -488,7 +489,7 @@ function buildClientErrorTestPayload(now = Date.now(), buildHash = BUILD_HASH) {
 
 async function handleClientErrorTestRequest(req, res, options = {}) {
     const env = options.env || process.env;
-    const auth = authorizeClientErrorRequest(req, env);
+    const auth = authorizeClientErrorRequest(req, env, { allowSameOriginWithoutToken: false });
     if (!auth.ok) {
         res.status(403).json({ ok: false, error: auth.error });
         return;

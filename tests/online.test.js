@@ -340,6 +340,7 @@ runTest('restore room index pruning は実体のない stale entry だけを落�
     const index = rt._readOnlineRestoreRoomIndex();
     assert.strictEqual(index.length, 1);
     assert.strictEqual(index[0].roomId, 'ROOM02');
+    assert.ok(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM02')));
 });
 
 runTest('initSocket はSocket.IO script未読込時に状態を変更しない', () => {
