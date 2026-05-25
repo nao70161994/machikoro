@@ -50,11 +50,11 @@ Treat current-version `human-turn-ui-locked` as a mismatch between `GameManager.
 | --- | --- | --- |
 | `roll` | `rollDice` | `btnRoll` |
 | `selectDice` / `rerollConfirm` / `harborChoice` | dice/reroll/harbor actions | `diceChoose` |
-| `pending` | `resolve*` pending actions | `pendingModal` / `pendingMenu` |
+| `pending` or `pendingIT` special case | `resolve*` pending actions | `pendingModal` / `pendingMenu` |
 | `build` | `buildCard` / `buildLandmark` / `undoBuild` | `buildMenu` |
 | `build` | `nextTurn` | `btnSkip` |
 
-If an allowed action exists but its container is hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, or has no usable child actions, `validateUiInteractability()` reports a registry-based `allowed-action-container-not-clickable` issue. Normal render now runs `syncUiInteractabilityAfterRender()` to make allowed containers physically clickable before the watchdog fires. `recoverUiInteractability()` remains the final fallback and records before/after diagnostics, but a recovery firing on a current version should still be treated as a regression. Add new gameplay action surfaces to the registry first, then add both a normal-render no-recovery test and a fallback recovery test.
+If an allowed action exists but its container is hidden, inert, aria-hidden, pointer-blocked, ancestor-blocked, lacks the expected `data-action` child, or has no usable child actions, `validateUiInteractability()` reports a registry-based `allowed-action-container-not-clickable` issue. Missing registry entries are reported as `allowed-action-missing-container-registry` instead of being silently ignored. Normal render runs `syncUiInteractabilityAfterRender()` to make allowed containers physically clickable before the watchdog fires. `recoverUiInteractability()` remains the final fallback and records before/after diagnostics, but a recovery firing on a current version should still be treated as a regression. Add new gameplay action surfaces to the registry first, then add registry coverage, normal-render no-recovery, and fallback recovery tests. Existing entry points are `tests/integration.test.js` and the release DOM-id check in `tests/release-e2e.test.js`.
 
 ### `cpu-turn-stalled` during pending CPU turns
 

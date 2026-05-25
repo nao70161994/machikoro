@@ -1097,3 +1097,21 @@ Regression coverage:
 - `tests/integration.test.js` verifies normal render produces no `human-turn-ui-locked` issue and no watchdog recovery for `roll`, `rerollConfirm`, `harborChoice`, `pending resolveBusiness`, and `build nextTurn`.
 - `tests/integration.test.js` verifies stale build-phase `gameScreen` / `btnSkip` / `buildMenu` locks are synchronized by render before watchdog notification.
 - `tests/integration.test.js` verifies fallback recovery trace includes before/after diagnostics when recovery is still invoked.
+
+### Registry-wide action/container audit
+
+Observed risk:
+- The primary action container registry covered the normal phase actions, but the contract was not directly tested against every `GAME_ACTIONS` entry.
+- `pendingIT` can make `allowedActionsFor(game)` return `resolveIT` even if phase has not yet been normalized to `pending`, so a phase-only registry lookup could miss the pending UI surface in restore or abnormal intermediate states.
+- Container-level usability could be satisfied by unrelated child controls such as detail or filter buttons, which made build/pending diagnostics less precise than the actual gameplay action.
+
+Root-cause fix:
+- `PRIMARY_ACTION_CONTAINER_REGISTRY` now exposes a diagnostic snapshot and is tested against `GAME_ACTIONS`, `GAME_ACTION_REGISTRY`, `GAME_PHASE_ACTIONS`, and pending action specs.
+- `resolveIT` keeps the pending container mapping for the `pendingIT` special case even outside `phase=pending`.
+- `validateUiInteractability()` now reports missing action registry entries and requires expected `data-action` children for content containers, so unrelated controls no longer satisfy gameplay action clickability.
+
+Regression coverage:
+- `tests/integration.test.js` verifies the registry covers every game action exactly once and all registry target/modal IDs exist in the integration DOM.
+- `tests/integration.test.js` verifies missing allowed-action registry entries are reported as contract violations.
+- `tests/integration.test.js` verifies normal render needs no recovery for roll, selectDice, reroll/skipReroll, harbor, all pending resolvers including `resolveIT`, buildCard, buildLandmark, undoBuild, and nextTurn.
+- `tests/release-e2e.test.js` verifies the registry container IDs exist in `index.html`.

@@ -1,6 +1,7 @@
 const assert = require('assert');
 const { makeElement, runTest } = require('./helpers/test-utils');
 const { loadIntegrationRuntime } = require('./helpers/integration-runtime');
+const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function hideAllTestModals(rt) {
     ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal'].forEach(id => {
@@ -716,6 +717,29 @@ runTest('integration: primary action registry は各phaseのhidden/inert/pointer
     }
 });
 
+runTest('integration: allowed action は同じdata-actionの有効子要素を要求する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 0;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const snapshot = rt.collectUiLockSnapshot('build-card-no-action-child');
+    const issue = rt.validateUiInteractability(snapshot).find(item => item.action === 'buildLandmark');
+    assert.ok(issue);
+    assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');
+    assert.strictEqual(issue.reason, 'action-child-not-clickable');
+});
+
 runTest('integration: allowed action container は子ボタン全disabledをクリック不能として診断する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -1126,6 +1150,57 @@ runTest('integration: client側debug error reportを手動送信できる', () =
     assert.ok(checkpoint);
 });
 
+runTest('integration: primary action container registry は GameManager action contract を網羅する', () => {
+    const rt = loadIntegrationRuntime();
+    const gameRuntime = loadGameRuntime();
+    const registry = rt.primaryActionContainerRegistryForDiagnostics();
+    const registryActions = registry.flatMap(entry => entry.actions);
+    const expectedActions = Object.values(gameRuntime.GAME_ACTIONS);
+
+    assert.deepStrictEqual([...new Set(registryActions)].sort(), expectedActions.slice().sort());
+    assert.strictEqual(registryActions.length, expectedActions.length, 'registry actions must not be duplicated');
+
+    const phaseActionEntries = Object.entries(gameRuntime.GAME_PHASE_ACTIONS)
+        .flatMap(([phase, actions]) => actions.map(action => [action, phase]));
+    const pendingEntries = gameRuntime.PENDING_ACTION_SPECS
+        .map(spec => [spec.action, gameRuntime.GAME_PHASES.PENDING])
+        .concat([[gameRuntime.PENDING_IT_QUEUE_POLICY.action, gameRuntime.GAME_PHASES.PENDING]]);
+    const expectedPhaseByAction = new Map(phaseActionEntries.concat(pendingEntries));
+
+    for (const entry of registry) {
+        assert.ok(rt.__test.elements[entry.targetId], `${entry.targetId} target exists`);
+        if (entry.modalId) assert.ok(rt.__test.elements[entry.modalId], `${entry.modalId} modal exists`);
+        for (const action of entry.actions) {
+            assert.strictEqual(entry.phase, expectedPhaseByAction.get(action), `${action} registry phase`);
+            assert.strictEqual(gameRuntime.GAME_ACTION_REGISTRY[action].phase, entry.phase, `${action} GameManager phase`);
+        }
+    }
+});
+
+runTest('integration: 未登録allowed actionはinteractability contract違反として検出する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const snapshot = rt.collectUiLockSnapshot('missing-registry-action');
+    snapshot.allowedActions = ['futureAction'];
+    const issue = rt.validateUiInteractability(snapshot).find(item => item.action === 'futureAction');
+    assert.ok(issue);
+    assert.strictEqual(issue.kind, 'allowed-action-missing-container-registry');
+    assert.strictEqual(issue.reason, 'missing-registry');
+    assert.strictEqual(issue.freezeKind, 'human-turn-ui-locked');
+});
+
 runTest('integration: 通常renderは主要action containerをrecoveryなしで操作可能にする', () => {
     const cases = [
         {
@@ -1134,8 +1209,18 @@ runTest('integration: 通常renderは主要action containerをrecoveryなしで�
             setup(rt, game) { game.phase = rt.GAME_PHASES.ROLL; },
         },
         {
-            name: 'rerollConfirm',
+            name: 'selectDice',
+            action: 'selectDice',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.SELECT_DICE; },
+        },
+        {
+            name: 'rerollConfirm reroll',
             action: 'rerollDice',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.REROLL_CONFIRM; game.lastDiceResult = 6; },
+        },
+        {
+            name: 'rerollConfirm skip',
+            action: 'skipReroll',
             setup(rt, game) { game.phase = rt.GAME_PHASES.REROLL_CONFIRM; game.lastDiceResult = 6; },
         },
         {
@@ -1151,6 +1236,78 @@ runTest('integration: 通常renderは主要action containerをrecoveryなしで�
                 game.pendingBusiness = 1;
                 game.currentPlayer().cards.push(rt.createCardByName('ビジネスセンター'));
                 game.players[1].cards.push(rt.createCardByName('森林'));
+            },
+        },
+        {
+            name: 'pending resolveTV',
+            action: 'resolveTV',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingTV = 1;
+            },
+        },
+        {
+            name: 'pending resolveCleaning',
+            action: 'resolveCleaning',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingCleaning = 1;
+                game.players[1].cards.push(rt.createCardByName('森林'));
+            },
+        },
+        {
+            name: 'pending resolveMover',
+            action: 'resolveMover',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingMover = 1;
+                game.currentPlayer().cards.push(rt.createCardByName('森林'));
+            },
+        },
+        {
+            name: 'pending resolveRenovation',
+            action: 'resolveRenovation',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingRenovation = 1;
+                game.currentPlayer().landmarks['駅'] = true;
+            },
+        },
+        {
+            name: 'pending resolveIT',
+            action: 'resolveIT',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingIT = true;
+                game.currentPlayer().coins = 3;
+            },
+        },
+        {
+            name: 'pending resolveIT outside pending phase',
+            action: 'resolveIT',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.BUILD;
+                game.pendingIT = true;
+                game.currentPlayer().coins = 3;
+            },
+        },
+        {
+            name: 'buildCard',
+            action: 'buildCard',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.BUILD; game.currentPlayer().coins = 10; },
+        },
+        {
+            name: 'buildLandmark',
+            action: 'buildLandmark',
+            setup(rt, game) { game.phase = rt.GAME_PHASES.BUILD; game.currentPlayer().coins = 10; },
+        },
+        {
+            name: 'undoBuild',
+            action: 'undoBuild',
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.BUILD;
+                game.builtThisTurn = true;
+                rt.__test.setUndoState({ state: 'test' });
             },
         },
         {

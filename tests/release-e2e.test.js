@@ -232,6 +232,13 @@ runTest('release mobile profiles は viewport/touch/safe-area と主要UAを定�
     }
 });
 
+runTest('release UI action registry containers は index.html に存在する', () => {
+    const index = readRepoFile('index.html');
+    ['btnRoll', 'btnSkip', 'diceChoose', 'buildMenu', 'pendingModal', 'pendingMenu'].forEach(id => {
+        assert.ok(new RegExp('id=[\"\']' + id + '[\"\']').test(index), id + ' exists');
+    });
+});
+
 runTest('release client error capture は iPhone Safari 風コンテキストと重複抑止を保持する', () => {
     const { context, fetchCalls } = loadAppShellRuntime(MOBILE_PROFILES[0]);
     const report = context.buildClientErrorReport({

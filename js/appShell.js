@@ -104,6 +104,86 @@ function childInteractiveState(el) {
     return { total: children.length, usable };
 }
 
+function expectedChildActionsForAction(action) {
+    if (action === 'selectDice') return ['selectDiceCount'];
+    if ([
+        'rerollDice',
+        'skipReroll',
+        'resolveHarbor',
+        'resolveTV',
+        'resolveBusiness',
+        'resolveCleaning',
+        'resolveMover',
+        'resolveRenovation',
+        'resolveIT',
+        'buildCard',
+        'buildLandmark',
+        'undoBuild',
+    ].includes(action)) return [action];
+    return [];
+}
+
+function expectedChildActionsForEntry(snapshot, entry) {
+    const action = entry && entry.action || '';
+    if ((action === 'buildCard' || action === 'buildLandmark') && snapshot && snapshot.builtThisTurn) return [];
+    if (action === 'undoBuild') {
+        try {
+            if (typeof undoState === 'undefined' || !undoState || !(snapshot && snapshot.builtThisTurn)) return [];
+        } catch (_) {
+            return [];
+        }
+    }
+    return expectedChildActionsForAction(action);
+}
+
+function childInteractiveStateForActions(el, actions) {
+    const expected = new Set(actions || []);
+    if (!el || !expected.size || typeof el.querySelectorAll !== 'function') return { total: 0, usable: 0 };
+    let children = [];
+    try {
+        children = Array.from(el.querySelectorAll('button, [role="button"], [data-action]') || [])
+            .filter(child => child && expected.has(child.dataset && child.dataset.action));
+    } catch (_) {
+        return { total: 0, usable: 0 };
+    }
+    if (children.length <= 0 && typeof el.innerHTML === 'string' && el.innerHTML) {
+        let total = 0;
+        let usableFromHtml = 0;
+        expected.forEach(action => {
+            const escaped = String(action).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const re = new RegExp('<[^>]+data-action=["\']' + escaped + '["\'][^>]*>', 'g');
+            const matches = el.innerHTML.match(re) || [];
+            total += matches.length;
+            usableFromHtml += matches.filter(tag => !/\sdisabled(?:\s|=|>|$)/i.test(tag)).length;
+        });
+        return { total, usable: usableFromHtml };
+    }
+    let usable = 0;
+    children.forEach(child => {
+        if (!child || child.disabled || child.hidden || child.inert) return;
+        const style = child.style || {};
+        let computedDisplay = '';
+        let computedVisibility = '';
+        let computedPointerEvents = '';
+        try {
+            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+                const computed = window.getComputedStyle(child);
+                computedDisplay = computed && computed.display || '';
+                computedVisibility = computed && computed.visibility || '';
+                computedPointerEvents = computed && computed.pointerEvents || '';
+            }
+        } catch (_) {}
+        if (style.display === 'none' || computedDisplay === 'none') return;
+        if (style.visibility === 'hidden' || computedVisibility === 'hidden') return;
+        if (style.pointerEvents === 'none' || computedPointerEvents === 'none') return;
+        try {
+            if (typeof child.closest === 'function' && child.closest('[inert], [aria-hidden="true"]')) return;
+        } catch (_) {}
+        usable++;
+    });
+    return { total: children.length, usable };
+}
+
 function safeElementSnapshot(id) {
     const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
     if (!el) return null;
@@ -198,15 +278,20 @@ const PRIMARY_ACTION_CONTAINER_REGISTRY = Object.freeze([
     Object.freeze({ phase: 'selectDice', actions: Object.freeze(['selectDice']), targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true }),
     Object.freeze({ phase: 'rerollConfirm', actions: Object.freeze(['rerollDice', 'skipReroll']), targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true }),
     Object.freeze({ phase: 'harborChoice', actions: Object.freeze(['resolveHarbor']), targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true }),
-    Object.freeze({ phase: 'pending', actions: Object.freeze(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']), targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true }),
+    Object.freeze({ phase: 'pending', actions: Object.freeze(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']), targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true }),
     Object.freeze({ phase: 'build', actions: Object.freeze(['buildCard', 'buildLandmark', 'undoBuild']), targetId: 'buildMenu', requiresContent: true }),
     Object.freeze({ phase: 'build', actions: Object.freeze(['nextTurn']), targetId: 'btnSkip', targetSource: 'actionButtons', requiresContent: false }),
 ]);
 
 function actionContainerSpecForAction(snapshot, action) {
     const phase = String(snapshot && snapshot.phase || '');
-    return PRIMARY_ACTION_CONTAINER_REGISTRY.find(spec =>
+    const exact = PRIMARY_ACTION_CONTAINER_REGISTRY.find(spec =>
         (!spec.phase || spec.phase === phase) && spec.actions.includes(action)
+    );
+    if (exact) return exact;
+    const pendingFields = snapshot && snapshot.pendingFields || {};
+    return PRIMARY_ACTION_CONTAINER_REGISTRY.find(spec =>
+        spec.allowPendingItOutsidePhase && action === 'resolveIT' && !!pendingFields.pendingIT && spec.actions.includes(action)
     ) || null;
 }
 
@@ -215,6 +300,25 @@ function expectedActionContainerEntries(snapshot) {
     return allowed
         .map(action => ({ action, spec: actionContainerSpecForAction(snapshot, action) }))
         .filter(entry => !!entry.spec);
+}
+
+function missingActionContainerRegistryEntries(snapshot) {
+    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+    return allowed
+        .filter(action => !actionContainerSpecForAction(snapshot, action))
+        .map(action => ({ action, phase: String(snapshot && snapshot.phase || '') }));
+}
+
+function primaryActionContainerRegistryForDiagnostics() {
+    return PRIMARY_ACTION_CONTAINER_REGISTRY.map(spec => ({
+        phase: spec.phase || '',
+        actions: Array.from(spec.actions || []),
+        targetId: spec.targetId || '',
+        modalId: spec.modalId || '',
+        targetSource: spec.targetSource || '',
+        requiresContent: !!spec.requiresContent,
+        allowPendingItOutsidePhase: !!spec.allowPendingItOutsidePhase,
+    }));
 }
 
 function snapshotStateById(snapshot, id, targetSource = '') {
@@ -235,6 +339,12 @@ function isActionContainerUiUsable(snapshot, entry) {
     const state = snapshotStateById(snapshot, spec.targetId, spec.targetSource);
     if (!state) return false;
     if (spec.requiresContent && state.htmlLength <= 0) return false;
+    const expectedChildActions = expectedChildActionsForEntry(snapshot, entry);
+    if (spec.requiresContent && expectedChildActions.length) {
+        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
+        const actionChildState = childInteractiveStateForActions(el, expectedChildActions);
+        if (actionChildState.total <= 0 || actionChildState.usable <= 0) return false;
+    }
     if (spec.requiresContent && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
     if (!isElementUsablyEnabled(state)) return false;
     if (spec.modalId) {
@@ -269,10 +379,24 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
     if (!isMyTurn) return issues;
     if (activeModals.length && !expectedPending.length) return issues;
 
+    for (const entry of missingActionContainerRegistryEntries(snapshot)) {
+        issues.push({
+            kind: 'allowed-action-missing-container-registry',
+            action: entry.action,
+            target: '',
+            actionTarget: entry.action,
+            phase: entry.phase,
+            reason: 'missing-registry',
+            freezeKind: 'human-turn-ui-locked',
+        });
+    }
+
     for (const entry of expectedContainers) {
         if (isActionContainerUiUsable(snapshot, entry)) continue;
         const state = snapshotStateById(snapshot, entry.spec.targetId, entry.spec.targetSource);
         let reason = uiLockReasonForElement(state);
+        const expectedChildActions = expectedChildActionsForEntry(snapshot, entry);
+        if (reason === 'not-clickable' && expectedChildActions.length) reason = 'action-child-not-clickable';
         if (entry.spec.modalId) {
             const modal = snapshotStateById(snapshot, entry.spec.modalId);
             if (modal && !isElementUsablyEnabled(modal)) reason = uiLockReasonForElement(modal);

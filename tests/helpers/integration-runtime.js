@@ -185,6 +185,7 @@ function loadIntegrationRuntime(options = {}) {
         setGame(value) { context.__tmpGame = value; vm.runInContext('game = __tmpGame', context); delete context.__tmpGame; },
         getCpuPlayers() { return vm.runInContext('cpuPlayers', context); },
         setCpuPlayers(value) { context.__tmpCpuPlayers = value; vm.runInContext('cpuPlayers = __tmpCpuPlayers', context); delete context.__tmpCpuPlayers; },
+        setUndoState(value) { context.__tmpUndoState = value; vm.runInContext('undoState = __tmpUndoState', context); delete context.__tmpUndoState; },
         setOnlineState(value) {
             context.__tmpOnlineState = value;
             vm.runInContext(`

@@ -292,15 +292,16 @@ Test index:
 ## UI interactability contract
 
 - Any visible and expected interaction must be both logically allowed and physically clickable. The runtime contract is now represented by `collectUiLockSnapshot()`, `validateUiInteractability()`, `syncUiInteractabilityAfterRender()`, and `recoverUiInteractability()` in `js/appShell.js`.
-- When adding an action surface, add it to `PRIMARY_ACTION_CONTAINER_REGISTRY` in `js/appShell.js` if it is driven by `allowedActionsFor()`. The registry is the UI state-machine contract from allowed action to physical container: `rollDice -> btnRoll`, dice/harbor choices -> `diceChoose`, build actions -> `buildMenu`, `nextTurn -> btnSkip`, and pending resolvers -> `pendingModal` / `pendingMenu`.
-- Do not treat `disabled=false` as sufficient. Check parent/root state too: `display:none`, `hidden`, `inert`, `aria-hidden`, `pointer-events:none`, and `ancestorBlocked` all make a visible control unusable.
+- Keep the three action layers distinct: `GAME_ACTION_REGISTRY` is the rule/server/replay payload contract, `currentUiAllowedActions()` / `canShowUiAction()` is the render gate, and `PRIMARY_ACTION_CONTAINER_REGISTRY` is the allowed-action-to-physical-container clickability contract.
+- When adding an action surface, add it to `PRIMARY_ACTION_CONTAINER_REGISTRY` in `js/appShell.js` if it is driven by `allowedActionsFor()`. The registry must cover every `GAME_ACTIONS` entry exactly once: `rollDice -> btnRoll`, dice/harbor choices -> `diceChoose`, build actions -> `buildMenu`, `nextTurn -> btnSkip`, and pending resolvers -> `pendingModal` / `pendingMenu`. `resolveIT` is also registered for the `pendingIT` special case where allowed actions can be `resolveIT` even before phase is normalized to `pending`.
+- Do not treat `disabled=false` as sufficient. Check parent/root state too: `display:none`, `hidden`, `inert`, `aria-hidden`, `pointer-events:none`, and `ancestorBlocked` all make a visible control unusable. For content containers, the registry also checks that the expected `data-action` child exists and is usable, so unrelated detail/filter buttons do not satisfy gameplay actions.
 - Active modals are allowed to lock the background, but the visible modal itself must remain interactive. `pendingModal` is special: it is validated by pending resolver rules so populated pending UI must have `pendingModal` and `pendingMenu` pointer interaction restored to `auto`.
 - Title/reset screens must not be auto-restored into `gameScreen`. `recoverUiInteractability()` should only be used with active game snapshots and must preserve the existing active-modal guard.
 
 Test index:
 
-- `tests/integration.test.js`: normal-render no-recovery checks for roll, rerollConfirm, harborChoice, pending resolveBusiness, and build nextTurn; registry-based recovery fallback for the same surfaces; root `gameScreen` display/inert locks; stale confirm/body locks; pending/buildMenu pointer locks; visible modal pointer locks; title/active-modal false positives.
-- `tests/release-e2e.test.js`: iPhone Safari pending pointer state approximation.
+- `tests/integration.test.js`: registry coverage against `GAME_ACTIONS`, missing-registry diagnostics, normal-render no-recovery checks for roll/selectDice/rerollConfirm/harborChoice/all pending resolvers/build actions/nextTurn, registry-based recovery fallback, action-specific child checks, root `gameScreen` display/inert locks, stale confirm/body locks, pending/buildMenu pointer locks, visible modal pointer locks, title/active-modal false positives.
+- `tests/release-e2e.test.js`: registry container IDs exist in `index.html`; iPhone Safari pending pointer state approximation.
 
 ## Maintainability continuation Cycle 1 handoff
 
