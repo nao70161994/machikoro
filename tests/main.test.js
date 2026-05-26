@@ -1714,6 +1714,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
+    assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));

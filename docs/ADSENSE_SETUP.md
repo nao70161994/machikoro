@@ -20,6 +20,7 @@ PUBLIC_ORIGIN=https://machikoro-9jv2.onrender.com
 curl -I "$PUBLIC_ORIGIN/"
 curl -I "$PUBLIC_ORIGIN/privacy.html"
 curl -I "$PUBLIC_ORIGIN/rules.html"
+curl -I "$PUBLIC_ORIGIN/manifest.json"
 curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -s "$PUBLIC_ORIGIN/api/version"
 ```
