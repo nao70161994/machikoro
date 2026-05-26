@@ -1790,7 +1790,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
-    assert.ok(readme.includes('トップページの説明メタは登録不要のプレイ'));
+    assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
     assert.ok(readme.includes('rules.html` は勝利条件と遊び方を公開 URL で確認できる'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
