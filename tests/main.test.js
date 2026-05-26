@@ -1757,6 +1757,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('privacy.html'));
     assert.ok(releaseChecklist.includes('account-free play'));
     assert.ok(releaseChecklist.includes('error notification exclusions'));
+    assert.ok(releaseChecklist.includes('AdSense review script'));
     assert.ok(releaseChecklist.includes('contact guidance'));
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('rules.html'));

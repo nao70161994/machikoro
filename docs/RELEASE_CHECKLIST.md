@@ -72,7 +72,7 @@ Before adding ad slots or expanding beyond the review loader, verify `docs/ADS_P
 - Placeholder failure must not stop game rendering.
 - PWA cache includes `js/adSlots.js` so offline app shell does not lose the helper.
 - `privacy.html` and `rules.html` are reachable from the title screen and are cached for PWA/offline shell use.
-- `privacy.html` explains local storage, online room data, client error reporting, and future ad provider data use.
+- `privacy.html` explains local storage, online room data, client error reporting, the AdSense review script, and future ad provider data use.
 - Placeholder slots use `pointer-events: none` and neutral copy so they cannot behave like buttons or encourage accidental taps.
 
 ## PWA Install / Update
