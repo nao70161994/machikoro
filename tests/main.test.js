@@ -1688,8 +1688,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
+    assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
+    assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
+    assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));

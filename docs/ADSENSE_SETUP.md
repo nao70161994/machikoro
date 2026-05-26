@@ -9,7 +9,7 @@ Open these URLs in a normal browser window and in a private/incognito window:
 - `<PUBLIC_ORIGIN>/`: title screen loads without console errors.
 - `<PUBLIC_ORIGIN>/privacy.html`: privacy policy is public, indexable, and links back to the game and rules page.
 - `<PUBLIC_ORIGIN>/rules.html`: rules page is public, indexable, and links back to the game and privacy policy.
-- `<PUBLIC_ORIGIN>/manifest.json`: PWA manifest returns JSON.
+- `<PUBLIC_ORIGIN>/manifest.json` and `<PUBLIC_ORIGIN>/manifest.webmanifest`: PWA manifests return JSON.
 - `<PUBLIC_ORIGIN>/sw.js`: Service Worker script returns JavaScript and includes the current app shell cache list.
 - `<PUBLIC_ORIGIN>/api/version`: returns the deployed build/version metadata.
 
@@ -20,6 +20,7 @@ PUBLIC_ORIGIN=https://machikoro-9jv2.onrender.com
 curl -I "$PUBLIC_ORIGIN/"
 curl -I "$PUBLIC_ORIGIN/privacy.html"
 curl -I "$PUBLIC_ORIGIN/rules.html"
+curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -s "$PUBLIC_ORIGIN/api/version"
 ```
 

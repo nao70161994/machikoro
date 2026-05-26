@@ -388,7 +388,7 @@ npm run report-rl-registry -- --format markdown --output models/rl_model/reports
 - `style.css`: 全スタイル
 - `server.js`: Express + Socket.IO サーバー、オンライン検証、復元
 - `sw.js`: Service Worker
-- `manifest.json`: PWA マニフェスト
+- `manifest.json` / `manifest.webmanifest`: PWA マニフェスト
 
 主要クライアントモジュール:
 
