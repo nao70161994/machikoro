@@ -465,6 +465,7 @@ RL スクリプト / モデル:
 
 - Render での稼働を前提にしています。
 - Render 環境変数、ntfy、広告 placeholder、PWA、CI のリリース前確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) を参照してください。
+- 通知分類、CI失敗、stale client、PWA更新、公開前確認の運用手順は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) を参照してください。
 - AdSense 審査提出前の公開 URL 確認は [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md) を参照してください。
 - AdSense 導入前の公開ページは [`privacy.html`](./privacy.html) と [`rules.html`](./rules.html) です。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
