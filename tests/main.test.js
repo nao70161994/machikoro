@@ -1803,8 +1803,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('AdSense Review Change Policy'));
     assert.ok(operations.includes('docs cleanup'));
     assert.ok(operations.includes('OGP/image metadata improvements'));
+    assert.ok(operations.includes('how-to text'));
     assert.ok(operations.includes('unknown notification fixes'));
     assert.ok(operations.includes('CI failure fixes'));
+    assert.ok(operations.includes('typo fixes'));
     assert.ok(operations.includes('minor CSS for static pages'));
     assert.ok(operations.includes('large UI redesigns'));
     assert.ok(operations.includes('ad placement changes'));
