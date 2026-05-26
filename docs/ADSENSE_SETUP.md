@@ -33,7 +33,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
 - Confirm `privacy.html` mentions local browser storage, online room data, client error reporting, and future Google AdSense / Cookie usage.
-- Confirm `rules.html` describes the win condition, turn flow, card colors, activation order, and landmarks.
+- Confirm `rules.html` describes how to start a local or online game, plus the win condition, turn flow, card colors, activation order, and landmarks.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata and use `/icons/icon-512.png` for the preview image.
 
 The in-app rules modal can remain available, but AdSense review should have direct public URLs for both privacy and rules.

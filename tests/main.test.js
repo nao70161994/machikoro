@@ -1663,6 +1663,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('Google AdSense'));
     assert.ok(privacy.includes('エラー'));
     assert.ok(rules.includes('勝利'));
+    assert.ok(rules.includes('はじめて遊ぶ方へ'));
+    assert.ok(rules.includes('タイトル画面でプレイ人数'));
+    assert.ok(rules.includes('ローカル対戦'));
+    assert.ok(rules.includes('オンライン対戦'));
 
     const titleSlot = renderAdSlot('title-bottom');
     const rulesSlot = renderAdSlot('rules-bottom');
