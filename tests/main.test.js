@@ -1455,7 +1455,18 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
 
     assert.ok(html.includes('<title>ダイスシティ</title>'));
-    assert.ok(html.includes('<h1>🏙️ ダイスシティ</h1>'));
+    assert.ok(html.includes('<h1>ダイスシティ</h1>'));
+    const titleScreen = html.slice(html.indexOf('<div id="titleScreen"'), html.indexOf('<div id="gameScreen"'));
+    const pwaBanners = html.slice(html.indexOf('<div id="pwaUpdateBanner"'), html.indexOf('<script src="js/Card.js"></script>'));
+    assert.ok(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(titleScreen));
+    assert.ok(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(pwaBanners));
+    assert.ok(!titleScreen.includes('?? ルール'));
+    assert.ok(!titleScreen.includes('?? ローカル'));
+    assert.ok(!pwaBanners.includes('??'));
+    assert.ok(html.includes('data-ui-action="showRules">ルール</button>'));
+    assert.ok(html.includes('id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal">ローカル</button>'));
+    assert.ok(html.includes('<span class="pwa-banner-icon">更新</span>'));
+    assert.ok(html.includes('<span class="pwa-banner-icon">追加</span>'));
     assert.ok(html.includes('content="ダイスシティ'));
     assert.ok(privacy.includes('<title>プライバシーポリシー - ダイスシティ</title>'));
     assert.ok(rules.includes('<title>ルール - ダイスシティ</title>'));

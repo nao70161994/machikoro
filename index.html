@@ -22,29 +22,29 @@
         <canvas id="cityCanvas"></canvas>
         <div class="title-content">
             <div class="title-header">
-                <h1>🏙️ ダイスシティ</h1>
+                <h1>ダイスシティ</h1>
                 <p class="title-logo-sub">DICE CITY</p>
-                <div class="title-logo-deco"><span>🏙️ ボードゲーム 🏙️</span></div>
+                <div class="title-logo-deco"><span>ボードゲーム</span></div>
                 <div class="title-buttons-row">
-                    <button class="rules-btn" data-ui-action="showRules">📖 ルール</button>
-                    <button class="rules-btn" data-ui-action="showCardSelect">🃏 カード選択</button>
+                    <button class="rules-btn" data-ui-action="showRules">ルール</button>
+                    <button class="rules-btn" data-ui-action="showCardSelect">カード選択</button>
                 </div>
             </div>
 
             <div id="onlineResumeSection" style="display:none">
                 <div class="online-resume-notice">
-                    <span id="onlineResumeDescription">🌐 オンラインゲームが中断されました</span>
+                    <span id="onlineResumeDescription">オンラインゲームが中断されました</span>
                     <div style="display:flex;gap:6px;margin-top:6px">
-                        <button data-ui-action="reconnectOnline" class="resume-btn" style="flex:1">🔌 再接続する</button>
-                        <button data-ui-action="deleteOnlineSession" class="delete-save-btn" aria-label="オンライン再接続データを削除">🗑</button>
+                        <button data-ui-action="reconnectOnline" class="resume-btn" style="flex:1">再接続する</button>
+                        <button data-ui-action="deleteOnlineSession" class="delete-save-btn" aria-label="オンライン再接続データを削除">削除</button>
                     </div>
                 </div>
             </div>
 
             <div class="tab-bar" role="tablist" aria-label="ゲームモード">
-                <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal">🏠 ローカル</button>
-                <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline" role="tab" aria-selected="false" aria-controls="tabContentOnline">🌐 オンライン</button>
-                <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats" role="tab" aria-selected="false" aria-controls="tabContentStats">📊 統計</button>
+                <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal">ローカル</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline" role="tab" aria-selected="false" aria-controls="tabContentOnline">オンライン</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats" role="tab" aria-selected="false" aria-controls="tabContentStats">統計</button>
             </div>
 
             <div id="tabContentLocal" class="tab-content" role="tabpanel" aria-labelledby="tabLocal">
@@ -78,8 +78,8 @@
                 </div>
                 <button id="btnStart" data-ui-action="startGame">ゲーム開始</button>
                 <div id="resumeSection" style="display:none">
-                    <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">▶ 続きから再開</button>
-                    <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">🗑</button>
+                    <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">続きから再開</button>
+                    <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">削除</button>
                 </div>
             </div>
 
@@ -112,7 +112,7 @@
                             <span id="onlineSpeedLabel">1.5秒</span>
                         </div>
                     </div>
-                    <button id="onlineCreateSubmitButton" data-ui-action="showCreateRoom">🏠 ルームを作る</button>
+                    <button id="onlineCreateSubmitButton" data-ui-action="showCreateRoom">ルームを作る</button>
                 </div>
 
                 <div id="onlineJoin" role="tabpanel" aria-labelledby="onlineTabJoin" style="display:none">
@@ -121,11 +121,11 @@
                         <input id="roomIdInput" type="text" placeholder="6文字のルームID" maxlength="6"
                             class="text-input" style="text-transform:uppercase">
                     </div>
-                    <button id="onlineJoinSubmitButton" data-ui-action="joinRoom">🚪 参加する</button>
+                    <button id="onlineJoinSubmitButton" data-ui-action="joinRoom">参加する</button>
                 </div>
 
                 <div id="offlineNotice" class="offline-notice" role="status" aria-live="polite" style="display:none">
-                    📵 オフライン中です。オンライン対戦にはネット接続が必要です。
+                    オフライン中です。オンライン対戦にはネット接続が必要です。
                 </div>
                 <div id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"></div>
             </div>
@@ -323,7 +323,7 @@
     <!-- PWA更新バナー -->
     <div id="pwaUpdateBanner" class="pwa-banner" role="region" aria-labelledby="pwaUpdateMsg" style="display:none">
         <div class="pwa-banner-text">
-            <span class="pwa-banner-icon">🔄</span>
+            <span class="pwa-banner-icon">更新</span>
             <span id="pwaUpdateMsg" aria-live="polite" aria-atomic="true">新しいバージョンがあります</span>
         </div>
         <div class="pwa-banner-actions">
@@ -335,7 +335,7 @@
     <!-- PWAインストールバナー -->
     <div id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true" style="display:none">
         <div class="pwa-banner-text">
-            <span class="pwa-banner-icon">🏙️</span>
+            <span class="pwa-banner-icon">追加</span>
             <span>ホーム画面に追加するとオフラインでも遊べます</span>
         </div>
         <div class="pwa-banner-actions">
