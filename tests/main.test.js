@@ -1450,7 +1450,9 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const riskPlan = fs.readFileSync(path.join(__dirname, '..', 'docs/RISK_REDUCTION_PLAN.md'), 'utf8');
     const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.json'), 'utf8'));
     const webmanifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
-    const publicSurfaces = [html, privacy, rules, readme, riskPlan].join('\n');
+    const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
+    const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
 
     assert.ok(html.includes('<title>ダイスシティ</title>'));
     assert.ok(html.includes('<h1>🏙️ ダイスシティ</h1>'));
@@ -1468,7 +1470,12 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(css.includes('.title-logo-sub'));
     assert.ok(css.includes('font-size: clamp(9px, 2.8vw, 11px);'));
     assert.ok(!publicSurfaces.includes('街コロ'));
+    assert.ok(!publicSurfaces.includes('[Machikoro]'));
+    assert.ok(!publicSurfaces.includes('Machikoro ntfy'));
+    assert.ok(!server.includes('[Machikoro]'));
+    assert.ok(server.includes('[ダイスシティ] Client Error'));
     assert.ok(riskPlan.includes('2026-05-26 Title Logo Layout Update'));
+    assert.ok(riskPlan.includes('2026-05-26 Public Name Final Audit'));
 });
 runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');

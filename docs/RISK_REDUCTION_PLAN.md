@@ -35,6 +35,14 @@ Intentionally not renamed:
 - Public naming surfaces checked in this pass: index title/logo/meta, PWA manifests, privacy/rules pages, README, legal links, footer/navigation, and PWA install/update display strings.
 - No internal `machikoro` identifiers were renamed.
 
+## 2026-05-26 Public Name Final Audit
+
+- Audited public-facing surfaces for the old Japanese product name, romanized old-name variants, and public notification titles after the rename.
+- Public UI / SEO / PWA surfaces checked: `index.html`, `privacy.html`, `rules.html`, `manifest.json`, `manifest.webmanifest`, `README.md`, `sw.js`, root public assets, icons, legal links, rules links, PWA install/update text, and ntfy notification title examples.
+- No remaining old Japanese product-name text was found in public UI / SEO / PWA / notification surfaces.
+- Remaining `machikoro` strings are internal or operational identifiers: Service Worker cache prefix, debug helpers, localStorage keys, package ids, deployed host examples, GitHub repository URLs, and technical docs. These are intentionally retained for compatibility and are not displayed as the product name.
+- The `icons/` files are binary PNG assets and contain no text metadata in this audit scope.
+
 ## Follow-up Checks
 
 - When adding a new public page, include ダイスシティ in title and meta description.
