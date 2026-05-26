@@ -139,7 +139,7 @@ Before public traffic, AdSense review, or broader PWA install testing, confirm t
 
 - `privacy.html` and `rules.html` are reachable from the title screen and mention account-free play, local storage / online room data / client error reporting / ad provider data as applicable.
 - `rules.html` explains how to start local/online play, how card selection works, and how save/resume works before the detailed turn and card rules.
-- Public pages include OGP/Twitter metadata with `/icons/icon-512.png` as the preview image.
+- Public pages include OGP/Twitter metadata with `/icons/icon-512.png` as the preview image and image alt metadata.
 - AdSense placeholders are still limited to title, rules, and result surfaces; no slot is near dice, build, pending, Undo, reconnect, or update controls.
 - `NTFY_TOPIC` receives a controlled `/api/client-error-test` notification, then `CLIENT_ERROR_TEST_ENABLED` is removed again.
 - `NTFY_CI_TOPIC` is configured as a GitHub Actions secret if CI failure paging is desired.
