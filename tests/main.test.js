@@ -1675,6 +1675,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('タイトル画面でプレイ人数'));
     assert.ok(rules.includes('ローカル対戦'));
     assert.ok(rules.includes('オンライン対戦'));
+    assert.ok(rules.includes('ルームを作る'));
+    assert.ok(rules.includes('ルームID'));
+    assert.ok(rules.includes('ルームに参加'));
     assert.ok(rules.includes('保存と再開'));
     assert.ok(rules.includes('タイトル画面から続きが再開'));
     assert.ok(rules.includes('同じ端末から再接続'));
