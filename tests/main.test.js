@@ -1786,6 +1786,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
     assert.ok(adsenseSetup.includes('登録不要 / no-registration play'));
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
+    assert.ok(adsenseSetup.includes('win condition, card selection, and save/resume'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('image alt text'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
