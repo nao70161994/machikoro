@@ -1773,6 +1773,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('contact guidance'));
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('rules.html'));
+    assert.ok(releaseChecklist.includes('explains the win condition'));
     assert.ok(releaseChecklist.includes('card selection works'));
     assert.ok(releaseChecklist.includes('save/resume works'));
     assert.ok(releaseChecklist.includes('/icons/icon-512.png'));
