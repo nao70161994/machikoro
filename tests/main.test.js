@@ -1767,6 +1767,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('image alt metadata'));
     assert.ok(releaseChecklist.includes('title page metadata mentions 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
+    assert.ok(releaseChecklist.includes('no in-game ad slot'));
+    assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
@@ -1798,6 +1800,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('grep -E "アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
+    assert.ok(adsenseSetup.includes('placeholder-only until real ad units are configured'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
