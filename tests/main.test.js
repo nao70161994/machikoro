@@ -1707,6 +1707,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('image alt metadata'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
+    assert.ok(readme.includes('AdSense Review Change Policy'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
