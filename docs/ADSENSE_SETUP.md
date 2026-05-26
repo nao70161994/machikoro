@@ -24,9 +24,9 @@ curl -I "$PUBLIC_ORIGIN/manifest.json"
 curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -I "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version"
-curl -s "$PUBLIC_ORIGIN/" | grep -E "登録不要|og:description|twitter:description"
-curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description"
-curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description"
+curl -s "$PUBLIC_ORIGIN/" | grep -E "登録不要|og:description|twitter:description|og:image:alt|twitter:image:alt"
+curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"
+curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"
 ```
 
 Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, or show stale content from a previous deployment.
