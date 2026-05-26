@@ -25,7 +25,7 @@ curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -I "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version"
 curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "カード選択|保存と再開|og:description|twitter:description"
-curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense"
+curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense|お問い合わせ|最終更新日"
 ```
 
 Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, or show stale content from a previous deployment.
@@ -37,7 +37,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm the title screen shows the legal links below the title ad placeholder.
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
-- Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, and future Google AdSense / Cookie usage.
+- Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, future Google AdSense / Cookie usage, contact guidance, and the last updated date.
 - Confirm `rules.html` describes how to start a local or online game, card selection, save/resume behavior, plus the win condition, turn flow, card colors, activation order, and landmarks.
 - Confirm `rules.html` description / OGP / Twitter metadata also mention card selection and save/resume, so shared previews do not show stale rule-page content.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, image alt text, and use `/icons/icon-512.png` for the preview image.
