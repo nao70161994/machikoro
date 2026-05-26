@@ -1747,6 +1747,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('ad placement changes'));
     assert.ok(operations.includes('PWA behavior changes'));
     assert.ok(operations.includes('node tests/main.test.js'));
+    assert.ok(operations.includes('contact guidance and the last updated date'));
 });
 
 runTest('docs は pending HTML helper 化の現在地を記載している', () => {
