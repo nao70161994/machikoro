@@ -1613,6 +1613,7 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
 
         assert.ok(head.includes('<meta name="robots" content="index,follow">'));
+        assert.ok(/<meta name="description" content="[^"]+">/.test(head));
         assert.ok(head.includes('<meta property="og:site_name" content="ダイスシティ">'));
         assert.ok(head.includes(`<meta property="og:type" content="${page.type}">`));
         assert.ok(head.includes(`<meta property="og:title" content="${page.title}">`));
