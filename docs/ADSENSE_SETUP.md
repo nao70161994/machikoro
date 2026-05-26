@@ -17,14 +17,14 @@ Quick command check:
 
 ```sh
 PUBLIC_ORIGIN=https://machikoro-9jv2.onrender.com
-curl -I "$PUBLIC_ORIGIN/"
-curl -I "$PUBLIC_ORIGIN/privacy.html"
-curl -I "$PUBLIC_ORIGIN/rules.html"
-curl -I "$PUBLIC_ORIGIN/manifest.json"
-curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
+curl -fI "$PUBLIC_ORIGIN/"
+curl -fI "$PUBLIC_ORIGIN/privacy.html"
+curl -fI "$PUBLIC_ORIGIN/rules.html"
+curl -fI "$PUBLIC_ORIGIN/manifest.json"
+curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|standalone|icon-512"
 curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|standalone|icon-512"
-curl -I "$PUBLIC_ORIGIN/sw.js"
+curl -fI "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -s "$PUBLIC_ORIGIN/" | grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"
 curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"

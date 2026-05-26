@@ -1802,6 +1802,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('error notification exclusions'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/privacy.html"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/rules.html"'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
@@ -1812,11 +1815,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('image alt text'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
-    assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.json"'));
-    assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.json"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"'));
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|standalone|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|standalone|icon-512"'));
-    assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/sw.js"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
