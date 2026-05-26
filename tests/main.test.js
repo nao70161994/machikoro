@@ -1612,6 +1612,7 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         const html = fs.readFileSync(path.join(__dirname, '..', page.file), 'utf8');
         const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
 
+        assert.ok(head.includes('<meta name="robots" content="index,follow">'));
         assert.ok(head.includes('<meta property="og:site_name" content="ダイスシティ">'));
         assert.ok(head.includes(`<meta property="og:type" content="${page.type}">`));
         assert.ok(head.includes(`<meta property="og:title" content="${page.title}">`));
@@ -1689,6 +1690,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
+    assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));

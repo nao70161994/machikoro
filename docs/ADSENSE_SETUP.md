@@ -6,7 +6,7 @@ Use this checklist after Render deploy and before submitting the production URL 
 
 Open these URLs in a normal browser window and in a private/incognito window:
 
-- `<PUBLIC_ORIGIN>/`: title screen loads without console errors.
+- `<PUBLIC_ORIGIN>/`: title screen loads without console errors and has indexable metadata.
 - `<PUBLIC_ORIGIN>/privacy.html`: privacy policy is public, indexable, and links back to the game and rules page.
 - `<PUBLIC_ORIGIN>/rules.html`: rules page is public, indexable, and links back to the game and privacy policy.
 - `<PUBLIC_ORIGIN>/manifest.json` and `<PUBLIC_ORIGIN>/manifest.webmanifest`: PWA manifests return JSON.
