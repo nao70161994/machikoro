@@ -1811,6 +1811,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('image alt text'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
+    assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/sw.js"'));
