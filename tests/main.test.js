@@ -1717,6 +1717,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('再接続トークン'));
     assert.ok(privacy.includes('保存データ全体'));
     assert.ok(privacy.includes('完全なスナップショット'));
+    assert.ok(privacy.includes('ブラウザのサイトデータ削除'));
+    assert.ok(privacy.includes('アプリ内の保存データ削除操作'));
+    assert.ok(privacy.includes('公開リポジトリの issue'));
     assert.ok(rules.includes('勝利'));
     assert.ok(rules.includes('はじめて遊ぶ方へ'));
     assert.ok(rules.includes('タイトル画面でプレイ人数'));
