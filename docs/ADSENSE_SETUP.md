@@ -22,6 +22,7 @@ curl -I "$PUBLIC_ORIGIN/privacy.html"
 curl -I "$PUBLIC_ORIGIN/rules.html"
 curl -I "$PUBLIC_ORIGIN/manifest.json"
 curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
+curl -I "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version"
 ```
 
