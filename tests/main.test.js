@@ -1781,7 +1781,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('save/resume works'));
     assert.ok(releaseChecklist.includes('/icons/icon-512.png'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
-    assert.ok(releaseChecklist.includes('title page metadata mentions 登録不要 / no-registration play'));
+    assert.ok(releaseChecklist.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
     assert.ok(releaseChecklist.includes('no in-game ad slot'));
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
