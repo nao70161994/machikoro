@@ -1626,6 +1626,9 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(head.includes('<meta name="twitter:description"'));
         assert.ok(head.includes('<meta name="twitter:image" content="/icons/icon-512.png">'));
         assert.ok(head.includes('<meta name="twitter:image:alt" content="ダイスシティのアプリアイコン">'));
+        if (page.file === 'index.html') {
+            assert.ok(head.includes('登録不要'));
+        }
         if (page.file === 'rules.html') {
             assert.ok(head.includes('カード選択'));
             assert.ok(head.includes('保存と再開'));
