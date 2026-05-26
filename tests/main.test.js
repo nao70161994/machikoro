@@ -1814,6 +1814,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
+    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|standalone|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|standalone|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('grep -E "登録不要|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
