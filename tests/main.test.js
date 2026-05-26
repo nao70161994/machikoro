@@ -1630,6 +1630,9 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
             assert.ok(head.includes('カード選択'));
             assert.ok(head.includes('保存と再開'));
         }
+        if (page.file === 'privacy.html') {
+            assert.ok(head.includes('アカウント登録不要'));
+        }
     }
 
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-512.png')));
