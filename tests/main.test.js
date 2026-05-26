@@ -1673,9 +1673,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(html.includes('id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"'));
     assert.ok(html.includes('href="privacy.html"'));
     assert.ok(html.includes('href="rules.html"'));
+    assert.ok(rules.includes('<body class="static-page">'));
     assert.ok(rules.includes('class="static-page-links" aria-label="関連ページ"'));
     assert.ok(rules.includes('<a href="/">ゲームへ戻る</a>'));
     assert.ok(rules.includes('<main class="static-page-content">'));
+    assert.ok(rules.includes('<p class="static-page-eyebrow">ダイスシティ</p>'));
     assert.ok(rules.includes('<h1>ルール</h1>'));
     assert.ok(rules.includes('<h2>はじめて遊ぶ方へ</h2>'));
     assert.ok(rules.includes('<h2>保存と再開</h2>'));
@@ -1684,7 +1686,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('<h2>発動順序</h2>'));
     assert.ok(rules.includes('<h2>ランドマーク</h2>'));
     assert.ok(rules.includes('<a href="privacy.html">プライバシーポリシー</a>'));
+    assert.ok(privacy.includes('<body class="static-page">'));
     assert.ok(privacy.includes('<main class="static-page-content">'));
+    assert.ok(privacy.includes('<p class="static-page-eyebrow">ダイスシティ</p>'));
     assert.ok(privacy.includes('<h1>プライバシーポリシー</h1>'));
     assert.ok(privacy.includes('<h2>取得する情報</h2>'));
     assert.ok(privacy.includes('<h2>エラー通知</h2>'));
