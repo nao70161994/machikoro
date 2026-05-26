@@ -1683,6 +1683,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('<h1>ルール</h1>'));
     assert.ok(rules.includes('<h2>勝利条件</h2>'));
     assert.ok(rules.includes('<h2>はじめて遊ぶ方へ</h2>'));
+    assert.ok(rules.includes('アカウント登録なしでブラウザから遊び始められます。'));
     assert.ok(rules.includes('<h2>保存と再開</h2>'));
     assert.ok(rules.includes('<h2>ターンの流れ</h2>'));
     assert.ok(rules.includes('<h2>カードの色</h2>'));
@@ -1822,7 +1823,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
-    assert.ok(adsenseSetup.includes('grep -E "index,follow|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
+    assert.ok(adsenseSetup.includes('grep -E "index,follow|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));

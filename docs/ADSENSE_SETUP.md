@@ -27,7 +27,7 @@ curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|stan
 curl -fI "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -s "$PUBLIC_ORIGIN/" | grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"
-curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"
+curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"
 curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"
 ```
 
