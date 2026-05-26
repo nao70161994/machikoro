@@ -1721,6 +1721,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('save/resume works'));
     assert.ok(releaseChecklist.includes('/icons/icon-512.png'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
+    assert.ok(releaseChecklist.includes('title page metadata mentions no-registration play'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
@@ -1755,6 +1756,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('ad placement changes'));
     assert.ok(operations.includes('PWA behavior changes'));
     assert.ok(operations.includes('node tests/main.test.js'));
+    assert.ok(operations.includes('title page metadata mentions no-registration play'));
     assert.ok(operations.includes('contact guidance and the last updated date'));
 });
 
