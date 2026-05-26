@@ -1671,6 +1671,12 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(html.includes('id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"'));
     assert.ok(html.includes('href="privacy.html"'));
     assert.ok(html.includes('href="rules.html"'));
+    assert.ok(rules.includes('class="static-page-links" aria-label="関連ページ"'));
+    assert.ok(rules.includes('<a href="/">ゲームへ戻る</a>'));
+    assert.ok(rules.includes('<a href="privacy.html">プライバシーポリシー</a>'));
+    assert.ok(privacy.includes('class="static-page-links" aria-label="関連ページ"'));
+    assert.ok(privacy.includes('<a href="/">ゲームへ戻る</a>'));
+    assert.ok(privacy.includes('<a href="rules.html">ルール</a>'));
     assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
     assert.ok(sw.includes("'/js/adSlots.js'"));
     assert.ok(sw.includes("'/privacy.html'"));
