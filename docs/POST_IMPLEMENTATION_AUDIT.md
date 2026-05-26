@@ -1134,3 +1134,17 @@ Root-cause fix:
 Regression coverage:
 - `tests/integration.test.js` verifies `buildLandmark` with no buildable landmark candidate does not produce a child-button UI lock.
 - `tests/integration.test.js` verifies `buildLandmark` with an affordable enabled landmark still requires a usable `data-action=buildLandmark` child.
+
+### rules/cardSelect modal close orphan lock fix
+
+Observed pattern:
+- Closing the rules or card-selection modal could leave the game UI physically locked even though no modal was visible.
+- The likely stale state was `gameScreen.inert`, `aria-hidden`, `pointer-events:none`, or `body.modal-open` remaining after modal close. This became more visible after the deny-by-default modal policy because modal ownership now matters more strictly.
+
+Root-cause fix:
+- `closeAccessibleModal()` now resolves modal ownership from the actual visible blocking modals after the target modal is hidden, instead of trusting only the remembered `activeModalId`.
+- When no blocking modal remains visible, close cleanup restores the app inert state and clears orphan modal locks from shell roots and `body.modal-open`.
+- `rulesModal` / `cardSelectModal` close paths record before/after UI state snapshots through the flow trace so future reports show whether lock cleanup happened at close time.
+
+Regression coverage:
+- `tests/ui.test.js` verifies that closing `rulesModal` or `cardSelectModal` clears orphan `gameScreen` inert / `aria-hidden` / pointer lock and removes `body.modal-open` when no modal remains visible.

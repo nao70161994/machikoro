@@ -160,6 +160,38 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
 });
 
+runTest('rules/cardSelect close はvisible modalなしのorphan lockを解除する', () => {
+    const { context, elements } = loadUiRuntime();
+
+    elements.rulesModal.style.display = 'flex';
+    elements.gameScreen.inert = true;
+    elements.gameScreen.setAttribute('aria-hidden', 'true');
+    elements.gameScreen.style.pointerEvents = 'none';
+    context.document.body.classList.add('modal-open');
+
+    context.closeRules();
+
+    assert.strictEqual(elements.rulesModal.style.display, 'none');
+    assert.strictEqual(elements.gameScreen.inert, false);
+    assert.strictEqual(elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
+    assert.strictEqual(context.document.body.classList.contains('modal-open'), false);
+
+    elements.cardSelectModal.style.display = 'flex';
+    elements.gameScreen.inert = true;
+    elements.gameScreen.setAttribute('aria-hidden', 'true');
+    elements.gameScreen.style.pointerEvents = 'none';
+    context.document.body.classList.add('modal-open');
+
+    context.closeCardSelect();
+
+    assert.strictEqual(elements.cardSelectModal.style.display, 'none');
+    assert.strictEqual(elements.gameScreen.inert, false);
+    assert.strictEqual(elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
+    assert.strictEqual(context.document.body.classList.contains('modal-open'), false);
+});
+
 runTest('modal helpers は既存の背景 pointer-events を復元する', () => {
     const { context, elements } = loadUiRuntime();
     elements.titleScreen.style.pointerEvents = 'auto';

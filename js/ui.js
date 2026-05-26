@@ -882,6 +882,9 @@ function buildRuntimeStateSnapshot(reason = '') {
             buildMenu: elementState('buildMenu'),
             btnSkip: elementState('btnSkip'),
             confirmModal: elementState('confirmModal'),
+            rulesModal: elementState('rulesModal'),
+            cardSelectModal: elementState('cardSelectModal'),
+            cardDetailModal: elementState('cardDetailModal'),
         },
     };
 }
@@ -987,6 +990,35 @@ function focusModal(modal) {
     const focusable = getFocusableElements(modal);
     const target = focusable[0] || modal;
     if (target && typeof target.focus === 'function') target.focus();
+}
+
+function clearOrphanAccessibleModalLocks() {
+    if (visibleBlockingModalIds().length > 0) return false;
+    let changed = false;
+    for (const rootId of MODAL_INERT_ROOT_IDS) {
+        const el = document.getElementById(rootId);
+        if (!el) continue;
+        if (el.inert) {
+            el.inert = false;
+            changed = true;
+        }
+        if (el.getAttribute && el.getAttribute('aria-hidden') === 'true') {
+            el.removeAttribute('aria-hidden');
+            changed = true;
+        }
+        if (el.style && el.style.pointerEvents === 'none') {
+            el.style.pointerEvents = '';
+            changed = true;
+        }
+    }
+    if (document.body && document.body.classList && document.body.classList.contains('modal-open')) {
+        document.body.classList.remove('modal-open');
+        changed = true;
+    }
+    if (changed && typeof recordFlowTrace === 'function') {
+        recordFlowTrace('modal-close-orphan-lock-cleared', { visibleBlockingModalIds: visibleBlockingModalIds() });
+    }
+    return changed;
 }
 
 function setAppInertForModal(enabled) {
@@ -1112,17 +1144,31 @@ function openAccessibleModal(id) {
 }
 
 function closeAccessibleModal(id, options = {}) {
+    const beforeSnapshot = buildRuntimeStateSnapshot('modal-close-before-' + id);
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'none';
-    if (activeModalId === id) activeModalId = null;
-    if (!activeModalId) {
-        setAppInertForModal(false);
-        if (document.body && document.body.classList) document.body.classList.remove('modal-open');
+
+    const visibleBlockingIds = visibleBlockingModalIds();
+    if (activeModalId === id || (activeModalId && !isModalVisibleById(activeModalId))) {
+        activeModalId = visibleBlockingIds[0] || null;
     }
+    if (visibleBlockingIds.length <= 0) {
+        activeModalId = null;
+        setAppInertForModal(false);
+        clearOrphanAccessibleModalLocks();
+    }
+
     if (options.restoreFocus !== false && lastModalFocus && typeof lastModalFocus.focus === 'function') {
         lastModalFocus.focus();
     }
     lastModalFocus = null;
+    if ((id === 'rulesModal' || id === 'cardSelectModal') && typeof recordFlowTrace === 'function') {
+        recordFlowTrace('modal-close-ui-state', {
+            modalId: id,
+            before: beforeSnapshot,
+            after: buildRuntimeStateSnapshot('modal-close-after-' + id),
+        });
+    }
 }
 
 function setConfirmModalAwaitingChoice(value) {
