@@ -1730,6 +1730,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('ルームに参加'));
     assert.ok(rules.includes('カード選択'));
     assert.ok(rules.includes('今回使う施設カード'));
+    assert.ok(rules.includes('サイコロを振り'));
+    assert.ok(rules.includes('コインを集め'));
+    assert.ok(rules.includes('建設フェーズ'));
     assert.ok(rules.includes('保存と再開'));
     assert.ok(rules.includes('タイトル画面から続きが再開'));
     assert.ok(rules.includes('同じ端末から再接続'));
