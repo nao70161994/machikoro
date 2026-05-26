@@ -1852,7 +1852,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('git diff --check'));
     assert.ok(operations.includes('node tests/main.test.js'));
     assert.ok(operations.includes('npm run test:static'));
-    assert.ok(operations.includes('title page metadata mentions 登録不要 / no-registration play'));
+    assert.ok(operations.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(operations.includes('rules.html` explains the win condition'));
     assert.ok(operations.includes('OGP/Twitter rule-page metadata current'));
     assert.ok(operations.includes('contact guidance and the last updated date'));

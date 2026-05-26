@@ -128,7 +128,7 @@ Before public traffic, ads, or wider PWA install testing:
 - `git status --short` is empty.
 - CI is green on the exact commit to deploy.
 - `docs/RELEASE_CHECKLIST.md` automated gate has been run or CI covers it.
-- `privacy.html` and `rules.html` are reachable from the title screen and cached by the PWA shell; the title page metadata mentions 登録不要 / no-registration play, `rules.html` explains the win condition and keeps OGP/Twitter rule-page metadata current, and `privacy.html` also mentions contact guidance and the last updated date.
+- `privacy.html` and `rules.html` are reachable from the title screen and cached by the PWA shell; the title page and rule-page metadata mention 登録不要 / no-registration play, `rules.html` explains the win condition and keeps OGP/Twitter rule-page metadata current, and `privacy.html` also mentions contact guidance and the last updated date.
 - AdSense placeholders remain outside gameplay controls and still use `pointer-events: none`.
 - PWA install prompt and update banner have been checked on at least one real mobile browser before relying on them publicly.
 - `/api/client-error-test` sends to ntfy in a controlled window, then `CLIENT_ERROR_TEST_ENABLED` is removed again.
