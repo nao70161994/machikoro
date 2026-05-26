@@ -24,6 +24,7 @@ curl -I "$PUBLIC_ORIGIN/manifest.json"
 curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -I "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version"
+curl -s "$PUBLIC_ORIGIN/" | grep -E "登録不要|og:description|twitter:description"
 curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "カード選択|保存と再開|og:description|twitter:description"
 curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense|お問い合わせ|最終更新日"
 ```
@@ -34,7 +35,7 @@ Do not submit to AdSense if any of the public pages return an error, redirect un
 
 From `<PUBLIC_ORIGIN>/`:
 
-- Confirm the title screen shows the legal links below the title ad placeholder.
+- Confirm the title screen shows the legal links below the title ad placeholder, and the title page description / OGP / Twitter metadata mention no-registration play.
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
 - Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, future Google AdSense / Cookie usage, contact guidance, and the last updated date.

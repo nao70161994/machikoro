@@ -1737,12 +1737,14 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
+    assert.ok(adsenseSetup.includes('no-registration play'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('image alt text'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/sw.js"'));
+    assert.ok(adsenseSetup.includes('grep -E "登録不要|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('grep -E "カード選択|保存と再開|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense|お問い合わせ|最終更新日"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
