@@ -1791,6 +1791,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('privacy policy is public, indexable'));
     assert.ok(adsenseSetup.includes('rules page is public, indexable'));
+    assert.ok(adsenseSetup.includes('links back to the game and rules page'));
+    assert.ok(adsenseSetup.includes('links back to the game and privacy policy'));
     assert.ok(adsenseSetup.includes('account registration or email address'));
     assert.ok(adsenseSetup.includes('contact guidance'));
     assert.ok(adsenseSetup.includes('last updated date'));
