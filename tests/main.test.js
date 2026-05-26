@@ -1679,6 +1679,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('<main class="static-page-content">'));
     assert.ok(rules.includes('<p class="static-page-eyebrow">ダイスシティ</p>'));
     assert.ok(rules.includes('<h1>ルール</h1>'));
+    assert.ok(rules.includes('<h2>勝利条件</h2>'));
     assert.ok(rules.includes('<h2>はじめて遊ぶ方へ</h2>'));
     assert.ok(rules.includes('<h2>保存と再開</h2>'));
     assert.ok(rules.includes('<h2>ターンの流れ</h2>'));
@@ -1723,6 +1724,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('アプリ内の保存データ削除操作'));
     assert.ok(privacy.includes('公開リポジトリの issue'));
     assert.ok(rules.includes('勝利'));
+    assert.ok(rules.includes('ランドマークをすべて建設'));
     assert.ok(rules.includes('はじめて遊ぶ方へ'));
     assert.ok(rules.includes('タイトル画面でプレイ人数'));
     assert.ok(rules.includes('ローカル対戦'));
