@@ -741,6 +741,31 @@ runTest('integration: buildLandmark allowed でも建設候補がなければ子
     assert.strictEqual(issue, undefined);
 });
 
+runTest('integration: 建設済みbuild phaseではbuildLandmark子ボタンを要求しない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    game.currentPlayer().coins = 30;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const snapshot = rt.collectUiLockSnapshot('build-landmark-built-this-turn');
+    assert.ok(snapshot.allowedActions.includes('buildLandmark'));
+    assert.ok(snapshot.allowedActions.includes('nextTurn'));
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    assert.strictEqual(rt.validateUiInteractability(snapshot).find(item => item.action === 'buildLandmark'), undefined);
+    assert.strictEqual(rt.validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked').length, 0);
+});
+
 runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

@@ -1127,12 +1127,13 @@ Observed pattern:
 - A current-version report showed `phase=build`, `allowedActions=[buildCard, buildLandmark, nextTurn, undoBuild]`, no visible modals, and an interactability issue for `buildLandmark -> buildMenu` with `reason=action-child-not-clickable`. Recovery finished the game, but normal render had still allowed a build action child mismatch to reach the watchdog.
 
 Root-cause fix:
-- `allowedActionsFor(game)` is phase-level and can include `buildLandmark` even when the player cannot currently afford or build any enabled landmark. The interactability checker now distinguishes phase-level permission from actual build candidates before requiring a clickable child button.
+- `allowedActionsFor(game)` is phase-level and can include `buildLandmark` even when the player cannot currently afford or build any enabled landmark. It can also remain present after a construction has completed while `nextTurn` / `undoBuild` are the physically relevant build-phase controls. The interactability checker now distinguishes phase-level permission from actual build candidates before requiring a clickable child button.
 - `PRIMARY_ACTION_CHILD_SELECTOR_REGISTRY` records the expected child selector for each content-container action. `buildCard` and `buildLandmark` only require a usable child when at least one real card/landmark candidate exists; if a candidate exists and the child is missing/disabled/blocked, `action-child-not-clickable` remains a regression.
 - This is a render/contract fix, not notification suppression. Watchdog recovery remains the final fallback, but the normal build render path should not emit `buildLandmark` child failures solely because no landmark candidate is affordable.
 
 Regression coverage:
 - `tests/integration.test.js` verifies `buildLandmark` with no buildable landmark candidate does not produce a child-button UI lock.
+- `tests/integration.test.js` verifies a build phase after construction does not require a `buildLandmark` child button even if phase-level allowed actions still include `buildLandmark`.
 - `tests/integration.test.js` verifies `buildLandmark` with an affordable enabled landmark still requires a usable `data-action=buildLandmark` child.
 
 ### rules/cardSelect modal close orphan lock fix

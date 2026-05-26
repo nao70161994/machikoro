@@ -215,7 +215,7 @@ If an allowed action exists but its container is hidden, inert, aria-hidden, poi
 
 Modal-close note: if a rules/card-selection close report shows no visible modals but `gameScreen` or `body.modal-open` remains locked, treat it as a modal lifecycle cleanup regression. Start with `modal-close-ui-state` / `modal-close-orphan-lock-cleared` flow checkpoints before adding new watchdog recovery.
 
-Build-phase note: `allowedActionsFor(game)` can include `buildCard` / `buildLandmark` even when no affordable candidate exists. Current-version `action-child-not-clickable` for `buildLandmark` should be investigated as a selector/candidate contract mismatch: if no enabled landmark is affordable, it is not a clickable-child regression; if one exists, at least one `data-action=buildLandmark` child must be physically usable after normal render.
+Build-phase note: `allowedActionsFor(game)` can include `buildCard` / `buildLandmark` even when no affordable candidate exists, and may still include them after construction while `nextTurn` / `undoBuild` are the relevant controls. Current-version `action-child-not-clickable` for `buildLandmark` should be investigated as a selector/candidate contract mismatch: if the turn has already built or no enabled landmark is affordable, it is not a clickable-child regression; if an unbuilt affordable enabled landmark exists, at least one `data-action=buildLandmark` child must be physically usable after normal render.
 
 ### `cpu-turn-stalled` during pending CPU turns
 
