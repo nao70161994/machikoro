@@ -1590,6 +1590,15 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(workflow.includes('if-no-files-found: error'));
 });
 
+runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
+    const matches = [...html.matchAll(/<script[^>]+pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8683516545883768[^>]*><\/script>/g)];
+
+    assert.strictEqual(matches.length, 1);
+    assert.ok(head.includes(matches[0][0]));
+    assert.ok(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8683516545883768"[\s\S]*crossorigin="anonymous"><\/script>/.test(matches[0][0]));
+});
 runTest('広告 placeholder は許可された画面だけに配置される', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');

@@ -61,9 +61,11 @@ Android/TWA build workflow secrets:
 
 ## Ads Placeholder Safety
 
-Current state is placeholder-only; no real AdSense/AdMob SDK is loaded.
+AdSense review code is installed in `index.html` head. The app still uses placeholder ad surfaces; no in-game ad slot or gameplay-near SDK placement is enabled.
 
-Before adding a real SDK, verify `docs/ADS_PLAN.md`:
+審査コード導入済み: keep exactly one `adsbygoogle.js?client=ca-pub-8683516545883768` script in `index.html` head with `async` and `crossorigin="anonymous"`.
+
+Before adding ad slots or expanding beyond the review loader, verify `docs/ADS_PLAN.md`:
 
 - Allowed placements are `title-bottom`, `rules-bottom`, and `result-bottom`.
 - No ad slot is near dice, build, pending modal, Undo, reconnect, or other gameplay controls.
