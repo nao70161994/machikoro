@@ -1665,6 +1665,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(css.includes('.static-page section + section'));
     assert.ok(css.includes('padding: 4px 0;'));
     assert.ok(privacy.includes('Google AdSense'));
+    assert.ok(privacy.includes('Cookie'));
+    assert.ok(privacy.includes('ブラウザ設定'));
+    assert.ok(privacy.includes('最終更新日: 2026-05-27'));
     assert.ok(privacy.includes('エラー'));
     assert.ok(rules.includes('勝利'));
     assert.ok(rules.includes('はじめて遊ぶ方へ'));
