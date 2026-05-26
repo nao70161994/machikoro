@@ -1645,6 +1645,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const docs = fs.readFileSync(path.join(__dirname, '..', 'docs/ADS_PLAN.md'), 'utf8');
     const releaseChecklist = fs.readFileSync(path.join(__dirname, '..', 'docs/RELEASE_CHECKLIST.md'), 'utf8');
     const adsenseSetup = fs.readFileSync(path.join(__dirname, '..', 'docs/ADSENSE_SETUP.md'), 'utf8');
+    const operations = fs.readFileSync(path.join(__dirname, '..', 'docs/OPERATIONS.md'), 'utf8');
     const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
     const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
     const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
@@ -1706,6 +1707,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));
+    assert.ok(operations.includes('AdSense Review Change Policy'));
+    assert.ok(operations.includes('large UI redesigns'));
+    assert.ok(operations.includes('ad placement changes'));
+    assert.ok(operations.includes('PWA behavior changes'));
+    assert.ok(operations.includes('node tests/main.test.js'));
 });
 
 runTest('docs は pending HTML helper 化の現在地を記載している', () => {

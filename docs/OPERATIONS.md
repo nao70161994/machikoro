@@ -113,6 +113,14 @@ Use this when a device appears to run old JS, misses a fix, or reports stale-cli
 
 The Service Worker must not precache RL model JSON; those models are lazy-loaded and runtime cached. PWA update fixes should keep game-in-progress reloads manual.
 
+## AdSense Review Change Policy
+
+While AdSense review is in progress, keep changes small and stability-focused:
+
+- Allowed: docs cleanup, OGP/image metadata improvements, how-to text, unknown notification fixes, CI failure fixes, typo fixes, and minor CSS for static pages.
+- Avoid until review completes: large UI redesigns, ad placement changes, PWA behavior changes, URL changes, rule changes, and broad refactors.
+- Keep commits small and run at least `git diff --check`, `node tests/main.test.js`, and `npm run test:static` for review-period docs/static-page changes.
+
 ## Public Release Preflight
 
 Before public traffic, ads, or wider PWA install testing:
