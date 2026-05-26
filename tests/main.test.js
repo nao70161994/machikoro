@@ -1441,6 +1441,35 @@ runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期�
     }
 });
 
+runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシティで一貫し折り返し対策を持つ', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
+    const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
+    const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+    const riskPlan = fs.readFileSync(path.join(__dirname, '..', 'docs/RISK_REDUCTION_PLAN.md'), 'utf8');
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.json'), 'utf8'));
+    const webmanifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
+    const publicSurfaces = [html, privacy, rules, readme, riskPlan].join('\n');
+
+    assert.ok(html.includes('<title>ダイスシティ</title>'));
+    assert.ok(html.includes('<h1>🏙️ ダイスシティ</h1>'));
+    assert.ok(html.includes('content="ダイスシティ'));
+    assert.ok(privacy.includes('<title>プライバシーポリシー - ダイスシティ</title>'));
+    assert.ok(rules.includes('<title>ルール - ダイスシティ</title>'));
+    assert.strictEqual(manifest.name, 'ダイスシティ');
+    assert.strictEqual(manifest.short_name, 'ダイスシティ');
+    assert.strictEqual(webmanifest.name, 'ダイスシティ');
+    assert.strictEqual(webmanifest.short_name, 'ダイスシティ');
+    assert.ok(css.includes('.title-header h1'));
+    assert.ok(css.includes('font-size: clamp(24px, 9vw, 52px);'));
+    assert.ok(css.includes('white-space: nowrap;'));
+    assert.ok(css.includes('letter-spacing: clamp(1px, 0.8vw, 6px);'));
+    assert.ok(css.includes('.title-logo-sub'));
+    assert.ok(css.includes('font-size: clamp(9px, 2.8vw, 11px);'));
+    assert.ok(!publicSurfaces.includes('街コロ'));
+    assert.ok(riskPlan.includes('2026-05-26 Title Logo Layout Update'));
+});
 runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');

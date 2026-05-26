@@ -76,8 +76,11 @@ body.modal-open #gameScreen {
 }
 
 .title-header h1 {
-    font-size: 52px;
-    letter-spacing: 6px;
+    max-width: 100%;
+    font-size: clamp(24px, 9vw, 52px);
+    line-height: 1.05;
+    letter-spacing: clamp(1px, 0.8vw, 6px);
+    white-space: nowrap;
     color: #f0c040;
     text-shadow:
         0 0 10px rgba(240,192,64,0.8),
@@ -89,8 +92,10 @@ body.modal-open #gameScreen {
 }
 
 .title-logo-sub {
-    font-size: 11px;
-    letter-spacing: 8px;
+    max-width: 100%;
+    font-size: clamp(9px, 2.8vw, 11px);
+    letter-spacing: clamp(3px, 1.8vw, 8px);
+    white-space: nowrap;
     color: rgba(240,192,64,0.6);
     margin-bottom: 16px;
 }

@@ -28,6 +28,13 @@ Intentionally not renamed:
 - localStorage keys and window debug helper names
 - repository URLs, Render host examples, and internal docs that describe code paths
 
+## 2026-05-26 Title Logo Layout Update
+
+- The title logo text is now kept on one line with responsive `clamp()` sizing and `white-space: nowrap`.
+- The subtitle uses the same no-wrap responsive sizing so the public title area does not regress on narrow mobile widths.
+- Public naming surfaces checked in this pass: index title/logo/meta, PWA manifests, privacy/rules pages, README, legal links, footer/navigation, and PWA install/update display strings.
+- No internal `machikoro` identifiers were renamed.
+
 ## Follow-up Checks
 
 - When adding a new public page, include ダイスシティ in title and meta description.
