@@ -24,6 +24,8 @@ curl -I "$PUBLIC_ORIGIN/manifest.json"
 curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"
 curl -I "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version"
+curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "カード選択|保存と再開|og:description|twitter:description"
+curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense"
 ```
 
 Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, or show stale content from a previous deployment.
