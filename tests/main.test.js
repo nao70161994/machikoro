@@ -1708,6 +1708,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(css.includes('.legal-links'));
     assert.ok(css.includes('.static-page section + section'));
     assert.ok(css.includes('padding: 4px 0;'));
+    assert.ok(privacy.includes('広告審査中および広告表示時'));
     assert.ok(privacy.includes('Google AdSense'));
     assert.ok(privacy.includes('審査用スクリプト'));
     assert.ok(privacy.includes('実際の広告ユニット'));
