@@ -717,7 +717,7 @@ runTest('integration: primary action registry は各phaseのhidden/inert/pointer
     }
 });
 
-runTest('integration: allowed action は同じdata-actionの有効子要素を要求する', () => {
+runTest('integration: buildLandmark allowed でも建設候補がなければ子ボタン要求でlock扱いしない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
@@ -733,7 +733,33 @@ runTest('integration: allowed action は同じdata-actionの有効子要素を�
     hideAllTestModals(rt);
     rt.render();
 
-    const snapshot = rt.collectUiLockSnapshot('build-card-no-action-child');
+    const snapshot = rt.collectUiLockSnapshot('build-landmark-no-candidate');
+    assert.ok(snapshot.allowedActions.includes('buildLandmark'));
+    const issue = rt.validateUiInteractability(snapshot).find(item => item.action === 'buildLandmark');
+    assert.strictEqual(issue, undefined);
+});
+
+runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const disabledLandmark = makeElement({ disabled: true });
+    disabledLandmark.setAttribute('data-action', 'buildLandmark');
+    rt.__test.elements.buildMenu.querySelectorAll = selector => selector.includes('buildLandmark') ? [disabledLandmark] : [];
+
+    const snapshot = rt.collectUiLockSnapshot('build-landmark-disabled-child');
     const issue = rt.validateUiInteractability(snapshot).find(item => item.action === 'buildLandmark');
     assert.ok(issue);
     assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');

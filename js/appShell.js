@@ -104,54 +104,120 @@ function childInteractiveState(el) {
     return { total: children.length, usable };
 }
 
+const PRIMARY_ACTION_CHILD_SELECTOR_REGISTRY = Object.freeze({
+    selectDice: Object.freeze({ actions: Object.freeze(['selectDiceCount']), selector: 'button[data-action="selectDiceCount"], [role="button"][data-action="selectDiceCount"], [data-action="selectDiceCount"]' }),
+    rerollDice: Object.freeze({ actions: Object.freeze(['rerollDice']), selector: 'button[data-action="rerollDice"], [role="button"][data-action="rerollDice"], [data-action="rerollDice"]' }),
+    skipReroll: Object.freeze({ actions: Object.freeze(['skipReroll']), selector: 'button[data-action="skipReroll"], [role="button"][data-action="skipReroll"], [data-action="skipReroll"]' }),
+    resolveHarbor: Object.freeze({ actions: Object.freeze(['resolveHarbor']), selector: 'button[data-action="resolveHarbor"], [role="button"][data-action="resolveHarbor"], [data-action="resolveHarbor"]' }),
+    resolveTV: Object.freeze({ actions: Object.freeze(['resolveTV']), selector: 'button[data-action="resolveTV"], [role="button"][data-action="resolveTV"], [data-action="resolveTV"]' }),
+    resolveBusiness: Object.freeze({ actions: Object.freeze(['resolveBusiness']), selector: 'button[data-action="resolveBusiness"], [role="button"][data-action="resolveBusiness"], [data-action="resolveBusiness"]' }),
+    resolveCleaning: Object.freeze({ actions: Object.freeze(['resolveCleaning']), selector: 'button[data-action="resolveCleaning"], [role="button"][data-action="resolveCleaning"], [data-action="resolveCleaning"]' }),
+    resolveMover: Object.freeze({ actions: Object.freeze(['resolveMover']), selector: 'button[data-action="resolveMover"], [role="button"][data-action="resolveMover"], [data-action="resolveMover"]' }),
+    resolveRenovation: Object.freeze({ actions: Object.freeze(['resolveRenovation']), selector: 'button[data-action="resolveRenovation"], [role="button"][data-action="resolveRenovation"], [data-action="resolveRenovation"]' }),
+    resolveIT: Object.freeze({ actions: Object.freeze(['resolveIT']), selector: 'button[data-action="resolveIT"], [role="button"][data-action="resolveIT"], [data-action="resolveIT"]' }),
+    buildCard: Object.freeze({ actions: Object.freeze(['buildCard']), selector: 'button[data-action="buildCard"], [role="button"][data-action="buildCard"], [data-action="buildCard"]' }),
+    buildLandmark: Object.freeze({ actions: Object.freeze(['buildLandmark']), selector: 'button[data-action="buildLandmark"], [role="button"][data-action="buildLandmark"], [data-action="buildLandmark"]' }),
+    undoBuild: Object.freeze({ actions: Object.freeze(['undoBuild']), selector: 'button[data-action="undoBuild"], [role="button"][data-action="undoBuild"], [data-action="undoBuild"]' }),
+});
+
+function hasBuildableCardCandidate() {
+    try {
+        if (typeof game === 'undefined' || !game || game.builtThisTurn) return false;
+        const current = game.currentPlayer && game.currentPlayer();
+        if (!current || typeof CARDS === 'undefined' || !Array.isArray(CARDS)) return false;
+        return CARDS.some(card => {
+            if (!card) return false;
+            const stock = typeof SHOP_STOCK !== 'undefined' && SHOP_STOCK ? SHOP_STOCK[card.name] : 0;
+            if (stock <= 0 || current.coins < card.cost) return false;
+            return !(card.color === 'purple' && typeof current.countCardIncludingDormant === 'function' && current.countCardIncludingDormant(card.name) > 0);
+        });
+    } catch (_) {
+        return true;
+    }
+}
+
+function hasBuildableLandmarkCandidate() {
+    try {
+        if (typeof game === 'undefined' || !game || game.builtThisTurn) return false;
+        const current = game.currentPlayer && game.currentPlayer();
+        if (!current || !current.landmarks) return false;
+        return Object.entries(current.landmarks).some(([name, built]) => {
+            if (built) return false;
+            if (typeof enabledLandmarks !== 'undefined' && enabledLandmarks && typeof enabledLandmarks.has === 'function' && !enabledLandmarks.has(name)) return false;
+            if (typeof Player === 'undefined' || !Player || typeof Player.landmarkCost !== 'function') return false;
+            return current.coins >= Player.landmarkCost(name);
+        });
+    } catch (_) {
+        return true;
+    }
+}
+
+function expectedChildSpecForAction(action) {
+    return PRIMARY_ACTION_CHILD_SELECTOR_REGISTRY[action] || null;
+}
+
+function expectedChildSpecForEntry(snapshot, entry) {
+    const action = entry && entry.action || '';
+    if ((action === 'buildCard' || action === 'buildLandmark') && snapshot && snapshot.builtThisTurn) return null;
+    if (action === 'buildCard' && !hasBuildableCardCandidate()) return null;
+    if (action === 'buildLandmark' && !hasBuildableLandmarkCandidate()) return null;
+    if (action === 'undoBuild') {
+        try {
+            if (typeof undoState === 'undefined' || !undoState || !(snapshot && snapshot.builtThisTurn)) return null;
+        } catch (_) {
+            return null;
+        }
+    }
+    return expectedChildSpecForAction(action);
+}
+
 function expectedChildActionsForAction(action) {
-    if (action === 'selectDice') return ['selectDiceCount'];
-    if ([
-        'rerollDice',
-        'skipReroll',
-        'resolveHarbor',
-        'resolveTV',
-        'resolveBusiness',
-        'resolveCleaning',
-        'resolveMover',
-        'resolveRenovation',
-        'resolveIT',
-        'buildCard',
-        'buildLandmark',
-        'undoBuild',
-    ].includes(action)) return [action];
-    return [];
+    const spec = expectedChildSpecForAction(action);
+    return spec ? Array.from(spec.actions) : [];
 }
 
 function expectedChildActionsForEntry(snapshot, entry) {
-    const action = entry && entry.action || '';
-    if ((action === 'buildCard' || action === 'buildLandmark') && snapshot && snapshot.builtThisTurn) return [];
-    if (action === 'undoBuild') {
-        try {
-            if (typeof undoState === 'undefined' || !undoState || !(snapshot && snapshot.builtThisTurn)) return [];
-        } catch (_) {
-            return [];
-        }
-    }
-    return expectedChildActionsForAction(action);
+    const spec = expectedChildSpecForEntry(snapshot, entry);
+    return spec ? Array.from(spec.actions) : [];
 }
 
-function childInteractiveStateForActions(el, actions) {
-    const expected = new Set(actions || []);
-    if (!el || !expected.size || typeof el.querySelectorAll !== 'function') return { total: 0, usable: 0 };
+function isInteractiveChildUsable(child) {
+    if (!child || child.disabled || child.hidden || child.inert) return false;
+    const style = child.style || {};
+    let computedDisplay = '';
+    let computedVisibility = '';
+    let computedPointerEvents = '';
+    try {
+        if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+            const computed = window.getComputedStyle(child);
+            computedDisplay = computed && computed.display || '';
+            computedVisibility = computed && computed.visibility || '';
+            computedPointerEvents = computed && computed.pointerEvents || '';
+        }
+    } catch (_) {}
+    if (style.display === 'none' || computedDisplay === 'none') return false;
+    if (style.visibility === 'hidden' || computedVisibility === 'hidden') return false;
+    if (style.pointerEvents === 'none' || computedPointerEvents === 'none') return false;
+    try {
+        if (typeof child.closest === 'function' && child.closest('[inert], [aria-hidden="true"]')) return false;
+    } catch (_) {}
+    return true;
+}
+
+function childInteractiveStateForSpec(el, spec) {
+    if (!el || !spec || typeof el.querySelectorAll !== 'function') return { total: 0, usable: 0 };
     let children = [];
     try {
-        children = Array.from(el.querySelectorAll('button, [role="button"], [data-action]') || [])
-            .filter(child => child && expected.has(child.dataset && child.dataset.action));
+        children = Array.from(el.querySelectorAll(spec.selector) || []);
     } catch (_) {
-        return { total: 0, usable: 0 };
+        children = [];
     }
     if (children.length <= 0 && typeof el.innerHTML === 'string' && el.innerHTML) {
         let total = 0;
         let usableFromHtml = 0;
-        expected.forEach(action => {
+        (spec.actions || []).forEach(action => {
             const escaped = String(action).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const re = new RegExp('<[^>]+data-action=["\']' + escaped + '["\'][^>]*>', 'g');
+            const re = new RegExp("<[^>]+data-action=[\"']" + escaped + "[\"'][^>]*>", 'g');
             const matches = el.innerHTML.match(re) || [];
             total += matches.length;
             usableFromHtml += matches.filter(tag => !/\sdisabled(?:\s|=|>|$)/i.test(tag)).length;
@@ -160,28 +226,18 @@ function childInteractiveStateForActions(el, actions) {
     }
     let usable = 0;
     children.forEach(child => {
-        if (!child || child.disabled || child.hidden || child.inert) return;
-        const style = child.style || {};
-        let computedDisplay = '';
-        let computedVisibility = '';
-        let computedPointerEvents = '';
-        try {
-            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-                const computed = window.getComputedStyle(child);
-                computedDisplay = computed && computed.display || '';
-                computedVisibility = computed && computed.visibility || '';
-                computedPointerEvents = computed && computed.pointerEvents || '';
-            }
-        } catch (_) {}
-        if (style.display === 'none' || computedDisplay === 'none') return;
-        if (style.visibility === 'hidden' || computedVisibility === 'hidden') return;
-        if (style.pointerEvents === 'none' || computedPointerEvents === 'none') return;
-        try {
-            if (typeof child.closest === 'function' && child.closest('[inert], [aria-hidden="true"]')) return;
-        } catch (_) {}
-        usable++;
+        if (isInteractiveChildUsable(child)) usable++;
     });
     return { total: children.length, usable };
+}
+
+function childInteractiveStateForActions(el, actions) {
+    const expected = new Set(actions || []);
+    if (!expected.size) return { total: 0, usable: 0 };
+    return childInteractiveStateForSpec(el, {
+        actions: Array.from(expected),
+        selector: Array.from(expected).map(action => '[data-action="' + String(action) + '"]').join(', '),
+    });
 }
 
 function safeElementSnapshot(id) {
@@ -339,10 +395,10 @@ function isActionContainerUiUsable(snapshot, entry) {
     const state = snapshotStateById(snapshot, spec.targetId, spec.targetSource);
     if (!state) return false;
     if (spec.requiresContent && state.htmlLength <= 0) return false;
-    const expectedChildActions = expectedChildActionsForEntry(snapshot, entry);
-    if (spec.requiresContent && expectedChildActions.length) {
+    const expectedChildSpec = expectedChildSpecForEntry(snapshot, entry);
+    if (spec.requiresContent && expectedChildSpec) {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
-        const actionChildState = childInteractiveStateForActions(el, expectedChildActions);
+        const actionChildState = childInteractiveStateForSpec(el, expectedChildSpec);
         if (actionChildState.total <= 0 || actionChildState.usable <= 0) return false;
     }
     if (spec.requiresContent && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
@@ -404,8 +460,8 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
         if (isActionContainerUiUsable(snapshot, entry)) continue;
         const state = snapshotStateById(snapshot, entry.spec.targetId, entry.spec.targetSource);
         let reason = uiLockReasonForElement(state);
-        const expectedChildActions = expectedChildActionsForEntry(snapshot, entry);
-        if (reason === 'not-clickable' && expectedChildActions.length) reason = 'action-child-not-clickable';
+        const expectedChildSpec = expectedChildSpecForEntry(snapshot, entry);
+        if (reason === 'not-clickable' && expectedChildSpec) reason = 'action-child-not-clickable';
         if (entry.spec.modalId) {
             const modal = snapshotStateById(snapshot, entry.spec.modalId);
             if (modal && !isElementUsablyEnabled(modal)) reason = uiLockReasonForElement(modal);
