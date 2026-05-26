@@ -1801,6 +1801,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
+    assert.ok(operations.includes('keep changes small and stability-focused'));
+    assert.ok(operations.includes('Keep commits small'));
     assert.ok(operations.includes('docs cleanup'));
     assert.ok(operations.includes('OGP/image metadata improvements'));
     assert.ok(operations.includes('how-to text'));
