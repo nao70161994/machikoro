@@ -1703,6 +1703,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(releaseChecklist.includes('privacy.html'));
     assert.ok(releaseChecklist.includes('account-free play'));
+    assert.ok(releaseChecklist.includes('error notification exclusions'));
     assert.ok(releaseChecklist.includes('rules.html'));
     assert.ok(releaseChecklist.includes('card selection works'));
     assert.ok(releaseChecklist.includes('save/resume works'));
@@ -1716,6 +1717,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('account registration or email address'));
+    assert.ok(adsenseSetup.includes('error notification exclusions'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));

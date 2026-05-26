@@ -35,7 +35,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm the title screen shows the legal links below the title ad placeholder.
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
-- Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, and future Google AdSense / Cookie usage.
+- Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, and future Google AdSense / Cookie usage.
 - Confirm `rules.html` describes how to start a local or online game, card selection, save/resume behavior, plus the win condition, turn flow, card colors, activation order, and landmarks.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, image alt text, and use `/icons/icon-512.png` for the preview image.
 
