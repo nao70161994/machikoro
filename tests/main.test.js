@@ -1674,6 +1674,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('ブラウザ設定'));
     assert.ok(privacy.includes('最終更新日: 2026-05-27'));
     assert.ok(privacy.includes('エラー'));
+    assert.ok(privacy.includes('再接続トークン'));
+    assert.ok(privacy.includes('保存データ全体'));
+    assert.ok(privacy.includes('完全なスナップショット'));
     assert.ok(rules.includes('勝利'));
     assert.ok(rules.includes('はじめて遊ぶ方へ'));
     assert.ok(rules.includes('タイトル画面でプレイ人数'));
