@@ -137,7 +137,7 @@ Regression test index:
 
 Before public traffic, AdSense review, or broader PWA install testing, confirm this short list in addition to the automated gate:
 
-- `privacy.html` and `rules.html` are reachable from the title screen and mention local storage / online room data / client error reporting / ad provider data as applicable.
+- `privacy.html` and `rules.html` are reachable from the title screen and mention account-free play, local storage / online room data / client error reporting / ad provider data as applicable.
 - `rules.html` explains how to start local/online play and how save/resume works before the detailed turn and card rules.
 - Public pages include OGP/Twitter metadata with `/icons/icon-512.png` as the preview image.
 - AdSense placeholders are still limited to title, rules, and result surfaces; no slot is near dice, build, pending, Undo, reconnect, or update controls.
