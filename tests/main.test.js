@@ -1752,6 +1752,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(resultSlot.includes('data-ad-location="result-bottom"'));
     assert.strictEqual(renderAdSlot('game-action'), '');
     assert.ok(docs.includes('AdSense / AdMob'));
+    assert.ok(docs.includes('`title-bottom`'));
+    assert.ok(docs.includes('`rules-bottom`'));
+    assert.ok(docs.includes('`result-bottom`'));
     assert.ok(docs.includes('ゲーム中の主要操作'));
     assert.ok(releaseChecklist.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(releaseChecklist.includes('privacy.html'));
