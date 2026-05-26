@@ -1620,10 +1620,12 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(head.includes('<meta property="og:image" content="/icons/icon-512.png">'));
         assert.ok(head.includes('<meta property="og:image:width" content="512">'));
         assert.ok(head.includes('<meta property="og:image:height" content="512">'));
+        assert.ok(head.includes('<meta property="og:image:alt" content="ダイスシティのアプリアイコン">'));
         assert.ok(head.includes('<meta name="twitter:card" content="summary">'));
         assert.ok(head.includes(`<meta name="twitter:title" content="${page.title}">`));
         assert.ok(head.includes('<meta name="twitter:description"'));
         assert.ok(head.includes('<meta name="twitter:image" content="/icons/icon-512.png">'));
+        assert.ok(head.includes('<meta name="twitter:image:alt" content="ダイスシティのアプリアイコン">'));
     }
 
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-512.png')));
