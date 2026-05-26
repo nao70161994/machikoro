@@ -1728,6 +1728,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('AdSense Review Change Policy'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
+    assert.ok(readme.includes('AdSense 導入前の公開ページはトップページ'));
+    assert.ok(readme.includes('トップページの説明メタは登録不要のプレイ'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('account registration or email address'));
