@@ -206,6 +206,7 @@ body.modal-open #gameScreen {
 .static-page-links a {
     color: #7fdbca;
     text-decoration: none;
+    padding: 4px 0;
 }
 
 .legal-links a:focus-visible,
@@ -240,6 +241,10 @@ body.modal-open #gameScreen {
 .static-page h1 {
     margin: 4px 0 16px;
     font-size: 30px;
+}
+
+.static-page section + section {
+    margin-top: 18px;
 }
 
 .static-page h2 {
