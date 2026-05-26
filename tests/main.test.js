@@ -1815,7 +1815,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/manifest.webmanifest"'));
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('grep -E "登録不要|og:description|twitter:description"'));
-    assert.ok(adsenseSetup.includes('grep -E "勝利条件|カード選択|保存と再開|og:description|twitter:description"'));
+    assert.ok(adsenseSetup.includes('grep -E "勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('grep -E "アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
