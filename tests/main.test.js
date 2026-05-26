@@ -1757,7 +1757,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('save/resume works'));
     assert.ok(releaseChecklist.includes('/icons/icon-512.png'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
-    assert.ok(releaseChecklist.includes('title page metadata mentions no-registration play'));
+    assert.ok(releaseChecklist.includes('title page metadata mentions 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
@@ -1776,7 +1776,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
-    assert.ok(adsenseSetup.includes('no-registration play'));
+    assert.ok(adsenseSetup.includes('登録不要 / no-registration play'));
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('image alt text'));
@@ -1806,7 +1806,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('git diff --check'));
     assert.ok(operations.includes('node tests/main.test.js'));
     assert.ok(operations.includes('npm run test:static'));
-    assert.ok(operations.includes('title page metadata mentions no-registration play'));
+    assert.ok(operations.includes('title page metadata mentions 登録不要 / no-registration play'));
     assert.ok(operations.includes('contact guidance and the last updated date'));
 });
 

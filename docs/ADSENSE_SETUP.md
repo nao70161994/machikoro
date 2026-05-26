@@ -35,7 +35,7 @@ Do not submit to AdSense if any of the public pages return an error, redirect un
 
 From `<PUBLIC_ORIGIN>/`:
 
-- Confirm the title screen shows the legal links below the title ad placeholder, and the title page description / OGP / Twitter metadata mention no-registration play.
+- Confirm the title screen shows the legal links below the title ad placeholder, and the title page description / OGP / Twitter metadata mention 登録不要 / no-registration play.
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
 - Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, future Google AdSense / Cookie usage, contact guidance, and the last updated date.
@@ -136,7 +136,7 @@ Follow-up implementation rules:
 Before clicking submit in AdSense:
 
 - `docs/RELEASE_CHECKLIST.md` automated gate is green for the deployed commit.
-- The title page is reachable from the public origin and its description / OGP / Twitter metadata mention no-registration play.
+- The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
 - `privacy.html` and `rules.html` are reachable from the public origin.
 - AdSense review code is installed exactly once, and ad surfaces remain placeholder-only until real ad units are configured.
 - PWA cache contains the public pages and ad placeholder helper.
