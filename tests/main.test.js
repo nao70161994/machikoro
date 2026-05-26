@@ -1641,6 +1641,7 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         }
         if (page.file === 'privacy.html') {
             assert.ok(head.includes('アカウント登録不要'));
+            assert.ok(head.includes('AdSense審査'));
         }
     }
 
@@ -1792,7 +1793,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -I "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('grep -E "登録不要|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('grep -E "勝利条件|カード選択|保存と再開|og:description|twitter:description"'));
-    assert.ok(adsenseSetup.includes('grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense|お問い合わせ|最終更新日|og:description|twitter:description"'));
+    assert.ok(adsenseSetup.includes('grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense|審査用スクリプト|お問い合わせ|最終更新日|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
