@@ -1601,6 +1601,33 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(workflow.includes('if-no-files-found: error'));
 });
 
+runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ', () => {
+    const pages = [
+        { file: 'index.html', title: 'ダイスシティ', type: 'website' },
+        { file: 'rules.html', title: 'ルール - ダイスシティ', type: 'article' },
+        { file: 'privacy.html', title: 'プライバシーポリシー - ダイスシティ', type: 'article' }
+    ];
+
+    for (const page of pages) {
+        const html = fs.readFileSync(path.join(__dirname, '..', page.file), 'utf8');
+        const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
+
+        assert.ok(head.includes('<meta property="og:site_name" content="ダイスシティ">'));
+        assert.ok(head.includes(`<meta property="og:type" content="${page.type}">`));
+        assert.ok(head.includes(`<meta property="og:title" content="${page.title}">`));
+        assert.ok(head.includes('<meta property="og:description"'));
+        assert.ok(head.includes('<meta property="og:image" content="/icons/icon-512.png">'));
+        assert.ok(head.includes('<meta property="og:image:width" content="512">'));
+        assert.ok(head.includes('<meta property="og:image:height" content="512">'));
+        assert.ok(head.includes('<meta name="twitter:card" content="summary">'));
+        assert.ok(head.includes(`<meta name="twitter:title" content="${page.title}">`));
+        assert.ok(head.includes('<meta name="twitter:description"'));
+        assert.ok(head.includes('<meta name="twitter:image" content="/icons/icon-512.png">'));
+    }
+
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-512.png')));
+});
+
 runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
