@@ -1630,6 +1630,7 @@ function compactFreezePayloadForStorage(payload) {
     return {
         freezeKind: payload && payload.freezeKind,
         stagnantMs: payload && payload.stagnantMs,
+        interactabilityIssues: Array.isArray(payload && payload.interactabilityIssues) ? payload.interactabilityIssues.map(compactIssueForTrace) : [],
         snapshot: {
             reason: snapshot.reason || '',
             timestamp: snapshot.timestamp || '',
@@ -1708,10 +1709,14 @@ function buildFreezeReportStack(payload) {
         confirmModal: ui.confirmModal ? { display: ui.confirmModal.display, hidden: !!ui.confirmModal.hidden, inert: !!ui.confirmModal.inert, ariaHidden: ui.confirmModal.ariaHidden, ancestorBlocked: !!ui.confirmModal.ancestorBlocked, pointerEvents: ui.confirmModal.pointerEvents || ui.confirmModal.computedPointerEvents || '', awaitingChoice: isConfirmModalAwaitingUserChoice() } : null,
         bodyClassName: snapshot.bodyClassName || '',
         expectedPrimaryActions: expectedPrimaryActions(snapshot),
-        interactabilityIssues: validateUiInteractability(snapshot),
+        interactabilityIssues: Array.isArray(payload && payload.interactabilityIssues) ? payload.interactabilityIssues.map(compactIssueForTrace) : validateUiInteractability(snapshot),
         pendingMenu: ui.pendingMenu ? { display: ui.pendingMenu.display, hidden: !!ui.pendingMenu.hidden, inert: !!ui.pendingMenu.inert, ancestorBlocked: !!ui.pendingMenu.ancestorBlocked, pointerEvents: ui.pendingMenu.pointerEvents || ui.pendingMenu.computedPointerEvents || '', htmlLength: ui.pendingMenu.htmlLength } : null,
         pendingModal: ui.pendingModal ? { display: ui.pendingModal.display, hidden: !!ui.pendingModal.hidden, inert: !!ui.pendingModal.inert, pointerEvents: ui.pendingModal.pointerEvents || ui.pendingModal.computedPointerEvents || '' } : null,
         actionButtons: buttonSummary,
+        recovery: payload && payload.recovery ? {
+            attempted: !!payload.recovery.attempted,
+            success: !!payload.recovery.success,
+        } : null,
     });
 }
 
@@ -1736,13 +1741,20 @@ function checkFreezeWatchdog() {
     }
     _freezeWatchdogLastReportKey = reportKey;
     _freezeWatchdogLastReportAt = now;
-    const payload = { freezeKind, stagnantMs: now - _freezeWatchdogLastChangedAt, snapshot };
+    const payload = {
+        freezeKind,
+        stagnantMs: now - _freezeWatchdogLastChangedAt,
+        snapshot,
+        interactabilityIssues: validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind),
+    };
     markClientFlowCheckpoint('freeze-watchdog-report', payload);
     try {
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem('machikoroFreezeSnapshot', freezePayloadStorageJson(payload));
         }
     } catch (_) {}
+    const recovered = recoverUiInteractability(snapshot);
+    payload.recovery = { attempted: true, success: !!recovered };
     if (typeof reportClientError === 'function') {
         reportClientError({
             source: 'freeze-watchdog',
@@ -1751,7 +1763,6 @@ function checkFreezeWatchdog() {
             stack: buildFreezeReportStack(payload),
         });
     }
-    recoverUiInteractability(snapshot);
 }
 
 function startFreezeWatchdog() {

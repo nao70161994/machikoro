@@ -187,6 +187,7 @@ runTest('integration: 購入後操作不能ならwatchdogがsnapshot保存と通
     assert.strictEqual(summary.gameScreen.inert, false);
     assert.strictEqual(summary.confirmModal.display, 'none');
     assert.deepStrictEqual(summary.expectedPrimaryActions, ['nextTurn']);
+    assert.deepStrictEqual(summary.recovery, { attempted: true, success: true });
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
@@ -523,6 +524,7 @@ runTest('integration: stale confirmModal が post-build の親lockを残して�
     assert.strictEqual(summary.confirmModal.awaitingChoice, false);
     assert.strictEqual(summary.gameScreen.inert, true);
     assert.deepStrictEqual(summary.expectedPrimaryActions, ['nextTurn']);
+    assert.deepStrictEqual(summary.recovery, { attempted: true, success: true });
 });
 
 runTest('integration: active modalなしでgameScreen.inertだけ残ったhuman-turn lockをwatchdogが復旧する', () => {

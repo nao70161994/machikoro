@@ -363,6 +363,45 @@ function isStaleClientErrorVersion(appVersion, stalePrefixes = STALE_CLIENT_ERRO
     return stalePrefixes.some(prefix => version.startsWith(String(prefix).toLowerCase()));
 }
 
+function extractFreezeSummaryFromStack(stack) {
+    const text = String(stack || '');
+    const marker = 'FREEZE_SUMMARY ';
+    const start = text.indexOf(marker);
+    if (start < 0) return null;
+    const jsonStart = start + marker.length;
+    const jsonText = text.slice(jsonStart).trim();
+    if (!jsonText) return null;
+    try {
+        return JSON.parse(jsonText);
+    } catch (_) {
+        return null;
+    }
+}
+
+function formatNtfyFreezeSummary(report, classification = classifyClientErrorReport(report)) {
+    const summary = extractFreezeSummaryFromStack(report && report.stack);
+    if (!summary || !summary.freezeKind) return '';
+    const issues = Array.isArray(summary.interactabilityIssues) ? summary.interactabilityIssues : [];
+    const topIssue = issues[0] || {};
+    const actions = Array.isArray(summary.allowedActions) ? summary.allowedActions.join(',') : '';
+    const recovery = summary.recovery || {};
+    const recoveryText = recovery.attempted ? (recovery.success ? 'success' : 'failed') : 'not-attempted';
+    return [
+        'UI_LOCK_SUMMARY',
+        'freezeKind=' + (summary.freezeKind || classification.freezeKind || '-'),
+        'phase=' + (summary.phase || report.phase || 'unknown'),
+        'version=' + (report.appVersion || '-'),
+        'actions=' + (actions || '-'),
+        'issue=' + (topIssue.kind || '-'),
+        'action=' + (topIssue.action || '-'),
+        'target=' + (topIssue.target || '-'),
+        'actionTarget=' + (topIssue.actionTarget || '-'),
+        'reason=' + (topIssue.reason || '-'),
+        'recovery=' + recoveryText,
+        'staleClient=' + (classification.classification === 'stale-client' ? 'true' : 'false'),
+    ].join('\n');
+}
+
 function classifyClientErrorReport(report) {
     const freezeKind = extractClientErrorFreezeKind(report);
     if (isStaleClientErrorVersion(report?.appVersion)) {
@@ -405,7 +444,9 @@ function classifyClientErrorReport(report) {
 
 function formatNtfyClientErrorMessage(report) {
     const classification = classifyClientErrorReport(report);
+    const freezeSummary = formatNtfyFreezeSummary(report, classification);
     const lines = [
+        ...(freezeSummary ? [freezeSummary, ''] : []),
         'classification=' + classification.classification,
         'pattern=' + (classification.knownPatternId || '-'),
         'phase=' + (report.phase || 'unknown'),
@@ -2095,6 +2136,8 @@ module.exports = {
     extractClientErrorFreezeKind,
     isStaleClientErrorVersion,
     classifyClientErrorReport,
+    extractFreezeSummaryFromStack,
+    formatNtfyFreezeSummary,
     formatNtfyClientErrorMessage,
     redactedClientErrorRoomId,
     notifyClientError,

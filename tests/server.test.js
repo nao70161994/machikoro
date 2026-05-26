@@ -46,6 +46,8 @@ const {
     extractClientErrorFreezeKind,
     isStaleClientErrorVersion,
     classifyClientErrorReport,
+    extractFreezeSummaryFromStack,
+    formatNtfyFreezeSummary,
     formatNtfyClientErrorMessage,
     redactedClientErrorRoomId,
     notifyClientError,
@@ -555,6 +557,62 @@ runTest('ntfy client error message は classification/phase/room/UA と本文を
     assert.ok(message.includes('version=abc123'));
     assert.ok(message.includes('Safari iPhone'));
     assert.ok(message.includes('updatePendingModalContent recursion'));
+});
+
+runTest('ntfy freeze summary は本文先頭にUI lock原因を短く出す', () => {
+    const stack = 'FREEZE_SUMMARY ' + JSON.stringify({
+        freezeKind: 'human-turn-ui-locked',
+        phase: 'build',
+        allowedActions: ['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild'],
+        interactabilityIssues: [{
+            kind: 'allowed-action-container-not-clickable',
+            action: 'buildLandmark',
+            target: 'buildMenu',
+            actionTarget: 'buildLandmark',
+            reason: 'action-child-not-clickable',
+        }],
+        recovery: { attempted: true, success: true },
+        noisyLargeField: 'x'.repeat(2000),
+    });
+    const report = normalizeClientErrorPayload({
+        message: 'human-turn-ui-locked after 5000ms',
+        stack,
+        phase: 'build',
+        appVersion: 'current-build',
+        roomId: 'ROOM42',
+    }, 1700000000000).report;
+    const message = formatNtfyClientErrorMessage(report);
+
+    assert.deepStrictEqual(extractFreezeSummaryFromStack(report.stack).allowedActions, ['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild']);
+    assert.ok(message.startsWith('UI_LOCK_SUMMARY\n'));
+    assert.ok(message.includes('freezeKind=human-turn-ui-locked'));
+    assert.ok(message.includes('phase=build'));
+    assert.ok(message.includes('version=current-build'));
+    assert.ok(message.includes('actions=buildCard,buildLandmark,nextTurn,undoBuild'));
+    assert.ok(message.includes('issue=allowed-action-container-not-clickable'));
+    assert.ok(message.includes('action=buildLandmark'));
+    assert.ok(message.includes('target=buildMenu'));
+    assert.ok(message.includes('actionTarget=buildLandmark'));
+    assert.ok(message.includes('reason=action-child-not-clickable'));
+    assert.ok(message.includes('recovery=success'));
+    assert.ok(message.includes('staleClient=false'));
+    assert.ok(message.indexOf('UI_LOCK_SUMMARY') < message.indexOf('classification=known-pattern'));
+    assert.ok(!message.includes('room=ROOM42'));
+});
+
+runTest('ntfy freeze summary は stale client 判定を先頭要約へ含める', () => {
+    const report = normalizeClientErrorPayload({
+        message: 'post-build-ui-blocked after 5000ms',
+        stack: 'FREEZE_SUMMARY ' + JSON.stringify({ freezeKind: 'post-build-ui-blocked', phase: 'build', recovery: { attempted: true, success: false } }),
+        phase: 'build',
+        appVersion: '86136c7',
+    }, 1700000000000).report;
+    const summary = formatNtfyFreezeSummary(report);
+
+    assert.ok(summary.startsWith('UI_LOCK_SUMMARY\n'));
+    assert.ok(summary.includes('freezeKind=post-build-ui-blocked'));
+    assert.ok(summary.includes('recovery=failed'));
+    assert.ok(summary.includes('staleClient=true'));
 });
 
 runTest('client error classification は stale client と未知通知を分ける', () => {
