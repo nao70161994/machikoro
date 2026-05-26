@@ -1613,6 +1613,8 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
 
         assert.ok(html.includes('<html lang="ja">'));
+        assert.ok(head.includes(`<title>${page.title}</title>`));
+        assert.ok(head.includes('<link rel="stylesheet" href="style.css">'));
         assert.ok(head.includes('<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">'));
         assert.ok(head.includes('<meta name="robots" content="index,follow">'));
         assert.ok(/<meta name="description" content="[^"]+">/.test(head));
