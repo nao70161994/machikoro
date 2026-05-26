@@ -343,7 +343,7 @@ const KNOWN_CLIENT_ERROR_FREEZE_KINDS = Object.freeze(new Set([
 ]));
 
 const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
-    Object.freeze({ id: 'manual-test-endpoint', pattern: 'Machikoro ntfy test notification' }),
+    Object.freeze({ id: 'manual-test-endpoint', pattern: 'ダイスシティ ntfy test notification' }),
     Object.freeze({ id: 'renderPlayers-playerSettings-fallback', pattern: 'difficulty' }),
     Object.freeze({ id: 'pending-render-recovery', pattern: 'updatePendingModalContent recursion' }),
 ]);
@@ -466,7 +466,7 @@ async function notifyClientError(report, options = {}) {
     return postNtfyNotification({
         topic: options.topic || process.env.NTFY_TOPIC,
         fetchImpl: options.fetchImpl || global.fetch,
-        title: classification.classification === 'unknown' ? '[Machikoro] Unknown Client Error' : '[Machikoro] Client Error',
+        title: classification.classification === 'unknown' ? '[ダイスシティ] Unknown Client Error' : '[ダイスシティ] Client Error',
         priority: classification.priority,
         tags: classification.tags,
         body: formatNtfyClientErrorMessage(report),
@@ -514,7 +514,7 @@ function isClientErrorTestEnabled(env = process.env) {
 function buildClientErrorTestPayload(now = Date.now(), buildHash = BUILD_HASH) {
     return {
         source: 'manual-test-endpoint',
-        message: 'Machikoro ntfy test notification',
+        message: 'ダイスシティ ntfy test notification',
         stack: 'Manual test via /api/client-error-test; no real client error occurred.',
         filename: 'server.js',
         line: null,
@@ -555,9 +555,9 @@ async function handleClientErrorTestRequest(req, res, options = {}) {
 }
 
 function lifecycleEventTitle(event) {
-    if (event === 'play-start') return '[Machikoro] Game Started';
-    if (event === 'victory') return '[Machikoro] Victory';
-    return '[Machikoro] Game Finished';
+    if (event === 'play-start') return '[ダイスシティ] Game Started';
+    if (event === 'victory') return '[ダイスシティ] Victory';
+    return '[ダイスシティ] Game Finished';
 }
 
 function normalizeLifecycleMode(value) {
@@ -806,6 +806,7 @@ app.get('/index.html', sendIndexWithBuildHash);
 const PUBLIC_ROOT_FILES = Object.freeze(new Set([
     'style.css',
     'manifest.json',
+    'manifest.webmanifest',
     'sw.js',
     'privacy.html',
     'rules.html',

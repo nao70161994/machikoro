@@ -3,6 +3,11 @@
 この文書は、途中参加した人間 / AI が最初に読む短い入口です。
 詳細は各専門 doc を参照し、このファイルは現在地と次の安全な一手だけを示します。
 
+## Public naming
+
+- 公開向けの製品名は「ダイスシティ」。
+- 内部コード名、package 名、cache prefix、localStorage key、window debug helper、既存 URL、履歴説明には `machikoro` / `Machikoro` が残る。互換性リスクがあるため、公開文言の変更目的だけで内部識別子を一括 rename しない。
+
 ## 読む順番
 
 1. `README.md`: 起動方法、テスト、主要機能。

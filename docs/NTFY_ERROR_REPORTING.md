@@ -1,6 +1,6 @@
 # ntfy client error reporting
 
-Machikoro can forward real browser errors to ntfy so iPhone Safari / Android Chrome only failures are visible soon after they happen.
+ダイスシティは real browser errors を ntfy へ転送でき so iPhone Safari / Android Chrome only failures are visible soon after they happen.
 
 ## Server setup
 
@@ -123,7 +123,7 @@ If `NTFY_TOPIC` is missing, the endpoint returns a clear warning response:
 {"ok":false,"error":"missing_ntfy_topic","message":"NTFY_TOPIC is not set"}
 ```
 
-A successful test returns `202` and sends a notification with `phase=test`, a hashed room label such as `room=hash:e12e115a`, and the message `Machikoro ntfy test notification`. This notification is explicitly marked as a manual test and does not represent a real client error.
+A successful test returns `202` and sends a notification with `phase=test`, a hashed room label such as `room=hash:e12e115a`, and the message `ダイスシティ ntfy test notification`. This notification is explicitly marked as a manual test and does not represent a real client error.
 
 ## Server safeguards
 
@@ -181,7 +181,7 @@ For `/api/game-lifecycle`, same-origin browser reports stay tokenless so normal 
 Example start notification:
 
 ```text
-Title: [Machikoro] Game Started
+Title: [ダイスシティ] Game Started
 mode=local
 players=4
 cpu=3
@@ -190,7 +190,7 @@ cpu=3
 Example finish notification:
 
 ```text
-Title: [Machikoro] Game Finished
+Title: [ダイスシティ] Game Finished
 event=play-finish
 mode=local
 players=4
@@ -233,7 +233,7 @@ CI failure notifications include only compact build metadata:
 Example CI notification:
 
 ```text
-Title: [Machikoro CI] Release pseudo E2E failed
+Title: [ダイスシティ CI] Release pseudo E2E failed
 workflow=Release pseudo E2E
 branch=main
 commit=1a84285

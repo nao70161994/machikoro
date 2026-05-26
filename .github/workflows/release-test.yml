@@ -63,7 +63,7 @@ jobs:
           run=${RUN_URL}
           EOF_NTFY
           curl -fsS -X POST "https://ntfy.sh/${NTFY_CI_TOPIC}" \
-            -H "Title: [Machikoro CI] ${GITHUB_WORKFLOW} failed" \
+            -H "Title: [ダイスシティ CI] ${GITHUB_WORKFLOW} failed" \
             -H "Priority: 4" \
             -H "Tags: warning,github_actions" \
             --data-binary @/tmp/ntfy-ci-message.txt

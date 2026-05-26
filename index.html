@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>街コロ</title>
+    <title>ダイスシティ</title>
     <link rel="stylesheet" href="style.css">
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="description" content="ダイスシティは、サイコロと街づくりを楽しめるオンライン・オフライン対応のブラウザボードゲームです。">
     <meta name="theme-color" content="#0f0e17">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="街コロ">
+    <meta name="apple-mobile-web-app-title" content="ダイスシティ">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
 </head>
 <body>
@@ -19,8 +20,8 @@
         <canvas id="cityCanvas"></canvas>
         <div class="title-content">
             <div class="title-header">
-                <h1>🏙️ 街コロ</h1>
-                <p class="title-logo-sub">MACHI KORO</p>
+                <h1>🏙️ ダイスシティ</h1>
+                <p class="title-logo-sub">DICE CITY</p>
                 <div class="title-logo-deco"><span>🏙️ ボードゲーム 🏙️</span></div>
                 <div class="title-buttons-row">
                     <button class="rules-btn" data-ui-action="showRules">📖 ルール</button>
@@ -182,7 +183,7 @@
     <div id="rulesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle" tabindex="-1" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="rulesModalTitle">📖 街コロ ルール説明</h2>
+                <h2 id="rulesModalTitle">📖 ダイスシティ ルール説明</h2>
                 <button data-ui-action="closeRules" aria-label="ルール説明を閉じる">✕</button>
             </div>
             <div class="modal-body">

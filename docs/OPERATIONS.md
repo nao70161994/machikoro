@@ -133,7 +133,7 @@ Use these as copy/paste starters when handing work to Codex. Replace bracketed v
 
 ### Unknown notification
 
-`/goal Investigate and fix current-version unknown Machikoro client notification. Notification: [paste private ntfy body]. Version=[hash], phase=[phase], UA=[browser]. Preserve privacy, add targeted regression test first, update docs/OPERATIONS.md if this becomes a known pattern, run relevant tests, commit/push.`
+`/goal Investigate and fix current-version unknown ダイスシティ client notification. Notification: [paste private ntfy body]. Version=[hash], phase=[phase], UA=[browser]. Preserve privacy, add targeted regression test first, update docs/OPERATIONS.md if this becomes a known pattern, run relevant tests, commit/push.`
 
 ### CI failure
 

@@ -58,4 +58,4 @@ jobs:
           failed_job=${FAILED_JOB}
           run=${RUN_URL}
           EOF_NTFY
-          curl -fsS -X POST "https://ntfy.sh/${NTFY_CI_TOPIC}"             -H "Title: [Machikoro CI] Nightly release regression failed"             -H "Priority: 4"             -H "Tags: warning,github_actions,nightly"             --data-binary @/tmp/ntfy-ci-message.txt
+          curl -fsS -X POST "https://ntfy.sh/${NTFY_CI_TOPIC}"             -H "Title: [ダイスシティ CI] Nightly release regression failed"             -H "Priority: 4"             -H "Tags: warning,github_actions,nightly"             --data-binary @/tmp/ntfy-ci-message.txt

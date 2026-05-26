@@ -364,6 +364,7 @@ runTest('createRoom rate limit は同一IPの再接続連投も抑止する', ()
 runTest('public static はアプリ資産だけをallowlist公開する', () => {
     assert.strictEqual(isPublicRootFile('style.css'), true);
     assert.strictEqual(isPublicRootFile('/manifest.json'), true);
+    assert.strictEqual(isPublicRootFile('/manifest.webmanifest'), true);
     assert.strictEqual(isPublicRootFile('server.js'), false);
     assert.strictEqual(isPublicRootFile('package.json'), false);
     assert.ok(PUBLIC_STATIC_DIRS.some(entry => entry.route === '/js'));
@@ -667,7 +668,7 @@ runTest('notifyClientError は未知だけ高優先度にし既知UI lockは低�
     assert.strictEqual(calls.length, 1);
     assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-test-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Unknown Client Error');
+    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Unknown Client Error');
     assert.strictEqual(calls[0].options.headers.Priority, '5');
     assert.ok(calls[0].options.headers.Tags.includes('unknown'));
     assert.ok(calls[0].options.body.includes('classification=unknown'));
@@ -680,7 +681,7 @@ runTest('notifyClientError は未知だけ高優先度にし既知UI lockは低�
             return { ok: true };
         },
     });
-    assert.strictEqual(calls[1].options.headers.Title, '[Machikoro] Client Error');
+    assert.strictEqual(calls[1].options.headers.Title, '[ダイスシティ] Client Error');
     assert.strictEqual(calls[1].options.headers.Priority, '3');
     assert.ok(calls[1].options.headers.Tags.includes('known'));
 });
@@ -690,7 +691,7 @@ runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み
     const calls = [];
     postNtfyNotification({
         topic: 'helper-topic',
-        title: '[Machikoro] Helper Test',
+        title: '[ダイスシティ] Helper Test',
         priority: '5',
         tags: 'test,gear',
         body: 'hello',
@@ -703,7 +704,7 @@ runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み
     assert.strictEqual(calls.length, 1);
     assert.strictEqual(calls[0].url, 'https://ntfy.sh/helper-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Helper Test');
+    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Helper Test');
     assert.strictEqual(calls[0].options.headers.Priority, '5');
     assert.strictEqual(calls[0].options.headers.Tags, 'test,gear');
     assert.strictEqual(calls[0].options.body, 'hello');
@@ -722,7 +723,7 @@ runTest('client error test payload は実エラーではないことが分かる
     const normalized = normalizeClientErrorPayload(payload, 1700000000000);
     assert.strictEqual(normalized.ok, true);
     assert.strictEqual(normalized.report.source, 'manual-test-endpoint');
-    assert.strictEqual(normalized.report.message, 'Machikoro ntfy test notification');
+    assert.strictEqual(normalized.report.message, 'ダイスシティ ntfy test notification');
     assert.strictEqual(normalized.report.phase, 'test');
     assert.strictEqual(normalized.report.roomId, 'TEST01');
     assert.strictEqual(normalized.report.appVersion, 'testhash');
@@ -782,7 +783,7 @@ runTest('notifyGameLifecycle は ntfy topic 設定時に軽量titleでPOSTする
     assert.strictEqual(calls.length, 1);
     assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-life-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[Machikoro] Game Started');
+    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Game Started');
     assert.strictEqual(calls[0].options.headers.Priority, '2');
     assert.ok(calls[0].options.body.includes('mode=local'));
     assert.ok(calls[0].options.body.includes('players=4'));

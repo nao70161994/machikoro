@@ -1,6 +1,6 @@
-# Machi Koro
+# ダイスシティ
 
-バニラ JavaScript で実装した街コロ Web アプリです。ローカル対戦、CPU 対戦、Socket.IO を使ったオンライン対戦、PWA 配布に対応しています。
+バニラ JavaScript で実装したダイスシティ Web アプリです。ローカル対戦、CPU 対戦、Socket.IO を使ったオンライン対戦、PWA 配布に対応しています。
 
 ## 起動方法
 

@@ -99,7 +99,7 @@ curl -X POST \
 Expected result:
 
 - The HTTP response is accepted, normally `202`.
-- The subscribed Android/iPhone ntfy client receives a message with `phase=test`, a hashed room label such as `room=hash:e12e115a`, and `Machikoro ntfy test notification`.
+- The subscribed Android/iPhone ntfy client receives a message with `phase=test`, a hashed room label such as `room=hash:e12e115a`, and `ダイスシティ ntfy test notification`.
 - After the test, remove `CLIENT_ERROR_TEST_ENABLED` from Render and redeploy/restart.
 
 Do not submit with a public or guessable `NTFY_TOPIC`, and do not paste reconnect tokens or full game snapshots into error payloads.

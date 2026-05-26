@@ -11,6 +11,7 @@ const STATIC_ASSETS = [
   '/rules.html',
   '/style.css',
   '/manifest.json',
+  '/manifest.webmanifest',
   '/js/Card.js',
   '/js/Player.js',
   '/js/GameManager.js',
