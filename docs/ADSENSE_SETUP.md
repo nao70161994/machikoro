@@ -140,5 +140,5 @@ Before clicking submit in AdSense:
 - `privacy.html` and `rules.html` are reachable from the public origin.
 - AdSense review code is installed exactly once, and ad surfaces remain placeholder-only until real ad units are configured.
 - PWA cache contains the public pages and ad placeholder helper.
-- ntfy real notification delivery has been confirmed and the temporary test endpoint flag has been removed.
+- ntfy real notification delivery has been confirmed, the temporary test endpoint flag has been removed, and `NTFY_TOPIC` is not public or guessable.
 - The commit hash in `/api/version` matches the commit intended for review.

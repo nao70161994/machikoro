@@ -1753,6 +1753,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('grep -E "カード選択|保存と再開|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('grep -E "アカウント登録|メールアドレス|Cookie|Google AdSense|お問い合わせ|最終更新日|og:description|twitter:description"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
+    assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
