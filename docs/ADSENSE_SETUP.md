@@ -18,33 +18,35 @@ Quick command check:
 
 ```sh
 PUBLIC_ORIGIN=https://machikoro-9jv2.onrender.com
-curl -fI "$PUBLIC_ORIGIN/"
-curl -fI "$PUBLIC_ORIGIN/privacy.html"
-curl -fI "$PUBLIC_ORIGIN/rules.html"
-curl -fI "$PUBLIC_ORIGIN/manifest.json"
-curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"
-curl -fI "$PUBLIC_ORIGIN/icons/icon-192.png"
-curl -fI "$PUBLIC_ORIGIN/icons/icon-512.png"
+for path in / /privacy.html /rules.html /manifest.json /manifest.webmanifest /icons/icon-192.png /icons/icon-512.png /sw.js; do
+  status=$(curl -fsSI -o /dev/null -w "%{http_code}" "$PUBLIC_ORIGIN$path")
+  if [ "$status" != "200" ]; then
+    echo "Unexpected status or redirect for $path: $status"
+    exit 1
+  fi
+done
 curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"
 curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"
-curl -fI "$PUBLIC_ORIGIN/sw.js"
+curl -fsS "$PUBLIC_ORIGIN/" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
+curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
+curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
 curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
-Negative checks for review-mode URL metadata and external connection hints on all public pages:
+Negative checks for review-mode URL metadata and public-page link hints on all public pages:
 
 ```sh
 for page in '' rules.html privacy.html; do
   html=$(curl -fsS "$PUBLIC_ORIGIN/$page")
-  if printf '%s' "$html" | grep -Ei '<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?canonical([[:space:]]|["'"'"'])|<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"'](og:url|twitter:url)["'"'"']|<meta[^>]+["'"'"'](og:url|twitter:url)["'"'"'][^>]+(property|name)[[:space:]]*=|<base\b|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?(preconnect|dns-prefetch|preload|modulepreload)([[:space:]]|["'"'"'])'; then
-    echo "Unexpected URL metadata or external connection hint found in /$page"
+  if printf '%s' "$html" | grep -Ei '<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?canonical([[:space:]]|["'"'"'])|<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"'](og:url|twitter:url)["'"'"']|<meta[^>]+["'"'"'](og:url|twitter:url)["'"'"'][^>]+(property|name)[[:space:]]*=|<base\b|<meta[^>]+http-equiv[[:space:]]*=[[:space:]]*["'"'"']refresh["'"'"']|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?(preconnect|dns-prefetch|preload|modulepreload)([[:space:]]|["'"'"'])|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']stylesheet["'"'"'][^>]+href[[:space:]]*=[[:space:]]*["'"'"']https?://'; then
+    echo "Unexpected URL metadata, redirect, refresh, external stylesheet, or public-page link hint found in /$page"
     exit 1
   fi
 done
-echo "Public page URL metadata and external connection hint checks passed"
+echo "Public page URL metadata and public-page link hint checks passed"
 ```
 
 Negative checks for the static explanation pages:
@@ -177,11 +179,11 @@ After review, if real ad units or an SDK adapter are intentionally added, follow
 
 Before clicking submit in AdSense or after review-period public-page changes:
 
-- `docs/RELEASE_CHECKLIST.md` automated gate is green for the deployed commit.
+- `docs/RELEASE_CHECKLIST.md` automated gate and applicable Public Preflight Summary items are green for the deployed commit; if CI covers only a subset, run the missing local checks before submission.
 - The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
 - `privacy.html` and `rules.html` are reachable from the public origin, and their description / OGP / Twitter metadata matches the current privacy and rule-page wording.
 - `/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin and still match the manifest / OGP advertised sizes.
 - AdSense review code is installed exactly once, ad surfaces remain placeholder-only, and live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent until real ad units are intentionally configured after review.
-- PWA cache contains the public pages and ad placeholder helper.
+- PWA cache contains the public pages and ad placeholder helper, and stale-client handling has been checked by comparing `/api/version` with `window.MACHIKORO_CLIENT_VERSION` plus the update banner / cache-clearing fallback.
 - ntfy real notification delivery has been confirmed, the temporary test endpoint flag has been removed, and `NTFY_TOPIC` is not public or guessable.
 - The commit hash in `/api/version` matches the commit intended for review.

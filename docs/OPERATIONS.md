@@ -132,8 +132,8 @@ Before public traffic, AdSense review submission/recheck, ads after review, or w
 
 - `git status --short` is empty.
 - CI is green on the exact commit to deploy.
-- `docs/RELEASE_CHECKLIST.md` automated gate has been run or CI covers it.
-- For AdSense review submission/recheck, run the public URL, OGP/PWA icon reachability, URL metadata / external connection hint, and static explanation page negative checks in `docs/ADSENSE_SETUP.md`; confirm `Public page URL metadata and external connection hint checks passed` plus `Static explanation page negative checks passed`.
+- `docs/RELEASE_CHECKLIST.md` automated gate has been run; if relying on CI, confirm which commands CI covers and run any missing local commands before release.
+- For AdSense review submission/recheck, run the public URL, OGP/PWA icon reachability, URL metadata / public-page link hint, and static explanation page negative checks in `docs/ADSENSE_SETUP.md`; confirm `Public page URL metadata and public-page link hint checks passed` plus `Static explanation page negative checks passed`.
 - `privacy.html` and `rules.html` are reachable from the title screen and cached by the PWA shell; the title page and rule-page metadata mention 登録不要 / no-registration play, privacy-page metadata mentions error reporting / AdSense review / ad topics, `rules.html` explains the win condition and keeps OGP/Twitter rule-page metadata current, and `privacy.html` also mentions contact guidance and the last updated date.
 - AdSense placeholders remain outside gameplay controls, still use `pointer-events: none`, and match the allowed-placement policy in `docs/ADS_PLAN.md`.
 - PWA install prompt and update banner have been checked on at least one real mobile browser before relying on them publicly.
@@ -146,6 +146,8 @@ Before public traffic, AdSense review submission/recheck, ads after review, or w
 Use these as copy/paste starters when handing work to Codex. Replace bracketed values with the notification or CI details.
 
 ### Unknown notification
+
+For AdSense review or any code-free triage window, first preserve the ntfy body privately, compare the report version with the deployed hash, classify current-version versus stale-client, decide whether submission/recheck should pause, and open a focused follow-up. Do not suppress or reclassify the report as the only action.
 
 `/goal Investigate and fix current-version unknown ダイスシティ client notification. Notification: [paste private ntfy body]. Version=[hash], phase=[phase], UA=[browser]. Preserve privacy, add targeted regression test first, update docs/OPERATIONS.md if this becomes a known pattern, run relevant tests, commit/push.`
 
