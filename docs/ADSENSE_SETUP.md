@@ -53,7 +53,7 @@ curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E 'property="og:image" content="/i
 curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
 curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
-curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
+curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|サイコロの出目|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|開始終了通知|ゲーム開始や終了|プレイヤー名|ルームコード|再接続トークン|カード一覧|保存データ全体|完全なスナップショット|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|秘密情報|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
