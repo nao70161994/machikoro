@@ -2239,6 +2239,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('Do not change during review unless an urgent incident or CI fix requires it'));
     assert.ok(operations.includes('large UI redesigns'));
     assert.ok(operations.includes('ad placement changes'));
+    assert.ok(operations.includes('live ad units'));
+    assert.ok(operations.includes('SDK adapters'));
     assert.ok(operations.includes('PWA behavior changes'));
     assert.ok(operations.includes('URL changes'));
     assert.ok(operations.includes('rule changes'));
