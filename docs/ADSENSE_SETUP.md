@@ -46,6 +46,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, and save/resume, so shared previews do not show stale rule-page content.
 - Confirm `privacy.html` and `rules.html` remain static explanation pages without page scripts, forms, buttons, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, `og:image` and `twitter:image` both point to `/icons/icon-512.png`, image alt text is present, and the PWA manifests and Apple touch icon still reference `/icons/icon-192.png`.
+  Preview image metadata should stay same-origin relative rather than using an external image host.
 - Confirm public HTML metadata does not hardcode staging origins or localhost into preview tags; use the deployed URL only in external submission forms and command examples.
 
 The in-app rules modal can remain available, but AdSense review should have direct public URLs for both privacy and rules.

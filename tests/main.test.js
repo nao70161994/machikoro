@@ -1651,6 +1651,12 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         const description = getMetaContent(/<meta name="description" content="([^"]+)">/);
         const ogDescription = getMetaContent(/<meta property="og:description" content="([^"]+)">/);
         const twitterDescription = getMetaContent(/<meta name="twitter:description" content="([^"]+)">/);
+        const ogImage = getMetaContent(/<meta property="og:image" content="([^"]+)">/);
+        const twitterImage = getMetaContent(/<meta name="twitter:image" content="([^"]+)">/);
+        assert.strictEqual(ogImage, '/icons/icon-512.png');
+        assert.strictEqual(twitterImage, '/icons/icon-512.png');
+        assert.ok(!/^https?:\/\//.test(ogImage));
+        assert.ok(!/^https?:\/\//.test(twitterImage));
         const previewDescriptions = [description, ogDescription, twitterDescription];
         assert.ok(description.length > 20);
         assert.ok(head.includes('<meta property="og:site_name" content="ダイスシティ">'));
@@ -1939,6 +1945,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('remain static explanation pages without page scripts, forms, buttons, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader'));
     assert.ok(adsenseSetup.includes('`og:image` and `twitter:image` both point to `/icons/icon-512.png`'));
+    assert.ok(adsenseSetup.includes('Preview image metadata should stay same-origin relative'));
     assert.ok(adsenseSetup.includes('image alt text is present'));
     assert.ok(adsenseSetup.includes('Apple touch icon still reference `/icons/icon-192.png`'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
