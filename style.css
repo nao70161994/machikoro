@@ -271,6 +271,20 @@ body.modal-open #gameScreen {
     margin-top: 24px;
 }
 
+@media (max-width: 480px) {
+    .static-page {
+        padding: 16px 12px;
+    }
+
+    .static-page-content {
+        padding: 18px;
+    }
+
+    .static-page h1 {
+        font-size: 26px;
+    }
+}
+
 /* ===== タブ ===== */
 .tab-bar {
     display: flex;
