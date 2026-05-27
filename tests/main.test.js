@@ -1791,6 +1791,8 @@ runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () =
 
     assert.strictEqual(matches.length, 1);
     assert.ok(head.includes(matches[0][0]));
+    assert.ok(head.indexOf('rel="apple-touch-icon"') < head.indexOf(matches[0][0]));
+    assert.ok(html.indexOf(matches[0][0]) < html.indexOf('</head>'));
     assert.ok(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8683516545883768"[\s\S]*crossorigin="anonymous"><\/script>/.test(matches[0][0]));
     const externalScriptSrcs = [...html.matchAll(/<script[^>]+src="(https?:\/\/[^"]+)"/g)].map((match) => match[1]);
     assert.deepStrictEqual(externalScriptSrcs, ['https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8683516545883768']);
@@ -1955,7 +1957,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!/\ssrc\s*=/.test(normalizedStaticPage));
         assert.ok(!/\sstyle\s*=/.test(normalizedStaticPage));
         assert.ok(!/http-equiv\s*=\s*["']refresh["']/.test(normalizedStaticPage));
-        for (const forbiddenTag of ['script', 'button', 'input', 'select', 'textarea', 'form', 'iframe', 'embed', 'object', 'canvas', 'img', 'picture', 'source', 'video', 'audio', 'svg']) {
+        for (const forbiddenTag of ['script', 'button', 'input', 'select', 'textarea', 'form', 'dialog', 'details', 'summary', 'iframe', 'embed', 'object', 'canvas', 'img', 'picture', 'source', 'video', 'audio', 'svg']) {
             assert.ok(!new RegExp('<\\s*' + forbiddenTag + '\\b').test(normalizedStaticPage));
         }
         assert.ok(!/role\s*=\s*["']button["']/.test(normalizedStaticPage));
@@ -2096,7 +2098,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('contact guidance'));
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
-    assert.ok(releaseChecklist.includes('no page script, form, button, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
+    assert.ok(releaseChecklist.includes('no page script, form, button, `dialog` / `details` / `summary`, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
     assert.ok(releaseChecklist.includes('Run the URL metadata / external connection hint checks and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
     assert.ok(releaseChecklist.includes('Static explanation page negative checks passed'));
     assert.ok(releaseChecklist.includes('Public page URL metadata and external connection hint checks passed'));
@@ -2126,6 +2128,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('no in-game ad slot'));
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
     assert.ok(releaseChecklist.includes('Live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent during review'));
+    assert.ok(releaseChecklist.includes('Review cleanup must not add ad slots or move the review loader'));
     assert.ok(releaseChecklist.includes('After review, before adding ad slots or expanding beyond the review loader'));
     assert.ok(releaseChecklist.includes('do not add live ad units'));
     assert.ok(releaseChecklist.includes('<ins class="adsbygoogle">'));
@@ -2193,7 +2196,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
     assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
-    assert.ok(adsenseSetup.includes('remain static explanation pages without page scripts, forms, buttons, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader'));
+    assert.ok(adsenseSetup.includes('remain static explanation pages without page scripts, forms, buttons, `dialog` / `details` / `summary`, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader'));
+    assert.ok(adsenseSetup.includes('<dialog|<details|<summary'));
     assert.ok(adsenseSetup.includes('`og:image` and `twitter:image` both point to `/icons/icon-512.png`'));
     assert.ok(adsenseSetup.includes('Preview image metadata should stay same-origin relative'));
     assert.ok(adsenseSetup.includes('image alt text is present'));

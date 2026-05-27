@@ -49,7 +49,7 @@ Negative checks for the static explanation pages:
 ```sh
 for page in rules.html privacy.html; do
   html=$(curl -s "$PUBLIC_ORIGIN/$page")
-  if printf '%s' "$html" | grep -Ei '<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|data-ad-client[[:space:]]*=|data-ad-slot[[:space:]]*=|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action|[[:space:]]id[[:space:]]*=|[[:space:]]style[[:space:]]*=|[[:space:]]src[[:space:]]*=|role[[:space:]]*=[[:space:]]*"button"|[[:space:]]on[a-z]+[[:space:]]*='; then
+  if printf '%s' "$html" | grep -Ei '<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|data-ad-client[[:space:]]*=|data-ad-slot[[:space:]]*=|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<dialog|<details|<summary|<form|<button|<input|<select|<textarea|data-|data-ui-action|[[:space:]]id[[:space:]]*=|[[:space:]]style[[:space:]]*=|[[:space:]]src[[:space:]]*=|role[[:space:]]*=[[:space:]]*"button"|[[:space:]]on[a-z]+[[:space:]]*='; then
     echo "Unexpected active or embedded content found in $page"
     exit 1
   fi
@@ -72,7 +72,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm `privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, AdSense review, and ads so shared previews do not show stale privacy-page content.
 - Confirm `rules.html` describes how to start a local or online game, card selection, save/resume behavior, plus the win condition, turn flow, card colors, activation order, landmarks, and the last updated date.
 - Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, and save/resume, so shared previews do not show stale rule-page content.
-- Confirm `privacy.html` and `rules.html` remain static explanation pages without page scripts, forms, buttons, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader.
+- Confirm `privacy.html` and `rules.html` remain static explanation pages without page scripts, forms, buttons, `dialog` / `details` / `summary`, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, `og:image` and `twitter:image` both point to `/icons/icon-512.png`, image alt text is present, and the referenced PNG assets remain 512x512 and 192x192 as advertised by metadata and manifests.
   Preview image metadata should stay same-origin relative rather than using an external image host.
 - Confirm public HTML metadata does not hardcode staging origins or localhost into preview tags; use the deployed URL only in external submission forms and command examples.
