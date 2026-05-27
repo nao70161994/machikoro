@@ -2124,6 +2124,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('both `og:image` and `twitter:image` pointing to `/icons/icon-512.png`'));
     assert.ok(releaseChecklist.includes('same-origin relative paths'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
+    assert.ok(releaseChecklist.includes('the local OGP/PWA icon dimension check in `docs/ADSENSE_SETUP.md` passes'));
     assert.ok(releaseChecklist.includes('OGP and PWA icon metadata sizes stay aligned with the 512x512 and 192x192 PNG assets'));
     assert.ok(releaseChecklist.includes('manifest `id`, `start_url`, language, display mode, theme colors, and portrait orientation stay stable'));
     assert.ok(releaseChecklist.includes('title-page PWA head metadata keeps one manifest link to `/manifest.webmanifest` and stays aligned with the manifest name, theme color, mobile web app flags, status bar style, and Apple touch icon'));
@@ -2213,6 +2214,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/icons/icon-192.png` and `<PUBLIC_ORIGIN>/icons/icon-512.png'));
     assert.ok(adsenseSetup.includes('OGP/PWA icon PNGs are reachable and match the advertised sizes'));
+    assert.ok(adsenseSetup.includes('Local icon dimension check before deploy'));
+    assert.ok(adsenseSetup.includes('Local OGP/PWA icon dimension checks passed'));
+    assert.ok(adsenseSetup.includes("struct.unpack('>II', data[16:24])"));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
     assert.ok(adsenseSetup.includes('Keep each public-page description / OGP / Twitter description concise'));
@@ -2275,6 +2279,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Submission fixes during review must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`'));
     assert.ok(adsenseSetup.includes('Before clicking submit in AdSense or after review-period public-page changes'));
     assert.ok(adsenseSetup.includes('/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin'));
+    assert.ok(adsenseSetup.includes('Local OGP/PWA icon dimension checks pass for `icons/icon-192.png` and `icons/icon-512.png` before deploy'));
     assert.ok(adsenseSetup.includes('manifest / OGP advertised sizes'));
     assert.ok(adsenseSetup.includes('stale-client handling has been checked by comparing `/api/version` with `window.MACHIKORO_CLIENT_VERSION`'));
     assert.ok(adsenseSetup.includes('applicable Public Preflight Summary items are green'));

@@ -14,6 +14,27 @@ Open these URLs in a normal browser window and in a private/incognito window:
 - `<PUBLIC_ORIGIN>/sw.js`: Service Worker script returns JavaScript and includes the current app shell cache list.
 - `<PUBLIC_ORIGIN>/api/version`: returns the deployed build/version metadata.
 
+Local icon dimension check before deploy:
+
+```sh
+python3 - <<'PY'
+from pathlib import Path
+import struct
+expected = {
+    'icons/icon-192.png': (192, 192),
+    'icons/icon-512.png': (512, 512),
+}
+for name, size in expected.items():
+    data = Path(name).read_bytes()
+    if data[:8] != b'\x89PNG\r\n\x1a\n':
+        raise SystemExit(f'{name}: not a PNG')
+    width, height = struct.unpack('>II', data[16:24])
+    if (width, height) != size:
+        raise SystemExit(f'{name}: got {width}x{height}, expected {size[0]}x{size[1]}')
+print('Local OGP/PWA icon dimension checks passed')
+PY
+```
+
 Quick command check:
 
 ```sh
@@ -182,6 +203,7 @@ After review, if real ad units or an SDK adapter are intentionally added, follow
 Before clicking submit in AdSense or after review-period public-page changes:
 
 - `docs/RELEASE_CHECKLIST.md` automated gate and applicable Public Preflight Summary items are green for the deployed commit; if CI covers only a subset, run the missing local checks before submission.
+- Local OGP/PWA icon dimension checks pass for `icons/icon-192.png` and `icons/icon-512.png` before deploy.
 - The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
 - `privacy.html` and `rules.html` are reachable from the public origin, and their description / OGP / Twitter metadata matches the current privacy and rule-page wording.
 - `/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin and still match the manifest / OGP advertised sizes.
