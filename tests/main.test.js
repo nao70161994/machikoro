@@ -1820,6 +1820,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.strictEqual(countMatches(html, /<nav class="legal-links" aria-label="サイト情報">/g), 1);
     for (const publicPageSource of [html, rules, privacy]) {
         assert.ok(!/<meta[^>]+http-equiv=["']?refresh/i.test(publicPageSource));
+        assert.ok(!/<base\b/i.test(publicPageSource));
     }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
