@@ -29,8 +29,8 @@ curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|st
 curl -fI "$PUBLIC_ORIGIN/sw.js"
 curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
-curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
-curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
+curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
+curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
 Negative checks for review-mode URL metadata and external connection hints on all public pages:
