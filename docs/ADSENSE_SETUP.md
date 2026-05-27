@@ -47,7 +47,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm `rules.html` describes how to start a local or online game, card selection, save/resume behavior, plus the win condition, turn flow, card colors, activation order, landmarks, and the last updated date.
 - Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, and save/resume, so shared previews do not show stale rule-page content.
 - Confirm `privacy.html` and `rules.html` remain static explanation pages without page scripts, forms, buttons, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader.
-- Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, `og:image` and `twitter:image` both point to `/icons/icon-512.png`, image alt text is present, and the PWA manifests and Apple touch icon still reference `/icons/icon-192.png`.
+- Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, `og:image` and `twitter:image` both point to `/icons/icon-512.png`, image alt text is present, and the referenced PNG assets remain 512x512 and 192x192 as advertised by metadata and manifests.
   Preview image metadata should stay same-origin relative rather than using an external image host.
 - Confirm public HTML metadata does not hardcode staging origins or localhost into preview tags; use the deployed URL only in external submission forms and command examples.
 - Keep each public-page description / OGP / Twitter description concise enough for search and share previews; the automated test keeps them at 160 characters or less.

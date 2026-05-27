@@ -1979,6 +1979,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
     assert.ok(adsenseSetup.includes('Keep each public-page description / OGP / Twitter description concise'));
     assert.ok(adsenseSetup.includes('Keep public-page titles consistent across HTML title, OGP, and Twitter metadata'));
+    assert.ok(adsenseSetup.includes('referenced PNG assets remain 512x512 and 192x192'));
     assert.ok(adsenseSetup.includes('Keep `og:site_name`, `og:type`, and `twitter:card` stable'));
     assert.ok(adsenseSetup.includes('登録不要 / no-registration play'));
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
@@ -1988,7 +1989,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('`og:image` and `twitter:image` both point to `/icons/icon-512.png`'));
     assert.ok(adsenseSetup.includes('Preview image metadata should stay same-origin relative'));
     assert.ok(adsenseSetup.includes('image alt text is present'));
-    assert.ok(adsenseSetup.includes('Apple touch icon still reference `/icons/icon-192.png`'));
+    assert.ok(adsenseSetup.includes('as advertised by metadata and manifests'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.json"'));
