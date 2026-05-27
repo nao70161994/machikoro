@@ -57,7 +57,7 @@ curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.
 curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|開始終了通知|ゲーム開始や終了|プレイヤー名|ルームコード|再接続トークン|カード一覧|保存データ全体|完全なスナップショット|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|秘密情報|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
-Negative checks for review-mode URL metadata and public-page link hints on all public pages:
+Negative checks for review-mode URL metadata, external stylesheets, and public-page link hints on all public pages:
 
 ```sh
 for page in '' rules.html privacy.html; do

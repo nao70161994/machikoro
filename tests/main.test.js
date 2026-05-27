@@ -2302,7 +2302,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録'));
     assert.ok(adsenseSetup.includes('開始終了通知|ゲーム開始や終了|プレイヤー名|ルームコード|再接続トークン|カード一覧|保存データ全体|完全なスナップショット'));
     assert.ok(adsenseSetup.includes('実際の広告ユニット|お問い合わせ|秘密情報|最終更新日: 2026-05-27|og:description'));
-    assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata and public-page link hints on all public pages'));
+    assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata, external stylesheets, and public-page link hints on all public pages'));
     assert.ok(adsenseSetup.includes('canonical([[:space:]]|'));
     assert.ok(adsenseSetup.includes('(property|name)[[:space:]]*='));
     assert.ok(adsenseSetup.includes('og:url|twitter:url'));
