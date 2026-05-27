@@ -2197,6 +2197,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/privacy.html"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/rules.html"'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
+    assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/icons/icon-192.png` and `<PUBLIC_ORIGIN>/icons/icon-512.png'));
+    assert.ok(adsenseSetup.includes('OGP/PWA icon PNGs are reachable and match the advertised sizes'));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
     assert.ok(adsenseSetup.includes('Keep each public-page description / OGP / Twitter description concise'));

@@ -10,6 +10,7 @@ Open these URLs in a normal browser window and in a private/incognito window:
 - `<PUBLIC_ORIGIN>/privacy.html`: privacy policy is public, indexable, and links back to the game and rules page.
 - `<PUBLIC_ORIGIN>/rules.html`: rules page is public, indexable, and links back to the game and privacy policy.
 - `<PUBLIC_ORIGIN>/manifest.json` and `<PUBLIC_ORIGIN>/manifest.webmanifest`: PWA manifests return JSON.
+- `<PUBLIC_ORIGIN>/icons/icon-192.png` and `<PUBLIC_ORIGIN>/icons/icon-512.png`: OGP/PWA icon PNGs are reachable and match the advertised sizes.
 - `<PUBLIC_ORIGIN>/sw.js`: Service Worker script returns JavaScript and includes the current app shell cache list.
 - `<PUBLIC_ORIGIN>/api/version`: returns the deployed build/version metadata.
 
