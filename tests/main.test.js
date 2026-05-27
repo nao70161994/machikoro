@@ -2233,6 +2233,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Unexpected status or redirect for $path'));
     assert.ok(adsenseSetup.includes('<meta[^>]+http-equiv'));
     assert.ok(adsenseSetup.includes('stylesheet([[:space:]]|'));
+    assert.ok(adsenseSetup.includes('href[[:space:]]*=[[:space:]]*["'));
+    assert.ok(adsenseSetup.includes('Unexpected external stylesheet found in /$page'));
     assert.ok(adsenseSetup.includes('https?://'));
     assert.ok(adsenseSetup.includes('<base\\b'));
     assert.ok(adsenseSetup.includes('[[:space:]]on[a-z]+[[:space:]]*[=]'));

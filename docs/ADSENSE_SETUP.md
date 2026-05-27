@@ -62,8 +62,12 @@ Negative checks for review-mode URL metadata and public-page link hints on all p
 ```sh
 for page in '' rules.html privacy.html; do
   html=$(curl -fsS "$PUBLIC_ORIGIN/$page")
-  if printf '%s' "$html" | grep -Ei '<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?canonical([[:space:]]|["'"'"'])|<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"'](og:url|twitter:url)["'"'"']|<meta[^>]+["'"'"'](og:url|twitter:url)["'"'"'][^>]+(property|name)[[:space:]]*=|<base\b|<meta[^>]+http-equiv[[:space:]]*=[[:space:]]*["'"'"']refresh["'"'"']|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?(preconnect|dns-prefetch|preload|modulepreload)([[:space:]]|["'"'"'])|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?stylesheet([[:space:]]|["'"'"'])[^>]+href[[:space:]]*=[[:space:]]*["'"'"']https?://'; then
-    echo "Unexpected URL metadata, redirect, refresh, external stylesheet, or public-page link hint found in /$page"
+  if printf '%s' "$html" | grep -Ei '<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?canonical([[:space:]]|["'"'"'])|<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"'](og:url|twitter:url)["'"'"']|<meta[^>]+["'"'"'](og:url|twitter:url)["'"'"'][^>]+(property|name)[[:space:]]*=|<base\b|<meta[^>]+http-equiv[[:space:]]*=[[:space:]]*["'"'"']refresh["'"'"']|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?(preconnect|dns-prefetch|preload|modulepreload)([[:space:]]|["'"'"'])'; then
+    echo "Unexpected URL metadata, redirect, refresh, or public-page link hint found in /$page"
+    exit 1
+  fi
+  if printf '%s' "$html" | grep -Ei '<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?stylesheet([[:space:]]|["'"'"'])[^>]+href[[:space:]]*=[[:space:]]*["'"'"']https?://|<link[^>]+href[[:space:]]*=[[:space:]]*["'"'"']https?://[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?stylesheet([[:space:]]|["'"'"'])'; then
+    echo "Unexpected external stylesheet found in /$page"
     exit 1
   fi
 done
