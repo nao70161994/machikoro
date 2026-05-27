@@ -1778,6 +1778,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!staticPage.includes('data-'));
         assert.ok(!staticPage.includes('data-ui-action'));
         assert.ok(!/\son[a-z]+=/.test(staticPage));
+        assert.ok(!staticPage.includes(' src="'));
         assert.ok(!staticPage.includes('<button'));
         assert.ok(!staticPage.includes('<input'));
         assert.ok(!staticPage.includes('<select'));
