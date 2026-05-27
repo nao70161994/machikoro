@@ -2052,6 +2052,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
     assert.ok(releaseChecklist.includes('no page script, form, button, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
+    assert.ok(releaseChecklist.includes('Run the static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
+    assert.ok(releaseChecklist.includes('Static explanation page negative checks passed'));
     assert.ok(releaseChecklist.includes('rules.html'));
     assert.ok(releaseChecklist.includes('explains the win condition'));
     assert.ok(releaseChecklist.includes('card selection works'));
