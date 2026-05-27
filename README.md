@@ -37,7 +37,7 @@ node server.js
 
 ## 運用ドキュメント
 
-運用フェーズの入口は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) です。ntfy 通知分類、CI失敗時の対応、PWA stale client 対応、Render 環境変数、公開前確認、Codex へ投げる障害対応テンプレをまとめています。
+運用フェーズの入口は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) です。ntfy 通知分類、unknown 通知の最優先対応、CI失敗時の対応、PWA stale client 対応、Render 環境変数、公開前確認、Codex へ投げる障害対応テンプレをまとめています。
 
 - 公開前チェック: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - AdSense 審査前の公開 URL 確認: [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md)

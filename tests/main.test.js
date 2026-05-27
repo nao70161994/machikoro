@@ -1997,6 +1997,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('no in-game ad slot'));
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
+    assert.ok(readme.includes('unknown 通知の最優先対応'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
     assert.ok(readme.includes('docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS に限定'));
     assert.ok(readme.includes('UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタ'));
