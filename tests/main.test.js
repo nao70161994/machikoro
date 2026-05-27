@@ -1621,7 +1621,16 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(head.includes('<link rel="stylesheet" href="style.css">'));
         assert.ok(head.includes('<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">'));
         assert.ok(head.includes('<meta name="robots" content="index,follow">'));
-        assert.ok(/<meta name="description" content="[^"]+">/.test(head));
+        const getMetaContent = (pattern) => {
+            const match = head.match(pattern);
+            assert.ok(match, 'missing meta in ' + page.file + ': ' + pattern);
+            return match[1];
+        };
+        const description = getMetaContent(/<meta name="description" content="([^"]+)">/);
+        const ogDescription = getMetaContent(/<meta property="og:description" content="([^"]+)">/);
+        const twitterDescription = getMetaContent(/<meta name="twitter:description" content="([^"]+)">/);
+        const previewDescriptions = [description, ogDescription, twitterDescription];
+        assert.ok(description.length > 20);
         assert.ok(head.includes('<meta property="og:site_name" content="ダイスシティ">'));
         assert.ok(head.includes(`<meta property="og:type" content="${page.type}">`));
         assert.ok(head.includes(`<meta property="og:title" content="${page.title}">`));
@@ -1636,19 +1645,25 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(head.includes('<meta name="twitter:image" content="/icons/icon-512.png">'));
         assert.ok(head.includes('<meta name="twitter:image:alt" content="ダイスシティのアプリアイコン">'));
         if (page.file === 'index.html') {
-            assert.ok(head.includes('登録不要'));
+            for (const previewDescription of previewDescriptions) {
+                assert.ok(previewDescription.includes('登録不要'));
+            }
         }
         if (page.file === 'rules.html') {
-            assert.ok(head.includes('アカウント登録なし'));
-            assert.ok(head.includes('勝利条件'));
-            assert.ok(head.includes('カード選択'));
-            assert.ok(head.includes('保存と再開'));
+            for (const previewDescription of previewDescriptions) {
+                assert.ok(previewDescription.includes('アカウント登録なし'));
+                assert.ok(previewDescription.includes('勝利条件'));
+                assert.ok(previewDescription.includes('カード選択'));
+                assert.ok(previewDescription.includes('保存と再開'));
+            }
         }
         if (page.file === 'privacy.html') {
-            assert.ok(head.includes('アカウント登録不要'));
-            assert.ok(head.includes('エラー通知'));
-            assert.ok(head.includes('AdSense審査'));
-            assert.ok(head.includes('広告'));
+            for (const previewDescription of previewDescriptions) {
+                assert.ok(previewDescription.includes('アカウント登録不要'));
+                assert.ok(previewDescription.includes('エラー通知'));
+                assert.ok(previewDescription.includes('AdSense審査'));
+                assert.ok(previewDescription.includes('広告'));
+            }
         }
     }
 
