@@ -1499,6 +1499,8 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(webmanifest.icons.every((icon) => icon.type === 'image/png'));
     assert.ok(webmanifest.icons.every((icon) => icon.purpose === 'any maskable'));
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
+    assert.strictEqual((head.match(/<link rel="manifest"/g) || []).length, 1);
+    assert.ok(head.includes('<link rel="manifest" href="/manifest.webmanifest">'));
     assert.strictEqual((head.match(/<meta name="theme-color"/g) || []).length, 1);
     assert.ok(head.includes('<meta name="theme-color" content="#0f0e17">'));
     assert.strictEqual((head.match(/<meta name="mobile-web-app-capable"/g) || []).length, 1);
