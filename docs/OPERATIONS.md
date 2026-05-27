@@ -119,7 +119,7 @@ While AdSense review is in progress, keep changes small and stability-focused:
 
 - Allowed: docs cleanup, OGP/image metadata improvements, how-to text, unknown notification fixes, CI failure fixes, typo fixes, and minor CSS for static pages.
 - Unknown client-error notifications and CI failures are allowed during review, but keep the fix targeted: reproduce, add or update a focused regression test, and do not hide the notification by only reclassifying or suppressing it.
-- Do not change during review unless an urgent incident or CI fix requires it: large UI redesigns, ad placement changes, PWA behavior changes, URL changes, rule changes, and broad refactors.
+- Do not change during review unless an urgent incident or CI fix requires it: large UI redesigns, ad placement changes, PWA behavior changes, URL changes, rule changes, and broad refactors. Keep `privacy.html` and `rules.html` as static explanation pages without automatic redirects or meta refresh.
 - Keep commits small and run at least `git diff --check`, `node tests/main.test.js`, and `npm run test:static` for review-period docs/static-page changes.
 
 ## Public Release Preflight
