@@ -1722,6 +1722,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const countMatches = (source, pattern) => (source.match(pattern) || []).length;
     assert.strictEqual(countMatches(rules, /<main class="static-page-content">/g), 1);
     assert.strictEqual(countMatches(privacy, /<main class="static-page-content">/g), 1);
+    assert.strictEqual(countMatches(rules, /<h1>/g), 1);
+    assert.strictEqual(countMatches(privacy, /<h1>/g), 1);
     assert.strictEqual(countMatches(rules, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
     assert.strictEqual(countMatches(privacy, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
     assert.ok(rules.trim().endsWith('</html>'));
