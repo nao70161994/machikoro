@@ -1831,6 +1831,16 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('<main class="static-page-content">'));
     assert.ok(rules.includes('<p class="static-page-eyebrow">ダイスシティ</p>'));
     assert.ok(rules.includes('<h1>ルール</h1>'));
+    const getH2Texts = (pageSource) => [...pageSource.matchAll(/<h2>([^<]+)<\/h2>/g)].map((match) => match[1]);
+    assert.deepStrictEqual(getH2Texts(rules), [
+        '勝利条件',
+        'はじめて遊ぶ方へ',
+        '保存と再開',
+        'ターンの流れ',
+        'カードの色',
+        '発動順序',
+        'ランドマーク'
+    ]);
     assert.ok(rules.includes('<h2>勝利条件</h2>'));
     assert.ok(rules.includes('<h2>はじめて遊ぶ方へ</h2>'));
     assert.ok(rules.includes('アカウント登録なしでブラウザから遊び始められます。'));
@@ -1860,6 +1870,13 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('<main class="static-page-content">'));
     assert.ok(privacy.includes('<p class="static-page-eyebrow">ダイスシティ</p>'));
     assert.ok(privacy.includes('<h1>プライバシーポリシー</h1>'));
+    assert.deepStrictEqual(getH2Texts(privacy), [
+        '取得する情報',
+        'エラー通知',
+        '広告について',
+        '保存データの削除',
+        'お問い合わせ'
+    ]);
     assert.ok(privacy.includes('<h2>取得する情報</h2>'));
     assert.ok(privacy.includes('<h2>エラー通知</h2>'));
     assert.ok(privacy.includes('<h2>広告について</h2>'));
