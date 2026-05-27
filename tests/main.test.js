@@ -2261,6 +2261,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(handoff.includes('URL 方針または外部接続方針の変更'));
     assert.ok(operations.includes('keep changes small and stability-focused'));
     assert.ok(operations.includes('Keep commits small'));
+    assert.ok(operations.includes('enable ads after review, or enable PWA production traffic'));
+    assert.ok(operations.includes('Before public traffic, ads after review, or wider PWA install testing'));
     assert.ok(operations.includes('docs cleanup'));
     assert.ok(operations.includes('OGP/image metadata wording'));
     assert.ok(operations.includes('how-to text'));

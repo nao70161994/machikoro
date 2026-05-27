@@ -64,7 +64,7 @@ Set these in the service that runs `server.js` unless noted otherwise:
 2. Identify the failed command and whether it is release, PWA, online, RL, CPU, or static.
 3. Rerun once only if the failure looks infrastructure/flaky.
 4. If it reproduces, fix on the smallest relevant surface and run the failed command locally.
-5. Do not publish or enable ads/PWA production traffic until the target commit is green.
+5. Do not publish, enable ads after review, or enable PWA production traffic until the target commit is green.
 
 ### Stale client notification
 
@@ -128,7 +128,7 @@ While AdSense review is in progress, keep changes small and stability-focused:
 
 ## Public Release Preflight
 
-Before public traffic, ads, or wider PWA install testing:
+Before public traffic, ads after review, or wider PWA install testing:
 
 - `git status --short` is empty.
 - CI is green on the exact commit to deploy.
