@@ -2204,6 +2204,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('rules.html` explains the win condition'));
     assert.ok(operations.includes('OGP/Twitter rule-page metadata current'));
     assert.ok(operations.includes('contact guidance and the last updated date'));
+    assert.ok(operations.includes('match the allowed-placement policy in `docs/ADS_PLAN.md`'));
 });
 
 runTest('docs は pending HTML helper 化の現在地を記載している', () => {
