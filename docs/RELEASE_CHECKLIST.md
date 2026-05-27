@@ -28,7 +28,7 @@ Required / platform-provided:
 
 Recommended for production observability:
 
-- `NTFY_TOPIC`: ntfy topic for browser error notification. Without it, client error reports only write `console.warn` on the server.
+- `NTFY_TOPIC`: ntfy topic for browser error and lifecycle notifications. Without it, client error and lifecycle reports only write server-side warnings.
 - GitHub Secret `NTFY_CI_TOPIC`: optional topic for GitHub Actions failure notifications. Set it in GitHub repository `Settings > Secrets and variables > Actions > Repository secrets`; success runs do not notify, and unset secrets skip the notification step.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: comma-separated allowed origins, for example `https://machikoro-9jv2.onrender.com`. Same-origin reports are always accepted; cross-origin reports are rejected unless allowlisted.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token for scripted/no-origin diagnostics and `/api/client-error-test`. Same-origin browser `/api/client-error` stays tokenless; leave unset unless a test caller or non-browser sender will send `X-Client-Error-Token` or `Authorization: Bearer`.

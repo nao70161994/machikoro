@@ -2040,6 +2040,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(docs.includes('誤タップ誘導に見える文言'));
     assert.ok(docs.includes('報酬示唆'));
     assert.ok(releaseChecklist.includes('docs/ADSENSE_SETUP.md'));
+    assert.ok(releaseChecklist.includes('ntfy topic for browser error and lifecycle notifications'));
+    assert.ok(releaseChecklist.includes('client error and lifecycle reports only write server-side warnings'));
     assert.ok(releaseChecklist.includes('privacy.html'));
     assert.ok(releaseChecklist.includes('account-free play'));
     assert.ok(releaseChecklist.includes('error notification exclusions'));
