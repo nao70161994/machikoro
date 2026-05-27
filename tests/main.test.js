@@ -2085,6 +2085,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('AdSense 審査前の公開 URL 確認'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
+    assert.ok(readme.includes('docs/ADS_PLAN.md'));
     assert.ok(readme.includes('静的ページ負の確認'));
     assert.ok(readme.includes('URLメタ / 外部接続ヒント確認'));
     assert.ok(readme.includes('Static explanation page negative checks passed'));

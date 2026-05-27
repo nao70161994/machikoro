@@ -41,6 +41,7 @@ node server.js
 
 - 公開前チェック: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - AdSense 審査前の公開 URL 確認: [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md)
+- 広告 placeholder 方針: [`docs/ADS_PLAN.md`](./docs/ADS_PLAN.md)
 - ntfy / client error / lifecycle 通知: [`docs/NTFY_ERROR_REPORTING.md`](./docs/NTFY_ERROR_REPORTING.md)
 - PWA 更新と stale client: [`docs/PWA_MODEL_LOADING.md`](./docs/PWA_MODEL_LOADING.md)
 - AI / Codex 引き継ぎ: [`docs/AI_HANDOFF.md`](./docs/AI_HANDOFF.md)
