@@ -71,7 +71,7 @@ for page in '' rules.html privacy.html; do
     exit 1
   fi
 done
-echo "Public page URL metadata and public-page link hint checks passed"
+echo "Public page URL metadata, external stylesheet, and public-page link hint checks passed"
 ```
 
 Negative checks for the static explanation pages:
