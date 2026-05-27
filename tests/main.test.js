@@ -1881,6 +1881,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.deepStrictEqual(getH2Texts(rules), [
         '勝利条件',
         'はじめて遊ぶ方へ',
+        '施設とランドマークの建設',
         '保存と再開',
         'ターンの流れ',
         'カードの色',
@@ -1890,6 +1891,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('<h2>勝利条件</h2>'));
     assert.ok(rules.includes('<h2>はじめて遊ぶ方へ</h2>'));
     assert.ok(rules.includes('アカウント登録なしでブラウザから遊び始められます。'));
+    assert.ok(rules.includes('<h2>施設とランドマークの建設</h2>'));
+    assert.ok(rules.includes('施設カードは、サイコロの出目に応じて'));
+    assert.ok(rules.includes('未建設のランドマーク'));
+    assert.ok(rules.includes('建設せずにターンを終了できます'));
     assert.ok(rules.includes('<h2>保存と再開</h2>'));
     assert.ok(rules.includes('<h2>ターンの流れ</h2>'));
     assert.ok(rules.includes('<h2>カードの色</h2>'));
@@ -2043,6 +2048,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('サイコロを振り'));
     assert.ok(rules.includes('コインを集め'));
     assert.ok(rules.includes('建設フェーズ'));
+    assert.ok(rules.includes('施設とランドマークの建設'));
+    assert.ok(rules.includes('街の収入源'));
+    assert.ok(rules.includes('コインを残したい場合'));
     assert.ok(rules.includes('保存と再開'));
     assert.ok(rules.includes('タイトル画面から続きが再開'));
     assert.ok(rules.includes('同じ端末から再接続'));
