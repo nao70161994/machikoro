@@ -76,7 +76,7 @@ After review, before adding ad slots or expanding beyond the review loader, veri
 - Placeholder failure must not stop game rendering.
 - PWA cache includes `js/adSlots.js` so offline app shell does not lose the helper.
 - `privacy.html` and `rules.html` are reachable from the title screen and are cached for PWA/offline shell use.
-- `privacy.html` explains account-free play, local storage, online room data, client error reporting, error notification exclusions, the AdSense review script, future ad provider data use, Cookie handling, contact guidance, and the last updated date.
+- `privacy.html` explains account-free play, local storage, online room data, client error reporting, lifecycle notification privacy, error notification exclusions, the AdSense review script, future ad provider data use, Cookie handling, contact guidance, and the last updated date.
 - Placeholder slots use `pointer-events: none` and neutral copy so they cannot behave like buttons or encourage accidental taps.
 - During AdSense review, do not add live ad units such as `<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, or ad unit ids; the current review state is placeholder-only plus the single review loader. Review cleanup must not add ad slots or move the review loader.
 
@@ -142,7 +142,7 @@ Regression test index:
 
 Before public traffic, AdSense review submission/recheck, ads after review, or broader PWA install testing, confirm this short list in addition to the automated gate:
 
-- `privacy.html` and `rules.html` are reachable from the title screen and mention account-free play, local storage / online room data / client error reporting, error notification exclusions / AdSense review script and ad provider data, contact guidance, and the last updated date as applicable.
+- `privacy.html` and `rules.html` are reachable from the title screen and mention account-free play, local storage / online room data / client error reporting, lifecycle notification privacy, error notification exclusions / AdSense review script and ad provider data, contact guidance, and the last updated date as applicable.
 - `privacy.html` and `rules.html` remain static explanation pages: no page script, form, button, `dialog` / `details` / `summary`, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader is added to either public page.
 - Run the URL metadata / public-page link hint checks, public OGP/PWA icon reachability checks, and static explanation page negative checks in `docs/ADSENSE_SETUP.md` before submitting and when rechecking public pages during review; they should finish with `Public page URL metadata and public-page link hint checks passed` and `Static explanation page negative checks passed`.
 - Public-page metadata, OGP/Twitter tags, manifest/head PWA metadata, static-page links, and static-page heading order are locked by the public-page assertions in `node tests/main.test.js`; update those assertions in the same commit as any intentional review-period copy change.

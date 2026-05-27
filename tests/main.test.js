@@ -2031,6 +2031,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('再接続トークン'));
     assert.ok(privacy.includes('保存データ全体'));
     assert.ok(privacy.includes('完全なスナップショット'));
+    assert.ok(privacy.includes('ゲーム開始や終了を知らせる簡単な通知'));
+    assert.ok(privacy.includes('プレイヤー名、ルームコード、再接続トークン'));
+    assert.ok(privacy.includes('保存データ全体は含めません'));
     assert.ok(privacy.includes('ブラウザのサイトデータ削除'));
     assert.ok(privacy.includes('アプリ内の保存データ削除操作'));
     assert.ok(privacy.includes('公開リポジトリの issue'));
@@ -2115,6 +2118,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('client error and lifecycle reports only write server-side warnings'));
     assert.ok(releaseChecklist.includes('privacy.html'));
     assert.ok(releaseChecklist.includes('account-free play'));
+    assert.ok(releaseChecklist.includes('lifecycle notification privacy'));
     assert.ok(releaseChecklist.includes('error notification exclusions'));
     assert.ok(releaseChecklist.includes('AdSense review script'));
     assert.ok(releaseChecklist.includes('future ad provider data use'));
@@ -2215,6 +2219,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('account registration or email address'));
     assert.ok(adsenseSetup.includes('contact guidance'));
     assert.ok(adsenseSetup.includes('last updated date'));
+    assert.ok(adsenseSetup.includes('lifecycle notification privacy'));
     assert.ok(adsenseSetup.includes('error notification exclusions'));
     assert.ok(adsenseSetup.includes('privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, AdSense review, and ads'));
     assert.ok(adsenseSetup.includes('stale privacy-page content'));
