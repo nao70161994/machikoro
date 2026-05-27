@@ -172,7 +172,7 @@ After review, if real ad units or an SDK adapter are intentionally added, follow
 
 ## 7. Submission Gate
 
-Before clicking submit in AdSense:
+Before clicking submit in AdSense or after review-period public-page changes:
 
 - `docs/RELEASE_CHECKLIST.md` automated gate is green for the deployed commit.
 - The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
