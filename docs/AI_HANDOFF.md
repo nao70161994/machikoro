@@ -296,7 +296,7 @@ Test index:
 - Watchdog interactive action coverage includes dice choice phases (`selectDice`, `rerollDice`, `skipReroll`, `resolveHarbor`) through the `diceChoose` snapshot. If new choice panels are added, include their root in the usable-action snapshot and tests.
 - `initOnlineGame()` is responsible for transient async reset: CPU schedule token, delayed human action, autoskip, `prevCoins`, and `undoState`. Keep it aligned with local `init()` for async safety.
 - Local CPU build failure is pass-through to `nextTurn`; online send failure remains a hard stop. Preserve this distinction when editing CPU execution.
-- Online lifecycle `play-start` is sent on fresh `gameStart`, not on `rejoinData`. Payload must stay privacy-light: no room id, reconnect token, or player names.
+- Online lifecycle `play-start` is sent on fresh `gameStart`, not on `rejoinData`. Payload must stay privacy-light: no room id, reconnect token, player names, card inventories, snapshots, or raw logs.
 
 ## UI interactability contract
 
