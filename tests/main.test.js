@@ -1829,6 +1829,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('<h2>保存データの削除</h2>'));
     assert.ok(privacy.includes('<h2>お問い合わせ</h2>'));
     assert.ok(privacy.includes('class="static-page-links" aria-label="関連ページ"'));
+    for (const staticPage of [rules, privacy]) {
+        assert.strictEqual((staticPage.match(/class="static-page-updated"/g) || []).length, 1);
+        assert.ok(/<p class="static-page-updated">最終更新日: 20\d{2}-\d{2}-\d{2}<\/p>/.test(staticPage));
+    }
     assert.ok(privacy.includes('<a href="/">ゲームへ戻る</a>'));
     assert.ok(privacy.includes('<a href="rules.html">ルール</a>'));
     assert.ok(!privacy.includes('data-ad-slot-host'));
