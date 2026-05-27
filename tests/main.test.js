@@ -2128,6 +2128,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('rules.html'));
     assert.ok(releaseChecklist.includes('explains the win condition'));
     assert.ok(releaseChecklist.includes('card selection works'));
+    assert.ok(releaseChecklist.includes('facility/landmark construction works'));
     assert.ok(releaseChecklist.includes('save/resume works'));
     assert.ok(releaseChecklist.includes('both `og:image` and `twitter:image` pointing to `/icons/icon-512.png`'));
     assert.ok(releaseChecklist.includes('same-origin relative paths'));
@@ -2241,6 +2242,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Preview image metadata should stay same-origin relative'));
     assert.ok(adsenseSetup.includes('image alt text is present'));
     assert.ok(adsenseSetup.includes('as advertised by metadata and manifests'));
+    assert.ok(adsenseSetup.includes('facility and landmark construction'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('property="og:image" content="/icons/icon-512.png"'));
@@ -2251,7 +2253,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
-    assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
+    assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録'));
     assert.ok(adsenseSetup.includes('実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description'));
     assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata and public-page link hints on all public pages'));
