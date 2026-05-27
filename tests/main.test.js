@@ -2222,6 +2222,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('自動遷移や meta refresh を追加しません'));
     assert.ok(readme.includes('静的ページ CSS は共有 `style.css` に限定'));
     assert.ok(readme.includes('外部 CSS host を追加しません'));
+    assert.ok(readme.includes('shared `style.css` を触る場合は狭いモバイル幅で本文と関連ページリンクのはみ出しも確認します'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('when rechecking public pages during review'));
     assert.ok(adsenseSetup.includes('Public URL Checks After Render Deploy / During Review'));
