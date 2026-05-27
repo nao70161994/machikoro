@@ -2035,7 +2035,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('ゲーム開始や終了を知らせる簡単な通知'));
     assert.ok(privacy.includes('プレイヤー名、ルームコード、再接続トークン'));
     assert.ok(privacy.includes('カード一覧'));
-    assert.ok(privacy.includes('保存データ全体は含めません'));
+    assert.ok(privacy.includes('保存データ全体、ゲームの完全なスナップショットは含めません'));
     assert.ok(privacy.includes('ブラウザのサイトデータ削除'));
     assert.ok(privacy.includes('アプリ内の保存データ削除操作'));
     assert.ok(privacy.includes('公開リポジトリの issue'));
@@ -2272,7 +2272,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録'));
-    assert.ok(adsenseSetup.includes('開始終了通知|ゲーム開始や終了|プレイヤー名|再接続トークン|カード一覧|保存データ全体'));
+    assert.ok(adsenseSetup.includes('開始終了通知|ゲーム開始や終了|プレイヤー名|ルームコード|再接続トークン|カード一覧|保存データ全体|完全なスナップショット'));
     assert.ok(adsenseSetup.includes('実際の広告ユニット|お問い合わせ|秘密情報|最終更新日: 2026-05-27|og:description'));
     assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata and public-page link hints on all public pages'));
     assert.ok(adsenseSetup.includes('canonical([[:space:]]|'));
