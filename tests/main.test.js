@@ -1918,6 +1918,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('how-to text'));
     assert.ok(operations.includes('unknown notification fixes'));
     assert.ok(operations.includes('CI failure fixes'));
+    assert.ok(operations.includes('Unknown client-error notifications and CI failures are allowed during review'));
+    assert.ok(operations.includes('do not hide the notification by only reclassifying or suppressing it'));
     assert.ok(operations.includes('typo fixes'));
     assert.ok(operations.includes('minor CSS for static pages'));
     assert.ok(operations.includes('Do not change during review unless an urgent incident or CI fix requires it'));
