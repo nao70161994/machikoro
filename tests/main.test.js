@@ -1697,6 +1697,12 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(html.includes('id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"'));
     assert.ok(html.includes('href="privacy.html"'));
     assert.ok(html.includes('href="rules.html"'));
+    const titleAdIndex = html.indexOf('id="adSlotTitleBottom"');
+    const legalLinksIndex = html.indexOf('class="legal-links" aria-label="サイト情報"');
+    const gameScreenIndex = html.indexOf('<div id="gameScreen"');
+    assert.ok(titleAdIndex > 0);
+    assert.ok(legalLinksIndex > titleAdIndex);
+    assert.ok(legalLinksIndex < gameScreenIndex);
     assert.ok(rules.includes('<body class="static-page">'));
     assert.ok(rules.includes('class="static-page-links" aria-label="関連ページ"'));
     assert.ok(rules.includes('<a href="/">ゲームへ戻る</a>'));
