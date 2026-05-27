@@ -1949,6 +1949,13 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.deepStrictEqual(getHrefs(privacy), ['/', 'rules.html', 'style.css']);
     assert.ok(!privacy.includes('adsbygoogle.js'));
     assert.ok(!rules.includes('adsbygoogle.js'));
+    const getLinkTags = (pageSource) => [...pageSource.matchAll(/<link[^>]+>/g)].map((match) => match[0]).sort();
+    assert.deepStrictEqual(getLinkTags(rules), ['<link rel="stylesheet" href="style.css">']);
+    assert.deepStrictEqual(getLinkTags(privacy), ['<link rel="stylesheet" href="style.css">']);
+    for (const staticPageSource of [rules, privacy]) {
+        assert.ok(!staticPageSource.includes('pagead2.googlesyndication.com'));
+        assert.ok(!staticPageSource.includes('ca-pub-8683516545883768'));
+    }
     for (const publicPageSource of [html, rules, privacy]) {
         assert.ok(!/<ins[^>]+class="[^"]*adsbygoogle/i.test(publicPageSource));
         assert.ok(!/data-ad-client=/i.test(publicPageSource));
