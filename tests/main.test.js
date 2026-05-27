@@ -2072,6 +2072,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('HTML title, OGP title, and Twitter title stay consistent and concise'));
     assert.ok(releaseChecklist.includes('public-page description / OGP / Twitter descriptions stay concise'));
     assert.ok(releaseChecklist.includes('public HTML metadata does not hardcode staging origins, localhost, or review-period external CSS hosts'));
+    assert.ok(releaseChecklist.includes('do not add `canonical`, `og:url`, or `twitter:url` metadata'));
+    assert.ok(releaseChecklist.includes('public-page tests currently lock those URL metadata tags out'));
     assert.ok(releaseChecklist.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
