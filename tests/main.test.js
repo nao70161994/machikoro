@@ -1453,6 +1453,8 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
     const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
     const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
+    assert.ok(ntfyDocs.includes('browser client-error and lifecycle notifications'));
+    assert.ok(!ntfyDocs.includes('topic name to publish client errors to'));
 
     const manifestKeys = ['background_color', 'description', 'display', 'icons', 'id', 'lang', 'name', 'orientation', 'short_name', 'start_url', 'theme_color'];
     assert.deepStrictEqual(Object.keys(manifest).sort(), manifestKeys);
