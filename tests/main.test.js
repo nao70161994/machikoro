@@ -2045,8 +2045,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
     assert.ok(releaseChecklist.includes('no page script, form, button, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
-    assert.ok(releaseChecklist.includes('Run the static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
+    assert.ok(releaseChecklist.includes('Run the URL metadata / external connection hint checks and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
     assert.ok(releaseChecklist.includes('Static explanation page negative checks passed'));
+    assert.ok(releaseChecklist.includes('Public page URL metadata and external connection hint checks passed'));
     assert.ok(releaseChecklist.includes('rules.html'));
     assert.ok(releaseChecklist.includes('explains the win condition'));
     assert.ok(releaseChecklist.includes('card selection works'));
@@ -2082,7 +2083,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('AdSense 審査前の公開 URL 確認'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('静的ページ負の確認'));
+    assert.ok(readme.includes('URLメタ / 外部接続ヒント確認'));
     assert.ok(readme.includes('Static explanation page negative checks passed'));
+    assert.ok(readme.includes('Public page URL metadata and external connection hint checks passed'));
     assert.ok(readme.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(readme.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
     assert.ok(readme.includes('外部接続方針変更'));

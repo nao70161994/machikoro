@@ -469,7 +469,7 @@ RL スクリプト / モデル:
 - 通知分類、CI失敗、stale client、PWA更新、公開前確認の運用手順は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) を参照してください。
 - AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を優先してください。審査中は docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS に限定し、UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタは緊急対応以外では行いません。docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static` を確認します。
 - AdSense 審査提出前の公開 URL 確認は [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md) を参照してください。
-- 審査提出前は `docs/ADSENSE_SETUP.md` の静的ページ負の確認も実行し、`Static explanation page negative checks passed` で終わることを確認してください。
+- 審査提出前は `docs/ADSENSE_SETUP.md` の URLメタ / 外部接続ヒント確認と静的ページ負の確認を実行し、`Public page URL metadata and external connection hint checks passed` と `Static explanation page negative checks passed` で終わることを確認してください。
 - 公開ページのメタ情報、OGP/Twitter、manifest、静的ページ不変条件は `node tests/main.test.js` の公開ページ系テストで固定しています。審査中に説明文や見出しを変える場合は、docs と同じ commit で該当 assertion も更新してください。
 - 審査中は `canonical` / `og:url` / `twitter:url` も URL 方針変更として扱い、明示的に方針確認するまでは追加しません。
 - 審査中は `preconnect` / `dns-prefetch` / `preload` / `modulepreload` も外部接続方針変更として扱い、明示的に方針確認するまでは追加しません。
