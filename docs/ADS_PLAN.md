@@ -19,9 +19,12 @@
 - 未知の location は空文字を返す。広告 helper が失敗してもリザルト描画は止めない。
 - `sw.js` は `js/adSlots.js` を cache 対象に含める。PWA offline 起動でも placeholder helper が欠落しないようにする。
 
-## 将来 SDK を入れるときの注意
+## AdSense 審査中の禁止事項
 
 - AdSense 審査中は新しい広告 slot、SDK adapter、広告位置変更を追加しない。実広告ユニット (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit id) も追加しない。審査中の変更は `docs/OPERATIONS.md` の `AdSense Review Change Policy` を優先する。
+
+## 審査後に SDK を入れるときの注意
+
 - 本物の SDK 読み込みは `renderAdSlot` の呼び出し側へ漏らさず、`js/adSlots.js` 内で adapter 化する。
 - SDK 読み込み失敗時は placeholder か空枠に戻し、ゲーム進行を止めない。
 - ゲーム中の主要操作、pending modal、建設メニュー、サイコロ操作、オンライン再接続操作の近くには広告を置かない。
