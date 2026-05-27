@@ -1,6 +1,6 @@
 # ntfy client error reporting
 
-ダイスシティは real browser errors を ntfy へ転送でき so iPhone Safari / Android Chrome only failures are visible soon after they happen.
+ダイスシティは real browser errors を ntfy へ転送できるため、iPhone Safari / Android Chrome only failures are visible soon after they happen.
 
 ## Server setup
 
