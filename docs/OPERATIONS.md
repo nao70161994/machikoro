@@ -117,7 +117,7 @@ The Service Worker must not precache RL model JSON; those models are lazy-loaded
 
 While AdSense review is in progress, keep changes small and stability-focused:
 
-- Allowed: docs cleanup, OGP/image metadata improvements, how-to text, unknown notification fixes, CI failure fixes, typo fixes, and minor CSS for static pages. Review-period static page CSS must stay on the shared `style.css`; do not add external CSS hosts.
+- Allowed without additional design review: docs cleanup, OGP/image metadata wording, how-to text, CI/test documentation fixes, typo fixes, and static-page test hardening. Unknown notification fixes, CI failure fixes, and minor shared `style.css` changes are emergency exceptions only when needed to preserve review stability. Review-period static page CSS must stay on the shared `style.css`; do not add external CSS hosts.
 - Unknown client-error notifications and CI failures are allowed during review, but keep the fix targeted: reproduce, add or update a focused regression test, and do not hide the notification by only reclassifying or suppressing it.
 - Do not change during review unless an urgent incident or CI fix requires it: large UI redesigns, ad placement changes, PWA behavior changes, URL changes, rule changes, and broad refactors. Keep `privacy.html` and `rules.html` as static explanation pages without automatic redirects or meta refresh.
 - Public-page invariant additions during review should be tests/docs only; do not change behavior, URLs, PWA update flow, ad placement, or game rules for invariant cleanup alone.

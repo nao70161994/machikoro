@@ -8,8 +8,8 @@ Set these environment variables on Render:
 
 - `NTFY_TOPIC`: ntfy topic name to publish browser client-error and lifecycle notifications to.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, no-origin/scripted diagnostics and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Same-origin browser `/api/client-error` reports stay tokenless so real browser reporting is not broken.
-- `CLIENT_ERROR_ALLOWED_ORIGINS`: optional comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
-- `TRUST_PROXY` / `EXPRESS_TRUST_PROXY`: optional Express proxy trust setting. Leave unset for direct serving; set `TRUST_PROXY=1` only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
+- `CLIENT_ERROR_ALLOWED_ORIGINS`: recommended for public production. Set a comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
+- `TRUST_PROXY=1`: optional Express proxy trust setting. Leave unset for direct serving; set only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
 - `CLIENT_ERROR_ALLOW_NO_ORIGIN`: optional escape hatch for controlled diagnostics. In production with `NTFY_TOPIC`, no-origin/no-token reports are rejected by default.
 
 Example topic names:
@@ -24,7 +24,7 @@ Render steps:
 1. Open the Render service dashboard.
 2. Go to `Environment`.
 3. Add `NTFY_TOPIC` with the chosen topic name.
-4. Optional: add `CLIENT_ERROR_ALLOWED_ORIGINS` with your production origin.
+4. For public production, add `CLIENT_ERROR_ALLOWED_ORIGINS` with your production origin.
 5. Optional: add `CLIENT_ERROR_SHARED_TOKEN` only if your reporter/test caller will send the matching header.
 6. Redeploy or restart the service.
 

@@ -2083,7 +2083,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('unknown 通知の最優先対応'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
-    assert.ok(readme.includes('docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS に限定'));
+    assert.ok(readme.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
+    assert.ok(readme.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
     assert.ok(readme.includes('UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタ'));
     assert.ok(readme.includes('docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static`'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
@@ -2178,14 +2179,14 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('keep changes small and stability-focused'));
     assert.ok(operations.includes('Keep commits small'));
     assert.ok(operations.includes('docs cleanup'));
-    assert.ok(operations.includes('OGP/image metadata improvements'));
+    assert.ok(operations.includes('OGP/image metadata wording'));
     assert.ok(operations.includes('how-to text'));
-    assert.ok(operations.includes('unknown notification fixes'));
-    assert.ok(operations.includes('CI failure fixes'));
+    assert.ok(operations.includes('Unknown notification fixes, CI failure fixes, and minor shared `style.css` changes are emergency exceptions'));
+    assert.ok(operations.includes('static-page test hardening'));
     assert.ok(operations.includes('Unknown client-error notifications and CI failures are allowed during review'));
     assert.ok(operations.includes('do not hide the notification by only reclassifying or suppressing it'));
     assert.ok(operations.includes('typo fixes'));
-    assert.ok(operations.includes('minor CSS for static pages'));
+    assert.ok(operations.includes('minor shared `style.css` changes'));
     assert.ok(operations.includes('Review-period static page CSS must stay on the shared `style.css`'));
     assert.ok(operations.includes('do not add external CSS hosts'));
     assert.ok(operations.includes('without automatic redirects or meta refresh'));
