@@ -1801,6 +1801,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const adsenseSetup = fs.readFileSync(path.join(__dirname, '..', 'docs/ADSENSE_SETUP.md'), 'utf8');
     const operations = fs.readFileSync(path.join(__dirname, '..', 'docs/OPERATIONS.md'), 'utf8');
     const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+    const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
     const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
     const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
     const { AD_SLOT_CONFIGS, renderAdSlot } = require('../js/adSlots.js');
@@ -2159,6 +2160,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
+    assert.ok(handoff.includes('AdSense Review Change Policy'));
+    assert.ok(handoff.includes('`canonical` / `og:url` / `twitter:url`'));
+    assert.ok(handoff.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
+    assert.ok(handoff.includes('URL 方針または外部接続方針の変更'));
     assert.ok(operations.includes('keep changes small and stability-focused'));
     assert.ok(operations.includes('Keep commits small'));
     assert.ok(operations.includes('docs cleanup'));
