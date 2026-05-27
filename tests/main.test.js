@@ -2141,6 +2141,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Negative checks for the static explanation pages'));
     assert.ok(adsenseSetup.includes('for page in rules.html privacy.html; do'));
     assert.ok(adsenseSetup.includes('grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg"'));
+    assert.ok(adsenseSetup.includes('Unexpected active or embedded content found in $page'));
+    assert.ok(adsenseSetup.includes('Static explanation page negative checks passed'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
     assert.ok(adsenseSetup.includes('placeholder-only until real ad units are configured'));

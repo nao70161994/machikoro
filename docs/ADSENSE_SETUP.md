@@ -35,8 +35,12 @@ Negative checks for the static explanation pages:
 
 ```sh
 for page in rules.html privacy.html; do
-  curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg" && exit 1
+  if curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg"; then
+    echo "Unexpected active or embedded content found in $page"
+    exit 1
+  fi
 done
+echo "Static explanation page negative checks passed"
 ```
 
 Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, show stale content from a previous deployment, or fail the negative checks above.
