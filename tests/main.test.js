@@ -1642,7 +1642,9 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         }
         if (page.file === 'privacy.html') {
             assert.ok(head.includes('アカウント登録不要'));
+            assert.ok(head.includes('エラー通知'));
             assert.ok(head.includes('AdSense審査'));
+            assert.ok(head.includes('広告'));
         }
     }
 
@@ -1830,7 +1832,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
-    assert.ok(adsenseSetup.includes('grep -E "index,follow|アカウント登録|メールアドレス|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
+    assert.ok(adsenseSetup.includes('grep -E "index,follow|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
     assert.ok(adsenseSetup.includes('placeholder-only until real ad units are configured'));
