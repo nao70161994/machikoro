@@ -140,7 +140,7 @@ Follow-up implementation rules:
 - Keep SDK loading isolated in `js/adSlots.js` or a small adapter called from it.
 - Do not place ad units near gameplay controls, pending choices, online reconnect, or Undo.
 - Keep failure behavior non-blocking: SDK load failure must leave a placeholder or empty slot and never stop game rendering.
-- Re-run `git diff --check`, `npm run test:static`, `npm run test:pwa`, and `npm run test:release` after adding the script.
+- Re-run `git diff --check`, `node tests/main.test.js`, `npm run test:static`, `npm run test:pwa`, and `npm run test:release` after adding the script or intentionally changing public-page metadata/copy.
 
 ## 7. Submission Gate
 

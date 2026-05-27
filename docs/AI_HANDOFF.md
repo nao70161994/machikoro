@@ -13,7 +13,7 @@
 1. `README.md`: 起動方法、テスト、主要機能。
 2. `docs/ARCHITECTURE.md`: 責務境界、phase/action map、壊してはいけない不変条件。
 3. `docs/AI_MAINTENANCE_ISSUES.md`: AI が誤読しやすい不変条件、stop conditions、grep 入口。
-4. `docs/REFACTOR_PLAN.md`: Phase 1〜6 の方針と実施済みログ。
+4. `docs/REFACTOR_PLAN.md`: 現行 phase 方針と実施済みログ。
 5. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
 6. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 7. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
@@ -38,6 +38,7 @@
 ## Continuous review operating policy
 
 - Continuous review は、現在のユーザー依頼が自律的な実装修正を求めている場合に限り、Cycle 完了ごとに停止せず、停止条件に該当するまで Cycle 1, 2, 3... と自律継続する。明示的な review-only / no-edit 指示がある場合はそれを優先する。
+- AdSense review mode では `docs/OPERATIONS.md` の `AdSense Review Change Policy` を優先し、許可された docs / tests / static-page CSS / 緊急修正だけに限定する。
 - 各 Cycle は全体レビュー、修正、tests、docs 更新、commit / push、working tree clean 確認まで行い、直後に次 Cycle を開始する。
 - 「完了しました。次へ進めますか？」で止めない。停止してよいのは、テスト3回修正失敗、git conflict、push失敗、破壊的変更、実機確認必須、hostless restore / server persisted canonical state など設計判断必須、または自動で安全に対応できる指摘がなくなった場合のみ。
 - 次 Cycle では前 Cycle の副作用も含め、変更箇所だけでなく毎回ディレクトリ全体を再レビューする。
@@ -56,6 +57,8 @@ npm run test:static
 npm run test:smoke
 npm test
 ```
+
+AdSense review-period docs/static-page changes use the narrower gate from `docs/OPERATIONS.md`: `git diff --check`, `node tests/main.test.js`, and `npm run test:static`.
 
 対象別の追加確認は `docs/maintenance-checklists.md` と `TESTPLAN.md` を使います。
 
