@@ -2184,10 +2184,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/ADS_PLAN.md'));
     assert.ok(readme.includes('静的ページ負の確認'));
     assert.ok(readme.includes('URLメタ / public-page link hint 確認'));
-    assert.ok(readme.includes('OGP/PWA icon 到達確認'));
+    assert.ok(readme.includes('OGP/PWA icon 到達確認、ローカル寸法確認'));
     assert.ok(readme.includes('審査提出前と審査中の公開ページ再確認'));
     assert.ok(readme.includes('Static explanation page negative checks passed'));
     assert.ok(readme.includes('Public page URL metadata and public-page link hint checks passed'));
+    assert.ok(readme.includes('Local OGP/PWA icon dimension checks passed'));
     assert.ok(readme.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(readme.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
     assert.ok(readme.includes('外部接続方針変更'));
