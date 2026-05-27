@@ -74,6 +74,7 @@ Before adding ad slots or expanding beyond the review loader, verify `docs/ADS_P
 - `privacy.html` and `rules.html` are reachable from the title screen and are cached for PWA/offline shell use.
 - `privacy.html` explains account-free play, local storage, online room data, client error reporting, error notification exclusions, the AdSense review script, future ad provider data use, Cookie handling, contact guidance, and the last updated date.
 - Placeholder slots use `pointer-events: none` and neutral copy so they cannot behave like buttons or encourage accidental taps.
+- During AdSense review, do not add live ad units such as `<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, or ad unit ids; the current review state is placeholder-only plus the single review loader.
 
 ## PWA Install / Update
 

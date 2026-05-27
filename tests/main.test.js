@@ -2109,6 +2109,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('pointer-events: none'));
     assert.ok(releaseChecklist.includes('no in-game ad slot'));
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
+    assert.ok(releaseChecklist.includes('do not add live ad units'));
+    assert.ok(releaseChecklist.includes('<ins class="adsbygoogle">'));
+    assert.ok(releaseChecklist.includes('data-ad-client'));
+    assert.ok(releaseChecklist.includes('data-ad-slot'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('unknown 通知の最優先対応'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
@@ -2202,6 +2206,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
     assert.ok(adsenseSetup.includes('placeholder-only until real ad units are configured'));
+    assert.ok(adsenseSetup.includes('Do not add live ad units'));
+    assert.ok(adsenseSetup.includes('<ins class="adsbygoogle">'));
+    assert.ok(adsenseSetup.includes('data-ad-client'));
+    assert.ok(adsenseSetup.includes('data-ad-slot'));
     assert.ok(adsenseSetup.includes('Allowed placeholder locations are `title-bottom`, `rules-bottom`, and `result-bottom` only'));
     assert.ok(adsenseSetup.includes('does not look like a reward, button, or call to action'));
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
