@@ -2,7 +2,7 @@
 
 ## 目的
 
-街コロに本物の広告 SDK を入れる前段階として、画面レイアウトに影響が出にくい placeholder 枠だけを用意する。AdSense 審査中は placeholder-only を維持し、対戦中の判断や操作を邪魔せず、審査後に将来 AdSense / AdMob / TWA 経由の広告に差し替えやすい場所と helper を固定する。
+ダイスシティに本物の広告 SDK を入れる前段階として、画面レイアウトに影響が出にくい placeholder 枠だけを用意する。AdSense 審査中は placeholder-only を維持し、対戦中の判断や操作を邪魔せず、審査後に将来 AdSense / AdMob / TWA 経由の広告に差し替えやすい場所と helper を固定する。
 
 ## 現在の配置
 

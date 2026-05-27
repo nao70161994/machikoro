@@ -2056,6 +2056,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     }
     assert.strictEqual(renderAdSlot('game-action'), '');
     assert.ok(docs.includes('AdSense / AdMob'));
+    assert.ok(docs.includes('ダイスシティに本物の広告 SDK を入れる前段階'));
+    assert.ok(!docs.includes('街コロに本物の広告 SDK'));
     assert.ok(docs.includes('AdSense 審査中は placeholder-only を維持'));
     assert.ok(docs.includes('審査後に将来 AdSense / AdMob / TWA 経由の広告に差し替えやすい場所と helper を固定'));
     assert.ok(docs.includes('## AdSense 審査中の禁止事項'));
