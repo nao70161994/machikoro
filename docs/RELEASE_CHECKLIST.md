@@ -65,7 +65,7 @@ AdSense review code is installed in `index.html` head. The app still uses placeh
 
 審査コード導入済み: keep exactly one `adsbygoogle.js?client=ca-pub-8683516545883768` script in `index.html` head with `async` and `crossorigin="anonymous"`.
 
-Before adding ad slots or expanding beyond the review loader, verify `docs/ADS_PLAN.md`:
+After review, before adding ad slots or expanding beyond the review loader, verify `docs/ADS_PLAN.md`:
 
 - Allowed placements are `title-bottom`, `rules-bottom`, and `result-bottom`.
 - No ad slot is near dice, build, pending modal, Undo, reconnect, or other gameplay controls.

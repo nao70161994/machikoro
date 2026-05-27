@@ -2110,6 +2110,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('no in-game ad slot'));
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
     assert.ok(releaseChecklist.includes('Live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent during review'));
+    assert.ok(releaseChecklist.includes('After review, before adding ad slots or expanding beyond the review loader'));
     assert.ok(releaseChecklist.includes('do not add live ad units'));
     assert.ok(releaseChecklist.includes('<ins class="adsbygoogle">'));
     assert.ok(releaseChecklist.includes('data-ad-client'));
