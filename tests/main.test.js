@@ -1454,6 +1454,7 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
     const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
     assert.ok(ntfyDocs.includes('browser client-error and lifecycle notifications'));
+    assert.ok(ntfyDocs.includes('unknown/CI notification fixes must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`'));
     assert.ok(!ntfyDocs.includes('topic name to publish client errors to'));
 
     const manifestKeys = ['background_color', 'description', 'display', 'icons', 'id', 'lang', 'name', 'orientation', 'short_name', 'start_url', 'theme_color'];
@@ -2074,6 +2075,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(docs.includes('ゲーム中の主要操作'));
     assert.ok(docs.includes('誤タップ誘導に見える文言'));
     assert.ok(docs.includes('報酬示唆'));
+    assert.ok(releaseChecklist.includes('enabling ads after review'));
     assert.ok(releaseChecklist.includes('AdSense Review Change Policy'));
     assert.ok(releaseChecklist.includes('UI大改修'));
     assert.ok(releaseChecklist.includes('広告位置変更'));
@@ -2134,6 +2136,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('AdSense Review Change Policy'));
     assert.ok(readme.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
     assert.ok(readme.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
+    assert.ok(readme.includes('緊急例外は unknown通知修正 / CI失敗修正 / 軽微CSS に限定'));
     assert.ok(readme.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ'));
     assert.ok(readme.includes('実広告ユニット、SDK adapter、広告位置変更、広告拡張は審査後のみ'));
     assert.ok(readme.includes('実広告ユニット'));
@@ -2240,6 +2243,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(handoff.includes('AdSense Review Change Policy'));
     assert.ok(handoff.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
     assert.ok(handoff.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
+    assert.ok(handoff.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタは審査中に行わず'));
     assert.ok(handoff.includes('審査中は placeholder-only を維持して実広告ユニット / SDK adapter / 広告位置変更 / 広告拡張を追加しない'));
     assert.ok(handoff.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(handoff.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
@@ -2258,7 +2262,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('Review-period static page CSS must stay on the shared `style.css`'));
     assert.ok(operations.includes('do not add external CSS hosts'));
     assert.ok(operations.includes('without automatic redirects or meta refresh'));
-    assert.ok(operations.includes('Do not change during review unless an urgent incident or CI fix requires it'));
+    assert.ok(operations.includes('Do not change during review: large UI redesigns, PWA behavior changes, URL changes, rule changes, and broad refactors'));
+    assert.ok(operations.includes('Unknown notification fixes, CI failure fixes, and minor shared `style.css` changes are the only emergency exceptions'));
     assert.ok(operations.includes('large UI redesigns'));
     assert.ok(operations.includes('ad placement changes'));
     assert.ok(operations.includes('Live ad units'));

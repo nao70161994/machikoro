@@ -220,7 +220,7 @@ Setup:
 3. Add `NTFY_CI_TOPIC` with a hard-to-guess topic name, ideally separate from `NTFY_TOPIC`.
 4. Subscribe to that topic in the ntfy app or web UI.
 
-The workflows in `.github/workflows/` post only when `failure()` is true. If `NTFY_CI_TOPIC` is unset, the notify step is skipped. Successful runs do not notify. `.github/workflows/nightly-release-test.yml` runs the release/PWA/online regression set on a daily schedule and uses the same failure-only topic.
+The workflows in `.github/workflows/` post only when `failure()` is true. If `NTFY_CI_TOPIC` is unset, the notify step is skipped. Successful runs do not notify. `.github/workflows/nightly-release-test.yml` runs the release/PWA/online regression set on a daily schedule and uses the same failure-only topic. During AdSense review, unknown/CI notification fixes must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`.
 
 CI failure notifications include only compact build metadata:
 

@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this before publishing `main` or enabling ads/PWA production traffic. This checklist is intentionally split into automated gates and manual-only reminders so release status is not inferred from one green command.
+Use this before publishing `main`, enabling ads after review, or enabling PWA production traffic. This checklist is intentionally split into automated gates and manual-only reminders so release status is not inferred from one green command.
 
 ## Automated Gate
 
