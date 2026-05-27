@@ -763,7 +763,9 @@ runTest('game lifecycle payload は名前とroomなしの短い通知本文へ�
     assert.ok(message.includes('mode=online'));
     assert.ok(message.includes('players=4'));
     assert.ok(message.includes('cpu=3'));
-    assert.ok(message.includes('winner=CPU Strong'));
+    assert.ok(message.includes('winnerKind=cpu'));
+    assert.ok(message.includes('winnerDifficulty=strong'));
+    assert.ok(!message.includes('winner=CPU Strong'));
     assert.ok(message.includes('turn=14'));
     assert.ok(!message.includes('Alice'));
     assert.ok(!message.includes('ABCD'));

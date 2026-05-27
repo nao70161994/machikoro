@@ -619,11 +619,12 @@ function normalizeGameLifecyclePayload(input, now = Date.now()) {
     };
 }
 
-function formatLifecycleWinner(report) {
-    if (!report.winnerKind) return '';
-    if (report.winnerKind === 'human') return 'Human';
-    const difficulty = lifecycleCpuDifficultyLabel(report.winnerCpuDifficulty);
-    return difficulty ? 'CPU ' + difficulty : 'CPU';
+function appendLifecycleWinnerLines(lines, report) {
+    if (!report.winnerKind) return;
+    lines.push('winnerKind=' + report.winnerKind);
+    if (report.winnerKind === 'cpu' && report.winnerCpuDifficulty) {
+        lines.push('winnerDifficulty=' + report.winnerCpuDifficulty);
+    }
 }
 
 function formatNtfyGameLifecycleMessage(report) {
@@ -633,8 +634,7 @@ function formatNtfyGameLifecycleMessage(report) {
         'players=' + report.playerCount,
         'cpu=' + report.cpuCount,
     ];
-    const winner = formatLifecycleWinner(report);
-    if (winner) lines.push('winner=' + winner);
+    appendLifecycleWinnerLines(lines, report);
     if (report.turn) lines.push('turn=' + report.turn);
     if (report.appVersion) lines.push('version=' + report.appVersion);
     return lines.join('\n');
