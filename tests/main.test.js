@@ -1454,6 +1454,10 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
     const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
     assert.ok(ntfyDocs.includes('browser client-error and lifecycle notifications'));
+    assert.ok(ntfyDocs.includes('NODE_ENV=production'));
+    assert.ok(ntfyDocs.includes('BUILD_HASH'));
+    assert.ok(ntfyDocs.includes('docs/OPERATIONS.md` as the source of truth'));
+    assert.ok(ntfyDocs.includes('GitHub Actions UI monitoring as the fallback'));
     assert.ok(ntfyDocs.includes('unknown/CI notification fixes must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`'));
     assert.ok(!ntfyDocs.includes('topic name to publish client errors to'));
 
@@ -2094,6 +2098,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('AdSense public URL setup / review recheck'));
     assert.ok(releaseChecklist.includes('Before public traffic, AdSense review submission/recheck, ads after review, or broader PWA install testing'));
     assert.ok(releaseChecklist.includes('ntfy topic for browser error and lifecycle notifications'));
+    assert.ok(releaseChecklist.includes('Actions UI monitoring as the fallback'));
+    assert.ok(releaseChecklist.includes('If delivery has not been proven by a controlled or real failure'));
     assert.ok(releaseChecklist.includes('client error and lifecycle reports only write server-side warnings'));
     assert.ok(releaseChecklist.includes('privacy.html'));
     assert.ok(releaseChecklist.includes('account-free play'));
@@ -2252,6 +2258,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Static explanation page negative checks passed'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
+    assert.ok(adsenseSetup.includes('Use `docs/OPERATIONS.md` as the source of truth for the full production environment list'));
+    assert.ok(adsenseSetup.includes('NODE_ENV=production'));
+    assert.ok(adsenseSetup.includes('BUILD_HASH'));
+    assert.ok(adsenseSetup.includes('CLIENT_ERROR_ALLOW_NO_ORIGIN'));
     assert.ok(adsenseSetup.includes('ad surfaces remain placeholder-only'));
     assert.ok(adsenseSetup.includes('live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent until real ad units are intentionally configured after review'));
     assert.ok(adsenseSetup.includes('Do not add live ad units'));

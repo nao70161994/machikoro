@@ -127,6 +127,8 @@ Before submission, verify the production error-notification path once with the r
 
 Render environment variables:
 
+Use `docs/OPERATIONS.md` as the source of truth for the full production environment list, including `NODE_ENV=production`, `BUILD_HASH`, and debug-only `CLIENT_ERROR_ALLOW_NO_ORIGIN`. For the notification test specifically:
+
 - `NTFY_TOPIC`: required for actual notification delivery.
 - `CLIENT_ERROR_ALLOWED_ORIGINS=<PUBLIC_ORIGIN>`: recommended origin gate for production.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional. If set, send it with the test request.

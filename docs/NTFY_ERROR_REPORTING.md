@@ -6,11 +6,15 @@
 
 Set these environment variables on Render:
 
+- `NODE_ENV=production`: recommended for public Render deployments so production defaults apply.
 - `NTFY_TOPIC`: ntfy topic name to publish browser client-error and lifecycle notifications to.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, no-origin/scripted diagnostics and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Same-origin browser `/api/client-error` reports stay tokenless so real browser reporting is not broken.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: recommended for public production. Set a comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
 - `TRUST_PROXY=1`: optional Express proxy trust setting. Leave unset for direct serving; set only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
 - `CLIENT_ERROR_ALLOW_NO_ORIGIN`: optional escape hatch for controlled diagnostics. In production with `NTFY_TOPIC`, no-origin/no-token reports are rejected by default.
+- `BUILD_HASH`: optional build metadata override for `/api/version`, Service Worker cache injection, and report versions. Usually let deployment derive it automatically.
+
+For the complete production env checklist, use `docs/OPERATIONS.md` as the source of truth and keep this page focused on ntfy-specific setup.
 
 Example topic names:
 
@@ -24,9 +28,10 @@ Render steps:
 1. Open the Render service dashboard.
 2. Go to `Environment`.
 3. Add `NTFY_TOPIC` with the chosen topic name.
-4. For public production, add `CLIENT_ERROR_ALLOWED_ORIGINS` with your production origin.
+4. Set `NODE_ENV=production` and, for public production, add `CLIENT_ERROR_ALLOWED_ORIGINS` with your production origin.
 5. Optional: add `CLIENT_ERROR_SHARED_TOKEN` only if your reporter/test caller will send the matching header.
-6. Redeploy or restart the service.
+6. Check `docs/OPERATIONS.md` for `BUILD_HASH`, `CLIENT_ERROR_ALLOW_NO_ORIGIN`, and other production-only knobs before redeploying.
+7. Redeploy or restart the service.
 
 If `NTFY_TOPIC` is not set, `POST /api/client-error` still accepts reports but only writes a server-side `console.warn`. The game must not stop when notification delivery fails.
 
@@ -221,6 +226,8 @@ Setup:
 4. Subscribe to that topic in the ntfy app or web UI.
 
 The workflows in `.github/workflows/` post only when `failure()` is true. If `NTFY_CI_TOPIC` is unset, the notify step is skipped. Successful runs do not notify. `.github/workflows/nightly-release-test.yml` runs the release/PWA/online regression set on a daily schedule and uses the same failure-only topic. During AdSense review, unknown/CI notification fixes must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`.
+
+There is no success notification to test without intentionally failing a job. If CI paging has not been proven in a controlled failure window, keep GitHub Actions UI monitoring as the fallback until the first real or controlled failure confirms delivery.
 
 CI failure notifications include only compact build metadata:
 

@@ -60,7 +60,7 @@ Android/TWA build workflow secrets:
 - Game lifecycle notifications are default ON. Confirm `window.__machikoroLifecycleNotifyState()` reports `enabled: true` when `localStorage.machikoroLifecycleNotifyEnabled` is unset. Use `localStorage.setItem('machikoroLifecycleNotifyEnabled', 'false')` only to opt out noisy browser profiles.
 - Lifecycle ntfy payloads must not include player names, room codes, reconnect tokens, card inventories, or full snapshots.
 - Do not leave a public or guessable `NTFY_TOPIC` in production.
-- If CI failure notifications are needed, set GitHub Secret `NTFY_CI_TOPIC` to a separate hard-to-guess topic. The release/APK/nightly workflows post only on failure and include workflow name, branch, short commit, failed job, and the Actions run URL.
+- If CI failure notifications are needed, set GitHub Secret `NTFY_CI_TOPIC` to a separate hard-to-guess topic. The release/APK/nightly workflows post only on failure and include workflow name, branch, short commit, failed job, and the Actions run URL. If delivery has not been proven by a controlled or real failure, keep GitHub Actions UI monitoring as the fallback.
 - Use `docs/OPERATIONS.md` to classify ntfy browser reports as `unknown`, `known-pattern`, or `stale-client`; only `unknown` client errors should page at high priority.
 
 ## Ads Placeholder Safety
@@ -152,7 +152,7 @@ Before public traffic, AdSense review submission/recheck, ads after review, or b
 - During AdSense review, do not add public-page link hints such as `preconnect`, `dns-prefetch`, `preload`, or `modulepreload`; the public-page tests currently lock those external connection hints out.
 - AdSense placeholders are still limited to title, rules, and result surfaces; no slot is near dice, build, pending, Undo, reconnect, or update controls. Live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent during review.
 - `NTFY_TOPIC` receives a controlled `/api/client-error-test` notification, then `CLIENT_ERROR_TEST_ENABLED` is removed again.
-- `NTFY_CI_TOPIC` is configured as a GitHub Actions secret if CI failure paging is desired.
+- `NTFY_CI_TOPIC` is configured as a GitHub Actions secret if CI failure paging is desired, and either a controlled/real failure has proven delivery or Actions UI monitoring is the documented fallback.
 - `/api/version` matches the intended deploy commit, and a browser with stale `window.MACHIKORO_CLIENT_VERSION` shows the PWA update banner.
 - PWA install and update behavior has been checked on at least one real mobile browser before relying on it publicly.
 - CI is green on the exact commit being deployed.
