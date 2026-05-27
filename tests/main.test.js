@@ -2173,6 +2173,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('when rechecking public pages during review'));
     assert.ok(adsenseSetup.includes('Public URL Checks After Render Deploy / During Review'));
+    assert.ok(adsenseSetup.includes('html=$(curl -fsS "$PUBLIC_ORIGIN/$page")'));
+    assert.ok(adsenseSetup.includes('<base\\b'));
+    assert.ok(adsenseSetup.includes('[[:space:]]on[a-z]+[[:space:]]*[=]'));
     assert.ok(adsenseSetup.includes('Do not submit to AdSense or treat a review-period public-page recheck as passing'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('one charset, one viewport, and one HTML title'));
