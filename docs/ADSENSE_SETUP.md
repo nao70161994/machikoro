@@ -38,6 +38,7 @@ Do not submit to AdSense if any of the public pages return an error, redirect un
 From `<PUBLIC_ORIGIN>/`:
 
 - Confirm the title screen shows the legal links below the title ad placeholder, and the title page description / OGP / Twitter metadata mention 登録不要 / no-registration play.
+- Confirm each public page keeps exactly one charset, one viewport, and one HTML title in the head before checking preview metadata.
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
 - Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, AdSense review script / future ad unit / Cookie usage, contact guidance, and the last updated date.

@@ -1622,6 +1622,10 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
 
         assert.ok(html.includes('<html lang="ja">'));
+        assert.strictEqual((head.match(/<meta charset=/g) || []).length, 1);
+        assert.strictEqual((head.match(/<title>/g) || []).length, 1);
+        assert.strictEqual((head.match(/<meta name="viewport"/g) || []).length, 1);
+        assert.ok(head.includes('<meta charset="UTF-8">'));
         assert.ok(head.includes(`<title>${page.title}</title>`));
         assert.ok(head.includes('<link rel="stylesheet" href="style.css">'));
         assert.ok(head.includes('<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">'));
@@ -1930,6 +1934,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('自動遷移や meta refresh を追加しません'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
+    assert.ok(adsenseSetup.includes('one charset, one viewport, and one HTML title'));
     assert.ok(adsenseSetup.includes('privacy policy is public, indexable'));
     assert.ok(adsenseSetup.includes('rules page is public, indexable'));
     assert.ok(adsenseSetup.includes('links back to the game and rules page'));
