@@ -1475,12 +1475,16 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.strictEqual(manifest.start_url, '/');
     assert.strictEqual(manifest.display, 'standalone');
     assert.deepStrictEqual(manifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
+    assert.deepStrictEqual(manifest.icons.map((icon) => icon.sizes).sort(), ['192x192', '512x512']);
+    assert.ok(manifest.icons.every((icon) => icon.type === 'image/png'));
     assert.ok(manifest.icons.every((icon) => icon.purpose === 'any maskable'));
     assert.strictEqual(webmanifest.name, 'ダイスシティ');
     assert.strictEqual(webmanifest.short_name, 'ダイスシティ');
     assert.strictEqual(webmanifest.start_url, '/');
     assert.strictEqual(webmanifest.display, 'standalone');
     assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
+    assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.sizes).sort(), ['192x192', '512x512']);
+    assert.ok(webmanifest.icons.every((icon) => icon.type === 'image/png'));
     assert.ok(webmanifest.icons.every((icon) => icon.purpose === 'any maskable'));
     assert.ok(html.includes('<link rel="apple-touch-icon" href="/icons/icon-192.png">'));
     assert.ok(css.includes('.title-header h1'));
@@ -1927,6 +1931,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('both `og:image` and `twitter:image` pointing to `/icons/icon-512.png`'));
     assert.ok(releaseChecklist.includes('same-origin relative paths'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
+    assert.ok(releaseChecklist.includes('OGP and PWA icon metadata sizes stay aligned with the 512x512 and 192x192 PNG assets'));
     assert.ok(releaseChecklist.includes('`og:site_name`, `og:type`, and `twitter:card` stay stable'));
     assert.ok(releaseChecklist.includes('exactly one charset, one viewport, one HTML title, one `robots` meta with `index,follow`, and one shared `style.css` stylesheet'));
     assert.ok(releaseChecklist.includes('review-period external CSS hosts'));
