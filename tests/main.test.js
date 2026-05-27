@@ -2075,6 +2075,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('public HTML metadata does not hardcode staging origins, localhost, or review-period external CSS hosts'));
     assert.ok(releaseChecklist.includes('do not add `canonical`, `og:url`, or `twitter:url` metadata'));
     assert.ok(releaseChecklist.includes('public-page tests currently lock those URL metadata tags out'));
+    assert.ok(releaseChecklist.includes('do not add public-page link hints such as `preconnect`, `dns-prefetch`, `preload`, or `modulepreload`'));
+    assert.ok(releaseChecklist.includes('public-page tests currently lock those external connection hints out'));
     assert.ok(releaseChecklist.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
@@ -2185,6 +2187,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('Public-page invariant additions during review should be tests/docs only'));
     assert.ok(operations.includes('do not change behavior, URLs, PWA update flow, ad placement, or game rules for invariant cleanup alone'));
     assert.ok(operations.includes('Treat `canonical`, `og:url`, and `twitter:url` metadata as URL policy changes during review'));
+    assert.ok(operations.includes('Treat public-page link hints such as `preconnect`, `dns-prefetch`, `preload`, and `modulepreload` as external connection policy changes during review'));
     assert.ok(operations.includes('git diff --check'));
     assert.ok(operations.includes('node tests/main.test.js'));
     assert.ok(operations.includes('npm run test:static'));
