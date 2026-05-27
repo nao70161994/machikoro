@@ -1625,7 +1625,9 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(head.includes(`<title>${page.title}</title>`));
         assert.ok(head.includes('<link rel="stylesheet" href="style.css">'));
         assert.ok(head.includes('<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">'));
+        assert.strictEqual((head.match(/<meta name="robots"/g) || []).length, 1);
         assert.ok(head.includes('<meta name="robots" content="index,follow">'));
+        assert.ok(!head.includes('noindex'));
         const getMetaContent = (pattern) => {
             const match = head.match(pattern);
             assert.ok(match, 'missing meta in ' + page.file + ': ' + pattern);
