@@ -2132,6 +2132,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
+    assert.ok(adsenseSetup.includes('Negative checks for the static explanation pages'));
+    assert.ok(adsenseSetup.includes('for page in rules.html privacy.html; do'));
+    assert.ok(adsenseSetup.includes('<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<img|<picture|<video|<audio|<svg'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
     assert.ok(adsenseSetup.includes('placeholder-only until real ad units are configured'));

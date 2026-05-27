@@ -31,7 +31,15 @@ curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.ht
 curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
-Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, or show stale content from a previous deployment.
+Negative checks for the static explanation pages:
+
+```sh
+for page in rules.html privacy.html; do
+  curl -s "$PUBLIC_ORIGIN/$page" | grep -E "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<img|<picture|<video|<audio|<svg" && exit 1
+done
+```
+
+Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, show stale content from a previous deployment, or fail the negative checks above.
 
 ## 2. Privacy / Rules Navigation
 
