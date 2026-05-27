@@ -51,6 +51,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm public HTML metadata does not hardcode staging origins or localhost into preview tags; use the deployed URL only in external submission forms and command examples.
 - Keep each public-page description / OGP / Twitter description concise enough for search and share previews; the automated test keeps them at 160 characters or less.
 - Keep public-page titles consistent across HTML title, OGP, and Twitter metadata; the automated test keeps each title at 60 characters or less.
+- Keep `og:site_name`, `og:type`, and `twitter:card` stable across public pages so shared previews do not drift.
 
 The in-app rules modal can remain available, but AdSense review should have direct public URLs for both privacy and rules.
 
