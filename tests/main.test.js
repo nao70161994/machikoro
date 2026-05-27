@@ -1908,6 +1908,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('save/resume works'));
     assert.ok(releaseChecklist.includes('both `og:image` and `twitter:image` pointing to `/icons/icon-512.png`'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
+    assert.ok(releaseChecklist.includes('HTML title, OGP title, and Twitter title stay consistent and concise'));
     assert.ok(releaseChecklist.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
