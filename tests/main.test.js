@@ -2102,6 +2102,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
     assert.ok(releaseChecklist.includes('no page script, form, button, `dialog` / `details` / `summary`, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
     assert.ok(releaseChecklist.includes('Run the URL metadata / external connection hint checks and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
+    assert.ok(releaseChecklist.includes('before submitting and when rechecking public pages during review'));
     assert.ok(releaseChecklist.includes('Static explanation page negative checks passed'));
     assert.ok(releaseChecklist.includes('Public page URL metadata and external connection hint checks passed'));
     assert.ok(releaseChecklist.includes('rules.html'));
