@@ -2217,6 +2217,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/icons/icon-192.png"'));
+    assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/icons/icon-512.png"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/sw.js"'));
