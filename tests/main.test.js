@@ -1472,8 +1472,12 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(rules.includes('<title>ルール - ダイスシティ</title>'));
     assert.strictEqual(manifest.name, 'ダイスシティ');
     assert.strictEqual(manifest.short_name, 'ダイスシティ');
+    assert.strictEqual(manifest.start_url, '/');
+    assert.strictEqual(manifest.display, 'standalone');
     assert.strictEqual(webmanifest.name, 'ダイスシティ');
     assert.strictEqual(webmanifest.short_name, 'ダイスシティ');
+    assert.strictEqual(webmanifest.start_url, '/');
+    assert.strictEqual(webmanifest.display, 'standalone');
     assert.ok(css.includes('.title-header h1'));
     assert.ok(css.includes('font-size: clamp(24px, 9vw, 52px);'));
     assert.ok(css.includes('white-space: nowrap;'));
@@ -1830,8 +1834,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"'));
-    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|standalone|icon-512"'));
-    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|standalone|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"'));
