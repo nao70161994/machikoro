@@ -1642,9 +1642,27 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
 
 runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ', () => {
     const pages = [
-        { file: 'index.html', title: 'ダイスシティ', type: 'website' },
-        { file: 'rules.html', title: 'ルール - ダイスシティ', type: 'article' },
-        { file: 'privacy.html', title: 'プライバシーポリシー - ダイスシティ', type: 'article' }
+        {
+            file: 'index.html',
+            title: 'ダイスシティ',
+            type: 'website',
+            description: 'ダイスシティは、登録不要でサイコロと街づくりを楽しめるオンライン・オフライン対応のブラウザボードゲームです。',
+            previewDescription: '登録不要でサイコロと街づくりを楽しめるオンライン・オフライン対応のブラウザボードゲームです。'
+        },
+        {
+            file: 'rules.html',
+            title: 'ルール - ダイスシティ',
+            type: 'article',
+            description: 'ダイスシティの基本ルール。アカウント登録なしのはじめ方、勝利条件、カード選択、保存と再開、ターンの流れ、カードの色、ランドマークを説明します。',
+            previewDescription: 'アカウント登録なしのはじめ方、勝利条件、カード選択、保存と再開、ターンの流れ、カードの色、ランドマークなど、ダイスシティの基本ルールを説明します。'
+        },
+        {
+            file: 'privacy.html',
+            title: 'プライバシーポリシー - ダイスシティ',
+            type: 'article',
+            description: 'ダイスシティのプライバシーポリシー。アカウント登録不要の遊び方、保存データ、オンライン対戦、エラー通知、AdSense審査と広告について説明します。',
+            previewDescription: 'アカウント登録不要の遊び方、保存データ、オンライン対戦、エラー通知、AdSense審査と広告について説明します。'
+        }
     ];
 
     for (const page of pages) {
@@ -1706,6 +1724,9 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(!/^https?:\/\//.test(ogImage));
         assert.ok(!/^https?:\/\//.test(twitterImage));
         const previewDescriptions = [description, ogDescription, twitterDescription];
+        assert.strictEqual(description, page.description);
+        assert.strictEqual(ogDescription, page.previewDescription);
+        assert.strictEqual(twitterDescription, page.previewDescription);
         assert.ok(description.length > 20);
         assert.ok(description.length <= 160);
         assert.ok(ogDescription.length <= 160);
