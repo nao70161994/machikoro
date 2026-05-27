@@ -31,6 +31,18 @@ curl -s "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.ht
 curl -s "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
+Negative checks for review-mode URL metadata and external connection hints on all public pages:
+
+```sh
+for page in '' rules.html privacy.html; do
+  if curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei '<link[^>]+rel=["'"'"']canonical|<meta[^>]+(property|name)=["'"'"'](og:url|twitter:url)["'"'"']|<link[^>]+rel=["'"'"'](preconnect|dns-prefetch|preload|modulepreload)["'"'"']'; then
+    echo "Unexpected URL metadata or external connection hint found in /$page"
+    exit 1
+  fi
+done
+echo "Public page URL metadata and external connection hint checks passed"
+```
+
 Negative checks for the static explanation pages:
 
 ```sh

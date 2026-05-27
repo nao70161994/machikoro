@@ -1925,40 +1925,29 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(!privacy.includes(' style='));
     assert.ok(!rules.includes(' style='));
     for (const staticPage of [privacy, rules]) {
-        assert.ok(!staticPage.includes(' id="'));
-        assert.ok(!staticPage.includes('data-'));
-        assert.ok(!staticPage.includes('data-ui-action'));
-        assert.ok(!/\son[a-z]+=/.test(staticPage));
-        assert.ok(!staticPage.includes(' src="'));
-        assert.ok(!staticPage.includes('http-equiv="refresh"'));
-        assert.ok(!staticPage.includes("http-equiv='refresh'"));
-        assert.ok(!staticPage.includes('<button'));
-        assert.ok(!staticPage.includes('<input'));
-        assert.ok(!staticPage.includes('<select'));
-        assert.ok(!staticPage.includes('<textarea'));
-        assert.ok(!staticPage.includes('<form'));
-        assert.ok(!staticPage.includes('<iframe'));
-        assert.ok(!staticPage.includes('<embed'));
-        assert.ok(!staticPage.includes('<object'));
-        assert.ok(!staticPage.includes('<canvas'));
-        assert.ok(!staticPage.includes('<img'));
-        assert.ok(!staticPage.includes('<picture'));
-        assert.ok(!staticPage.includes('<source'));
-        assert.ok(!staticPage.includes('<video'));
-        assert.ok(!staticPage.includes('<audio'));
-        assert.ok(!staticPage.includes('<svg'));
-        assert.ok(!staticPage.includes('role="button"'));
-        assert.ok(!staticPage.includes('aria-live'));
-        assert.ok(!staticPage.includes('aria-busy'));
-        assert.ok(!staticPage.includes('aria-disabled'));
-        assert.ok(!staticPage.includes('aria-modal'));
-        assert.ok(!staticPage.includes('inert'));
-        assert.ok(!staticPage.includes('hidden'));
-        assert.ok(!staticPage.includes('target="_blank"'));
-        assert.ok(!staticPage.includes('download'));
+        const normalizedStaticPage = staticPage.toLowerCase();
+        assert.ok(!/\sid\s*=/.test(normalizedStaticPage));
+        assert.ok(!normalizedStaticPage.includes('data-'));
+        assert.ok(!normalizedStaticPage.includes('data-ui-action'));
+        assert.ok(!/\son[a-z]+\s*=/.test(normalizedStaticPage));
+        assert.ok(!/\ssrc\s*=/.test(normalizedStaticPage));
+        assert.ok(!/\sstyle\s*=/.test(normalizedStaticPage));
+        assert.ok(!/http-equiv\s*=\s*["']refresh["']/.test(normalizedStaticPage));
+        for (const forbiddenTag of ['script', 'button', 'input', 'select', 'textarea', 'form', 'iframe', 'embed', 'object', 'canvas', 'img', 'picture', 'source', 'video', 'audio', 'svg']) {
+            assert.ok(!new RegExp('<\\s*' + forbiddenTag + '\\b').test(normalizedStaticPage));
+        }
+        assert.ok(!/role\s*=\s*["']button["']/.test(normalizedStaticPage));
+        assert.ok(!normalizedStaticPage.includes('aria-live'));
+        assert.ok(!normalizedStaticPage.includes('aria-busy'));
+        assert.ok(!normalizedStaticPage.includes('aria-disabled'));
+        assert.ok(!normalizedStaticPage.includes('aria-modal'));
+        assert.ok(!normalizedStaticPage.includes('inert'));
+        assert.ok(!normalizedStaticPage.includes('hidden'));
+        assert.ok(!/target\s*=\s*["']_blank["']/.test(normalizedStaticPage));
+        assert.ok(!normalizedStaticPage.includes('download'));
     }
-    const getHrefs = (pageSource) => [...pageSource.matchAll(/href="([^"]+)"/g)]
-        .map((match) => match[1])
+    const getHrefs = (pageSource) => [...pageSource.matchAll(/href\s*=\s*(["'])(.*?)\1/gi)]
+        .map((match) => match[2])
         .sort();
     assert.deepStrictEqual(getHrefs(rules), ['/', 'privacy.html', 'style.css']);
     assert.deepStrictEqual(getHrefs(privacy), ['/', 'rules.html', 'style.css']);
@@ -2094,6 +2083,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('静的ページ負の確認'));
     assert.ok(readme.includes('Static explanation page negative checks passed'));
     assert.ok(readme.includes('`canonical` / `og:url` / `twitter:url`'));
+    assert.ok(readme.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
+    assert.ok(readme.includes('外部接続方針変更'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
     assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明'));
@@ -2150,6 +2141,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|保存と再開|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
+    assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata and external connection hints on all public pages'));
+    assert.ok(adsenseSetup.includes('canonical|<meta[^>]+(property|name)='));
+    assert.ok(adsenseSetup.includes('og:url|twitter:url'));
+    assert.ok(adsenseSetup.includes('preconnect|dns-prefetch|preload|modulepreload'));
+    assert.ok(adsenseSetup.includes('Public page URL metadata and external connection hint checks passed'));
     assert.ok(adsenseSetup.includes('Negative checks for the static explanation pages'));
     assert.ok(adsenseSetup.includes('for page in rules.html privacy.html; do'));
     assert.ok(adsenseSetup.includes('grep -Ei \'<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action| id=| style=| src=|role="button"| on[a-z]+=\''));
