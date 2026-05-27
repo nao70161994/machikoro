@@ -2148,7 +2148,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
     assert.ok(releaseChecklist.includes('no page script, form, button, `dialog` / `details` / `summary`, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
-    assert.ok(releaseChecklist.includes('Run the URL metadata / public-page link hint checks, public OGP/PWA icon reachability checks, local OGP/PWA icon dimension check, and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
+    assert.ok(releaseChecklist.includes('Run the URL metadata / external stylesheet / public-page link hint checks, public OGP/PWA icon reachability checks, local OGP/PWA icon dimension check, and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
     assert.ok(releaseChecklist.includes('before submitting and when rechecking public pages during review'));
     assert.ok(releaseChecklist.includes('Static explanation page negative checks passed'));
     assert.ok(releaseChecklist.includes('Public page URL metadata, external stylesheet, and public-page link hint checks passed'));
@@ -2207,7 +2207,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('docs/ADS_PLAN.md'));
     assert.ok(readme.includes('静的ページ負の確認'));
-    assert.ok(readme.includes('URLメタ / public-page link hint 確認'));
+    assert.ok(readme.includes('URLメタ / external stylesheet / public-page link hint 確認'));
     assert.ok(readme.includes('OGP/PWA icon 到達確認、ローカル寸法確認'));
     assert.ok(readme.includes('審査提出前と審査中の公開ページ再確認'));
     assert.ok(readme.includes('Static explanation page negative checks passed'));
@@ -2360,7 +2360,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('Keep commits small'));
     assert.ok(operations.includes('enable ads after review, or enable PWA production traffic'));
     assert.ok(operations.includes('Before public traffic, AdSense review submission/recheck, ads after review, or wider PWA install testing'));
-    assert.ok(operations.includes('For AdSense review submission/recheck, run the public URL, OGP/PWA icon reachability, local OGP/PWA icon dimension, URL metadata / public-page link hint, and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
+    assert.ok(operations.includes('For AdSense review submission/recheck, run the public URL, OGP/PWA icon reachability, local OGP/PWA icon dimension, URL metadata / external stylesheet / public-page link hint, and static explanation page negative checks in `docs/ADSENSE_SETUP.md`'));
     assert.ok(operations.includes('Public page URL metadata, external stylesheet, and public-page link hint checks passed'));
     assert.ok(operations.includes('Local OGP/PWA icon dimension checks passed'));
     assert.ok(operations.includes('Static explanation page negative checks passed'));
