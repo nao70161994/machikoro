@@ -35,7 +35,7 @@ Negative checks for the static explanation pages:
 
 ```sh
 for page in rules.html privacy.html; do
-  if curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg"; then
+  if curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action| id=| style=| src=|role="button"| on[a-z]+="; then
     echo "Unexpected active or embedded content found in $page"
     exit 1
   fi
