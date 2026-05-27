@@ -1774,6 +1774,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(!privacy.includes(' style='));
     assert.ok(!rules.includes(' style='));
     for (const staticPage of [privacy, rules]) {
+        assert.ok(!staticPage.includes(' id="'));
+        assert.ok(!staticPage.includes('data-'));
         assert.ok(!staticPage.includes('data-ui-action'));
         assert.ok(!staticPage.includes('<button'));
         assert.ok(!staticPage.includes('<input'));
