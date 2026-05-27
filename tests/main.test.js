@@ -1985,15 +1985,15 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!staticPageSource.includes('ca-pub-8683516545883768'));
     }
     for (const publicPageSource of [html, rules, privacy]) {
-        assert.ok(!/<ins[^>]+class="[^"]*adsbygoogle/i.test(publicPageSource));
-        assert.ok(!/data-ad-client=/i.test(publicPageSource));
-        assert.ok(!/data-ad-slot=/i.test(publicPageSource));
+        assert.ok(!/<ins[^>]+class\s*=\s*(["'])[^"']*adsbygoogle/i.test(publicPageSource));
+        assert.ok(!/data-ad-client\s*=/i.test(publicPageSource));
+        assert.ok(!/data-ad-slot\s*=/i.test(publicPageSource));
     }
     const liveAdUnitSources = [adSlotsSource, renderAdSlot('title-bottom'), renderAdSlot('rules-bottom'), renderAdSlot('result-bottom')];
     for (const liveAdUnitSource of liveAdUnitSources) {
-        assert.ok(!/<ins[^>]+class="[^"]*adsbygoogle/i.test(liveAdUnitSource));
-        assert.ok(!/data-ad-client=/i.test(liveAdUnitSource));
-        assert.ok(!/data-ad-slot=/i.test(liveAdUnitSource));
+        assert.ok(!/<ins[^>]+class\s*=\s*(["'])[^"']*adsbygoogle/i.test(liveAdUnitSource));
+        assert.ok(!/data-ad-client\s*=/i.test(liveAdUnitSource));
+        assert.ok(!/data-ad-slot\s*=/i.test(liveAdUnitSource));
         assert.ok(!/ca-pub-/i.test(liveAdUnitSource));
         assert.ok(!/pagead2\.googlesyndication\.com/i.test(liveAdUnitSource));
     }
