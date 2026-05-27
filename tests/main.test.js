@@ -1498,6 +1498,18 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.sizes).sort(), ['192x192', '512x512']);
     assert.ok(webmanifest.icons.every((icon) => icon.type === 'image/png'));
     assert.ok(webmanifest.icons.every((icon) => icon.purpose === 'any maskable'));
+    const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
+    assert.strictEqual((head.match(/<meta name="theme-color"/g) || []).length, 1);
+    assert.ok(head.includes('<meta name="theme-color" content="#0f0e17">'));
+    assert.strictEqual((head.match(/<meta name="mobile-web-app-capable"/g) || []).length, 1);
+    assert.ok(head.includes('<meta name="mobile-web-app-capable" content="yes">'));
+    assert.strictEqual((head.match(/<meta name="apple-mobile-web-app-capable"/g) || []).length, 1);
+    assert.ok(head.includes('<meta name="apple-mobile-web-app-capable" content="yes">'));
+    assert.strictEqual((head.match(/<meta name="apple-mobile-web-app-status-bar-style"/g) || []).length, 1);
+    assert.ok(head.includes('<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'));
+    assert.strictEqual((head.match(/<meta name="apple-mobile-web-app-title"/g) || []).length, 1);
+    assert.ok(head.includes('<meta name="apple-mobile-web-app-title" content="ダイスシティ">'));
+    assert.strictEqual((head.match(/<link rel="apple-touch-icon"/g) || []).length, 1);
     assert.ok(html.includes('<link rel="apple-touch-icon" href="/icons/icon-192.png">'));
     assert.ok(css.includes('.title-header h1'));
     assert.ok(css.includes('font-size: clamp(24px, 9vw, 52px);'));
