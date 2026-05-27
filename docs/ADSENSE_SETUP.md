@@ -1,6 +1,6 @@
 # AdSense Setup
 
-Use this checklist after Render deploy and before submitting the production URL to AdSense. Replace `<PUBLIC_ORIGIN>` with the deployed origin, for example `https://machikoro-9jv2.onrender.com`.
+Use this checklist after Render deploy, before submitting the production URL to AdSense, and when rechecking public pages during review. Replace `<PUBLIC_ORIGIN>` with the deployed origin, for example `https://machikoro-9jv2.onrender.com`.
 
 ## 1. Public URL Checks After Render Deploy
 
