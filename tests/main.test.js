@@ -2057,6 +2057,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(docs.includes('審査後に将来 AdSense / AdMob / TWA 経由の広告に差し替えやすい場所と helper を固定'));
     assert.ok(docs.includes('## AdSense 審査中の禁止事項'));
     assert.ok(docs.includes('## 審査後に SDK を入れるときの注意'));
+    assert.ok(docs.includes('AdSense 審査中の placeholder-only 状態では、SDK 未導入でも console error なしで起動する'));
     assert.ok(docs.includes('AdSense 審査中は新しい広告 slot'));
     assert.ok(docs.includes('SDK adapter、広告位置変更を追加しない'));
     assert.ok(docs.includes('実広告ユニット'));

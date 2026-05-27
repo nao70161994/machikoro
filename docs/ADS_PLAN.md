@@ -37,5 +37,5 @@
 - ルールモーダル本文末尾に `rules-bottom` が表示される。
 - 勝利リザルト統計の下に `result-bottom` が表示される。
 - 対戦中の `#gameScreen` 操作パネル、建設メニュー、pending modal 周辺には広告枠がない。
-- SDK 未導入でも console error なしで起動する。
+- AdSense 審査中の placeholder-only 状態では、SDK 未導入でも console error なしで起動する。
 - `npm run test:static`, `npm run test:smoke`, `npm test` が通る。
