@@ -1758,6 +1758,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!staticPage.includes('<form'));
         assert.ok(!staticPage.includes('role="button"'));
     }
+    const getHrefs = (pageSource) => [...pageSource.matchAll(/href="([^"]+)"/g)]
+        .map((match) => match[1])
+        .sort();
+    assert.deepStrictEqual(getHrefs(rules), ['/', 'privacy.html', 'style.css']);
+    assert.deepStrictEqual(getHrefs(privacy), ['/', 'rules.html', 'style.css']);
     assert.ok(!privacy.includes('adsbygoogle.js'));
     assert.ok(!rules.includes('adsbygoogle.js'));
     assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
