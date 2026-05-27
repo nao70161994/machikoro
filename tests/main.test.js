@@ -2206,7 +2206,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Static explanation page negative checks passed'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
     assert.ok(adsenseSetup.includes('NTFY_TOPIC` is not public or guessable'));
-    assert.ok(adsenseSetup.includes('placeholder-only until real ad units are configured'));
+    assert.ok(adsenseSetup.includes('ad surfaces remain placeholder-only'));
+    assert.ok(adsenseSetup.includes('live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent until real ad units are intentionally configured after review'));
     assert.ok(adsenseSetup.includes('Do not add live ad units'));
     assert.ok(adsenseSetup.includes('<ins class="adsbygoogle">'));
     assert.ok(adsenseSetup.includes('data-ad-client'));
