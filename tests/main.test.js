@@ -2351,7 +2351,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(handoff.includes('追加 loader や live ad unit を入れない'));
     assert.ok(handoff.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(handoff.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
-    assert.ok(handoff.includes('URL 方針または外部接続方針の変更'));
+    assert.ok(handoff.includes('公開ページの CSS は共有 `style.css` に限定'));
+    assert.ok(handoff.includes('外部 CSS host を追加しない'));
+    assert.ok(handoff.includes('URL 方針、外部接続方針、または CSS 配信方針の変更'));
     assert.ok(operations.includes('keep changes small and stability-focused'));
     assert.ok(operations.includes('Keep commits small'));
     assert.ok(operations.includes('enable ads after review, or enable PWA production traffic'));

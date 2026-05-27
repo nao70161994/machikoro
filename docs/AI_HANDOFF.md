@@ -39,7 +39,7 @@
 
 - Continuous review は、現在のユーザー依頼が自律的な実装修正を求めている場合に限り、Cycle 完了ごとに停止せず、停止条件に該当するまで Cycle 1, 2, 3... と自律継続する。明示的な review-only / no-edit 指示がある場合はそれを優先する。
 - AdSense review mode では `docs/OPERATIONS.md` の `AdSense Review Change Policy` を正本にする。審査中は docs/static 中心に限定し、docs/static 変更でも URL/PWA/広告位置/ルール/広範な UI 挙動を変えない。UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ、実広告ユニット、SDK adapter、広告位置変更、広告拡張を追加しない。`index.html` head の AdSense 審査 loader は1つだけ維持し、追加 loader や live ad unit を入れない。unknown通知修正、CI失敗修正、軽微CSSの緊急例外も `docs/OPERATIONS.md` の条件内で扱う。
-- 審査中は `canonical` / `og:url` / `twitter:url` と `preconnect` / `dns-prefetch` / `preload` / `modulepreload` を追加しない。URL 方針または外部接続方針の変更が必要な場合は、先に `docs/OPERATIONS.md` と `docs/ADSENSE_SETUP.md` の確認手順を更新する。
+- 審査中は `canonical` / `og:url` / `twitter:url` と `preconnect` / `dns-prefetch` / `preload` / `modulepreload` を追加しない。公開ページの CSS は共有 `style.css` に限定し、外部 CSS host を追加しない。URL 方針、外部接続方針、または CSS 配信方針の変更が必要な場合は、先に `docs/OPERATIONS.md` と `docs/ADSENSE_SETUP.md` の確認手順を更新する。
 - 各 Cycle は全体レビュー、修正、tests、docs 更新、commit / push、working tree clean 確認まで行い、直後に次 Cycle を開始する。
 - 「完了しました。次へ進めますか？」で止めない。停止してよいのは、テスト3回修正失敗、git conflict、push失敗、破壊的変更、実機確認必須、hostless restore / server persisted canonical state など設計判断必須、または自動で安全に対応できる指摘がなくなった場合のみ。
 - 次 Cycle では前 Cycle の副作用も含め、変更箇所だけでなく毎回ディレクトリ全体を再レビューする。
