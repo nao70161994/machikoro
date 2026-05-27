@@ -41,6 +41,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Open `ルール` and confirm it reaches `rules.html`.
 - Open `プライバシーポリシー` and confirm it reaches `privacy.html`.
 - Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, error notification exclusions, AdSense review script / future ad unit / Cookie usage, contact guidance, and the last updated date.
+- Confirm `privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, AdSense review, and ads so shared previews do not show stale privacy-page content.
 - Confirm `rules.html` describes how to start a local or online game, card selection, save/resume behavior, plus the win condition, turn flow, card colors, activation order, landmarks, and the last updated date.
 - Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, and save/resume, so shared previews do not show stale rule-page content.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, image alt text, and use `/icons/icon-512.png` for the preview image.
