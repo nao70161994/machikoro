@@ -1454,6 +1454,11 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
     const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
 
+    const manifestKeys = ['background_color', 'description', 'display', 'icons', 'id', 'lang', 'name', 'orientation', 'short_name', 'start_url', 'theme_color'];
+    assert.deepStrictEqual(Object.keys(manifest).sort(), manifestKeys);
+    assert.deepStrictEqual(Object.keys(webmanifest).sort(), manifestKeys);
+    assert.deepStrictEqual(webmanifest, manifest);
+
     assert.ok(html.includes('<title>ダイスシティ</title>'));
     assert.ok(html.includes('<h1>ダイスシティ</h1>'));
     const titleScreen = html.slice(html.indexOf('<div id="titleScreen"'), html.indexOf('<div id="gameScreen"'));
@@ -1817,6 +1822,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.deepStrictEqual([...legalLinksHtml.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map((match) => match[1]), ['ルール', 'プライバシーポリシー']);
     assert.ok(!legalLinksHtml.includes('target="_blank"'));
     assert.ok(!legalLinksHtml.includes('download'));
+    const unsafeHrefPattern = /^(?:https?:)?\/\/|^javascript:|^data:/i;
+    for (const href of [...html.matchAll(/href="([^"]+)"/g)].map((match) => match[1])) {
+        assert.ok(!unsafeHrefPattern.test(href));
+    }
     assert.strictEqual(countMatches(rules, /<main class="static-page-content">/g), 1);
     assert.strictEqual(countMatches(privacy, /<main class="static-page-content">/g), 1);
     assert.strictEqual(countMatches(rules, /<h1>/g), 1);
@@ -1940,6 +1949,11 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.deepStrictEqual(getHrefs(privacy), ['/', 'rules.html', 'style.css']);
     assert.ok(!privacy.includes('adsbygoogle.js'));
     assert.ok(!rules.includes('adsbygoogle.js'));
+    for (const publicPageSource of [html, rules, privacy]) {
+        assert.ok(!/<ins[^>]+class="[^"]*adsbygoogle/i.test(publicPageSource));
+        assert.ok(!/data-ad-client=/i.test(publicPageSource));
+        assert.ok(!/data-ad-slot=/i.test(publicPageSource));
+    }
     assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
     assert.ok(sw.includes("'/js/adSlots.js'"));
     assert.ok(sw.includes("'/privacy.html'"));
