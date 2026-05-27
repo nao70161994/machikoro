@@ -1665,8 +1665,8 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
             file: 'rules.html',
             title: 'ルール - ダイスシティ',
             type: 'article',
-            description: 'ダイスシティの基本ルール。アカウント登録なしのはじめ方、勝利条件、カード選択、保存と再開、ターンの流れ、カードの色、ランドマークを説明します。',
-            previewDescription: 'アカウント登録なしのはじめ方、勝利条件、カード選択、保存と再開、ターンの流れ、カードの色、ランドマークなど、ダイスシティの基本ルールを説明します。'
+            description: 'ダイスシティの基本ルール。アカウント登録なしのはじめ方、勝利条件、カード選択、施設とランドマーク建設、保存と再開を説明します。',
+            previewDescription: 'アカウント登録なしのはじめ方、勝利条件、カード選択、施設とランドマーク建設、保存と再開など、ダイスシティの基本ルールを説明します。'
         },
         {
             file: 'privacy.html',
@@ -1911,7 +1911,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         getMetaContentFromPage(rules, /<meta name="twitter:description" content="([^"]+)">/)
     ];
     for (const metaDescription of rulesMetaDescriptions) {
-        for (const keyword of ['勝利条件', 'カード選択', '保存と再開']) {
+        for (const keyword of ['勝利条件', 'カード選択', '施設とランドマーク建設', '保存と再開']) {
             assert.ok(metaDescription.includes(keyword));
             assert.ok(rules.includes(keyword));
         }
