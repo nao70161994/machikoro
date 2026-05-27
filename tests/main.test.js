@@ -1944,6 +1944,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('same-origin relative paths'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
     assert.ok(releaseChecklist.includes('OGP and PWA icon metadata sizes stay aligned with the 512x512 and 192x192 PNG assets'));
+    assert.ok(releaseChecklist.includes('manifest `id`, `start_url`, language, display mode, theme colors, and portrait orientation stay stable'));
     assert.ok(releaseChecklist.includes('`og:site_name`, `og:type`, and `twitter:card` stay stable'));
     assert.ok(releaseChecklist.includes('exactly one charset, one viewport, one HTML title, one `robots` meta with `index,follow`, and one shared `style.css` stylesheet'));
     assert.ok(releaseChecklist.includes('review-period external CSS hosts'));
