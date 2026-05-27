@@ -2063,6 +2063,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(docs.includes('## AdSense 審査中の禁止事項'));
     assert.ok(docs.includes('## 審査後に SDK を入れるときの注意'));
     assert.ok(docs.includes('AdSense 審査中の placeholder-only 状態では、SDK 未導入でも console error なしで起動する'));
+    assert.ok(docs.includes('AdSense 審査中の docs/static 変更では `git diff --check`, `node tests/main.test.js`, `npm run test:static` が通る'));
+    assert.ok(docs.includes('審査後に広告 SDK や広告実装を変更する場合は、追加で `npm run test:smoke`, `npm test` も通す'));
     assert.ok(docs.includes('AdSense 審査中は新しい広告 slot'));
     assert.ok(docs.includes('SDK adapter、広告位置変更、広告拡張を追加しない'));
     assert.ok(docs.includes('広告計画は `AdSense Review Change Policy` の例外ではない'));

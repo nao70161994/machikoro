@@ -39,4 +39,5 @@
 - 勝利リザルト統計の下に `result-bottom` が表示される。
 - 対戦中の `#gameScreen` 操作パネル、建設メニュー、pending modal 周辺には広告枠がない。
 - AdSense 審査中の placeholder-only 状態では、SDK 未導入でも console error なしで起動する。
-- `npm run test:static`, `npm run test:smoke`, `npm test` が通る。
+- AdSense 審査中の docs/static 変更では `git diff --check`, `node tests/main.test.js`, `npm run test:static` が通る。
+- 審査後に広告 SDK や広告実装を変更する場合は、追加で `npm run test:smoke`, `npm test` も通す。
