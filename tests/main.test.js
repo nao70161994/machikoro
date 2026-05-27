@@ -1789,6 +1789,8 @@ runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () =
     assert.strictEqual(matches.length, 1);
     assert.ok(head.includes(matches[0][0]));
     assert.ok(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8683516545883768"[\s\S]*crossorigin="anonymous"><\/script>/.test(matches[0][0]));
+    const externalScriptSrcs = [...html.matchAll(/<script[^>]+src="(https?:\/\/[^"]+)"/g)].map((match) => match[1]);
+    assert.deepStrictEqual(externalScriptSrcs, ['https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8683516545883768']);
 });
 runTest('広告 placeholder は許可された画面だけに配置される', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
