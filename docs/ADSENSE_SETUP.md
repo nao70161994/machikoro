@@ -161,7 +161,7 @@ The AdSense review loader is installed. Keep it in `index.html` inside `<head>`,
 </head>
 ```
 
-Follow-up implementation rules:
+After review, if real ad units or an SDK adapter are intentionally added, follow these implementation rules:
 
 - Keep SDK loading isolated in `js/adSlots.js` or a small adapter called from it.
 - Do not place ad units near gameplay controls, pending choices, online reconnect, or Undo.
