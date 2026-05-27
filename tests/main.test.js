@@ -1724,6 +1724,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
     assert.deepStrictEqual([...legalLinksHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ['rules.html', 'privacy.html']);
+    assert.deepStrictEqual([...legalLinksHtml.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map((match) => match[1]), ['ルール', 'プライバシーポリシー']);
     assert.strictEqual(countMatches(rules, /<main class="static-page-content">/g), 1);
     assert.strictEqual(countMatches(privacy, /<main class="static-page-content">/g), 1);
     assert.strictEqual(countMatches(rules, /<h1>/g), 1);
