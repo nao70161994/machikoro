@@ -1628,6 +1628,8 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.strictEqual((head.match(/<meta name="robots"/g) || []).length, 1);
         assert.ok(head.includes('<meta name="robots" content="index,follow">'));
         assert.ok(!head.includes('noindex'));
+        assert.ok(!head.includes('machikoro-9jv2.onrender.com'));
+        assert.ok(!head.includes('localhost'));
         const getMetaContent = (pattern) => {
             const match = head.match(pattern);
             assert.ok(match, 'missing meta in ' + page.file + ': ' + pattern);
@@ -1924,6 +1926,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
     assert.ok(adsenseSetup.includes('their description / OGP / Twitter metadata matches the current privacy and rule-page wording'));
+    assert.ok(adsenseSetup.includes('does not hardcode staging origins or localhost into preview tags'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/privacy.html"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/rules.html"'));
