@@ -200,7 +200,7 @@ event=play-finish
 mode=local
 players=4
 cpu=3
-winner=CPU Strong
+winnerDifficulty=strong
 turn=14
 ```
 

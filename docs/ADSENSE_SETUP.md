@@ -54,7 +54,7 @@ curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E 'property="og:image" content="
 curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
-curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
+curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|ゲーム開始や終了|プレイヤー名|再接続トークン|カード一覧|保存データ全体|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 ```
 
 Negative checks for review-mode URL metadata and public-page link hints on all public pages:
@@ -97,7 +97,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm `privacy.html` mentions that normal play does not require account registration or email address input, plus local browser storage, online room data, client error reporting, lifecycle notification privacy, error notification exclusions, AdSense review script / future ad unit / Cookie usage, contact guidance, and the last updated date.
 - Confirm `privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, AdSense review, and ads so shared previews do not show stale privacy-page content.
 - Confirm `rules.html` describes how to start a local or online game, card selection, facility and landmark construction, save/resume behavior, plus the win condition, turn flow, card colors, activation order, landmarks, and the last updated date.
-- Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, and save/resume, so shared previews do not show stale rule-page content.
+- Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, facility and landmark construction, and save/resume, so shared previews do not show stale rule-page content.
 - Confirm `privacy.html` and `rules.html` remain static explanation pages without page scripts, forms, buttons, `dialog` / `details` / `summary`, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader.
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, `og:image` and `twitter:image` both point to `/icons/icon-512.png`, image alt text is present, and the referenced PNG assets remain 512x512 and 192x192 as advertised by metadata and manifests.
   Preview image metadata should stay same-origin relative rather than using an external image host.

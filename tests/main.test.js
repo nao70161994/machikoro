@@ -2033,6 +2033,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('完全なスナップショット'));
     assert.ok(privacy.includes('ゲーム開始や終了を知らせる簡単な通知'));
     assert.ok(privacy.includes('プレイヤー名、ルームコード、再接続トークン'));
+    assert.ok(privacy.includes('カード一覧'));
     assert.ok(privacy.includes('保存データ全体は含めません'));
     assert.ok(privacy.includes('ブラウザのサイトデータ削除'));
     assert.ok(privacy.includes('アプリ内の保存データ削除操作'));
@@ -2191,7 +2192,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('外部接続方針変更'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
-    assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明'));
+    assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明を伝え、本文は lifecycle通知のプライバシーも説明します'));
     assert.ok(readme.includes('rules.html` は勝利条件、施設とランドマークの建設、遊び方を公開 URL で確認できる'));
     assert.ok(readme.includes('施設とランドマークの建設'));
     assert.ok(readme.includes('公開ページは `robots` メタを `index,follow` に保ちます'));
@@ -2244,7 +2245,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('Keep `og:site_name`, `og:type`, and `twitter:card` stable'));
     assert.ok(adsenseSetup.includes('登録不要 / no-registration play'));
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
-    assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
+    assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, facility and landmark construction, and save/resume'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('remain static explanation pages without page scripts, forms, buttons, `dialog` / `details` / `summary`, extra `src` asset loads, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, automatic redirects / meta refresh, ad placeholders, or an AdSense loader'));
     assert.ok(adsenseSetup.includes('<dialog|<details|<summary'));
@@ -2265,6 +2266,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録'));
+    assert.ok(adsenseSetup.includes('ゲーム開始や終了|プレイヤー名|再接続トークン|カード一覧|保存データ全体'));
     assert.ok(adsenseSetup.includes('実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description'));
     assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata and public-page link hints on all public pages'));
     assert.ok(adsenseSetup.includes('canonical([[:space:]]|'));
@@ -2359,9 +2361,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('npm run test:static'));
     assert.ok(operations.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(operations.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
+    assert.ok(operations.includes('lifecycle notification privacy'));
     assert.ok(operations.includes('rules.html` explains the win condition'));
     assert.ok(operations.includes('OGP/Twitter rule-page metadata current'));
-    assert.ok(operations.includes('contact guidance and the last updated date'));
+    assert.ok(operations.includes('lifecycle notification privacy, contact guidance, and the last updated date'));
     assert.ok(operations.includes('match the allowed-placement policy in `docs/ADS_PLAN.md`'));
 });
 
