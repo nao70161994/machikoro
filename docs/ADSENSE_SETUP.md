@@ -57,7 +57,7 @@ done
 echo "Static explanation page negative checks passed"
 ```
 
-Do not submit to AdSense if any of the public pages return an error, redirect unexpectedly, show stale content from a previous deployment, or fail the negative checks above.
+Do not submit to AdSense or treat a review-period public-page recheck as passing if any public page returns an error, redirects unexpectedly, shows stale content from a previous deployment, or fails the negative checks above.
 
 ## 2. Privacy / Rules Navigation
 
