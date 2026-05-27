@@ -2152,6 +2152,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('Static explanation page negative checks passed'));
     assert.ok(releaseChecklist.includes('Public page URL metadata and public-page link hint checks passed'));
     assert.ok(releaseChecklist.includes('Local OGP/PWA icon dimension checks passed'));
+    assert.ok(releaseChecklist.includes('review-period static-page CSS expectations are locked by the public-page assertions in `node tests/main.test.js`'));
+    assert.ok(releaseChecklist.includes('intentional review-period copy or shared CSS change'));
     assert.ok(releaseChecklist.includes('CI green does not cover the full local automated gate above'));
     assert.ok(releaseChecklist.includes('Unknown notification fixes, CI failure fixes, and minor shared CSS are emergency exceptions only when needed to preserve review stability'));
     assert.ok(releaseChecklist.includes('rules.html'));
@@ -2387,6 +2389,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('npm run test:static'));
     assert.ok(operations.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(operations.includes('privacy-page metadata mentions error reporting / lifecycle notifications / AdSense review / ad topics'));
+    assert.ok(operations.includes('If shared `style.css` changes during review, check `privacy.html` and `rules.html` at narrow mobile width'));
     assert.ok(operations.includes('lifecycle notification privacy'));
     assert.ok(operations.includes('rules.html` explains the win condition'));
     assert.ok(operations.includes('OGP/Twitter rule-page metadata current'));
