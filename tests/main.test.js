@@ -2216,6 +2216,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
     assert.ok(handoff.includes('AdSense Review Change Policy'));
+    assert.ok(handoff.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
+    assert.ok(handoff.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
+    assert.ok(handoff.includes('実広告ユニット、SDK adapter は避ける'));
     assert.ok(handoff.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(handoff.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
     assert.ok(handoff.includes('URL 方針または外部接続方針の変更'));
