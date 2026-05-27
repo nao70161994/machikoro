@@ -96,7 +96,7 @@ Use this when a device appears to run old JS, misses a fix, or reports stale-cli
 
 1. Check server version:
 
-   `curl -s <PUBLIC_ORIGIN>/api/version`
+   `curl -fsS <PUBLIC_ORIGIN>/api/version`
 
 2. Check browser version:
 
