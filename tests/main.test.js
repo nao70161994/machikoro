@@ -2345,6 +2345,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(handoff.includes('docs/static 変更でも URL/PWA/広告位置/ルール/広範な UI 挙動を変えない'));
     assert.ok(handoff.includes('unknown通知修正、CI失敗修正、軽微CSSの緊急例外も `docs/OPERATIONS.md` の条件内で扱う'));
     assert.ok(handoff.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ、実広告ユニット、SDK adapter、広告位置変更、広告拡張を追加しない'));
+    assert.ok(handoff.includes('`index.html` head の AdSense 審査 loader は1つだけ維持'));
+    assert.ok(handoff.includes('追加 loader や live ad unit を入れない'));
     assert.ok(handoff.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(handoff.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
     assert.ok(handoff.includes('URL 方針または外部接続方針の変更'));
