@@ -2158,7 +2158,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('do not add public-page link hints such as `preconnect`, `dns-prefetch`, `preload`, or `modulepreload`'));
     assert.ok(releaseChecklist.includes('public-page tests currently lock those external connection hints out'));
     assert.ok(releaseChecklist.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
-    assert.ok(releaseChecklist.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
+    assert.ok(releaseChecklist.includes('privacy-page metadata mentions error reporting / lifecycle notifications / AdSense review / ad topics'));
     assert.ok(releaseChecklist.includes('pointer-events: none'));
     assert.ok(releaseChecklist.includes('no in-game ad slot'));
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
@@ -2224,7 +2224,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('last updated date'));
     assert.ok(adsenseSetup.includes('lifecycle notification privacy'));
     assert.ok(adsenseSetup.includes('error notification exclusions'));
-    assert.ok(adsenseSetup.includes('privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, AdSense review, and ads'));
+    assert.ok(adsenseSetup.includes('privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, start/finish lifecycle notifications, AdSense review, and ads'));
     assert.ok(adsenseSetup.includes('stale privacy-page content'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
@@ -2363,7 +2363,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('node tests/main.test.js'));
     assert.ok(operations.includes('npm run test:static'));
     assert.ok(operations.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
-    assert.ok(operations.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
+    assert.ok(operations.includes('privacy-page metadata mentions error reporting / lifecycle notifications / AdSense review / ad topics'));
     assert.ok(operations.includes('lifecycle notification privacy'));
     assert.ok(operations.includes('rules.html` explains the win condition'));
     assert.ok(operations.includes('OGP/Twitter rule-page metadata current'));
