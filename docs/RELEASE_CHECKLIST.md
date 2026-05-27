@@ -140,7 +140,7 @@ Regression test index:
 
 ## Public Preflight Summary
 
-Before public traffic, AdSense review, or broader PWA install testing, confirm this short list in addition to the automated gate:
+Before public traffic, AdSense review submission/recheck, ads after review, or broader PWA install testing, confirm this short list in addition to the automated gate:
 
 - `privacy.html` and `rules.html` are reachable from the title screen and mention account-free play, local storage / online room data / client error reporting, error notification exclusions / AdSense review script and ad provider data, contact guidance, and the last updated date as applicable.
 - `privacy.html` and `rules.html` remain static explanation pages: no page script, form, button, `dialog` / `details` / `summary`, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader is added to either public page.
