@@ -468,7 +468,7 @@ RL スクリプト / モデル:
 - 通知分類、CI失敗、stale client、PWA更新、公開前確認の運用手順は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) を参照してください。
 - AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を優先してください。
 - AdSense 審査提出前の公開 URL 確認は [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md) を参照してください。
-- AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`rules.html` は勝利条件と遊び方を公開 URL で確認できる前提です。
+- AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明を伝えます。`rules.html` は勝利条件と遊び方を公開 URL で確認できる前提です。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
 - Android 向けには `.github/workflows/build-apk.yml` で TWA APK をビルドします。
 
