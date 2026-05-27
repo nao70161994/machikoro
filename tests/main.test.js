@@ -2218,6 +2218,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('pagead2.googlesyndication.com'));
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(adsenseSetup.includes('After review, if real ad units or an SDK adapter are intentionally added'));
+    assert.ok(adsenseSetup.includes('after any post-review ad SDK/unit change or intentional public-page metadata/copy change'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
     assert.ok(handoff.includes('AdSense Review Change Policy'));
     assert.ok(handoff.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
