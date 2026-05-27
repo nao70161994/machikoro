@@ -48,6 +48,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, `og:image` and `twitter:image` both point to `/icons/icon-512.png`, image alt text is present, and the PWA manifests and Apple touch icon still reference `/icons/icon-192.png`.
   Preview image metadata should stay same-origin relative rather than using an external image host.
 - Confirm public HTML metadata does not hardcode staging origins or localhost into preview tags; use the deployed URL only in external submission forms and command examples.
+- Keep each public-page description / OGP / Twitter description concise enough for search and share previews; the automated test keeps them at 160 characters or less.
 
 The in-app rules modal can remain available, but AdSense review should have direct public URLs for both privacy and rules.
 

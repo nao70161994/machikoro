@@ -1659,6 +1659,9 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.ok(!/^https?:\/\//.test(twitterImage));
         const previewDescriptions = [description, ogDescription, twitterDescription];
         assert.ok(description.length > 20);
+        assert.ok(description.length <= 160);
+        assert.ok(ogDescription.length <= 160);
+        assert.ok(twitterDescription.length <= 160);
         assert.ok(head.includes('<meta property="og:site_name" content="ダイスシティ">'));
         assert.ok(head.includes(`<meta property="og:type" content="${page.type}">`));
         assert.ok(head.includes(`<meta property="og:title" content="${page.title}">`));
@@ -1939,6 +1942,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
+    assert.ok(adsenseSetup.includes('Keep each public-page description / OGP / Twitter description concise'));
     assert.ok(adsenseSetup.includes('登録不要 / no-registration play'));
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
     assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
