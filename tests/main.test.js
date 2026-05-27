@@ -2233,7 +2233,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('if [ "$status" != "200" ]; then'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/icons/icon-192.png` and `<PUBLIC_ORIGIN>/icons/icon-512.png'));
-    assert.ok(adsenseSetup.includes('OGP/PWA icon PNGs are reachable and match the advertised sizes'));
+    assert.ok(adsenseSetup.includes('OGP/PWA icon PNGs are reachable from the public origin; local dimension checks below verify they match the advertised sizes'));
     assert.ok(adsenseSetup.includes('Local icon dimension check before deploy'));
     assert.ok(adsenseSetup.includes('Local OGP/PWA icon dimension checks passed'));
     assert.ok(adsenseSetup.includes("struct.unpack('>II', data[16:24])"));
@@ -2300,7 +2300,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(adsenseSetup.includes('Submission fixes during review must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`'));
     assert.ok(adsenseSetup.includes('Before clicking submit in AdSense or after review-period public-page changes'));
-    assert.ok(adsenseSetup.includes('/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin'));
+    assert.ok(adsenseSetup.includes('/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin; the local dimension check confirms'));
     assert.ok(adsenseSetup.includes('Local OGP/PWA icon dimension checks pass for `icons/icon-192.png` and `icons/icon-512.png` before deploy'));
     assert.ok(adsenseSetup.includes('manifest / OGP advertised sizes'));
     assert.ok(adsenseSetup.includes('stale-client handling has been checked by comparing `/api/version` with `window.MACHIKORO_CLIENT_VERSION`'));

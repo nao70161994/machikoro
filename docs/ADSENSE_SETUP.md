@@ -10,7 +10,7 @@ Open these URLs in a normal browser window and in a private/incognito window:
 - `<PUBLIC_ORIGIN>/privacy.html`: privacy policy is public, indexable, and links back to the game and rules page.
 - `<PUBLIC_ORIGIN>/rules.html`: rules page is public, indexable, and links back to the game and privacy policy.
 - `<PUBLIC_ORIGIN>/manifest.json` and `<PUBLIC_ORIGIN>/manifest.webmanifest`: PWA manifests return JSON.
-- `<PUBLIC_ORIGIN>/icons/icon-192.png` and `<PUBLIC_ORIGIN>/icons/icon-512.png`: OGP/PWA icon PNGs are reachable and match the advertised sizes.
+- `<PUBLIC_ORIGIN>/icons/icon-192.png` and `<PUBLIC_ORIGIN>/icons/icon-512.png`: OGP/PWA icon PNGs are reachable from the public origin; local dimension checks below verify they match the advertised sizes.
 - `<PUBLIC_ORIGIN>/sw.js`: Service Worker script returns JavaScript and includes the current app shell cache list.
 - `<PUBLIC_ORIGIN>/api/version`: returns the deployed build/version metadata.
 
@@ -206,7 +206,7 @@ Before clicking submit in AdSense or after review-period public-page changes:
 - Local OGP/PWA icon dimension checks pass for `icons/icon-192.png` and `icons/icon-512.png` before deploy.
 - The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
 - `privacy.html` and `rules.html` are reachable from the public origin, and their description / OGP / Twitter metadata matches the current privacy and rule-page wording.
-- `/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin and still match the manifest / OGP advertised sizes.
+- `/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin; the local dimension check confirms they still match the manifest / OGP advertised sizes.
 - AdSense review code is installed exactly once, ad surfaces remain placeholder-only, and live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent until real ad units are intentionally configured after review.
 - PWA cache contains the public pages and ad placeholder helper, and stale-client handling has been checked by comparing `/api/version` with `window.MACHIKORO_CLIENT_VERSION` plus the update banner / cache-clearing fallback.
 - ntfy real notification delivery has been confirmed, the temporary test endpoint flag has been removed, and `NTFY_TOPIC` is not public or guessable.
