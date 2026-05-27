@@ -2257,6 +2257,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('index.html'));
     assert.ok(adsenseSetup.includes('Submission fixes during review must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`'));
     assert.ok(adsenseSetup.includes('Before clicking submit in AdSense or after review-period public-page changes'));
+    assert.ok(adsenseSetup.includes('/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin'));
+    assert.ok(adsenseSetup.includes('manifest / OGP advertised sizes'));
     assert.ok(adsenseSetup.includes('do not use submission cleanup as a reason to change UI flow, ad placement, PWA behavior, URLs, game rules, or broad architecture'));
     assert.ok(adsenseSetup.includes('After review, if real ad units or an SDK adapter are intentionally added'));
     assert.ok(adsenseSetup.includes('after any post-review ad SDK/unit change or intentional public-page metadata/copy change'));
