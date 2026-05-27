@@ -1472,6 +1472,8 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(rules.includes('<title>ルール - ダイスシティ</title>'));
     assert.strictEqual(manifest.name, 'ダイスシティ');
     assert.strictEqual(manifest.short_name, 'ダイスシティ');
+    assert.strictEqual(manifest.description, 'ダイスシティ - オンライン・オフライン対応のブラウザボードゲーム');
+    assert.strictEqual(manifest.lang, 'ja');
     assert.strictEqual(manifest.start_url, '/');
     assert.strictEqual(manifest.display, 'standalone');
     assert.deepStrictEqual(manifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
@@ -1480,6 +1482,8 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(manifest.icons.every((icon) => icon.purpose === 'any maskable'));
     assert.strictEqual(webmanifest.name, 'ダイスシティ');
     assert.strictEqual(webmanifest.short_name, 'ダイスシティ');
+    assert.strictEqual(webmanifest.description, 'ダイスシティ - オンライン・オフライン対応のブラウザボードゲーム');
+    assert.strictEqual(webmanifest.lang, 'ja');
     assert.strictEqual(webmanifest.start_url, '/');
     assert.strictEqual(webmanifest.display, 'standalone');
     assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
