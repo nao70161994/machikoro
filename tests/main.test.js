@@ -1749,8 +1749,15 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(!rules.includes('<script'));
     assert.ok(!privacy.includes(' style='));
     assert.ok(!rules.includes(' style='));
-    assert.ok(!privacy.includes('data-ui-action'));
-    assert.ok(!rules.includes('data-ui-action'));
+    for (const staticPage of [privacy, rules]) {
+        assert.ok(!staticPage.includes('data-ui-action'));
+        assert.ok(!staticPage.includes('<button'));
+        assert.ok(!staticPage.includes('<input'));
+        assert.ok(!staticPage.includes('<select'));
+        assert.ok(!staticPage.includes('<textarea'));
+        assert.ok(!staticPage.includes('<form'));
+        assert.ok(!staticPage.includes('role="button"'));
+    }
     assert.ok(!privacy.includes('adsbygoogle.js'));
     assert.ok(!rules.includes('adsbygoogle.js'));
     assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
