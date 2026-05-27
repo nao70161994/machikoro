@@ -1882,7 +1882,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('contact guidance'));
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
-    assert.ok(releaseChecklist.includes('no page script, form, button, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, ad placeholder, or AdSense loader'));
+    assert.ok(releaseChecklist.includes('no page script, form, button, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, ad placeholder, or AdSense loader'));
     assert.ok(releaseChecklist.includes('rules.html'));
     assert.ok(releaseChecklist.includes('explains the win condition'));
     assert.ok(releaseChecklist.includes('card selection works'));
@@ -1930,7 +1930,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
     assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
-    assert.ok(adsenseSetup.includes('remain static explanation pages without page scripts, forms, buttons, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, ad placeholders, or an AdSense loader'));
+    assert.ok(adsenseSetup.includes('remain static explanation pages without page scripts, forms, buttons, embedded media elements, inline event handlers, app `id`/`data-*` attributes, `data-ui-action`, ad placeholders, or an AdSense loader'));
     assert.ok(adsenseSetup.includes('`og:image` and `twitter:image` both point to `/icons/icon-512.png`'));
     assert.ok(adsenseSetup.includes('image alt text is present'));
     assert.ok(adsenseSetup.includes('Apple touch icon still reference `/icons/icon-192.png`'));
