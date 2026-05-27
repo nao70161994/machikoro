@@ -35,7 +35,7 @@ Negative checks for the static explanation pages:
 
 ```sh
 for page in rules.html privacy.html; do
-  curl -s "$PUBLIC_ORIGIN/$page" | grep -E "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<img|<picture|<video|<audio|<svg" && exit 1
+  curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg" && exit 1
 done
 ```
 
