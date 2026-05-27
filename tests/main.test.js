@@ -1709,6 +1709,13 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(titleAdIndex > 0);
     assert.ok(legalLinksIndex > titleAdIndex);
     assert.ok(legalLinksIndex < gameScreenIndex);
+    const countMatches = (source, pattern) => (source.match(pattern) || []).length;
+    assert.strictEqual(countMatches(rules, /<main class="static-page-content">/g), 1);
+    assert.strictEqual(countMatches(privacy, /<main class="static-page-content">/g), 1);
+    assert.strictEqual(countMatches(rules, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
+    assert.strictEqual(countMatches(privacy, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
+    assert.ok(rules.trim().endsWith('</html>'));
+    assert.ok(privacy.trim().endsWith('</html>'));
     assert.ok(rules.includes('<body class="static-page">'));
     assert.ok(rules.includes('class="static-page-links" aria-label="関連ページ"'));
     assert.ok(rules.includes('<a href="/">ゲームへ戻る</a>'));
