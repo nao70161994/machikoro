@@ -1474,10 +1474,15 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.strictEqual(manifest.short_name, 'ダイスシティ');
     assert.strictEqual(manifest.start_url, '/');
     assert.strictEqual(manifest.display, 'standalone');
+    assert.deepStrictEqual(manifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
+    assert.ok(manifest.icons.every((icon) => icon.purpose === 'any maskable'));
     assert.strictEqual(webmanifest.name, 'ダイスシティ');
     assert.strictEqual(webmanifest.short_name, 'ダイスシティ');
     assert.strictEqual(webmanifest.start_url, '/');
     assert.strictEqual(webmanifest.display, 'standalone');
+    assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
+    assert.ok(webmanifest.icons.every((icon) => icon.purpose === 'any maskable'));
+    assert.ok(html.includes('<link rel="apple-touch-icon" href="/icons/icon-192.png">'));
     assert.ok(css.includes('.title-header h1'));
     assert.ok(css.includes('font-size: clamp(24px, 9vw, 52px);'));
     assert.ok(css.includes('white-space: nowrap;'));
@@ -1668,6 +1673,7 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
     }
 
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-512.png')));
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-192.png')));
 });
 
 runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () => {
@@ -1857,12 +1863,13 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
     assert.ok(adsenseSetup.includes('image alt text'));
+    assert.ok(adsenseSetup.includes('Apple touch icon still reference `/icons/icon-192.png`'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.json"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"'));
-    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|icon-512"'));
-    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|icon-192|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|icon-192|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/sw.js"'));
     assert.ok(adsenseSetup.includes('curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"'));

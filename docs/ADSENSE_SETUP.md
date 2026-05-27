@@ -22,8 +22,8 @@ curl -fI "$PUBLIC_ORIGIN/privacy.html"
 curl -fI "$PUBLIC_ORIGIN/rules.html"
 curl -fI "$PUBLIC_ORIGIN/manifest.json"
 curl -fI "$PUBLIC_ORIGIN/manifest.webmanifest"
-curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|icon-512"
-curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|icon-512"
+curl -s "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|icon-192|icon-512"
+curl -s "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|icon-192|icon-512"
 curl -fI "$PUBLIC_ORIGIN/sw.js"
 curl -s "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -s "$PUBLIC_ORIGIN/" | grep -E "index,follow|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image:alt|twitter:image:alt"
@@ -44,7 +44,7 @@ From `<PUBLIC_ORIGIN>/`:
 - Confirm `privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, AdSense review, and ads so shared previews do not show stale privacy-page content.
 - Confirm `rules.html` describes how to start a local or online game, card selection, save/resume behavior, plus the win condition, turn flow, card colors, activation order, landmarks, and the last updated date.
 - Confirm `rules.html` description / OGP / Twitter metadata also mention account-free play, the win condition, card selection, and save/resume, so shared previews do not show stale rule-page content.
-- Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, image alt text, and use `/icons/icon-512.png` for the preview image.
+- Confirm the title, rules, and privacy pages include OGP/Twitter preview metadata, image alt text, and use `/icons/icon-512.png` for the preview image; confirm the PWA manifests and Apple touch icon still reference `/icons/icon-192.png`.
 
 The in-app rules modal can remain available, but AdSense review should have direct public URLs for both privacy and rules.
 
