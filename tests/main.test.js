@@ -1945,6 +1945,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明'));
     assert.ok(readme.includes('rules.html` は勝利条件と遊び方を公開 URL で確認できる'));
     assert.ok(readme.includes('自動遷移や meta refresh を追加しません'));
+    assert.ok(readme.includes('静的ページ CSS は共有 `style.css` に限定'));
+    assert.ok(readme.includes('外部 CSS host を追加しません'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('one charset, one viewport, and one HTML title'));
