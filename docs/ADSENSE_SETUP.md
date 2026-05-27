@@ -35,7 +35,8 @@ Negative checks for review-mode URL metadata and external connection hints on al
 
 ```sh
 for page in '' rules.html privacy.html; do
-  if curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei '<link[^>]+rel=["'"'"']canonical|<meta[^>]+(property|name)=["'"'"'](og:url|twitter:url)["'"'"']|<link[^>]+rel=["'"'"'](preconnect|dns-prefetch|preload|modulepreload)["'"'"']'; then
+  html=$(curl -s "$PUBLIC_ORIGIN/$page")
+  if printf '%s' "$html" | grep -Ei '<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?canonical([[:space:]]|["'"'"'])|<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"'](og:url|twitter:url)["'"'"']|<meta[^>]+["'"'"'](og:url|twitter:url)["'"'"'][^>]+(property|name)[[:space:]]*=|<link[^>]+rel[[:space:]]*=[[:space:]]*["'"'"']([^"'"'"']*[[:space:]])?(preconnect|dns-prefetch|preload|modulepreload)([[:space:]]|["'"'"'])'; then
     echo "Unexpected URL metadata or external connection hint found in /$page"
     exit 1
   fi
@@ -47,7 +48,8 @@ Negative checks for the static explanation pages:
 
 ```sh
 for page in rules.html privacy.html; do
-  if curl -s "$PUBLIC_ORIGIN/$page" | grep -Ei '<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action| id=| style=| src=|role="button"| on[a-z]+='; then
+  html=$(curl -s "$PUBLIC_ORIGIN/$page")
+  if printf '%s' "$html" | grep -Ei '<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|data-ad-client[[:space:]]*=|data-ad-slot[[:space:]]*=|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action|[[:space:]]id[[:space:]]*=|[[:space:]]style[[:space:]]*=|[[:space:]]src[[:space:]]*=|role[[:space:]]*=[[:space:]]*"button"|[[:space:]]on[a-z]+[[:space:]]*='; then
     echo "Unexpected active or embedded content found in $page"
     exit 1
   fi
