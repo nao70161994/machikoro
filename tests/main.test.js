@@ -1863,6 +1863,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!getHtmlTags(publicPageSource, 'link').some((tag) => tagHasRelToken(tag, ['canonical'])));
         assert.ok(!getHtmlTags(publicPageSource, 'meta').some((tag) => tagHasNameOrProperty(tag, ['og:url', 'twitter:url'])));
         assert.ok(!getHtmlTags(publicPageSource, 'link').some((tag) => tagHasRelToken(tag, ['preconnect', 'dns-prefetch', 'preload', 'modulepreload'])));
+        assert.ok(!getHtmlTags(publicPageSource, 'link').some((tag) => tagHasRelToken(tag, ['stylesheet']) && /^https?:\/\//i.test(getAttrValue(tag, 'href'))));
     }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
