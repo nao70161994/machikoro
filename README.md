@@ -466,7 +466,7 @@ RL スクリプト / モデル:
 - Render での稼働を前提にしています。
 - Render 環境変数、ntfy、広告 placeholder、PWA、CI のリリース前確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) を参照してください。
 - 通知分類、CI失敗、stale client、PWA更新、公開前確認の運用手順は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) を参照してください。
-- AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を優先してください。審査中は docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS 以外の大きな変更を避けます。docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static` を確認します。
+- AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を優先してください。審査中は docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS に限定し、UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタは緊急対応以外では行いません。docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static` を確認します。
 - AdSense 審査提出前の公開 URL 確認は [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md) を参照してください。
 - AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明を伝えます。`rules.html` は勝利条件と遊び方を公開 URL で確認できる前提です。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
