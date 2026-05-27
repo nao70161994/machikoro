@@ -1798,6 +1798,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+    const adSlotsSource = fs.readFileSync(path.join(__dirname, '..', 'js/adSlots.js'), 'utf8');
     const docs = fs.readFileSync(path.join(__dirname, '..', 'docs/ADS_PLAN.md'), 'utf8');
     const releaseChecklist = fs.readFileSync(path.join(__dirname, '..', 'docs/RELEASE_CHECKLIST.md'), 'utf8');
     const adsenseSetup = fs.readFileSync(path.join(__dirname, '..', 'docs/ADSENSE_SETUP.md'), 'utf8');
@@ -1811,6 +1812,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.deepStrictEqual(Object.keys(AD_SLOT_CONFIGS).sort(), ['result-bottom', 'rules-bottom', 'title-bottom']);
     assert.ok(html.includes('id="adSlotTitleBottom" class="ad-slot-host" data-ad-slot-host="title-bottom"'));
     assert.ok(html.includes('id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"'));
+    assert.deepStrictEqual([...html.matchAll(/data-ad-slot-host="([^"]+)"/g)].map((match) => match[1]), ['title-bottom', 'rules-bottom']);
     assert.ok(html.includes('href="privacy.html"'));
     assert.ok(html.includes('href="rules.html"'));
     const titleAdIndex = html.indexOf('id="adSlotTitleBottom"');
@@ -1821,12 +1823,28 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(legalLinksIndex < gameScreenIndex);
     const countMatches = (source, pattern) => (source.match(pattern) || []).length;
     assert.strictEqual(countMatches(html, /<nav class="legal-links" aria-label="サイト情報">/g), 1);
+    const getHtmlTags = (pageSource, tagName) => [...pageSource.matchAll(new RegExp('<' + tagName + '\\b[^>]*>', 'gi'))].map((match) => match[0]);
+    const getAttrValue = (tagSource, attrName) => {
+        const quoted = tagSource.match(new RegExp("\\s" + attrName + "\\s*=\\s*([\"'])(.*?)\\1", "i"));
+        if (quoted) return quoted[2];
+        const unquoted = tagSource.match(new RegExp("\\s" + attrName + "\\s*=\\s*([^\\s>]+)", "i"));
+        return unquoted ? unquoted[1] : '';
+    };
+    const tagHasRelToken = (tagSource, forbiddenTokens) => {
+        const rel = getAttrValue(tagSource, 'rel').toLowerCase();
+        return rel.split(/\s+/).some((token) => forbiddenTokens.includes(token));
+    };
+    const tagHasNameOrProperty = (tagSource, forbiddenValues) => {
+        const values = [getAttrValue(tagSource, 'name'), getAttrValue(tagSource, 'property')]
+            .map((value) => value.toLowerCase());
+        return values.some((value) => forbiddenValues.includes(value));
+    };
     for (const publicPageSource of [html, rules, privacy]) {
-        assert.ok(!/<meta[^>]+http-equiv=["']?refresh/i.test(publicPageSource));
+        assert.ok(!/<meta[^>]+http-equiv\s*=\s*["']?refresh/i.test(publicPageSource));
         assert.ok(!/<base\b/i.test(publicPageSource));
-        assert.ok(!/<link[^>]+rel=["']canonical/i.test(publicPageSource));
-        assert.ok(!/<meta[^>]+(?:property|name)=["'](?:og:url|twitter:url)["']/i.test(publicPageSource));
-        assert.ok(!/<link[^>]+rel=["'](?:preconnect|dns-prefetch|preload|modulepreload)["']/i.test(publicPageSource));
+        assert.ok(!getHtmlTags(publicPageSource, 'link').some((tag) => tagHasRelToken(tag, ['canonical'])));
+        assert.ok(!getHtmlTags(publicPageSource, 'meta').some((tag) => tagHasNameOrProperty(tag, ['og:url', 'twitter:url'])));
+        assert.ok(!getHtmlTags(publicPageSource, 'link').some((tag) => tagHasRelToken(tag, ['preconnect', 'dns-prefetch', 'preload', 'modulepreload'])));
     }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
@@ -1968,6 +1986,14 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!/data-ad-client=/i.test(publicPageSource));
         assert.ok(!/data-ad-slot=/i.test(publicPageSource));
     }
+    const liveAdUnitSources = [adSlotsSource, renderAdSlot('title-bottom'), renderAdSlot('rules-bottom'), renderAdSlot('result-bottom')];
+    for (const liveAdUnitSource of liveAdUnitSources) {
+        assert.ok(!/<ins[^>]+class="[^"]*adsbygoogle/i.test(liveAdUnitSource));
+        assert.ok(!/data-ad-client=/i.test(liveAdUnitSource));
+        assert.ok(!/data-ad-slot=/i.test(liveAdUnitSource));
+        assert.ok(!/ca-pub-/i.test(liveAdUnitSource));
+        assert.ok(!/pagead2\.googlesyndication\.com/i.test(liveAdUnitSource));
+    }
     assert.ok(html.includes('<script src="js/adSlots.js"></script>'));
     assert.ok(sw.includes("'/js/adSlots.js'"));
     assert.ok(sw.includes("'/privacy.html'"));
@@ -2029,6 +2055,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(docs.includes('AdSense / AdMob'));
     assert.ok(docs.includes('AdSense 審査中は新しい広告 slot'));
     assert.ok(docs.includes('SDK adapter、広告位置変更を追加しない'));
+    assert.ok(docs.includes('実広告ユニット'));
+    assert.ok(docs.includes('data-ad-client'));
+    assert.ok(docs.includes('data-ad-slot'));
     assert.ok(docs.includes('AdSense Review Change Policy'));
     assert.ok(docs.includes('`title-bottom`'));
     assert.ok(docs.includes('`rules-bottom`'));
@@ -2086,6 +2115,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
     assert.ok(readme.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
     assert.ok(readme.includes('UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタ'));
+    assert.ok(readme.includes('実広告ユニット'));
+    assert.ok(readme.includes('SDK adapter'));
     assert.ok(readme.includes('docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static`'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('AdSense 審査前の公開 URL 確認'));
