@@ -1846,7 +1846,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('explains the win condition'));
     assert.ok(releaseChecklist.includes('card selection works'));
     assert.ok(releaseChecklist.includes('save/resume works'));
-    assert.ok(releaseChecklist.includes('/icons/icon-512.png'));
+    assert.ok(releaseChecklist.includes('both `og:image` and `twitter:image` pointing to `/icons/icon-512.png`'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
     assert.ok(releaseChecklist.includes('title page and rule-page metadata mention 登録不要 / no-registration play'));
     assert.ok(releaseChecklist.includes('privacy-page metadata mentions error reporting / AdSense review / ad topics'));
@@ -1889,7 +1889,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
     assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
     assert.ok(adsenseSetup.includes('shared previews do not show stale rule-page content'));
-    assert.ok(adsenseSetup.includes('image alt text'));
+    assert.ok(adsenseSetup.includes('`og:image` and `twitter:image` both point to `/icons/icon-512.png`'));
+    assert.ok(adsenseSetup.includes('image alt text is present'));
     assert.ok(adsenseSetup.includes('Apple touch icon still reference `/icons/icon-192.png`'));
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
