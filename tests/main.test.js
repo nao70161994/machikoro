@@ -2170,6 +2170,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('外部 CSS host を追加しません'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('when rechecking public pages during review'));
+    assert.ok(adsenseSetup.includes('Public URL Checks After Render Deploy / During Review'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('one charset, one viewport, and one HTML title'));
     assert.ok(adsenseSetup.includes('one shared `style.css` stylesheet'));
