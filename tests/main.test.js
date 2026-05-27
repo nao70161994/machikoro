@@ -2089,6 +2089,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('大規模リファクタ'));
     assert.ok(releaseChecklist.includes('live ad units, SDK adapters, or ad expansion'));
     assert.ok(releaseChecklist.includes('docs/ADSENSE_SETUP.md'));
+    assert.ok(releaseChecklist.includes('AdSense public URL setup / review recheck'));
     assert.ok(releaseChecklist.includes('ntfy topic for browser error and lifecycle notifications'));
     assert.ok(releaseChecklist.includes('client error and lifecycle reports only write server-side warnings'));
     assert.ok(releaseChecklist.includes('privacy.html'));
