@@ -2020,6 +2020,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('広告審査中および広告表示時'));
     assert.ok(privacy.includes('Google AdSense'));
     assert.ok(privacy.includes('審査用スクリプト'));
+    assert.ok(privacy.includes('仮の表示枠（placeholder）'));
     assert.ok(privacy.includes('実際の広告ユニット'));
     assert.ok(privacy.includes('アカウント登録'));
     assert.ok(privacy.includes('メールアドレス'));
