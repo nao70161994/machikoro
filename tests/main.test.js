@@ -1818,6 +1818,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(legalLinksIndex < gameScreenIndex);
     const countMatches = (source, pattern) => (source.match(pattern) || []).length;
     assert.strictEqual(countMatches(html, /<nav class="legal-links" aria-label="サイト情報">/g), 1);
+    for (const publicPageSource of [html, rules, privacy]) {
+        assert.ok(!/<meta[^>]+http-equiv=["']?refresh/i.test(publicPageSource));
+    }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
     assert.deepStrictEqual([...legalLinksHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ['rules.html', 'privacy.html']);
