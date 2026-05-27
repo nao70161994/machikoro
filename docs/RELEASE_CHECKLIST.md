@@ -20,6 +20,10 @@ npm run test:rl
 
 CI also runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. Nightly regression runs `npm run test:release`, `npm run test:pwa`, and `npm run test:online` from `.github/workflows/nightly-release-test.yml`. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`.
 
+## AdSense Review Change Policy
+
+During review, keep release fixes inside docs, OGP wording, how-to text, unknown notification fixes, CI failure fixes, typo fixes, static test hardening, and minor shared CSS needed for review stability. Do not use release cleanup as a reason for UI大改修, 広告位置変更, PWA挙動変更, URL変更, ルール変更, 大規模リファクタ, live ad units, SDK adapters, or ad expansion.
+
 ## Render Environment Variables
 
 Required / platform-provided:

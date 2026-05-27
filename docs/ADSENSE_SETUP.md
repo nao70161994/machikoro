@@ -161,6 +161,8 @@ The AdSense review loader is installed. Keep it in `index.html` inside `<head>`,
 </head>
 ```
 
+Submission fixes during review must stay within `docs/OPERATIONS.md` の `AdSense Review Change Policy`; do not use submission cleanup as a reason to change UI flow, ad placement, PWA behavior, URLs, game rules, or broad architecture.
+
 After review, if real ad units or an SDK adapter are intentionally added, follow these implementation rules:
 
 - Keep SDK loading isolated in `js/adSlots.js` or a small adapter called from it.

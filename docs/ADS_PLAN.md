@@ -21,7 +21,8 @@
 
 ## AdSense 審査中の禁止事項
 
-- AdSense 審査中は新しい広告 slot、SDK adapter、広告位置変更を追加しない。実広告ユニット (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit id) も追加しない。審査中の変更は `docs/OPERATIONS.md` の `AdSense Review Change Policy` を優先する。
+- 広告計画は `AdSense Review Change Policy` の例外ではない。審査中は広告関連であっても UI 大改修、PWA 挙動変更、URL変更、ルール変更、大規模リファクタを行わない。
+- AdSense 審査中は新しい広告 slot、SDK adapter、広告位置変更、広告拡張を追加しない。実広告ユニット (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit id) も追加しない。審査中の変更は `docs/OPERATIONS.md` の `AdSense Review Change Policy` を優先する。
 
 ## 審査後に SDK を入れるときの注意
 
