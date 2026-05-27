@@ -2277,6 +2277,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('save/resume behavior'));
     assert.ok(adsenseSetup.includes('landmarks, and the last updated date'));
     assert.ok(adsenseSetup.includes('property="og:image" content="/icons/icon-512.png"'));
+    assert.ok(adsenseSetup.includes('property="og:image:width" content="512"'));
+    assert.ok(adsenseSetup.includes('property="og:image:height" content="512"'));
     assert.ok(adsenseSetup.includes('name="twitter:image" content="/icons/icon-512.png"'));
     assert.ok(adsenseSetup.includes('property="og:image:alt"'));
     assert.ok(adsenseSetup.includes('name="twitter:image:alt"'));

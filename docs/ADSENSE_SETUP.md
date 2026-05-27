@@ -48,9 +48,9 @@ for path in / /privacy.html /rules.html /manifest.json /manifest.webmanifest /ic
 done
 curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"
 curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"
-curl -fsS "$PUBLIC_ORIGIN/" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
-curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
-curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
+curl -fsS "$PUBLIC_ORIGIN/" | grep -E 'property="og:image" content="/icons/icon-512.png"|property="og:image:width" content="512"|property="og:image:height" content="512"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
+curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|property="og:image:width" content="512"|property="og:image:height" content="512"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
+curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|property="og:image:width" content="512"|property="og:image:height" content="512"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
 curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"
 curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
 curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|サイコロの出目|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"
