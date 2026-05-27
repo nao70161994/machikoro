@@ -2127,6 +2127,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('future ad provider data use'));
     assert.ok(releaseChecklist.includes('Cookie handling'));
     assert.ok(releaseChecklist.includes('contact guidance'));
+    assert.ok(releaseChecklist.includes('public-secret redaction guidance'));
     assert.ok(releaseChecklist.includes('last updated date'));
     assert.ok(releaseChecklist.includes('remain static explanation pages'));
     assert.ok(releaseChecklist.includes('no page script, form, button, `dialog` / `details` / `summary`, extra `src` asset load, embedded media element, inline event handler, app `id`/`data-*` attribute, `data-ui-action`, automatic redirect / meta refresh, ad placeholder, or AdSense loader'));
@@ -2223,6 +2224,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('links back to the game and privacy policy'));
     assert.ok(adsenseSetup.includes('account registration or email address'));
     assert.ok(adsenseSetup.includes('contact guidance'));
+    assert.ok(adsenseSetup.includes('public-secret redaction guidance'));
     assert.ok(adsenseSetup.includes('last updated date'));
     assert.ok(adsenseSetup.includes('lifecycle notification privacy'));
     assert.ok(adsenseSetup.includes('error notification exclusions'));
@@ -2271,7 +2273,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E "index,follow|style.css|rules.html|アカウント登録'));
     assert.ok(adsenseSetup.includes('開始終了通知|ゲーム開始や終了|プレイヤー名|再接続トークン|カード一覧|保存データ全体'));
-    assert.ok(adsenseSetup.includes('実際の広告ユニット|お問い合わせ|最終更新日: 2026-05-27|og:description'));
+    assert.ok(adsenseSetup.includes('実際の広告ユニット|お問い合わせ|秘密情報|最終更新日: 2026-05-27|og:description'));
     assert.ok(adsenseSetup.includes('Negative checks for review-mode URL metadata and public-page link hints on all public pages'));
     assert.ok(adsenseSetup.includes('canonical([[:space:]]|'));
     assert.ok(adsenseSetup.includes('(property|name)[[:space:]]*='));
@@ -2369,7 +2371,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('lifecycle notification privacy'));
     assert.ok(operations.includes('rules.html` explains the win condition'));
     assert.ok(operations.includes('OGP/Twitter rule-page metadata current'));
-    assert.ok(operations.includes('lifecycle notification privacy, contact guidance, and the last updated date'));
+    assert.ok(operations.includes('lifecycle notification privacy, contact guidance, public-secret redaction guidance, and the last updated date'));
     assert.ok(operations.includes('match the allowed-placement policy in `docs/ADS_PLAN.md`'));
 });
 
