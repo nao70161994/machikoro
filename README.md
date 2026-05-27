@@ -468,7 +468,7 @@ RL スクリプト / モデル:
 - Render での稼働を前提にしています。
 - Render 環境変数、ntfy、広告 placeholder、PWA、CI のリリース前確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md) を参照してください。
 - 通知分類、CI失敗、stale client、PWA更新、公開前確認の運用手順は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) を参照してください。
-- AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を優先してください。審査中は docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening を中心に限定し、unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外として扱います。緊急例外は unknown通知修正 / CI失敗修正 / 軽微CSS に限定し、UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタは審査中に行いません。実広告ユニット、SDK adapter、広告位置変更、広告拡張は審査後のみ扱います。docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static` を確認します。
+- AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を正本にしてください。審査中は docs/static 中心に限定し、UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ、実広告ユニット、SDK adapter、広告位置変更、広告拡張は行いません。docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static` を確認します。
 - AdSense 審査提出前 / 審査中の公開 URL 確認は [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md) を参照してください。
 - 審査提出前と審査中の公開ページ再確認では、`docs/ADSENSE_SETUP.md` の URLメタ / 外部接続ヒント確認と静的ページ負の確認を実行し、`Public page URL metadata and external connection hint checks passed` と `Static explanation page negative checks passed` で終わることを確認してください。
 - 公開ページのメタ情報、OGP/Twitter、manifest、静的ページ不変条件は `node tests/main.test.js` の公開ページ系テストで固定しています。審査中に説明文や見出しを変える場合は、docs と同じ commit で該当 assertion も更新してください。

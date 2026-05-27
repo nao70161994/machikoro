@@ -2144,11 +2144,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('unknown 通知の最優先対応'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
-    assert.ok(readme.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
-    assert.ok(readme.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
-    assert.ok(readme.includes('緊急例外は unknown通知修正 / CI失敗修正 / 軽微CSS に限定'));
-    assert.ok(readme.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ'));
-    assert.ok(readme.includes('実広告ユニット、SDK adapter、広告位置変更、広告拡張は審査後のみ'));
+    assert.ok(readme.includes('審査中は docs/static 中心に限定'));
+    assert.ok(readme.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ、実広告ユニット、SDK adapter、広告位置変更、広告拡張は行いません'));
     assert.ok(readme.includes('実広告ユニット'));
     assert.ok(readme.includes('SDK adapter'));
     assert.ok(readme.includes('docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static`'));
@@ -2260,10 +2257,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('after any post-review ad SDK/unit change or intentional public-page metadata/copy change'));
     assert.ok(operations.includes('AdSense Review Change Policy'));
     assert.ok(handoff.includes('AdSense Review Change Policy'));
-    assert.ok(handoff.includes('docs / OGP文言 / 遊び方説明 / CI・test文書 / typo / static test hardening'));
-    assert.ok(handoff.includes('unknown通知修正、CI失敗修正、静的ページCSSは審査安定性を保つ緊急例外'));
-    assert.ok(handoff.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタは審査中に行わず'));
-    assert.ok(handoff.includes('審査中は placeholder-only を維持して実広告ユニット / SDK adapter / 広告位置変更 / 広告拡張を追加しない'));
+    assert.ok(handoff.includes('審査中は docs/static 中心に限定'));
+    assert.ok(handoff.includes('unknown通知修正、CI失敗修正、軽微CSSの緊急例外も `docs/OPERATIONS.md` の条件内で扱う'));
+    assert.ok(handoff.includes('UI大改修、PWA挙動変更、URL変更、ルール変更、大規模リファクタ、実広告ユニット、SDK adapter、広告位置変更、広告拡張を追加しない'));
     assert.ok(handoff.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(handoff.includes('`preconnect` / `dns-prefetch` / `preload` / `modulepreload`'));
     assert.ok(handoff.includes('URL 方針または外部接続方針の変更'));
