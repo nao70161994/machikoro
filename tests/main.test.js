@@ -1981,6 +1981,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタ'));
     assert.ok(readme.includes('docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static`'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
+    assert.ok(readme.includes('AdSense 審査前の公開 URL 確認'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
