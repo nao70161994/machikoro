@@ -2053,6 +2053,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('今回使う施設カード'));
     assert.ok(rules.includes('サイコロを振り'));
     assert.ok(rules.includes('コインを集め'));
+    assert.ok(rules.includes('サイコロの出目と同じ数字を持つ施設'));
+    assert.ok(rules.includes('出やすい数字の施設'));
     assert.ok(rules.includes('建設フェーズ'));
     assert.ok(rules.includes('施設とランドマークの建設'));
     assert.ok(rules.includes('街の収入源'));
