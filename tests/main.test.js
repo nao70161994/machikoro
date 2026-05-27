@@ -2117,6 +2117,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('URL changes'));
     assert.ok(operations.includes('rule changes'));
     assert.ok(operations.includes('broad refactors'));
+    assert.ok(operations.includes('Public-page invariant additions during review should be tests/docs only'));
+    assert.ok(operations.includes('do not change behavior, URLs, PWA update flow, ad placement, or game rules for invariant cleanup alone'));
     assert.ok(operations.includes('git diff --check'));
     assert.ok(operations.includes('node tests/main.test.js'));
     assert.ok(operations.includes('npm run test:static'));
