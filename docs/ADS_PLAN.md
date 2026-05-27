@@ -21,6 +21,7 @@
 
 ## 将来 SDK を入れるときの注意
 
+- AdSense 審査中は新しい広告 slot、SDK adapter、広告位置変更を追加しない。審査中の変更は `docs/OPERATIONS.md` の `AdSense Review Change Policy` を優先する。
 - 本物の SDK 読み込みは `renderAdSlot` の呼び出し側へ漏らさず、`js/adSlots.js` 内で adapter 化する。
 - SDK 読み込み失敗時は placeholder か空枠に戻し、ゲーム進行を止めない。
 - ゲーム中の主要操作、pending modal、建設メニュー、サイコロ操作、オンライン再接続操作の近くには広告を置かない。

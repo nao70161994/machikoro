@@ -2025,6 +2025,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     }
     assert.strictEqual(renderAdSlot('game-action'), '');
     assert.ok(docs.includes('AdSense / AdMob'));
+    assert.ok(docs.includes('AdSense 審査中は新しい広告 slot'));
+    assert.ok(docs.includes('SDK adapter、広告位置変更を追加しない'));
+    assert.ok(docs.includes('AdSense Review Change Policy'));
     assert.ok(docs.includes('`title-bottom`'));
     assert.ok(docs.includes('`rules-bottom`'));
     assert.ok(docs.includes('`result-bottom`'));
