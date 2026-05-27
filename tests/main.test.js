@@ -1648,6 +1648,11 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         assert.strictEqual(countMeta(/<meta name="twitter:description"/g), 1);
         assert.strictEqual(countMeta(/<meta name="twitter:image"/g), 1);
         assert.strictEqual(countMeta(/<meta name="twitter:image:alt"/g), 1);
+        const ogTitle = getMetaContent(/<meta property="og:title" content="([^"]+)">/);
+        const twitterTitle = getMetaContent(/<meta name="twitter:title" content="([^"]+)">/);
+        assert.strictEqual(ogTitle, page.title);
+        assert.strictEqual(twitterTitle, page.title);
+        assert.ok(page.title.length <= 60);
         const description = getMetaContent(/<meta name="description" content="([^"]+)">/);
         const ogDescription = getMetaContent(/<meta property="og:description" content="([^"]+)">/);
         const twitterDescription = getMetaContent(/<meta name="twitter:description" content="([^"]+)">/);
@@ -1943,6 +1948,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('card selection'));
     assert.ok(adsenseSetup.includes('description / OGP / Twitter metadata'));
     assert.ok(adsenseSetup.includes('Keep each public-page description / OGP / Twitter description concise'));
+    assert.ok(adsenseSetup.includes('Keep public-page titles consistent across HTML title, OGP, and Twitter metadata'));
     assert.ok(adsenseSetup.includes('登録不要 / no-registration play'));
     assert.ok(adsenseSetup.includes('The title page is reachable from the public origin'));
     assert.ok(adsenseSetup.includes('account-free play, the win condition, card selection, and save/resume'));
