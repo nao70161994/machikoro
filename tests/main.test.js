@@ -2084,6 +2084,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('AdSense 審査前の公開 URL 確認'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
+    assert.ok(readme.includes('静的ページ負の確認'));
+    assert.ok(readme.includes('Static explanation page negative checks passed'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
     assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明'));

@@ -469,6 +469,7 @@ RL スクリプト / モデル:
 - 通知分類、CI失敗、stale client、PWA更新、公開前確認の運用手順は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) を参照してください。
 - AdSense 審査中の変更制限は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) の `AdSense Review Change Policy` を優先してください。審査中は docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS に限定し、UI大改修、広告位置変更、PWA挙動変更、URL変更、ルール変更、大規模リファクタは緊急対応以外では行いません。docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static` を確認します。
 - AdSense 審査提出前の公開 URL 確認は [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md) を参照してください。
+- 審査提出前は `docs/ADSENSE_SETUP.md` の静的ページ負の確認も実行し、`Static explanation page negative checks passed` で終わることを確認してください。
 - 公開ページのメタ情報、OGP/Twitter、manifest、静的ページ不変条件は `node tests/main.test.js` の公開ページ系テストで固定しています。審査中に説明文や見出しを変える場合は、docs と同じ commit で該当 assertion も更新してください。
 - AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明を伝えます。`rules.html` は勝利条件と遊び方を公開 URL で確認できる前提です。公開ページは `robots` メタを `index,follow` に保ちます。`privacy.html` / `rules.html` は静的説明ページとして維持し、自動遷移や meta refresh を追加しません。審査中の静的ページ CSS は共有 `style.css` に限定し、外部 CSS host を追加しません。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
