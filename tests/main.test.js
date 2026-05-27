@@ -2255,6 +2255,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
     assert.ok(adsenseSetup.includes('their description / OGP / Twitter metadata matches the current privacy and rule-page wording'));
+    assert.ok(adsenseSetup.includes('If shared `style.css` changed during review, confirm both pages remain readable at narrow mobile width'));
     assert.ok(adsenseSetup.includes('does not hardcode staging origins or localhost into preview tags'));
     assert.ok(adsenseSetup.includes('for path in / /privacy.html /rules.html /manifest.json /manifest.webmanifest /icons/icon-192.png /icons/icon-512.png /sw.js; do'));
     assert.ok(adsenseSetup.includes('status=$(curl -fsSI -o /dev/null -w "%{http_code}" "$PUBLIC_ORIGIN$path")'));

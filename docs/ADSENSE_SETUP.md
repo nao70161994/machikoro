@@ -205,7 +205,7 @@ Before clicking submit in AdSense or after review-period public-page changes:
 - `docs/RELEASE_CHECKLIST.md` automated gate and applicable Public Preflight Summary items are green for the deployed commit; if CI covers only a subset, run the missing local checks before submission.
 - Local OGP/PWA icon dimension checks pass for `icons/icon-192.png` and `icons/icon-512.png` before deploy.
 - The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
-- `privacy.html` and `rules.html` are reachable from the public origin, and their description / OGP / Twitter metadata matches the current privacy and rule-page wording.
+- `privacy.html` and `rules.html` are reachable from the public origin, and their description / OGP / Twitter metadata matches the current privacy and rule-page wording. If shared `style.css` changed during review, confirm both pages remain readable at narrow mobile width and their related-page links do not overflow.
 - `/icons/icon-192.png` and `/icons/icon-512.png` are reachable from the public origin; the local dimension check confirms they still match the manifest / OGP advertised sizes.
 - AdSense review code is installed exactly once, ad surfaces remain placeholder-only, and live ad units (`<ins class="adsbygoogle">`, `data-ad-client`, `data-ad-slot`, ad unit ids) remain absent until real ad units are intentionally configured after review.
 - PWA cache contains the public pages and ad placeholder helper, and stale-client handling has been checked by comparing `/api/version` with `window.MACHIKORO_CLIENT_VERSION` plus the update banner / cache-clearing fallback.
