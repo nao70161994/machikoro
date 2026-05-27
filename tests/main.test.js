@@ -2090,6 +2090,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('静的ページ負の確認'));
     assert.ok(readme.includes('Static explanation page negative checks passed'));
+    assert.ok(readme.includes('`canonical` / `og:url` / `twitter:url`'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
     assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明'));
@@ -2182,6 +2183,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('broad refactors'));
     assert.ok(operations.includes('Public-page invariant additions during review should be tests/docs only'));
     assert.ok(operations.includes('do not change behavior, URLs, PWA update flow, ad placement, or game rules for invariant cleanup alone'));
+    assert.ok(operations.includes('Treat `canonical`, `og:url`, and `twitter:url` metadata as URL policy changes during review'));
     assert.ok(operations.includes('git diff --check'));
     assert.ok(operations.includes('node tests/main.test.js'));
     assert.ok(operations.includes('npm run test:static'));
