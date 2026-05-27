@@ -2144,7 +2144,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('grep -E "index,follow|style.css|rules.html|アカウント登録|メールアドレス|エラー通知|Cookie|AdSense審査|Google AdSense|審査用スクリプト|実際の広告ユニット|お問い合わせ|最終更新日|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('Negative checks for the static explanation pages'));
     assert.ok(adsenseSetup.includes('for page in rules.html privacy.html; do'));
-    assert.ok(adsenseSetup.includes('grep -Ei "<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action| id=| style=| src=|role="button"| on[a-z]+="'));
+    assert.ok(adsenseSetup.includes('grep -Ei \'<script|adsbygoogle|pagead2.googlesyndication.com|ca-pub-|<iframe|<embed|<object|<canvas|<img|<picture|<source|<video|<audio|<svg|<form|<button|<input|<select|<textarea|data-|data-ui-action| id=| style=| src=|role="button"| on[a-z]+=\''));
     assert.ok(adsenseSetup.includes('Unexpected active or embedded content found in $page'));
     assert.ok(adsenseSetup.includes('Static explanation page negative checks passed'));
     assert.ok(adsenseSetup.includes('/api/client-error-test'));
