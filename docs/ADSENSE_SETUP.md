@@ -140,7 +140,7 @@ Before clicking submit in AdSense:
 
 - `docs/RELEASE_CHECKLIST.md` automated gate is green for the deployed commit.
 - The title page is reachable from the public origin and its description / OGP / Twitter metadata mention 登録不要 / no-registration play.
-- `privacy.html` and `rules.html` are reachable from the public origin.
+- `privacy.html` and `rules.html` are reachable from the public origin, and their description / OGP / Twitter metadata matches the current privacy and rule-page wording.
 - AdSense review code is installed exactly once, and ad surfaces remain placeholder-only until real ad units are configured.
 - PWA cache contains the public pages and ad placeholder helper.
 - ntfy real notification delivery has been confirmed, the temporary test endpoint flag has been removed, and `NTFY_TOPIC` is not public or guessable.

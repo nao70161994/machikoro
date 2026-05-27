@@ -1808,6 +1808,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('stale privacy-page content'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/privacy.html'));
     assert.ok(adsenseSetup.includes('<PUBLIC_ORIGIN>/rules.html'));
+    assert.ok(adsenseSetup.includes('their description / OGP / Twitter metadata matches the current privacy and rule-page wording'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/privacy.html"'));
     assert.ok(adsenseSetup.includes('curl -fI "$PUBLIC_ORIGIN/rules.html"'));
