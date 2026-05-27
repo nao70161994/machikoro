@@ -1781,6 +1781,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!staticPage.includes('<textarea'));
         assert.ok(!staticPage.includes('<form'));
         assert.ok(!staticPage.includes('role="button"'));
+        assert.ok(!staticPage.includes('aria-modal'));
+        assert.ok(!staticPage.includes('inert'));
+        assert.ok(!staticPage.includes('hidden'));
         assert.ok(!staticPage.includes('target="_blank"'));
         assert.ok(!staticPage.includes('download'));
     }
