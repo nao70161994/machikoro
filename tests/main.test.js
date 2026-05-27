@@ -1783,6 +1783,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         assert.ok(!staticPage.includes('<select'));
         assert.ok(!staticPage.includes('<textarea'));
         assert.ok(!staticPage.includes('<form'));
+        assert.ok(!staticPage.includes('<iframe'));
+        assert.ok(!staticPage.includes('<embed'));
+        assert.ok(!staticPage.includes('<object'));
+        assert.ok(!staticPage.includes('<canvas'));
         assert.ok(!staticPage.includes('role="button"'));
         assert.ok(!staticPage.includes('aria-live'));
         assert.ok(!staticPage.includes('aria-busy'));
