@@ -2200,6 +2200,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('SDK adapter'));
     assert.ok(readme.includes('docs/static 変更でも最低限 `git diff --check`, `node tests/main.test.js`, `npm run test:static`'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
+    assert.ok(readme.includes('AdSense 審査中は `index.html` head の審査コードを1つだけ維持'));
+    assert.ok(readme.includes('実広告ユニットや追加 loader は入れません'));
     assert.ok(readme.includes('AdSense 審査提出前 / 審査中の公開 URL 確認'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('docs/ADS_PLAN.md'));
