@@ -1821,6 +1821,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     for (const publicPageSource of [html, rules, privacy]) {
         assert.ok(!/<meta[^>]+http-equiv=["']?refresh/i.test(publicPageSource));
         assert.ok(!/<base\b/i.test(publicPageSource));
+        assert.ok(!/<link[^>]+rel=["']canonical/i.test(publicPageSource));
+        assert.ok(!/<meta[^>]+(?:property|name)=["'](?:og:url|twitter:url)["']/i.test(publicPageSource));
     }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
