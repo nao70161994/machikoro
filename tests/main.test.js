@@ -1839,6 +1839,22 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('<h2>カードの色</h2>'));
     assert.ok(rules.includes('<h2>発動順序</h2>'));
     assert.ok(rules.includes('<h2>ランドマーク</h2>'));
+    const getMetaContentFromPage = (pageSource, pattern) => {
+        const match = pageSource.match(pattern);
+        assert.ok(match);
+        return match[1];
+    };
+    const rulesMetaDescriptions = [
+        getMetaContentFromPage(rules, /<meta name="description" content="([^"]+)">/),
+        getMetaContentFromPage(rules, /<meta property="og:description" content="([^"]+)">/),
+        getMetaContentFromPage(rules, /<meta name="twitter:description" content="([^"]+)">/)
+    ];
+    for (const metaDescription of rulesMetaDescriptions) {
+        for (const keyword of ['勝利条件', 'カード選択', '保存と再開']) {
+            assert.ok(metaDescription.includes(keyword));
+            assert.ok(rules.includes(keyword));
+        }
+    }
     assert.ok(rules.includes('<a href="privacy.html">プライバシーポリシー</a>'));
     assert.ok(privacy.includes('<body class="static-page">'));
     assert.ok(privacy.includes('<main class="static-page-content">'));
@@ -1849,6 +1865,17 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(privacy.includes('<h2>広告について</h2>'));
     assert.ok(privacy.includes('<h2>保存データの削除</h2>'));
     assert.ok(privacy.includes('<h2>お問い合わせ</h2>'));
+    const privacyMetaDescriptions = [
+        getMetaContentFromPage(privacy, /<meta name="description" content="([^"]+)">/),
+        getMetaContentFromPage(privacy, /<meta property="og:description" content="([^"]+)">/),
+        getMetaContentFromPage(privacy, /<meta name="twitter:description" content="([^"]+)">/)
+    ];
+    for (const metaDescription of privacyMetaDescriptions) {
+        for (const keyword of ['エラー通知', 'AdSense審査', '広告']) {
+            assert.ok(metaDescription.includes(keyword));
+            assert.ok(privacy.includes(keyword));
+        }
+    }
     assert.ok(privacy.includes('class="static-page-links" aria-label="関連ページ"'));
     for (const staticPage of [rules, privacy]) {
         assert.strictEqual((staticPage.match(/class="static-page-updated"/g) || []).length, 1);
