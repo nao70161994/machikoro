@@ -49,7 +49,7 @@
 - UI: 既知の inline handler / pending renderer / build menu / card select / stats helper 化は実施済み。新しい UI surface が見つかった場合は、`PRIMARY_ACTION_CONTAINER_REGISTRY`、通常 render no-recovery test、fallback recovery test を同時に追加する。modal deny-by-default は実装済みで、将来の nested blocking modal 例外や新しい modal UX だけ design / manual verification required。
 - CPU: heuristic の強さを変えず、diagnostics / scoring / execution flow を targeted tests で固定してから helper 単位で分離する。
 - GameManager / Server / Online: action metadata を dispatch / canonical payload / online apply の contract test へさらに寄せる。hostless restore、signed restore、server-persisted canonical state、複数 room resume UI は design required。
-- Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection を小さく追加する。
+- Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection を小さく追加する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
 
 ## 変更時の最低確認
 

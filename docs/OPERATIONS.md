@@ -185,6 +185,8 @@ The workflow installs Node dependencies with `npm ci` and installs `scripts/rl/r
 
 Set `NTFY_CI_TOPIC` as a GitHub Actions repository secret. Use a topic that is different from production browser errors (`NTFY_TOPIC`).
 
+CI failure notifications use the same triage shape for release, APK, and nightly workflows; the nightly workflow is the common example below.
+
 Nightly CI failure notifications include:
 
 - workflow name

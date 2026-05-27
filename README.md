@@ -474,7 +474,7 @@ RL スクリプト / モデル:
 - 公開ページのメタ情報、OGP/Twitter、manifest、静的ページ不変条件は `node tests/main.test.js` の公開ページ系テストで固定しています。審査中に説明文や見出しを変える場合は、docs と同じ commit で該当 assertion も更新してください。
 - 審査中は `canonical` / `og:url` / `twitter:url` も URL 方針変更として扱い、明示的に方針確認するまでは追加しません。
 - 審査中は `preconnect` / `dns-prefetch` / `preload` / `modulepreload` も外部接続方針変更として扱い、明示的に方針確認するまでは追加しません。
-- AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`privacy.html` の説明メタはエラー通知・開始終了通知、AdSense審査、広告の説明を伝え、本文は開始終了通知のプライバシーも説明します。`rules.html` は勝利条件、施設とランドマークの建設、遊び方を公開 URL で確認できる前提です。公開ページは `robots` メタを `index,follow` に保ちます。`privacy.html` / `rules.html` は静的説明ページとして維持し、自動遷移や meta refresh を追加しません。審査中の静的ページ CSS は共有 `style.css` に限定し、外部 CSS host を追加しません。
+- AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`privacy.html` の説明メタはエラー通知・開始終了通知、AdSense審査、広告の説明を伝え、本文は開始終了通知のプライバシーと秘密情報の公開禁止も説明します。`rules.html` は勝利条件、施設とランドマークの建設、遊び方を公開 URL で確認できる前提です。公開ページは `robots` メタを `index,follow` に保ちます。`privacy.html` / `rules.html` は静的説明ページとして維持し、自動遷移や meta refresh を追加しません。審査中の静的ページ CSS は共有 `style.css` に限定し、外部 CSS host を追加しません。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
 - Android 向けには `.github/workflows/build-apk.yml` で TWA APK をビルドします。
 

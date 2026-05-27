@@ -98,7 +98,7 @@ Use separate topics and priorities so routine activity does not hide urgent fail
 - `play-start` / `play-finish`: lifecycle heartbeat on `NTFY_TOPIC`; useful for confirming real usage and deploy health, not an incident by itself.
 - `unknown`: browser client-error on `NTFY_TOPIC`; highest priority and should be investigated immediately.
 - `known-pattern`: browser client-error on `NTFY_TOPIC`; inspect version and frequency. Current-version repeats are regressions.
-- `stale-client`: browser client-error on `NTFY_TOPIC`; guide the device through PWA update/cache clearing before debugging code.
+- `stale-client`: browser client-error on `NTFY_TOPIC`; guide the device through PWA update/cache clearing before debugging code. Clear Service Worker/cache state only; do not delete restore bundles or local saved game data unless restore/reconnect has been ruled out.
 - CI failed: GitHub Actions failure on `NTFY_CI_TOPIC`; release blocker until the failed command is green.
 
 Keep `NTFY_TOPIC` and `NTFY_CI_TOPIC` different. Browser topics may include runtime details such as phase/version/user agent; CI topics include repository workflow metadata. Both should be hard to guess and rotated if leaked.
