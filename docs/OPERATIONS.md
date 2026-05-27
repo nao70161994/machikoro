@@ -128,11 +128,12 @@ While AdSense review is in progress, keep changes small and stability-focused:
 
 ## Public Release Preflight
 
-Before public traffic, ads after review, or wider PWA install testing:
+Before public traffic, AdSense review submission/recheck, ads after review, or wider PWA install testing:
 
 - `git status --short` is empty.
 - CI is green on the exact commit to deploy.
 - `docs/RELEASE_CHECKLIST.md` automated gate has been run or CI covers it.
+- For AdSense review submission/recheck, run the public URL checks in `docs/ADSENSE_SETUP.md` and confirm `Public page URL metadata and external connection hint checks passed` plus `Static explanation page negative checks passed`.
 - `privacy.html` and `rules.html` are reachable from the title screen and cached by the PWA shell; the title page and rule-page metadata mention 登録不要 / no-registration play, privacy-page metadata mentions error reporting / AdSense review / ad topics, `rules.html` explains the win condition and keeps OGP/Twitter rule-page metadata current, and `privacy.html` also mentions contact guidance and the last updated date.
 - AdSense placeholders remain outside gameplay controls, still use `pointer-events: none`, and match the allowed-placement policy in `docs/ADS_PLAN.md`.
 - PWA install prompt and update banner have been checked on at least one real mobile browser before relying on them publicly.

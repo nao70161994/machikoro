@@ -2262,7 +2262,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('keep changes small and stability-focused'));
     assert.ok(operations.includes('Keep commits small'));
     assert.ok(operations.includes('enable ads after review, or enable PWA production traffic'));
-    assert.ok(operations.includes('Before public traffic, ads after review, or wider PWA install testing'));
+    assert.ok(operations.includes('Before public traffic, AdSense review submission/recheck, ads after review, or wider PWA install testing'));
+    assert.ok(operations.includes('For AdSense review submission/recheck, run the public URL checks in `docs/ADSENSE_SETUP.md`'));
+    assert.ok(operations.includes('Public page URL metadata and external connection hint checks passed'));
+    assert.ok(operations.includes('Static explanation page negative checks passed'));
     assert.ok(operations.includes('docs cleanup'));
     assert.ok(operations.includes('OGP/image metadata wording'));
     assert.ok(operations.includes('how-to text'));
