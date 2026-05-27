@@ -1672,8 +1672,8 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
             file: 'privacy.html',
             title: 'プライバシーポリシー - ダイスシティ',
             type: 'article',
-            description: 'ダイスシティのプライバシーポリシー。アカウント登録不要の遊び方、保存データ、オンライン対戦、エラー通知、AdSense審査と広告について説明します。',
-            previewDescription: 'アカウント登録不要の遊び方、保存データ、オンライン対戦、エラー通知、AdSense審査と広告について説明します。'
+            description: 'ダイスシティのプライバシーポリシー。アカウント登録不要の遊び方、保存データ、オンライン対戦、エラー通知・開始終了通知、AdSense審査と広告について説明します。',
+            previewDescription: 'アカウント登録不要の遊び方、保存データ、オンライン対戦、エラー通知・開始終了通知、AdSense審査と広告について説明します。'
         }
     ];
 
@@ -2194,7 +2194,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('外部接続方針変更'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
-    assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明を伝え、本文は lifecycle通知のプライバシーも説明します'));
+    assert.ok(readme.includes('privacy.html` の説明メタはエラー通知・開始終了通知、AdSense審査、広告の説明を伝え、本文は lifecycle通知のプライバシーも説明します'));
     assert.ok(readme.includes('rules.html` は勝利条件、施設とランドマークの建設、遊び方を公開 URL で確認できる'));
     assert.ok(readme.includes('施設とランドマークの建設'));
     assert.ok(readme.includes('公開ページは `robots` メタを `index,follow` に保ちます'));
