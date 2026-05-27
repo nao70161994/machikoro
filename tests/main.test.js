@@ -1921,6 +1921,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('both `og:image` and `twitter:image` pointing to `/icons/icon-512.png`'));
     assert.ok(releaseChecklist.includes('same-origin relative paths'));
     assert.ok(releaseChecklist.includes('image alt metadata'));
+    assert.ok(releaseChecklist.includes('`og:site_name`, `og:type`, and `twitter:card` stay stable'));
     assert.ok(releaseChecklist.includes('exactly one charset, one viewport, one HTML title, and one `robots` meta with `index,follow`'));
     assert.ok(releaseChecklist.includes('HTML title, OGP title, and Twitter title stay consistent and concise'));
     assert.ok(releaseChecklist.includes('public-page description / OGP / Twitter descriptions stay concise'));
