@@ -1792,6 +1792,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('gameplay-near SDK placement'));
     assert.ok(readme.includes('docs/OPERATIONS.md'));
     assert.ok(readme.includes('AdSense Review Change Policy'));
+    assert.ok(readme.includes('docs / OGP / 遊び方説明 / unknown通知 / CI失敗 / typo / 静的ページCSS'));
+    assert.ok(readme.includes('大きな変更を避けます'));
     assert.ok(readme.includes('docs/RELEASE_CHECKLIST.md'));
     assert.ok(readme.includes('docs/ADSENSE_SETUP.md'));
     assert.ok(readme.includes('AdSense 審査中の公開ページはトップページ'));
