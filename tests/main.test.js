@@ -2227,6 +2227,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('public-secret redaction guidance'));
     assert.ok(adsenseSetup.includes('last updated date'));
     assert.ok(adsenseSetup.includes('lifecycle notification privacy'));
+    assert.ok(adsenseSetup.includes('lifecycle notification exclusions for player names / room codes / reconnect tokens / card inventories / full snapshots'));
     assert.ok(adsenseSetup.includes('error notification exclusions'));
     assert.ok(adsenseSetup.includes('privacy.html` description / OGP / Twitter metadata mention account-free play, error reporting, start/finish lifecycle notifications, AdSense review, and ads'));
     assert.ok(adsenseSetup.includes('stale privacy-page content'));
