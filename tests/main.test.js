@@ -1908,6 +1908,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(readme.includes('トップページと `rules.html` の説明メタは登録不要のプレイ'));
     assert.ok(readme.includes('privacy.html` の説明メタはエラー通知、AdSense審査、広告の説明'));
     assert.ok(readme.includes('rules.html` は勝利条件と遊び方を公開 URL で確認できる'));
+    assert.ok(readme.includes('自動遷移や meta refresh を追加しません'));
     assert.ok(readme.includes('manifest.json` / `manifest.webmanifest'));
     assert.ok(adsenseSetup.includes('indexable metadata'));
     assert.ok(adsenseSetup.includes('privacy policy is public, indexable'));
