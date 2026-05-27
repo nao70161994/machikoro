@@ -1791,15 +1791,26 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
 runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
-    const matches = [...html.matchAll(/<script[^>]+pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8683516545883768[^>]*><\/script>/g)];
+    const scriptTags = [...html.matchAll(/<script\b[^>]*><\/script>/gi)].map((match) => match[0]);
+    const getAttrValue = (tagSource, attrName) => {
+        const quoted = tagSource.match(new RegExp("\\s" + attrName + "\\s*=\\s*([\"'])(.*?)\\1", "i"));
+        if (quoted) return quoted[2];
+        const unquoted = tagSource.match(new RegExp('\\s' + attrName + '\\s*=\\s*([^\\s>]+)', 'i'));
+        return unquoted ? unquoted[1] : '';
+    };
+    const expectedSrc = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8683516545883768';
+    const matches = scriptTags.filter((tag) => getAttrValue(tag, 'src') === expectedSrc);
 
     assert.strictEqual(matches.length, 1);
-    assert.ok(head.includes(matches[0][0]));
-    assert.ok(head.indexOf('rel="apple-touch-icon"') < head.indexOf(matches[0][0]));
-    assert.ok(html.indexOf(matches[0][0]) < html.indexOf('</head>'));
-    assert.ok(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-8683516545883768"[\s\S]*crossorigin="anonymous"><\/script>/.test(matches[0][0]));
-    const externalScriptSrcs = [...html.matchAll(/<script[^>]+src="(https?:\/\/[^"]+)"/g)].map((match) => match[1]);
-    assert.deepStrictEqual(externalScriptSrcs, ['https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8683516545883768']);
+    assert.ok(head.includes(matches[0]));
+    assert.ok(head.indexOf('rel="apple-touch-icon"') < head.indexOf(matches[0]));
+    assert.ok(html.indexOf(matches[0]) < html.indexOf('</head>'));
+    assert.strictEqual(getAttrValue(matches[0], 'async'), '');
+    assert.strictEqual(getAttrValue(matches[0], 'crossorigin'), 'anonymous');
+    const externalScriptSrcs = scriptTags
+        .map((tag) => getAttrValue(tag, 'src'))
+        .filter((src) => /^https?:\/\//.test(src));
+    assert.deepStrictEqual(externalScriptSrcs, [expectedSrc]);
 });
 runTest('広告 placeholder は許可された画面だけに配置される', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
