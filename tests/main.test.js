@@ -1716,8 +1716,13 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
         }
     }
 
-    assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-512.png')));
-    assert.ok(fs.existsSync(path.join(__dirname, '..', 'icons/icon-192.png')));
+    const readPngSize = (relativePath) => {
+        const bytes = fs.readFileSync(path.join(__dirname, '..', relativePath));
+        assert.strictEqual(bytes.slice(1, 4).toString('ascii'), 'PNG');
+        return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+    };
+    assert.deepStrictEqual(readPngSize('icons/icon-512.png'), { width: 512, height: 512 });
+    assert.deepStrictEqual(readPngSize('icons/icon-192.png'), { width: 192, height: 192 });
 });
 
 runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () => {
