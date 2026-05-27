@@ -1633,6 +1633,14 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
             assert.ok(match, 'missing meta in ' + page.file + ': ' + pattern);
             return match[1];
         };
+        const countMeta = (pattern) => (head.match(pattern) || []).length;
+        assert.strictEqual(countMeta(/<meta name="description"/g), 1);
+        assert.strictEqual(countMeta(/<meta property="og:title"/g), 1);
+        assert.strictEqual(countMeta(/<meta property="og:description"/g), 1);
+        assert.strictEqual(countMeta(/<meta property="og:image"/g), 1);
+        assert.strictEqual(countMeta(/<meta name="twitter:title"/g), 1);
+        assert.strictEqual(countMeta(/<meta name="twitter:description"/g), 1);
+        assert.strictEqual(countMeta(/<meta name="twitter:image"/g), 1);
         const description = getMetaContent(/<meta name="description" content="([^"]+)">/);
         const ogDescription = getMetaContent(/<meta property="og:description" content="([^"]+)">/);
         const twitterDescription = getMetaContent(/<meta name="twitter:description" content="([^"]+)">/);
