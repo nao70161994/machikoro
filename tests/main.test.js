@@ -305,6 +305,8 @@ function loadMainRuntime(options = {}) {
             fetchCalls,
             consoleErrors,
             flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
+            flushOneTimeout: () => { if (timeouts.length) timeouts.shift()(); },
+            getTimeoutCount: () => timeouts.length,
             setSelectedCount: (value) => { selectedCount = value; },
             getSelectedCount: () => selectedCount,
             setPlayerSettings: (value) => { playerSettings = value; },
@@ -770,6 +772,38 @@ runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTu
 
     rt.__test.scheduleCPU();
     rt.__test.flushTimeouts();
+
+    assert.strictEqual(buildCalls, 1);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main scheduleCPU は現在フェーズ以外のCPU手順で遅延しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    let buildCalls = 0;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { throw new Error('pending step should be skipped'); },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { throw new Error('selectDice step should be skipped'); },
+        chooseReroll() { throw new Error('reroll step should be skipped'); },
+        chooseHarbor() { throw new Error('harbor step should be skipped'); },
+        build() { buildCalls++; return false; },
+    }, null]);
+
+    rt.__test.scheduleCPU();
+
+    assert.strictEqual(rt.__test.getTimeoutCount(), 1);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-step-skip-phase' && entry.details.step === 'roll'));
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-step-skip-phase' && entry.details.step === 'pending'));
+
+    rt.__test.flushOneTimeout();
 
     assert.strictEqual(buildCalls, 1);
     assert.strictEqual(game.currentPlayerIndex, 1);

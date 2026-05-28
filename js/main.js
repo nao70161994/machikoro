@@ -517,6 +517,19 @@ function chooseCpuPendingResolution(cpu) {
 
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
+function shouldRunCpuPhaseStep(stepName) {
+    if (!game) return false;
+    if (stepName === "roll") return game.phase === GAME_PHASES.ROLL;
+    if (stepName === "selectDice") return game.phase === GAME_PHASES.SELECT_DICE;
+    if (stepName === "rerollConfirm") return game.phase === GAME_PHASES.REROLL_CONFIRM;
+    if (stepName === "harborChoice") return game.phase === GAME_PHASES.HARBOR_CHOICE;
+    if (stepName === "pending") return game.phase === GAME_PHASES.PENDING;
+    if (stepName === "build") return game.phase === GAME_PHASES.BUILD && !game.pendingIT && !game.builtThisTurn;
+    if (stepName === "nextTurn") return game.phase === GAME_PHASES.BUILD && !game.pendingIT;
+    if (stepName === "resolveIT") return !!game.pendingIT;
+    return true;
+}
+
 const CPU_PHASE_HANDLERS = [
     {
         name: "roll",
@@ -650,6 +663,11 @@ function scheduleCPU() {
             return;
         }
         const step = CPU_PHASE_HANDLERS[stepIndex++];
+        if (!shouldRunCpuPhaseStep(step.name)) {
+            markMainCheckpoint('scheduleCPU-step-skip-phase', { step: step.name, phase: game && game.phase || '', pendingIT: !!(game && game.pendingIT) });
+            runNextStep();
+            return;
+        }
         queueCPUStep(token, cpuSpeed, () => {
             if (isReplaying) return;
             if (isOnlineGame && !isRoomHost) return;
