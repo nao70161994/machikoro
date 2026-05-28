@@ -1446,13 +1446,16 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
     const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
+    const howToPlay = fs.readFileSync(path.join(__dirname, '..', 'how-to-play.html'), 'utf8');
+    const cardsPage = fs.readFileSync(path.join(__dirname, '..', 'cards.html'), 'utf8');
+    const aiCpu = fs.readFileSync(path.join(__dirname, '..', 'ai-cpu.html'), 'utf8');
     const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
     const riskPlan = fs.readFileSync(path.join(__dirname, '..', 'docs/RISK_REDUCTION_PLAN.md'), 'utf8');
     const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.json'), 'utf8'));
     const webmanifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
     const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
     const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
-    const publicSurfaces = [html, privacy, rules, readme, riskPlan, ntfyDocs].join('\n');
+    const publicSurfaces = [html, privacy, rules, howToPlay, cardsPage, aiCpu, readme, riskPlan, ntfyDocs].join('\n');
     assert.ok(ntfyDocs.includes('browser client-error and lifecycle notifications'));
     assert.ok(ntfyDocs.includes('NODE_ENV=production'));
     assert.ok(ntfyDocs.includes('BUILD_HASH'));
@@ -1482,6 +1485,9 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(html.includes('content="ダイスシティ'));
     assert.ok(privacy.includes('<title>プライバシーポリシー - ダイスシティ</title>'));
     assert.ok(rules.includes('<title>ルール - ダイスシティ</title>'));
+    assert.ok(howToPlay.includes('<title>遊び方 - ダイスシティ</title>'));
+    assert.ok(cardsPage.includes('<title>カードとランドマーク - ダイスシティ</title>'));
+    assert.ok(aiCpu.includes('<title>CPUとAI - ダイスシティ</title>'));
     assert.strictEqual(manifest.name, 'ダイスシティ');
     assert.strictEqual(manifest.short_name, 'ダイスシティ');
     assert.strictEqual(manifest.description, 'ダイスシティ - オンライン・オフライン対応のブラウザボードゲーム');
@@ -1658,8 +1664,8 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
             file: 'index.html',
             title: 'ダイスシティ',
             type: 'website',
-            description: 'ダイスシティは、登録不要でサイコロと街づくりを楽しめるオンライン・オフライン対応のブラウザボードゲームです。',
-            previewDescription: '登録不要でサイコロと街づくりを楽しめるオンライン・オフライン対応のブラウザボードゲームです。'
+            description: 'ダイスシティは、登録不要でサイコロと街づくりを楽しめるブラウザボードゲームです。目的、カード、CPU、PWA対応も案内します。',
+            previewDescription: 'ダイスシティは、登録不要でサイコロと街づくりを楽しめるブラウザボードゲームです。目的、カード、CPU、PWA対応も案内します。'
         },
         {
             file: 'rules.html',
@@ -1667,6 +1673,27 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
             type: 'article',
             description: 'ダイスシティの基本ルール。アカウント登録なしのはじめ方、勝利条件、カード選択、施設とランドマーク建設、保存と再開を説明します。',
             previewDescription: 'アカウント登録なしのはじめ方、勝利条件、カード選択、施設とランドマーク建設、保存と再開など、ダイスシティの基本ルールを説明します。'
+        },
+        {
+            file: 'how-to-play.html',
+            title: '遊び方 - ダイスシティ',
+            type: 'article',
+            description: 'ダイスシティの遊び方。目的、勝利条件、ターンの流れ、サイコロとカード、PWAとしての遊び方を説明します。',
+            previewDescription: '目的、勝利条件、ターンの流れ、サイコロとカード、PWAとしての遊び方が分かるダイスシティのガイドです。'
+        },
+        {
+            file: 'cards.html',
+            title: 'カードとランドマーク - ダイスシティ',
+            type: 'article',
+            description: 'ダイスシティのカードカテゴリ、色ごとの発動条件、ランドマーク効果、建設方針を説明します。',
+            previewDescription: 'カードカテゴリ、色ごとの発動条件、ランドマーク効果、建設方針をまとめたダイスシティの施設ガイドです。'
+        },
+        {
+            file: 'ai-cpu.html',
+            title: 'CPUとAI - ダイスシティ',
+            type: 'article',
+            description: 'ダイスシティのCPU難易度、最強CPU、AI深層学習CPU、ローカル練習とオンラインCPU補充を説明します。',
+            previewDescription: 'CPU難易度、最強CPU、AI深層学習CPU、ローカル練習とオンラインCPU補充を説明するダイスシティのAIガイドです。'
         },
         {
             file: 'privacy.html',
@@ -1777,6 +1804,28 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
                 assert.ok(previewDescription.includes('広告'));
             }
         }
+        if (page.file === 'how-to-play.html') {
+            for (const previewDescription of previewDescriptions) {
+                assert.ok(previewDescription.includes('目的'));
+                assert.ok(previewDescription.includes('勝利条件'));
+                assert.ok(previewDescription.includes('ターンの流れ'));
+                assert.ok(previewDescription.includes('PWA'));
+            }
+        }
+        if (page.file === 'cards.html') {
+            for (const previewDescription of previewDescriptions) {
+                assert.ok(previewDescription.includes('カードカテゴリ'));
+                assert.ok(previewDescription.includes('ランドマーク'));
+                assert.ok(previewDescription.includes('建設方針'));
+            }
+        }
+        if (page.file === 'ai-cpu.html') {
+            for (const previewDescription of previewDescriptions) {
+                assert.ok(previewDescription.includes('CPU難易度'));
+                assert.ok(previewDescription.includes('AI深層学習CPU'));
+                assert.ok(previewDescription.includes('オンラインCPU補充'));
+            }
+        }
     }
 
     const readPngSize = (relativePath) => {
@@ -1825,6 +1874,10 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
     const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
     const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
+    const howToPlay = fs.readFileSync(path.join(__dirname, '..', 'how-to-play.html'), 'utf8');
+    const cardsPage = fs.readFileSync(path.join(__dirname, '..', 'cards.html'), 'utf8');
+    const aiCpu = fs.readFileSync(path.join(__dirname, '..', 'ai-cpu.html'), 'utf8');
+    const staticPages = [rules, privacy, howToPlay, cardsPage, aiCpu];
     const { AD_SLOT_CONFIGS, renderAdSlot } = require('../js/adSlots.js');
 
     assert.deepStrictEqual(Object.keys(AD_SLOT_CONFIGS).sort(), ['result-bottom', 'rules-bottom', 'title-bottom']);
@@ -1833,10 +1886,14 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.deepStrictEqual([...html.matchAll(/data-ad-slot-host="([^"]+)"/g)].map((match) => match[1]), ['title-bottom', 'rules-bottom']);
     assert.ok(html.includes('href="privacy.html"'));
     assert.ok(html.includes('href="rules.html"'));
+    assert.ok(html.includes('href="how-to-play.html"'));
+    assert.ok(html.includes('href="cards.html"'));
+    assert.ok(html.includes('href="ai-cpu.html"'));
     const titleAdIndex = html.indexOf('id="adSlotTitleBottom"');
     const legalLinksIndex = html.indexOf('class="legal-links" aria-label="サイト情報"');
     const gameScreenIndex = html.indexOf('<div id="gameScreen"');
     assert.ok(titleAdIndex > 0);
+    assert.ok(titleAdIndex > html.indexOf('class="title-about"'));
     assert.ok(legalLinksIndex > titleAdIndex);
     assert.ok(legalLinksIndex < gameScreenIndex);
     const countMatches = (source, pattern) => (source.match(pattern) || []).length;
@@ -1857,7 +1914,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
             .map((value) => value.toLowerCase());
         return values.some((value) => forbiddenValues.includes(value));
     };
-    for (const publicPageSource of [html, rules, privacy]) {
+    for (const publicPageSource of [html, ...staticPages]) {
         assert.ok(!/<meta[^>]+http-equiv\s*=\s*["']?refresh/i.test(publicPageSource));
         assert.ok(!/<base\b/i.test(publicPageSource));
         assert.ok(!getHtmlTags(publicPageSource, 'link').some((tag) => tagHasRelToken(tag, ['canonical'])));
@@ -1867,22 +1924,20 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
-    assert.deepStrictEqual([...legalLinksHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ['rules.html', 'privacy.html']);
-    assert.deepStrictEqual([...legalLinksHtml.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map((match) => match[1]), ['ルール', 'プライバシーポリシー']);
+    assert.deepStrictEqual([...legalLinksHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ['how-to-play.html', 'cards.html', 'ai-cpu.html', 'rules.html', 'privacy.html']);
+    assert.deepStrictEqual([...legalLinksHtml.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map((match) => match[1]), ['遊び方', 'カード', 'CPUとAI', 'ルール', 'プライバシーポリシー']);
     assert.ok(!legalLinksHtml.includes('target="_blank"'));
     assert.ok(!legalLinksHtml.includes('download'));
     const unsafeHrefPattern = /^(?:https?:)?\/\/|^javascript:|^data:/i;
     for (const href of [...html.matchAll(/href="([^"]+)"/g)].map((match) => match[1])) {
         assert.ok(!unsafeHrefPattern.test(href));
     }
-    assert.strictEqual(countMatches(rules, /<main class="static-page-content">/g), 1);
-    assert.strictEqual(countMatches(privacy, /<main class="static-page-content">/g), 1);
-    assert.strictEqual(countMatches(rules, /<h1>/g), 1);
-    assert.strictEqual(countMatches(privacy, /<h1>/g), 1);
-    assert.strictEqual(countMatches(rules, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
-    assert.strictEqual(countMatches(privacy, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
-    assert.ok(rules.trim().endsWith('</html>'));
-    assert.ok(privacy.trim().endsWith('</html>'));
+    for (const staticPage of staticPages) {
+        assert.strictEqual(countMatches(staticPage, /<main class="static-page-content">/g), 1);
+        assert.strictEqual(countMatches(staticPage, /<h1>/g), 1);
+        assert.strictEqual(countMatches(staticPage, /<nav class="static-page-links" aria-label="関連ページ">/g), 1);
+        assert.ok(staticPage.trim().endsWith('</html>'));
+    }
     assert.ok(rules.includes('<body class="static-page">'));
     assert.ok(rules.includes('class="static-page-links" aria-label="関連ページ"'));
     assert.ok(rules.includes('<a href="/">ゲームへ戻る</a>'));
@@ -1957,7 +2012,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
         }
     }
     assert.ok(privacy.includes('class="static-page-links" aria-label="関連ページ"'));
-    for (const staticPage of [rules, privacy]) {
+    for (const staticPage of staticPages) {
         assert.strictEqual((staticPage.match(/class="static-page-updated"/g) || []).length, 1);
         assert.ok(/<p class="static-page-updated">最終更新日: 20\d{2}-\d{2}-\d{2}<\/p>/.test(staticPage));
     }
@@ -1969,7 +2024,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(!rules.includes('<script'));
     assert.ok(!privacy.includes(' style='));
     assert.ok(!rules.includes(' style='));
-    for (const staticPage of [privacy, rules]) {
+    for (const staticPage of staticPages) {
         const normalizedStaticPage = staticPage.toLowerCase();
         assert.ok(!/\sid\s*=/.test(normalizedStaticPage));
         assert.ok(!normalizedStaticPage.includes('data-'));
@@ -1994,18 +2049,22 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     const getHrefs = (pageSource) => [...pageSource.matchAll(/href\s*=\s*(["'])(.*?)\1/gi)]
         .map((match) => match[2])
         .sort();
-    assert.deepStrictEqual(getHrefs(rules), ['/', 'privacy.html', 'style.css']);
-    assert.deepStrictEqual(getHrefs(privacy), ['/', 'rules.html', 'style.css']);
+    assert.deepStrictEqual(getHrefs(rules), ['/', 'ai-cpu.html', 'cards.html', 'how-to-play.html', 'privacy.html', 'style.css']);
+    assert.deepStrictEqual(getHrefs(privacy), ['/', 'ai-cpu.html', 'cards.html', 'how-to-play.html', 'rules.html', 'style.css']);
+    assert.deepStrictEqual(getHrefs(howToPlay), ['/', 'ai-cpu.html', 'cards.html', 'privacy.html', 'rules.html', 'style.css']);
+    assert.deepStrictEqual(getHrefs(cardsPage), ['/', 'ai-cpu.html', 'how-to-play.html', 'privacy.html', 'rules.html', 'style.css']);
+    assert.deepStrictEqual(getHrefs(aiCpu), ['/', 'cards.html', 'how-to-play.html', 'privacy.html', 'rules.html', 'style.css']);
     assert.ok(!privacy.includes('adsbygoogle.js'));
     assert.ok(!rules.includes('adsbygoogle.js'));
     const getLinkTags = (pageSource) => [...pageSource.matchAll(/<link[^>]+>/g)].map((match) => match[0]).sort();
-    assert.deepStrictEqual(getLinkTags(rules), ['<link rel="stylesheet" href="style.css">']);
-    assert.deepStrictEqual(getLinkTags(privacy), ['<link rel="stylesheet" href="style.css">']);
-    for (const staticPageSource of [rules, privacy]) {
+    for (const staticPageSource of staticPages) {
+        assert.deepStrictEqual(getLinkTags(staticPageSource), ['<link rel="stylesheet" href="style.css">']);
+    }
+    for (const staticPageSource of staticPages) {
         assert.ok(!staticPageSource.includes('pagead2.googlesyndication.com'));
         assert.ok(!staticPageSource.includes('ca-pub-8683516545883768'));
     }
-    for (const publicPageSource of [html, rules, privacy]) {
+    for (const publicPageSource of [html, ...staticPages]) {
         assert.ok(!/<ins[^>]+class\s*=\s*(["'])[^"']*adsbygoogle/i.test(publicPageSource));
         assert.ok(!/data-ad-client\s*=/i.test(publicPageSource));
         assert.ok(!/data-ad-slot\s*=/i.test(publicPageSource));
@@ -2022,6 +2081,9 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(sw.includes("'/js/adSlots.js'"));
     assert.ok(sw.includes("'/privacy.html'"));
     assert.ok(sw.includes("'/rules.html'"));
+    assert.ok(sw.includes("'/how-to-play.html'"));
+    assert.ok(sw.includes("'/cards.html'"));
+    assert.ok(sw.includes("'/ai-cpu.html'"));
     assert.ok(css.includes('.ad-slot'));
     assert.ok(css.includes('pointer-events: none;'));
     assert.ok(css.includes('.legal-links'));
@@ -2077,6 +2139,23 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(rules.includes('保存と再開'));
     assert.ok(rules.includes('タイトル画面から続きが再開'));
     assert.ok(rules.includes('同じ端末から再接続'));
+    assert.ok(html.includes('このゲームについて'));
+    assert.ok(html.includes('サイコロで街を育てる対戦ゲーム'));
+    assert.ok(html.includes('PWAとして起動'));
+    assert.ok(howToPlay.includes('<h1>遊び方</h1>'));
+    assert.ok(howToPlay.includes('<h2>ダイスシティとは</h2>'));
+    assert.ok(howToPlay.includes('<h2>ゲームの目的と勝利条件</h2>'));
+    assert.ok(howToPlay.includes('<h2>ターンの流れ</h2>'));
+    assert.ok(howToPlay.includes('<h2>サイコロとカードの仕組み</h2>'));
+    assert.ok(howToPlay.includes('<h2>PWAとして遊ぶ</h2>'));
+    assert.ok(cardsPage.includes('<h1>カードとランドマーク</h1>'));
+    assert.ok(cardsPage.includes('<h2>カードの色と発動条件</h2>'));
+    assert.ok(cardsPage.includes('<h2>カードカテゴリ</h2>'));
+    assert.ok(cardsPage.includes('<h2>ランドマークの役割</h2>'));
+    assert.ok(aiCpu.includes('<h1>CPUとAI</h1>'));
+    assert.ok(aiCpu.includes('<h2>CPU難易度</h2>'));
+    assert.ok(aiCpu.includes('<h2>AI深層学習CPU</h2>'));
+    assert.ok(aiCpu.includes('<h2>オンライン対戦でのCPU</h2>'));
 
     const titleSlot = renderAdSlot('title-bottom');
     const rulesSlot = renderAdSlot('rules-bottom');

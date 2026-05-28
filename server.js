@@ -810,6 +810,9 @@ const PUBLIC_ROOT_FILES = Object.freeze(new Set([
     'sw.js',
     'privacy.html',
     'rules.html',
+    'how-to-play.html',
+    'cards.html',
+    'ai-cpu.html',
 ]));
 
 const PUBLIC_STATIC_DIRS = Object.freeze([
