@@ -38,7 +38,7 @@ Set these in the service that runs `server.js` unless noted otherwise:
 | Name | Where | Required | Purpose | Operations note |
 | --- | --- | --- | --- | --- |
 | `NODE_ENV=production` | Render | Recommended | Enables production defaults such as no-origin client-error blocking when `NTFY_TOPIC` is set. | Keep explicit in production so debug defaults do not leak. |
-| `NTFY_TOPIC` | Render | Recommended | Browser client-error and lifecycle notifications. | Use a hard-to-guess topic. Rotate if exposed. |
+| `NTFY_TOPIC` | Render | Recommended | Browser client-error and lifecycle notifications when `NODE_ENV=production`. | Use a hard-to-guess topic. Rotate if exposed. Local/dev `NTFY_TOPIC` values are ignored by normal reports. |
 | `NTFY_CI_TOPIC` | GitHub Actions secret | Optional but recommended | Failure-only CI notifications. | Use a different topic from `NTFY_TOPIC`; success runs stay silent. |
 | `CLIENT_ERROR_ALLOWED_ORIGINS` | Render | Recommended for public production | Comma-separated public origins allowed to report browser errors. | Same-origin reports are allowed automatically; use this for explicit public origin hygiene. |
 | `CLIENT_ERROR_SHARED_TOKEN` | Render | Optional | Token for scripted/no-origin diagnostics and `/api/client-error-test`. | Do not require normal browser reports to expose it. Use only for controlled tests or non-browser senders. |

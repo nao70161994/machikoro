@@ -238,6 +238,15 @@ function isProductionNoOriginClientErrorBlocked(req, env = process.env) {
     return String(env.NODE_ENV || '').toLowerCase() === 'production' && !!String(env.NTFY_TOPIC || '').trim();
 }
 
+function isNtfyConfigured(env = process.env) {
+    return String(env.NODE_ENV || '').toLowerCase() === 'production' && !!String(env.NTFY_TOPIC || '').trim();
+}
+
+function resolveNtfyTopic(options = {}, env = process.env) {
+    if (Object.prototype.hasOwnProperty.call(options, 'topic')) return options.topic;
+    return isNtfyConfigured(env) ? env.NTFY_TOPIC : '';
+}
+
 function clientErrorSharedToken(env = process.env) {
     return String(env.CLIENT_ERROR_SHARED_TOKEN || env.CLIENT_ERROR_TOKEN || '').trim();
 }
@@ -464,7 +473,7 @@ function formatNtfyClientErrorMessage(report) {
 async function notifyClientError(report, options = {}) {
     const classification = classifyClientErrorReport(report);
     return postNtfyNotification({
-        topic: options.topic || process.env.NTFY_TOPIC,
+        topic: resolveNtfyTopic(options, options.env || process.env),
         fetchImpl: options.fetchImpl || global.fetch,
         title: classification.classification === 'unknown' ? '[ダイスシティ] Unknown Client Error' : '[ダイスシティ] Client Error',
         priority: classification.priority,
@@ -498,7 +507,7 @@ async function handleClientErrorRequest(req, res, options = {}) {
     }
     const duplicate = isDuplicateClientError(normalized.report, now, options.dedupeCache || clientErrorDedupeCache);
     if (!duplicate) {
-        await notifyClientError(normalized.report, options.notifyOptions || {});
+        await notifyClientError(normalized.report, { env: options.env || process.env, ...(options.notifyOptions || {}) });
     }
     res.status(202).json({ ok: true, duplicate });
 }
@@ -550,7 +559,7 @@ async function handleClientErrorTestRequest(req, res, options = {}) {
         res.status(500).json({ ok: false, error: normalized.reason });
         return;
     }
-    const result = await notifyClientError(normalized.report, options.notifyOptions || {});
+    const result = await notifyClientError(normalized.report, { env, ...(options.notifyOptions || {}) });
     res.status(result.sent ? 202 : 503).json({ ok: result.sent, test: true, result });
 }
 
@@ -671,7 +680,7 @@ function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycl
 
 async function notifyGameLifecycle(report, options = {}) {
     return postNtfyNotification({
-        topic: options.topic || process.env.NTFY_TOPIC,
+        topic: resolveNtfyTopic(options, options.env || process.env),
         fetchImpl: options.fetchImpl || global.fetch,
         title: lifecycleEventTitle(report.event),
         priority: '2',
@@ -709,7 +718,7 @@ async function handleGameLifecycleRequest(req, res, options = {}) {
     }
     const duplicate = isDuplicateGameLifecycle(normalized.report, now, options.dedupeCache || gameLifecycleDedupeCache);
     let result = { sent: false, reason: duplicate ? 'duplicate' : 'not-sent' };
-    if (!duplicate) result = await notifyGameLifecycle(normalized.report, options.notifyOptions || {});
+    if (!duplicate) result = await notifyGameLifecycle(normalized.report, { env, ...(options.notifyOptions || {}) });
     res.status(202).json({ ok: true, duplicate, result });
 }
 

@@ -7,7 +7,7 @@
 Set these environment variables on Render:
 
 - `NODE_ENV=production`: recommended for public Render deployments so production defaults apply.
-- `NTFY_TOPIC`: ntfy topic name to publish browser client-error and lifecycle notifications to.
+- `NTFY_TOPIC`: ntfy topic name to publish browser client-error and lifecycle notifications to when `NODE_ENV=production`. Local/dev runs with this variable set only log warnings unless a test passes an explicit topic internally.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, no-origin/scripted diagnostics and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Same-origin browser `/api/client-error` reports stay tokenless so real browser reporting is not broken.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: recommended for public production. Set a comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
 - `TRUST_PROXY=1`: optional Express proxy trust setting. Leave unset for direct serving; set only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
@@ -33,7 +33,7 @@ Render steps:
 6. Check `docs/OPERATIONS.md` for `BUILD_HASH`, `CLIENT_ERROR_ALLOW_NO_ORIGIN`, and other production-only knobs before redeploying.
 7. Redeploy or restart the service.
 
-If `NTFY_TOPIC` is not set, `POST /api/client-error` still accepts reports but only writes a server-side `console.warn`. The game must not stop when notification delivery fails.
+If `NODE_ENV=production` and `NTFY_TOPIC` are not both set, `POST /api/client-error` still accepts reports but only writes a server-side `console.warn`. The game must not stop when notification delivery fails.
 
 ## Subscribing on Android
 
@@ -179,7 +179,7 @@ When not explicitly disabled, the browser sends compact `POST /api/game-lifecycl
 - `play-start`
 - `play-finish`
 
-The server publishes to the same `NTFY_TOPIC` only when that environment variable is configured. If `NTFY_TOPIC` is missing, the endpoint only logs a server-side warning and gameplay continues.
+The server publishes to the same `NTFY_TOPIC` only when `NODE_ENV=production` and `NTFY_TOPIC` are both configured. Otherwise the endpoint only logs a server-side warning and gameplay continues.
 
 For `/api/game-lifecycle`, same-origin browser reports stay tokenless so normal play-start/play-finish reporting does not require exposing a shared secret. Scripted/no-origin lifecycle diagnostics must send `X-Client-Error-Token` or `Authorization: Bearer` when `CLIENT_ERROR_SHARED_TOKEN` is configured.
 

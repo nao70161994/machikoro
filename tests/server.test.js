@@ -689,6 +689,56 @@ runTest('notifyClientError は未知だけ高優先度にし既知UI lockは低�
 });
 
 
+runTest('notifyClientError は production 以外の環境変数NTFY_TOPICへ誤送信しない', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousTopic = process.env.NTFY_TOPIC;
+    process.env.NODE_ENV = 'development';
+    process.env.NTFY_TOPIC = 'non-game-local-topic';
+    const calls = [];
+    const report = normalizeClientErrorPayload({ message: 'boom', phase: 'build' }, 1700000000000).report;
+
+    const result = await notifyClientError(report, {
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousTopic === undefined) delete process.env.NTFY_TOPIC;
+    else process.env.NTFY_TOPIC = previousTopic;
+
+    assert.deepStrictEqual(calls, []);
+    assert.strictEqual(result.sent, false);
+    assert.strictEqual(result.reason, 'missing-topic');
+});
+
+runTest('notifyGameLifecycle は production 以外の環境変数NTFY_TOPICへ誤送信しない', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousTopic = process.env.NTFY_TOPIC;
+    process.env.NODE_ENV = 'development';
+    process.env.NTFY_TOPIC = 'non-game-local-topic';
+    const calls = [];
+    const report = normalizeGameLifecyclePayload({ event: 'play-start', mode: 'local', playerCount: 2, cpuCount: 1, sessionId: 'local-topic-guard' }, 1700000000000).report;
+
+    const result = await notifyGameLifecycle(report, {
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousTopic === undefined) delete process.env.NTFY_TOPIC;
+    else process.env.NTFY_TOPIC = previousTopic;
+
+    assert.deepStrictEqual(calls, []);
+    assert.strictEqual(result.sent, false);
+    assert.strictEqual(result.reason, 'missing-topic');
+});
+
 runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み立てる', () => {
     const calls = [];
     postNtfyNotification({
