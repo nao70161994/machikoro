@@ -289,8 +289,9 @@ runAsyncTest('release ntfy client-error-test は実送信せず mock fetch で�
     assert.strictEqual(recorder.body.ok, true);
     assert.strictEqual(recorder.body.test, true);
     assert.strictEqual(calls.length, 1);
-    assert.strictEqual(calls[0].url, 'https://ntfy.sh/mock-topic');
-    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Client Error');
+    const ntfyUrl = new URL(calls[0].url);
+    assert.strictEqual(ntfyUrl.origin + ntfyUrl.pathname, 'https://ntfy.sh/mock-topic');
+    assert.strictEqual(ntfyUrl.searchParams.get('title'), '[ダイスシティ] Client Error');
     assert.ok(calls[0].options.body.includes('phase=test'));
     assert.ok(calls[0].options.body.includes('ダイスシティ ntfy test notification'));
     assert.ok(calls[0].options.body.includes('room=hash:'));

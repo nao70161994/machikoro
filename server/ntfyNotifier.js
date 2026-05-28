@@ -9,14 +9,14 @@ async function postNtfyNotification(options = {}) {
         console.warn(options.fetchUnavailableMessage || '[ntfy] fetch unavailable; notification skipped');
         return { sent: false, reason: 'fetch-unavailable' };
     }
+    const params = new URLSearchParams();
+    if (options.title) params.set('title', options.title);
+    if (options.priority) params.set('priority', String(options.priority));
+    if (options.tags) params.set('tags', options.tags);
+    const query = params.toString();
     try {
-        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic), {
+        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic) + (query ? '?' + query : ''), {
             method: 'POST',
-            headers: {
-                Title: options.title || '[Machikoro]',
-                Priority: String(options.priority || '3'),
-                Tags: options.tags || 'video_game',
-            },
             body: options.body || '',
         });
         if (response && response.ok === false) {

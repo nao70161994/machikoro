@@ -666,11 +666,12 @@ runTest('notifyClientError は未知だけ高優先度にし既知UI lockは低�
     });
 
     assert.strictEqual(calls.length, 1);
-    assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-test-topic');
+    const unknownUrl = new URL(calls[0].url);
+    assert.strictEqual(unknownUrl.origin + unknownUrl.pathname, 'https://ntfy.sh/machikoro-test-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Unknown Client Error');
-    assert.strictEqual(calls[0].options.headers.Priority, '5');
-    assert.ok(calls[0].options.headers.Tags.includes('unknown'));
+    assert.strictEqual(unknownUrl.searchParams.get('title'), '[ダイスシティ] Unknown Client Error');
+    assert.strictEqual(unknownUrl.searchParams.get('priority'), '5');
+    assert.ok(unknownUrl.searchParams.get('tags').includes('unknown'));
     assert.ok(calls[0].options.body.includes('classification=unknown'));
 
     const known = normalizeClientErrorPayload({ message: 'pending-ui-locked after 5000ms', stack: 'FREEZE_SUMMARY {"freezeKind":"pending-ui-locked"}' }, 1700000000000).report;
@@ -681,9 +682,10 @@ runTest('notifyClientError は未知だけ高優先度にし既知UI lockは低�
             return { ok: true };
         },
     });
-    assert.strictEqual(calls[1].options.headers.Title, '[ダイスシティ] Client Error');
-    assert.strictEqual(calls[1].options.headers.Priority, '3');
-    assert.ok(calls[1].options.headers.Tags.includes('known'));
+    const knownUrl = new URL(calls[1].url);
+    assert.strictEqual(knownUrl.searchParams.get('title'), '[ダイスシティ] Client Error');
+    assert.strictEqual(knownUrl.searchParams.get('priority'), '3');
+    assert.ok(knownUrl.searchParams.get('tags').includes('known'));
 });
 
 
@@ -702,11 +704,12 @@ runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み
     });
 
     assert.strictEqual(calls.length, 1);
-    assert.strictEqual(calls[0].url, 'https://ntfy.sh/helper-topic');
+    const helperUrl = new URL(calls[0].url);
+    assert.strictEqual(helperUrl.origin + helperUrl.pathname, 'https://ntfy.sh/helper-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Helper Test');
-    assert.strictEqual(calls[0].options.headers.Priority, '5');
-    assert.strictEqual(calls[0].options.headers.Tags, 'test,gear');
+    assert.strictEqual(helperUrl.searchParams.get('title'), '[ダイスシティ] Helper Test');
+    assert.strictEqual(helperUrl.searchParams.get('priority'), '5');
+    assert.strictEqual(helperUrl.searchParams.get('tags'), 'test,gear');
     assert.strictEqual(calls[0].options.body, 'hello');
 });
 
@@ -783,10 +786,11 @@ runTest('notifyGameLifecycle は ntfy topic 設定時に軽量titleでPOSTする
     });
 
     assert.strictEqual(calls.length, 1);
-    assert.strictEqual(calls[0].url, 'https://ntfy.sh/machikoro-life-topic');
+    const lifecycleUrl = new URL(calls[0].url);
+    assert.strictEqual(lifecycleUrl.origin + lifecycleUrl.pathname, 'https://ntfy.sh/machikoro-life-topic');
     assert.strictEqual(calls[0].options.method, 'POST');
-    assert.strictEqual(calls[0].options.headers.Title, '[ダイスシティ] Game Started');
-    assert.strictEqual(calls[0].options.headers.Priority, '2');
+    assert.strictEqual(lifecycleUrl.searchParams.get('title'), '[ダイスシティ] Game Started');
+    assert.strictEqual(lifecycleUrl.searchParams.get('priority'), '2');
     assert.ok(calls[0].options.body.includes('mode=local'));
     assert.ok(calls[0].options.body.includes('players=4'));
 });
