@@ -766,6 +766,38 @@ runTest('integration: 建設済みbuild phaseではbuildLandmark子ボタンを�
     assert.strictEqual(rt.validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked').length, 0);
 });
 
+runTest('integration: 建設済みbuild phaseでbuildMenuが空でも購入actionをlock原因にしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    game.currentPlayer().coins = 30;
+    hideAllTestModals(rt);
+    rt.render();
+
+    rt.__test.elements.buildMenu.innerHTML = '';
+    rt.__test.elements.btnSkip.disabled = true;
+
+    const snapshot = rt.collectUiLockSnapshot('post-build-empty-menu');
+    const issues = rt.validateUiInteractability(snapshot);
+    assert.ok(snapshot.allowedActions.includes('buildCard'));
+    assert.ok(snapshot.allowedActions.includes('buildLandmark'));
+    assert.ok(snapshot.allowedActions.includes('undoBuild'));
+    assert.strictEqual(issues.find(item => item.action === 'buildCard'), undefined);
+    assert.strictEqual(issues.find(item => item.action === 'buildLandmark'), undefined);
+    assert.strictEqual(issues.find(item => item.action === 'undoBuild'), undefined);
+    assert.strictEqual(issues.find(item => item.action === 'nextTurn').reason, 'disabled-mismatch');
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), 'post-build-ui-blocked');
+});
+
 runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

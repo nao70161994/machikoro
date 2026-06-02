@@ -358,6 +358,12 @@ function expectedActionContainerEntries(snapshot) {
         .filter(entry => !!entry.spec);
 }
 
+function shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason) {
+    if (!entry || !entry.spec || !entry.spec.requiresContent) return false;
+    if (expectedChildSpecForEntry(snapshot, entry)) return false;
+    return reason === 'not-clickable' || reason === 'action-child-not-clickable' || reason === 'child-not-clickable';
+}
+
 function missingActionContainerRegistryEntries(snapshot) {
     const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
     return allowed
@@ -466,6 +472,7 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
             const modal = snapshotStateById(snapshot, entry.spec.modalId);
             if (modal && !isElementUsablyEnabled(modal)) reason = uiLockReasonForElement(modal);
         }
+        if (shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason)) continue;
         issues.push({
             kind: 'allowed-action-container-not-clickable',
             action: entry.action,
