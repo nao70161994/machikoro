@@ -145,6 +145,35 @@ runTest('integration: 購入後watchdogは操作可能な通常待機をfreeze�
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
 });
 
+runTest('integration: 建設後にskip disabledが遅れて残ってもstabilizerがwatchdog前に復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+
+    rt.__test.elements.btnSkip.disabled = true;
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
+    const snapshot = rt.collectUiLockSnapshot('post-build-stabilized');
+    assert.strictEqual(rt.validateUiInteractability(snapshot).find(issue => issue.action === 'nextTurn'), undefined);
+    assert.strictEqual(rt.__test.fetchCalls.find(call => call.url === '/api/client-error'), undefined);
+});
+
 runTest('integration: 購入後操作不能ならwatchdogがsnapshot保存と通知を行う', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

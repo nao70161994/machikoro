@@ -16,6 +16,7 @@ let _freezeWatchdogLastKey = '';
 let _freezeWatchdogLastChangedAt = 0;
 let _freezeWatchdogLastReportKey = '';
 let _freezeWatchdogLastReportAt = 0;
+let _postBuildUiStabilizerPending = false;
 
 function truncateClientErrorField(value, limit) {
     const text = String(value || '');
@@ -820,6 +821,55 @@ function clearUiLocks(reason = 'ui-unlock', snapshot = null) {
     const changed = forceClearModalLocksForRecovery(snapshot);
     clearGameScreenLockIfNoActiveModal(snapshot, reason + '-game-screen');
     if (changed || !hasActiveBlockingModal(snapshot)) markClientFlowCheckpoint(reason);
+}
+
+function isPostBuildNextTurnSnapshot(snapshot) {
+    if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
+    if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+    if (hasActiveBlockingModal(snapshot)) return false;
+    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+    const pending = snapshot.pendingFields || {};
+    return allowed.includes('nextTurn') && !pending.pendingRenovation;
+}
+
+function stabilizePostBuildNextTurnUi(reason = 'post-build-ui-stabilizer') {
+    const snapshot = buildClientRuntimeSnapshot(reason);
+    if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
+    const btnSkip = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnSkip') : null;
+    if (!btnSkip) return false;
+    let changed = false;
+    if (btnSkip.disabled) {
+        btnSkip.disabled = false;
+        changed = true;
+    }
+    if (btnSkip.textContent !== '建設完了・ターン終了') {
+        btnSkip.textContent = '建設完了・ターン終了';
+        changed = true;
+    }
+    changed = clearGameScreenLockIfNoActiveModal(snapshot, reason + '-game-screen') || changed;
+    if (changed) markClientFlowCheckpoint(reason, { recovery: 'post-build-next-turn-ui' });
+    return changed;
+}
+
+function schedulePostBuildUiStabilizer(reason = 'post-build-ui-stabilizer') {
+    if (_postBuildUiStabilizerPending) return false;
+    const snapshot = buildClientRuntimeSnapshot(reason + '-schedule');
+    if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
+    _postBuildUiStabilizerPending = true;
+    const delays = [0, 250, 1500, 3500];
+    let remaining = delays.length;
+    const run = () => {
+        stabilizePostBuildNextTurnUi(reason);
+        remaining--;
+        if (remaining <= 0) _postBuildUiStabilizerPending = false;
+    };
+    try {
+        if (typeof setTimeout === 'function') delays.forEach(delay => setTimeout(run, delay));
+        else while (remaining > 0) run();
+    } catch (_) {
+        while (remaining > 0) run();
+    }
+    return true;
 }
 
 function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
