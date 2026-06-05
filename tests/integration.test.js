@@ -1444,6 +1444,29 @@ runTest('integration: 通常renderは主要action containerをrecoveryなしで�
     }
 });
 
+runTest('integration: harborChoice の正常なresolveHarborボタンはfreeze扱いしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    hideAllTestModals(rt);
+    game.phase = rt.GAME_PHASES.HARBOR_CHOICE;
+    game.lastDiceResult = 10;
+    rt.render();
+
+    const snapshot = rt.collectUiLockSnapshot('harbor-choice-normal');
+    assert.deepStrictEqual(Array.from(snapshot.allowedActions), ['resolveHarbor']);
+    assert.ok(rt.__test.elements.diceChoose.innerHTML.includes('data-action="resolveHarbor"'));
+    assert.strictEqual(rt.validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked').length, 0);
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
+});
+
 runTest('integration: build phase render はstale root/container lockをwatchdog前に同期する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

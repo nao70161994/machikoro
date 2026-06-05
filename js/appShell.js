@@ -587,8 +587,9 @@ function expectedPrimaryActions(snapshot) {
 }
 
 function hasUsablePrimaryAction(snapshot) {
+    const primaryActions = new Set(expectedPrimaryActions(snapshot));
     return expectedActionContainerEntries(snapshot)
-        .filter(entry => !entry.action.startsWith('resolve'))
+        .filter(entry => primaryActions.has(entry.action))
         .some(entry => isActionContainerUiUsable(snapshot, entry));
 }
 
@@ -599,8 +600,9 @@ function expectedPendingActions(snapshot) {
 }
 
 function hasUsablePendingAction(snapshot) {
+    const pendingActions = new Set(expectedPendingActions(snapshot));
     return expectedActionContainerEntries(snapshot)
-        .filter(entry => entry.action.startsWith('resolve'))
+        .filter(entry => pendingActions.has(entry.action))
         .some(entry => isActionContainerUiUsable(snapshot, entry));
 }
 
