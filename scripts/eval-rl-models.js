@@ -36,6 +36,7 @@ function parseArgs(argv) {
         csv: '',
         markdown: '',
         independentSeeds: false,
+        allowSmoke: false,
     };
 
     for (let i = 0; i < argv.length; i++) {
@@ -56,6 +57,7 @@ function parseArgs(argv) {
         else if (arg === '--csv') args.csv = argv[++i] || '';
         else if (arg === '--markdown') args.markdown = argv[++i] || '';
         else if (arg === '--independent-seeds') args.independentSeeds = true;
+        else if (arg === '--allow-smoke') args.allowSmoke = true;
     }
     return args;
 }
@@ -334,7 +336,16 @@ function renderMarkdown(results) {
     return lines.join('\n') + '\n';
 }
 
+function assertEvaluationGateAllowsOutput(results, args = {}) {
+    const gate = evaluationGate(results);
+    if (gate.smokeOnly && !args.allowSmoke) {
+        throw new Error(`短期評価(smokeOnly)は採用artifactとして出力できません: minGames=${gate.minGames === null ? 'n/a' : gate.minGames}. --allow-smoke を明示してください。`);
+    }
+    return gate;
+}
+
 function writeOutputs(results, args) {
+    assertEvaluationGateAllowsOutput(results, args);
     if (args.output) fs.writeFileSync(args.output, JSON.stringify(results, null, 2), 'utf8');
     if (args.csv) fs.writeFileSync(args.csv, renderCsv(results), 'utf8');
     if (args.markdown) fs.writeFileSync(args.markdown, renderMarkdown(results), 'utf8');
@@ -344,9 +355,14 @@ if (require.main === module) {
     const args = parseArgs(process.argv.slice(2));
     const registry = loadRegistry(args.registryPath);
     const results = evaluateModelSpecs(resolveModelSpecs(args, registry), args);
-    writeOutputs(results, args);
-    if (args.format === 'json') console.log(JSON.stringify(results, null, 2));
-    else console.log(renderText(results));
+    try {
+        writeOutputs(results, args);
+        if (args.format === 'json') console.log(JSON.stringify(results, null, 2));
+        else console.log(renderText(results));
+    } catch (error) {
+        console.error(error && error.message || error);
+        process.exitCode = 1;
+    }
 }
 
 module.exports = {
@@ -362,6 +378,7 @@ module.exports = {
     summarizeModel,
     evaluateModelSpecs,
     evaluationGate,
+    assertEvaluationGateAllowsOutput,
     renderText,
     renderCsv,
     renderMarkdown,

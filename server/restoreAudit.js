@@ -6,6 +6,38 @@ const RESTORE_AUDIT_SIGNATURE_ALGORITHMS = Object.freeze({
 const RESTORE_AUDIT_MAX_STRING_LENGTH = 256;
 const RESTORE_AUDIT_HASH_PATTERN = /^[a-f0-9]{16,128}$/i;
 
+
+function stableJson(value) {
+    if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+    if (value && typeof value === 'object') {
+        return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value);
+}
+
+function restoreAuditPayloadHash(cryptoModule, payload) {
+    if (!cryptoModule || !payload) return '';
+    return cryptoModule.createHash('sha256').update(stableJson(payload)).digest('hex');
+}
+
+function restoreAuditSignature(cryptoModule, secret, roomId, canonicalHash) {
+    if (!cryptoModule || typeof secret !== 'string' || !secret || !canonicalHash) return '';
+    return cryptoModule
+        .createHmac('sha256', secret)
+        .update(`${normalizeRestoreAuditRoomId(roomId)}\n${canonicalHash}`)
+        .digest('hex');
+}
+
+function timingSafeEqualHex(cryptoModule, a, b) {
+    if (!cryptoModule || typeof a !== 'string' || typeof b !== 'string') return false;
+    if (!/^[a-f0-9]+$/i.test(a) || !/^[a-f0-9]+$/i.test(b) || a.length !== b.length) return false;
+    try {
+        return cryptoModule.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex'));
+    } catch (_) {
+        return false;
+    }
+}
+
 function normalizeRestoreAuditRoomId(roomId) {
     return typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
 }
@@ -67,9 +99,53 @@ function buildUnsignedRestoreAuditRecord(roomId, options = {}) {
     };
 }
 
+
+function buildSignedRestoreAuditRecord(roomId, payload, options = {}) {
+    const cryptoModule = options.crypto;
+    const secret = typeof options.secret === 'string' ? options.secret : '';
+    const normalizedRoomId = normalizeRestoreAuditRoomId(roomId);
+    if (!normalizedRoomId || !cryptoModule || !secret || !payload) return null;
+    const canonicalHash = restoreAuditPayloadHash(cryptoModule, payload);
+    const signature = restoreAuditSignature(cryptoModule, secret, normalizedRoomId, canonicalHash);
+    if (!canonicalHash || !signature) return null;
+    return {
+        schemaVersion: RESTORE_AUDIT_SCHEMA_VERSION,
+        roomId: normalizedRoomId,
+        signed: true,
+        algorithm: RESTORE_AUDIT_SIGNATURE_ALGORITHMS.HMAC_SHA256,
+        keyId: typeof options.keyId === 'string' ? options.keyId.slice(0, 96) : 'restore-audit-v1',
+        canonicalHash,
+        payloadHash: canonicalHash,
+        signature,
+        createdAt: Number.isInteger(options.now) ? options.now : Date.now(),
+        source: typeof options.source === 'string' ? options.source.slice(0, 64) : 'server-canonical-snapshot',
+    };
+}
+
+function verifySignedRestoreAuditRecord(record, payload, options = {}) {
+    const validation = validateRestoreAuditRecord(record, { roomId: options.roomId });
+    if (!validation.ok) return validation;
+    const audit = validation.record;
+    if (!audit || !audit.signed || audit.algorithm !== RESTORE_AUDIT_SIGNATURE_ALGORITHMS.HMAC_SHA256) {
+        return { ok: false, reason: 'not-signed' };
+    }
+    const cryptoModule = options.crypto;
+    const secret = typeof options.secret === 'string' ? options.secret : '';
+    if (!cryptoModule || !secret) return { ok: false, reason: 'missing-secret' };
+    const canonicalHash = restoreAuditPayloadHash(cryptoModule, payload);
+    if (!canonicalHash || audit.canonicalHash !== canonicalHash) return { ok: false, reason: 'canonical-mismatch' };
+    const expectedSignature = restoreAuditSignature(cryptoModule, secret, audit.roomId, canonicalHash);
+    if (!timingSafeEqualHex(cryptoModule, audit.signature, expectedSignature)) {
+        return { ok: false, reason: 'signature-mismatch' };
+    }
+    return { ok: true, record: audit };
+}
+
 module.exports = {
     RESTORE_AUDIT_SCHEMA_VERSION,
     RESTORE_AUDIT_SIGNATURE_ALGORITHMS,
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
+    buildSignedRestoreAuditRecord,
+    verifySignedRestoreAuditRecord,
 };

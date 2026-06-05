@@ -442,7 +442,7 @@ function shouldShowPendingForCurrentPlayer() {
 function normalizePendingModalInteraction(el, modal, hasContent) {
     if (modal && modal.style) {
         modal.style.display = hasContent ? "flex" : "none";
-        modal.style.pointerEvents = hasContent ? "auto" : "";
+        modal.style.pointerEvents = "";
     }
     if (el && el.style) {
         el.style.pointerEvents = hasContent ? "auto" : "";

@@ -623,7 +623,7 @@ print(env._target_opponent_slots())
     assert.deepStrictEqual(JSON.parse(lines[1]), [3, 1, 2, 4]);
 });
 
-runTest('rl train: pending target choice は BC target head に合わせて合法手 mask を切り替える', () => {
+runTest('rl train: pending business mask はtarget head選択後も全相手候補を保持する', () => {
     const output = runPython(`
 import numpy as np
 from scripts.rl.agent import RLAgent
@@ -665,7 +665,7 @@ print(int(mask[take_mine]))
     assert.deepStrictEqual(JSON.parse(lines[0]), [1, 2, 3]);
     assert.strictEqual(lines[1], '2');
     assert.strictEqual(lines[2], '1');
-    assert.strictEqual(lines[3], '0');
+    assert.strictEqual(lines[3], '1');
 });
 
 runTest('rl train: pending business は休業中カードだけでも合法手になる', () => {

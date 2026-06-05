@@ -2865,6 +2865,20 @@
 - 残課題:
   - canonical serialization、key rotation、freshness/expiry、legacy unsigned bundle policy は追加設計判断が必要。
 
+## Phase 5b - signed restore verification and unsigned snapshot guard
+
+- 状態: completed; `npm test` / `npm run test:static` passed before commit.
+- 対象: server restart restore の client snapshot 信頼境界、復元署名、canonical state 優先順位。
+- 修正済み:
+  - `server/restoreAudit.js` に canonical payload hash と HMAC 署名生成/検証を追加した。
+  - `buildRejoinDataPayload()` は `RESTORE_AUDIT_SECRET` または `MACHIKORO_RESTORE_AUDIT_SECRET` がある場合、`stateSnapshot` に署名済み `restoreAudit` を添付する。
+  - `handleRecreateRoom()` は server canonical state を最優先し、次に署名済み snapshot を信頼し、未署名 snapshot は action log replay の補助としても使わない。
+  - `js/online.js` は `onlineRestoreAudit` を保存/送信し、room index へ有無を記録する。
+  - `tests/server.test.js` で署名付き復元、未署名 snapshot 拒否、既存 rejoin payload の署名添付を固定した。
+- コード挙動: signing secret 未設定の環境では compacted client snapshot は信頼しない。full action log replay は互換経路として残る。
+- 残課題:
+  - durable canonical adapter、key rotation、freshness/expiry、hostless restore は引き続き設計/運用判断が必要。
+
 ## Phase 6 - multiple room resume UI design footing
 
 - 状態: completed; docs/test verification passed before commit.

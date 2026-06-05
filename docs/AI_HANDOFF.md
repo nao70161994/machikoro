@@ -367,11 +367,11 @@ Test index:
 - Scoped restore reads still prefer `*:room:<ROOM>` keys and fall back to legacy global keys for compatibility. Do not remove legacy keys destructively until a retention policy and multiple-room resume UX are explicit.
 - `_pruneOnlineRestoreRoomIndex()` prunes stale index rows only; it must not delete restore bundles. Multiple-room resume UI should use this index only after stale/live/completed bundle states are documented and tested.
 
-## Restore audit metadata footing
+## Restore audit / signed snapshot footing
 
-- `server/restoreAudit.js` validates optional `restoreAudit` metadata on `recreateRoom` payloads. It accepts absent metadata and explicit unsigned audit records, but rejects malformed room-mismatched or internally inconsistent records.
-- This is not signed restore. Unsigned audit records must never increase restore rank, bypass host-only restore, or override server-persisted canonical state. Real signing still needs canonical serialization, key rotation, freshness policy, and legacy-bundle behavior.
-- Future signed restore work should add verification as a separate layer and keep `server-persisted canonical state` higher priority in the trust model.
+- `server/restoreAudit.js` now supports HMAC-signed restore audit records for the canonical restore payload (`gameStartPayload` + `stateSnapshot`) when `RESTORE_AUDIT_SECRET` or `MACHIKORO_RESTORE_AUDIT_SECRET` is configured.
+- Trust priority is: server-loaded canonical state, then valid signed client snapshot, then replay from action log without trusting the client snapshot. Unsigned audit records remain diagnostics only and must not increase restore rank or bypass host-only restore.
+- If no signing secret is configured, compacted client snapshots are ignored unless server canonical state is available. Full action-log replay remains compatible; compacted restart restore needs the secret or a durable canonical adapter.
 
 ## Multiple room resume design footing
 
@@ -382,5 +382,5 @@ Test index:
 ## Hostless restore re-evaluation
 
 - `docs/HOSTLESS_RESTORE_DESIGN.md` now lists the concrete gates for re-evaluation. The 2026-05-26 footings do not authorize hostless restore.
-- Keep `recreateRoom` replacement host-only. `onlineRestoreRoomIndex` and `restoreAudit` are supporting diagnostics/locators, not authority.
+- Keep `recreateRoom` replacement host-only. `onlineRestoreRoomIndex` is a locator only; `restoreAudit` becomes authority only when server-generated and HMAC-verified for the exact canonical restore payload.
 - Stop before implementation if the next step requires provisional quorum, durable storage selection, replacement timing rules, or multi-device manual verification.

@@ -23,7 +23,7 @@ function effectiveActionSchema(modelData) {
 }
 
 function parseArgs(argv) {
-    let modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
+    let modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json');
     let games = 20;
     let seed = 1;
     let maxSteps = 5000;
@@ -82,7 +82,7 @@ function buildRlEvalRunSeriesOptions(options, lineup, seed, rlModelData) {
 }
 
 function evaluateRlVsJs(options = {}) {
-    const modelPath = options.modelPath || path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
+    const modelPath = options.modelPath || path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json');
     const rlModelData = options.rlModelData || loadModel(modelPath);
     const lineups = Array.isArray(options.lineups) && options.lineups.length > 0
         ? options.lineups.map(lineup => lineup.slice())

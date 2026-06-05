@@ -63,10 +63,13 @@ const rooms = Object.create(null);
 const {
     createCanonicalStateStoreFromEnv,
     buildCanonicalStateRecord,
+    validateCanonicalStateRecord,
 } = require('./server/canonicalStateStore');
 const {
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
+    buildSignedRestoreAuditRecord,
+    verifySignedRestoreAuditRecord,
 } = require('./server/restoreAudit');
 const {
     roomTimestamp,
@@ -119,6 +122,9 @@ const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
 const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
+function restoreAuditSecret() {
+    return String(process.env.RESTORE_AUDIT_SECRET || process.env.MACHIKORO_RESTORE_AUDIT_SECRET || '');
+}
 
 function resolveTrustProxySetting(env = process.env) {
     const value = String(env.TRUST_PROXY || env.EXPRESS_TRUST_PROXY || '').trim();
@@ -1009,15 +1015,22 @@ function acceptedClientActionRefs(room) {
 }
 
 function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
-    return {
-        gameStartPayload: overrides.gameStartPayload || room.gameStartPayload,
-        stateSnapshot: overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null),
+    const gameStartPayload = overrides.gameStartPayload || room.gameStartPayload;
+    const stateSnapshot = overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null);
+    const payload = {
+        gameStartPayload,
+        stateSnapshot,
         actionLog: overrides.actionLog || room.actionLog || [],
         acceptedClientActions: acceptedClientActionRefs(room),
         playerIndex,
         hostPlayerIndex: overrides.hostPlayerIndex !== undefined ? overrides.hostPlayerIndex : room.hostPlayerIndex,
         hostEpoch: Number.isInteger(overrides.hostEpoch) ? overrides.hostEpoch : (room.hostEpoch || 0),
     };
+    const restoreAudit = overrides.restoreAudit !== undefined
+        ? overrides.restoreAudit
+        : buildRestoreSnapshotAudit(room.roomId, gameStartPayload, stateSnapshot);
+    if (restoreAudit) payload.restoreAudit = restoreAudit;
+    return payload;
 }
 
 function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
@@ -1030,6 +1043,49 @@ function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store
         console.warn('[canonical-state-store] save failed:', error && error.message || error);
         return { ok: false, reason: 'save-failed' };
     }
+}
+
+function loadRoomCanonicalStateRecord(roomId, store = canonicalStateStore) {
+    if (!store || typeof store.load !== 'function') return null;
+    try {
+        const record = store.load(roomId);
+        const validation = validateCanonicalStateRecord(record);
+        if (!validation.ok || record.roomId !== roomId) return null;
+        return record;
+    } catch (error) {
+        console.warn('[canonical-state-store] load failed:', error && error.message || error);
+        return null;
+    }
+}
+
+function buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot) {
+    if (!stateSnapshot || !gameStartPayload) return null;
+    const playerCount = Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0;
+    const normalizedGameStartPayload = Object.assign({}, gameStartPayload, {
+        playerSettings: normalizePlayerSettings(gameStartPayload.playerSettings, playerCount),
+    });
+    return {
+        gameStartPayload: normalizedGameStartPayload,
+        stateSnapshot,
+    };
+}
+
+function buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, now = Date.now()) {
+    return buildSignedRestoreAuditRecord(
+        roomId,
+        buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot),
+        { crypto, secret: restoreAuditSecret(), now }
+    );
+}
+
+function isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, restoreAudit) {
+    if (!stateSnapshot) return true;
+    const validation = verifySignedRestoreAuditRecord(
+        restoreAudit,
+        buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot),
+        { roomId, crypto, secret: restoreAuditSecret() }
+    );
+    return validation.ok;
 }
 
 // ===== Socket events =====
@@ -1438,7 +1494,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが大きすぎます');
         return;
     }
-    const { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload;
+    let { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload;
     if (!roomId || !gameStartPayload || !reconnectToken) {
         emitAppError(socket, '復元データが不完全です');
         return;
@@ -1447,11 +1503,19 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
+    const canonicalRecord = loadRoomCanonicalStateRecord(roomId);
+    if (canonicalRecord) {
+        gameStartPayload = canonicalRecord.gameStartPayload || gameStartPayload;
+        stateSnapshot = canonicalRecord.stateSnapshot || null;
+        actionLog = Array.isArray(canonicalRecord.actionLog) ? canonicalRecord.actionLog : [];
+    }
     const restoreAuditValidation = validateRestoreAuditRecord(payload.restoreAudit, { roomId });
     if (!restoreAuditValidation.ok) {
         emitAppError(socket, '復元署名メタデータが無効です');
         return;
     }
+    const clientSnapshotTrusted = !!canonicalRecord || !stateSnapshot || isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, payload.restoreAudit);
+    const replayStateSnapshot = clientSnapshotTrusted ? stateSnapshot : null;
     if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
         if (!room.started) {
@@ -1459,16 +1523,27 @@ function handleRecreateRoom(socket, payload = {}) {
             return;
         }
         const existingReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
-        const sanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot);
+        const existingHostRestoreAuthenticated = Number.isInteger(playerIndex) &&
+            existingReconnectTokenHash &&
+            hashReconnectToken(reconnectToken) === existingReconnectTokenHash &&
+            room.hostPlayerIndex === playerIndex;
+        const sanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot);
+        if (existingHostRestoreAuthenticated && sanitizedExistingRoomActionLog === null) {
+            emitAppError(socket, '復元データが壊れています');
+            return;
+        }
+        const incomingRankForExistingRoom = restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog || []);
         const incomingCanReplace = !!sanitizedExistingRoomActionLog &&
             isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
             !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
-            Number.isInteger(playerIndex) &&
-            existingReconnectTokenHash &&
-            hashReconnectToken(reconnectToken) === existingReconnectTokenHash &&
-            room.hostPlayerIndex === playerIndex &&
-            canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapshot, sanitizedExistingRoomActionLog);
+            existingHostRestoreAuthenticated &&
+            clientSnapshotTrusted &&
+            canReplaceRestoredRoom(room, playerIndex, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
         if (!incomingCanReplace) {
+            if (existingHostRestoreAuthenticated && isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog || [])) {
+                emitAppError(socket, '復元データが壊れています');
+                return;
+            }
             const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
             if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
                 emitAppError(socket, 'INVALID_TOKEN');
@@ -1526,12 +1601,21 @@ function handleRecreateRoom(socket, payload = {}) {
         return;
     }
     const restoredPlayers = buildRestoredHumanPlayers(gameStartPayload, playerIndex, socket.id);
-    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot);
+    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot);
     if (!sanitizedActionLog) {
         emitAppError(socket, '復元データが壊れています');
         return;
     }
-    const restoredRank = restorePayloadRank(gameStartPayload, stateSnapshot, sanitizedActionLog);
+    if (!clientSnapshotTrusted && sanitizedActionLog.length === 0) {
+        emitAppError(socket, '復元データが壊れています');
+        return;
+    }
+    const restoredRank = canonicalRecord
+        ? {
+            hostEpoch: Number.isInteger(canonicalRecord.hostEpoch) ? canonicalRecord.hostEpoch : 0,
+            actionSeq: Number.isInteger(canonicalRecord.actionSeq) ? canonicalRecord.actionSeq : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog).actionSeq,
+        }
+        : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog);
     gameStartPayload.hostEpoch = restoredRank.hostEpoch;
     gameStartPayload.actionSeq = restoredRank.actionSeq;
     const restoredRoom = {
@@ -1548,7 +1632,7 @@ function handleRecreateRoom(socket, payload = {}) {
         enabledLandmarks: gameStartPayload.enabledLandmarks || [],
         cpuSpeed: gameStartPayload.cpuSpeed || 1500,
         gameStartPayload,
-        stateSnapshot: sanitizeClientStateSnapshot(stateSnapshot, playerNames.length),
+        stateSnapshot: sanitizeClientStateSnapshot(replayStateSnapshot, playerNames.length),
         acceptedClientActions: {},
         actionLog: sanitizedActionLog,
         lastUndoState: null,
@@ -2120,6 +2204,8 @@ module.exports = {
     validateRestorePayloadLimits,
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
+    buildSignedRestoreAuditRecord,
+    verifySignedRestoreAuditRecord,
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
     sanitizeRestoreActionLog,
@@ -2177,6 +2263,10 @@ module.exports = {
     acceptedClientActionRefs,
     buildRejoinDataPayload,
     persistRoomCanonicalState,
+    loadRoomCanonicalStateRecord,
+    buildRestoreSnapshotAuditPayload,
+    buildRestoreSnapshotAudit,
+    isVerifiedClientRestoreSnapshot,
     generateRoomId,
     isValidRoomId,
     buildRestoredHumanPlayers,

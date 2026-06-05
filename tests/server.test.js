@@ -1,3 +1,4 @@
+process.env.RESTORE_AUDIT_SECRET = process.env.RESTORE_AUDIT_SECRET || 'test-restore-audit-secret';
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -19,6 +20,7 @@ const {
     validateRestorePayloadLimits,
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
+    buildRestoreSnapshotAudit,
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
     sanitizeRestoreActionLog,
@@ -214,6 +216,17 @@ function extractSwitchActionCases(functionBody) {
 
 function extractActionValidatorBranches(functionBody) {
     return [...functionBody.matchAll(/action === ['"]([^'"]+)['"]/g)].map(match => match[1]).sort();
+}
+
+function makeRestoreAudit(roomId, gameStartPayload, stateSnapshot) {
+    return buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, 1234567890);
+}
+
+function signedRestorePayload(payload) {
+    if (payload && payload.roomId && payload.gameStartPayload && payload.stateSnapshot && !payload.restoreAudit) {
+        payload.restoreAudit = makeRestoreAudit(payload.roomId, payload.gameStartPayload, payload.stateSnapshot);
+    }
+    return payload;
 }
 
 function makeSnapshot(overrides = {}) {
@@ -2327,7 +2340,7 @@ runTest('handleRecreateRoom は正しい reconnectToken を要求し不正なら
         reconnectToken: 'forged-token',
     };
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
         assert.deepStrictEqual(joined, []);
         assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: 'INVALID_TOKEN' }]);
         assert.strictEqual(__rooms.REST01, undefined);
@@ -2374,7 +2387,7 @@ runTest('handleRecreateRoom は payload 欠損を例外にせず拒否する', (
             join() { throw new Error('join should not be called'); },
         };
 
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
 
         assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '復元データが不完全です' }]);
     }
@@ -2430,6 +2443,41 @@ runTest('handleRecreateRoom は不正な restore audit metadata を拒否する'
     });
 
     assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '復元署名メタデータが無効です' }]);
+});
+
+runTest('handleRecreateRoom は未署名 client snapshot を拒否する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join() { throw new Error('join should not be called'); },
+    };
+    const reconnectToken = 'token-host';
+    handleRecreateRoom(socket, {
+        roomId: 'REST_UNSIGNED_SNAPSHOT',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: makeSnapshot({ actionSeq: 0 }),
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    });
+
+    assert.strictEqual(__rooms.REST_UNSIGNED_SNAPSHOT, undefined);
+    assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが壊れています' }]);
 });
 
 runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共有する', () => {
@@ -2555,7 +2603,7 @@ runTest('handleRecreateRoom は replay 不能な actionLog を持つ復元を拒
     };
 
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
         assert.deepStrictEqual(joined, []);
         assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが壊れています' }]);
         assert.strictEqual(__rooms.REST_BROKEN_LOG, undefined);
@@ -2609,6 +2657,7 @@ runTest('handleRecreateRoom は既に復元済みのルームなら再作成せ�
 
         assert.deepStrictEqual(joined, ['REST_EXISTS']);
         assert.strictEqual(__rooms.REST_EXISTS.players[0].id, 'socket-host-2');
+        delete emitted[0].payload.restoreAudit;
         assert.deepStrictEqual(emitted, [{
             name: 'rejoinData',
             payload: {
@@ -2668,11 +2717,12 @@ runTest('handleRecreateRoom は復元データを canonical snapshot に畳み�
         reconnectToken,
     };
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
         assert.deepStrictEqual(joined, ['REST02']);
         assert.notStrictEqual(__rooms.REST02.stateSnapshot, stateSnapshot);
         assert.strictEqual(__rooms.REST02.stateSnapshot.currentPlayerIndex, 1);
         assert.deepStrictEqual(__rooms.REST02.actionLog, []);
+        delete emitted[0].payload.restoreAudit;
         assert.deepStrictEqual(emitted, [{
             name: 'rejoinData',
             payload: {
@@ -2727,7 +2777,7 @@ runTest('handleRecreateRoom は playerIndex なし actionLog の復元を拒否�
     };
 
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
         assert.deepStrictEqual(joined, []);
         assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが壊れています' }]);
         assert.strictEqual(__rooms.REST_LEGACY_LOG, undefined);
@@ -2791,7 +2841,7 @@ runTest('handleRecreateRoom は playerSettings 空配列の全員人間ルーム
     };
 
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
         assert.deepStrictEqual(joined, ['REST_EMPTY_SETTINGS']);
         assert.strictEqual(__rooms.REST_EMPTY_SETTINGS.stateSnapshot.currentPlayerIndex, 1);
         assert.strictEqual(emitted[0].name, 'rejoinData');
@@ -2825,7 +2875,7 @@ runTest('handleRecreateRoom は client snapshot の valid undoState から undoB
     });
 
     try {
-        handleRecreateRoom(socket, {
+        handleRecreateRoom(socket, signedRestorePayload({
             roomId: 'REST_UNDO',
             gameStartPayload,
             stateSnapshot,
@@ -2833,7 +2883,7 @@ runTest('handleRecreateRoom は client snapshot の valid undoState から undoB
             playerIndex: 0,
             playerName: 'A',
             reconnectToken,
-        });
+        }));
 
         assert.deepStrictEqual(joined, ['REST_UNDO']);
         assert.strictEqual(__rooms.REST_UNDO.stateSnapshot.players[0].coins, builtMirror.lastUndoState.playerCoins[0]);
@@ -2950,7 +3000,7 @@ runTest('handleRecreateRoom はより新しい hostEpoch の復元payloadで古�
     };
 
     try {
-        handleRecreateRoom(socket, {
+        handleRecreateRoom(socket, signedRestorePayload({
             roomId: 'REPLACE01',
             gameStartPayload: newPayload,
             stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build' }),
@@ -2958,7 +3008,7 @@ runTest('handleRecreateRoom はより新しい hostEpoch の復元payloadで古�
             playerIndex: 0,
             playerName: 'Alice',
             reconnectToken: tokenAlice,
-        });
+        }));
 
         assert.deepStrictEqual(joined, ['REPLACE01']);
         assert.strictEqual(__rooms.REPLACE01.roomId, 'REPLACE01');
@@ -3487,7 +3537,7 @@ runTest('handleRecreateRoom はsnapshot以前のactionLogを再適用しない',
     };
 
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
 
         assert.deepStrictEqual(joined, ['REST_SKIP_OLD_LOG']);
         assert.deepStrictEqual(emitted[0].payload.acceptedClientActions, []);
@@ -3531,7 +3581,7 @@ runTest('handleRecreateRoom はsnapshot圧縮後のseqなしactionLogを再適�
     };
 
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
 
         assert.deepStrictEqual(joined, ['REST_SKIP_LEGACY_LOG']);
         assert.deepStrictEqual(emitted[0].payload.acceptedClientActions, []);
@@ -3616,7 +3666,7 @@ runTest('handleRecreateRoom はhuman reconnectTokenHash欠落を拒否しCPU空h
         id: 'socket-host-good',
         emit(name, payload) { goodEmitted.push({ name, payload }); },
         join(roomId) { joined.push(roomId); },
-    }, {
+    }, signedRestorePayload({
         roomId: 'REST_CPU_EMPTY_HASH',
         gameStartPayload: {
             playerNames: ['Alice', 'CPU'],
@@ -3633,7 +3683,7 @@ runTest('handleRecreateRoom はhuman reconnectTokenHash欠落を拒否しCPU空h
         playerIndex: 0,
         playerName: 'Alice',
         reconnectToken,
-    });
+    }));
 
     try {
         assert.deepStrictEqual(joined, ['REST_CPU_EMPTY_HASH']);
@@ -3676,7 +3726,7 @@ runTest('handleRecreateRoom はsnapshot圧縮後も受理済みclientActionIdを
     };
 
     try {
-        handleRecreateRoom(socket, payload);
+        handleRecreateRoom(socket, signedRestorePayload(payload));
 
         assert.deepStrictEqual(joined, ['REST_ACCEPTED_IDS']);
         assert.deepStrictEqual(emitted[0].payload.actionLog, []);
@@ -3722,7 +3772,7 @@ runTest('handleRecreateRoom は共通fixtureの最大 actionSeq を復元rankに
     };
 
     try {
-        handleRecreateRoom(socket, {
+        handleRecreateRoom(socket, signedRestorePayload({
             roomId: 'RESTORE_SEQ_FIXTURE',
             gameStartPayload: Object.assign({}, fixture.gameStartPayload),
             stateSnapshot: makeSnapshot(fixture.stateSnapshotOverrides),
@@ -3730,7 +3780,7 @@ runTest('handleRecreateRoom は共通fixtureの最大 actionSeq を復元rankに
             playerIndex: fixture.playerIndex,
             playerName: fixture.playerName,
             reconnectToken: fixture.reconnectToken,
-        });
+        }));
 
         assert.deepStrictEqual(joined, ['RESTORE_SEQ_FIXTURE']);
         assert.strictEqual(__rooms.RESTORE_SEQ_FIXTURE.hostEpoch, fixture.expectedRank.hostEpoch);

@@ -10,7 +10,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 | --- | --- | --- | --- |
 | Modal stack / deny-nesting | Implemented deny-by-default with no nested blocking modal exceptions. Future exceptions require registry/tests/manual mobile verification. | Extend only when a concrete UX cannot use inline detail or non-blocking notice. | UI interactability contract, modal tests, mobile manual checks. |
 | Server-persisted canonical state | Minimal no-op/memory adapter footing exists; durable restart restore is not implemented. | Choose durable storage before enabling authoritative restart recovery. | Durable store choice, retention policy, atomic snapshot/log persistence. |
-| Signed restore snapshot / action log | Optional restore audit schema exists; real signature verification remains deferred. Do not treat unsigned audit metadata as trust. | After canonical serialization and key policy are designed. | Canonical serialization, key rotation, legacy-bundle policy. |
+| Signed restore snapshot / action log | HMAC-signed restore audit verification exists behind `RESTORE_AUDIT_SECRET` / `MACHIKORO_RESTORE_AUDIT_SECRET`; unsigned metadata remains diagnostics only. | Extend only for key rotation, freshness limits, or durable/adversarial deployments. | Stable secret, key rotation policy, legacy-bundle policy. |
 | Hostless restore | Still deferred after 2026-05-26 footing review. Non-host bundles must not become canonical under the current trust model. | Re-evaluate only after durable server persistence or explicit provisional-quorum acceptance. | Candidate hash/rank fixtures, grace window, replacement policy, multi-device manual tests. |
 | Multiple room resume UI | Design footing documented; visible picker remains deferred until stale/live/completed candidate policy is implemented. | After candidate classification, retention policy, and mobile UX tests. | Restore bundle index, stale-key pruning policy, UX for room selection. |
 | Production client-error origin/token | Same-origin browser reporting stays tokenless; scripted/no-origin diagnostics require token when configured. | Revisit only if a deliberate browser token delivery model is added. | Render env configuration, same-origin browser reporting, documented curl/test flow. |
@@ -65,7 +65,7 @@ The priority is:
 2. Signed snapshot/action metadata as fallback or audit support.
 3. Hostless restore only after the authority model is explicit.
 
-Server persistence reduces the need for signed client restore as the primary recovery path. Signed client bundles may still be useful for diagnostics, offline fallback, or migration, but they should not be described as fully authoritative unless every restored canonical field is covered by the signature and freshness policy.
+Server persistence reduces the need for signed client restore as the primary recovery path. The current HMAC restore audit covers the canonical restore payload and is allowed as a fallback for compacted client snapshots when the server secret is configured. Unsigned metadata remains diagnostic only; freshness windows and key rotation are still operational design items.
 
 Hostless restore before server persistence would improve availability but lowers the trust boundary. If it is ever implemented early, it must be labeled provisional, use candidate quorum/hash comparison, prefer host candidates during a grace window, and keep replacement rules explicit.
 
@@ -101,7 +101,7 @@ Stale client detection is diagnostic only. It must not delete restore bundles, r
 - Candidate classification, visible multi-room resume picker, and retention/stale/completed policy.
 - Legacy/global restore key pruning after compatibility policy is settled.
 - Durable canonical state adapter behind an operational storage decision.
-- Real signed restore verification only with canonical serialization, key/version/migration policy.
+- Restore audit key rotation, freshness limits, and legacy unsigned-bundle migration policy.
 - Hostless restore only after authority model is settled.
 
 ### Do Not Do

@@ -7,7 +7,7 @@ const {
 } = require(path.join(__dirname, 'selfplay.js'));
 
 function parseArgs(argv) {
-    let modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'model.browser.json');
+    let modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json');
     let opponent = 'strong';
     let lineup = [];
     let seed = 1;

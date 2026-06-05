@@ -157,12 +157,15 @@ class MachikoroEnv:
                 return [ACT_TV_TARGET]
             if pending_field == "pendingBusiness" and self.pending_biz > 0:
                 acts = []
-                # 本番ルールに合わせて、交換対象は休業中を含む施設全体から選ぶ。
+                # target head なしの実行時に合わせ、交換候補は全相手の施設から集約する。
+                target_cards = {name for index, opponent in enumerate(self.players) if index != self.current
+                                for name in CARD_NAMES
+                                if opponent.cards[name] > 0 and CARD_DEF[name].color != "purple"}
                 for give_ci, give_name in enumerate(CARD_NAMES):
                     if p.cards[give_name] <= 0 or CARD_DEF[give_name].color == "purple":
                         continue
                     for take_ci, take_name in enumerate(CARD_NAMES):
-                        if opp.cards[take_name] <= 0 or CARD_DEF[take_name].color == "purple":
+                        if take_name not in target_cards:
                             continue
                         acts.append(ACT_BC_BASE + give_ci * NUM_CARDS + take_ci)
                 return acts if acts else [ACT_PASS]
@@ -288,13 +291,15 @@ class MachikoroEnv:
                 take_ci = combo % NUM_CARDS
                 give_name = CARD_NAMES[give_ci]
                 take_name = CARD_NAMES[take_ci]
-                if (p.cards[give_name] > 0 and opp.cards[take_name] > 0 and
+                target_index = self._business_target_index_for_take(take_name, oi)
+                target = self.players[target_index] if target_index is not None else opp
+                if (p.cards[give_name] > 0 and target.cards[take_name] > 0 and
                         CARD_DEF[give_name].color != "purple" and
                         CARD_DEF[take_name].color != "purple"):
                     give_dormant = self._remove_one_card(p, give_name, prefer_dormant=True)
-                    take_dormant = self._remove_one_card(opp, take_name, prefer_dormant=False)
+                    take_dormant = self._remove_one_card(target, take_name, prefer_dormant=False)
                     self._add_one_card(p, take_name, take_dormant)
-                    self._add_one_card(opp, give_name, give_dormant)
+                    self._add_one_card(target, give_name, give_dormant)
             self.pending_biz -= 1
             self._consume_pending("pendingBusiness")
             self._check_pending()
@@ -758,6 +763,19 @@ class MachikoroEnv:
         was_dormant = self._remove_one_card(src, name)
         self._add_one_card(dst, name, was_dormant)
         return True
+
+
+    def _business_target_index_for_take(self, take_name: str, preferred_index: int | None = None) -> int | None:
+        if preferred_index is not None and 0 <= int(preferred_index) < len(self.players):
+            preferred = self.players[int(preferred_index)]
+            if int(preferred_index) != self.current and preferred.cards[take_name] > 0 and CARD_DEF[take_name].color != "purple":
+                return int(preferred_index)
+        for index, player in enumerate(self.players):
+            if index == self.current:
+                continue
+            if player.cards[take_name] > 0 and CARD_DEF[take_name].color != "purple":
+                return index
+        return None
 
     def _has_business_exchange(self, current_index: int) -> bool:
         current = self.players[current_index]

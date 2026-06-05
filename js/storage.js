@@ -2,6 +2,7 @@ const ONLINE_RESTORE_BUNDLE_KEYS = Object.freeze([
     'onlineGameStart',
     'onlineActionLog',
     'onlineStateSnapshot',
+    'onlineRestoreAudit',
     'onlinePendingAction',
     'onlineRestoreRoomIndex',
 ]);

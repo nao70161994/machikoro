@@ -271,6 +271,12 @@ function validateRegistry(registry, options = {}) {
                 if (!coverage.has4pLineups) {
                     warnings.push(`${entry.id}: 多人数採用候補なのに 4人 lineup 評価が不足しています`);
                 }
+                if (minimumGames > 0 && coverage.has3pLineups && !hasMinimumLineupGames(coverage, 'best3pGames', minimumGames)) {
+                    warnings.push(`${entry.id}: 多人数採用候補の 3人 lineup 評価ゲーム数が少なすぎます (${coverage.best3pGames} < ${minimumGames})`);
+                }
+                if (minimumGames > 0 && coverage.has4pLineups && !hasMinimumLineupGames(coverage, 'best4pGames', minimumGames)) {
+                    warnings.push(`${entry.id}: 多人数採用候補の 4人 lineup 評価ゲーム数が少なすぎます (${coverage.best4pGames} < ${minimumGames})`);
+                }
                 if (isExtendedMultiplayerRecommendedRole(entry.role) && !coverage.has5pLineups) {
                     warnings.push(`${entry.id}: 多人数採用候補なのに 5人 lineup 評価が不足しています`);
                 }

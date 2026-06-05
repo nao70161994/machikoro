@@ -11,6 +11,7 @@ const {
     buildSignature,
     evaluateModelSpecs,
     evaluationGate,
+    assertEvaluationGateAllowsOutput,
     renderText,
     renderCsv,
     renderMarkdown,
@@ -362,6 +363,12 @@ runTest('eval-rl-models evaluationGate は50戦以上を adoptionCandidate と�
         smokeOnly: false,
         name: 'adoptionCandidate',
     });
+});
+
+runTest('eval-rl-models write gate は短期評価artifactを明示なしで拒否する', () => {
+    const shortResults = [{ summaries: [{ games: 20 }] }];
+    assert.throws(() => assertEvaluationGateAllowsOutput(shortResults, {}), /smokeOnly/);
+    assert.doesNotThrow(() => assertEvaluationGateAllowsOutput(shortResults, { allowSmoke: true }));
 });
 
 runTest('eval-rl-models evaluationGate はgames不明を smokeOnly と表示する', () => {

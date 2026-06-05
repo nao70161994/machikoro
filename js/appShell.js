@@ -696,7 +696,7 @@ function isStaleConfirmModalSnapshot(snapshot) {
 
 function activeBlockingModalIds(snapshot) {
     return Array.isArray(snapshot && snapshot.visibleModals)
-        ? snapshot.visibleModals.filter(id => explicitModalOpenFromSnapshot(snapshot, id) && (id !== 'confirmModal' || !isStaleConfirmModalSnapshot(snapshot)))
+        ? snapshot.visibleModals.filter(id => id !== 'pendingModal' && explicitModalOpenFromSnapshot(snapshot, id) && (id !== 'confirmModal' || !isStaleConfirmModalSnapshot(snapshot)))
         : [];
 }
 
@@ -1176,6 +1176,33 @@ if (typeof window !== 'undefined') {
 // ===== クラッシュ回復 =====
 let _crashShown = false;
 
+
+function focusableCrashScreenElements(el) {
+    if (!el || typeof el.querySelectorAll !== 'function') return [];
+    return Array.from(el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(node => !node.disabled && node.offsetParent !== null);
+}
+
+function trapCrashScreenFocus(event) {
+    if (!_crashShown || event.key !== 'Tab') return;
+    const el = document.getElementById('crashScreen');
+    const focusables = focusableCrashScreenElements(el);
+    if (focusables.length === 0) {
+        event.preventDefault();
+        if (el && typeof el.focus === 'function') el.focus();
+        return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
 function showCrashScreen(err) {
     if (_crashShown) return;
     _crashShown = true;
@@ -1187,6 +1214,9 @@ function showCrashScreen(err) {
     const resumeBtn = document.getElementById('crashResumeBtn');
     if (resumeBtn) resumeBtn.style.display = localStorage.getItem('savedGame') ? 'block' : 'none';
     el.style.display = 'flex';
+    el.setAttribute('aria-modal', 'true');
+    if (typeof el.hasAttribute !== 'function' || !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    if (typeof document.addEventListener === 'function') document.addEventListener('keydown', trapCrashScreenFocus, true);
     const focusTarget = resumeBtn && resumeBtn.style.display !== 'none'
         ? resumeBtn
         : el.querySelector && el.querySelector('[data-ui-action="reloadPage"]');
@@ -1196,6 +1226,7 @@ function showCrashScreen(err) {
 
 function crashResume() {
     _crashShown = false;
+    if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', trapCrashScreenFocus, true);
     document.getElementById('crashScreen').style.display = 'none';
     resumeGame();
 }

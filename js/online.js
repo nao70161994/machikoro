@@ -108,6 +108,7 @@ const ONLINE_STORAGE_KEYS = Object.freeze({
     gameStart: 'onlineGameStart',
     actionLog: 'onlineActionLog',
     stateSnapshot: 'onlineStateSnapshot',
+    restoreAudit: 'onlineRestoreAudit',
     pendingAction: 'onlinePendingAction',
 });
 const ONLINE_RESTORE_ROOM_INDEX_KEY = 'onlineRestoreRoomIndex';
@@ -270,11 +271,13 @@ function _buildOnlineRestoreRoomIndexEntry(roomId, now = Date.now()) {
     const actionLog = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.actionLog, normalizedRoomId, null);
     const stateSnapshot = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, normalizedRoomId, null);
     const pendingAction = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.pendingAction, normalizedRoomId, null);
+    const restoreAudit = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, normalizedRoomId, null);
     const hasGameStart = !!gameStart;
     const hasActionLog = Array.isArray(actionLog);
     const hasStateSnapshot = !!stateSnapshot;
     const hasPendingAction = !!pendingAction;
-    if (!session && !hasGameStart && !hasActionLog && !hasStateSnapshot && !hasPendingAction) return null;
+    const hasRestoreAudit = !!restoreAudit;
+    if (!session && !hasGameStart && !hasActionLog && !hasStateSnapshot && !hasPendingAction && !hasRestoreAudit) return null;
     return {
         schemaVersion: ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION,
         roomId: normalizedRoomId,
@@ -286,6 +289,7 @@ function _buildOnlineRestoreRoomIndexEntry(roomId, now = Date.now()) {
         hasActionLog,
         hasStateSnapshot,
         hasPendingAction,
+        hasRestoreAudit,
     };
 }
 
@@ -318,12 +322,17 @@ function _clearOnlineRestoreBundle() {
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.gameStart);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.actionLog);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
     _clearPendingOutboundAction();
     _removeOnlineRestoreRoomIndexEntry(roomIdBeforeClear);
 }
 
 function _readOnlineStateSnapshot() {
     return _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, null);
+}
+
+function _readOnlineRestoreAudit() {
+    return _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, null);
 }
 
 function _clearRejoinRetry() {
@@ -810,7 +819,7 @@ function initSocket() {
         scheduleCPU();
     });
 
-    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch }) => {
+    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch, restoreAudit }) => {
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
         const localBundle = _readLocalRestoreBundle();
@@ -858,6 +867,11 @@ function initSocket() {
                 _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
             } else {
                 _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+            }
+            if (restoreAudit) {
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, restoreAudit);
+            } else {
+                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
             }
             _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
         } catch(e) {}
@@ -1174,6 +1188,7 @@ function _tryRestoreRoom() {
         }
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
+        const restoreAudit = _readOnlineRestoreAudit();
         _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
@@ -1181,6 +1196,7 @@ function _tryRestoreRoom() {
             gameStartPayload,
             stateSnapshot,
             actionLog,
+            restoreAudit,
             playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,
             reconnectToken,
@@ -1197,8 +1213,9 @@ function _readLocalRestoreBundle() {
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
+        const restoreAudit = _readOnlineRestoreAudit();
         _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
-        return { gameStartPayload, stateSnapshot, actionLog };
+        return { gameStartPayload, stateSnapshot, actionLog, restoreAudit };
     } catch (_) {
         return null;
     }
@@ -1210,6 +1227,7 @@ function _sendRecreateRoomFromBundle(bundle) {
         gameStartPayload: bundle.gameStartPayload,
         stateSnapshot: bundle.stateSnapshot,
         actionLog: bundle.actionLog,
+        restoreAudit: bundle.restoreAudit,
         playerIndex: myOriginalPlayerIndex,
         playerName: myPlayerName,
         reconnectToken,

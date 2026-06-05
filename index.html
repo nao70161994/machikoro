@@ -405,6 +405,9 @@
         let _serverVersionHash = '';
         let _versionMismatchDetected = false;
         let _versionMismatchReported = false;
+        function _isOnlineGameActive() {
+          return typeof isOnlineGame !== 'undefined' && isOnlineGame;
+        }
         function _showPwaUpdateBanner(message, options = {}) {
           const installBanner = document.getElementById('pwaInstallBanner');
           if (installBanner) installBanner.style.display = 'none';
@@ -417,8 +420,10 @@
           btn.style.opacity = '';
           if (options.versionMismatch) btn.dataset.versionMismatch = '1';
           else delete btn.dataset.versionMismatch;
-          if (!options.versionMismatch && typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-            msg.textContent = '新バージョンあり（ゲーム終了後に再起動してください）';
+          if (_isOnlineGameActive()) {
+            msg.textContent = options.versionMismatch
+              ? '古いバージョンです（オンラインゲーム終了後に再起動してください）'
+              : '新バージョンあり（ゲーム終了後に再起動してください）';
             btn.disabled = true;
             btn.style.opacity = '0.4';
           }
@@ -523,6 +528,10 @@
           }).catch(() => {});
         });
         window.pwaApplyUpdate = () => {
+          if (_isOnlineGameActive()) {
+            _showPwaUpdateBanner(_versionMismatchDetected ? '古いバージョンです（オンラインゲーム終了後に再起動してください）' : undefined, { versionMismatch: _versionMismatchDetected });
+            return;
+          }
           updateRequestedByUser = true;
           if (_waitingSW) {
             _waitingSW.postMessage({ type: 'SKIP_WAITING' });

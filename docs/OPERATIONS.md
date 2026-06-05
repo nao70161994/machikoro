@@ -87,8 +87,8 @@ Set these in the service that runs `server.js` unless noted otherwise:
 1. Identify whether the report is live reconnect, server restart restore, host migration, or stale bundle handling.
 2. Preserve room id only privately; do not paste reconnect tokens or raw localStorage in public notes.
 3. Compare host/non-host role, `hostEpoch`, replay-backed rank, snapshot `actionSeq`, residual action log, and accepted client action refs.
-4. Remember the trust boundary: host-only restore remains authoritative; `onlineRestoreRoomIndex` and `restoreAudit` do not increase authority.
-5. Escalate to design work before changing hostless restore, signed restore, durable canonical store, or room replacement rules.
+4. Remember the trust boundary: host-only restore remains authoritative; `onlineRestoreRoomIndex` is only a locator, and `restoreAudit` is authority only when HMAC-verified for the exact canonical restore payload.
+5. Configure `RESTORE_AUDIT_SECRET` (or `MACHIKORO_RESTORE_AUDIT_SECRET`) before relying on compacted client snapshot restore after a server restart. Without it, replay from full action logs is the compatibility path.
 
 ## PWA Update Operations
 
@@ -286,9 +286,9 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 
 ## Restore Audit Metadata
 
-- `restoreAudit` is optional metadata for future signed restore diagnostics. Current deployments do not verify signatures and must not describe restore bundles as trusted because this field exists.
-- Invalid audit metadata is rejected to prevent silently accepting poisoned or room-mismatched audit claims. Missing metadata remains compatible with existing clients.
-- Real signed restore requires a canonical serialization format, key rotation procedure, freshness limits, and explicit behavior for legacy unsigned bundles.
+- `restoreAudit` is HMAC-verified when `RESTORE_AUDIT_SECRET` or `MACHIKORO_RESTORE_AUDIT_SECRET` is configured. A valid signature covers the canonical restore payload and allows the server to trust the compacted client snapshot after restart.
+- Unsigned or invalid audit metadata does not increase authority. If no server canonical state exists, the server ignores unsigned snapshots and falls back to replaying a valid action log from the initial state.
+- Keep the secret stable across restarts. Rotating it invalidates previously issued restore audits unless a migration/key-ring policy is added.
 
 ## Multiple Room Resume UI
 
