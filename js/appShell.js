@@ -1791,6 +1791,20 @@ function checkFreezeWatchdog() {
     if (now - _freezeWatchdogLastChangedAt < FREEZE_WATCHDOG_THRESHOLD_MS) return;
     const freezeKind = classifyLikelyFreeze(snapshot);
     if (!freezeKind) return;
+    if (freezeKind === 'post-build-ui-blocked') {
+        const recovered = recoverUiInteractability(snapshot);
+        const after = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-recovery');
+        if (recovered && classifyLikelyFreeze(after) !== freezeKind) {
+            _freezeWatchdogLastKey = freezeWatchdogStateKey(after);
+            _freezeWatchdogLastChangedAt = now;
+            markClientFlowCheckpoint('freeze-watchdog-recovered-without-report', {
+                freezeKind,
+                before: compactSnapshotForUiTrace(snapshot),
+                after: compactSnapshotForUiTrace(after),
+            });
+            return;
+        }
+    }
     const reportKey = freezeKind + '|' + freezeIssueDedupeSignature(snapshot);
     if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) {
         recoverUiInteractability(snapshot);
