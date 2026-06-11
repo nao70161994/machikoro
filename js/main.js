@@ -18,6 +18,7 @@ let autoSkipTimeout = null;
 let delayedHumanActionPending = false;
 let delayedHumanActionTimeout = null;
 let delayedHumanActionToken = 0;
+let localGameStartPending = false;
 
 // 取り消し
 let undoState = null;
@@ -26,6 +27,7 @@ let tutorialLevel = localStorage.getItem('tutorialLevel') || 'beginner';
 
 // CPU進行チェーン制御
 let cpuScheduleToken = 0;
+let cpuStepScheduledUntil = 0;
 
 function escapeAttribute(value) {
     return String(value)
@@ -99,16 +101,7 @@ function createCpuPlayer(difficulty, options = {}) {
         applyLiveExpertDefaults();
     }
     if (resolvedDifficulty === 'rl') {
-        try {
-            return RLModelPortfolio.createRandomCpu(resolvedOptions);
-        } catch (error) {
-            console.error(error);
-            showNotice("深層学習AIモデルを読み込めませんでした。CPU（最強）で代替します。");
-            if (resolvedOptions.expertPurpose === "live") {
-                applyLiveExpertDefaults();
-            }
-            return new CPU('expert', resolvedOptions);
-        }
+        return RLModelPortfolio.createRandomCpu(resolvedOptions);
     }
     return new CPU(resolvedDifficulty, resolvedOptions);
 }
@@ -197,7 +190,18 @@ function onChangePlayerName(index, value) {
     saveSettings();
 }
 
-function startGame() {
+function hasLocalRlCpuSetting(playerCount = selectedCount) {
+    return playerSettings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
+}
+
+function preloadLocalRlModelsForStart(playerCount) {
+    if (!hasLocalRlCpuSetting(playerCount)) return null;
+    if (typeof RLModelPortfolio === "undefined" || typeof RLModelPortfolio.preloadEligibleModels !== "function") return null;
+    if (typeof RLModelPortfolio.shouldAvoidSynchronousModelLoad === "function" && !RLModelPortfolio.shouldAvoidSynchronousModelLoad()) return null;
+    return RLModelPortfolio.preloadEligibleModels(playerCount);
+}
+
+function startGameNow() {
     cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
     saveSettings();
     resetStatsRecorded();
@@ -207,6 +211,27 @@ function startGame() {
     document.getElementById("gameScreen").style.display = "block";
     init(selectedCount);
     if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
+}
+
+function startGame() {
+    if (localGameStartPending) return;
+    const preload = preloadLocalRlModelsForStart(selectedCount);
+    if (preload && typeof preload.then === "function") {
+        localGameStartPending = true;
+        showNotice("深層学習AIモデルを読み込んでいます。");
+        preload
+            .then(() => {
+                localGameStartPending = false;
+                startGameNow();
+            })
+            .catch(error => {
+                localGameStartPending = false;
+                console.error(error);
+                showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度開始してください。");
+            });
+        return;
+    }
+    startGameNow();
 }
 
 function restartGame() {
@@ -355,7 +380,10 @@ function canRunAction(action) {
 }
 
 function queueCPUStep(token, delay, fn) {
+    const wait = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
+    cpuStepScheduledUntil = Date.now() + wait + 1500;
     setTimeout(() => {
+        cpuStepScheduledUntil = Date.now() + 1500;
         if (token !== cpuScheduleToken) return;
         fn();
     }, delay);

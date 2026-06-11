@@ -82,6 +82,64 @@ runTest('RL model portfolio: runtime load はXHRを一度だけ使いRLCPUを返
 });
 
 
+runTest('RL model portfolio: iPhone Safari は未preloadモデルで同期XHRを使わない', () => {
+    const requests = [];
+    class FakeXHR {
+        open(method, url, async) { requests.push({ method, url, async }); }
+        send() { throw new Error('sync XHR should not run'); }
+    }
+    class FakeRLCPU {
+        constructor(modelData) { this.modelData = modelData; }
+    }
+    const { RLModelPortfolio } = loadPortfolio({
+        XMLHttpRequest: FakeXHR,
+        RLCPU: FakeRLCPU,
+        navigator: { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1' },
+    });
+
+    assert.strictEqual(RLModelPortfolio.shouldAvoidSynchronousModelLoad(), true);
+    assert.throws(
+        () => RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' }),
+        /not preloaded/
+    );
+    assert.deepStrictEqual(requests, []);
+});
+
+runTest('RL model portfolio: preload済みモデルはiPhone SafariでもRLCPUを返す', async () => {
+    const requests = [];
+    class FakeXHR {
+        open(method, url, async) { requests.push({ method, url, async }); }
+        send() { throw new Error('sync XHR should not run'); }
+    }
+    class FakeRLCPU {
+        constructor(modelData) { this.modelData = modelData; }
+    }
+    const fetchCalls = [];
+    const { RLModelPortfolio } = loadPortfolio({
+        XMLHttpRequest: FakeXHR,
+        RLCPU: FakeRLCPU,
+        navigator: { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1' },
+        fetch(url, options) {
+            fetchCalls.push({ url, options });
+            return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({ stateDim: 145, actionSchema: 'action-flat-v1', layers: [] }),
+            });
+        },
+    });
+
+    await RLModelPortfolio.preloadModelData(RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2));
+    const cpu = RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' });
+
+    assert.strictEqual(fetchCalls.length, 1);
+    assert.strictEqual(fetchCalls[0].url, 'models/rl_model/portfolio/seed71-top3.browser.json');
+    assert.deepStrictEqual(requests, []);
+    assert.strictEqual(cpu.difficulty, 'rl');
+    assert.strictEqual(cpu.modelData.stateDim, 145);
+});
+
+
 runTest('RL model portfolio: entries は外部から重みを書き換えられない', () => {
     const { RLModelPortfolio } = loadPortfolio();
     const multiplayerModel = RLModelPortfolio.models.find(model => model.id === 'self-only-4p-h256-lr1e5-5000-seed103');

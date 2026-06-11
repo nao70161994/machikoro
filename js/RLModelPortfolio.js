@@ -32,6 +32,7 @@ const RL_MODEL_PORTFOLIO = Object.freeze([
 
 const RLModelPortfolio = (() => {
     const cache = new Map();
+    const pendingLoads = new Map();
 
     function eligibleModels(playerCount) {
         const count = Number(playerCount) || 2;
@@ -68,9 +69,22 @@ const RLModelPortfolio = (() => {
         return models.find(model => model.id === modelId) || null;
     }
 
+    function isMobileSafariRuntime() {
+        if (typeof navigator === "undefined" || !navigator.userAgent) return false;
+        const ua = navigator.userAgent;
+        return /iP(?:hone|ad|od)/.test(ua) && /Safari\//.test(ua) && !/(CriOS|FxiOS|EdgiOS)/.test(ua);
+    }
+
+    function shouldAvoidSynchronousModelLoad() {
+        return isMobileSafariRuntime();
+    }
+
     function loadModelData(model) {
         if (!model) throw new Error("RL model portfolio is empty");
         if (cache.has(model.path)) return cache.get(model.path);
+        if (shouldAvoidSynchronousModelLoad()) {
+            throw new Error(`RL model is not preloaded: ${model.path}`);
+        }
         const request = new XMLHttpRequest();
         request.open("GET", model.path, false);
         request.send(null);
@@ -80,6 +94,40 @@ const RLModelPortfolio = (() => {
         const data = JSON.parse(request.responseText);
         cache.set(model.path, data);
         return data;
+    }
+
+    function preloadModelData(model) {
+        if (!model) return Promise.reject(new Error("RL model portfolio is empty"));
+        if (cache.has(model.path)) return Promise.resolve(cache.get(model.path));
+        if (pendingLoads.has(model.path)) return pendingLoads.get(model.path);
+        if (typeof fetch !== "function") {
+            return Promise.reject(new Error("fetch is not available for RL model preload"));
+        }
+        const request = fetch(model.path, { cache: "force-cache" })
+            .then(response => {
+                if (!response || response.ok === false) {
+                    const status = response && response.status !== undefined ? response.status : "unknown";
+                    throw new Error(`RL model preload failed: ${model.path} (${status})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                cache.set(model.path, data);
+                pendingLoads.delete(model.path);
+                return data;
+            })
+            .catch(error => {
+                pendingLoads.delete(model.path);
+                throw error;
+            });
+        pendingLoads.set(model.path, request);
+        return request;
+    }
+
+    function preloadEligibleModels(playerCount) {
+        const models = eligibleModels(playerCount);
+        if (!models.length) return Promise.resolve([]);
+        return Promise.all(models.map(preloadModelData));
     }
 
     function createRandomCpu(options = {}) {
@@ -105,7 +153,10 @@ const RLModelPortfolio = (() => {
         createRandomCpu,
         eligibleModels,
         modelById,
+        preloadEligibleModels,
+        preloadModelData,
         selectRandomModel,
+        shouldAvoidSynchronousModelLoad,
         supportsPlayerCount,
     };
 })();

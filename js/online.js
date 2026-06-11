@@ -2,6 +2,7 @@
 let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
+let onlineCreateRoomPending = false;
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
@@ -1005,9 +1006,18 @@ function handleAppError(msg) {
     document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
 }
 
-function showCreateRoom() {
-    const name = document.getElementById("playerNameInput").value.trim();
-    if (!name) { showNotice("名前を入力してください"); return; }
+function hasOnlineRlCpuSetting(playerCount = onlineSelectedCount) {
+    return onlinePlayerSettings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
+}
+
+function preloadOnlineRlModelsForCreate(playerCount) {
+    if (!hasOnlineRlCpuSetting(playerCount)) return null;
+    if (typeof RLModelPortfolio === "undefined" || typeof RLModelPortfolio.preloadEligibleModels !== "function") return null;
+    if (typeof RLModelPortfolio.shouldAvoidSynchronousModelLoad === "function" && !RLModelPortfolio.shouldAvoidSynchronousModelLoad()) return null;
+    return RLModelPortfolio.preloadEligibleModels(playerCount);
+}
+
+function emitCreateRoom(name) {
     myPlayerName = name;
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
     initSocket();
@@ -1021,6 +1031,29 @@ function showCreateRoom() {
         enabledLandmarks: [...enabledLandmarks],
         clientVersion: getClientVersion(),
     });
+}
+
+function showCreateRoom() {
+    if (onlineCreateRoomPending) return;
+    const name = document.getElementById("playerNameInput").value.trim();
+    if (!name) { showNotice("名前を入力してください"); return; }
+    const preload = preloadOnlineRlModelsForCreate(onlineSelectedCount);
+    if (preload && typeof preload.then === "function") {
+        onlineCreateRoomPending = true;
+        showNotice("深層学習AIモデルを読み込んでいます。");
+        preload
+            .then(() => {
+                onlineCreateRoomPending = false;
+                emitCreateRoom(name);
+            })
+            .catch(error => {
+                onlineCreateRoomPending = false;
+                console.error(error);
+                showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。");
+            });
+        return;
+    }
+    emitCreateRoom(name);
 }
 
 function joinRoom() {

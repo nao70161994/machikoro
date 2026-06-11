@@ -520,6 +520,10 @@ function buildClientRuntimeSnapshot(reason = '') {
     const currentPlayerIndex = hasGame ? game.currentPlayerIndex : null;
     let isCpuTurn = false;
     try { isCpuTurn = !!(hasGame && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]); } catch (_) {}
+    let cpuStepScheduled = false;
+    try {
+        cpuStepScheduled = !!(isCpuTurn && typeof cpuStepScheduledUntil !== 'undefined' && Date.now() < cpuStepScheduledUntil);
+    } catch (_) {}
     return {
         reason,
         timestamp: new Date().toISOString(),
@@ -528,6 +532,7 @@ function buildClientRuntimeSnapshot(reason = '') {
         turnCount: hasGame ? game.turnCount : null,
         currentPlayerIndex,
         isCpuTurn,
+        cpuStepScheduled,
         isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
         isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
@@ -1428,7 +1433,7 @@ function classifyLikelyFreeze(snapshot) {
     if (pendingIssue || noUsablePendingAction) return 'pending-ui-locked';
     if ((!activeBlockingModalOpen && noUsablePrimaryAction) || humanIssue) return 'human-turn-ui-locked';
     if (pendingOpenWithoutContent) return 'pending-without-action';
-    if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight) return 'cpu-turn-stalled';
+    if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight && !snapshot.cpuStepScheduled) return 'cpu-turn-stalled';
     if (snapshot.onlineActionInFlight) return 'online-action-in-flight-stalled';
     return '';
 }
@@ -1454,6 +1459,7 @@ function compactSnapshotForUiTrace(snapshot) {
         currentPlayerIndex: snapshot && snapshot.currentPlayerIndex,
         myPlayerIndex: snapshot && snapshot.myPlayerIndex,
         isCpuTurn: !!(snapshot && snapshot.isCpuTurn),
+        cpuStepScheduled: !!(snapshot && snapshot.cpuStepScheduled),
         isOnlineGame: snapshot && snapshot.isOnlineGame,
         onlineActionInFlight: snapshot && snapshot.onlineActionInFlight,
         allowedActions: Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [],
@@ -1729,6 +1735,7 @@ function compactFreezePayloadForStorage(payload) {
             turnCount: snapshot.turnCount,
             currentPlayerIndex: snapshot.currentPlayerIndex,
             isCpuTurn: !!snapshot.isCpuTurn,
+            cpuStepScheduled: !!snapshot.cpuStepScheduled,
             isOnlineGame: snapshot.isOnlineGame,
             isRoomHost: snapshot.isRoomHost,
             myPlayerIndex: snapshot.myPlayerIndex,
@@ -1790,6 +1797,7 @@ function buildFreezeReportStack(payload) {
         currentPlayerIndex: snapshot.currentPlayerIndex,
         myPlayerIndex: snapshot.myPlayerIndex,
         isOnlineGame: snapshot.isOnlineGame,
+        cpuStepScheduled: snapshot.cpuStepScheduled,
         onlineActionInFlight: snapshot.onlineActionInFlight,
         isReconnectingOnline: snapshot.isReconnectingOnline,
         socketConnected: snapshot.socketConnected,

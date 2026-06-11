@@ -555,6 +555,17 @@ runTest('main createCpuPlayer は5人以上でも学習AIを生成する', () =>
     assert.deepStrictEqual(rt.__test.alerts, []);
 });
 
+runTest('main createCpuPlayer はRLモデル失敗時にCPU最強へ差し替えない', () => {
+    const rt = loadMainRuntime();
+    rt.RLModelPortfolio.createRandomCpu = () => { throw new Error('model unavailable'); };
+
+    assert.throws(
+        () => rt.createCpuPlayer('rl', { playerCount: 2, expertPurpose: "live" }),
+        /model unavailable/
+    );
+    assert.deepStrictEqual(rt.__test.alerts, []);
+});
+
 runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(2);

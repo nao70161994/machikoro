@@ -516,6 +516,30 @@ runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', (
     assert.strictEqual(emitted.payload.playerSettings[2].difficulty, 'strong');
 });
 
+runTest('showCreateRoom はRL preload失敗時に部屋作成せず差し替えもしない', async () => {
+    const runtime = loadOnlineRuntime();
+    runtime.console = Object.assign({}, console, { error() {} });
+    runtime.RLModelPortfolio = {
+        shouldAvoidSynchronousModelLoad() { return true; },
+        preloadEligibleModels() { return Promise.reject(new Error('preload failed')); },
+        selectRandomModel() { return { id: 'should-not-freeze' }; },
+    };
+    runtime.document.getElementById('playerNameInput').value = 'Alice';
+    runtime.document.getElementById('onlineCpuSpeed').value = '1500';
+    runtime.setOnlineSelectedCount(3);
+    runtime.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    runtime.showCreateRoom();
+    await Promise.resolve();
+
+    const emitted = runtime.getSocketEmits().filter(event => event.name === 'createRoom').pop();
+    assert.strictEqual(emitted, undefined);
+});
+
 runTest('initOnlineGame: 5人以上のRL CPUはplayerOrder後もrlとして生成する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
