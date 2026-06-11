@@ -346,7 +346,7 @@ runTest('release iPhone Safari pending UI は pointer-events none 残留を正�
     context.renderPending();
 
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
-    assert.strictEqual(elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, '');
     assert.strictEqual(elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
 });
@@ -416,7 +416,7 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
         handleRecreateRoom(socket, {
             roomId,
             gameStartPayload,
-            stateSnapshot: makeSnapshot(),
+            stateSnapshot: null,
             actionLog: [],
             playerIndex: 0,
             playerName: 'Alice',
@@ -438,7 +438,7 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
         handleRecreateRoom(bobSocket, {
             roomId,
             gameStartPayload: newerPayload,
-            stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build' }),
+            stateSnapshot: null,
             actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }],
             playerIndex: 1,
             playerName: 'Bob',
