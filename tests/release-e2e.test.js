@@ -346,7 +346,7 @@ runTest('release iPhone Safari pending UI は pointer-events none 残留を正�
     context.renderPending();
 
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
-    assert.strictEqual(elements.pendingModal.style.pointerEvents, '');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, 'auto');
     assert.strictEqual(elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
 });

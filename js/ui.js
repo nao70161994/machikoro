@@ -442,7 +442,7 @@ function shouldShowPendingForCurrentPlayer() {
 function normalizePendingModalInteraction(el, modal, hasContent) {
     if (modal && modal.style) {
         modal.style.display = hasContent ? "flex" : "none";
-        modal.style.pointerEvents = "";
+        modal.style.pointerEvents = hasContent ? "auto" : "";
     }
     if (el && el.style) {
         el.style.pointerEvents = hasContent ? "auto" : "";
@@ -454,7 +454,7 @@ function updatePendingModalContent(el, modal, html) {
     if (isUpdatingPendingModalContent) return false;
     const nextHtml = html || "";
     if (nextHtml) {
-        const blockingIds = visibleBlockingModalIds();
+        const blockingIds = visibleBlockingModalIds().filter(id => id !== 'pendingModal');
         if (blockingIds.length > 0) {
             recordModalPolicyViolation('pending-modal-open-denied', { parentModalId: blockingIds[0], childModalId: 'pendingModal', visibleBlockingModalIds: blockingIds });
             return false;

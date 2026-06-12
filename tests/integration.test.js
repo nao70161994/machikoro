@@ -388,7 +388,7 @@ runTest('integration: pending操作不能ならwatchdogが縮約通知してrend
     assert.ok(report.stack.includes('FREEZE_SUMMARY'));
     assert.ok(!report.stack.includes('FREEZE_SNAPSHOT'));
     assert.ok(!report.stack.includes('Alice'));
-    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, '');
+    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto');
     assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('テレビ局'));
     const snapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
@@ -412,7 +412,7 @@ runTest('integration: Business Center pending modal の pointer-events none をw
     game.players[1].addCard(rt.createCardByName('牧場'));
     rt.render();
     assert.ok(rt.__test.elements.pendingMenu.innerHTML.includes('ビジネスセンター'));
-    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, '');
+    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto');
 
     rt.__test.elements.pendingModal.style.pointerEvents = 'none';
     rt.__test.runIntervals(1);
@@ -425,7 +425,7 @@ runTest('integration: Business Center pending modal の pointer-events none をw
         return report.source === 'freeze-watchdog' && report.message.includes('pending-ui-locked');
     });
     assert.ok(reportCall);
-    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, '');
+    assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto');
     assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, 'auto');
 });
 
@@ -681,7 +681,7 @@ runTest('integration: primary action registry は各phaseのhidden/inert/pointer
             action: 'resolveBusiness',
             targetId: 'pendingMenu',
             corrupt(el, rt) { rt.__test.elements.pendingModal.style.pointerEvents = 'none'; el.style.pointerEvents = 'none'; },
-            assertRecovered(el, rt) { assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, ''); assert.strictEqual(el.style.pointerEvents, 'auto'); },
+            assertRecovered(el, rt) { assert.strictEqual(rt.__test.elements.pendingModal.style.pointerEvents, 'auto'); assert.strictEqual(el.style.pointerEvents, 'auto'); },
             setup(rt, game) { game.phase = rt.GAME_PHASES.PENDING; game.pendingBusiness = 1; },
         },
         {
