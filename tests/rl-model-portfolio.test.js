@@ -50,35 +50,22 @@ runTest('RL model portfolio: 明示model idが不正ならランダムへfallbac
     assert.throws(() => RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'unknown-model' }), /not available/);
 });
 
-runTest('RL model portfolio: runtime load はXHRを一度だけ使いRLCPUを返す', () => {
+runTest('RL model portfolio: 未preloadモデルでは同期XHRせずCPU生成を拒否する', () => {
     const requests = [];
     class FakeXHR {
-        open(method, url, async) { this.method = method; this.url = url; this.async = async; }
-        send() {
-            requests.push({ method: this.method, url: this.url, async: this.async });
-            this.status = 200;
-            this.responseText = JSON.stringify({ stateDim: 145, actionSchema: 'action-flat-v1', layers: [] });
-        }
+        open(method, url, async) { requests.push({ method, url, async }); }
+        send() { throw new Error('sync XHR should not run'); }
     }
     class FakeRLCPU {
         constructor(modelData) { this.modelData = modelData; }
     }
     const { RLModelPortfolio } = loadPortfolio({ XMLHttpRequest: FakeXHR, RLCPU: FakeRLCPU });
 
-    const first = RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' });
-    const second = RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' });
-
-    assert.strictEqual(requests.length, 1);
-    assert.deepStrictEqual(requests[0], {
-        method: 'GET',
-        url: 'models/rl_model/portfolio/seed71-top3.browser.json',
-        async: false,
-    });
-    assert.strictEqual(first.difficulty, 'rl');
-    assert.strictEqual(first.modelId, 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3');
-    assert.strictEqual(first.modelLabel, 'RL（農業・ワイナリー）');
-    assert.strictEqual(first.modelData.stateDim, 145);
-    assert.strictEqual(second.modelId, first.modelId);
+    assert.throws(
+        () => RLModelPortfolio.createRandomCpu({ playerCount: 2, rlModelId: 'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3' }),
+        /not preloaded/
+    );
+    assert.deepStrictEqual(requests, []);
 });
 
 
@@ -103,6 +90,41 @@ runTest('RL model portfolio: iPhone Safari は未preloadモデルで同期XHRを
         /not preloaded/
     );
     assert.deepStrictEqual(requests, []);
+});
+
+runTest('RL model portfolio: iPadOS desktop UA でも同期XHRを避ける', () => {
+    const { RLModelPortfolio } = loadPortfolio({
+        navigator: {
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+            maxTouchPoints: 5,
+        },
+    });
+
+    assert.strictEqual(RLModelPortfolio.shouldAvoidSynchronousModelLoad(), true);
+});
+
+runTest('RL model portfolio: preload は一時失敗をretryする', async () => {
+    const fetchCalls = [];
+    const { RLModelPortfolio } = loadPortfolio({
+        fetch(url, options) {
+            fetchCalls.push({ url, options });
+            if (fetchCalls.length < 3) {
+                return Promise.reject(new Error('temporary network failure'));
+            }
+            return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({ stateDim: 145, actionSchema: 'action-flat-v1', layers: [] }),
+            });
+        },
+    });
+
+    await RLModelPortfolio.preloadModelData(
+        RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2),
+        { attempts: 3, retryDelayMs: 0 }
+    );
+
+    assert.strictEqual(fetchCalls.length, 3);
 });
 
 runTest('RL model portfolio: preload済みモデルはiPhone SafariでもRLCPUを返す', async () => {
@@ -183,4 +205,30 @@ runTest('RL model portfolio: adopted モデルは portfolio に存在し配布JS
         assert.strictEqual(data.actionSchema, 'action-flat-v1', `${model.id} has unsupported action schema`);
         assert.ok(data.layers, `${model.id} has no exported layers`);
     }
+});
+
+runTest('RL model portfolio: fetch不在ならfailed stateを返す', async () => {
+    const { RLModelPortfolio } = loadPortfolio({ fetch: undefined });
+    const model = RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2);
+
+    await assert.rejects(() => RLModelPortfolio.preloadModelData(model), /fetch is not available/);
+
+    const state = RLModelPortfolio.modelLoadState(model);
+    assert.strictEqual(state.status, 'failed');
+    assert.ok(state.error.includes('fetch is not available'));
+});
+
+runTest('RL model portfolio: preload最終失敗はeligible stateをfailedにする', async () => {
+    const { RLModelPortfolio } = loadPortfolio({
+        fetch() { return Promise.reject(new Error('network down')); },
+    });
+
+    await assert.rejects(
+        () => RLModelPortfolio.preloadEligibleModels(2, { attempts: 1, retryDelayMs: 0 }),
+        /network down/
+    );
+
+    const state = RLModelPortfolio.eligibleLoadState(2);
+    assert.strictEqual(state.status, 'failed');
+    assert.ok(state.errors.some(error => error.includes('network down')));
 });

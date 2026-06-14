@@ -123,6 +123,7 @@ function changeCount(delta) {
     selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
     document.getElementById("playerCount").textContent = selectedCount;
     renderPlayerSettings();
+    preloadLocalRlModelsInBackground('local-player-count-preload');
     saveSettings();
 }
 
@@ -162,6 +163,7 @@ function renderPlayerSettings() {
         </div>
     `).join("") + rlNotice;
     document.getElementById("playerSettings").innerHTML = html;
+    updateLocalRlModelReadinessUi();
 }
 
 function onChangePlayerType(index, value) {
@@ -179,6 +181,7 @@ function onChangePlayerType(index, value) {
         };
     }
     renderPlayerSettings();
+    if (value === "rl") preloadLocalRlModelsInBackground('local-rl-selected-preload');
     saveSettings();
 }
 
@@ -190,18 +193,84 @@ function onChangePlayerName(index, value) {
     saveSettings();
 }
 
-function hasLocalRlCpuSetting(playerCount = selectedCount) {
-    return playerSettings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
+function hasRlCpuSetting(settings, playerCount) {
+    return settings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
 }
 
-function preloadLocalRlModelsForStart(playerCount) {
-    if (!hasLocalRlCpuSetting(playerCount)) return null;
-    if (typeof RLModelPortfolio === "undefined" || typeof RLModelPortfolio.preloadEligibleModels !== "function") return null;
-    if (typeof RLModelPortfolio.shouldAvoidSynchronousModelLoad === "function" && !RLModelPortfolio.shouldAvoidSynchronousModelLoad()) return null;
-    return RLModelPortfolio.preloadEligibleModels(playerCount);
+function snapshotLocalPlayerSettings(playerCount = selectedCount) {
+    return playerSettings.slice(0, playerCount).map((setting, index) => Object.assign({
+        type: "human",
+        difficulty: "normal",
+        name: defaultLocalPlayerName(index),
+    }, setting || {}));
 }
 
-function startGameNow() {
+function hasLocalRlCpuSetting(playerCount = selectedCount, settings = playerSettings) {
+    return hasRlCpuSetting(settings, playerCount);
+}
+
+function canPreloadRlModels() {
+    return typeof RLModelPortfolio !== "undefined" && typeof RLModelPortfolio.preloadEligibleModels === "function";
+}
+
+function localRlModelLoadState(playerCount = selectedCount) {
+    if (!hasLocalRlCpuSetting(playerCount)) return { status: 'unused', ready: 0, total: 0, errors: [] };
+    if (!canPreloadRlModels()) return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
+    if (typeof RLModelPortfolio.eligibleLoadState === "function") return RLModelPortfolio.eligibleLoadState(playerCount);
+    return { status: 'idle', ready: 0, total: 1, errors: [] };
+}
+
+function localRlModelStatusMessage(state) {
+    if (!state || state.status === 'unused') return '';
+    if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
+    if (state.status === 'loading') return '深層学習AIモデルを読み込んでいます。';
+    if (state.status === 'failed') return '深層学習AIモデルを読み込めませんでした。再試行してください。';
+    return '深層学習AIモデルを開始時に読み込みます。';
+}
+
+function updateLocalRlModelReadinessUi() {
+    const state = localRlModelLoadState(selectedCount);
+    const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnStart') : null;
+    const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('localRlModelStatus') : null;
+    if (btn && !localGameStartPending) {
+        if (state.status === 'loading') {
+            btn.disabled = true;
+            btn.textContent = 'モデル読み込み中';
+        } else {
+            btn.disabled = false;
+            btn.textContent = state.status === 'failed' ? 'モデルを再試行' : 'ゲーム開始';
+        }
+    }
+    if (status) status.textContent = localRlModelStatusMessage(state);
+    return state;
+}
+
+function preloadLocalRlModelsForStart(playerCount, settings = playerSettings) {
+    if (!hasLocalRlCpuSetting(playerCount, settings)) return null;
+    if (!canPreloadRlModels()) return Promise.reject(new Error("RL model loader is not available"));
+    return RLModelPortfolio.preloadEligibleModels(playerCount, { attempts: 3 });
+}
+
+function preloadLocalRlModelsInBackground(reason = 'local-rl-background-preload') {
+    if (!hasLocalRlCpuSetting(selectedCount) || !canPreloadRlModels()) {
+        updateLocalRlModelReadinessUi();
+        return null;
+    }
+    updateLocalRlModelReadinessUi();
+    const preload = RLModelPortfolio.preloadEligibleModels(selectedCount, { attempts: 3, retryDelayMs: 0 });
+    if (preload && typeof preload.then === "function") {
+        preload.then(() => updateLocalRlModelReadinessUi()).catch(error => {
+            if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(reason, error);
+            updateLocalRlModelReadinessUi();
+        });
+    }
+    updateLocalRlModelReadinessUi();
+    return preload;
+}
+
+function startGameNow(playerCount = selectedCount, settings = playerSettings) {
+    selectedCount = playerCount;
+    playerSettings = snapshotLocalPlayerSettings(playerCount).map((_, index) => Object.assign({}, settings[index] || {}));
     cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
     saveSettings();
     resetStatsRecorded();
@@ -209,24 +278,38 @@ function startGameNow() {
     if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('start-game-reset-ui-locks');
     document.getElementById("titleScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
-    init(selectedCount);
+    init(playerCount);
     if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
 }
 
 function startGame() {
     if (localGameStartPending) return;
-    const preload = preloadLocalRlModelsForStart(selectedCount);
+    const startPlayerCount = selectedCount;
+    const startPlayerSettings = snapshotLocalPlayerSettings(startPlayerCount);
+    const state = updateLocalRlModelReadinessUi();
+    if (state.status === 'loading') {
+        showNotice("深層学習AIモデルを読み込んでいます。");
+        return;
+    }
+    const preload = preloadLocalRlModelsForStart(startPlayerCount, startPlayerSettings);
     if (preload && typeof preload.then === "function") {
         localGameStartPending = true;
+        const btn = document.getElementById("btnStart");
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = "モデル読み込み中";
+        }
         showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {
                 localGameStartPending = false;
-                startGameNow();
+                updateLocalRlModelReadinessUi();
+                startGameNow(startPlayerCount, startPlayerSettings);
             })
             .catch(error => {
                 localGameStartPending = false;
                 console.error(error);
+                updateLocalRlModelReadinessUi();
                 showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度開始してください。");
             });
         return;

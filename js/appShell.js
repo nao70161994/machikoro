@@ -1898,7 +1898,9 @@ if (typeof window !== 'undefined') {
 
 function initMainView() {
     loadSettings();
+    if (typeof preloadLocalRlModelsInBackground === 'function') preloadLocalRlModelsInBackground('init-main-local-rl-preload');
     renderOnlinePlayerSettings();
+    if (typeof preloadOnlineRlModelsInBackground === 'function') preloadOnlineRlModelsInBackground('init-main-online-rl-preload');
     updateResumeButton();
     drawCitySkyline();
     if (!_mainViewResizeBound) {

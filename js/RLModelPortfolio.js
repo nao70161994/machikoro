@@ -33,6 +33,7 @@ const RL_MODEL_PORTFOLIO = Object.freeze([
 const RLModelPortfolio = (() => {
     const cache = new Map();
     const pendingLoads = new Map();
+    const loadStates = new Map();
 
     function eligibleModels(playerCount) {
         const count = Number(playerCount) || 2;
@@ -72,62 +73,112 @@ const RLModelPortfolio = (() => {
     function isMobileSafariRuntime() {
         if (typeof navigator === "undefined" || !navigator.userAgent) return false;
         const ua = navigator.userAgent;
-        return /iP(?:hone|ad|od)/.test(ua) && /Safari\//.test(ua) && !/(CriOS|FxiOS|EdgiOS)/.test(ua);
+        const isAppleMobile = /iP(?:hone|ad|od)/.test(ua) || (/\bMacintosh\b/.test(ua) && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1);
+        return isAppleMobile && /Safari\//.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(ua);
     }
 
     function shouldAvoidSynchronousModelLoad() {
         return isMobileSafariRuntime();
     }
 
+    function markLoadState(model, status, error = null) {
+        if (!model) return;
+        loadStates.set(model.path, Object.freeze({
+            status,
+            modelId: model.id,
+            path: model.path,
+            error: error ? String(error && error.message || error) : '',
+            updatedAt: Date.now(),
+        }));
+    }
+
+    function modelLoadState(model) {
+        if (!model) return Object.freeze({ status: 'missing', modelId: '', path: '', error: 'missing model', updatedAt: 0 });
+        if (cache.has(model.path)) return Object.freeze({ status: 'ready', modelId: model.id, path: model.path, error: '', updatedAt: Date.now() });
+        if (pendingLoads.has(model.path)) return Object.freeze({ status: 'loading', modelId: model.id, path: model.path, error: '', updatedAt: Date.now() });
+        return loadStates.get(model.path) || Object.freeze({ status: 'idle', modelId: model.id, path: model.path, error: '', updatedAt: 0 });
+    }
+
+    function eligibleLoadState(playerCount) {
+        const models = eligibleModels(playerCount);
+        if (!models.length) return Object.freeze({ status: 'missing', ready: 0, total: 0, errors: [] });
+        const states = models.map(modelLoadState);
+        const ready = states.filter(state => state.status === 'ready').length;
+        const loading = states.some(state => state.status === 'loading');
+        const failedStates = states.filter(state => state.status === 'failed');
+        let status = 'idle';
+        if (ready === models.length) status = 'ready';
+        else if (loading) status = 'loading';
+        else if (failedStates.length) status = 'failed';
+        return Object.freeze({
+            status,
+            ready,
+            total: models.length,
+            errors: failedStates.map(state => state.error).filter(Boolean),
+        });
+    }
+
     function loadModelData(model) {
         if (!model) throw new Error("RL model portfolio is empty");
         if (cache.has(model.path)) return cache.get(model.path);
-        if (shouldAvoidSynchronousModelLoad()) {
-            throw new Error(`RL model is not preloaded: ${model.path}`);
-        }
-        const request = new XMLHttpRequest();
-        request.open("GET", model.path, false);
-        request.send(null);
-        if (request.status < 200 || request.status >= 300) {
-            throw new Error(`RL model load failed: ${model.path} (${request.status})`);
-        }
-        const data = JSON.parse(request.responseText);
-        cache.set(model.path, data);
-        return data;
+        throw new Error(`RL model is not preloaded: ${model.path}`);
     }
 
-    function preloadModelData(model) {
-        if (!model) return Promise.reject(new Error("RL model portfolio is empty"));
-        if (cache.has(model.path)) return Promise.resolve(cache.get(model.path));
-        if (pendingLoads.has(model.path)) return pendingLoads.get(model.path);
-        if (typeof fetch !== "function") {
-            return Promise.reject(new Error("fetch is not available for RL model preload"));
-        }
-        const request = fetch(model.path, { cache: "force-cache" })
+    function preloadRetryDelay(attempt, options) {
+        const delayMs = Number.isFinite(options.retryDelayMs) ? Math.max(0, options.retryDelayMs) : Math.min(1200, 300 * attempt);
+        if (delayMs <= 0 || typeof setTimeout !== "function") return Promise.resolve();
+        return new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    function fetchModelData(model) {
+        return fetch(model.path, { cache: "force-cache" })
             .then(response => {
                 if (!response || response.ok === false) {
                     const status = response && response.status !== undefined ? response.status : "unknown";
                     throw new Error(`RL model preload failed: ${model.path} (${status})`);
                 }
                 return response.json();
-            })
+            });
+    }
+
+    function preloadModelData(model, options = {}) {
+        if (!model) return Promise.reject(new Error("RL model portfolio is empty"));
+        if (cache.has(model.path)) {
+            markLoadState(model, 'ready');
+            return Promise.resolve(cache.get(model.path));
+        }
+        if (pendingLoads.has(model.path)) return pendingLoads.get(model.path);
+        if (typeof fetch !== "function") {
+            const error = new Error("fetch is not available for RL model preload");
+            markLoadState(model, 'failed', error);
+            return Promise.reject(error);
+        }
+        markLoadState(model, 'loading');
+        const maxAttempts = Math.max(1, Math.floor(Number.isFinite(options.attempts) ? options.attempts : 3));
+        const loadWithRetry = (attempt) => fetchModelData(model).catch(error => {
+            if (attempt >= maxAttempts) throw error;
+            return preloadRetryDelay(attempt, options).then(() => loadWithRetry(attempt + 1));
+        });
+        const request = loadWithRetry(1)
             .then(data => {
                 cache.set(model.path, data);
                 pendingLoads.delete(model.path);
+                markLoadState(model, 'ready');
                 return data;
             })
             .catch(error => {
                 pendingLoads.delete(model.path);
+                markLoadState(model, 'failed', error);
                 throw error;
             });
         pendingLoads.set(model.path, request);
         return request;
     }
 
-    function preloadEligibleModels(playerCount) {
+    function preloadEligibleModels(playerCount, options = {}) {
         const models = eligibleModels(playerCount);
         if (!models.length) return Promise.resolve([]);
-        return Promise.all(models.map(preloadModelData));
+        return Promise.all(models.map(model => preloadModelData(model, options)));
     }
 
     function createRandomCpu(options = {}) {
@@ -153,6 +204,8 @@ const RLModelPortfolio = (() => {
         createRandomCpu,
         eligibleModels,
         modelById,
+        eligibleLoadState,
+        modelLoadState,
         preloadEligibleModels,
         preloadModelData,
         selectRandomModel,

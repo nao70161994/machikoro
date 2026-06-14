@@ -45,6 +45,7 @@ function loadMainRuntime(options = {}) {
     const timeouts = [];
     const alerts = [];
     const fetchCalls = [];
+    const rlPreloadCalls = [];
     const consoleErrors = [];
     const testConsole = {
         log() {},
@@ -77,6 +78,7 @@ function loadMainRuntime(options = {}) {
         alerts,
         sentActions,
         fetchCalls,
+        rlPreloadCalls,
         consoleErrors,
         document: {
             body: makeElement(),
@@ -285,6 +287,10 @@ function loadMainRuntime(options = {}) {
         RLModelPortfolio: {
             supportsPlayerCount(playerCount) { return Number(playerCount) <= 10; },
             createRandomCpu(options) { return { difficulty: 'rl', options }; },
+            preloadEligibleModels(playerCount, options) {
+                rlPreloadCalls.push({ playerCount, options });
+                return Promise.resolve([]);
+            },
         },
     };
     context.global = context;
@@ -303,6 +309,7 @@ function loadMainRuntime(options = {}) {
             sentActions,
             alerts,
             fetchCalls,
+            rlPreloadCalls,
             consoleErrors,
             flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
             flushOneTimeout: () => { if (timeouts.length) timeouts.shift()(); },
@@ -564,6 +571,103 @@ runTest('main createCpuPlayer はRLモデル失敗時にCPU最強へ差し替え
         /model unavailable/
     );
     assert.deepStrictEqual(rt.__test.alerts, []);
+});
+
+runTest('main onChangePlayerType はRL選択時にモデルを先読みする', async () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(3);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'human', difficulty: 'normal', name: 'B' },
+        { type: 'human', difficulty: 'normal', name: 'C' },
+    ]);
+
+    rt.onChangePlayerType(1, 'rl');
+    await Promise.resolve();
+
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.__test.rlPreloadCalls.pop())), {
+        playerCount: 3,
+        options: { attempts: 3, retryDelayMs: 0 },
+    });
+});
+
+runTest('main renderPlayerSettings はRLモデルloading中に開始ボタンを止める', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'cpu', difficulty: 'rl', name: 'B' },
+    ]);
+    rt.RLModelPortfolio.eligibleLoadState = () => ({ status: 'loading', ready: 0, total: 3, errors: [] });
+
+    rt.renderPlayerSettings();
+
+    assert.strictEqual(rt.__test.elements.btnStart.disabled, true);
+    assert.strictEqual(rt.__test.elements.btnStart.textContent, 'モデル読み込み中');
+    assert.ok(rt.__test.elements.localRlModelStatus.textContent.includes('読み込んでいます'));
+});
+
+runTest('main renderPlayerSettings はRLモデルfailed時に再試行表示にする', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'cpu', difficulty: 'rl', name: 'B' },
+    ]);
+    rt.RLModelPortfolio.eligibleLoadState = () => ({ status: 'failed', ready: 0, total: 3, errors: ['network'] });
+
+    rt.renderPlayerSettings();
+
+    assert.strictEqual(rt.__test.elements.btnStart.disabled, false);
+    assert.strictEqual(rt.__test.elements.btnStart.textContent, 'モデルを再試行');
+    assert.ok(rt.__test.elements.localRlModelStatus.textContent.includes('再試行'));
+});
+
+runTest('main startGame はRL preload完了後にクリック時点の設定で開始する', async () => {
+    const rt = loadMainRuntime();
+    let resolvePreload;
+    rt.RLModelPortfolio.preloadEligibleModels = (playerCount, options) => {
+        rt.__test.rlPreloadCalls.push({ playerCount, options });
+        return new Promise(resolve => { resolvePreload = resolve; });
+    };
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'cpu', difficulty: 'rl', name: 'B' },
+    ]);
+
+    rt.startGame();
+    rt.__test.setSelectedCount(4);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'cpu', difficulty: 'normal', name: 'B' },
+        { type: 'cpu', difficulty: 'normal', name: 'C' },
+        { type: 'cpu', difficulty: 'normal', name: 'D' },
+    ]);
+    resolvePreload([]);
+    await Promise.resolve();
+
+    assert.strictEqual(rt.__test.rlPreloadCalls[0].playerCount, 2);
+    assert.strictEqual(rt.__test.getGame().players.length, 2);
+    assert.strictEqual(rt.__test.getCpuPlayers().length, 2);
+});
+
+runTest('main startGame はRL preload失敗時にゲームを開始しない', async () => {
+    const rt = loadMainRuntime();
+    rt.console = Object.assign({}, console, { error() {} });
+    rt.RLModelPortfolio.preloadEligibleModels = () => Promise.reject(new Error('preload failed'));
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'cpu', difficulty: 'rl', name: 'B' },
+    ]);
+
+    rt.startGame();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.strictEqual(rt.__test.getGame(), undefined);
+    assert.ok(rt.__test.alerts.some(message => message.includes('読み込めませんでした')));
 });
 
 runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {

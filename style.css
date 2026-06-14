@@ -2471,3 +2471,10 @@ button:not(:disabled):active {
         transition-duration: 0.001ms !important;
     }
 }
+
+.model-load-status {
+    min-height: 1.4em;
+    margin-top: 6px;
+    color: #6b7280;
+    font-size: 0.9rem;
+}

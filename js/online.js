@@ -20,7 +20,7 @@ function onlineCpuOpponentDifficultiesFromSettings(settings) {
 }
 
 function freezeOnlinePlayerSettings(settings, playerCount) {
-    return settings.map(setting => {
+    return settings.slice(0, playerCount).map(setting => {
         if (!setting || setting.type !== "cpu") return setting;
         const frozen = Object.assign({}, setting);
         if (frozen.difficulty === "rl" && !frozen.rlModelId && typeof RLModelPortfolio !== "undefined") {
@@ -39,6 +39,7 @@ function changeOnlineCount(delta) {
     onlineSelectedCount = Math.min(10, Math.max(2, onlineSelectedCount + delta));
     document.getElementById("onlinePlayerCount").textContent = onlineSelectedCount;
     renderOnlinePlayerSettings();
+    preloadOnlineRlModelsInBackground('online-player-count-preload');
 }
 
 function getOnlineRlCpuSettingNote(playerCount) {
@@ -74,6 +75,7 @@ function renderOnlinePlayerSettings() {
         </div>
     `).join("") + rlNotice;
     document.getElementById("onlinePlayerSettings").innerHTML = html;
+    updateOnlineRlModelReadinessUi();
 }
 
 function onChangeOnlinePlayerType(index, value) {
@@ -82,6 +84,8 @@ function onChangeOnlinePlayerType(index, value) {
     } else {
         onlinePlayerSettings[index] = { type: "cpu", difficulty: value };
     }
+    updateOnlineRlModelReadinessUi();
+    if (value === "rl") preloadOnlineRlModelsInBackground('online-rl-selected-preload');
 }
 
 // オンライン対戦（セッション状態）— resetOnlineState() でまとめてリセット
@@ -788,17 +792,30 @@ function initSocket() {
         } catch(e) {}
         saveOnlineSession();
         if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-game-start-reset-ui-locks');
-        document.getElementById("titleScreen").style.display = "none";
-        document.getElementById("gameScreen").style.display = "block";
-        initOnlineGame(playerNames, ps, playerOrder);
-        if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
-        // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
-        if (versions && versions.length > 1) {
-            const unique = [...new Set(versions)];
-            if (unique.length > 1) {
-                game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
+        const startOnlineGame = () => {
+            document.getElementById("titleScreen").style.display = "none";
+            document.getElementById("gameScreen").style.display = "block";
+            initOnlineGame(playerNames, ps, playerOrder);
+            if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
+            // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
+            if (versions && versions.length > 1) {
+                const unique = [...new Set(versions)];
+                if (unique.length > 1) {
+                    game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
+                }
             }
+        };
+        const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
+        if (preload && typeof preload.then === "function") {
+            document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
+            preload.then(startOnlineGame).catch(error => {
+                console.error(error);
+                isOnlineGame = false;
+                document.getElementById("onlineStatus").textContent = '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して再接続してください。';
+            });
+            return;
         }
+        startOnlineGame();
     });
 
     socket.on('gameAction', ({ action, data, playerIndex, seq, clientActionId }) => {
@@ -880,43 +897,56 @@ function initSocket() {
         cpuScheduleToken++;
         if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
 
-        document.getElementById("titleScreen").style.display = "none";
-        document.getElementById("gameScreen").style.display = "block";
+        const restoreOnlineGame = () => {
+            document.getElementById("titleScreen").style.display = "none";
+            document.getElementById("gameScreen").style.display = "block";
 
-        let restoredOk = false;
-        try {
-            // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
-            isReplaying = true;
-            initOnlineGame(playerNames, ps, playerOrder);
-            if (stateSnapshot) {
-                restoreOnlineSnapshot(stateSnapshot);
+            let restoredOk = false;
+            try {
+                // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
+                isReplaying = true;
+                initOnlineGame(playerNames, ps, playerOrder);
+                if (stateSnapshot) {
+                    restoreOnlineSnapshot(stateSnapshot);
+                }
+                for (const { action, data } of replayActionLog) {
+                    applyReplayedAction(action, data);
+                }
+                restoredOk = true;
+            } catch (e) {
+                document.getElementById("onlineStatus").textContent = '❌ 復元データの再生に失敗しました。再接続してください。';
+                isReconnectingOnline = true;
+            } finally {
+                isReplaying = false;
             }
-            for (const { action, data } of replayActionLog) {
-                applyReplayedAction(action, data);
+            if (!restoredOk) return;
+            prevCoins = null;
+            render();
+            scheduleCPU();
+            if (pendingBeforeRejoin && !pendingAccepted && socket && socket.connected !== false) {
+                if (!_canResendPendingOutboundAction(pendingBeforeRejoin)) {
+                    _clearPendingOutboundAction();
+                    return;
+                }
+                _setOnlineActionInFlight(true);
+                socket.emit('gameAction', {
+                    action: pendingBeforeRejoin.action,
+                    data: pendingBeforeRejoin.data,
+                    clientActionId: pendingBeforeRejoin.clientActionId,
+                });
             }
-            restoredOk = true;
-        } catch (e) {
-            document.getElementById("onlineStatus").textContent = '❌ 復元データの再生に失敗しました。再接続してください。';
-            isReconnectingOnline = true;
-        } finally {
-            isReplaying = false;
-        }
-        if (!restoredOk) return;
-        prevCoins = null;
-        render();
-        scheduleCPU();
-        if (pendingBeforeRejoin && !pendingAccepted && socket && socket.connected !== false) {
-            if (!_canResendPendingOutboundAction(pendingBeforeRejoin)) {
-                _clearPendingOutboundAction();
-                return;
-            }
-            _setOnlineActionInFlight(true);
-            socket.emit('gameAction', {
-                action: pendingBeforeRejoin.action,
-                data: pendingBeforeRejoin.data,
-                clientActionId: pendingBeforeRejoin.clientActionId,
+        };
+        const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
+        if (preload && typeof preload.then === "function") {
+            document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
+            preload.then(restoreOnlineGame).catch(error => {
+                console.error(error);
+                isReconnectingOnline = true;
+                document.getElementById("onlineStatus").textContent = '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して再接続してください。';
             });
+            return;
         }
+        restoreOnlineGame();
     });
 
     socket.on('playerRejoined', ({ playerIndex, playerName }) => {
@@ -1006,26 +1036,86 @@ function handleAppError(msg) {
     document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
 }
 
-function hasOnlineRlCpuSetting(playerCount = onlineSelectedCount) {
-    return onlinePlayerSettings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
+function snapshotOnlinePlayerSettings(playerCount = onlineSelectedCount) {
+    return onlinePlayerSettings.slice(0, playerCount).map(setting => Object.assign({ type: "human", difficulty: "normal" }, setting || {}));
 }
 
-function preloadOnlineRlModelsForCreate(playerCount) {
-    if (!hasOnlineRlCpuSetting(playerCount)) return null;
-    if (typeof RLModelPortfolio === "undefined" || typeof RLModelPortfolio.preloadEligibleModels !== "function") return null;
-    if (typeof RLModelPortfolio.shouldAvoidSynchronousModelLoad === "function" && !RLModelPortfolio.shouldAvoidSynchronousModelLoad()) return null;
-    return RLModelPortfolio.preloadEligibleModels(playerCount);
+function hasOnlineRlCpuSetting(playerCount = onlineSelectedCount, settings = onlinePlayerSettings) {
+    return settings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
 }
 
-function emitCreateRoom(name) {
+function canPreloadOnlineRlModels() {
+    return typeof RLModelPortfolio !== "undefined" && typeof RLModelPortfolio.preloadEligibleModels === "function";
+}
+
+function onlineRlModelLoadState(playerCount = onlineSelectedCount) {
+    if (!hasOnlineRlCpuSetting(playerCount)) return { status: 'unused', ready: 0, total: 0, errors: [] };
+    if (!canPreloadOnlineRlModels()) return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
+    if (typeof RLModelPortfolio.eligibleLoadState === "function") return RLModelPortfolio.eligibleLoadState(playerCount);
+    return { status: 'idle', ready: 0, total: 1, errors: [] };
+}
+
+function onlineRlModelStatusMessage(state) {
+    if (!state || state.status === 'unused') return '';
+    if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
+    if (state.status === 'loading') return '深層学習AIモデルを読み込んでいます。';
+    if (state.status === 'failed') return '深層学習AIモデルを読み込めませんでした。再試行してください。';
+    return '深層学習AIモデルをルーム作成時に読み込みます。';
+}
+
+function updateOnlineRlModelReadinessUi() {
+    const state = onlineRlModelLoadState(onlineSelectedCount);
+    const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
+    const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineRlModelStatus') : null;
+    if (btn && !onlineCreateRoomPending) {
+        if (state.status === 'loading') {
+            btn.disabled = true;
+            btn.textContent = 'モデル読み込み中';
+        } else {
+            btn.disabled = false;
+            btn.textContent = state.status === 'failed' ? 'モデルを再試行' : 'ルームを作る';
+        }
+    }
+    if (status) status.textContent = onlineRlModelStatusMessage(state);
+    return state;
+}
+
+function preloadOnlineRlModelsForSettings(playerCount, settings) {
+    if (!hasOnlineRlCpuSetting(playerCount, settings)) return null;
+    if (!canPreloadOnlineRlModels()) return Promise.reject(new Error("RL model loader is not available"));
+    return RLModelPortfolio.preloadEligibleModels(playerCount, { attempts: 3 });
+}
+
+function preloadOnlineRlModelsForCreate(playerCount, settings = onlinePlayerSettings) {
+    return preloadOnlineRlModelsForSettings(playerCount, settings);
+}
+
+function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preload') {
+    if (!hasOnlineRlCpuSetting(onlineSelectedCount) || !canPreloadOnlineRlModels()) {
+        updateOnlineRlModelReadinessUi();
+        return null;
+    }
+    updateOnlineRlModelReadinessUi();
+    const preload = RLModelPortfolio.preloadEligibleModels(onlineSelectedCount, { attempts: 3, retryDelayMs: 0 });
+    if (preload && typeof preload.then === "function") {
+        preload.then(() => updateOnlineRlModelReadinessUi()).catch(error => {
+            if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(reason, error);
+            updateOnlineRlModelReadinessUi();
+        });
+    }
+    updateOnlineRlModelReadinessUi();
+    return preload;
+}
+
+function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onlinePlayerSettings) {
     myPlayerName = name;
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
     initSocket();
     isRoomHost = true;
     socket.emit('createRoom', {
         playerName: name,
-        playerCount: onlineSelectedCount,
-        playerSettings: freezeOnlinePlayerSettings(onlinePlayerSettings, onlineSelectedCount),
+        playerCount,
+        playerSettings: freezeOnlinePlayerSettings(settings, playerCount),
         cpuSpeed: onlineCpuSpeed,
         enabledCards: [...enabledCards],
         enabledLandmarks: [...enabledLandmarks],
@@ -1037,23 +1127,37 @@ function showCreateRoom() {
     if (onlineCreateRoomPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
     if (!name) { showNotice("名前を入力してください"); return; }
-    const preload = preloadOnlineRlModelsForCreate(onlineSelectedCount);
+    const createPlayerCount = onlineSelectedCount;
+    const createPlayerSettings = snapshotOnlinePlayerSettings(createPlayerCount);
+    const state = updateOnlineRlModelReadinessUi();
+    if (state.status === 'loading') {
+        showNotice("深層学習AIモデルを読み込んでいます。");
+        return;
+    }
+    const preload = preloadOnlineRlModelsForCreate(createPlayerCount, createPlayerSettings);
     if (preload && typeof preload.then === "function") {
         onlineCreateRoomPending = true;
+        const btn = document.getElementById("onlineCreateSubmitButton");
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = "モデル読み込み中";
+        }
         showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {
                 onlineCreateRoomPending = false;
-                emitCreateRoom(name);
+                updateOnlineRlModelReadinessUi();
+                emitCreateRoom(name, createPlayerCount, createPlayerSettings);
             })
             .catch(error => {
                 onlineCreateRoomPending = false;
                 console.error(error);
+                updateOnlineRlModelReadinessUi();
                 showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。");
             });
         return;
     }
-    emitCreateRoom(name);
+    emitCreateRoom(name, createPlayerCount, createPlayerSettings);
 }
 
 function joinRoom() {

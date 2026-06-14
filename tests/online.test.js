@@ -76,6 +76,15 @@ function loadOnlineRuntime(options = {}) {
             if (Number.isInteger(id) && timeoutHandlers[id - 1]) timeoutHandlers[id - 1].cleared = true;
         }
         let createdCpuPlayerCalls = [];
+        let rlPreloadCalls = [];
+        var RLModelPortfolio = {
+            preloadEligibleModels(playerCount, options) {
+                rlPreloadCalls.push({ playerCount, options });
+                return Promise.resolve([]);
+            },
+            shouldAvoidSynchronousModelLoad() { return true; },
+            selectRandomModel() { return { id: 'test-rl-model' }; },
+        };
         function createCpuPlayer(difficulty, options = {}) {
             createdCpuPlayerCalls.push({ difficulty, options });
             return new CPU(difficulty, options);
@@ -123,6 +132,7 @@ function loadOnlineRuntime(options = {}) {
         this.getShopStock = () => SHOP_STOCK;
         this.getCpuPlayers = () => cpuPlayers;
         this.getCreatedCpuPlayerCalls = () => createdCpuPlayerCalls;
+        this.getRlPreloadCalls = () => rlPreloadCalls;
         this.setEnabledCards = (s) => { enabledCards = s; };
         this.setEnabledLandmarks = (s) => { enabledLandmarks = s; };
         this.getStatsResetCount = () => statsResetCount;
@@ -137,6 +147,7 @@ function loadOnlineRuntime(options = {}) {
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this.getClientVersion = getClientVersion;
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
+        this.onChangeOnlinePlayerType = onChangeOnlinePlayerType;
         this.showCreateRoom = showCreateRoom;
         this.setOnlineSelectedCount = (value) => { onlineSelectedCount = value; };
         this.setOnlinePlayerSettings = (value) => { onlinePlayerSettings = value; };
@@ -352,6 +363,76 @@ runTest('initSocket はSocket.IO script未読込時に状態を変更しない',
     assert.deepStrictEqual(Object.keys(localRt.getSocketHandlers()), []);
 });
 
+runTest('onChangeOnlinePlayerType はRL選択時にモデルを先読みする', async () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineSelectedCount(4);
+    rt.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.onChangeOnlinePlayerType(2, 'rl');
+    await Promise.resolve();
+
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.getRlPreloadCalls().pop())), {
+        playerCount: 4,
+        options: { attempts: 3, retryDelayMs: 0 },
+    });
+});
+
+runTest('renderOnlinePlayerSettings はRLモデルloading中に部屋作成ボタンを止める', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineSelectedCount(3);
+    rt.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.RLModelPortfolio.eligibleLoadState = () => ({ status: 'loading', ready: 0, total: 1, errors: [] });
+
+    rt.renderOnlinePlayerSettings();
+
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.disabled, true);
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.textContent, 'モデル読み込み中');
+    assert.ok(rt.elements.onlineRlModelStatus.textContent.includes('読み込んでいます'));
+});
+
+runTest('renderOnlinePlayerSettings はRLモデルfailed時に部屋作成を再試行表示にする', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineSelectedCount(3);
+    rt.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.RLModelPortfolio.eligibleLoadState = () => ({ status: 'failed', ready: 0, total: 1, errors: ['network'] });
+
+    rt.renderOnlinePlayerSettings();
+
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.disabled, false);
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.textContent, 'モデルを再試行');
+    assert.ok(rt.elements.onlineRlModelStatus.textContent.includes('再試行'));
+});
+
+runTest('onChangeOnlinePlayerType はRL解除時に部屋作成ボタンを戻す', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineSelectedCount(2);
+    rt.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+    ]);
+    rt.RLModelPortfolio.eligibleLoadState = () => ({ status: 'loading', ready: 0, total: 1, errors: [] });
+    rt.renderOnlinePlayerSettings();
+
+    rt.onChangeOnlinePlayerType(1, 'normal');
+
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.disabled, false);
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.textContent, 'ルームを作る');
+    assert.strictEqual(rt.elements.onlineRlModelStatus.textContent, '');
+});
+
 runTest('renderOnlinePlayerSettings は学習AIの選択方針を説明する', () => {
     const localRt = loadOnlineRuntime();
     localRt.setOnlineSelectedCount(2);
@@ -490,9 +571,13 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     assert.deepStrictEqual(Array.from(cpuPlayers[1].options.expertOpponentDifficulties), ['human', 'normal']);
 });
 
-runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', () => {
+runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', async () => {
     const runtime = loadOnlineRuntime();
     runtime.RLModelPortfolio = {
+        preloadEligibleModels(playerCount) {
+            assert.strictEqual(playerCount, 3);
+            return Promise.resolve([]);
+        },
         selectRandomModel(playerCount) {
             assert.strictEqual(playerCount, 3);
             return { id: 'frozen-online-rl' };
@@ -508,6 +593,7 @@ runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', (
     ]);
 
     runtime.showCreateRoom();
+    await Promise.resolve();
 
     const emitted = runtime.getSocketEmits().filter(event => event.name === 'createRoom').pop();
     assert.ok(emitted, 'createRoom emit should exist');
@@ -652,6 +738,43 @@ runTest('rejoinData は build action replay から undoState を復元する', (
     assert.ok(undoState);
     assert.strictEqual(undoState.playerCoins[0], 4);
     assert.strictEqual(undoState.shopStock['カフェ'], 6);
+});
+
+runTest('gameStart はRL CPUモデルをpreloadしてから初期化する', async () => {
+    const rt = loadOnlineRuntime();
+    let resolvePreload;
+    rt.RLModelPortfolio = {
+        preloadEligibleModels(playerCount, options) {
+            rt.getRlPreloadCalls().push({ playerCount, options });
+            return new Promise(resolve => { resolvePreload = resolve; });
+        },
+    };
+    rt.initSocket();
+
+    rt.getSocketHandlers().gameStart({
+        playerNames: ['Alice', 'RL CPU', 'Bob'],
+        playerSettings: [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'rl', rlModelId: 'fixed-rl' },
+            { type: 'human' },
+        ],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1, 2],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['test-version'],
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 0,
+    });
+
+    assert.strictEqual(rt.getGame(), null);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.getRlPreloadCalls().pop())), { playerCount: 3, options: { attempts: 3 } });
+    resolvePreload([]);
+    await Promise.resolve();
+
+    assert.ok(rt.getGame());
+    assert.strictEqual(rt.getCpuPlayers()[1].difficulty, 'rl');
 });
 
 runTest('gameStart は restore bundle を room-scoped key にも保存する', () => {

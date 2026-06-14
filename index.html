@@ -91,6 +91,7 @@
                     </select>
                 </div>
                 <button id="btnStart" data-ui-action="startGame">ゲーム開始</button>
+                <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
                 <div id="resumeSection" style="display:none">
                     <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">続きから再開</button>
                     <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">削除</button>
@@ -127,6 +128,7 @@
                         </div>
                     </div>
                     <button id="onlineCreateSubmitButton" data-ui-action="showCreateRoom">ルームを作る</button>
+                    <div id="onlineRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
                 </div>
 
                 <div id="onlineJoin" role="tabpanel" aria-labelledby="onlineTabJoin" style="display:none">

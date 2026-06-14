@@ -175,6 +175,24 @@ function resumeGame() {
         if (!isValidSavedGameState(state)) {
             throw new Error('Invalid saved game');
         }
+        const savedCpuSettings = normalizeSavedCpuSettings(state);
+        const hasRlCpu = savedCpuSettings.some(setting => setting && setting.difficulty === 'rl');
+        if (hasRlCpu && typeof RLModelPortfolio !== 'undefined' && typeof RLModelPortfolio.preloadEligibleModels === 'function') {
+            const loadState = typeof RLModelPortfolio.eligibleLoadState === 'function'
+                ? RLModelPortfolio.eligibleLoadState(state.players.length)
+                : null;
+            if (!loadState || loadState.status !== 'ready') {
+                const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
+                if (preload && typeof preload.then === 'function') {
+                    showNotice("深層学習AIモデルを読み込んでいます。");
+                    preload.then(() => resumeGame()).catch(error => {
+                        console.error(error);
+                        showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
+                    });
+                    return;
+                }
+            }
+        }
         cpuScheduleToken++;
         if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
         if (typeof resetOnlineState === 'function') resetOnlineState();
@@ -225,7 +243,7 @@ function resumeGame() {
         game.pendingTunaDice = state.pendingTunaDice || null;
         game.turnCount = state.turnCount || 0;
         game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
-        const cpuSettings = normalizeSavedCpuSettings(state);
+        const cpuSettings = savedCpuSettings;
         const opponentDifficulties = cpuSettings.map(s => s ? s.difficulty || "normal" : "human");
         cpuPlayers = cpuSettings.map(s => {
             if (!s) return null;
