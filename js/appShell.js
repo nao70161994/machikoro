@@ -1559,6 +1559,7 @@ function clearActionContainerForRecovery(spec) {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
         if (!el) return;
         if (el.hidden) { el.hidden = false; changed = true; }
+        if (id === spec.targetId && el.disabled) { el.disabled = false; changed = true; }
         if (el.inert) { el.inert = false; changed = true; }
         if (typeof el.removeAttribute === 'function' && el.getAttribute && el.getAttribute('aria-hidden') !== null) {
             el.removeAttribute('aria-hidden');
@@ -1609,6 +1610,7 @@ function clearUiInteractabilityIssueTargets(issues) {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(issue.target) : null;
         if (!el) return;
         if (el.hidden) { el.hidden = false; changed = true; }
+        if (issue.reason === 'disabled-mismatch' && el.disabled) { el.disabled = false; changed = true; }
         if (el.inert) { el.inert = false; changed = true; }
         if (typeof el.removeAttribute === 'function' && el.getAttribute && el.getAttribute('aria-hidden') !== null) {
             el.removeAttribute('aria-hidden');

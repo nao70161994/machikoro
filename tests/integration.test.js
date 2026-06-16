@@ -1486,6 +1486,7 @@ runTest('integration: build phase render はstale root/container lockをwatchdog
     rt.__test.elements.gameScreen.style.display = 'none';
     rt.__test.elements.gameScreen.inert = true;
     rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
+    rt.__test.elements.btnSkip.disabled = true;
     rt.__test.elements.btnSkip.inert = true;
     rt.__test.elements.btnSkip.style.pointerEvents = 'none';
     rt.__test.elements.buildMenu.style.pointerEvents = 'none';
@@ -1496,6 +1497,7 @@ runTest('integration: build phase render はstale root/container lockをwatchdog
     assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.inert, false);
     assert.notStrictEqual(rt.__test.elements.btnSkip.style.pointerEvents, 'none');
     assert.notStrictEqual(rt.__test.elements.buildMenu.style.pointerEvents, 'none');
