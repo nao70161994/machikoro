@@ -1514,6 +1514,7 @@ function syncAllowedActionContainersForRender(snapshot, issues = null) {
         if (issueActions.size && !issueActions.has(entry.action)) continue;
         if (isActionContainerUiUsable(snapshot, entry)) continue;
         changed = clearActionContainerForRecovery(entry.spec) || changed;
+        changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
     }
     return changed;
 }
@@ -1577,6 +1578,34 @@ function clearActionContainerForRecovery(spec) {
     return changed;
 }
 
+function clearExpectedActionChildrenForRecovery(snapshot, entry) {
+    const spec = entry && entry.spec;
+    const childSpec = expectedChildSpecForEntry(snapshot, entry);
+    if (!spec || !childSpec || !spec.targetId) return false;
+    const parent = typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
+    if (!parent || typeof parent.querySelectorAll !== 'function') return false;
+    let children = [];
+    try {
+        children = Array.from(parent.querySelectorAll(childSpec.selector) || []);
+    } catch (_) {
+        children = [];
+    }
+    let changed = false;
+    children.forEach(child => {
+        if (!child) return;
+        if (child.disabled) { child.disabled = false; changed = true; }
+        if (child.hidden) { child.hidden = false; changed = true; }
+        if (child.inert) { child.inert = false; changed = true; }
+        if (typeof child.removeAttribute === 'function' && child.getAttribute && child.getAttribute('aria-hidden') !== null) {
+            child.removeAttribute('aria-hidden');
+            changed = true;
+        }
+        if (child.style && child.style.display === 'none') { child.style.display = ''; changed = true; }
+        if (child.style && child.style.pointerEvents === 'none') { child.style.pointerEvents = ''; changed = true; }
+    });
+    return changed;
+}
+
 function recoverAllowedActionContainers(snapshot, issues = null) {
     if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
     if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
@@ -1588,6 +1617,7 @@ function recoverAllowedActionContainers(snapshot, issues = null) {
         if (issueActions.size && !issueActions.has(entry.action)) continue;
         if (isActionContainerUiUsable(snapshot, entry)) continue;
         changed = clearActionContainerForRecovery(entry.spec) || changed;
+        changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
     }
     return changed || issueActions.size > 0;
 }

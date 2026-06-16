@@ -828,6 +828,8 @@ runTest('integration: buildLandmark allowed かつ建設候補ありなら専用
     assert.ok(issue);
     assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');
     assert.strictEqual(issue.reason, 'action-child-not-clickable');
+    assert.strictEqual(rt.recoverUiInteractability(snapshot), true);
+    assert.strictEqual(disabledLandmark.disabled, false);
 });
 
 runTest('integration: allowed action container は子ボタン全disabledをクリック不能として診断する', () => {
@@ -859,6 +861,8 @@ runTest('integration: allowed action container は子ボタン全disabledをク�
     assert.strictEqual(issue.reason, 'child-not-clickable');
     assert.strictEqual(snapshot.actionButtons.buttons.diceChoose.totalInteractiveChildren, 1);
     assert.strictEqual(snapshot.actionButtons.buttons.diceChoose.usableInteractiveChildren, 0);
+    assert.strictEqual(rt.recoverUiInteractability(snapshot), true);
+    assert.strictEqual(disabledChoice.disabled, false);
 });
 
 runTest('integration: gameScreen display none と inert が残ったpost-build lockをwatchdogが復旧する', () => {
