@@ -364,6 +364,7 @@ function renderActiveGameState(current) {
     safeRenderStep('renderBuildMenu', () => renderBuildMenu());
     safeRenderStep('syncUiInteractabilityAfterRender', () => {
         if (typeof syncUiInteractabilityAfterRender === 'function') syncUiInteractabilityAfterRender('render-active-game-state');
+        if (typeof stabilizePostBuildNextTurnUi === 'function') stabilizePostBuildNextTurnUi('render-active-game-state-sync');
         if (typeof schedulePostBuildUiStabilizer === 'function') schedulePostBuildUiStabilizer('render-active-game-state');
     });
     safeRenderStep('checkAutoSkip', () => checkAutoSkip());
