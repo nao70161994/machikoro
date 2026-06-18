@@ -582,6 +582,11 @@ runTest('renderActiveGameState は skip/end turn を allowedActions と online g
     context.renderActiveGameState(player);
     assert.strictEqual(elements.btnSkip.disabled, false);
 
+    context.cpuPlayers = [];
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, false);
+    context.cpuPlayers = [null];
+
     context.isOnlineGame = true;
     context.myPlayerIndex = 0;
     context.onlineActionInFlight = false;

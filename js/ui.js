@@ -145,7 +145,7 @@ function getTutorialMessage() {
     if (!game) return { title: "", body: "", tags: [] };
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    const isCPUTurn = !!cpuPlayers[game.currentPlayerIndex];
     const levelText = tutorialLevel === 'advanced' ? '上級者向け' : '初心者向け';
     if (!isMyTurn) {
         return {
@@ -288,7 +288,7 @@ function clearOnlineSessionAfterWin() {
 
 function renderWinnerState(winner) {
     const winnerIdx = game.players.indexOf(winner);
-    const isCPUWinner = cpuPlayers[winnerIdx] !== null;
+    const isCPUWinner = !!cpuPlayers[winnerIdx];
     if (!winSoundPlayed) {
         if (winner.name === lastWinnerName) winStreak++;
         else { winStreak = 1; lastWinnerName = winner.name; }
@@ -331,7 +331,7 @@ function renderWinnerState(winner) {
 
 function renderActiveGameState(current) {
     document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
-    const isCPUTurn = cpuPlayers[game.currentPlayerIndex] !== null;
+    const isCPUTurn = !!cpuPlayers[game.currentPlayerIndex];
     if (game.phase === GAME_PHASES.ROLL && game.currentPlayerIndex !== prevPlayerIndex) {
         if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
         prevPlayerIndex = game.currentPlayerIndex;
@@ -392,7 +392,7 @@ function isOnlineUiInputBlocked() {
 
 function isCurrentHumanUiTurn() {
     if (!game) return false;
-    const isCPUTurn = Array.isArray(cpuPlayers) && cpuPlayers[game.currentPlayerIndex] !== null;
+    const isCPUTurn = Array.isArray(cpuPlayers) && !!cpuPlayers[game.currentPlayerIndex];
     if (isCPUTurn) return false;
     if (isOnlineUiInputBlocked()) return false;
     return !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
