@@ -884,8 +884,18 @@ function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
     if (!expectedPrimaryActions(snapshot).length) return false;
     if (hasActiveBlockingModal(snapshot)) return false;
-    clearUiLocks(reason, snapshot);
+    clearUiLocks(reason + '-before-render', snapshot);
     try { if (typeof render === 'function') render(); } catch (_) {}
+    const afterRender = buildClientRuntimeSnapshot(reason + '-after-render');
+    if (!isHumanTurnSnapshot(afterRender) || isOnlineUiBlockedSnapshot(afterRender)) return false;
+    if (hasActiveBlockingModal(afterRender)) return false;
+    const issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    let changed = clearGameScreenLockIfNoActiveModal(afterRender, reason + '-game-screen');
+    changed = syncAllowedActionContainersForRender(afterRender, issues) || changed;
+    changed = clearUiInteractabilityIssueTargets(issues) || changed;
+    clearUiLocks(reason + '-after-render', afterRender);
+    if (changed) markClientFlowCheckpoint(reason + '-after-render-sync');
+    markClientFlowCheckpoint(reason);
     return true;
 }
 
@@ -1543,14 +1553,18 @@ function syncUiInteractabilityAfterRender(reason = 'render-sync') {
 function recoverPostBuildUiFreeze(snapshot) {
     if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
     clearUiLocks('freeze-watchdog-post-build-unlock', snapshot);
-    recoverAllowedActionContainers(snapshot, issues);
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'post-build-ui-blocked' });
-    return true;
+    const afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-render');
+    const issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    recoverAllowedActionContainers(afterRender, issues);
+    clearUiLocks('freeze-watchdog-post-build-after-render-unlock', afterRender);
+    const afterRecovery = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-recovery');
+    const recovered = classifyLikelyFreeze(afterRecovery) !== 'post-build-ui-blocked';
+    if (recovered) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'post-build-ui-blocked' });
+    return recovered;
 }
 
 function clearActionContainerForRecovery(spec) {

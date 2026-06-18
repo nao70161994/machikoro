@@ -174,6 +174,37 @@ runTest('integration: 建設後にskip disabledが遅れて残ってもstabilize
     assert.strictEqual(rt.__test.fetchCalls.find(call => call.url === '/api/client-error'), undefined);
 });
 
+runTest('integration: 建設後unlockはrenderで再disabled化されたskipを即時復旧する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 5;
+    const originalRender = rt.render;
+    rt.render = () => {
+        originalRender();
+        if (game.phase === rt.GAME_PHASES.BUILD && game.builtThisTurn) {
+            rt.__test.elements.btnSkip.disabled = true;
+        }
+    };
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    const snapshot = rt.collectUiLockSnapshot('post-build-unlock-after-render-sync');
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
+    assert.strictEqual(rt.__test.fetchCalls.find(call => call.url === '/api/client-error'), undefined);
+});
+
 runTest('integration: 購入後操作不能をwatchdogが復旧できたら通知しない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
@@ -209,6 +240,38 @@ runTest('integration: 購入後操作不能をwatchdogが復旧できたら通�
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered-without-report'));
 });
 
+
+runTest('integration: post-build recovery はrender後に残ったskip disabledを成功判定前に直す', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    hideAllTestModals(rt);
+    rt.render();
+
+    rt.__test.elements.btnSkip.disabled = true;
+    const originalRender = rt.render;
+    rt.render = () => {
+        originalRender();
+        rt.__test.elements.btnSkip.disabled = true;
+    };
+
+    const before = rt.collectUiLockSnapshot('post-build-render-redisable-before');
+    assert.strictEqual(rt.classifyLikelyFreeze(before), 'post-build-ui-blocked');
+    assert.strictEqual(rt.recoverUiInteractability(before), true);
+
+    const after = rt.collectUiLockSnapshot('post-build-render-redisable-after');
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    assert.strictEqual(rt.classifyLikelyFreeze(after), '');
+});
 
 runTest('integration: 建設後にUI lockが残っても自分ターン操作を復旧する', () => {
     const rt = loadIntegrationRuntime();
