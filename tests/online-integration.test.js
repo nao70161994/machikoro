@@ -634,6 +634,30 @@ runTest('online integration: ROOM_NOT_FOUND で非ホストは再接続リトラ
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
 });
 
+runTest('online integration: rejoin retry timeout は入力ブロック解除後に再描画する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    rt.__test.setOnlineState({ isOnlineGame: true, isReconnectingOnline: true, myPlayerIndex: 0, socket: { connected: true } });
+    rt.render();
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, true);
+
+    for (let i = 0; i < 9; i++) {
+        rt._scheduleRejoinRetry();
+        rt.__test.flushTimeouts();
+    }
+
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent.includes('タイムアウト'), true);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+});
 if (process.exitCode) {
     throw new Error('online integrationテストで失敗が発生しました');
 }

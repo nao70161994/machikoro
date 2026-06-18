@@ -821,6 +821,7 @@ function closeStaleBlockingModals(snapshot, reason = 'ui-unlock') {
         closed = true;
     }
     if (closed) resetAccessibleModalStateForRecovery();
+    return closed;
 }
 
 function clearUiLocks(reason = 'ui-unlock', snapshot = null) {
@@ -1773,6 +1774,10 @@ function compactFreezePayloadForStorage(payload) {
         freezeKind: payload && payload.freezeKind,
         stagnantMs: payload && payload.stagnantMs,
         interactabilityIssues: Array.isArray(payload && payload.interactabilityIssues) ? payload.interactabilityIssues.map(compactIssueForTrace) : [],
+        recovery: payload && payload.recovery ? {
+            attempted: !!payload.recovery.attempted,
+            success: !!payload.recovery.success,
+        } : null,
         snapshot: {
             reason: snapshot.reason || '',
             timestamp: snapshot.timestamp || '',
@@ -1822,6 +1827,10 @@ function freezePayloadStorageJson(payload) {
     return JSON.stringify({
         freezeKind: payload && payload.freezeKind,
         stagnantMs: payload && payload.stagnantMs,
+        recovery: payload && payload.recovery ? {
+            attempted: !!payload.recovery.attempted,
+            success: !!payload.recovery.success,
+        } : null,
         snapshot: {
             phase: payload && payload.snapshot && payload.snapshot.phase || '',
             allowedActions: payload && payload.snapshot && payload.snapshot.allowedActions || [],
@@ -1836,8 +1845,10 @@ function buildFreezeReportStack(payload) {
     const buttonSummary = snapshot.actionButtons && snapshot.actionButtons.buttons
         ? Object.fromEntries(Object.entries(snapshot.actionButtons.buttons).map(([id, state]) => [id, state ? { disabled: !!state.disabled, hidden: !!state.hidden, inert: !!state.inert, ancestorBlocked: !!state.ancestorBlocked, pointerEvents: state.pointerEvents || state.computedPointerEvents || '' } : null]))
         : {};
+    const recoveryStatus = payload && payload.recovery ? (payload.recovery.success ? 'recovery=success' : 'recovery=failed') : 'recovery=none';
     return 'FREEZE_SUMMARY ' + JSON.stringify({
         freezeKind: payload && payload.freezeKind,
+        recoveryStatus,
         stagnantMs: payload && payload.stagnantMs,
         phase: snapshot.phase,
         currentPlayerIndex: snapshot.currentPlayerIndex,
@@ -1878,20 +1889,6 @@ function checkFreezeWatchdog() {
     if (now - _freezeWatchdogLastChangedAt < FREEZE_WATCHDOG_THRESHOLD_MS) return;
     const freezeKind = classifyLikelyFreeze(snapshot);
     if (!freezeKind) return;
-    if (freezeKind === 'post-build-ui-blocked') {
-        const recovered = recoverUiInteractability(snapshot);
-        const after = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-recovery');
-        if (recovered && classifyLikelyFreeze(after) !== freezeKind) {
-            _freezeWatchdogLastKey = freezeWatchdogStateKey(after);
-            _freezeWatchdogLastChangedAt = now;
-            markClientFlowCheckpoint('freeze-watchdog-recovered-without-report', {
-                freezeKind,
-                before: compactSnapshotForUiTrace(snapshot),
-                after: compactSnapshotForUiTrace(after),
-            });
-            return;
-        }
-    }
     const reportKey = freezeKind + '|' + freezeIssueDedupeSignature(snapshot);
     if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) {
         recoverUiInteractability(snapshot);
@@ -1906,13 +1903,13 @@ function checkFreezeWatchdog() {
         interactabilityIssues: validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind),
     };
     markClientFlowCheckpoint('freeze-watchdog-report', payload);
+    const recovered = recoverUiInteractability(snapshot);
+    payload.recovery = { attempted: true, success: !!recovered };
     try {
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem('machikoroFreezeSnapshot', freezePayloadStorageJson(payload));
         }
     } catch (_) {}
-    const recovered = recoverUiInteractability(snapshot);
-    payload.recovery = { attempted: true, success: !!recovered };
     if (typeof reportClientError === 'function') {
         reportClientError({
             source: 'freeze-watchdog',

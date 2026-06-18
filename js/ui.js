@@ -9,6 +9,15 @@ const LOG_TYPE_DISPLAY = {
 };
 let isUpdatingPendingModalContent = false;
 
+function currentCpuPlayerAt(index) {
+    try {
+        if (typeof cpuPlayers === 'undefined' || !Array.isArray(cpuPlayers)) return null;
+        return cpuPlayers[index] || null;
+    } catch (_) {
+        return null;
+    }
+}
+
 function classifyLogEntry(entry) {
     return LOG_TYPE_DISPLAY[entry.type] || { cls: "log-system", label: "進行" };
 }
@@ -145,7 +154,7 @@ function getTutorialMessage() {
     if (!game) return { title: "", body: "", tags: [] };
     const current = game.currentPlayer();
     const isMyTurn = !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
-    const isCPUTurn = !!cpuPlayers[game.currentPlayerIndex];
+    const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
     const levelText = tutorialLevel === 'advanced' ? '上級者向け' : '初心者向け';
     if (!isMyTurn) {
         return {
@@ -288,7 +297,7 @@ function clearOnlineSessionAfterWin() {
 
 function renderWinnerState(winner) {
     const winnerIdx = game.players.indexOf(winner);
-    const isCPUWinner = !!cpuPlayers[winnerIdx];
+    const isCPUWinner = !!currentCpuPlayerAt(winnerIdx);
     if (!winSoundPlayed) {
         if (winner.name === lastWinnerName) winStreak++;
         else { winStreak = 1; lastWinnerName = winner.name; }
@@ -310,7 +319,8 @@ function renderWinnerState(winner) {
     if (!winSoundPlayed) {
         winSoundPlayed = true;
         playSound('win');
-        recordGameStats(winner, game, cpuPlayers);
+        const cpuList = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
+        recordGameStats(winner, game, cpuList);
         if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
     }
     localStorage.removeItem('savedGame');
@@ -331,7 +341,7 @@ function renderWinnerState(winner) {
 
 function renderActiveGameState(current) {
     document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
-    const isCPUTurn = !!cpuPlayers[game.currentPlayerIndex];
+    const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
     if (game.phase === GAME_PHASES.ROLL && game.currentPlayerIndex !== prevPlayerIndex) {
         if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
         prevPlayerIndex = game.currentPlayerIndex;
@@ -392,7 +402,7 @@ function isOnlineUiInputBlocked() {
 
 function isCurrentHumanUiTurn() {
     if (!game) return false;
-    const isCPUTurn = Array.isArray(cpuPlayers) && !!cpuPlayers[game.currentPlayerIndex];
+    const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
     if (isCPUTurn) return false;
     if (isOnlineUiInputBlocked()) return false;
     return !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
@@ -457,7 +467,9 @@ function updatePendingModalContent(el, modal, html) {
         const blockingIds = visibleBlockingModalIds().filter(id => id !== 'pendingModal');
         if (blockingIds.length > 0) {
             recordModalPolicyViolation('pending-modal-open-denied', { parentModalId: blockingIds[0], childModalId: 'pendingModal', visibleBlockingModalIds: blockingIds });
-            return false;
+            if (el.innerHTML !== '') el.innerHTML = '';
+            normalizePendingModalInteraction(el, modal, false);
+            return true;
         }
     }
     isUpdatingPendingModalContent = true;
@@ -864,7 +876,7 @@ function buildRuntimeStateSnapshot(reason = '') {
         builtThisTurn: !!(game && game.builtThisTurn),
         turnCount: game && game.turnCount,
         currentPlayerIndex: game && game.currentPlayerIndex,
-        isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[game.currentPlayerIndex]),
+        isCpuTurn: !!(game && currentCpuPlayerAt(game.currentPlayerIndex)),
         isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         pendingFields: game ? {
@@ -1028,8 +1040,7 @@ function setAppInertForModal(enabled) {
         for (const entry of modalInertRestore) {
             const el = entry && entry.el;
             if (!el) continue;
-            if (entry.hadInert) el.inert = entry.inert;
-            else { try { delete el.inert; } catch (_) { el.inert = false; } }
+            el.inert = entry.hadInert ? entry.inert : false;
             if (entry.ariaHidden === null) el.removeAttribute && el.removeAttribute('aria-hidden');
             else el.setAttribute && el.setAttribute('aria-hidden', entry.ariaHidden);
             if (el.style) el.style.pointerEvents = entry.pointerEvents || '';

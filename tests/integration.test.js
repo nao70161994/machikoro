@@ -205,7 +205,7 @@ runTest('integration: 建設後unlockはrenderで再disabled化されたskipを�
     assert.strictEqual(rt.__test.fetchCalls.find(call => call.url === '/api/client-error'), undefined);
 });
 
-runTest('integration: 購入後操作不能をwatchdogが復旧できたら通知しない', () => {
+runTest('integration: 購入後操作不能をwatchdogが復旧できても通知して原因を残す', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
@@ -227,17 +227,20 @@ runTest('integration: 購入後操作不能をwatchdogが復旧できたら通�
     rt.__test.advanceTime(6000);
     rt.__test.runIntervals(1);
 
-    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'post-build-ui-blocked');
+    assert.deepStrictEqual(freezeSnapshot.recovery, { attempted: true, success: true });
     const reportCall = rt.__test.fetchCalls.find(call => {
         if (call.url !== '/api/client-error') return false;
         const report = JSON.parse(call.options.body);
         return report.source === 'freeze-watchdog';
     });
-    assert.strictEqual(reportCall, undefined);
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.stack.includes('recovery=success'));
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
-    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered-without-report'));
 });
 
 
@@ -584,15 +587,18 @@ runTest('integration: stale confirmModal が post-build の親lockを残して�
     rt.__test.advanceTime(6000);
     rt.__test.runIntervals(1);
 
-    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'post-build-ui-blocked');
+    assert.deepStrictEqual(freezeSnapshot.recovery, { attempted: true, success: true });
     assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
-    assert.strictEqual(reportCall, undefined);
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.stack.includes('recovery=success'));
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
-    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered-without-report'));
 });
 
 runTest('integration: active modalなしでgameScreen.inertだけ残ったhuman-turn lockをwatchdogが復旧する', () => {
@@ -954,15 +960,18 @@ runTest('integration: gameScreen display none と inert が残ったpost-build l
     rt.__test.advanceTime(6000);
     rt.__test.runIntervals(1);
 
-    assert.strictEqual(rt.localStorage.getItem('machikoroFreezeSnapshot'), null);
+    const freezeSnapshot = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(freezeSnapshot.freezeKind, 'post-build-ui-blocked');
+    assert.deepStrictEqual(freezeSnapshot.recovery, { attempted: true, success: true });
     assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
-    assert.strictEqual(reportCall, undefined);
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.stack.includes('recovery=success'));
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
-    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered-without-report'));
 });
 
 runTest('integration: title screenではorphan gameScreen displayを勝手に復旧しない', () => {
@@ -1047,6 +1056,7 @@ runTest('integration: stale pendingModal が通常操作を塞いだらwatchdog�
     assert.ok(reportCall);
     const report = JSON.parse(reportCall.options.body);
     assert.ok(report.message.includes('stale-modal-ui-locked'));
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
 });
 
 

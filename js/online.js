@@ -1376,6 +1376,8 @@ function _scheduleRejoinRetry() {
     if (_rejoinRetryCount >= MAX_RETRY) {
         document.getElementById("onlineStatus").textContent = '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。';
         isReconnectingOnline = false;
+        try { if (typeof render === 'function') render(); } catch (_) {}
+        try { if (typeof scheduleCPU === 'function') scheduleCPU(); } catch (_) {}
         return;
     }
     _rejoinRetryCount++;

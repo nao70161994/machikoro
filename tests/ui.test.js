@@ -153,8 +153,8 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     context.closeRules();
 
     assert.strictEqual(elements.rulesModal.style.display, 'none');
-    assert.strictEqual(elements.titleScreen.inert, undefined);
-    assert.strictEqual(elements.gameScreen.inert, undefined);
+    assert.strictEqual(elements.titleScreen.inert, false);
+    assert.strictEqual(elements.gameScreen.inert, false);
     assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(elements.titleScreen.style.pointerEvents, '');
     assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
@@ -190,6 +190,19 @@ runTest('rules/cardSelect close はvisible modalなしのorphan lockを解除す
     assert.strictEqual(elements.gameScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
     assert.strictEqual(context.document.body.classList.contains('modal-open'), false);
+});
+
+runTest('modal helpers はnative inertを明示的にfalseへ戻す', () => {
+    const { context, elements } = loadUiRuntime();
+    delete elements.gameScreen.inert;
+    delete elements.titleScreen.inert;
+
+    context.showRules();
+    assert.strictEqual(elements.gameScreen.inert, true);
+
+    context.closeRules();
+    assert.strictEqual(elements.gameScreen.inert, false);
+    assert.strictEqual(elements.titleScreen.inert, false);
 });
 
 runTest('modal helpers は既存の背景 pointer-events を復元する', () => {
@@ -273,8 +286,8 @@ runTest('showConfirm はOKでcallbackを一度だけ呼びmodal lockを解除す
     assert.strictEqual(okCount, 1);
     assert.strictEqual(elements.confirmModal.style.display, 'none');
     assert.strictEqual(context.__machikoroConfirmModalOpen, false);
-    assert.strictEqual(elements.titleScreen.inert, undefined);
-    assert.strictEqual(elements.gameScreen.inert, undefined);
+    assert.strictEqual(elements.titleScreen.inert, false);
+    assert.strictEqual(elements.gameScreen.inert, false);
 });
 
 runTest('showConfirm はCancelとEscapeでcallbackを呼ばずmodal lockを解除する', () => {
@@ -292,8 +305,8 @@ runTest('showConfirm はCancelとEscapeでcallbackを呼ばずmodal lockを解�
     assert.strictEqual(okCount, 0);
     assert.strictEqual(elements.confirmModal.style.display, 'none');
     assert.strictEqual(context.__machikoroConfirmModalOpen, false);
-    assert.strictEqual(elements.titleScreen.inert, undefined);
-    assert.strictEqual(elements.gameScreen.inert, undefined);
+    assert.strictEqual(elements.titleScreen.inert, false);
+    assert.strictEqual(elements.gameScreen.inert, false);
 });
 
 
@@ -329,14 +342,18 @@ runTest('card detail/select modal はactive blocking modal中に開かない', (
     assert.strictEqual(context.__machikoroModalPolicyViolations.length, 2);
 });
 
-runTest('pending modal はblocking modal中に表示されない', () => {
+runTest('pending modal はblocking modal中に表示されず既存内容も閉じる', () => {
     const { context, elements } = loadUiRuntime();
 
+    assert.strictEqual(context.updatePendingModalContent(elements.pendingMenu, elements.pendingModal, '<button data-action="resolveBusiness">Old</button>'), true);
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
     assert.strictEqual(context.showRules(), true);
-    assert.strictEqual(context.updatePendingModalContent(elements.pendingMenu, elements.pendingModal, '<button data-action="resolveTV">A</button>'), false);
+    assert.strictEqual(context.updatePendingModalContent(elements.pendingMenu, elements.pendingModal, '<button data-action="resolveTV">A</button>'), true);
 
     assert.strictEqual(elements.rulesModal.style.display, 'flex');
-    assert.notStrictEqual(elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(elements.pendingModal.style.display, 'none');
+    assert.strictEqual(elements.pendingModal.style.pointerEvents, '');
+    assert.strictEqual(elements.pendingMenu.style.pointerEvents, '');
     assert.strictEqual(elements.pendingMenu.innerHTML, '');
     assert.strictEqual(context.__machikoroModalPolicyViolations[0].type, 'pending-modal-open-denied');
 });
@@ -360,7 +377,7 @@ runTest('modal close は背景の既存aria-hiddenを復元する', () => {
     context.handleModalKeydown({ key: 'Escape', preventDefault() {} });
 
     assert.strictEqual(elements.rulesModal.style.display, 'none');
-    assert.strictEqual(elements.titleScreen.inert, undefined);
+    assert.strictEqual(elements.titleScreen.inert, false);
     assert.strictEqual(elements.gameScreen.getAttribute('aria-hidden'), 'false');
 });
 
@@ -583,6 +600,9 @@ runTest('renderActiveGameState は skip/end turn を allowedActions と online g
     assert.strictEqual(elements.btnSkip.disabled, false);
 
     context.cpuPlayers = [];
+    context.renderActiveGameState(player);
+    assert.strictEqual(elements.btnSkip.disabled, false);
+    context.cpuPlayers = undefined;
     context.renderActiveGameState(player);
     assert.strictEqual(elements.btnSkip.disabled, false);
     context.cpuPlayers = [null];
