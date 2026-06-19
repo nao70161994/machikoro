@@ -241,6 +241,21 @@ function childInteractiveStateForActions(el, actions) {
     });
 }
 
+function compactActionChildStates(snapshot) {
+    return expectedActionContainerEntries(snapshot || {}).map(entry => {
+        const spec = entry && entry.spec;
+        const childSpec = expectedChildSpecForEntry(snapshot, entry);
+        const parent = spec && spec.targetId && typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
+        const state = childSpec ? childInteractiveStateForSpec(parent, childSpec) : { total: 0, usable: 0 };
+        return {
+            action: entry && entry.action || '',
+            target: spec && spec.targetId || '',
+            childTotal: state.total || 0,
+            childUsable: state.usable || 0,
+        };
+    }).filter(item => item.childTotal > 0 || item.action === 'undoBuild' || item.childUsable <= 0);
+}
+
 function safeElementSnapshot(id) {
     const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
     if (!el) return null;
@@ -1558,14 +1573,69 @@ function recoverPostBuildUiFreeze(snapshot) {
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    const afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-render');
-    const issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    try {
+        if (typeof renderBuildMenu === 'function') renderBuildMenu();
+    } catch (_) {}
+    let afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-render');
+    let issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
     recoverAllowedActionContainers(afterRender, issues);
+    ensurePostBuildUndoButtonForRecovery(afterRender);
     clearUiLocks('freeze-watchdog-post-build-after-render-unlock', afterRender);
+    try {
+        if (typeof renderBuildMenu === 'function') renderBuildMenu();
+    } catch (_) {}
+    afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-second-render');
+    issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    recoverAllowedActionContainers(afterRender, issues);
+    ensurePostBuildUndoButtonForRecovery(afterRender);
     const afterRecovery = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-recovery');
     const recovered = classifyLikelyFreeze(afterRecovery) !== 'post-build-ui-blocked';
     if (recovered) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'post-build-ui-blocked' });
     return recovered;
+}
+
+function ensurePostBuildUndoButtonForRecovery(snapshot) {
+    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+    if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn || !allowed.includes('undoBuild')) return false;
+    try {
+        if (typeof undoState === 'undefined' || !undoState) return false;
+    } catch (_) {
+        return false;
+    }
+    const buildMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('buildMenu') : null;
+    if (!buildMenu) return false;
+    let children = [];
+    try {
+        if (typeof buildMenu.querySelectorAll === 'function') children = Array.from(buildMenu.querySelectorAll('[data-action="undoBuild"]') || []);
+    } catch (_) {
+        children = [];
+    }
+    let changed = false;
+    if (!children.length && typeof buildMenu.innerHTML === 'string' && !/data-action=["']undoBuild["']/.test(buildMenu.innerHTML)) {
+        const undoHtml = '<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>';
+        if (typeof buildMenu.insertAdjacentHTML === 'function') buildMenu.insertAdjacentHTML('afterbegin', undoHtml);
+        else buildMenu.innerHTML = undoHtml + buildMenu.innerHTML;
+        changed = true;
+        try {
+            if (typeof buildMenu.querySelectorAll === 'function') children = Array.from(buildMenu.querySelectorAll('[data-action="undoBuild"]') || []);
+        } catch (_) {
+            children = [];
+        }
+    }
+    children.forEach(child => {
+        if (!child) return;
+        if (child.disabled) { child.disabled = false; changed = true; }
+        if (child.hidden) { child.hidden = false; changed = true; }
+        if (child.inert) { child.inert = false; changed = true; }
+        if (typeof child.removeAttribute === 'function' && child.getAttribute && child.getAttribute('aria-hidden') !== null) {
+            child.removeAttribute('aria-hidden');
+            changed = true;
+        }
+        if (child.style && child.style.display === 'none') { child.style.display = ''; changed = true; }
+        if (child.style && child.style.pointerEvents === 'none') { child.style.pointerEvents = ''; changed = true; }
+    });
+    if (changed) markClientFlowCheckpoint('post-build-undo-button-recovered', { action: 'undoBuild' });
+    return changed;
 }
 
 function clearActionContainerForRecovery(spec) {
@@ -1633,6 +1703,7 @@ function recoverAllowedActionContainers(snapshot, issues = null) {
         if (isActionContainerUiUsable(snapshot, entry)) continue;
         changed = clearActionContainerForRecovery(entry.spec) || changed;
         changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
+        if (entry.action === 'undoBuild') changed = ensurePostBuildUndoButtonForRecovery(snapshot) || changed;
     }
     return changed || issueActions.size > 0;
 }
@@ -1842,9 +1913,6 @@ function freezePayloadStorageJson(payload) {
 function buildFreezeReportStack(payload) {
     const snapshot = payload && payload.snapshot || {};
     const ui = snapshot.ui || {};
-    const buttonSummary = snapshot.actionButtons && snapshot.actionButtons.buttons
-        ? Object.fromEntries(Object.entries(snapshot.actionButtons.buttons).map(([id, state]) => [id, state ? { disabled: !!state.disabled, hidden: !!state.hidden, inert: !!state.inert, ancestorBlocked: !!state.ancestorBlocked, pointerEvents: state.pointerEvents || state.computedPointerEvents || '' } : null]))
-        : {};
     const recoveryStatus = payload && payload.recovery ? (payload.recovery.success ? 'recovery=success' : 'recovery=failed') : 'recovery=none';
     return 'FREEZE_SUMMARY ' + JSON.stringify({
         freezeKind: payload && payload.freezeKind,
@@ -1867,7 +1935,7 @@ function buildFreezeReportStack(payload) {
         interactabilityIssues: Array.isArray(payload && payload.interactabilityIssues) ? payload.interactabilityIssues.map(compactIssueForTrace) : validateUiInteractability(snapshot),
         pendingMenu: ui.pendingMenu ? { display: ui.pendingMenu.display, hidden: !!ui.pendingMenu.hidden, inert: !!ui.pendingMenu.inert, ancestorBlocked: !!ui.pendingMenu.ancestorBlocked, pointerEvents: ui.pendingMenu.pointerEvents || ui.pendingMenu.computedPointerEvents || '', htmlLength: ui.pendingMenu.htmlLength } : null,
         pendingModal: ui.pendingModal ? { display: ui.pendingModal.display, hidden: !!ui.pendingModal.hidden, inert: !!ui.pendingModal.inert, pointerEvents: ui.pendingModal.pointerEvents || ui.pendingModal.computedPointerEvents || '' } : null,
-        actionButtons: buttonSummary,
+        actionChildren: compactActionChildStates(snapshot),
         recovery: payload && payload.recovery ? {
             attempted: !!payload.recovery.attempted,
             success: !!payload.recovery.success,

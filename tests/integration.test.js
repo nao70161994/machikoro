@@ -872,6 +872,39 @@ runTest('integration: 建設済みbuild phaseでbuildMenuが空でも購入actio
     assert.strictEqual(rt.classifyLikelyFreeze(snapshot), 'post-build-ui-blocked');
 });
 
+runTest('integration: post-build undoBuild 子ボタン欠落をwatchdog復旧で再生成する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    rt.__test.setUndoState({ state: 'test' });
+    hideAllTestModals(rt);
+    rt.render();
+
+    rt.__test.elements.buildMenu.innerHTML = '<button data-action="buildCard" disabled>bad stale build child</button>';
+    rt.__test.elements.btnSkip.disabled = true;
+
+    const before = rt.collectUiLockSnapshot('post-build-missing-undo-child');
+    const issue = rt.validateUiInteractability(before).find(item => item.action === 'undoBuild');
+    assert.ok(issue);
+    assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');
+    assert.strictEqual(issue.reason, 'action-child-not-clickable');
+
+    assert.strictEqual(rt.recoverUiInteractability(before), true);
+    assert.ok(rt.__test.elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+    const after = rt.collectUiLockSnapshot('post-build-missing-undo-child-after');
+    assert.strictEqual(rt.classifyLikelyFreeze(after), '');
+    assert.strictEqual(rt.validateUiInteractability(after).find(item => item.action === 'undoBuild'), undefined);
+});
+
 runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
