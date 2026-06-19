@@ -128,6 +128,7 @@ function hasBuildableCardCandidate() {
         if (!current || typeof CARDS === 'undefined' || !Array.isArray(CARDS)) return false;
         return CARDS.some(card => {
             if (!card) return false;
+            if (typeof cardFilter !== 'undefined' && cardFilter && card.color !== cardFilter) return false;
             const stock = typeof SHOP_STOCK !== 'undefined' && SHOP_STOCK ? SHOP_STOCK[card.name] : 0;
             if (stock <= 0 || current.coins < card.cost) return false;
             return !(card.color === 'purple' && typeof current.countCardIncludingDormant === 'function' && current.countCardIncludingDormant(card.name) > 0);

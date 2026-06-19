@@ -905,6 +905,29 @@ runTest('integration: post-build undoBuild 子ボタン欠落をwatchdog復旧�
     assert.strictEqual(rt.validateUiInteractability(after).find(item => item.action === 'undoBuild'), undefined);
 });
 
+runTest('integration: card filterで建設可能カードが非表示ならbuildCard子ボタン欠落をlock扱いしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 1;
+    hideAllTestModals(rt);
+    rt.render();
+    rt.setCardFilter('red');
+
+    const snapshot = rt.collectUiLockSnapshot('build-card-filter-hidden-buildable-card');
+    assert.ok(snapshot.allowedActions.includes('buildCard'));
+    assert.strictEqual(rt.validateUiInteractability(snapshot).find(item => item.action === 'buildCard'), undefined);
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
+});
+
 runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
