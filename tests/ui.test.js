@@ -740,6 +740,14 @@ runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedAction
     context.undoState = { cardName: '麦畑' };
     context.renderBuildMenu();
     assert.ok(elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+    assert.ok(!/data-action="undoBuild"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+
+    context.isOnlineGame = true;
+    context.socket = { connected: false };
+    context.renderBuildMenu();
+    assert.ok(elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+    assert.ok(/data-action="undoBuild"[^>]+disabled/.test(elements.buildMenu.innerHTML));
+    context.isOnlineGame = false;
 
     context.game.allowed = [];
     context.renderBuildMenu();

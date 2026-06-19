@@ -716,9 +716,18 @@ function buildLandmarkButtonsHtml(current, canBuildLandmarkAction) {
     }).join("");
 }
 
+function canRenderUndoBuildAction() {
+    if (!undoState || !game || !game.builtThisTurn) return false;
+    try {
+        return currentUiAllowedActions().has('undoBuild');
+    } catch (_) {
+        return false;
+    }
+}
+
 function buildUndoBuildButtonHtml() {
-    return (undoState && game.builtThisTurn && canShowUiAction('undoBuild'))
-        ? `<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>`
+    return canRenderUndoBuildAction()
+        ? `<button class="undo-btn" data-action="undoBuild"${uiActionDisabledAttr('undoBuild')}>↩ 建設を取り消す</button>`
         : '';
 }
 
