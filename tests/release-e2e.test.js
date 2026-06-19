@@ -265,6 +265,38 @@ runTest('release client error capture は iPhone Safari 風コンテキストと
     assert.strictEqual(JSON.parse(fetchCalls[0].options.body).source, 'window.onerror');
 });
 
+runTest('release freeze summary stack は長くてもJSONとして壊さず縮約する', () => {
+    const { context } = loadAppShellRuntime(MOBILE_PROFILES[0]);
+    const stack = 'FREEZE_SUMMARY ' + JSON.stringify({
+        freezeKind: 'post-build-ui-blocked',
+        recoveryStatus: 'recovery=failed',
+        stagnantMs: 5004,
+        phase: 'build',
+        allowedActions: ['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild'],
+        visibleModals: [],
+        bodyClassName: 'x'.repeat(3000),
+        interactabilityIssues: Array.from({ length: 20 }, (_, i) => ({
+            kind: 'allowed-action-container-not-clickable',
+            action: i === 0 ? 'undoBuild' : 'buildCard',
+            target: 'buildMenu',
+            actionTarget: i === 0 ? 'undoBuild' : 'buildCard',
+            reason: 'action-child-not-clickable',
+            freezeKind: 'human-turn-ui-locked',
+        })),
+        actionChildren: Array.from({ length: 20 }, (_, i) => ({ action: 'a' + i, target: 'buildMenu', childTotal: i, childUsable: 0 })),
+        recovery: { attempted: true, success: false },
+    });
+
+    const report = context.buildClientErrorReport({ source: 'freeze-watchdog', message: 'post-build-ui-blocked after 5004ms', stack });
+    assert.ok(report.stack.length <= CLIENT_ERROR_LIMITS.maxStackLength);
+    assert.ok(report.stack.startsWith('FREEZE_SUMMARY '));
+    const summary = JSON.parse(report.stack.replace(/^FREEZE_SUMMARY /, ''));
+    assert.strictEqual(summary.freezeKind, 'post-build-ui-blocked');
+    assert.deepStrictEqual(summary.allowedActions, ['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild']);
+    assert.strictEqual(summary.recovery.success, false);
+    assert.strictEqual(summary.compacted, true);
+});
+
 runAsyncTest('release ntfy client-error-test は実送信せず mock fetch で通知内容を検証する', async () => {
     const calls = [];
     const { recorder, res } = makeResponseRecorder();
