@@ -905,6 +905,35 @@ runTest('integration: post-build undoBuild 子ボタン欠落をwatchdog復旧�
     assert.strictEqual(rt.validateUiInteractability(after).find(item => item.action === 'undoBuild'), undefined);
 });
 
+runTest('integration: render直後syncはpost-build undoBuild子ボタン欠落をwatchdog前に再生成する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    rt.__test.setUndoState({ state: 'test' });
+    hideAllTestModals(rt);
+    rt.render();
+
+    rt.__test.elements.buildMenu.innerHTML = '<button data-action="buildCard" disabled>bad stale build child</button>';
+    rt.__test.elements.btnSkip.disabled = false;
+
+    const before = rt.collectUiLockSnapshot('post-build-missing-undo-child-before-render-sync');
+    assert.strictEqual(rt.validateUiInteractability(before).find(item => item.action === 'undoBuild').reason, 'action-child-not-clickable');
+    assert.strictEqual(rt.syncUiInteractabilityAfterRender('test-post-build-undo-render-sync'), true);
+    assert.ok(rt.__test.elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+    const after = rt.collectUiLockSnapshot('post-build-missing-undo-child-after-render-sync');
+    assert.strictEqual(rt.classifyLikelyFreeze(after), '');
+    assert.strictEqual(rt.validateUiInteractability(after).find(item => item.action === 'undoBuild'), undefined);
+});
+
 runTest('integration: card filterで建設可能カードが非表示ならbuildCard子ボタン欠落をlock扱いしない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

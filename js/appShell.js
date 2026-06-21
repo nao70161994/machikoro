@@ -1604,6 +1604,7 @@ function syncAllowedActionContainersForRender(snapshot, issues = null) {
         if (isActionContainerUiUsable(snapshot, entry)) continue;
         changed = clearActionContainerForRecovery(entry.spec) || changed;
         changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
+        if (entry.action === 'undoBuild') changed = ensurePostBuildUndoButtonForRecovery(snapshot) || changed;
     }
     return changed;
 }
