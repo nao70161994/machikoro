@@ -1846,6 +1846,25 @@ function recoverStaleModalUiLock(snapshot) {
     return true;
 }
 
+function recoverCpuTurnStall(snapshot) {
+    if (!snapshot || !snapshot.isCpuTurn || snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return false;
+    if (snapshot.isOnlineGame && !snapshot.isRoomHost) return false;
+    if (typeof scheduleCPU !== 'function') return false;
+    try {
+        scheduleCPU();
+    } catch (_) {
+        return false;
+    }
+    const after = buildClientRuntimeSnapshot('cpu-turn-stall-recovery-after');
+    const recovered = !!after.cpuStepScheduled;
+    markClientFlowCheckpoint('freeze-watchdog-cpu-reschedule', {
+        recovered,
+        before: compactSnapshotForUiTrace(snapshot),
+        after: compactSnapshotForUiTrace(after),
+    });
+    return recovered;
+}
+
 function recoverUiInteractability(snapshot) {
     const before = snapshot || buildClientRuntimeSnapshot('ui-recovery-before');
     const freezeKind = classifyLikelyFreeze(before);
@@ -1856,6 +1875,7 @@ function recoverUiInteractability(snapshot) {
     else if (freezeKind === 'human-turn-ui-locked') recovered = recoverHumanUiLock(before);
     else if (freezeKind === 'pending-ui-locked') recovered = recoverPendingUiLock(before);
     else if (freezeKind === 'stale-modal-ui-locked') recovered = recoverStaleModalUiLock(before);
+    else if (freezeKind === 'cpu-turn-stalled') recovered = recoverCpuTurnStall(before);
     else if (freezeKind.startsWith('modal-ui-locked')) recovered = recoverModalUiLock(before);
     if (recovered) {
         const after = buildClientRuntimeSnapshot('ui-recovery-after');

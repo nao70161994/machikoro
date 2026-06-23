@@ -334,6 +334,49 @@ runTest('integration: CPUターン終了後に人間ターンのUI lockを解除
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-human-turn-unlock'));
 });
 
+runTest('integration: CPU build turn stall はwatchdogがCPU処理を再スケジュールする', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'normal' },
+    ]);
+
+    rt.startGame();
+    rt.__test.flushTimeouts();
+    const game = rt.__test.getGame();
+    game.currentPlayerIndex = 2;
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = false;
+    rt.__test.setCpuPlayers([null, null, {
+        chooseTVTarget() { return 0; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { return false; },
+    }]);
+    rt.__test.timeouts.length = 0;
+
+    const before = rt.collectUiLockSnapshot('cpu-build-turn-stalled');
+    assert.strictEqual(before.isCpuTurn, true);
+    assert.strictEqual(before.cpuStepScheduled, false);
+    assert.strictEqual(rt.classifyLikelyFreeze(before), 'cpu-turn-stalled');
+
+    assert.strictEqual(rt.recoverUiInteractability(before), true);
+    const after = rt.collectUiLockSnapshot('cpu-build-turn-stalled-after-recovery');
+    assert.strictEqual(after.cpuStepScheduled, true);
+    assert.strictEqual(rt.classifyLikelyFreeze(after), '');
+    assert.ok(rt.__test.timeouts.length > 0);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-cpu-reschedule'));
+});
+
 runTest('integration: pending中の正当なmodal lockは人間ターンunlockで解除しない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
