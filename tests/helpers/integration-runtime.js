@@ -177,6 +177,52 @@ function loadIntegrationRuntime(options = {}) {
         fetchCalls,
         alerts,
         isSocketDisconnected: () => socketDisconnected,
+        hideAllModals() {
+            ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal'].forEach(id => {
+                const el = elements[id];
+                if (el && el.style) el.style.display = 'none';
+                if (el) el.hidden = false;
+            });
+            if (context.window) context.window.__machikoroConfirmModalOpen = false;
+        },
+        startLocalGame(settings = [
+            { type: 'human', difficulty: 'normal' },
+            { type: 'human', difficulty: 'normal' },
+        ]) {
+            context.enabledCards = new Set(context.CARDS.map(card => card.name));
+            context.enabledLandmarks = new Set(context.Player.landmarkNames());
+            context.__tmpPlayerSettings = settings;
+            vm.runInContext('playerSettings = __tmpPlayerSettings', context);
+            delete context.__tmpPlayerSettings;
+            context.startGame();
+            return vm.runInContext('game', context);
+        },
+        startBuildPhase(options = {}) {
+            const game = vm.runInContext('game', context);
+            if (!game) return null;
+            game.phase = context.GAME_PHASES.BUILD;
+            game.builtThisTurn = !!options.builtThisTurn;
+            if (Number.isFinite(options.coins)) game.currentPlayer().coins = options.coins;
+            return game;
+        },
+        tickFreezeWatchdog(ms = 6000) {
+            intervals.slice().forEach(fn => fn());
+            dateState.now += ms;
+            intervals.slice().forEach(fn => fn());
+        },
+        getClientErrorReports(source = '') {
+            return fetchCalls
+                .filter(call => !source || call.url === source || (call.options && String(call.options.body || '').includes(source)))
+                .map(call => {
+                    try { return JSON.parse(call.options.body); } catch (_) { return null; }
+                })
+                .filter(Boolean);
+        },
+        getFreezeSnapshot() {
+            const raw = storage.machikoroFreezeSnapshot;
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch (_) { return null; }
+        },
         flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
         runIntervals: (count = 1) => { for (let i = 0; i < count; i++) intervals.slice().forEach(fn => fn()); },
         advanceTime: ms => { dateState.now += ms; },
@@ -185,6 +231,8 @@ function loadIntegrationRuntime(options = {}) {
         setGame(value) { context.__tmpGame = value; vm.runInContext('game = __tmpGame', context); delete context.__tmpGame; },
         getCpuPlayers() { return vm.runInContext('cpuPlayers', context); },
         setCpuPlayers(value) { context.__tmpCpuPlayers = value; vm.runInContext('cpuPlayers = __tmpCpuPlayers', context); delete context.__tmpCpuPlayers; },
+        cancelCpuSchedule(reason = 'test-cancel-cpu') { return vm.runInContext(`typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler.cancel(${JSON.stringify(reason)}) : null`, context); },
+        getCpuSchedulerHealth() { return vm.runInContext(`typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler.getHealth() : null`, context); },
         setUndoState(value) { context.__tmpUndoState = value; vm.runInContext('undoState = __tmpUndoState', context); delete context.__tmpUndoState; },
         setOnlineState(value) {
             context.__tmpOnlineState = value;

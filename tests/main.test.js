@@ -327,6 +327,9 @@ function loadMainRuntime(options = {}) {
             setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
             getAutoSkipPending: () => autoSkipPending,
             getCpuScheduleToken: () => cpuScheduleToken,
+            getCpuSchedulerHealth: () => cpuTurnScheduler.getHealth(),
+            scheduleCpuTurn: (reason) => cpuTurnScheduler.schedule(reason),
+            cancelCpuSchedule: (reason) => cpuTurnScheduler.cancel(reason),
             scheduleCPU: () => scheduleCPU(),
             counters,
         };
@@ -864,6 +867,78 @@ runTest('main scheduleCPU はCPUターンの pendingIT をpending handlerで自�
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-pending-resolution' && entry.details.action === 'resolveIT'));
     assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main cpuTurnScheduler はCPU手番の予約状態をhealthで返す', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return 1; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { return false; },
+    }, null]);
+
+    const health = rt.__test.scheduleCpuTurn('test-scheduler-health');
+
+    assert.strictEqual(health.isCpuTurn, true);
+    assert.strictEqual(health.blockedReason, '');
+    assert.strictEqual(health.stepScheduled, true);
+    assert.strictEqual(rt.__test.getTimeoutCount(), 1);
+});
+
+runTest('main cpuTurnScheduler はstale timeoutを予約中healthにしない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return 1; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { throw new Error('stale timeout should not run'); },
+    }, null]);
+
+    rt.__test.scheduleCpuTurn('test-stale-schedule');
+    rt.__test.cancelCpuSchedule('test-stale-cancel');
+    rt.__test.flushOneTimeout();
+    const health = rt.__test.getCpuSchedulerHealth();
+
+    assert.strictEqual(health.stepScheduled, false);
+    assert.strictEqual(rt.__test.getTimeoutCount(), 0);
+});
+
+runTest('main cpuTurnScheduler はCPU予約不可理由をhealthに返す', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    const humanHealth = rt.__test.scheduleCpuTurn('test-human-turn-blocked');
+    assert.strictEqual(humanHealth.blockedReason, 'human-turn');
+    assert.strictEqual(humanHealth.stepScheduled, false);
+
+    rt.isOnlineGame = true;
+    rt.isRoomHost = false;
+    rt.__test.setCpuPlayers([{ build() {} }, null]);
+    const nonHostHealth = rt.__test.scheduleCpuTurn('test-non-host-blocked');
+    assert.strictEqual(nonHostHealth.blockedReason, 'non-host');
+    assert.strictEqual(nonHostHealth.stepScheduled, false);
 });
 
 runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTurnへ進める', () => {

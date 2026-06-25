@@ -4,6 +4,10 @@ const { loadIntegrationRuntime } = require('./helpers/integration-runtime');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function hideAllTestModals(rt) {
+    if (rt && rt.__test && typeof rt.__test.hideAllModals === 'function') {
+        rt.__test.hideAllModals();
+        return;
+    }
     ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal'].forEach(id => {
         const el = rt.__test.elements[id];
         if (el && el.style) el.style.display = 'none';
@@ -363,6 +367,7 @@ runTest('integration: CPU build turn stall はwatchdogがCPU処理を再スケ�
         build() { return false; },
     }]);
     rt.__test.timeouts.length = 0;
+    rt.__test.cancelCpuSchedule('test-cpu-stall-clear-schedule');
 
     const before = rt.collectUiLockSnapshot('cpu-build-turn-stalled');
     assert.strictEqual(before.isCpuTurn, true);

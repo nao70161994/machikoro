@@ -5,6 +5,17 @@ const CLIENT_ERROR_REPORT_MESSAGE_LIMIT = 500;
 const CLIENT_ERROR_REPORT_SUPPRESS_MS = 10000;
 const FREEZE_WATCHDOG_INTERVAL_MS = 1000;
 const FREEZE_WATCHDOG_THRESHOLD_MS = 5000;
+const FREEZE_SUMMARY_SCHEMA_VERSION = 2;
+const FREEZE_KINDS = Object.freeze({
+    MODAL_UI_LOCKED: 'modal-ui-locked',
+    HUMAN_TURN_UI_LOCKED: 'human-turn-ui-locked',
+    PENDING_UI_LOCKED: 'pending-ui-locked',
+    STALE_MODAL_UI_LOCKED: 'stale-modal-ui-locked',
+    POST_BUILD_UI_BLOCKED: 'post-build-ui-blocked',
+    PENDING_WITHOUT_ACTION: 'pending-without-action',
+    CPU_TURN_STALLED: 'cpu-turn-stalled',
+    ONLINE_ACTION_IN_FLIGHT_STALLED: 'online-action-in-flight-stalled',
+});
 let _clientErrorReportingBound = false;
 let _consoleErrorHooked = false;
 let _lastClientErrorReport = { key: '', time: 0 };
@@ -452,7 +463,7 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
             kind: 'nested-blocking-modal-policy-violation',
             reason: 'nested-blocking-modal',
             target: activeModals.join(','),
-            freezeKind: 'modal-ui-locked',
+            freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED,
         });
     }
 
@@ -460,8 +471,8 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
         if (id === 'pendingModal') continue;
         const modal = modalSnapshotFromRuntime(snapshot, id) || ui[id];
         if (!modal) continue;
-        if (modal.inert) issues.push({ kind: 'visible-modal-inert', reason: 'parent-inert', target: id, freezeKind: 'modal-ui-locked' });
-        if (modal.pointerEvents === 'none' || modal.computedPointerEvents === 'none') issues.push({ kind: 'visible-modal-pointer-events-none', reason: 'pointer-events-none', target: id, freezeKind: 'modal-ui-locked' });
+        if (modal.inert) issues.push({ kind: 'visible-modal-inert', reason: 'parent-inert', target: id, freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED });
+        if (modal.pointerEvents === 'none' || modal.computedPointerEvents === 'none') issues.push({ kind: 'visible-modal-pointer-events-none', reason: 'pointer-events-none', target: id, freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED });
     }
 
     if (!isMyTurn) return issues;
@@ -475,7 +486,7 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
             actionTarget: entry.action,
             phase: entry.phase,
             reason: 'missing-registry',
-            freezeKind: 'human-turn-ui-locked',
+            freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
         });
     }
 
@@ -497,21 +508,21 @@ function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
             actionTarget: entry.action,
             phase: entry.spec.phase || snapshot.phase,
             reason,
-            freezeKind: 'human-turn-ui-locked',
+            freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
         });
     }
 
     if (!activeModals.length && ui.gameScreen && (ui.gameScreen.inert || ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none') && expectedContainers.length) {
-        issues.push({ kind: 'orphan-game-screen-lock', target: 'gameScreen', reason: ui.gameScreen.inert ? 'parent-inert' : 'parent-display-none', freezeKind: 'human-turn-ui-locked' });
+        issues.push({ kind: 'orphan-game-screen-lock', target: 'gameScreen', reason: ui.gameScreen.inert ? 'parent-inert' : 'parent-display-none', freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED });
     }
     if (!activeModals.length && snapshot.bodyClassName && /modal-open/.test(snapshot.bodyClassName) && expectedContainers.length) {
-        issues.push({ kind: 'stale-modal-body-lock', target: 'body', reason: 'stale-modal', freezeKind: 'human-turn-ui-locked' });
+        issues.push({ kind: 'stale-modal-body-lock', target: 'body', reason: 'stale-modal', freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED });
     }
     return issues;
 }
 
 function primaryUiIssue(snapshot) {
-    return validateUiInteractability(snapshot).find(issue => issue.freezeKind === 'human-turn-ui-locked');
+    return validateUiInteractability(snapshot).find(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
 }
 
 function primaryActionButtonStates() {
@@ -538,7 +549,10 @@ function buildClientRuntimeSnapshot(reason = '') {
     try { isCpuTurn = !!(hasGame && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]); } catch (_) {}
     let cpuStepScheduled = false;
     try {
-        cpuStepScheduled = !!(isCpuTurn && typeof cpuStepScheduledUntil !== 'undefined' && Date.now() < cpuStepScheduledUntil);
+        if (isCpuTurn && typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.getHealth === 'function') {
+            cpuStepScheduled = !!cpuTurnScheduler.getHealth().stepScheduled;
+        } else if (isCpuTurn && typeof isCpuStepScheduledNow === 'function') cpuStepScheduled = !!isCpuStepScheduledNow();
+        else cpuStepScheduled = !!(isCpuTurn && typeof cpuStepScheduledUntil !== 'undefined' && Date.now() < cpuStepScheduledUntil);
     } catch (_) {}
     return {
         reason,
@@ -906,7 +920,7 @@ function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     const afterRender = buildClientRuntimeSnapshot(reason + '-after-render');
     if (!isHumanTurnSnapshot(afterRender) || isOnlineUiBlockedSnapshot(afterRender)) return false;
     if (hasActiveBlockingModal(afterRender)) return false;
-    const issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    const issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
     let changed = clearGameScreenLockIfNoActiveModal(afterRender, reason + '-game-screen');
     changed = syncAllowedActionContainersForRender(afterRender, issues) || changed;
     changed = clearUiInteractabilityIssueTargets(issues) || changed;
@@ -947,6 +961,7 @@ function compactFreezeSummaryStackForReport(stack, limit = CLIENT_ERROR_REPORT_S
         return truncateClientErrorField(text, limit);
     }
     const compact = {
+        schemaVersion: summary.schemaVersion || FREEZE_SUMMARY_SCHEMA_VERSION,
         freezeKind: summary.freezeKind || '',
         recoveryStatus: summary.recoveryStatus || '',
         stagnantMs: summary.stagnantMs,
@@ -979,6 +994,7 @@ function compactFreezeSummaryStackForReport(stack, limit = CLIENT_ERROR_REPORT_S
     result = marker + JSON.stringify(compact);
     if (result.length <= limit) return result;
     return marker + JSON.stringify({
+        schemaVersion: compact.schemaVersion || FREEZE_SUMMARY_SCHEMA_VERSION,
         freezeKind: compact.freezeKind,
         recoveryStatus: compact.recoveryStatus,
         stagnantMs: compact.stagnantMs,
@@ -1302,7 +1318,9 @@ function trapCrashScreenFocus(event) {
 function showCrashScreen(err) {
     if (_crashShown) return;
     _crashShown = true;
-    cpuScheduleToken++; // CPUループを停止
+    if (typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.cancel === 'function') cpuTurnScheduler.cancel('game-lifecycle-reset-cpu');
+    else if (typeof cancelCpuSchedule === 'function') cancelCpuSchedule('game-lifecycle-reset-cpu');
+    else cpuScheduleToken++; // CPUループを停止
     const el = document.getElementById('crashScreen');
     if (!el) return;
     const msg = (err instanceof Error ? err.stack || err.message : String(err || '不明なエラー')).slice(0, 300);
@@ -1510,20 +1528,20 @@ function classifyLikelyFreeze(snapshot) {
     const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
     const noUsablePendingAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedPending.length > 0 && !hasUsablePendingAction(snapshot);
     const interactabilityIssues = validateUiInteractability(snapshot);
-    const modalIssue = interactabilityIssues.find(issue => issue.freezeKind === 'modal-ui-locked');
-    const pendingIssue = interactabilityIssues.find(issue => issue.freezeKind === 'pending-ui-locked');
-    const humanIssue = interactabilityIssues.find(issue => issue.freezeKind === 'human-turn-ui-locked');
+    const modalIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.MODAL_UI_LOCKED);
+    const pendingIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.PENDING_UI_LOCKED);
+    const humanIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
     if (modalIssue) return modalIssue.freezeKind + ':' + modalIssue.reason;
-    if (stalePendingOpen && isMyTurn && !snapshot.isCpuTurn && !onlineBlocked) return 'stale-modal-ui-locked';
+    if (stalePendingOpen && isMyTurn && !snapshot.isCpuTurn && !onlineBlocked) return FREEZE_KINDS.STALE_MODAL_UI_LOCKED;
     if ((confirmOpen && !staleConfirmOpen) || (activeBlockingModalOpen && !expectedPending.length)) return '';
     if (!activeBlockingModalOpen && !onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || gameScreenHidden || staleConfirmOpen || noUsablePrimaryAction || humanIssue)) {
-        return 'post-build-ui-blocked';
+        return FREEZE_KINDS.POST_BUILD_UI_BLOCKED;
     }
-    if (pendingIssue || noUsablePendingAction) return 'pending-ui-locked';
-    if ((!activeBlockingModalOpen && noUsablePrimaryAction) || humanIssue) return 'human-turn-ui-locked';
-    if (pendingOpenWithoutContent) return 'pending-without-action';
-    if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight && !snapshot.cpuStepScheduled) return 'cpu-turn-stalled';
-    if (snapshot.onlineActionInFlight) return 'online-action-in-flight-stalled';
+    if (pendingIssue || noUsablePendingAction) return FREEZE_KINDS.PENDING_UI_LOCKED;
+    if ((!activeBlockingModalOpen && noUsablePrimaryAction) || humanIssue) return FREEZE_KINDS.HUMAN_TURN_UI_LOCKED;
+    if (pendingOpenWithoutContent) return FREEZE_KINDS.PENDING_WITHOUT_ACTION;
+    if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight && !snapshot.cpuStepScheduled) return FREEZE_KINDS.CPU_TURN_STALLED;
+    if (snapshot.onlineActionInFlight) return FREEZE_KINDS.ONLINE_ACTION_IN_FLIGHT_STALLED;
     return '';
 }
 
@@ -1613,7 +1631,7 @@ function syncUiInteractabilityAfterRender(reason = 'render-sync') {
     const before = buildClientRuntimeSnapshot(reason);
     if (!isHumanTurnSnapshot(before) || isOnlineUiBlockedSnapshot(before)) return false;
     if (hasActiveBlockingModal(before) && !expectedPendingActions(before).length) return false;
-    const issues = validateUiInteractability(before).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    const issues = validateUiInteractability(before).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
     if (!issues.length) return false;
     let changed = clearGameScreenLockIfNoActiveModal(before, reason + '-game-screen');
     changed = syncAllowedActionContainersForRender(before, issues) || changed;
@@ -1641,7 +1659,7 @@ function recoverPostBuildUiFreeze(snapshot) {
         if (typeof renderBuildMenu === 'function') renderBuildMenu();
     } catch (_) {}
     let afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-render');
-    let issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    let issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
     recoverAllowedActionContainers(afterRender, issues);
     ensurePostBuildUndoButtonForRecovery(afterRender);
     clearUiLocks('freeze-watchdog-post-build-after-render-unlock', afterRender);
@@ -1649,12 +1667,12 @@ function recoverPostBuildUiFreeze(snapshot) {
         if (typeof renderBuildMenu === 'function') renderBuildMenu();
     } catch (_) {}
     afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-second-render');
-    issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
     recoverAllowedActionContainers(afterRender, issues);
     ensurePostBuildUndoButtonForRecovery(afterRender);
     const afterRecovery = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-recovery');
-    const recovered = classifyLikelyFreeze(afterRecovery) !== 'post-build-ui-blocked';
-    if (recovered) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'post-build-ui-blocked' });
+    const recovered = classifyLikelyFreeze(afterRecovery) !== FREEZE_KINDS.POST_BUILD_UI_BLOCKED;
+    if (recovered) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.POST_BUILD_UI_BLOCKED });
     return recovered;
 }
 
@@ -1779,7 +1797,7 @@ function recoverPendingUiLock(snapshot) {
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'pending-ui-locked', issues });
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.PENDING_UI_LOCKED, issues });
     return changed;
 }
 
@@ -1811,18 +1829,18 @@ function clearUiInteractabilityIssueTargets(issues) {
 function recoverHumanUiLock(snapshot) {
     if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
     if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
-    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'human-turn-ui-locked');
+    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
     const changed = recoverAllowedActionContainers(snapshot, issues) || clearUiInteractabilityIssueTargets(issues);
     clearUiLocks('freeze-watchdog-human-turn-unlock', snapshot);
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'human-turn-ui-locked', issues });
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED, issues });
     return changed || issues.length > 0;
 }
 
 function recoverModalUiLock(snapshot) {
-    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === 'modal-ui-locked');
+    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === FREEZE_KINDS.MODAL_UI_LOCKED);
     if (!issues.length) return false;
     let changed = false;
     issues.forEach(issue => {
@@ -1831,7 +1849,7 @@ function recoverModalUiLock(snapshot) {
         if (el.inert) { el.inert = false; changed = true; }
         if (el.style && el.style.pointerEvents === 'none') { el.style.pointerEvents = 'auto'; changed = true; }
     });
-    if (changed) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'modal-ui-locked', issues });
+    if (changed) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED, issues });
     return changed;
 }
 
@@ -1842,15 +1860,27 @@ function recoverStaleModalUiLock(snapshot) {
     try {
         if (typeof render === 'function') render();
     } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: 'stale-modal-ui-locked' });
+    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.STALE_MODAL_UI_LOCKED });
     return true;
 }
 
 function recoverCpuTurnStall(snapshot) {
     if (!snapshot || !snapshot.isCpuTurn || snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return false;
     if (snapshot.isOnlineGame && !snapshot.isRoomHost) return false;
-    if (typeof scheduleCPU !== 'function') return false;
     try {
+        if (typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.schedule === 'function') {
+            const health = cpuTurnScheduler.schedule('watchdog-cpu-turn-stall');
+            const recovered = !!(health && health.stepScheduled);
+            const after = buildClientRuntimeSnapshot('cpu-turn-stall-recovery-after');
+            markClientFlowCheckpoint('freeze-watchdog-cpu-reschedule', {
+                recovered,
+                schedulerHealth: health || null,
+                before: compactSnapshotForUiTrace(snapshot),
+                after: compactSnapshotForUiTrace(after),
+            });
+            return recovered;
+        }
+        if (typeof scheduleCPU !== 'function') return false;
         scheduleCPU();
     } catch (_) {
         return false;
@@ -1865,18 +1895,33 @@ function recoverCpuTurnStall(snapshot) {
     return recovered;
 }
 
+function normalizedFreezeKindForRecovery(freezeKind) {
+    return String(freezeKind || '').split(':')[0];
+}
+
+function freezeRecoveryHandlers() {
+    return {
+        [FREEZE_KINDS.POST_BUILD_UI_BLOCKED]: recoverPostBuildUiFreeze,
+        [FREEZE_KINDS.HUMAN_TURN_UI_LOCKED]: recoverHumanUiLock,
+        [FREEZE_KINDS.PENDING_UI_LOCKED]: recoverPendingUiLock,
+        [FREEZE_KINDS.STALE_MODAL_UI_LOCKED]: recoverStaleModalUiLock,
+        [FREEZE_KINDS.CPU_TURN_STALLED]: recoverCpuTurnStall,
+        [FREEZE_KINDS.MODAL_UI_LOCKED]: recoverModalUiLock,
+    };
+}
+
+function recoverFreezeKind(freezeKind, snapshot) {
+    const kind = normalizedFreezeKindForRecovery(freezeKind);
+    const handler = freezeRecoveryHandlers()[kind];
+    return typeof handler === 'function' ? handler(snapshot) : false;
+}
+
 function recoverUiInteractability(snapshot) {
     const before = snapshot || buildClientRuntimeSnapshot('ui-recovery-before');
     const freezeKind = classifyLikelyFreeze(before);
     if (!freezeKind) return false;
     const issues = validateUiInteractability(before).filter(issue => issue && issue.freezeKind);
-    let recovered = false;
-    if (freezeKind === 'post-build-ui-blocked') recovered = recoverPostBuildUiFreeze(before);
-    else if (freezeKind === 'human-turn-ui-locked') recovered = recoverHumanUiLock(before);
-    else if (freezeKind === 'pending-ui-locked') recovered = recoverPendingUiLock(before);
-    else if (freezeKind === 'stale-modal-ui-locked') recovered = recoverStaleModalUiLock(before);
-    else if (freezeKind === 'cpu-turn-stalled') recovered = recoverCpuTurnStall(before);
-    else if (freezeKind.startsWith('modal-ui-locked')) recovered = recoverModalUiLock(before);
+    const recovered = recoverFreezeKind(freezeKind, before);
     if (recovered) {
         const after = buildClientRuntimeSnapshot('ui-recovery-after');
         markClientFlowCheckpoint('ui-interactability-recovery-fired', {
@@ -1999,6 +2044,7 @@ function buildFreezeReportStack(payload) {
     const ui = snapshot.ui || {};
     const recoveryStatus = payload && payload.recovery ? (payload.recovery.success ? 'recovery=success' : 'recovery=failed') : 'recovery=none';
     return 'FREEZE_SUMMARY ' + JSON.stringify({
+        schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
         freezeKind: payload && payload.freezeKind,
         recoveryStatus,
         stagnantMs: payload && payload.stagnantMs,

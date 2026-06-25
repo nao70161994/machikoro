@@ -291,6 +291,7 @@ runTest('release freeze summary stack は長くてもJSONとして壊さず縮�
     assert.ok(report.stack.length <= CLIENT_ERROR_LIMITS.maxStackLength);
     assert.ok(report.stack.startsWith('FREEZE_SUMMARY '));
     const summary = JSON.parse(report.stack.replace(/^FREEZE_SUMMARY /, ''));
+    assert.strictEqual(summary.schemaVersion, 2);
     assert.strictEqual(summary.freezeKind, 'post-build-ui-blocked');
     assert.deepStrictEqual(summary.allowedActions, ['buildCard', 'buildLandmark', 'nextTurn', 'undoBuild']);
     assert.strictEqual(summary.recovery.success, false);

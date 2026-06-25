@@ -29,6 +29,30 @@ let tutorialLevel = localStorage.getItem('tutorialLevel') || 'beginner';
 let cpuScheduleToken = 0;
 let cpuStepScheduledUntil = 0;
 
+function cancelCpuSchedule(reason = 'cpu-schedule-cancel') {
+    cpuScheduleToken++;
+    cpuStepScheduledUntil = 0;
+    try {
+        if (typeof markMainCheckpoint === 'function') markMainCheckpoint(reason, { cpuScheduleToken });
+    } catch (_) {}
+    return cpuScheduleToken;
+}
+
+function markCpuStepScheduled(delay, leaseMs = 1500) {
+    const wait = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
+    cpuStepScheduledUntil = Date.now() + wait + leaseMs;
+    return cpuStepScheduledUntil;
+}
+
+function refreshCpuStepScheduleLease(leaseMs = 1500) {
+    cpuStepScheduledUntil = Date.now() + leaseMs;
+    return cpuStepScheduledUntil;
+}
+
+function isCpuStepScheduledNow() {
+    return Date.now() < cpuStepScheduledUntil;
+}
+
 function escapeAttribute(value) {
     return String(value)
         .replace(/&/g, '&amp;')
@@ -325,7 +349,7 @@ function restartGame() {
         else {
             ['onlineSession', 'onlineGameStart', 'onlineActionLog', 'onlineStateSnapshot', 'onlinePendingAction'].forEach(key => localStorage.removeItem(key));
         }
-        cpuScheduleToken++;
+        cancelCpuSchedule('restart-game-cancel-cpu');
         cancelDelayedHumanAction();
         cancelAutoSkip();
         stopConfetti();
@@ -355,7 +379,7 @@ function restartGame() {
 }
 
 function init(playerCount) {
-    cpuScheduleToken++;
+    cancelCpuSchedule('init-cancel-cpu');
     cancelDelayedHumanAction();
     prevCoins = null;
     stopConfetti();
@@ -463,11 +487,10 @@ function canRunAction(action) {
 }
 
 function queueCPUStep(token, delay, fn) {
-    const wait = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
-    cpuStepScheduledUntil = Date.now() + wait + 1500;
+    markCpuStepScheduled(delay);
     setTimeout(() => {
-        cpuStepScheduledUntil = Date.now() + 1500;
         if (token !== cpuScheduleToken) return;
+        refreshCpuStepScheduleLease();
         fn();
     }, delay);
 }
@@ -742,25 +765,53 @@ const CPU_PHASE_HANDLERS = [
     },
 ];
 
-function scheduleCPU() {
+function cpuScheduleBlockedReason() {
+    if (typeof isReplaying !== 'undefined' && isReplaying) return 'replaying';
+    if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return 'non-host';
+    if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
+        if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return 'reconnecting';
+        if (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) return 'online-in-flight';
+        if (typeof socket === 'undefined' || !socket || socket.connected === false) return 'socket-disconnected';
+    }
+    if (!game) return 'no-game';
+    if (game.checkWinner && game.checkWinner()) return 'winner';
+    if (!Array.isArray(cpuPlayers) || !cpuPlayers[game.currentPlayerIndex]) return 'human-turn';
+    return '';
+}
+
+function currentCpuTurnSchedulerHealth() {
+    const blockedReason = cpuScheduleBlockedReason();
+    const currentPlayerIndex = game ? game.currentPlayerIndex : null;
+    return {
+        token: cpuScheduleToken,
+        scheduledUntil: cpuStepScheduledUntil,
+        stepScheduled: !blockedReason && isCpuStepScheduledNow(),
+        isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
+        currentPlayerIndex,
+        blockedReason,
+    };
+}
+
+function scheduleCpuTurn(reason = 'scheduleCPU') {
     markMainCheckpoint('scheduleCPU-enter', {
+        reason,
         isReplaying: typeof isReplaying !== 'undefined' ? isReplaying : null,
         isOnlineGame: typeof isOnlineGame !== 'undefined' ? isOnlineGame : null,
         isRoomHost: typeof isRoomHost !== 'undefined' ? isRoomHost : null,
     });
-    if (isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return; }
-    if (isOnlineGame && !isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return; }
+    if (isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return currentCpuTurnSchedulerHealth(); }
+    if (isOnlineGame && !isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return currentCpuTurnSchedulerHealth(); }
     if (isOnlineGame && (
         (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
         (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
         (typeof socket === 'undefined' || !socket || socket.connected === false)
-    )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : null }); return; }
-    if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return; }
+    )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : null }); return currentCpuTurnSchedulerHealth(); }
+    if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return currentCpuTurnSchedulerHealth(); }
     const ci = game.currentPlayerIndex;
     if (!cpuPlayers[ci]) {
         markMainCheckpoint('scheduleCPU-skip-human-turn', { currentPlayerIndex: ci });
         if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn('scheduleCPU-human-turn-unlock');
-        return;
+        return currentCpuTurnSchedulerHealth();
     }
     const cpu = cpuPlayers[ci];
     const token = ++cpuScheduleToken;
@@ -798,6 +849,24 @@ function scheduleCPU() {
     }
 
     runNextStep();
+    return currentCpuTurnSchedulerHealth();
+}
+
+const cpuTurnScheduler = Object.freeze({
+    schedule(reason = 'cpu-turn-scheduler-schedule') {
+        return scheduleCpuTurn(reason);
+    },
+    cancel(reason = 'cpu-turn-scheduler-cancel') {
+        cancelCpuSchedule(reason);
+        return currentCpuTurnSchedulerHealth();
+    },
+    getHealth() {
+        return currentCpuTurnSchedulerHealth();
+    },
+});
+
+function scheduleCPU() {
+    return cpuTurnScheduler.schedule('scheduleCPU');
 }
 
 function canRunLocalHumanAction(expectedPlayerIndex = null) {
