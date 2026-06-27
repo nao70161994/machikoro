@@ -1790,6 +1790,9 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('reportClientError({'));
     assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
     assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));
+    const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
+    assert.ok(appShellSource.includes("markClientFlowCheckpoint('freeze-watchdog-report'"));
+    assert.ok(!appShellSource.includes("markClientFlowCheckpoint('freeze-watchdog-tick'"));
     assert.ok(html.includes('if (_isInGame() && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('updateRequestedByUser = true;'));
     assert.ok(html.includes('_forceVersionReload();'));
@@ -1848,6 +1851,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(!html.includes('onchange='));
     assert.ok(css.includes('--z-pwa-banner: 500;'));
     assert.ok(css.includes('--z-pending-modal: 600;'));
+    assert.ok(css.includes('--z-notice-toast: 800;'));
     assert.ok(css.includes('--z-modal: 1000;'));
     assert.ok(css.includes('#pwaUpdateBanner'));
     assert.ok(css.includes('z-index: var(--z-pwa-banner);'));
@@ -1855,6 +1859,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.indexOf('max-height: min(calc(100vh - 24px), 70vh);') < css.indexOf('max-height: min(calc(100dvh - 24px), 70dvh);'));
     assert.ok(css.includes('calc(12px + env(safe-area-inset-bottom, 0px))'));
     assert.ok(css.includes('z-index: var(--z-modal);'));
+    assert.ok(css.includes('.confirm-modal-content'));
+    assert.ok(css.includes('animation: none;'));
     assert.ok(css.includes(':focus-visible'));
     assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));
     assert.ok(css.includes('.notice-toast'));

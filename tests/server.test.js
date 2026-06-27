@@ -658,6 +658,20 @@ runTest('client error classification は stale client と未知通知を分け�
         knownPatternId: 'cpu-turn-stalled',
     });
 
+    const versionMismatch = normalizeClientErrorPayload({
+        source: 'version-mismatch',
+        message: 'Client version mismatch',
+        stack: 'client=0a7a9fe\nserver=bf2f17d',
+        appVersion: '0a7a9fe',
+    }, 1700000000000).report;
+    assert.deepStrictEqual(classifyClientErrorReport(versionMismatch), {
+        classification: 'known-pattern',
+        priority: '2',
+        tags: 'hourglass,known,stale_client',
+        freezeKind: '',
+        knownPatternId: 'client-version-mismatch',
+    });
+
     const unknown = normalizeClientErrorPayload({
         message: 'new unrecovered crash',
         stack: 'new stack',

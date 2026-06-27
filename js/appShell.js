@@ -2076,7 +2076,6 @@ function buildFreezeReportStack(payload) {
 function checkFreezeWatchdog() {
     const now = Date.now();
     const snapshot = buildClientRuntimeSnapshot('freeze-watchdog');
-    markClientFlowCheckpoint('freeze-watchdog-tick', { phase: snapshot.phase, turnCount: snapshot.turnCount });
     const key = freezeWatchdogStateKey(snapshot);
     if (key !== _freezeWatchdogLastKey) {
         _freezeWatchdogLastKey = key;

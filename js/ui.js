@@ -452,9 +452,22 @@ function shouldShowPendingForCurrentPlayer() {
 function normalizePendingModalInteraction(el, modal, hasContent) {
     if (modal && modal.style) {
         modal.style.display = hasContent ? "flex" : "none";
+        modal.style.visibility = hasContent ? "visible" : "";
+        modal.style.opacity = hasContent ? "1" : "";
         modal.style.pointerEvents = hasContent ? "auto" : "";
+        modal.style.transform = hasContent ? "" : "";
+        if (hasContent && typeof modal.querySelector === 'function') {
+            const inner = modal.querySelector('.pending-modal-inner');
+            if (inner && inner.style) {
+                inner.style.visibility = 'visible';
+                inner.style.opacity = '1';
+                inner.style.pointerEvents = 'auto';
+            }
+        }
     }
     if (el && el.style) {
+        el.style.visibility = hasContent ? "visible" : "";
+        el.style.opacity = hasContent ? "1" : "";
         el.style.pointerEvents = hasContent ? "auto" : "";
     }
 }
@@ -1083,14 +1096,16 @@ function isModalVisibleById(id) {
     if (!id || typeof document === 'undefined' || typeof document.getElementById !== 'function') return false;
     const modal = document.getElementById(id);
     if (!modal || modal.hidden) return false;
-    const inlineDisplay = modal.style ? modal.style.display || '' : '';
+    const inline = modal.style || {};
+    const inlineDisplay = inline.display || '';
     if (inlineDisplay === 'none') return false;
-    if (inlineDisplay) return true;
+    if (inline.visibility === 'hidden' || inline.opacity === '0' || inline.pointerEvents === 'none') return false;
     if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
         const style = window.getComputedStyle(modal);
-        return !!(style && style.display !== 'none' && style.visibility !== 'hidden');
+        if (style && (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0' || style.pointerEvents === 'none')) return false;
+        if (style && style.display) return true;
     }
-    return false;
+    return !!inlineDisplay;
 }
 
 function modalStackExceptionKey(parentId, childId) {
@@ -1147,6 +1162,23 @@ function canOpenBlockingModal(id) {
     return false;
 }
 
+function normalizeModalVisualStateForOpen(modal) {
+    if (!modal || !modal.style) return;
+    modal.style.display = 'flex';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+    modal.style.transform = '';
+    if (typeof modal.querySelector === 'function') {
+        const content = modal.querySelector('.modal-content');
+        if (content && content.style) {
+            content.style.visibility = 'visible';
+            content.style.opacity = '1';
+            content.style.pointerEvents = 'auto';
+        }
+    }
+}
+
 function openAccessibleModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return false;
@@ -1154,7 +1186,7 @@ function openAccessibleModal(id) {
     if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
     activeModalId = id;
     if (document.body && document.body.classList) document.body.classList.add('modal-open');
-    modal.style.display = 'flex';
+    normalizeModalVisualStateForOpen(modal);
     if (typeof modal.setAttribute === 'function') {
         modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
         modal.setAttribute('aria-modal', 'true');
@@ -1177,6 +1209,9 @@ function closeAccessibleModal(id, options = {}) {
         activeModalId = null;
         setAppInertForModal(false);
         clearOrphanAccessibleModalLocks();
+        if (id !== 'pendingModal' && typeof renderPending === 'function') {
+            try { renderPending(); } catch (_) {}
+        }
     }
 
     if (options.restoreFocus !== false && lastModalFocus && typeof lastModalFocus.focus === 'function') {

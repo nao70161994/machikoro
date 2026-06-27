@@ -8,6 +8,7 @@
  * z-index scale:
  * - PWA banner: below gameplay overlays so update/install notices never cover an active modal.
  * - Pending modal: above page UI, below turn announcement and full modal dialogs.
+ * - Notice toast: above gameplay overlays, below full modal dialogs.
  * - Modal: top normal interaction layer.
  * - Crash: emergency recovery layer above all app UI.
  */
@@ -15,6 +16,7 @@
     --z-pwa-banner: 500;
     --z-pending-modal: 600;
     --z-turn-announcer: 700;
+    --z-notice-toast: 800;
     --z-modal: 1000;
     --z-crash-screen: 2000;
 }
@@ -709,7 +711,9 @@ body.modal-open #gameScreen {
     border: 1px solid rgba(233,69,96,0.25);
     box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06);
     margin: auto;
-    animation: modalSlideIn 0.22s cubic-bezier(0.22,1,0.36,1) both;
+    opacity: 1;
+    transform: none;
+    animation: none;
 }
 
 .modal-header {
@@ -1488,7 +1492,9 @@ button:not(:disabled):active {
     max-height: min(calc(100dvh - 24px), 70dvh);
     border: 2px solid rgba(233,69,96,0.55);
     box-shadow: 0 0 48px rgba(233,69,96,0.18), 0 12px 40px rgba(0,0,0,0.8);
-    animation: modalSlideIn 0.22s cubic-bezier(0.22,1,0.36,1) both;
+    opacity: 1;
+    transform: none;
+    animation: none;
     overflow-y: auto;
     overscroll-behavior: contain;
     pointer-events: auto;
@@ -1897,6 +1903,9 @@ button:not(:disabled):active {
 /* ===== 確認ダイアログ ===== */
 .confirm-modal-content {
     max-width: 300px;
+    opacity: 1;
+    transform: none;
+    animation: none;
 }
 
 .confirm-modal-body {
@@ -2448,7 +2457,7 @@ button:not(:disabled):active {
     border: 1px solid rgba(240,192,64,0.45);
     border-radius: 8px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.45);
-    z-index: var(--z-modal);
+    z-index: var(--z-notice-toast);
 }
 
 .notice-toast-close {

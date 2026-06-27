@@ -276,8 +276,14 @@ runTest('showConfirm はOKでcallbackを一度だけ呼びmodal lockを解除す
     const { context, elements } = loadUiRuntime();
     let okCount = 0;
 
+    elements.confirmModal.style.opacity = '0';
+    elements.confirmModal.style.visibility = 'hidden';
+    elements.confirmModal.style.pointerEvents = 'none';
     assert.strictEqual(context.showConfirm('本当に実行しますか', () => { okCount++; }), true);
     assert.strictEqual(elements.confirmModal.style.display, 'flex');
+    assert.strictEqual(elements.confirmModal.style.opacity, '1');
+    assert.strictEqual(elements.confirmModal.style.visibility, 'visible');
+    assert.strictEqual(elements.confirmModal.style.pointerEvents, 'auto');
     assert.strictEqual(elements.confirmMessage.textContent, '本当に実行しますか');
     assert.strictEqual(context.__machikoroConfirmModalOpen, true);
 
@@ -329,6 +335,17 @@ runTest('blocking modal はdeny-by-defaultで二重openを拒否する', () => {
     assert.strictEqual(oldHandlerCalled, 1);
 });
 
+runTest('不可視のblocking modalは新しいmodal表示を妨げない', () => {
+    const { context, elements } = loadUiRuntime();
+
+    elements.rulesModal.style.display = 'flex';
+    elements.rulesModal.style.visibility = 'hidden';
+    assert.strictEqual(context.showConfirm('確認', () => {}), true);
+
+    assert.strictEqual(elements.confirmModal.style.display, 'flex');
+    assert.strictEqual(context.__machikoroModalPolicyViolations, undefined);
+});
+
 runTest('card detail/select modal はactive blocking modal中に開かない', () => {
     const { context, elements } = loadUiRuntime();
 
@@ -356,6 +373,37 @@ runTest('pending modal はblocking modal中に表示されず既存内容も閉�
     assert.strictEqual(elements.pendingMenu.style.pointerEvents, '');
     assert.strictEqual(elements.pendingMenu.innerHTML, '');
     assert.strictEqual(context.__machikoroModalPolicyViolations[0].type, 'pending-modal-open-denied');
+});
+
+runTest('blocking modalを閉じると残っているpending actionを再表示する', () => {
+    const { context, elements } = loadUiRuntime();
+    const makePlayer = name => ({ name, coins: 3, cards: [], getMinorCards() { return []; }, isDormant() { return false; } });
+    context.GameManager = {
+        nextPendingActionFor() { return { action: 'resolveTV', field: 'pendingTV', count: 1 }; },
+        allowedActionsFor() { return new Set(['resolveTV']); },
+    };
+    context.game = {
+        phase: 'pending',
+        currentPlayerIndex: 0,
+        pendingTV: 1,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        players: [makePlayer('Alice'), makePlayer('Bob')],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+
+    assert.strictEqual(context.showRules(), true);
+    context.renderPending();
+    assert.strictEqual(elements.pendingModal.style.display, 'none');
+
+    context.closeRules();
+
+    assert.strictEqual(elements.rulesModal.style.display, 'none');
+    assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
 });
 
 runTest('non-blocking notice はblocking modal中も表示できる', () => {
@@ -552,9 +600,19 @@ runTest('renderPending は allowedActionsFor の先頭pending actionだけを表
     assert.strictEqual(elements.pendingMenu.innerHTML, '');
 
     context.game.allowed = ['resolveTV'];
+    elements.pendingModal.style.opacity = '0';
+    elements.pendingModal.style.visibility = 'hidden';
+    elements.pendingModal.style.pointerEvents = 'none';
+    elements.pendingMenu.style.opacity = '0';
+    elements.pendingMenu.style.visibility = 'hidden';
+    elements.pendingMenu.style.pointerEvents = 'none';
     context.renderPending();
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(elements.pendingModal.style.opacity, '1');
+    assert.strictEqual(elements.pendingModal.style.visibility, 'visible');
     assert.strictEqual(elements.pendingModal.style.pointerEvents, 'auto');
+    assert.strictEqual(elements.pendingMenu.style.opacity, '1');
+    assert.strictEqual(elements.pendingMenu.style.visibility, 'visible');
     assert.strictEqual(elements.pendingMenu.style.pointerEvents, 'auto');
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
     assert.ok(!elements.pendingMenu.innerHTML.includes('data-action="resolveBusiness"'));
