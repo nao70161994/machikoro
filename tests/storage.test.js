@@ -82,6 +82,7 @@ function loadStorageRuntime() {
         isReconnectingOnline: false,
         isRoomHost: false,
         myPlayerIndex: 0,
+        myOriginalPlayerIndex: -1,
         myPlayerName: '',
         myRoomId: null,
         reconnectToken: '',
@@ -99,6 +100,7 @@ function loadStorageRuntime() {
             context.socket = {
                 emit(name, payload) { context.emits.push({ name, payload }); },
             };
+            return true;
         },
         resetOnlineState() { context.resetOnlineStateCalls = (context.resetOnlineStateCalls || 0) + 1; },
         cancelDelayedHumanAction() { context.cancelDelayedHumanActionCalls = (context.cancelDelayedHumanActionCalls || 0) + 1; },

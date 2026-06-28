@@ -68,6 +68,8 @@ function loadOnlineRuntime(options = {}) {
         let socketEmits = [];
         let socketDisconnected = false;
         let timeoutHandlers = [];
+        let clientFlowCheckpoints = [];
+        let clientErrorReports = [];
         function setTimeout(handler, ms) {
             timeoutHandlers.push({ handler, ms });
             return timeoutHandlers.length;
@@ -109,6 +111,8 @@ function loadOnlineRuntime(options = {}) {
                 disconnect() { socketDisconnected = true; },
             });
         }
+        function markClientFlowCheckpoint(name, details) { clientFlowCheckpoints.push({ name, details }); }
+        function reportClientError(payload) { clientErrorReports.push(payload); }
         const alert = () => {};
         const showNotice = () => {};
     `, context);
@@ -141,6 +145,8 @@ function loadOnlineRuntime(options = {}) {
         this.getSocketHandlers = () => socketHandlers;
         this.getSocketEmits = () => socketEmits;
         this.getSocketDisconnected = () => socketDisconnected;
+        this.getClientFlowCheckpoints = () => clientFlowCheckpoints;
+        this.getClientErrorReports = () => clientErrorReports;
         this.getUndoState = () => undoState;
         this.setUndoState = (value) => { undoState = value; };
         this.applyAction = applyAction;
@@ -192,7 +198,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.myPlayerName !== 'undefined') myPlayerName = v.myPlayerName;
             if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
-        this.getOnlineState = () => ({ socket, isReconnectingOnline, isRoomHost, onlineActionInFlight });
+        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, isRoomHost, onlineActionInFlight });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;
@@ -361,6 +367,44 @@ runTest('initSocket はSocket.IO script未読込時に状態を変更しない',
 
     assert.strictEqual(localRt.getOnlineState().socket, null);
     assert.deepStrictEqual(Object.keys(localRt.getSocketHandlers()), []);
+});
+
+runTest('showCreateRoom はSocket.IO script未読込時に送信せずエラー表示する', () => {
+    const localRt = loadOnlineRuntime({ withoutIo: true });
+    localRt.document.getElementById('playerNameInput').value = 'Alice';
+    localRt.document.getElementById('onlineCpuSpeed').value = '1500';
+
+    localRt.showCreateRoom();
+
+    assert.strictEqual(localRt.getOnlineState().socket, null);
+    assert.strictEqual(localRt.getSocketEmits().length, 0);
+    assert.strictEqual(localRt.elements.onlineStatus.textContent, '❌ オンライン機能を読み込めませんでした。サーバーURLから開き直してください。');
+});
+
+runTest('joinRoom はSocket.IO script未読込時に送信せずhost状態を落とす', () => {
+    const localRt = loadOnlineRuntime({ withoutIo: true });
+    localRt.document.getElementById('playerNameInput').value = 'Bob';
+    localRt.document.getElementById('roomIdInput').value = 'room01';
+    localRt.setOnlineState({ isRoomHost: true });
+
+    localRt.joinRoom();
+
+    assert.strictEqual(localRt.getOnlineState().socket, null);
+    assert.strictEqual(localRt.getOnlineState().isRoomHost, false);
+    assert.strictEqual(localRt.getSocketEmits().length, 0);
+    assert.strictEqual(localRt.elements.onlineStatus.textContent, '❌ オンライン機能を読み込めませんでした。サーバーURLから開き直してください。');
+});
+
+runTest('initSocket はSocket.IO script未読込時に診断を送る', () => {
+    const localRt = loadOnlineRuntime({ withoutIo: true });
+
+    assert.strictEqual(localRt.initSocket(), false);
+    assert.strictEqual(localRt.initSocket(), false);
+
+    assert.strictEqual(localRt.getClientFlowCheckpoints().length, 1);
+    assert.strictEqual(localRt.getClientFlowCheckpoints()[0].name, 'socket-io-unavailable');
+    assert.strictEqual(localRt.getClientErrorReports().length, 1);
+    assert.strictEqual(localRt.getClientErrorReports()[0].source, 'socket-io-unavailable');
 });
 
 runTest('onChangeOnlinePlayerType はRL選択時にモデルを先読みする', async () => {
@@ -571,6 +615,25 @@ runTest('initOnlineGame: CPU設定がorderに合わせてcpuPlayersに反映さ�
     assert.deepStrictEqual(Array.from(cpuPlayers[1].options.expertOpponentDifficulties), ['human', 'normal']);
 });
 
+runTest('showCreateRoom は作成中の連打でcreateRoomを重複送信しない', () => {
+    const rt = loadOnlineRuntime();
+    rt.document.getElementById('playerNameInput').value = 'Alice';
+    rt.document.getElementById('onlineCpuSpeed').value = '1500';
+
+    rt.showCreateRoom();
+    rt.showCreateRoom();
+
+    const emits = rt.getSocketEmits().filter(e => e.name === 'createRoom');
+    assert.strictEqual(emits.length, 1);
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.disabled, true);
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.textContent, '作成中');
+
+    rt.getSocketHandlers().roomCreated({ roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1' });
+
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.disabled, false);
+    assert.strictEqual(rt.elements.onlineCreateSubmitButton.textContent, 'ルームを作る');
+});
+
 runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', async () => {
     const runtime = loadOnlineRuntime();
     runtime.RLModelPortfolio = {
@@ -775,6 +838,95 @@ runTest('gameStart はRL CPUモデルをpreloadしてから初期化する', asy
 
     assert.ok(rt.getGame());
     assert.strictEqual(rt.getCpuPlayers()[1].difficulty, 'rl');
+});
+
+runTest('gameStart はRL preload失敗時にオンライン状態と復元bundleを確定しない', async () => {
+    const rt = loadOnlineRuntime();
+    rt.RLModelPortfolio = {
+        preloadEligibleModels() {
+            return Promise.reject(new Error('model down'));
+        },
+    };
+    rt.initSocket();
+
+    rt.getSocketHandlers().gameStart({
+        playerNames: ['Alice', 'RL CPU', 'Bob'],
+        playerSettings: [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'rl', rlModelId: 'fixed-rl' },
+            { type: 'human' },
+        ],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1, 2],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        versions: ['test-version'],
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 0,
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.strictEqual(rt.getGame(), null);
+    assert.strictEqual(rt.getOnlineState().isOnlineGame, false);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.elements.onlineStatus.textContent, '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して部屋を作り直してください。');
+});
+
+runTest('rejoinData はRL preload失敗時にオンライン復元を確定しない', async () => {
+    const rt = loadOnlineRuntime();
+    rt.RLModelPortfolio = {
+        preloadEligibleModels() {
+            return Promise.reject(new Error('rejoin model down'));
+        },
+    };
+    rt.initSocket();
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: {
+            schemaVersion: 2,
+            playerNames: ['Alice', 'RL CPU', 'Bob'],
+            playerSettings: [
+                { type: 'human' },
+                { type: 'cpu', difficulty: 'rl', rlModelId: 'fixed-rl' },
+                { type: 'human' },
+            ],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1, 2],
+            enabledCards: CARDS.map(c => c.name),
+            enabledLandmarks: Player.landmarkNames(),
+            reconnectTokenHashes: ['hash-a', '', 'hash-b'],
+            hostPlayerIndex: 0,
+            hostEpoch: 1,
+            actionSeq: 0,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.strictEqual(rt.getGame(), null);
+    assert.strictEqual(rt.getOnlineState().isOnlineGame, false);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart'), null);
+    assert.strictEqual(rt.elements.onlineStatus.textContent, '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して再接続してください。');
+});
+
+runTest('gameAction はゲーム未初期化なら適用せず再接続表示にする', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+
+    rt.getSocketHandlers().gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 });
+
+    assert.strictEqual(rt.getGame(), null);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.elements.onlineStatus.textContent, '⚠️ ゲーム状態を準備できていないため、再接続してください。');
 });
 
 runTest('gameStart は restore bundle を room-scoped key にも保存する', () => {

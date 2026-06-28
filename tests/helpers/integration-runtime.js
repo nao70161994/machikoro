@@ -141,6 +141,7 @@ function loadIntegrationRuntime(options = {}) {
             YAKUSHO: '役所',
         },
     };
+    if (options.withoutIo) delete context.io;
     context.global = context;
     vm.createContext(context);
     const files = [

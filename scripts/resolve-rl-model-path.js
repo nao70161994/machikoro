@@ -18,9 +18,17 @@ function parseArgs(argv) {
     return args;
 }
 
+function assertSafeRunLabel(runLabel) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runLabel || '') || String(runLabel).includes('..')) {
+        throw new Error(`unsafe run-label: ${runLabel}`);
+    }
+    return runLabel;
+}
+
 function browserPathForRunLabel(runLabel, rank = 1) {
+    const safeRunLabel = assertSafeRunLabel(runLabel);
     const fileName = rank === 1 ? 'best_model.browser.json' : `best_model.top${rank}.browser.json`;
-    return path.join('models', 'rl_model', 'runs', runLabel, fileName);
+    return path.join('models', 'rl_model', 'runs', safeRunLabel, fileName);
 }
 
 function resolveModelPath(target, rank = 1, registry = null) {
@@ -42,6 +50,7 @@ if (require.main === module) {
 
 module.exports = {
     parseArgs,
+    assertSafeRunLabel,
     browserPathForRunLabel,
     resolveModelPath,
 };

@@ -334,6 +334,13 @@ runTest('allowedActions は phase と pending 状態から許可actionを返す'
         [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD].sort()
     );
 
+    game.pendingIT = true;
+    assert.deepStrictEqual(
+        [...game.allowedActions()].sort(),
+        [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD].sort()
+    );
+    game.pendingIT = false;
+
     game.phase = GAME_PHASES.PENDING;
     assert.deepStrictEqual([...game.allowedActions()], []);
 
@@ -730,6 +737,20 @@ runTest('清掃業は大施設を対象にできない', () => {
     assert.strictEqual(resolved, false);
     assert.strictEqual(game.players[1].isDormant(stadium), false);
     assert.strictEqual(game.pendingCleaning, 1);
+});
+
+runTest('清掃業は場に存在しない対象でpendingを消費しない', () => {
+    const game = new GameManager(2);
+    game.currentPlayer().cards = [createCardByName('麦畑')];
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+    game.pendingActionQueue = [{ action: GAME_ACTIONS.RESOLVE_CLEANING, field: 'pendingCleaning' }];
+
+    const resolved = game.resolveCleaning('カフェ');
+
+    assert.strictEqual(resolved, false);
+    assert.strictEqual(game.pendingCleaning, 1);
+    assert.strictEqual(game.currentPlayer().coins, 3);
 });
 
 runTest('清掃業は休業可能な施設がなければpendingに入らない', () => {

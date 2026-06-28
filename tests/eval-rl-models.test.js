@@ -6,6 +6,7 @@ const {
     parseLineups,
     parseNumberList,
     browserPathForRunLabel,
+    defaultRegistryModelIds,
     resolveModelSpecs,
     scoreSummaries,
     buildSignature,
@@ -90,6 +91,29 @@ runTest('eval-rl-models は run-label から rank 別モデルパスを作る', 
         browserPathForRunLabel('abc', 3),
         'models/rl_model/runs/abc/best_model.top3.browser.json'
     );
+});
+
+runTest('eval-rl-models は危険な run-label を拒否する', () => {
+    assert.throws(() => browserPathForRunLabel('../abc', 1), /unsafe run-label/);
+    assert.throws(() => browserPathForRunLabel('abc/def', 1), /unsafe run-label/);
+});
+
+runTest('eval-rl-models はデフォルト評価対象を人数範囲で絞る', () => {
+    const registry = {
+        portfolioPolicy: {
+            recommendedActiveModels: [
+                { id: 'multi', role: 'adopted-3p-10p' },
+                { id: 'two', role: 'adopted-2p-main' },
+            ],
+        },
+        models: [
+            { id: 'multi', training: { players: 4 } },
+            { id: 'two', training: { players: 2 } },
+        ],
+    };
+
+    assert.deepStrictEqual(defaultRegistryModelIds(registry, { lineups: [] }), ['two']);
+    assert.deepStrictEqual(defaultRegistryModelIds(registry, { lineups: [['rl', 'weak', 'normal']] }), ['multi']);
 });
 
 runTest('eval-rl-models は registry id と run-label を評価対象へ解決する', () => {

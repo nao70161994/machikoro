@@ -62,19 +62,51 @@ function parseArgs(argv) {
     return args;
 }
 
-function defaultRegistryModelIds(registry) {
+function evaluationPlayerCounts(args = {}) {
+    if (Array.isArray(args.lineups) && args.lineups.length > 0) {
+        return [...new Set(args.lineups.map(lineup => Array.isArray(lineup) ? lineup.length : 0).filter(count => count > 0))];
+    }
+    return [2];
+}
+
+function recommendedEntryPlayerRange(entry, model = null) {
+    const role = String(entry && entry.role || '');
+    const trainingPlayers = model && model.training && Number.isInteger(model.training.players) ? model.training.players : 0;
+    let minPlayers = 1;
+    let maxPlayers = 10;
+    if (/\b2p\b/.test(role)) maxPlayers = 2;
+    if (/\b(?:3p|4p|5p|10p|multiplayer)/i.test(role) || trainingPlayers >= 3) minPlayers = 3;
+    return { minPlayers, maxPlayers };
+}
+
+function rangeAllowsAnyPlayerCount(range, playerCounts) {
+    return playerCounts.some(count => count >= range.minPlayers && count <= range.maxPlayers);
+}
+
+function defaultRegistryModelIds(registry, args = {}) {
+    const registryModels = new Map((registry.models || []).map(model => [model.id, model]));
+    const playerCounts = evaluationPlayerCounts(args);
     const recommended = (((registry.portfolioPolicy || {}).recommendedActiveModels) || [])
-        .map(entry => entry && entry.id)
-        .filter(Boolean);
+        .filter(entry => entry && entry.id)
+        .filter(entry => rangeAllowsAnyPlayerCount(recommendedEntryPlayerRange(entry, registryModels.get(entry.id)), playerCounts))
+        .map(entry => entry.id);
     if (recommended.length > 0) return recommended;
     return (registry.models || [])
         .filter(model => model.status === 'adopted' || model.status === 'candidate')
         .map(model => model.id);
 }
 
+function assertSafeRunLabel(runLabel) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runLabel || '') || String(runLabel).includes('..')) {
+        throw new Error(`unsafe run-label: ${runLabel}`);
+    }
+    return runLabel;
+}
+
 function browserPathForRunLabel(runLabel, rank = 1) {
+    const safeRunLabel = assertSafeRunLabel(runLabel);
     const fileName = rank === 1 ? 'best_model.browser.json' : `best_model.top${rank}.browser.json`;
-    return path.join('models', 'rl_model', 'runs', runLabel, fileName);
+    return path.join('models', 'rl_model', 'runs', safeRunLabel, fileName);
 }
 
 function resolveModelSpecs(args, registry) {
@@ -82,7 +114,7 @@ function resolveModelSpecs(args, registry) {
     const hasExplicitTargets = args.models.length > 0 || args.runLabels.length > 0 || (args.modelPaths || []).length > 0;
     const ids = args.models.length > 0
         ? args.models
-        : (hasExplicitTargets ? [] : defaultRegistryModelIds(registry));
+        : (hasExplicitTargets ? [] : defaultRegistryModelIds(registry, args));
     const specs = [];
 
     for (const id of ids) {
@@ -371,6 +403,7 @@ module.exports = {
     parseNumberList,
     assertRlModelLineupCompatible,
     defaultRegistryModelIds,
+    assertSafeRunLabel,
     browserPathForRunLabel,
     resolveModelSpecs,
     scoreSummaries,

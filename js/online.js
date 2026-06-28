@@ -3,6 +3,7 @@ let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 let onlineCreateRoomPending = false;
+let onlineSocketUnavailableReported = false;
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
@@ -744,14 +745,35 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
 
 // オンライン対戦（Socket.IO）
 function initSocket() {
-    if (socket) return;
+    if (socket) return true;
     if (typeof io !== 'function') {
-        showNotice('オンライン機能を読み込めませんでした。通信状態を確認して再読み込みしてください。');
-        return;
+        const message = 'オンライン機能を読み込めませんでした。サーバーURLから開き直してください。';
+        showNotice(message);
+        const el = document.getElementById("onlineStatus");
+        if (el) el.textContent = `❌ ${message}`;
+        if (!onlineSocketUnavailableReported) {
+            onlineSocketUnavailableReported = true;
+            if (typeof markClientFlowCheckpoint === 'function') {
+                markClientFlowCheckpoint('socket-io-unavailable', {
+                    href: typeof location !== 'undefined' && location.href ? location.href : '',
+                    origin: typeof location !== 'undefined' && location.origin ? location.origin : '',
+                    hasServiceWorkerController: !!(typeof navigator !== 'undefined' && navigator.serviceWorker && navigator.serviceWorker.controller),
+                });
+            }
+            if (typeof reportClientError === 'function') {
+                reportClientError({
+                    source: 'socket-io-unavailable',
+                    message: 'Socket.IO client script is unavailable',
+                    stack: 'href=' + ((typeof location !== 'undefined' && location.href) || '') + '\norigin=' + ((typeof location !== 'undefined' && location.origin) || ''),
+                });
+            }
+        }
+        return false;
     }
     socket = io();
 
     socket.on('roomCreated', ({ roomId, playerIndex, reconnectToken: token }) => {
+        setOnlineCreateRoomPending(false);
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
@@ -777,22 +799,21 @@ function initSocket() {
     });
 
     socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq }) => {
-        isOnlineGame = true;
-        _setOnlineHostState(hostPlayerIndex);
-        cpuSpeed = cs || 1500;
-        if (ec) enabledCards = new Set(ec);
-        enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
-        // ゲーム開始データとアクションログをlocalStorageに保存（サーバー再起動後の復元用）
-        try {
-            const gameStartPayload = _applyOnlineHostPayload({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }, hostPlayerIndex, hostEpoch);
-            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
-            _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
-            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, []);
-            _clearPendingOutboundAction();
-        } catch(e) {}
-        saveOnlineSession();
-        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-game-start-reset-ui-locks');
+        const gameStartPayload = _applyOnlineHostPayload({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }, hostPlayerIndex, hostEpoch);
         const startOnlineGame = () => {
+            isOnlineGame = true;
+            _setOnlineHostState(hostPlayerIndex);
+            cpuSpeed = cs || 1500;
+            if (ec) enabledCards = new Set(ec);
+            enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
+            try {
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, []);
+                _clearPendingOutboundAction();
+            } catch(e) {}
+            saveOnlineSession();
+            if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-game-start-reset-ui-locks');
             document.getElementById("titleScreen").style.display = "none";
             document.getElementById("gameScreen").style.display = "block";
             initOnlineGame(playerNames, ps, playerOrder);
@@ -811,7 +832,8 @@ function initSocket() {
             preload.then(startOnlineGame).catch(error => {
                 console.error(error);
                 isOnlineGame = false;
-                document.getElementById("onlineStatus").textContent = '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して再接続してください。';
+                _setOnlineActionInFlight(false);
+                document.getElementById("onlineStatus").textContent = '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して部屋を作り直してください。';
             });
             return;
         }
@@ -819,6 +841,12 @@ function initSocket() {
     });
 
     socket.on('gameAction', ({ action, data, playerIndex, seq, clientActionId }) => {
+        if (!game) {
+            isReconnectingOnline = true;
+            const el = document.getElementById("onlineStatus");
+            if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
+            return;
+        }
         _saveActionLog(action, data, { playerIndex, seq, clientActionId });
         applyReplayedAction(action, data);
         render();
@@ -827,6 +855,12 @@ function initSocket() {
 
     socket.on('actionAccepted', ({ action, data, playerIndex, seq, clientActionId }) => {
         _setOnlineActionInFlight(false);
+        if (!game) {
+            isReconnectingOnline = true;
+            const el = document.getElementById("onlineStatus");
+            if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
+            return;
+        }
         const pendingBeforeAccept = _readPendingOutboundAction();
         if (_shouldClearPendingForAcceptedAction({ action, data, playerIndex, seq, clientActionId }, pendingBeforeAccept)) {
             _clearPendingOutboundAction();
@@ -868,36 +902,37 @@ function initSocket() {
             replayActionLog.some(entry => _sameOnlineActionEntry(entry, pendingBeforeRejoin)) ||
             pendingCompactedIntoSnapshot ||
             pendingAcceptedById;
-        isOnlineGame = true;
-        isReconnectingOnline = false;
-        _setOnlineActionInFlight(false);
-        if (pendingAccepted) _clearPendingOutboundAction();
-        _clearRejoinRetry();
-        cpuSpeed = cs || 1500;
-        if (ec) enabledCards = new Set(ec);
-        enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
-        myOriginalPlayerIndex = playerIndex;
-        myPlayerIndex = playerIndex;
-        _setOnlineHostState(hostPlayerIndex);
-        try {
-            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
-            if (stateSnapshot) {
-                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
-            } else {
-                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
-            }
-            if (restoreAudit) {
-                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, restoreAudit);
-            } else {
-                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
-            }
-            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
-        } catch(e) {}
-        saveOnlineSession();
-        cpuScheduleToken++;
-        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+        const persistRejoinBundle = () => {
+            _setOnlineActionInFlight(false);
+            if (pendingAccepted) _clearPendingOutboundAction();
+            _clearRejoinRetry();
+            cpuSpeed = cs || 1500;
+            if (ec) enabledCards = new Set(ec);
+            enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
+            myOriginalPlayerIndex = playerIndex;
+            myPlayerIndex = playerIndex;
+            _setOnlineHostState(hostPlayerIndex);
+            try {
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
+                if (stateSnapshot) {
+                    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
+                } else {
+                    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
+                }
+                if (restoreAudit) {
+                    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, restoreAudit);
+                } else {
+                    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
+                }
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
+            } catch(e) {}
+            saveOnlineSession();
+            cpuScheduleToken++;
+            if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+        };
 
         const restoreOnlineGame = () => {
+            persistRejoinBundle();
             document.getElementById("titleScreen").style.display = "none";
             document.getElementById("gameScreen").style.display = "block";
 
@@ -920,6 +955,8 @@ function initSocket() {
                 isReplaying = false;
             }
             if (!restoredOk) return;
+            isOnlineGame = true;
+            isReconnectingOnline = false;
             prevCoins = null;
             render();
             scheduleCPU();
@@ -1002,13 +1039,15 @@ function initSocket() {
     });
 
     socket.on(APP_ERROR_EVENT, handleAppError);
+    return true;
 }
 
 function handleAppError(msg) {
     _setOnlineActionInFlight(false);
+    setOnlineCreateRoomPending(false);
     if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
         if (isRoomHost) {
-            _tryRestoreRoom();
+            if (!_tryRestoreRoom()) _scheduleRejoinRetry();
         } else {
             _scheduleRejoinRetry();
         }
@@ -1080,6 +1119,19 @@ function updateOnlineRlModelReadinessUi() {
     return state;
 }
 
+function setOnlineCreateRoomPending(pending) {
+    onlineCreateRoomPending = pending === true;
+    const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
+    if (onlineCreateRoomPending) {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '作成中';
+        }
+        return;
+    }
+    updateOnlineRlModelReadinessUi();
+}
+
 function preloadOnlineRlModelsForSettings(playerCount, settings) {
     if (!hasOnlineRlCpuSetting(playerCount, settings)) return null;
     if (!canPreloadOnlineRlModels()) return Promise.reject(new Error("RL model loader is not available"));
@@ -1110,7 +1162,8 @@ function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preloa
 function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onlinePlayerSettings) {
     myPlayerName = name;
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
-    initSocket();
+    if (!initSocket()) return;
+    setOnlineCreateRoomPending(true);
     isRoomHost = true;
     socket.emit('createRoom', {
         playerName: name,
@@ -1166,8 +1219,8 @@ function joinRoom() {
     if (!name) { showNotice("名前を入力してください"); return; }
     if (roomId.length !== 6) { showNotice("ルームIDは6文字です"); return; }
     myPlayerName = name;
-    initSocket();
     isRoomHost = false;
+    if (!initSocket()) return;
     socket.emit('joinRoom', { roomId, playerName: name, clientVersion: getClientVersion() });
 }
 
@@ -1310,7 +1363,7 @@ function sendAction(action, data = {}) {
     return !isOnlineGame;
 }
 
-function _tryRestoreRoom() {
+function _tryRestoreRoom(options = {}) {
     try {
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload) {
@@ -1323,23 +1376,31 @@ function _tryRestoreRoom() {
             document.getElementById("onlineStatus").textContent = '❌ 古い復元データのため再接続できません';
             return;
         }
+        const isStoredHost = gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex;
+        const allowHostless = !!options.allowHostless;
+        if (!isStoredHost && !allowHostless) return false;
         const stateSnapshot = _readOnlineStateSnapshot();
         const actionLog = _readOnlineActionLog();
         const restoreAudit = _readOnlineRestoreAudit();
         _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
-        document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
+        document.getElementById("onlineStatus").textContent = allowHostless && !isStoredHost
+            ? '♻️ ホスト不在のため、この端末の復元データでゲームを復元中...'
+            : '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,
             gameStartPayload,
             stateSnapshot,
             actionLog,
             restoreAudit,
+            restoreMode: allowHostless && !isStoredHost ? 'hostless' : undefined,
             playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,
             reconnectToken,
         });
+        return true;
     } catch(e) {
         document.getElementById("onlineStatus").textContent = '❌ 復元に失敗しました';
+        return false;
     }
 }
 
@@ -1374,6 +1435,7 @@ function _sendRecreateRoomFromBundle(bundle) {
 function _scheduleRejoinRetry() {
     const MAX_RETRY = 8;
     if (_rejoinRetryCount >= MAX_RETRY) {
+        if (_tryRestoreRoom({ allowHostless: true })) return;
         document.getElementById("onlineStatus").textContent = '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。';
         isReconnectingOnline = false;
         try { if (typeof render === 'function') render(); } catch (_) {}

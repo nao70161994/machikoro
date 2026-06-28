@@ -433,7 +433,12 @@
           if (document.body && document.body.classList) document.body.classList.add('pwa-banner-open');
         }
         function refreshPwaUpdateState() {
-          if (!_waitingSW) return false;
+          if (!_waitingSW) {
+            if (_versionMismatchDetected) {
+              _showPwaUpdateBanner('古いバージョンです。修正済みバグを避けるため更新してください。', { versionMismatch: true });
+            }
+            return false;
+          }
           if (!_isInGame()) {
             _waitingSW.postMessage({ type: 'SKIP_WAITING' });
             return true;
@@ -476,6 +481,35 @@
           _reportVersionMismatch(_serverVersionHash);
           _showPwaUpdateBanner('古いバージョンです。修正済みバグを避けるため更新してください。', { versionMismatch: true });
         }
+        function _reportOnlineDeliveryIssue(reason, details = {}) {
+          const el = document.getElementById('onlineStatus');
+          if (el && !el.textContent) el.textContent = '⚠️ オンライン機能を読み込めません。サーバーURLから開いてください。';
+          if (typeof markClientFlowCheckpoint === 'function') {
+            markClientFlowCheckpoint('online-delivery-check-failed', Object.assign({ reason, href: location.href, origin: location.origin }, details));
+          }
+          if (typeof reportClientError === 'function') {
+            reportClientError({
+              source: 'online-delivery-check',
+              message: 'Online delivery check failed: ' + reason,
+              stack: 'href=' + location.href + '\norigin=' + location.origin + '\nreason=' + reason,
+            });
+          }
+        }
+        function checkOnlineDelivery() {
+          if (typeof fetch !== 'function') return Promise.resolve(false);
+          if (typeof io === 'function') return Promise.resolve(true);
+          return fetch('/socket.io/socket.io.js', {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+          }).then(response => {
+            if (response && response.ok) return true;
+            _reportOnlineDeliveryIssue('socket-io-script-unavailable', { status: response ? response.status : 0 });
+            return false;
+          }).catch(error => {
+            _reportOnlineDeliveryIssue('socket-io-script-fetch-failed', { message: error && error.message ? error.message : '' });
+            return false;
+          });
+        }
         function checkClientVersionMismatch() {
           if (typeof fetch !== 'function') return Promise.resolve(false);
           const clientVersion = window.MACHIKORO_CLIENT_VERSION || '';
@@ -489,8 +523,12 @@
               return true;
             }
             return false;
-          }).catch(() => false);
+          }).catch(error => {
+            if (typeof io !== 'function') _reportOnlineDeliveryIssue('api-version-fetch-failed', { message: error && error.message ? error.message : '' });
+            return false;
+          });
         }
+        window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;
         window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;
         window.refreshPwaUpdateState = refreshPwaUpdateState;
         function _handleWaitingSW(sw) {
@@ -514,6 +552,7 @@
           location.reload();
         });
         window.addEventListener('load', () => {
+          checkOnlineDelivery();
           checkClientVersionMismatch();
           navigator.serviceWorker.register('/sw.js').then(reg => {
             if (reg.waiting && navigator.serviceWorker.controller) {

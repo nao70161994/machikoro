@@ -19,6 +19,9 @@ runTest('online integration: reconnectOnline は rejoinRoom を送信して onli
     assert.strictEqual(rt.__test.socketEmits.length, 1);
     assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
+    const state = rt.__test.getOnlineState();
+    assert.strictEqual(state.myOriginalPlayerIndex, 1);
+    assert.strictEqual(state.myPlayerIndex, 1);
 });
 
 runTest('online integration: gameStart はtitle modal lockを解除してlifecycle startを送る', () => {
@@ -284,6 +287,24 @@ runTest('online integration: rejoinData は actionLog の不正要素を無視�
 
     assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineActionLog')), [{ action: 'nextTurn', data: {} }]);
     assert.strictEqual(rt.__test.getGame().currentPlayerIndex, 1);
+});
+
+runTest('online integration: reconnectOnline はSocket.IO未読込時にセッションを消さず送信しない', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true, withoutIo: true });
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token-1',
+        isRoomHost: true,
+    }));
+
+    rt.reconnectOnline();
+
+    assert.strictEqual(rt.localStorage.getItem('onlineSession') !== null, true);
+    assert.strictEqual(rt.__test.socketEmits.length, 0);
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '❌ オンライン機能を読み込めませんでした。サーバーURLから開き直してください。');
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, false);
 });
 
 runTest('online integration: reconnectOnline は壊れたセッションを破棄して警告する', () => {
@@ -608,6 +629,39 @@ runTest('online integration: ROOM_NOT_FOUND 復元は壊れた actionLog JSON �
     assert.strictEqual(rt.__test.socketEmits[0].payload.actionLog.length, 0);
 });
 
+runTest('online integration: reconnectOnline 後のROOM_NOT_FOUNDでホストは保存indexを使って復元する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token-1',
+        isRoomHost: true,
+    }));
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+    }));
+
+    rt.reconnectOnline();
+    rt.__test.socketEmits.length = 0;
+    rt.__test.socketHandlers.appError('ROOM_NOT_FOUND');
+
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].name, 'recreateRoom');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.playerIndex, 0);
+    assert.strictEqual(rt.__test.socketEmits[0].payload.gameStartPayload.hostPlayerIndex, 0);
+});
+
 runTest('online integration: ROOM_NOT_FOUND で非ホストは再接続リトライを送る', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineSession', JSON.stringify({
@@ -632,6 +686,58 @@ runTest('online integration: ROOM_NOT_FOUND で非ホストは再接続リトラ
     assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
+});
+
+runTest('online integration: 非ホストはホスト待機上限後にhostless復元を送る', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        playerName: 'Bob',
+        reconnectToken: 'token-bob',
+        isRoomHost: false,
+    }));
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 2,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+    }));
+    rt.localStorage.setItem('onlineStateSnapshot', JSON.stringify({
+        actionSeq: 2,
+        players: [],
+        currentPlayerIndex: 0,
+        shopStock: {},
+    }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([]));
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isReconnectingOnline: true,
+        isRoomHost: false,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        reconnectToken: 'token-bob',
+    });
+
+    for (let i = 0; i < 9; i++) {
+        rt._scheduleRejoinRetry();
+        rt.__test.flushTimeouts();
+    }
+
+    const emitted = rt.__test.socketEmits[rt.__test.socketEmits.length - 1];
+    assert.strictEqual(emitted.name, 'recreateRoom');
+    assert.strictEqual(emitted.payload.restoreMode, 'hostless');
+    assert.strictEqual(emitted.payload.playerIndex, 1);
+    assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 0);
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '♻️ ホスト不在のため、この端末の復元データでゲームを復元中...');
 });
 
 runTest('online integration: rejoin retry timeout は入力ブロック解除後に再描画する', () => {
