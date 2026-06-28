@@ -1894,6 +1894,7 @@ function sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq) {
     } else if (snapshotSeq > 0) {
         return { skip: true };
     }
+    if (!gameRuntime.GAME_ACTION_REGISTRY[entry.action]) return { invalid: true };
     const normalized = { action: entry.action, data: canonicalizeActionData(entry.action, entry.data || {}) };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;

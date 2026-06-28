@@ -2612,6 +2612,8 @@ runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共�
     assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn', seq: 3 }, 'ROOM1', 3), { skip: true });
     assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn' }, 'ROOM1', 3), { skip: true });
     assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn', roomId: 'OTHER', seq: 4 }, 'ROOM1', 3), { invalid: true });
+    assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'unknownAction', seq: 4 }, 'ROOM1', 3), { invalid: true });
+    assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'unknownAction', seq: 3 }, 'ROOM1', 3), { skip: true });
 
     const sanitized = sanitizeRestoreActionLog([
         { action: 'nextTurn', data: {}, seq: 2, playerIndex: 0 },
