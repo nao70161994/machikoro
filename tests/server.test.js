@@ -7,6 +7,8 @@ const {
     APP_ERROR_EVENT,
     emitAppError,
     requirePlainSocketPayload,
+    SOCKET_PAYLOAD_LIMITS,
+    validateSocketPayloadLimits,
     ROOM_LIFECYCLE_LIMITS,
     isRoomExpired,
     cleanupExpiredRooms,
@@ -1691,6 +1693,26 @@ runTest('requirePlainSocketPayload は非object payloadをappErrorで拒否す�
         assert.strictEqual(ok, false);
         assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '無効なリクエストです' }]);
     }
+});
+
+runTest('requirePlainSocketPayload は過大なsocket payloadをappErrorで拒否する', () => {
+    const payloads = [
+        { playerName: 'a'.repeat(SOCKET_PAYLOAD_LIMITS.maxStringLength + 1) },
+        { playerName: 'a'.repeat(900), roomId: 'b'.repeat(900), clientVersion: 'c'.repeat(900), extra: 'd'.repeat(900), more: 'e'.repeat(900) },
+        { nested: { a: { b: { c: { d: { e: { f: { g: { h: { i: true } } } } } } } } } },
+    ];
+
+    for (const payload of payloads) {
+        const emitted = [];
+        const ok = requirePlainSocketPayload({ emit(name, body) { emitted.push({ name, body }); } }, payload);
+        assert.strictEqual(ok, false);
+        assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, body: '無効なリクエストです' }]);
+    }
+});
+
+runTest('validateSocketPayloadLimits は通常payloadとrestore payloadの上限を分離する', () => {
+    assert.deepStrictEqual(validateSocketPayloadLimits({ roomId: 'ABC123', playerName: 'Alice' }).ok, true);
+    assert.strictEqual(validateSocketPayloadLimits({ data: 'x'.repeat(SOCKET_PAYLOAD_LIMITS.maxJsonBytes) }).ok, false);
 });
 
 runTest('requirePlainSocketPayload はplain object payloadを許可する', () => {

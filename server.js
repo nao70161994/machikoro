@@ -102,6 +102,13 @@ const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxPlayerCardRefs: 5000,
 });
 
+const SOCKET_PAYLOAD_LIMITS = Object.freeze({
+    maxJsonBytes: 16 * 1024,
+    maxStringLength: 1000,
+    maxTotalStringChars: 4000,
+    maxDepth: 8,
+});
+
 const CLIENT_ERROR_LIMITS = Object.freeze({
     maxJsonBytes: 32 * 1024,
     maxStringLength: 4000,
@@ -861,8 +868,34 @@ function emitAppError(socket, message) {
     socket.emit(APP_ERROR_EVENT, message);
 }
 
+function validateSocketPayloadLimits(payload, limits = SOCKET_PAYLOAD_LIMITS) {
+    if (!isPlainObject(payload)) return { ok: false, reason: 'not-object' };
+    let jsonBytes = 0;
+    try {
+        jsonBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    } catch {
+        return { ok: false, reason: 'json' };
+    }
+    if (jsonBytes > limits.maxJsonBytes) return { ok: false, reason: 'json-size', jsonBytes };
+    const stats = { stringChars: 0 };
+    const visit = (value, depth = 0) => {
+        if (depth > limits.maxDepth) return false;
+        if (typeof value === 'string') {
+            if (value.length > limits.maxStringLength) return false;
+            stats.stringChars += value.length;
+            return stats.stringChars <= limits.maxTotalStringChars;
+        }
+        if (Array.isArray(value)) return value.every(item => visit(item, depth + 1));
+        if (isPlainObject(value)) return Object.values(value).every(item => visit(item, depth + 1));
+        return true;
+    };
+    if (!visit(payload)) return { ok: false, reason: 'content-size', stringChars: stats.stringChars };
+    return { ok: true, jsonBytes, stringChars: stats.stringChars };
+}
+
 function requirePlainSocketPayload(socket, payload) {
-    if (isPlainObject(payload)) return true;
+    const validation = validateSocketPayloadLimits(payload);
+    if (validation.ok) return true;
     emitAppError(socket, '無効なリクエストです');
     return false;
 }
@@ -2288,6 +2321,8 @@ module.exports = {
     validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
+    SOCKET_PAYLOAD_LIMITS,
+    validateSocketPayloadLimits,
     validateRestorePayloadLimits,
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
