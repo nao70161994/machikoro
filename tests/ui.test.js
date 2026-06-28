@@ -1266,6 +1266,22 @@ runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組
     assert.ok(html.includes('data-action="showLandmarkDetail"'));
 });
 
+runTest('buildBuildMenuHtml は在庫欠落カードを建設候補に表示しない', () => {
+    const { context } = loadUiRuntime();
+    context.SHOP_STOCK = {};
+    context.game = { builtThisTurn: false };
+    const current = {
+        coins: 10,
+        landmarks: { '駅': false },
+        countCardIncludingDormant() { return 0; },
+    };
+
+    const html = context.buildBuildMenuHtml(current, true, true);
+
+    assert.ok(!html.includes('残りundefined枚'));
+    assert.ok(!html.includes('data-action="buildCard"'));
+});
+
 runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成する', () => {
     const { context } = loadUiRuntime();
     const card = context.createCardByName('麦畑');

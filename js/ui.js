@@ -135,7 +135,8 @@ function renderLog() {
 
 function getTutorialHints(current) {
     const affordableCards = CARDS.filter(card =>
-        SHOP_STOCK[card.name] > 0 &&
+        enabledCards.has(card.name) &&
+        getShopStockCount(SHOP_STOCK, card) > 0 &&
         current.coins >= card.cost &&
         !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
     ).sort((a, b) => a.cost - b.cost);
@@ -716,7 +717,8 @@ function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
     const sortedCards = [...CARDS].sort(compareCardsForDisplay);
     const visibleCards = cardFilter ? sortedCards.filter(c => c.color === cardFilter) : sortedCards;
     return visibleCards.map(card => {
-        const stock = SHOP_STOCK[card.name];
+        if (!enabledCards.has(card.name)) return "";
+        const stock = getShopStockCount(SHOP_STOCK, card);
         if (stock <= 0) return "";
         const canBuildThis = canBuildCardAction && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
         return renderBuildCardButton(card, stock, canBuildThis);
