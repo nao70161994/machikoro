@@ -55,6 +55,7 @@
 
 7. オンライン CPU 進行
    - 自動確認: `tests/online.test.js` / `tests/online-integration.test.js` で action 適用、CPU 手番、再接続まわりの主要分岐を検査する。
+   - 配信確認: `npm run test:online-delivery` でローカルサーバーを起動し、`/`, `/api/version`, `/socket.io/socket.io.js`, `/sw.js` が同一 origin で配信されることを検査する。
    - 手動確認: 複数クライアントで実際に同期表示とCPU進行タイミングを見る。
    - 人間1人 + CPU の部屋を作る。
    - CPUターンを数回進める。
@@ -159,6 +160,7 @@ Service Worker 更新、install prompt、オフライン表示、バージョン
 
 22. オンライン参加者のバージョン不一致警告
    - 自動確認: `tests/online.test.js` / `tests/server.test.js` で client version 収集と不一致時ログの主要経路を検査する。
+   - 本番配信確認: 公開 URL では `node scripts/check-online-delivery.js --origin https://example.com` を実行し、client version、Service Worker cache 名、Socket.IO client script が同じ build hash / origin で揃うことを検査する。
    - 手動確認: 古いタブや古い Service Worker 制御下のクライアントを混ぜた実ブラウザで、警告表示と継続動作を確認する。
    - 片方のクライアントだけ古いタブまたは古い Service Worker 制御下に残した状態でオンライン対戦を開始する。
    - 期待結果: ゲーム開始後のログにバージョン不一致警告が出て、全員に reload を促す。警告後もアプリ固有エラーは `appError` として扱われ、Socket.IO の transport error と混ざらない。

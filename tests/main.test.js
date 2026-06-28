@@ -1783,11 +1783,18 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('let updateRequestedByUser = false;'));
     assert.ok(html.includes('let _versionMismatchDetected = false;'));
     assert.ok(html.includes('function refreshPwaUpdateState()'));
+    assert.ok(html.includes(`if (!_waitingSW) {
+            if (_versionMismatchDetected)`));
     assert.ok(html.includes('function checkClientVersionMismatch()'));
     assert.ok(html.includes("fetch('/api/version',"));
     assert.ok(html.includes("cache: 'no-store'"));
     assert.ok(html.includes('client-version-mismatch'));
     assert.ok(html.includes('reportClientError({'));
+    assert.ok(html.includes('function checkOnlineDelivery()'));
+    assert.ok(html.includes("fetch('/socket.io/socket.io.js'"));
+    assert.ok(html.includes('online-delivery-check-failed'));
+    assert.ok(html.includes('window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;'));
+    assert.ok(html.includes('checkOnlineDelivery();'));
     assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
     assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');

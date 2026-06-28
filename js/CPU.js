@@ -608,7 +608,7 @@ class CPU {
 
         if (card.color === "red") {
             if (isCurrentTurn) return 0;
-            if (card.effect === CARD_EFFECTS.HARBOR_RED) return capped(roller.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
+            if (card.effect === CARD_EFFECTS.HARBOR_RED) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
             if (card.effect === CARD_EFFECTS.FRENCHR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 2 ? Math.min(card.income, roller.coins) : 0);
             if (card.effect === CARD_EFFECTS.MEMBERBAR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 3 ? roller.coins : 0);
             return capped(card.income + (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0));

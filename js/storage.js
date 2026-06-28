@@ -149,8 +149,13 @@ function reconnectOnline() {
         isRoomHost = session.isRoomHost || false;
         myPlayerName = session.playerName || '';
         myRoomId = session.roomId;
+        myOriginalPlayerIndex = Number.isInteger(session.playerIndex) ? session.playerIndex : -1;
+        myPlayerIndex = myOriginalPlayerIndex;
         reconnectToken = session.reconnectToken || '';
-        initSocket();
+        if (!initSocket()) {
+            isReconnectingOnline = false;
+            return;
+        }
         document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
         switchTab('online');
         socket.emit('rejoinRoom', {

@@ -1697,12 +1697,15 @@ runTest('validateGameAction は enabledCards に含まれないカードの建�
     assert.strictEqual(result.ok, false);
 });
 
-runTest('getAllowedActions は pendingIT 中に resolveIT のみ返す', () => {
+runTest('getAllowedActions は pendingIT でも PENDING フェーズ外なら通常phaseを優先する', () => {
     const { GameManager, GAME_ACTIONS } = loadGameRuntime();
     const game = new GameManager(2);
     game.phase = 'build';
     game.pendingIT = true;
-    assert.deepStrictEqual([...getAllowedActions(game)], [GAME_ACTIONS.RESOLVE_IT]);
+    assert.deepStrictEqual(
+        [...getAllowedActions(game)].sort(),
+        [GAME_ACTIONS.BUILD_CARD, GAME_ACTIONS.BUILD_LANDMARK, GAME_ACTIONS.NEXT_TURN, GAME_ACTIONS.UNDO_BUILD].sort()
+    );
 });
 
 runTest('getAllowedActions は pending queue の先頭actionだけを返す', () => {
@@ -2962,6 +2965,126 @@ runTest('handleRecreateRoom は旧ホスト不在なら再接続者をホスト�
         assert.strictEqual(emitted[0].payload.hostPlayerIndex, 1);
     } finally {
         delete __rooms.REHOST01;
+    }
+});
+
+runTest('handleRecreateRoom は空roomのhostless復元を送信者ホストへ昇格する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const reconnectTokenHashes = [
+        crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+        crypto.createHash('sha256').update(tokenBob).digest('hex'),
+    ];
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes,
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+        actionSeq: 4,
+    };
+    const socket = {
+        id: 'socket-bob-hostless',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        handleRecreateRoom(socket, signedRestorePayload({
+            roomId: 'HOSTLESS01',
+            gameStartPayload,
+            stateSnapshot: makeSnapshot({ actionSeq: 4 }),
+            actionLog: [],
+            restoreMode: 'hostless',
+            playerIndex: 1,
+            playerName: 'Bob',
+            reconnectToken: tokenBob,
+        }));
+
+        assert.deepStrictEqual(joined, ['HOSTLESS01']);
+        assert.strictEqual(__rooms.HOSTLESS01.hostPlayerIndex, 1);
+        assert.strictEqual(__rooms.HOSTLESS01.hostEpoch, 3);
+        assert.strictEqual(__rooms.HOSTLESS01.gameStartPayload.hostPlayerIndex, 1);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.hostPlayerIndex, 1);
+        assert.strictEqual(emitted[0].payload.hostEpoch, 3);
+    } finally {
+        delete __rooms.HOSTLESS01;
+    }
+});
+
+runTest('handleRecreateRoom は古い復元済みroomを新しいhostless復元で置き換える', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const reconnectTokenHashes = [
+        crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+        crypto.createHash('sha256').update(tokenBob).digest('hex'),
+    ];
+    const oldPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes,
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 3,
+    };
+    const newPayload = Object.assign({}, oldPayload, { actionSeq: 8 });
+    __rooms.HOSTLESS_REPLACE = {
+        started: true,
+        restored: true,
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 3,
+        players: [
+            { id: 'socket-alice-stale', index: 0, name: 'Alice', reconnectTokenHash: reconnectTokenHashes[0] },
+            { id: null, index: 1, name: 'Bob', reconnectTokenHash: reconnectTokenHashes[1] },
+        ],
+        playerSettings: oldPayload.playerSettings,
+        maxPlayers: 2,
+        gameStartPayload: oldPayload,
+        stateSnapshot: makeSnapshot({ actionSeq: 3 }),
+        actionLog: [],
+    };
+    const socket = {
+        id: 'socket-bob-newer',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        handleRecreateRoom(socket, signedRestorePayload({
+            roomId: 'HOSTLESS_REPLACE',
+            gameStartPayload: newPayload,
+            stateSnapshot: makeSnapshot({ actionSeq: 8 }),
+            actionLog: [],
+            restoreMode: 'hostless',
+            playerIndex: 1,
+            playerName: 'Bob',
+            reconnectToken: tokenBob,
+        }));
+
+        assert.deepStrictEqual(joined, ['HOSTLESS_REPLACE']);
+        assert.strictEqual(__rooms.HOSTLESS_REPLACE.hostPlayerIndex, 1);
+        assert.strictEqual(__rooms.HOSTLESS_REPLACE.hostEpoch, 1);
+        assert.strictEqual(__rooms.HOSTLESS_REPLACE.actionSeq, 8);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.hostPlayerIndex, 1);
+    } finally {
+        delete __rooms.HOSTLESS_REPLACE;
     }
 });
 

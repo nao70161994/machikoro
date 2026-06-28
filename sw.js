@@ -39,6 +39,35 @@ const STATIC_ASSETS = [
 ];
 
 const RL_MODEL_PATH_PATTERN = /^\/models\/rl_model\/portfolio\/[^/]+\.browser\.json$/;
+const OPTIONAL_PRECACHE_ASSETS = new Set([
+  '/privacy.html',
+  '/rules.html',
+  '/how-to-play.html',
+  '/cards.html',
+  '/ai-cpu.html',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+]);
+
+function isOptionalPrecacheAsset(asset) {
+  return OPTIONAL_PRECACHE_ASSETS.has(asset);
+}
+
+function precacheStaticAssets(cache) {
+  const results = STATIC_ASSETS.map((asset) => {
+    return cache.add(asset).then(() => ({ asset, ok: true })).catch((error) => ({ asset, ok: false, error }));
+  });
+  return Promise.all(results).then((entries) => {
+    const failedCritical = entries.filter((entry) => !entry.ok && !isOptionalPrecacheAsset(entry.asset));
+    const failedOptional = entries.filter((entry) => !entry.ok && isOptionalPrecacheAsset(entry.asset));
+    if (failedOptional.length && typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[machikoro-sw] optional precache failed', failedOptional.map((entry) => entry.asset));
+    }
+    if (failedCritical.length) {
+      throw new Error('Critical precache failed: ' + failedCritical.map((entry) => entry.asset).join(', '));
+    }
+  });
+}
 
 // 「今すぐ更新」ボタンからのメッセージを受け取る
 self.addEventListener('message', (event) => {
@@ -48,9 +77,7 @@ self.addEventListener('message', (event) => {
 // インストール: アプリ起動に必要な軽量アセットだけをキャッシュ
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(STATIC_ASSETS)
-    )
+    caches.open(CACHE_NAME).then((cache) => precacheStaticAssets(cache))
   );
 });
 
@@ -65,7 +92,11 @@ self.addEventListener('activate', (event) => {
 
 function cacheRuntimeResponse(event, response) {
   const clone = response.clone();
-  const cacheWrite = caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+  const cacheWrite = caches.open(CACHE_NAME)
+    .then((cache) => cache.put(event.request, clone))
+    .catch((error) => {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn('[machikoro-sw] runtime cache write failed', error);
+    });
   if (event && typeof event.waitUntil === 'function') event.waitUntil(cacheWrite);
   return cacheWrite;
 }

@@ -1738,7 +1738,7 @@ function clearActionContainerForRecovery(spec) {
             changed = true;
         }
         if (el.style && el.style.pointerEvents === 'none') {
-            el.style.pointerEvents = id === 'pendingModal' || id === 'pendingMenu' ? 'auto' : '';
+            el.style.pointerEvents = id === 'pendingMenu' ? 'auto' : '';
             changed = true;
         }
     });

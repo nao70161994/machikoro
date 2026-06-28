@@ -1599,15 +1599,6 @@ runTest('integration: 通常renderは主要action containerをrecoveryなしで�
             },
         },
         {
-            name: 'pending resolveIT outside pending phase',
-            action: 'resolveIT',
-            setup(rt, game) {
-                game.phase = rt.GAME_PHASES.BUILD;
-                game.pendingIT = true;
-                game.currentPlayer().coins = 3;
-            },
-        },
-        {
             name: 'buildCard',
             action: 'buildCard',
             setup(rt, game) { game.phase = rt.GAME_PHASES.BUILD; game.currentPlayer().coins = 10; },

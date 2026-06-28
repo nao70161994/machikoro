@@ -24,6 +24,11 @@ runTest('resolve-rl-model-path browserPathForRunLabel は rank 別 path を返�
     assert.strictEqual(browserPathForRunLabel('abc', 2), 'models/rl_model/runs/abc/best_model.top2.browser.json');
 });
 
+runTest('resolve-rl-model-path browserPathForRunLabel は危険な run-label を拒否する', () => {
+    assert.throws(() => browserPathForRunLabel('../abc', 1), /unsafe run-label/);
+    assert.throws(() => browserPathForRunLabel('abc/def', 1), /unsafe run-label/);
+});
+
 runTest('resolve-rl-model-path resolveModelPath は model id / run-label / path を解決する', () => {
     const registry = {
         models: [

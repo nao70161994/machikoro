@@ -579,6 +579,20 @@ runTest('_cardActivationValue: 赤カードのモール加算は支払う側で�
     assert.strictEqual(cpu._cardActivationValue(cafe, game, owner, roller, 3), 2);
 });
 
+runTest('_cardActivationValue: 寿司屋は出目プレイヤーではなく所有者の港で評価する', () => {
+    const cpu = new CPU("expert", { expertPreset: "v2simple" });
+    const game = new GameManager(2);
+    const owner = game.currentPlayer();
+    const roller = game.players[1];
+    const sushi = createCardByName('寿司屋');
+
+    roller.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    assert.strictEqual(cpu._cardActivationValue(sushi, game, owner, roller, 1), 0);
+
+    owner.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    assert.strictEqual(cpu._cardActivationValue(sushi, game, owner, roller, 1), 3);
+});
+
 runTest('_cardActivationValue: コーン畑はランドマーク2軒目以降では収入0として見る', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);

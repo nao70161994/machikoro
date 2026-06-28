@@ -52,10 +52,12 @@ function loadServiceWorker(options = {}) {
         },
         add(asset) {
             addCalls.push(asset);
+            if (options.addReject && options.addReject(asset)) return Promise.reject(new Error('add failed: ' + asset));
             return Promise.resolve();
         },
         put(request, response) {
             putCalls.push({ request, response });
+            if (options.putReject) return Promise.reject(new Error('put failed'));
             cacheEntries.set(request.url || request, response);
             return Promise.resolve();
         },
@@ -153,12 +155,23 @@ function dispatchMessage(runtime, data) {
     await runTest('Service Worker install はRLモデルをprecacheしない', async () => {
         const runtime = loadServiceWorker();
         await dispatchInstall(runtime);
-        assert.strictEqual(runtime.addAllCalls.length, 1);
-        const assets = runtime.addAllCalls[0];
+        assert.strictEqual(runtime.addAllCalls.length, 0);
+        const assets = runtime.addCalls;
         assert.ok(assets.includes('/index.html'));
         assert.ok(assets.includes('/js/RLModelPortfolio.js'));
         assert.ok(!assets.some(asset => asset.includes('/models/rl_model/portfolio/')), 'RL models must not be install precached');
-        assert.deepStrictEqual(runtime.addCalls, []);
+    });
+
+    await runTest('Service Worker install は任意asset失敗だけなら完了する', async () => {
+        const runtime = loadServiceWorker({ addReject: asset => asset === '/icons/icon-512.png' });
+        await dispatchInstall(runtime);
+        assert.ok(runtime.addCalls.includes('/index.html'));
+        assert.ok(runtime.addCalls.includes('/icons/icon-512.png'));
+    });
+
+    await runTest('Service Worker install は重要asset失敗なら失敗する', async () => {
+        const runtime = loadServiceWorker({ addReject: asset => asset === '/index.html' });
+        await assert.rejects(() => dispatchInstall(runtime), /Critical precache failed/);
     });
 
     await runTest('Service Worker activate はclients.claimをwaitUntil内で完了する', async () => {
@@ -189,6 +202,20 @@ function dispatchMessage(runtime, data) {
         assert.ok(docs.includes('network-first'));
         assert.ok(docs.includes('cached fallback'));
         assert.ok(!docs.includes('cache-first で扱う'));
+    });
+
+    await runTest('Service Worker runtime cache put 失敗でもnetwork responseを返す', async () => {
+        const network = makeResponse('network-model');
+        const request = makeRequest('https://example.test/models/rl_model/portfolio/seed103-4p.browser.json');
+        const runtime = loadServiceWorker({
+            putReject: true,
+            fetchResponse: () => network,
+        });
+        const { response, waitUntilPromises } = await dispatchFetch(runtime, request);
+
+        assert.strictEqual(response, network);
+        await Promise.all(waitUntilPromises);
+        assert.strictEqual(runtime.putCalls.length, 1);
     });
 
     await runTest('Service Worker はRLモデルJSONをruntime network-firstで更新する', async () => {

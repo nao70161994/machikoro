@@ -277,11 +277,10 @@ class GameManager {
 
     // Returns pending action descriptors in the order they should be resolved.
     static pendingActionsFor(game) {
-        if (!game) return [];
+        if (!game || game.phase !== GAME_PHASES.PENDING) return [];
         if (game.pendingIT) {
             return [{ action: PENDING_IT_QUEUE_POLICY.action, field: PENDING_IT_QUEUE_POLICY.field, count: 1 }];
         }
-        if (game.phase !== GAME_PHASES.PENDING) return [];
         const queue = GameManager.ensurePendingActionQueue(game);
         if (queue.length > 0) return GameManager._groupPendingQueue(queue);
         return [];
@@ -353,7 +352,7 @@ class GameManager {
     static allowedActionsFor(game) {
         if (!game) return new Set();
         const pendingActions = GameManager.pendingActionsFor(game);
-        if (game.pendingIT || game.phase === GAME_PHASES.PENDING) {
+        if (game.phase === GAME_PHASES.PENDING) {
             return new Set(pendingActions[0] ? [pendingActions[0].action] : []);
         }
         return new Set(GAME_PHASE_ACTIONS[game.phase] || []);
@@ -782,6 +781,7 @@ class GameManager {
                 }
             }
         }
+        if (count <= 0) return false;
         current.coins += count;
         this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${count}軒を休業 → +${count}コイン`);
         this._consumePendingAction('pendingCleaning');

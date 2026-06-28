@@ -42,6 +42,12 @@ fi
 if [ -n "$CUSTOM_OUT_DIR" ]; then
     OUT_DIR="$CUSTOM_OUT_DIR"
 else
+    case "$RUN_LABEL" in
+        ''|.*|*..*|*/*|*\\*|*[!A-Za-z0-9._-]*)
+            echo "error: unsafe run-label: $RUN_LABEL" >&2
+            exit 1
+            ;;
+    esac
     OUT_DIR="models/rl_model/runs/$RUN_LABEL"
 fi
 

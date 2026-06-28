@@ -50,7 +50,8 @@
     "export-rl-model": "python3 -m scripts.rl.export_model",
     "test:static:py": "python3 -m py_compile scripts/rl/*.py",
     "test:release": "node tests/run-all.js release",
-    "eval-expert-v2-multiseed": "node scripts/eval-expert-v2-multiseed.js"
+    "eval-expert-v2-multiseed": "node scripts/eval-expert-v2-multiseed.js",
+    "test:online-delivery": "node scripts/check-online-delivery.js"
   },
   "keywords": [],
   "author": "",
