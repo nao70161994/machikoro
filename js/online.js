@@ -227,6 +227,7 @@ function _normalizeOnlineRestoreRoomIndexEntry(entry) {
         hasActionLog: entry.hasActionLog === true,
         hasStateSnapshot: entry.hasStateSnapshot === true,
         hasPendingAction: entry.hasPendingAction === true,
+        hasRestoreAudit: entry.hasRestoreAudit === true,
     };
 }
 
@@ -389,6 +390,13 @@ function _handleOnlineActionTimeout() {
     return _emitOnlineRejoinRequest();
 }
 
+function markOnlineGameFinished() {
+    isOnlineGame = false;
+    isReconnectingOnline = false;
+    _setOnlineActionInFlight(false);
+    _clearRejoinRetry();
+}
+
 function resetOnlineState() {
     const roomIdBeforeReset = myRoomId;
     cpuScheduleToken++;
@@ -417,11 +425,7 @@ function _saveActionLog(action, data, options = {}) {
             const snapshot = buildOnlineSnapshot();
             if (snapshot) {
                 _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, snapshot);
-                log = [];
-                if (options.alreadyApplied) {
-                    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
-                    return;
-                }
+                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
             }
         }
         if (Number.isInteger(options.seq) && !options.alreadyApplied) {
@@ -430,8 +434,16 @@ function _saveActionLog(action, data, options = {}) {
         const entry = { action, data };
         if (Number.isInteger(options.playerIndex)) entry.playerIndex = options.playerIndex;
         if (typeof options.clientActionId === 'string') entry.clientActionId = options.clientActionId;
+        if (options.restoreActionAudit && typeof options.restoreActionAudit === 'object') entry.restoreActionAudit = options.restoreActionAudit;
         entry.seq = seq;
         log.push(entry);
+        const serverSnapshotSeq = Number.isInteger(options.stateSnapshot?.actionSeq) ? options.stateSnapshot.actionSeq : null;
+        if (options.stateSnapshot && options.restoreAudit && Number.isInteger(serverSnapshotSeq)) {
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, options.stateSnapshot);
+            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, options.restoreAudit);
+            log = log.filter(item => !Number.isInteger(item.seq) || item.seq > serverSnapshotSeq);
+            _writeOnlineGameStartPatch({ actionSeq: Math.max(seq, serverSnapshotSeq) });
+        }
         _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
     } catch(e) {}
 }
@@ -444,6 +456,7 @@ function _normalizeOnlineActionLog(value) {
             if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
             if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
             if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
+            if (entry.restoreActionAudit && typeof entry.restoreActionAudit === 'object') normalized.restoreActionAudit = entry.restoreActionAudit;
             return normalized;
         });
 }
@@ -840,20 +853,20 @@ function initSocket() {
         startOnlineGame();
     });
 
-    socket.on('gameAction', ({ action, data, playerIndex, seq, clientActionId }) => {
+    socket.on('gameAction', ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
         if (!game) {
             isReconnectingOnline = true;
             const el = document.getElementById("onlineStatus");
             if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
             return;
         }
-        _saveActionLog(action, data, { playerIndex, seq, clientActionId });
+        _saveActionLog(action, data, { playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
         applyReplayedAction(action, data);
         render();
         scheduleCPU();
     });
 
-    socket.on('actionAccepted', ({ action, data, playerIndex, seq, clientActionId }) => {
+    socket.on('actionAccepted', ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
         _setOnlineActionInFlight(false);
         if (!game) {
             isReconnectingOnline = true;
@@ -867,7 +880,7 @@ function initSocket() {
         }
         applyReplayedAction(action, data);
         render();
-        _saveActionLog(action, data, { alreadyApplied: true, playerIndex, seq, clientActionId });
+        _saveActionLog(action, data, { alreadyApplied: true, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
         scheduleCPU();
     });
 
@@ -1379,10 +1392,9 @@ function _tryRestoreRoom(options = {}) {
         const isStoredHost = gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex;
         const allowHostless = !!options.allowHostless;
         if (!isStoredHost && !allowHostless) return false;
-        const stateSnapshot = _readOnlineStateSnapshot();
-        const actionLog = _readOnlineActionLog();
         const restoreAudit = _readOnlineRestoreAudit();
-        _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
+        const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
+        const actionLog = _readOnlineActionLog();
         document.getElementById("onlineStatus").textContent = allowHostless && !isStoredHost
             ? '♻️ ホスト不在のため、この端末の復元データでゲームを復元中...'
             : '♻️ サーバー再起動を検知。ゲームを復元中...';
@@ -1409,10 +1421,9 @@ function _readLocalRestoreBundle() {
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload || gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;
-        const stateSnapshot = _readOnlineStateSnapshot();
-        const actionLog = _readOnlineActionLog();
         const restoreAudit = _readOnlineRestoreAudit();
-        _appendPendingForRestore(actionLog, _readPendingOutboundActionForCurrentSession({ requireRoomId: true }));
+        const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
+        const actionLog = _readOnlineActionLog();
         return { gameStartPayload, stateSnapshot, actionLog, restoreAudit };
     } catch (_) {
         return null;
@@ -1446,16 +1457,20 @@ function _scheduleRejoinRetry() {
     document.getElementById("onlineStatus").textContent = `⏳ ホストの復元を待っています... (${_rejoinRetryCount}/${MAX_RETRY})`;
     _rejoinRetryTimer = setTimeout(() => {
         if (!socket || !isReconnectingOnline) return;
-        const raw = localStorage.getItem('onlineSession');
-        if (!raw) return;
-        try {
-            const session = JSON.parse(raw);
-            socket.emit('rejoinRoom', {
-                roomId: session.roomId,
-                playerIndex: session.playerIndex,
-                playerName: session.playerName,
-                reconnectToken: session.reconnectToken,
-            });
-        } catch(e) {}
+        const session = typeof readOnlineSession === 'function'
+            ? readOnlineSession()
+            : {
+                roomId: myRoomId,
+                playerIndex: myOriginalPlayerIndex,
+                playerName: myPlayerName,
+                reconnectToken,
+            };
+        if (!session) return;
+        socket.emit('rejoinRoom', {
+            roomId: session.roomId,
+            playerIndex: session.playerIndex,
+            playerName: session.playerName,
+            reconnectToken: session.reconnectToken,
+        });
     }, 3000);
 }

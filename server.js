@@ -1089,6 +1089,48 @@ function isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot
     return validation.ok;
 }
 
+function buildRestoreActionAuditPayload(actionEntry) {
+    if (!actionEntry || typeof actionEntry.action !== 'string') return null;
+    if (!Number.isInteger(actionEntry.playerIndex) || !Number.isInteger(actionEntry.seq)) return null;
+    const payload = {
+        action: actionEntry.action,
+        data: actionEntry.data || {},
+        playerIndex: actionEntry.playerIndex,
+        seq: actionEntry.seq,
+    };
+    const safeClientActionId = normalizeClientActionId(actionEntry.clientActionId);
+    if (safeClientActionId) payload.clientActionId = safeClientActionId;
+    return payload;
+}
+
+function buildRestoreActionAudit(roomId, actionEntry, now = Date.now()) {
+    return buildSignedRestoreAuditRecord(
+        roomId,
+        buildRestoreActionAuditPayload(actionEntry),
+        { crypto, secret: restoreAuditSecret(), now, source: 'server-action-log' }
+    );
+}
+
+function isVerifiedRestoreActionAudit(roomId, actionEntry) {
+    const validation = verifySignedRestoreAuditRecord(
+        actionEntry && actionEntry.restoreActionAudit,
+        buildRestoreActionAuditPayload(actionEntry),
+        { roomId, crypto, secret: restoreAuditSecret() }
+    );
+    return validation.ok;
+}
+
+function attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actionLogLengthBeforeCompact) {
+    if (!room || !actionEntry || !room.stateSnapshot) return null;
+    if (!Number.isInteger(actionLogLengthBeforeCompact) || actionLogLengthBeforeCompact <= MAX_ACTION_LOG_LENGTH) return null;
+    if (Array.isArray(room.actionLog) && room.actionLog.length !== 0) return null;
+    const restoreAudit = buildRestoreSnapshotAudit(roomId, room.gameStartPayload, room.stateSnapshot);
+    if (!restoreAudit) return null;
+    actionEntry.stateSnapshot = room.stateSnapshot;
+    actionEntry.restoreAudit = restoreAudit;
+    return { stateSnapshot: actionEntry.stateSnapshot, restoreAudit };
+}
+
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 const roomGcInterval = setInterval(() => {
@@ -1278,6 +1320,8 @@ io.on('connection', (socket) => {
         const actionSeq = nextRoomActionSeq(room);
         const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
         if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
+        const restoreActionAudit = buildRestoreActionAudit(roomId, actionEntry);
+        if (restoreActionAudit) actionEntry.restoreActionAudit = restoreActionAudit;
         if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
             emitAppError(socket, '無効な操作です');
             return;
@@ -1286,7 +1330,9 @@ io.on('connection', (socket) => {
         rememberAcceptedClientAction(room, actionEntry);
         if (room.actionLog) {
             room.actionLog.push(actionEntry);
+            const actionLogLengthBeforeCompact = room.actionLog.length;
             compactRoomActionLog(room);
+            attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actionLogLengthBeforeCompact);
             markRoomCanonicalMirrorCurrent(room);
             room.lastTouchedAt = Date.now();
             persistRoomCanonicalState(roomId, room, 'accepted-action');
@@ -1356,6 +1402,7 @@ function handleStartedRoomSocketDisconnect(io, roomId, room, socket) {
         if (remaining.length > 0) {
             setRoomHostPlayerIndex(room, remaining[0].index);
             emitRoomHostChanged(roomId, room, io);
+            persistRoomCanonicalState(roomId, room, 'host-changed');
             console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
             return { ignored: false, hostChanged: true, playerIndex: socket.playerIndex };
         }
@@ -1516,7 +1563,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元署名メタデータが無効です');
         return;
     }
-    const clientSnapshotTrusted = !!canonicalRecord || !stateSnapshot || isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, payload.restoreAudit);
+    const clientSnapshotTrusted = !!canonicalRecord || (stateSnapshot && isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, payload.restoreAudit));
     const replayStateSnapshot = clientSnapshotTrusted ? stateSnapshot : null;
     if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
@@ -1529,17 +1576,16 @@ function handleRecreateRoom(socket, payload = {}) {
             existingReconnectTokenHash &&
             hashReconnectToken(reconnectToken) === existingReconnectTokenHash;
         const existingHostRestoreAuthenticated = existingRestoreAuthenticated && room.hostPlayerIndex === playerIndex;
-        const sanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot);
-        if (existingRestoreAuthenticated && sanitizedExistingRoomActionLog === null) {
-            emitAppError(socket, '復元データが壊れています');
-            return;
-        }
-        const incomingRankForExistingRoom = restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog || []);
-        const existingRoomHostlessReplace = restoreMode === 'hostless' &&
+        const rawSanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !canonicalRecord });
+        const sanitizedExistingRoomActionLog = rawSanitizedExistingRoomActionLog || [];
+        const incomingRestoreLogValid = rawSanitizedExistingRoomActionLog !== null;
+        const incomingRankForExistingRoom = restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
+        const existingRoomHostlessReplace = !canonicalRecord &&
+            restoreMode === 'hostless' &&
             existingRestoreAuthenticated &&
             room.restored === true &&
             gameStartPayload.hostPlayerIndex !== playerIndex &&
-            isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog || []);
+            isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
         if (existingRoomHostlessReplace) {
             gameStartPayload = Object.assign({}, gameStartPayload, {
                 hostPlayerIndex: playerIndex,
@@ -1549,14 +1595,14 @@ function handleRecreateRoom(socket, payload = {}) {
                 ) + 1,
             });
         }
-        const incomingCanReplace = !!sanitizedExistingRoomActionLog &&
+        const incomingCanReplace = incomingRestoreLogValid &&
             isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
             !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
             (existingHostRestoreAuthenticated || existingRoomHostlessReplace) &&
             clientSnapshotTrusted &&
             canReplaceRestoredRoom(room, playerIndex, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
         if (!incomingCanReplace) {
-            if (existingHostRestoreAuthenticated && isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog || [])) {
+            if (existingHostRestoreAuthenticated && isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog)) {
                 emitAppError(socket, '復元データが壊れています');
                 return;
             }
@@ -1577,6 +1623,7 @@ function handleRecreateRoom(socket, payload = {}) {
             if (!isRoomHostConnected(room)) {
                 setRoomHostPlayerIndex(room, playerIndex);
                 emitRoomHostChanged(roomId, room);
+                persistRoomCanonicalState(roomId, room, 'host-reselected');
                 console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
             }
             room.lastTouchedAt = Date.now();
@@ -1608,7 +1655,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, 'INVALID_TOKEN');
         return;
     }
-    const restoreAsHostless = restoreMode === 'hostless' && gameStartPayload.hostPlayerIndex !== playerIndex;
+    const restoreAsHostless = !canonicalRecord && restoreMode === 'hostless' && gameStartPayload.hostPlayerIndex !== playerIndex;
     if (!Number.isInteger(gameStartPayload.hostPlayerIndex) || (gameStartPayload.hostPlayerIndex !== playerIndex && !restoreAsHostless)) {
         emitAppError(socket, '復元は元のホストのみ実行できます');
         return;
@@ -1618,12 +1665,16 @@ function handleRecreateRoom(socket, payload = {}) {
         return;
     }
     const restoredPlayers = buildRestoredHumanPlayers(gameStartPayload, playerIndex, socket.id);
-    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot);
+    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !canonicalRecord });
     if (!sanitizedActionLog) {
         emitAppError(socket, '復元データが壊れています');
         return;
     }
-    if (!clientSnapshotTrusted && sanitizedActionLog.length === 0) {
+    if (!canonicalRecord && !clientSnapshotTrusted && sanitizedActionLog.length === 0) {
+        emitAppError(socket, '復元データが壊れています');
+        return;
+    }
+    if (!canonicalRecord && !stateSnapshot && sanitizedActionLog.length === 0) {
         emitAppError(socket, '復元データが壊れています');
         return;
     }
@@ -1808,17 +1859,26 @@ function sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq) {
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
     const safeClientActionId = normalizeClientActionId(entry.clientActionId);
     if (safeClientActionId) normalized.clientActionId = safeClientActionId;
+    const auditValidation = validateRestoreAuditRecord(entry.restoreActionAudit, { roomId });
+    if (!auditValidation.ok) return { invalid: true };
+    if (auditValidation.record && auditValidation.record.signed) normalized.restoreActionAudit = auditValidation.record;
     return { entry: normalized };
 }
 
-function sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot) {
+function sanitizeRestoreActionLog(actionLog, roomId, stateSnapshot, options = {}) {
     if (!Array.isArray(actionLog)) return [];
     const snapshotSeq = restoreSnapshotActionSeq(stateSnapshot);
+    const requireSignedActionAudit = options.requireSignedActionAudit === true;
+    let lastSeq = snapshotSeq;
     const sanitized = [];
     for (const entry of actionLog) {
         const result = sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq);
         if (result.invalid) return null;
-        if (result.entry) sanitized.push(result.entry);
+        if (!result.entry) continue;
+        if (!Number.isInteger(result.entry.seq) || result.entry.seq !== lastSeq + 1) return null;
+        if (requireSignedActionAudit && !isVerifiedRestoreActionAudit(roomId, result.entry)) return null;
+        lastSeq = result.entry.seq;
+        sanitized.push(result.entry);
     }
     return sanitized;
 }
@@ -2288,6 +2348,10 @@ module.exports = {
     buildRestoreSnapshotAuditPayload,
     buildRestoreSnapshotAudit,
     isVerifiedClientRestoreSnapshot,
+    buildRestoreActionAuditPayload,
+    buildRestoreActionAudit,
+    isVerifiedRestoreActionAudit,
+    attachCompactedRestoreSnapshotToAction,
     generateRoomId,
     isValidRoomId,
     buildRestoredHumanPlayers,

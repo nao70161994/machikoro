@@ -21,6 +21,9 @@ const {
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
     buildRestoreSnapshotAudit,
+    buildRestoreActionAudit,
+    isVerifiedRestoreActionAudit,
+    attachCompactedRestoreSnapshotToAction,
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
     sanitizeRestoreActionLog,
@@ -222,7 +225,25 @@ function makeRestoreAudit(roomId, gameStartPayload, stateSnapshot) {
     return buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, 1234567890);
 }
 
+function signRestoreActionLog(roomId, actionLog, stateSnapshot = null) {
+    if (!Array.isArray(actionLog)) return actionLog;
+    let nextSeq = restoreSnapshotActionSeq(stateSnapshot);
+    return actionLog.map(entry => {
+        if (!entry) return entry;
+        const signed = Object.assign({}, entry);
+        if (!Number.isInteger(signed.seq)) return signed;
+        nextSeq = Math.max(nextSeq, signed.seq);
+        if (signed.restoreActionAudit) return signed;
+        const audit = buildRestoreActionAudit(roomId, signed, 1234567890);
+        if (audit) signed.restoreActionAudit = audit;
+        return signed;
+    });
+}
+
 function signedRestorePayload(payload) {
+    if (payload && payload.roomId && Array.isArray(payload.actionLog)) {
+        payload.actionLog = signRestoreActionLog(payload.roomId, payload.actionLog, payload.stateSnapshot);
+    }
     if (payload && payload.roomId && payload.gameStartPayload && payload.stateSnapshot && !payload.restoreAudit) {
         payload.restoreAudit = makeRestoreAudit(payload.roomId, payload.gameStartPayload, payload.stateSnapshot);
     }
@@ -2502,10 +2523,13 @@ runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共�
     assert.strictEqual(restoreSnapshotActionSeq({ actionSeq: -1 }), 0);
     assert.strictEqual(restoreSnapshotActionSeq(null), 0);
 
+    const auditedEntry = { action: 'nextTurn', data: {}, seq: 4, playerIndex: 0, clientActionId: 'client-1' };
+    auditedEntry.restoreActionAudit = buildRestoreActionAudit('ROOM1', auditedEntry, 1234567890);
     assert.deepStrictEqual(
-        sanitizeRestoreActionLogEntry({ action: 'nextTurn', data: {}, seq: 4, playerIndex: 0, clientActionId: 'client-1' }, 'ROOM1', 3),
-        { entry: { action: 'nextTurn', data: {}, playerIndex: 0, seq: 4, clientActionId: 'client-1' } }
+        sanitizeRestoreActionLogEntry(auditedEntry, 'ROOM1', 3),
+        { entry: { action: 'nextTurn', data: {}, playerIndex: 0, seq: 4, clientActionId: 'client-1', restoreActionAudit: auditedEntry.restoreActionAudit } }
     );
+    assert.strictEqual(isVerifiedRestoreActionAudit('ROOM1', sanitizeRestoreActionLogEntry(auditedEntry, 'ROOM1', 3).entry), true);
     assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn', seq: 3 }, 'ROOM1', 3), { skip: true });
     assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn' }, 'ROOM1', 3), { skip: true });
     assert.deepStrictEqual(sanitizeRestoreActionLogEntry({ action: 'nextTurn', roomId: 'OTHER', seq: 4 }, 'ROOM1', 3), { invalid: true });
@@ -2520,6 +2544,39 @@ runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共�
         { action: 'nextTurn', data: {}, playerIndex: 0, seq: 5, clientActionId: 'ok-5' },
     ]);
     assert.strictEqual(sanitizeRestoreActionLog([{ action: 'nextTurn', roomId: 'OTHER', seq: 4 }], 'ROOM1', { actionSeq: 3 }), null);
+    assert.strictEqual(sanitizeRestoreActionLog([
+        { action: 'buildCard', data: { cardName: '麦畑' }, seq: 5, playerIndex: 0 },
+        { action: 'nextTurn', data: {}, seq: 4, playerIndex: 0 },
+    ], 'ROOM1', { actionSeq: 3 }), null);
+    assert.strictEqual(sanitizeRestoreActionLog([
+        { action: 'nextTurn', data: {}, seq: 4, playerIndex: 0 },
+        { action: 'nextTurn', data: {}, seq: 6, playerIndex: 0 },
+    ], 'ROOM1', { actionSeq: 3 }), null);
+});
+
+runTest('attachCompactedRestoreSnapshotToAction は compact 済みsnapshotを署名付きでactionへ添付する', () => {
+    const room = makeRoom();
+    room.gameStartPayload.playerNames = ['A', 'B'];
+    room.stateSnapshot = makeSnapshot({ actionSeq: 201 });
+    room.actionLog = [];
+    const actionEntry = { action: 'nextTurn', data: {}, playerIndex: 0, seq: 201 };
+
+    const attached = attachCompactedRestoreSnapshotToAction('ROOM1', room, actionEntry, 201);
+
+    assert.ok(attached);
+    assert.strictEqual(actionEntry.stateSnapshot, room.stateSnapshot);
+    assert.ok(actionEntry.restoreAudit && actionEntry.restoreAudit.signed);
+    assert.strictEqual(actionEntry.restoreAudit.roomId, 'ROOM1');
+    assert.strictEqual(attachCompactedRestoreSnapshotToAction('ROOM1', room, {}, 200), null);
+});
+
+runTest('restore action audit は actionLog 改ざんを検出する', () => {
+    const entry = { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, seq: 1, playerIndex: 0 };
+    const signed = Object.assign({}, entry, { restoreActionAudit: buildRestoreActionAudit('ROOM1', entry, 1234567890) });
+    assert.strictEqual(isVerifiedRestoreActionAudit('ROOM1', signed), true);
+    const tampered = Object.assign({}, signed, { data: { forceDice: 6, tunaDice: [6, 6] } });
+    assert.strictEqual(isVerifiedRestoreActionAudit('ROOM1', tampered), false);
+    assert.strictEqual(sanitizeRestoreActionLog([tampered], 'ROOM1', null, { requireSignedActionAudit: true }), null);
 });
 
 runTest('handleRecreateRoom は過大な復元payloadを早期拒否する', () => {
@@ -2711,7 +2768,7 @@ runTest('handleRecreateRoom は復元データを canonical snapshot に畳み�
         phase: 'build',
         shopStock: { '麦畑': 5 },
     });
-    const actionLog = [{ action: 'nextTurn', data: {}, playerIndex: 0 }];
+    const actionLog = [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }];
     const payload = {
         roomId: 'REST02',
         gameStartPayload: {
@@ -2754,6 +2811,48 @@ runTest('handleRecreateRoom は復元データを canonical snapshot に畳み�
         }]);
     } finally {
         delete __rooms.REST02;
+    }
+});
+
+runTest('handleRecreateRoom はsnapshotもactionLogもない復元を拒否する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    const reconnectToken = 'token-host';
+    const payload = {
+        roomId: 'REST_EMPTY_REWIND',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    };
+
+    try {
+        handleRecreateRoom(socket, signedRestorePayload(payload));
+        assert.deepStrictEqual(joined, []);
+        assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが壊れています' }]);
+        assert.strictEqual(__rooms.REST_EMPTY_REWIND, undefined);
+    } finally {
+        delete __rooms.REST_EMPTY_REWIND;
     }
 });
 
@@ -2851,7 +2950,7 @@ runTest('handleRecreateRoom は playerSettings 空配列の全員人間ルーム
             phase: 'build',
             shopStock: { '麦畑': 6 },
         }),
-        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0 }],
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }],
         playerIndex: 0,
         playerName: 'Alice',
         reconnectToken,
@@ -2896,7 +2995,7 @@ runTest('handleRecreateRoom は client snapshot の valid undoState から undoB
             roomId: 'REST_UNDO',
             gameStartPayload,
             stateSnapshot,
-            actionLog: [{ action: 'undoBuild', data: {}, playerIndex: 0 }],
+            actionLog: [{ action: 'undoBuild', data: {}, playerIndex: 0, seq: (stateSnapshot.actionSeq || 0) + 1 }],
             playerIndex: 0,
             playerName: 'A',
             reconnectToken,
@@ -3856,7 +3955,7 @@ runTest('handleRecreateRoom はsnapshot圧縮後も受理済みclientActionIdを
             hostPlayerIndex: 0,
         },
         stateSnapshot: makeSnapshot({ currentPlayerIndex: 0, phase: 'build', shopStock: { '麦畑': 5 }, actionSeq: 4 }),
-        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 99, clientActionId: 'pending-high-seq' }],
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 5, clientActionId: 'pending-next-seq' }],
         playerIndex: 0,
         playerName: 'Alice',
         reconnectToken,
@@ -3867,7 +3966,7 @@ runTest('handleRecreateRoom はsnapshot圧縮後も受理済みclientActionIdを
 
         assert.deepStrictEqual(joined, ['REST_ACCEPTED_IDS']);
         assert.deepStrictEqual(emitted[0].payload.actionLog, []);
-        assert.deepStrictEqual(emitted[0].payload.acceptedClientActions, [{ playerIndex: 0, clientActionId: 'pending-high-seq', seq: 99 }]);
+        assert.deepStrictEqual(emitted[0].payload.acceptedClientActions, [{ playerIndex: 0, clientActionId: 'pending-next-seq', seq: 5 }]);
         assert.strictEqual(emitted[0].payload.stateSnapshot.actionSeq, 5);
     } finally {
         delete __rooms.REST_ACCEPTED_IDS;

@@ -1028,6 +1028,7 @@ function handleStaticUiClick(event) {
         else reloadCurrentPage();
     }
     else if (action === 'hidePwaUpdateBanner') {
+        if (typeof shouldKeepPwaUpdateBannerVisible === 'function' && shouldKeepPwaUpdateBannerVisible()) return;
         const banner = document.getElementById('pwaUpdateBanner');
         if (banner) banner.style.display = 'none';
         if (typeof maybeShowPwaInstallBanner === 'function') maybeShowPwaInstallBanner();

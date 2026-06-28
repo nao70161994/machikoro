@@ -187,7 +187,7 @@ runTest('storage updateResumeButton はローカルとオンラインの再開�
 
     assert.strictEqual(rt.elements.resumeSection.style.display, 'flex');
     assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'block');
-    assert.strictEqual(rt.elements.onlineResumeDescription.textContent, '🌐 P1 として room-1 に再接続できます');
+    assert.strictEqual(rt.elements.onlineResumeDescription.textContent, '🌐 P1 として ROOM-1 に再接続できます');
 });
 
 runTest('storage updateResumeButton は壊れたオンライン再接続データを表示しない', () => {
@@ -317,7 +317,7 @@ runTest('storage reconnectOnline はCPU復元を行わず再接続だけ送る',
     assert.strictEqual(rt.switchedTab, 'online');
     assert.strictEqual(rt.emits.length, 1);
     assert.strictEqual(rt.emits[0].name, 'rejoinRoom');
-    assert.strictEqual(rt.emits[0].payload.roomId, 'room-1');
+    assert.strictEqual(rt.emits[0].payload.roomId, 'ROOM-1');
     assert.strictEqual(rt.emits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
     assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');

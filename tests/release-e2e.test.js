@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
+process.env.RESTORE_AUDIT_SECRET = process.env.RESTORE_AUDIT_SECRET || 'test-restore-audit-secret';
 const releaseAsyncTests = [];
 
 function runAsyncTest(name, fn) {
@@ -27,6 +28,7 @@ const {
     serializeMirrorState,
     restoreMirrorState,
     handleRecreateRoom,
+    buildRestoreSnapshotAudit,
     loadGameRuntime,
 } = require('../server');
 
@@ -394,6 +396,7 @@ runAsyncTest('release PWA install/update と Service Worker lifecycle を疑似�
     assert.ok(index.includes("fetch('/api/version',"));
     assert.ok(index.includes('古いバージョンです。修正済みバグを避けるため更新してください。'));
     assert.ok(index.includes('_forceVersionReload();'));
+    assert.ok(index.includes('function shouldKeepPwaUpdateBannerVisible()'));
 
     const appShell = loadAppShellRuntime(MOBILE_PROFILES[1]);
     let prevented = false;
@@ -446,11 +449,13 @@ runTest('release reconnect/restore/host migration は server restart 相当の�
 
     try {
         delete __rooms[roomId];
+        const stateSnapshot = makeSnapshot({ actionSeq: 0 });
         handleRecreateRoom(socket, {
             roomId,
             gameStartPayload,
-            stateSnapshot: null,
+            stateSnapshot,
             actionLog: [],
+            restoreAudit: buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, 1234567890),
             playerIndex: 0,
             playerName: 'Alice',
             reconnectToken: tokenAlice,

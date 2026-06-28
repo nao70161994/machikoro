@@ -610,6 +610,7 @@ runTest('online integration: ROOM_NOT_FOUND 復元は壊れた actionLog JSON �
         currentPlayerIndex: 0,
         shopStock: {},
     }));
+    rt.localStorage.setItem('onlineRestoreAudit', JSON.stringify({ schemaVersion: 1, roomId: 'ROOM01', signed: true }));
     rt.localStorage.setItem('onlineActionLog', '{broken');
     rt.initSocket();
     rt.__test.setOnlineState({
@@ -686,6 +687,36 @@ runTest('online integration: ROOM_NOT_FOUND で非ホストは再接続リトラ
     assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
+});
+
+runTest('online integration: rejoin retry は正規化済みsessionで再送する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: ' room01 ',
+        playerIndex: 1,
+        playerName: ' Bob ',
+        reconnectToken: ' token-bob ',
+    }));
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isReconnectingOnline: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        reconnectToken: 'token-bob',
+    });
+
+    rt._scheduleRejoinRetry();
+    rt.__test.flushTimeouts();
+
+    const emitted = rt.__test.socketEmits[rt.__test.socketEmits.length - 1];
+    assert.strictEqual(emitted.name, 'rejoinRoom');
+    assert.deepStrictEqual(Object.assign({}, emitted.payload), {
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        playerName: 'Bob',
+        reconnectToken: 'token-bob',
+    });
 });
 
 runTest('online integration: 非ホストはホスト待機上限後にhostless復元を送る', () => {

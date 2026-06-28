@@ -77,6 +77,8 @@ function loadUiRuntime() {
         recordCalls: 0,
         saveGameCalls: 0,
         clearOnlineSessionStorageCalls: 0,
+        markOnlineGameFinishedCalls: 0,
+        refreshPwaUpdateStateCalls: 0,
         crashErr: '',
         updateResumeButton() {},
         startConfetti() {},
@@ -97,6 +99,8 @@ function loadUiRuntime() {
         recordGameStats() { context.recordCalls++; },
         saveGameState() { context.saveGameCalls++; },
         clearOnlineSessionStorage() { context.clearOnlineSessionStorageCalls++; localStorage.removeItem('onlineSession'); },
+        markOnlineGameFinished() { context.markOnlineGameFinishedCalls++; },
+        refreshPwaUpdateState() { context.refreshPwaUpdateStateCalls++; },
         LOG_TYPES: {
             DICE: 'dice',
             GAIN: 'gain',
@@ -486,6 +490,8 @@ runTest('renderWinnerState はオンライン復元bundleをまとめて消す',
     assert.strictEqual(context.localStorage.getItem('savedGame'), null);
     assert.strictEqual(context.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(context.clearOnlineSessionStorageCalls, 1);
+    assert.strictEqual(context.markOnlineGameFinishedCalls, 1);
+    assert.strictEqual(context.refreshPwaUpdateStateCalls, 1);
     assert.strictEqual(elements.btnRoll.disabled, true);
 });
 

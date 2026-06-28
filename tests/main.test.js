@@ -1794,6 +1794,10 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes("fetch('/socket.io/socket.io.js'"));
     assert.ok(html.includes('online-delivery-check-failed'));
     assert.ok(html.includes('window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;'));
+    assert.ok(html.includes('function shouldKeepPwaUpdateBannerVisible()'));
+    assert.ok(html.includes('window.shouldKeepPwaUpdateBannerVisible = shouldKeepPwaUpdateBannerVisible;'));
+    assert.ok(html.includes('(_versionMismatchDetected || !!_waitingSW) && _isOnlineGameActive()'));
+    assert.ok(mainSource.includes("shouldKeepPwaUpdateBannerVisible()"));
     assert.ok(html.includes('checkOnlineDelivery();'));
     assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
     assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));

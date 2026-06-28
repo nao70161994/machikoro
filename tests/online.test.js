@@ -329,6 +329,7 @@ runTest('restore room index は scoped bundle 更新をroom単位で追跡する
     rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineGameStart', 'ROOM01'), JSON.stringify({ actionSeq: 2 }));
     rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineActionLog', 'ROOM01'), JSON.stringify([{ action: 'nextTurn', seq: 4 }]));
     rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineStateSnapshot', 'ROOM01'), JSON.stringify({ actionSeq: 3 }));
+    rt.localStorage.setItem(rt._onlineRoomStorageKey('onlineRestoreAudit', 'ROOM01'), JSON.stringify({ schemaVersion: 1, roomId: 'ROOM01', signed: true }));
     rt._refreshOnlineRestoreRoomIndex('ROOM01', 1700000000000);
 
     const index = rt._readOnlineRestoreRoomIndex();
@@ -340,6 +341,7 @@ runTest('restore room index は scoped bundle 更新をroom単位で追跡する
     assert.strictEqual(index[0].hasGameStart, true);
     assert.strictEqual(index[0].hasActionLog, true);
     assert.strictEqual(index[0].hasStateSnapshot, true);
+    assert.strictEqual(index[0].hasRestoreAudit, true);
 });
 
 runTest('restore room index pruning は実体のない stale entry だけを落とす', () => {
@@ -1336,7 +1338,7 @@ runTest('rejoinData は共通fixtureの最大 actionSeq を local sequencing 用
 
     const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(stored.hostEpoch, fixture.expectedRank.hostEpoch);
-    assert.strictEqual(stored.actionSeq, 8);
+    assert.strictEqual(stored.actionSeq, fixture.expectedRank.actionSeq);
 });
 
 runTest('_onlineRestoreRank は共通fixtureのreplay可能action数を復元rankに使う', () => {
@@ -2024,7 +2026,7 @@ runTest('gameAction は clientActionId を受信側の復元ログへ保存す�
     assert.strictEqual(actionLog[0].clientActionId, 'remote-action-1');
 });
 
-runTest('_tryRestoreRoom は未ackアクションを復元actionLogへ含める', () => {
+runTest('_tryRestoreRoom は未ackアクションを復元actionLogへ混ぜない', () => {
     const rt = loadOnlineRuntime();
     rt.initSocket();
     rt.setOnlineState({
@@ -2061,9 +2063,9 @@ runTest('_tryRestoreRoom は未ackアクションを復元actionLogへ含める'
     const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
     assert.ok(emitted);
     assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 0);
-    assert.strictEqual(emitted.payload.actionLog.length, 2);
-    assert.strictEqual(emitted.payload.actionLog[1].action, 'nextTurn');
-    assert.strictEqual(emitted.payload.actionLog[1].playerIndex, 0);
+    assert.strictEqual(emitted.payload.actionLog.length, 1);
+    assert.strictEqual(emitted.payload.actionLog.some(entry => entry.action === 'nextTurn'), false);
+    assert.strictEqual(rt._readPendingOutboundAction().action, 'nextTurn');
 });
 
 runTest('_tryRestoreRoom は別roomの未ackアクションを復元actionLogへ混ぜない', () => {
@@ -2182,12 +2184,11 @@ runTest('ROOM_NOT_FOUND のホスト復元経路は未ackアクションを消�
     const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
     assert.ok(emitted);
     assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 0);
-    assert.strictEqual(emitted.payload.actionLog.length, 1);
-    assert.strictEqual(emitted.payload.actionLog[0].action, 'nextTurn');
+    assert.strictEqual(emitted.payload.actionLog.length, 0);
     assert.strictEqual(rt._readPendingOutboundAction().action, 'nextTurn');
 });
 
-runTest('_tryRestoreRoom は同内容の過去ログがあっても未ackアクションを落とさない', () => {
+runTest('_tryRestoreRoom は同内容の過去ログがあっても未ackアクションを復元ログへ混ぜない', () => {
     const rt = loadOnlineRuntime();
     rt.initSocket();
     rt.setOnlineState({
@@ -2218,9 +2219,9 @@ runTest('_tryRestoreRoom は同内容の過去ログがあっても未ackアク�
 
     const emitted = rt.getSocketEmits().filter(e => e.name === 'recreateRoom').pop();
     assert.ok(emitted);
-    assert.strictEqual(emitted.payload.actionLog.length, 2);
-    assert.strictEqual(emitted.payload.actionLog[1].action, 'nextTurn');
-    assert.strictEqual(typeof emitted.payload.actionLog[1].clientActionId, 'string');
+    assert.strictEqual(emitted.payload.actionLog.length, 1);
+    assert.strictEqual(emitted.payload.actionLog.some(entry => typeof entry.clientActionId === 'string'), false);
+    assert.strictEqual(rt._readPendingOutboundAction().action, 'nextTurn');
 });
 
 runTest('_tryRestoreRoom は古い復元schemaを送信せず破棄する', () => {
@@ -2521,7 +2522,27 @@ runTest('restore bundle read は scoped copy がなければ legacy へfallback�
     assert.strictEqual(actionLog[0].action, 'nextTurn');
 });
 
-runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', () => {
+runTest('_saveActionLog はサーバー署名snapshot受信時にsnapshot以前のactionLogをpruneする', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM01' });
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify({ actionSeq: 0 }));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify([
+        { action: 'nextTurn', data: {}, seq: 199, playerIndex: 0, restoreActionAudit: { schemaVersion: 1, roomId: 'ROOM01', signed: true } },
+        { action: 'nextTurn', data: {}, seq: 200, playerIndex: 1, restoreActionAudit: { schemaVersion: 1, roomId: 'ROOM01', signed: true } },
+    ]));
+    const stateSnapshot = { actionSeq: 201, currentPlayerIndex: 1, players: [], shopStock: {} };
+    const restoreAudit = { schemaVersion: 1, roomId: 'ROOM01', signed: true };
+
+    rt._saveActionLog('nextTurn', {}, { seq: 201, playerIndex: 0, stateSnapshot, restoreAudit });
+
+    const log = rt._readOnlineActionLog();
+    assert.strictEqual(log.length, 0);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineStateSnapshot')), stateSnapshot);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineRestoreAudit')), restoreAudit);
+    assert.strictEqual(JSON.parse(rt.localStorage.getItem('onlineGameStart')).actionSeq, 201);
+});
+
+runTest('_saveActionLog はしきい値超過時も署名済みactionLogを維持してsnapshotを補助保存する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
@@ -2534,9 +2555,10 @@ runTest('_saveActionLog はしきい値超過時に snapshot へ圧縮する', (
     rt._saveActionLog('buildLandmark', { name: '駅' });
     const log = rt._readOnlineActionLog();
     const snapshot = JSON.parse(rt.localStorage.getItem('onlineStateSnapshot'));
-    assert.strictEqual(log.length, 1);
-    assert.strictEqual(log[0].action, 'buildLandmark');
+    assert.strictEqual(log.length, 201);
+    assert.strictEqual(log[200].action, 'buildLandmark');
     assert.strictEqual(snapshot.players[0].coins, 9);
+    assert.strictEqual(rt.localStorage.getItem('onlineRestoreAudit'), null);
 });
 
 runTest('_saveActionLog は restore bundle 更新を room-scoped key にも保存する', () => {
@@ -2557,9 +2579,10 @@ runTest('_saveActionLog は restore bundle 更新を room-scoped key にも保�
     const scopedActionLog = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineActionLog', 'ROOM01')));
     const scopedSnapshot = JSON.parse(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineStateSnapshot', 'ROOM01')));
     assert.strictEqual(scopedGameStart.actionSeq, 201);
-    assert.strictEqual(scopedActionLog.length, 1);
-    assert.strictEqual(scopedActionLog[0].seq, 201);
+    assert.strictEqual(scopedActionLog.length, 201);
+    assert.strictEqual(scopedActionLog[200].seq, 201);
     assert.strictEqual(scopedSnapshot.players[0].coins, 9);
+    assert.strictEqual(rt.localStorage.getItem(rt._onlineRoomStorageKey('onlineRestoreAudit', 'ROOM01')), null);
 });
 
 runTest('_saveActionLog は未適用の受信actionをsnapshotのactionSeqに含めない', () => {
@@ -2578,12 +2601,12 @@ runTest('_saveActionLog は未適用の受信actionをsnapshotのactionSeqに含
     const snapshot = JSON.parse(rt.localStorage.getItem('onlineStateSnapshot'));
     const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(snapshot.actionSeq, 200);
-    assert.strictEqual(log.length, 1);
-    assert.strictEqual(log[0].seq, 201);
+    assert.strictEqual(log.length, 201);
+    assert.strictEqual(log[200].seq, 201);
     assert.strictEqual(storedGameStart.actionSeq, 201);
 });
 
-runTest('_saveActionLog は適用済みactionの圧縮時に同じactionを二重保存しない', () => {
+runTest('_saveActionLog は適用済みactionのsnapshot補助保存時もactionLogを維持する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
@@ -2596,7 +2619,8 @@ runTest('_saveActionLog は適用済みactionの圧縮時に同じactionを二�
     rt._saveActionLog('nextTurn', {}, { alreadyApplied: true });
     const log = rt._readOnlineActionLog();
     const snapshot = JSON.parse(rt.localStorage.getItem('onlineStateSnapshot'));
-    assert.strictEqual(log.length, 0);
+    assert.strictEqual(log.length, 201);
+    assert.strictEqual(log[200].action, 'nextTurn');
     assert.strictEqual(snapshot.currentPlayerIndex, game.currentPlayerIndex);
     assert.strictEqual(snapshot.turnCount, game.turnCount);
 });

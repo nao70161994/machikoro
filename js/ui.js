@@ -325,6 +325,8 @@ function renderWinnerState(winner) {
     }
     localStorage.removeItem('savedGame');
     clearOnlineSessionAfterWin();
+    if (typeof markOnlineGameFinished === 'function') markOnlineGameFinished();
+    if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
     updateResumeButton();
     startConfetti();
     document.getElementById("btnRoll").disabled = true;

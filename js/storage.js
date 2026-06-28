@@ -100,7 +100,7 @@ function readOnlineSession() {
         const raw = localStorage.getItem('onlineSession');
         if (!raw) return null;
         const session = JSON.parse(raw);
-        const roomId = typeof session.roomId === 'string' ? session.roomId.trim() : '';
+        const roomId = typeof session.roomId === 'string' ? session.roomId.trim().toUpperCase() : '';
         const playerName = typeof session.playerName === 'string' ? session.playerName.trim() : '';
         const reconnectToken = typeof session.reconnectToken === 'string' ? session.reconnectToken.trim() : '';
         if (

@@ -38,7 +38,7 @@ function makeSeqRankUsesMaxFieldsFixture() {
         reconnectToken: RESTORE_TOKENS[0],
         gameStartPayload: makeRestoreGameStartPayload({ hostEpoch: 3, actionSeq: 2 }),
         stateSnapshotOverrides: { currentPlayerIndex: 0, phase: 'build', actionSeq: 5 },
-        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 8 }],
+        actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 6 }],
         expectedRank: { hostEpoch: 3, actionSeq: 6 },
     };
 }

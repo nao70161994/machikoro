@@ -410,18 +410,23 @@
         function _isOnlineGameActive() {
           return typeof isOnlineGame !== 'undefined' && isOnlineGame;
         }
+        function shouldKeepPwaUpdateBannerVisible() {
+          return (_versionMismatchDetected || !!_waitingSW) && _isOnlineGameActive();
+        }
         function _showPwaUpdateBanner(message, options = {}) {
           const installBanner = document.getElementById('pwaInstallBanner');
           if (installBanner) installBanner.style.display = 'none';
           const banner = document.getElementById('pwaUpdateBanner');
           const btn = document.getElementById('pwaUpdateBtn');
           const msg = document.getElementById('pwaUpdateMsg');
+          const dismiss = banner ? banner.querySelector('[data-ui-action="hidePwaUpdateBanner"]') : null;
           if (!banner || !btn || !msg) return;
           msg.textContent = message || '新しいバージョンがあります';
           btn.disabled = false;
           btn.style.opacity = '';
           if (options.versionMismatch) btn.dataset.versionMismatch = '1';
           else delete btn.dataset.versionMismatch;
+          if (dismiss) dismiss.style.display = shouldKeepPwaUpdateBannerVisible() ? 'none' : '';
           if (_isOnlineGameActive()) {
             msg.textContent = options.versionMismatch
               ? '古いバージョンです（オンラインゲーム終了後に再起動してください）'
@@ -528,6 +533,7 @@
             return false;
           });
         }
+        window.shouldKeepPwaUpdateBannerVisible = shouldKeepPwaUpdateBannerVisible;
         window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;
         window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;
         window.refreshPwaUpdateState = refreshPwaUpdateState;
