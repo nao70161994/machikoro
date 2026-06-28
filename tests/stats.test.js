@@ -180,6 +180,38 @@ runTest('renderStats はCPU別フィルタを表示する', () => {
     assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="CPU（最強）"'));
 });
 
+runTest('loadStats は壊れた数値を表示前に正規化する', () => {
+    const rt = loadStatsRuntime();
+    rt.localStorage.setItem('gameStats', JSON.stringify({
+        all: {
+            totalGames: '2.9',
+            wins: 99,
+            totalTurns: '12.8',
+            cardStats: { 麦畑: { winWith: '5', loseWith: '-2' }, 壊れた: null },
+            landmarkStats: { 駅: { winWith: 'NaN', loseWith: 4 } },
+        },
+        local: { totalGames: -1, wins: 10, totalTurns: -5, cardStats: {}, landmarkStats: {} },
+        online: { totalGames: 0, wins: 0, totalTurns: 0, cardStats: {}, landmarkStats: {} },
+        players: {},
+        cpuTypes: {},
+    }));
+
+    const stats = rt.loadStats();
+    assert.strictEqual(stats.all.totalGames, 2);
+    assert.strictEqual(stats.all.wins, 2);
+    assert.strictEqual(stats.all.totalTurns, 12);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(stats.all.cardStats.麦畑)), { winWith: 5, loseWith: 0 });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(stats.all.landmarkStats.駅)), { winWith: 0, loseWith: 4 });
+
+    rt.renderStats();
+
+    assert.ok(rt.__test.statsEl.innerHTML.includes('100%'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('NaN'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('Infinity'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('10000%'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('width:-'));
+});
+
 runTest('renderStats はui.jsのescapeHtmlがなくても表示をescapeする', () => {
     const rt = loadStatsRuntime({ withEscapeHtml: false });
     const stats = rt.createDefaultStats();

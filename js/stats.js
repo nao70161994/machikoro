@@ -31,13 +31,33 @@ function createDefaultStats() {
     };
 }
 
+function normalizeStatsNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+}
+
+function cloneStatsResultMap(map) {
+    const normalized = {};
+    for (const [name, value] of Object.entries(map || {})) {
+        if (!value || typeof value !== 'object') continue;
+        normalized[name] = {
+            winWith: normalizeStatsNumber(value.winWith),
+            loseWith: normalizeStatsNumber(value.loseWith),
+        };
+    }
+    return normalized;
+}
+
 function cloneStatsBucket(bucket) {
+    const source = bucket && typeof bucket === 'object' ? bucket : {};
+    const totalGames = normalizeStatsNumber(source.totalGames);
+    const wins = Math.min(normalizeStatsNumber(source.wins), totalGames);
     return {
-        totalGames: bucket.totalGames || 0,
-        wins: bucket.wins || 0,
-        totalTurns: bucket.totalTurns || 0,
-        cardStats: Object.assign({}, bucket.cardStats || {}),
-        landmarkStats: Object.assign({}, bucket.landmarkStats || {}),
+        totalGames,
+        wins,
+        totalTurns: normalizeStatsNumber(source.totalTurns),
+        cardStats: cloneStatsResultMap(source.cardStats),
+        landmarkStats: cloneStatsResultMap(source.landmarkStats),
     };
 }
 
