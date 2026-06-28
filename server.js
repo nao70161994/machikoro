@@ -1129,7 +1129,7 @@ function buildRestoreActionAuditPayload(actionEntry) {
     if (!Number.isInteger(actionEntry.playerIndex) || !Number.isInteger(actionEntry.seq)) return null;
     const payload = {
         action: actionEntry.action,
-        data: actionEntry.data || {},
+        data: canonicalizeActionData(actionEntry.action, actionEntry.data || {}),
         playerIndex: actionEntry.playerIndex,
         seq: actionEntry.seq,
     };

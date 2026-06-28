@@ -2626,6 +2626,28 @@ runTest('attachCompactedRestoreSnapshotToAction は compact 済みsnapshotを署
     assert.strictEqual(attachCompactedRestoreSnapshotToAction('ROOM1', room, {}, 200), null);
 });
 
+runTest('restore action audit は live undoBuild payload と復元canonical dataを同じ署名対象にする', () => {
+    const liveEntry = {
+        action: 'undoBuild',
+        data: { state: makeSnapshot({ actionSeq: 3 }) },
+        seq: 4,
+        playerIndex: 0,
+        clientActionId: 'undo-live-1',
+    };
+    liveEntry.restoreActionAudit = buildRestoreActionAudit('ROOM1', liveEntry, 1234567890);
+
+    const sanitized = sanitizeRestoreActionLog([liveEntry], 'ROOM1', { actionSeq: 3 }, { requireSignedActionAudit: true });
+
+    assert.deepStrictEqual(sanitized, [{
+        action: 'undoBuild',
+        data: {},
+        playerIndex: 0,
+        seq: 4,
+        clientActionId: 'undo-live-1',
+        restoreActionAudit: liveEntry.restoreActionAudit,
+    }]);
+});
+
 runTest('restore action audit は actionLog 改ざんを検出する', () => {
     const entry = { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, seq: 1, playerIndex: 0 };
     const signed = Object.assign({}, entry, { restoreActionAudit: buildRestoreActionAudit('ROOM1', entry, 1234567890) });
