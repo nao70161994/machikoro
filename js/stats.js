@@ -218,9 +218,17 @@ function bindStatsHandlers(el) {
     _statsHandlersBound = true;
 }
 
-function clearStats() {
+function applyClearStats() {
     localStorage.removeItem('gameStats');
     renderStats();
+}
+
+function clearStats() {
+    if (typeof showConfirm === 'function') {
+        showConfirm('統計をリセットしますか？', applyClearStats);
+        return;
+    }
+    applyClearStats();
 }
 
 function setStatsViewMode(mode) {

@@ -18,7 +18,15 @@ function loadStatsRuntime(options = {}) {
         },
         isOnlineGame: false,
         myPlayerIndex: -1,
+        confirmCalls: [],
     };
+    if (options.withShowConfirm) {
+        context.showConfirm = function showConfirm(message, cb) {
+            context.confirmCalls.push(message);
+            if (options.confirmResult !== false) cb();
+            return true;
+        };
+    }
     if (options.withEscapeHtml !== false) {
         context.escapeHtml = function escapeHtml(value) {
             return String(value)
@@ -38,6 +46,7 @@ function loadStatsRuntime(options = {}) {
             statsEl,
             setOnline(v) { isOnlineGame = v; },
             setMyPlayerIndex(v) { myPlayerIndex = v; },
+            confirmCalls,
         };
     `, context);
     return context;
@@ -247,6 +256,29 @@ runTest('handleStatsClick は data-action から統計表示を切り替える',
             closest() { return this; },
         },
     });
+    assert.strictEqual(rt.localStorage.getItem('gameStats'), null);
+});
+
+runTest('clearStats は showConfirm 経由で統計を削除する', () => {
+    const rt = loadStatsRuntime({ withShowConfirm: true, confirmResult: false });
+    const game = makeGame();
+    rt.recordGameStats(game.players[0], game, [null, null]);
+
+    rt.clearStats();
+
+    assert.deepStrictEqual(rt.__test.confirmCalls, ['統計をリセットしますか？']);
+    assert.ok(rt.localStorage.getItem('gameStats'));
+
+    rt.__test.confirmCalls.length = 0;
+    rt.showConfirm = function showConfirm(message, cb) {
+        rt.__test.confirmCalls.push(message);
+        cb();
+        return true;
+    };
+
+    rt.clearStats();
+
+    assert.deepStrictEqual(rt.__test.confirmCalls, ['統計をリセットしますか？']);
     assert.strictEqual(rt.localStorage.getItem('gameStats'), null);
 });
 
