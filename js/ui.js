@@ -454,7 +454,7 @@ function normalizePendingModalInteraction(el, modal, hasContent) {
         modal.style.display = hasContent ? "flex" : "none";
         modal.style.visibility = hasContent ? "visible" : "";
         modal.style.opacity = hasContent ? "1" : "";
-        modal.style.pointerEvents = "";
+        modal.style.pointerEvents = hasContent ? "auto" : "";
         modal.style.transform = hasContent ? "" : "";
         if (hasContent && typeof modal.querySelector === 'function') {
             const inner = modal.querySelector('.pending-modal-inner');
