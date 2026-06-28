@@ -85,6 +85,7 @@ function loadIntegrationRuntime(options = {}) {
             createElement() { return makeElement(); },
         },
         window: {
+            MACHIKORO_CLIENT_VERSION: options.clientVersion || 'integration-build',
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: false }; },

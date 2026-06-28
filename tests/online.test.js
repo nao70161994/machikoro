@@ -152,6 +152,7 @@ function loadOnlineRuntime(options = {}) {
         this.applyAction = applyAction;
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this.getClientVersion = getClientVersion;
+        this.buildOnlineRejoinPayload = buildOnlineRejoinPayload;
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
         this.onChangeOnlinePlayerType = onChangeOnlinePlayerType;
         this.showCreateRoom = showCreateRoom;
@@ -238,6 +239,24 @@ runTest('GAME_ACTION_REGISTRY は client applyAction で網羅される', () => 
 runTest('online.js は未使用 remote action helper を残さない', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     assert.ok(!source.includes('function handleRemoteAction'));
+});
+
+runTest('buildOnlineRejoinPayload はclientVersionを含める', () => {
+    const localRt = loadOnlineRuntime();
+    localRt.window.MACHIKORO_CLIENT_VERSION = 'build-rejoin-1';
+
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(localRt.buildOnlineRejoinPayload({
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token-1',
+    }))), {
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token-1',
+        clientVersion: 'build-rejoin-1',
+    });
 });
 
 runTest('getClientVersion はindexへ注入されたビルドハッシュを使う', () => {
@@ -1740,6 +1759,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
         playerIndex: 0,
         playerName: 'Alice',
         reconnectToken: 'token',
+        clientVersion: 'unknown',
     });
 });
 
@@ -2826,6 +2846,7 @@ runTest('handleAppError は無効操作時にオンライン状態を再同期�
         playerIndex: 1,
         playerName: 'Alice',
         reconnectToken: 'token-1',
+        clientVersion: 'unknown',
     });
 });
 

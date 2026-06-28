@@ -19,6 +19,7 @@ runTest('online integration: reconnectOnline は rejoinRoom を送信して onli
     assert.strictEqual(rt.__test.socketEmits.length, 1);
     assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
     assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'ROOM01');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.clientVersion, 'integration-build');
     const state = rt.__test.getOnlineState();
     assert.strictEqual(state.myOriginalPlayerIndex, 1);
     assert.strictEqual(state.myPlayerIndex, 1);
@@ -133,6 +134,7 @@ runTest('online integration: socket再接続時はrejoinRoomで最新状態を�
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
     assert.strictEqual(rt.__test.socketEmits[0].payload.reconnectToken, 'token-1');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.clientVersion, 'integration-build');
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
 });
 
@@ -716,6 +718,7 @@ runTest('online integration: rejoin retry は正規化済みsessionで再送す�
         playerIndex: 1,
         playerName: 'Bob',
         reconnectToken: 'token-bob',
+        clientVersion: 'integration-build',
     });
 });
 

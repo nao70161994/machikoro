@@ -36,6 +36,16 @@ function getClientVersion() {
     return (typeof window !== "undefined" && window.MACHIKORO_CLIENT_VERSION) || "unknown";
 }
 
+function buildOnlineRejoinPayload(session) {
+    return {
+        roomId: session && session.roomId,
+        playerIndex: session && session.playerIndex,
+        playerName: session && session.playerName,
+        reconnectToken: session && session.reconnectToken,
+        clientVersion: getClientVersion(),
+    };
+}
+
 function changeOnlineCount(delta) {
     onlineSelectedCount = Math.min(10, Math.max(2, onlineSelectedCount + delta));
     document.getElementById("onlinePlayerCount").textContent = onlineSelectedCount;
@@ -370,12 +380,12 @@ function _setOnlineActionInFlight(value) {
 
 function _emitOnlineRejoinRequest() {
     if (!socket || socket.connected === false || !myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return false;
-    socket.emit('rejoinRoom', {
+    socket.emit('rejoinRoom', buildOnlineRejoinPayload({
         roomId: myRoomId,
         playerIndex: myOriginalPlayerIndex,
         playerName: myPlayerName,
         reconnectToken,
-    });
+    }));
     return true;
 }
 
@@ -1028,12 +1038,12 @@ function initSocket() {
         if (el && el.textContent.startsWith('⏳')) el.textContent = '';
         if (isOnlineGame && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
             isReconnectingOnline = true;
-            socket.emit('rejoinRoom', {
+            socket.emit('rejoinRoom', buildOnlineRejoinPayload({
                 roomId: myRoomId,
                 playerIndex: myOriginalPlayerIndex,
                 playerName: myPlayerName,
                 reconnectToken,
-            });
+            }));
         }
     });
 
@@ -1466,11 +1476,6 @@ function _scheduleRejoinRetry() {
                 reconnectToken,
             };
         if (!session) return;
-        socket.emit('rejoinRoom', {
-            roomId: session.roomId,
-            playerIndex: session.playerIndex,
-            playerName: session.playerName,
-            reconnectToken: session.reconnectToken,
-        });
+        socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
     }, 3000);
 }

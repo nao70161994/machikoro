@@ -26,7 +26,7 @@ function loadStorageRuntime() {
                 return elements[id];
             },
         },
-        window: {},
+        window: { MACHIKORO_CLIENT_VERSION: 'storage-build' },
         elements,
         alerts,
         GameManager: class GameManager {
@@ -229,6 +229,7 @@ runTest('storage reconnectOnline はオンライン再接続データの空白�
     assert.strictEqual(rt.emits[0].payload.roomId, 'ROOM1');
     assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
     assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
+    assert.strictEqual(rt.emits[0].payload.clientVersion, 'storage-build');
 });
 
 runTest('storage deleteSavedGame は確認後に savedGame を削除する', () => {

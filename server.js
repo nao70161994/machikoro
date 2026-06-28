@@ -1380,7 +1380,8 @@ io.on('connection', (socket) => {
 
     socket.on('rejoinRoom', (payload) => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        const { roomId, playerIndex, playerName, reconnectToken } = payload;
+        const { roomId, playerIndex, playerName, reconnectToken, clientVersion } = payload;
+        socket.clientVersion = clientVersion || 'unknown';
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }

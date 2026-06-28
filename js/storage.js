@@ -1,3 +1,18 @@
+function getStorageClientVersion() {
+    if (typeof getClientVersion === 'function') return getClientVersion();
+    return (typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION) || 'unknown';
+}
+
+function buildStorageOnlineRejoinPayload(session) {
+    return {
+        roomId: session && session.roomId,
+        playerIndex: session && session.playerIndex,
+        playerName: session && session.playerName,
+        reconnectToken: session && session.reconnectToken,
+        clientVersion: getStorageClientVersion(),
+    };
+}
+
 const ONLINE_RESTORE_BUNDLE_KEYS = Object.freeze([
     'onlineGameStart',
     'onlineActionLog',
@@ -158,12 +173,10 @@ function reconnectOnline() {
         }
         document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
         switchTab('online');
-        socket.emit('rejoinRoom', {
-            roomId: session.roomId,
-            playerIndex: session.playerIndex,
-            playerName: session.playerName,
-            reconnectToken: session.reconnectToken,
-        });
+        const rejoinPayload = typeof buildOnlineRejoinPayload === 'function'
+            ? buildOnlineRejoinPayload(session)
+            : buildStorageOnlineRejoinPayload(session);
+        socket.emit('rejoinRoom', rejoinPayload);
     } catch(e) {
         isReconnectingOnline = false;
         clearOnlineSessionStorage();
