@@ -286,12 +286,14 @@ function renderStats() {
     const stats = loadStats();
     const bucket = _statsPlayerFilter ? getFilteredStatsBucket(stats, _statsPlayerFilter) : getCurrentStatsBucket(stats, _statsViewMode);
     const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
+    const safeModeLabel = escapeHtml(modeLabel);
+    const emptyModeLabel = escapeHtml(_statsPlayerFilter || getStatsModeLabel(_statsViewMode));
     const filterTabsHtml = buildStatsFilterTabsHtml(stats);
 
     if (bucket.totalGames === 0) {
         el.innerHTML = `
             ${filterTabsHtml}
-            <div class="stats-empty">まだ${_statsPlayerFilter || getStatsModeLabel(_statsViewMode)}の記録がありません。<br>${_statsViewMode === 'online' ? 'オンライン対戦を完了すると記録されます。' : 'ゲームをプレイすると記録されます。'}</div>
+            <div class="stats-empty">まだ${emptyModeLabel}の記録がありません。<br>${_statsViewMode === 'online' ? 'オンライン対戦を完了すると記録されます。' : 'ゲームをプレイすると記録されます。'}</div>
         `;
         return;
     }
@@ -303,7 +305,7 @@ function renderStats() {
 
     el.innerHTML = `
         ${filterTabsHtml}
-        <div class="stats-mode-label">${modeLabel}</div>
+        <div class="stats-mode-label">${safeModeLabel}</div>
 
         <div class="stats-overview">
             <div class="stats-overview-item">

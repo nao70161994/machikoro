@@ -16,7 +16,14 @@ function loadStatsRuntime() {
                 return null;
             },
         },
-        escapeHtml(value) { return String(value); },
+        escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        },
         isOnlineGame: false,
         myPlayerIndex: -1,
     };
@@ -160,6 +167,35 @@ runTest('renderStats はCPU別フィルタを表示する', () => {
     rt.recordGameStats(game.players[0], game, [{ difficulty: 'expert' }, null]);
     rt.renderStats();
     assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="CPU（最強）"'));
+});
+
+runTest('renderStats は保存済みプレイヤー名をラベルと空状態でescapeする', () => {
+    const rt = loadStatsRuntime();
+    const name = '<img src=x onerror=alert(1)>';
+    const stats = rt.createDefaultStats();
+    stats.players[name] = rt.createEmptyStatsBucket();
+    stats.players[name].totalGames = 1;
+    stats.players[name].wins = 1;
+    rt.localStorage.setItem('gameStats', JSON.stringify(stats));
+
+    rt.renderStats();
+    rt.handleStatsClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'setStatsPlayerFilter', playerName: name },
+            closest() { return this; },
+        },
+    });
+    assert.ok(rt.__test.statsEl.innerHTML.includes('&lt;img src=x onerror=alert(1)&gt;の成績'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('<img src=x onerror=alert(1)>'));
+
+    const emptyStats = rt.createDefaultStats();
+    emptyStats.players[name] = rt.createEmptyStatsBucket();
+    rt.localStorage.setItem('gameStats', JSON.stringify(emptyStats));
+    rt.renderStats();
+    assert.ok(rt.__test.statsEl.innerHTML.includes('まだ&lt;img src=x onerror=alert(1)&gt;の記録がありません'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('まだ<img'));
 });
 
 runTest('handleStatsClick は data-action から統計表示を切り替える', () => {
