@@ -15,6 +15,7 @@ function runTest(name, fn) {
 
 const runtime = loadCPURuntime();
 const CPU = runtime.CPU;
+const CPUPendingResolution = runtime.CPUPendingResolution;
 const GameManager = runtime.GameManager;
 const Player = runtime.Player;
 const createCardByName = runtime.createCardByName;
@@ -26,6 +27,22 @@ const LANDMARK_NAMES = runtime.LANDMARK_NAMES;
 function makeFullShopStock() {
     return Object.fromEntries(CARDS.map(card => [card.name, 6]));
 }
+
+runTest('CPU pending resolution helper はCPU wrapperから参照される', () => {
+    assert.ok(CPUPendingResolution);
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    game.players[1].coins = 3;
+    const cpu = new CPU('normal');
+    cpu.chooseTVTarget = () => 1;
+
+    const viaHelper = CPUPendingResolution.choosePendingResolution(game, cpu);
+    const viaCpu = CPU.choosePendingResolution(game, cpu);
+    assert.deepStrictEqual(viaCpu.payload, viaHelper.payload);
+    assert.strictEqual(viaCpu.action, 'resolveTV');
+    assert.strictEqual(CPU._pendingActionDescriptors(game)[0].action, 'resolveTV');
+});
 
 runTest('CPU tuning scaffold は外部tableからexpert presetと既定optionを読む', () => {
     assert.ok(runtime.CPU_EXPERT_PRESETS.default);

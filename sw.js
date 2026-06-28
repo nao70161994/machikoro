@@ -21,6 +21,7 @@ const STATIC_ASSETS = [
   '/js/cpuTuning.js',
   '/js/cpuDiagnostics.js',
   '/js/cpuEvaluationCache.js',
+  '/js/cpuPendingResolution.js',
   '/js/CPU.js',
   '/js/RLCPU.js',
   '/js/RLModelPortfolio.js',

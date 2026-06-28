@@ -1644,7 +1644,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/GameManager.js', 'js/CPU.js');
     assertBefore('js/cpuTuning.js', 'js/CPU.js');
     assertBefore('js/cpuDiagnostics.js', 'js/CPU.js');
-    assertBefore('js/cpuEvaluationCache.js', 'js/CPU.js');
+    assertBefore('js/cpuEvaluationCache.js', 'js/cpuPendingResolution.js');
+    assertBefore('js/cpuPendingResolution.js', 'js/CPU.js');
     assertBefore('js/CPU.js', 'js/RLCPU.js');
     assertBefore('js/RLModelPortfolio.js', 'js/online.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
