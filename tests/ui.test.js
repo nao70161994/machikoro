@@ -1297,6 +1297,33 @@ runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成
     assert.ok(html.includes('can-afford'));
 });
 
+runTest('カード詳細と建設ボタンは説明文と分類をescapeする', () => {
+    const { context } = loadUiRuntime();
+    const card = {
+        name: '<img src=x onerror=alert(1)>',
+        color: 'green" onclick="alert(1)',
+        category: '<script>alert(1)</script>',
+        cost: 1,
+        diceNums: [1],
+        income: '<b>9</b>',
+        effect: 'unknown-effect',
+    };
+
+    const buttonHtml = context.renderBuildCardButton(card, 1, true);
+    const detail = context.buildCardDetailContent(card);
+
+    assert.ok(buttonHtml.includes('card-color-blue'));
+    assert.ok(!buttonHtml.includes('onclick="alert(1)'));
+    assert.ok(buttonHtml.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+    assert.ok(buttonHtml.includes('+&lt;b&gt;9&lt;/b&gt;コイン'));
+    assert.ok(!buttonHtml.includes('<script>alert(1)</script>'));
+    assert.ok(!buttonHtml.includes('+<b>9</b>コイン'));
+    assert.ok(detail.html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+    assert.ok(detail.html.includes('+&lt;b&gt;9&lt;/b&gt;コイン'));
+    assert.ok(!detail.html.includes('<script>alert(1)</script>'));
+    assert.ok(!detail.html.includes('+<b>9</b>コイン'));
+});
+
 runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生成する', () => {
     const { context } = loadUiRuntime();
 

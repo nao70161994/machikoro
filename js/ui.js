@@ -696,14 +696,19 @@ function getLandmarkEmoji(name) {
     return (Player._LANDMARK_DEFS.find(d => d.name === name) || {}).emoji || "🏛️";
 }
 
+function safeCardColorName(color) {
+    return ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue';
+}
+
 function renderBuildCardButton(card, stock, canBuildThis) {
     const safeName = escapeHtml(card.name);
-    return `<div class="card-wrapper"><button class="card-btn card-color-${card.color} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${getEffectText(card)}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
+    const safeColor = safeCardColorName(card.color);
+    return `<div class="card-wrapper"><button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
 }
 
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
     const safeName = escapeHtml(name);
-    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${getLandmarkEffectText(name)}</div></div></button><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
+    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${escapeHtml(getLandmarkEffectText(name))}</div></div></button><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
 }
 
 function buildCardFilterBarHtml() {
@@ -1407,7 +1412,7 @@ function toggleLog() {
 function buildLandmarkDetailContent(name) {
     const emoji = getLandmarkEmoji(name);
     const cost = Player.landmarkCost(name);
-    const effect = getLandmarkEffectText(name);
+    const effect = escapeHtml(getLandmarkEffectText(name));
     return {
         title: `${emoji} ${name}`,
         html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`,
@@ -1417,9 +1422,10 @@ function buildLandmarkDetailContent(name) {
 function buildCardDetailContent(card) {
     const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
     const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
+    const safeColor = safeCardColorName(card.color);
     return {
         title: card.name,
-        html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[card.color]}">${colorNames[card.color]}</span> ${card.category}</span></div></div><div class="card-detail-effect">${getEffectText(card)}</div>`,
+        html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[safeColor]}">${colorNames[safeColor]}</span> ${escapeHtml(card.category)}</span></div></div><div class="card-detail-effect">${escapeHtml(getEffectText(card))}</div>`,
     };
 }
 
