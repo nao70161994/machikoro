@@ -83,8 +83,24 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         if (bucket) bucket.count++;
     }
 
+    function isSocketInActiveRoom(socket, targetRooms = defaultRooms) {
+        const roomId = socket && socket.roomId;
+        const socketId = socket && socket.id;
+        const room = roomId && targetRooms && targetRooms[roomId];
+        return !!(room && socketId && Array.isArray(room.players) && room.players.some(player => player && player.id === socketId));
+    }
+
+    function validateSocketCanEnterRoom(socket, targetRoomId = null, targetRooms = defaultRooms) {
+        const roomId = socket && socket.roomId;
+        if (!isSocketInActiveRoom(socket, targetRooms)) return { ok: true };
+        if (targetRoomId && roomId === targetRoomId) return { ok: true };
+        return { ok: false, message: 'すでに別のルームに参加しています' };
+    }
+
     function validateCreateRoomLifecycle(socket, now = Date.now(), targetRooms = defaultRooms) {
         cleanupExpiredRooms(now, targetRooms);
+        const activeRoom = validateSocketCanEnterRoom(socket, null, targetRooms);
+        if (!activeRoom.ok) return activeRoom;
         if (Object.keys(targetRooms).length >= limits.maxRooms) {
             return { ok: false, message: 'ルーム数が上限に達しています。しばらくしてから再試行してください' };
         }
@@ -106,6 +122,8 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         createRoomRateKeyForSocket,
         canCreateRoomForRateKey,
         markCreateRoomForRateKey,
+        isSocketInActiveRoom,
+        validateSocketCanEnterRoom,
         validateCreateRoomLifecycle,
     };
 }

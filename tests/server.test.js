@@ -15,6 +15,8 @@ const {
     createRoomRateKeyForSocket,
     canCreateRoomForRateKey,
     markCreateRoomForRateKey,
+    isSocketInActiveRoom,
+    validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
@@ -368,6 +370,27 @@ runTest('validateCreateRoomLifecycle は期限切れroomを掃除してから上
 
     targetRooms.full = { started: false, createdAt: now, lastTouchedAt: now };
     assert.strictEqual(validateCreateRoomLifecycle({}, now, targetRooms).ok, false);
+});
+
+runTest('room lifecycle は同じsocketの別room入室を拒否する', () => {
+    const rooms = {
+        OLDROOM: { started: false, players: [{ id: 'socket-1', index: 0 }] },
+        TARGET: { started: false, players: [] },
+    };
+    const socket = { id: 'socket-1', roomId: 'OLDROOM' };
+
+    assert.strictEqual(isSocketInActiveRoom(socket, rooms), true);
+    assert.deepStrictEqual(validateSocketCanEnterRoom(socket, 'TARGET', rooms), {
+        ok: false,
+        message: 'すでに別のルームに参加しています',
+    });
+    assert.deepStrictEqual(validateCreateRoomLifecycle(socket, 4000000, rooms), {
+        ok: false,
+        message: 'すでに別のルームに参加しています',
+    });
+    assert.deepStrictEqual(validateSocketCanEnterRoom(socket, 'OLDROOM', rooms), { ok: true });
+    assert.deepStrictEqual(validateSocketCanEnterRoom({ id: 'socket-2', roomId: 'GONE' }, 'TARGET', rooms), { ok: true });
+    assert.deepStrictEqual(validateSocketCanEnterRoom({ id: 'socket-2', roomId: 'OLDROOM' }, 'TARGET', rooms), { ok: true });
 });
 
 runTest('createRoom rate limit は同一socketの連続作成だけを拒否する', () => {

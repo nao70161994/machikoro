@@ -80,6 +80,8 @@ const {
     createRoomRateKeyForSocket,
     canCreateRoomForRateKey,
     markCreateRoomForRateKey,
+    isSocketInActiveRoom,
+    validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
@@ -1228,6 +1230,8 @@ io.on('connection', (socket) => {
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ルームが見つかりません'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
+        const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
+        if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }
         if (room.started) { emitAppError(socket, 'ゲームはすでに開始されています'); return; }
 
         // 重複参加チェック
@@ -2280,6 +2284,8 @@ module.exports = {
     createRoomRateKeyForSocket,
     canCreateRoomForRateKey,
     markCreateRoomForRateKey,
+    isSocketInActiveRoom,
+    validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
     validateRestorePayloadLimits,
