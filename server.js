@@ -150,14 +150,16 @@ function truncateText(value, maxLength) {
 }
 
 function scrubClientErrorText(value) {
-    return String(value || '').replace(/https?:\/\/[^\s)'\"]+/g, rawUrl => {
-        try {
-            const parsed = new URL(rawUrl);
-            return parsed.origin + parsed.pathname;
-        } catch (_error) {
-            return rawUrl.split(/[?#]/)[0];
-        }
-    });
+    return String(value || '')
+        .replace(/https?:\/\/[^\s)'"]+/g, rawUrl => {
+            try {
+                const parsed = new URL(rawUrl);
+                return parsed.origin + parsed.pathname;
+            } catch (_error) {
+                return rawUrl.split(/[?#]/)[0];
+            }
+        })
+        .replace(/((?:reconnectToken|sessionId|clientErrorToken|x-client-error-token|token)[\s"']*[=:][\s"']*)([^\s,}\]"']+)/gi, '$1[redacted]');
 }
 
 function normalizeClientErrorNumber(value) {

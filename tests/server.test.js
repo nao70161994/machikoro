@@ -619,6 +619,29 @@ runTest('ntfy client error message は classification/phase/room/UA と本文を
     assert.ok(message.includes('updatePendingModalContent recursion'));
 });
 
+runTest('ntfy client error message はURL queryとtoken値をredactする', () => {
+    const report = normalizeClientErrorPayload({
+        message: 'failed reconnectToken=secret-token at https://example.com/play?room=ABCD&token=query-secret',
+        stack: 'stack sessionId:"session-secret" token=plain-secret x-client-error-token=header-secret',
+        filename: 'https://example.com/app.js?cache=private',
+        url: 'https://example.com/game?room=ABCD&reconnectToken=url-secret',
+    }, 1700000000000).report;
+    const message = formatNtfyClientErrorMessage(report);
+
+    assert.ok(message.includes('reconnectToken=[redacted]'));
+    assert.ok(message.includes('sessionId:"[redacted]"'));
+    assert.ok(message.includes('token=[redacted]'));
+    assert.ok(message.includes('x-client-error-token=[redacted]'));
+    assert.ok(message.includes('https://example.com/play'));
+    assert.ok(message.includes('https://example.com/app.js'));
+    assert.ok(!message.includes('secret-token'));
+    assert.ok(!message.includes('query-secret'));
+    assert.ok(!message.includes('session-secret'));
+    assert.ok(!message.includes('plain-secret'));
+    assert.ok(!message.includes('header-secret'));
+    assert.ok(!message.includes('cache=private'));
+});
+
 runTest('ntfy freeze summary は本文先頭にUI lock原因を短く出す', () => {
     const stack = 'FREEZE_SUMMARY ' + JSON.stringify({
         freezeKind: 'human-turn-ui-locked',
