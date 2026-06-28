@@ -7,6 +7,16 @@ let _statsRecorded = false;
 let _statsViewMode = 'all';
 let _statsPlayerFilter = '';
 
+function escapeStatsHtml(value) {
+    if (typeof escapeHtml === 'function') return escapeHtml(value);
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function createEmptyStatsBucket() {
     return { totalGames: 0, wins: 0, totalTurns: 0, cardStats: {}, landmarkStats: {} };
 }
@@ -234,10 +244,10 @@ function buildStatsFilterTabsHtml(stats) {
             <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'online' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online">オンライン</button>
         </div>
         ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
-            ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join('')}
+            ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeStatsHtml(name)}">${escapeStatsHtml(name)}</button>`).join('')}
         </div>` : ''}
         ${cpuLabels.length ? `<div class="stats-filter-group-label">CPU別</div><div class="stats-player-filters">
-            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join('')}
+            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeStatsHtml(name)}">${escapeStatsHtml(name)}</button>`).join('')}
         </div>` : ''}
         ${_statsPlayerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" data-action="setStatsPlayerFilter" data-player-name="">解除</button></div>` : ''}
     `;
@@ -256,7 +266,7 @@ function buildStatsCardRowsHtml(bucket) {
         const pct = Math.round(e.rate * 100);
         return `<div class="stats-card-row">
             <span class="stats-rank">${i + 1}</span>
-            <span class="stats-card-name">${escapeHtml(e.name)}</span>
+            <span class="stats-card-name">${escapeStatsHtml(e.name)}</span>
             <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
             <span class="stats-pct">${pct}%</span>
             <span class="stats-count">${e.total}戦</span>
@@ -270,7 +280,7 @@ function buildStatsLandmarkRowsHtml(bucket) {
             const total = s.winWith + s.loseWith;
             const pct = total > 0 ? Math.round(s.winWith / total * 100) : 0;
             return `<div class="stats-card-row">
-                <span class="stats-card-name">${escapeHtml(name)}</span>
+                <span class="stats-card-name">${escapeStatsHtml(name)}</span>
                 <div class="stats-bar-wrap"><div class="stats-bar stats-bar-lm" style="width:${pct}%"></div></div>
                 <span class="stats-pct">${pct}%</span>
                 <span class="stats-count">${total}戦</span>
@@ -286,8 +296,8 @@ function renderStats() {
     const stats = loadStats();
     const bucket = _statsPlayerFilter ? getFilteredStatsBucket(stats, _statsPlayerFilter) : getCurrentStatsBucket(stats, _statsViewMode);
     const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
-    const safeModeLabel = escapeHtml(modeLabel);
-    const emptyModeLabel = escapeHtml(_statsPlayerFilter || getStatsModeLabel(_statsViewMode));
+    const safeModeLabel = escapeStatsHtml(modeLabel);
+    const emptyModeLabel = escapeStatsHtml(_statsPlayerFilter || getStatsModeLabel(_statsViewMode));
     const filterTabsHtml = buildStatsFilterTabsHtml(stats);
 
     if (bucket.totalGames === 0) {

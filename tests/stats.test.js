@@ -2,7 +2,7 @@ const assert = require('assert');
 const vm = require('vm');
 const { createStorage, loadScript, runTest } = require('./helpers/test-utils');
 
-function loadStatsRuntime() {
+function loadStatsRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
     const statsEl = { innerHTML: '' };
     const context = {
@@ -16,17 +16,19 @@ function loadStatsRuntime() {
                 return null;
             },
         },
-        escapeHtml(value) {
+        isOnlineGame: false,
+        myPlayerIndex: -1,
+    };
+    if (options.withEscapeHtml !== false) {
+        context.escapeHtml = function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
-        },
-        isOnlineGame: false,
-        myPlayerIndex: -1,
-    };
+        };
+    }
     context.global = context;
     vm.createContext(context);
     loadScript(context, 'js/stats.js');
@@ -167,6 +169,19 @@ runTest('renderStats はCPU別フィルタを表示する', () => {
     rt.recordGameStats(game.players[0], game, [{ difficulty: 'expert' }, null]);
     rt.renderStats();
     assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="CPU（最強）"'));
+});
+
+runTest('renderStats はui.jsのescapeHtmlがなくても表示をescapeする', () => {
+    const rt = loadStatsRuntime({ withEscapeHtml: false });
+    const stats = rt.createDefaultStats();
+    stats.players['<b>Alice</b>'] = rt.createEmptyStatsBucket();
+    stats.players['<b>Alice</b>'].totalGames = 1;
+    rt.localStorage.setItem('gameStats', JSON.stringify(stats));
+
+    rt.renderStats();
+
+    assert.ok(rt.__test.statsEl.innerHTML.includes('&lt;b&gt;Alice&lt;/b&gt;'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes('<b>Alice</b>'));
 });
 
 runTest('renderStats は保存済みプレイヤー名をラベルと空状態でescapeする', () => {
