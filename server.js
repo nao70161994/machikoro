@@ -1858,7 +1858,7 @@ function sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq) {
     } else if (snapshotSeq > 0) {
         return { skip: true };
     }
-    const normalized = { action: entry.action, data: entry.data || {} };
+    const normalized = { action: entry.action, data: canonicalizeActionData(entry.action, entry.data || {}) };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
     const safeClientActionId = normalizeClientActionId(entry.clientActionId);

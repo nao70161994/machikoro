@@ -1484,6 +1484,17 @@ runTest('isActiveRoomSocket は再接続後の古いsocketを拒否する', () =
     assert.strictEqual(isActiveRoomSocket(room, { id: 'old-socket', playerIndex: 0 }), false);
 });
 
+runTest('sanitizeRestoreActionLogEntry は復元action dataをcanonicalizeする', () => {
+    const result = sanitizeRestoreActionLogEntry({
+        action: 'buildCard',
+        data: { cardName: '麦畑', huge: 'x'.repeat(1000) },
+        playerIndex: 0,
+        seq: 1,
+    }, 'ROOM01', 0);
+
+    assert.deepStrictEqual(result.entry.data, { cardName: '麦畑' });
+});
+
 runTest('canonicalizeActionData は action log に余分なpayload keyを残さない', () => {
     assert.deepStrictEqual(canonicalizeActionData('nextTurn', { extra: 'x' }), {});
     assert.deepStrictEqual(canonicalizeActionData('buildCard', { cardName: '麦畑', huge: 'x'.repeat(1000) }), { cardName: '麦畑' });
