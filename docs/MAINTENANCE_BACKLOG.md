@@ -4,6 +4,8 @@ Last updated: 2026-06-29
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
+For larger root-cause refactors, use `docs/ARCHITECTURE_REFACTOR_PLAN.md`. It defines the intended module boundaries, migration order, contract tests, rollback paths, and manual-verification gates before any broad split is attempted.
+
 ## Recently Fixed / Guarded
 
 These risks are now covered by code changes, contract tests, or operations guidance. Do not remove these guards without replacing the same contract coverage.
