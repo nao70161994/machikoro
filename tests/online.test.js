@@ -241,6 +241,17 @@ runTest('online.js は未使用 remote action helper を残さない', () => {
     assert.ok(!source.includes('function handleRemoteAction'));
 });
 
+runTest('rejoinRoom送信経路はbuildOnlineRejoinPayloadでclientVersion契約を共有する', () => {
+    const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'storage.js'), 'utf8');
+    const directOnlineRejoinEmits = onlineSource.match(/socket\.emit\('rejoinRoom'/g) || [];
+
+    assert.strictEqual(directOnlineRejoinEmits.length, 3);
+    assert.strictEqual((onlineSource.match(/socket\.emit\('rejoinRoom', buildOnlineRejoinPayload/g) || []).length, 3);
+    assert.ok(storageSource.includes('buildOnlineRejoinPayload(session)'));
+    assert.ok(storageSource.includes('buildStorageOnlineRejoinPayload(session)'));
+    assert.ok(storageSource.includes('clientVersion: getStorageClientVersion()'));
+});
 runTest('buildOnlineRejoinPayload はclientVersionを含める', () => {
     const localRt = loadOnlineRuntime();
     localRt.window.MACHIKORO_CLIENT_VERSION = 'build-rejoin-1';

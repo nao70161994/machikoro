@@ -2729,6 +2729,20 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(operations.includes('match the allowed-placement policy in `docs/ADS_PLAN.md`'));
 });
 
+runTest('operations docs は保守用contract guardrailを列挙している', () => {
+    const operations = fs.readFileSync(path.join(__dirname, '..', 'docs/OPERATIONS.md'), 'utf8');
+
+    assert.ok(operations.includes('Maintenance Contract Guardrails'));
+    assert.ok(operations.includes('SOCKET_PAYLOAD_LIMITS'));
+    assert.ok(operations.includes('`undoBuild` restore action audit'));
+    assert.ok(operations.includes('Every `rejoinRoom` emit path must include `clientVersion`'));
+    assert.ok(operations.includes('custom confirm modal contract'));
+    assert.ok(operations.includes('Card/landmark detail and build-button HTML must escape'));
+    assert.ok(operations.includes('redact reconnect tokens, session ids, shared client-error tokens'));
+    assert.ok(operations.includes('Saved stats numbers must normalize to finite non-negative integers'));
+    assert.ok(operations.includes('Restore action logs must reject unknown action names'));
+});
+
 runTest('docs は pending HTML helper 化の現在地を記載している', () => {
     const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
     const audit = fs.readFileSync(path.join(__dirname, '..', 'docs/POST_IMPLEMENTATION_AUDIT.md'), 'utf8');

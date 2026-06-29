@@ -1324,6 +1324,23 @@ runTest('カード詳細と建設ボタンは説明文と分類をescapeする',
     assert.ok(!detail.html.includes('+<b>9</b>コイン'));
 });
 
+runTest('ランドマーク詳細と建設ボタンは説明文をescapeする', () => {
+    const { context } = loadUiRuntime();
+    const originalEffect = vm.runInContext("Player._LANDMARK_DEFS.find(def => def.name === '駅').effect", context);
+    vm.runInContext("Player._LANDMARK_DEFS.find(def => def.name === '駅').effect = '<img src=x onerror=alert(1)>サイコロ'", context);
+    try {
+        const buttonHtml = context.renderLandmarkBuildButton('駅', false, 4, true);
+        const detail = context.buildLandmarkDetailContent('駅');
+
+        assert.ok(buttonHtml.includes('&lt;img src=x onerror=alert(1)&gt;サイコロ'));
+        assert.ok(detail.html.includes('&lt;img src=x onerror=alert(1)&gt;サイコロ'));
+        assert.ok(!buttonHtml.includes('<img src=x onerror=alert(1)>'));
+        assert.ok(!detail.html.includes('<img src=x onerror=alert(1)>'));
+    } finally {
+        vm.runInContext("Player._LANDMARK_DEFS.find(def => def.name === '駅').effect = " + JSON.stringify(originalEffect), context);
+    }
+});
+
 runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生成する', () => {
     const { context } = loadUiRuntime();
 

@@ -90,6 +90,21 @@ Set these in the service that runs `server.js` unless noted otherwise:
 4. Remember the trust boundary: host-only restore remains authoritative; `onlineRestoreRoomIndex` is only a locator, and `restoreAudit` is authority only when HMAC-verified for the exact canonical restore payload.
 5. Configure `RESTORE_AUDIT_SECRET` (or `MACHIKORO_RESTORE_AUDIT_SECRET`) before relying on compacted client snapshot restore after a server restart. Without it, replay from full action logs is the compatibility path.
 
+## Maintenance Contract Guardrails
+
+When changing online/server/UI safety code, keep these contracts covered by targeted tests before pushing:
+
+- Socket.IO request payloads must pass the shared `SOCKET_PAYLOAD_LIMITS` gate; restore payloads use the separate restore limits.
+- Server action logs must store only canonical payload keys, and `undoBuild` restore action audit must sign the same canonical data as live action logging.
+- Every `rejoinRoom` emit path must include `clientVersion`; use the shared rejoin payload helper or storage fallback helper.
+- Destructive stats reset must use the custom confirm modal contract, not native `confirm()` or direct one-tap deletion.
+- Card/landmark detail and build-button HTML must escape names, categories, effects, and attribute-derived class inputs.
+- Client-error / ntfy bodies must redact reconnect tokens, session ids, shared client-error tokens, and URL query secrets before notification or logs.
+- Saved stats numbers must normalize to finite non-negative integers before rendering percentages or bar widths.
+- Restore action logs must reject unknown action names before replay or rank calculation.
+
+These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
+
 ## PWA Update Operations
 
 Use this when a device appears to run old JS, misses a fix, or reports stale-client:

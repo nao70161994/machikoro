@@ -642,6 +642,21 @@ runTest('ntfy client error message はURL queryとtoken値をredactする', () =
     assert.ok(!message.includes('cache=private'));
 });
 
+runTest('ntfy client error message はJSON形式のtoken/session値もredactする', () => {
+    const report = normalizeClientErrorPayload({
+        message: 'json token payload',
+        stack: 'FREEZE_SUMMARY {"reconnectToken":"json-secret","sessionId":"json-session","nested":{"token":"nested-secret"}}',
+    }, 1700000000000).report;
+    const message = formatNtfyClientErrorMessage(report);
+
+    assert.ok(message.includes('"reconnectToken":"[redacted]"'));
+    assert.ok(message.includes('"sessionId":"[redacted]"'));
+    assert.ok(message.includes('"token":"[redacted]"'));
+    assert.ok(!message.includes('json-secret'));
+    assert.ok(!message.includes('json-session'));
+    assert.ok(!message.includes('nested-secret'));
+});
+
 runTest('ntfy freeze summary は本文先頭にUI lock原因を短く出す', () => {
     const stack = 'FREEZE_SUMMARY ' + JSON.stringify({
         freezeKind: 'human-turn-ui-locked',
