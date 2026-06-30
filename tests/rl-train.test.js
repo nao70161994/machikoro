@@ -623,7 +623,7 @@ print(env._target_opponent_slots())
     assert.deepStrictEqual(JSON.parse(lines[1]), [3, 1, 2, 4]);
 });
 
-runTest('rl train: pending business mask はtarget head選択後も全相手候補を保持する', () => {
+runTest('rl train: pending business mask はtarget head選択後に選択相手へ絞る', () => {
     const output = runPython(`
 import numpy as np
 from scripts.rl.agent import RLAgent
@@ -665,7 +665,7 @@ print(int(mask[take_mine]))
     assert.deepStrictEqual(JSON.parse(lines[0]), [1, 2, 3]);
     assert.strictEqual(lines[1], '2');
     assert.strictEqual(lines[2], '1');
-    assert.strictEqual(lines[3], '1');
+    assert.strictEqual(lines[3], '0');
 });
 
 runTest('rl train: pending business は休業中カードだけでも合法手になる', () => {
@@ -755,6 +755,33 @@ print(env.players[2].dormant["パン屋"])
     assert.strictEqual(lines[2], '0');
     assert.strictEqual(lines[3], '2');
     assert.strictEqual(lines[4], '1');
+});
+
+runTest('rl train: cleaning pending はJSと同じく休業可能施設がない時は立たない', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+
+env = MachikoroEnv(player_count=2)
+env.current = 0
+for player in env.players:
+    for name in list(player.cards.keys()):
+        player.cards[name] = 0
+        player.dormant[name] = 0
+env.players[0].cards["清掃業"] = 1
+env._proc_purple(env.players[0], 0, 8)
+print(env.pending_clean)
+print(env.pending_action_queue)
+
+env.players[1].cards["パン屋"] = 1
+env._proc_purple(env.players[0], 0, 8)
+print(env.pending_clean)
+print(env.pending_action_queue)
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '0');
+    assert.strictEqual(lines[1], '[]');
+    assert.strictEqual(lines[2], '1');
+    assert.strictEqual(lines[3], "['pendingCleaning']");
 });
 
 runTest('rl train: mover と business pending は JS と同じ発動条件で立つ', () => {

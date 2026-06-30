@@ -157,10 +157,9 @@ class MachikoroEnv:
                 return [ACT_TV_TARGET]
             if pending_field == "pendingBusiness" and self.pending_biz > 0:
                 acts = []
-                # target head なしの実行時に合わせ、交換候補は全相手の施設から集約する。
-                target_cards = {name for index, opponent in enumerate(self.players) if index != self.current
-                                for name in CARD_NAMES
-                                if opponent.cards[name] > 0 and CARD_DEF[name].color != "purple"}
+                # JS inference contract: a legal selected target restricts BC take candidates.
+                target_cards = {name for name in CARD_NAMES
+                                if opp.cards[name] > 0 and CARD_DEF[name].color != "purple"}
                 for give_ci, give_name in enumerate(CARD_NAMES):
                     if p.cards[give_name] <= 0 or CARD_DEF[give_name].color == "purple":
                         continue
@@ -175,7 +174,7 @@ class MachikoroEnv:
                 for ci, n in enumerate(CARD_NAMES):
                     if ci in seen: continue
                     for pl in self.players:
-                        if pl.active(n) > 0:
+                        if pl.active(n) > 0 and CARD_DEF[n].color != "purple":
                             acts.append(ACT_CLEAN_BASE + ci)
                             seen.add(ci)
                             break
@@ -631,8 +630,9 @@ class MachikoroEnv:
                 p.coins += total
 
             elif cd.effect == CLEANING:
-                self.pending_clean += 1
-                self._append_pending("pendingCleaning")
+                if self._has_cleaning_target():
+                    self.pending_clean += 1
+                    self._append_pending("pendingCleaning")
 
             elif cd.effect == ITSTARTUP:
                 total = 0
@@ -791,6 +791,13 @@ class MachikoroEnv:
                 for n in CARD_NAMES
             )
             for index, player in enumerate(self.players)
+        )
+
+    def _has_cleaning_target(self) -> bool:
+        return any(
+            player.active(n) > 0 and CARD_DEF[n].color != "purple"
+            for player in self.players
+            for n in CARD_NAMES
         )
 
     def _player_threat_score(self, player: PlayerState) -> float:
