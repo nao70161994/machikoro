@@ -1618,6 +1618,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'index.html',
         'js/main.js',
         'js/ui.js',
+        'js/onlineStorage.js',
         'js/online.js',
         'js/stats.js',
     ];
@@ -1648,6 +1649,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuPendingResolution.js', 'js/CPU.js');
     assertBefore('js/CPU.js', 'js/RLCPU.js');
     assertBefore('js/RLModelPortfolio.js', 'js/online.js');
+    assertBefore('js/onlineStorage.js', 'js/online.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
     assertBefore('js/ui.js', 'js/storage.js');
     assertBefore('js/storage.js', 'js/appShell.js');

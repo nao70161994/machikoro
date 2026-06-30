@@ -117,7 +117,8 @@ function loadOnlineRuntime(options = {}) {
         const showNotice = () => {};
     `, context);
 
-    // online.js をロード
+    // online storage facade と online.js をロード
+    loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート
@@ -277,6 +278,42 @@ runTest('getClientVersion はindexへ注入されたビルドハッシュを使�
     localRt.window.MACHIKORO_CLIENT_VERSION = 'build-123';
 
     assert.strictEqual(localRt.getClientVersion(), 'build-123');
+});
+
+runTest('onlineStorage facade は既存キーとroom-scoped fallback契約を固定する', () => {
+    const { createStorage } = require('./helpers/test-utils');
+    const { localStorage } = createStorage();
+    const facade = require('../js/onlineStorage').createOnlineStorageFacade({
+        storage: localStorage,
+        getCurrentRoomId: () => 'room01',
+        sessionKey: 'onlineSession',
+        storageKeys: {
+            gameStart: 'onlineGameStart',
+            actionLog: 'onlineActionLog',
+            stateSnapshot: 'onlineStateSnapshot',
+            restoreAudit: 'onlineRestoreAudit',
+            pendingAction: 'onlinePendingAction',
+        },
+        roomIndexKey: 'onlineRestoreRoomIndex',
+        roomIndexSchemaVersion: 1,
+        roomKeySeparator: ':room:',
+        maxRestoreActionSeq: (_gameStart, _snapshot, _actionLog, pending) => pending?.seq || 0,
+    });
+
+    assert.strictEqual(facade.roomStorageKey('onlineGameStart', ' room01 '), 'onlineGameStart:room:ROOM01');
+    assert.deepStrictEqual(facade.roomStorageKeys('onlineGameStart', 'room01'), ['onlineGameStart', 'onlineGameStart:room:ROOM01']);
+    facade.writeRestoreStorageJson('onlineGameStart', { roomId: 'ROOM01' }, ' room01 ');
+    assert.deepStrictEqual(JSON.parse(localStorage.getItem('onlineGameStart')), { roomId: 'ROOM01' });
+    assert.deepStrictEqual(JSON.parse(localStorage.getItem('onlineGameStart:room:ROOM01')), { roomId: 'ROOM01' });
+    localStorage.setItem('onlinePendingAction:room:ROOM01', JSON.stringify({ seq: 9 }));
+    const indexEntry = facade.refreshRestoreRoomIndex('room01', 1234)[0];
+    assert.strictEqual(indexEntry.roomId, 'ROOM01');
+    assert.strictEqual(indexEntry.hasGameStart, true);
+    assert.strictEqual(indexEntry.hasPendingAction, true);
+    assert.strictEqual(indexEntry.actionSeq, 9);
+    facade.removeRestoreStorageItem('onlineGameStart', 'room01');
+    assert.strictEqual(localStorage.getItem('onlineGameStart'), null);
+    assert.strictEqual(localStorage.getItem('onlineGameStart:room:ROOM01'), null);
 });
 
 runTest('_onlineRoomStorageKey はroom idを正規化し二重scopingしない', () => {

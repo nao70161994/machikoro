@@ -131,142 +131,6 @@ const ONLINE_RESTORE_ROOM_INDEX_KEY = 'onlineRestoreRoomIndex';
 const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
-const ONLINE_STORAGE_MISSING = Symbol('onlineStorageMissing');
-
-function _normalizeOnlineRoomId(roomId) {
-    return typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
-}
-
-function _isKnownOnlineGameAction(action) {
-    if (typeof action !== 'string') return false;
-    if (typeof GAME_ACTION_REGISTRY === 'undefined') return true;
-    return !!GAME_ACTION_REGISTRY[action];
-}
-
-function _onlineRoomStorageKey(key, roomId = myRoomId) {
-    if (typeof key !== 'string' || key === '') return key;
-    if (key.includes(ONLINE_ROOM_STORAGE_KEY_SEPARATOR)) return key;
-    const normalizedRoomId = _normalizeOnlineRoomId(roomId);
-    if (!normalizedRoomId) return key;
-    return `${key}${ONLINE_ROOM_STORAGE_KEY_SEPARATOR}${normalizedRoomId}`;
-}
-
-function _onlineRoomStorageKeys(key, roomId = myRoomId) {
-    const scopedKey = _onlineRoomStorageKey(key, roomId);
-    return scopedKey === key ? [key] : [key, scopedKey];
-}
-
-function _writeOnlineRoomStorageJson(key, value, roomId = myRoomId) {
-    const scopedKey = _onlineRoomStorageKey(key, roomId);
-    if (scopedKey !== key) _writeOnlineStorageJson(scopedKey, value);
-    _refreshOnlineRestoreRoomIndex(roomId);
-}
-
-function _removeOnlineRoomStorageItem(key, roomId = myRoomId) {
-    const scopedKey = _onlineRoomStorageKey(key, roomId);
-    if (scopedKey !== key) _removeOnlineStorageItem(scopedKey);
-    _refreshOnlineRestoreRoomIndex(roomId);
-}
-
-function _writeOnlineRestoreStorageJson(key, value, roomId = myRoomId) {
-    for (const storageKey of _onlineRoomStorageKeys(key, roomId)) {
-        _writeOnlineStorageJson(storageKey, value);
-    }
-    _refreshOnlineRestoreRoomIndex(roomId);
-}
-
-function _removeOnlineRestoreStorageItem(key, roomId = myRoomId) {
-    for (const storageKey of _onlineRoomStorageKeys(key, roomId)) {
-        _removeOnlineStorageItem(storageKey);
-    }
-    _refreshOnlineRestoreRoomIndex(roomId);
-}
-
-function _writeOnlineSessionStorageJson(value, roomId = myRoomId) {
-    _writeOnlineStorageJson(ONLINE_SESSION_STORAGE_KEY, value);
-    const scopedKey = _onlineRoomStorageKey(ONLINE_SESSION_STORAGE_KEY, roomId);
-    if (scopedKey !== ONLINE_SESSION_STORAGE_KEY) _writeOnlineStorageJson(scopedKey, value);
-    _refreshOnlineRestoreRoomIndex(roomId);
-}
-
-function _removeOnlineSessionStorageItem(roomId = myRoomId) {
-    _removeOnlineStorageItem(ONLINE_SESSION_STORAGE_KEY);
-    const scopedKey = _onlineRoomStorageKey(ONLINE_SESSION_STORAGE_KEY, roomId);
-    if (scopedKey !== ONLINE_SESSION_STORAGE_KEY) _removeOnlineStorageItem(scopedKey);
-    _refreshOnlineRestoreRoomIndex(roomId);
-}
-
-function _readOnlineStorageJson(key, fallback = null) {
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-    } catch (e) {
-        return fallback;
-    }
-}
-
-function _readOnlineRoomStorageJson(key, fallback = null, roomId = myRoomId) {
-    const scopedKey = _onlineRoomStorageKey(key, roomId);
-    if (scopedKey !== key) {
-        const scopedValue = _readOnlineStorageJson(scopedKey, ONLINE_STORAGE_MISSING);
-        if (scopedValue !== ONLINE_STORAGE_MISSING) return scopedValue;
-    }
-    return _readOnlineStorageJson(key, fallback);
-}
-
-function _writeOnlineStorageJson(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-}
-
-function _removeOnlineStorageItem(key) {
-    localStorage.removeItem(key);
-}
-
-function _normalizeOnlineRestoreRoomIndexEntry(entry) {
-    if (!entry || typeof entry !== 'object') return null;
-    const roomId = _normalizeOnlineRoomId(entry.roomId);
-    if (!roomId) return null;
-    return {
-        schemaVersion: ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION,
-        roomId,
-        updatedAt: Number.isInteger(entry.updatedAt) ? entry.updatedAt : 0,
-        playerName: typeof entry.playerName === 'string' ? entry.playerName : '',
-        playerIndex: Number.isInteger(entry.playerIndex) ? entry.playerIndex : null,
-        actionSeq: Number.isInteger(entry.actionSeq) ? entry.actionSeq : 0,
-        hasGameStart: entry.hasGameStart === true,
-        hasActionLog: entry.hasActionLog === true,
-        hasStateSnapshot: entry.hasStateSnapshot === true,
-        hasPendingAction: entry.hasPendingAction === true,
-        hasRestoreAudit: entry.hasRestoreAudit === true,
-    };
-}
-
-function _readOnlineRestoreRoomIndex() {
-    const raw = _readOnlineStorageJson(ONLINE_RESTORE_ROOM_INDEX_KEY, []);
-    const entries = Array.isArray(raw) ? raw : [];
-    const byRoom = new Map();
-    for (const entry of entries) {
-        const normalized = _normalizeOnlineRestoreRoomIndexEntry(entry);
-        if (!normalized) continue;
-        const previous = byRoom.get(normalized.roomId);
-        if (!previous || normalized.updatedAt >= previous.updatedAt) byRoom.set(normalized.roomId, normalized);
-    }
-    return Array.from(byRoom.values()).sort((a, b) => b.updatedAt - a.updatedAt || a.roomId.localeCompare(b.roomId));
-}
-
-function _writeOnlineRestoreRoomIndex(entries) {
-    const normalizedEntries = (Array.isArray(entries) ? entries : [])
-        .map(_normalizeOnlineRestoreRoomIndexEntry)
-        .filter(Boolean)
-        .sort((a, b) => b.updatedAt - a.updatedAt || a.roomId.localeCompare(b.roomId));
-    _writeOnlineStorageJson(ONLINE_RESTORE_ROOM_INDEX_KEY, normalizedEntries);
-}
-
-function _readOnlineScopedStorageJson(key, roomId, fallback = null) {
-    const scopedKey = _onlineRoomStorageKey(key, roomId);
-    if (scopedKey === key) return fallback;
-    return _readOnlineStorageJson(scopedKey, fallback);
-}
 
 function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {
     const logSeq = Array.isArray(actionLog)
@@ -280,58 +144,105 @@ function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingActio
     );
 }
 
+const onlineStorage = createOnlineStorageFacade({
+    storage: typeof localStorage !== 'undefined' ? localStorage : null,
+    getCurrentRoomId: () => myRoomId,
+    sessionKey: ONLINE_SESSION_STORAGE_KEY,
+    storageKeys: ONLINE_STORAGE_KEYS,
+    roomIndexKey: ONLINE_RESTORE_ROOM_INDEX_KEY,
+    roomIndexSchemaVersion: ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION,
+    roomKeySeparator: ONLINE_ROOM_STORAGE_KEY_SEPARATOR,
+    maxRestoreActionSeq: _maxOnlineRestoreActionSeq,
+});
+
+function _normalizeOnlineRoomId(roomId) {
+    return onlineStorage.normalizeRoomId(roomId);
+}
+
+function _isKnownOnlineGameAction(action) {
+    if (typeof action !== 'string') return false;
+    if (typeof GAME_ACTION_REGISTRY === 'undefined') return true;
+    return !!GAME_ACTION_REGISTRY[action];
+}
+
+function _onlineRoomStorageKey(key, roomId = myRoomId) {
+    return onlineStorage.roomStorageKey(key, roomId);
+}
+
+function _onlineRoomStorageKeys(key, roomId = myRoomId) {
+    return onlineStorage.roomStorageKeys(key, roomId);
+}
+
+function _writeOnlineRoomStorageJson(key, value, roomId = myRoomId) {
+    return onlineStorage.writeRoomStorageJson(key, value, roomId);
+}
+
+function _removeOnlineRoomStorageItem(key, roomId = myRoomId) {
+    return onlineStorage.removeRoomStorageItem(key, roomId);
+}
+
+function _writeOnlineRestoreStorageJson(key, value, roomId = myRoomId) {
+    return onlineStorage.writeRestoreStorageJson(key, value, roomId);
+}
+
+function _removeOnlineRestoreStorageItem(key, roomId = myRoomId) {
+    return onlineStorage.removeRestoreStorageItem(key, roomId);
+}
+
+function _writeOnlineSessionStorageJson(value, roomId = myRoomId) {
+    return onlineStorage.writeSessionStorageJson(value, roomId);
+}
+
+function _removeOnlineSessionStorageItem(roomId = myRoomId) {
+    return onlineStorage.removeSessionStorageItem(roomId);
+}
+
+function _readOnlineStorageJson(key, fallback = null) {
+    return onlineStorage.readStorageJson(key, fallback);
+}
+
+function _readOnlineRoomStorageJson(key, fallback = null, roomId = myRoomId) {
+    return onlineStorage.readRoomStorageJson(key, fallback, roomId);
+}
+
+function _writeOnlineStorageJson(key, value) {
+    return onlineStorage.writeStorageJson(key, value);
+}
+
+function _removeOnlineStorageItem(key) {
+    return onlineStorage.removeStorageItem(key);
+}
+
+function _normalizeOnlineRestoreRoomIndexEntry(entry) {
+    return onlineStorage.normalizeRestoreRoomIndexEntry(entry);
+}
+
+function _readOnlineRestoreRoomIndex() {
+    return onlineStorage.readRestoreRoomIndex();
+}
+
+function _writeOnlineRestoreRoomIndex(entries) {
+    return onlineStorage.writeRestoreRoomIndex(entries);
+}
+
+function _readOnlineScopedStorageJson(key, roomId, fallback = null) {
+    return onlineStorage.readScopedStorageJson(key, roomId, fallback);
+}
+
 function _buildOnlineRestoreRoomIndexEntry(roomId, now = Date.now()) {
-    const normalizedRoomId = _normalizeOnlineRoomId(roomId);
-    if (!normalizedRoomId) return null;
-    const session = _readOnlineScopedStorageJson(ONLINE_SESSION_STORAGE_KEY, normalizedRoomId, null);
-    const gameStart = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.gameStart, normalizedRoomId, null);
-    const actionLog = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.actionLog, normalizedRoomId, null);
-    const stateSnapshot = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, normalizedRoomId, null);
-    const pendingAction = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.pendingAction, normalizedRoomId, null);
-    const restoreAudit = _readOnlineScopedStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, normalizedRoomId, null);
-    const hasGameStart = !!gameStart;
-    const hasActionLog = Array.isArray(actionLog);
-    const hasStateSnapshot = !!stateSnapshot;
-    const hasPendingAction = !!pendingAction;
-    const hasRestoreAudit = !!restoreAudit;
-    if (!session && !hasGameStart && !hasActionLog && !hasStateSnapshot && !hasPendingAction && !hasRestoreAudit) return null;
-    return {
-        schemaVersion: ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION,
-        roomId: normalizedRoomId,
-        updatedAt: Number.isInteger(now) ? now : Date.now(),
-        playerName: typeof session?.playerName === 'string' ? session.playerName : '',
-        playerIndex: Number.isInteger(session?.playerIndex) ? session.playerIndex : null,
-        actionSeq: _maxOnlineRestoreActionSeq(gameStart, stateSnapshot, actionLog, pendingAction),
-        hasGameStart,
-        hasActionLog,
-        hasStateSnapshot,
-        hasPendingAction,
-        hasRestoreAudit,
-    };
+    return onlineStorage.buildRestoreRoomIndexEntry(roomId, now);
 }
 
 function _refreshOnlineRestoreRoomIndex(roomId = myRoomId, now = Date.now()) {
-    const normalizedRoomId = _normalizeOnlineRoomId(roomId);
-    if (!normalizedRoomId) return [];
-    const entries = _readOnlineRestoreRoomIndex().filter(entry => entry.roomId !== normalizedRoomId);
-    const entry = _buildOnlineRestoreRoomIndexEntry(normalizedRoomId, now);
-    if (entry) entries.unshift(entry);
-    _writeOnlineRestoreRoomIndex(entries);
-    return _readOnlineRestoreRoomIndex();
+    return onlineStorage.refreshRestoreRoomIndex(roomId, now);
 }
 
 function _removeOnlineRestoreRoomIndexEntry(roomId = myRoomId) {
-    const normalizedRoomId = _normalizeOnlineRoomId(roomId);
-    if (!normalizedRoomId) return _readOnlineRestoreRoomIndex();
-    const entries = _readOnlineRestoreRoomIndex().filter(entry => entry.roomId !== normalizedRoomId);
-    _writeOnlineRestoreRoomIndex(entries);
-    return entries;
+    return onlineStorage.removeRestoreRoomIndexEntry(roomId);
 }
 
 function _pruneOnlineRestoreRoomIndex() {
-    const entries = _readOnlineRestoreRoomIndex().filter(entry => _buildOnlineRestoreRoomIndexEntry(entry.roomId));
-    _writeOnlineRestoreRoomIndex(entries);
-    return entries;
+    return onlineStorage.pruneRestoreRoomIndex();
 }
 
 function _clearOnlineRestoreBundle() {

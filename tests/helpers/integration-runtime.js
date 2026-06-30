@@ -160,7 +160,10 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiNotice.js',
         'js/ui.js',
     ];
-    if (options.includeOnline) files.push('js/online.js');
+    if (options.includeOnline) {
+        files.push('js/onlineStorage.js');
+        files.push('js/online.js');
+    }
     files.push('js/main.js');
     loadScripts(context, files);
     vm.runInContext(`
