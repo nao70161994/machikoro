@@ -158,6 +158,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/storage.js',
         'js/stats.js',
         'js/uiNotice.js',
+        'js/uiBuildMenu.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {

@@ -697,45 +697,44 @@ function getLandmarkEmoji(name) {
 }
 
 function safeCardColorName(color) {
-    return ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue';
+    return UiBuildMenu.safeCardColorName(color);
 }
 
 function renderBuildCardButton(card, stock, canBuildThis) {
-    const safeName = escapeHtml(card.name);
-    const safeColor = safeCardColorName(card.color);
-    return `<div class="card-wrapper"><button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div><div class="card-footer">残り${stock}枚</div></button><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
+    return UiBuildMenu.renderBuildCardButton({ card, stock, canBuildThis, escapeHtml, getEffectText });
 }
 
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
-    const safeName = escapeHtml(name);
-    return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${escapeHtml(getLandmarkEffectText(name))}</div></div></button><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ</button></div>`;
+    return UiBuildMenu.renderLandmarkBuildButton({ name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji });
 }
 
 function buildCardFilterBarHtml() {
-    const filterDefs = [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫']];
-    return filterDefs.map(([c, label]) =>
-        `<button class="card-filter-btn${cardFilter === c ? ' active' : ''}" data-action="setCardFilter" data-card-filter="${c}">${label}</button>`
-    ).join('');
+    return UiBuildMenu.buildCardFilterBarHtml(cardFilter);
 }
 
 function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
-    const sortedCards = [...CARDS].sort(compareCardsForDisplay);
-    const visibleCards = cardFilter ? sortedCards.filter(c => c.color === cardFilter) : sortedCards;
-    return visibleCards.map(card => {
-        if (!enabledCards.has(card.name)) return "";
-        const stock = getShopStockCount(SHOP_STOCK, card);
-        if (stock <= 0) return "";
-        const canBuildThis = canBuildCardAction && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
-        return renderBuildCardButton(card, stock, canBuildThis);
-    }).join("");
+    return UiBuildMenu.buildVisibleCardButtonsHtml({
+        cards: CARDS,
+        cardFilter,
+        enabledCards,
+        shopStock: SHOP_STOCK,
+        current,
+        canBuildCardAction,
+        compareCardsForDisplay,
+        getShopStockCount,
+        renderBuildCardButton,
+    });
 }
 
 function buildLandmarkButtonsHtml(current, canBuildLandmarkAction) {
-    return Object.entries(current.landmarks).filter(([name]) => enabledLandmarks.has(name)).map(([name, built]) => {
-        const cost = Player.landmarkCost(name);
-        const canBuildThis = canBuildLandmarkAction && !built && current.coins >= cost;
-        return renderLandmarkBuildButton(name, built, cost, canBuildThis);
-    }).join("");
+    return UiBuildMenu.buildLandmarkButtonsHtml({
+        landmarks: current.landmarks,
+        enabledLandmarks,
+        currentCoins: current.coins,
+        canBuildLandmarkAction,
+        landmarkCost: Player.landmarkCost,
+        renderLandmarkBuildButton,
+    });
 }
 
 function canRenderUndoBuildAction() {
@@ -754,12 +753,18 @@ function buildUndoBuildButtonHtml() {
 }
 
 function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction) {
-    const canBuild = canBuildCardAction || canBuildLandmarkAction;
     const filterBtnsHtml = buildCardFilterBarHtml();
     const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction);
     const landmarkHtml = buildLandmarkButtonsHtml(current, canBuildLandmarkAction);
     const undoBtn = buildUndoBuildButtonHtml();
-    return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+    return UiBuildMenu.buildBuildMenuHtml({
+        canBuildCardAction,
+        canBuildLandmarkAction,
+        filterBtnsHtml,
+        cardHtml,
+        landmarkHtml,
+        undoBtn,
+    });
 }
 
 function renderBuildMenu() {

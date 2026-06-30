@@ -124,7 +124,7 @@ function loadUiRuntime() {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/uiBuildMenu.js', 'js/ui.js']);
     return { context, elements };
 }
 
@@ -1245,6 +1245,44 @@ runTest('buildLandmarkDetailContent はランドマーク詳細HTMLを生成す�
     assert.ok(content.html.includes('ランドマーク'));
     assert.ok(content.html.includes('💰 4'));
     assert.ok(content.html.includes('サイコロ'));
+});
+
+runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固定する', () => {
+    const helper = require('../js/uiBuildMenu');
+    const card = {
+        name: '<card>',
+        color: 'green" onclick=alert(1)',
+        category: '<cat>',
+        diceNums: [1, 2],
+        cost: 3,
+    };
+    const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const cardHtml = helper.renderBuildCardButton({
+        card,
+        stock: 2,
+        canBuildThis: true,
+        escapeHtml: escape,
+        getEffectText: () => '<effect>',
+    });
+
+    assert.ok(cardHtml.includes('card-color-blue'));
+    assert.ok(cardHtml.includes('&lt;card&gt;'));
+    assert.ok(cardHtml.includes('&lt;cat&gt;'));
+    assert.ok(cardHtml.includes('&lt;effect&gt;'));
+    assert.ok(!cardHtml.includes('<effect>'));
+
+    const visible = helper.buildVisibleCardButtonsHtml({
+        cards: [card],
+        cardFilter: '',
+        enabledCards: new Set([card.name]),
+        shopStock: { [card.name]: 2 },
+        current: { coins: 1, countCardIncludingDormant: () => 0 },
+        canBuildCardAction: true,
+        compareCardsForDisplay: () => 0,
+        getShopStockCount: stock => stock[card.name],
+        renderBuildCardButton: (_card, stock, canBuildThis) => String(stock) + ':' + String(canBuildThis),
+    });
+    assert.strictEqual(visible, '2:false');
 });
 
 runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組み立てる', () => {

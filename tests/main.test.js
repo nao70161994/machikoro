@@ -1617,6 +1617,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
     const files = [
         'index.html',
         'js/main.js',
+        'js/uiBuildMenu.js',
         'js/ui.js',
         'js/onlineStorage.js',
         'js/online.js',
@@ -1651,6 +1652,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/RLModelPortfolio.js', 'js/online.js');
     assertBefore('js/onlineStorage.js', 'js/online.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
+    assertBefore('js/uiBuildMenu.js', 'js/ui.js');
     assertBefore('js/ui.js', 'js/storage.js');
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
