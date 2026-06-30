@@ -159,6 +159,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/stats.js',
         'js/uiNotice.js',
         'js/uiBuildMenu.js',
+        'js/uiCardDetail.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {

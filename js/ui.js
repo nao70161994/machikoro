@@ -1415,23 +1415,17 @@ function toggleLog() {
 }
 
 function buildLandmarkDetailContent(name) {
-    const emoji = getLandmarkEmoji(name);
-    const cost = Player.landmarkCost(name);
-    const effect = escapeHtml(getLandmarkEffectText(name));
-    return {
-        title: `${emoji} ${name}`,
-        html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`,
-    };
+    return UiCardDetail.buildLandmarkDetailContent({
+        name,
+        emoji: getLandmarkEmoji(name),
+        cost: Player.landmarkCost(name),
+        effectText: getLandmarkEffectText(name),
+        escapeHtml,
+    });
 }
 
 function buildCardDetailContent(card) {
-    const colorNames = { blue:'青', green:'緑', red:'赤', purple:'紫' };
-    const colorBadges = { blue:'blue-badge', green:'green-badge', red:'red-badge', purple:'purple-badge' };
-    const safeColor = safeCardColorName(card.color);
-    return {
-        title: card.name,
-        html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>💰 ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>🎲 [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${colorBadges[safeColor]}">${colorNames[safeColor]}</span> ${escapeHtml(card.category)}</span></div></div><div class="card-detail-effect">${escapeHtml(getEffectText(card))}</div>`,
-    };
+    return UiCardDetail.buildCardDetailContent({ card, escapeHtml, getEffectText, safeCardColorName });
 }
 
 function showCardDetail(name, isLandmark = false) {

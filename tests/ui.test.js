@@ -124,7 +124,7 @@ function loadUiRuntime() {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/uiBuildMenu.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/uiBuildMenu.js', 'js/uiCardDetail.js', 'js/ui.js']);
     return { context, elements };
 }
 
@@ -1221,6 +1221,35 @@ runTest('renderPlayers は human の playerSettings 欠落時も落ちない', (
     assert.ok(trace);
     assert.strictEqual(trace.details.fallbackType, 'human');
     assert.strictEqual(trace.details.fallbackDifficulty, 'human');
+});
+
+runTest('UiCardDetail helper はカード詳細HTMLのescape契約をpureに固定する', () => {
+    const helper = require('../js/uiCardDetail');
+    const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const card = { name: '<name>', color: 'bad-color', category: '<cat>', cost: 1, diceNums: [1] };
+    const content = helper.buildCardDetailContent({
+        card,
+        escapeHtml: escape,
+        getEffectText: () => '<effect>',
+        safeCardColorName: color => ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue',
+    });
+
+    assert.strictEqual(content.title, '<name>');
+    assert.ok(content.html.includes('blue-badge'));
+    assert.ok(content.html.includes('&lt;cat&gt;'));
+    assert.ok(content.html.includes('&lt;effect&gt;'));
+    assert.ok(!content.html.includes('<effect>'));
+
+    const landmark = helper.buildLandmarkDetailContent({
+        name: '駅',
+        emoji: 'E',
+        cost: 4,
+        effectText: '<landmark-effect>',
+        escapeHtml: escape,
+    });
+    assert.strictEqual(landmark.title, 'E 駅');
+    assert.ok(landmark.html.includes('&lt;landmark-effect&gt;'));
+    assert.ok(!landmark.html.includes('<landmark-effect>'));
 });
 
 runTest('buildCardDetailContent は施設カード詳細HTMLを生成する', () => {
