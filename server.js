@@ -83,9 +83,18 @@ const {
     isSocketInActiveRoom,
     validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
+    buildPlayerList: buildRoomPlayerList,
+    countRoomHumanSlots: countRoomHumanSlotsForRoom,
+    buildGameStartPlayerNames: buildGameStartPlayerNamesForRoom,
+    shuffledPlayerOrder: shuffledRoomPlayerOrder,
+    roomClientVersions: roomClientVersionsForSockets,
+    roomReconnectTokenHashes: roomReconnectTokenHashesForRoom,
+    getRemainingConnectedPlayers: getRemainingConnectedRoomPlayers,
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
     defaultRooms: rooms,
+    cpuDifficultyLabel,
+    hashReconnectToken,
 });
 const {
     restorePayloadRank,
@@ -1965,11 +1974,7 @@ function isValidGameStartPayload(payload, playerCount) {
 }
 
 function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
-    return room.players.filter(p =>
-        p.id &&
-        p.id !== disconnectedSocketId &&
-        sockets.has(p.id)
-    );
+    return getRemainingConnectedRoomPlayers(room, sockets, disconnectedSocketId);
 }
 
 function rollServerDie() {
@@ -2103,62 +2108,27 @@ function applyAcceptedActionToRoomCanonicalMirror(room, mirror, actionEntry) {
 
 
 function buildPlayerList(room) {
-    if (room.playerSettings.length === 0) {
-        return room.players.map(p => p.name);
-    }
-    return room.playerSettings.map((s, i) => {
-        if (s.type === "cpu") {
-            const diffLabel = cpuDifficultyLabel(s.difficulty);
-            return `CPU（${diffLabel}）`;
-        }
-        const p = room.players.find(p => p.index === i);
-        if (p) return p.name;
-        return "待機中...";
-    });
+    return buildRoomPlayerList(room);
 }
 
 function countRoomHumanSlots(room) {
-    return room.playerSettings.length > 0
-        ? room.playerSettings.filter(s => s.type === "human").length
-        : room.maxPlayers;
+    return countRoomHumanSlotsForRoom(room);
 }
 
 function buildGameStartPlayerNames(room) {
-    if (room.playerSettings.length === 0) return room.players.map(p => p.name);
-    let cpuCount = 0;
-    return room.playerSettings.map((s, i) => {
-        if (s.type === "cpu") {
-            cpuCount++;
-            const diffLabel = cpuDifficultyLabel(s.difficulty);
-            return `CPU${cpuCount}（${diffLabel}）`;
-        }
-        const p = room.players.find(p => p.index === i);
-        if (p) return p.name;
-        return "不明";
-    });
+    return buildGameStartPlayerNamesForRoom(room);
 }
 
 function shuffledPlayerOrder(playerNames, randomFn = Math.random) {
-    const playerOrder = playerNames.map((_, i) => i);
-    for (let i = playerOrder.length - 1; i > 0; i--) {
-        const j = Math.floor(randomFn() * (i + 1));
-        [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
-    }
-    return playerOrder;
+    return shuffledRoomPlayerOrder(playerNames, randomFn);
 }
 
 function roomClientVersions(io, room) {
-    return room.players.map(p => {
-        const s = io.sockets.sockets.get(p.id);
-        return s ? (s.clientVersion || 'unknown') : 'unknown';
-    });
+    return roomClientVersionsForSockets(io.sockets.sockets, room);
 }
 
 function roomReconnectTokenHashes(room, playerNames) {
-    return playerNames.map((_, index) => {
-        const player = room.players.find(p => p.index === index);
-        return player?.reconnectToken ? hashReconnectToken(player.reconnectToken) : '';
-    });
+    return roomReconnectTokenHashesForRoom(room, playerNames);
 }
 
 function buildGameStartPayload(io, room, randomFn = Math.random) {

@@ -1,6 +1,6 @@
 'use strict';
 
-function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
+function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyLabel = difficulty => difficulty || '普', hashReconnectToken = token => token || '' }) {
     const createRoomRateBuckets = new Map();
 
     function roomTimestamp(value) {
@@ -113,6 +113,73 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         return { ok: true };
     }
 
+    function buildPlayerList(room) {
+        if (room.playerSettings.length === 0) {
+            return room.players.map(p => p.name);
+        }
+        return room.playerSettings.map((s, i) => {
+            if (s.type === "cpu") {
+                const diffLabel = cpuDifficultyLabel(s.difficulty);
+                return `CPU（${diffLabel}）`;
+            }
+            const p = room.players.find(p => p.index === i);
+            if (p) return p.name;
+            return "待機中...";
+        });
+    }
+
+    function countRoomHumanSlots(room) {
+        return room.playerSettings.length > 0
+            ? room.playerSettings.filter(s => s.type === "human").length
+            : room.maxPlayers;
+    }
+
+    function buildGameStartPlayerNames(room) {
+        if (room.playerSettings.length === 0) return room.players.map(p => p.name);
+        let cpuCount = 0;
+        return room.playerSettings.map((s, i) => {
+            if (s.type === "cpu") {
+                cpuCount++;
+                const diffLabel = cpuDifficultyLabel(s.difficulty);
+                return `CPU${cpuCount}（${diffLabel}）`;
+            }
+            const p = room.players.find(p => p.index === i);
+            if (p) return p.name;
+            return "不明";
+        });
+    }
+
+    function shuffledPlayerOrder(playerNames, randomFn = Math.random) {
+        const playerOrder = playerNames.map((_, i) => i);
+        for (let i = playerOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(randomFn() * (i + 1));
+            [playerOrder[i], playerOrder[j]] = [playerOrder[j], playerOrder[i]];
+        }
+        return playerOrder;
+    }
+
+    function roomClientVersions(sockets, room) {
+        return room.players.map(p => {
+            const s = sockets.get(p.id);
+            return s ? (s.clientVersion || 'unknown') : 'unknown';
+        });
+    }
+
+    function roomReconnectTokenHashes(room, playerNames) {
+        return playerNames.map((_, index) => {
+            const player = room.players.find(p => p.index === index);
+            return player?.reconnectToken ? hashReconnectToken(player.reconnectToken) : '';
+        });
+    }
+
+    function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
+        return room.players.filter(p =>
+            p.id &&
+            p.id !== disconnectedSocketId &&
+            sockets.has(p.id)
+        );
+    }
+
     return {
         roomTimestamp,
         isRoomExpired,
@@ -125,6 +192,13 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
         isSocketInActiveRoom,
         validateSocketCanEnterRoom,
         validateCreateRoomLifecycle,
+        buildPlayerList,
+        countRoomHumanSlots,
+        buildGameStartPlayerNames,
+        shuffledPlayerOrder,
+        roomClientVersions,
+        roomReconnectTokenHashes,
+        getRemainingConnectedPlayers,
     };
 }
 
