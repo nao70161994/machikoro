@@ -814,7 +814,7 @@ app.post('/api/client-error', (req, res) => {
     });
 });
 
-app.post('/api/client-error-test', (req, res) => {
+app.post('/api/client-error-test', express.json({ limit: '1kb' }), (req, res) => {
     handleClientErrorTestRequest(req, res).catch((error) => {
         console.warn('[client-error-test] handler failed:', error?.message || error);
         res.status(503).json({ ok: false, error: 'client_error_test_failed' });
@@ -1625,7 +1625,7 @@ function handleRecreateRoom(socket, payload = {}) {
             existingReconnectTokenHash &&
             hashReconnectToken(reconnectToken) === existingReconnectTokenHash;
         const existingHostRestoreAuthenticated = existingRestoreAuthenticated && room.hostPlayerIndex === playerIndex;
-        const rawSanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !canonicalRecord });
+        const rawSanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !!restoreAuditSecret() && !canonicalRecord });
         const sanitizedExistingRoomActionLog = rawSanitizedExistingRoomActionLog || [];
         const incomingRestoreLogValid = rawSanitizedExistingRoomActionLog !== null;
         const incomingRankForExistingRoom = restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
@@ -1714,7 +1714,7 @@ function handleRecreateRoom(socket, payload = {}) {
         return;
     }
     const restoredPlayers = buildRestoredHumanPlayers(gameStartPayload, playerIndex, socket.id);
-    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !canonicalRecord });
+    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !!restoreAuditSecret() && !canonicalRecord });
     if (!sanitizedActionLog) {
         emitAppError(socket, '復元データが壊れています');
         return;

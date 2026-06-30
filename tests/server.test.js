@@ -1845,6 +1845,11 @@ runTest('/api/version は stale cache を避ける Cache-Control を返す', () 
     assert.ok(source.includes("res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');"));
 });
 
+runTest('/api/client-error-test route はdebug endpointにも小さなJSON上限を持つ', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    assert.ok(source.includes("app.post('/api/client-error-test', express.json({ limit: '1kb' })"));
+});
+
 // ===== validateGameAction =====
 
 runTest('validateGameAction は非現在プレイヤーのアクションを拒否する', () => {
@@ -2492,6 +2497,61 @@ runTest('resolveRejoinPlayer は復元済みルームでトークン不一致な
     assert.strictEqual(player, null);
     assert.strictEqual(room.players.length, 1);
 });
+runTest('handleRecreateRoom は署名secret未設定なら無署名full actionLogで復元できる', () => {
+    const crypto = require('crypto');
+    const previousRestoreSecret = process.env.RESTORE_AUDIT_SECRET;
+    const previousMachikoroRestoreSecret = process.env.MACHIKORO_RESTORE_AUDIT_SECRET;
+    const emitted = [];
+    const joined = [];
+    const reconnectToken = 'token-host';
+    const socket = {
+        id: 'socket-host-unsigned',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+    const payload = {
+        roomId: 'REST_UNSIGNED_LOG',
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+            actionSeq: 1,
+        },
+        stateSnapshot: null,
+        actionLog: [{ action: 'rollDice', data: { forceDice: 1 }, playerIndex: 0, seq: 1 }],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    };
+
+    try {
+        delete process.env.RESTORE_AUDIT_SECRET;
+        delete process.env.MACHIKORO_RESTORE_AUDIT_SECRET;
+
+        handleRecreateRoom(socket, payload);
+
+        assert.deepStrictEqual(joined, ['REST_UNSIGNED_LOG']);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(__rooms.REST_UNSIGNED_LOG.actionSeq, 1);
+        assert.strictEqual(__rooms.REST_UNSIGNED_LOG.stateSnapshot.actionSeq, 1);
+        assert.strictEqual(__rooms.REST_UNSIGNED_LOG.stateSnapshot.lastDiceResult, 1);
+    } finally {
+        if (typeof previousRestoreSecret === 'undefined') delete process.env.RESTORE_AUDIT_SECRET;
+        else process.env.RESTORE_AUDIT_SECRET = previousRestoreSecret;
+        if (typeof previousMachikoroRestoreSecret === 'undefined') delete process.env.MACHIKORO_RESTORE_AUDIT_SECRET;
+        else process.env.MACHIKORO_RESTORE_AUDIT_SECRET = previousMachikoroRestoreSecret;
+        delete __rooms.REST_UNSIGNED_LOG;
+    }
+});
+
 runTest('handleRecreateRoom は正しい reconnectToken を要求し不正なら appError を返す', () => {
     const crypto = require('crypto');
     const emitted = [];
