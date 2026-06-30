@@ -295,14 +295,24 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 **Priority:** P2. Let implementation boundaries drive test boundaries.
 
+## Implemented Safe Units
+
+As of 2026-06-30, the first rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, or reconnect timing:
+
+- `server/roomLifecycle.js` owns pure room/player-list/start-payload/version/token/disconnect-candidate helpers; Socket.IO handlers remain in `server.js`.
+- `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
+- `js/uiBuildMenu.js` and `js/uiCardDetail.js` own pure build-menu/card-detail HTML generation; `ui.js` still owns modal lifecycle and render orchestration.
+- Contract tests now guard action metadata/canonical payload table drift, restore unknown-action rejection, and UI interactability registry selector drift.
+
+The remaining steps below still require the same gates described in each design section. In particular, reconnect state-machine work, Socket.IO handler movement, and modal lifecycle movement need planned verification beyond pure helper tests.
+
 ## Recommended Migration Order
 
-1. **Server pure room lifecycle helpers:** Extract only pure policy from `server.js`, keep Socket.IO handlers in place, and add domain tests.
-2. **Online storage facade:** Wrap existing localStorage/session behavior without changing keys or reconnect timing.
-3. **UI pure render helpers:** Move build menu/card detail/card select helpers with escape and selector contract tests.
-4. **Action contract metadata:** Add cross-layer read-only tests, then introduce a shared metadata table gradually.
-5. **Reconnect state machine and server socket handler split:** Move timing/event orchestration only after helper/facade tests are stable and manual-device verification is scheduled.
-6. **Restore trust boundary ADR:** Start only when product/security requirements justify durable or signed authority.
+1. **Keep the implemented helper boundaries stable:** Prefer extending `server/roomLifecycle.js`, `js/onlineStorage.js`, `js/uiBuildMenu.js`, or `js/uiCardDetail.js` before adding equivalent logic back into giant files.
+2. **UI card select or other pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
+3. **Action contract metadata:** Keep adding cross-layer read-only tests, then introduce a shared metadata table gradually.
+4. **Reconnect state machine and server socket handler split:** Move timing/event orchestration only after helper/facade tests are stable and manual-device verification is scheduled.
+5. **Restore trust boundary ADR:** Start only when product/security requirements justify durable or signed authority.
 
 ## First Safe Design Units
 
@@ -310,9 +320,9 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 2. `js/onlineStorage.js` facade for restore bundle and room-scoped keys. This reduces stale-state risk without changing storage format.
 3. `js/uiBuildMenu.js` and `js/uiCardDetail.js` pure helpers. These are visible but can be guarded by existing escape/selector tests before any modal lifecycle work.
 
-## Why Not Implement This Now
+## Why Not Implement The Remaining Work Now
 
-- The current request is explicitly design-only.
+- The safe pure-helper units above are complete; remaining handler/state/lifecycle moves are no longer pure extraction only.
 - Handler moves and reconnect state-machine changes need careful sequencing and, for visible/socket timing changes, real-device verification.
 - Restore trust improvements are product/security decisions, not maintenance cleanup.
 - Broad simultaneous splits would create compatibility risk and make rollback difficult.

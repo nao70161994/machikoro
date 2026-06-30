@@ -1,6 +1,6 @@
 # Maintenance Backlog
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
@@ -21,6 +21,10 @@ These risks are now covered by code changes, contract tests, or operations guida
 | Stats saved numbers | Corrupt saved stats could render `NaN`, negative, or extreme percentages/bar widths. | stats load normalization and render tests for finite non-negative numbers. |
 | Restore action log | Unknown restore actions could pass sanitize and fail later during replay/rank logic. | `sanitizeRestoreActionLogEntry()` rejects unknown actions after snapshot skip gate; server tests cover invalid vs skipped old entries. |
 | Guardrail docs | Future AI edits could remove safety contracts because they were scattered. | `docs/OPERATIONS.md` Maintenance Contract Guardrails and `tests/main.test.js` docs assertion. |
+| Room lifecycle helpers | Pure room lifecycle policy was embedded in `server.js`, making handler edits too broad. | `server/roomLifecycle.js` owns player-list, start-payload, client-version, reconnect-token, and disconnect-candidate helpers; server tests cover pure behavior. |
+| Online storage facade | Room-scoped storage keys, legacy fallback reads, and restore bundle cleanup were hard to audit inside `online.js`. | `js/onlineStorage.js` preserves existing key names/formats and room-scoped fallback contracts; online tests cover facade behavior. |
+| UI pure render helpers | Build menu/card detail HTML generation lived inside `ui.js`, increasing escape and selector drift risk. | `js/uiBuildMenu.js` and `js/uiCardDetail.js` provide pure HTML helpers with UI tests for escape/gate contracts. |
+| Cross-layer action/selector contracts | Action metadata and UI child selectors could drift silently. | Server tests compare action registry, validators, canonical payload keys, and replay flags; main static tests compare interactability registry selectors with rendered UI sources. |
 
 ## Backlog Classification
 
@@ -42,10 +46,10 @@ No current Critical maintenance item is known from this review. The remaining tr
 
 | Item | Classification | Risk | Impact | Suggested action | Deferred reason |
 | --- | --- | --- | --- | --- | --- |
-| `server.js` socket handlers remain large | Design judgment required | Room lifecycle, payload validation, restore, reconnect, and canonical mirror code share one large file. | AI edits can accidentally cross room lifecycle and restore boundaries. | Next small safe step: extract pure room lifecycle helpers only when a failing/changed test needs it. Avoid moving live handlers wholesale. | Broad split risks online compatibility and test export churn. |
+| `server.js` socket handlers remain large | Design judgment required | Socket event wiring, payload validation, restore, reconnect, and canonical mirror code still share one large file, although pure room lifecycle helpers now live in `server/roomLifecycle.js`. | AI edits can still accidentally cross restore/reconnect/action relay boundaries. | Keep adding pure helpers only behind tests; do not move live Socket.IO handlers until a handler-family migration plan and manual online check exist. | Broad split risks online compatibility and test export churn. |
 | `js/CPU.js` remains a giant mixed file | Design judgment required / future large task | Evaluation, execution, diagnostics, and self-play helpers are still close together. | CPU behavior changes can leak across live/selfplay/tests. | Prefer helper extraction only around already-tested pure scoring/diagnostics functions. | CPU strength must not change; broad refactor requires benchmark parity. |
-| `js/ui.js` still owns many rendering surfaces | Now safer, still medium | Modal, build menu, card detail, player render, stats entry points, and log UI remain in one file. | Selector drift or rendering-side effects are easy for AI to miss. | Continue only with test-backed extraction of pure HTML helpers; keep modal lifecycle stable. | Large UI split needs visual/mobile checks. |
-| `js/online.js` storage/session namespace remains complex | Design judgment required | Room-scoped keys, legacy fallback, pending outbound, restore bundle, and rejoin retry overlap. | Small mistakes can resurrect stale room data or drop pending actions. | Add targeted tests when changing a key path. Consider a storage facade only if touching multiple key functions. | Facade rewrite could affect save/reconnect compatibility. |
+| `js/ui.js` still owns modal/player/stats/log orchestration | Now safer, still medium | Build menu and card detail pure rendering are split, but modal lifecycle, card select, player render, stats entry points, and log UI remain in `ui.js`. | Selector drift or rendering-side effects are easier to catch, but modal/focus/pointer regressions still need real devices. | Continue only with narrow pure helper extraction or selector tests; keep modal lifecycle stable until iPhone/Safari checks are planned. | Large UI split needs visual/mobile checks. |
+| `js/online.js` reconnect/session orchestration remains complex | Design judgment required | Storage access is now behind `js/onlineStorage.js`, but socket lifecycle, rejoin retry, pending outbound timing, and visible reconnect status still overlap in `online.js`. | Small timing mistakes can resurrect stale room data or drop pending actions. | Use the facade for all storage changes and add targeted tests when changing retry/state paths. Delay reconnect state machine work until manual-device verification is scheduled. | State-machine rewrite could affect save/reconnect compatibility. |
 | Action metadata cross-layer duplication | Safe only in narrow tests | `GAME_ACTION_REGISTRY`, server canonical payload table, client `applyAction`, pending specs, and UI registry must stay aligned. | New actions can be added in one layer but not another. | Add contract tests for any new action before implementation; consider generated checklist docs later. | Full dispatch unification is larger than current scope. |
 | Test files are also giant | Now acceptable | `tests/server.test.js`, `tests/cpu.test.js`, and `tests/online.test.js` are large. | Future test edits may be hard to localize. | Split only by stable domain boundaries when adding new tests becomes painful. | Mechanical test moves can create noise without behavior value. |
 
@@ -71,7 +75,7 @@ No code fix is required immediately from this review. If a future small task is 
 
 - Durable canonical state / real signed restore / hostless restore.
 - Server socket handler decomposition beyond pure helper extraction.
-- Online storage facade or room gate redesign.
+- Reconnect state machine or room gate redesign beyond the existing `js/onlineStorage.js` facade.
 - CPU evaluation/execution architecture changes.
 - Action metadata unification beyond additional contract tests.
 
@@ -102,6 +106,6 @@ No code fix is required immediately from this review. If a future small task is 
 
 If work continues, these are the highest value small-to-medium follow-ups:
 
-1. Add action contract coverage when the next action/pending path changes, especially canonical payload + client apply + UI registry alignment.
-2. Extract one pure `server.js` room lifecycle helper only if a concrete room lifecycle bug or test requires it.
-3. Run a real-device online/PWA reconnect matrix and record results in `docs/OPERATIONS.md` or a manual test note before more online refactoring.
+1. Run a real-device online/PWA reconnect matrix and record results in `docs/OPERATIONS.md` or a manual test note before reconnect state-machine work.
+2. Add action contract coverage when the next action/pending path changes, especially canonical payload + client apply + UI registry alignment.
+3. Extract the next pure UI/server helper only when an existing test can assert the exact output or policy without moving lifecycle wiring.

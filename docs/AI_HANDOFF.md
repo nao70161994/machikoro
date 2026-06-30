@@ -50,8 +50,8 @@
 
 - UI: 既知の inline handler / pending renderer / build menu / card select / stats helper 化は実施済み。新しい UI surface が見つかった場合は、`PRIMARY_ACTION_CONTAINER_REGISTRY`、通常 render no-recovery test、fallback recovery test を同時に追加する。modal deny-by-default は実装済みで、将来の nested blocking modal 例外や新しい modal UX だけ design / manual verification required。
 - CPU: heuristic の強さを変えず、diagnostics / scoring / execution flow を targeted tests で固定してから helper 単位で分離する。
-- GameManager / Server / Online: action metadata を dispatch / canonical payload / online apply の contract test へさらに寄せる。hostless restore、signed restore、server-persisted canonical state、複数 room resume UI は design required。
-- Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection を小さく追加する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
+- GameManager / Server / Online: `server/roomLifecycle.js` と `js/onlineStorage.js` が実装済みの安全境界。次は action metadata を dispatch / canonical payload / online apply の contract test へさらに寄せる。hostless restore、signed restore、server-persisted canonical state、複数 room resume UI は design required。
+- Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection は強化済み。新しい helper script を足す場合は `index.html`、`sw.js`、integration runtime、`tests/main.test.js` の script/asset drift test を同時に更新する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
 
 ## 変更時の最低確認
 
@@ -252,6 +252,12 @@ AdSense review-period docs/static-page changes use the narrower gate from `docs/
 - Normal human-turn unlock is limited to primary actions and must not close informational modals. Pending recovery is a separate `pending-ui-locked` path and only repairs `pendingModal` / `pendingMenu` visibility/lock state.
 - Client error freeze notifications send compact `FREEZE_SUMMARY` data to ntfy. Keep full text-bearing UI snapshots local-only unless privacy is explicitly reviewed.
 - CPU pending choices should be validated against live board state before sending/applying, especially RL-derived target names.
+
+## Implemented helper boundaries
+
+- Server room lifecycle: use `server/roomLifecycle.js` for pure room/player/start-payload/version/token/disconnect-candidate policy before editing equivalent logic in `server.js`.
+- Online storage: use `js/onlineStorage.js` for existing localStorage/session key access and restore bundle/index helpers; do not create new ad-hoc key reads in `online.js`.
+- UI pure rendering: use `js/uiBuildMenu.js` and `js/uiCardDetail.js` for build menu/card detail HTML. Keep modal lifecycle and real-device focus/pointer behavior in `ui.js` until planned verification exists.
 
 ## UI action enabled helper
 

@@ -102,6 +102,8 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Client-error / ntfy bodies must redact reconnect tokens, session ids, shared client-error tokens, and URL query secrets before notification or logs.
 - Saved stats numbers must normalize to finite non-negative integers before rendering percentages or bar widths.
 - Restore action logs must reject unknown action names before replay or rank calculation.
+- New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests.
+- UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
 
