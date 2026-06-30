@@ -1630,6 +1630,59 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
     }
 });
 
+runTest('UI interactability registry は描画されるaction child selectorと同期する', () => {
+    const appShell = fs.readFileSync(path.join(__dirname, '..', 'js', 'appShell.js'), 'utf8');
+    const uiSources = [
+        'js/ui.js',
+        'js/uiBuildMenu.js',
+        'js/uiCardDetail.js',
+    ].map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\\n');
+    const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const actionContainers = {
+        rollDice: 'btnRoll',
+        selectDice: 'diceChoose',
+        rerollDice: 'diceChoose',
+        skipReroll: 'diceChoose',
+        resolveHarbor: 'diceChoose',
+        resolveTV: 'pendingMenu',
+        resolveBusiness: 'pendingMenu',
+        resolveCleaning: 'pendingMenu',
+        resolveMover: 'pendingMenu',
+        resolveRenovation: 'pendingMenu',
+        resolveIT: 'pendingMenu',
+        buildCard: 'buildMenu',
+        buildLandmark: 'buildMenu',
+        undoBuild: 'buildMenu',
+        nextTurn: 'btnSkip',
+    };
+    for (const [action, targetId] of Object.entries(actionContainers)) {
+        assert.ok(appShell.includes("'" + action + "'"), action + ' missing from appShell action registry');
+        assert.ok(appShell.includes("targetId: '" + targetId + "'"), targetId + ' target missing for ' + action);
+        assert.ok(new RegExp('id=["\']' + targetId + '["\']').test(index), targetId + ' container missing from index.html');
+    }
+
+    const childActions = {
+        selectDice: 'selectDiceCount',
+        rerollDice: 'rerollDice',
+        skipReroll: 'skipReroll',
+        resolveHarbor: 'resolveHarbor',
+        resolveTV: 'resolveTV',
+        resolveBusiness: 'resolveBusiness',
+        resolveCleaning: 'resolveCleaning',
+        resolveMover: 'resolveMover',
+        resolveRenovation: 'resolveRenovation',
+        resolveIT: 'resolveIT',
+        buildCard: 'buildCard',
+        buildLandmark: 'buildLandmark',
+        undoBuild: 'undoBuild',
+    };
+    for (const [registryAction, renderedAction] of Object.entries(childActions)) {
+        assert.ok(appShell.includes(registryAction + ': Object.freeze'), registryAction + ' child selector registry missing');
+        assert.ok(appShell.includes('data-action="' + renderedAction + '"'), renderedAction + ' selector missing from registry');
+        assert.ok(uiSources.includes('data-action="' + renderedAction + '"'), renderedAction + ' is not rendered by UI sources');
+    }
+});
+
 runTest('index.html のbrowser-global script orderは主要依存順を維持する', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const scripts = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(match => match[1]);
