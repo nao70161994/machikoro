@@ -1043,6 +1043,23 @@ runTest('game lifecycle endpoint は duplicate を抑止する', async () => {
     assert.strictEqual(calls.length, 1);
 });
 
+runTest('action metadata は server validator/canonical payload/replay 契約と同じaction集合を使う', () => {
+    const runtime = loadGameRuntime();
+    const actions = Object.values(runtime.GAME_ACTIONS).sort();
+    assert.deepStrictEqual(Object.keys(runtime.GAME_ACTION_REGISTRY).sort(), actions, 'registry action set drift');
+    assert.deepStrictEqual(Object.keys(ACTION_PAYLOAD_VALIDATORS).sort(), actions, 'server validator action set drift');
+    assert.deepStrictEqual(Object.keys(CANONICAL_ACTION_PAYLOAD_KEYS).sort(), actions, 'canonical payload action set drift');
+    for (const action of actions) {
+        const entry = runtime.GAME_ACTION_REGISTRY[action];
+        assert.strictEqual(entry.action, action, action + ' registry action mismatch');
+        assert.strictEqual(entry.serverPayload, true, action + ' must declare server payload support');
+        assert.strictEqual(entry.serverReplay, true, action + ' must declare server replay support');
+        assert.strictEqual(entry.clientApply, true, action + ' must declare client apply support');
+        assert.strictEqual(typeof ACTION_PAYLOAD_VALIDATORS[action], 'function', action + ' validator missing');
+        assert.ok(Array.isArray(CANONICAL_ACTION_PAYLOAD_KEYS[action]), action + ' canonical payload keys missing');
+    }
+});
+
 runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で網羅される', () => {
     const runtime = loadGameRuntime();
     const actions = Object.values(runtime.GAME_ACTIONS).sort();
@@ -2645,6 +2662,23 @@ runTest('handleRecreateRoom は未署名 client snapshot を拒否する', () =>
 
     assert.strictEqual(__rooms.REST_UNSIGNED_SNAPSHOT, undefined);
     assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが壊れています' }]);
+});
+
+runTest('restore action log はsnapshot境界後の未知actionをbatch全体で拒否する', () => {
+    const snapshot = { actionSeq: 2 };
+    assert.deepStrictEqual(sanitizeRestoreActionLog([
+        { action: 'unknownAction', seq: 2 },
+        { action: 'nextTurn', data: {}, seq: 3 },
+    ], 'ROOM1', snapshot), [
+        { action: 'nextTurn', data: {}, seq: 3 },
+    ]);
+    assert.strictEqual(sanitizeRestoreActionLog([
+        { action: 'nextTurn', data: {}, seq: 3 },
+        { action: 'unknownAction', seq: 4 },
+    ], 'ROOM1', snapshot), null);
+    assert.strictEqual(sanitizeRestoreActionLog([
+        { action: 'unknownAction', seq: 3 },
+    ], 'ROOM1', snapshot), null);
 });
 
 runTest('sanitizeRestoreActionLog helpers は snapshot seq と room gate を共有する', () => {
