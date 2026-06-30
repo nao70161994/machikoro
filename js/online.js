@@ -654,14 +654,11 @@ function _setOnlineHostState(hostPlayerIndex) {
 }
 
 function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
-    const raw = localStorage.getItem('onlineSession');
-    if (raw) {
-        try {
-            const s = JSON.parse(raw);
-            s.isRoomHost = isRoomHost;
-            s.reconnectToken = reconnectToken || s.reconnectToken || '';
-            _writeOnlineSessionStorageJson(s, s.roomId || myRoomId);
-        } catch (_) {}
+    const session = _readOnlineStorageJson(ONLINE_SESSION_STORAGE_KEY, null);
+    if (session && typeof session === 'object') {
+        session.isRoomHost = isRoomHost;
+        session.reconnectToken = reconnectToken || session.reconnectToken || '';
+        _writeOnlineSessionStorageJson(session, session.roomId || myRoomId);
     }
     try {
         const gameStartPayload = _readOnlineGameStartPayload();
