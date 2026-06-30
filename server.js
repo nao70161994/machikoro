@@ -1592,7 +1592,6 @@ function handleRecreateRoom(socket, payload = {}) {
         return;
     }
     let { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload;
-    const restoreMode = payload.restoreMode;
     if (!roomId || !gameStartPayload || !reconnectToken) {
         emitAppError(socket, '復元データが不完全です');
         return;
@@ -1628,26 +1627,10 @@ function handleRecreateRoom(socket, payload = {}) {
         const rawSanitizedExistingRoomActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !!restoreAuditSecret() && !canonicalRecord });
         const sanitizedExistingRoomActionLog = rawSanitizedExistingRoomActionLog || [];
         const incomingRestoreLogValid = rawSanitizedExistingRoomActionLog !== null;
-        const incomingRankForExistingRoom = restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
-        const existingRoomHostlessReplace = !canonicalRecord &&
-            restoreMode === 'hostless' &&
-            existingRestoreAuthenticated &&
-            room.restored === true &&
-            gameStartPayload.hostPlayerIndex !== playerIndex &&
-            isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
-        if (existingRoomHostlessReplace) {
-            gameStartPayload = Object.assign({}, gameStartPayload, {
-                hostPlayerIndex: playerIndex,
-                hostEpoch: Math.max(
-                    incomingRankForExistingRoom.hostEpoch,
-                    Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0
-                ) + 1,
-            });
-        }
         const incomingCanReplace = incomingRestoreLogValid &&
             isValidGameStartPayload(gameStartPayload, Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0) &&
             !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
-            (existingHostRestoreAuthenticated || existingRoomHostlessReplace) &&
+            existingHostRestoreAuthenticated &&
             clientSnapshotTrusted &&
             canReplaceRestoredRoom(room, playerIndex, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
         if (!incomingCanReplace) {
@@ -1704,8 +1687,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, 'INVALID_TOKEN');
         return;
     }
-    const restoreAsHostless = !canonicalRecord && restoreMode === 'hostless' && gameStartPayload.hostPlayerIndex !== playerIndex;
-    if (!Number.isInteger(gameStartPayload.hostPlayerIndex) || (gameStartPayload.hostPlayerIndex !== playerIndex && !restoreAsHostless)) {
+    if (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex) {
         emitAppError(socket, '復元は元のホストのみ実行できます');
         return;
     }
@@ -1733,10 +1715,6 @@ function handleRecreateRoom(socket, payload = {}) {
             actionSeq: Number.isInteger(canonicalRecord.actionSeq) ? canonicalRecord.actionSeq : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog).actionSeq,
         }
         : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog);
-    if (restoreAsHostless) {
-        restoredRank.hostEpoch = Math.max(restoredRank.hostEpoch, Number.isInteger(gameStartPayload.hostEpoch) ? gameStartPayload.hostEpoch : 0) + 1;
-        gameStartPayload.hostPlayerIndex = playerIndex;
-    }
     gameStartPayload.hostEpoch = restoredRank.hostEpoch;
     gameStartPayload.actionSeq = restoredRank.actionSeq;
     const restoredRoom = {

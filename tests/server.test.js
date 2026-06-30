@@ -3314,7 +3314,7 @@ runTest('handleRecreateRoom は旧ホスト不在なら再接続者をホスト�
     }
 });
 
-runTest('handleRecreateRoom は空roomのhostless復元を送信者ホストへ昇格する', () => {
+runTest('handleRecreateRoom は空roomのhostless復元を拒否する', () => {
     const crypto = require('crypto');
     const emitted = [];
     const joined = [];
@@ -3354,19 +3354,16 @@ runTest('handleRecreateRoom は空roomのhostless復元を送信者ホストへ�
             reconnectToken: tokenBob,
         }));
 
-        assert.deepStrictEqual(joined, ['HOSTLESS01']);
-        assert.strictEqual(__rooms.HOSTLESS01.hostPlayerIndex, 1);
-        assert.strictEqual(__rooms.HOSTLESS01.hostEpoch, 3);
-        assert.strictEqual(__rooms.HOSTLESS01.gameStartPayload.hostPlayerIndex, 1);
-        assert.strictEqual(emitted[0].name, 'rejoinData');
-        assert.strictEqual(emitted[0].payload.hostPlayerIndex, 1);
-        assert.strictEqual(emitted[0].payload.hostEpoch, 3);
+        assert.deepStrictEqual(joined, []);
+        assert.strictEqual(__rooms.HOSTLESS01, undefined);
+        assert.strictEqual(emitted[0].name, 'appError');
+        assert.strictEqual(emitted[0].payload, '復元は元のホストのみ実行できます');
     } finally {
         delete __rooms.HOSTLESS01;
     }
 });
 
-runTest('handleRecreateRoom は古い復元済みroomを新しいhostless復元で置き換える', () => {
+runTest('handleRecreateRoom はhostless payloadで復元済みroomを置き換えない', () => {
     const crypto = require('crypto');
     const emitted = [];
     const joined = [];
@@ -3426,9 +3423,11 @@ runTest('handleRecreateRoom は古い復元済みroomを新しいhostless復元�
         assert.deepStrictEqual(joined, ['HOSTLESS_REPLACE']);
         assert.strictEqual(__rooms.HOSTLESS_REPLACE.hostPlayerIndex, 1);
         assert.strictEqual(__rooms.HOSTLESS_REPLACE.hostEpoch, 1);
-        assert.strictEqual(__rooms.HOSTLESS_REPLACE.actionSeq, 8);
+        assert.strictEqual(__rooms.HOSTLESS_REPLACE.actionSeq, 3);
+        assert.strictEqual(__rooms.HOSTLESS_REPLACE.stateSnapshot.actionSeq, 3);
         assert.strictEqual(emitted[0].name, 'rejoinData');
         assert.strictEqual(emitted[0].payload.hostPlayerIndex, 1);
+        assert.strictEqual(emitted[0].payload.gameStartPayload.actionSeq, 3);
     } finally {
         delete __rooms.HOSTLESS_REPLACE;
     }

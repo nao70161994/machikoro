@@ -842,6 +842,58 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
     assert.ok(rt.getScheduleCount() > 0);
 });
 
+runTest('rejoinData は署名なしsnapshotでローカル完全actionLogを短い残差logで上書きしない', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    const game = new rt.GameManager(2);
+    rt.setGame(game);
+    for (const card of CARDS) rt.getShopStock()[card.name] = 6;
+    rt.initSocket();
+    rt.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        reconnectToken: 'token-bob',
+        isRoomHost: false,
+    });
+    const fullActionLog = [
+        { action: 'rollDice', data: { forceDice: 1 }, playerIndex: 0, seq: 1 },
+        { action: 'nextTurn', data: {}, playerIndex: 0, seq: 2 },
+    ];
+    const gameStartPayload = {
+        schemaVersion: 2,
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(c => c.name),
+        enabledLandmarks: Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 2,
+    };
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify(gameStartPayload));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify(fullActionLog));
+    const stateSnapshot = rt.buildOnlineSnapshot();
+    stateSnapshot.actionSeq = 2;
+
+    rt.getSocketHandlers().rejoinData({
+        gameStartPayload: Object.assign({}, gameStartPayload),
+        stateSnapshot,
+        actionLog: [],
+        playerIndex: 1,
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+    });
+
+    const storedActionLog = rt._readOnlineActionLog();
+    assert.strictEqual(storedActionLog.length, 2);
+    assert.strictEqual(JSON.stringify(storedActionLog.map(entry => entry.seq)), JSON.stringify([1, 2]));
+    assert.strictEqual(JSON.parse(rt.localStorage.getItem('onlineActionLog')).length, 2);
+});
+
 runTest('rejoinData は build action replay から undoState を復元する', () => {
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));

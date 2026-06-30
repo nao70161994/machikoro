@@ -855,7 +855,15 @@ function initSocket() {
                 } else {
                     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
                 }
-                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, replayActionLog);
+                const storedActionLog = _readOnlineActionLog();
+                const shouldKeepUnsignedFullLog = stateSnapshot &&
+                    !restoreAudit &&
+                    Array.isArray(storedActionLog) &&
+                    storedActionLog.length > replayActionLog.length;
+                _writeOnlineRestoreStorageJson(
+                    ONLINE_STORAGE_KEYS.actionLog,
+                    shouldKeepUnsignedFullLog ? storedActionLog : replayActionLog
+                );
             } catch(e) {}
             saveOnlineSession();
             cpuScheduleToken++;
@@ -1294,7 +1302,7 @@ function sendAction(action, data = {}) {
     return !isOnlineGame;
 }
 
-function _tryRestoreRoom(options = {}) {
+function _tryRestoreRoom() {
     try {
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload) {
@@ -1308,21 +1316,17 @@ function _tryRestoreRoom(options = {}) {
             return;
         }
         const isStoredHost = gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex;
-        const allowHostless = !!options.allowHostless;
-        if (!isStoredHost && !allowHostless) return false;
+        if (!isStoredHost) return false;
         const restoreAudit = _readOnlineRestoreAudit();
         const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
         const actionLog = _readOnlineActionLog();
-        document.getElementById("onlineStatus").textContent = allowHostless && !isStoredHost
-            ? '♻️ ホスト不在のため、この端末の復元データでゲームを復元中...'
-            : '♻️ サーバー再起動を検知。ゲームを復元中...';
+        document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
         socket.emit('recreateRoom', {
             roomId: myRoomId,
             gameStartPayload,
             stateSnapshot,
             actionLog,
             restoreAudit,
-            restoreMode: allowHostless && !isStoredHost ? 'hostless' : undefined,
             playerIndex: myOriginalPlayerIndex,
             playerName: myPlayerName,
             reconnectToken,
@@ -1364,7 +1368,6 @@ function _sendRecreateRoomFromBundle(bundle) {
 function _scheduleRejoinRetry() {
     const MAX_RETRY = 8;
     if (_rejoinRetryCount >= MAX_RETRY) {
-        if (_tryRestoreRoom({ allowHostless: true })) return;
         document.getElementById("onlineStatus").textContent = '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。';
         isReconnectingOnline = false;
         try { if (typeof render === 'function') render(); } catch (_) {}

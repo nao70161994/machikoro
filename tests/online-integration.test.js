@@ -722,7 +722,7 @@ runTest('online integration: rejoin retry は正規化済みsessionで再送す�
     });
 });
 
-runTest('online integration: 非ホストはホスト待機上限後にhostless復元を送る', () => {
+runTest('online integration: 非ホストはホスト待機上限後もhostless復元を送らない', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineSession', JSON.stringify({
         roomId: 'ROOM01',
@@ -766,12 +766,8 @@ runTest('online integration: 非ホストはホスト待機上限後にhostless�
         rt.__test.flushTimeouts();
     }
 
-    const emitted = rt.__test.socketEmits[rt.__test.socketEmits.length - 1];
-    assert.strictEqual(emitted.name, 'recreateRoom');
-    assert.strictEqual(emitted.payload.restoreMode, 'hostless');
-    assert.strictEqual(emitted.payload.playerIndex, 1);
-    assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 0);
-    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '♻️ ホスト不在のため、この端末の復元データでゲームを復元中...');
+    assert.strictEqual(rt.__test.socketEmits.some(event => event.name === 'recreateRoom'), false);
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。');
 });
 
 runTest('online integration: rejoin retry timeout は入力ブロック解除後に再描画する', () => {
