@@ -119,7 +119,7 @@ function loadStorageRuntime() {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/storage.js']);
+    loadScripts(context, ['js/onlineStorage.js', 'js/storage.js']);
     vm.runInContext(`
         this.__test = {
             elements,
@@ -213,6 +213,29 @@ runTest('storage updateResumeButton は型不正なオンライン再接続デ�
     rt.updateResumeButton();
 
     assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'none');
+});
+
+runTest('storage reconnectOnline はSocket.IO初期化失敗時に部分適用したオンライン状態を戻す', () => {
+    const rt = loadStorageRuntime();
+    rt.initSocket = () => false;
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'room-1',
+        playerIndex: 1,
+        playerName: 'P2',
+        reconnectToken: 'token-1',
+        isRoomHost: true,
+    }));
+
+    rt.reconnectOnline();
+
+    assert.strictEqual(rt.isReconnectingOnline, false);
+    assert.strictEqual(rt.isRoomHost, false);
+    assert.strictEqual(rt.myPlayerName, '');
+    assert.strictEqual(rt.myRoomId, null);
+    assert.strictEqual(rt.myOriginalPlayerIndex, -1);
+    assert.strictEqual(rt.myPlayerIndex, -1);
+    assert.strictEqual(rt.reconnectToken, '');
+    assert.deepStrictEqual(rt.emits, []);
 });
 
 runTest('storage reconnectOnline はオンライン再接続データの空白を正規化して送る', () => {

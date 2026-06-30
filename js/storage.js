@@ -13,20 +13,75 @@ function buildStorageOnlineRejoinPayload(session) {
     };
 }
 
+const STORAGE_ONLINE_SESSION_KEY = typeof ONLINE_SESSION_STORAGE_KEY !== 'undefined'
+    ? ONLINE_SESSION_STORAGE_KEY
+    : 'onlineSession';
+const STORAGE_ONLINE_ROOM_KEY_SEPARATOR = typeof ONLINE_ROOM_STORAGE_KEY_SEPARATOR !== 'undefined'
+    ? ONLINE_ROOM_STORAGE_KEY_SEPARATOR
+    : ':room:';
+const STORAGE_ONLINE_STORAGE_KEYS = typeof ONLINE_STORAGE_KEYS !== 'undefined'
+    ? ONLINE_STORAGE_KEYS
+    : Object.freeze({
+        gameStart: 'onlineGameStart',
+        actionLog: 'onlineActionLog',
+        stateSnapshot: 'onlineStateSnapshot',
+        restoreAudit: 'onlineRestoreAudit',
+        pendingAction: 'onlinePendingAction',
+    });
+const STORAGE_ONLINE_RESTORE_ROOM_INDEX_KEY = typeof ONLINE_RESTORE_ROOM_INDEX_KEY !== 'undefined'
+    ? ONLINE_RESTORE_ROOM_INDEX_KEY
+    : 'onlineRestoreRoomIndex';
 const ONLINE_RESTORE_BUNDLE_KEYS = Object.freeze([
-    'onlineGameStart',
-    'onlineActionLog',
-    'onlineStateSnapshot',
-    'onlineRestoreAudit',
-    'onlinePendingAction',
-    'onlineRestoreRoomIndex',
+    STORAGE_ONLINE_STORAGE_KEYS.gameStart,
+    STORAGE_ONLINE_STORAGE_KEYS.actionLog,
+    STORAGE_ONLINE_STORAGE_KEYS.stateSnapshot,
+    STORAGE_ONLINE_STORAGE_KEYS.restoreAudit,
+    STORAGE_ONLINE_STORAGE_KEYS.pendingAction,
+    STORAGE_ONLINE_RESTORE_ROOM_INDEX_KEY,
 ]);
+let storageOnlineStorageFacade = null;
+
+function getStorageOnlineStorageFacade() {
+    if (storageOnlineStorageFacade) return storageOnlineStorageFacade;
+    if (typeof createOnlineStorageFacade !== 'function') return null;
+    storageOnlineStorageFacade = createOnlineStorageFacade({
+        storage: localStorage,
+        sessionKey: STORAGE_ONLINE_SESSION_KEY,
+        storageKeys: STORAGE_ONLINE_STORAGE_KEYS,
+        roomIndexKey: STORAGE_ONLINE_RESTORE_ROOM_INDEX_KEY,
+        roomKeySeparator: STORAGE_ONLINE_ROOM_KEY_SEPARATOR,
+        getCurrentRoomId: () => (typeof myRoomId === 'string' ? myRoomId : ''),
+    });
+    return storageOnlineStorageFacade;
+}
+
+function normalizeOnlineSessionPayload(session) {
+    if (!session || typeof session !== 'object') return null;
+    const roomId = typeof session.roomId === 'string' ? session.roomId.trim().toUpperCase() : '';
+    const playerName = typeof session.playerName === 'string' ? session.playerName.trim() : '';
+    const reconnectToken = typeof session.reconnectToken === 'string' ? session.reconnectToken.trim() : '';
+    if (
+        roomId === '' ||
+        !Number.isInteger(session.playerIndex) ||
+        session.playerIndex < 0 ||
+        playerName === '' ||
+        reconnectToken === ''
+    ) {
+        return null;
+    }
+    return Object.assign({}, session, { roomId, playerName, reconnectToken });
+}
 
 function removeOnlineRestoreBundleStorageKeyVariants(key) {
-    localStorage.removeItem(key);
+    const storageFacade = getStorageOnlineStorageFacade();
+    if (storageFacade && typeof storageFacade.removeStorageItem === 'function') {
+        storageFacade.removeStorageItem(key);
+    } else {
+        localStorage.removeItem(key);
+    }
     try {
         if (typeof localStorage.length !== 'number' || typeof localStorage.key !== 'function') return;
-        const scopedPrefix = `${key}:room:`;
+        const scopedPrefix = key + STORAGE_ONLINE_ROOM_KEY_SEPARATOR;
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             const storageKey = localStorage.key(i);
@@ -48,7 +103,7 @@ function clearOnlineRestoreBundleStorage() {
 }
 
 function clearOnlineSessionStorage() {
-    removeOnlineRestoreBundleStorageKeyVariants('onlineSession');
+    removeOnlineRestoreBundleStorageKeyVariants(STORAGE_ONLINE_SESSION_KEY);
     clearOnlineRestoreBundleStorage();
 }
 
@@ -112,23 +167,11 @@ function updateResumeButton() {
 
 function readOnlineSession() {
     try {
-        const raw = localStorage.getItem('onlineSession');
-        if (!raw) return null;
-        const session = JSON.parse(raw);
-        const roomId = typeof session.roomId === 'string' ? session.roomId.trim().toUpperCase() : '';
-        const playerName = typeof session.playerName === 'string' ? session.playerName.trim() : '';
-        const reconnectToken = typeof session.reconnectToken === 'string' ? session.reconnectToken.trim() : '';
-        if (
-            !session ||
-            roomId === '' ||
-            !Number.isInteger(session.playerIndex) ||
-            session.playerIndex < 0 ||
-            playerName === '' ||
-            reconnectToken === ''
-        ) {
-            return null;
-        }
-        return Object.assign({}, session, { roomId, playerName, reconnectToken });
+        const storageFacade = getStorageOnlineStorageFacade();
+        const session = storageFacade && typeof storageFacade.readStorageJson === 'function'
+            ? storageFacade.readStorageJson(STORAGE_ONLINE_SESSION_KEY, null)
+            : JSON.parse(localStorage.getItem(STORAGE_ONLINE_SESSION_KEY) || 'null');
+        return normalizeOnlineSessionPayload(session);
     } catch(e) {
         return null;
     }
@@ -151,7 +194,7 @@ function deleteOnlineSession() {
 function reconnectOnline() {
     const session = readOnlineSession();
     if (!session) {
-        if (localStorage.getItem('onlineSession')) {
+        if (localStorage.getItem(STORAGE_ONLINE_SESSION_KEY)) {
             clearOnlineSessionStorage();
             updateResumeButton();
             showNotice('再接続データの読み込みに失敗しました');
@@ -169,6 +212,12 @@ function reconnectOnline() {
         reconnectToken = session.reconnectToken || '';
         if (!initSocket()) {
             isReconnectingOnline = false;
+            isRoomHost = false;
+            myPlayerName = '';
+            myRoomId = null;
+            myOriginalPlayerIndex = -1;
+            myPlayerIndex = -1;
+            reconnectToken = '';
             return;
         }
         document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
