@@ -753,6 +753,32 @@ runTest('storage loadSettings は旧設定にもローカル名の初期値を�
     assert.strictEqual(rt.elements.speedLabel.textContent, '超高速');
 });
 
+runTest('storage resumeGame はRL preload中の連打を一度だけ復元する', async () => {
+    const rt = loadStorageRuntime();
+    let resolvePreload;
+    let preloadCalls = 0;
+    rt.RLModelPortfolio = {
+        eligibleLoadState() { return { status: 'idle' }; },
+        preloadEligibleModels() {
+            preloadCalls++;
+            return new Promise(resolve => { resolvePreload = resolve; });
+        },
+    };
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+
+    rt.resumeGame();
+    rt.resumeGame();
+
+    assert.strictEqual(preloadCalls, 1);
+    assert.strictEqual(rt.elements.btnResume.disabled, true);
+    resolvePreload([]);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(rt.renderCount, 1);
+    assert.strictEqual(rt.__test.getResetOnlineStateCalls(), 1);
+    assert.strictEqual(rt.elements.btnResume.disabled, false);
+});
+
 if (process.exitCode) {
     throw new Error('storageテストで失敗が発生しました');
 }

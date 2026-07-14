@@ -34,6 +34,8 @@ const RLModelPortfolio = (() => {
     const cache = new Map();
     const pendingLoads = new Map();
     const loadStates = new Map();
+    const pendingFetchDeadlines = new Set();
+    const pendingRetryDeadlines = new Set();
 
     function eligibleModels(playerCount) {
         const count = Number(playerCount) || 2;
@@ -127,11 +129,41 @@ const RLModelPortfolio = (() => {
     function preloadRetryDelay(attempt, options) {
         const delayMs = Number.isFinite(options.retryDelayMs) ? Math.max(0, options.retryDelayMs) : Math.min(1200, 300 * attempt);
         if (delayMs <= 0 || typeof setTimeout !== "function") return Promise.resolve();
-        return new Promise(resolve => setTimeout(resolve, delayMs));
+        return new Promise(resolve => {
+            const pending = {
+                deadline: Date.now() + delayMs,
+                timer: null,
+                settled: false,
+            };
+            pending.finish = () => {
+                if (pending.settled) return;
+                pending.settled = true;
+                if (pending.timer !== null && typeof clearTimeout === "function") clearTimeout(pending.timer);
+                pending.timer = null;
+                pendingRetryDeadlines.delete(pending);
+                resolve();
+            };
+            pending.arm = () => {
+                if (pending.settled) return;
+                if (pending.timer !== null && typeof clearTimeout === "function") clearTimeout(pending.timer);
+                const remaining = pending.deadline - Date.now();
+                if (remaining <= 0) {
+                    pending.finish();
+                    return;
+                }
+                pending.timer = setTimeout(pending.finish, remaining);
+            };
+            pendingRetryDeadlines.add(pending);
+            pending.arm();
+        });
     }
 
-    function fetchModelData(model) {
-        return fetch(model.path, { cache: "force-cache" })
+    function fetchModelData(model, options) {
+        const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(0, options.timeoutMs) : 15000;
+        const controller = typeof AbortController === "function" ? new AbortController() : null;
+        const fetchOptions = { cache: "force-cache" };
+        if (controller) fetchOptions.signal = controller.signal;
+        const fetchPromise = fetch(model.path, fetchOptions)
             .then(response => {
                 if (!response || response.ok === false) {
                     const status = response && response.status !== undefined ? response.status : "unknown";
@@ -139,6 +171,51 @@ const RLModelPortfolio = (() => {
                 }
                 return response.json();
             });
+        if (timeoutMs <= 0 || typeof setTimeout !== "function") return fetchPromise;
+        return new Promise((resolve, reject) => {
+            const pending = {
+                model,
+                controller,
+                deadline: Date.now() + timeoutMs,
+                timer: null,
+                settled: false,
+                reject,
+            };
+            const settle = (callback, value) => {
+                if (pending.settled) return;
+                pending.settled = true;
+                if (pending.timer !== null && typeof clearTimeout === "function") clearTimeout(pending.timer);
+                pending.timer = null;
+                pendingFetchDeadlines.delete(pending);
+                callback(value);
+            };
+            pending.expire = () => {
+                if (pending.controller) pending.controller.abort();
+                settle(reject, new Error(`RL model preload timed out: ${model.path} (${timeoutMs}ms)`));
+            };
+            pending.arm = () => {
+                if (pending.settled) return;
+                if (pending.timer !== null && typeof clearTimeout === "function") clearTimeout(pending.timer);
+                const remaining = pending.deadline - Date.now();
+                if (remaining <= 0) {
+                    pending.expire();
+                    return;
+                }
+                pending.timer = setTimeout(pending.expire, remaining);
+            };
+            pendingFetchDeadlines.add(pending);
+            pending.arm();
+            fetchPromise.then(
+                data => settle(resolve, data),
+                error => settle(reject, error)
+            );
+        });
+    }
+
+    function resumePendingLoadsAfterPageActivation() {
+        for (const pending of [...pendingFetchDeadlines]) pending.arm();
+        for (const pending of [...pendingRetryDeadlines]) pending.arm();
+        return pendingFetchDeadlines.size + pendingRetryDeadlines.size;
     }
 
     function preloadModelData(model, options = {}) {
@@ -155,7 +232,7 @@ const RLModelPortfolio = (() => {
         }
         markLoadState(model, 'loading');
         const maxAttempts = Math.max(1, Math.floor(Number.isFinite(options.attempts) ? options.attempts : 3));
-        const loadWithRetry = (attempt) => fetchModelData(model).catch(error => {
+        const loadWithRetry = (attempt) => fetchModelData(model, options).catch(error => {
             if (attempt >= maxAttempts) throw error;
             return preloadRetryDelay(attempt, options).then(() => loadWithRetry(attempt + 1));
         });
@@ -208,6 +285,7 @@ const RLModelPortfolio = (() => {
         modelLoadState,
         preloadEligibleModels,
         preloadModelData,
+        resumePendingLoadsAfterPageActivation,
         selectRandomModel,
         shouldAvoidSynchronousModelLoad,
         supportsPlayerCount,

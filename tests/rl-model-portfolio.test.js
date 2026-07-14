@@ -232,3 +232,94 @@ runTest('RL model portfolio: preload最終失敗はeligible stateをfailedにす
     assert.strictEqual(state.status, 'failed');
     assert.ok(state.errors.some(error => error.includes('network down')));
 });
+
+runTest('RL model portfolio: page activation expires a Safari-suspended preload timer', async () => {
+    let now = 1000;
+    let abortCalls = 0;
+    const timers = [];
+    class FakeDate extends Date { static now() { return now; } }
+    class FakeAbortController {
+        constructor() { this.signal = {}; }
+        abort() { abortCalls += 1; }
+    }
+    const { RLModelPortfolio } = loadPortfolio({
+        Date: FakeDate,
+        AbortController: FakeAbortController,
+        setTimeout(handler) { timers.push(handler); return timers.length; },
+        clearTimeout() {},
+        fetch() { return new Promise(() => {}); },
+    });
+    const model = RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2);
+    const request = RLModelPortfolio.preloadModelData(model, { attempts: 1, timeoutMs: 15 });
+    now += 20;
+
+    RLModelPortfolio.resumePendingLoadsAfterPageActivation();
+
+    await assert.rejects(() => request, /preload timed out/);
+    assert.strictEqual(abortCalls, 1);
+    assert.strictEqual(RLModelPortfolio.modelLoadState(model).status, 'failed');
+});
+
+runTest('RL model portfolio: page activation completes an expired Safari-suspended retry delay', async () => {
+    let now = 1000;
+    let fetchCalls = 0;
+    const timers = [];
+    class FakeDate extends Date { static now() { return now; } }
+    const { RLModelPortfolio } = loadPortfolio({
+        Date: FakeDate,
+        setTimeout(handler) { timers.push(handler); return timers.length; },
+        clearTimeout() {},
+        fetch() {
+            fetchCalls += 1;
+            if (fetchCalls === 1) return Promise.reject(new Error('temporary'));
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({ stateDim: 145 }) });
+        },
+    });
+    const model = RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2);
+    const request = RLModelPortfolio.preloadModelData(model, { attempts: 2, retryDelayMs: 15, timeoutMs: 100 });
+    for (let i = 0; i < 6; i++) await Promise.resolve();
+    now += 20;
+
+    const pendingAfterActivation = RLModelPortfolio.resumePendingLoadsAfterPageActivation();
+    assert.ok(pendingAfterActivation >= 0);
+    const data = await request;
+
+    assert.strictEqual(data.stateDim, 145);
+    assert.strictEqual(fetchCalls, 2);
+});
+
+runTest('RL model portfolio: 未解決fetchはtimeout後にfailedとなり再試行できる', async () => {
+    let fetchCalls = 0;
+    let abortCalls = 0;
+    class FakeAbortController {
+        constructor() { this.signal = {}; }
+        abort() { abortCalls += 1; }
+    }
+    const { RLModelPortfolio } = loadPortfolio({
+        AbortController: FakeAbortController,
+        setTimeout,
+        clearTimeout,
+        fetch() {
+            fetchCalls += 1;
+            if (fetchCalls === 1) return new Promise(() => {});
+            return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({ stateDim: 145, actionSchema: 'action-flat-v1', layers: [] }),
+            });
+        },
+    });
+    const model = RLModelPortfolio.modelById('self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3', 2);
+
+    await assert.rejects(
+        () => RLModelPortfolio.preloadModelData(model, { attempts: 1, timeoutMs: 5 }),
+        /preload timed out/
+    );
+    assert.strictEqual(RLModelPortfolio.modelLoadState(model).status, 'failed');
+    assert.strictEqual(abortCalls, 1);
+
+    const data = await RLModelPortfolio.preloadModelData(model, { attempts: 1, timeoutMs: 50 });
+    assert.strictEqual(data.stateDim, 145);
+    assert.strictEqual(fetchCalls, 2);
+    assert.strictEqual(RLModelPortfolio.modelLoadState(model).status, 'ready');
+});
