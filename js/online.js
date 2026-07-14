@@ -3,6 +3,11 @@ let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 let onlineCreateRoomPending = false;
+let onlineJoinRoomPending = false;
+let onlineLobbyRequestTimer = null;
+let onlineLobbyRequestKind = '';
+let onlineLobbyRequestGeneration = 0;
+const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
 let onlineSocketUnavailableReported = false;
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
 
@@ -115,9 +120,21 @@ let onlineActionInFlightAt = 0;
 let _onlineActionTimeoutTimer = null;
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
+let _rejoinRetryDeadline = 0;
+let _rejoinRetryExhausted = false;
+let _onlineRestoreGeneration = 0;
+let _onlineRestoreInProgress = false;
+let _onlineRestoreEventQueue = [];
+let _lastAppliedOnlineActionSeqMemory = 0;
+let _flushingOnlineRestoreEvents = false;
+let _onlineRestoreQuarantined = false;
+const _pendingOutboundActionsMemory = new Map();
 const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
 const ONLINE_ACTION_ACK_TIMEOUT_MS = 15000;
+const ONLINE_REJOIN_RETRY_DELAY_MS = 3000;
+const ONLINE_REJOIN_MAX_ATTEMPTS = 8;
+const ONLINE_RESTORE_EVENT_QUEUE_LIMIT = 256;
 const ONLINE_RESTORE_SCHEMA_VERSION = 2;
 const ONLINE_SESSION_STORAGE_KEY = 'onlineSession';
 const ONLINE_STORAGE_KEYS = Object.freeze({
@@ -144,8 +161,21 @@ function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingActio
     );
 }
 
+function getOnlineClientStorage() {
+    try {
+        if (typeof localStorage !== 'undefined') return localStorage;
+    } catch (_) {}
+    return {
+        getItem() { return null; },
+        setItem() {},
+        removeItem() {},
+        key() { return null; },
+        length: 0,
+    };
+}
+
 const onlineStorage = createOnlineStorageFacade({
-    storage: typeof localStorage !== 'undefined' ? localStorage : null,
+    storage: getOnlineClientStorage(),
     getCurrentRoomId: () => myRoomId,
     sessionKey: ONLINE_SESSION_STORAGE_KEY,
     storageKeys: ONLINE_STORAGE_KEYS,
@@ -265,10 +295,43 @@ function _readOnlineRestoreAudit() {
 
 function _clearRejoinRetry() {
     _rejoinRetryCount = 0;
+    _rejoinRetryDeadline = 0;
+    _rejoinRetryExhausted = false;
     if (_rejoinRetryTimer) {
         clearTimeout(_rejoinRetryTimer);
         _rejoinRetryTimer = null;
     }
+}
+
+function _finishRejoinRetryTimeout() {
+    if (_rejoinRetryTimer) clearTimeout(_rejoinRetryTimer);
+    _rejoinRetryTimer = null;
+    _rejoinRetryDeadline = 0;
+    _rejoinRetryExhausted = true;
+    const el = document.getElementById("onlineStatus");
+    if (el) el.textContent = '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。';
+    // Canonical state is unknown. Keep all game input and host CPU blocked.
+    isReconnectingOnline = true;
+    cpuScheduleToken++;
+    try { if (typeof render === 'function') render(); } catch (_) {}
+    return false;
+}
+
+function _armOnlineRejoinResponseTimeout() {
+    if (_rejoinRetryTimer || _rejoinRetryExhausted || typeof setTimeout !== 'function') return true;
+    _rejoinRetryDeadline = Date.now() + ONLINE_REJOIN_RETRY_DELAY_MS;
+    _rejoinRetryTimer = setTimeout(() => {
+        _rejoinRetryTimer = null;
+        _rejoinRetryDeadline = 0;
+        if (!isReconnectingOnline) return;
+        if (_rejoinRetryCount >= ONLINE_REJOIN_MAX_ATTEMPTS) {
+            _finishRejoinRetryTimeout();
+            return;
+        }
+        const session = typeof readOnlineSession === 'function' ? readOnlineSession() : null;
+        _emitOnlineRejoinRequest(session);
+    }, ONLINE_REJOIN_RETRY_DELAY_MS);
+    return true;
 }
 
 function _clearOnlineActionTimeout() {
@@ -289,15 +352,35 @@ function _setOnlineActionInFlight(value) {
     }
 }
 
-function _emitOnlineRejoinRequest() {
-    if (!socket || socket.connected === false || !myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return false;
-    socket.emit('rejoinRoom', buildOnlineRejoinPayload({
+function _emitOnlineRejoinRequest(sessionOverride = null) {
+    const session = sessionOverride || {
         roomId: myRoomId,
         playerIndex: myOriginalPlayerIndex,
         playerName: myPlayerName,
         reconnectToken,
-    }));
+    };
+    if (!socket || !session.roomId || session.playerIndex < 0 || !session.playerName || !session.reconnectToken) return false;
+    isReconnectingOnline = true;
+    if (socket.connected === false) return true;
+    if (_rejoinRetryCount >= ONLINE_REJOIN_MAX_ATTEMPTS) return _finishRejoinRetryTimeout();
+    if (_rejoinRetryTimer) {
+        clearTimeout(_rejoinRetryTimer);
+        _rejoinRetryTimer = null;
+    }
+    _rejoinRetryCount++;
+    socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
+    _armOnlineRejoinResponseTimeout();
     return true;
+}
+
+function resumeOnlineReconnectAfterPageActivation() {
+    if (!isReconnectingOnline || _rejoinRetryExhausted) return false;
+    if (!socket || socket.connected === false) return false;
+    if (_rejoinRetryTimer && _rejoinRetryDeadline > Date.now()) return false;
+    if (_rejoinRetryTimer) clearTimeout(_rejoinRetryTimer);
+    _rejoinRetryTimer = null;
+    _rejoinRetryDeadline = 0;
+    return _emitOnlineRejoinRequest();
 }
 
 function _handleOnlineActionTimeout() {
@@ -319,6 +402,7 @@ function markOnlineGameFinished() {
 }
 
 function resetOnlineState() {
+    finishOnlineLobbyRequest();
     const roomIdBeforeReset = myRoomId;
     cpuScheduleToken++;
     if (socket) { socket.disconnect(); socket = null; }
@@ -333,6 +417,13 @@ function resetOnlineState() {
     _setOnlineActionInFlight(false);
     _clearPendingOutboundAction(roomIdBeforeReset);
     _clearRejoinRetry();
+    _onlineRestoreGeneration++;
+    _onlineRestoreInProgress = false;
+    _onlineRestoreEventQueue = [];
+    _lastAppliedOnlineActionSeqMemory = 0;
+    _flushingOnlineRestoreEvents = false;
+    _onlineRestoreQuarantined = false;
+    _pendingOutboundActionsMemory.clear();
 }
 
 function _saveActionLog(action, data, options = {}) {
@@ -395,6 +486,8 @@ function _savePendingOutboundAction(action, data) {
         seq: _nextOnlineActionSeq(),
         clientActionId: _createOnlineClientActionId(),
     };
+    const memoryKey = _normalizeOnlineRoomId(entry.roomId) || '';
+    _pendingOutboundActionsMemory.set(memoryKey, entry);
     try {
         _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry);
         _writeOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry, entry.roomId);
@@ -429,10 +522,29 @@ function _currentOnlineActionSeq(log = null) {
     const actionLog = log || _readOnlineActionLog();
     const logSeq = actionLog.reduce((max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max, 0);
     return Math.max(
+        _lastAppliedOnlineActionSeqMemory,
         Number.isInteger(payload?.actionSeq) ? payload.actionSeq : 0,
         snapshotSeq,
         logSeq
     );
+}
+
+function _lastAppliedOnlineActionSeq(log = null) {
+    const snapshot = _readOnlineStateSnapshot();
+    const snapshotSeq = Number.isInteger(snapshot?.actionSeq) ? snapshot.actionSeq : 0;
+    const actionLog = log || _readOnlineActionLog();
+    const storedSeq = actionLog.reduce(
+        (max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max,
+        snapshotSeq
+    );
+    _lastAppliedOnlineActionSeqMemory = Math.max(_lastAppliedOnlineActionSeqMemory, storedSeq);
+    return _lastAppliedOnlineActionSeqMemory;
+}
+
+function _setLastAppliedOnlineActionSeq(seq) {
+    if (Number.isInteger(seq)) {
+        _lastAppliedOnlineActionSeqMemory = Math.max(_lastAppliedOnlineActionSeqMemory, seq);
+    }
 }
 
 function _serverOnlineActionSeq(gameStartPayload, stateSnapshot, actionLog) {
@@ -487,7 +599,17 @@ function _normalizePendingOutboundAction(entry) {
 }
 
 function _readPendingOutboundAction() {
-    return _normalizePendingOutboundAction(_readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null));
+    const currentRoomKey = _normalizeOnlineRoomId(myRoomId) || '';
+    if (_pendingOutboundActionsMemory.has(currentRoomKey)) {
+        return _pendingOutboundActionsMemory.get(currentRoomKey);
+    }
+    const stored = _normalizePendingOutboundAction(_readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null));
+    if (stored) {
+        const storedRoomKey = _normalizeOnlineRoomId(stored.roomId) || currentRoomKey;
+        _pendingOutboundActionsMemory.set(storedRoomKey, stored);
+        return stored;
+    }
+    return null;
 }
 
 function _readPendingOutboundActionForCurrentSession(options = {}) {
@@ -499,6 +621,8 @@ function _readPendingOutboundActionForCurrentSession(options = {}) {
 }
 
 function _clearPendingOutboundAction(roomId = myRoomId) {
+    const memoryKey = _normalizeOnlineRoomId(roomId) || '';
+    _pendingOutboundActionsMemory.delete(memoryKey);
     try {
         _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
         _removeOnlineRoomStorageItem(ONLINE_STORAGE_KEYS.pendingAction, roomId);
@@ -546,6 +670,53 @@ function _shouldClearPendingForAcceptedAction(accepted, pending) {
     return _sameOnlineActionEntry(accepted, pending);
 }
 
+function _queueOnlineEventDuringRestore(type, payload) {
+    if (!_onlineRestoreInProgress && !_onlineRestoreQuarantined) return false;
+    if (_onlineRestoreEventQueue.length >= ONLINE_RESTORE_EVENT_QUEUE_LIMIT) {
+        _abortOnlineRestore(_onlineRestoreGeneration, '復元中の操作が多すぎるため、状態を再同期しています...', []);
+        return true;
+    }
+    _onlineRestoreEventQueue.push({ type, payload, generation: _onlineRestoreGeneration });
+    return true;
+}
+
+
+function _abortOnlineRestore(generation, statusMessage, queuedEvents = null) {
+    if (generation !== _onlineRestoreGeneration) return;
+    _onlineRestoreInProgress = false;
+    _onlineRestoreQuarantined = true;
+    _onlineRestoreEventQueue = Array.isArray(queuedEvents) ? queuedEvents : [];
+    isReconnectingOnline = true;
+    const el = document.getElementById("onlineStatus");
+    if (el && statusMessage) el.textContent = statusMessage;
+    if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+}
+
+function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
+    if (generation !== _onlineRestoreGeneration) return false;
+    const queuedEvents = _onlineRestoreEventQueue;
+    _onlineRestoreEventQueue = [];
+    _onlineRestoreInProgress = false;
+    _flushingOnlineRestoreEvents = true;
+    try {
+        for (let index = 0; index < queuedEvents.length; index++) {
+            const event = queuedEvents[index];
+            if (event.generation !== generation) continue;
+            if (Number.isInteger(event.payload?.seq) && event.payload.seq <= restoredThroughSeq) continue;
+            const handler = handlers[event.type];
+            if (typeof handler === 'function' && handler(event.payload) === false) {
+                _abortOnlineRestore(generation, '操作の適用に失敗したため、状態を再同期しています...', queuedEvents.slice(index));
+                return false;
+            }
+        }
+    } finally {
+        _flushingOnlineRestoreEvents = false;
+    }
+    render();
+    scheduleCPU();
+    _onlineRestoreQuarantined = false;
+    return true;
+}
 
 function _appendPendingForRestore(actionLog, pending) {
     if (!pending) return actionLog;
@@ -704,11 +875,12 @@ function initSocket() {
     socket = io();
 
     socket.on('roomCreated', ({ roomId, playerIndex, reconnectToken: token }) => {
-        setOnlineCreateRoomPending(false);
+        finishOnlineLobbyRequest('create');
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
         reconnectToken = token;
+        saveOnlineSession();
         document.getElementById("onlineStatus").innerHTML = `
             <div>ルームを作成しました！</div>
             <div class="room-id-display">${roomId}</div>
@@ -716,10 +888,12 @@ function initSocket() {
     });
 
     socket.on('roomJoined', ({ roomId, playerIndex, reconnectToken: token }) => {
+        finishOnlineLobbyRequest('join');
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
         myRoomId = roomId;
         reconnectToken = token;
+        saveOnlineSession();
         document.getElementById("onlineStatus").textContent = `ルーム ${roomId} に参加しました！`;
     });
 
@@ -730,8 +904,14 @@ function initSocket() {
     });
 
     socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq }) => {
+        _clearRejoinRetry();
+        _onlineRestoreQuarantined = false;
+        const startGeneration = ++_onlineRestoreGeneration;
+        _onlineRestoreInProgress = true;
+        _onlineRestoreEventQueue = [];
         const gameStartPayload = _applyOnlineHostPayload({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }, hostPlayerIndex, hostEpoch);
         const startOnlineGame = () => {
+            if (startGeneration !== _onlineRestoreGeneration) return;
             isOnlineGame = true;
             _setOnlineHostState(hostPlayerIndex);
             cpuSpeed = cs || 1500;
@@ -756,55 +936,126 @@ function initSocket() {
                     game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
                 }
             }
+            _lastAppliedOnlineActionSeqMemory = Number.isInteger(actionSeq) ? actionSeq : 0;
+            _flushOnlineRestoreEvents(startGeneration, _lastAppliedOnlineActionSeqMemory, {
+                gameAction: handleGameAction,
+                actionAccepted: handleActionAccepted,
+                hostChanged: handleHostChanged,
+            });
         };
         const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
         if (preload && typeof preload.then === "function") {
             document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
             preload.then(startOnlineGame).catch(error => {
+                if (startGeneration !== _onlineRestoreGeneration) return;
                 console.error(error);
                 isOnlineGame = false;
                 _setOnlineActionInFlight(false);
-                document.getElementById("onlineStatus").textContent = '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して部屋を作り直してください。';
+                _abortOnlineRestore(startGeneration, "深層学習AIモデルを読み込めませんでした。再接続して再試行します。");
             });
             return;
         }
         startOnlineGame();
     });
 
-    socket.on('gameAction', ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
+    const handleGameAction = ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
+        const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
+        if (_queueOnlineEventDuringRestore('gameAction', payload)) return;
         if (!game) {
             isReconnectingOnline = true;
             const el = document.getElementById("onlineStatus");
-            if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
-            return;
+            if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続しています...';
+            _emitOnlineRejoinRequest();
+            return !_flushingOnlineRestoreEvents;
         }
+        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
+        if (Number.isInteger(seq) && seq <= lastAppliedSeq) return;
+        if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) {
+            isReconnectingOnline = true;
+            cpuScheduleToken++;
+            const el = document.getElementById("onlineStatus");
+            if (el) el.textContent = "操作の欠落を検知したため、状態を再同期しています...";
+            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+            return !_flushingOnlineRestoreEvents;
+        }
+        try {
+            applyReplayedAction(action, data);
+        } catch (error) {
+            console.error(error);
+            isReconnectingOnline = true;
+            cpuScheduleToken++;
+            if (!_flushingOnlineRestoreEvents && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+            return false;
+        }
+        _setLastAppliedOnlineActionSeq(seq);
         _saveActionLog(action, data, { playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
-        applyReplayedAction(action, data);
-        render();
-        scheduleCPU();
-    });
+        if (!_flushingOnlineRestoreEvents) {
+            render();
+            scheduleCPU();
+        }
+        return true;
+    };
+    socket.on('gameAction', handleGameAction);
 
-    socket.on('actionAccepted', ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
+    const handleActionAccepted = ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
+        const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
+        if (_queueOnlineEventDuringRestore('actionAccepted', payload)) return;
+        const pendingBeforeAccept = _readPendingOutboundActionForCurrentSession();
+        if (!_shouldClearPendingForAcceptedAction(payload, pendingBeforeAccept)) return;
         _setOnlineActionInFlight(false);
         if (!game) {
             isReconnectingOnline = true;
             const el = document.getElementById("onlineStatus");
             if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
+            return !_flushingOnlineRestoreEvents;
+        }
+        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
+        if (Number.isInteger(seq) && seq <= lastAppliedSeq) {
+            _clearPendingOutboundAction();
             return;
         }
-        const pendingBeforeAccept = _readPendingOutboundAction();
-        if (_shouldClearPendingForAcceptedAction({ action, data, playerIndex, seq, clientActionId }, pendingBeforeAccept)) {
-            _clearPendingOutboundAction();
+        if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) {
+            isReconnectingOnline = true;
+            cpuScheduleToken++;
+            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+            return !_flushingOnlineRestoreEvents;
         }
-        applyReplayedAction(action, data);
-        render();
+        try {
+            applyReplayedAction(action, data);
+        } catch (error) {
+            console.error(error);
+            isReconnectingOnline = true;
+            cpuScheduleToken++;
+            if (!_flushingOnlineRestoreEvents && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+            return false;
+        }
+        _setLastAppliedOnlineActionSeq(seq);
         _saveActionLog(action, data, { alreadyApplied: true, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
-        scheduleCPU();
-    });
+        _clearPendingOutboundAction();
+        if (!_flushingOnlineRestoreEvents) {
+            render();
+            scheduleCPU();
+        }
+        return true;
+    };
+    socket.on('actionAccepted', handleActionAccepted);
 
     socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch, restoreAudit }) => {
+        const carriedEvents = (_onlineRestoreInProgress || _onlineRestoreQuarantined)
+            ? _onlineRestoreEventQueue.slice()
+            : [];
+        const restoreGeneration = ++_onlineRestoreGeneration;
+        _onlineRestoreInProgress = true;
+        _onlineRestoreQuarantined = false;
+        _onlineRestoreEventQueue = carriedEvents.map(event => ({
+            type: event.type,
+            payload: event.payload,
+            generation: restoreGeneration,
+        }));
+        _clearRejoinRetry();
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
+        const restoredThroughSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
         const localBundle = _readLocalRestoreBundle();
         if (localBundle && localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex) {
             const localRank = _onlineRestoreRank(localBundle.gameStartPayload, localBundle.stateSnapshot, localBundle.actionLog);
@@ -820,7 +1071,11 @@ function initSocket() {
         gameStartPayload.schemaVersion = ONLINE_RESTORE_SCHEMA_VERSION;
         _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch);
         gameStartPayload.actionSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
-        const pendingBeforeRejoin = _readPendingOutboundAction();
+        let pendingBeforeRejoin = _readPendingOutboundAction();
+        if (pendingBeforeRejoin && !_pendingOutboundActionBelongsToCurrentSession(pendingBeforeRejoin, { requireRoomId: true })) {
+            _clearPendingOutboundAction();
+            pendingBeforeRejoin = null;
+        }
         const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
         const pendingCompactedIntoSnapshot = pendingBeforeRejoin &&
             typeof pendingBeforeRejoin.clientActionId !== 'string' &&
@@ -871,6 +1126,7 @@ function initSocket() {
         };
 
         const restoreOnlineGame = () => {
+            if (restoreGeneration !== _onlineRestoreGeneration) return;
             persistRejoinBundle();
             document.getElementById("titleScreen").style.display = "none";
             document.getElementById("gameScreen").style.display = "block";
@@ -893,13 +1149,22 @@ function initSocket() {
             } finally {
                 isReplaying = false;
             }
-            if (!restoredOk) return;
+            if (!restoredOk) {
+                _abortOnlineRestore(restoreGeneration, "復元データの再生に失敗しました。再接続して再試行します。");
+                return;
+            }
             isOnlineGame = true;
             isReconnectingOnline = false;
             prevCoins = null;
-            render();
-            scheduleCPU();
-            if (pendingBeforeRejoin && !pendingAccepted && socket && socket.connected !== false) {
+            _lastAppliedOnlineActionSeqMemory = restoredThroughSeq;
+            if (!_flushOnlineRestoreEvents(restoreGeneration, restoredThroughSeq, {
+                gameAction: handleGameAction,
+                actionAccepted: handleActionAccepted,
+                hostChanged: handleHostChanged,
+            })) return;
+            if (pendingBeforeRejoin && !pendingAccepted &&
+                _sameOnlineActionEntry(_readPendingOutboundActionForCurrentSession(), pendingBeforeRejoin) &&
+                socket && socket.connected !== false) {
                 if (!_canResendPendingOutboundAction(pendingBeforeRejoin)) {
                     _clearPendingOutboundAction();
                     return;
@@ -916,9 +1181,9 @@ function initSocket() {
         if (preload && typeof preload.then === "function") {
             document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
             preload.then(restoreOnlineGame).catch(error => {
+                if (restoreGeneration !== _onlineRestoreGeneration) return;
                 console.error(error);
-                isReconnectingOnline = true;
-                document.getElementById("onlineStatus").textContent = '❌ 深層学習AIモデルを読み込めませんでした。通信状態を確認して再接続してください。';
+                _abortOnlineRestore(restoreGeneration, "深層学習AIモデルを読み込めませんでした。再接続して再試行します。");
             });
             return;
         }
@@ -938,7 +1203,8 @@ function initSocket() {
         render();
     });
 
-    socket.on('hostChanged', ({ newHostPlayerIndex, hostEpoch }) => {
+    const handleHostChanged = ({ newHostPlayerIndex, hostEpoch }) => {
+        if (_queueOnlineEventDuringRestore("hostChanged", { newHostPlayerIndex, hostEpoch })) return;
         if (_setOnlineHostState(newHostPlayerIndex)) {
             game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
             render();
@@ -947,24 +1213,27 @@ function initSocket() {
             cpuScheduleToken++;
         }
         _persistOnlineHostState(newHostPlayerIndex, hostEpoch);
-    });
+    };
+    socket.on("hostChanged", handleHostChanged);
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
         const el = document.getElementById("onlineStatus");
         if (el && el.textContent.startsWith('⏳')) el.textContent = '';
-        if (isOnlineGame && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
+        if ((isOnlineGame || isReconnectingOnline || _onlineRestoreInProgress) && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
             isReconnectingOnline = true;
-            socket.emit('rejoinRoom', buildOnlineRejoinPayload({
-                roomId: myRoomId,
-                playerIndex: myOriginalPlayerIndex,
-                playerName: myPlayerName,
-                reconnectToken,
-            }));
+            _emitOnlineRejoinRequest();
         }
     });
 
     socket.on('disconnect', () => {
-        if (!isOnlineGame) return;
+        finishOnlineLobbyRequest();
+        if (!isOnlineGame && !_onlineRestoreInProgress) return;
+        if (_onlineRestoreInProgress) {
+            _onlineRestoreGeneration++;
+            _onlineRestoreInProgress = false;
+            _onlineRestoreQuarantined = true;
+            _onlineRestoreEventQueue = [];
+        }
         isReconnectingOnline = true;
         _setOnlineActionInFlight(false);
         cpuScheduleToken++;
@@ -982,6 +1251,7 @@ function initSocket() {
 }
 
 function handleAppError(msg) {
+    finishOnlineLobbyRequest();
     _setOnlineActionInFlight(false);
     setOnlineCreateRoomPending(false);
     if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
@@ -1058,6 +1328,43 @@ function updateOnlineRlModelReadinessUi() {
     return state;
 }
 
+function setOnlineJoinRoomPending(pending) {
+    onlineJoinRoomPending = pending === true;
+    const btn = typeof document !== 'undefined' && document.getElementById
+        ? document.getElementById('onlineJoinSubmitButton')
+        : null;
+    if (btn) {
+        btn.disabled = onlineJoinRoomPending;
+        btn.textContent = onlineJoinRoomPending ? '参加中' : '参加する';
+    }
+}
+
+function finishOnlineLobbyRequest(kind = '') {
+    if (kind && onlineLobbyRequestKind && kind !== onlineLobbyRequestKind) return false;
+    onlineLobbyRequestGeneration++;
+    if (onlineLobbyRequestTimer) clearTimeout(onlineLobbyRequestTimer);
+    onlineLobbyRequestTimer = null;
+    onlineLobbyRequestKind = '';
+    setOnlineCreateRoomPending(false);
+    setOnlineJoinRoomPending(false);
+    return true;
+}
+
+function beginOnlineLobbyRequest(kind) {
+    finishOnlineLobbyRequest();
+    onlineLobbyRequestKind = kind;
+    const generation = ++onlineLobbyRequestGeneration;
+    if (kind === 'create') setOnlineCreateRoomPending(true);
+    if (kind === 'join') setOnlineJoinRoomPending(true);
+    onlineLobbyRequestTimer = setTimeout(() => {
+        if (generation !== onlineLobbyRequestGeneration || onlineLobbyRequestKind !== kind) return;
+        finishOnlineLobbyRequest(kind);
+        const status = document.getElementById('onlineStatus');
+        if (status) status.textContent = '⚠️ サーバー応答がありません。もう一度お試しください。';
+        showNotice('サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。');
+    }, ONLINE_LOBBY_REQUEST_TIMEOUT_MS);
+}
+
 function setOnlineCreateRoomPending(pending) {
     onlineCreateRoomPending = pending === true;
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
@@ -1102,7 +1409,7 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
     myPlayerName = name;
     onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
     if (!initSocket()) return;
-    setOnlineCreateRoomPending(true);
+    beginOnlineLobbyRequest('create');
     isRoomHost = true;
     socket.emit('createRoom', {
         playerName: name,
@@ -1153,6 +1460,7 @@ function showCreateRoom() {
 }
 
 function joinRoom() {
+    if (onlineJoinRoomPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
     const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
     if (!name) { showNotice("名前を入力してください"); return; }
@@ -1160,6 +1468,7 @@ function joinRoom() {
     myPlayerName = name;
     isRoomHost = false;
     if (!initSocket()) return;
+    beginOnlineLobbyRequest('join');
     socket.emit('joinRoom', { roomId, playerName: name, clientVersion: getClientVersion() });
 }
 
@@ -1366,27 +1675,8 @@ function _sendRecreateRoomFromBundle(bundle) {
 }
 
 function _scheduleRejoinRetry() {
-    const MAX_RETRY = 8;
-    if (_rejoinRetryCount >= MAX_RETRY) {
-        document.getElementById("onlineStatus").textContent = '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。';
-        isReconnectingOnline = false;
-        try { if (typeof render === 'function') render(); } catch (_) {}
-        try { if (typeof scheduleCPU === 'function') scheduleCPU(); } catch (_) {}
-        return;
-    }
-    _rejoinRetryCount++;
-    document.getElementById("onlineStatus").textContent = `⏳ ホストの復元を待っています... (${_rejoinRetryCount}/${MAX_RETRY})`;
-    _rejoinRetryTimer = setTimeout(() => {
-        if (!socket || !isReconnectingOnline) return;
-        const session = typeof readOnlineSession === 'function'
-            ? readOnlineSession()
-            : {
-                roomId: myRoomId,
-                playerIndex: myOriginalPlayerIndex,
-                playerName: myPlayerName,
-                reconnectToken,
-            };
-        if (!session) return;
-        socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
-    }, 3000);
+    if (_rejoinRetryCount >= ONLINE_REJOIN_MAX_ATTEMPTS) return _finishRejoinRetryTimeout();
+    const el = document.getElementById("onlineStatus");
+    if (el) el.textContent = `⏳ ホストの復元を待っています... (${_rejoinRetryCount + 1}/${ONLINE_REJOIN_MAX_ATTEMPTS})`;
+    return _armOnlineRejoinResponseTimeout();
 }
