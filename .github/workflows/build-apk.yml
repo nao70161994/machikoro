@@ -170,7 +170,7 @@ jobs:
           expect << 'EXPECTEOF'
           set timeout 600
           log_user 1
-          spawn bubblewrap build --skipPwaValidation
+          spawn bubblewrap build
           expect {
             -re {\(Y/n\)} { send "Y\r"; exp_continue }
             eof           { }
