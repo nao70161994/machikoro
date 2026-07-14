@@ -165,3 +165,11 @@ Before tagging or announcing a release:
 - CI is green for the target commit.
 - `git status --short` is empty.
 - Any remaining real-device checks are explicitly tracked as manual-only, not silently assumed complete.
+
+## B分類オンライン耐障害化 gate (2026-07-15)
+
+- `npm run test:online`、`npm run test:release`、`npm run test:sim`、`MACHIKORO_SOAK_RUNS=3 npm run test:soak`を実行する。
+- GitHub Actions nightlyでonline、soak、simulation、mobile WebKitが同一commitでgreenであることを確認する。
+- restart E2Eを通常gateへ入れない。file durable canonical storeが明示採用されるまでは`CANONICAL_STATE_STORE=noop`で実行する。
+- iPhone Safari実機の再接続、background復帰、PWA更新はmanual-requiredとして結果を記録する。WebKit成功だけで実機確認済みにしない。
+- APK変更は署名secretを揃えた実workflow成功まで条件付き、production deliveryは手動dispatchのみとする。

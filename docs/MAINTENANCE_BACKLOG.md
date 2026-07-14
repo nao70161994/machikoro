@@ -109,3 +109,11 @@ If work continues, these are the highest value small-to-medium follow-ups:
 1. Run a real-device online/PWA reconnect matrix and record results in `docs/OPERATIONS.md` or a manual test note before reconnect state-machine work.
 2. Add action contract coverage when the next action/pending path changes, especially canonical payload + client apply + UI registry alignment.
 3. Extract the next pure UI/server helper only when an existing test can assert the exact output or policy without moving lifecycle wiring.
+
+## 2026-07-15 B分類オンライン耐障害化
+
+- B1: ACK timeout、pending保護、restore queue上限、再接続世代管理、durable非依存の2/4クライアントE2E、短縮soak、Ubuntu WebKit nightly。GitHub Actions `29348807863` と Release `29348809695` は成功。
+- B2: TWA APKのBubblewrap固定/validation強制は署名password secret不足で実APK未確認。manual online deliveryは`workflow_dispatch`のみだがdefault branch未配置のため未実行。
+- B3: file durable canonical store、server再起動後のfile復元E2E、canonical transactionは引き続き対象外。既定storeは`noop`を維持する。
+- B4: dotted stream action ID、watermark protocol、非host canonical置換は既存protocol/信頼境界との互換性を確認できず採用しない。
+- 実機iPhone Safariの長時間4人戦、background復帰、PWA更新は未確認。自動WebKit成功で代替済みとは扱わない。

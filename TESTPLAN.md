@@ -183,3 +183,9 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
    - 自動確認: `.github/workflows/build-apk.yml` で `app-release-signed.apk` の存在と非空を検査し、upload-artifact は missing artifact を error にする。
    - 手動確認: GitHub Actions の手動実行で keystore secret 不足時は早期失敗し、APK 未生成時も成功扱いにならないことを見る。
    - 期待結果: 署名・fingerprint・APK 生成のどれかが失敗した場合、workflow が緑にならない。
+
+25. B分類オンライン耐障害化
+   - 自動確認: `tests/online-action-reconnect-e2e.test.js`でbuild/undo/pending復元、`tests/online-completion-e2e.test.js`で4人完走・host移譲・200 action圧縮・再接続、`tests/online-soak.test.js`で反復完走を検査する。
+   - CI確認: nightlyのonline、3回soak、simulation、Ubuntu WebKitを同一commitで実行する。restart file persistence E2Eはdurable canonical state側へ隔離する。
+   - 手動確認: iPhone Safariで4人戦、通信断/復帰、background復帰、PWA更新延期を確認する。2026-07-15時点では実機未確認。
+   - 期待結果: ACK timeoutでもpendingを失わず、canonical rejoin後に重複送信せず復帰し、restore中eventの順序と上限を守る。
