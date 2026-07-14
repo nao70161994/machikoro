@@ -685,10 +685,11 @@ runTest('online integration: ROOM_NOT_FOUND で非ホストは再接続リトラ
 
     rt.__test.flushTimeouts();
 
-    assert.strictEqual(rt.__test.socketEmits.length, 1);
-    assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
+    assert.strictEqual(rt.__test.socketEmits.length, 8);
+    assert.strictEqual(rt.__test.socketEmits.every(event => event.name === 'rejoinRoom'), true);
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent.includes('タイムアウト'), true);
 });
 
 runTest('online integration: rejoin retry は正規化済みsessionで再送する', () => {
@@ -761,16 +762,15 @@ runTest('online integration: 非ホストはホスト待機上限後もhostless�
         reconnectToken: 'token-bob',
     });
 
-    for (let i = 0; i < 9; i++) {
-        rt._scheduleRejoinRetry();
-        rt.__test.flushTimeouts();
-    }
+    rt._scheduleRejoinRetry();
+    rt.__test.flushTimeouts();
 
+    assert.strictEqual(rt.__test.socketEmits.filter(event => event.name === 'rejoinRoom').length, 8);
     assert.strictEqual(rt.__test.socketEmits.some(event => event.name === 'recreateRoom'), false);
-    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '❌ 再接続がタイムアウトしました。ホストが復元できなかった可能性があります。');
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。');
 });
 
-runTest('online integration: rejoin retry timeout は入力ブロック解除後に再描画する', () => {
+runTest('online integration: rejoin retry timeout 後も入力をブロックする', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
@@ -782,17 +782,60 @@ runTest('online integration: rejoin retry timeout は入力ブロック解除後
     const game = rt.__test.getGame();
     game.phase = rt.GAME_PHASES.BUILD;
     game.builtThisTurn = true;
-    rt.__test.setOnlineState({ isOnlineGame: true, isReconnectingOnline: true, myPlayerIndex: 0, socket: { connected: true } });
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isOnlineGame: true,
+        isReconnectingOnline: true,
+        myPlayerIndex: 0,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-a',
+    });
     rt.render();
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, true);
 
-    for (let i = 0; i < 9; i++) {
-        rt._scheduleRejoinRetry();
-        rt.__test.flushTimeouts();
-    }
+    rt._scheduleRejoinRetry();
+    rt.__test.flushTimeouts();
 
+    assert.strictEqual(rt.__test.socketEmits.filter(event => event.name === 'rejoinRoom').length, 8);
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent.includes('タイムアウト'), true);
-    assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
+    assert.strictEqual(rt.__test.elements.btnSkip.disabled, true);
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
+});
+
+runTest('online integration: 未接続で予約した再接続はconnect後に送信する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01', playerIndex: 1, playerName: 'Bob', reconnectToken: 'token-bob'
+    }));
+    rt.initSocket();
+    const socket = rt.__test.getOnlineState().socket;
+    socket.connected = false;
+
+    rt.reconnectOnline();
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.__test.socketEmits.length, 0);
+
+    socket.connected = true;
+    rt.__test.socketHandlers.connect();
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
+});
+
+runTest('online integration: page復帰時に期限切れrejoin待機を即再送する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isReconnectingOnline: true,
+        myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Bob', reconnectToken: 'token-bob'
+    });
+    rt._scheduleRejoinRetry();
+    rt.__test.advanceTime(3001);
+
+    assert.strictEqual(rt.resumeOnlineReconnectAfterPageActivation(), true);
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
 });
 if (process.exitCode) {
     throw new Error('online integrationテストで失敗が発生しました');

@@ -102,6 +102,11 @@ function loadStorageRuntime() {
             };
             return true;
         },
+        _emitOnlineRejoinRequest(session) {
+            context.rejoinRequests.push(Object.assign({}, session));
+            context.socket.emit('rejoinRoom', context.buildStorageOnlineRejoinPayload(session));
+            return true;
+        },
         resetOnlineState() { context.resetOnlineStateCalls = (context.resetOnlineStateCalls || 0) + 1; },
         cancelDelayedHumanAction() { context.cancelDelayedHumanActionCalls = (context.cancelDelayedHumanActionCalls || 0) + 1; },
         resetUiLocksForGameReset(reason) { context.resetUiLocksForGameResetCalls = (context.resetUiLocksForGameResetCalls || 0) + 1; context.resetUiLocksReason = reason; },
@@ -114,6 +119,7 @@ function loadStorageRuntime() {
         alert(message) { alerts.push(message); },
         showNotice(message) { alerts.push(message); },
         emits: [],
+        rejoinRequests: [],
         sentActions: [],
         createdCpuPlayers: [],
     };
@@ -253,6 +259,8 @@ runTest('storage reconnectOnline はオンライン再接続データの空白�
     assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
     assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
     assert.strictEqual(rt.emits[0].payload.clientVersion, 'storage-build');
+    assert.strictEqual(rt.rejoinRequests.length, 1);
+    assert.strictEqual(rt.rejoinRequests[0].roomId, 'ROOM1');
 });
 
 runTest('storage deleteSavedGame は確認後に savedGame を削除する', () => {
