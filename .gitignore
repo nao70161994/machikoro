@@ -14,6 +14,9 @@ node_modules/
 dist/
 build/
 out/
+playwright-report/
+test-results/
+blob-report/
 
 # Python
 __pycache__/

@@ -53,7 +53,8 @@
     "eval-expert-v2-multiseed": "node scripts/eval-expert-v2-multiseed.js",
     "test:online-delivery": "node scripts/check-online-delivery.js",
     "pretest": "node tests/check-prerequisites.js",
-    "test:soak": "node tests/run-all.js soak"
+    "test:soak": "node tests/run-all.js soak",
+    "test:browser-e2e": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -64,6 +65,7 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "supertest": "^7.2.2"
   }
 }
