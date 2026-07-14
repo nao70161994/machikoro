@@ -548,25 +548,47 @@ function buildClientRuntimeSnapshot(reason = '') {
     let isCpuTurn = false;
     try { isCpuTurn = !!(hasGame && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]); } catch (_) {}
     let cpuStepScheduled = false;
+    let cpuSchedulerHealth = null;
     try {
         if (isCpuTurn && typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.getHealth === 'function') {
-            cpuStepScheduled = !!cpuTurnScheduler.getHealth().stepScheduled;
-        } else if (isCpuTurn && typeof isCpuStepScheduledNow === 'function') cpuStepScheduled = !!isCpuStepScheduledNow();
-        else cpuStepScheduled = !!(isCpuTurn && typeof cpuStepScheduledUntil !== 'undefined' && Date.now() < cpuStepScheduledUntil);
+            const health = cpuTurnScheduler.getHealth();
+            cpuStepScheduled = !!health.stepScheduled;
+            cpuSchedulerHealth = {
+                blockedReason: health.blockedReason || '',
+                token: Number.isInteger(health.token) ? health.token : null,
+                scheduledUntil: Number.isFinite(health.scheduledUntil) ? health.scheduledUntil : 0,
+                stepScheduled: !!health.stepScheduled,
+            };
+        } else {
+            const scheduledUntil = typeof cpuStepScheduledUntil !== 'undefined' ? cpuStepScheduledUntil : 0;
+            cpuStepScheduled = !!(isCpuTurn && typeof isCpuStepScheduledNow === 'function' &&
+                isCpuStepScheduledNow() && Date.now() < scheduledUntil);
+            cpuSchedulerHealth = isCpuTurn ? {
+                blockedReason: '',
+                token: typeof cpuScheduleToken !== 'undefined' && Number.isInteger(cpuScheduleToken) ? cpuScheduleToken : null,
+                scheduledUntil: Number.isFinite(scheduledUntil) ? scheduledUntil : 0,
+                stepScheduled: cpuStepScheduled,
+            } : null;
+        }
     } catch (_) {}
+    let hasWinner = false;
+    try { hasWinner = !!(hasGame && typeof game.checkWinner === 'function' && game.checkWinner()); } catch (_) {}
     return {
         reason,
         timestamp: new Date().toISOString(),
         phase: hasGame ? game.phase : '',
+        hasWinner,
         builtThisTurn: !!(hasGame && game.builtThisTurn),
         turnCount: hasGame ? game.turnCount : null,
         currentPlayerIndex,
         isCpuTurn,
         cpuStepScheduled,
+        cpuSchedulerHealth,
         isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
         isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? !!onlineActionInFlight : null,
+        onlineActionInFlightAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : null,
         isReconnectingOnline: typeof isReconnectingOnline !== 'undefined' ? !!isReconnectingOnline : null,
         socketConnected: typeof socket !== 'undefined' && socket ? socket.connected !== false : null,
         allowedActions: allowedActionListForSnapshot(),
@@ -930,8 +952,40 @@ function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     return true;
 }
 
+function safeAppShellStorageGet(key, fallback = null) {
+    try {
+        return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : fallback;
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function safeAppShellStorageSet(key, value) {
+    try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function safeAppShellStorageRemove(key) {
+    try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+    } catch (_) {}
+}
+
 function markClientFlowCheckpoint(event, details = {}) {
-    const checkpoint = { event, details, snapshot: buildClientRuntimeSnapshot(event), timestamp: new Date().toISOString() };
+    let checkpoint;
+    try {
+        checkpoint = { event, details, snapshot: buildClientRuntimeSnapshot(event), timestamp: new Date().toISOString() };
+    } catch (_) {
+        try {
+            checkpoint = { event, details, snapshot: null, timestamp: new Date().toISOString(), snapshotFailed: true };
+        } catch (_) {
+            return null;
+        }
+    }
     try {
         const root = typeof window !== 'undefined' ? window : globalThis;
         if (root) {
@@ -969,6 +1023,7 @@ function compactFreezeSummaryStackForReport(stack, limit = CLIENT_ERROR_REPORT_S
         currentPlayerIndex: summary.currentPlayerIndex,
         myPlayerIndex: summary.myPlayerIndex,
         isOnlineGame: summary.isOnlineGame,
+        cpuSchedulerHealth: summary.cpuSchedulerHealth || null,
         isReconnectingOnline: summary.isReconnectingOnline,
         allowedActions: Array.isArray(summary.allowedActions) ? summary.allowedActions : [],
         visibleModals: Array.isArray(summary.visibleModals) ? summary.visibleModals : [],
@@ -1326,7 +1381,7 @@ function showCrashScreen(err) {
     const msg = (err instanceof Error ? err.stack || err.message : String(err || '不明なエラー')).slice(0, 300);
     document.getElementById('crashMessage').textContent = msg;
     const resumeBtn = document.getElementById('crashResumeBtn');
-    if (resumeBtn) resumeBtn.style.display = localStorage.getItem('savedGame') ? 'block' : 'none';
+    if (resumeBtn) resumeBtn.style.display = safeAppShellStorageGet('savedGame') ? 'block' : 'none';
     el.style.display = 'flex';
     el.setAttribute('aria-modal', 'true');
     if (typeof el.hasAttribute !== 'function' || !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
@@ -1389,7 +1444,7 @@ function maybeShowPwaInstallBanner() {
         updatePwaBannerBodyState();
         return;
     }
-    if (localStorage.getItem('pwaInstallDismissed')) {
+    if (safeAppShellStorageGet('pwaInstallDismissed')) {
         updatePwaBannerBodyState();
         return;
     }
@@ -1407,7 +1462,7 @@ function pwaInstallPrompt() {
 
 function pwaInstallDismiss() {
     setPwaBannerVisible('pwaInstallBanner', false);
-    localStorage.setItem('pwaInstallDismissed', '1');
+    safeAppShellStorageSet('pwaInstallDismissed', '1');
     _pwaInstallEvent = null;
 }
 
@@ -1479,7 +1534,7 @@ function bindPwaInstallHandlers() {
     }
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
-        if (localStorage.getItem('pwaInstallDismissed')) {
+        if (safeAppShellStorageGet('pwaInstallDismissed')) {
             return;
         }
         _pwaInstallEvent = e;
@@ -1511,7 +1566,7 @@ function hasPendingWork(snapshot) {
 }
 
 function classifyLikelyFreeze(snapshot) {
-    if (!snapshot || !snapshot.phase) return '';
+    if (!snapshot || !snapshot.phase || snapshot.hasWinner) return '';
     const ui = snapshot.ui || {};
     const isMyTurn = !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
     const skipDisabled = !!(ui.btnSkip && ui.btnSkip.disabled);
@@ -1567,6 +1622,7 @@ function compactSnapshotForUiTrace(snapshot) {
         myPlayerIndex: snapshot && snapshot.myPlayerIndex,
         isCpuTurn: !!(snapshot && snapshot.isCpuTurn),
         cpuStepScheduled: !!(snapshot && snapshot.cpuStepScheduled),
+        cpuSchedulerHealth: snapshot && snapshot.cpuSchedulerHealth || null,
         isOnlineGame: snapshot && snapshot.isOnlineGame,
         onlineActionInFlight: snapshot && snapshot.onlineActionInFlight,
         allowedActions: Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [],
@@ -1895,6 +1951,23 @@ function recoverCpuTurnStall(snapshot) {
     return recovered;
 }
 
+function recoverOnlineActionInFlightStall(snapshot) {
+    if (!snapshot || !snapshot.onlineActionInFlight) return false;
+    if (typeof _handleOnlineActionTimeout !== 'function') return false;
+    try {
+        const recovered = _handleOnlineActionTimeout();
+        markClientFlowCheckpoint('freeze-watchdog-online-action-resync', {
+            recovered: !!recovered,
+            onlineActionInFlightAt: snapshot.onlineActionInFlightAt || null,
+            before: compactSnapshotForUiTrace(snapshot),
+            after: compactSnapshotForUiTrace(buildClientRuntimeSnapshot('online-action-stall-recovery-after')),
+        });
+        return !!recovered;
+    } catch (_) {
+        return false;
+    }
+}
+
 function normalizedFreezeKindForRecovery(freezeKind) {
     return String(freezeKind || '').split(':')[0];
 }
@@ -1906,6 +1979,7 @@ function freezeRecoveryHandlers() {
         [FREEZE_KINDS.PENDING_UI_LOCKED]: recoverPendingUiLock,
         [FREEZE_KINDS.STALE_MODAL_UI_LOCKED]: recoverStaleModalUiLock,
         [FREEZE_KINDS.CPU_TURN_STALLED]: recoverCpuTurnStall,
+        [FREEZE_KINDS.ONLINE_ACTION_IN_FLIGHT_STALLED]: recoverOnlineActionInFlightStall,
         [FREEZE_KINDS.MODAL_UI_LOCKED]: recoverModalUiLock,
     };
 }
@@ -1987,6 +2061,7 @@ function compactFreezePayloadForStorage(payload) {
             currentPlayerIndex: snapshot.currentPlayerIndex,
             isCpuTurn: !!snapshot.isCpuTurn,
             cpuStepScheduled: !!snapshot.cpuStepScheduled,
+            cpuSchedulerHealth: snapshot.cpuSchedulerHealth || null,
             isOnlineGame: snapshot.isOnlineGame,
             isRoomHost: snapshot.isRoomHost,
             myPlayerIndex: snapshot.myPlayerIndex,
@@ -2033,6 +2108,7 @@ function freezePayloadStorageJson(payload) {
         } : null,
         snapshot: {
             phase: payload && payload.snapshot && payload.snapshot.phase || '',
+            cpuSchedulerHealth: payload && payload.snapshot && payload.snapshot.cpuSchedulerHealth || null,
             allowedActions: payload && payload.snapshot && payload.snapshot.allowedActions || [],
             visibleModals: payload && payload.snapshot && payload.snapshot.visibleModals || [],
         },
@@ -2053,6 +2129,7 @@ function buildFreezeReportStack(payload) {
         myPlayerIndex: snapshot.myPlayerIndex,
         isOnlineGame: snapshot.isOnlineGame,
         cpuStepScheduled: snapshot.cpuStepScheduled,
+        cpuSchedulerHealth: snapshot.cpuSchedulerHealth || null,
         onlineActionInFlight: snapshot.onlineActionInFlight,
         isReconnectingOnline: snapshot.isReconnectingOnline,
         socketConnected: snapshot.socketConnected,
@@ -2135,6 +2212,9 @@ function sendDebugClientErrorReport(message = 'manual client error test') {
 if (typeof window !== 'undefined') {
     window.__machikoroSendTestErrorReport = sendDebugClientErrorReport;
 }
+
+// Register before main.js evaluates so startup failures can still reach the crash UI.
+if (typeof window !== 'undefined') bindCrashHandlers();
 
 function initMainView() {
     loadSettings();
