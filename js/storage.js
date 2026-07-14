@@ -275,10 +275,9 @@ function reconnectOnline() {
         }
         document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
         switchTab('online');
-        const rejoinPayload = typeof buildOnlineRejoinPayload === 'function'
-            ? buildOnlineRejoinPayload(session)
-            : buildStorageOnlineRejoinPayload(session);
-        socket.emit('rejoinRoom', rejoinPayload);
+        if (typeof _emitOnlineRejoinRequest !== 'function' || !_emitOnlineRejoinRequest(session)) {
+            showNotice('再接続要求を送信できませんでした');
+        }
     } catch(e) {
         isReconnectingOnline = false;
         clearOnlineSessionStorage();
