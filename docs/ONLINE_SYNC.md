@@ -259,3 +259,10 @@ Manual checks remain important for:
 - Undo sync across clients.
 
 Use `TESTPLAN.md` for high-risk manual coverage.
+
+## 2026-07-15 Reconnect durability boundary
+
+- ACK待機は同じ`clientActionId`だけを完了扱いにし、timeout時はpendingを保持してcanonical rejoinで照合する。既存event名、payload、UUID形式action IDは維持する。
+- restore中のlive eventは最大256件のqueueへ隔離し、overflowやsequence gapでは適用を続けず再同期する。別restore generationのcallbackは状態を確定しない。
+- 自動確認は2クライアントaction再接続、4人完走/host移譲/圧縮、3回nightly soak、Ubuntu WebKitで成功。server再起動file persistenceはこの採用単位に含まない。
+- action stream ID/watermark、非hostによるcanonical置換、durable file storeはprotocol/authority変更なのでdeferred。実機iPhone Safariは未確認。
