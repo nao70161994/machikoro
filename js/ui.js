@@ -9,6 +9,27 @@ const LOG_TYPE_DISPLAY = {
 };
 let isUpdatingPendingModalContent = false;
 
+function safeUiStorageSet(key, value) {
+    try {
+        if (typeof safeStorageSet === 'function') return safeStorageSet(key, value);
+        if (typeof localStorage === 'undefined') return false;
+        localStorage.setItem(key, value);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function safeUiStorageRemove(key) {
+    try {
+        if (typeof safeStorageRemove === 'function') {
+            safeStorageRemove(key);
+            return;
+        }
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+    } catch (_) {}
+}
+
 function currentCpuPlayerAt(index) {
     try {
         if (typeof cpuPlayers === 'undefined' || !Array.isArray(cpuPlayers)) return null;
@@ -292,7 +313,7 @@ function clearOnlineSessionAfterWin() {
     if (clearOnlineSession) {
         clearOnlineSession();
     } else {
-        localStorage.removeItem('onlineSession');
+        safeUiStorageRemove('onlineSession');
     }
 }
 
@@ -302,8 +323,8 @@ function renderWinnerState(winner) {
     if (!winSoundPlayed) {
         if (winner.name === lastWinnerName) winStreak++;
         else { winStreak = 1; lastWinnerName = winner.name; }
-        localStorage.setItem('winStreak', winStreak);
-        localStorage.setItem('lastWinnerName', lastWinnerName);
+        safeUiStorageSet('winStreak', winStreak);
+        safeUiStorageSet('lastWinnerName', lastWinnerName);
     }
     const scoreRows = game.players.slice().sort((a, b) => b.coins - a.coins).map(p => {
         const isW = p === winner;
@@ -324,7 +345,7 @@ function renderWinnerState(winner) {
         recordGameStats(winner, game, cpuList);
         if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
     }
-    localStorage.removeItem('savedGame');
+    safeUiStorageRemove('savedGame');
     clearOnlineSessionAfterWin();
     if (typeof markOnlineGameFinished === 'function') markOnlineGameFinished();
     if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
