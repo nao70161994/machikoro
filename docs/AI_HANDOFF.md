@@ -392,3 +392,10 @@ Test index:
 - `docs/HOSTLESS_RESTORE_DESIGN.md` now lists the concrete gates for re-evaluation. The 2026-05-26 footings do not authorize hostless restore.
 - Keep `recreateRoom` replacement host-only. `onlineRestoreRoomIndex` is a locator only; `restoreAudit` becomes authority only when server-generated and HMAC-verified for the exact canonical restore payload.
 - Stop before implementation if the next step requires provisional quorum, durable storage selection, replacement timing rules, or multi-device manual verification.
+
+## 2026-07-15 B分類採用handoff
+
+- 採用単位とrollback順は`docs/UNCOMMITTED_WORK_RESCUE_PLAN.md`を正とする。B1 source commitsは`92805aa`, `6bc947d`, `3f73ec5`, `12a3a1a`, `d7a14c9`, `4585e0b`。
+- GitHub Actions: Release `29348809695`、Nightly `29348807863`（online/soak/simulation/WebKit）は成功。Node 20 action deprecation warningは残る。
+- B2のAPK `b0c6c14`/`172785b` とmanual delivery `d13e866`はmainへ入れない。APKは署名password secrets設定後、deliveryはworkflowがdefault branchへ入った後に再評価する。
+- restart file persistence、durable canonical transaction、stream/watermark protocol、hostless restoreはB1へ混ぜない。実機iPhone Safariは未確認。
