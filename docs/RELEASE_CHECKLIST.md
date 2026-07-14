@@ -11,6 +11,9 @@ git diff --check
 npm run test:static
 npm run test:smoke
 npm test
+npm run test:sim
+npm run test:browser-e2e
+MACHIKORO_SOAK_RUNS=3 npm run test:soak
 npm run test:online
 npm run test:pwa
 npm run test:release
@@ -19,6 +22,8 @@ npm run test:rl
 ```
 
 CI also runs `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` from `.github/workflows/release-test.yml` on pull requests, pushes to `main`, and manual dispatch. Nightly regression runs `npm run test:release`, `npm run test:pwa`, and `npm run test:online` from `.github/workflows/nightly-release-test.yml`. The Android/TWA APK workflow runs `npm ci`, `npm run test:static`, `npm test`, `npm run test:pwa`, and `npm run test:release` before `bubblewrap build`. CI green does not cover the full local automated gate above; run any missing commands locally before a release or record them as manual-only risk.
+
+PR CI also runs simulation and mobile WebKit jobs. Nightly additionally runs three consecutive 4-player online completions and mobile WebKit. `.github/workflows/online-delivery.yml` checks a deployed origin only when manually dispatched; enabling a schedule requires an explicit operations and Actions-usage decision. `npm test` requires Python 3 plus `python3 -m pip install -r scripts/rl/requirements.txt`; `npm run pretest` reports a focused prerequisite error when NumPy is unavailable.
 
 ## AdSense Review Change Policy
 

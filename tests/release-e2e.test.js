@@ -1,8 +1,9 @@
 const assert = require('assert');
-const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const YAML = require('yaml');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
 process.env.RESTORE_AUDIT_SECRET = process.env.RESTORE_AUDIT_SECRET || 'test-restore-audit-secret';
 const releaseAsyncTests = [];
@@ -22,13 +23,10 @@ process.on('beforeExit', () => {
     });
 });
 const {
-    __rooms,
     CLIENT_ERROR_LIMITS,
     handleClientErrorTestRequest,
     serializeMirrorState,
     restoreMirrorState,
-    handleRecreateRoom,
-    buildRestoreSnapshotAudit,
     loadGameRuntime,
 } = require('../server');
 
@@ -422,84 +420,30 @@ runAsyncTest('release PWA install/update と Service Worker lifecycle を疑似�
     assert.ok(sw.deletedCaches.includes('machikoro-old'));
 });
 
-runTest('release reconnect/restore/host migration は server restart 相当の復元経路で維持される', () => {
-    const emitted = [];
-    const joined = [];
-    const roomId = 'RELRESTORE01';
-    const tokenAlice = 'token-alice';
-    const tokenBob = 'token-bob';
-    const reconnectTokenHashes = [tokenAlice, tokenBob].map(token => crypto.createHash('sha256').update(token).digest('hex'));
-    const gameStartPayload = {
-        playerNames: ['Alice', 'Bob'],
-        playerSettings: [{ type: 'human' }, { type: 'human' }],
-        reconnectTokenHashes,
-        enabledCards: ['麦畑'],
-        enabledLandmarks: ['駅'],
-        cpuSpeed: 1500,
-        playerOrder: [0, 1],
-        hostPlayerIndex: 0,
-        hostEpoch: 0,
-        actionSeq: 0,
-    };
-    const socket = {
-        id: 'socket-alice-restored',
-        emit(name, payload) { emitted.push({ name, payload }); },
-        join(id) { joined.push(id); },
-    };
-
-    try {
-        delete __rooms[roomId];
-        const stateSnapshot = makeSnapshot({ actionSeq: 0 });
-        handleRecreateRoom(socket, {
-            roomId,
-            gameStartPayload,
-            stateSnapshot,
-            actionLog: [],
-            restoreAudit: buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, 1234567890),
-            playerIndex: 0,
-            playerName: 'Alice',
-            reconnectToken: tokenAlice,
-        });
-
-        assert.deepStrictEqual(joined, [roomId]);
-        assert.strictEqual(__rooms[roomId].restored, true);
-        assert.strictEqual(__rooms[roomId].hostPlayerIndex, 0);
-        assert.strictEqual(emitted[0].name, 'rejoinData');
-        assert.ok(emitted[0].payload.stateSnapshot);
-
-        const bobSocket = {
-            id: 'socket-bob-new-host',
-            emit(name, payload) { emitted.push({ name, payload }); },
-            join(id) { joined.push(id); },
-        };
-        const newerPayload = Object.assign({}, gameStartPayload, { hostPlayerIndex: 1, hostEpoch: 1, actionSeq: 1 });
-        handleRecreateRoom(bobSocket, {
-            roomId,
-            gameStartPayload: newerPayload,
-            stateSnapshot: null,
-            actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }],
-            playerIndex: 1,
-            playerName: 'Bob',
-            reconnectToken: tokenBob,
-        });
-
-        assert.strictEqual(__rooms[roomId].hostPlayerIndex, 1);
-        assert.strictEqual(__rooms[roomId].hostEpoch, 1);
-        assert.strictEqual(__rooms[roomId].actionSeq, 0);
-        assert.notStrictEqual(__rooms[roomId].stateSnapshot.actionSeq, 1);
-        assert.strictEqual(emitted[1].name, 'rejoinData');
-        assert.strictEqual(emitted[1].payload.gameStartPayload, gameStartPayload);
-    } finally {
-        delete __rooms[roomId];
-    }
+runTest('release restart restore は別server processとfile canonical storeで維持される', () => {
+    const result = spawnSync(process.execPath, ['tests/online-restart-e2e.test.js'], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        timeout: 120000,
+    });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
 });
 
 runTest('release workflow と checklist は static safety gate と nightly gate を含む', () => {
     const workflow = readRepoFile('.github/workflows/release-test.yml');
     const nightlyWorkflow = readRepoFile('.github/workflows/nightly-release-test.yml');
     const apkWorkflow = readRepoFile('.github/workflows/build-apk.yml');
+    const deliveryWorkflow = readRepoFile('.github/workflows/online-delivery.yml');
     const checklist = readRepoFile('docs/RELEASE_CHECKLIST.md');
     const operations = readRepoFile('docs/OPERATIONS.md');
+    const workflowRuns = (source) => Object.values(YAML.parse(source).jobs)
+        .flatMap(job => job.steps || [])
+        .map(step => step.run)
+        .filter(Boolean)
+        .join('\n');
+    const releaseRuns = workflowRuns(workflow);
+    const nightlyRuns = workflowRuns(nightlyWorkflow);
+    const deliveryRuns = workflowRuns(deliveryWorkflow);
 
     assert.ok(workflow.includes('npm run test:static'));
     assert.ok(workflow.includes('npm run test:pwa'));
@@ -522,9 +466,17 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(apkWorkflow.includes('npm run test:static'));
     assert.ok(apkWorkflow.includes('npm test'));
     assert.ok(apkWorkflow.indexOf('npm run test:static') < apkWorkflow.indexOf('npm test'));
+    assert.ok(releaseRuns.includes('npm run test:sim'));
+    assert.ok(releaseRuns.includes('npm run test:browser-e2e'));
+    assert.ok(nightlyRuns.includes('npm run test:sim'));
+    assert.ok(nightlyRuns.includes('npm run test:soak'));
+    assert.ok(nightlyRuns.includes('npm run test:browser-e2e'));
+    assert.ok(deliveryRuns.includes('npm run test:online-delivery'));
+    assert.ok(workflowRuns(apkWorkflow).includes('@bubblewrap/cli@1.24.1'));
+    assert.ok(!workflowRuns(apkWorkflow).includes('--skipPwaValidation'));
 });
 
-runTest('release shortened long-run smoke は 60分相当を短縮して snapshot roundtrip を繰り返す', () => {
+runTest('release 180 step snapshot roundtrip smoke は決定論的に状態を維持する', () => {
     const runtime = loadGameRuntime();
     const game = new runtime.GameManager(2);
     const shopStock = { '麦畑': 6, 'パン屋': 6, 'カフェ': 6 };

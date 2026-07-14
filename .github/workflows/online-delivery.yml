@@ -1,0 +1,32 @@
+name: Production Online Delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      origin:
+        description: Origin to verify
+        required: false
+        default: https://machikoro-9jv2.onrender.com
+
+jobs:
+  production-online-delivery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify production delivery
+        env:
+          DEFAULT_ORIGIN: https://machikoro-9jv2.onrender.com
+          INPUT_ORIGIN: ${{ inputs.origin }}
+        run: npm run test:online-delivery -- --origin "${INPUT_ORIGIN:-$DEFAULT_ORIGIN}" --timeout-ms 30000
+      - name: Verify production Socket.IO handshake
+        env:
+          DEFAULT_ORIGIN: https://machikoro-9jv2.onrender.com
+          INPUT_ORIGIN: ${{ inputs.origin }}
+        run: node tests/online-delivery-handshake.js --origin "${INPUT_ORIGIN:-$DEFAULT_ORIGIN}"
