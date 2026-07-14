@@ -73,6 +73,8 @@ const TEST_GROUPS = {
         'online.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
+        'online-action-reconnect-e2e.test.js',
+        'online-completion-e2e.test.js',
         'storage.test.js',
     ],
     pwa: [
@@ -129,9 +131,18 @@ const TEST_GROUPS = {
         'summarize-rl-metrics.test.js',
         'cli-args.test.js',
     ],
+    soak: [
+        'online-soak.test.js',
+    ],
 };
 
 const repoRoot = path.join(__dirname, '..');
+
+const REQUIRED_TEST_GROUPS = Object.freeze({
+    'online-action-reconnect-e2e.test.js': ['online'],
+    'online-completion-e2e.test.js': ['online'],
+    'online-soak.test.js': ['soak'],
+});
 
 function listActualTestFiles() {
     return fs.readdirSync(__dirname)
@@ -156,6 +167,19 @@ function validateTestGroups() {
             if (!actualSet.has(file)) {
                 errors.push(`${group}: listed test file does not exist: ${file}`);
             }
+        }
+    }
+
+    for (const [file, requiredGroups] of Object.entries(REQUIRED_TEST_GROUPS)) {
+        for (const group of requiredGroups) {
+            if (!TEST_GROUPS[group] || !TEST_GROUPS[group].includes(file)) {
+                errors.push(`${file}: must belong to ${group} test group`);
+            }
+        }
+    }
+    for (const file of actualFiles) {
+        if (/^online(?:-|\.)/.test(file) && file !== 'online-soak.test.js' && !TEST_GROUPS.online.includes(file)) {
+            errors.push(`${file}: online-prefixed tests must belong to online test group`);
         }
     }
 

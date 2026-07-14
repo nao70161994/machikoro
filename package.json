@@ -52,7 +52,8 @@
     "test:release": "node tests/run-all.js release",
     "eval-expert-v2-multiseed": "node scripts/eval-expert-v2-multiseed.js",
     "test:online-delivery": "node scripts/check-online-delivery.js",
-    "pretest": "node tests/check-prerequisites.js"
+    "pretest": "node tests/check-prerequisites.js",
+    "test:soak": "node tests/run-all.js soak"
   },
   "keywords": [],
   "author": "",
