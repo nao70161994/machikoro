@@ -109,3 +109,5 @@ If work continues, these are the highest value small-to-medium follow-ups:
 1. Run a real-device online/PWA reconnect matrix and record results in `docs/OPERATIONS.md` or a manual test note before reconnect state-machine work.
 2. Add action contract coverage when the next action/pending path changes, especially canonical payload + client apply + UI registry alignment.
 3. Extract the next pure UI/server helper only when an existing test can assert the exact output or policy without moving lifecycle wiring.
+
+The experimental canonical file adapter does not close the durable-state backlog item. Before adoption, select a persistent/shared volume, define capacity and retention, document backup and corruption recovery, test competing owners across processes/instances, and approve the server/client protocol rollout. Keep the default store mode `noop` until those gates are complete.

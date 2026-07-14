@@ -392,3 +392,10 @@ Test index:
 - `docs/HOSTLESS_RESTORE_DESIGN.md` now lists the concrete gates for re-evaluation. The 2026-05-26 footings do not authorize hostless restore.
 - Keep `recreateRoom` replacement host-only. `onlineRestoreRoomIndex` is a locator only; `restoreAudit` becomes authority only when server-generated and HMAC-verified for the exact canonical restore payload.
 - Stop before implementation if the next step requires provisional quorum, durable storage selection, replacement timing rules, or multi-device manual verification.
+
+## Online durability split status
+
+- The original large WIP is preserved at `rescue/online-durability-review` commit `5d841f6`; do not merge that commit directly.
+- `review/online-durability-split` contains thematic rollback units. See `docs/UNCOMMITTED_WORK_RESCUE_PLAN.md` for classification and merge order.
+- The file canonical adapter is experimental and opt-in only. Unset or unknown `CANONICAL_STATE_STORE` values resolve to `noop`; production persistence and multi-instance operation remain unapproved.
+- GitHub Actions WebKit, production delivery, and real iPhone Safari long-run play are not implied by local Node E2E results and must be recorded separately.

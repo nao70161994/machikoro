@@ -149,9 +149,11 @@ Keep these definitions aligned. A future cleanup should move this comparison int
 
 ### Canonical state store footing
 
-The server now has a small `server/canonicalStateStore.js` adapter contract. The default mode is `noop`, so current deployments still rely on live in-memory room state and host-provided restart restore exactly as before. `CANONICAL_STATE_STORE=memory` is a test/development adapter only; it is not durable across process restarts and must not be described as server-persisted restore.
+The server has a `server/canonicalStateStore.js` adapter contract. The default mode is `noop`, so current deployments still rely on live in-memory room state and host-provided restart restore exactly as before. `CANONICAL_STATE_STORE=memory` is a test/development adapter only; it is not durable across process restarts and must not be described as server-persisted restore.
 
-The stored record shape is intentionally limited to canonical server fields: `gameStartPayload`, compacted `stateSnapshot`, residual `actionLog`, accepted client-action refs, host metadata, action sequence, and timestamps. A future durable adapter must write atomically after accepted actions and compaction, load server state before accepting client `recreateRoom`, and make server state outrank every client restore bundle.
+An experimental file adapter exists for explicit `CANONICAL_STATE_STORE=file` testing. It implements revision checks, leases, journal/backup recovery, checksums, and writer locking, but it is not a production adoption decision and must never be enabled by default. Persistent volume selection, retention/capacity, backup restoration, corruption operations, and multi-instance shared ownership remain unresolved.
+
+The stored record shape is limited to canonical server fields: `gameStartPayload`, compacted `stateSnapshot`, residual `actionLog`, accepted client-action refs and watermarks, host metadata, action sequence, lease/revision metadata, and timestamps. Server-loaded canonical state must explicitly outrank client `recreateRoom` bundles.
 
 
 Live rooms keep an in-memory `canonicalMirror` after game start or server-side restore. The mirror is not serialized to clients and is safe to discard: if it is missing or stale, server validation rebuilds it from `stateSnapshot + actionLog`.
