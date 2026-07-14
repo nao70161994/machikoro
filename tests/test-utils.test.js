@@ -26,12 +26,20 @@ runTest('runTest は await された async failure を exitCode に反映する'
     assert.ok((result.stderr || '').includes('async boom'));
 });
 
-runTest('test files は async runTest を fire-and-forget にしない', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const files = ['tests/release-e2e.test.js', 'tests/cpu.test.js'];
-    for (const file of files) {
-        const source = fs.readFileSync(path.join(process.cwd(), file), 'utf8');
-        assert.ok(!/[^A-Za-z0-9_]runTest\([^\n]+async\s*\(/.test(source), file + ' has fire-and-forget async runTest');
-    }
+runTest('runTest は fire-and-forget 呼出しも登録順に逐次実行する', () => {
+    const script = [
+        "const { runTest, waitForTests } = require('./tests/helpers/test-utils');",
+        "const order = [];",
+        "runTest('first', async () => {",
+        "  order.push('first:start');",
+        "  await new Promise(resolve => setTimeout(resolve, 20));",
+        "  order.push('first:end');",
+        "});",
+        "runTest('second', () => order.push('second'));",
+        "waitForTests().then(() => {",
+        "  if (order.join(',') !== 'first:start,first:end,second') process.exit(2);",
+        "});",
+    ].join('\n');
+    const result = spawnSync(process.execPath, ['-e', script], { cwd: process.cwd(), encoding: 'utf8' });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
 });

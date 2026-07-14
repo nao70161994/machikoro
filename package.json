@@ -7,7 +7,7 @@
     "test": "node tests/run-all.js unit",
     "test:sim": "node tests/run-all.js sim",
     "test:all": "node tests/run-all.js all",
-    "test:static": "node --check server.js && git ls-files '*.js' ':!:node_modules/*' | xargs -n 1 node --check && git ls-files '*.json' ':!:node_modules/*' | xargs -n 1 node -e \"const fs=require('fs'); JSON.parse(fs.readFileSync(process.argv[1],'utf8'))\" && git ls-files '*.sh' ':!:node_modules/*' | xargs -n 1 sh -n && npm run test:static:py",
+    "test:static": "git ls-files --cached --others --exclude-standard -- \"*.js\" \":!:node_modules/*\" | xargs -n 1 node --check && git ls-files --cached --others --exclude-standard -- \"*.json\" \":!:node_modules/*\" | xargs -n 1 node -e \"const fs=require(\\\"fs\\\"); JSON.parse(fs.readFileSync(process.argv[1],\\\"utf8\\\"))\" && git ls-files --cached --others --exclude-standard -- \"*.sh\" \":!:node_modules/*\" | xargs -n 1 sh -n && npm run test:static:py",
     "test:smoke": "npm run test:static && npm run test:core && node tests/run-all.js cpu-smoke && npm run test:online",
     "test:core": "node tests/run-all.js core",
     "test:online": "node tests/run-all.js online",
@@ -51,7 +51,8 @@
     "test:static:py": "python3 -m py_compile scripts/rl/*.py",
     "test:release": "node tests/run-all.js release",
     "eval-expert-v2-multiseed": "node scripts/eval-expert-v2-multiseed.js",
-    "test:online-delivery": "node scripts/check-online-delivery.js"
+    "test:online-delivery": "node scripts/check-online-delivery.js",
+    "pretest": "node tests/check-prerequisites.js"
   },
   "keywords": [],
   "author": "",
