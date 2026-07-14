@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-function runTest(name, fn) {
+let testQueue = null;
+
+function recordTestResult(name, fn) {
     try {
         const result = fn();
         if (result && typeof result.then === 'function') {
@@ -20,6 +22,23 @@ function runTest(name, fn) {
         console.error(error.stack);
         process.exitCode = 1;
     }
+}
+
+function runTest(name, fn) {
+    if (testQueue) {
+        testQueue = testQueue.then(() => recordTestResult(name, fn));
+        return testQueue;
+    }
+    const result = recordTestResult(name, fn);
+    if (result && typeof result.then === 'function') {
+        testQueue = Promise.resolve(result);
+        return testQueue;
+    }
+    return result;
+}
+
+function waitForTests() {
+    return testQueue || Promise.resolve();
 }
 
 function makeElement(overrides = {}) {
@@ -117,4 +136,5 @@ module.exports = {
     loadScripts,
     makeElement,
     runTest,
+    waitForTests,
 };
