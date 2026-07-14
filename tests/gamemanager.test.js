@@ -348,6 +348,17 @@ runTest('allowedActions は phase と pending 状態から許可actionを返す'
     assert.deepStrictEqual([...game.allowedActions()], []);
 });
 
+runTest('勝敗決定後は BUILD action と nextTurn を拒否する', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.BUILD;
+    for (const name of game.enabledLandmarks) game.currentPlayer().landmarks[name] = true;
+
+    assert.deepStrictEqual([...game.allowedActions()], []);
+    assert.strictEqual(game.nextTurn(), false);
+    assert.strictEqual(game.phase, GAME_PHASES.BUILD);
+    assert.strictEqual(game.currentPlayerIndex, 0);
+});
+
 runTest('pendingActionsFor は pending field を解決順descriptorとして返す', () => {
     const plain = value => JSON.parse(JSON.stringify(value));
     const game = new GameManager(2);

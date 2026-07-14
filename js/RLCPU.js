@@ -919,34 +919,39 @@ class RLCPU {
     }
 
     build(game, shopStock) {
-        const { action } = this._chooseForGame(game, shopStock);
-        if (action === RLCPU.ACTIONS.PASS || action < 0) return null;
-        if (action >= RLCPU.ACTIONS.BUY_CARD_BASE && action < RLCPU.ACTIONS.BUY_CARD_BASE + CARDS.length) {
-            const card = CARDS[action - RLCPU.ACTIONS.BUY_CARD_BASE];
-            if (typeof isOnlineGame !== "undefined" && isOnlineGame) {
-                if (typeof isRoomHost !== "undefined" && !isRoomHost) return false;
-                if (typeof isReconnectingOnline !== "undefined" && isReconnectingOnline) return false;
-                if (typeof socket !== "undefined" && socket && socket.connected === false) return false;
-                return typeof sendAction === "function" && sendAction("buildCard", { cardName: card.name }) === true;
-            }
-            if (game.buildCard(card)) {
-                if (shopStock && Number.isFinite(shopStock[card.name])) {
-                    shopStock[card.name] = Math.max(0, shopStock[card.name] - 1);
+        try {
+            const { action } = this._chooseForGame(game, shopStock);
+            if (action === RLCPU.ACTIONS.PASS || action < 0) return null;
+            if (action >= RLCPU.ACTIONS.BUY_CARD_BASE && action < RLCPU.ACTIONS.BUY_CARD_BASE + CARDS.length) {
+                const card = CARDS[action - RLCPU.ACTIONS.BUY_CARD_BASE];
+                if (typeof isOnlineGame !== "undefined" && isOnlineGame) {
+                    if (typeof isRoomHost !== "undefined" && !isRoomHost) return false;
+                    if (typeof isReconnectingOnline !== "undefined" && isReconnectingOnline) return false;
+                    if (typeof socket !== "undefined" && socket && socket.connected === false) return false;
+                    return typeof sendAction === "function" && sendAction("buildCard", { cardName: card.name }) === true;
                 }
-                return true;
+                if (game.buildCard(card)) {
+                    if (shopStock && Number.isFinite(shopStock[card.name])) {
+                        shopStock[card.name] = Math.max(0, shopStock[card.name] - 1);
+                    }
+                    return true;
+                }
+                return false;
             }
+            if (action >= RLCPU.ACTIONS.BUY_LM_BASE && action < RLCPU.ACTIONS.BUY_LM_BASE + RLCPU.LANDMARK_ORDER.length) {
+                const name = RLCPU.LANDMARK_ORDER[action - RLCPU.ACTIONS.BUY_LM_BASE];
+                if (typeof isOnlineGame !== "undefined" && isOnlineGame) {
+                    if (typeof isRoomHost !== "undefined" && !isRoomHost) return false;
+                    if (typeof isReconnectingOnline !== "undefined" && isReconnectingOnline) return false;
+                    if (typeof socket !== "undefined" && socket && socket.connected === false) return false;
+                    return typeof sendAction === "function" && sendAction("buildLandmark", { name }) === true;
+                }
+                return game.buildLandmark(name) === true;
+            }
+            return null;
+        } catch (error) {
+            console.error('[rl-cpu] build decision failed:', error);
             return false;
         }
-        if (action >= RLCPU.ACTIONS.BUY_LM_BASE && action < RLCPU.ACTIONS.BUY_LM_BASE + RLCPU.LANDMARK_ORDER.length) {
-            const name = RLCPU.LANDMARK_ORDER[action - RLCPU.ACTIONS.BUY_LM_BASE];
-            if (typeof isOnlineGame !== "undefined" && isOnlineGame) {
-                if (typeof isRoomHost !== "undefined" && !isRoomHost) return false;
-                if (typeof isReconnectingOnline !== "undefined" && isReconnectingOnline) return false;
-                if (typeof socket !== "undefined" && socket && socket.connected === false) return false;
-                return typeof sendAction === "function" && sendAction("buildLandmark", { name }) === true;
-            }
-            return game.buildLandmark(name) === true;
-        }
-        return null;
     }
 }

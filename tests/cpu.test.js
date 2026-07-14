@@ -190,6 +190,21 @@ runTest('CPU smoke: build calls terminate for all difficulties', () => {
     }
 });
 
+runTest('CPU build は判断中の例外を失敗結果へ変換して同期的に終了する', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    cpu.buildNormal = () => { throw new Error('injected build failure'); };
+    const originalConsoleError = console.error;
+    console.error = () => {};
+    try {
+        assert.strictEqual(cpu.build(game, makeFullShopStock()), false);
+    } finally {
+        console.error = originalConsoleError;
+    }
+    assert.strictEqual(game.builtThisTurn, false);
+});
+
 runTest('choosePendingResolution は pending 順と fallback move を共有する', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);
