@@ -8,9 +8,23 @@ let cpuSpeed = 1500;
 // コインアニメーション用
 let prevCoins = null;
 
+function safeMainStorageGet(key, fallback = null) {
+    try {
+        return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : fallback;
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function safeMainStorageRemove(key) {
+    try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+    } catch (_) {}
+}
+
 // 連勝記録
-let winStreak = parseInt(localStorage.getItem('winStreak') || '0');
-let lastWinnerName = localStorage.getItem('lastWinnerName') || '';
+let winStreak = parseInt(safeMainStorageGet('winStreak', '0') || '0');
+let lastWinnerName = safeMainStorageGet('lastWinnerName', '') || '';
 
 // オートスキップ
 let autoSkipPending = false;
@@ -18,20 +32,23 @@ let autoSkipTimeout = null;
 let delayedHumanActionPending = false;
 let delayedHumanActionTimeout = null;
 let delayedHumanActionToken = 0;
+let delayedHumanActionState = null;
 let localGameStartPending = false;
 
 // 取り消し
 let undoState = null;
-let tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
-let tutorialLevel = localStorage.getItem('tutorialLevel') || 'beginner';
+let tutorialEnabled = safeMainStorageGet('tutorialEnabled') !== 'false';
+let tutorialLevel = safeMainStorageGet('tutorialLevel', 'beginner') || 'beginner';
 
 // CPU進行チェーン制御
 let cpuScheduleToken = 0;
 let cpuStepScheduledUntil = 0;
+let cpuPendingStepToken = null;
 
 function cancelCpuSchedule(reason = 'cpu-schedule-cancel') {
     cpuScheduleToken++;
     cpuStepScheduledUntil = 0;
+    cpuPendingStepToken = null;
     try {
         if (typeof markMainCheckpoint === 'function') markMainCheckpoint(reason, { cpuScheduleToken });
     } catch (_) {}
@@ -50,7 +67,7 @@ function refreshCpuStepScheduleLease(leaseMs = 1500) {
 }
 
 function isCpuStepScheduledNow() {
-    return Date.now() < cpuStepScheduledUntil;
+    return cpuPendingStepToken !== null && cpuPendingStepToken === cpuScheduleToken;
 }
 
 function escapeAttribute(value) {
@@ -344,10 +361,10 @@ function startGame() {
 function restartGame() {
     showConfirm("最初からやり直しますか？\n現在のゲームは終了します", () => {
         markMainCheckpoint('restart-game-confirmed-start');
-        localStorage.removeItem('savedGame');
+        safeMainStorageRemove('savedGame');
         if (typeof clearOnlineSessionStorage === 'function') clearOnlineSessionStorage();
         else {
-            ['onlineSession', 'onlineGameStart', 'onlineActionLog', 'onlineStateSnapshot', 'onlinePendingAction'].forEach(key => localStorage.removeItem(key));
+            ['onlineSession', 'onlineGameStart', 'onlineActionLog', 'onlineStateSnapshot', 'onlinePendingAction'].forEach(safeMainStorageRemove);
         }
         cancelCpuSchedule('restart-game-cancel-cpu');
         cancelDelayedHumanAction();
@@ -439,7 +456,11 @@ function cpuDo(action, data, fallback) {
 }
 
 function markMainCheckpoint(event, details = {}) {
-    if (typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
+    try {
+        if (typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
+    } catch (_) {
+        // Diagnostics must never interrupt the CPU scheduler or a player action.
+    }
 }
 
 function runLocalOrSendOnline(action, data, fallback) {
@@ -488,8 +509,10 @@ function canRunAction(action) {
 
 function queueCPUStep(token, delay, fn) {
     markCpuStepScheduled(delay);
+    cpuPendingStepToken = token;
     setTimeout(() => {
         if (token !== cpuScheduleToken) return;
+        cpuPendingStepToken = null;
         refreshCpuStepScheduleLease();
         fn();
     }, delay);
@@ -785,7 +808,7 @@ function currentCpuTurnSchedulerHealth() {
     return {
         token: cpuScheduleToken,
         scheduledUntil: cpuStepScheduledUntil,
-        stepScheduled: !blockedReason && isCpuStepScheduledNow(),
+        stepScheduled: !blockedReason && isCpuStepScheduledNow() && Date.now() < cpuStepScheduledUntil,
         isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
         currentPlayerIndex,
         blockedReason,
@@ -841,7 +864,19 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             if (!game || game.checkWinner()) return;
             if (!cpuPlayers[game.currentPlayerIndex]) return;
             markMainCheckpoint('scheduleCPU-step-run', { step: step.name });
-            const stepResult = step.run(cpu);
+            let stepResult;
+            try {
+                stepResult = step.run(cpu);
+            } catch (error) {
+                console.error('[cpu] phase step failed:', step.name, error);
+                markMainCheckpoint('scheduleCPU-step-error', { step: step.name, message: error && error.message || String(error) });
+                if (isOnlineGame) return;
+                if (step.name === 'build' && game.phase === GAME_PHASES.BUILD && !game.builtThisTurn) {
+                    game.nextTurn();
+                }
+                runNextStep();
+                return;
+            }
             markMainCheckpoint('scheduleCPU-step-result', { step: step.name, stepResult });
             if (stepResult === false) return;
             runNextStep();
@@ -869,6 +904,84 @@ function scheduleCPU() {
     return cpuTurnScheduler.schedule('scheduleCPU');
 }
 
+let cpuResumeSchedulerBound = false;
+
+function resumeCpuTurnAfterPageActivation(reason) {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    const health = currentCpuTurnSchedulerHealth();
+    if (!health.isCpuTurn || health.blockedReason) return;
+    if (health.stepScheduled && Date.now() < health.scheduledUntil) return;
+    cancelCpuSchedule(reason + '-expire-stale');
+    scheduleCpuTurn(reason);
+}
+
+function runDelayedHumanAction(scheduledToken) {
+    const state = delayedHumanActionState;
+    if (!state || scheduledToken !== delayedHumanActionToken || scheduledToken !== state.token) return;
+    delayedHumanActionPending = false;
+    delayedHumanActionTimeout = null;
+    delayedHumanActionState = null;
+    if (!canRunHumanAction(state.action, state.playerIndex)) return;
+    state.run();
+}
+
+function scheduleDelayedHumanAction(action, playerIndex, run, delay = 600) {
+    delayedHumanActionPending = true;
+    const token = ++delayedHumanActionToken;
+    delayedHumanActionState = {
+        token,
+        action,
+        playerIndex,
+        deadline: Date.now() + delay,
+        run,
+    };
+    delayedHumanActionTimeout = setTimeout(() => runDelayedHumanAction(token), delay);
+}
+
+function resumeDelayedHumanActionAfterPageActivation() {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    const state = delayedHumanActionState;
+    if (!delayedHumanActionPending || !state) return;
+    if (!canRunHumanAction(state.action, state.playerIndex)) {
+        cancelDelayedHumanAction();
+        return;
+    }
+    if (Date.now() >= state.deadline) {
+        runDelayedHumanAction(state.token);
+        return;
+    }
+    if (delayedHumanActionTimeout !== null) clearTimeout(delayedHumanActionTimeout);
+    const token = ++delayedHumanActionToken;
+    state.token = token;
+    delayedHumanActionTimeout = setTimeout(
+        () => runDelayedHumanAction(token),
+        Math.max(0, state.deadline - Date.now())
+    );
+}
+
+function resumeTurnAfterPageActivation(reason) {
+    if (typeof RLModelPortfolio !== 'undefined' &&
+            typeof RLModelPortfolio.resumePendingLoadsAfterPageActivation === 'function') {
+        RLModelPortfolio.resumePendingLoadsAfterPageActivation();
+    }
+    resumeDelayedHumanActionAfterPageActivation();
+    if (typeof resumeOnlineReconnectAfterPageActivation === 'function') {
+        resumeOnlineReconnectAfterPageActivation();
+    }
+    resumeCpuTurnAfterPageActivation(reason);
+}
+
+function bindCpuResumeScheduler() {
+    if (cpuResumeSchedulerBound) return;
+    cpuResumeSchedulerBound = true;
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+        document.addEventListener('visibilitychange', () => resumeTurnAfterPageActivation('visibility-resume'));
+    }
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('pageshow', () => resumeTurnAfterPageActivation('pageshow-resume'));
+    }
+}
+
 function canRunLocalHumanAction(expectedPlayerIndex = null) {
     if (!game || game.checkWinner()) return false;
     if (expectedPlayerIndex !== null && game.currentPlayerIndex !== expectedPlayerIndex) return false;
@@ -889,6 +1002,7 @@ function canRunHumanAction(action, expectedPlayerIndex = null) {
 function cancelDelayedHumanAction() {
     delayedHumanActionToken++;
     delayedHumanActionPending = false;
+    delayedHumanActionState = null;
     if (delayedHumanActionTimeout !== null) {
         clearTimeout(delayedHumanActionTimeout);
         delayedHumanActionTimeout = null;
@@ -904,15 +1018,9 @@ function onRoll() {
     } else {
         // 駅なし：アニメーションあり
         if (delayedHumanActionPending) return;
-        delayedHumanActionPending = true;
-        const scheduledToken = ++delayedHumanActionToken;
         const scheduledPlayerIndex = game.currentPlayerIndex;
         updateDiceDisplay(null, true);
-        delayedHumanActionTimeout = setTimeout(() => {
-            if (scheduledToken !== delayedHumanActionToken) return;
-            delayedHumanActionPending = false;
-            delayedHumanActionTimeout = null;
-            if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex)) return;
+        scheduleDelayedHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex, () => {
             if (isOnlineGame) {
                 runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
                 return;
@@ -920,23 +1028,17 @@ function onRoll() {
             const forceDice = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
             runLocalOrSendOnline('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
-        }, 600);
+        });
     }
 }
 
 function onSelectDiceCount(useTwo) {
     if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE)) return;
     if (delayedHumanActionPending) return;
-    delayedHumanActionPending = true;
-    const scheduledToken = ++delayedHumanActionToken;
     playSound('dice');
     const scheduledPlayerIndex = game.currentPlayerIndex;
     updateDiceDisplay(null, true);
-    delayedHumanActionTimeout = setTimeout(() => {
-        if (scheduledToken !== delayedHumanActionToken) return;
-        delayedHumanActionPending = false;
-        delayedHumanActionTimeout = null;
-        if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex)) return;
+    scheduleDelayedHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex, () => {
         if (isOnlineGame) {
             runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1 },
                 () => game.selectDiceCount(useTwo, 1, useTwo ? 1 : 0, null));
@@ -947,7 +1049,7 @@ function onSelectDiceCount(useTwo) {
         const tunaDice = [rollRandomDie(), rollRandomDie()];
         runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice },
             () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
-    }, 600);
+    });
 }
 
 function onReroll() {
@@ -1556,3 +1658,4 @@ function checkAutoSkip() {
 // 初期表示
 initMainView();
 bindDelegatedUiHandlers();
+bindCpuResumeScheduler();

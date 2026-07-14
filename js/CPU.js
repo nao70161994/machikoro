@@ -2650,16 +2650,21 @@ class CPU {
 
     build(game, shopStock) {
         this._lastBuildActionResult = null;
-        this._syncExpertTuningForGame(game);
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
-        if (this.difficulty === "weak") {
-            this.buildWeak(game, shopStock);
-        } else if (this.difficulty === "normal") {
-            this.buildNormal(game, shopStock);
-        } else if (this.difficulty === "strong") {
-            this.buildStrong(game, shopStock);
-        } else {
-            this.buildExpert(game, shopStock);
+        try {
+            this._syncExpertTuningForGame(game);
+            if (this.difficulty === "weak") {
+                this.buildWeak(game, shopStock);
+            } else if (this.difficulty === "normal") {
+                this.buildNormal(game, shopStock);
+            } else if (this.difficulty === "strong") {
+                this.buildStrong(game, shopStock);
+            } else {
+                this.buildExpert(game, shopStock);
+            }
+        } catch (error) {
+            console.error('[cpu] build decision failed:', error);
+            return this._setBuildActionResult(false);
         }
         return this._lastBuildActionResult;
     }

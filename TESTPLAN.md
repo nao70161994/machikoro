@@ -183,3 +183,11 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
    - 自動確認: `.github/workflows/build-apk.yml` で `app-release-signed.apk` の存在と非空を検査し、upload-artifact は missing artifact を error にする。
    - 手動確認: GitHub Actions の手動実行で keystore secret 不足時は早期失敗し、APK 未生成時も成功扱いにならないことを見る。
    - 期待結果: 署名・fingerprint・APK 生成のどれかが失敗した場合、workflow が緑にならない。
+
+25. Mobile WebKit / 実iOSオンラインsoak
+   - 自動確認: `npx playwright install webkit` 後に `npm run test:browser-e2e` を実行し、mobile WebKitでService Worker登録、2クライアントの部屋作成/参加、開始、再読込、再接続を確認する。
+   - 自動soak: `MACHIKORO_SOAK_RUNS=3 npm run test:soak` で4人human戦の完走、action log圧縮、host再接続を3回連続実行する。
+   - 実端末: iPhone Safariを4台、またはiPhone Safari 1台と別端末/プライベートタブ3つで4人human部屋を作る。画面自動ロックを無効化し、各端末を通常操作する。
+   - 30分以上経過後、host端末をバックグラウンドへ移して復帰し、次に非host端末を再読込して再接続する。建設後Undo、pending対象選択、Service Worker更新通知も最低1回通す。
+   - 勝利画面まで全端末の手番、coins、cards、landmarks、action sequenceが一致することを記録する。Safariのメモリ警告、白画面、`cpu-turn-stalled`、操作不能が1件でもあれば成功扱いにしない。
+   - Playwright WebKitはiOS Safariの近似であり、実iOSのバックグラウンド停止、メモリ制限、PWA standalone固有挙動の代替ではない。

@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 const crypto = require('crypto');
+const proxyaddr = require('proxy-addr');
 const { execSync } = require('child_process');
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 
@@ -33,6 +34,11 @@ const {
     getAllowedActions,
 } = require('./server/actionValidation')({ gameRuntime });
 const MAX_ACTION_LOG_LENGTH = 200;
+const MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS = 5000;
+const MAX_MONOTONIC_ACCEPTED_CLIENT_ACTIONS = 256;
+const MAX_CLIENT_ACTION_STREAMS_PER_PLAYER = 32;
+const CANONICAL_LEASE_MS = 30 * 60 * 1000;
+const SERVER_INSTANCE_ID = `${process.pid}-${crypto.randomBytes(8).toString('hex')}`;
 const {
     serializeMirrorState,
     restoreMirrorState,
@@ -95,6 +101,7 @@ const {
     defaultRooms: rooms,
     cpuDifficultyLabel,
     hashReconnectToken,
+    clientAddressForSocket: socketClientIp,
 });
 const {
     restorePayloadRank,
@@ -138,6 +145,45 @@ const GAME_LIFECYCLE_LIMITS = Object.freeze({
 });
 const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
+const SOCKET_EVENT_RATE_LIMITS = Object.freeze({
+    joinRoom: { windowMs: 60000, socketMax: 60, addressMax: 240 },
+    rejoinRoom: { windowMs: 60000, socketMax: 120, addressMax: 480 },
+    recreateRoom: { windowMs: 60000, socketMax: 20, addressMax: 80 },
+    gameAction: { windowMs: 60000, socketMax: 5000, addressMax: 20000 },
+});
+const socketEventRateBuckets = new Map();
+
+function isSocketEventRateLimited(socket, eventName, now = Date.now(), buckets = socketEventRateBuckets) {
+    const limit = SOCKET_EVENT_RATE_LIMITS[eventName];
+    if (!limit) return false;
+    const address = socketClientIp(socket) || socket?.id || 'unknown';
+    const keys = [
+        { key: `${eventName}:socket:${socket?.id || 'unknown'}`, max: limit.socketMax },
+        { key: `${eventName}:address:${address}`, max: limit.addressMax },
+    ];
+    let limited = false;
+    for (const entry of keys) {
+        let bucket = buckets.get(entry.key);
+        if (!bucket || now - bucket.windowStart >= limit.windowMs) {
+            bucket = { windowStart: now, count: 0 };
+            buckets.set(entry.key, bucket);
+        }
+        bucket.count++;
+        if (bucket.count > entry.max) limited = true;
+    }
+    for (const [bucketKey, value] of buckets) {
+        if (now - value.windowStart >= 60000) buckets.delete(bucketKey);
+    }
+    while (buckets.size > 4000) buckets.delete(buckets.keys().next().value);
+    return limited;
+}
+
+function rejectRateLimitedSocketEvent(socket, eventName) {
+    if (!isSocketEventRateLimited(socket, eventName)) return false;
+    emitAppError(socket, '操作が短時間に集中しています。少し待ってから再試行してください');
+    return true;
+}
+
 const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
 function restoreAuditSecret() {
@@ -151,6 +197,20 @@ function resolveTrustProxySetting(env = process.env) {
     if (['0', 'false', 'no', 'off'].includes(lower)) return false;
     if (['1', 'true', 'yes', 'on'].includes(lower)) return 1;
     return value;
+}
+
+function socketClientIp(socket, trustProxy = resolveTrustProxySetting(process.env)) {
+    const request = socket && (socket.request || socket.handshake);
+    const direct = socket?.handshake?.address || socket?.conn?.remoteAddress || request?.socket?.remoteAddress || null;
+    if (!request || !trustProxy) return direct;
+    try {
+        const trust = Number.isInteger(trustProxy)
+            ? ((address, index) => index < trustProxy)
+            : proxyaddr.compile(String(trustProxy));
+        return proxyaddr(request, trust);
+    } catch (_) {
+        return direct;
+    }
 }
 
 function truncateText(value, maxLength) {
@@ -1022,6 +1082,25 @@ function hashReconnectToken(token) {
     return token ? crypto.createHash('sha256').update(String(token)).digest('hex') : '';
 }
 
+function parseMonotonicClientActionId(clientActionId) {
+    const match = /^m1\.([A-Za-z0-9_-]{8,24})\.([1-9a-z][0-9a-z]*)$/.exec(String(clientActionId || ''));
+    if (!match) return null;
+    const counter = Number.parseInt(match[2], 36);
+    if (!Number.isSafeInteger(counter) || counter < 1) return null;
+    return { streamId: match[1], counter };
+}
+
+function acceptedClientActionWatermarkKey(playerIndex, streamId) {
+    return `${playerIndex}:${streamId}`;
+}
+
+function isClientActionAcceptedByWatermark(room, clientActionId, playerIndex) {
+    const parsed = parseMonotonicClientActionId(clientActionId);
+    if (!parsed || !room || !Number.isInteger(playerIndex)) return false;
+    const watermark = room.acceptedClientActionWatermarks?.[acceptedClientActionWatermarkKey(playerIndex, parsed.streamId)];
+    return Number.isSafeInteger(watermark) && parsed.counter <= watermark;
+}
+
 function acceptedClientActionKey(playerIndex, clientActionId) {
     return `${playerIndex}:${clientActionId}`;
 }
@@ -1043,11 +1122,35 @@ function rememberAcceptedClientAction(room, actionEntry) {
     if (!room || !actionEntry || typeof actionEntry.clientActionId !== 'string' || !actionEntry.clientActionId || !Number.isInteger(actionEntry.playerIndex)) return;
     if (!room.acceptedClientActions) room.acceptedClientActions = {};
     room.acceptedClientActions[acceptedClientActionKey(actionEntry.playerIndex, actionEntry.clientActionId)] = actionEntry;
-    const ids = Object.keys(room.acceptedClientActions);
-    if (ids.length > 100) {
-        ids.sort((a, b) => (room.acceptedClientActions[a].seq || 0) - (room.acceptedClientActions[b].seq || 0));
-        for (const id of ids.slice(0, ids.length - 100)) delete room.acceptedClientActions[id];
+    const parsed = parseMonotonicClientActionId(actionEntry.clientActionId);
+    if (parsed) {
+        if (!room.acceptedClientActionWatermarks) room.acceptedClientActionWatermarks = {};
+        const watermarkKey = acceptedClientActionWatermarkKey(actionEntry.playerIndex, parsed.streamId);
+        room.acceptedClientActionWatermarks[watermarkKey] = Math.max(room.acceptedClientActionWatermarks[watermarkKey] || 0, parsed.counter);
+        const monotonicEntries = Object.entries(room.acceptedClientActions)
+            .filter(([, entry]) => parseMonotonicClientActionId(entry.clientActionId))
+            .sort((a, b) => (a[1].seq || 0) - (b[1].seq || 0));
+        for (const [key] of monotonicEntries.slice(0, Math.max(0, monotonicEntries.length - MAX_MONOTONIC_ACCEPTED_CLIENT_ACTIONS))) delete room.acceptedClientActions[key];
     }
+}
+
+function hasAcceptedClientActionCapacity(room, clientActionId = '', playerIndex = null) {
+    const parsed = parseMonotonicClientActionId(clientActionId);
+    if (parsed) {
+        if (!Number.isInteger(playerIndex)) return false;
+        const prefix = playerIndex + ':';
+        const existingKey = acceptedClientActionWatermarkKey(playerIndex, parsed.streamId);
+        if (Object.prototype.hasOwnProperty.call(room && room.acceptedClientActionWatermarks || {}, existingKey)) return true;
+        return Object.keys(room && room.acceptedClientActionWatermarks || {}).filter(key => key.startsWith(prefix)).length < MAX_CLIENT_ACTION_STREAMS_PER_PLAYER;
+    }
+    return Object.values(room && room.acceptedClientActions || {}).filter(entry => !parseMonotonicClientActionId(entry.clientActionId)).length < MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS;
+}
+
+function acceptedClientActionWatermarkRefs(room) {
+    return Object.entries(room && room.acceptedClientActionWatermarks || {}).map(([key, counter]) => {
+        const separator = key.indexOf(':');
+        return { playerIndex: Number.parseInt(key.slice(0, separator), 10), streamId: key.slice(separator + 1), counter };
+    }).filter(ref => Number.isInteger(ref.playerIndex) && ref.streamId && Number.isSafeInteger(ref.counter));
 }
 
 function acceptedClientActionRefs(room) {
@@ -1069,6 +1172,7 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
         stateSnapshot,
         actionLog: overrides.actionLog || room.actionLog || [],
         acceptedClientActions: acceptedClientActionRefs(room),
+        acceptedClientActionWatermarks: acceptedClientActionWatermarkRefs(room),
         playerIndex,
         hostPlayerIndex: overrides.hostPlayerIndex !== undefined ? overrides.hostPlayerIndex : room.hostPlayerIndex,
         hostEpoch: Number.isInteger(overrides.hostEpoch) ? overrides.hostEpoch : (room.hostEpoch || 0),
@@ -1082,14 +1186,92 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
 
 function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
     if (!store || typeof store.save !== 'function') return { ok: true, skipped: true };
-    const record = buildCanonicalStateRecord(roomId, room, { reason, now });
+    const record = buildCanonicalStateRecord(roomId, room, {
+        reason,
+        now,
+        ownerId: SERVER_INSTANCE_ID,
+        leaseExpiresAt: now + CANONICAL_LEASE_MS,
+    });
     if (!record) return { ok: false, reason: 'invalid-record' };
     try {
-        return store.save(record);
+        const result = store.save(record, { expectedRevision: Number.isInteger(room.canonicalRevision) ? room.canonicalRevision : 0 });
+        if (result && result.reason === 'revision-conflict') {
+            room.canonicalConflict = true;
+            room.canonicalDegraded = true;
+            fenceCanonicalConflict(roomId, room);
+        }
+        if (result && result.ok) {
+            if (Number.isInteger(result.revision)) room.canonicalRevision = result.revision;
+            if (result.degraded) { room.canonicalDegraded = true; scheduleRoomDurabilityRecovery(roomId); }
+            scheduleRoomLeaseRefresh(roomId);
+        }
+        return result;
     } catch (error) {
         console.warn('[canonical-state-store] save failed:', error && error.message || error);
         return { ok: false, reason: 'save-failed' };
     }
+}
+
+function captureRoomActionTransaction(room) {
+    return {
+        actionSeq: room.actionSeq,
+        gameStartActionSeq: room.gameStartPayload && room.gameStartPayload.actionSeq,
+        stateSnapshot: JSON.parse(JSON.stringify(room.stateSnapshot || null)),
+        actionLog: JSON.parse(JSON.stringify(room.actionLog || [])),
+        acceptedClientActions: JSON.parse(JSON.stringify(room.acceptedClientActions || {})),
+        acceptedClientActionWatermarks: JSON.parse(JSON.stringify(room.acceptedClientActionWatermarks || {})),
+        canonicalRevision: room.canonicalRevision,
+        lastUndoState: JSON.parse(JSON.stringify(room.lastUndoState || null)),
+        lastTouchedAt: room.lastTouchedAt,
+    };
+}
+
+function rollbackRoomActionTransaction(room, transaction) {
+    room.actionSeq = transaction.actionSeq;
+    if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
+        if (transaction.gameStartActionSeq === undefined) delete room.gameStartPayload.actionSeq;
+        else room.gameStartPayload.actionSeq = transaction.gameStartActionSeq;
+    }
+    room.stateSnapshot = transaction.stateSnapshot;
+    room.actionLog = transaction.actionLog;
+    room.acceptedClientActions = transaction.acceptedClientActions;
+    room.acceptedClientActionWatermarks = transaction.acceptedClientActionWatermarks;
+    room.canonicalRevision = transaction.canonicalRevision;
+    room.lastUndoState = transaction.lastUndoState;
+    room.lastTouchedAt = transaction.lastTouchedAt;
+    resetRoomCanonicalMirror(room);
+}
+
+function captureRoomHostTransaction(room) {
+    return {
+        hostPlayerIndex: room.hostPlayerIndex,
+        hostEpoch: room.hostEpoch,
+        gameStartHostPlayerIndex: room.gameStartPayload && room.gameStartPayload.hostPlayerIndex,
+        gameStartHostEpoch: room.gameStartPayload && room.gameStartPayload.hostEpoch,
+        lastTouchedAt: room.lastTouchedAt,
+    };
+}
+
+function rollbackRoomHostTransaction(room, transaction) {
+    room.hostPlayerIndex = transaction.hostPlayerIndex;
+    room.hostEpoch = transaction.hostEpoch;
+    room.lastTouchedAt = transaction.lastTouchedAt;
+    if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
+        room.gameStartPayload.hostPlayerIndex = transaction.gameStartHostPlayerIndex;
+        room.gameStartPayload.hostEpoch = transaction.gameStartHostEpoch;
+    }
+}
+
+function persistRoomHostChange(roomId, room, hostPlayerIndex, reason, store = canonicalStateStore) {
+    const transaction = captureRoomHostTransaction(room);
+    setRoomHostPlayerIndex(room, hostPlayerIndex);
+    room.lastTouchedAt = Date.now();
+    const result = persistRoomCanonicalState(roomId, room, reason, Date.now(), store);
+    if (!result || !result.ok) {
+        rollbackRoomHostTransaction(room, transaction);
+        return false;
+    }
+    return true;
 }
 
 function loadRoomCanonicalStateRecord(roomId, store = canonicalStateStore) {
@@ -1146,6 +1328,8 @@ function buildRestoreActionAuditPayload(actionEntry) {
     };
     const safeClientActionId = normalizeClientActionId(actionEntry.clientActionId);
     if (safeClientActionId) payload.clientActionId = safeClientActionId;
+    if (Number.isInteger(actionEntry.authorizedHostPlayerIndex)) payload.authorizedHostPlayerIndex = actionEntry.authorizedHostPlayerIndex;
+    if (Number.isInteger(actionEntry.hostEpoch)) payload.hostEpoch = actionEntry.hostEpoch;
     return payload;
 }
 
@@ -1179,8 +1363,132 @@ function attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actio
 
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
+function cleanupExpiredCanonicalRecords(now = Date.now(), store = canonicalStateStore, activeRooms = rooms) {
+    if (!store || typeof store.list !== 'function' || typeof store.delete !== 'function') return 0;
+    let records;
+    try {
+        records = store.list();
+    } catch (error) {
+        console.warn('[canonical-state-store] list failed:', error && error.message || error);
+        return 0;
+    }
+    let deleted = 0;
+    for (const record of records) {
+        if (!record || activeRooms[record.roomId]) continue;
+        if (Number.isInteger(record.leaseExpiresAt) && record.leaseExpiresAt > now) continue;
+        const touchedAt = roomTimestamp(record.lastTouchedAt) || roomTimestamp(record.persistedAt);
+        if (touchedAt > 0 && now - touchedAt > ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs) {
+            try {
+                const result = store.delete(record.roomId, { expectedRevision: record.revision, leaseExpiredAt: now });
+                if (result && result.ok) deleted++;
+            } catch (error) {
+                console.warn('[canonical-state-store] delete failed:', error && error.message || error);
+            }
+        }
+    }
+    return deleted;
+}
+
+const roomDurabilityRecoveryTimers = new Map();
+
+function fenceCanonicalConflict(roomId, room) {
+    if (!room) return false;
+    room.canonicalConflict = true;
+    room.canonicalDegraded = true;
+    if (rooms[roomId] !== room) return false;
+    io.to(roomId).emit(APP_ERROR_EVENT, 'CANONICAL_REVISION_CONFLICT');
+    for (const player of room.players || []) {
+        const playerSocket = player?.id && io.sockets.sockets.get(player.id);
+        detachSocketFromRoom(player?.id, roomId, 'CANONICAL_REVISION_CONFLICT');
+        if (playerSocket && typeof playerSocket.disconnect === 'function') playerSocket.disconnect(true);
+        if (player) player.id = null;
+    }
+    delete rooms[roomId];
+    const leaseTimer = roomLeaseRefreshTimers.get(roomId);
+    if (leaseTimer) clearTimeout(leaseTimer.timer || leaseTimer);
+    roomLeaseRefreshTimers.delete(roomId);
+    const recoveryTimer = roomDurabilityRecoveryTimers.get(roomId);
+    if (recoveryTimer) clearTimeout(recoveryTimer.timer || recoveryTimer);
+    roomDurabilityRecoveryTimers.delete(roomId);
+    return true;
+}
+
+function scheduleRoomDurabilityRecovery(roomId, attempt = 0) {
+    if (roomDurabilityRecoveryTimers.has(roomId)) return;
+    const delay = Math.min(30000, 1000 * (2 ** Math.min(attempt, 5))) + Math.floor(Math.random() * 250);
+    const timer = setTimeout(() => {
+        roomDurabilityRecoveryTimers.delete(roomId);
+        const room = rooms[roomId];
+        if (!room || !room.canonicalDegraded || room.canonicalConflict) return;
+        const result = typeof canonicalStateStore.verifyDurability === 'function'
+            ? canonicalStateStore.verifyDurability({
+                roomId,
+                expectedRevision: room.canonicalRevision,
+                ownerId: SERVER_INSTANCE_ID,
+            })
+            : { ok: true };
+        if (result && result.ok) {
+            room.canonicalDegraded = false;
+            io.to(roomId).emit(APP_ERROR_EVENT, 'CANONICAL_STORE_RECOVERED');
+            return;
+        }
+        if (result && (result.reason === 'revision-conflict' || result.reason === 'owner-conflict')) {
+            fenceCanonicalConflict(roomId, room);
+            return;
+        }
+        scheduleRoomDurabilityRecovery(roomId, attempt + 1);
+    }, delay);
+    if (typeof timer.unref === 'function') timer.unref();
+    roomDurabilityRecoveryTimers.set(roomId, { timer, attempt });
+}
+
+const roomLeaseRefreshTimers = new Map();
+
+function scheduleRoomLeaseRefresh(roomId, attempt = 0) {
+    if (!canonicalStateStore || typeof canonicalStateStore.renewLease !== 'function' || roomLeaseRefreshTimers.has(roomId)) return;
+    const baseDelay = attempt > 0 ? Math.min(5 * 60 * 1000, 15000 * (2 ** Math.min(attempt, 5))) : 5 * 60 * 1000;
+    const delay = baseDelay + Math.floor(Math.random() * 5 * 60 * 1000);
+    const timer = setTimeout(() => {
+        roomLeaseRefreshTimers.delete(roomId);
+        const room = rooms[roomId];
+        if (!room || !room.started || !Array.isArray(room.players) || !room.players.some(player => player && player.id)) return;
+        const now = Date.now();
+        let result;
+        try {
+            result = canonicalStateStore.renewLease(roomId, { expectedRevision: Number.isInteger(room.canonicalRevision) ? room.canonicalRevision : 0, ownerId: SERVER_INSTANCE_ID, leaseExpiresAt: now + CANONICAL_LEASE_MS, now });
+        } catch (error) { result = { ok: false, reason: 'save-failed' }; }
+        if (result && result.ok) {
+            if (Number.isInteger(result.revision)) room.canonicalRevision = result.revision;
+            if (result.degraded) { room.canonicalDegraded = true; scheduleRoomDurabilityRecovery(roomId); }
+            scheduleRoomLeaseRefresh(roomId, 0);
+        } else {
+            if (result && result.reason === 'revision-conflict') {
+                room.canonicalConflict = true;
+                room.canonicalDegraded = true;
+                fenceCanonicalConflict(roomId, room);
+                return;
+            }
+            scheduleRoomLeaseRefresh(roomId, attempt + 1);
+        }
+    }, delay);
+    if (typeof timer.unref === 'function') timer.unref();
+    roomLeaseRefreshTimers.set(roomId, timer);
+}
+
 const roomGcInterval = setInterval(() => {
-    cleanupExpiredRooms(Date.now(), rooms);
+    const now = Date.now();
+    const roomsBeforeCleanup = new Map(Object.entries(rooms));
+    cleanupExpiredRooms(now, rooms);
+    for (const [roomId, removedRoom] of roomsBeforeCleanup) {
+        if (!rooms[roomId]) {
+            try {
+                canonicalStateStore.delete(roomId, { expectedRevision: Number.isInteger(removedRoom.canonicalRevision) ? removedRoom.canonicalRevision : 0 });
+            } catch (error) {
+                console.warn('[canonical-state-store] delete failed:', error && error.message || error);
+            }
+        }
+    }
+    cleanupExpiredCanonicalRecords(now);
 }, 10 * 60 * 1000);
 if (typeof roomGcInterval.unref === 'function') {
     roomGcInterval.unref();
@@ -1190,6 +1498,7 @@ io.on('connection', (socket) => {
     console.log('接続:', socket.id);
 
     socket.on('createRoom', (payload) => {
+        if (socket.roomJoinPending) { emitAppError(socket, 'ルーム処理中です'); return; }
         if (!requirePlainSocketPayload(socket, payload)) return;
         let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
@@ -1235,37 +1544,50 @@ io.on('connection', (socket) => {
         }
         markCreateRoomForSocket(socket, now);
         markCreateRoomForRateKey(createRoomRateKeyForSocket(socket), now);
-        rooms[roomId] = {
+        const room = {
             roomId,
             createdAt: now,
             lastTouchedAt: now,
             enabledCards: selectedCards,
             enabledLandmarks: selectedLandmarks,
-            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
+            players: [{ id: null, name: playerName, index: hostIndex, reconnectToken }],
             hostPlayerIndex: hostIndex,
             hostEpoch: 0,
             actionSeq: 0,
             acceptedClientActions: {},
+            acceptedClientActionWatermarks: {},
             maxPlayers: playerCount,
             playerSettings,
             cpuSpeed,
             started: false,
         };
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = hostIndex;
-        socket.emit('roomCreated', { roomId, playerIndex: hostIndex, reconnectToken });
-
-        // 参加者リストを送信
-        const playerList = buildPlayerList(rooms[roomId]);
-        io.to(roomId).emit('playerList', playerList);
-
-        // 人間が1人だけなら即開始チェック
-        checkGameStart(io, roomId);
-        console.log(`ルーム作成: ${roomId} (${playerCount}人)`);
+        rooms[roomId] = room;
+        socket.roomJoinPending = roomId;
+        runAfterSocketJoin(socket, roomId, () => {
+            if (rooms[roomId] !== room || socket.roomJoinPending !== roomId || socket.connected === false) {
+                if (rooms[roomId] === room) delete rooms[roomId];
+                if (socket.roomJoinPending === roomId) socket.roomJoinPending = null;
+                socket.leave(roomId);
+                return;
+            }
+            socket.roomJoinPending = null;
+            room.players[0].id = socket.id;
+            socket.roomId = roomId;
+            socket.playerIndex = hostIndex;
+            socket.emit('roomCreated', { roomId, playerIndex: hostIndex, reconnectToken });
+            io.to(roomId).emit('playerList', buildPlayerList(room));
+            checkGameStart(io, roomId);
+            console.log(`ルーム作成: ${roomId} (${playerCount}人)`);
+        }, () => {
+            if (rooms[roomId] === room) delete rooms[roomId];
+            if (socket.roomJoinPending === roomId) socket.roomJoinPending = null;
+            emitAppError(socket, 'ルームの作成に失敗しました。再試行してください');
+        });
     });
 
     socket.on('joinRoom', (payload) => {
+        if (socket.roomJoinPending) { emitAppError(socket, 'ルーム処理中です'); return; }
+        if (rejectRateLimitedSocketEvent(socket, 'joinRoom')) return;
         if (!requirePlainSocketPayload(socket, payload)) return;
         let { roomId, playerName, clientVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
@@ -1312,22 +1634,38 @@ io.on('connection', (socket) => {
         }
 
         const reconnectToken = generateReconnectToken();
+        const previousLastTouchedAt = room.lastTouchedAt;
+        const pendingPlayer = { id: null, name: playerName, index: playerIndex, reconnectToken };
         room.lastTouchedAt = Date.now();
-        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken });
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = playerIndex;
-        socket.emit('roomJoined', { roomId, playerIndex, reconnectToken });
-
-        // 参加者リストを送信
-        const playerList = buildPlayerList(room);
-        io.to(roomId).emit('playerList', playerList);
-
-        // ゲーム開始チェック
-        checkGameStart(io, roomId);
+        room.players.push(pendingPlayer);
+        socket.roomJoinPending = roomId;
+        runAfterSocketJoin(socket, roomId, () => {
+            if (rooms[roomId] !== room || !room.players.includes(pendingPlayer) || socket.roomJoinPending !== roomId || socket.connected === false) {
+                const index = room.players.indexOf(pendingPlayer);
+                if (index >= 0) room.players.splice(index, 1);
+                room.lastTouchedAt = previousLastTouchedAt;
+                if (socket.roomJoinPending === roomId) socket.roomJoinPending = null;
+                socket.leave(roomId);
+                return;
+            }
+            socket.roomJoinPending = null;
+            pendingPlayer.id = socket.id;
+            socket.roomId = roomId;
+            socket.playerIndex = playerIndex;
+            socket.emit('roomJoined', { roomId, playerIndex, reconnectToken });
+            io.to(roomId).emit('playerList', buildPlayerList(room));
+            checkGameStart(io, roomId);
+        }, () => {
+            const index = room.players.indexOf(pendingPlayer);
+            if (index >= 0) room.players.splice(index, 1);
+            room.lastTouchedAt = previousLastTouchedAt;
+            if (socket.roomJoinPending === roomId) socket.roomJoinPending = null;
+            emitAppError(socket, 'ルームへの参加に失敗しました。再試行してください');
+        });
     });
 
     socket.on('gameAction', (payload) => {
+        if (rejectRateLimitedSocketEvent(socket, 'gameAction')) return;
         if (!requirePlainSocketPayload(socket, payload)) return;
         const { action, data, clientActionId } = payload;
         const roomId = socket.roomId;
@@ -1338,10 +1676,23 @@ io.on('connection', (socket) => {
             emitAppError(socket, 'INVALID_SESSION');
             return;
         }
+        if (room.canonicalDegraded) {
+            emitAppError(socket, 'CANONICAL_STORE_DEGRADED');
+            return;
+        }
         const safeClientActionId = normalizeClientActionId(clientActionId);
         const acceptedAction = findAcceptedClientAction(room, safeClientActionId, socket.playerIndex);
         if (acceptedAction) {
             socket.emit('actionAccepted', acceptedAction);
+            return;
+        }
+        const monotonicClientAction = parseMonotonicClientActionId(safeClientActionId);
+        if (safeClientActionId && isClientActionAcceptedByWatermark(room, safeClientActionId, socket.playerIndex)) {
+            emitAppError(socket, 'ACTION_ALREADY_COMMITTED');
+            return;
+        }
+        if (safeClientActionId && !hasAcceptedClientActionCapacity(room, safeClientActionId, socket.playerIndex)) {
+            emitAppError(socket, '操作履歴の上限に達しました。ゲームへ再接続してください');
             return;
         }
         let validation;
@@ -1356,40 +1707,66 @@ io.on('connection', (socket) => {
             emitAppError(socket, '無効な操作です');
             return;
         }
-        let safeData = canonicalizeActionData(action, validation.data);
-        if (action === 'buildCard' || action === 'buildLandmark') {
-            room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
-        } else if (action === 'undoBuild') {
-            safeData = { state: room.lastUndoState || validation.mirror.lastUndoState };
-            room.lastUndoState = null;
-        } else if (action === 'nextTurn') {
-            room.lastUndoState = null;
+        const actionTransaction = captureRoomActionTransaction(room);
+        let actionCommitted = false;
+        try {
+            let safeData = canonicalizeActionData(action, validation.data);
+            if (action === 'buildCard' || action === 'buildLandmark') {
+                room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
+            } else if (action === 'undoBuild') {
+                safeData = { state: room.lastUndoState || validation.mirror.lastUndoState };
+                room.lastUndoState = null;
+            } else if (action === 'nextTurn') {
+                room.lastUndoState = null;
+            }
+            const actionSeq = peekNextRoomActionSeq(room);
+            const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
+            if (validation.cpuPlayers?.[validation.mirror.game.currentPlayerIndex]) {
+                actionEntry.authorizedHostPlayerIndex = socket.playerIndex;
+                actionEntry.hostEpoch = Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0;
+            }
+            if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
+            const restoreActionAudit = buildRestoreActionAudit(roomId, actionEntry);
+            if (restoreActionAudit) actionEntry.restoreActionAudit = restoreActionAudit;
+            if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
+                rollbackRoomActionTransaction(room, actionTransaction);
+                emitAppError(socket, '無効な操作です');
+                return;
+            }
+            commitRoomActionSeq(room, actionSeq);
+            room.lastUndoState = room.canonicalMirror?.lastUndoState || null;
+            rememberAcceptedClientAction(room, actionEntry);
+            if (!Array.isArray(room.actionLog)) room.actionLog = [];
+            {
+                room.actionLog.push(actionEntry);
+                const actionLogLengthBeforeCompact = room.actionLog.length;
+                compactRoomActionLog(room);
+                attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actionLogLengthBeforeCompact);
+                markRoomCanonicalMirrorCurrent(room);
+                room.lastTouchedAt = Date.now();
+                const persistResult = persistRoomCanonicalState(roomId, room, 'accepted-action');
+                if (!persistResult || !persistResult.ok) {
+                    rollbackRoomActionTransaction(room, actionTransaction);
+                    emitAppError(socket, '操作を保存できませんでした。再試行してください');
+                    return;
+                }
+                actionCommitted = true;
+                if (persistResult.degraded) {
+                    io.to(roomId).emit(APP_ERROR_EVENT, 'CANONICAL_STORE_DEGRADED');
+                    return;
+                }
+            }
+            socket.to(roomId).emit('gameAction', actionEntry);
+            socket.emit('actionAccepted', actionEntry);
+        } catch (error) {
+            if (!actionCommitted) rollbackRoomActionTransaction(room, actionTransaction);
+            console.error('gameAction transaction failed:', error);
+            emitAppError(socket, '操作を保存できませんでした。再試行してください');
         }
-        const actionSeq = nextRoomActionSeq(room);
-        const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
-        if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
-        const restoreActionAudit = buildRestoreActionAudit(roomId, actionEntry);
-        if (restoreActionAudit) actionEntry.restoreActionAudit = restoreActionAudit;
-        if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
-            emitAppError(socket, '無効な操作です');
-            return;
-        }
-        room.lastUndoState = room.canonicalMirror?.lastUndoState || null;
-        rememberAcceptedClientAction(room, actionEntry);
-        if (room.actionLog) {
-            room.actionLog.push(actionEntry);
-            const actionLogLengthBeforeCompact = room.actionLog.length;
-            compactRoomActionLog(room);
-            attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actionLogLengthBeforeCompact);
-            markRoomCanonicalMirrorCurrent(room);
-            room.lastTouchedAt = Date.now();
-            persistRoomCanonicalState(roomId, room, 'accepted-action');
-        }
-        socket.to(roomId).emit('gameAction', actionEntry);
-        socket.emit('actionAccepted', actionEntry);
     });
 
     socket.on('rejoinRoom', (payload) => {
+        if (rejectRateLimitedSocketEvent(socket, 'rejoinRoom')) return;
         if (!requirePlainSocketPayload(socket, payload)) return;
         const { roomId, playerIndex, playerName, reconnectToken, clientVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
@@ -1403,22 +1780,37 @@ io.on('connection', (socket) => {
             return;
         }
 
-        detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
-        const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
-        if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }
-
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = playerIndex;
-        room.lastTouchedAt = Date.now();
-
-        socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
-        io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
-        console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
+        const shouldReselectHost = !isRoomHostConnected(room);
+        runAfterSocketJoin(socket, roomId, () => {
+            if (shouldReselectHost && !persistRoomHostChange(roomId, room, playerIndex, 'host-reselected')) {
+                socket.leave(roomId);
+                emitAppError(socket, 'ホスト変更を保存できませんでした。再試行してください');
+                return;
+            }
+            detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
+            const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
+            if (!player) {
+                socket.leave(roomId);
+                if (shouldReselectHost) scheduleHostMigrationRetry(io, roomId);
+                emitAppError(socket, '再接続情報が一致しません');
+                return;
+            }
+            socket.roomId = roomId;
+            socket.playerIndex = playerIndex;
+            room.lastTouchedAt = Date.now();
+            if (shouldReselectHost) emitRoomHostChanged(roomId, room);
+            socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
+            io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
+            console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
+        }, () => {
+            if (shouldReselectHost) scheduleHostMigrationRetry(io, roomId);
+            emitAppError(socket, '再接続に失敗しました。再試行してください');
+        });
     });
 
     // サーバー再起動後にホストがルームを復元する
     socket.on('recreateRoom', (payload) => {
+        if (rejectRateLimitedSocketEvent(socket, 'recreateRoom')) return;
         handleRecreateRoom(socket, payload);
     });
 
@@ -1438,6 +1830,28 @@ function removeWaitingRoomSocket(io, roomId, room, socket) {
     return { removedRoom: false, playerList };
 }
 
+const hostMigrationRetryTimers = new Map();
+
+function scheduleHostMigrationRetry(ioInstance, roomId, attempt = 0) {
+    if (hostMigrationRetryTimers.has(roomId)) return;
+    const delay = Math.min(30000, 1000 * (2 ** Math.min(attempt, 5))) + Math.floor(Math.random() * 250);
+    const timer = setTimeout(() => {
+        hostMigrationRetryTimers.delete(roomId);
+        const room = rooms[roomId];
+        if (!room || !room.started || isRoomHostConnected(room)) return;
+        const remaining = getRemainingConnectedPlayers(room, ioInstance.sockets.sockets);
+        if (remaining.length === 0) return;
+        if (!persistRoomHostChange(roomId, room, remaining[0].index, 'host-changed-retry')) {
+            scheduleHostMigrationRetry(ioInstance, roomId, attempt + 1);
+            return;
+        }
+        emitRoomHostChanged(roomId, room, ioInstance);
+        console.log('ホスト移譲（再試行）: ' + roomId + ' → プレイヤー' + room.hostPlayerIndex);
+    }, delay);
+    if (typeof timer.unref === 'function') timer.unref();
+    hostMigrationRetryTimers.set(roomId, { timer, attempt });
+}
+
 function handleStartedRoomSocketDisconnect(io, roomId, room, socket) {
     const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
     if (!disconnectedPlayer || disconnectedPlayer.id !== socket.id) return { ignored: true };
@@ -1449,9 +1863,12 @@ function handleStartedRoomSocketDisconnect(io, roomId, room, socket) {
     if (socket.playerIndex === room.hostPlayerIndex) {
         const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
         if (remaining.length > 0) {
-            setRoomHostPlayerIndex(room, remaining[0].index);
+            if (!persistRoomHostChange(roomId, room, remaining[0].index, 'host-changed')) {
+                console.warn(`ホスト移譲の保存失敗（再試行予定）: ${roomId}`);
+                scheduleHostMigrationRetry(io, roomId);
+                return { ignored: false, hostChanged: false, hostChangePending: true, playerIndex: socket.playerIndex };
+            }
             emitRoomHostChanged(roomId, room, io);
-            persistRoomCanonicalState(roomId, room, 'host-changed');
             console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
             return { ignored: false, hostChanged: true, playerIndex: socket.playerIndex };
         }
@@ -1501,12 +1918,20 @@ function emitRoomHostChanged(roomId, room, ioInstance = io) {
 }
 
 function nextRoomActionSeq(room) {
+    return commitRoomActionSeq(room, peekNextRoomActionSeq(room));
+}
+
+function peekNextRoomActionSeq(room) {
     const current = Number.isInteger(room.actionSeq) ? room.actionSeq : restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq;
-    room.actionSeq = current + 1;
+    return current + 1;
+}
+
+function commitRoomActionSeq(room, actionSeq) {
+    room.actionSeq = actionSeq;
     if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
-        room.gameStartPayload.actionSeq = room.actionSeq;
+        room.gameStartPayload.actionSeq = actionSeq;
     }
-    return room.actionSeq;
+    return actionSeq;
 }
 
 
@@ -1541,6 +1966,26 @@ function detachSocketFromRoom(socketId, roomId, message = 'INVALID_SESSION') {
         oldSocket.roomId = null;
         oldSocket.playerIndex = null;
     }
+}
+
+function runAfterSocketJoin(socket, roomId, onJoined, onFailure) {
+    let result;
+    try {
+        result = socket.join(roomId);
+    } catch (error) {
+        onFailure(error);
+        return false;
+    }
+    if (result && typeof result.then === 'function') {
+        const handleJoined = () => {
+            try { onJoined(); } catch (error) { onFailure(error); }
+        };
+        try { result.then(handleJoined, onFailure); }
+        catch (error) { onFailure(error); }
+        return true;
+    }
+    onJoined();
+    return true;
 }
 
 function detachExistingPlayerSocket(room, roomId, playerIndex, newSocketId) {
@@ -1643,24 +2088,34 @@ function handleRecreateRoom(socket, payload = {}) {
                 emitAppError(socket, 'INVALID_TOKEN');
                 return;
             }
-            detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
-            const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
-            if (!player) {
-                emitAppError(socket, '再接続情報が一致しません');
-                return;
-            }
-            socket.join(roomId);
-            socket.roomId = roomId;
-            socket.playerIndex = playerIndex;
-            if (!isRoomHostConnected(room)) {
-                setRoomHostPlayerIndex(room, playerIndex);
-                emitRoomHostChanged(roomId, room);
-                persistRoomCanonicalState(roomId, room, 'host-reselected');
-                console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
-            }
-            room.lastTouchedAt = Date.now();
-            socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
-            io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
+            const shouldReselectHost = !isRoomHostConnected(room);
+            runAfterSocketJoin(socket, roomId, () => {
+                if (shouldReselectHost && !persistRoomHostChange(roomId, room, playerIndex, 'host-reselected')) {
+                    socket.leave(roomId);
+                    emitAppError(socket, 'ホスト変更を保存できませんでした。再試行してください');
+                    return;
+                }
+                detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
+                const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
+                if (!player) {
+                    socket.leave(roomId);
+                    if (shouldReselectHost) scheduleHostMigrationRetry(io, roomId);
+                    emitAppError(socket, '再接続情報が一致しません');
+                    return;
+                }
+                socket.roomId = roomId;
+                socket.playerIndex = playerIndex;
+                if (shouldReselectHost) {
+                    emitRoomHostChanged(roomId, room);
+                    console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+                }
+                room.lastTouchedAt = Date.now();
+                socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
+                io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
+            }, () => {
+                if (shouldReselectHost) scheduleHostMigrationRetry(io, roomId);
+                emitAppError(socket, '再接続に失敗しました。再試行してください');
+            });
             return;
         }
     }
@@ -1687,7 +2142,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, 'INVALID_TOKEN');
         return;
     }
-    if (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex) {
+    if (!canonicalRecord && (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex)) {
         emitAppError(socket, '復元は元のホストのみ実行できます');
         return;
     }
@@ -1711,7 +2166,8 @@ function handleRecreateRoom(socket, payload = {}) {
     }
     const restoredRank = canonicalRecord
         ? {
-            hostEpoch: Number.isInteger(canonicalRecord.hostEpoch) ? canonicalRecord.hostEpoch : 0,
+            hostEpoch: (Number.isInteger(canonicalRecord.hostEpoch) ? canonicalRecord.hostEpoch : 0) +
+                (canonicalRecord.hostPlayerIndex === playerIndex ? 0 : 1),
             actionSeq: Number.isInteger(canonicalRecord.actionSeq) ? canonicalRecord.actionSeq : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog).actionSeq,
         }
         : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog);
@@ -1733,11 +2189,18 @@ function handleRecreateRoom(socket, payload = {}) {
         gameStartPayload,
         stateSnapshot: sanitizeClientStateSnapshot(replayStateSnapshot, playerNames.length),
         acceptedClientActions: {},
+        acceptedClientActionWatermarks: canonicalRecord?.acceptedClientActionWatermarks || {},
+        canonicalRevision: Number.isInteger(canonicalRecord?.revision) ? canonicalRecord.revision : 0,
         actionLog: sanitizedActionLog,
         lastUndoState: null,
         lastTouchedAt: Date.now(),
     };
     for (const entry of restoredRoom.actionLog) rememberAcceptedClientAction(restoredRoom, entry);
+    if (canonicalRecord && Array.isArray(canonicalRecord.acceptedClientActions)) {
+        for (const entry of canonicalRecord.acceptedClientActions) {
+            if (entry && typeof entry.action === 'string') rememberAcceptedClientAction(restoredRoom, entry);
+        }
+    }
     const restoredMirror = createRoomMirror(restoredRoom);
     if (!restoredMirror) {
         emitAppError(socket, '復元データが壊れています');
@@ -1752,22 +2215,27 @@ function handleRecreateRoom(socket, payload = {}) {
         restoredRoom.actionSeq
     );
     restoredRoom.actionLog = [];
-    if (hasOwnRoom(roomId)) {
-        detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
-        delete rooms[roomId];
-    }
-    rooms[roomId] = restoredRoom;
-    persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
-    socket.join(roomId);
-    socket.roomId = roomId;
-    socket.playerIndex = playerIndex;
-    socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
-        gameStartPayload,
-        stateSnapshot: restoredRoom.stateSnapshot,
-        actionLog: restoredRoom.actionLog,
-        hostPlayerIndex: playerIndex,
-    }));
-    console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+    runAfterSocketJoin(socket, roomId, () => {
+        const persistResult = persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
+        if (!persistResult || !persistResult.ok) {
+            socket.leave(roomId);
+            emitAppError(socket, '復元状態を保存できませんでした。再試行してください');
+            return;
+        }
+        if (hasOwnRoom(roomId)) {
+            detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+        }
+        rooms[roomId] = restoredRoom;
+        socket.roomId = roomId;
+        socket.playerIndex = playerIndex;
+        socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
+            gameStartPayload,
+            stateSnapshot: restoredRoom.stateSnapshot,
+            actionLog: restoredRoom.actionLog,
+            hostPlayerIndex: playerIndex,
+        }));
+        console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+    }, () => emitAppError(socket, '再接続に失敗しました。再試行してください'));
 }
 
 // ===== Snapshot limits and restore payload guards =====
@@ -1885,6 +2353,10 @@ function sanitizeRestoreActionLogEntry(entry, roomId, snapshotSeq) {
     const normalized = { action: entry.action, data: canonicalizeActionData(entry.action, entry.data || {}) };
     if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
     if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+    if (Number.isInteger(entry.authorizedHostPlayerIndex) && entry.authorizedHostPlayerIndex === entry.playerIndex) {
+        normalized.authorizedHostPlayerIndex = entry.authorizedHostPlayerIndex;
+        if (Number.isInteger(entry.hostEpoch) && entry.hostEpoch >= 0) normalized.hostEpoch = entry.hostEpoch;
+    }
     const safeClientActionId = normalizeClientActionId(entry.clientActionId);
     if (safeClientActionId) normalized.clientActionId = safeClientActionId;
     const auditValidation = validateRestoreAuditRecord(entry.restoreActionAudit, { roomId });
@@ -2178,7 +2650,7 @@ function canonicalizeActionData(action, data) {
 
 function normalizeClientActionId(clientActionId) {
     if (typeof clientActionId !== 'string') return '';
-    return /^[A-Za-z0-9:_-]{1,120}$/.test(clientActionId) ? clientActionId : '';
+    return /^[A-Za-z0-9:._-]{1,120}$/.test(clientActionId) ? clientActionId : '';
 }
 
 function originalPlayerIndexForGamePosition(room, gamePosition) {
@@ -2213,12 +2685,21 @@ function validateGameAction(room, socket, action, data) {
             requireUndoPayload: false,
         }),
         mirror,
+        cpuPlayers,
         data: authoritativeData,
     };
 }
 
 
 function markRoomGameStarted(room, gameStartPayload, now = Date.now()) {
+    const transaction = {
+        started: room.started,
+        gameStartPayload: room.gameStartPayload,
+        stateSnapshot: room.stateSnapshot,
+        actionLog: room.actionLog,
+        lastUndoState: room.lastUndoState,
+        lastTouchedAt: room.lastTouchedAt,
+    };
     room.started = true;
     room.gameStartPayload = gameStartPayload;
     room.stateSnapshot = null;
@@ -2226,27 +2707,70 @@ function markRoomGameStarted(room, gameStartPayload, now = Date.now()) {
     room.lastUndoState = null;
     resetRoomCanonicalMirror(room);
     room.lastTouchedAt = now;
-    persistRoomCanonicalState(room.roomId, room, 'game-start', now);
+    const result = room.roomId
+        ? persistRoomCanonicalState(room.roomId, room, 'game-start', now)
+        : { ok: true, skipped: true };
+    if (!result || !result.ok) {
+        Object.assign(room, transaction);
+        resetRoomCanonicalMirror(room);
+        return false;
+    }
+    return true;
 }
 
-function checkGameStart(io, roomId) {
+const gameStartRetryTimers = new Map();
+
+function scheduleGameStartRetry(io, roomId, attempt = 0) {
+    if (gameStartRetryTimers.has(roomId)) return;
+    const delay = Math.min(30000, 1000 * (2 ** Math.min(attempt, 5))) + Math.floor(Math.random() * 250);
+    const timer = setTimeout(() => {
+        gameStartRetryTimers.delete(roomId);
+        checkGameStart(io, roomId, true, attempt + 1);
+    }, delay);
+    if (typeof timer.unref === 'function') timer.unref();
+    gameStartRetryTimers.set(roomId, { timer, attempt });
+}
+
+function checkGameStart(io, roomId, isRetry = false, retryAttempt = 0) {
     const room = rooms[roomId];
+    if (room && !room.roomId) room.roomId = roomId;
     if (!room || room.started) return;
 
     if (room.players.length >= countRoomHumanSlots(room)) {
         const gameStartPayload = buildGameStartPayload(io, room);
-        markRoomGameStarted(room, gameStartPayload);
+        if (!markRoomGameStarted(room, gameStartPayload)) {
+            if (!isRetry) {
+                for (const player of room.players) {
+                    const playerSocket = io.sockets.sockets.get(player.id);
+                    if (playerSocket) emitAppError(playerSocket, 'ゲーム開始状態を保存できませんでした。自動的に再試行します');
+                }
+            }
+            scheduleGameStartRetry(io, roomId, retryAttempt);
+            return;
+        }
+        const retryState = gameStartRetryTimers.get(roomId);
+        if (retryState) clearTimeout(retryState.timer);
+        gameStartRetryTimers.delete(roomId);
         io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${gameStartPayload.playerNames.join(', ')}`);
     }
 }
 
-process.on('uncaughtException', (err) => {
-    console.error('uncaughtException:', err);
-});
-process.on('unhandledRejection', (reason) => {
-    console.error('unhandledRejection:', reason);
-});
+function beginFatalServerShutdown(kind, error) {
+    console.error(kind + ':', error);
+    const forceExit = setTimeout(() => process.exit(1), 5000);
+    if (typeof forceExit.unref === 'function') forceExit.unref();
+    try {
+        server.close(() => process.exit(1));
+    } catch (_) {
+        process.exit(1);
+    }
+}
+
+if (require.main === module) {
+    process.once('uncaughtException', error => beginFatalServerShutdown('uncaughtException', error));
+    process.once('unhandledRejection', reason => beginFatalServerShutdown('unhandledRejection', reason));
+}
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
@@ -2259,6 +2783,9 @@ if (require.main === module) {
 module.exports = {
     __rooms: rooms,
     APP_ERROR_EVENT,
+    MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS,
+    MAX_MONOTONIC_ACCEPTED_CLIENT_ACTIONS,
+    MAX_CLIENT_ACTION_STREAMS_PER_PLAYER,
     emitAppError,
     requirePlainSocketPayload,
     ROOM_LIFECYCLE_LIMITS,
@@ -2291,6 +2818,8 @@ module.exports = {
     handleGameLifecycleRequest,
     isDuplicateGameLifecycle,
     resolveTrustProxySetting,
+    socketClientIp,
+    isSocketEventRateLimited,
     normalizeClientErrorPayload,
     requestHeader,
     requestBaseOrigin,
@@ -2332,11 +2861,20 @@ module.exports = {
     normalizeCpuSpeed,
     normalizeEnabledCards,
     isActiveRoomSocket,
+    parseMonotonicClientActionId,
+    isClientActionAcceptedByWatermark,
     findAcceptedClientAction,
     rememberAcceptedClientAction,
+    hasAcceptedClientActionCapacity,
     acceptedClientActionRefs,
+    acceptedClientActionWatermarkRefs,
     buildRejoinDataPayload,
     persistRoomCanonicalState,
+    persistRoomHostChange,
+    captureRoomActionTransaction,
+    rollbackRoomActionTransaction,
+    cleanupExpiredCanonicalRecords,
+    fenceCanonicalConflict,
     loadRoomCanonicalStateRecord,
     buildRestoreSnapshotAuditPayload,
     buildRestoreSnapshotAudit,
@@ -2352,6 +2890,8 @@ module.exports = {
     canonicalizeActionData,
     normalizeClientActionId,
     nextRoomActionSeq,
+    peekNextRoomActionSeq,
+    commitRoomActionSeq,
     roomHostChangedPayload,
     emitRoomHostChanged,
     restorePayloadRank,
@@ -2366,6 +2906,7 @@ module.exports = {
     markRoomGameStarted,
     buildPlayerList,
     resolveRejoinPlayer,
+    runAfterSocketJoin,
     removeWaitingRoomSocket,
     handleStartedRoomSocketDisconnect,
     handleSocketDisconnect,

@@ -4,10 +4,13 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "pretest": "node tests/check-prerequisites.js",
     "test": "node tests/run-all.js unit",
     "test:sim": "node tests/run-all.js sim",
     "test:all": "node tests/run-all.js all",
-    "test:static": "node --check server.js && git ls-files '*.js' ':!:node_modules/*' | xargs -n 1 node --check && git ls-files '*.json' ':!:node_modules/*' | xargs -n 1 node -e \"const fs=require('fs'); JSON.parse(fs.readFileSync(process.argv[1],'utf8'))\" && git ls-files '*.sh' ':!:node_modules/*' | xargs -n 1 sh -n && npm run test:static:py",
+    "test:static": "git ls-files --cached --others --exclude-standard -- '*.js' ':!:node_modules/*' | xargs -n 1 node --check && git ls-files --cached --others --exclude-standard -- '*.json' ':!:node_modules/*' | xargs -n 1 node -e \"const fs=require('fs'); JSON.parse(fs.readFileSync(process.argv[1],'utf8'))\" && git ls-files --cached --others --exclude-standard -- '*.sh' ':!:node_modules/*' | xargs -n 1 sh -n && npm run test:static:py",
+    "test:browser-e2e": "playwright test",
+    "test:soak": "node tests/run-all.js soak",
     "test:smoke": "npm run test:static && npm run test:core && node tests/run-all.js cpu-smoke && npm run test:online",
     "test:core": "node tests/run-all.js core",
     "test:online": "node tests/run-all.js online",
@@ -59,9 +62,12 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1",
+    "proxy-addr": "^2.0.7",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "supertest": "^7.2.2"
+    "@playwright/test": "1.61.1",
+    "supertest": "^7.2.2",
+    "yaml": "2.9.0"
   }
 }

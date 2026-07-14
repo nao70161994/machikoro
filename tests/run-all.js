@@ -10,6 +10,9 @@ const TEST_GROUPS = {
         'online.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
+        'online-action-reconnect-e2e.test.js',
+        'online-completion-e2e.test.js',
+        'online-restart-e2e.test.js',
         'storage.test.js',
         'main.test.js',
         'sw.test.js',
@@ -59,6 +62,9 @@ const TEST_GROUPS = {
         'tune-expert.test.js',
         'train-expert-crowd.test.js',
     ],
+    soak: [
+        'online-soak.test.js',
+    ],
     core: [
         'gamemanager.test.js',
         'integration.test.js',
@@ -73,6 +79,9 @@ const TEST_GROUPS = {
         'online.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
+        'online-action-reconnect-e2e.test.js',
+        'online-completion-e2e.test.js',
+        'online-restart-e2e.test.js',
         'storage.test.js',
     ],
     pwa: [
@@ -133,6 +142,22 @@ const TEST_GROUPS = {
 
 const repoRoot = path.join(__dirname, '..');
 
+const REQUIRED_TEST_GROUPS = Object.freeze({
+    'online.test.js': ['online'],
+    'online-integration.test.js': ['online'],
+    'online-delivery-smoke.test.js': ['online'],
+    'online-action-reconnect-e2e.test.js': ['online'],
+    'online-completion-e2e.test.js': ['online'],
+    'online-restart-e2e.test.js': ['online'],
+    'online-soak.test.js': ['soak'],
+    'storage.test.js': ['online', 'pwa'],
+    'sw.test.js': ['pwa'],
+    'release-e2e.test.js': ['release'],
+    'selfplay.test.js': ['sim'],
+    'tune-expert.test.js': ['sim'],
+    'train-expert-crowd.test.js': ['sim'],
+});
+
 function listActualTestFiles() {
     return fs.readdirSync(__dirname)
         .filter(file => file.endsWith('.test.js'))
@@ -164,6 +189,25 @@ function validateTestGroups() {
             errors.push(`unlisted test file: ${file}`);
         }
     }
+
+    for (const [file, requiredGroups] of Object.entries(REQUIRED_TEST_GROUPS)) {
+        for (const group of requiredGroups) {
+            if (!TEST_GROUPS[group] || !TEST_GROUPS[group].includes(file)) {
+                errors.push(`${file}: must belong to ${group} test group`);
+            }
+        }
+    }
+    for (const file of actualFiles) {
+        const isOnlineTest = /^online(?:-|\.)/.test(file) && file !== 'online-soak.test.js';
+        const isPwaTest = /^pwa(?:-|\.)/.test(file);
+        if (isOnlineTest && !TEST_GROUPS.online.includes(file)) {
+            errors.push(`${file}: online-prefixed tests must belong to online test group`);
+        }
+        if (isPwaTest && !TEST_GROUPS.pwa.includes(file)) {
+            errors.push(`${file}: pwa-prefixed tests must belong to pwa test group`);
+        }
+    }
+
 
     if (errors.length > 0) {
         console.error('[test runner] invalid test groups:');

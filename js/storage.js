@@ -1,3 +1,52 @@
+function getSafeClientStorage() {
+    try {
+        return typeof localStorage !== 'undefined' ? localStorage : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function safeStorageGet(key, fallback = null) {
+    try {
+        const storage = getSafeClientStorage();
+        return storage ? storage.getItem(key) : fallback;
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function safeStorageSet(key, value) {
+    try {
+        const storage = getSafeClientStorage();
+        if (!storage) return false;
+        storage.setItem(key, value);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function safeStorageRemove(key) {
+    try {
+        const storage = getSafeClientStorage();
+        if (storage) storage.removeItem(key);
+    } catch (_) {}
+}
+
+let localResumePending = false;
+let localResumeGeneration = 0;
+
+function setLocalResumePending(pending) {
+    localResumePending = pending === true;
+    const button = typeof document !== 'undefined' && document.getElementById
+        ? document.getElementById('btnResume')
+        : null;
+    if (button) {
+        button.disabled = localResumePending;
+        button.textContent = localResumePending ? 'モデル読み込み中' : '続きから再開';
+    }
+}
+
 function getStorageClientVersion() {
     if (typeof getClientVersion === 'function') return getClientVersion();
     return (typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION) || 'unknown';
@@ -44,8 +93,10 @@ let storageOnlineStorageFacade = null;
 function getStorageOnlineStorageFacade() {
     if (storageOnlineStorageFacade) return storageOnlineStorageFacade;
     if (typeof createOnlineStorageFacade !== 'function') return null;
+    const storage = getSafeClientStorage();
+    if (!storage) return null;
     storageOnlineStorageFacade = createOnlineStorageFacade({
-        storage: localStorage,
+        storage,
         sessionKey: STORAGE_ONLINE_SESSION_KEY,
         storageKeys: STORAGE_ONLINE_STORAGE_KEYS,
         roomIndexKey: STORAGE_ONLINE_RESTORE_ROOM_INDEX_KEY,
@@ -73,23 +124,25 @@ function normalizeOnlineSessionPayload(session) {
 }
 
 function removeOnlineRestoreBundleStorageKeyVariants(key) {
+    const storage = getSafeClientStorage();
     const storageFacade = getStorageOnlineStorageFacade();
     if (storageFacade && typeof storageFacade.removeStorageItem === 'function') {
         storageFacade.removeStorageItem(key);
     } else {
-        localStorage.removeItem(key);
+        safeStorageRemove(key);
     }
+    if (!storage) return;
     try {
-        if (typeof localStorage.length !== 'number' || typeof localStorage.key !== 'function') return;
+        if (typeof storage.length !== 'number' || typeof storage.key !== 'function') return;
         const scopedPrefix = key + STORAGE_ONLINE_ROOM_KEY_SEPARATOR;
         const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const storageKey = localStorage.key(i);
+        for (let i = 0; i < storage.length; i++) {
+            const storageKey = storage.key(i);
             if (typeof storageKey === 'string' && storageKey.startsWith(scopedPrefix)) {
                 keysToRemove.push(storageKey);
             }
         }
-        keysToRemove.forEach(storageKey => localStorage.removeItem(storageKey));
+        keysToRemove.forEach(safeStorageRemove);
     } catch (e) {}
 }
 
@@ -153,7 +206,7 @@ function saveGameState() {
 
 function updateResumeButton() {
     const localSection = document.getElementById('resumeSection');
-    if (localSection) localSection.style.display = localStorage.getItem('savedGame') ? 'flex' : 'none';
+    if (localSection) localSection.style.display = safeStorageGet('savedGame') ? 'flex' : 'none';
     const onlineSection = document.getElementById('onlineResumeSection');
     const onlineDescription = document.getElementById('onlineResumeDescription');
     const onlineSession = readOnlineSession();
@@ -170,7 +223,7 @@ function readOnlineSession() {
         const storageFacade = getStorageOnlineStorageFacade();
         const session = storageFacade && typeof storageFacade.readStorageJson === 'function'
             ? storageFacade.readStorageJson(STORAGE_ONLINE_SESSION_KEY, null)
-            : JSON.parse(localStorage.getItem(STORAGE_ONLINE_SESSION_KEY) || 'null');
+            : JSON.parse(safeStorageGet(STORAGE_ONLINE_SESSION_KEY) || 'null');
         return normalizeOnlineSessionPayload(session);
     } catch(e) {
         return null;
@@ -179,7 +232,7 @@ function readOnlineSession() {
 
 function deleteSavedGame() {
     showConfirm("セーブデータを削除しますか？", () => {
-        localStorage.removeItem('savedGame');
+        safeStorageRemove('savedGame');
         updateResumeButton();
     });
 }
@@ -194,7 +247,7 @@ function deleteOnlineSession() {
 function reconnectOnline() {
     const session = readOnlineSession();
     if (!session) {
-        if (localStorage.getItem(STORAGE_ONLINE_SESSION_KEY)) {
+        if (safeStorageGet(STORAGE_ONLINE_SESSION_KEY)) {
             clearOnlineSessionStorage();
             updateResumeButton();
             showNotice('再接続データの読み込みに失敗しました');
@@ -222,10 +275,9 @@ function reconnectOnline() {
         }
         document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
         switchTab('online');
-        const rejoinPayload = typeof buildOnlineRejoinPayload === 'function'
-            ? buildOnlineRejoinPayload(session)
-            : buildStorageOnlineRejoinPayload(session);
-        socket.emit('rejoinRoom', rejoinPayload);
+        if (typeof _emitOnlineRejoinRequest !== 'function' || !_emitOnlineRejoinRequest(session)) {
+            showNotice('再接続要求を送信できませんでした');
+        }
     } catch(e) {
         isReconnectingOnline = false;
         clearOnlineSessionStorage();
@@ -234,8 +286,9 @@ function reconnectOnline() {
     }
 }
 
-function resumeGame() {
-    const raw = localStorage.getItem('savedGame');
+function resumeGame(options = {}) {
+    if (localResumePending && !options.fromPreload) return;
+    const raw = safeStorageGet('savedGame');
     if (!raw) return;
     try {
         const state = JSON.parse(raw);
@@ -244,15 +297,23 @@ function resumeGame() {
         }
         const savedCpuSettings = normalizeSavedCpuSettings(state);
         const hasRlCpu = savedCpuSettings.some(setting => setting && setting.difficulty === 'rl');
-        if (hasRlCpu && typeof RLModelPortfolio !== 'undefined' && typeof RLModelPortfolio.preloadEligibleModels === 'function') {
+        if (!options.skipRlPreload && hasRlCpu && typeof RLModelPortfolio !== 'undefined' && typeof RLModelPortfolio.preloadEligibleModels === 'function') {
             const loadState = typeof RLModelPortfolio.eligibleLoadState === 'function'
                 ? RLModelPortfolio.eligibleLoadState(state.players.length)
                 : null;
             if (!loadState || loadState.status !== 'ready') {
                 const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
                 if (preload && typeof preload.then === 'function') {
+                    const resumeGeneration = ++localResumeGeneration;
+                    setLocalResumePending(true);
                     showNotice("深層学習AIモデルを読み込んでいます。");
-                    preload.then(() => resumeGame()).catch(error => {
+                    preload.then(() => {
+                        if (resumeGeneration !== localResumeGeneration) return;
+                        setLocalResumePending(false);
+                        resumeGame({ fromPreload: true, skipRlPreload: true });
+                    }).catch(error => {
+                        if (resumeGeneration !== localResumeGeneration) return;
+                        setLocalResumePending(false);
                         console.error(error);
                         showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
                     });
@@ -333,7 +394,8 @@ function resumeGame() {
         render();
         scheduleCPU();
     } catch(e) {
-        localStorage.removeItem('savedGame');
+        setLocalResumePending(false);
+        safeStorageRemove('savedGame');
         updateResumeButton();
         showNotice("セーブデータの読み込みに失敗しました");
     }

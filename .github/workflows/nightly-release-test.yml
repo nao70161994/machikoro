@@ -9,7 +9,7 @@ on:
 jobs:
   nightly-release-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     env:
       NTFY_CI_TOPIC: ${{ secrets.NTFY_CI_TOPIC }}
 
@@ -41,6 +41,20 @@ jobs:
 
       - name: Online restore/sync nightly
         run: npm run test:online
+
+      - name: Simulation nightly
+        run: npm run test:sim
+
+      - name: Four-player online soak nightly
+        env:
+          MACHIKORO_SOAK_RUNS: '3'
+        run: npm run test:soak
+
+      - name: Install WebKit runtime
+        run: npx playwright install --with-deps webkit
+
+      - name: Mobile WebKit nightly
+        run: npm run test:browser-e2e
 
       - name: Notify nightly CI failure
         if: ${{ failure() && env.NTFY_CI_TOPIC != '' }}

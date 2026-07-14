@@ -1,6 +1,6 @@
 'use strict';
 
-function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyLabel = difficulty => difficulty || '普', hashReconnectToken = token => token || '' }) {
+function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyLabel = difficulty => difficulty || '普', hashReconnectToken = token => token || '', clientAddressForSocket = null }) {
     const createRoomRateBuckets = new Map();
 
     function roomTimestamp(value) {
@@ -9,6 +9,7 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
 
     function isRoomExpired(room, now = Date.now()) {
         if (!room) return false;
+        if (Array.isArray(room.players) && room.players.some(player => player && player.id)) return false;
         const ttl = room.started
             ? limits.startedRoomTtlMs
             : limits.pendingRoomTtlMs;
@@ -38,6 +39,10 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
     }
 
     function createRoomRateKeyForSocket(socket) {
+        if (typeof clientAddressForSocket === 'function') {
+            const address = clientAddressForSocket(socket);
+            if (address) return address;
+        }
         return socket?.handshake?.address ||
             socket?.conn?.remoteAddress ||
             socket?.request?.socket?.remoteAddress ||

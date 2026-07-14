@@ -102,6 +102,11 @@ function loadStorageRuntime() {
             };
             return true;
         },
+        _emitOnlineRejoinRequest(session) {
+            context.rejoinRequests.push(Object.assign({}, session));
+            context.socket.emit('rejoinRoom', context.buildStorageOnlineRejoinPayload(session));
+            return true;
+        },
         resetOnlineState() { context.resetOnlineStateCalls = (context.resetOnlineStateCalls || 0) + 1; },
         cancelDelayedHumanAction() { context.cancelDelayedHumanActionCalls = (context.cancelDelayedHumanActionCalls || 0) + 1; },
         resetUiLocksForGameReset(reason) { context.resetUiLocksForGameResetCalls = (context.resetUiLocksForGameResetCalls || 0) + 1; context.resetUiLocksReason = reason; },
@@ -114,6 +119,7 @@ function loadStorageRuntime() {
         alert(message) { alerts.push(message); },
         showNotice(message) { alerts.push(message); },
         emits: [],
+        rejoinRequests: [],
         sentActions: [],
         createdCpuPlayers: [],
     };
@@ -253,6 +259,8 @@ runTest('storage reconnectOnline はオンライン再接続データの空白�
     assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
     assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
     assert.strictEqual(rt.emits[0].payload.clientVersion, 'storage-build');
+    assert.strictEqual(rt.rejoinRequests.length, 1);
+    assert.strictEqual(rt.rejoinRequests[0].roomId, 'ROOM1');
 });
 
 runTest('storage deleteSavedGame は確認後に savedGame を削除する', () => {
@@ -751,6 +759,32 @@ runTest('storage loadSettings は旧設定にもローカル名の初期値を�
     assert.strictEqual(settings[1].name, 'プレイヤー2');
     assert.strictEqual(settings[2].name, '花子');
     assert.strictEqual(rt.elements.speedLabel.textContent, '超高速');
+});
+
+runTest('storage resumeGame はRL preload中の連打を一度だけ復元する', async () => {
+    const rt = loadStorageRuntime();
+    let resolvePreload;
+    let preloadCalls = 0;
+    rt.RLModelPortfolio = {
+        eligibleLoadState() { return { status: 'idle' }; },
+        preloadEligibleModels() {
+            preloadCalls++;
+            return new Promise(resolve => { resolvePreload = resolve; });
+        },
+    };
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+
+    rt.resumeGame();
+    rt.resumeGame();
+
+    assert.strictEqual(preloadCalls, 1);
+    assert.strictEqual(rt.elements.btnResume.disabled, true);
+    resolvePreload([]);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(rt.renderCount, 1);
+    assert.strictEqual(rt.__test.getResetOnlineStateCalls(), 1);
+    assert.strictEqual(rt.elements.btnResume.disabled, false);
 });
 
 if (process.exitCode) {
