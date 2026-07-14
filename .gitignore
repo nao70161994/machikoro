@@ -15,6 +15,9 @@ dist/
 build/
 out/
 data/canonical-state.json*
+playwright-report/
+test-results/
+blob-report/
 
 # Python
 __pycache__/
