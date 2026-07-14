@@ -1,61 +1,116 @@
 name: Nightly Release Regression
 
 on:
-  schedule:
-    # 03:17 JST daily. Keep this away from top-of-hour GitHub Actions load spikes.
-    - cron: '17 18 * * *'
-  workflow_dispatch:
+    schedule:
+        # 03:17 JST daily. Keep this away from top-of-hour GitHub Actions load spikes.
+        - cron: '17 18 * * *'
+    workflow_dispatch:
+
+permissions:
+    contents: read
 
 jobs:
-  nightly-release-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      NTFY_CI_TOPIC: ${{ secrets.NTFY_CI_TOPIC }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          cache: pip
-          cache-dependency-path: scripts/rl/requirements.txt
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          python -m pip install --upgrade pip
-          pip install -r scripts/rl/requirements.txt
-
-      - name: Release pseudo E2E nightly
-        run: npm run test:release
-
-      - name: PWA nightly
-        run: npm run test:pwa
-
-      - name: Online restore/sync nightly
-        run: npm run test:online
-
-      - name: Notify nightly CI failure
-        if: ${{ failure() && env.NTFY_CI_TOPIC != '' }}
-        continue-on-error: true
+    nightly-release-test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
         env:
-          FAILED_JOB: nightly-release-test
-        run: |
-          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          COMMIT="${GITHUB_SHA}"
-          SHORT_COMMIT="${COMMIT:0:7}"
-          cat > /tmp/ntfy-ci-message.txt << EOF_NTFY
-          workflow=${GITHUB_WORKFLOW}
-          branch=${GITHUB_REF_NAME}
-          commit=${SHORT_COMMIT}
-          failed_job=${FAILED_JOB}
-          run=${RUN_URL}
-          EOF_NTFY
-          curl -fsS -X POST "https://ntfy.sh/${NTFY_CI_TOPIC}"             -H "Title: [ダイスシティ CI] Nightly release regression failed"             -H "Priority: 4"             -H "Tags: warning,github_actions,nightly"             --data-binary @/tmp/ntfy-ci-message.txt
+            NTFY_CI_TOPIC: ${{ secrets.NTFY_CI_TOPIC }}
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: npm
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: '3.x'
+                  cache: pip
+                  cache-dependency-path: scripts/rl/requirements.txt
+            - name: Install dependencies
+              run: |
+                  npm ci
+                  python -m pip install --upgrade pip
+                  pip install -r scripts/rl/requirements.txt
+            - name: Release pseudo E2E nightly
+              run: npm run test:release
+            - name: PWA nightly
+              run: npm run test:pwa
+            - name: Online restore/sync nightly
+              run: npm run test:online
+            - name: Notify nightly CI failure
+              if: ${{ failure() && env.NTFY_CI_TOPIC != '' }}
+              continue-on-error: true
+              env:
+                  FAILED_JOB: nightly-release-test
+              run: |
+                  RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+                  COMMIT="${GITHUB_SHA}"
+                  SHORT_COMMIT="${COMMIT:0:7}"
+                  cat > /tmp/ntfy-ci-message.txt << EOF_NTFY
+                  workflow=${GITHUB_WORKFLOW}
+                  branch=${GITHUB_REF_NAME}
+                  commit=${SHORT_COMMIT}
+                  failed_job=${FAILED_JOB}
+                  run=${RUN_URL}
+                  EOF_NTFY
+                  curl -fsS -X POST "https://ntfy.sh/${NTFY_CI_TOPIC}" \
+                      -H "Title: [ダイスシティ CI] Nightly release regression failed" \
+                      -H "Priority: 4" \
+                      -H "Tags: warning,github_actions,nightly" \
+                      --data-binary @/tmp/ntfy-ci-message.txt
+
+    simulation-test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci
+            - name: Simulation regression
+              run: npm run test:sim
+
+    online-soak:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci
+            - name: Four-player online soak
+              env:
+                  MACHIKORO_SOAK_RUNS: '3'
+              run: npm run test:soak
+
+    mobile-webkit-e2e:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci
+            - name: Install WebKit runtime
+              run: npx playwright install --with-deps webkit
+            - name: Mobile WebKit E2E
+              run: npm run test:browser-e2e
+            - name: Upload WebKit diagnostics
+              if: ${{ failure() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: mobile-webkit-diagnostics
+                  path: |
+                      playwright-report/
+                      test-results/
+                  if-no-files-found: ignore
