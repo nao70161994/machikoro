@@ -1,11 +1,9 @@
 const assert = require('assert');
-const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
 const serverModule = require('../server');
-const clientBundlePath = path.join(path.dirname(require.resolve('socket.io/package.json')), 'client-dist', 'socket.io.js');
-const connectClient = require(clientBundlePath);
+const connectClient = require('socket.io-client');
 const runtime = serverModule.loadGameRuntime();
 const PLAYER_NAMES = ['Alice', 'Bob', 'Carol', 'Dave'];
 const COMPLETION_LANDMARKS = [
