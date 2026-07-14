@@ -17,6 +17,7 @@ out/
 playwright-report/
 test-results/
 blob-report/
+data/canonical-state.json*
 
 # Python
 __pycache__/
