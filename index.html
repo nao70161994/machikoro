@@ -411,11 +411,18 @@
         let _serverVersionHash = '';
         let _versionMismatchDetected = false;
         let _versionMismatchReported = false;
+        function _isOnlineFlowActive() {
+          if (typeof isOnlineGame !== 'undefined' && isOnlineGame) return true;
+          if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return true;
+          if (typeof myRoomId !== 'undefined' && !!myRoomId) return true;
+          if (typeof onlineCreateRoomPending !== 'undefined' && onlineCreateRoomPending) return true;
+          return typeof onlineJoinRoomPending !== 'undefined' && onlineJoinRoomPending;
+        }
         function _isOnlineGameActive() {
           return typeof isOnlineGame !== 'undefined' && isOnlineGame;
         }
         function shouldKeepPwaUpdateBannerVisible() {
-          return (_versionMismatchDetected || !!_waitingSW) && _isOnlineGameActive();
+          return (_versionMismatchDetected || !!_waitingSW) && _isOnlineFlowActive();
         }
         function _showPwaUpdateBanner(message, options = {}) {
           const installBanner = document.getElementById('pwaInstallBanner');
@@ -431,7 +438,7 @@
           if (options.versionMismatch) btn.dataset.versionMismatch = '1';
           else delete btn.dataset.versionMismatch;
           if (dismiss) dismiss.style.display = shouldKeepPwaUpdateBannerVisible() ? 'none' : '';
-          if (_isOnlineGameActive()) {
+          if (_isOnlineFlowActive()) {
             msg.textContent = options.versionMismatch
               ? '古いバージョンです（オンラインゲーム終了後に再起動してください）'
               : '新バージョンあり（ゲーム終了後に再起動してください）';
@@ -448,7 +455,7 @@
             }
             return false;
           }
-          if (!_isInGame()) {
+          if (!_isInGame() && !_isOnlineFlowActive()) {
             _waitingSW.postMessage({ type: 'SKIP_WAITING' });
             return true;
           }
@@ -553,7 +560,7 @@
             hadServiceWorkerController = true;
             return;
           }
-          if (_isInGame() && !updateRequestedByUser) {
+          if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser) {
             _showPwaUpdateBanner();
             return;
           }
@@ -579,7 +586,7 @@
           }).catch(() => {});
         });
         window.pwaApplyUpdate = () => {
-          if (_isOnlineGameActive()) {
+          if (_isOnlineFlowActive()) {
             _showPwaUpdateBanner(_versionMismatchDetected ? '古いバージョンです（オンラインゲーム終了後に再起動してください）' : undefined, { versionMismatch: _versionMismatchDetected });
             return;
           }
