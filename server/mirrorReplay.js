@@ -336,11 +336,15 @@ function makeMirrorReplay({
             : settings.length;
         if (entry.playerIndex < 0 || entry.playerIndex >= playerCount) return false;
         if (cpuPlayers[currentIndex]) {
+            const authorizedHostPlayerIndex = Number.isInteger(entry.authorizedHostPlayerIndex)
+                ? entry.authorizedHostPlayerIndex
+                : null;
             const hostPlayerIndex = Number.isInteger(room.hostPlayerIndex)
                 ? room.hostPlayerIndex
                 : room.gameStartPayload?.hostPlayerIndex;
-            return Number.isInteger(hostPlayerIndex) &&
-                entry.playerIndex === hostPlayerIndex &&
+            const acceptingHostPlayerIndex = authorizedHostPlayerIndex === null ? hostPlayerIndex : authorizedHostPlayerIndex;
+            return Number.isInteger(acceptingHostPlayerIndex) &&
+                entry.playerIndex === acceptingHostPlayerIndex &&
                 settings[entry.playerIndex]?.type !== 'cpu';
         }
         return entry.playerIndex === originalCurrentIndex;

@@ -1,10 +1,14 @@
 process.env.RESTORE_AUDIT_SECRET = process.env.RESTORE_AUDIT_SECRET || 'test-restore-audit-secret';
+process.env.CANONICAL_STATE_STORE = 'memory';
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const {
     APP_ERROR_EVENT,
+    MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS,
+    MAX_MONOTONIC_ACCEPTED_CLIENT_ACTIONS,
+    MAX_CLIENT_ACTION_STREAMS_PER_PLAYER,
     emitAppError,
     requirePlainSocketPayload,
     SOCKET_PAYLOAD_LIMITS,
@@ -39,6 +43,8 @@ const {
     handleGameLifecycleRequest,
     isDuplicateGameLifecycle,
     resolveTrustProxySetting,
+    socketClientIp,
+    isSocketEventRateLimited,
     normalizeClientErrorPayload,
     requestBaseOrigin,
     hasClientReportOrigin,
@@ -78,11 +84,18 @@ const {
     normalizeCpuSpeed,
     normalizeEnabledCards,
     isActiveRoomSocket,
+    isClientActionAcceptedByWatermark,
     findAcceptedClientAction,
     rememberAcceptedClientAction,
+    hasAcceptedClientActionCapacity,
     acceptedClientActionRefs,
     buildRejoinDataPayload,
     persistRoomCanonicalState,
+    persistRoomHostChange,
+    captureRoomActionTransaction,
+    rollbackRoomActionTransaction,
+    cleanupExpiredCanonicalRecords,
+    fenceCanonicalConflict,
     generateRoomId,
     isValidRoomId,
     buildRestoredHumanPlayers,
@@ -90,6 +103,8 @@ const {
     canonicalizeActionData,
     normalizeClientActionId,
     nextRoomActionSeq,
+    peekNextRoomActionSeq,
+    commitRoomActionSeq,
     roomHostChangedPayload,
     emitRoomHostChanged,
     restorePayloadRank,
@@ -103,6 +118,7 @@ const {
     buildGameStartPayload,
     markRoomGameStarted,
     resolveRejoinPlayer,
+    runAfterSocketJoin,
     handleSocketDisconnect,
     handleRecreateRoom,
     getRemainingConnectedPlayers,
@@ -155,6 +171,7 @@ const {
     validateCanonicalStateRecord,
     createNoopCanonicalStateStore,
     createMemoryCanonicalStateStore,
+    createFileCanonicalStateStore,
 } = require('../server/canonicalStateStore');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
@@ -263,16 +280,35 @@ function makeSnapshot(overrides = {}) {
     return Object.assign(serializeMirrorState(game, { 麦畑: 6, パン屋: 0, カフェ: 0, ビジネスセンター: 0, 引越し屋: 0 }), overrides);
 }
 
+function canonicalStoreTestRoom(actionSeq = 0, overrides = {}) {
+    return Object.assign({
+        gameStartPayload: {},
+        stateSnapshot: actionSeq > 0 ? { actionSeq } : null,
+        actionLog: [],
+        acceptedClientActions: {},
+        acceptedClientActionWatermarks: {},
+        hostEpoch: 0,
+        actionSeq,
+    }, overrides);
+}
 
-runTest('canonical state store は既定noopでmemory adapterはrecordをclone保存する', () => {
+function setCanonicalStoreTestSeq(room, actionSeq) {
+    room.actionSeq = actionSeq;
+    room.stateSnapshot = actionSeq > 0 ? { actionSeq } : null;
+}
+
+
+runTest('canonical state store は既定noopでfileとmemoryは明示opt-inする', () => {
     assert.strictEqual(canonicalStateStoreMode({}), CANONICAL_STATE_STORE_MODES.NOOP);
+    assert.strictEqual(canonicalStateStoreMode({ CANONICAL_STATE_STORE: 'noop' }), CANONICAL_STATE_STORE_MODES.NOOP);
     assert.strictEqual(canonicalStateStoreMode({ CANONICAL_STATE_STORE: 'memory' }), CANONICAL_STATE_STORE_MODES.MEMORY);
+    assert.strictEqual(canonicalStateStoreMode({ CANONICAL_STATE_STORE: 'file' }), CANONICAL_STATE_STORE_MODES.FILE);
 
     const room = {
         gameStartPayload: { playerNames: ['A', 'B'], reconnectTokenHashes: ['h1', 'h2'] },
         stateSnapshot: { actionSeq: 3, players: [] },
         actionLog: [{ action: 'nextTurn', data: {}, playerIndex: 0, seq: 4, clientActionId: 'c1' }],
-        acceptedClientActions: { key: { playerIndex: 0, clientActionId: 'c1', seq: 4 } },
+        acceptedClientActions: { key: { action: 'nextTurn', data: {}, playerIndex: 0, clientActionId: 'c1', seq: 4 } },
         hostPlayerIndex: 0,
         hostEpoch: 2,
         actionSeq: 4,
@@ -282,6 +318,8 @@ runTest('canonical state store は既定noopでmemory adapterはrecordをclone�
     assert.deepStrictEqual(validateCanonicalStateRecord(record), { ok: true });
     assert.strictEqual(record.reason, 'test');
     assert.strictEqual(record.acceptedClientActions.length, 1);
+    assert.strictEqual(record.acceptedClientActions[0].action, 'nextTurn');
+    assert.deepStrictEqual(record.acceptedClientActions[0].data, {});
 
     const noop = createNoopCanonicalStateStore();
     assert.deepStrictEqual(noop.save(record), { ok: true, skipped: true });
@@ -295,6 +333,91 @@ runTest('canonical state store は既定noopでmemory adapterはrecordをclone�
     loaded.actionLog.push({ action: 'rollDice' });
     assert.strictEqual(memory.load('ROOM01').actionLog.length, 1);
     assert.strictEqual(memory.list().length, 1);
+
+    const filePath = path.join('/tmp', `machikoro-canonical-state-${process.pid}.json`);
+    try {
+        const fileStore = createFileCanonicalStateStore(filePath);
+        assert.deepStrictEqual(fileStore.save(buildCanonicalStateRecord('ROOM01', room)), { ok: true });
+        const restartedStore = createFileCanonicalStateStore(filePath);
+        assert.strictEqual(restartedStore.load('ROOM01').roomId, 'ROOM01');
+        restartedStore.delete('ROOM01');
+        assert.strictEqual(restartedStore.load('ROOM01'), null);
+    } finally {
+        try { fs.unlinkSync(filePath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+});
+
+runTest('file canonical store は破損primaryをbackupから復旧して隔離する', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-corrupt-${process.pid}.json`);
+    const cleanup = () => {
+        for (const name of fs.readdirSync('/tmp')) {
+            if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+        }
+    };
+    cleanup();
+    try {
+        const store = createFileCanonicalStateStore(filePath);
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('BACKUP1', room)), { ok: true });
+        setCanonicalStoreTestSeq(room, 2);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('BACKUP1', room)), { ok: true });
+        fs.writeFileSync(filePath, '{broken');
+
+        assert.strictEqual(store.load('BACKUP1').actionSeq, 2);
+        assert.strictEqual(fs.readFileSync(filePath, 'utf8'), '{broken');
+        assert.ok(!fs.readdirSync('/tmp').some(name => name.startsWith(path.basename(filePath) + '.corrupt-')));
+
+        setCanonicalStoreTestSeq(room, 3);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('BACKUP1', room)), { ok: true });
+        assert.strictEqual(store.load('BACKUP1').actionSeq, 3);
+        assert.ok(fs.readdirSync('/tmp').some(name => name.startsWith(path.basename(filePath) + '.corrupt-')));
+    } finally {
+        cleanup();
+    }
+});
+
+runTest('file canonical store はbackupも無い破損fileを空状態で上書きしない', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-no-backup-${process.pid}.json`);
+    try {
+        fs.writeFileSync(filePath, '{broken');
+        const store = createFileCanonicalStateStore(filePath);
+        const room = canonicalStoreTestRoom(1);
+        assert.throws(() => store.save(buildCanonicalStateRecord('CORRUPT1', room)), /canonical state is unreadable/);
+        assert.strictEqual(fs.readFileSync(filePath, 'utf8'), '{broken');
+    } finally {
+        for (const suffix of ['', '.bak', '.lock']) {
+            try { fs.unlinkSync(filePath + suffix); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+        }
+    }
+});
+
+runTest('file canonical store は終了済みprocessのlockを回収して保存する', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-stale-lock-${process.pid}.json`);
+    const lockPath = filePath + '.lock';
+    try {
+        fs.writeFileSync(lockPath, '99999999');
+        const store = createFileCanonicalStateStore(filePath);
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('STALE01', room)), { ok: true });
+        assert.strictEqual(store.load('STALE01').actionSeq, 1);
+    } finally {
+        for (const suffix of ['', '.bak', '.lock']) {
+            try { fs.unlinkSync(filePath + suffix); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+        }
+    }
+});
+
+runTest('file canonical store は同時writer lock中の保存を明示的に拒否する', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-lock-${process.pid}.json`);
+    const lockPath = filePath + '.lock';
+    try {
+        fs.writeFileSync(lockPath, 'other');
+        const store = createFileCanonicalStateStore(filePath);
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('LOCK001', room)), { ok: false, reason: 'store-busy' });
+    } finally {
+        try { fs.unlinkSync(lockPath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
 });
 
 runTest('persistRoomCanonicalState はstore失敗をゲーム進行から分離する', () => {
@@ -302,6 +425,47 @@ runTest('persistRoomCanonicalState はstore失敗をゲーム進行から分離�
     const result = persistRoomCanonicalState('ROOM02', room, 'test', 1700000000000, { save() { throw new Error('disk down'); } });
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.reason, 'save-failed');
+});
+
+runTest('rollbackRoomActionTransaction は永続化失敗前のseq・log・dedupe・mirrorへ戻す', () => {
+    const room = makeRoom();
+    room.actionSeq = 3;
+    room.gameStartPayload.actionSeq = 3;
+    room.actionLog = [];
+    room.acceptedClientActions = {};
+    room.acceptedClientActionWatermarks = { '0:stream001': 3 };
+    room.canonicalRevision = 7;
+    room.canonicalMirror = createRoomMirror(room);
+    markRoomCanonicalMirrorCurrent(room);
+    const beforeHash = canonicalMirrorStateHash(room.canonicalMirror);
+    const transaction = captureRoomActionTransaction(room);
+
+    room.actionSeq = 4;
+    room.gameStartPayload.actionSeq = 4;
+    room.actionLog.push({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 4, clientActionId: 'failed-ack' });
+    room.acceptedClientActions['0:failed-ack'] = room.actionLog[0];
+    room.acceptedClientActionWatermarks['0:stream001'] = 4;
+    room.canonicalRevision = 8;
+    room.lastTouchedAt = 999;
+
+    rollbackRoomActionTransaction(room, transaction);
+
+    assert.strictEqual(room.actionSeq, 3);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 3);
+    assert.deepStrictEqual(room.actionLog, []);
+    assert.deepStrictEqual(room.acceptedClientActions, {});
+    assert.deepStrictEqual(room.acceptedClientActionWatermarks, { '0:stream001': 3 });
+    assert.strictEqual(room.canonicalRevision, 7);
+    assert.strictEqual(findAcceptedClientAction(room, 'failed-ack', 0), null);
+    assert.strictEqual(canonicalMirrorStateHash(room.canonicalMirror), beforeHash);
+});
+
+runTest('server fatal handler はmain processだけでgraceful shutdownを開始する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    assert.ok(source.includes("process.once('uncaughtException'"));
+    assert.ok(source.includes("process.once('unhandledRejection'"));
+    assert.ok(source.includes("server.close(() => process.exit(1))"));
+    assert.ok(!source.includes("process.on('uncaughtException'"));
 });
 
 runTest('server module.exports は重複した公開名を持たない', () => {
@@ -346,6 +510,31 @@ runTest('cleanupExpiredRooms は未開始roomをTTLで削除し新しいroomを�
     assert.strictEqual(cleanupExpiredRooms(now, targetRooms), 1);
     assert.strictEqual(targetRooms.oldPending, undefined);
     assert.ok(targetRooms.freshPending);
+});
+
+runTest('cleanupExpiredRooms は接続中playerがいるroomをTTL削除しない', () => {
+    const now = ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs * 2;
+    const targetRooms = {
+        connected: { started: true, players: [{ id: 'socket-1' }], lastTouchedAt: 1 },
+        disconnected: { started: true, players: [{ id: null }], lastTouchedAt: 1 },
+    };
+
+    assert.strictEqual(cleanupExpiredRooms(now, targetRooms), 1);
+    assert.ok(targetRooms.connected);
+    assert.strictEqual(targetRooms.disconnected, undefined);
+});
+
+runTest('cleanupExpiredCanonicalRecords はactive roomを残しstore-only期限切れrecordだけ削除する', () => {
+    const now = ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs * 2;
+    const makeRecord = roomId => ({
+        schemaVersion: 1, roomId, persistedAt: 1, gameStartPayload: {}, stateSnapshot: null,
+        actionLog: [], acceptedClientActions: [], acceptedClientActionWatermarks: {}, revision: 0, hostPlayerIndex: 0, hostEpoch: 0, actionSeq: 0, lastTouchedAt: 1,
+    });
+    const store = createMemoryCanonicalStateStore([makeRecord('ACTIVE1'), makeRecord('STALE01')]);
+
+    assert.strictEqual(cleanupExpiredCanonicalRecords(now, store, { ACTIVE1: {} }), 1);
+    assert.ok(store.load('ACTIVE1'));
+    assert.strictEqual(store.load('STALE01'), null);
 });
 
 runTest('cleanupExpiredRooms は開始済みroomの既存TTLを維持する', () => {
@@ -1644,6 +1833,7 @@ runTest('canonicalizeActionData は GAME_ACTIONS 全体のpayload shapeを固定
 
 runTest('normalizeClientActionId は長すぎる値と危険文字を落とす', () => {
     assert.strictEqual(normalizeClientActionId('client-action_1:2'), 'client-action_1:2');
+    assert.strictEqual(normalizeClientActionId('m1.stream001.1'), 'm1.stream001.1');
     assert.strictEqual(normalizeClientActionId('x'.repeat(121)), '');
     assert.strictEqual(normalizeClientActionId('__proto__'), '__proto__');
     assert.strictEqual(normalizeClientActionId('bad space'), '');
@@ -2467,6 +2657,26 @@ runTest('createRoomMirror はCPUターン復元ログをホスト名義だけ許
     assert.strictEqual(createRoomMirror(room), null);
 });
 
+runTest('createRoomMirror はホスト移譲前に受理したCPU actionを受理時host metadataで復元する', () => {
+    const room = makeRoom();
+    room.hostPlayerIndex = 0;
+    room.hostEpoch = 2;
+    room.playerSettings = [{ type: 'cpu', difficulty: 'normal' }, { type: 'human' }];
+    room.gameStartPayload.playerSettings = room.playerSettings;
+    room.gameStartPayload.hostPlayerIndex = 0;
+    room.gameStartPayload.hostEpoch = 2;
+    room.gameStartPayload.playerNames = ['CPU1（普）', 'New Host'];
+    room.actionLog = [{
+        action: 'rollDice',
+        data: { forceDice: 3, tunaDice: [1, 1] },
+        playerIndex: 1,
+        authorizedHostPlayerIndex: 1,
+        hostEpoch: 1,
+    }];
+
+    assert.ok(createRoomMirror(room));
+});
+
 runTest('resolveRejoinPlayer は復元済みルームでも正しいトークン一致時のみ既存プレイヤーを再利用する', () => {
     const room = {
         restored: true,
@@ -2877,6 +3087,7 @@ runTest('handleRecreateRoom は復元payloadでも2〜10人制限を守る', () 
                 stateSnapshot: null,
                 actionLog: [],
                 acceptedClientActions: [],
+                acceptedClientActionWatermarks: [],
                 playerIndex: 0,
                 playerName: 'Alice',
                 reconnectToken,
@@ -2955,7 +3166,7 @@ runTest('handleRecreateRoom は既に復元済みのルームなら再作成せ�
         hostPlayerIndex: 0,
     };
     const stateSnapshot = { players: [{ name: 'Alice' }], currentPlayerIndex: 0, shopStock: {} };
-    const actionLog = [{ action: 'rollDice', data: { forceDice: 1 }, playerIndex: 0 }];
+    const actionLog = [{ action: 'rollDice', data: { forceDice: 1 }, playerIndex: 0, seq: 1 }];
     __rooms.REST_EXISTS = {
         players: [{ id: null, index: 0, name: 'Alice', reconnectToken: '', reconnectTokenHash: tokenHash }],
         started: true,
@@ -2963,6 +3174,7 @@ runTest('handleRecreateRoom は既に復元済みのルームなら再作成せ�
         gameStartPayload: existingPayload,
         stateSnapshot,
         actionLog,
+        actionSeq: 1,
     };
 
     try {
@@ -2986,6 +3198,7 @@ runTest('handleRecreateRoom は既に復元済みのルームなら再作成せ�
                 stateSnapshot,
                 actionLog,
                 acceptedClientActions: [],
+                acceptedClientActionWatermarks: [],
                 playerIndex: 0,
                 hostPlayerIndex: 0,
                 hostEpoch: 0,
@@ -3051,6 +3264,7 @@ runTest('handleRecreateRoom は復元データを canonical snapshot に畳み�
                 stateSnapshot: __rooms.REST02.stateSnapshot,
                 actionLog: [],
                 acceptedClientActions: [],
+                acceptedClientActionWatermarks: [],
                 playerIndex: 0,
                 hostPlayerIndex: 0,
                 hostEpoch: 0,
@@ -4474,6 +4688,18 @@ runTest('handleRecreateRoom は同一hostEpochの別ホストpayloadで復元済
     }
 });
 
+runTest('action seq はpeekだけでは進まずapply成功後のcommitで進む', () => {
+    const room = makeRoom();
+    room.actionSeq = 4;
+    room.gameStartPayload.actionSeq = 4;
+    assert.strictEqual(peekNextRoomActionSeq(room), 5);
+    assert.strictEqual(room.actionSeq, 4);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 4);
+    assert.strictEqual(commitRoomActionSeq(room, 5), 5);
+    assert.strictEqual(room.actionSeq, 5);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 5);
+});
+
 runTest('nextRoomActionSeq は未compact actionで stateSnapshot.actionSeq を進めない', () => {
     const room = makeRoom();
     room.actionSeq = 10;
@@ -5101,6 +5327,462 @@ runTest('checkGameStart は人間枠が不足している間は開始しない',
     } finally {
         delete __rooms[roomId];
     }
+});
+
+runTest('host移譲はstore失敗後にconnected playerへretryする', () => {
+    const roomId = 'HOSTRETRY';
+    const emitted = [];
+    const oldSetTimeout = global.setTimeout;
+    let retryCallback = null;
+    const retryDelays = [];
+    global.setTimeout = (callback, delay) => {
+        retryCallback = callback;
+        retryDelays.push(delay);
+        return { unref() {} };
+    };
+    const io = {
+        sockets: { sockets: new Map([['guest-socket', {}]]) },
+        to() { return { emit(name, payload) { emitted.push({ name, payload }); } }; },
+    };
+    const room = {
+        roomId,
+        started: true,
+        players: [
+            { id: 'host-socket', index: 0, name: 'Host' },
+            { id: 'guest-socket', index: 1, name: 'Guest' },
+        ],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        gameStartPayload: { hostPlayerIndex: 0, hostEpoch: 0 },
+        stateSnapshot: { actionSeq: 1 },
+        actionSeq: 1,
+        actionLog: [],
+        acceptedClientActions: { broken: { playerIndex: 0, clientActionId: 'broken' } },
+    };
+    __rooms[roomId] = room;
+    try {
+        const result = handleStartedRoomSocketDisconnect(io, roomId, room, { id: 'host-socket', playerIndex: 0 });
+        assert.strictEqual(result.hostChangePending, true);
+        assert.strictEqual(room.hostPlayerIndex, 0);
+        assert.strictEqual(typeof retryCallback, 'function');
+        retryCallback();
+        assert.strictEqual(room.hostPlayerIndex, 0);
+        assert.ok(retryDelays[1] > retryDelays[0]);
+        room.acceptedClientActions = {};
+        retryCallback();
+        assert.strictEqual(room.hostPlayerIndex, 1);
+        assert.ok(emitted.some(entry => entry.name === 'hostChanged' && entry.payload.newHostPlayerIndex === 1));
+    } finally {
+        global.setTimeout = oldSetTimeout;
+    }
+});
+
+runTest('handleRecreateRoom はPromise join失敗時に既存player socketを追放しない', () => {
+    const crypto = require('crypto');
+    const tokenA = 'token-a';
+    const tokenB = 'token-b';
+    const hashA = crypto.createHash('sha256').update(tokenA).digest('hex');
+    const hashB = crypto.createHash('sha256').update(tokenB).digest('hex');
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes: [hashA, hashB],
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+    };
+    __rooms.JOINFAIL = {
+        roomId: 'JOINFAIL',
+        started: true,
+        players: [
+            { id: null, index: 0, name: 'Alice', reconnectTokenHash: hashA },
+            { id: 'old-bob', index: 1, name: 'Bob', reconnectTokenHash: hashB },
+        ],
+        hostPlayerIndex: 0,
+        hostEpoch: 0,
+        actionSeq: 0,
+        gameStartPayload,
+        stateSnapshot: null,
+        actionLog: [],
+        acceptedClientActions: {},
+        acceptedClientActionWatermarks: {},
+    };
+    const emitted = [];
+    const socket = {
+        id: 'new-bob',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join() { return { then(resolve, reject) { reject(new Error('join failed')); } }; },
+    };
+    handleRecreateRoom(socket, signedRestorePayload({
+        roomId: 'JOINFAIL', gameStartPayload, stateSnapshot: null, actionLog: [],
+        playerIndex: 1, playerName: 'Bob', reconnectToken: tokenB,
+    }));
+    assert.strictEqual(__rooms.JOINFAIL.players[1].id, 'old-bob');
+    assert.ok(emitted.some(entry => entry.name === APP_ERROR_EVENT && /再接続に失敗/.test(entry.payload)));
+});
+
+runTest('persistRoomHostChange は保存失敗時にhost indexとepochをrollbackする', () => {
+    const room = {
+        roomId: 'HOSTTX1',
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+        gameStartPayload: { hostPlayerIndex: 0, hostEpoch: 2 },
+        actionSeq: 0,
+        actionLog: [],
+        acceptedClientActions: {},
+        lastTouchedAt: 10,
+    };
+    const result = persistRoomHostChange('HOSTTX1', room, 1, 'test', { save() { return { ok: false, reason: 'store-busy' }; } });
+    assert.strictEqual(result, false);
+    assert.strictEqual(room.hostPlayerIndex, 0);
+    assert.strictEqual(room.hostEpoch, 2);
+    assert.strictEqual(room.gameStartPayload.hostPlayerIndex, 0);
+    assert.strictEqual(room.gameStartPayload.hostEpoch, 2);
+    assert.strictEqual(room.lastTouchedAt, 10);
+});
+
+runTest('accepted action dedupe は上限まで正確に保持し超過前にcapacityを閉じる', () => {
+    const room = { acceptedClientActions: {} };
+    for (let i = 0; i < MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS; i++) {
+        rememberAcceptedClientAction(room, { action: 'nextTurn', data: {}, seq: i + 1, playerIndex: 0, clientActionId: `id-${i}` });
+    }
+    assert.strictEqual(Object.keys(room.acceptedClientActions).length, MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS);
+    assert.strictEqual(hasAcceptedClientActionCapacity(room), false);
+    assert.strictEqual(findAcceptedClientAction(room, 'id-0', 0).seq, 1);
+    assert.strictEqual(findAcceptedClientAction(room, `id-${MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS - 1}`, 0).seq, MAX_LEGACY_ACCEPTED_CLIENT_ACTIONS);
+});
+
+runTest('monotonic clientActionId は5001件後もwatermarkで継続しexact cacheをboundedに保つ', () => {
+    const room = { acceptedClientActions: {}, acceptedClientActionWatermarks: {} };
+    for (let i = 1; i <= 5001; i++) {
+        rememberAcceptedClientAction(room, { action: 'nextTurn', data: {}, seq: i, playerIndex: 0, clientActionId: `m1.stream001.${i.toString(36)}` });
+    }
+    assert.strictEqual(room.acceptedClientActionWatermarks['0:stream001'], 5001);
+    assert.strictEqual(Object.keys(room.acceptedClientActions).length, MAX_MONOTONIC_ACCEPTED_CLIENT_ACTIONS);
+    assert.strictEqual(hasAcceptedClientActionCapacity(room, 'm1.stream001.3uy', 0), true);
+    assert.strictEqual(isClientActionAcceptedByWatermark(room, 'm1.stream001.1', 0), true);
+    assert.strictEqual(findAcceptedClientAction(room, 'm1.stream001.1', 0), null);
+});
+
+runTest('canonical store revision CAS はstale save・lease・deleteを拒否する', () => {
+    const store = createMemoryCanonicalStateStore();
+    const room = { actionSeq: 0, hostEpoch: 0, actionLog: [], acceptedClientActions: {}, acceptedClientActionWatermarks: {} };
+    const record = buildCanonicalStateRecord('CASROOM', room);
+    assert.deepStrictEqual(store.save(record, { expectedRevision: 0 }), { ok: true, revision: 1 });
+    assert.strictEqual(store.save(record, { expectedRevision: 0 }).reason, 'revision-conflict');
+    assert.strictEqual(store.renewLease('CASROOM', { expectedRevision: 0, leaseExpiresAt: 10, now: 1 }).reason, 'revision-conflict');
+    assert.strictEqual(store.delete('CASROOM', { expectedRevision: 0 }).reason, 'revision-conflict');
+    assert.ok(store.load('CASROOM'));
+});
+
+runTest('canonical record は action sequence の欠落・重複・逆順を拒否する', () => {
+    const base = buildCanonicalStateRecord('STRICT1', {
+        actionSeq: 2,
+        hostEpoch: 0,
+        actionLog: [
+            { action: 'rollDice', data: {}, seq: 1 },
+            { action: 'nextTurn', data: {}, seq: 2 },
+        ],
+        acceptedClientActions: {
+            a: { action: 'rollDice', data: {}, seq: 1, playerIndex: 0, clientActionId: 'a' },
+        },
+    });
+    assert.strictEqual(validateCanonicalStateRecord(base).ok, true);
+    const missing = JSON.parse(JSON.stringify(base));
+    delete missing.actionLog[0].seq;
+    assert.deepStrictEqual(validateCanonicalStateRecord(missing), { ok: false, reason: 'action-log-seq' });
+    const duplicate = JSON.parse(JSON.stringify(base));
+    duplicate.actionLog[1].seq = 1;
+    assert.deepStrictEqual(validateCanonicalStateRecord(duplicate), { ok: false, reason: 'action-log-seq' });
+    const gap = JSON.parse(JSON.stringify(base));
+    gap.actionLog[1].seq = 3;
+    gap.actionSeq = 3;
+    assert.deepStrictEqual(validateCanonicalStateRecord(gap), { ok: false, reason: 'action-log-seq' });
+    const missingAcceptedSeq = JSON.parse(JSON.stringify(base));
+    delete missingAcceptedSeq.acceptedClientActions[0].seq;
+    assert.deepStrictEqual(validateCanonicalStateRecord(missingAcceptedSeq), { ok: false, reason: 'accepted-client-action-seq' });
+});
+
+runTest('file canonical store は pre-commit backup失敗時にprimaryを進めない', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-precommit-${process.pid}.json`);
+    const store = createFileCanonicalStateStore(filePath);
+    const originalCopy = fs.copyFileSync;
+    try {
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('FAULT01', room)), { ok: true });
+        setCanonicalStoreTestSeq(room, 2);
+        fs.copyFileSync = () => { const error = new Error('injected backup failure'); error.code = 'ENOSPC'; throw error; };
+        assert.throws(() => store.save(buildCanonicalStateRecord('FAULT01', room)), /injected backup failure/);
+        fs.copyFileSync = originalCopy;
+        assert.strictEqual(store.load('FAULT01').actionSeq, 1);
+    } finally {
+        fs.copyFileSync = originalCopy;
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store は post-commit backup失敗を成功扱いしてprimaryとcallerを一致させる', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-postcommit-${process.pid}.json`);
+    const store = createFileCanonicalStateStore(filePath);
+    const originalRename = fs.renameSync;
+    try {
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('FAULT02', room)), { ok: true });
+        setCanonicalStoreTestSeq(room, 2);
+        const primaryTempPath = `${filePath}.${process.pid}.tmp`;
+        fs.renameSync = (source, destination) => {
+            if (source === primaryTempPath && destination === filePath) throw new Error('injected post-commit failure');
+            return originalRename(source, destination);
+        };
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('FAULT02', room)), { ok: true });
+        fs.renameSync = originalRename;
+        assert.strictEqual(store.load('FAULT02').actionSeq, 2);
+    } finally {
+        fs.renameSync = originalRename;
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store はprimary欠落時もbackupを空store扱いしない', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-backup-only-${process.pid}.json`);
+    const store = createFileCanonicalStateStore(filePath);
+    try {
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('BACKONLY', room)), { ok: true });
+        fs.unlinkSync(filePath);
+        assert.strictEqual(store.load('BACKONLY').actionSeq, 1);
+        setCanonicalStoreTestSeq(room, 2);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('BACKONLY', room)), { ok: true });
+        assert.strictEqual(store.load('BACKONLY').actionSeq, 2);
+    } finally {
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store は別process相当のstale lease/save/deleteで新revisionを巻き戻さない', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-cas-process-${process.pid}.json`);
+    const storeA = createFileCanonicalStateStore(filePath);
+    const storeB = createFileCanonicalStateStore(filePath);
+    try {
+        const roomA = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(storeA.save(buildCanonicalStateRecord('CASPROC', roomA), { expectedRevision: 0 }), { ok: true, revision: 1 });
+        const roomB = canonicalStoreTestRoom(2);
+        assert.deepStrictEqual(storeB.save(buildCanonicalStateRecord('CASPROC', roomB), { expectedRevision: 1 }), { ok: true, revision: 2 });
+        assert.strictEqual(storeA.renewLease('CASPROC', { expectedRevision: 1, ownerId: 'A', leaseExpiresAt: Date.now() + 1000, now: Date.now() }).reason, 'revision-conflict');
+        assert.strictEqual(storeA.delete('CASPROC', { expectedRevision: 1, leaseExpiredAt: Date.now() }).reason, 'revision-conflict');
+        assert.strictEqual(storeA.save(buildCanonicalStateRecord('CASPROC', roomA), { expectedRevision: 1 }).reason, 'revision-conflict');
+        assert.strictEqual(storeB.load('CASPROC').actionSeq, 2);
+    } finally {
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store はcommit後lock cleanup失敗をrollback結果に変えない', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-lock-cleanup-${process.pid}.json`);
+    const lockPath = filePath + '.lock';
+    const store = createFileCanonicalStateStore(filePath);
+    const originalUnlink = fs.unlinkSync;
+    try {
+        const room = canonicalStoreTestRoom(1);
+        let injected = false;
+        fs.unlinkSync = target => {
+            if (!injected && target === lockPath) { injected = true; const error = new Error('injected lock cleanup failure'); error.code = 'EPERM'; throw error; }
+            return originalUnlink(target);
+        };
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('LOCKCOM', room)), { ok: true, degraded: true });
+        fs.unlinkSync = originalUnlink;
+        assert.deepStrictEqual(store.verifyDurability(), { ok: true });
+        assert.strictEqual(fs.existsSync(lockPath), false);
+        assert.strictEqual(store.load('LOCKCOM').actionSeq, 1);
+    } finally {
+        fs.unlinkSync = originalUnlink;
+        try { originalUnlink(lockPath); } catch {}
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store はjournal dir fsync失敗をdegraded commitとして照合できる', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-degraded-${process.pid}.json`);
+    const store = createFileCanonicalStateStore(filePath);
+    const originalOpen = fs.openSync;
+    const originalFsync = fs.fsyncSync;
+    let directoryFd = null;
+    try {
+        fs.openSync = (target, ...args) => { const fd = originalOpen(target, ...args); if (target === path.dirname(filePath) && args[0] === 'r') directoryFd = fd; return fd; };
+        let injected = false;
+        fs.fsyncSync = fd => { if (!injected && fd === directoryFd) { injected = true; throw new Error('injected directory fsync failure'); } return originalFsync(fd); };
+        const room = canonicalStoreTestRoom(1);
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('DEGRADE', room)), { ok: true, degraded: true });
+        fs.openSync = originalOpen;
+        fs.fsyncSync = originalFsync;
+        assert.deepStrictEqual(store.verifyDurability(), { ok: true });
+        assert.strictEqual(store.load('DEGRADE').actionSeq, 1);
+    } finally {
+        fs.openSync = originalOpen;
+        fs.fsyncSync = originalFsync;
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store はjournal・primary・backup破損時に二世代前backupへfallbackする', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-generations-${process.pid}.json`);
+    const store = createFileCanonicalStateStore(filePath);
+    try {
+        const room = canonicalStoreTestRoom(1);
+        store.save(buildCanonicalStateRecord('GENROOM', room));
+        setCanonicalStoreTestSeq(room, 2); store.save(buildCanonicalStateRecord('GENROOM', room));
+        setCanonicalStoreTestSeq(room, 3); store.save(buildCanonicalStateRecord('GENROOM', room));
+        fs.writeFileSync(filePath + '.journal', '{broken');
+        fs.writeFileSync(filePath, '{broken');
+        fs.writeFileSync(filePath + '.bak', '{broken');
+        assert.strictEqual(store.load('GENROOM').actionSeq, 1);
+    } finally {
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('file canonical store はlock metadata fsync失敗時にlockを残さない', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-lock-fault-${process.pid}.json`);
+    const lockPath = filePath + '.lock';
+    const store = createFileCanonicalStateStore(filePath);
+    const originalFsync = fs.fsyncSync;
+    try {
+        const room = canonicalStoreTestRoom(1);
+        let injected = false;
+        fs.fsyncSync = fd => {
+            if (!injected) { injected = true; throw new Error('injected lock fsync failure'); }
+            return originalFsync(fd);
+        };
+        assert.throws(() => store.save(buildCanonicalStateRecord('LOCKFLT', room)), /injected lock fsync failure/);
+        assert.strictEqual(fs.existsSync(lockPath), false);
+        fs.fsyncSync = originalFsync;
+        assert.deepStrictEqual(store.save(buildCanonicalStateRecord('LOCKFLT', room)), { ok: true });
+    } finally {
+        fs.fsyncSync = originalFsync;
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('monotonic clientActionId は欠番counterも前進として受理できる', () => {
+    const room = { acceptedClientActions: {}, acceptedClientActionWatermarks: {} };
+    rememberAcceptedClientAction(room, { action: 'rollDice', data: {}, seq: 1, playerIndex: 0, clientActionId: 'm1.stream001.5' });
+    assert.strictEqual(room.acceptedClientActionWatermarks['0:stream001'], 5);
+    assert.strictEqual(hasAcceptedClientActionCapacity(room, 'm1.stream001.6', 0), true);
+    const record = buildCanonicalStateRecord('GAPROOM', {
+        actionSeq: 1,
+        hostEpoch: 0,
+        actionLog: [{ action: 'rollDice', data: {}, seq: 1, playerIndex: 0, clientActionId: 'm1.stream001.5' }],
+        acceptedClientActions: room.acceptedClientActions,
+        acceptedClientActionWatermarks: room.acceptedClientActionWatermarks,
+    });
+    assert.deepStrictEqual(validateCanonicalStateRecord(record), { ok: true });
+});
+
+runTest('monotonic clientActionId はplayerごとのstream数を上限で閉じる', () => {
+    const room = { acceptedClientActions: {}, acceptedClientActionWatermarks: {} };
+    for (let i = 0; i < MAX_CLIENT_ACTION_STREAMS_PER_PLAYER; i++) {
+        const streamId = ('stream' + i.toString(36)).padEnd(8, '0');
+        rememberAcceptedClientAction(room, { action: 'nextTurn', data: {}, seq: i + 1, playerIndex: 0, clientActionId: `m1.${streamId}.1` });
+    }
+    assert.strictEqual(hasAcceptedClientActionCapacity(room, 'm1.overflow0.1', 0), false);
+    assert.strictEqual(hasAcceptedClientActionCapacity(room, 'm1.stream00.2', 0), true);
+});
+
+runTest('canonical record はnonzero seqの空履歴を拒否する', () => {
+    const record = buildCanonicalStateRecord('EMPTYSEQ', { actionSeq: 1, hostEpoch: 0, actionLog: [], acceptedClientActions: {}, acceptedClientActionWatermarks: {} });
+    assert.deepStrictEqual(validateCanonicalStateRecord(record), { ok: false, reason: 'action-log-tail-seq' });
+});
+
+runTest('file durability verify はroom revisionとownerの一致を要求する', () => {
+    const filePath = path.join('/tmp', `machikoro-canonical-verify-owner-${process.pid}.json`);
+    const storeA = createFileCanonicalStateStore(filePath);
+    const storeB = createFileCanonicalStateStore(filePath);
+    try {
+        assert.deepStrictEqual(storeA.save(buildCanonicalStateRecord('VERIFY1', canonicalStoreTestRoom(0), { ownerId: 'owner-a' }), { expectedRevision: 0 }), { ok: true, revision: 1 });
+        assert.deepStrictEqual(storeB.save(buildCanonicalStateRecord('VERIFY1', canonicalStoreTestRoom(0), { ownerId: 'owner-b' }), { expectedRevision: 1 }), { ok: true, revision: 2 });
+        assert.strictEqual(storeA.verifyDurability({ roomId: 'VERIFY1', expectedRevision: 1, ownerId: 'owner-a' }).reason, 'revision-conflict');
+        assert.strictEqual(storeA.verifyDurability({ roomId: 'VERIFY1', expectedRevision: 2, ownerId: 'owner-a' }).reason, 'owner-conflict');
+        assert.deepStrictEqual(storeB.verifyDurability({ roomId: 'VERIFY1', expectedRevision: 2, ownerId: 'owner-b' }), { ok: true });
+    } finally {
+        for (const name of fs.readdirSync('/tmp')) if (name.startsWith(path.basename(filePath))) fs.unlinkSync(path.join('/tmp', name));
+    }
+});
+
+runTest('canonical revision conflict はstale room socketを切断してroomをfenceする', () => {
+    const roomId = 'FENCE01';
+    let disconnected = 0;
+    const socket = {
+        id: 'fence-socket',
+        roomId,
+        playerIndex: 0,
+        emit() {},
+        leave() {},
+        disconnect(force) { assert.strictEqual(force, true); disconnected++; },
+    };
+    __io.sockets.sockets.set(socket.id, socket);
+    const room = { roomId, started: true, players: [{ id: socket.id, index: 0, name: 'A' }] };
+    __rooms[roomId] = room;
+    try {
+        assert.strictEqual(fenceCanonicalConflict(roomId, room), true);
+        assert.strictEqual(__rooms[roomId], undefined);
+        assert.strictEqual(disconnected, 1);
+        assert.strictEqual(socket.roomId, null);
+    } finally {
+        __io.sockets.sockets.delete(socket.id);
+        delete __rooms[roomId];
+    }
+});
+
+runTest('runAfterSocketJoin はPromise adapter拒否時に成功処理を実行しない', () => {
+    let joined = 0;
+    let failed = 0;
+    const socket = { join() { return { then(resolve, reject) { reject(new Error('adapter down')); } }; } };
+    assert.strictEqual(runAfterSocketJoin(socket, 'ROOM01', () => { joined++; }, () => { failed++; }), true);
+    assert.strictEqual(joined, 0);
+    assert.strictEqual(failed, 1);
+});
+
+runTest('socket event rate limit はsocket・IP・event単位でburstを遮断する', () => {
+    const buckets = new Map();
+    const socket = { id: 's1', handshake: { address: '203.0.113.10' } };
+    for (let i = 0; i < 5000; i++) assert.strictEqual(isSocketEventRateLimited(socket, 'gameAction', 1000, buckets), false);
+    assert.strictEqual(isSocketEventRateLimited(socket, 'gameAction', 1000, buckets), true);
+    assert.strictEqual(isSocketEventRateLimited(socket, 'gameAction', 61001, buckets), false);
+});
+
+runTest('socket event rate limit はsocketを張り直してもIP合計を遮断する', () => {
+    const buckets = new Map();
+    const address = '203.0.113.20';
+    for (let socketIndex = 0; socketIndex < 5; socketIndex++) {
+        const socket = { id: `shared-${socketIndex}`, handshake: { address } };
+        for (let action = 0; action < 4000; action++) {
+            assert.strictEqual(isSocketEventRateLimited(socket, 'gameAction', 1000, buckets), false);
+        }
+    }
+    const extraSocket = { id: 'shared-extra', handshake: { address } };
+    assert.strictEqual(isSocketEventRateLimited(extraSocket, 'gameAction', 1000, buckets), true);
+});
+
+runTest('socketClientIp はtrusted proxy時だけforwarded addressを採用する', () => {
+    const request = {
+        headers: { 'x-forwarded-for': '198.51.100.9' },
+        connection: { remoteAddress: '10.0.0.1' },
+        socket: { remoteAddress: '10.0.0.1' },
+    };
+    const socket = { request, handshake: { address: '10.0.0.1' } };
+    assert.strictEqual(socketClientIp(socket, false), '10.0.0.1');
+    assert.strictEqual(socketClientIp(socket, 1), '198.51.100.9');
+});
+
+runTest('canonical GC は別processの有効leaseを削除しない', () => {
+    const now = 1700000000000;
+    const record = buildCanonicalStateRecord('LEASE01', { actionSeq: 0, hostEpoch: 0, actionLog: [], acceptedClientActions: {}, lastTouchedAt: now - ROOM_LIFECYCLE_LIMITS.startedRoomTtlMs - 1 }, { now, ownerId: 'other', leaseExpiresAt: now + 1000 });
+    const store = createMemoryCanonicalStateStore([record]);
+    assert.strictEqual(cleanupExpiredCanonicalRecords(now, store, Object.create(null)), 0);
+    assert.ok(store.load('LEASE01'));
 });
 
 if (process.exitCode) {
