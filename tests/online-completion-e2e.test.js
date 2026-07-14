@@ -107,6 +107,14 @@ function gameStateHash(game, shopStock, undoState) {
     });
 }
 
+function nextUndoState(game, shopStock, action, currentUndoState) {
+    if (action === 'buildCard' || action === 'buildLandmark') {
+        return serverModule.makeUndoStateFromMirror(game, shopStock);
+    }
+    if (action === 'undoBuild' || action === 'nextTurn') return null;
+    return currentUndoState;
+}
+
 function nextCompletionAction(game) {
     if (game.phase === runtime.GAME_PHASES.ROLL) return { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } };
     if (game.phase === runtime.GAME_PHASES.SELECT_DICE) {
@@ -115,6 +123,7 @@ function nextCompletionAction(game) {
     if (game.phase === runtime.GAME_PHASES.REROLL_CONFIRM) return { action: 'skipReroll', data: {} };
     if (game.phase === runtime.GAME_PHASES.HARBOR_CHOICE) return { action: 'resolveHarbor', data: { useBonus: false } };
     if (game.phase === runtime.GAME_PHASES.BUILD) {
+        if (game.builtThisTurn) return { action: 'nextTurn', data: {} };
         const current = game.currentPlayer();
         const landmark = COMPLETION_LANDMARKS.find(name => !current.landmarks[name]);
         if (landmark && current.coins >= runtime.Player.landmarkCost(landmark)) {
@@ -134,7 +143,16 @@ function trackSocket(socket, state) {
         state.sequences.push(entry.seq);
         state.accepted.push(entry);
     });
-    socket.on('appError', error => state.appErrors.push(error));
+    socket.on('appError', error => {
+        state.appErrors.push(error);
+        console.error(
+            '[online completion appError]',
+            JSON.stringify({ error, pendingContext: state.pendingContext || null })
+        );
+    });
+    socket.on('connect_error', error => {
+        console.error('[online completion connect_error]', error && error.message ? error.message : error);
+    });
 }
 
 async function rejoinClient(origin, clients, states, credentials, index) {
@@ -163,7 +181,7 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
     });
     const origin = 'http://127.0.0.1:' + httpServer.address().port;
     const clients = Array.from({ length: 4 }, () => connect(origin));
-    const states = Array.from({ length: 4 }, () => ({ sequences: [], accepted: [], deliveryCounts: new Map(), appErrors: [] }));
+    const states = Array.from({ length: 4 }, () => ({ sequences: [], accepted: [], deliveryCounts: new Map(), appErrors: [], pendingContext: null }));
     clients.forEach((socket, index) => trackSocket(socket, states[index]));
 
     try {
@@ -209,6 +227,7 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
         let dedupeActorIndex = null;
         let hostDisconnectDone = false;
         let replayedWhileDisconnected = 0;
+        let oracleUndoState = null;
 
         while (!game.checkWinner() && actionCount < 1500) {
             const actorIndex = gameStart.playerOrder[game.currentPlayerIndex];
@@ -216,11 +235,13 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
             const command = nextCompletionAction(game);
             const clientActionId = 'completion-' + (actionCount + 1);
             const acceptedPromise = onceEvent(actor, 'actionAccepted');
+            states[actorIndex].pendingContext = { actionCount, actorIndex, phase: game.phase, builtThisTurn: game.builtThisTurn, command };
             actor.emit('gameAction', { action: command.action, data: command.data, clientActionId });
             const accepted = await acceptedPromise;
             actionCount++;
             assert.strictEqual(accepted.seq, actionCount);
             assert.strictEqual(accepted.clientActionId, clientActionId, 'ACKが送信action IDと対応すること');
+            oracleUndoState = nextUndoState(game, expectedShopStock, accepted.action, oracleUndoState);
             applyAcceptedAction(game, accepted.action, accepted.data);
 
             if (actionCount === 10) {
@@ -257,6 +278,7 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
                     replayedWhileDisconnected++;
                     assert.strictEqual(interimAccepted.seq, actionCount);
                     assert.strictEqual(interimAccepted.clientActionId, interimId);
+                    oracleUndoState = nextUndoState(game, expectedShopStock, interimAccepted.action, oracleUndoState);
                     applyAcceptedAction(game, interimAccepted.action, interimAccepted.data);
                 }
                 assert.ok(replayedWhileDisconnected > 0, 'host切断中も他clientのactionが進むこと');
@@ -279,13 +301,15 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
                 const restored = new runtime.GameManager(4);
                 restored.enabledLandmarks = new Set(COMPLETION_LANDMARKS);
                 restoreSnapshot(restored, compactedRejoinData.stateSnapshot);
+                let restoredUndoState = compactedRejoinData.stateSnapshot.undoState || null;
                 compactedRejoinData.actionLog.forEach((entry, index) => {
                     assert.strictEqual(entry.seq, compactedRejoinData.stateSnapshot.actionSeq + index + 1);
+                    restoredUndoState = nextUndoState(restored, expectedShopStock, entry.action, restoredUndoState);
                     applyAcceptedAction(restored, entry.action, entry.data);
                 });
                 assert.strictEqual(
-                    gameStateHash(restored, compactedRejoinData.stateSnapshot.shopStock, compactedRejoinData.stateSnapshot.undoState),
-                    gameStateHash(game, expectedShopStock, null),
+                    gameStateHash(restored, compactedRejoinData.stateSnapshot.shopStock, restoredUndoState),
+                    gameStateHash(game, expectedShopStock, oracleUndoState),
                     'snapshot + residualがshopStock/undoStateを含むoracle状態を復元すること'
                 );
             }
