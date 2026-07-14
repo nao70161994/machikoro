@@ -42,7 +42,7 @@ jobs:
           npm run test:release
 
       - name: Bubblewrap インストール
-        run: npm install -g @bubblewrap/cli
+        run: npm install -g @bubblewrap/cli@1.24.1
 
       - name: Bubblewrap 設定（Node.jsで確実に書き込む）
         run: |
