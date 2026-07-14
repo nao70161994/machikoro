@@ -139,6 +139,7 @@ runTest('integration: 購入後watchdogは操作可能な通常待機をfreeze�
     rt.__test.elements.confirmOkBtn.onclick();
     rt.__test.runIntervals(1);
     rt.__test.advanceTime(6000);
+    assert.strictEqual(rt.__test.getCpuSchedulerHealth().stepScheduled, false);
     rt.__test.runIntervals(1);
 
     const freezeReports = rt.__test.fetchCalls
@@ -242,6 +243,7 @@ runTest('integration: 購入後操作不能をwatchdogが復旧できても通�
     assert.ok(reportCall);
     const report = JSON.parse(reportCall.options.body);
     assert.ok(report.stack.includes('recovery=success'));
+    assert.ok(report.stack.includes('cpuSchedulerHealth'));
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
@@ -380,6 +382,112 @@ runTest('integration: CPU build turn stall はwatchdogがCPU処理を再スケ�
     assert.strictEqual(rt.classifyLikelyFreeze(after), '');
     assert.ok(rt.__test.timeouts.length > 0);
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-cpu-reschedule'));
+});
+
+runTest('integration: Safari形のCPU build stallを5秒watchdogがrecovery successで再予約する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    rt.__test.flushTimeouts();
+    const game = rt.__test.getGame();
+    game.currentPlayerIndex = 1;
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = false;
+    rt.__test.setCpuPlayers([null, {
+        chooseTVTarget() { return 0; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { return false; },
+    }]);
+    rt.__test.scheduleCpuTurn('test-safari-cpu-timer-lost');
+    rt.__test.timeouts.length = 0;
+    rt.__test.elements.pendingMenu.style.display = 'block';
+    rt.__test.elements.pendingMenu.innerHTML = '';
+
+    rt.__test.runIntervals(1);
+    rt.__test.advanceTime(6000);
+    rt.__test.runIntervals(1);
+
+    const saved = JSON.parse(rt.localStorage.getItem('machikoroFreezeSnapshot'));
+    assert.strictEqual(saved.freezeKind, 'cpu-turn-stalled');
+    assert.deepStrictEqual(saved.recovery, { attempted: true, success: true });
+    assert.strictEqual(saved.snapshot.ui.pendingMenu.display, 'block');
+    assert.strictEqual(saved.snapshot.cpuSchedulerHealth.stepScheduled, false);
+    assert.strictEqual(saved.snapshot.cpuSchedulerHealth.blockedReason, '');
+    assert.ok(Number.isInteger(saved.snapshot.cpuSchedulerHealth.token));
+    assert.ok(Number.isFinite(saved.snapshot.cpuSchedulerHealth.scheduledUntil));
+    assert.strictEqual(rt.collectUiLockSnapshot('after-safari-watchdog').cpuStepScheduled, true);
+    assert.ok(rt.__test.timeouts.length > 0);
+    const reportCall = rt.__test.fetchCalls.find(call => call.url === '/api/client-error');
+    assert.ok(reportCall);
+    const report = JSON.parse(reportCall.options.body);
+    assert.ok(report.message.includes('cpu-turn-stalled'));
+    assert.ok(report.stack.includes('recovery=success'));
+});
+
+runTest('integration: online action ACK停止はwatchdogがpendingを保持して再同期する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    rt.__test.getGame().phase = rt.GAME_PHASES.BUILD;
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        isOnlineGame: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-a',
+    });
+
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const pending = rt.localStorage.getItem('onlinePendingAction');
+    const snapshot = rt.buildClientRuntimeSnapshot('online-ack-stalled');
+    assert.strictEqual(snapshot.onlineActionInFlight, true);
+    assert.strictEqual(snapshot.onlineActionInFlightAt > 0, true);
+
+    assert.strictEqual(rt.recoverFreezeKind('online-action-in-flight-stalled', snapshot), true);
+    assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), pending);
+    assert.strictEqual(rt.__test.socketEmits.some(event => event.name === 'rejoinRoom'), true);
+    assert.strictEqual(rt.buildClientRuntimeSnapshot().isReconnectingOnline, true);
+    assert.strictEqual(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-online-action-resync'), true);
+});
+
+runTest('integration: 勝利表示後のbuild phaseをwatchdogがfreeze扱いしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set([rt.LANDMARK_NAMES.STATION]);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.enabledLandmarks = new Set([rt.LANDMARK_NAMES.STATION]);
+    game.players[game.currentPlayerIndex].landmarks[rt.LANDMARK_NAMES.STATION] = true;
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = true;
+    rt.render();
+
+    const snapshot = rt.buildClientRuntimeSnapshot('winner-watchdog');
+    assert.strictEqual(snapshot.hasWinner, true);
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
+    assert.strictEqual(rt.recoverUiInteractability(snapshot), false);
 });
 
 runTest('integration: pending中の正当なmodal lockは人間ターンunlockで解除しない', () => {

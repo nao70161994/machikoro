@@ -136,6 +136,7 @@ function loadMainRuntime(options = {}) {
         scheduleCPU() {},
         saveSettings() {},
         updateDiceDisplay() {},
+        rollRandomDie() { return 3; },
         sendAction(action, data) { sentActions.push({ action, data }); },
         saveGameState() {},
         saveUndoState() {},
@@ -293,6 +294,12 @@ function loadMainRuntime(options = {}) {
             },
         },
     };
+    if (options.throwStorageAccess) {
+        Object.defineProperty(context, 'localStorage', {
+            configurable: true,
+            get() { throw new Error('storage blocked'); },
+        });
+    }
     context.global = context;
     vm.createContext(context);
 
@@ -330,6 +337,11 @@ function loadMainRuntime(options = {}) {
             getCpuSchedulerHealth: () => cpuTurnScheduler.getHealth(),
             scheduleCpuTurn: (reason) => cpuTurnScheduler.schedule(reason),
             cancelCpuSchedule: (reason) => cpuTurnScheduler.cancel(reason),
+            expireCpuScheduleLease: () => { cpuStepScheduledUntil = 0; },
+            expireDelayedHumanAction: () => {
+                if (delayedHumanActionState) delayedHumanActionState.deadline = 0;
+            },
+            getDelayedHumanActionPending: () => delayedHumanActionPending,
             scheduleCPU: () => scheduleCPU(),
             counters,
         };
@@ -941,6 +953,39 @@ runTest('main cpuTurnScheduler はCPU予約不可理由をhealthに返す', () =
     assert.strictEqual(nonHostHealth.stepScheduled, false);
 });
 
+runTest('main cpuTurnScheduler は画面復帰時に未予約のローカルCPU手番を再開する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseTVTarget() { return 1; },
+        chooseBusinessMove() { return null; },
+        chooseCleaningTarget() { return null; },
+        chooseMoverMove() { return null; },
+        chooseRenovationTarget() { return null; },
+        chooseITInvest() { return false; },
+        chooseDiceCount() { return false; },
+        chooseReroll() { return false; },
+        chooseHarbor() { return false; },
+        build() { return false; },
+    }, null]);
+    rt.__test.scheduleCpuTurn('test-page-resume-pending');
+    const tokenBeforeResume = rt.__test.getCpuScheduleToken();
+    rt.__test.expireCpuScheduleLease();
+    const expiredHealth = rt.__test.getCpuSchedulerHealth();
+    assert.strictEqual(expiredHealth.stepScheduled, false);
+    assert.ok(Number.isInteger(expiredHealth.token));
+
+    rt.__test.eventHandlers['document:visibilitychange']();
+
+    const health = rt.__test.getCpuSchedulerHealth();
+    assert.strictEqual(health.stepScheduled, true);
+    assert.strictEqual(rt.__test.getTimeoutCount(), 2);
+    assert.ok(rt.__test.getCpuScheduleToken() > tokenBeforeResume);
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-enter' && entry.details.reason === 'visibility-resume'));
+});
+
 runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTurnへ進める', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);
@@ -966,6 +1011,43 @@ runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTu
     assert.strictEqual(buildCalls, 1);
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main scheduleCPU は未知CPUのBUILD例外でもローカル手番をpassする', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        build() { throw new Error('unknown cpu build failure'); },
+    }, null]);
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.strictEqual(game.builtThisTurn, false);
+    assert.ok(rt.consoleErrors.some(args => args.includes('[cpu] phase step failed:')));
+    assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-step-error' && entry.details.step === 'build'));
+});
+
+runTest('main scheduleCPU は診断checkpoint例外でもBUILD手番を完了する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    let buildCalls = 0;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        build() { buildCalls++; return false; },
+    }, null]);
+    vm.runInContext(`markClientFlowCheckpoint = () => { throw new Error('diagnostic storage failed'); };`, rt);
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(buildCalls, 1);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.strictEqual(rt.__test.getCpuSchedulerHealth().stepScheduled, false);
 });
 
 runTest('main scheduleCPU は現在フェーズ以外のCPU手順で遅延しない', () => {
@@ -1015,6 +1097,85 @@ runTest('main onSelectDiceCount は遅延中にオンライン手番が変わっ
 
     assert.strictEqual(game.selectedDice, undefined);
     assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
+runTest('main は画面復帰時に期限切れのdice選択を一度だけ完了する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    let selectCalls = 0;
+    const originalSelectDiceCount = game.selectDiceCount.bind(game);
+    game.selectDiceCount = (...args) => {
+        selectCalls++;
+        originalSelectDiceCount(...args);
+    };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.onSelectDiceCount(false);
+    rt.__test.expireDelayedHumanAction();
+    rt.__test.eventHandlers['document:visibilitychange']();
+    rt.__test.eventHandlers.pageshow();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(selectCalls, 1);
+    assert.strictEqual(rt.__test.getDelayedHumanActionPending(), false);
+    assert.strictEqual(game.selectedDice.useTwo, false);
+});
+
+runTest('main は画面復帰時に期限切れのrollを一度だけ完了する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.ROLL;
+    let rollCalls = 0;
+    game.rollDice = () => { rollCalls++; };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.onRoll();
+    rt.__test.expireDelayedHumanAction();
+    rt.__test.eventHandlers.pageshow();
+    rt.__test.eventHandlers['document:visibilitychange']();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(rollCalls, 1);
+    assert.strictEqual(rt.__test.getDelayedHumanActionPending(), false);
+});
+
+runTest('main は期限前の連続した画面復帰でdice選択を再予約して二重実行しない', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    let selectCalls = 0;
+    game.selectDiceCount = () => { selectCalls++; };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.onSelectDiceCount(true);
+    rt.__test.eventHandlers['document:visibilitychange']();
+    rt.__test.eventHandlers.pageshow();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(selectCalls, 1);
+    assert.strictEqual(rt.__test.getDelayedHumanActionPending(), false);
+});
+
+runTest('main は画面復帰時にdice選択の手番が変わっていたら遅延操作を破棄する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    let selectCalls = 0;
+    game.selectDiceCount = () => { selectCalls++; };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+
+    rt.onSelectDiceCount(false);
+    game.currentPlayerIndex = 1;
+    rt.__test.eventHandlers.pageshow();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(selectCalls, 0);
+    assert.strictEqual(rt.__test.getDelayedHumanActionPending(), false);
 });
 
 runTest('main init は遅延中のdice選択callbackを無効化する', () => {
@@ -1171,6 +1332,7 @@ runTest('main delegated/static UI handler は重複登録しない', () => {
         'document:input': 1,
         'document:change': 1,
         'document:keydown': 1,
+        'document:visibilitychange': 1,
     });
 
     rt.bindStaticUiHandlers();
@@ -1181,6 +1343,7 @@ runTest('main delegated/static UI handler は重複登録しない', () => {
         'document:input': 1,
         'document:change': 1,
         'document:keydown': 1,
+        'document:visibilitychange': 1,
     });
 });
 
@@ -1502,6 +1665,24 @@ runTest('appShell beforeinstallprompt はdismiss済み起動でも標準prompt�
     assert.notStrictEqual(rt.__test.elements.pwaInstallBanner.style.display, 'block');
 });
 
+runTest('SafariでlocalStorage取得が拒否されてもmain初期化とcrash handler登録を継続する', () => {
+    const rt = loadMainRuntime({ throwStorageAccess: true });
+    assert.strictEqual(rt.__test.counters.loadSettings, 1);
+    assert.strictEqual(typeof rt.__test.eventHandlers.error, 'function');
+    rt.showCrashScreen(new Error('startup failure'));
+    assert.strictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.crashResumeBtn.style.display, 'none');
+});
+
+runTest('markClientFlowCheckpoint はsnapshot生成失敗を外へ伝播しない', () => {
+    const rt = loadMainRuntime();
+    vm.runInContext("buildClientRuntimeSnapshot = () => { throw new Error('snapshot failed'); };", rt);
+    let checkpoint;
+    assert.doesNotThrow(() => { checkpoint = rt.markClientFlowCheckpoint('snapshot-failure'); });
+    assert.strictEqual(checkpoint.snapshot, null);
+    assert.strictEqual(checkpoint.snapshotFailed, true);
+});
+
 runTest('appShell crashResume はクラッシュ画面を閉じて resumeGame を呼ぶ', () => {
     const rt = loadMainRuntime();
     rt.showCrashScreen(new Error('boom'));
@@ -1563,6 +1744,16 @@ runTest('appShell initMainView は shell 初期化をまとめて呼ぶ', () => 
     assert.strictEqual(rt.__test.eventAddCounts['window:online'], 1);
     assert.strictEqual(rt.__test.eventAddCounts['window:offline'], 1);
     assert.strictEqual(rt.__test.eventAddCounts['window:beforeinstallprompt'], 1);
+});
+
+runTest('index.html はオンライン待機室と接続要求中のPWA更新を保留する', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.ok(html.includes('function _isOnlineFlowActive()'));
+    assert.ok(html.includes("typeof myRoomId !== 'undefined' && !!myRoomId"));
+    assert.ok(html.includes("typeof onlineCreateRoomPending !== 'undefined' && onlineCreateRoomPending"));
+    assert.ok(html.includes("typeof onlineJoinRoomPending !== 'undefined' && onlineJoinRoomPending"));
+    assert.ok(html.includes("if (!_isInGame() && !_isOnlineFlowActive())"));
+    assert.ok(html.includes("if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser)"));
 });
 
 runTest('index.html は統計タブをオンラインタブの外に配置している', () => {
@@ -1856,7 +2047,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;'));
     assert.ok(html.includes('function shouldKeepPwaUpdateBannerVisible()'));
     assert.ok(html.includes('window.shouldKeepPwaUpdateBannerVisible = shouldKeepPwaUpdateBannerVisible;'));
-    assert.ok(html.includes('(_versionMismatchDetected || !!_waitingSW) && _isOnlineGameActive()'));
+    assert.ok(html.includes('(_versionMismatchDetected || !!_waitingSW) && _isOnlineFlowActive()'));
     assert.ok(mainSource.includes("shouldKeepPwaUpdateBannerVisible()"));
     assert.ok(html.includes('checkOnlineDelivery();'));
     assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
@@ -1864,7 +2055,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     assert.ok(appShellSource.includes("markClientFlowCheckpoint('freeze-watchdog-report'"));
     assert.ok(!appShellSource.includes("markClientFlowCheckpoint('freeze-watchdog-tick'"));
-    assert.ok(html.includes('if (_isInGame() && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
+    assert.ok(html.includes('if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('updateRequestedByUser = true;'));
     assert.ok(html.includes('_forceVersionReload();'));
     assert.ok(html.includes('caches.keys()'));
