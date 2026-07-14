@@ -351,6 +351,7 @@ class GameManager {
     // Returns action names allowed by phase/pending state only. Payload legality is validated separately.
     static allowedActionsFor(game) {
         if (!game) return new Set();
+        if (typeof game.checkWinner === 'function' && game.checkWinner()) return new Set();
         const pendingActions = GameManager.pendingActionsFor(game);
         if (game.phase === GAME_PHASES.PENDING) {
             return new Set(pendingActions[0] ? [pendingActions[0].action] : []);
@@ -903,6 +904,7 @@ class GameManager {
 
     nextTurn() {
         if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今はターン終了できません`); return false; }
+        if (this.checkWinner()) { this.addLog(LOG_TYPES.ERROR, `❌ 勝敗決定後はターン終了できません`); return false; }
         const current = this.currentPlayer();
         if (!this.builtThisTurn && current.landmarks[LANDMARK_NAMES.AIRPORT]) {
             current.coins += 10;
