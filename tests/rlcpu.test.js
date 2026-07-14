@@ -1149,6 +1149,29 @@ runTest('RLCPU: business/mover は同名カード混在時に具体的なカー�
     assert.strictEqual(moverMove.cardIndex, 1);
 });
 
+runTest('RLCPU: build は推論例外をfalseへ変換して盤面を変更しない', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GameManager, GAME_PHASES } = context;
+    const cpu = new RLCPU(buildParityModelWithStateDim(context, 353));
+    const game = new GameManager(2);
+    const shopStock = createDefaultShopStock(context);
+    game.phase = GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 20;
+    const beforeCards = game.currentPlayer().cards.length;
+    const beforeStock = JSON.stringify(shopStock);
+    cpu._chooseForGame = () => { throw new Error('injected inference failure'); };
+    const originalConsoleError = console.error;
+    console.error = () => {};
+    try {
+        assert.strictEqual(cpu.build(game, shopStock), false);
+    } finally {
+        console.error = originalConsoleError;
+    }
+    assert.strictEqual(game.currentPlayer().cards.length, beforeCards);
+    assert.strictEqual(game.builtThisTurn, false);
+    assert.strictEqual(JSON.stringify(shopStock), beforeStock);
+});
+
 runTest('RLCPU: online build gate は非ホスト・再接続・切断中に送信もローカル適用もしない', () => {
     const cases = [
         ['non-host', { isRoomHost: false, isReconnectingOnline: false, socket: { connected: true } }],
