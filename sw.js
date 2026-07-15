@@ -35,6 +35,7 @@ const STATIC_ASSETS = [
   '/js/online.js',
   '/js/uiNotice.js',
   '/js/uiBuildMenu.js',
+  '/js/uiPendingMenu.js',
   '/js/uiCardDetail.js',
   '/js/uiCardSelect.js',
   '/js/ui.js',

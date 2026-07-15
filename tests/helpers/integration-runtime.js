@@ -162,6 +162,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/stats.js',
         'js/uiNotice.js',
         'js/uiBuildMenu.js',
+        'js/uiPendingMenu.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/ui.js',
