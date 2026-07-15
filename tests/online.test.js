@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
-const { serializeMirrorState } = require('../server');
+const { applyActionToMirror, serializeMirrorState } = require('../server');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
     makeSeqRankUsesMaxFieldsFixture,
@@ -2889,6 +2889,38 @@ runTest('buildOnlineSnapshot は server mirror snapshot と主要キーが一致
 
     assert.deepStrictEqual(Object.keys(clientSnapshot).sort(), Object.keys(serverSnapshot).sort());
     assert.deepStrictEqual(Object.keys(clientSnapshot.players[0]).sort(), Object.keys(serverSnapshot.players[0]).sort());
+});
+
+runTest('client apply と server mirror は同じaction列から同じsnapshotへ収束する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.setEnabledCards(new Set(runtime.CARDS.map(card => card.name)));
+    runtime.setEnabledLandmarks(new Set(runtime.Player.landmarkNames()));
+    runtime.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+
+    const serverGame = new runtime.GameManager(2);
+    serverGame.players[0].name = 'Alice';
+    serverGame.players[1].name = 'Bob';
+    const serverStock = Object.assign({}, runtime.getShopStock());
+    const actions = [
+        { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } },
+        { action: 'buildCard', data: { cardName: '麦畑' } },
+        { action: 'nextTurn', data: {} },
+        { action: 'rollDice', data: { forceDice: 2, tunaDice: [1, 1] } },
+        { action: 'buildCard', data: { cardName: 'パン屋' } },
+    ];
+
+    for (const entry of actions) {
+        runtime.applyAction(entry.action, entry.data);
+        assert.strictEqual(
+            applyActionToMirror(serverGame, serverStock, entry.action, entry.data, runtime.createCardByName),
+            true,
+            entry.action
+        );
+    }
+
+    const clientSnapshot = JSON.parse(JSON.stringify(runtime.buildOnlineSnapshot()));
+    const serverSnapshot = JSON.parse(JSON.stringify(serializeMirrorState(serverGame, serverStock)));
+    assert.deepStrictEqual(clientSnapshot, serverSnapshot);
 });
 
 runTest('online snapshot は build/restore/build でroundtripできる', () => {
