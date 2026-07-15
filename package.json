@@ -54,7 +54,8 @@
     "test:online-delivery": "node scripts/check-online-delivery.js",
     "pretest": "node tests/check-prerequisites.js",
     "test:soak": "node tests/run-all.js soak",
-    "test:browser-e2e": "playwright test"
+    "test:browser-e2e": "playwright test",
+    "test:apk-validation": "node scripts/validate-apk-config.js"
   },
   "keywords": [],
   "author": "",
