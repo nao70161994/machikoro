@@ -302,11 +302,12 @@ As of 2026-07-15, rollback-friendly units from this plan are implemented without
 - `server/roomLifecycle.js` owns pure room/player-list/start-payload/version/token/disconnect-candidate helpers; Socket.IO handlers remain in `server.js`.
 - `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
 - `js/uiBuildMenu.js`, `js/uiCardDetail.js`, and `js/uiCardSelect.js` own pure HTML generation; `ui.js` still owns modal lifecycle, event handling, and render orchestration.
-- `js/clientReporting.js` owns pure client report shaping while `appShell.js` retains browser capture, fetch, watchdog, lifecycle, and PWA side effects.
+- `js/clientReporting.js` and `js/lifecycleNotify.js` own pure client report and lifecycle payload shaping while `appShell.js` retains browser capture, storage, dedupe, fetch, watchdog, and PWA side effects.
 - `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
 - `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js` owns unchanged dice-frequency tables behind the existing CPU wrapper methods.
-- Contract tests guard action metadata/canonical payload/UI drift, snapshot roundtrip, malformed restore, and complete client/server replay snapshot parity.
+- Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity.
+- Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
 The remaining steps below still require the same gates described in each design section. In particular, reconnect state-machine work, Socket.IO handler movement, and modal lifecycle movement need planned verification beyond pure helper tests.

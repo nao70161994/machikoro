@@ -23,13 +23,13 @@
 
 ## 2026-07-15 保守性改善の現在地
 
-- app shell: `js/clientReporting.js` にpureなreport整形を分離。watchdog、lifecycle通知、PWA/SW副作用は `appShell.js` に残す。
+- app shell: `js/clientReporting.js` にpureなreport整形、`js/lifecycleNotify.js` にopt-out判定とpayload整形を分離。storage、dedupe、fetch、watchdog、PWA/SW副作用は `appShell.js` に残す。
 - CPU: `js/cpuEvaluation.js` に既存ダイス頻度表だけを分離。heuristic、difficulty、行動選択は未変更。
 - server: `server/clientErrorReporting.js` にpureなclient-error正規化/redactionを分離。Socket.IO/HTTP handlerは移動していない。
 - online: `js/onlinePayload.js` に既存rejoin payload生成だけを分離。ACK、restore queue、retry、protocolは未変更。
 - UI: `js/uiCardSelect.js` にtoggle button HTML生成だけを分離。modal lifecycle、focus/inert、event処理は未変更。
-- contracts: 既存のaction metadata/phase/actor/payload/replay/UI網羅に加え、同一action traceのclient/server最終snapshot完全一致を固定。
-- tooling: JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。既存の `test:static` を維持。
+- contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
+- tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
 
 次の安全な作業は、既存テストで出力を完全固定できるpure helperだけに限定する。reconnect state machine、Socket.IO handler移動、modal lifecycle、CPU scoring/executionの移動は、実機確認または追加の設計判断なしでは開始しない。
 

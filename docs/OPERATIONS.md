@@ -103,10 +103,12 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Client-error / ntfy bodies must redact reconnect tokens, session ids, shared client-error tokens, and URL query secrets before notification or logs.
 - Saved stats numbers must normalize to finite non-negative integers before rendering percentages or bar widths.
 - Restore action logs must reject unknown action names before replay or rank calculation.
-- New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests.
+- New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests; update `tests/runtime-dependencies.test.js` when the helper has a browser-global consumer.
 - UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
 - Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
-- `js/clientReporting.js`, `server/clientErrorReporting.js`, `js/onlinePayload.js`, and UI HTML helpers are pure boundaries; keep network, socket, lifecycle, modal, and PWA side effects in their existing owners.
+- Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
+- Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
+- `js/clientReporting.js`, `js/lifecycleNotify.js`, `server/clientErrorReporting.js`, `js/onlinePayload.js`, and UI HTML helpers are pure boundaries; keep network, socket, storage, lifecycle, modal, and PWA side effects in their existing owners.
 - CPU helper extraction must preserve wrapper results and existing CPU tests; do not change heuristic constants, difficulty presets, or action selection under a maintenance-only task.
 - JSDoc/checkJs/ESLint remain deferred until a dependency/config task approves a narrow allowlist; do not turn their introduction into a repository-wide cleanup.
 
