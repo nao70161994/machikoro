@@ -49,7 +49,7 @@ jobs:
             - name: Bubblewrap 1.24.1 検証
               run: |
                   npm install -g @bubblewrap/cli@1.24.1
-                  test "$(bubblewrap --version)" = "1.24.1"
+                  node -e "const cp=require('child_process'); const path=require('path'); const root=cp.execFileSync('npm',['root','-g'],{encoding:'utf8'}).trim(); const version=require(path.join(root,'@bubblewrap/cli/package.json')).version; if(version!=='1.24.1') throw new Error('unexpected Bubblewrap version: '+version);"
 
     build-signed:
         if: ${{ inputs.build_signed }}
@@ -89,7 +89,7 @@ jobs:
             - name: Bubblewrap 1.24.1 インストール
               run: |
                   npm install -g @bubblewrap/cli@1.24.1
-                  test "$(bubblewrap --version)" = "1.24.1"
+                  node -e "const cp=require('child_process'); const path=require('path'); const root=cp.execFileSync('npm',['root','-g'],{encoding:'utf8'}).trim(); const version=require(path.join(root,'@bubblewrap/cli/package.json')).version; if(version!=='1.24.1') throw new Error('unexpected Bubblewrap version: '+version);"
 
             - name: Bubblewrap 設定
               run: |
