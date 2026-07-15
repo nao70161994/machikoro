@@ -1121,7 +1121,7 @@ function readGameLifecycleNotifyValue() {
 }
 
 function isLifecycleNotifyFalse(value) {
-    return ['0', 'false', 'no', 'off', 'disabled'].includes(String(value || '').toLowerCase());
+    return LifecycleNotify.isDisabledValue(value);
 }
 
 function isGameLifecycleNotificationEnabled() {
@@ -1227,18 +1227,17 @@ function cpuDifficultyForWinner(winner) {
 
 function buildGameLifecyclePayload(event, extra = {}) {
     if (!_gameLifecycleSessionId) _gameLifecycleSessionId = createGameLifecycleSessionId();
-    const payload = {
+    return LifecycleNotify.buildPayload({
         event,
         mode: gameLifecycleMode(),
         playerCount: gameLifecyclePlayerCount(),
         cpuCount: gameLifecycleCpuCount(),
         sessionId: _gameLifecycleSessionId,
         appVersion: gameLifecycleAppVersion(),
-    };
-    if (extra.turn !== undefined) payload.turn = extra.turn;
-    if (extra.winnerKind) payload.winnerKind = extra.winnerKind;
-    if (extra.winnerCpuDifficulty) payload.winnerCpuDifficulty = extra.winnerCpuDifficulty;
-    return payload;
+        turn: extra.turn,
+        winnerKind: extra.winnerKind,
+        winnerCpuDifficulty: extra.winnerCpuDifficulty,
+    });
 }
 
 function sendGameLifecycleNotification(event, extra = {}) {

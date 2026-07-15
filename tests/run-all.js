@@ -22,6 +22,7 @@ const TEST_GROUPS = {
         'confetti.test.js',
         'stats.test.js',
         'ui-card-select.test.js',
+        'lifecycle-notify.test.js',
         'ui.test.js',
         'integration.test.js',
         'rlcpu.test.js',
@@ -75,6 +76,7 @@ const TEST_GROUPS = {
         'confetti.test.js',
         'stats.test.js',
         'ui-card-select.test.js',
+        'lifecycle-notify.test.js',
         'ui.test.js',
     ],
     online: [

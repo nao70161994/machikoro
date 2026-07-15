@@ -156,6 +156,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuPendingResolution.js',
         'js/CPU.js',
         'js/clientReporting.js',
+        'js/lifecycleNotify.js',
         'js/appShell.js',
         'js/storage.js',
         'js/stats.js',
