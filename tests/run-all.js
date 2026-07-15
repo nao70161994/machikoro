@@ -7,6 +7,7 @@ const TEST_GROUPS = {
         'gamemanager.test.js',
         'server.test.js',
         'cpu.test.js',
+        'cpu-evaluation.test.js',
         'online.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
@@ -94,6 +95,7 @@ const TEST_GROUPS = {
     ],
     cpu: [
         'cpu.test.js',
+        'cpu-evaluation.test.js',
         'selfplay.test.js',
         'tune-expert.test.js',
         'train-expert-crowd.test.js',

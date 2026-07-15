@@ -152,6 +152,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuTuning.js',
         'js/cpuDiagnostics.js',
         'js/cpuEvaluationCache.js',
+        'js/cpuEvaluation.js',
         'js/cpuPendingResolution.js',
         'js/CPU.js',
         'js/clientReporting.js',
