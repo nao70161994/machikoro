@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-06-29
+Last updated: 2026-07-15
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -297,12 +297,17 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-06-30, the first rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, or reconnect timing:
+As of 2026-07-15, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
 
 - `server/roomLifecycle.js` owns pure room/player-list/start-payload/version/token/disconnect-candidate helpers; Socket.IO handlers remain in `server.js`.
 - `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
-- `js/uiBuildMenu.js` and `js/uiCardDetail.js` own pure build-menu/card-detail HTML generation; `ui.js` still owns modal lifecycle and render orchestration.
-- Contract tests now guard action metadata/canonical payload table drift, restore unknown-action rejection, and UI interactability registry selector drift.
+- `js/uiBuildMenu.js`, `js/uiCardDetail.js`, and `js/uiCardSelect.js` own pure HTML generation; `ui.js` still owns modal lifecycle, event handling, and render orchestration.
+- `js/clientReporting.js` owns pure client report shaping while `appShell.js` retains browser capture, fetch, watchdog, lifecycle, and PWA side effects.
+- `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
+- `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
+- `js/cpuEvaluation.js` owns unchanged dice-frequency tables behind the existing CPU wrapper methods.
+- Contract tests guard action metadata/canonical payload/UI drift, snapshot roundtrip, malformed restore, and complete client/server replay snapshot parity.
+- New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
 The remaining steps below still require the same gates described in each design section. In particular, reconnect state-machine work, Socket.IO handler movement, and modal lifecycle movement need planned verification beyond pure helper tests.
 

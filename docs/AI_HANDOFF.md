@@ -14,11 +14,24 @@
 2. `docs/ARCHITECTURE.md`: 責務境界、phase/action map、壊してはいけない不変条件。
 3. `docs/AI_MAINTENANCE_ISSUES.md`: AI が誤読しやすい不変条件、stop conditions、grep 入口。
 4. `docs/MAINTENANCE_BACKLOG.md`: 直近改善後の残リスク分類、触る/触らない判断、次の費用対効果候補。
-5. `docs/ARCHITECTURE_REFACTOR_PLAN.md`: 根本改善が必要な責務境界、段階的移行順、contract test、rollback、実機確認 gate。
-6. `docs/REFACTOR_PLAN.md`: 現行 phase 方針と実施済みログ。
-7. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
-8. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
-9. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
+5. `docs/ADR_INDEX.md`: 現在有効な設計判断とhistorical文書の索引。
+6. `docs/ARCHITECTURE_REFACTOR_PLAN.md`: 根本改善が必要な責務境界、段階的移行順、contract test、rollback、実機確認 gate。
+7. `docs/REFACTOR_PLAN.md`: 現行 phase 方針と実施済みログ。
+8. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
+9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
+10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
+
+## 2026-07-15 保守性改善の現在地
+
+- app shell: `js/clientReporting.js` にpureなreport整形を分離。watchdog、lifecycle通知、PWA/SW副作用は `appShell.js` に残す。
+- CPU: `js/cpuEvaluation.js` に既存ダイス頻度表だけを分離。heuristic、difficulty、行動選択は未変更。
+- server: `server/clientErrorReporting.js` にpureなclient-error正規化/redactionを分離。Socket.IO/HTTP handlerは移動していない。
+- online: `js/onlinePayload.js` に既存rejoin payload生成だけを分離。ACK、restore queue、retry、protocolは未変更。
+- UI: `js/uiCardSelect.js` にtoggle button HTML生成だけを分離。modal lifecycle、focus/inert、event処理は未変更。
+- contracts: 既存のaction metadata/phase/actor/payload/replay/UI網羅に加え、同一action traceのclient/server最終snapshot完全一致を固定。
+- tooling: JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。既存の `test:static` を維持。
+
+次の安全な作業は、既存テストで出力を完全固定できるpure helperだけに限定する。reconnect state machine、Socket.IO handler移動、modal lifecycle、CPU scoring/executionの移動は、実機確認または追加の設計判断なしでは開始しない。
 
 ## 2026-05-16 時点の実施済み範囲
 

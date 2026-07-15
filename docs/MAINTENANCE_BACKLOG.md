@@ -1,6 +1,6 @@
 # Maintenance Backlog
 
-Last updated: 2026-06-30
+Last updated: 2026-07-15
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
@@ -25,6 +25,12 @@ These risks are now covered by code changes, contract tests, or operations guida
 | Online storage facade | Room-scoped storage keys, legacy fallback reads, and restore bundle cleanup were hard to audit inside `online.js`. | `js/onlineStorage.js` preserves existing key names/formats and room-scoped fallback contracts; online tests cover facade behavior. |
 | UI pure render helpers | Build menu/card detail HTML generation lived inside `ui.js`, increasing escape and selector drift risk. | `js/uiBuildMenu.js` and `js/uiCardDetail.js` provide pure HTML helpers with UI tests for escape/gate contracts. |
 | Cross-layer action/selector contracts | Action metadata and UI child selectors could drift silently. | Server tests compare action registry, validators, canonical payload keys, and replay flags; main static tests compare interactability registry selectors with rendered UI sources. |
+| Client report formatting | Error normalization, redaction inputs, and report keys were embedded in `appShell.js`. | `js/clientReporting.js` owns pure report formatting; browser capture, fetch, and watchdog side effects stay in `appShell.js`. |
+| Server client-error normalization | Notification payload normalization was coupled to server routes and rate limits. | `server/clientErrorReporting.js` owns pure normalization/redaction; auth, dedupe, ntfy, and HTTP wiring stay in `server.js`. |
+| CPU dice-frequency evaluation | Pure frequency tables lived inside the giant CPU class. | `js/cpuEvaluation.js` owns the unchanged one-/two-dice frequency lookup; wrapper parity and CPU tests guard behavior. |
+| Online rejoin payload | Rejoin wire fields were assembled inside reconnect orchestration. | `js/onlinePayload.js` builds the existing `rejoinRoom` payload while `online.js` retains timing and socket ownership. |
+| Client/server replay parity | Client apply and server mirror could evolve to different final snapshots despite per-action coverage. | An online contract test applies the same representative action trace to both paths and compares complete serialized snapshots. |
+| Card-select HTML | Toggle-button HTML and attribute escaping were embedded in modal orchestration. | `js/uiCardSelect.js` owns pure button generation; event handling, modal state, and DOM updates remain in `ui.js`. |
 
 ## Backlog Classification
 
@@ -47,11 +53,12 @@ No current Critical maintenance item is known from this review. The remaining tr
 | Item | Classification | Risk | Impact | Suggested action | Deferred reason |
 | --- | --- | --- | --- | --- | --- |
 | `server.js` socket handlers remain large | Design judgment required | Socket event wiring, payload validation, restore, reconnect, and canonical mirror code still share one large file, although pure room lifecycle helpers now live in `server/roomLifecycle.js`. | AI edits can still accidentally cross restore/reconnect/action relay boundaries. | Keep adding pure helpers only behind tests; do not move live Socket.IO handlers until a handler-family migration plan and manual online check exist. | Broad split risks online compatibility and test export churn. |
-| `js/CPU.js` remains a giant mixed file | Design judgment required / future large task | Evaluation, execution, diagnostics, and self-play helpers are still close together. | CPU behavior changes can leak across live/selfplay/tests. | Prefer helper extraction only around already-tested pure scoring/diagnostics functions. | CPU strength must not change; broad refactor requires benchmark parity. |
+| `js/CPU.js` remains a giant mixed file | Design judgment required / future large task | Diagnostics and dice-frequency evaluation have seams, but most evaluation, execution, and self-play helpers remain close together. | CPU behavior changes can leak across live/selfplay/tests. | Prefer extraction only around already-tested pure functions with wrapper parity and fixed CPU tests. | CPU strength must not change; broad refactor requires benchmark parity. |
 | `js/ui.js` still owns modal/player/stats/log orchestration | Now safer, still medium | Build menu and card detail pure rendering are split, but modal lifecycle, card select, player render, stats entry points, and log UI remain in `ui.js`. | Selector drift or rendering-side effects are easier to catch, but modal/focus/pointer regressions still need real devices. | Continue only with narrow pure helper extraction or selector tests; keep modal lifecycle stable until iPhone/Safari checks are planned. | Large UI split needs visual/mobile checks. |
 | `js/online.js` reconnect/session orchestration remains complex | Design judgment required | Storage access is now behind `js/onlineStorage.js`, but socket lifecycle, rejoin retry, pending outbound timing, and visible reconnect status still overlap in `online.js`. | Small timing mistakes can resurrect stale room data or drop pending actions. | Use the facade for all storage changes and add targeted tests when changing retry/state paths. Delay reconnect state machine work until manual-device verification is scheduled. | State-machine rewrite could affect save/reconnect compatibility. |
 | Action metadata cross-layer duplication | Safe only in narrow tests | `GAME_ACTION_REGISTRY`, server canonical payload table, client `applyAction`, pending specs, and UI registry must stay aligned. | New actions can be added in one layer but not another. | Add contract tests for any new action before implementation; consider generated checklist docs later. | Full dispatch unification is larger than current scope. |
 | Test files are also giant | Now acceptable | `tests/server.test.js`, `tests/cpu.test.js`, and `tests/online.test.js` are large. | Future test edits may be hard to localize. | Split only by stable domain boundaries when adding new tests becomes painful. | Mechanical test moves can create noise without behavior value. |
+| JSDoc/checkJs/ESLint | Deferred tooling | TypeScript and ESLint are not installed and no scoped config exists. | Introducing them now requires dependencies and would likely surface broad legacy warnings. | Re-evaluate only with an approved dependency/config task and a narrow file allowlist. | This cycle forbids dependency additions and large warning cleanup. |
 
 ### Low
 

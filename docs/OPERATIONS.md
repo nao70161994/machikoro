@@ -11,6 +11,7 @@ Use this document as the first stop when production behavior looks wrong. Other 
 - PWA update and RL model loading behavior: `docs/PWA_MODEL_LOADING.md`
 - Online restore and trust boundaries: `docs/ONLINE_SYNC.md`, `docs/ADR_RESTORE_TRUST_BOUNDARY.md`
 - AI maintenance handoff: `docs/AI_HANDOFF.md`
+- Design decision index: `docs/ADR_INDEX.md`
 
 Normal operations should answer four questions in order:
 
@@ -104,6 +105,10 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Restore action logs must reject unknown action names before replay or rank calculation.
 - New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests.
 - UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
+- Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
+- `js/clientReporting.js`, `server/clientErrorReporting.js`, `js/onlinePayload.js`, and UI HTML helpers are pure boundaries; keep network, socket, lifecycle, modal, and PWA side effects in their existing owners.
+- CPU helper extraction must preserve wrapper results and existing CPU tests; do not change heuristic constants, difficulty presets, or action selection under a maintenance-only task.
+- JSDoc/checkJs/ESLint remain deferred until a dependency/config task approves a narrow allowlist; do not turn their introduction into a repository-wide cleanup.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
 
