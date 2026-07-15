@@ -113,7 +113,8 @@ If work continues, these are the highest value small-to-medium follow-ups:
 ## 2026-07-15 B分類オンライン耐障害化
 
 - B1: ACK timeout、pending保護、restore queue上限、再接続世代管理、durable非依存の2/4クライアントE2E、短縮soak、Ubuntu WebKit nightly。GitHub Actions `29348807863` と Release `29348809695` は成功。
-- B2: TWA APKのBubblewrap固定/validation強制は署名password secret不足で実APK未確認。manual online deliveryは`workflow_dispatch`のみだがdefault branch未配置のため未実行。
-- B3: file durable canonical store、server再起動後のfile復元E2E、canonical transactionは引き続き対象外。既定storeは`noop`を維持する。
-- B4: dotted stream action ID、watermark protocol、非host canonical置換は既存protocol/信頼境界との互換性を確認できず採用しない。
+- APKのsecret不要validation-onlyはActions `29379796044`で成功。署名付きAPKは`ANDROID_KEYSTORE_BASE64`、`KEYSTORE_STORE_PASSWORD`、`KEYSTORE_KEY_PASSWORD`の設定後に`build_signed=true`で実行するため、実APKは引き続き人間待ち。
+- manual online deliveryは固定production originへのGETと読み取り専用Socket.IO handshakeだけに限定し、Actions `29379820494`で成功。定期scheduleは追加しない。
+- B3: file durable canonical storeは`review/durable-canonical-experimental`だけに隔離。既定storeは`noop`を維持し、canonical transactionとrestart persistenceはmainへ入れない。
+- B4: 現行action ID境界とrolling compatibilityを`docs/PROTOCOL_COMPATIBILITY.md`で固定。dotted stream ID、watermark、非host canonical置換の実装は採用しない。
 - 実機iPhone Safariの長時間4人戦、background復帰、PWA更新は未確認。自動WebKit成功で代替済みとは扱わない。

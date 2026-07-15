@@ -266,3 +266,10 @@ Use `TESTPLAN.md` for high-risk manual coverage.
 - restore中のlive eventは最大256件のqueueへ隔離し、overflowやsequence gapでは適用を続けず再同期する。別restore generationのcallbackは状態を確定しない。
 - 自動確認は2クライアントaction再接続、4人完走/host移譲/圧縮、3回nightly soak、Ubuntu WebKitで成功。server再起動file persistenceはこの採用単位に含まない。
 - action stream ID/watermark、非hostによるcanonical置換、durable file storeはprotocol/authority変更なのでdeferred。実機iPhone Safariは未確認。
+
+## 2026-07-15 Protocol compatibility decision
+
+- Current clients and servers continue to use legacy opaque `clientActionId` values and exact ACK matching. There is no feature negotiation for stream watermarks.
+- Dotted monotonic IDs are rejected by the current server, and non-host canonical replacement remains forbidden.
+- Rolling deployment requirements and deferred protocol work are recorded in `docs/PROTOCOL_COMPATIBILITY.md`.
+- The production handshake workflow only connects and closes; it does not create/join a room or emit a game action.

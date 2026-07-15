@@ -181,8 +181,9 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
 
 24. TWA APK artifact 失敗検知
    - 自動確認: `.github/workflows/build-apk.yml` で `app-release-signed.apk` の存在と非空を検査し、upload-artifact は missing artifact を error にする。
-   - 手動確認: GitHub Actions の手動実行で keystore secret 不足時は早期失敗し、APK 未生成時も成功扱いにならないことを見る。
-   - 期待結果: 署名・fingerprint・APK 生成のどれかが失敗した場合、workflow が緑にならない。
+   - CI確認: `build_signed=false`ではsecretなしでrelease gate、TWA静的構成、Bubblewrap 1.24.1固定を検証する。
+   - 手動確認: 3つの署名secret設定後に`build_signed=true`で実行し、fingerprintとsigned APK artifactを確認する。
+   - 期待結果: validation-onlyはsecretなしで成功し、署名・fingerprint・APK生成のどれかが失敗した場合はsigned jobが緑にならない。
 
 25. B分類オンライン耐障害化
    - 自動確認: `tests/online-action-reconnect-e2e.test.js`でbuild/undo/pending復元、`tests/online-completion-e2e.test.js`で4人完走・host移譲・200 action圧縮・再接続、`tests/online-soak.test.js`で反復完走を検査する。

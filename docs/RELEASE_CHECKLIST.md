@@ -172,4 +172,4 @@ Before tagging or announcing a release:
 - GitHub Actions nightlyでonline、soak、simulation、mobile WebKitが同一commitでgreenであることを確認する。
 - restart E2Eを通常gateへ入れない。file durable canonical storeが明示採用されるまでは`CANONICAL_STATE_STORE=noop`で実行する。
 - iPhone Safari実機の再接続、background復帰、PWA更新はmanual-requiredとして結果を記録する。WebKit成功だけで実機確認済みにしない。
-- APK変更は署名secretを揃えた実workflow成功まで条件付き、production deliveryは手動dispatchのみとする。
+- APK validation-onlyはsecretなしで実行し、署名付きAPKだけを`build_signed=true`と3つの署名secretへ分離する。production deliveryは固定originへの読み取り専用検査として手動dispatchだけで実行する。

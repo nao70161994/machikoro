@@ -32,3 +32,10 @@ Date: 2026-07-15
 - No file durable canonical store, canonical transaction, restart persistence, stream/watermark protocol, production schedule, or APK change is in B1.
 - Apply in this order: online implementation, Node E2E, Playwright, Node 20 client support, driver fix, nightly workflow, docs.
 - Roll back in reverse order. Online implementation and its tests are one compatibility unit; do not keep only one side.
+
+## 2026-07-15 Remaining work disposition
+
+- Safe CI/runtime, read-only delivery, secret-free APK validation, and protocol contract tests were rebuilt on `review/remaining-ai-ready`.
+- File durability is isolated on `review/durable-canonical-experimental`; it is opt-in and not a main merge candidate.
+- Stream/watermark and non-host authority implementations remain excluded. The compatibility contract and legacy action ID boundary are the only main candidates.
+- Signed APK and iPhone Safari checks remain human-only; no result is inferred for either.

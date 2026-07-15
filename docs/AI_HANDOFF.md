@@ -399,3 +399,11 @@ Test index:
 - GitHub Actions: Release `29348809695`、Nightly `29348807863`（online/soak/simulation/WebKit）は成功。Node 20 action deprecation warningは残る。
 - B2のAPK `b0c6c14`/`172785b` とmanual delivery `d13e866`はmainへ入れない。APKは署名password secrets設定後、deliveryはworkflowがdefault branchへ入った後に再評価する。
 - restart file persistence、durable canonical transaction、stream/watermark protocol、hostless restoreはB1へ混ぜない。実機iPhone Safariは未確認。
+
+## 2026-07-15 Remaining AI-only validation
+
+- GitHub Actions action runtime majors were updated and Release/Nightly/APK validation passed on the validation branch.
+- Manual production delivery is workflow-dispatch only, fixed to the production origin, and performs GET checks plus a read-only Socket.IO connect/close. It emits no room or game event.
+- APK validation no longer requires signing secrets. The signed job remains human-blocked until `ANDROID_KEYSTORE_BASE64`, `KEYSTORE_STORE_PASSWORD`, and `KEYSTORE_KEY_PASSWORD` are configured.
+- Durable file persistence and canonical transactions remain experimental. The default canonical store is still `noop`.
+- Dotted action IDs, watermarks, and non-host canonical replacement remain rejected; see `docs/PROTOCOL_COMPATIBILITY.md`. iPhone Safari remains unverified.
