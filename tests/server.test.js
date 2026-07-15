@@ -1642,11 +1642,24 @@ runTest('canonicalizeActionData は GAME_ACTIONS 全体のpayload shapeを固定
     }
 });
 
-runTest('normalizeClientActionId は長すぎる値と危険文字を落とす', () => {
-    assert.strictEqual(normalizeClientActionId('client-action_1:2'), 'client-action_1:2');
-    assert.strictEqual(normalizeClientActionId('x'.repeat(121)), '');
-    assert.strictEqual(normalizeClientActionId('__proto__'), '__proto__');
-    assert.strictEqual(normalizeClientActionId('bad space'), '');
+runTest('normalizeClientActionId は現行protocolの境界と文字集合を固定する', () => {
+    const cases = [
+        ['a', 'a'],
+        ['client-action_1:2', 'client-action_1:2'],
+        ['x'.repeat(120), 'x'.repeat(120)],
+        ['__proto__', '__proto__'],
+        ['', ''],
+        ['x'.repeat(121), ''],
+        ['bad space', ''],
+        ['m1.stream.1', ''],
+        ['slash/action', ''],
+        ['日本語', ''],
+        [null, ''],
+        [42, ''],
+    ];
+    for (const [input, expected] of cases) {
+        assert.strictEqual(normalizeClientActionId(input), expected, String(input));
+    }
 });
 
 runTest('accepted clientActionId は再送時に既存actionAcceptedを返すため保持できる', () => {
