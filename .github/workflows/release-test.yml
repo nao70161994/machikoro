@@ -6,6 +6,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      run_online_delivery:
+        description: 'Validate read-only production delivery'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   release-test:
@@ -67,3 +73,22 @@ jobs:
             -H "Priority: 4" \
             -H "Tags: warning,github_actions" \
             --data-binary @/tmp/ntfy-ci-message.txt
+
+  validate-online-delivery:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_online_delivery }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: production-online-delivery
+      cancel-in-progress: false
+    env:
+      PRODUCTION_ORIGIN: https://machikoro-9jv2.onrender.com
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:online-delivery -- --origin "$PRODUCTION_ORIGIN" --timeout-ms 30000
+      - run: node tests/online-delivery-handshake.js --origin "$PRODUCTION_ORIGIN" --timeout-ms 30000
