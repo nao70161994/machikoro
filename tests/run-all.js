@@ -6,6 +6,7 @@ const TEST_GROUPS = {
     unit: [
         'gamemanager.test.js',
         'server.test.js',
+        'client-error-reporting.test.js',
         'cpu.test.js',
         'cpu-evaluation.test.js',
         'online.test.js',
@@ -74,6 +75,7 @@ const TEST_GROUPS = {
     online: [
         'gamemanager.test.js',
         'server.test.js',
+        'client-error-reporting.test.js',
         'online.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',

@@ -1,0 +1,58 @@
+const assert = require('assert');
+const { makeClientErrorReporting } = require('../server/clientErrorReporting');
+const { runTest } = require('./helpers/test-utils');
+
+const reporting = makeClientErrorReporting({
+    isPlainObject(value) {
+        return !!value && typeof value === 'object' && !Array.isArray(value);
+    },
+    limits: {
+        maxMessageLength: 500,
+        maxStackLength: 2400,
+    },
+    buildHash: 'test-build',
+});
+
+runTest('server client error reporting は既存payload fieldと数値範囲を維持する', () => {
+    const normalized = reporting.normalizeClientErrorPayload({
+        source: 'window.onerror',
+        message: 'boom',
+        stack: 'stack',
+        filename: 'js/ui.js',
+        line: 12,
+        column: 3,
+        playerIndex: 2,
+        phase: 'build',
+        roomId: 'ROOM',
+    }, 1700000000000);
+
+    assert.strictEqual(normalized.ok, true);
+    assert.strictEqual(normalized.report.appVersion, 'test-build');
+    assert.strictEqual(normalized.report.line, 12);
+    assert.strictEqual(normalized.report.column, 3);
+    assert.strictEqual(normalized.report.playerIndex, 2);
+    assert.strictEqual(normalized.report.receivedAt, '2023-11-14T22:13:20.000Z');
+    assert.strictEqual(reporting.normalizeClientErrorNumber(1000001), null);
+    assert.strictEqual(reporting.normalizeClientErrorPlayerIndex(21), null);
+});
+
+runTest('server client error reporting はURL queryとtoken値を正規化前に除去する', () => {
+    const normalized = reporting.normalizeClientErrorPayload({
+        message: 'token=secret https://example.com/play?room=SECRET#hash',
+        stack: 'sessionId:"private"',
+        filename: 'https://example.com/app.js?cache=SECRET',
+        url: 'https://example.com/?token=SECRET',
+    }, 1700000000000);
+
+    const serialized = JSON.stringify(normalized.report);
+    assert.ok(serialized.includes('[redacted]'));
+    assert.ok(serialized.includes('https://example.com/play'));
+    assert.ok(!serialized.includes('secret'));
+    assert.ok(!serialized.includes('private'));
+    assert.ok(!serialized.includes('SECRET'));
+});
+
+runTest('server client error reporting はobject以外と空payloadを拒否する', () => {
+    assert.strictEqual(reporting.normalizeClientErrorPayload([]).ok, false);
+    assert.strictEqual(reporting.normalizeClientErrorPayload({}).ok, false);
+});
