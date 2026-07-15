@@ -1898,6 +1898,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/CPU.js', 'js/RLCPU.js');
     assertBefore('js/RLModelPortfolio.js', 'js/online.js');
     assertBefore('js/onlineStorage.js', 'js/online.js');
+    assertBefore('js/onlinePayload.js', 'js/online.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
     assertBefore('js/uiBuildMenu.js', 'js/ui.js');
     assertBefore('js/uiCardDetail.js', 'js/ui.js');

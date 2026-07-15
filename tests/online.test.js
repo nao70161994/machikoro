@@ -139,6 +139,7 @@ function loadOnlineRuntime(options = {}) {
 
     // online storage facade と online.js をロード
     loadScript(context, 'js/onlineStorage.js');
+    loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート

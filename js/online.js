@@ -42,13 +42,7 @@ function getClientVersion() {
 }
 
 function buildOnlineRejoinPayload(session) {
-    return {
-        roomId: session && session.roomId,
-        playerIndex: session && session.playerIndex,
-        playerName: session && session.playerName,
-        reconnectToken: session && session.reconnectToken,
-        clientVersion: getClientVersion(),
-    };
+    return OnlinePayload.buildRejoin(session, getClientVersion());
 }
 
 function changeOnlineCount(delta) {

@@ -166,6 +166,7 @@ function loadIntegrationRuntime(options = {}) {
     ];
     if (options.includeOnline) {
         files.push('js/onlineStorage.js');
+        files.push('js/onlinePayload.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');
