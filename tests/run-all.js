@@ -62,6 +62,7 @@ const TEST_GROUPS = {
         'summarize-rl-metrics.test.js',
         'cli-args.test.js',
         'test-utils.test.js',
+        'runtime-dependencies.test.js',
     ],
     sim: [
         'selfplay.test.js',
@@ -78,6 +79,7 @@ const TEST_GROUPS = {
         'stats.test.js',
         'ui-card-select.test.js',
         'lifecycle-notify.test.js',
+        'runtime-dependencies.test.js',
         'ui.test.js',
     ],
     online: [
