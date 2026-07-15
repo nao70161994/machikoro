@@ -1355,13 +1355,20 @@ function closeCardSelect() {
 }
 
 function buildCardSelectToggleButtonHtml(name, enabled) {
-    const safeName = escapeHtml(name);
-    return `<button class="card-toggle-btn ${enabled ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}" aria-pressed="${enabled ? 'true' : 'false'}">${safeName}</button>`;
+    return UiCardSelect.buildCardToggleButtonHtml({
+        name,
+        enabled,
+        escapeHtml,
+    });
 }
 
 function buildLandmarkSelectToggleButtonHtml(name, enabled) {
-    const safeName = escapeHtml(name);
-    return `<button class="card-toggle-btn ${enabled ? 'on' : 'off'}" data-action="toggleLandmark" data-landmark-name="${safeName}" aria-pressed="${enabled ? 'true' : 'false'}">${getLandmarkEmoji(name)} ${safeName}</button>`;
+    return UiCardSelect.buildLandmarkToggleButtonHtml({
+        name,
+        enabled,
+        escapeHtml,
+        getLandmarkEmoji,
+    });
 }
 
 function renderCardSelectModal() {

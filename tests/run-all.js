@@ -20,6 +20,7 @@ const TEST_GROUPS = {
         'sw.test.js',
         'confetti.test.js',
         'stats.test.js',
+        'ui-card-select.test.js',
         'ui.test.js',
         'integration.test.js',
         'rlcpu.test.js',
@@ -71,6 +72,7 @@ const TEST_GROUPS = {
         'client-reporting.test.js',
         'confetti.test.js',
         'stats.test.js',
+        'ui-card-select.test.js',
         'ui.test.js',
     ],
     online: [
