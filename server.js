@@ -10,6 +10,7 @@ const { postNtfyNotification } = require('./server/ntfyNotifier');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
+const makeGameSettings = require('./server/gameSettings');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -801,61 +802,18 @@ const ALLOWED_RL_MODEL_IDS = new Set([
     'self-only-both-h256-lr2e5-5000-seed69-rewardcap',
 ]);
 
-function normalizePlayerSettings(playerSettings, playerCount) {
-    if (!Array.isArray(playerSettings)) {
-        return Array.from({ length: playerCount }, () => ({ type: 'human', difficulty: 'normal' }));
-    }
-    const normalized = playerSettings.slice(0, playerCount).map((setting) => {
-        if (!setting || setting.type !== 'cpu') return { type: 'human', difficulty: 'normal' };
-        const difficulty = ALLOWED_CPU_DIFFICULTIES.has(setting.difficulty) ? setting.difficulty : 'normal';
-        const normalized = { type: 'cpu', difficulty };
-        if (difficulty === 'rl' && ALLOWED_RL_MODEL_IDS.has(setting.rlModelId)) {
-            normalized.rlModelId = setting.rlModelId;
-        }
-        return normalized;
-    });
-    while (normalized.length < playerCount) {
-        normalized.push({ type: 'human', difficulty: 'normal' });
-    }
-    return normalized;
-}
+const gameSettings = makeGameSettings({
+    cardNames: gameRuntime.CARDS.map(card => card.name),
+    allowedCpuDifficulties: ALLOWED_CPU_DIFFICULTIES,
+    allowedRlModelIds: ALLOWED_RL_MODEL_IDS,
+});
 
-function hasInvalidRlModelId(playerSettings) {
-    if (!Array.isArray(playerSettings)) return false;
-    return playerSettings.some(setting =>
-        setting?.type === 'cpu' &&
-        setting.difficulty === 'rl' &&
-        typeof setting.rlModelId === 'string' &&
-        !ALLOWED_RL_MODEL_IDS.has(setting.rlModelId)
-    );
-}
-
-function hasMissingRlModelId(playerSettings) {
-    if (!Array.isArray(playerSettings)) return false;
-    return playerSettings.some(setting =>
-        setting?.type === 'cpu' &&
-        setting.difficulty === 'rl' &&
-        typeof setting.rlModelId !== 'string'
-    );
-}
-
-function hasInvalidOnlineRlModelSettings(playerSettings) {
-    return hasMissingRlModelId(playerSettings) || hasInvalidRlModelId(playerSettings);
-}
-
-function normalizeCpuSpeed(cpuSpeed) {
-    const value = Number(cpuSpeed);
-    if (!Number.isFinite(value)) return 1500;
-    return Math.max(0, Math.min(5000, Math.floor(value)));
-}
-
-function normalizeEnabledCards(enabledCards) {
-    const allCards = gameRuntime.CARDS.map(card => card.name);
-    if (!Array.isArray(enabledCards)) return allCards;
-    const validCards = new Set(allCards);
-    const selected = enabledCards.filter(name => validCards.has(name));
-    return selected.length > 0 ? [...new Set(selected)] : allCards;
-}
+const {
+    normalizePlayerSettings,
+    hasInvalidOnlineRlModelSettings,
+    normalizeCpuSpeed,
+    normalizeEnabledCards,
+} = gameSettings;
 
 function generateReconnectToken() {
     if (typeof crypto.randomUUID === 'function') {
