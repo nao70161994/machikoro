@@ -303,6 +303,8 @@ function loadMainRuntime(options = {}) {
     context.global = context;
     vm.createContext(context);
 
+    const clientReportingSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientReporting.js'), 'utf8');
+    vm.runInContext(clientReportingSource, context, { filename: 'js/clientReporting.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
@@ -1901,6 +1903,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiCardDetail.js', 'js/ui.js');
     assertBefore('js/ui.js', 'js/storage.js');
     assertBefore('js/storage.js', 'js/appShell.js');
+    assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
 });

@@ -29,26 +29,10 @@ let _freezeWatchdogLastReportKey = '';
 let _freezeWatchdogLastReportAt = 0;
 let _postBuildUiStabilizerPending = false;
 
-function truncateClientErrorField(value, limit) {
-    const text = String(value || '');
-    return text.length > limit ? text.slice(0, limit) + '...' : text;
-}
-
-function errorLikeMessage(value) {
-    if (value instanceof Error) return value.message;
-    if (value && typeof value.message === 'string') return value.message;
-    return String(value || '不明なエラー');
-}
-
-function errorLikeStack(value) {
-    if (value instanceof Error) return value.stack || value.message;
-    if (value && typeof value.stack === 'string') return value.stack;
-    return '';
-}
-
-function isErrorLike(value) {
-    return value instanceof Error || !!(value && (typeof value.message === 'string' || typeof value.stack === 'string'));
-}
+const truncateClientErrorField = ClientReporting.truncateField;
+const errorLikeMessage = ClientReporting.errorMessage;
+const errorLikeStack = ClientReporting.errorStack;
+const isErrorLike = ClientReporting.isErrorLike;
 
 function safeClientErrorUrl() {
     if (typeof window === 'undefined' || !window.location) return '';
@@ -1070,22 +1054,14 @@ function clientErrorStackForReport(input) {
 }
 
 function buildClientErrorReport(input) {
-    const source = input?.source || 'unknown';
-    const error = input?.error;
-    const message = input?.message || errorLikeMessage(error);
-    return Object.assign(safeClientErrorContext(), {
-        source,
-        message: truncateClientErrorField(message, CLIENT_ERROR_REPORT_MESSAGE_LIMIT),
+    return ClientReporting.buildReport(input, safeClientErrorContext(), {
+        messageLimit: CLIENT_ERROR_REPORT_MESSAGE_LIMIT,
         stack: clientErrorStackForReport(input || {}),
-        filename: truncateClientErrorField(input?.filename || '', 300),
-        line: Number.isFinite(input?.line) ? input.line : null,
-        column: Number.isFinite(input?.column) ? input.column : null,
-        timestamp: new Date().toISOString(),
     });
 }
 
 function clientErrorReportKey(report) {
-    return [report.source, report.message, report.filename, report.line, report.column, report.phase, report.roomId].join('|');
+    return ClientReporting.reportKey(report);
 }
 
 function reportClientError(input) {
