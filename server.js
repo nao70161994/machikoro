@@ -9,6 +9,7 @@ const { execSync } = require('child_process');
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
+const { makeSocketPayloadValidation } = require('./server/socketPayload');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -119,6 +120,16 @@ const SOCKET_PAYLOAD_LIMITS = Object.freeze({
     maxTotalStringChars: 4000,
     maxDepth: 8,
 });
+const {
+    validateSocketPayloadLimits,
+    validateRestorePayloadLimits,
+} = makeSocketPayloadValidation({
+    isPlainObject,
+    byteLength: value => Buffer.byteLength(value, 'utf8'),
+    socketLimits: SOCKET_PAYLOAD_LIMITS,
+    restoreLimits: RESTORE_PAYLOAD_LIMITS,
+});
+
 
 const CLIENT_ERROR_LIMITS = Object.freeze({
     maxJsonBytes: 32 * 1024,
@@ -761,31 +772,6 @@ const APP_ERROR_EVENT = 'appError';
 
 function emitAppError(socket, message) {
     socket.emit(APP_ERROR_EVENT, message);
-}
-
-function validateSocketPayloadLimits(payload, limits = SOCKET_PAYLOAD_LIMITS) {
-    if (!isPlainObject(payload)) return { ok: false, reason: 'not-object' };
-    let jsonBytes = 0;
-    try {
-        jsonBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    } catch {
-        return { ok: false, reason: 'json' };
-    }
-    if (jsonBytes > limits.maxJsonBytes) return { ok: false, reason: 'json-size', jsonBytes };
-    const stats = { stringChars: 0 };
-    const visit = (value, depth = 0) => {
-        if (depth > limits.maxDepth) return false;
-        if (typeof value === 'string') {
-            if (value.length > limits.maxStringLength) return false;
-            stats.stringChars += value.length;
-            return stats.stringChars <= limits.maxTotalStringChars;
-        }
-        if (Array.isArray(value)) return value.every(item => visit(item, depth + 1));
-        if (isPlainObject(value)) return Object.values(value).every(item => visit(item, depth + 1));
-        return true;
-    };
-    if (!visit(payload)) return { ok: false, reason: 'content-size', stringChars: stats.stringChars };
-    return { ok: true, jsonBytes, stringChars: stats.stringChars };
 }
 
 function requirePlainSocketPayload(socket, payload) {
@@ -1655,57 +1641,6 @@ function handleRecreateRoom(socket, payload = {}) {
 }
 
 // ===== Snapshot limits and restore payload guards =====
-function validateRestorePayloadLimits(payload, limits = RESTORE_PAYLOAD_LIMITS) {
-    if (!isPlainObject(payload)) return { ok: false, reason: 'not-object' };
-    let jsonBytes = 0;
-    try {
-        jsonBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    } catch {
-        return { ok: false, reason: 'json' };
-    }
-    if (jsonBytes > limits.maxJsonBytes) return { ok: false, reason: 'json-size', jsonBytes };
-    if (Array.isArray(payload.actionLog) && payload.actionLog.length > limits.maxActionLogEntries) {
-        return { ok: false, reason: 'action-log-length', actionLogEntries: payload.actionLog.length };
-    }
-
-    const stats = { stringChars: 0, playerCardRefs: 0 };
-    const visit = (value, key = '', depth = 0) => {
-        if (depth > 20) return false;
-        if (typeof value === 'string') {
-            if (value.length > limits.maxStringLength) return false;
-            stats.stringChars += value.length;
-            return stats.stringChars <= limits.maxTotalStringChars;
-        }
-        if (Array.isArray(value)) {
-            if ((key === 'cards' || key === 'playerCardNames') && value.every(item => typeof item === 'string' || Array.isArray(item))) {
-                stats.playerCardRefs += countNestedStrings(value);
-                if (stats.playerCardRefs > limits.maxPlayerCardRefs) return false;
-            }
-            for (const item of value) {
-                if (!visit(item, key, depth + 1)) return false;
-            }
-            return true;
-        }
-        if (isPlainObject(value)) {
-            for (const [childKey, childValue] of Object.entries(value)) {
-                if (!visit(childValue, childKey, depth + 1)) return false;
-            }
-        }
-        return true;
-    };
-
-    if (!visit(payload)) {
-        return { ok: false, reason: 'content-size', stringChars: stats.stringChars, playerCardRefs: stats.playerCardRefs };
-    }
-    return { ok: true, jsonBytes, actionLogEntries: Array.isArray(payload.actionLog) ? payload.actionLog.length : 0, playerCardRefs: stats.playerCardRefs };
-}
-
-function countNestedStrings(value) {
-    if (typeof value === 'string') return 1;
-    if (!Array.isArray(value)) return 0;
-    return value.reduce((sum, item) => sum + countNestedStrings(item), 0);
-}
-
 function isReconnectTokenHashString(value) {
     return typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value);
 }
