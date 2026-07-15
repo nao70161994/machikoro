@@ -7,6 +7,7 @@ const TEST_GROUPS = {
         'gamemanager.test.js',
         'card-contract.test.js',
         'server.test.js',
+        'game-lifecycle-reporting.test.js',
         'snapshot-contract.test.js',
         'client-error-reporting.test.js',
         'cpu.test.js',
@@ -85,6 +86,7 @@ const TEST_GROUPS = {
     online: [
         'gamemanager.test.js',
         'server.test.js',
+        'game-lifecycle-reporting.test.js',
         'snapshot-contract.test.js',
         'client-error-reporting.test.js',
         'online.test.js',
