@@ -64,7 +64,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/release-e2e.test.js', [
             ['js/clientReporting.js', 'js/appShell.js'],
-            ['js/lifecycleNotify.js', 'js/appShell.js']
+            ['js/lifecycleNotify.js', 'js/appShell.js'],
+            ['js/uiPendingMenu.js', 'js/ui.js']
         ]],
         ['tests/main.test.js', [
             ['js/clientReporting.js', 'js/appShell.js'],
