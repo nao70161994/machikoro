@@ -108,7 +108,7 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
 - Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
 - Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
-- `js/clientReporting.js`, `js/lifecycleNotify.js`, `server/clientErrorReporting.js`, `js/onlinePayload.js`, and UI HTML helpers are pure boundaries; keep network, socket, storage, lifecycle, modal, and PWA side effects in their existing owners.
+- Client/lifecycle reporting, server payload/settings, online payload/restore-rank, and UI HTML helper modules are pure boundaries; keep network, socket, storage, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.
 - CPU helper extraction must preserve wrapper results and existing CPU tests; do not change heuristic constants, difficulty presets, or action selection under a maintenance-only task.
 - JSDoc/checkJs/ESLint remain deferred until a dependency/config task approves a narrow allowlist; do not turn their introduction into a repository-wide cleanup.
 

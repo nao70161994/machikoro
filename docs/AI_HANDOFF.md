@@ -25,9 +25,9 @@
 
 - app shell: `js/clientReporting.js` にpureなreport整形、`js/lifecycleNotify.js` にopt-out判定とpayload整形を分離。storage、dedupe、fetch、watchdog、PWA/SW副作用は `appShell.js` に残す。
 - CPU: `js/cpuEvaluation.js` に既存ダイス頻度表だけを分離。heuristic、difficulty、行動選択は未変更。
-- server: `server/clientErrorReporting.js` にpureなclient-error正規化/redactionを分離。Socket.IO/HTTP handlerは移動していない。
-- online: `js/onlinePayload.js` に既存rejoin payload生成だけを分離。ACK、restore queue、retry、protocolは未変更。
-- UI: `js/uiCardSelect.js` にtoggle button HTML生成だけを分離。modal lifecycle、focus/inert、event処理は未変更。
+- server: `server/clientErrorReporting.js`、`server/gameLifecycleReporting.js`、`server/socketPayload.js`、`server/gameSettings.js` に通知整形、payload上限、設定正規化のpure処理を分離。Socket.IO/HTTP handlerは移動していない。
+- online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離。ACK、restore queue、retry、protocolは未変更。
+- UI: `js/uiPendingMenu.js` と既存UI helper群にpending/build/detail/selectのHTML生成を分離。modal lifecycle、focus/inert、event処理は未変更。
 - contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
 - tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
 

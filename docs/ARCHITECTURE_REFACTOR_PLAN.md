@@ -299,9 +299,11 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 As of 2026-07-15, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
 
-- `server/roomLifecycle.js` owns pure room/player-list/start-payload/version/token/disconnect-candidate helpers; Socket.IO handlers remain in `server.js`.
+- `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
+- `server/gameLifecycleReporting.js` owns lifecycle notification payload/text formatting while auth, rate limits, dedupe, and HTTP delivery remain in `server.js`.
 - `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
-- `js/uiBuildMenu.js`, `js/uiCardDetail.js`, and `js/uiCardSelect.js` own pure HTML generation; `ui.js` still owns modal lifecycle, event handling, and render orchestration.
+- `js/onlineRestoreRank.js` owns existing restore-rank calculation while reconnect timing, ACK handling, restore queues, and Socket.IO ownership remain in `online.js`.
+- `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, and `js/uiCardSelect.js` own pure HTML generation; `ui.js` still owns modal lifecycle, event handling, and render orchestration.
 - `js/clientReporting.js` and `js/lifecycleNotify.js` own pure client report and lifecycle payload shaping while `appShell.js` retains browser capture, storage, dedupe, fetch, watchdog, and PWA side effects.
 - `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
 - `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
@@ -314,8 +316,8 @@ The remaining steps below still require the same gates described in each design 
 
 ## Recommended Migration Order
 
-1. **Keep the implemented helper boundaries stable:** Prefer extending `server/roomLifecycle.js`, `js/onlineStorage.js`, `js/uiBuildMenu.js`, or `js/uiCardDetail.js` before adding equivalent logic back into giant files.
-2. **UI card select or other pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
+1. **Keep the implemented helper boundaries stable:** Prefer extending the existing server, online, and UI pure modules before adding equivalent logic back into giant files.
+2. **Further pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
 3. **Action contract metadata:** Keep adding cross-layer read-only tests, then introduce a shared metadata table gradually.
 4. **Reconnect state machine and server socket handler split:** Move timing/event orchestration only after helper/facade tests are stable and manual-device verification is scheduled.
 5. **Restore trust boundary ADR:** Start only when product/security requirements justify durable or signed authority.
