@@ -5,6 +5,7 @@ const path = require('path');
 const TEST_GROUPS = {
     unit: [
         'gamemanager.test.js',
+        'card-contract.test.js',
         'server.test.js',
         'client-error-reporting.test.js',
         'cpu.test.js',
@@ -67,6 +68,7 @@ const TEST_GROUPS = {
     ],
     core: [
         'gamemanager.test.js',
+        'card-contract.test.js',
         'integration.test.js',
         'main.test.js',
         'client-reporting.test.js',
