@@ -1,0 +1,30 @@
+name: Production Online Delivery
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: production-online-delivery
+    cancel-in-progress: false
+
+jobs:
+    production-online-delivery:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        env:
+            PRODUCTION_ORIGIN: https://machikoro-9jv2.onrender.com
+        steps:
+            - uses: actions/checkout@v6
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '20'
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci
+            - name: Verify production delivery
+              run: npm run test:online-delivery -- --origin "$PRODUCTION_ORIGIN" --timeout-ms 30000
+            - name: Verify read-only Socket.IO handshake
+              run: node tests/online-delivery-handshake.js --origin "$PRODUCTION_ORIGIN" --timeout-ms 30000
