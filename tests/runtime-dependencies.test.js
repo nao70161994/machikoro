@@ -25,6 +25,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/onlineStorage.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
+            ['js/onlineRestoreRank.js', 'js/online.js'],
             ['js/uiBuildMenu.js', 'js/ui.js'],
             ['js/uiCardDetail.js', 'js/ui.js'],
             ['js/uiCardSelect.js', 'js/ui.js'],
@@ -45,7 +46,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardDetail.js', 'js/ui.js'],
             ['js/uiCardSelect.js', 'js/ui.js'],
             ['js/onlineStorage.js', 'js/online.js'],
-            ['js/onlinePayload.js', 'js/online.js']
+            ['js/onlinePayload.js', 'js/online.js'],
+            ['js/onlineRestoreRank.js', 'js/online.js'],
         ]],
         ['tests/ui.test.js', [
             ['js/uiBuildMenu.js', 'js/ui.js'],
@@ -54,7 +56,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/online.test.js', [
             ['js/onlineStorage.js', 'js/online.js'],
-            ['js/onlinePayload.js', 'js/online.js']
+            ['js/onlinePayload.js', 'js/online.js'],
+            ['js/onlineRestoreRank.js', 'js/online.js'],
         ]],
         ['tests/release-e2e.test.js', [
             ['js/clientReporting.js', 'js/appShell.js'],

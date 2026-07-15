@@ -542,37 +542,32 @@ function _setLastAppliedOnlineActionSeq(seq) {
 }
 
 function _serverOnlineActionSeq(gameStartPayload, stateSnapshot, actionLog) {
-    const logSeq = (actionLog || []).reduce((max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max, 0);
-    return Math.max(
-        Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0,
-        Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0,
-        logSeq
-    );
+    return OnlineRestoreRank.serverActionSeq(gameStartPayload, stateSnapshot, actionLog);
 }
 
 function _isOnlineRestoreRankAction(entry) {
-    return !!(entry && typeof entry.action === 'string' &&
-        typeof GAME_ACTION_REGISTRY !== 'undefined' && GAME_ACTION_REGISTRY[entry.action]);
+    const actionRegistry = typeof GAME_ACTION_REGISTRY !== 'undefined'
+        ? GAME_ACTION_REGISTRY
+        : null;
+    return OnlineRestoreRank.isRankAction(entry, actionRegistry);
 }
 
 function _onlineRestoreReplaySeq(stateSnapshot, actionLog) {
-    const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
-    const replayedActionCount = Array.isArray(actionLog)
-        ? actionLog.filter(_isOnlineRestoreRankAction).length
-        : 0;
-    return snapshotSeq + replayedActionCount;
+    const actionRegistry = typeof GAME_ACTION_REGISTRY !== 'undefined'
+        ? GAME_ACTION_REGISTRY
+        : null;
+    return OnlineRestoreRank.replaySeq(stateSnapshot, actionLog, actionRegistry);
 }
 
 function _onlineRestoreRank(gameStartPayload, stateSnapshot, actionLog) {
-    return {
-        hostEpoch: Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0,
-        actionSeq: _onlineRestoreReplaySeq(stateSnapshot || null, actionLog || []),
-    };
+    const actionRegistry = typeof GAME_ACTION_REGISTRY !== 'undefined'
+        ? GAME_ACTION_REGISTRY
+        : null;
+    return OnlineRestoreRank.build(gameStartPayload, stateSnapshot, actionLog, actionRegistry);
 }
 
 function _isOnlineRestoreRankNewer(localRank, serverRank) {
-    return localRank.hostEpoch > serverRank.hostEpoch ||
-        (localRank.hostEpoch === serverRank.hostEpoch && localRank.actionSeq > serverRank.actionSeq);
+    return OnlineRestoreRank.isNewer(localRank, serverRank);
 }
 
 function _nextOnlineActionSeq(log = null) {
