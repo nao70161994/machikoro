@@ -1903,6 +1903,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/GameManager.js', 'js/CPU.js');
     assertBefore('js/cpuTuning.js', 'js/CPU.js');
     assertBefore('js/cpuProfile.js', 'js/CPU.js');
+    assertBefore('js/cpuLegalMoves.js', 'js/CPU.js');
     assertBefore('js/cpuSimulation.js', 'js/CPU.js');
     assertBefore('js/cpuDiagnostics.js', 'js/CPU.js');
     assertBefore('js/cpuEvaluationCache.js', 'js/cpuPendingResolution.js');

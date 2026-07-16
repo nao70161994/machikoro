@@ -3025,21 +3025,18 @@ class CPU {
     }
 
     _listExpertV2SimpleAffordableLandmarks(current, game) {
-        return Player.landmarkNames()
-            .filter(name =>
-                (!game.enabledLandmarks || game.enabledLandmarks.has(name)) &&
-                !current.landmarks[name] &&
-                current.coins >= Player.landmarkCost(name)
-            )
-            .map(name => ({ type: 'landmark', name }));
+        return CPULegalMoves.affordableLandmarkNames(
+            current,
+            game.enabledLandmarks,
+            Player.landmarkNames(),
+            Player.landmarkCost,
+            true
+        ).map(name => ({ type: 'landmark', name }));
     }
 
     _listExpertV2SimpleAffordableCards(current, shopStock) {
-        return CARDS.filter(card =>
-            shopStock[card.name] > 0 &&
-            current.coins >= card.cost &&
-            !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
-        ).map(card => ({ type: 'card', card }));
+        return CPULegalMoves.affordableCards(current, shopStock, CARDS)
+            .map(card => ({ type: 'card', card }));
     }
 
     _buildExpertV2Simple(current, game, shopStock) {
@@ -3901,17 +3898,17 @@ class CPU {
     _listExpertBuildOptions(game, shopStock) {
         const current = game.currentPlayer();
         const options = [{ type: 'skip' }];
-        for (const name of Player.landmarkNames()) {
-            if (!game.enabledLandmarks || !game.enabledLandmarks.has(name)) continue;
-            if (current.landmarks[name]) continue;
-            const cost = Player.landmarkCost(name);
-            if (current.coins >= cost) options.push({ type: 'landmark', name });
-        }
-        const affordable = CARDS.filter(card =>
-            shopStock[card.name] > 0 &&
-            current.coins >= card.cost &&
-            !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
+        const affordableLandmarks = CPULegalMoves.affordableLandmarkNames(
+            current,
+            game.enabledLandmarks,
+            Player.landmarkNames(),
+            Player.landmarkCost,
+            false
         );
+        for (const name of affordableLandmarks) {
+            options.push({ type: 'landmark', name });
+        }
+        const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
         const ranked = affordable.map(card => ({
             card,
             score: this._scoreExpertCardCandidate(card, game, current),
@@ -4018,17 +4015,17 @@ class CPU {
     _listStrongBuildOptions(game, shopStock) {
         const current = game.currentPlayer();
         const options = [];
-        for (const name of Player.landmarkNames()) {
-            if (!game.enabledLandmarks || !game.enabledLandmarks.has(name)) continue;
-            if (current.landmarks[name]) continue;
-            const cost = Player.landmarkCost(name);
-            if (current.coins >= cost) options.push({ type: 'landmark', name });
-        }
-        const affordable = CARDS.filter(card =>
-            shopStock[card.name] > 0 &&
-            current.coins >= card.cost &&
-            !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
+        const affordableLandmarks = CPULegalMoves.affordableLandmarkNames(
+            current,
+            game.enabledLandmarks,
+            Player.landmarkNames(),
+            Player.landmarkCost,
+            false
         );
+        for (const name of affordableLandmarks) {
+            options.push({ type: 'landmark', name });
+        }
+        const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
         const ranked = this._sortAffordableForDifficulty(affordable, game, current, "strong");
         const targetLandmark = this._strongTargetLandmark(current, game);
         const attackUnlocked = this._strongAttackUnlocked(current, game, targetLandmark);
