@@ -1,12 +1,4 @@
-const LOG_TYPE_DISPLAY = {
-    [LOG_TYPES.DICE]:    { cls: "log-dice",    label: "ダイス" },
-    [LOG_TYPES.GAIN]:    { cls: "log-gain",    label: "収入"   },
-    [LOG_TYPES.LOSE]:    { cls: "log-lose",    label: "支払い" },
-    [LOG_TYPES.BUILD]:   { cls: "log-build",   label: "建設"   },
-    [LOG_TYPES.SPECIAL]: { cls: "log-special", label: "特殊"   },
-    [LOG_TYPES.SYSTEM]:  { cls: "log-system",  label: "進行"   },
-    [LOG_TYPES.ERROR]:   { cls: "log-error",   label: "エラー" },
-};
+const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 let isUpdatingPendingModalContent = false;
 
 function safeUiStorageSet(key, value) {
@@ -40,46 +32,11 @@ function currentCpuPlayerAt(index) {
 }
 
 function classifyLogEntry(entry) {
-    return LOG_TYPE_DISPLAY[entry.type] || { cls: "log-system", label: "進行" };
+    return UiLogDisplay.classifyLogEntry(entry, LOG_TYPE_DISPLAY);
 }
 
 function extractLogDetails(entry) {
-    const detail = { actor: '', target: '', amount: '', subject: '' };
-    if (!entry) return detail;
-    const entry_msg = entry.message || entry;
-    const amountMatch = entry_msg.match(/([+-]?\d+)コイン/);
-    if (amountMatch) detail.amount = amountMatch[1];
-
-    const actorPatterns = [
-        /^(?:🌾|🏪|🐟|💸|🍸|🍽️|📰|🏛️)\s+([^の\s]+)の/,
-        /^(?:📺|🚚)\s+([^か\s]+)から/,
-        /^(?:🔄)\s+([^ ]+)/,
-        /^(?:👤)\s+([^の]+)のターン/
-    ];
-    for (const pattern of actorPatterns) {
-        const match = entry_msg.match(pattern);
-        if (match) {
-            detail.actor = match[1];
-            break;
-        }
-    }
-
-    const targetMatch = entry_msg.match(/(?:から|を)([^に\s]+)(?:に|の)?/);
-    if (targetMatch && !detail.target) detail.target = targetMatch[1];
-
-    const subjectPatterns = [
-        /の([^発動\s]+)発動/,
-        /^(?:🏗️|🔨|🚚|🧹|🍷|📺|🏢)\s*([^を⇔ ]+)/,
-        /^(?:🌾|🏪|🐟|💸|🍸|🍽️)\s+[^の]+の([^発動\s]+)/
-    ];
-    for (const pattern of subjectPatterns) {
-        const match = entry_msg.match(pattern);
-        if (match) {
-            detail.subject = match[1];
-            break;
-        }
-    }
-    return detail;
+    return UiLogDisplay.extractLogDetails(entry);
 }
 
 function renderLog() {
