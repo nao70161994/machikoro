@@ -307,6 +307,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(clientReportingSource, context, { filename: 'js/clientReporting.js' });
     const lifecycleNotifySource = fs.readFileSync(path.join(__dirname, '..', 'js/lifecycleNotify.js'), 'utf8');
     vm.runInContext(lifecycleNotifySource, context, { filename: 'js/lifecycleNotify.js' });
+    const uiWatchdogSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdog.js'), 'utf8');
+    vm.runInContext(uiWatchdogSource, context, { filename: 'js/uiWatchdog.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
@@ -1919,6 +1921,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');
+    assertBefore('js/uiWatchdog.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
 });

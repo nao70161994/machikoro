@@ -46,6 +46,7 @@ const STATIC_ASSETS = [
   '/js/stats.js',
   '/js/clientReporting.js',
   '/js/lifecycleNotify.js',
+  '/js/uiWatchdog.js',
   '/js/appShell.js',
   '/js/main.js',
   '/icons/icon-192.png',

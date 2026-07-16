@@ -1519,25 +1519,11 @@ function bindPwaInstallHandlers() {
 }
 
 function freezeWatchdogStateKey(snapshot) {
-    const pending = snapshot.pendingFields || {};
-    return [
-        snapshot.phase || '',
-        snapshot.turnCount ?? '',
-        snapshot.currentPlayerIndex ?? '',
-        snapshot.builtThisTurn ? 'built' : 'open',
-        pending.pendingTV || 0,
-        pending.pendingBusiness || 0,
-        pending.pendingCleaning || 0,
-        pending.pendingMover || 0,
-        pending.pendingRenovation || 0,
-        pending.pendingIT ? 1 : 0,
-        snapshot.onlineActionInFlight ? 1 : 0,
-    ].join('|');
+    return UiWatchdog.stateKey(snapshot);
 }
 
 function hasPendingWork(snapshot) {
-    const pending = snapshot.pendingFields || {};
-    return !!(pending.pendingTV || pending.pendingBusiness || pending.pendingCleaning || pending.pendingMover || pending.pendingRenovation || pending.pendingIT);
+    return UiWatchdog.hasPendingWork(snapshot);
 }
 
 function classifyLikelyFreeze(snapshot) {
@@ -1561,18 +1547,29 @@ function classifyLikelyFreeze(snapshot) {
     const modalIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.MODAL_UI_LOCKED);
     const pendingIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.PENDING_UI_LOCKED);
     const humanIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    if (modalIssue) return modalIssue.freezeKind + ':' + modalIssue.reason;
-    if (stalePendingOpen && isMyTurn && !snapshot.isCpuTurn && !onlineBlocked) return FREEZE_KINDS.STALE_MODAL_UI_LOCKED;
-    if ((confirmOpen && !staleConfirmOpen) || (activeBlockingModalOpen && !expectedPending.length)) return '';
-    if (!activeBlockingModalOpen && !onlineBlocked && snapshot.phase === 'build' && snapshot.builtThisTurn && isMyTurn && !snapshot.isCpuTurn && (skipDisabled || gameInert || gameScreenHidden || staleConfirmOpen || noUsablePrimaryAction || humanIssue)) {
-        return FREEZE_KINDS.POST_BUILD_UI_BLOCKED;
-    }
-    if (pendingIssue || noUsablePendingAction) return FREEZE_KINDS.PENDING_UI_LOCKED;
-    if ((!activeBlockingModalOpen && noUsablePrimaryAction) || humanIssue) return FREEZE_KINDS.HUMAN_TURN_UI_LOCKED;
-    if (pendingOpenWithoutContent) return FREEZE_KINDS.PENDING_WITHOUT_ACTION;
-    if (snapshot.isCpuTurn && !snapshot.onlineActionInFlight && !snapshot.cpuStepScheduled) return FREEZE_KINDS.CPU_TURN_STALLED;
-    if (snapshot.onlineActionInFlight) return FREEZE_KINDS.ONLINE_ACTION_IN_FLIGHT_STALLED;
-    return '';
+    return UiWatchdog.classifyFreezeFacts({
+        phase: snapshot.phase,
+        builtThisTurn: snapshot.builtThisTurn,
+        isMyTurn,
+        isCpuTurn: snapshot.isCpuTurn,
+        onlineBlocked,
+        confirmOpen,
+        staleConfirmOpen,
+        activeBlockingModalOpen,
+        hasExpectedPendingActions: expectedPending.length > 0,
+        stalePendingOpen,
+        skipDisabled,
+        gameInert,
+        gameScreenHidden,
+        noUsablePrimaryAction,
+        noUsablePendingAction,
+        pendingOpenWithoutContent,
+        onlineActionInFlight: snapshot.onlineActionInFlight,
+        cpuStepScheduled: snapshot.cpuStepScheduled,
+        modalIssue,
+        pendingIssue,
+        humanIssue,
+    }, FREEZE_KINDS);
 }
 
 function compactIssueForTrace(issue) {

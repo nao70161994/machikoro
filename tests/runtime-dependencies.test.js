@@ -34,7 +34,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardDetail.js', 'js/ui.js'],
             ['js/uiCardSelect.js', 'js/ui.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
-            ['js/lifecycleNotify.js', 'js/appShell.js']
+            ['js/lifecycleNotify.js', 'js/appShell.js'],
+            ['js/uiWatchdog.js', 'js/appShell.js']
         ]],
         ['scripts/selfplay.js', [
             ['js/cpuEvaluation.js', 'js/CPU.js']
@@ -46,6 +47,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
+            ['js/uiWatchdog.js', 'js/appShell.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/uiPlayerDisplay.js', 'js/ui.js'],
@@ -76,11 +78,13 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
+            ['js/uiWatchdog.js', 'js/appShell.js'],
             ['js/uiPendingMenu.js', 'js/ui.js']
         ]],
         ['tests/main.test.js', [
             ['js/clientReporting.js', 'js/appShell.js'],
-            ['js/lifecycleNotify.js', 'js/appShell.js']
+            ['js/lifecycleNotify.js', 'js/appShell.js'],
+            ['js/uiWatchdog.js', 'js/appShell.js']
         ]]
     ];
 
