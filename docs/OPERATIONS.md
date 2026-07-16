@@ -110,7 +110,9 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
 - Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
 - Client/lifecycle reporting, watchdog classification, server payload/settings/restore sanitation, online payload/restore-rank, and UI display/HTML helper modules are pure boundaries; keep network, socket, DOM recovery, storage, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.
-- CPU helper extraction must preserve wrapper results, fixed seed/action traces, and existing CPU tests; do not change heuristic constants, difficulty presets, or action selection under a maintenance-only task.
+- CPU helper extraction must preserve wrapper results, the exact decision baseline, the 2–10 player/all-difficulty self-play baseline, fixed traces, and existing CPU tests; do not change heuristic constants, difficulty presets, candidate order, or action selection under a maintenance-only task.
+- Run `npm run test:cpu-regression` after CPU scoring, legal-move, simulation, or execution edits. It compares winner, turns, and completion for 36 seeded full matches.
+- Regenerate CPU baselines only for an intentional, reviewed behavior change. Pass `--source-commit <full-40-character-commit>` identifying the accepted pre-generation behavior; never refresh an artifact merely to make a failing test green.
 - JSDoc/checkJs/ESLint remain deferred until a dependency/config task approves a narrow allowlist; do not turn their introduction into a repository-wide cleanup.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.

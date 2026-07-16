@@ -21,17 +21,17 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-16 保守性改善の現在地
+## 2026-07-17 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類を分離。DOM snapshot/recovery、storage、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
-- CPU: `js/cpuEvaluation.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に既存評価primitive、有限option判定、人数別profile、先読み用seeded RNGを分離。直接契約と固定seed/action traceを追加し、heuristic、difficulty、行動選択は未変更。
+- CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/購入減点primitive、合法建設filter、人数別profile、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、行動選択は未変更。
 - server: 通知、payload上限、設定、room/static/action履歴に加え、dice payload、reconnect identity、restore sanitation、canonical mirror metadataをpure helperへ分離。Socket.IO/HTTP handler、event名、wire payload、restore authorityは移動・変更していない。
 - online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離。ACK、restore queue、retry、protocolは未変更。
 - UI: pending/build/detail/selectに加え、`js/uiPlayerDisplay.js`、`js/uiLogDisplay.js`、`js/uiCardOrder.js` に表示設定、構造化log解析、カード順序を分離。modal lifecycle、focus/inert、DOM副作用、event処理は未変更。
 - contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
 - tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
 
-既存レビュー項目のうちAI単独で安全に進められるpure helperと契約補強は完了。残るreconnect state machine、Socket.IO handler移動、modal lifecycle、CPU scoring/legal-move/executionの移動は、callback/timing、iPhone実機、またはCPU強さの追加gateなしでは開始しない。現在iPhoneは利用できず、WebKit自動テストを実機完了とは扱わない。
+既存レビュー項目のうちAI単独で安全に進められるpure helperと契約補強は完了。残るreconnect state machine、Socket.IO handler移動、modal lifecycle、CPUの大きなscoring/selectionとlive build executionの移動は、callback/timing、iPhone実機、または追加の意味論判断なしでは開始しない。現在iPhoneは利用できず、WebKit自動テストを実機完了とは扱わない。
 
 ## 2026-05-16 時点の実施済み範囲
 

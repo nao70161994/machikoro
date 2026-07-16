@@ -300,7 +300,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-07-16, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
+As of 2026-07-17, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
 
 - `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
@@ -312,12 +312,13 @@ As of 2026-07-16, rollback-friendly units from this plan are implemented without
 - `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, and freeze-classification policy while `appShell.js` retains browser capture, DOM snapshots, recovery, storage, dedupe, fetch, timers, and PWA side effects.
 - `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
 - `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
-- `js/cpuEvaluation.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation primitives, player-count profile policy, and deterministic playout RNG behind existing CPU wrapper methods; direct sequence contracts and a fixed seed/action trace guard action-selection parity.
+- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty primitives, affordable-build filters, player-count profiles, and injected lookahead loop/steps behind existing CPU wrappers.
+- CPU extraction is guarded by 9 representative fixtures across build/dice/reroll/harbor/pending states, 36 exact decision snapshots for all difficulties, and 36 seeded full matches for all difficulties and 2–10 players. Baseline artifacts record their source commit.
 - Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity.
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, reconnect state-machine work, Socket.IO handler movement, modal lifecycle movement, and CPU scoring/legal-move movement need planned verification beyond pure helper tests. No iPhone is available in the current environment, so automated WebKit coverage must not be recorded as completion of the real-device gate.
+The remaining steps below still require the same gates described in each design section. In particular, reconnect state-machine work, Socket.IO handler movement, modal lifecycle movement, broad CPU scoring/selection movement, and live build execution need planned verification beyond current automated parity. No iPhone is available in the current environment, so automated WebKit coverage must not be recorded as completion of the real-device gate.
 
 ## Recommended Migration Order
 
