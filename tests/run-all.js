@@ -7,6 +7,7 @@ const TEST_GROUPS = {
         'gamemanager.test.js',
         'card-contract.test.js',
         'server.test.js',
+        'action-acceptance.test.js',
         'game-lifecycle-reporting.test.js',
         'game-settings.test.js',
         'room-validation.test.js',
@@ -93,6 +94,7 @@ const TEST_GROUPS = {
     online: [
         'gamemanager.test.js',
         'server.test.js',
+        'action-acceptance.test.js',
         'game-lifecycle-reporting.test.js',
         'game-settings.test.js',
         'room-validation.test.js',
