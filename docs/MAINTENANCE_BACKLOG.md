@@ -1,6 +1,6 @@
 # Maintenance Backlog
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
@@ -24,6 +24,9 @@ These risks are now covered by code changes, contract tests, or operations guida
 | Room lifecycle helpers | Pure room lifecycle policy was embedded in `server.js`, making handler edits too broad. | `server/roomLifecycle.js` owns player-list, start-payload, client-version, reconnect-token, and disconnect-candidate helpers; server tests cover pure behavior. |
 | Socket payload limits | Normal and restore payload size/depth/string checks were embedded in transport wiring. | `server/socketPayload.js` owns unchanged pure limit checks; handlers retain event names and error behavior. |
 | Server game settings | CPU/player/card setting normalization and RL model validation were embedded in `server.js`. | `server/gameSettings.js` owns the injected pure policy; the existing allowlists and exported server API remain unchanged. |
+| Room input validation | Player-name sanitation, room ID validation, and collision-safe ID generation were embedded beside Socket.IO handlers. | `server/roomValidation.js` owns the unchanged input rules; direct tests fix unsafe IDs, length limits, alphabet, and collision retry behavior. |
+| Static asset policy | Root-file allowlisting and build-hash injection were mixed with Express route wiring. | `server/staticAssets.js` owns the unchanged pure allowlist and string transforms; PWA, online, and release tests retain delivery behavior. |
+| Accepted action history | Duplicate-action lookup, bounded ACK memory, and reconnect ACK references were embedded in `server.js`. | `server/actionAcceptance.js` owns player-scoped keys, legacy/action-log fallback, the 100-entry bound, and minimal reconnect refs. |
 | Server lifecycle reporting | Lifecycle notification normalization and text formatting were mixed with HTTP, auth, dedupe, and delivery. | `server/gameLifecycleReporting.js` owns pure formatting while `server.js` retains all side effects. |
 | Online storage facade | Room-scoped storage keys, legacy fallback reads, and restore bundle cleanup were hard to audit inside `online.js`. | `js/onlineStorage.js` preserves existing key names/formats and room-scoped fallback contracts; online tests cover facade behavior. |
 | UI pure render helpers | Build/pending/detail/select HTML generation lived inside `ui.js`, increasing escape and selector drift risk. | `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, and `js/uiCardSelect.js` provide pure HTML helpers with escape/gate/selector contracts. |

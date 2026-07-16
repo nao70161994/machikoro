@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -75,6 +75,9 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 - Client-error ntfy redaction coverage.
 - Unknown restore action rejection after snapshot skip gating.
 - Current PWA basic static/release guardrails.
+- Room-name/ID validation and collision retry live in `server/roomValidation.js`.
+- Static root allowlisting and build-hash injection live in `server/staticAssets.js`.
+- Accepted client-action lookup, bounded memory, and reconnect refs live in `server/actionAcceptance.js`.
 
 ## Design A: Server Room Lifecycle And Socket Event Split
 

@@ -21,11 +21,11 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-15 保守性改善の現在地
+## 2026-07-16 保守性改善の現在地
 
 - app shell: `js/clientReporting.js` にpureなreport整形、`js/lifecycleNotify.js` にopt-out判定とpayload整形を分離。storage、dedupe、fetch、watchdog、PWA/SW副作用は `appShell.js` に残す。
 - CPU: `js/cpuEvaluation.js` に既存ダイス頻度表だけを分離。heuristic、difficulty、行動選択は未変更。
-- server: `server/clientErrorReporting.js`、`server/gameLifecycleReporting.js`、`server/socketPayload.js`、`server/gameSettings.js` に通知整形、payload上限、設定正規化のpure処理を分離。Socket.IO/HTTP handlerは移動していない。
+- server: 通知整形、payload上限、設定正規化に加え、`server/roomValidation.js`、`server/staticAssets.js`、`server/actionAcceptance.js` にroom入力、static配信判定、受理済みaction履歴を分離。Socket.IO/HTTP handler、event名、wire payloadは移動・変更していない。
 - online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離。ACK、restore queue、retry、protocolは未変更。
 - UI: `js/uiPendingMenu.js` と既存UI helper群にpending/build/detail/selectのHTML生成を分離。modal lifecycle、focus/inert、event処理は未変更。
 - contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
