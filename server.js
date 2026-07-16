@@ -133,6 +133,14 @@ const {
     isIncomingRestoreNewer,
     canReplaceRestoredRoom,
 } = require('./server/restoreRank');
+const {
+    stableStateHash,
+    canonicalMirrorStateHash,
+    roomCanonicalMirrorMarker,
+} = require('./server/canonicalMirrorMetadata')({
+    serializeMirrorState,
+    restorePayloadRank,
+});
 const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 1024 * 1024,
     maxActionLogEntries: 1000,
@@ -1675,25 +1683,6 @@ function rollServerDie() {
     return crypto.randomInt(1, 7);
 }
 
-function stableHashStringify(value) {
-    if (value === null || typeof value !== 'object') return JSON.stringify(value);
-    if (Array.isArray(value)) {
-        return '[' + value.map(stableHashStringify).join(',') + ']';
-    }
-    const keys = Object.keys(value).sort();
-    return '{' + keys.map(key => JSON.stringify(key) + ':' + stableHashStringify(value[key])).join(',') + '}';
-}
-
-function stableStateHash(value) {
-    return crypto.createHash('sha256').update(stableHashStringify(value)).digest('hex').slice(0, 16);
-}
-
-function canonicalMirrorStateHash(mirror) {
-    if (!mirror || !mirror.game) return null;
-    const state = serializeMirrorState(mirror.game, mirror.shopStock, mirror.lastUndoState || null, 0);
-    return stableStateHash(state);
-}
-
 function recordCanonicalMirrorMismatch(room, marker, previousHash, rebuiltHash) {
     if (!room || !previousHash || !rebuiltHash || previousHash === rebuiltHash) return;
     room.lastCanonicalMirrorMismatch = {
@@ -1708,13 +1697,6 @@ function recordCanonicalMirrorMismatch(room, marker, previousHash, rebuiltHash) 
         rebuiltHash,
         marker,
     });
-}
-
-function roomCanonicalMirrorMarker(room) {
-    return {
-        actionSeq: restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq,
-        actionLogLength: Array.isArray(room.actionLog) ? room.actionLog.length : 0,
-    };
 }
 
 function markRoomCanonicalMirrorCurrent(room) {
