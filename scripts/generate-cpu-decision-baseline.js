@@ -97,6 +97,7 @@ module.exports = {
     CPU_BASELINE_DIFFICULTIES,
     CPU_BASELINE_OPTIONS,
     assertSourceCommit,
+    currentCommit,
     generateCpuDecisionBaseline,
     parseArgs,
     writeCpuDecisionBaseline,

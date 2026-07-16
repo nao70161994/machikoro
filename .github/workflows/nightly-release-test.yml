@@ -73,6 +73,8 @@ jobs:
               run: npm ci
             - name: Simulation regression
               run: npm run test:sim
+            - name: CPU 2-10 player regression
+              run: npm run test:cpu-regression
 
     online-soak:
         runs-on: ubuntu-latest

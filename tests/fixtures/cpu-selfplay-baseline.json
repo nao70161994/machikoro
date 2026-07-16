@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "527cb84aeaf6b0daede3197345d9d70506056e2e",
+  "maxSteps": 1800,
+  "difficulties": [
+    "weak",
+    "normal",
+    "strong",
+    "expert"
+  ],
+  "playerCounts": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "matches": [
+    {
+      "difficulty": "weak",
+      "playerCount": 2,
+      "seed": 1720,
+      "winner": 0,
+      "turns": 64,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 3,
+      "seed": 1730,
+      "winner": 2,
+      "turns": 113,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 4,
+      "seed": 1740,
+      "winner": 2,
+      "turns": 106,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 5,
+      "seed": 1750,
+      "winner": 3,
+      "turns": 128,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 6,
+      "seed": 1760,
+      "winner": 0,
+      "turns": 96,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 7,
+      "seed": 1770,
+      "winner": 1,
+      "turns": 169,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 8,
+      "seed": 1780,
+      "winner": 3,
+      "turns": 179,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 9,
+      "seed": 1790,
+      "winner": 8,
+      "turns": 179,
+      "exhausted": false
+    },
+    {
+      "difficulty": "weak",
+      "playerCount": 10,
+      "seed": 1800,
+      "winner": 5,
+      "turns": 215,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 2,
+      "seed": 1721,
+      "winner": 0,
+      "turns": 62,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 3,
+      "seed": 1731,
+      "winner": 2,
+      "turns": 74,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 4,
+      "seed": 1741,
+      "winner": 2,
+      "turns": 102,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 5,
+      "seed": 1751,
+      "winner": 2,
+      "turns": 102,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 6,
+      "seed": 1761,
+      "winner": 5,
+      "turns": 119,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 7,
+      "seed": 1771,
+      "winner": 2,
+      "turns": 142,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 8,
+      "seed": 1781,
+      "winner": 1,
+      "turns": 161,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 9,
+      "seed": 1791,
+      "winner": 6,
+      "turns": 150,
+      "exhausted": false
+    },
+    {
+      "difficulty": "normal",
+      "playerCount": 10,
+      "seed": 1801,
+      "winner": 3,
+      "turns": 133,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 2,
+      "seed": 1722,
+      "winner": 1,
+      "turns": 77,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 3,
+      "seed": 1732,
+      "winner": 1,
+      "turns": 91,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 4,
+      "seed": 1742,
+      "winner": 3,
+      "turns": 71,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 5,
+      "seed": 1752,
+      "winner": 0,
+      "turns": 80,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 6,
+      "seed": 1762,
+      "winner": 2,
+      "turns": 134,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 7,
+      "seed": 1772,
+      "winner": 0,
+      "turns": 154,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 8,
+      "seed": 1782,
+      "winner": 7,
+      "turns": 159,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 9,
+      "seed": 1792,
+      "winner": 3,
+      "turns": 165,
+      "exhausted": false
+    },
+    {
+      "difficulty": "strong",
+      "playerCount": 10,
+      "seed": 1802,
+      "winner": 1,
+      "turns": 171,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 2,
+      "seed": 1723,
+      "winner": 0,
+      "turns": 42,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 3,
+      "seed": 1733,
+      "winner": 1,
+      "turns": 58,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 4,
+      "seed": 1743,
+      "winner": 2,
+      "turns": 126,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 5,
+      "seed": 1753,
+      "winner": 2,
+      "turns": 117,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 6,
+      "seed": 1763,
+      "winner": 1,
+      "turns": 115,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 7,
+      "seed": 1773,
+      "winner": 1,
+      "turns": 155,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 8,
+      "seed": 1783,
+      "winner": 0,
+      "turns": 136,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 9,
+      "seed": 1793,
+      "winner": 7,
+      "turns": 259,
+      "exhausted": false
+    },
+    {
+      "difficulty": "expert",
+      "playerCount": 10,
+      "seed": 1803,
+      "winner": 3,
+      "turns": 203,
+      "exhausted": false
+    }
+  ]
+}

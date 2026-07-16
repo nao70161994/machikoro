@@ -152,6 +152,7 @@ const TEST_GROUPS = {
         'cpu-simulation.test.js',
         'cpu-decision-snapshot.test.js',
         'cpu-decision-baseline.test.js',
+        'cpu-selfplay-regression.test.js',
         'selfplay.test.js',
         'tune-expert.test.js',
         'train-expert-crowd.test.js',
