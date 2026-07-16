@@ -180,6 +180,13 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
         );
     }
 
+    function roomHostChangedPayload(room) {
+        return {
+            newHostPlayerIndex: room?.hostPlayerIndex,
+            hostEpoch: Number.isInteger(room?.hostEpoch) ? room.hostEpoch : 0,
+        };
+    }
+
     return {
         roomTimestamp,
         isRoomExpired,
@@ -199,6 +206,7 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
         roomClientVersions,
         roomReconnectTokenHashes,
         getRemainingConnectedPlayers,
+        roomHostChangedPayload,
     };
 }
 

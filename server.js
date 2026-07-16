@@ -119,6 +119,7 @@ const {
     roomClientVersions: roomClientVersionsForSockets,
     roomReconnectTokenHashes: roomReconnectTokenHashesForRoom,
     getRemainingConnectedPlayers: getRemainingConnectedRoomPlayers,
+    roomHostChangedPayload: buildRoomHostChangedPayload,
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
     defaultRooms: rooms,
@@ -1259,10 +1260,7 @@ function setRoomHostPlayerIndex(room, hostPlayerIndex) {
 }
 
 function roomHostChangedPayload(room) {
-    return {
-        newHostPlayerIndex: room?.hostPlayerIndex,
-        hostEpoch: Number.isInteger(room?.hostEpoch) ? room.hostEpoch : 0,
-    };
+    return buildRoomHostChangedPayload(room);
 }
 
 function emitRoomHostChanged(roomId, room, ioInstance = io) {
