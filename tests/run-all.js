@@ -21,6 +21,7 @@ const TEST_GROUPS = {
         'snapshot-contract.test.js',
         'client-error-reporting.test.js',
         'cpu.test.js',
+        'cpu-profile.test.js',
         'cpu-evaluation.test.js',
         'online.test.js',
         'online-payload.test.js',
@@ -143,6 +144,7 @@ const TEST_GROUPS = {
     ],
     cpu: [
         'cpu.test.js',
+        'cpu-profile.test.js',
         'cpu-evaluation.test.js',
         'selfplay.test.js',
         'tune-expert.test.js',

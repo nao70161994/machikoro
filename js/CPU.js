@@ -64,7 +64,7 @@ class CPU {
     }
 
     static _finiteOption(options, key, fallback) {
-        return Number.isFinite(options && options[key]) ? options[key] : fallback;
+        return CPUProfile.finiteOption(options, key, fallback);
     }
 
     _expertFlagEnabled(name) {
@@ -398,45 +398,11 @@ class CPU {
     }
 
     _playerCountProfile(game) {
-        const count = game.players.length;
-        if (count >= 4) {
-            return {
-                landmarkBias: 1.12,
-                blueFactor: 1.28,
-                redFactor: 0.92,
-                greenFactor: 1.18,
-                purpleFactor: 0.82,
-                massAttackFactor: 0.95,
-                airportBias: 0.9,
-            };
-        }
-        if (count === 3) {
-            return {
-                landmarkBias: 1,
-                blueFactor: 1.05,
-                redFactor: 1.08,
-                greenFactor: 1,
-                purpleFactor: 1.05,
-                massAttackFactor: 1.08,
-                airportBias: 1,
-            };
-        }
-        return {
-            landmarkBias: 1,
-            blueFactor: 1,
-            redFactor: 1,
-            greenFactor: 1,
-            purpleFactor: 1,
-            massAttackFactor: 1,
-            airportBias: 1,
-        };
+        return CPUProfile.playerCountProfile(game.players.length);
     }
 
     _expertProfileName(game) {
-        if (!game || !game.players) return "crowd";
-        if (game.players.length <= 2) return "duel";
-        if (game.players.length === 3) return "trio";
-        return "crowd";
+        return CPUProfile.expertProfileName(game && game.players ? game.players.length : null);
     }
 
     _syncExpertTuningForGame(game) {
