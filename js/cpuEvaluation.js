@@ -36,6 +36,49 @@ const CPUEvaluation = Object.freeze({
             !player.landmarks[name] && player.coins >= landmarkCost(name)
         ).length;
     },
+
+    sameBuildOption(a, b) {
+        if (!a || !b || a.type !== b.type) return false;
+        if (a.type === 'landmark') return a.name === b.name;
+        return a.card && b.card && a.card.name === b.card.name;
+    },
+
+    futurePayoffCardNames(card, mode, categories) {
+        if (!card) return [];
+        const payoffs = [];
+        if (card.category === categories.LIVESTOCK) payoffs.push('チーズ工場');
+        if (card.name === '森林' || card.name === '鉱山') payoffs.push('家具工場');
+        if (card.name === '花畑') payoffs.push('フラワーショップ');
+        if (card.name === 'ブドウ園') payoffs.push('ワイナリー');
+        if (mode === 'core') return payoffs;
+        if (card.category === categories.FARM) payoffs.push('青果市場');
+        if (card.category === categories.RESTAURANT) {
+            payoffs.push('食品倉庫');
+            payoffs.push('ドリンク工場');
+        }
+        return payoffs;
+    },
+
+    marginalComboIncome(enabler, payoff, categories, effects) {
+        if (!enabler || !payoff) return 0;
+        switch (payoff.effect) {
+            case effects.CHEESE:
+                return enabler.category === categories.LIVESTOCK ? payoff.income : 0;
+            case effects.FURNITURE:
+                return (enabler.name === '森林' || enabler.name === '鉱山') ? payoff.income : 0;
+            case effects.MARKET:
+                return enabler.category === categories.FARM ? payoff.income : 0;
+            case effects.FLOWER:
+                return enabler.name === '花畑' ? payoff.income : 0;
+            case effects.WINERY:
+                return enabler.name === 'ブドウ園' ? payoff.income : 0;
+            case effects.FOODWAREHOUSE:
+            case effects.DRINKFACTORY:
+                return enabler.category === categories.RESTAURANT ? payoff.income : 0;
+            default:
+                return 0;
+        }
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) {

@@ -3288,9 +3288,7 @@ class CPU {
     }
 
     _sameExpertV2SimpleBuildOption(a, b) {
-        if (!a || !b || a.type !== b.type) return false;
-        if (a.type === 'landmark') return a.name === b.name;
-        return a.card && b.card && a.card.name === b.card.name;
+        return CPUEvaluation.sameBuildOption(a, b);
     }
 
     _scoreExpertV2SimpleBuildOption(game, option, shopStock = null) {
@@ -3422,40 +3420,16 @@ class CPU {
     }
 
     _expertV2SimpleFuturePayoffCards(card, mode = "unlock") {
-        if (!card) return [];
-        const payoffs = [];
-        if (card.category === CARD_CATEGORIES.LIVESTOCK) payoffs.push("チーズ工場");
-        if (card.name === "森林" || card.name === "鉱山") payoffs.push("家具工場");
-        if (card.name === "花畑") payoffs.push("フラワーショップ");
-        if (card.name === "ブドウ園") payoffs.push("ワイナリー");
-        if (mode === "core") return payoffs;
-        if (card.category === CARD_CATEGORIES.FARM) payoffs.push("青果市場");
-        if (card.category === CARD_CATEGORIES.RESTAURANT) {
-            payoffs.push("食品倉庫");
-            payoffs.push("ドリンク工場");
-        }
-        return payoffs;
+        return CPUEvaluation.futurePayoffCardNames(card, mode, CARD_CATEGORIES);
     }
 
     _expertV2SimpleMarginalComboIncome(enabler, payoff) {
-        if (!enabler || !payoff) return 0;
-        switch (payoff.effect) {
-            case CARD_EFFECTS.CHEESE:
-                return enabler.category === CARD_CATEGORIES.LIVESTOCK ? payoff.income : 0;
-            case CARD_EFFECTS.FURNITURE:
-                return (enabler.name === "森林" || enabler.name === "鉱山") ? payoff.income : 0;
-            case CARD_EFFECTS.MARKET:
-                return enabler.category === CARD_CATEGORIES.FARM ? payoff.income : 0;
-            case CARD_EFFECTS.FLOWER:
-                return enabler.name === "花畑" ? payoff.income : 0;
-            case CARD_EFFECTS.WINERY:
-                return enabler.name === "ブドウ園" ? payoff.income : 0;
-            case CARD_EFFECTS.FOODWAREHOUSE:
-            case CARD_EFFECTS.DRINKFACTORY:
-                return enabler.category === CARD_CATEGORIES.RESTAURANT ? payoff.income : 0;
-            default:
-                return 0;
-        }
+        return CPUEvaluation.marginalComboIncome(
+            enabler,
+            payoff,
+            CARD_CATEGORIES,
+            CARD_EFFECTS
+        );
     }
 
     _buyLateGameLandmark(current, game) {
