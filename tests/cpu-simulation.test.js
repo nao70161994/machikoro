@@ -62,3 +62,55 @@ runTest('CPU simulation playoutはmaxStepsで停止して追加stepを実行し�
     assert.strictEqual(safety, 2);
     assert.strictEqual(steps, 2);
 });
+
+runTest('CPU simulation stepはdice消費順とroll payloadを維持する', () => {
+    const phases = {
+        ROLL: 'roll',
+        SELECT_DICE: 'selectDice',
+        REROLL_CONFIRM: 'reroll',
+        HARBOR_CHOICE: 'harbor',
+        PENDING: 'pending',
+        BUILD: 'build',
+    };
+    const values = [0, 0.2, 0.4];
+    const calls = [];
+    const game = {
+        phase: phases.ROLL,
+        rollDice(dice, tunaDice) {
+            calls.push({ dice, tunaDice });
+        },
+    };
+    CPUSimulation.runStep(game, {}, {}, () => values.shift(), phases, {});
+
+    assert.deepStrictEqual(calls, [{ dice: 3, tunaDice: [1, 2] }]);
+    assert.deepStrictEqual(values, []);
+});
+
+runTest('CPU simulation stepはbuild後のpendingITとnextTurn順を維持する', () => {
+    const phases = {
+        ROLL: 'roll',
+        SELECT_DICE: 'selectDice',
+        REROLL_CONFIRM: 'reroll',
+        HARBOR_CHOICE: 'harbor',
+        PENDING: 'pending',
+        BUILD: 'build',
+    };
+    const calls = [];
+    const game = {
+        phase: phases.BUILD,
+        pendingIT: false,
+        nextTurn() {
+            calls.push('nextTurn');
+        },
+    };
+    const cpu = {
+        build(receivedGame, receivedStock) {
+            assert.strictEqual(receivedGame, game);
+            assert.deepStrictEqual(receivedStock, { wheat: 2 });
+            calls.push('build');
+        },
+    };
+    CPUSimulation.runStep(game, cpu, { wheat: 2 }, () => 0, phases, {});
+
+    assert.deepStrictEqual(calls, ['build', 'nextTurn']);
+});

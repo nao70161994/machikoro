@@ -4199,49 +4199,14 @@ class CPU {
     }
 
     _runSimulationStep(game, cpu, shopStock, rng) {
-        const die = () => Math.floor(rng() * 6) + 1;
-        const tunaDice = [die(), die()];
-        switch (game.phase) {
-            case GAME_PHASES.ROLL:
-                game.rollDice(die(), tunaDice);
-                return;
-            case GAME_PHASES.SELECT_DICE: {
-                const useTwo = cpu.chooseDiceCount(game);
-                game.selectDiceCount(useTwo, die(), die(), tunaDice);
-                return;
-            }
-            case GAME_PHASES.REROLL_CONFIRM:
-                if (cpu.chooseReroll(game)) game.rerollDice(die(), tunaDice);
-                else game.skipReroll();
-                return;
-            case GAME_PHASES.HARBOR_CHOICE:
-                game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
-                return;
-            case GAME_PHASES.PENDING:
-                const pendingResolution = CPU.choosePendingResolution(game, cpu);
-                if (pendingResolution) {
-                    pendingResolution.apply();
-                    return;
-                }
-                if (game.pendingCleaning > 0) {
-                    const cardName = cpu.chooseCleaningTarget(game);
-                    if (cardName) game.resolveCleaning(cardName);
-                    else CPU._clearPendingField(game, 'pendingCleaning');
-                    return;
-                }
-                game.phase = GAME_PHASES.BUILD;
-                return;
-            case GAME_PHASES.BUILD:
-                if (game.pendingIT) {
-                    game.resolveIT(cpu.chooseITInvest(game));
-                    return;
-                }
-                cpu.build(game, shopStock);
-                if (!game.pendingIT && game.phase === GAME_PHASES.BUILD) game.nextTurn();
-                return;
-            default:
-                return;
-        }
+        return CPUSimulation.runStep(
+            game,
+            cpu,
+            shopStock,
+            rng,
+            GAME_PHASES,
+            CPUPendingResolution
+        );
     }
 
     _shouldHoldForLandmark(current, game, bestCardScore, maxShortfall) {
