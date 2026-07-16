@@ -24,7 +24,7 @@
 ## 2026-07-16 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類を分離。DOM snapshot/recovery、storage、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
-- CPU: `js/cpuEvaluation.js` と `js/cpuProfile.js` に既存ダイス頻度表、有限option判定、人数別profileを分離。固定seed/action traceを追加し、heuristic、difficulty、行動選択は未変更。
+- CPU: `js/cpuEvaluation.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に既存評価primitive、有限option判定、人数別profile、先読み用seeded RNGを分離。直接契約と固定seed/action traceを追加し、heuristic、difficulty、行動選択は未変更。
 - server: 通知、payload上限、設定、room/static/action履歴に加え、dice payload、reconnect identity、restore sanitation、canonical mirror metadataをpure helperへ分離。Socket.IO/HTTP handler、event名、wire payload、restore authorityは移動・変更していない。
 - online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離。ACK、restore queue、retry、protocolは未変更。
 - UI: pending/build/detail/selectに加え、`js/uiPlayerDisplay.js`、`js/uiLogDisplay.js`、`js/uiCardOrder.js` に表示設定、構造化log解析、カード順序を分離。modal lifecycle、focus/inert、DOM副作用、event処理は未変更。

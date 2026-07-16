@@ -312,7 +312,7 @@ As of 2026-07-16, rollback-friendly units from this plan are implemented without
 - `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, and freeze-classification policy while `appShell.js` retains browser capture, DOM snapshots, recovery, storage, dedupe, fetch, timers, and PWA side effects.
 - `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
 - `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
-- `js/cpuEvaluation.js` and `js/cpuProfile.js` own unchanged dice-frequency and player-count profile policy behind existing CPU wrapper methods; a fixed seed/action trace guards action-selection parity.
+- `js/cpuEvaluation.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation primitives, player-count profile policy, and deterministic playout RNG behind existing CPU wrapper methods; direct sequence contracts and a fixed seed/action trace guard action-selection parity.
 - Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity.
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
