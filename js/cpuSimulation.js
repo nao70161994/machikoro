@@ -8,6 +8,15 @@ const CPUSimulation = Object.freeze({
             return state / 0x100000000;
         };
     },
+
+    runPlayout(game, maxSteps, step) {
+        let safety = 0;
+        while (!game.checkWinner() && safety < maxSteps) {
+            step();
+            safety++;
+        }
+        return safety;
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) {

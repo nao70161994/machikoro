@@ -33,3 +33,32 @@ runTest('CPU本体のplayout RNG wrapperはpure simulationへ同値委譲する'
         Array.from({ length: 8 }, () => pureRng())
     );
 });
+
+runTest('CPU simulation playoutはwinnerまで既存順でstepを実行する', () => {
+    let steps = 0;
+    let winnerChecks = 0;
+    const game = {
+        checkWinner() {
+            winnerChecks++;
+            return steps >= 3 ? { name: 'winner' } : null;
+        },
+    };
+    const safety = CPUSimulation.runPlayout(game, 10, () => {
+        steps++;
+    });
+
+    assert.strictEqual(safety, 3);
+    assert.strictEqual(steps, 3);
+    assert.strictEqual(winnerChecks, 4);
+});
+
+runTest('CPU simulation playoutはmaxStepsで停止して追加stepを実行しない', () => {
+    let steps = 0;
+    const game = { checkWinner: () => null };
+    const safety = CPUSimulation.runPlayout(game, 2, () => {
+        steps++;
+    });
+
+    assert.strictEqual(safety, 2);
+    assert.strictEqual(steps, 2);
+});

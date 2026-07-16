@@ -4061,12 +4061,10 @@ class CPU {
             const tuning = this.expertTuning;
             const seed = game.turnCount + focusIndex * 97 + game.currentPlayer().coins * 13 + maxSteps;
             const rng = this._createPlayoutRng(seed);
-            let safety = 0;
-            while (!game.checkWinner() && safety < maxSteps) {
+            const safety = CPUSimulation.runPlayout(game, maxSteps, () => {
                 const cpu = cpus[game.currentPlayerIndex];
                 this._runSimulationStep(game, cpu, shopStock, rng);
-                safety++;
-            }
+            });
             this._profileCount("expert.lookaheadSteps", safety);
             if (game.checkWinner()) {
                 const winnerIndex = game.players.indexOf(game.checkWinner());
