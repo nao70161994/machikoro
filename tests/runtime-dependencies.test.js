@@ -23,6 +23,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
     const cases = [
         ['index.html', [
             ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuSimulation.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/onlineStorage.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
@@ -40,14 +41,17 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['scripts/selfplay.js', [
             ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuSimulation.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/runtime-loaders.js', [
             ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuSimulation.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
             ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuSimulation.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
