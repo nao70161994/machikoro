@@ -13,6 +13,7 @@
     "test:online": "node tests/run-all.js online",
     "test:pwa": "node --check sw.js && node --check js/appShell.js && node tests/run-all.js pwa",
     "test:cpu": "node tests/run-all.js cpu",
+    "generate-cpu-decision-baseline": "node scripts/generate-cpu-decision-baseline.js",
     "test:rl": "node tests/run-all.js rl",
     "test:coverage": "node scripts/test-coverage.js",
     "selfplay": "node scripts/selfplay.js",
