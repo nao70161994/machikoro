@@ -18,6 +18,7 @@ const {
 } = require('./server/roomValidation');
 const {
     PUBLIC_ROOT_FILES,
+    PUBLIC_STATIC_DIRS,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
@@ -777,12 +778,6 @@ function sendIndexWithBuildHash(req, res) {
 
 app.get('/', sendIndexWithBuildHash);
 app.get('/index.html', sendIndexWithBuildHash);
-
-const PUBLIC_STATIC_DIRS = Object.freeze([
-    { route: '/js', directory: 'js' },
-    { route: '/icons', directory: 'icons' },
-    { route: '/models/rl_model/portfolio', directory: path.join('models', 'rl_model', 'portfolio') },
-]);
 
 function sendPublicRootFile(req, res, next) {
     const fileName = String(req.path || '').replace(/^\/+/, '');

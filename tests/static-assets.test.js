@@ -1,11 +1,16 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const {
     PUBLIC_ROOT_FILES,
+    PUBLIC_STATIC_DIRS,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
 } = require('../server/staticAssets');
 const { runTest } = require('./helpers/test-utils');
+
+const repoRoot = path.join(__dirname, '..');
 
 runTest('static assets は公開root allowlistを固定する', () => {
     assert.deepStrictEqual(Array.from(PUBLIC_ROOT_FILES), [
@@ -22,6 +27,44 @@ runTest('static assets は公開root allowlistを固定する', () => {
     assert.strictEqual(isPublicRootFile('/manifest.json'), true);
     assert.strictEqual(isPublicRootFile('server.js'), false);
     assert.strictEqual(isPublicRootFile('../style.css'), false);
+});
+
+runTest('static assets は公開directory routeとindexのlocal asset参照を同期する', () => {
+    assert.deepStrictEqual(PUBLIC_STATIC_DIRS, [
+        { route: '/js', directory: 'js' },
+        { route: '/icons', directory: 'icons' },
+        { route: '/models/rl_model/portfolio', directory: 'models/rl_model/portfolio' },
+    ]);
+    assert.ok(Object.isFrozen(PUBLIC_STATIC_DIRS));
+    for (const entry of PUBLIC_STATIC_DIRS) {
+        assert.ok(Object.isFrozen(entry), `${entry.route} entry must be frozen`);
+        assert.ok(fs.statSync(path.join(repoRoot, entry.directory)).isDirectory());
+    }
+    for (const fileName of PUBLIC_ROOT_FILES) {
+        assert.ok(fs.statSync(path.join(repoRoot, fileName)).isFile(), `missing public root file: ${fileName}`);
+    }
+
+    const indexSource = fs.readFileSync(path.join(repoRoot, 'index.html'), 'utf8');
+    const localAssetRefs = Array.from(indexSource.matchAll(/\b(?:src|href)="([^"]+)"/g), match => match[1])
+        .filter(ref => !/^https?:\/\//.test(ref))
+        .filter(ref => ref !== '/socket.io/socket.io.js');
+
+    for (const ref of localAssetRefs) {
+        const requestPath = ref.split(/[?#]/, 1)[0];
+        const rootFile = requestPath.replace(/^\/+/, '');
+        const routePath = '/' + rootFile;
+        if (isPublicRootFile(rootFile)) {
+            assert.ok(fs.statSync(path.join(repoRoot, rootFile)).isFile(), `missing index asset: ${ref}`);
+            continue;
+        }
+
+        const staticEntry = PUBLIC_STATIC_DIRS.find(entry =>
+            routePath === entry.route || routePath.startsWith(entry.route + '/')
+        );
+        assert.ok(staticEntry, `index asset is not served by an allowlisted route: ${ref}`);
+        const suffix = routePath.slice(staticEntry.route.length).replace(/^\/+/, '');
+        assert.ok(fs.statSync(path.join(repoRoot, staticEntry.directory, suffix)).isFile(), `missing index asset: ${ref}`);
+    }
 });
 
 runTest('static assets はSW cache versionだけをbuild hashへ置換する', () => {

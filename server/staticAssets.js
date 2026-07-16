@@ -12,6 +12,12 @@ const PUBLIC_ROOT_FILES = Object.freeze(new Set([
     'ai-cpu.html',
 ]));
 
+const PUBLIC_STATIC_DIRS = Object.freeze([
+    Object.freeze({ route: '/js', directory: 'js' }),
+    Object.freeze({ route: '/icons', directory: 'icons' }),
+    Object.freeze({ route: '/models/rl_model/portfolio', directory: 'models/rl_model/portfolio' }),
+]);
+
 function injectServiceWorkerBuildHash(content, buildHash) {
     return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
 }
@@ -27,6 +33,7 @@ function isPublicRootFile(fileName) {
 
 module.exports = {
     PUBLIC_ROOT_FILES,
+    PUBLIC_STATIC_DIRS,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
