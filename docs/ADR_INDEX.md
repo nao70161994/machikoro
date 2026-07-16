@@ -1,6 +1,6 @@
 # ADR Index
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 この索引は設計判断の入口です。実装の現在地は `MAINTENANCE_BACKLOG.md`、段階移行計画は `ARCHITECTURE_REFACTOR_PLAN.md` を正本とします。
 
@@ -10,6 +10,8 @@ Last updated: 2026-07-15
 | --- | --- | --- |
 | [Modal stack policy](ADR_MODAL_STACK_POLICY.md) | Accepted | blocking modalはdeny-by-default。例外のないmodal lifecycle全面統合は行わない。 |
 | [Restore trust boundary](ADR_RESTORE_TRUST_BOUNDARY.md) | Accepted | casual-trustとhost-only restore境界を維持。durable canonical state、hostless restore、追加のauthority変更は別設計とする。 |
+
+今回のpure helper抽出は既存Accepted判断の範囲内であり、新しいprotocol・restore authority・modal policyのADR変更はありません。
 
 ## Rejected
 

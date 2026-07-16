@@ -104,12 +104,13 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Saved stats numbers must normalize to finite non-negative integers before rendering percentages or bar widths.
 - Restore action logs must reject unknown action names before replay or rank calculation.
 - New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests; update `tests/runtime-dependencies.test.js` when the helper has a browser-global consumer.
+- Public root files and directory routes must remain explicit in `server/staticAssets.js`; every local `index.html` asset must resolve through that allowlist, except Socket.IO's own client route.
 - UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
 - Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
 - Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
 - Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
-- Client/lifecycle reporting, server payload/settings, online payload/restore-rank, and UI HTML helper modules are pure boundaries; keep network, socket, storage, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.
-- CPU helper extraction must preserve wrapper results and existing CPU tests; do not change heuristic constants, difficulty presets, or action selection under a maintenance-only task.
+- Client/lifecycle reporting, watchdog classification, server payload/settings/restore sanitation, online payload/restore-rank, and UI display/HTML helper modules are pure boundaries; keep network, socket, DOM recovery, storage, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.
+- CPU helper extraction must preserve wrapper results, fixed seed/action traces, and existing CPU tests; do not change heuristic constants, difficulty presets, or action selection under a maintenance-only task.
 - JSDoc/checkJs/ESLint remain deferred until a dependency/config task approves a narrow allowlist; do not turn their introduction into a repository-wide cleanup.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
