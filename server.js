@@ -11,6 +11,11 @@ const { makeClientErrorReporting } = require('./server/clientErrorReporting');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const makeGameSettings = require('./server/gameSettings');
+const {
+    sanitizeName,
+    isValidRoomId,
+    generateRoomId: generateUniqueRoomId,
+} = require('./server/roomValidation');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -782,10 +787,6 @@ function requirePlainSocketPayload(socket, payload) {
     return false;
 }
 
-function sanitizeName(name) {
-    return String(name || '').trim().slice(0, 20).replace(/[<>&"'`]/g, '');
-}
-
 function cpuDifficultyLabel(difficulty) {
     if (difficulty === 'weak') return '弱';
     if (difficulty === 'normal') return '普';
@@ -822,28 +823,12 @@ function generateReconnectToken() {
     return crypto.randomBytes(16).toString('hex');
 }
 
-const ROOM_ID_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-
-function isValidRoomId(roomId) {
-    if (typeof roomId !== 'string') return false;
-    if (roomId.length < 1 || roomId.length > 64) return false;
-    if (roomId === '__proto__' || roomId === 'constructor' || roomId === 'prototype') return false;
-    return /^[A-Za-z0-9_-]+$/.test(roomId);
-}
-
 function hasOwnRoom(roomId) {
     return isValidRoomId(roomId) && Object.prototype.hasOwnProperty.call(rooms, roomId);
 }
 
 function generateRoomId(existingRooms = rooms) {
-    let roomId;
-    do {
-        roomId = '';
-        for (let i = 0; i < 6; i++) {
-            roomId += ROOM_ID_ALPHABET[Math.floor(Math.random() * ROOM_ID_ALPHABET.length)];
-        }
-    } while (Object.prototype.hasOwnProperty.call(existingRooms, roomId));
-    return roomId;
+    return generateUniqueRoomId(existingRooms);
 }
 
 function hashReconnectToken(token) {
