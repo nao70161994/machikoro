@@ -16,6 +16,12 @@ const {
     isValidRoomId,
     generateRoomId: generateUniqueRoomId,
 } = require('./server/roomValidation');
+const {
+    PUBLIC_ROOT_FILES,
+    injectServiceWorkerBuildHash,
+    injectIndexBuildHash,
+    isPublicRootFile,
+} = require('./server/staticAssets');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -660,15 +666,6 @@ function resolveBuildHash() {
     }
 }
 
-function injectServiceWorkerBuildHash(content, buildHash) {
-    return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
-}
-
-function injectIndexBuildHash(content, buildHash) {
-    const script = `<script>window.MACHIKORO_CLIENT_VERSION=${JSON.stringify(buildHash)};</script>`;
-    return String(content).replace('</head>', `    ${script}\n</head>`);
-}
-
 const BUILD_HASH = require.main === module ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
 if (require.main === module) {
     console.log(`Build hash: ${BUILD_HASH}`);
@@ -740,27 +737,11 @@ function sendIndexWithBuildHash(req, res) {
 app.get('/', sendIndexWithBuildHash);
 app.get('/index.html', sendIndexWithBuildHash);
 
-const PUBLIC_ROOT_FILES = Object.freeze(new Set([
-    'style.css',
-    'manifest.json',
-    'manifest.webmanifest',
-    'sw.js',
-    'privacy.html',
-    'rules.html',
-    'how-to-play.html',
-    'cards.html',
-    'ai-cpu.html',
-]));
-
 const PUBLIC_STATIC_DIRS = Object.freeze([
     { route: '/js', directory: 'js' },
     { route: '/icons', directory: 'icons' },
     { route: '/models/rl_model/portfolio', directory: path.join('models', 'rl_model', 'portfolio') },
 ]);
-
-function isPublicRootFile(fileName) {
-    return PUBLIC_ROOT_FILES.has(String(fileName || '').replace(/^\/+/, ''));
-}
 
 function sendPublicRootFile(req, res, next) {
     const fileName = String(req.path || '').replace(/^\/+/, '');

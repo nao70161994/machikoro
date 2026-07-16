@@ -10,6 +10,7 @@ const TEST_GROUPS = {
         'game-lifecycle-reporting.test.js',
         'game-settings.test.js',
         'room-validation.test.js',
+        'static-assets.test.js',
         'socket-payload.test.js',
         'snapshot-contract.test.js',
         'client-error-reporting.test.js',
@@ -111,6 +112,7 @@ const TEST_GROUPS = {
     pwa: [
         'storage.test.js',
         'main.test.js',
+        'static-assets.test.js',
         'sw.test.js',
     ],
     release: [
