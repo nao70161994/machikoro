@@ -34,6 +34,7 @@ const STATIC_ASSETS = [
   '/js/onlineRestoreRank.js',
   '/js/online.js',
   '/js/uiNotice.js',
+  '/js/uiPlayerDisplay.js',
   '/js/uiBuildMenu.js',
   '/js/uiPendingMenu.js',
   '/js/uiCardDetail.js',

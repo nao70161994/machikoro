@@ -124,7 +124,7 @@ function loadUiRuntime() {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/ui.js']);
     return { context, elements };
 }
 

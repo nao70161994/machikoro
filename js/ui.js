@@ -599,46 +599,33 @@ function renderPending() {
 }
 
 function renderPlayerDifficultyLabel(difficulty) {
-    if (difficulty === 'weak') return '弱';
-    if (difficulty === 'normal') return '普';
-    if (difficulty === 'strong') return '強';
-    if (difficulty === 'rl') return '深';
-    return 'AI';
+    return UiPlayerDisplay.difficultyLabel(difficulty);
 }
 
 function validRenderCpuDifficulty(value) {
-    return ['weak', 'normal', 'strong', 'expert', 'rl'].includes(value) ? value : 'normal';
+    return UiPlayerDisplay.normalizeCpuDifficulty(value);
 }
 
 function getPlayerSettingForRender(index, player) {
     const settings = typeof playerSettings !== 'undefined' && Array.isArray(playerSettings) ? playerSettings : [];
     const cpus = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
-    const setting = settings[index];
-    const cpu = cpus[index] || null;
-    const inferredCpu = !!cpu || setting?.type === 'cpu' || player?.isCPU === true;
-    if (setting && (!inferredCpu || setting.difficulty || cpu?.difficulty)) {
-        return {
-            type: inferredCpu ? 'cpu' : 'human',
-            difficulty: inferredCpu ? validRenderCpuDifficulty(cpu?.difficulty || setting.difficulty) : 'human',
-            name: player?.name || setting.name || `プレイヤー${index + 1}`,
-            missing: false,
-        };
-    }
-    const fallback = {
-        type: inferredCpu ? 'cpu' : 'human',
-        difficulty: inferredCpu ? validRenderCpuDifficulty(cpu?.difficulty) : 'human',
-        name: player?.name || `プレイヤー${index + 1}`,
-        missing: true,
-    };
-    recordFlowTrace('render-player-setting-fallback', {
-        playerIndex: index,
-        fallbackType: fallback.type,
-        fallbackDifficulty: fallback.difficulty,
-        playerSettingsLength: settings.length,
-        cpuPlayersLength: cpus.length,
-        playersLength: game && Array.isArray(game.players) ? game.players.length : 0,
+    const resolved = UiPlayerDisplay.resolvePlayerSetting({
+        playerSettings: settings,
+        cpuPlayers: cpus,
+        index,
+        player,
     });
-    return fallback;
+    if (resolved.missing) {
+        recordFlowTrace('render-player-setting-fallback', {
+            playerIndex: index,
+            fallbackType: resolved.type,
+            fallbackDifficulty: resolved.difficulty,
+            playerSettingsLength: settings.length,
+            cpuPlayersLength: cpus.length,
+            playersLength: game && Array.isArray(game.players) ? game.players.length : 0,
+        });
+    }
+    return resolved;
 }
 
 function renderPlayers() {
