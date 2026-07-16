@@ -2296,13 +2296,7 @@ class CPU {
     }
 
     _strongSoftCapValue(value) {
-        if (this.difficulty !== "strong") return value;
-        const sign = Math.sign(value);
-        const abs = Math.abs(value);
-        if (abs <= 12) return value;
-        if (abs <= 20) return sign * (12 + (abs - 12) * 0.5);
-        if (abs <= 30) return sign * (16 + (abs - 20) * 0.3);
-        return sign * (19 + Math.sqrt(abs - 30));
+        return CPUEvaluation.strongSoftCapValue(value, this.difficulty);
     }
 
     _strongCrowdDisruptionReady(game, player) {
@@ -2702,11 +2696,11 @@ class CPU {
     }
 
     _coinsTowardsNextLandmark(player) {
-        const remainingCosts = Player.landmarkNames()
-            .filter(name => !player.landmarks[name])
-            .map(name => Player.landmarkCost(name));
-        if (remainingCosts.length === 0) return 0;
-        return Math.max(0, player.coins - Math.min(...remainingCosts));
+        return CPUEvaluation.coinsTowardsNextLandmark(
+            player,
+            Player.landmarkNames(),
+            Player.landmarkCost
+        );
     }
 
     _estimateCleaningValue(game, player) {
@@ -2924,7 +2918,8 @@ class CPU {
     }
 
     _opponentDilutionFactor(game) {
-        return 1 / Math.max(1, (game && game.players ? game.players.length : 1) - 1);
+        const playerCount = game && game.players ? game.players.length : 1;
+        return CPUEvaluation.opponentDilutionFactor(playerCount);
     }
 
     _receivedCardValue(card, game, player) {
@@ -3602,9 +3597,7 @@ class CPU {
     }
 
     _countReachableLandmarks(player, enabledLandmarks) {
-        return enabledLandmarks.filter(name =>
-            !player.landmarks[name] && player.coins >= Player.landmarkCost(name)
-        ).length;
+        return CPUEvaluation.countReachableLandmarks(player, enabledLandmarks, Player.landmarkCost);
     }
 
     _isProgressIncomeCard(card, player) {
