@@ -79,6 +79,45 @@ const CPUEvaluation = Object.freeze({
                 return 0;
         }
     },
+
+    landmarkCardPenalty(hasAffordableLandmark, mode, option, effects, remainingLandmarkCount) {
+        if (!hasAffordableLandmark || mode === 'none') return 0;
+        if (!option || option.type !== 'card' || !option.card) return 0;
+        if (mode !== 'riskySpecials') return 0;
+        const remaining = remainingLandmarkCount();
+        switch (option.card.effect) {
+            case effects.BUSINESS:
+                return 8;
+            case effects.RENOVATION:
+                return 6 + (remaining <= 4 ? 6 : 0);
+            case effects.LOAN:
+                return 5;
+            default:
+                return 0;
+        }
+    },
+
+    lateBasicDuplicatePenalty(
+        isExpertV2Simple,
+        playerCount,
+        current,
+        option,
+        deltaEv,
+        shoppingMallName,
+        remainingLandmarkCount
+    ) {
+        if (!isExpertV2Simple || !option || option.type !== 'card' || !option.card) return 0;
+        if (playerCount < 4) return 0;
+        if (!current || current.landmarks[shoppingMallName]) return 0;
+        const remaining = remainingLandmarkCount();
+        if (remaining > 4) return 0;
+        const card = option.card;
+        const basicNames = new Set(['コンビニ', 'ピザ屋', 'バーガーショップ', '食品倉庫']);
+        if (!basicNames.has(card.name)) return 0;
+        if (current.countCard(card.name) < 2) return 0;
+        if (Number.isFinite(deltaEv) && deltaEv > 0.45) return 0;
+        return current.countCard(card.name) >= 3 ? 0.75 : 0.45;
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) {

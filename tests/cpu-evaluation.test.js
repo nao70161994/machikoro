@@ -133,3 +133,74 @@ runTest('CPU本体のcombo scoring wrapperはpure evaluationへ完全委譲す�
         CPUEvaluation.marginalComboIncome(ranch, cheese, CARD_CATEGORIES, CARD_EFFECTS)
     );
 });
+
+runTest('CPU evaluation はlandmark比較中の危険カード減点を維持する', () => {
+    const effects = { BUSINESS: 'business', RENOVATION: 'renovation', LOAN: 'loan' };
+    assert.strictEqual(
+        CPUEvaluation.landmarkCardPenalty(
+            true,
+            'riskySpecials',
+            { type: 'card', card: { effect: effects.RENOVATION } },
+            effects,
+            () => 4
+        ),
+        12
+    );
+    assert.strictEqual(
+        CPUEvaluation.landmarkCardPenalty(false, 'riskySpecials', null, effects, () => {
+            throw new Error('remaining count must stay lazy');
+        }),
+        0
+    );
+});
+
+runTest('CPU evaluation は終盤の基本カード重複減点を維持する', () => {
+    const current = {
+        landmarks: { mall: false },
+        countCard: () => 3,
+    };
+    assert.strictEqual(
+        CPUEvaluation.lateBasicDuplicatePenalty(
+            true,
+            4,
+            current,
+            { type: 'card', card: { name: 'コンビニ' } },
+            0.2,
+            'mall',
+            () => 4
+        ),
+        0.75
+    );
+    assert.strictEqual(
+        CPUEvaluation.lateBasicDuplicatePenalty(
+            true,
+            3,
+            current,
+            { type: 'card', card: { name: 'コンビニ' } },
+            0.2,
+            'mall',
+            () => {
+                throw new Error('remaining count must stay lazy');
+            }
+        ),
+        0
+    );
+});
+
+runTest('CPU本体のv2simple penalty wrapperはpure evaluation結果を維持する', () => {
+    const { CPU, GameManager, createCardByName } = loadCPURuntime();
+    const cpu = new CPU('expert', {
+        expertPreset: 'v2simple',
+        expertLandmarkCardPenaltyMode: 'riskySpecials',
+    });
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.cards.push(createCardByName('コンビニ'), createCardByName('コンビニ'));
+    current.landmarks['駅'] = true;
+    current.landmarks['港'] = true;
+    const option = { type: 'card', card: createCardByName('コンビニ') };
+    assert.strictEqual(cpu._expertV2SimpleLateBasicDuplicatePenalty(game, option, 0.2), 0.45);
+
+    const renovation = { type: 'card', card: createCardByName('改装屋') };
+    assert.strictEqual(cpu._expertV2SimpleLandmarkCardPenalty(game, renovation, true), 12);
+});

@@ -3211,20 +3211,13 @@ class CPU {
     }
 
     _expertV2SimpleLandmarkCardPenalty(game, option, hasAffordableLandmark) {
-        if (!hasAffordableLandmark || this.expertLandmarkCardPenaltyMode === "none") return 0;
-        if (!option || option.type !== "card" || !option.card) return 0;
-        if (this.expertLandmarkCardPenaltyMode !== "riskySpecials") return 0;
-        const remaining = this._remainingEnabledLandmarks(game.currentPlayer(), game).length;
-        switch (option.card.effect) {
-            case CARD_EFFECTS.BUSINESS:
-                return 8;
-            case CARD_EFFECTS.RENOVATION:
-                return 6 + (remaining <= 4 ? 6 : 0);
-            case CARD_EFFECTS.LOAN:
-                return 5;
-            default:
-                return 0;
-        }
+        return CPUEvaluation.landmarkCardPenalty(
+            hasAffordableLandmark,
+            this.expertLandmarkCardPenaltyMode,
+            option,
+            CARD_EFFECTS,
+            () => this._remainingEnabledLandmarks(game.currentPlayer(), game).length
+        );
     }
 
     _scoreExpertV2SimpleLandmarkOption(game, name) {
@@ -3333,18 +3326,16 @@ class CPU {
     }
 
     _expertV2SimpleLateBasicDuplicatePenalty(game, option, deltaEv) {
-        if (!this._isExpertV2Simple() || !option || option.type !== 'card' || !option.card) return 0;
-        if (!game || game.players.length < 4) return 0;
-        const current = game.currentPlayer();
-        if (!current || current.landmarks[LANDMARK_NAMES.SHOPPING_MALL]) return 0;
-        const remaining = this._remainingEnabledLandmarks(current, game).length;
-        if (remaining > 4) return 0;
-        const card = option.card;
-        const basicNames = new Set(['コンビニ', 'ピザ屋', 'バーガーショップ', '食品倉庫']);
-        if (!basicNames.has(card.name)) return 0;
-        if (current.countCard(card.name) < 2) return 0;
-        if (Number.isFinite(deltaEv) && deltaEv > 0.45) return 0;
-        return current.countCard(card.name) >= 3 ? 0.75 : 0.45;
+        const current = game && game.currentPlayer();
+        return CPUEvaluation.lateBasicDuplicatePenalty(
+            this._isExpertV2Simple(),
+            game && game.players ? game.players.length : 0,
+            current,
+            option,
+            deltaEv,
+            LANDMARK_NAMES.SHOPPING_MALL,
+            () => this._remainingEnabledLandmarks(current, game).length
+        );
     }
 
     _expertV2SimpleRedOpponentTurnBonus(game, option) {
