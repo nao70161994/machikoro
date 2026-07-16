@@ -1813,6 +1813,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'index.html',
         'js/main.js',
         'js/uiLogDisplay.js',
+        'js/uiCardOrder.js',
         'js/uiPlayerDisplay.js',
         'js/uiBuildMenu.js',
         'js/uiCardDetail.js',
@@ -1908,6 +1909,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/onlinePayload.js', 'js/online.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
     assertBefore('js/uiLogDisplay.js', 'js/ui.js');
+    assertBefore('js/uiCardOrder.js', 'js/ui.js');
     assertBefore('js/uiPlayerDisplay.js', 'js/ui.js');
     assertBefore('js/uiBuildMenu.js', 'js/ui.js');
     assertBefore('js/uiPendingMenu.js', 'js/ui.js');

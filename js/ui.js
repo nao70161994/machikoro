@@ -934,22 +934,11 @@ function safeRenderStep(step, fn) {
 }
 
 function compareCardsForDisplay(a, b) {
-    const colorDiff = (CARD_COLOR_ORDER[a.color] ?? 9) - (CARD_COLOR_ORDER[b.color] ?? 9);
-    if (colorDiff !== 0) return colorDiff;
-    const diceDiff = Math.min(...a.diceNums) - Math.min(...b.diceNums);
-    if (diceDiff !== 0) return diceDiff;
-    const costDiff = a.cost - b.cost;
-    if (costDiff !== 0) return costDiff;
-    return a.name.localeCompare(b.name, 'ja');
+    return UiCardOrder.compareCardsForDisplay(a, b, CARD_COLOR_ORDER);
 }
 
 function compareCardNamesForDisplay(a, b) {
-    const cardA = CARDS.find(card => card.name === a);
-    const cardB = CARDS.find(card => card.name === b);
-    if (cardA && cardB) return compareCardsForDisplay(cardA, cardB);
-    if (cardA) return -1;
-    if (cardB) return 1;
-    return a.localeCompare(b, 'ja');
+    return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
 function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; cardFilter = ''; }
