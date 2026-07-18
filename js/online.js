@@ -477,16 +477,7 @@ function _saveActionLog(action, data, options = {}) {
 }
 
 function _normalizeOnlineActionLog(value) {
-    if (!Array.isArray(value)) return [];
-    return value.filter(entry => entry && typeof entry.action === 'string')
-        .map(entry => {
-            const normalized = { action: entry.action, data: entry.data || {} };
-            if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-            if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
-            if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
-            if (entry.restoreActionAudit && typeof entry.restoreActionAudit === 'object') normalized.restoreActionAudit = entry.restoreActionAudit;
-            return normalized;
-        });
+    return OnlinePayload.normalizeActionLog(value);
 }
 
 function _readOnlineActionLog() {
@@ -599,14 +590,10 @@ function _nextOnlineActionSeq(log = null) {
 }
 
 function _normalizePendingOutboundAction(entry) {
-    if (!entry || !_isKnownOnlineGameAction(entry.action)) return null;
-    const normalized = { action: entry.action, data: entry.data || {} };
-    if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
-    const normalizedRoomId = _normalizeOnlineRoomId(entry.roomId);
-    if (normalizedRoomId) normalized.roomId = normalizedRoomId;
-    if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
-    if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
-    return normalized;
+    return OnlinePayload.normalizePendingOutboundAction(entry, {
+        isKnownAction: _isKnownOnlineGameAction,
+        normalizeRoomId: _normalizeOnlineRoomId,
+    });
 }
 
 function _readPendingOutboundAction() {
@@ -660,25 +647,15 @@ function _clearPendingOutboundActionForCurrentSession(options = {}) {
 }
 
 function _sameOnlineActionEntry(a, b) {
-    if (!a || !b) return false;
-    if (a.clientActionId || b.clientActionId) return a.clientActionId === b.clientActionId;
-    return a.action === b.action &&
-        a.playerIndex === b.playerIndex &&
-        JSON.stringify(a.data || {}) === JSON.stringify(b.data || {});
+    return OnlinePayload.sameActionEntry(a, b);
 }
 
 function _acceptedClientActionMatchesPending(ref, pending) {
-    return !!(ref && pending && typeof ref.clientActionId === 'string' &&
-        ref.clientActionId === pending.clientActionId &&
-        Number.isInteger(ref.playerIndex) && ref.playerIndex === pending.playerIndex);
+    return OnlinePayload.acceptedClientActionMatchesPending(ref, pending);
 }
 
 function _shouldClearPendingForAcceptedAction(accepted, pending) {
-    if (!pending) return false;
-    if (typeof pending.clientActionId === 'string') {
-        return typeof accepted?.clientActionId === 'string' && _sameOnlineActionEntry(accepted, pending);
-    }
-    return _sameOnlineActionEntry(accepted, pending);
+    return OnlinePayload.shouldClearPendingForAcceptedAction(accepted, pending);
 }
 
 function _queueOnlineEventDuringRestore(type, payload) {
