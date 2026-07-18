@@ -1992,99 +1992,15 @@ function freezeIssueDedupeSignature(snapshot) {
 }
 
 function compactElementSnapshotForStorage(state) {
-    if (!state) return null;
-    return {
-        id: state.id || '',
-        display: state.display || '',
-        computedDisplay: state.computedDisplay || '',
-        visibility: state.visibility || '',
-        computedVisibility: state.computedVisibility || '',
-        pointerEvents: state.pointerEvents || '',
-        computedPointerEvents: state.computedPointerEvents || '',
-        disabled: !!state.disabled,
-        hidden: !!state.hidden,
-        inert: !!state.inert,
-        ancestorBlocked: !!state.ancestorBlocked,
-        ariaHidden: state.ariaHidden || null,
-        htmlLength: state.htmlLength || 0,
-        totalInteractiveChildren: state.totalInteractiveChildren || 0,
-        usableInteractiveChildren: state.usableInteractiveChildren || 0,
-    };
+    return UiWatchdog.compactElementSnapshotForStorage(state);
 }
 
 function compactFreezePayloadForStorage(payload) {
-    const snapshot = payload && payload.snapshot || {};
-    const ui = snapshot.ui || {};
-    const buttons = snapshot.actionButtons && snapshot.actionButtons.buttons || {};
-    return {
-        freezeKind: payload && payload.freezeKind,
-        stagnantMs: payload && payload.stagnantMs,
-        interactabilityIssues: Array.isArray(payload && payload.interactabilityIssues) ? payload.interactabilityIssues.map(compactIssueForTrace) : [],
-        recovery: payload && payload.recovery ? {
-            attempted: !!payload.recovery.attempted,
-            success: !!payload.recovery.success,
-        } : null,
-        snapshot: {
-            reason: snapshot.reason || '',
-            timestamp: snapshot.timestamp || '',
-            phase: snapshot.phase || '',
-            builtThisTurn: !!snapshot.builtThisTurn,
-            turnCount: snapshot.turnCount,
-            currentPlayerIndex: snapshot.currentPlayerIndex,
-            isCpuTurn: !!snapshot.isCpuTurn,
-            cpuStepScheduled: !!snapshot.cpuStepScheduled,
-            cpuSchedulerHealth: snapshot.cpuSchedulerHealth || null,
-            isOnlineGame: snapshot.isOnlineGame,
-            isRoomHost: snapshot.isRoomHost,
-            myPlayerIndex: snapshot.myPlayerIndex,
-            onlineActionInFlight: snapshot.onlineActionInFlight,
-            isReconnectingOnline: snapshot.isReconnectingOnline,
-            socketConnected: snapshot.socketConnected,
-            allowedActions: Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [],
-            visibleModals: Array.isArray(snapshot.visibleModals) ? snapshot.visibleModals : [],
-            bodyClassName: snapshot.bodyClassName || '',
-            pendingFields: snapshot.pendingFields || null,
-            ui: {
-                gameScreen: compactElementSnapshotForStorage(ui.gameScreen),
-                pendingModal: compactElementSnapshotForStorage(ui.pendingModal),
-                pendingMenu: compactElementSnapshotForStorage(ui.pendingMenu),
-                buildMenu: compactElementSnapshotForStorage(ui.buildMenu),
-                btnSkip: compactElementSnapshotForStorage(ui.btnSkip),
-                confirmModal: compactElementSnapshotForStorage(ui.confirmModal),
-                btnRoll: compactElementSnapshotForStorage(ui.btnRoll),
-                btnReroll: compactElementSnapshotForStorage(ui.btnReroll),
-                diceChoose: compactElementSnapshotForStorage(ui.diceChoose),
-                cardDetailModal: compactElementSnapshotForStorage(ui.cardDetailModal),
-                cardSelectModal: compactElementSnapshotForStorage(ui.cardSelectModal),
-                rulesModal: compactElementSnapshotForStorage(ui.rulesModal),
-            },
-            actionButtons: {
-                enabled: snapshot.actionButtons && Array.isArray(snapshot.actionButtons.enabled) ? snapshot.actionButtons.enabled : [],
-                buttons: Object.fromEntries(Object.entries(buttons).map(([id, state]) => [id, compactElementSnapshotForStorage(state)])),
-            },
-        },
-    };
+    return UiWatchdog.compactFreezePayloadForStorage(payload, compactIssueForTrace);
 }
 
 function freezePayloadStorageJson(payload) {
-    const full = JSON.stringify(payload);
-    if (full.length <= 7000) return full;
-    const compact = JSON.stringify(compactFreezePayloadForStorage(payload));
-    if (compact.length <= 7000) return compact;
-    return JSON.stringify({
-        freezeKind: payload && payload.freezeKind,
-        stagnantMs: payload && payload.stagnantMs,
-        recovery: payload && payload.recovery ? {
-            attempted: !!payload.recovery.attempted,
-            success: !!payload.recovery.success,
-        } : null,
-        snapshot: {
-            phase: payload && payload.snapshot && payload.snapshot.phase || '',
-            cpuSchedulerHealth: payload && payload.snapshot && payload.snapshot.cpuSchedulerHealth || null,
-            allowedActions: payload && payload.snapshot && payload.snapshot.allowedActions || [],
-            visibleModals: payload && payload.snapshot && payload.snapshot.visibleModals || [],
-        },
-    });
+    return UiWatchdog.freezePayloadStorageJson(payload, compactIssueForTrace);
 }
 
 function buildFreezeReportStack(payload) {

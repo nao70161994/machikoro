@@ -58,4 +58,72 @@ assert.strictEqual(UiWatchdog.stateKey({
     onlineActionInFlight: true,
 }), 'build|3|1|built|2|0|0|0|0|1|1');
 
+const compactElement = UiWatchdog.compactElementSnapshotForStorage({
+    id: 'btnRoll',
+    display: 'block',
+    disabled: 0,
+    hidden: 1,
+    ariaHidden: '',
+    htmlLength: 12,
+    ignored: 'large-field',
+});
+assert.deepStrictEqual(compactElement, {
+    id: 'btnRoll',
+    display: 'block',
+    computedDisplay: '',
+    visibility: '',
+    computedVisibility: '',
+    pointerEvents: '',
+    computedPointerEvents: '',
+    disabled: false,
+    hidden: true,
+    inert: false,
+    ancestorBlocked: false,
+    ariaHidden: null,
+    htmlLength: 12,
+    totalInteractiveChildren: 0,
+    usableInteractiveChildren: 0,
+});
+
+const freezePayload = {
+    freezeKind: 'human-turn-ui-locked',
+    stagnantMs: 5000,
+    interactabilityIssues: [{ reason: 'disabled', extra: true }],
+    recovery: { attempted: 1, success: 0 },
+    snapshot: {
+        reason: 'watchdog',
+        phase: 'build',
+        allowedActions: ['rollDice'],
+        visibleModals: [],
+        ui: { btnRoll: { id: 'btnRoll', disabled: true } },
+        actionButtons: { enabled: ['btnRoll'], buttons: { btnRoll: { id: 'btnRoll', disabled: true } } },
+        verbose: 'x'.repeat(8000),
+    },
+};
+const compactPayload = UiWatchdog.compactFreezePayloadForStorage(
+    freezePayload,
+    issue => ({ reason: issue.reason })
+);
+assert.deepStrictEqual(compactPayload.interactabilityIssues, [{ reason: 'disabled' }]);
+assert.strictEqual(compactPayload.snapshot.ui.btnRoll.disabled, true);
+assert.strictEqual(compactPayload.snapshot.actionButtons.buttons.btnRoll.id, 'btnRoll');
+assert.strictEqual(Object.prototype.hasOwnProperty.call(compactPayload.snapshot, 'verbose'), false);
+
+const smallPayload = { freezeKind: 'small', snapshot: { phase: 'roll' } };
+assert.strictEqual(UiWatchdog.freezePayloadStorageJson(smallPayload), JSON.stringify(smallPayload));
+const storedCompact = JSON.parse(UiWatchdog.freezePayloadStorageJson(freezePayload, issue => issue));
+assert.strictEqual(storedCompact.snapshot.reason, 'watchdog');
+assert.strictEqual(Object.prototype.hasOwnProperty.call(storedCompact.snapshot, 'verbose'), false);
+
+const oversizedPayload = {
+    freezeKind: 'oversized',
+    stagnantMs: 9000,
+    recovery: { attempted: true, success: false },
+    snapshot: {
+        reason: 'removed-by-minimal-fallback',
+        phase: 'build',
+        allowedActions: Array.from({ length: 2000 }, (_, index) => 'action-' + index),
+    },
+};
+assert.strictEqual(JSON.parse(UiWatchdog.freezePayloadStorageJson(oversizedPayload)).snapshot.reason, undefined);
 console.log('ui watchdog tests passed');
