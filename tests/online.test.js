@@ -323,6 +323,7 @@ runTest('buildOnlineRejoinPayload はclientVersionを含める', () => {
         playerName: 'Alice',
         reconnectToken: 'token-1',
         clientVersion: 'build-rejoin-1',
+        hostlessRestoreVersion: 1,
     });
 });
 
@@ -2001,6 +2002,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
         playerName: 'Alice',
         reconnectToken: 'token',
         clientVersion: 'unknown',
+        hostlessRestoreVersion: 1,
     });
 });
 
@@ -3141,6 +3143,7 @@ runTest('handleAppError は無効操作時にオンライン状態を再同期�
         playerName: 'Alice',
         reconnectToken: 'token-1',
         clientVersion: 'unknown',
+        hostlessRestoreVersion: 1,
     });
 });
 

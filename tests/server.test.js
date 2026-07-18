@@ -100,6 +100,7 @@ const {
     shuffledPlayerOrder,
     roomClientVersions,
     roomReconnectTokenHashes,
+    roomHostlessRestoreCapabilities,
     buildGameStartPayload,
     markRoomGameStarted,
     resolveRejoinPlayer,
@@ -4882,8 +4883,8 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     const io = {
         sockets: {
             sockets: new Map([
-                ['s1', { clientVersion: 'v-host' }],
-                ['s2', { clientVersion: '' }],
+                ['s1', { clientVersion: 'v-host', hostlessRestoreVersion: 1 }],
+                ['s2', { clientVersion: '', hostlessRestoreVersion: 1 }],
             ]),
         },
     };
@@ -4910,6 +4911,7 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     assert.deepStrictEqual(buildGameStartPlayerNames(room), ['CPU1（普）', 'Alice', 'Bob']);
     assert.deepStrictEqual(shuffledPlayerOrder(['A', 'B', 'C'], () => 0), [1, 2, 0]);
     assert.deepStrictEqual(roomClientVersions(io, room), ['v-host', 'unknown']);
+    assert.deepStrictEqual(roomHostlessRestoreCapabilities(io, room, ['CPU1（普）', 'Alice', 'Bob']), [0, 1, 1]);
 
     const payload = buildGameStartPayload(io, room, () => 0);
     assert.deepStrictEqual(payload.playerNames, ['CPU1（普）', 'Alice', 'Bob']);
@@ -4920,6 +4922,9 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     assert.ok(payload.reconnectTokenHashes[2]);
     assert.strictEqual(payload.hostEpoch, 4);
     assert.strictEqual(payload.actionSeq, 8);
+    assert.deepStrictEqual(payload.hostlessRestoreCapabilities, [0, 1, 1]);
+    assert.strictEqual(payload.hostlessRestoreGeneration, 0);
+    assert.strictEqual(payload.hostlessRestoreCount, 0);
 });
 
 runTest('markRoomGameStarted は開始時の復元状態を初期化する', () => {

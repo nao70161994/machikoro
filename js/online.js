@@ -1420,6 +1420,7 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
         enabledCards: [...enabledCards],
         enabledLandmarks: [...enabledLandmarks],
         clientVersion: getClientVersion(),
+        hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
     });
 }
 
@@ -1470,7 +1471,12 @@ function joinRoom() {
     isRoomHost = false;
     if (!initSocket()) return;
     beginOnlineLobbyRequest('join');
-    socket.emit('joinRoom', { roomId, playerName: name, clientVersion: getClientVersion() });
+    socket.emit('joinRoom', {
+        roomId,
+        playerName: name,
+        clientVersion: getClientVersion(),
+        hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
+    });
 }
 
 function initOnlineGame(playerNames, ps, playerOrder) {

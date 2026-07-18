@@ -976,8 +976,9 @@ io.on('connection', (socket) => {
 
     socket.on('createRoom', (payload) => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion } = payload;
+        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion, hostlessRestoreVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
+        socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
         playerCount = Number(playerCount);
@@ -1052,8 +1053,9 @@ io.on('connection', (socket) => {
 
     socket.on('joinRoom', (payload) => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        let { roomId, playerName, clientVersion } = payload;
+        let { roomId, playerName, clientVersion, hostlessRestoreVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
+        socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         playerName = sanitizeName(playerName);
         if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ルームが見つかりません'); return; }
@@ -1176,8 +1178,9 @@ io.on('connection', (socket) => {
 
     socket.on('rejoinRoom', (payload) => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        const { roomId, playerIndex, playerName, reconnectToken, clientVersion } = payload;
+        const { roomId, playerIndex, playerName, reconnectToken, clientVersion, hostlessRestoreVersion } = payload;
         socket.clientVersion = clientVersion || 'unknown';
+        socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
@@ -1697,6 +1700,16 @@ function roomReconnectTokenHashes(room, playerNames) {
     return roomReconnectTokenHashesForRoom(room, playerNames);
 }
 
+function roomHostlessRestoreCapabilities(ioInstance, room, playerNames) {
+    return playerNames.map((_, index) => {
+        const setting = Array.isArray(room.playerSettings) ? room.playerSettings[index] : null;
+        if (setting?.type === 'cpu') return 0;
+        const player = room.players.find(candidate => candidate.index === index);
+        const playerSocket = player?.id ? ioInstance.sockets.sockets.get(player.id) : null;
+        return playerSocket?.hostlessRestoreVersion === 1 ? 1 : 0;
+    });
+}
+
 function buildGameStartPayload(io, room, randomFn = Math.random) {
     const playerNames = buildGameStartPlayerNames(room);
     return {
@@ -1711,6 +1724,9 @@ function buildGameStartPayload(io, room, randomFn = Math.random) {
         actionSeq: room.actionSeq || 0,
         versions: roomClientVersions(io, room),
         reconnectTokenHashes: roomReconnectTokenHashes(room, playerNames),
+        hostlessRestoreCapabilities: roomHostlessRestoreCapabilities(io, room, playerNames),
+        hostlessRestoreGeneration: 0,
+        hostlessRestoreCount: 0,
     };
 }
 
@@ -1912,6 +1928,7 @@ module.exports = {
     shuffledPlayerOrder,
     roomClientVersions,
     roomReconnectTokenHashes,
+    roomHostlessRestoreCapabilities,
     buildGameStartPayload,
     markRoomGameStarted,
     buildPlayerList,

@@ -720,6 +720,7 @@ runTest('online integration: rejoin retry は正規化済みsessionで再送す�
         playerName: 'Bob',
         reconnectToken: 'token-bob',
         clientVersion: 'integration-build',
+        hostlessRestoreVersion: 1,
     });
 });
 
