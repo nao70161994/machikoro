@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-18
+Last updated: 2026-07-19
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -53,12 +53,13 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | iPhone Safari modal/focus/inert/touch behavior | Real iPhone Safari check for blocking modals, invisible overlays, tap targets, and focus recovery. |
 | Android Chrome/TWA PWA update flow | Real Android/TWA check for service worker update banner, reload, background/resume, and stale-client handling. |
 | Long-running online reconnect | Real network/device matrix for room create/join, reconnect, server restart restore, host migration, CPU turn, undo sync, and background resume. |
+| Provisional hostless timing | Mixed Android/iPhone host disappearance through grace, candidate collection, confirmation rotation, and former-host return. |
 
 ### Do Not Touch Yet
 
 - Durable canonical server state.
 - Real signed restore.
-- Hostless restore.
+- Authoritative or single-candidate hostless restore beyond the accepted provisional quorum contract.
 - Multi-room resume UI.
 - CPU strength changes or RL portfolio adoption decisions.
 - PWA cache strategy rewrite.
@@ -300,7 +301,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-07-18, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
+As of 2026-07-19, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
 
 - `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
@@ -315,12 +316,16 @@ As of 2026-07-18, rollback-friendly units from this plan are implemented without
 - `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
 - `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty primitives, affordable-build filters, player-count profiles, weighted dice outcomes, and injected lookahead loop/steps behind existing CPU wrappers.
+- `server/hostlessRestoreCandidate.js`, `server/hostlessRestoreCoordinator.js`,
+  `server/hostlessRestoreGateway.js`, and `server/hostlessRestoreRuntime.js`
+  own the provisional quorum policy and additive transport boundary. The client
+  capability/payload/consent path fails closed for old or mixed clients.
 - CPU extraction is guarded by 9 representative fixtures across build/dice/reroll/harbor/pending states, 36 exact decision snapshots for all difficulties, and 36 seeded full matches for all difficulties and 2–10 players. Baseline artifacts record their source commit.
 - Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity.
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, reconnect timer/callback migration, Socket.IO handler movement, modal lifecycle movement, broad CPU scoring/selection movement, and live build execution need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, Undo, online CPU, background/PWA, or modal gates.
+The remaining steps below still require the same gates described in each design section. In particular, reconnect timer/callback migration, Socket.IO handler movement, modal lifecycle movement, broad CPU scoring/selection movement, and live build execution need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
 
 ## Recommended Migration Order
 

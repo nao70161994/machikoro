@@ -114,6 +114,24 @@
    - 無効な相手や対象が混ざるケースを確認する。
    - 期待結果: クラッシュせず、無効操作は拒否される。
 
+### Provisional hostless restore manual matrix
+
+自動contract testに加え、hostless timingを実機で完了扱いにする前に次を確認します。
+
+- Android 2台 + iPhone 2台の4人戦でhostを離脱させ、通常復元の60秒待機、
+  30秒候補収集、承認modalを経て全員が同一盤面へ戻る。
+- 1候補だけ、候補hash/rank不一致、同一playerの複数tab、CPUだけの候補では
+  復元せず、client bundleが自動削除されない。
+- 最初の承認候補が拒否、timeout、切断した場合は元player順の次候補へ進み、
+  全員失敗時はroomを作らない。
+- 旧clientを1台混ぜると従来host-only経路へfail closedし、強制切断しない。
+- 暫定復元後に旧hostが戻っても元の席へ通常再接続し、host権を奪い返したり
+  live/restored roomを置換したりしない。
+- 完了済み対局、generation違い、4回目の暫定復元は拒否される。
+- `HOSTLESS_RESTORE_ENABLED=0`では新eventを受けてもhost-only挙動になる。
+- server log/通知にraw room ID、snapshot、action log、tokenが出ず、room hash、
+  件数、rank/generation、結果、理由だけが残る。
+
 ## CPU / RL
 
 CPU 判断の変更は、ローカル進行だけでなく保存/復元とオンライン同期も確認してください。RL runtime、export、trace parity の補助確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) を参照してください。

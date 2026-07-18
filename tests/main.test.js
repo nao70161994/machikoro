@@ -3052,17 +3052,19 @@ runTest('docs は Phase 1〜7 実装後の設計状態と矛盾しない', () =>
     assert.ok(onlineSync.includes('live dice と in-memory canonical mirror は導入済み'));
 });
 
-runTest('docs は hostless restore の再評価gateを記載している', () => {
+runTest('docs は hostless restore の暫定quorum契約を記載している', () => {
     const hostless = fs.readFileSync(path.join(__dirname, '..', 'docs/HOSTLESS_RESTORE_DESIGN.md'), 'utf8');
     const adr = fs.readFileSync(path.join(__dirname, '..', 'docs/ADR_RESTORE_TRUST_BOUNDARY.md'), 'utf8');
     const decisions = fs.readFileSync(path.join(__dirname, '..', 'docs/IMPLEMENTATION_DECISIONS.md'), 'utf8');
 
-    assert.ok(hostless.includes('2026-05-26 Re-evaluation Gate'));
+    assert.ok(hostless.includes('Status: Accepted for staged implementation'));
+    assert.ok(hostless.includes('Every candidate received in the collection window must have the same canonical'));
+    assert.ok(hostless.includes('emergency server switch back'));
     assert.ok(hostless.includes('onlineRestoreRoomIndex'));
     assert.ok(hostless.includes('restoreAudit'));
     assert.ok(hostless.includes('restored room replacement remains host-only'));
     assert.ok(adr.includes('Option A remains the active implementation'));
-    assert.ok(decisions.includes('Still deferred after 2026-05-26 footing review'));
+    assert.ok(decisions.includes('Provisional quorum fallback accepted on 2026-07-19'));
 });
 
 runTest('docs は multiple room resume の設計足場を記載している', () => {

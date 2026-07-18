@@ -3,6 +3,25 @@
 この文書は、途中参加した人間 / AI が最初に読む短い入口です。
 詳細は各専門 doc を参照し、このファイルは現在地と次の安全な一手だけを示します。
 
+## 2026-07-19 Current restore status
+
+- Read `docs/HOSTLESS_RESTORE_DESIGN.md` after the restore trust ADR. It is the
+  source of truth for the accepted provisional quorum fallback.
+- Normal host restore remains first. Only compatible clients enter hostless
+  recovery after existing retries are exhausted; mixed old/new clients fail
+  closed to host-only behavior.
+- Candidate normalization, exact agreement, generation/expiry, confirmation
+  rotation, server runtime, client payload/consent, and anonymous diagnostics
+  are implemented in dedicated hostless restore modules and contract tests.
+- `HOSTLESS_RESTORE_ENABLED=0` is the immediate operational rollback.
+- Existing Socket.IO meanings, localStorage keys/formats, game rules, CPU/RL,
+  and PWA/SW behavior remain unchanged. Existing-room replacement remains
+  host-only.
+- The four-player Android/iPhone completion on 2026-07-18 proves ordinary
+  reconnect only. The full 60-second grace, 30-second collection, confirmation
+  rotation, mismatch, mixed-old-client, and former-host-return matrix remains
+  manual verification; do not infer it from WebKit or ordinary reconnect.
+
 ## Public naming
 
 - 公開向けの製品名は「ダイスシティ」。

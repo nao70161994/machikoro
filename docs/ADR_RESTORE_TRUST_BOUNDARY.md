@@ -236,3 +236,15 @@ The following implementation footings now exist but do not change the accepted t
 - Restore audit metadata: optional schema validation, no signature verification or trust elevation.
 
 Therefore Option A remains the active implementation. Option D remains the preferred long-term authority before hostless restore. Option C remains fallback/audit support only until canonical serialization and key policy are accepted.
+
+## Update: 2026-07-19 Provisional Availability Fallback
+
+The product explicitly accepted the lower-trust provisional mode described in
+`HOSTLESS_RESTORE_DESIGN.md`. Option A remains the active implementation for
+normal host restore and for replacement of any live/restored room. The additive
+fallback applies only when the room is absent and normal host recovery is
+exhausted.
+
+This does not make participant-carried data server-authoritative. It requires two
+or more distinct human identities, exact agreement from every collected
+candidate, explicit confirmation, bounded in-memory retention, generation and

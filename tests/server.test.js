@@ -100,11 +100,14 @@ const {
     shuffledPlayerOrder,
     roomClientVersions,
     roomReconnectTokenHashes,
+    roomHostlessRestoreCapabilities,
     buildGameStartPayload,
     markRoomGameStarted,
     resolveRejoinPlayer,
     handleSocketDisconnect,
     handleRecreateRoom,
+    hostlessRestoreRoomLogId,
+    hostlessRestoreDiagnostic,
     getRemainingConnectedPlayers,
     serializeMirrorState,
     restoreMirrorState,
@@ -3376,6 +3379,100 @@ runTest('handleRecreateRoom は空roomのhostless復元を拒否する', () => {
     }
 });
 
+runTest('handleRecreateRoom は内部承認済みhostless候補だけを暫定roomへ復元する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes: [
+            crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+            crypto.createHash('sha256').update(tokenBob).digest('hex'),
+        ],
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+        actionSeq: 4,
+        hostlessRestoreGeneration: 1,
+        hostlessRestoreCount: 1,
+    };
+    const socket = {
+        id: 'socket-bob-approved',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        const result = handleRecreateRoom(socket, {
+            roomId: 'HOSTLESS_APPROVED',
+            gameStartPayload,
+            stateSnapshot: makeSnapshot({ actionSeq: 4 }),
+            actionLog: [],
+            playerIndex: 1,
+            playerName: 'Bob',
+            reconnectToken: tokenBob,
+        }, {
+            approvedHostless: true,
+            candidateCount: 2,
+        });
+
+        assert.deepStrictEqual(result, {
+            ok: true,
+            roomId: 'HOSTLESS_APPROVED',
+            provisionalRestore: true,
+        });
+        assert.deepStrictEqual(joined, ['HOSTLESS_APPROVED']);
+        const room = __rooms.HOSTLESS_APPROVED;
+        assert.strictEqual(room.hostPlayerIndex, 1);
+        assert.strictEqual(room.hostEpoch, 3);
+        assert.strictEqual(room.hostlessRestoreGeneration, 2);
+        assert.strictEqual(room.hostlessRestoreCount, 2);
+        assert.strictEqual(room.hostlessRestoreCandidateCount, 2);
+        assert.strictEqual(room.provisionalRestore, true);
+        assert.strictEqual(room.gameStartPayload.hostPlayerIndex, 1);
+        assert.strictEqual(room.gameStartPayload.hostEpoch, 3);
+        assert.strictEqual(room.gameStartPayload.hostlessRestoreGeneration, 2);
+        assert.strictEqual(room.gameStartPayload.hostlessRestoreCount, 2);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.provisionalRestore, true);
+        assert.strictEqual(emitted[0].payload.hostlessRestoreGeneration, 2);
+        assert.strictEqual(emitted[0].payload.hostlessRestoreCount, 2);
+        assert.match(hostlessRestoreRoomLogId('HOSTLESS_APPROVED'), /^[a-f0-9]{12}$/);
+        assert.notStrictEqual(hostlessRestoreRoomLogId('HOSTLESS_APPROVED'), 'HOSTLESS_APPROVED');
+        assert.strictEqual(hostlessRestoreRoomLogId('HOSTLESS_APPROVED'), hostlessRestoreRoomLogId('HOSTLESS_APPROVED'));
+    } finally {
+        delete __rooms.HOSTLESS_APPROVED;
+    }
+});
+
+runTest('hostless診断はroom hashと集計値だけを返しraw候補を除外する', () => {
+    const diagnostic = hostlessRestoreDiagnostic({
+        type: 'terminal',
+        roomId: 'HOSTLESS_PRIVATE_ROOM',
+        generation: 2,
+        stage: 'collecting',
+        candidateCount: 3,
+        rank: { hostEpoch: 4, actionSeq: 18, secret: 'rank-secret' },
+        reason: 'candidate-mismatch',
+        canonicalHash: 'canonical-secret',
+        payload: { stateSnapshot: { private: true } },
+        reconnectToken: 'token-secret',
+    });
+    assert.deepStrictEqual(Object.keys(diagnostic), [
+        'event', 'roomHash', 'generation', 'stage', 'candidateCount', 'rank', 'reason',
+    ]);
+    assert.match(diagnostic.roomHash, /^[a-f0-9]{12}$/);
+    assert.deepStrictEqual(diagnostic.rank, { hostEpoch: 4, actionSeq: 18 });
+    assert.strictEqual(JSON.stringify(diagnostic).includes('PRIVATE_ROOM'), false);
+    assert.strictEqual(JSON.stringify(diagnostic).includes('secret'), false);
+});
+
 runTest('handleRecreateRoom はhostless payloadで復元済みroomを置き換えない', () => {
     const crypto = require('crypto');
     const emitted = [];
@@ -4882,8 +4979,8 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     const io = {
         sockets: {
             sockets: new Map([
-                ['s1', { clientVersion: 'v-host' }],
-                ['s2', { clientVersion: '' }],
+                ['s1', { clientVersion: 'v-host', hostlessRestoreVersion: 1 }],
+                ['s2', { clientVersion: '', hostlessRestoreVersion: 1 }],
             ]),
         },
     };
@@ -4910,6 +5007,7 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     assert.deepStrictEqual(buildGameStartPlayerNames(room), ['CPU1（普）', 'Alice', 'Bob']);
     assert.deepStrictEqual(shuffledPlayerOrder(['A', 'B', 'C'], () => 0), [1, 2, 0]);
     assert.deepStrictEqual(roomClientVersions(io, room), ['v-host', 'unknown']);
+    assert.deepStrictEqual(roomHostlessRestoreCapabilities(io, room, ['CPU1（普）', 'Alice', 'Bob']), [0, 1, 1]);
 
     const payload = buildGameStartPayload(io, room, () => 0);
     assert.deepStrictEqual(payload.playerNames, ['CPU1（普）', 'Alice', 'Bob']);
@@ -4920,6 +5018,9 @@ runTest('buildGameStartPayload は開始payloadの名前・順番・version・to
     assert.ok(payload.reconnectTokenHashes[2]);
     assert.strictEqual(payload.hostEpoch, 4);
     assert.strictEqual(payload.actionSeq, 8);
+    assert.deepStrictEqual(payload.hostlessRestoreCapabilities, [0, 1, 1]);
+    assert.strictEqual(payload.hostlessRestoreGeneration, 0);
+    assert.strictEqual(payload.hostlessRestoreCount, 0);
 });
 
 runTest('markRoomGameStarted は開始時の復元状態を初期化する', () => {
