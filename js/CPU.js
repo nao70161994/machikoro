@@ -1912,24 +1912,11 @@ class CPU {
     }
 
     _diceFreqForRoller(diceNums, roller) {
-        if (!roller || !roller.landmarks || !roller.landmarks[LANDMARK_NAMES.STATION]) {
-            return this._singleDiceFreq(diceNums);
-        }
-        return Math.max(this._singleDiceFreq(diceNums), this._doubleDiceFreq(diceNums));
+        return CPUEvaluation.diceFrequencyForRoller(diceNums, roller, LANDMARK_NAMES.STATION);
     }
 
     _cardDiceFreq(card, game, player) {
-        if (!card || !game || !player) return this._doubleDiceFreq(card && card.diceNums ? card.diceNums : []);
-        const ci = game.players.indexOf(player);
-        if (card.color === "blue") {
-            return game.players.reduce((sum, p) => sum + this._diceFreqForRoller(card.diceNums, p), 0);
-        }
-        if (card.color === "red") {
-            return game.players.reduce((sum, p, i) =>
-                i === ci ? sum : sum + this._diceFreqForRoller(card.diceNums, p), 0
-            );
-        }
-        return this._diceFreqForRoller(card.diceNums, player);
+        return CPUEvaluation.cardDiceFrequency(card, game, player, LANDMARK_NAMES.STATION);
     }
 
     _diceFreq(diceNums) {
