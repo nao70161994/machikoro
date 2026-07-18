@@ -979,7 +979,10 @@ function attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actio
 
 let hostlessRestoreRuntime = null;
 const hostlessRestoreCoordinator = createHostlessRestoreCoordinator({
-    onEvent: event => hostlessRestoreRuntime?.handleCoordinatorEvent(event),
+    onEvent: event => {
+        logHostlessRestoreCoordinatorEvent(event);
+        hostlessRestoreRuntime?.handleCoordinatorEvent(event);
+    },
 });
 const hostlessRestoreGateway = makeHostlessRestoreGateway({
     crypto,
@@ -1006,6 +1009,28 @@ function hostlessRestoreRoomLogId(roomId) {
     if (typeof roomId !== 'string' || !roomId) return '-';
     return crypto.createHash('sha256').update(roomId).digest('hex').slice(0, 12);
 }
+function hostlessRestoreDiagnostic(event = {}) {
+    const rank = event.rank && typeof event.rank === 'object'
+        ? {
+            hostEpoch: Number.isInteger(event.rank.hostEpoch) ? event.rank.hostEpoch : 0,
+            actionSeq: Number.isInteger(event.rank.actionSeq) ? event.rank.actionSeq : 0,
+        }
+        : null;
+    return Object.freeze({
+        event: typeof event.type === 'string' ? event.type : 'unknown',
+        roomHash: hostlessRestoreRoomLogId(event.roomId),
+        generation: Number.isInteger(event.generation) ? event.generation : 0,
+        stage: typeof event.stage === 'string' ? event.stage : '',
+        candidateCount: Number.isInteger(event.candidateCount) ? event.candidateCount : 0,
+        rank,
+        reason: typeof event.reason === 'string' ? event.reason : '',
+    });
+}
+
+function logHostlessRestoreCoordinatorEvent(event) {
+    console.log('[hostless-restore]', JSON.stringify(hostlessRestoreDiagnostic(event)));
+}
+
 
 function approveHostlessRestoreCandidate(socket, payload, metadata = {}) {
     const roomId = typeof payload?.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
@@ -2046,6 +2071,7 @@ module.exports = {
     hostlessRestoreEnabled,
     hostlessRestoreRoomLogId,
     getRemainingConnectedPlayers,
+    hostlessRestoreDiagnostic,
     serializeMirrorState,
     restoreMirrorState,
     compactRoomActionLog,

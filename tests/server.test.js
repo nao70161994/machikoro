@@ -107,6 +107,7 @@ const {
     handleSocketDisconnect,
     handleRecreateRoom,
     hostlessRestoreRoomLogId,
+    hostlessRestoreDiagnostic,
     getRemainingConnectedPlayers,
     serializeMirrorState,
     restoreMirrorState,
@@ -3448,6 +3449,28 @@ runTest('handleRecreateRoom は内部承認済みhostless候補だけを暫定ro
     } finally {
         delete __rooms.HOSTLESS_APPROVED;
     }
+});
+
+runTest('hostless診断はroom hashと集計値だけを返しraw候補を除外する', () => {
+    const diagnostic = hostlessRestoreDiagnostic({
+        type: 'terminal',
+        roomId: 'HOSTLESS_PRIVATE_ROOM',
+        generation: 2,
+        stage: 'collecting',
+        candidateCount: 3,
+        rank: { hostEpoch: 4, actionSeq: 18, secret: 'rank-secret' },
+        reason: 'candidate-mismatch',
+        canonicalHash: 'canonical-secret',
+        payload: { stateSnapshot: { private: true } },
+        reconnectToken: 'token-secret',
+    });
+    assert.deepStrictEqual(Object.keys(diagnostic), [
+        'event', 'roomHash', 'generation', 'stage', 'candidateCount', 'rank', 'reason',
+    ]);
+    assert.match(diagnostic.roomHash, /^[a-f0-9]{12}$/);
+    assert.deepStrictEqual(diagnostic.rank, { hostEpoch: 4, actionSeq: 18 });
+    assert.strictEqual(JSON.stringify(diagnostic).includes('PRIVATE_ROOM'), false);
+    assert.strictEqual(JSON.stringify(diagnostic).includes('secret'), false);
 });
 
 runTest('handleRecreateRoom はhostless payloadで復元済みroomを置き換えない', () => {
