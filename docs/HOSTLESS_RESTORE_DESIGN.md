@@ -1,8 +1,40 @@
 # Hostless Restore Design
 
-作成日: 2026-05-19
+Last updated: 2026-07-19
 
-Status: Deferred design sketch. `docs/IMPLEMENTATION_DECISIONS.md` and `docs/ADR_RESTORE_TRUST_BOUNDARY.md` are now the authoritative decision records. Do not use this sketch to implement non-host canonical replacement unless server-persisted canonical state exists, or the project explicitly accepts a provisional quorum-based lower-trust mode.
+Status: Accepted for staged implementation as a provisional quorum-based
+lower-trust mode. This is an availability fallback for casual play, not durable
+server authority.
+
+## 2026-07-19 Accepted Contract
+
+- Existing host restore stays authoritative during a 60-second host grace period.
+- Hostless candidate collection then lasts 30 seconds.
+- At least two distinct human player identities must submit candidates. Multiple
+  tabs/devices for one player count once; CPU players never count.
+- Every candidate received in the collection window must have the same canonical
+  state hash and replay-backed rank. One-client recovery, majority voting, and
+  best-rank selection across mismatches are forbidden.
+- Completed games are reported as completed and are not recreated.
+- The agreeing compatible player with the lowest original player index receives
+  a 60-second confirmation. Reject, disconnect, or timeout passes confirmation to
+  the next agreeing player. Recovery occurs only after explicit approval.
+- The approving player becomes host. A returning former host rejoins its original
+  seat without replacing the restored room or reclaiming host automatically.
+- Candidate bodies are memory-only and expire within two minutes. Success,
+  terminal failure, room completion, and cleanup discard them immediately.
+- Each success increments a restore generation; older-generation candidates are
+  never reused. A match permits at most three provisional restores.
+- Failure reasons distinguish insufficient candidates, mismatch, rejection,
+  timeout, completion, and attempt limit without deleting client bundles.
+- The confirmation and game log identify provisional participant-data recovery;
+  no permanent warning banner is required.
+- Hostless support is enabled by default but has an emergency server switch back
+  to host-only behavior.
+- Socket.IO support is additive. Existing events and payload meanings remain
+  unchanged. Unsupported clients are not disconnected; their presence keeps the
+  room on the existing host-only path.
+- Existing localStorage keys and formats remain unchanged.
 
 ## 背景
 
@@ -27,11 +59,21 @@ Status: Deferred design sketch. `docs/IMPLEMENTATION_DECISIONS.md` and `docs/ADR
    - player count / player order / reconnect token hash の一致度
 4. host 候補が来た場合は host を優先する。
 5. host 候補が来ない場合だけ、複数候補の hash が一致し、rank が最大の bundle を provisional room として復元する。
-6. provisional room は server log と client notice に明示し、後から host がより新しい hostEpoch/hash の bundle を提示した場合は置換可能にする。
+6. provisional room は server log と client notice に明示し、後から届いた
+   host/non-host bundleでは置換しない。
 
-## すぐ実装しない理由
+## Implementation Slices
 
-非 host bundle 採用は、改ざん localStorage や stale bundle を room 正本に昇格させる可能性があります。実装する場合は、複数候補 hash 一致、grace window、UI notice、置換ルール、manual recovery 手順をセットにする必要があります。
+1. Pure candidate canonicalization, equality, rank, generation, expiry, host
+   selection, and attempt-limit helpers with table-driven contracts.
+2. In-memory coordinator for grace, collection, confirmation rotation, terminal
+   cleanup, and emergency disable.
+3. Additive client capability, candidate submission, status, confirmation, retry,
+   and local discard actions.
+4. Integration contracts for host precedence, old-client fallback, mismatch,
+   duplicate identities, timeout, completion, and repeated generations.
+5. Mixed Android/iPhone manual verification before mobile timing is considered
+   fully verified.
 
 ## 先に入れた足場
 
