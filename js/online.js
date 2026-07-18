@@ -116,6 +116,7 @@ let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
 let _rejoinRetryExhausted = false;
+let _hostlessRestorePending = false;
 let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
@@ -310,6 +311,14 @@ function _clearRejoinRetry() {
 }
 
 function _finishRejoinRetryTimeout() {
+    if (_hostlessRestorePending) return true;
+    if (_requestHostlessRestore()) {
+        const waitingEl = document.getElementById("onlineStatus");
+        if (waitingEl) {
+            waitingEl.textContent = '⏳ 元のホストを60秒待機後、参加者データの一致確認を開始します...';
+        }
+        return true;
+    }
     if (_rejoinRetryTimer) clearTimeout(_rejoinRetryTimer);
     _rejoinRetryTimer = null;
     _rejoinRetryDeadline = 0;
@@ -423,6 +432,7 @@ function resetOnlineState() {
     _setOnlineActionInFlight(false);
     _clearPendingOutboundAction(roomIdBeforeReset);
     _clearRejoinRetry();
+    _hostlessRestorePending = false;
     _onlineRestoreGeneration++;
     _onlineRestoreInProgress = false;
     _onlineRestoreEventQueue = [];
@@ -904,13 +914,24 @@ function initSocket() {
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
-    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq }) => {
+    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount }) => {
         _clearRejoinRetry();
+        _hostlessRestorePending = false;
         _onlineRestoreQuarantined = false;
         const startGeneration = ++_onlineRestoreGeneration;
         _onlineRestoreInProgress = true;
         _onlineRestoreEventQueue = [];
-        const gameStartPayload = _applyOnlineHostPayload({ schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null, enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex, actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0 }, hostPlayerIndex, hostEpoch);
+        const gameStartPayload = _applyOnlineHostPayload({
+            schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps,
+            cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null,
+            enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex,
+            actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0,
+            hostlessRestoreCapabilities,
+            hostlessRestoreGeneration: Number.isInteger(hostlessRestoreGeneration)
+                ? hostlessRestoreGeneration : 0,
+            hostlessRestoreCount: Number.isInteger(hostlessRestoreCount)
+                ? hostlessRestoreCount : 0,
+        }, hostPlayerIndex, hostEpoch);
         const startOnlineGame = () => {
             if (startGeneration !== _onlineRestoreGeneration) return;
             isOnlineGame = true;
@@ -1041,7 +1062,7 @@ function initSocket() {
     };
     socket.on('actionAccepted', handleActionAccepted);
 
-    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch, restoreAudit }) => {
+    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch, restoreAudit, provisionalRestore }) => {
         const carriedEvents = (_onlineRestoreInProgress || _onlineRestoreQuarantined)
             ? _onlineRestoreEventQueue.slice()
             : [];
@@ -1054,6 +1075,7 @@ function initSocket() {
             generation: restoreGeneration,
         }));
         _clearRejoinRetry();
+        _hostlessRestorePending = false;
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
         const restoredThroughSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
@@ -1143,6 +1165,9 @@ function initSocket() {
                 for (const { action, data } of replayActionLog) {
                     applyReplayedAction(action, data);
                 }
+                if (provisionalRestore) {
+                    game.addLog(LOG_TYPES.SYSTEM, '⚠️ 参加者データの全一致確認により暫定復元しました');
+                }
                 restoredOk = true;
             } catch (e) {
                 document.getElementById("onlineStatus").textContent = '❌ 復元データの再生に失敗しました。再接続してください。';
@@ -1189,6 +1214,88 @@ function initSocket() {
             return;
         }
         restoreOnlineGame();
+    });
+
+    const hostlessEvents = OnlinePayload.hostlessRestoreEvents;
+    socket.on(hostlessEvents.COLLECT, ({ roomId, generation }) => {
+        if (roomId !== myRoomId) return;
+        const el = document.getElementById("onlineStatus");
+        if (el) el.textContent = '♻️ 参加者間の復元データ一致を確認しています...';
+        if (!_submitHostlessRestoreCandidate(generation) && el) {
+            el.textContent = '❌ 復元候補の世代が一致しません。保存データは削除されていません。';
+        }
+    });
+
+    socket.on(hostlessEvents.CONFIRMATION, ({ roomId, candidateCount }) => {
+        if (roomId !== myRoomId) return;
+        const message =
+            `${candidateCount || 0}人の参加者データが完全一致しました。あなたを新しいホストとして暫定復元しますか？`;
+        const respond = approved => {
+            if (!socket || socket.connected === false) return;
+            socket.emit(hostlessEvents.CONFIRM, {
+                roomId,
+                approved: approved === true,
+            });
+        };
+        if (typeof showConfirm !== 'function' ||
+                showConfirm(message, () => respond(true), () => respond(false)) !== true) {
+            respond(false);
+        }
+    });
+
+    socket.on(hostlessEvents.STATUS, ({ roomId, reason, stage, candidateCount }) => {
+        if (roomId && roomId !== myRoomId) return;
+        const el = document.getElementById("onlineStatus");
+        if (reason === 'host-restored') {
+            _hostlessRestorePending = false;
+            _clearRejoinRetry();
+            isReconnectingOnline = true;
+            if (el) el.textContent = '♻️ 元のホストが復元しました。再接続しています...';
+            _emitOnlineRejoinRequest();
+            return;
+        }
+        if (reason === 'waiting-for-host') {
+            if (el) el.textContent = '⏳ 元のホストの復元を60秒待っています...';
+            return;
+        }
+        if (stage === 'confirming' && reason === 'quorum-ready') {
+            if (el) el.textContent =
+                `⏳ ${candidateCount || 0}人の候補が一致しました。ホスト承認を待っています...`;
+            return;
+        }
+        const terminalReasons = new Set([
+            'disabled',
+            'unsupported-client',
+            'original-host',
+            'generation-mismatch',
+            'insufficient-candidates',
+            'candidate-mismatch',
+            'completed-game',
+            'attempt-limit',
+            'confirmation-exhausted',
+            'retention-timeout',
+            'restore-failed',
+            'room-exists',
+        ]);
+        if (!terminalReasons.has(reason)) return;
+        _hostlessRestorePending = false;
+        _rejoinRetryExhausted = true;
+        isReconnectingOnline = true;
+        if (el) {
+            el.textContent = '❌ ' + OnlinePayload.hostlessRestoreStatusMessage(reason) +
+                ' 再接続をやり直すか、タイトル画面から保存データを明示的に破棄できます。';
+        }
+    });
+
+    socket.on(hostlessEvents.APPROVED, ({ roomId, hostPlayerIndex }) => {
+        if (roomId !== myRoomId) return;
+        _hostlessRestorePending = false;
+        if (hostPlayerIndex === myOriginalPlayerIndex) return;
+        _clearRejoinRetry();
+        isReconnectingOnline = true;
+        const el = document.getElementById("onlineStatus");
+        if (el) el.textContent = '♻️ 暫定復元したルームへ再接続しています...';
+        _emitOnlineRejoinRequest();
     });
 
     socket.on('playerRejoined', ({ playerIndex, playerName }) => {
@@ -1666,6 +1773,43 @@ function _readLocalRestoreBundle() {
     } catch (_) {
         return null;
     }
+}
+
+function _onlineHostlessRestoreIdentity() {
+    return {
+        roomId: myRoomId,
+        playerIndex: myOriginalPlayerIndex,
+        playerName: myPlayerName,
+        reconnectToken,
+    };
+}
+
+function _requestHostlessRestore() {
+    if (!socket || socket.connected === false || _hostlessRestorePending) return false;
+    const bundle = _readLocalRestoreBundle();
+    const payload = OnlinePayload.buildHostlessRestoreRequest(
+        bundle,
+        _onlineHostlessRestoreIdentity()
+    );
+    if (!payload) return false;
+    _hostlessRestorePending = true;
+    isReconnectingOnline = true;
+    socket.emit(OnlinePayload.hostlessRestoreEvents.REQUEST, payload);
+    return true;
+}
+
+function _submitHostlessRestoreCandidate(generation) {
+    const bundle = _readLocalRestoreBundle();
+    if (!bundle || bundle.gameStartPayload.hostlessRestoreGeneration !== generation) {
+        return false;
+    }
+    const payload = OnlinePayload.buildHostlessRestoreCandidate(
+        bundle,
+        _onlineHostlessRestoreIdentity()
+    );
+    if (!payload || !socket || socket.connected === false) return false;
+    socket.emit(OnlinePayload.hostlessRestoreEvents.CANDIDATE, payload);
+    return true;
 }
 
 function _sendRecreateRoomFromBundle(bundle) {

@@ -172,6 +172,19 @@ runTest('collection開始時だけrequesterへraw候補提出を要求する', (
     }).ok, true);
 });
 
+runTest('collection中に遅れて登録したrequesterにも候補提出を要求する', () => {
+    const { runtime, sockets, sessions } = setup();
+    const first = socket('s1');
+    const late = socket('s2');
+    sockets.set(first.id, first);
+    sockets.set(late.id, late);
+    runtime.request(first, { roomId: 'ROOM01', playerIndex: 1 });
+    sessions.get('ROOM01').stage = 'collecting';
+    runtime.request(late, { roomId: 'ROOM01', playerIndex: 2 });
+    assert.strictEqual(late.emitted.at(-1).name, HOSTLESS_RESTORE_EVENTS.COLLECT);
+    assert.strictEqual(late.emitted.at(-1).payload.generation, 0);
+});
+
 runTest('generation不一致・未登録socket・収集外提出を拒否する', () => {
     const { runtime, sockets, sessions } = setup();
     const client = socket('s1');

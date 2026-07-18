@@ -76,6 +76,7 @@ function loadOnlineRuntime(options = {}) {
         let timeoutHandlers = [];
         let clientFlowCheckpoints = [];
         let clientErrorReports = [];
+        let confirmRequests = [];
         function setTimeout(handler, ms) {
             timeoutHandlers.push({ handler, ms });
             return timeoutHandlers.length;
@@ -135,6 +136,10 @@ function loadOnlineRuntime(options = {}) {
         function reportClientError(payload) { clientErrorReports.push(payload); }
         const alert = () => {};
         const showNotice = () => {};
+        function showConfirm(message, onOk, onCancel) {
+            confirmRequests.push({ message, onOk, onCancel });
+            return true;
+        }
     `, context);
 
     // online storage facade と online.js をロード
@@ -174,6 +179,7 @@ function loadOnlineRuntime(options = {}) {
         this.getClientErrorReports = () => clientErrorReports;
         this.getUndoState = () => undoState;
         this.setUndoState = (value) => { undoState = value; };
+        this.getConfirmRequests = () => confirmRequests;
         this.applyAction = applyAction;
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this.getClientVersion = getClientVersion;
@@ -205,6 +211,9 @@ function loadOnlineRuntime(options = {}) {
         this._tryRestoreRoom = _tryRestoreRoom;
         this._canResendPendingOutboundAction = _canResendPendingOutboundAction;
         this._createOnlineClientActionId = _createOnlineClientActionId;
+        this._requestHostlessRestore = _requestHostlessRestore;
+        this._submitHostlessRestoreCandidate = _submitHostlessRestoreCandidate;
+        this._finishRejoinRetryTimeout = _finishRejoinRetryTimeout;
         this._handleOnlineActionTimeout = _handleOnlineActionTimeout;
         this.getTimeoutHandlers = () => timeoutHandlers;
         this.buildOnlineSnapshot = buildOnlineSnapshot;
@@ -224,13 +233,14 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
             if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
+            if (typeof v.hostlessRestorePending !== 'undefined') _hostlessRestorePending = v.hostlessRestorePending;
             if (typeof v.myRoomId !== 'undefined') myRoomId = v.myRoomId;
             if (typeof v.myOriginalPlayerIndex !== 'undefined') myOriginalPlayerIndex = v.myOriginalPlayerIndex;
             if (typeof v.myPlayerName !== 'undefined') myPlayerName = v.myPlayerName;
             if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
         this.getOnlineLobbyState = () => ({ createPending: onlineCreateRoomPending, joinPending: onlineJoinRoomPending, kind: onlineLobbyRequestKind });
-        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), isRoomHost, onlineActionInFlight });
+        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;
@@ -248,6 +258,164 @@ function makeGame(count = 2) {
     for (const card of CARDS) rt.getShopStock()[card.name] = 6;
     return g;
 }
+
+function seedHostlessRestoreBundle(runtime, overrides = {}) {
+    runtime.initSocket();
+    runtime.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Guest',
+        reconnectToken: 'token-guest',
+        isReconnectingOnline: true,
+    });
+    const gameStartPayload = Object.assign({
+        schemaVersion: 2,
+        playerNames: ['Host', 'Guest'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 1,
+        actionSeq: 4,
+        reconnectTokenHashes: ['hash-host', 'hash-guest'],
+        hostlessRestoreCapabilities: [1, 1],
+        hostlessRestoreGeneration: 2,
+        hostlessRestoreCount: 1,
+        enabledCards: CARDS.map(card => card.name),
+        enabledLandmarks: Player.landmarkNames(),
+    }, overrides);
+    runtime.localStorage.setItem('onlineGameStart', JSON.stringify(gameStartPayload));
+    runtime.localStorage.setItem('onlineStateSnapshot', JSON.stringify({ actionSeq: 4 }));
+    runtime.localStorage.setItem('onlineActionLog', JSON.stringify([]));
+    runtime.localStorage.setItem('onlineRestoreAudit', JSON.stringify({ version: 1 }));
+    return {
+        handlers: runtime.getSocketHandlers(),
+        gameStartPayload,
+    };
+}
+
+runTest('hostless retry exhaustionは対応clientだけ軽量requestへ移行する', () => {
+    const runtime = loadOnlineRuntime();
+    seedHostlessRestoreBundle(runtime);
+
+    assert.strictEqual(runtime._finishRejoinRetryTimeout(), true);
+    const emitted = runtime.getSocketEmits().pop();
+    assert.strictEqual(emitted.name, 'requestHostlessRestore');
+    assert.strictEqual(Object.hasOwn(emitted.payload, 'stateSnapshot'), false);
+    assert.strictEqual(Object.hasOwn(emitted.payload, 'actionLog'), false);
+    assert.strictEqual(runtime.getOnlineState().hostlessRestorePending, true);
+    assert.strictEqual(runtime._finishRejoinRetryTimeout(), true);
+    assert.strictEqual(runtime.getSocketEmits().length, 0);
+});
+
+runTest('hostless collection通知後だけraw候補を送信する', () => {
+    const runtime = loadOnlineRuntime();
+    const { handlers } = seedHostlessRestoreBundle(runtime);
+    runtime._requestHostlessRestore();
+    const beforeCollection = runtime.getSocketEmits().filter(event =>
+        event.name === 'submitHostlessRestoreCandidate'
+    );
+    assert.strictEqual(beforeCollection.length, 0);
+
+    handlers.hostlessRestoreCollect({ roomId: 'ROOM01', generation: 2 });
+    const emitted = runtime.getSocketEmits().pop();
+    assert.strictEqual(emitted.name, 'submitHostlessRestoreCandidate');
+    assert.strictEqual(emitted.payload.stateSnapshot.actionSeq, 4);
+    assert.strictEqual(emitted.payload.actionLog.length, 0);
+    assert.strictEqual(emitted.payload.restoreAudit.version, 1);
+});
+
+runTest('hostless確認modalは承認と明示拒否を別payloadで返す', () => {
+    const runtime = loadOnlineRuntime();
+    const { handlers } = seedHostlessRestoreBundle(runtime);
+
+    handlers.hostlessRestoreConfirmation({ roomId: 'ROOM01', candidateCount: 2 });
+    let confirmation = runtime.getConfirmRequests().pop();
+    assert.match(confirmation.message, /2人/);
+    confirmation.onCancel();
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getSocketEmits().pop())), {
+        name: 'confirmHostlessRestore',
+        payload: { roomId: 'ROOM01', approved: false },
+    });
+
+    handlers.hostlessRestoreConfirmation({ roomId: 'ROOM01', candidateCount: 2 });
+    confirmation = runtime.getConfirmRequests().pop();
+    confirmation.onOk();
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getSocketEmits().pop())), {
+        name: 'confirmHostlessRestore',
+        payload: { roomId: 'ROOM01', approved: true },
+    });
+});
+
+runTest('hostless不一致はbundleを保持し明示破棄と再試行を案内する', () => {
+    const runtime = loadOnlineRuntime();
+    const { handlers, gameStartPayload } = seedHostlessRestoreBundle(runtime);
+    runtime._requestHostlessRestore();
+
+    handlers.hostlessRestoreStatus({
+        roomId: 'ROOM01',
+        reason: 'candidate-mismatch',
+        candidateCount: 2,
+    });
+
+    assert.strictEqual(
+        runtime.localStorage.getItem('onlineGameStart'),
+        JSON.stringify(gameStartPayload)
+    );
+    assert.match(runtime.document.getElementById('onlineStatus').textContent, /多数決では復元しません/);
+    assert.match(runtime.document.getElementById('onlineStatus').textContent, /明示的に破棄/);
+    assert.strictEqual(runtime.getOnlineState().hostlessRestorePending, false);
+    assert.strictEqual(runtime.getOnlineState().reconnectState, 'failed');
+});
+
+runTest('hostless承認後は新host以外だけ通常rejoinへ合流する', () => {
+    const guestRuntime = loadOnlineRuntime();
+    const { handlers } = seedHostlessRestoreBundle(guestRuntime);
+    handlers.hostlessRestoreApproved({
+        roomId: 'ROOM01',
+        hostPlayerIndex: 2,
+        provisional: true,
+    });
+    assert.strictEqual(guestRuntime.getSocketEmits().pop().name, 'rejoinRoom');
+
+    const hostRuntime = loadOnlineRuntime();
+    const seeded = seedHostlessRestoreBundle(hostRuntime);
+    seeded.handlers.hostlessRestoreApproved({
+        roomId: 'ROOM01',
+        hostPlayerIndex: 1,
+        provisional: true,
+    });
+    assert.strictEqual(
+        hostRuntime.getSocketEmits().some(event => event.name === 'rejoinRoom'),
+        false
+    );
+
+});
+runTest('hostless暫定復元はrejoinData後のゲームログに一度明示する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.setEnabledCards(new Set(CARDS.map(card => card.name)));
+    runtime.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    const { handlers, gameStartPayload } = seedHostlessRestoreBundle(runtime);
+
+    handlers.rejoinData({
+        gameStartPayload,
+        stateSnapshot: null,
+        actionLog: [],
+        acceptedClientActions: [],
+        playerIndex: 1,
+        hostPlayerIndex: 1,
+        hostEpoch: 2,
+        provisionalRestore: true,
+    });
+
+    const provisionalLogs = runtime.getGame().log.filter(entry =>
+        entry.message.includes('参加者データの全一致確認により暫定復元')
+    );
+    assert.strictEqual(provisionalLogs.length, 1);
+});
+
+
+
+
 
 runTest('GAME_ACTION_REGISTRY は client applyAction で網羅される', () => {
     const runtime = loadOnlineRuntime();
@@ -2646,8 +2814,15 @@ runTest('initSocket gameStart はバージョン不一致時だけ警告ログ�
         enabledCards: CARDS.map(c => c.name),
         enabledLandmarks: Player.landmarkNames(),
         versions: ['same', 'same'],
+        hostlessRestoreCapabilities: [1, 1],
+        hostlessRestoreGeneration: 2,
+        hostlessRestoreCount: 1,
     });
     assert.ok(!rt.getGame().log.some(entry => entry.message.includes('バージョン不一致')));
+    const storedHostlessStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
+    assert.deepStrictEqual(storedHostlessStart.hostlessRestoreCapabilities, [1, 1]);
+    assert.strictEqual(storedHostlessStart.hostlessRestoreGeneration, 2);
+    assert.strictEqual(storedHostlessStart.hostlessRestoreCount, 1);
 
     handlers.gameStart({
         playerNames: ['Alice', 'Bob'],

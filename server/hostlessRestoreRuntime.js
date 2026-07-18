@@ -143,12 +143,20 @@ function createHostlessRestoreRuntime(options = {}) {
         });
         socket.hostlessRestoreRoomId = validation.roomId;
         socket.hostlessRestorePlayerIndex = validation.playerIndex;
+        const currentSession = coordinator.inspect(validation.roomId);
         socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
             roomId: validation.roomId,
             generation: validation.generation,
-            stage: coordinator.inspect(validation.roomId)?.stage || '',
+            stage: currentSession?.stage || '',
             reason: 'waiting-for-host',
         });
+        if (currentSession?.stage === 'collecting') {
+            socket.emit(HOSTLESS_RESTORE_EVENTS.COLLECT, {
+                roomId: validation.roomId,
+                generation: validation.generation,
+                timeoutMs: 0,
+            });
+        }
         return { ok: true };
     }
 

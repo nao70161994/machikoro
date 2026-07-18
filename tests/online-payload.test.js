@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { OnlinePayload } = require('../js/onlinePayload');
+const { HOSTLESS_RESTORE_EVENTS } = require('../server/hostlessRestoreRuntime');
 const { runTest } = require('./helpers/test-utils');
 
 runTest('online payload は再接続wire fieldを既存順序と値で生成する', () => {
@@ -106,9 +107,14 @@ runTest('hostless capability判定は旧形式の全員human設定を維持す�
 });
 
 runTest('hostless statusは失敗理由を区別し未知理由でもbundle保持を案内する', () => {
-    assert.match(OnlinePayload.hostlessRestoreStatusMessage('mismatch'), /一致しません/);
+    assert.match(OnlinePayload.hostlessRestoreStatusMessage('candidate-mismatch'), /一致しません/);
     assert.match(OnlinePayload.hostlessRestoreStatusMessage('insufficient-candidates'), /足りません/);
-    assert.match(OnlinePayload.hostlessRestoreStatusMessage('completed'), /完了済み/);
+    assert.match(OnlinePayload.hostlessRestoreStatusMessage('completed-game'), /完了済み/);
     assert.match(OnlinePayload.hostlessRestoreStatusMessage('unknown'), /削除されていません/);
     assert.ok(Object.isFrozen(OnlinePayload.hostlessRestoreEvents));
+});
+
+runTest('hostless additive event名はclient/serverで完全一致する', () => {
+    assert.deepStrictEqual(OnlinePayload.hostlessRestoreEvents, HOSTLESS_RESTORE_EVENTS);
+    assert.strictEqual(Object.values(HOSTLESS_RESTORE_EVENTS).some(name => name === 'recreateRoom'), false);
 });
