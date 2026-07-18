@@ -21,10 +21,15 @@ function currentCommit() {
     }).trim();
 }
 
-function assertSourceCommit(sourceCommit) {
+function validateSourceCommit(sourceCommit) {
     if (!/^[0-9a-f]{40}$/.test(sourceCommit)) {
         throw new Error('CPU baseline source commit must be a full 40-character hash');
     }
+    return sourceCommit;
+}
+
+function assertSourceCommit(sourceCommit) {
+    sourceCommit = validateSourceCommit(sourceCommit);
     try {
         childProcess.execFileSync('git', ['cat-file', '-e', `${sourceCommit}^{commit}`], {
             cwd: path.join(__dirname, '..'),
@@ -37,7 +42,7 @@ function assertSourceCommit(sourceCommit) {
 }
 
 function generateCpuDecisionBaseline(sourceCommit = currentCommit()) {
-    sourceCommit = assertSourceCommit(sourceCommit);
+    sourceCommit = validateSourceCommit(sourceCommit);
     const runtime = loadCPURuntime();
     const snapshots = [];
     CPU_BASELINE_DIFFICULTIES.forEach(difficulty => {
@@ -80,7 +85,8 @@ function writeCpuDecisionBaseline(options = {}) {
         'fixtures',
         'cpu-decision-baseline.json'
     );
-    const baseline = generateCpuDecisionBaseline(options.sourceCommit || currentCommit());
+    const sourceCommit = assertSourceCommit(options.sourceCommit || currentCommit());
+    const baseline = generateCpuDecisionBaseline(sourceCommit);
     fs.mkdirSync(path.dirname(output), { recursive: true });
     fs.writeFileSync(output, `${JSON.stringify(baseline, null, 2)}\n`);
     return { output, baseline };
@@ -95,6 +101,7 @@ if (require.main === module) {
 
 module.exports = {
     CPU_BASELINE_DIFFICULTIES,
+    validateSourceCommit,
     CPU_BASELINE_OPTIONS,
     assertSourceCommit,
     currentCommit,

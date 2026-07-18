@@ -6,6 +6,7 @@ const {
     CPU_BASELINE_DIFFICULTIES,
     generateCpuDecisionBaseline,
     parseArgs,
+    validateSourceCommit,
 } = require('../scripts/generate-cpu-decision-baseline');
 const { runTest } = require('./helpers/test-utils');
 
@@ -29,6 +30,15 @@ runTest('CPU decision baselineは存在しない基準commitを拒否する', ()
     assert.throws(
         () => assertSourceCommit('0123456789012345678901234567890123456789'),
         /does not exist/
+    );
+});
+
+runTest('CPU decision baseline比較はshallow checkoutでも基準commit形式を検証できる', () => {
+    const unavailableCommit = '0123456789012345678901234567890123456789';
+    assert.strictEqual(validateSourceCommit(unavailableCommit), unavailableCommit);
+    assert.throws(
+        () => validateSourceCommit('not-a-full-commit'),
+        /full 40-character hash/
     );
 });
 

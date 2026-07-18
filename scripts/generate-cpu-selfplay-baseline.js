@@ -5,6 +5,7 @@ const path = require('path');
 const {
     assertSourceCommit,
     currentCommit,
+    validateSourceCommit,
 } = require('./generate-cpu-decision-baseline');
 const { loadRuntime, simulateGameLightweight } = require('./selfplay');
 
@@ -20,7 +21,7 @@ function caseSeed(difficulty, playerCount) {
 }
 
 function generateCpuSelfplayBaseline(sourceCommit = currentCommit()) {
-    sourceCommit = assertSourceCommit(sourceCommit);
+    sourceCommit = validateSourceCommit(sourceCommit);
     const runtime = loadRuntime({ includeRL: false });
     const matches = [];
     CPU_SELFPLAY_DIFFICULTIES.forEach(difficulty => {
@@ -74,7 +75,8 @@ function writeCpuSelfplayBaseline(options = {}) {
         'fixtures',
         'cpu-selfplay-baseline.json'
     );
-    const baseline = generateCpuSelfplayBaseline(options.sourceCommit || currentCommit());
+    const sourceCommit = assertSourceCommit(options.sourceCommit || currentCommit());
+    const baseline = generateCpuSelfplayBaseline(sourceCommit);
     fs.mkdirSync(path.dirname(output), { recursive: true });
     fs.writeFileSync(output, `${JSON.stringify(baseline, null, 2)}\n`);
     return { output, baseline };
