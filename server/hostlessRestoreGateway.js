@@ -58,7 +58,6 @@ function makeHostlessRestoreGateway(options = {}) {
 
     function canonicalGameStartPayload(gameStartPayload) {
         const fields = [
-            'schemaVersion',
             'enabledCards',
             'enabledLandmarks',
             'playerNames',

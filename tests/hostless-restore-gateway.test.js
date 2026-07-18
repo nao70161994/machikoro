@@ -6,6 +6,12 @@ const {
 const {
     makeHostlessRestoreGateway,
 } = require('../server/hostlessRestoreGateway');
+const {
+    buildSignedRestoreAuditRecord,
+    validateRestoreAuditRecord,
+    verifySignedRestoreAuditRecord,
+} = require('../server/restoreAudit');
+
 
 function runTest(name, fn) {
     try {
@@ -91,7 +97,44 @@ runTest('gatewayは検証済みbundleをserver canonical snapshotとhashへ変�
     });
     assert.deepStrictEqual(result.candidate.payload.actionLog, []);
     assert.strictEqual(result.candidate.canonicalHash.length, 64);
+    assert.strictEqual(result.candidate.payload.gameStartPayload.schemaVersion, undefined);
     assert.strictEqual(result.candidate.payload.gameStartPayload.ignoredFutureField, undefined);
+});
+
+runTest('client専用schemaを除外してserver署名snapshotを検証する', () => {
+    const secret = 'hostless-test-secret';
+    const stateSnapshot = { actionSeq: 7 };
+    const serverGameStart = startPayload();
+    delete serverGameStart.schemaVersion;
+    delete serverGameStart.ignoredFutureField;
+    const restoreAudit = buildSignedRestoreAuditRecord('ROOM01', {
+        gameStartPayload: serverGameStart,
+        stateSnapshot,
+    }, {
+        crypto,
+        secret,
+        now: 1,
+    });
+    const gateway = makeGateway({
+        validateRestoreAuditRecord,
+        isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, snapshot, audit) {
+            return verifySignedRestoreAuditRecord(audit, {
+                gameStartPayload,
+                stateSnapshot: snapshot,
+            }, {
+                roomId,
+                crypto,
+                secret,
+            }).ok;
+        },
+    });
+    const result = gateway.prepareCandidate({ id: 'signed-client' }, candidatePayload({
+        gameStartPayload: Object.assign({ schemaVersion: 2 }, serverGameStart),
+        stateSnapshot,
+        restoreAudit,
+    }));
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.candidate.payload.gameStartPayload.schemaVersion, undefined);
 });
 
 runTest('軽量requestはraw stateなしでidentity・世代・回数を検証する', () => {
