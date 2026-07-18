@@ -143,6 +143,18 @@ const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 
+function getOnlineReconnectState() {
+    const connected = !!socket && socket.connected !== false;
+    return OnlineReconnectState.derive({
+        failed: _rejoinRetryExhausted,
+        replaying: isReplaying,
+        restoring: _onlineRestoreInProgress,
+        rejoining: isReconnectingOnline && connected,
+        connecting: isReconnectingOnline && !connected,
+        active: isOnlineGame,
+    });
+}
+
 function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {
     const logSeq = Array.isArray(actionLog)
         ? actionLog.reduce((max, entry) => Number.isInteger(entry && entry.seq) ? Math.max(max, entry.seq) : max, 0)

@@ -141,6 +141,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreRank.js');
+    loadScript(context, 'js/onlineReconnectState.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート
@@ -216,6 +217,10 @@ function loadOnlineRuntime(options = {}) {
         this.joinRoom = joinRoom;
         this.setOnlineState = (v) => {
             if (typeof v.socket !== 'undefined') socket = v.socket;
+            if (typeof v.isOnlineGame !== 'undefined') isOnlineGame = v.isOnlineGame;
+            if (typeof v.isReplaying !== 'undefined') isReplaying = v.isReplaying;
+            if (typeof v.onlineRestoreInProgress !== 'undefined') _onlineRestoreInProgress = v.onlineRestoreInProgress;
+            if (typeof v.rejoinRetryExhausted !== 'undefined') _rejoinRetryExhausted = v.rejoinRetryExhausted;
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
             if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
@@ -225,7 +230,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
         this.getOnlineLobbyState = () => ({ createPending: onlineCreateRoomPending, joinPending: onlineJoinRoomPending, kind: onlineLobbyRequestKind });
-        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, isRoomHost, onlineActionInFlight });
+        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), isRoomHost, onlineActionInFlight });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;
@@ -267,6 +272,29 @@ runTest('online.js は未使用 remote action helper を残さない', () => {
     assert.ok(!source.includes('function handleRemoteAction'));
 });
 
+
+runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維持する', () => {
+    const localRt = loadOnlineRuntime();
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'idle');
+
+    localRt.setOnlineState({ isOnlineGame: true });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'active');
+
+    localRt.setOnlineState({ isReconnectingOnline: true, socket: { connected: false } });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'connecting');
+
+    localRt.setOnlineState({ socket: { connected: true } });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'rejoining');
+
+    localRt.setOnlineState({ onlineRestoreInProgress: true });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'restoring');
+
+    localRt.setOnlineState({ isReplaying: true });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'replaying');
+
+    localRt.setOnlineState({ rejoinRetryExhausted: true });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'failed');
+});
 runTest('rejoinRoom送信経路はbuildOnlineRejoinPayloadでclientVersion契約を共有する', () => {
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'storage.js'), 'utf8');

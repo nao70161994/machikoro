@@ -178,6 +178,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineStorage.js');
         files.push('js/onlinePayload.js');
         files.push('js/onlineRestoreRank.js');
+        files.push('js/onlineReconnectState.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');
@@ -274,7 +275,7 @@ function loadIntegrationRuntime(options = {}) {
             delete context.__tmpOnlineState;
         },
         getOnlineState() {
-            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
+            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
         },
     };
     return context;

@@ -35,6 +35,7 @@ const STATIC_ASSETS = [
   '/js/onlineStorage.js',
   '/js/onlinePayload.js',
   '/js/onlineRestoreRank.js',
+  '/js/onlineReconnectState.js',
   '/js/online.js',
   '/js/uiNotice.js',
   '/js/uiLogDisplay.js',
