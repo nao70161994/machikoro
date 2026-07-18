@@ -4,7 +4,8 @@ Last updated: 2026-07-19
 
 Status: Accepted for staged implementation as a provisional quorum-based
 lower-trust mode. This is an availability fallback for casual play, not durable
-server authority.
+server authority. The pure candidate, coordinator, gateway, Socket.IO runtime,
+client consent flow, anonymous diagnostics, and emergency switch are implemented.
 
 ## 2026-07-19 Accepted Contract
 
@@ -64,16 +65,17 @@ server authority.
 
 ## Implementation Slices
 
-1. Pure candidate canonicalization, equality, rank, generation, expiry, host
-   selection, and attempt-limit helpers with table-driven contracts.
-2. In-memory coordinator for grace, collection, confirmation rotation, terminal
-   cleanup, and emergency disable.
-3. Additive client capability, candidate submission, status, confirmation, retry,
-   and local discard actions.
-4. Integration contracts for host precedence, old-client fallback, mismatch,
-   duplicate identities, timeout, completion, and repeated generations.
-5. Mixed Android/iPhone manual verification before mobile timing is considered
-   fully verified.
+1. Implemented: pure candidate canonicalization, equality, rank, generation,
+   expiry, host selection, and attempt-limit helpers with table-driven contracts.
+2. Implemented: in-memory coordinator for grace, collection, confirmation
+   rotation, terminal cleanup, and emergency disable.
+3. Implemented: additive client capability, candidate submission, status,
+   confirmation, retry, and local discard actions.
+4. Implemented: integration contracts for host precedence, old-client fallback,
+   mismatch, duplicate identities, timeout, completion, and repeated generations.
+5. Pending manual verification: mixed Android/iPhone host disappearance through
+   the full 60-second grace, 30-second collection, and 60-second confirmation
+   timing. Ordinary reconnect completion does not prove this timing matrix.
 
 ## 先に入れた足場
 
@@ -81,23 +83,26 @@ server authority.
 - `onlineSession` 削除時に restore bundle も削除し、古い候補が残り続けないようにした。
 - canonical mirror mismatch は server 側に記録済み。
 
-## 手動確認
+## Remaining Manual Verification
 
-hostless restore 実装前でも、次を確認対象にします。
+- Four-player mixed Android/iPhone play with two devices of each type, followed
+  by host disappearance or server restart and the full provisional recovery flow.
+- Candidate mismatch, confirmation rejection/timeout rotation, an old-client
+  participant, and `HOSTLESS_RESTORE_ENABLED=0` host-only rollback.
+- A former host returning after provisional recovery must regain only its
+  original seat; it must not reclaim host or replace the live room.
 
-- host が復元できない場合、非 host は待機し続けるがクラッシュしない。
-- host が戻った後、非 host が正しい状態へ追従する。
-- 古い `onlineGameStart` / `onlineActionLog` / `onlineStateSnapshot` が削除操作後に残らない。
+## Historical: 2026-05-26 Re-evaluation Gate
 
-## 2026-05-26 Re-evaluation Gate
-
-The current implementation still does not meet the bar for hostless restore. The new footings change the prerequisites, not the decision:
+This gate predates the explicit acceptance of provisional quorum restore on
+2026-07-19. The accepted contract above supersedes its earlier implementation
+hold, while its warning against claiming durable server authority still applies:
 
 - `server/canonicalStateStore.js` exists, but the default is noop and `CANONICAL_STATE_STORE=memory` is non-durable. Hostless restore must wait for a durable authoritative store or an explicitly accepted provisional quorum mode.
 - `onlineRestoreRoomIndex` exists, but it is only a locator for scoped client bundles. It must not promote non-host bundles to canonical state.
 - `restoreAudit` metadata exists, but unsigned audit records do not add trust, freshness, or authority.
 
-Hostless restore can be reconsidered only after all of the following are true:
+The historical reconsideration gates were:
 
 1. Durable server-persisted canonical state exists, or the product explicitly accepts lower-trust provisional restore.
 2. Candidate comparison fixtures cover canonical hash, replay-backed rank, host epoch, player order, and reconnect token hash consistency.
@@ -105,4 +110,5 @@ Hostless restore can be reconsidered only after all of the following are true:
 4. Multi-device manual tests cover host disappearance, host migration, server restart, stale client cache, and mobile background/resume.
 5. User-facing diagnostics clearly label provisional recovery and do not present it as authoritative.
 
-Until those gates are met, non-host clients should keep retrying or reconnecting, and restored room replacement remains host-only.
+The provisional implementation now satisfies the automated design and contract
+gates. Mobile timing remains a manual verification item, and restored room replacement remains host-only.

@@ -10,6 +10,7 @@ Use this document as the first stop when production behavior looks wrong. Other 
 - Browser error / lifecycle notification details: `docs/NTFY_ERROR_REPORTING.md`
 - PWA update and RL model loading behavior: `docs/PWA_MODEL_LOADING.md`
 - Online restore and trust boundaries: `docs/ONLINE_SYNC.md`, `docs/ADR_RESTORE_TRUST_BOUNDARY.md`
+- Provisional hostless restore contract: `docs/HOSTLESS_RESTORE_DESIGN.md`
 - AI maintenance handoff: `docs/AI_HANDOFF.md`
 - Design decision index: `docs/ADR_INDEX.md`
 
@@ -42,6 +43,7 @@ Set these in the service that runs `server.js` unless noted otherwise:
 | `NTFY_TOPIC` | Render | Recommended | Browser client-error and lifecycle notifications when `NODE_ENV=production`. | Use a hard-to-guess topic. Rotate if exposed. Local/dev `NTFY_TOPIC` values are ignored by normal reports. |
 | `NTFY_CI_TOPIC` | GitHub Actions secret | Optional but recommended | Failure-only CI notifications. | Use a different topic from `NTFY_TOPIC`; success runs stay silent. |
 | `CLIENT_ERROR_ALLOWED_ORIGINS` | Render | Recommended for public production | Comma-separated public origins allowed to report browser errors. | Same-origin reports are allowed automatically; use this for explicit public origin hygiene. |
+| `HOSTLESS_RESTORE_ENABLED` | Render | Optional; enabled by default | Enables the provisional quorum fallback after normal host restore retries are exhausted. | Set to `0` for immediate host-only rollback. Values `false`, `no`, `off`, and `disabled` also disable it. |
 | `CLIENT_ERROR_SHARED_TOKEN` | Render | Optional | Token for scripted/no-origin diagnostics and `/api/client-error-test`. | Do not require normal browser reports to expose it. Use only for controlled tests or non-browser senders. |
 | `CLIENT_ERROR_TEST_ENABLED=1` | Render | Temporary only | Enables `/api/client-error-test` in production-like environments. | Remove immediately after test notification. |
 | `CLIENT_ERROR_ALLOW_NO_ORIGIN` | Render | Debug only | Allows no-origin/no-token diagnostics. | Avoid in production except a short controlled window. |
@@ -301,7 +303,7 @@ Nightly automation reduces but does not fully replace:
 - Android Chrome/TWA store packaging behavior
 - additional multi-device online paths listed above
 - screen reader announcement quality
-- hostless restore or server-persisted canonical state design validation
+- full provisional hostless timing on mixed devices, and future server-persisted canonical state design
 
 Keep these as explicit manual/design items rather than treating nightly green as proof of real-device completion.
 
@@ -312,7 +314,14 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 - Public production client-error reporting should set `CLIENT_ERROR_ALLOWED_ORIGINS` and keep `NTFY_TOPIC` private. Scripted/no-origin diagnostics should use `CLIENT_ERROR_SHARED_TOKEN` or a temporary `CLIENT_ERROR_ALLOW_NO_ORIGIN` exception.
 - `CLIENT_ERROR_SHARED_TOKEN` is for scripted/no-origin diagnostics and `/api/client-error-test`; same-origin browser `/api/client-error` and `/api/game-lifecycle` reports remain tokenless so real-device reporting keeps working. Keep the token private and do not expose it to normal browser code unless a deliberate browser token model is added.
 - Stale-client classification is diagnostic. It must not automatically clear restore bundles, reject reconnect, or reload during an active game.
-- Server restart restore remains host-only for casual play. Hostless restore and server-persisted canonical state are design/implementation projects, not operational toggles.
+- Server restart restore remains host-first for casual play. After the normal path
+  is exhausted, compatible clients may use the provisional quorum fallback.
+- Hostless recovery requires two distinct human identities, exact agreement from
+  every collected candidate, and explicit confirmation. It never uses majority
+  voting and never replaces an existing room.
+- Raw candidate bodies stay in memory for at most two minutes; diagnostics contain
+  only a hashed room identifier, counts, rank/generation, result, and reason.
+- Set `HOSTLESS_RESTORE_ENABLED=0` to return immediately to host-only behavior.
 - Multiple room resume UI should not be enabled until restore bundles have a per-room index and stale bundles have a safe pruning policy.
 
 ## Online Restore Room Index

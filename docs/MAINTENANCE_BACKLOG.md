@@ -1,6 +1,6 @@
 # Maintenance Backlog
 
-Last updated: 2026-07-18
+Last updated: 2026-07-19
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
@@ -68,8 +68,8 @@ No current Critical maintenance item is known from this review. The remaining tr
 
 | Item | Classification | Risk | Impact | Suggested action | Deferred reason |
 | --- | --- | --- | --- | --- | --- |
-| Host-supplied restart restore trust boundary | Design judgment required / future large task | Server restart restore still relies on client-provided bundles unless signed audit or future durable canonical state is available. | Competitive/public trust would be overstated if treated as fully server authoritative. | Keep current casual trust wording. Revisit only with `docs/ADR_RESTORE_TRUST_BOUNDARY.md`, durable persistence, or signed/provisional restore design. | Out of scope: real signed restore, durable canonical state, hostless restore. |
-| Hostless restore and restored-room replacement policy | Design judgment required | Some footing exists, but non-host bundles becoming canonical would change trust and replacement semantics. | Could corrupt restored rooms or let stale/non-host data outrank host/server state. | Keep restored-room replacement host-only. Use `docs/HOSTLESS_RESTORE_DESIGN.md` before implementation. | Explicitly excluded; needs multi-device/manual policy. |
+| Host-supplied restart restore trust boundary | Design judgment required / future large task | Server restart restore still relies on client-provided bundles unless signed audit or future durable canonical state is available. | Competitive/public trust would be overstated if treated as fully server authoritative. | Keep current casual trust wording. The implemented hostless quorum fallback is explicitly provisional, not durable authority. | Out of scope: real signed restore and durable canonical state. |
+| Provisional hostless restore | Implemented; real-device timing verification remains | The fail-closed quorum path can recover an absent-host room only after host grace, exact agreement, and explicit confirmation. | Availability improves without allowing one-client or majority selection, while client-carried state remains lower trust. | Keep restored-room replacement host-only and preserve `HOSTLESS_RESTORE_ENABLED=0` as the immediate rollback. | Full 60s grace + 30s collection + confirmation rotation is not yet verified on mixed real devices. |
 | Long-running real online play and reconnect | Partially verified on real devices | A four-player mixed-device match (Android ×2, iPhone ×2) completed through victory with reconnect on 2026-07-18. | Basic mixed-device synchronization and reconnect continuation have direct evidence; specialized recovery paths remain. | Keep automated gates and manually verify host migration, server restart restore, Undo around reconnect, online CPU, background/resume, and PWA update paths separately. | One completed match does not cover every reconnect/PWA/modal failure mode. |
 
 ### Medium
@@ -104,7 +104,7 @@ No code fix is required immediately from this review. If a future small task is 
 
 ### 2. Requires Design Judgment
 
-- Durable canonical state / real signed restore / hostless restore.
+- Durable canonical state / real signed restore / authoritative hostless restore.
 - Server socket handler decomposition beyond pure helper extraction.
 - Reconnect state machine or room gate redesign beyond the existing `js/onlineStorage.js` facade.
 - CPU evaluation/execution architecture changes.
@@ -128,7 +128,7 @@ No code fix is required immediately from this review. If a future small task is 
 ### 5. Future Large Tasks
 
 - Durable server canonical state adapter with retention, locking, and explicit priority over client restore bundles.
-- Signed/provisional restore authority and hostless restore policy.
+- Durable/signed restore authority beyond the implemented provisional quorum policy.
 - Multi-room resume UI with candidate classification and stale/live/completed retention policy.
 - Server handler module split with stable exported test seams.
 - CPU/RL architecture split with parity benchmarks and no-strength-change gates.

@@ -2,7 +2,7 @@
 
 Date: 2026-05-26
 
-Status: Accepted design index. This document records the current cross-cutting decisions for deferred design items. It is intentionally documentation-only; do not treat it as evidence that the listed features are implemented.
+Status: Accepted decision index, updated 2026-07-19. Each row states whether its design is implemented, deferred, or awaiting manual verification; use the linked implementation and tests as evidence.
 
 ## Summary
 
@@ -11,7 +11,7 @@ Status: Accepted design index. This document records the current cross-cutting d
 | Modal stack / deny-nesting | Implemented deny-by-default with no nested blocking modal exceptions. Future exceptions require registry/tests/manual mobile verification. | Extend only when a concrete UX cannot use inline detail or non-blocking notice. | UI interactability contract, modal tests, mobile manual checks. |
 | Server-persisted canonical state | Minimal no-op/memory adapter footing exists; durable restart restore is not implemented. | Choose durable storage before enabling authoritative restart recovery. | Durable store choice, retention policy, atomic snapshot/log persistence. |
 | Signed restore snapshot / action log | HMAC-signed restore audit verification exists behind `RESTORE_AUDIT_SECRET` / `MACHIKORO_RESTORE_AUDIT_SECRET`; unsigned metadata remains diagnostics only. | Extend only for key rotation, freshness limits, or durable/adversarial deployments. | Stable secret, key rotation policy, legacy-bundle policy. |
-| Hostless restore | Provisional quorum fallback accepted on 2026-07-19: host-first grace, two or more distinct humans, all-candidate exact agreement, explicit confirmation, no late replacement, and an emergency host-only switch. | Implement in independently revertible slices; do not describe it as server-authoritative. | Candidate hash/rank fixtures, generation/expiry coordinator, compatibility fallback, multi-device manual tests. |
+| Hostless restore | Provisional quorum fallback accepted on 2026-07-19: host-first grace, two or more distinct humans, all-candidate exact agreement, explicit confirmation, no late replacement, and an emergency host-only switch. | Implemented in independently revertible slices; do not describe it as server-authoritative. | Automated contracts are complete; the full mixed-device timing matrix remains manual. |
 | Multiple room resume UI | Design footing documented; visible picker remains deferred until stale/live/completed candidate policy is implemented. | After candidate classification, retention policy, and mobile UX tests. | Restore bundle index, stale-key pruning policy, UX for room selection. |
 | Production client-error origin/token | Same-origin browser reporting stays tokenless; scripted/no-origin diagnostics require token when configured. | Revisit only if a deliberate browser token delivery model is added. | Render env configuration, same-origin browser reporting, documented curl/test flow. |
 | Restore bundle per-room namespace / pruning | Scoped-first reads and a per-room restore index exist; visible resume UI and destructive legacy/global pruning remain deferred. | Add UI only after stale-bundle UX and retention policy are explicit. | Old-key compatibility, storage tests, stale-bundle retention policy. |
@@ -63,11 +63,11 @@ The priority is:
 
 1. Server-persisted canonical state.
 2. Signed snapshot/action metadata as fallback or audit support.
-3. Hostless restore only after the authority model is explicit.
+3. Provisional quorum hostless restore only under its explicit lower-trust contract.
 
 Server persistence reduces the need for signed client restore as the primary recovery path. The current HMAC restore audit covers the canonical restore payload and is allowed as a fallback for compacted client snapshots when the server secret is configured. Unsigned metadata remains diagnostic only; freshness windows and key rotation are still operational design items.
 
-Hostless restore before server persistence would improve availability but lowers the trust boundary. If it is ever implemented early, it must be labeled provisional, use candidate quorum/hash comparison, prefer host candidates during a grace window, and keep replacement rules explicit.
+The implemented hostless fallback improves availability but lowers the trust boundary. It is labeled provisional, uses exact candidate quorum/hash comparison, prefers host recovery during a grace window, and keeps replacement rules explicit.
 
 ### Multiple room resume UI vs namespace/pruning
 
@@ -102,7 +102,7 @@ Stale client detection is diagnostic only. It must not delete restore bundles, r
 - Legacy/global restore key pruning after compatibility policy is settled.
 - Durable canonical state adapter behind an operational storage decision.
 - Restore audit key rotation, freshness limits, and legacy unsigned-bundle migration policy.
-- Hostless restore only after authority model is settled.
+- Real-device hostless timing verification and any future authoritative restore design.
 
 ### Do Not Do
 
@@ -125,7 +125,7 @@ Modal policy:
 Restore trust:
 
 - Host-only restore remains accepted for valid token/schema/rank bundles.
-- Non-host replacement remains rejected until hostless restore is explicitly implemented.
+- Live/restored-room replacement remains rejected; only an empty-room recreation approved by the internal quorum coordinator may use the provisional path.
 - Stale host bundle loses to newer replay-backed rank.
 - Server-persisted state, when added, beats any client bundle.
 - Signed bundle tests mutate every signed canonical field and verify rejection.
