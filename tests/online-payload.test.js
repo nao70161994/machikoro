@@ -33,3 +33,82 @@ runTest('online payload は欠落sessionも旧undefined field契約を維持す�
 runTest('online payload はhostless capabilityをfrozen定数で公開する', () => {
     assert.strictEqual(OnlinePayload.hostlessRestoreVersion, 1);
 });
+
+function hostlessBundle(overrides = {}) {
+    return {
+        gameStartPayload: Object.assign({
+            playerNames: ['Host', 'Guest', 'CPU'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }, { type: 'cpu' }],
+            hostPlayerIndex: 0,
+            hostlessRestoreCapabilities: [1, 1, 0],
+            hostlessRestoreGeneration: 2,
+            hostlessRestoreCount: 1,
+        }, overrides),
+        stateSnapshot: { actionSeq: 4 },
+        actionLog: [{ action: 'nextTurn' }],
+        restoreAudit: { version: 1 },
+    };
+}
+
+const hostlessIdentity = {
+    roomId: 'ROOM01',
+    playerIndex: 1,
+    playerName: 'Guest',
+    reconnectToken: 'token-guest',
+};
+
+runTest('hostless軽量requestはraw snapshotとaction logを送らない', () => {
+    const payload = OnlinePayload.buildHostlessRestoreRequest(hostlessBundle(), hostlessIdentity);
+    assert.deepStrictEqual(payload, {
+        roomId: 'ROOM01',
+        gameStartPayload: hostlessBundle().gameStartPayload,
+        playerIndex: 1,
+        playerName: 'Guest',
+        reconnectToken: 'token-guest',
+        capabilityVersion: 1,
+    });
+    assert.strictEqual(Object.hasOwn(payload, 'stateSnapshot'), false);
+    assert.strictEqual(Object.hasOwn(payload, 'actionLog'), false);
+    assert.strictEqual(Object.hasOwn(payload, 'restoreAudit'), false);
+});
+
+runTest('hostless raw候補は収集event用payloadにだけ含まれる', () => {
+    const bundle = hostlessBundle();
+    const payload = OnlinePayload.buildHostlessRestoreCandidate(bundle, hostlessIdentity);
+    assert.strictEqual(payload.stateSnapshot, bundle.stateSnapshot);
+    assert.strictEqual(payload.actionLog, bundle.actionLog);
+    assert.strictEqual(payload.restoreAudit, bundle.restoreAudit);
+    assert.strictEqual(payload.capabilityVersion, 1);
+});
+
+runTest('hostless payloadは元host・旧client混在・3回上限をfail closedする', () => {
+    assert.strictEqual(OnlinePayload.buildHostlessRestoreRequest(
+        hostlessBundle(),
+        Object.assign({}, hostlessIdentity, { playerIndex: 0 })
+    ), null);
+    assert.strictEqual(OnlinePayload.buildHostlessRestoreRequest(
+        hostlessBundle({ hostlessRestoreCapabilities: [1, 0, 0] }),
+        hostlessIdentity
+    ), null);
+    assert.strictEqual(OnlinePayload.buildHostlessRestoreRequest(
+        hostlessBundle({ hostlessRestoreCount: 3 }),
+        hostlessIdentity
+    ), null);
+});
+
+runTest('hostless capability判定は旧形式の全員human設定を維持する', () => {
+    const bundle = hostlessBundle({
+        playerNames: ['Host', 'Guest'],
+        playerSettings: [],
+        hostlessRestoreCapabilities: [1, 1],
+    });
+    assert.strictEqual(OnlinePayload.supportsHostlessRestore(bundle, hostlessIdentity), true);
+});
+
+runTest('hostless statusは失敗理由を区別し未知理由でもbundle保持を案内する', () => {
+    assert.match(OnlinePayload.hostlessRestoreStatusMessage('mismatch'), /一致しません/);
+    assert.match(OnlinePayload.hostlessRestoreStatusMessage('insufficient-candidates'), /足りません/);
+    assert.match(OnlinePayload.hostlessRestoreStatusMessage('completed'), /完了済み/);
+    assert.match(OnlinePayload.hostlessRestoreStatusMessage('unknown'), /削除されていません/);
+    assert.ok(Object.isFrozen(OnlinePayload.hostlessRestoreEvents));
+});
