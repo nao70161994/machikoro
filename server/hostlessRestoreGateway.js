@@ -87,6 +87,46 @@ function makeHostlessRestoreGateway(options = {}) {
         return canonical;
     }
 
+    function validateRequest(payload = {}) {
+        if (!isPlainObject(payload)) return failure('not-object');
+        const sizeValidation = validateRestorePayloadLimits(payload);
+        if (!sizeValidation?.ok) return failure('payload-limits');
+        const { roomId, gameStartPayload, playerIndex, playerName, reconnectToken, capabilityVersion } = payload;
+        if (!isValidRoomId(roomId)) return failure('room-id');
+        if (!isPlainObject(gameStartPayload) || !Array.isArray(gameStartPayload.playerNames)) {
+            return failure('game-start');
+        }
+        const playerCount = gameStartPayload.playerNames.length;
+        if (!isValidGameStartPayload(gameStartPayload, playerCount)) return failure('game-start');
+        if (hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings)) return failure('player-settings');
+        if (capabilityVersion !== HOSTLESS_RESTORE_SCHEMA_VERSION ||
+                !supportsHostlessRestore(gameStartPayload)) {
+            return failure('unsupported-client');
+        }
+        if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerCount) {
+            return failure('player-index');
+        }
+        if (gameStartPayload.hostPlayerIndex === playerIndex) return failure('original-host');
+        const settings = normalizePlayerSettings(gameStartPayload.playerSettings, playerCount);
+        if (settings[playerIndex]?.type === 'cpu') return failure('cpu-player');
+        if (!isValidRestoreReconnectTokenHashes(gameStartPayload)) return failure('token-hashes');
+        const expectedTokenHash = getExpectedReconnectTokenHash(
+            { players: [], gameStartPayload },
+            playerIndex,
+            playerName
+        );
+        if (!expectedTokenHash || hashReconnectToken(reconnectToken) !== expectedTokenHash) {
+            return failure('invalid-token');
+        }
+        return Object.freeze({
+            ok: true,
+            roomId,
+            playerIndex,
+            generation: normalizedCounter(gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD]),
+            attemptCount: normalizedCounter(gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD]),
+        });
+    }
+
     function prepareCandidate(socket, payload = {}) {
         if (!isPlainObject(payload)) return failure('not-object');
         const sizeValidation = validateRestorePayloadLimits(payload);
@@ -210,6 +250,7 @@ function makeHostlessRestoreGateway(options = {}) {
     return Object.freeze({
         supportsHostlessRestore,
         canonicalGameStartPayload,
+        validateRequest,
         prepareCandidate,
     });
 }

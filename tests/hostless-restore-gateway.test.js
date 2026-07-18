@@ -94,6 +94,27 @@ runTest('gatewayは検証済みbundleをserver canonical snapshotとhashへ変�
     assert.strictEqual(result.candidate.payload.gameStartPayload.ignoredFutureField, undefined);
 });
 
+runTest('軽量requestはraw stateなしでidentity・世代・回数を検証する', () => {
+    const gateway = makeGateway();
+    const result = gateway.validateRequest({
+        roomId: 'ROOM01',
+        capabilityVersion: 1,
+        gameStartPayload: startPayload(),
+        playerIndex: 1,
+        playerName: 'Guest',
+        reconnectToken: 'guest',
+    });
+    assert.deepStrictEqual(result, {
+        ok: true,
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        generation: 2,
+        attemptCount: 1,
+    });
+    assert.strictEqual(JSON.stringify(result).includes('stateSnapshot'), false);
+    assert.strictEqual(JSON.stringify(result).includes('actionLog'), false);
+});
+
 runTest('gateway hashはraw snapshotのkey順と余分なgameStart fieldに影響されない', () => {
     const gateway = makeGateway();
     const left = gateway.prepareCandidate({ id: 'left' }, candidatePayload({
@@ -135,6 +156,15 @@ runTest('元host・CPU・token不一致の候補を拒否する', () => {
     assert.strictEqual(gateway.prepareCandidate({ id: 'socket' }, candidatePayload({
         reconnectToken: 'wrong',
     })).reason, 'invalid-token');
+});
+
+runTest('軽量requestも元host・旧client・token不一致を拒否する', () => {
+    const gateway = makeGateway();
+    const base = candidatePayload();
+    assert.strictEqual(gateway.validateRequest(base).ok, true);
+    assert.strictEqual(gateway.validateRequest(Object.assign({}, base, { playerIndex: 0 })).reason, 'original-host');
+    assert.strictEqual(gateway.validateRequest(Object.assign({}, base, { capabilityVersion: 0 })).reason, 'unsupported-client');
+    assert.strictEqual(gateway.validateRequest(Object.assign({}, base, { reconnectToken: 'wrong' })).reason, 'invalid-token');
 });
 
 runTest('署名されていないsnapshotはaction logも空なら採用しない', () => {
