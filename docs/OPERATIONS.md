@@ -283,13 +283,21 @@ For every ntfy browser error:
 4. If `classification=unknown`, create a focused test before broad refactors. Preserve the ntfy body and local `machikoroFreezeSnapshot` when available.
 5. Never paste reconnect tokens, raw room codes, full snapshots, or localStorage dumps into public issues.
 
+## Recorded Real-Device Online Evidence
+
+2026-07-18 manual verification completed one four-player online match through victory with two Android devices and two iPhones. At least one disconnect/reconnect occurred and the match continued to completion with the four clients participating.
+
+This evidence covers mixed Android/iPhone basic play, live synchronization, and reconnect continuation for that match. It does not prove host migration, server-process restart restore, Undo synchronization around reconnect, online CPU turns, background/resume behavior, Service Worker update deferral, install prompts, or modal focus/inert behavior.
+
+Keep those uncovered paths explicit in `TESTPLAN.md`; do not infer them from this completed match or from automated WebKit.
+
 ## Manual Checks Still Required
 
 Nightly automation reduces but does not fully replace:
 
 - real iPhone Safari install/update prompt behavior
 - Android Chrome/TWA store packaging behavior
-- multi-device long-running online play over real networks
+- additional multi-device online paths listed above
 - screen reader announcement quality
 - hostless restore or server-persisted canonical state design validation
 

@@ -21,7 +21,7 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-17 保守性改善の現在地
+## 2026-07-18 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類を分離。DOM snapshot/recovery、storage、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
 - CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/購入減点primitive、合法建設filter、人数別profile、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、行動選択は未変更。
@@ -31,7 +31,7 @@
 - contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
 - tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
 
-既存レビュー項目のうちAI単独で安全に進められるpure helperと契約補強は完了。残るreconnect state machine、Socket.IO handler移動、modal lifecycle、CPUの大きなscoring/selectionとlive build executionの移動は、callback/timing、iPhone実機、または追加の意味論判断なしでは開始しない。現在iPhoneは利用できず、WebKit自動テストを実機完了とは扱わない。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。残るreconnect state machine、Socket.IO handler移動、modal lifecycle、CPUの大きなscoring/selectionとlive build executionは、契約とrollback単位を保てる範囲だけ進める。
 
 ## 2026-05-16 時点の実施済み範囲
 

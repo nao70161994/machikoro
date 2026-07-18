@@ -188,5 +188,6 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
 25. B分類オンライン耐障害化
    - 自動確認: `tests/online-action-reconnect-e2e.test.js`でbuild/undo/pending復元、`tests/online-completion-e2e.test.js`で4人完走・host移譲・200 action圧縮・再接続、`tests/online-soak.test.js`で反復完走を検査する。
    - CI確認: nightlyのonline、3回soak、simulation、Ubuntu WebKitを同一commitで実行する。restart file persistence E2Eはdurable canonical state側へ隔離する。
-   - 手動確認: iPhone Safariで4人戦、通信断/復帰、background復帰、PWA更新延期を確認する。2026-07-15時点では実機未確認。
+   - 手動確認済み（2026-07-18）: Android 2台＋iPhone 2台の4人戦を、再接続ありで勝利まで完走した。
+   - 未確認: host移譲、server restart restore、Undo同期、online CPU、background復帰、PWA更新延期は個別に確認する。
    - 期待結果: ACK timeoutでもpendingを失わず、canonical rejoin後に重複送信せず復帰し、restore中eventの順序と上限を守る。

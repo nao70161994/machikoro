@@ -68,7 +68,7 @@ No current Critical maintenance item is known from this review. The remaining tr
 | --- | --- | --- | --- | --- | --- |
 | Host-supplied restart restore trust boundary | Design judgment required / future large task | Server restart restore still relies on client-provided bundles unless signed audit or future durable canonical state is available. | Competitive/public trust would be overstated if treated as fully server authoritative. | Keep current casual trust wording. Revisit only with `docs/ADR_RESTORE_TRUST_BOUNDARY.md`, durable persistence, or signed/provisional restore design. | Out of scope: real signed restore, durable canonical state, hostless restore. |
 | Hostless restore and restored-room replacement policy | Design judgment required | Some footing exists, but non-host bundles becoming canonical would change trust and replacement semantics. | Could corrupt restored rooms or let stale/non-host data outrank host/server state. | Keep restored-room replacement host-only. Use `docs/HOSTLESS_RESTORE_DESIGN.md` before implementation. | Explicitly excluded; needs multi-device/manual policy. |
-| Long-running real online play and reconnect | Real-device verification required | Automated pseudo-E2E cannot fully model network transitions, mobile backgrounding, and real Socket.IO timing. | Online success may still fail on device/network combinations despite unit coverage. | Run manual long-match matrix on iPhone Safari and Android Chrome/TWA after online changes. | No iPhone is available in the current environment; automated WebKit is evidence but is not a real-device substitute. |
+| Long-running real online play and reconnect | Partially verified on real devices | A four-player mixed-device match (Android ×2, iPhone ×2) completed through victory with reconnect on 2026-07-18. | Basic mixed-device synchronization and reconnect continuation have direct evidence; specialized recovery paths remain. | Keep automated gates and manually verify host migration, server restart restore, Undo around reconnect, online CPU, background/resume, and PWA update paths separately. | One completed match does not cover every reconnect/PWA/modal failure mode. |
 
 ### Medium
 
@@ -146,4 +146,4 @@ If work continues, these are the highest value small-to-medium follow-ups:
 - manual online deliveryは固定production originへのGETと読み取り専用Socket.IO handshakeだけに限定し、Actions `29379820494`で成功。定期scheduleは追加しない。
 - B3: file durable canonical storeは`review/durable-canonical-experimental`だけに隔離。既定storeは`noop`を維持し、canonical transactionとrestart persistenceはmainへ入れない。
 - B4: 現行action ID境界とrolling compatibilityを`docs/PROTOCOL_COMPATIBILITY.md`で固定。dotted stream ID、watermark、非host canonical置換の実装は採用しない。
-- 実機iPhone Safariの長時間4人戦、background復帰、PWA更新は未確認。自動WebKit成功で代替済みとは扱わない。
+- 2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を、再接続ありで勝利まで完走確認。host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新は未確認で、自動WebKitやこの1試合から完了を推定しない。
