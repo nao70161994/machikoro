@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-16
+Last updated: 2026-07-18
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -128,7 +128,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | Future file | Responsibility |
 | --- | --- |
 | `js/onlineStorage.js` | Browser-global facade for room-scoped session keys, legacy fallback reads, restore bundle read/write/delete, pending outbound persistence, and namespace constants. |
-| `js/onlineReconnectState.js` | Explicit state constants and transition helpers for idle, connecting, joining, rejoining, retrying, restoring, failed, and completed/left flows. |
+| `js/onlineReconnectState.js` | Explicit state constants and transition helpers for idle, connecting, rejoining, restoring, replaying, active, failed, and completed flows. The current integration is observation-only. |
 | `js/onlineActions.js` | Client action send/apply helpers only after storage and state are stable. |
 | `js/online.js` | Socket event orchestration and integration with UI/main. |
 
@@ -300,25 +300,27 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-07-17, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
+As of 2026-07-18, rollback-friendly units from this plan are implemented without changing wire protocol, storage format, game rules, CPU tuning, PWA behavior, or reconnect timing:
 
 - `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
 - `server/gameLifecycleReporting.js` owns lifecycle notification payload/text formatting while auth, rate limits, dedupe, and HTTP delivery remain in `server.js`.
 - `server/staticAssets.js` owns root files and directory routes; tests verify allowlisted files exist and every local `index.html` asset is served by an allowlisted route.
+- `server/actionPayload.js` owns the frozen canonical payload key table and client action ID normalization while handlers, event names, and payload shapes remain unchanged.
 - `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
 - `js/onlineRestoreRank.js` owns existing restore-rank calculation while reconnect timing, ACK handling, restore queues, and Socket.IO ownership remain in `online.js`.
+- `js/onlineReconnectState.js` owns eight state names, allowed-transition contracts, and a read-only projection of the existing booleans; timers, callbacks, retry counts, and UI text remain in `online.js`.
 - `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, `js/uiCardSelect.js`, `js/uiPlayerDisplay.js`, `js/uiLogDisplay.js`, and `js/uiCardOrder.js` own pure HTML/display/order policy; `ui.js` still owns modal lifecycle, DOM mutation, event handling, and render orchestration.
-- `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, and freeze-classification policy while `appShell.js` retains browser capture, DOM snapshots, recovery, storage, dedupe, fetch, timers, and PWA side effects.
+- `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, freeze classification, and bounded diagnostic serialization while `appShell.js` retains browser capture, DOM snapshots, recovery, storage writes, dedupe, fetch, timers, and PWA side effects.
 - `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
 - `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
-- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty primitives, affordable-build filters, player-count profiles, and injected lookahead loop/steps behind existing CPU wrappers.
+- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty primitives, affordable-build filters, player-count profiles, weighted dice outcomes, and injected lookahead loop/steps behind existing CPU wrappers.
 - CPU extraction is guarded by 9 representative fixtures across build/dice/reroll/harbor/pending states, 36 exact decision snapshots for all difficulties, and 36 seeded full matches for all difficulties and 2–10 players. Baseline artifacts record their source commit.
 - Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity.
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, reconnect state-machine work, Socket.IO handler movement, modal lifecycle movement, broad CPU scoring/selection movement, and live build execution need planned verification beyond current automated parity. No iPhone is available in the current environment, so automated WebKit coverage must not be recorded as completion of the real-device gate.
+The remaining steps below still require the same gates described in each design section. In particular, reconnect timer/callback migration, Socket.IO handler movement, modal lifecycle movement, broad CPU scoring/selection movement, and live build execution need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, Undo, online CPU, background/PWA, or modal gates.
 
 ## Recommended Migration Order
 

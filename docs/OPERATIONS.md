@@ -103,13 +103,15 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - Client-error / ntfy bodies must redact reconnect tokens, session ids, shared client-error tokens, and URL query secrets before notification or logs.
 - Saved stats numbers must normalize to finite non-negative integers before rendering percentages or bar widths.
 - Restore action logs must reject unknown action names before replay or rank calculation.
+- Canonical action keys and client action IDs must go through `server/actionPayload.js`; keep its action set synchronized with `GAME_ACTION_REGISTRY`, validators, and mirror replay.
 - New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests; update `tests/runtime-dependencies.test.js` when the helper has a browser-global consumer.
 - Public root files and directory routes must remain explicit in `server/staticAssets.js`; every local `index.html` asset must resolve through that allowlist, except Socket.IO's own client route.
 - UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
+- `OnlineReconnectState` is observation-only: changing its table must not silently change retry timers, callback order, socket events, status text, or storage cleanup.
 - Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
 - Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
 - Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
-- Client/lifecycle reporting, watchdog classification, server payload/settings/restore sanitation, online payload/restore-rank, and UI display/HTML helper modules are pure boundaries; keep network, socket, DOM recovery, storage, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.
+- Client/lifecycle reporting, watchdog classification/diagnostic serialization, server payload/settings/restore sanitation, online payload/restore-rank/state observation, and UI display/HTML helper modules are pure boundaries; keep network, socket, DOM recovery, storage writes, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.
 - CPU helper extraction must preserve wrapper results, the exact decision baseline, the 2–10 player/all-difficulty self-play baseline, fixed traces, and existing CPU tests; do not change heuristic constants, difficulty presets, candidate order, or action selection under a maintenance-only task.
 - Run `npm run test:cpu-regression` after CPU scoring, legal-move, simulation, or execution edits. It compares winner, turns, and completion for 36 seeded full matches.
 - Regenerate CPU baselines only for an intentional, reviewed behavior change. Pass `--source-commit <full-40-character-commit>` identifying the accepted pre-generation behavior; never refresh an artifact merely to make a failing test green.

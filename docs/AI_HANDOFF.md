@@ -23,15 +23,15 @@
 
 ## 2026-07-18 保守性改善の現在地
 
-- app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類を分離。DOM snapshot/recovery、storage、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
-- CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/購入減点primitive、合法建設filter、人数別profile、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、行動選択は未変更。
-- server: 通知、payload上限、設定、room/static/action履歴に加え、dice payload、reconnect identity、restore sanitation、canonical mirror metadataをpure helperへ分離。Socket.IO/HTTP handler、event名、wire payload、restore authorityは移動・変更していない。
-- online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離。ACK、restore queue、retry、protocolは未変更。
+- app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
+- CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/重複購入/経済バランスprimitive、合法建設filter、人数別profile、重み付き出目表、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、乱数消費、行動選択は未変更。
+- server: 通知、payload上限、設定、room/static/action履歴に加え、canonical action payload、dice payload、reconnect identity、restore sanitation、canonical mirror metadataをpure helperへ分離。Socket.IO/HTTP handler、event名、wire payload、restore authorityは移動・変更していない。
+- online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離し、`js/onlineReconnectState.js` に8状態と許可遷移、既存booleanのread-only観測を追加。ACK、restore queue、retry timer/callback、protocolは未変更。
 - UI: pending/build/detail/selectに加え、`js/uiPlayerDisplay.js`、`js/uiLogDisplay.js`、`js/uiCardOrder.js` に表示設定、構造化log解析、カード順序を分離。modal lifecycle、focus/inert、DOM副作用、event処理は未変更。
 - contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
 - tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
 
-2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。残るreconnect state machine、Socket.IO handler移動、modal lifecycle、CPUの大きなscoring/selectionとlive build executionは、契約とrollback単位を保てる範囲だけ進める。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。残るreconnect timer/callback移行、Socket.IO handler移動、modal lifecycle、CPUの大きなscoring/selectionとlive build executionは、人間判断と対象別実機matrixが用意されるまでdeferred。
 
 ## 2026-05-16 時点の実施済み範囲
 
