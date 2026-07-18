@@ -300,19 +300,24 @@ runTest('showConfirm はOKでcallbackを一度だけ呼びmodal lockを解除す
     assert.strictEqual(elements.gameScreen.inert, false);
 });
 
-runTest('showConfirm はCancelとEscapeでcallbackを呼ばずmodal lockを解除する', () => {
+runTest('showConfirm はCancelとEscapeで任意のcancel callbackを一度だけ呼ぶ', () => {
     const { context, elements } = loadUiRuntime();
     let okCount = 0;
+    let cancelCount = 0;
 
-    context.showConfirm('キャンセル確認', () => { okCount++; });
+    context.showConfirm('キャンセル確認', () => { okCount++; }, () => { cancelCount++; });
     elements.confirmCancelBtn.onclick();
     assert.strictEqual(okCount, 0);
+    assert.strictEqual(cancelCount, 1);
     assert.strictEqual(elements.confirmModal.style.display, 'none');
     assert.strictEqual(context.__machikoroConfirmModalOpen, false);
+    elements.confirmCancelBtn.onclick();
+    assert.strictEqual(cancelCount, 1);
 
-    context.showConfirm('Esc確認', () => { okCount++; });
+    context.showConfirm('Esc確認', () => { okCount++; }, () => { cancelCount++; });
     context.handleModalKeydown({ key: 'Escape', preventDefault() {} });
     assert.strictEqual(okCount, 0);
+    assert.strictEqual(cancelCount, 2);
     assert.strictEqual(elements.confirmModal.style.display, 'none');
     assert.strictEqual(context.__machikoroConfirmModalOpen, false);
     assert.strictEqual(elements.titleScreen.inert, false);

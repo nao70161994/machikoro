@@ -1172,9 +1172,14 @@ function setConfirmModalAwaitingChoice(value) {
     } catch (_) {}
 }
 
+let confirmModalCancelHandler = null;
+
 function closeConfirmModal(accepted) {
+    const cancelHandler = accepted === true ? null : confirmModalCancelHandler;
+    confirmModalCancelHandler = null;
     setConfirmModalAwaitingChoice(false);
     closeAccessibleModal('confirmModal');
+    if (cancelHandler) cancelHandler();
 }
 
 function handleModalKeydown(event) {
@@ -1392,7 +1397,7 @@ function escapeHtml(str) {
 }
 
 
-function showConfirm(message, onOk) {
+function showConfirm(message, onOk, onCancel) {
     const modal = document.getElementById('confirmModal');
     const messageEl = document.getElementById('confirmMessage');
     const okBtn = document.getElementById('confirmOkBtn');
@@ -1405,6 +1410,7 @@ function showConfirm(message, onOk) {
     messageEl.textContent = message;
     if (!openAccessibleModal('confirmModal')) return false;
     setConfirmModalAwaitingChoice(true);
+    confirmModalCancelHandler = typeof onCancel === 'function' ? onCancel : null;
     okBtn.onclick = () => {
         closeConfirmModal(true);
         onOk();
