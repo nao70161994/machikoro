@@ -34,6 +34,31 @@ runTest('CPU本体のplayout RNG wrapperはpure simulationへ同値委譲する'
     );
 });
 
+runTest('CPU simulation は1個振りと2個振りの既存代表出目・重みを維持する', () => {
+    const oneDie = CPUSimulation.diceOutcomeWeights(false);
+    const twoDice = CPUSimulation.diceOutcomeWeights(true);
+
+    assert.deepStrictEqual(oneDie.map(outcome => outcome.total), [1, 2, 3, 4, 5, 6]);
+    assert.deepStrictEqual(oneDie.map(outcome => outcome.weight), [1, 1, 1, 1, 1, 1]);
+    assert.deepStrictEqual(twoDice.map(outcome => outcome.total), [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    assert.deepStrictEqual(twoDice.map(outcome => outcome.weight), [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1]);
+    assert.strictEqual(twoDice.reduce((sum, outcome) => sum + outcome.weight, 0), 36);
+});
+
+runTest('CPU本体のdice outcome wrapperはpure simulationへ同値委譲する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('expert');
+
+    assert.strictEqual(
+        JSON.stringify(cpu._diceOutcomeWeights(false)),
+        JSON.stringify(CPUSimulation.diceOutcomeWeights(false))
+    );
+    assert.strictEqual(
+        JSON.stringify(cpu._diceOutcomeWeights(true)),
+        JSON.stringify(CPUSimulation.diceOutcomeWeights(true))
+    );
+});
+
 runTest('CPU simulation playoutはwinnerまで既存順でstepを実行する', () => {
     let steps = 0;
     let winnerChecks = 0;

@@ -860,29 +860,7 @@ class CPU {
     }
 
     _diceOutcomeWeights(useTwo) {
-        if (!useTwo) {
-            return [
-                { weight: 1, dice1: 1, dice2: 0, total: 1 },
-                { weight: 1, dice1: 2, dice2: 0, total: 2 },
-                { weight: 1, dice1: 3, dice2: 0, total: 3 },
-                { weight: 1, dice1: 4, dice2: 0, total: 4 },
-                { weight: 1, dice1: 5, dice2: 0, total: 5 },
-                { weight: 1, dice1: 6, dice2: 0, total: 6 },
-            ];
-        }
-        return [
-            { weight: 1, dice1: 1, dice2: 1, total: 2 },
-            { weight: 2, dice1: 1, dice2: 2, total: 3 },
-            { weight: 3, dice1: 1, dice2: 3, total: 4 },
-            { weight: 4, dice1: 1, dice2: 4, total: 5 },
-            { weight: 5, dice1: 1, dice2: 5, total: 6 },
-            { weight: 6, dice1: 1, dice2: 6, total: 7 },
-            { weight: 5, dice1: 2, dice2: 6, total: 8 },
-            { weight: 4, dice1: 3, dice2: 6, total: 9 },
-            { weight: 3, dice1: 4, dice2: 6, total: 10 },
-            { weight: 2, dice1: 5, dice2: 6, total: 11 },
-            { weight: 1, dice1: 6, dice2: 6, total: 12 },
-        ];
+        return CPUSimulation.diceOutcomeWeights(useTwo);
     }
 
     _simulationShopStock(playerCount = 2) {
