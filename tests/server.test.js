@@ -106,6 +106,7 @@ const {
     resolveRejoinPlayer,
     handleSocketDisconnect,
     handleRecreateRoom,
+    hostlessRestoreRoomLogId,
     getRemainingConnectedPlayers,
     serializeMirrorState,
     restoreMirrorState,
@@ -3374,6 +3375,78 @@ runTest('handleRecreateRoom は空roomのhostless復元を拒否する', () => {
         assert.strictEqual(emitted[0].payload, '復元は元のホストのみ実行できます');
     } finally {
         delete __rooms.HOSTLESS01;
+    }
+});
+
+runTest('handleRecreateRoom は内部承認済みhostless候補だけを暫定roomへ復元する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const tokenAlice = 'token-alice';
+    const tokenBob = 'token-bob';
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        reconnectTokenHashes: [
+            crypto.createHash('sha256').update(tokenAlice).digest('hex'),
+            crypto.createHash('sha256').update(tokenBob).digest('hex'),
+        ],
+        enabledCards: ['麦畑'],
+        enabledLandmarks: ['駅'],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        hostPlayerIndex: 0,
+        hostEpoch: 2,
+        actionSeq: 4,
+        hostlessRestoreGeneration: 1,
+        hostlessRestoreCount: 1,
+    };
+    const socket = {
+        id: 'socket-bob-approved',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(roomId) { joined.push(roomId); },
+    };
+
+    try {
+        const result = handleRecreateRoom(socket, {
+            roomId: 'HOSTLESS_APPROVED',
+            gameStartPayload,
+            stateSnapshot: makeSnapshot({ actionSeq: 4 }),
+            actionLog: [],
+            playerIndex: 1,
+            playerName: 'Bob',
+            reconnectToken: tokenBob,
+        }, {
+            approvedHostless: true,
+            candidateCount: 2,
+        });
+
+        assert.deepStrictEqual(result, {
+            ok: true,
+            roomId: 'HOSTLESS_APPROVED',
+            provisionalRestore: true,
+        });
+        assert.deepStrictEqual(joined, ['HOSTLESS_APPROVED']);
+        const room = __rooms.HOSTLESS_APPROVED;
+        assert.strictEqual(room.hostPlayerIndex, 1);
+        assert.strictEqual(room.hostEpoch, 3);
+        assert.strictEqual(room.hostlessRestoreGeneration, 2);
+        assert.strictEqual(room.hostlessRestoreCount, 2);
+        assert.strictEqual(room.hostlessRestoreCandidateCount, 2);
+        assert.strictEqual(room.provisionalRestore, true);
+        assert.strictEqual(room.gameStartPayload.hostPlayerIndex, 1);
+        assert.strictEqual(room.gameStartPayload.hostEpoch, 3);
+        assert.strictEqual(room.gameStartPayload.hostlessRestoreGeneration, 2);
+        assert.strictEqual(room.gameStartPayload.hostlessRestoreCount, 2);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.provisionalRestore, true);
+        assert.strictEqual(emitted[0].payload.hostlessRestoreGeneration, 2);
+        assert.strictEqual(emitted[0].payload.hostlessRestoreCount, 2);
+        assert.match(hostlessRestoreRoomLogId('HOSTLESS_APPROVED'), /^[a-f0-9]{12}$/);
+        assert.notStrictEqual(hostlessRestoreRoomLogId('HOSTLESS_APPROVED'), 'HOSTLESS_APPROVED');
+        assert.strictEqual(hostlessRestoreRoomLogId('HOSTLESS_APPROVED'), hostlessRestoreRoomLogId('HOSTLESS_APPROVED'));
+    } finally {
+        delete __rooms.HOSTLESS_APPROVED;
     }
 });
 

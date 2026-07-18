@@ -34,6 +34,16 @@ const {
     getExpectedReconnectTokenHash,
     isValidRestoreReconnectTokenHashes,
 } = require('./server/reconnectIdentity')({ crypto });
+const {
+    HOSTLESS_RESTORE_GENERATION_FIELD,
+    HOSTLESS_RESTORE_COUNT_FIELD,
+    makeHostlessRestoreGateway,
+} = require('./server/hostlessRestoreGateway');
+const { createHostlessRestoreCoordinator } = require('./server/hostlessRestoreCoordinator');
+const {
+    createHostlessRestoreRuntime,
+    hostlessRestoreEnabled,
+} = require('./server/hostlessRestoreRuntime');
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -862,6 +872,11 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
         ? overrides.restoreAudit
         : buildRestoreSnapshotAudit(room.roomId, gameStartPayload, stateSnapshot);
     if (restoreAudit) payload.restoreAudit = restoreAudit;
+    if (room.provisionalRestore === true) {
+        payload.provisionalRestore = true;
+        payload.hostlessRestoreGeneration = room.hostlessRestoreGeneration || 0;
+        payload.hostlessRestoreCount = room.hostlessRestoreCount || 0;
+    }
     return payload;
 }
 
@@ -962,6 +977,58 @@ function attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actio
     return { stateSnapshot: actionEntry.stateSnapshot, restoreAudit };
 }
 
+let hostlessRestoreRuntime = null;
+const hostlessRestoreCoordinator = createHostlessRestoreCoordinator({
+    onEvent: event => hostlessRestoreRuntime?.handleCoordinatorEvent(event),
+});
+const hostlessRestoreGateway = makeHostlessRestoreGateway({
+    crypto,
+    isPlainObject,
+    isValidRoomId,
+    validateRestorePayloadLimits,
+    validateRestoreAuditRecord,
+    isVerifiedClientRestoreSnapshot,
+    sanitizeRestoreActionLog,
+    sanitizeClientStateSnapshot,
+    isValidGameStartPayload,
+    hasInvalidOnlineRlModelSettings,
+    normalizePlayerSettings,
+    isValidRestoreReconnectTokenHashes,
+    getExpectedReconnectTokenHash,
+    hashReconnectToken,
+    restorePayloadRank,
+    createRoomMirror,
+    serializeMirrorState,
+    restoreAuditSecret,
+});
+
+function hostlessRestoreRoomLogId(roomId) {
+    if (typeof roomId !== 'string' || !roomId) return '-';
+    return crypto.createHash('sha256').update(roomId).digest('hex').slice(0, 12);
+}
+
+function approveHostlessRestoreCandidate(socket, payload, metadata = {}) {
+    const roomId = typeof payload?.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
+    if (!roomId || hasOwnRoom(roomId)) return { ok: false, reason: 'room-exists' };
+    const result = handleRecreateRoom(socket, payload, {
+        approvedHostless: true,
+        candidateCount: metadata.candidateCount,
+    });
+    if (!result?.ok || !rooms[roomId]?.provisionalRestore) {
+        return { ok: false, reason: result?.reason || 'restore-failed' };
+    }
+    return { ok: true };
+}
+
+hostlessRestoreRuntime = createHostlessRestoreRuntime({
+    io,
+    coordinator: hostlessRestoreCoordinator,
+    gateway: hostlessRestoreGateway,
+    hasRoom: hasOwnRoom,
+    approveCandidate: approveHostlessRestoreCandidate,
+    enabled: hostlessRestoreEnabled(process.env),
+});
+
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 const roomGcInterval = setInterval(() => {
@@ -973,6 +1040,7 @@ if (typeof roomGcInterval.unref === 'function') {
 
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
+    hostlessRestoreRuntime.registerSocket(socket);
 
     socket.on('createRoom', (payload) => {
         if (!requirePlainSocketPayload(socket, payload)) return;
@@ -1207,10 +1275,12 @@ io.on('connection', (socket) => {
 
     // サーバー再起動後にホストがルームを復元する
     socket.on('recreateRoom', (payload) => {
-        handleRecreateRoom(socket, payload);
+        const result = handleRecreateRoom(socket, payload);
+        if (result?.ok) hostlessRestoreRuntime.hostRestored(result.roomId);
     });
 
     socket.on('disconnect', () => {
+        hostlessRestoreRuntime.disconnect(socket);
         handleSocketDisconnect(io, socket);
     });
 });
@@ -1354,7 +1424,8 @@ function isRoomHostConnected(room) {
     return !!(hostPlayer?.id && io.sockets.sockets.has(hostPlayer.id));
 }
 
-function handleRecreateRoom(socket, payload = {}) {
+function handleRecreateRoom(socket, payload = {}, options = {}) {
+    const approvedHostless = options.approvedHostless === true;
     if (!isPlainObject(payload)) {
         emitAppError(socket, '復元データが不完全です');
         return;
@@ -1372,18 +1443,25 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
-    const canonicalRecord = loadRoomCanonicalStateRecord(roomId);
+    if (approvedHostless && hasOwnRoom(roomId)) {
+        emitAppError(socket, '同じルームIDが既に使用されています');
+        return { ok: false, reason: 'room-exists' };
+    }
+    const canonicalRecord = approvedHostless ? null : loadRoomCanonicalStateRecord(roomId);
     if (canonicalRecord) {
         gameStartPayload = canonicalRecord.gameStartPayload || gameStartPayload;
         stateSnapshot = canonicalRecord.stateSnapshot || null;
         actionLog = Array.isArray(canonicalRecord.actionLog) ? canonicalRecord.actionLog : [];
     }
-    const restoreAuditValidation = validateRestoreAuditRecord(payload.restoreAudit, { roomId });
+    const restoreAuditValidation = approvedHostless
+        ? { ok: true }
+        : validateRestoreAuditRecord(payload.restoreAudit, { roomId });
     if (!restoreAuditValidation.ok) {
         emitAppError(socket, '復元署名メタデータが無効です');
         return;
     }
-    const clientSnapshotTrusted = !!canonicalRecord || (stateSnapshot && isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, payload.restoreAudit));
+    const clientSnapshotTrusted = approvedHostless || !!canonicalRecord ||
+        (stateSnapshot && isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, payload.restoreAudit));
     const replayStateSnapshot = clientSnapshotTrusted ? stateSnapshot : null;
     if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
@@ -1459,7 +1537,7 @@ function handleRecreateRoom(socket, payload = {}) {
         emitAppError(socket, 'INVALID_TOKEN');
         return;
     }
-    if (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex) {
+    if (!approvedHostless && (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex)) {
         emitAppError(socket, '復元は元のホストのみ実行できます');
         return;
     }
@@ -1487,8 +1565,16 @@ function handleRecreateRoom(socket, payload = {}) {
             actionSeq: Number.isInteger(canonicalRecord.actionSeq) ? canonicalRecord.actionSeq : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog).actionSeq,
         }
         : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog);
-    gameStartPayload.hostEpoch = restoredRank.hostEpoch;
+    const restoredHostEpoch = approvedHostless ? restoredRank.hostEpoch + 1 : restoredRank.hostEpoch;
+    gameStartPayload.hostPlayerIndex = playerIndex;
+    gameStartPayload.hostEpoch = restoredHostEpoch;
     gameStartPayload.actionSeq = restoredRank.actionSeq;
+    if (approvedHostless) {
+        gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] =
+            (gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] || 0) + 1;
+        gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] =
+            (gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] || 0) + 1;
+    }
     const restoredRoom = {
         roomId,
         players: restoredPlayers,
@@ -1497,7 +1583,7 @@ function handleRecreateRoom(socket, payload = {}) {
         started: true,
         restored: true,
         hostPlayerIndex: playerIndex,
-        hostEpoch: restoredRank.hostEpoch,
+        hostEpoch: restoredHostEpoch,
         actionSeq: restoredRank.actionSeq,
         enabledCards: gameStartPayload.enabledCards || [],
         enabledLandmarks: gameStartPayload.enabledLandmarks || [],
@@ -1508,6 +1594,12 @@ function handleRecreateRoom(socket, payload = {}) {
         actionLog: sanitizedActionLog,
         lastUndoState: null,
         lastTouchedAt: Date.now(),
+        provisionalRestore: approvedHostless,
+        hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] || 0,
+        hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] || 0,
+        hostlessRestoreCandidateCount: approvedHostless && Number.isInteger(options.candidateCount)
+            ? options.candidateCount
+            : 0,
     };
     for (const entry of restoredRoom.actionLog) rememberAcceptedClientAction(restoredRoom, entry);
     const restoredMirror = createRoomMirror(restoredRoom);
@@ -1525,6 +1617,10 @@ function handleRecreateRoom(socket, payload = {}) {
     );
     restoredRoom.actionLog = [];
     if (hasOwnRoom(roomId)) {
+        if (approvedHostless) {
+            emitAppError(socket, '同じルームIDが既に使用されています');
+            return { ok: false, reason: 'room-exists' };
+        }
         detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
         delete rooms[roomId];
     }
@@ -1539,7 +1635,16 @@ function handleRecreateRoom(socket, payload = {}) {
         actionLog: restoredRoom.actionLog,
         hostPlayerIndex: playerIndex,
     }));
-    console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+    if (approvedHostless) {
+        console.log(
+            `[hostless-restore] roomHash=${hostlessRestoreRoomLogId(roomId)} ` +
+            `candidates=${restoredRoom.hostlessRestoreCandidateCount} ` +
+            `generation=${restoredRoom.hostlessRestoreGeneration} result=approved`
+        );
+    } else {
+        console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
+    }
+    return { ok: true, roomId, provisionalRestore: approvedHostless };
 }
 
 // ===== Snapshot limits and restore payload guards =====
@@ -1937,6 +2042,9 @@ module.exports = {
     handleStartedRoomSocketDisconnect,
     handleSocketDisconnect,
     handleRecreateRoom,
+    approveHostlessRestoreCandidate,
+    hostlessRestoreEnabled,
+    hostlessRestoreRoomLogId,
     getRemainingConnectedPlayers,
     serializeMirrorState,
     restoreMirrorState,

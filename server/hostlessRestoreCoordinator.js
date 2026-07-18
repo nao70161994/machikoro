@@ -86,6 +86,7 @@ function createHostlessRestoreCoordinator(options = {}) {
             playerIndex: nextPlayerIndex,
             timeoutMs: limits.confirmationMs,
             reason,
+            candidateCount: session.quorum.candidates.length,
         });
         arm(session, 'confirmation', limits.confirmationMs, () => moveConfirmation(session, 'timeout'));
         return true;

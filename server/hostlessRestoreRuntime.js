@@ -197,10 +197,11 @@ function createHostlessRestoreRuntime(options = {}) {
             rank: result.candidate.rank,
         });
         if (!approval?.ok) {
-            socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
+            const status = {
                 roomId,
                 reason: approval?.reason || 'restore-failed',
-            });
+            };
+            notifyRoomRequesters(roomId, HOSTLESS_RESTORE_EVENTS.STATUS, status);
             requesters.delete(roomId);
             return { ok: false, reason: approval?.reason || 'restore-failed' };
         }
