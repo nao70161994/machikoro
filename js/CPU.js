@@ -2015,12 +2015,7 @@ class CPU {
     }
 
     _cardSpamPenalty(card, player, intensity = 1) {
-        const owned = player.countCard(card.name);
-        if (owned <= 0) return 0;
-        let penalty = owned * 0.35 * intensity;
-        if (card.color === "red") penalty += owned * 0.65 * intensity;
-        if (card.color === "purple") penalty += owned * 1.4 * intensity;
-        return penalty;
+        return CPUEvaluation.cardSpamPenalty(card, player.countCard(card.name), intensity);
     }
 
     _duplicateRenovationPenalty(player, difficulty = this.difficulty, game = null) {
@@ -2101,24 +2096,7 @@ class CPU {
 
     _economyBalancePenalty(card, game, player, intensity = 1) {
         const profile = this._playerCountProfile(game);
-        const cards = player.cards || [];
-        const blueCount = cards.filter(c => c.color === "blue").length;
-        const greenCount = cards.filter(c => c.color === "green").length;
-        const redCount = cards.filter(c => c.color === "red").length;
-        let penalty = 0;
-        if (card.color === "red" && redCount >= Math.max(2, greenCount + blueCount)) {
-            penalty += (redCount - Math.max(greenCount, 1) + 1) * 0.9 * intensity * profile.redFactor;
-        }
-        if (card.color === "red" && greenCount + blueCount <= 2) {
-            penalty += 0.8 * intensity;
-        }
-        if (card.color === "green" && greenCount <= 1 && blueCount === 0) {
-            penalty -= 0.4 * intensity;
-        }
-        if (card.color === "blue" && blueCount === 0) {
-            penalty -= 0.25 * intensity;
-        }
-        return penalty;
+        return CPUEvaluation.economyBalancePenalty(card, player.cards || [], intensity, profile.redFactor);
     }
 
     _strongConditionalCardAdjustment(card, game, player) {

@@ -97,6 +97,34 @@ const CPUEvaluation = Object.freeze({
         }
     },
 
+    cardSpamPenalty(card, owned, intensity = 1) {
+        if (owned <= 0) return 0;
+        let penalty = owned * 0.35 * intensity;
+        if (card.color === 'red') penalty += owned * 0.65 * intensity;
+        if (card.color === 'purple') penalty += owned * 1.4 * intensity;
+        return penalty;
+    },
+
+    economyBalancePenalty(card, cards, intensity, redFactor) {
+        const blueCount = cards.filter(candidate => candidate.color === 'blue').length;
+        const greenCount = cards.filter(candidate => candidate.color === 'green').length;
+        const redCount = cards.filter(candidate => candidate.color === 'red').length;
+        let penalty = 0;
+        if (card.color === 'red' && redCount >= Math.max(2, greenCount + blueCount)) {
+            penalty += (redCount - Math.max(greenCount, 1) + 1) * 0.9 * intensity * redFactor;
+        }
+        if (card.color === 'red' && greenCount + blueCount <= 2) {
+            penalty += 0.8 * intensity;
+        }
+        if (card.color === 'green' && greenCount <= 1 && blueCount === 0) {
+            penalty -= 0.4 * intensity;
+        }
+        if (card.color === 'blue' && blueCount === 0) {
+            penalty -= 0.25 * intensity;
+        }
+        return penalty;
+    },
+
     lateBasicDuplicatePenalty(
         isExpertV2Simple,
         playerCount,

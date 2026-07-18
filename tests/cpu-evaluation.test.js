@@ -204,3 +204,42 @@ runTest('CPU本体のv2simple penalty wrapperはpure evaluation結果を維持�
     const renovation = { type: 'card', card: createCardByName('改装屋') };
     assert.strictEqual(cpu._expertV2SimpleLandmarkCardPenalty(game, renovation, true), 12);
 });
+
+runTest('CPU evaluation は重複購入と経済バランスの既存減点を維持する', () => {
+    assert.strictEqual(CPUEvaluation.cardSpamPenalty({ color: 'red' }, 2, 1), 2);
+    assert.strictEqual(CPUEvaluation.cardSpamPenalty({ color: 'purple' }, 2, 1), 3.5);
+    assert.strictEqual(CPUEvaluation.cardSpamPenalty({ color: 'blue' }, 0, 2), 0);
+
+    const cards = [
+        { color: 'green' },
+        { color: 'red' },
+        { color: 'red' },
+        { color: 'red' },
+    ];
+    assert.strictEqual(CPUEvaluation.economyBalancePenalty({ color: 'red' }, cards, 1, 0.75), 2.825);
+    assert.strictEqual(CPUEvaluation.economyBalancePenalty({ color: 'green' }, cards, 1, 1), -0.4);
+    assert.strictEqual(CPUEvaluation.economyBalancePenalty({ color: 'blue' }, cards, 1, 1), -0.25);
+});
+
+runTest('CPU本体の重複購入と経済バランスwrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager, createCardByName } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(4);
+    const player = game.currentPlayer();
+    const card = createCardByName('寿司屋');
+    player.cards.push(card, createCardByName('寿司屋'));
+
+    assert.strictEqual(
+        cpu._cardSpamPenalty(card, player, 0.8),
+        CPUEvaluation.cardSpamPenalty(card, player.countCard(card.name), 0.8)
+    );
+    assert.strictEqual(
+        cpu._economyBalancePenalty(card, game, player, 0.8),
+        CPUEvaluation.economyBalancePenalty(
+            card,
+            player.cards,
+            0.8,
+            cpu._playerCountProfile(game).redFactor
+        )
+    );
+});
