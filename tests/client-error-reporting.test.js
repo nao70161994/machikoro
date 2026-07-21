@@ -1,5 +1,10 @@
 const assert = require('assert');
 const { makeClientErrorReporting } = require('../server/clientErrorReporting');
+const {
+    requestBaseOrigin,
+    clientErrorAllowedOrigins,
+    authorizeClientErrorRequest,
+} = require('../server/clientErrorAuth');
 const { runTest } = require('./helpers/test-utils');
 
 const reporting = makeClientErrorReporting({
@@ -104,4 +109,47 @@ runTest('server client error reporting はstale判定とfreeze要約の本文順
     assert.ok(message.includes('actions=buildCard'));
     assert.ok(message.includes('recovery=failed'));
     assert.ok(message.indexOf('UI_LOCK_SUMMARY') < message.indexOf('classification=stale-client'));
+});
+
+runTest('server client error auth はsame-originと設定originを正規化する', () => {
+    const req = {
+        protocol: 'https',
+        headers: {
+            host: 'example.com',
+            origin: 'https://example.com/path',
+            'x-forwarded-proto': 'https,http',
+        },
+    };
+
+    assert.strictEqual(requestBaseOrigin(req), 'https://example.com');
+    assert.deepStrictEqual(
+        clientErrorAllowedOrigins(req, {
+            CLIENT_ERROR_ALLOWED_ORIGINS: 'https://other.example/path, invalid',
+        }),
+        ['https://other.example', 'https://example.com']
+    );
+    assert.deepStrictEqual(authorizeClientErrorRequest(req, {}), { ok: true });
+});
+
+runTest('server client error auth はproduction no-originと不正tokenをfail closedする', () => {
+    const noOrigin = { headers: { host: 'example.com' }, protocol: 'https' };
+    const production = { NODE_ENV: 'production', NTFY_TOPIC: 'topic' };
+    assert.deepStrictEqual(authorizeClientErrorRequest(noOrigin, production), {
+        ok: false,
+        error: 'forbidden_origin',
+    });
+
+    const tokenEnv = Object.assign({}, production, { CLIENT_ERROR_SHARED_TOKEN: 'secret' });
+    assert.deepStrictEqual(authorizeClientErrorRequest(noOrigin, tokenEnv), {
+        ok: false,
+        error: 'invalid_client_error_token',
+    });
+    const bearer = {
+        headers: {
+            host: 'example.com',
+            authorization: 'Bearer secret',
+        },
+        protocol: 'https',
+    };
+    assert.deepStrictEqual(authorizeClientErrorRequest(bearer, tokenEnv), { ok: true });
 });
