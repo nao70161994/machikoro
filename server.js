@@ -39,6 +39,7 @@ const {
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
 } = require('./server/actionAcceptance');
+const makeRejoinPayload = require('./server/rejoinPayload');
 const {
     generateReconnectToken,
     hashReconnectToken,
@@ -644,29 +645,10 @@ function generateRoomId(existingRooms = rooms) {
     return generateUniqueRoomId(existingRooms);
 }
 
-function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
-    const gameStartPayload = overrides.gameStartPayload || room.gameStartPayload;
-    const stateSnapshot = overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null);
-    const payload = {
-        gameStartPayload,
-        stateSnapshot,
-        actionLog: overrides.actionLog || room.actionLog || [],
-        acceptedClientActions: acceptedClientActionRefs(room),
-        playerIndex,
-        hostPlayerIndex: overrides.hostPlayerIndex !== undefined ? overrides.hostPlayerIndex : room.hostPlayerIndex,
-        hostEpoch: Number.isInteger(overrides.hostEpoch) ? overrides.hostEpoch : (room.hostEpoch || 0),
-    };
-    const restoreAudit = overrides.restoreAudit !== undefined
-        ? overrides.restoreAudit
-        : buildRestoreSnapshotAudit(room.roomId, gameStartPayload, stateSnapshot);
-    if (restoreAudit) payload.restoreAudit = restoreAudit;
-    if (room.provisionalRestore === true) {
-        payload.provisionalRestore = true;
-        payload.hostlessRestoreGeneration = room.hostlessRestoreGeneration || 0;
-        payload.hostlessRestoreCount = room.hostlessRestoreCount || 0;
-    }
-    return payload;
-}
+const { buildRejoinDataPayload } = makeRejoinPayload({
+    acceptedClientActionRefs,
+    buildRestoreSnapshotAudit,
+});
 
 function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
     if (!store || typeof store.save !== 'function') return { ok: true, skipped: true };

@@ -1697,10 +1697,12 @@ runTest('acceptedClientActionRefs は reconnect ack metadata 用の最小refを�
     rememberAcceptedClientAction(room, actionEntry);
 
     assert.deepStrictEqual(acceptedClientActionRefs(room), [{ playerIndex: 1, clientActionId: 'client-action-ref', seq: 11 }]);
-    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-    const occurrences = source.match(/acceptedClientActions: acceptedClientActionRefs/g) || [];
+    const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const helperSource = fs.readFileSync(path.join(__dirname, '..', 'server', 'rejoinPayload.js'), 'utf8');
+    const occurrences = helperSource.match(/acceptedClientActions: acceptedClientActionRefs/g) || [];
     assert.strictEqual(occurrences.length, 1);
-    assert.ok(source.includes('buildRejoinDataPayload(room, playerIndex)'));
+    assert.ok(serverSource.includes('buildRejoinDataPayload(room, playerIndex)'));
+    assert.ok(serverSource.includes("require('./server/rejoinPayload')"));
 });
 
 runTest('buildRejoinDataPayload は reconnect payload metadata を一箇所で組み立てる', () => {
