@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-19
+Last updated: 2026-07-22
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -10,9 +10,9 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 | Area | Current owner | Current responsibility |
 | --- | --- | --- |
-| Server entrypoint | `server.js` | Express static serving, API routes, Socket.IO setup, payload limits, room create/join/rejoin, live action validation, canonical action audit, restore/recreate, disconnect/host lifecycle, ntfy reporting. |
-| Online client | `js/online.js` | Socket.IO connection, room create/join/rejoin, restore bundle read/write, stale room handling, pending outbound action replay, online action application, reconnect retry UI state. |
-| UI | `js/ui.js` | Main rendering, modal lifecycle, build menu, card detail, card select, player surfaces, logs, stats entry points, interactability recovery. |
+| Server entrypoint | `server.js` plus `server/*` helpers | Express/API/Socket.IO wiring, room/action/restore sequencing, and ntfy delivery remain in `server.js`; validation, identity, payload, reporting, lifecycle, and sanitation policies have focused helpers. |
+| Online client | `js/online.js` plus online helpers | Socket lifecycle, retry/queue/session orchestration and action application remain in `online.js`; storage, payload normalization/ACK comparison, restore rank, and state vocabulary have focused helpers. |
+| UI | `js/ui.js` plus UI helpers | Top-level rendering, modal/focus/inert, DOM mutation, stats hooks, and event processing remain in `ui.js`; build/pending/detail/select/player/log/order/tutorial transforms have pure helpers. |
 | Rules/actions | `js/GameManager.js`, `js/Card.js`, action metadata in related files | Rule execution, phase transitions, pending queue, action names, action metadata, allowed action calculation, replayable action shape. |
 | Restore/replay/canonical payload | `server.js`, `js/online.js`, `js/GameManager.js`, tests | Live action validation, restore action log sanitation, canonical payload building, replay ordering, snapshot-plus-log recovery. |
 | Tests | `tests/server.test.js`, `tests/online.test.js`, `tests/ui.test.js`, `tests/main.test.js`, others | Contract coverage exists, but high-traffic files are large and often test several boundaries in one file. |
@@ -301,21 +301,22 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-07-19, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
+As of 2026-07-22, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
 
 - `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
 - `server/gameLifecycleReporting.js` owns lifecycle notification payload/text formatting while auth, rate limits, dedupe, and HTTP delivery remain in `server.js`.
+- `server/clientErrorReporting.js`, `server/clientErrorAuth.js`, and `server/reportThrottle.js` own unchanged report shaping/classification, request authorization, and injected rate/dedupe algorithms; HTTP status and delivery remain in `server.js`.
+- `server/rejoinPayload.js` owns the injected snapshot/log/ACK/audit/provisional-field builder; event names and reconnect handler timing remain in `server.js`.
 - `server/staticAssets.js` owns root files and directory routes; tests verify allowlisted files exist and every local `index.html` asset is served by an allowlisted route.
 - `server/actionPayload.js` owns the frozen canonical payload key table and client action ID normalization while handlers, event names, and payload shapes remain unchanged.
 - `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
 - `js/onlineRestoreRank.js` owns existing restore-rank calculation while reconnect timing, ACK handling, restore queues, and Socket.IO ownership remain in `online.js`.
 - `js/onlineReconnectState.js` owns eight state names, allowed-transition contracts, and a read-only projection of the existing booleans; timers, callbacks, retry counts, and UI text remain in `online.js`.
-- `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, `js/uiCardSelect.js`, `js/uiPlayerDisplay.js`, `js/uiLogDisplay.js`, and `js/uiCardOrder.js` own pure HTML/display/order policy; `ui.js` still owns modal lifecycle, DOM mutation, event handling, and render orchestration.
+- `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, `js/uiCardSelect.js`, `js/uiPlayerDisplay.js`, `js/uiLogDisplay.js`, `js/uiCardOrder.js`, and `js/uiTutorial.js` own pure HTML/display/order/guidance policy; `ui.js` still owns modal lifecycle, DOM mutation, event handling, and render orchestration.
 - `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, freeze classification, and bounded diagnostic serialization while `appShell.js` retains browser capture, DOM snapshots, recovery, storage writes, dedupe, fetch, timers, and PWA side effects.
-- `server/clientErrorReporting.js` owns pure error normalization/redaction while `server.js` retains auth, rate limits, notification, and route wiring.
-- `js/onlinePayload.js` owns the existing rejoin payload shape while reconnect timing and Socket.IO ownership stay in `online.js`.
-- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty primitives, affordable-build filters, player-count profiles, weighted dice outcomes, and injected lookahead loop/steps behind existing CPU wrappers.
+- `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log and pending-action normalization, and ACK comparison while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
+- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty/dice-frequency primitives, affordable-build filters, player-count profiles, weighted dice outcomes, and injected lookahead loop/steps behind existing CPU wrappers.
 - `server/hostlessRestoreCandidate.js`, `server/hostlessRestoreCoordinator.js`,
   `server/hostlessRestoreGateway.js`, and `server/hostlessRestoreRuntime.js`
   own the provisional quorum policy and additive transport boundary. The client

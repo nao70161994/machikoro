@@ -40,17 +40,17 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-18 保守性改善の現在地
+## 2026-07-22 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
-- CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/重複購入/経済バランスprimitive、合法建設filter、人数別profile、重み付き出目表、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、乱数消費、行動選択は未変更。
-- server: 通知、payload上限、設定、room/static/action履歴に加え、canonical action payload、dice payload、reconnect identity、restore sanitation、canonical mirror metadataをpure helperへ分離。Socket.IO/HTTP handler、event名、wire payload、restore authorityは移動・変更していない。
-- online: `js/onlinePayload.js` と `js/onlineRestoreRank.js` に既存rejoin payload生成と復元順位計算を分離し、`js/onlineReconnectState.js` に8状態と許可遷移、既存booleanのread-only観測を追加。ACK、restore queue、retry timer/callback、protocolは未変更。
-- UI: pending/build/detail/selectに加え、`js/uiPlayerDisplay.js`、`js/uiLogDisplay.js`、`js/uiCardOrder.js` に表示設定、構造化log解析、カード順序を分離。modal lifecycle、focus/inert、DOM副作用、event処理は未変更。
+- CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/出目頻度/重複購入/経済バランスprimitive、合法建設filter、人数別profile、重み付き出目表、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、乱数消費、行動選択は未変更。
+- server: 既存helper群に加え、`server/clientErrorReporting.js`、`server/clientErrorAuth.js`、`server/reportThrottle.js`、`server/rejoinPayload.js` が通知整形/認可/throttleと再参加payloadを所有。Socket.IO/HTTP handler、event名、wire payload意味、restore authorityは移動・変更していない。
+- online: `js/onlinePayload.js` にrejoin payload、action-log/pending正規化、ACK一致判定を集約し、`js/onlineRestoreRank.js` と `js/onlineReconnectState.js` が復元順位とread-only状態観測を所有。restore queue、retry timer/callback、protocolは未変更。
+- UI: pending/build/detail/select/player/log/orderに加え、`js/uiTutorial.js` にphase/pending案内と建設候補計算を分離。script/SW asset順は静的契約で固定し、modal lifecycle、focus/inert、DOM副作用、event処理、PWA更新挙動は未変更。
 - contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
 - tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
 
-2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。残るreconnect timer/callback移行、Socket.IO handler移動、modal lifecycle、CPUの大きなscoring/selectionとlive build executionは、人間判断と対象別実機matrixが用意されるまでdeferred。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-22の再監査では、残るreconnect timer/callback、Socket.IO handler、modal lifecycle、CPUの大きなscoring/selectionとlive build executionはいずれもpure抽出ではなくなったためdeferred。新依存なしのcheckJs/ESLint導入余地もない。
 
 ## 2026-05-16 時点の実施済み範囲
 
@@ -78,11 +78,11 @@
 - 「完了しました。次へ進めますか？」で止めない。停止してよいのは、テスト3回修正失敗、git conflict、push失敗、破壊的変更、実機確認必須、hostless restore / server persisted canonical state など設計判断必須、または自動で安全に対応できる指摘がなくなった場合のみ。
 - 次 Cycle では前 Cycle の副作用も含め、変更箇所だけでなく毎回ディレクトリ全体を再レビューする。
 
-## 次に安全な作業候補
+## 次に安全な作業の条件
 
-- UI: 既知の inline handler / pending renderer / build menu / card select / stats helper 化は実施済み。新しい UI surface が見つかった場合は、`PRIMARY_ACTION_CONTAINER_REGISTRY`、通常 render no-recovery test、fallback recovery test を同時に追加する。modal deny-by-default は実装済みで、将来の nested blocking modal 例外や新しい modal UX だけ design / manual verification required。
-- CPU: heuristic の強さを変えず、diagnostics / scoring / execution flow を targeted tests で固定してから helper 単位で分離する。
-- GameManager / Server / Online: `server/roomLifecycle.js` と `js/onlineStorage.js` が実装済みの安全境界。次は action metadata を dispatch / canonical payload / online apply の contract test へさらに寄せる。hostless restore、signed restore、server-persisted canonical state、複数 room resume UI は design required。
+- UI: pure表示helperはtutorialまで実施済み。modal deny-by-default は実装済み。次は具体的なUI変更に伴うexact-output helperだけを対象にし、modal/focus/inertは実機matrixなしで移動しない。
+- CPU: 新しい具体的なscoring変更がない限り機械的に分割しない。変更時はdecision/self-play baseline、候補順、乱数消費の完全一致を要求する。
+- GameManager / Server / Online: action/payload変更時は既存cross-layer contractを先に拡張する。timer/callback/handler/state-machine移動、hostless authority、signed/durable restore、複数room UIはdesign/manual required。
 - Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection は強化済み。新しい helper script を足す場合は `index.html`、`sw.js`、integration runtime、`tests/main.test.js` の script/asset drift test を同時に更新する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
 
 ## 変更時の最低確認
