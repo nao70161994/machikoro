@@ -19,6 +19,11 @@ const {
     requestClientErrorToken,
     authorizeClientErrorRequest,
 } = require('./server/clientErrorAuth');
+const {
+    pruneRateBuckets,
+    isRateLimited: isReportRateLimited,
+    rememberAndCheckDuplicate,
+} = require('./server/reportThrottle');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const makeGameSettings = require('./server/gameSettings');
@@ -287,28 +292,16 @@ function resolveNtfyTopic(options = {}, env = process.env) {
     return isNtfyConfigured(env) ? env.NTFY_TOPIC : '';
 }
 
-function pruneRateBuckets(now, buckets, windowMs, maxBuckets) {
-    for (const [bucketKey, bucket] of buckets.entries()) {
-        if (!bucket || now - bucket.windowStart >= windowMs) buckets.delete(bucketKey);
-    }
-    if (buckets.size <= maxBuckets) return;
-    const overflow = buckets.size - maxBuckets;
-    for (const bucketKey of Array.from(buckets.keys()).slice(0, overflow)) buckets.delete(bucketKey);
-}
-
 function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
     pruneRateBuckets(now, buckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, CLIENT_ERROR_LIMITS.rateLimitMaxBuckets);
 }
 
 function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
-    pruneClientErrorRateBuckets(now, buckets);
-    const bucket = buckets.get(key);
-    if (!bucket) {
-        buckets.set(key, { windowStart: now, count: 1 });
-        return false;
-    }
-    bucket.count++;
-    return bucket.count > CLIENT_ERROR_LIMITS.rateLimitMax;
+    return isReportRateLimited(key, now, buckets, {
+        windowMs: CLIENT_ERROR_LIMITS.rateLimitWindowMs,
+        max: CLIENT_ERROR_LIMITS.rateLimitMax,
+        maxBuckets: CLIENT_ERROR_LIMITS.rateLimitMaxBuckets,
+    });
 }
 
 function clientErrorDedupeKey(report) {
@@ -326,13 +319,7 @@ function clientErrorDedupeKey(report) {
 }
 
 function isDuplicateClientError(report, now = Date.now(), cache = clientErrorDedupeCache) {
-    const key = clientErrorDedupeKey(report);
-    const previous = cache.get(key);
-    cache.set(key, now);
-    for (const [cachedKey, timestamp] of cache.entries()) {
-        if (now - timestamp > CLIENT_ERROR_LIMITS.duplicateWindowMs) cache.delete(cachedKey);
-    }
-    return previous !== undefined && now - previous < CLIENT_ERROR_LIMITS.duplicateWindowMs;
+    return rememberAndCheckDuplicate(clientErrorDedupeKey(report), now, cache, CLIENT_ERROR_LIMITS.duplicateWindowMs);
 }
 
 async function notifyClientError(report, options = {}) {
@@ -434,14 +421,11 @@ function gameLifecycleRateKey(req) {
 }
 
 function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecycleRateBuckets) {
-    pruneRateBuckets(now, buckets, GAME_LIFECYCLE_LIMITS.rateLimitWindowMs, GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets);
-    const bucket = buckets.get(key);
-    if (!bucket) {
-        buckets.set(key, { windowStart: now, count: 1 });
-        return false;
-    }
-    bucket.count++;
-    return bucket.count > GAME_LIFECYCLE_LIMITS.rateLimitMax;
+    return isReportRateLimited(key, now, buckets, {
+        windowMs: GAME_LIFECYCLE_LIMITS.rateLimitWindowMs,
+        max: GAME_LIFECYCLE_LIMITS.rateLimitMax,
+        maxBuckets: GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets,
+    });
 }
 
 function gameLifecycleDedupeKey(report) {
@@ -449,13 +433,7 @@ function gameLifecycleDedupeKey(report) {
 }
 
 function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
-    const key = gameLifecycleDedupeKey(report);
-    const previous = cache.get(key);
-    cache.set(key, now);
-    for (const [cachedKey, timestamp] of cache.entries()) {
-        if (now - timestamp > GAME_LIFECYCLE_LIMITS.duplicateWindowMs) cache.delete(cachedKey);
-    }
-    return previous !== undefined && now - previous < GAME_LIFECYCLE_LIMITS.duplicateWindowMs;
+    return rememberAndCheckDuplicate(gameLifecycleDedupeKey(report), now, cache, GAME_LIFECYCLE_LIMITS.duplicateWindowMs);
 }
 
 async function notifyGameLifecycle(report, options = {}) {
