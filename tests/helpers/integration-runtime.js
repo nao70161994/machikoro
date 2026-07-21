@@ -172,6 +172,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiPendingMenu.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
+        'js/uiTutorial.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {

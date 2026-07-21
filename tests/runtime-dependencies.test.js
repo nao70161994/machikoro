@@ -37,6 +37,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiPendingMenu.js', 'js/ui.js'],
             ['js/uiCardDetail.js', 'js/ui.js'],
             ['js/uiCardSelect.js', 'js/ui.js'],
+            ['js/uiTutorial.js', 'js/ui.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js']
@@ -68,6 +69,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiPendingMenu.js', 'js/ui.js'],
             ['js/uiCardDetail.js', 'js/ui.js'],
             ['js/uiCardSelect.js', 'js/ui.js'],
+            ['js/uiTutorial.js', 'js/ui.js'],
             ['js/onlineStorage.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],
@@ -80,7 +82,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiBuildMenu.js', 'js/ui.js'],
             ['js/uiPendingMenu.js', 'js/ui.js'],
             ['js/uiCardDetail.js', 'js/ui.js'],
-            ['js/uiCardSelect.js', 'js/ui.js']
+            ['js/uiCardSelect.js', 'js/ui.js'],
+            ['js/uiTutorial.js', 'js/ui.js']
         ]],
         ['tests/online.test.js', [
             ['js/onlineStorage.js', 'js/online.js'],
@@ -94,7 +97,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],
-            ['js/uiPendingMenu.js', 'js/ui.js']
+            ['js/uiPendingMenu.js', 'js/ui.js'],
+            ['js/uiTutorial.js', 'js/ui.js']
         ]],
         ['tests/main.test.js', [
             ['js/clientReporting.js', 'js/appShell.js'],
