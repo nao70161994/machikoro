@@ -118,3 +118,90 @@ runTest('hostless additive event名はclient/serverで完全一致する', () =>
     assert.deepStrictEqual(OnlinePayload.hostlessRestoreEvents, HOSTLESS_RESTORE_EVENTS);
     assert.strictEqual(Object.values(HOSTLESS_RESTORE_EVENTS).some(name => name === 'recreateRoom'), false);
 });
+
+runTest('online payload は保存済みaction logを既存の最小fieldへ正規化する', () => {
+    const audit = { algorithm: 'hmac' };
+    assert.deepStrictEqual(OnlinePayload.normalizeActionLog(null), []);
+    assert.deepStrictEqual(OnlinePayload.normalizeActionLog([
+        null,
+        { data: {} },
+        {
+            action: 'buildCard',
+            data: { cardName: '麦畑' },
+            playerIndex: 1,
+            seq: 7,
+            clientActionId: 'client-7',
+            restoreActionAudit: audit,
+            ignored: true,
+        },
+    ]), [{
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        playerIndex: 1,
+        seq: 7,
+        clientActionId: 'client-7',
+        restoreActionAudit: audit,
+    }]);
+});
+
+runTest('online payload はpending actionを既知actionとroom正規化の注入契約で絞る', () => {
+    const options = {
+        isKnownAction(action) {
+            return action === 'buildCard';
+        },
+        normalizeRoomId(roomId) {
+            return String(roomId || '').trim().toUpperCase();
+        },
+    };
+    assert.strictEqual(OnlinePayload.normalizePendingOutboundAction({ action: 'unknown' }, options), null);
+    assert.deepStrictEqual(OnlinePayload.normalizePendingOutboundAction({
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        roomId: ' room01 ',
+        playerIndex: 0,
+        seq: 3,
+        clientActionId: 'client-3',
+        ignored: true,
+    }, options), {
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 3,
+        clientActionId: 'client-3',
+    });
+});
+
+runTest('online payload はpending ACK一致判定のclientActionId優先契約を維持する', () => {
+    const pending = {
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+        playerIndex: 1,
+        clientActionId: 'client-1',
+    };
+    assert.strictEqual(OnlinePayload.sameActionEntry(pending, { clientActionId: 'client-1' }), true);
+    assert.strictEqual(OnlinePayload.sameActionEntry(pending, {
+        action: pending.action,
+        data: pending.data,
+        playerIndex: pending.playerIndex,
+    }), false);
+    assert.strictEqual(OnlinePayload.acceptedClientActionMatchesPending({
+        clientActionId: 'client-1',
+        playerIndex: 1,
+    }, pending), true);
+    assert.strictEqual(OnlinePayload.shouldClearPendingForAcceptedAction({
+        clientActionId: 'client-1',
+    }, pending), true);
+    assert.strictEqual(OnlinePayload.shouldClearPendingForAcceptedAction({
+        clientActionId: 'client-2',
+    }, pending), false);
+    assert.strictEqual(OnlinePayload.shouldClearPendingForAcceptedAction({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 1,
+    }, {
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 1,
+    }), true);
+});

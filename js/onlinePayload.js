@@ -56,7 +56,60 @@ function hostlessIdentityFields(bundle, identity) {
     };
 }
 
+function normalizeOnlineActionLog(value) {
+    if (!Array.isArray(value)) return [];
+    return value.filter(entry => entry && typeof entry.action === 'string')
+        .map(entry => {
+            const normalized = { action: entry.action, data: entry.data || {} };
+            if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+            if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+            if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
+            if (entry.restoreActionAudit && typeof entry.restoreActionAudit === 'object') normalized.restoreActionAudit = entry.restoreActionAudit;
+            return normalized;
+        });
+}
+
+function normalizePendingOutboundAction(entry, options = {}) {
+    const isKnownAction = options.isKnownAction || (() => false);
+    const normalizeRoomId = options.normalizeRoomId || (() => '');
+    if (!entry || !isKnownAction(entry.action)) return null;
+    const normalized = { action: entry.action, data: entry.data || {} };
+    if (Number.isInteger(entry.playerIndex)) normalized.playerIndex = entry.playerIndex;
+    const normalizedRoomId = normalizeRoomId(entry.roomId);
+    if (normalizedRoomId) normalized.roomId = normalizedRoomId;
+    if (Number.isInteger(entry.seq)) normalized.seq = entry.seq;
+    if (typeof entry.clientActionId === 'string') normalized.clientActionId = entry.clientActionId;
+    return normalized;
+}
+
+function sameOnlineActionEntry(a, b) {
+    if (!a || !b) return false;
+    if (a.clientActionId || b.clientActionId) return a.clientActionId === b.clientActionId;
+    return a.action === b.action &&
+        a.playerIndex === b.playerIndex &&
+        JSON.stringify(a.data || {}) === JSON.stringify(b.data || {});
+}
+
+function acceptedClientActionMatchesPending(ref, pending) {
+    return !!(ref && pending && typeof ref.clientActionId === 'string' &&
+        ref.clientActionId === pending.clientActionId &&
+        Number.isInteger(ref.playerIndex) && ref.playerIndex === pending.playerIndex);
+}
+
+function shouldClearPendingForAcceptedAction(accepted, pending) {
+    if (!pending) return false;
+    if (typeof pending.clientActionId === 'string') {
+        return typeof accepted?.clientActionId === 'string' && sameOnlineActionEntry(accepted, pending);
+    }
+    return sameOnlineActionEntry(accepted, pending);
+}
+
 const OnlinePayload = Object.freeze({
+    normalizeActionLog: normalizeOnlineActionLog,
+    normalizePendingOutboundAction,
+    sameActionEntry: sameOnlineActionEntry,
+    acceptedClientActionMatchesPending,
+    shouldClearPendingForAcceptedAction,
     buildRejoin(session, clientVersion) {
         return {
             roomId: session && session.roomId,

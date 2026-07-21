@@ -8,6 +8,22 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
+const {
+    requestHeader,
+    requestBaseOrigin,
+    hasClientReportOrigin,
+    clientErrorAllowedOrigins,
+    isClientErrorOriginAllowed,
+    clientErrorSharedToken,
+    isProductionNoOriginClientErrorBlocked,
+    requestClientErrorToken,
+    authorizeClientErrorRequest,
+} = require('./server/clientErrorAuth');
+const {
+    pruneRateBuckets,
+    isRateLimited: isReportRateLimited,
+    rememberAndCheckDuplicate,
+} = require('./server/reportThrottle');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const makeGameSettings = require('./server/gameSettings');
@@ -28,6 +44,7 @@ const {
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
 } = require('./server/actionAcceptance');
+const makeRejoinPayload = require('./server/rejoinPayload');
 const {
     generateReconnectToken,
     hashReconnectToken,
@@ -241,10 +258,18 @@ const {
     normalizeClientErrorNumber,
     normalizeClientErrorPlayerIndex,
     normalizeClientErrorPayload,
+    extractClientErrorFreezeKind,
+    isStaleClientErrorVersion,
+    classifyClientErrorReport,
+    extractFreezeSummaryFromStack,
+    formatNtfyFreezeSummary,
+    formatNtfyClientErrorMessage,
+    redactedClientErrorRoomId,
 } = makeClientErrorReporting({
     isPlainObject,
     limits: CLIENT_ERROR_LIMITS,
     buildHash: () => BUILD_HASH,
+    hashRoomId: roomId => crypto.createHash('sha256').update(roomId).digest('hex'),
 });
 const {
     lifecycleEventTitle,
@@ -258,61 +283,6 @@ function clientErrorRateKey(req) {
     return req?.ip || req?.socket?.remoteAddress || 'unknown';
 }
 
-function requestHeader(req, name) {
-    if (!req) return '';
-    if (typeof req.get === 'function') return req.get(name) || '';
-    const headers = req.headers || {};
-    return headers[name.toLowerCase()] || headers[name] || '';
-}
-
-function normalizeOriginValue(value) {
-    const text = String(value || '').trim();
-    if (!text) return '';
-    try {
-        const parsed = new URL(text);
-        return parsed.origin;
-    } catch (_error) {
-        return '';
-    }
-}
-
-function requestBaseOrigin(req) {
-    const host = requestHeader(req, 'host');
-    if (!host) return '';
-    const forwardedProto = requestHeader(req, 'x-forwarded-proto').split(',')[0].trim();
-    const proto = forwardedProto || req?.protocol || 'http';
-    return normalizeOriginValue(proto + '://' + host);
-}
-
-function clientErrorAllowedOrigins(req, env = process.env) {
-    const configured = String(env.CLIENT_ERROR_ALLOWED_ORIGINS || env.CLIENT_ERROR_ALLOWED_ORIGIN || '')
-        .split(',')
-        .map(normalizeOriginValue)
-        .filter(Boolean);
-    const sameOrigin = requestBaseOrigin(req);
-    if (sameOrigin) configured.push(sameOrigin);
-    return Array.from(new Set(configured));
-}
-
-function hasClientReportOrigin(req) {
-    return !!(normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer')));
-}
-
-function isClientErrorOriginAllowed(req, env = process.env) {
-    const origin = normalizeOriginValue(requestHeader(req, 'origin')) || normalizeOriginValue(requestHeader(req, 'referer'));
-    if (!origin) return true;
-    const allowed = clientErrorAllowedOrigins(req, env);
-    return allowed.includes(origin);
-}
-
-function isProductionNoOriginClientErrorBlocked(req, env = process.env) {
-    const hasOrigin = hasClientReportOrigin(req);
-    if (hasOrigin) return false;
-    if (clientErrorSharedToken(env)) return false;
-    if (String(env.CLIENT_ERROR_ALLOW_NO_ORIGIN || '').trim()) return false;
-    return String(env.NODE_ENV || '').toLowerCase() === 'production' && !!String(env.NTFY_TOPIC || '').trim();
-}
-
 function isNtfyConfigured(env = process.env) {
     return String(env.NODE_ENV || '').toLowerCase() === 'production' && !!String(env.NTFY_TOPIC || '').trim();
 }
@@ -322,51 +292,16 @@ function resolveNtfyTopic(options = {}, env = process.env) {
     return isNtfyConfigured(env) ? env.NTFY_TOPIC : '';
 }
 
-function clientErrorSharedToken(env = process.env) {
-    return String(env.CLIENT_ERROR_SHARED_TOKEN || env.CLIENT_ERROR_TOKEN || '').trim();
-}
-
-function requestClientErrorToken(req) {
-    const headerToken = String(requestHeader(req, 'x-client-error-token') || '').trim();
-    if (headerToken) return headerToken;
-    const authorization = String(requestHeader(req, 'authorization') || '').trim();
-    const match = authorization.match(/^Bearer\s+(.+)$/i);
-    return match ? match[1].trim() : '';
-}
-
-function authorizeClientErrorRequest(req, env = process.env, authOptions = {}) {
-    if (!isClientErrorOriginAllowed(req, env)) return { ok: false, error: 'forbidden_origin' };
-    if (isProductionNoOriginClientErrorBlocked(req, env)) return { ok: false, error: 'forbidden_origin' };
-    const expectedToken = clientErrorSharedToken(env);
-    if (!expectedToken) return { ok: true };
-    if (authOptions.allowSameOriginWithoutToken !== false && hasClientReportOrigin(req)) return { ok: true };
-    return requestClientErrorToken(req) === expectedToken
-        ? { ok: true }
-        : { ok: false, error: 'invalid_client_error_token' };
-}
-
-function pruneRateBuckets(now, buckets, windowMs, maxBuckets) {
-    for (const [bucketKey, bucket] of buckets.entries()) {
-        if (!bucket || now - bucket.windowStart >= windowMs) buckets.delete(bucketKey);
-    }
-    if (buckets.size <= maxBuckets) return;
-    const overflow = buckets.size - maxBuckets;
-    for (const bucketKey of Array.from(buckets.keys()).slice(0, overflow)) buckets.delete(bucketKey);
-}
-
 function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
     pruneRateBuckets(now, buckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, CLIENT_ERROR_LIMITS.rateLimitMaxBuckets);
 }
 
 function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
-    pruneClientErrorRateBuckets(now, buckets);
-    const bucket = buckets.get(key);
-    if (!bucket) {
-        buckets.set(key, { windowStart: now, count: 1 });
-        return false;
-    }
-    bucket.count++;
-    return bucket.count > CLIENT_ERROR_LIMITS.rateLimitMax;
+    return isReportRateLimited(key, now, buckets, {
+        windowMs: CLIENT_ERROR_LIMITS.rateLimitWindowMs,
+        max: CLIENT_ERROR_LIMITS.rateLimitMax,
+        maxBuckets: CLIENT_ERROR_LIMITS.rateLimitMaxBuckets,
+    });
 }
 
 function clientErrorDedupeKey(report) {
@@ -384,166 +319,7 @@ function clientErrorDedupeKey(report) {
 }
 
 function isDuplicateClientError(report, now = Date.now(), cache = clientErrorDedupeCache) {
-    const key = clientErrorDedupeKey(report);
-    const previous = cache.get(key);
-    cache.set(key, now);
-    for (const [cachedKey, timestamp] of cache.entries()) {
-        if (now - timestamp > CLIENT_ERROR_LIMITS.duplicateWindowMs) cache.delete(cachedKey);
-    }
-    return previous !== undefined && now - previous < CLIENT_ERROR_LIMITS.duplicateWindowMs;
-}
-
-function summarizeUserAgent(userAgent) {
-    const text = String(userAgent || 'unknown');
-    if (/iPhone|iPad|iPod/.test(text) && /Safari/.test(text)) return 'Safari iPhone';
-    if (/Android/.test(text) && /Chrome/.test(text)) return 'Android Chrome';
-    if (/Safari/.test(text) && !/Chrome/.test(text)) return 'Safari';
-    if (/Chrome/.test(text)) return 'Chrome';
-    return text.slice(0, 80);
-}
-
-function redactedClientErrorRoomId(roomId) {
-    const text = String(roomId || '').trim();
-    if (!text) return '-';
-    return 'hash:' + crypto.createHash('sha256').update(text).digest('hex').slice(0, 8);
-}
-
-const STALE_CLIENT_ERROR_VERSION_PREFIXES = Object.freeze([
-    'd1eb530',
-    'f6ce626',
-    '86136c7',
-    'cedbf74',
-    '5d058cb',
-    '9cd909f',
-]);
-
-const KNOWN_CLIENT_ERROR_FREEZE_KINDS = Object.freeze(new Set([
-    'post-build-ui-blocked',
-    'human-turn-ui-locked',
-    'pending-ui-locked',
-    'cpu-turn-stalled',
-    'modal-ui-locked',
-    'stale-modal-ui-locked',
-]));
-
-const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
-    Object.freeze({ id: 'manual-test-endpoint', pattern: 'ダイスシティ ntfy test notification' }),
-    Object.freeze({ id: 'client-version-mismatch', pattern: 'Client version mismatch', priority: '2', tags: 'hourglass,known,stale_client' }),
-    Object.freeze({ id: 'renderPlayers-playerSettings-fallback', pattern: 'difficulty' }),
-    Object.freeze({ id: 'pending-render-recovery', pattern: 'updatePendingModalContent recursion' }),
-]);
-
-function extractClientErrorFreezeKind(report) {
-    const message = String(report?.message || '');
-    const messageMatch = message.match(/^([a-z0-9-]+) after \d+ms$/i);
-    if (messageMatch) return messageMatch[1];
-    const stack = String(report?.stack || '');
-    const stackMatch = stack.match(/"freezeKind"\s*:\s*"([^"]+)"/);
-    return stackMatch ? stackMatch[1] : '';
-}
-
-function isStaleClientErrorVersion(appVersion, stalePrefixes = STALE_CLIENT_ERROR_VERSION_PREFIXES) {
-    const version = String(appVersion || '').trim().toLowerCase();
-    if (!version) return false;
-    return stalePrefixes.some(prefix => version.startsWith(String(prefix).toLowerCase()));
-}
-
-function extractFreezeSummaryFromStack(stack) {
-    const text = String(stack || '');
-    const marker = 'FREEZE_SUMMARY ';
-    const start = text.indexOf(marker);
-    if (start < 0) return null;
-    const jsonStart = start + marker.length;
-    const jsonText = text.slice(jsonStart).trim();
-    if (!jsonText) return null;
-    try {
-        return JSON.parse(jsonText);
-    } catch (_) {
-        return null;
-    }
-}
-
-function formatNtfyFreezeSummary(report, classification = classifyClientErrorReport(report)) {
-    const summary = extractFreezeSummaryFromStack(report && report.stack);
-    if (!summary || !summary.freezeKind) return '';
-    const issues = Array.isArray(summary.interactabilityIssues) ? summary.interactabilityIssues : [];
-    const topIssue = issues[0] || {};
-    const actions = Array.isArray(summary.allowedActions) ? summary.allowedActions.join(',') : '';
-    const recovery = summary.recovery || {};
-    const recoveryText = recovery.attempted ? (recovery.success ? 'success' : 'failed') : 'not-attempted';
-    return [
-        'UI_LOCK_SUMMARY',
-        'freezeKind=' + (summary.freezeKind || classification.freezeKind || '-'),
-        'phase=' + (summary.phase || report.phase || 'unknown'),
-        'version=' + (report.appVersion || '-'),
-        'actions=' + (actions || '-'),
-        'issue=' + (topIssue.kind || '-'),
-        'action=' + (topIssue.action || '-'),
-        'target=' + (topIssue.target || '-'),
-        'actionTarget=' + (topIssue.actionTarget || '-'),
-        'reason=' + (topIssue.reason || '-'),
-        'recovery=' + recoveryText,
-        'staleClient=' + (classification.classification === 'stale-client' ? 'true' : 'false'),
-    ].join('\n');
-}
-
-function classifyClientErrorReport(report) {
-    const freezeKind = extractClientErrorFreezeKind(report);
-    if (isStaleClientErrorVersion(report?.appVersion)) {
-        return {
-            classification: 'stale-client',
-            priority: '2',
-            tags: 'hourglass,known,stale_client',
-            freezeKind,
-            knownPatternId: 'fixed-version-prefix',
-        };
-    }
-    if (freezeKind && KNOWN_CLIENT_ERROR_FREEZE_KINDS.has(freezeKind)) {
-        return {
-            classification: 'known-pattern',
-            priority: '3',
-            tags: 'warning,known,ui_lock',
-            freezeKind,
-            knownPatternId: freezeKind,
-        };
-    }
-    const combined = [report?.message, report?.stack].map(value => String(value || '')).join('\n');
-    const matched = KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS.find(entry => combined.includes(entry.pattern));
-    if (matched) {
-        return {
-            classification: 'known-pattern',
-            priority: matched.priority || '3',
-            tags: matched.tags || 'warning,known,computer',
-            freezeKind,
-            knownPatternId: matched.id,
-        };
-    }
-    return {
-        classification: 'unknown',
-        priority: '5',
-        tags: 'rotating_light,unknown,computer',
-        freezeKind,
-        knownPatternId: '',
-    };
-}
-
-function formatNtfyClientErrorMessage(report) {
-    const classification = classifyClientErrorReport(report);
-    const freezeSummary = formatNtfyFreezeSummary(report, classification);
-    const lines = [
-        ...(freezeSummary ? [freezeSummary, ''] : []),
-        'classification=' + classification.classification,
-        'pattern=' + (classification.knownPatternId || '-'),
-        'phase=' + (report.phase || 'unknown'),
-        'room=' + redactedClientErrorRoomId(report.roomId),
-        'player=' + (report.playerIndex ?? '-'),
-        'version=' + (report.appVersion || '-'),
-        summarizeUserAgent(report.userAgent),
-        report.message,
-    ];
-    if (report.filename) lines.push(report.filename + ':' + (report.line ?? '-') + ':' + (report.column ?? '-'));
-    if (report.stack) lines.push('', truncateText(report.stack, CLIENT_ERROR_LIMITS.maxStackLength));
-    return lines.join('\n');
+    return rememberAndCheckDuplicate(clientErrorDedupeKey(report), now, cache, CLIENT_ERROR_LIMITS.duplicateWindowMs);
 }
 
 async function notifyClientError(report, options = {}) {
@@ -645,14 +421,11 @@ function gameLifecycleRateKey(req) {
 }
 
 function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecycleRateBuckets) {
-    pruneRateBuckets(now, buckets, GAME_LIFECYCLE_LIMITS.rateLimitWindowMs, GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets);
-    const bucket = buckets.get(key);
-    if (!bucket) {
-        buckets.set(key, { windowStart: now, count: 1 });
-        return false;
-    }
-    bucket.count++;
-    return bucket.count > GAME_LIFECYCLE_LIMITS.rateLimitMax;
+    return isReportRateLimited(key, now, buckets, {
+        windowMs: GAME_LIFECYCLE_LIMITS.rateLimitWindowMs,
+        max: GAME_LIFECYCLE_LIMITS.rateLimitMax,
+        maxBuckets: GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets,
+    });
 }
 
 function gameLifecycleDedupeKey(report) {
@@ -660,13 +433,7 @@ function gameLifecycleDedupeKey(report) {
 }
 
 function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
-    const key = gameLifecycleDedupeKey(report);
-    const previous = cache.get(key);
-    cache.set(key, now);
-    for (const [cachedKey, timestamp] of cache.entries()) {
-        if (now - timestamp > GAME_LIFECYCLE_LIMITS.duplicateWindowMs) cache.delete(cachedKey);
-    }
-    return previous !== undefined && now - previous < GAME_LIFECYCLE_LIMITS.duplicateWindowMs;
+    return rememberAndCheckDuplicate(gameLifecycleDedupeKey(report), now, cache, GAME_LIFECYCLE_LIMITS.duplicateWindowMs);
 }
 
 async function notifyGameLifecycle(report, options = {}) {
@@ -856,29 +623,10 @@ function generateRoomId(existingRooms = rooms) {
     return generateUniqueRoomId(existingRooms);
 }
 
-function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
-    const gameStartPayload = overrides.gameStartPayload || room.gameStartPayload;
-    const stateSnapshot = overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null);
-    const payload = {
-        gameStartPayload,
-        stateSnapshot,
-        actionLog: overrides.actionLog || room.actionLog || [],
-        acceptedClientActions: acceptedClientActionRefs(room),
-        playerIndex,
-        hostPlayerIndex: overrides.hostPlayerIndex !== undefined ? overrides.hostPlayerIndex : room.hostPlayerIndex,
-        hostEpoch: Number.isInteger(overrides.hostEpoch) ? overrides.hostEpoch : (room.hostEpoch || 0),
-    };
-    const restoreAudit = overrides.restoreAudit !== undefined
-        ? overrides.restoreAudit
-        : buildRestoreSnapshotAudit(room.roomId, gameStartPayload, stateSnapshot);
-    if (restoreAudit) payload.restoreAudit = restoreAudit;
-    if (room.provisionalRestore === true) {
-        payload.provisionalRestore = true;
-        payload.hostlessRestoreGeneration = room.hostlessRestoreGeneration || 0;
-        payload.hostlessRestoreCount = room.hostlessRestoreCount || 0;
-    }
-    return payload;
-}
+const { buildRejoinDataPayload } = makeRejoinPayload({
+    acceptedClientActionRefs,
+    buildRestoreSnapshotAudit,
+});
 
 function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
     if (!store || typeof store.save !== 'function') return { ok: true, skipped: true };

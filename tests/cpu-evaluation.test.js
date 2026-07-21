@@ -243,3 +243,39 @@ runTest('CPU本体の重複購入と経済バランスwrapperはpure evaluation�
         )
     );
 });
+
+runTest('CPU evaluation はカード色と駅所持者から既存の出目頻度を集計する', () => {
+    const station = 'station';
+    const noStation = { landmarks: { [station]: false } };
+    const withStation = { landmarks: { [station]: true } };
+    const players = [noStation, withStation, noStation];
+    const game = { players };
+    const blue = { color: 'blue', diceNums: [2, 7] };
+    const red = { color: 'red', diceNums: [2, 7] };
+    const green = { color: 'green', diceNums: [2, 7] };
+
+    assert.strictEqual(CPUEvaluation.diceFrequencyForRoller([2, 7], noStation, station), 1);
+    assert.strictEqual(CPUEvaluation.diceFrequencyForRoller([2, 7], withStation, station), 7);
+    assert.strictEqual(CPUEvaluation.cardDiceFrequency(blue, game, noStation, station), 9);
+    assert.strictEqual(CPUEvaluation.cardDiceFrequency(red, game, noStation, station), 8);
+    assert.strictEqual(CPUEvaluation.cardDiceFrequency(green, game, withStation, station), 7);
+    assert.strictEqual(CPUEvaluation.cardDiceFrequency(null, game, noStation, station), 0);
+});
+
+runTest('CPU本体のcard dice frequency wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager, createCardByName, LANDMARK_NAMES } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(3);
+    const player = game.players[0];
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    const card = createCardByName('高級フレンチ');
+
+    assert.strictEqual(
+        cpu._diceFreqForRoller(card.diceNums, game.players[1]),
+        CPUEvaluation.diceFrequencyForRoller(card.diceNums, game.players[1], LANDMARK_NAMES.STATION)
+    );
+    assert.strictEqual(
+        cpu._cardDiceFreq(card, game, player),
+        CPUEvaluation.cardDiceFrequency(card, game, player, LANDMARK_NAMES.STATION)
+    );
+});

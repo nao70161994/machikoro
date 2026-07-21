@@ -9,6 +9,38 @@ const CPUEvaluation = Object.freeze({
         return diceNums.reduce((sum, dice) => sum + (weights[dice] || 0), 0);
     },
 
+    diceFrequencyForRoller(diceNums, roller, stationName) {
+        if (!roller || !roller.landmarks || !roller.landmarks[stationName]) {
+            return CPUEvaluation.singleDiceFrequency(diceNums);
+        }
+        return Math.max(
+            CPUEvaluation.singleDiceFrequency(diceNums),
+            CPUEvaluation.doubleDiceFrequency(diceNums)
+        );
+    },
+
+    cardDiceFrequency(card, game, player, stationName) {
+        if (!card || !game || !player) {
+            return CPUEvaluation.doubleDiceFrequency(card && card.diceNums ? card.diceNums : []);
+        }
+        const currentIndex = game.players.indexOf(player);
+        if (card.color === 'blue') {
+            return game.players.reduce(
+                (sum, roller) => sum + CPUEvaluation.diceFrequencyForRoller(card.diceNums, roller, stationName),
+                0
+            );
+        }
+        if (card.color === 'red') {
+            return game.players.reduce(
+                (sum, roller, index) => index === currentIndex
+                    ? sum
+                    : sum + CPUEvaluation.diceFrequencyForRoller(card.diceNums, roller, stationName),
+                0
+            );
+        }
+        return CPUEvaluation.diceFrequencyForRoller(card.diceNums, player, stationName);
+    },
+
     strongSoftCapValue(value, difficulty) {
         if (difficulty !== 'strong') return value;
         const sign = Math.sign(value);
