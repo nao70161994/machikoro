@@ -205,3 +205,95 @@ runTest('online payload はpending ACK一致判定のclientActionId優先契約�
         playerIndex: 1,
     }), true);
 });
+
+
+const normalizeRoomId = value => String(value || '').trim().toUpperCase();
+
+runTest('online payload keeps room-scoped pending ownership and legacy seq fallback', () => {
+    assert.strictEqual(OnlinePayload.pendingBelongsToSession(null, 'ROOM01', {
+        normalizeRoomId,
+        requireRoomId: true,
+    }), true);
+    assert.strictEqual(OnlinePayload.pendingBelongsToSession({
+        roomId: ' room01 ',
+    }, 'ROOM01', { normalizeRoomId, requireRoomId: true }), true);
+    assert.strictEqual(OnlinePayload.pendingBelongsToSession({
+        roomId: 'ROOM02',
+    }, 'ROOM01', { normalizeRoomId, requireRoomId: true }), false);
+    assert.strictEqual(OnlinePayload.pendingBelongsToSession({
+        seq: 4,
+    }, 'ROOM01', { normalizeRoomId, requireRoomId: true }), true);
+    assert.strictEqual(OnlinePayload.pendingBelongsToSession({
+        seq: 4,
+    }, 'ROOM01', { normalizeRoomId, requireExplicitRoomId: true }), false);
+});
+
+runTest('online payload appends current-room pending action once without cloning the log', () => {
+    const pending = {
+        action: 'nextTurn',
+        data: {},
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        seq: 3,
+    };
+    const log = [];
+    assert.strictEqual(OnlinePayload.appendPendingForRestore(log, pending, {
+        currentRoomId: 'room01',
+        normalizeRoomId,
+    }), log);
+    assert.deepStrictEqual(log, [pending]);
+    OnlinePayload.appendPendingForRestore(log, Object.assign({}, pending), {
+        currentRoomId: 'ROOM01',
+        normalizeRoomId,
+    });
+    assert.strictEqual(log.length, 1);
+    OnlinePayload.appendPendingForRestore(log, Object.assign({}, pending, {
+        roomId: 'ROOM02',
+        seq: 4,
+    }), {
+        currentRoomId: 'ROOM01',
+        normalizeRoomId,
+    });
+    assert.strictEqual(log.length, 1);
+});
+
+runTest('online payload isolates pending resend policy from socket and timer side effects', () => {
+    const pending = {
+        action: 'nextTurn',
+        data: {},
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        seq: 3,
+    };
+    const state = {
+        currentRoomId: 'ROOM01',
+        normalizeRoomId,
+        game: { currentPlayerIndex: 0, players: [{}, {}] },
+        originalPlayerIndex: 0,
+        playerIndex: 0,
+        cpuPlayers: [null, null],
+        isRoomHost: false,
+    };
+    assert.strictEqual(OnlinePayload.canResendPendingOutboundAction(pending, state), true);
+    assert.strictEqual(OnlinePayload.canResendPendingOutboundAction(
+        Object.assign({}, pending, { roomId: 'ROOM02' }),
+        state
+    ), false);
+    assert.strictEqual(OnlinePayload.canResendPendingOutboundAction(
+        Object.assign({}, pending, { playerIndex: 1 }),
+        state
+    ), false);
+    assert.strictEqual(OnlinePayload.canResendPendingOutboundAction(pending, Object.assign({}, state, {
+        game: { currentPlayerIndex: 1, players: [{}, {}] },
+    })), false);
+    assert.strictEqual(OnlinePayload.canResendPendingOutboundAction(pending, Object.assign({}, state, {
+        game: { currentPlayerIndex: 1, players: [{}, {}] },
+        cpuPlayers: [null, {}],
+        isRoomHost: true,
+    })), true);
+    assert.strictEqual(OnlinePayload.canResendPendingOutboundAction(pending, Object.assign({}, state, {
+        game: { currentPlayerIndex: 1, players: [{}, {}] },
+        cpuPlayers: [null, {}],
+        isRoomHost: false,
+    })), false);
+});
