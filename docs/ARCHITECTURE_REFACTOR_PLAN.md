@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -301,13 +301,14 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-07-22, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
+As of 2026-07-23, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
 
 - `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
 - `server/gameLifecycleReporting.js` owns lifecycle notification payload/text formatting while auth, rate limits, dedupe, and HTTP delivery remain in `server.js`.
 - `server/clientErrorReporting.js`, `server/clientErrorAuth.js`, and `server/reportThrottle.js` own unchanged report shaping/classification, request authorization, and injected rate/dedupe algorithms; HTTP status and delivery remain in `server.js`.
 - `server/rejoinPayload.js` owns the injected snapshot/log/ACK/audit/provisional-field builder; event names and reconnect handler timing remain in `server.js`.
+- `server/restoreValidation.js` owns game-start validation, undo-state sanitation, and restored human-slot reconstruction; restore schema and authority are unchanged.
 - `server/staticAssets.js` owns root files and directory routes; tests verify allowlisted files exist and every local `index.html` asset is served by an allowlisted route.
 - `server/actionPayload.js` owns the frozen canonical payload key table and client action ID normalization while handlers, event names, and payload shapes remain unchanged.
 - `js/onlineStorage.js` owns existing online localStorage/session key access and restore bundle/index helpers; key names and payload formats are unchanged.
@@ -315,15 +316,16 @@ As of 2026-07-22, rollback-friendly units from this plan are implemented without
 - `js/onlineReconnectState.js` owns eight state names, allowed-transition contracts, and a read-only projection of the existing booleans; timers, callbacks, retry counts, and UI text remain in `online.js`.
 - `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, `js/uiCardSelect.js`, `js/uiPlayerDisplay.js`, `js/uiLogDisplay.js`, `js/uiCardOrder.js`, and `js/uiTutorial.js` own pure HTML/display/order/guidance policy; `ui.js` still owns modal lifecycle, DOM mutation, event handling, and render orchestration.
 - `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, freeze classification, and bounded diagnostic serialization while `appShell.js` retains browser capture, DOM snapshots, recovery, storage writes, dedupe, fetch, timers, and PWA side effects.
-- `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log and pending-action normalization, and ACK comparison while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
+- `js/actionUiRegistry.js` owns the frozen action-to-container and action-to-child-selector manifest used by watchdog diagnostics; DOM inspection and recovery remain in `appShell.js`.
+- `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log/pending normalization, ACK comparison, room ownership, duplicate-free restore append, and resend eligibility while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, and `js/cpuSimulation.js` own unchanged evaluation/penalty/dice-frequency primitives, affordable-build filters, player-count profiles, weighted dice outcomes, and injected lookahead loop/steps behind existing CPU wrappers.
 - `server/hostlessRestoreCandidate.js`, `server/hostlessRestoreCoordinator.js`,
   `server/hostlessRestoreGateway.js`, and `server/hostlessRestoreRuntime.js`
   own the provisional quorum policy and additive transport boundary. The client
   capability/payload/consent path fails closed for old or mixed clients.
 - CPU extraction is guarded by 9 representative fixtures across build/dice/reroll/harbor/pending states, 36 exact decision snapshots for all difficulties, and 36 seeded full matches for all difficulties and 2–10 players. Baseline artifacts record their source commit.
-- Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity.
-- Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders.
+- Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity. `npm run report:action-contract` emits the current cross-layer manifest and fails on drift.
+- Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders. Scoped ESLint bug rules run from `test:static` over the pure-helper allowlist.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
 The remaining steps below still require the same gates described in each design section. In particular, reconnect timer/callback migration, Socket.IO handler movement, modal lifecycle movement, broad CPU scoring/selection movement, and live build execution need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
@@ -332,7 +334,7 @@ The remaining steps below still require the same gates described in each design 
 
 1. **Keep the implemented helper boundaries stable:** Prefer extending the existing server, online, and UI pure modules before adding equivalent logic back into giant files.
 2. **Further pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
-3. **Action contract metadata:** Keep adding cross-layer read-only tests, then introduce a shared metadata table gradually.
+3. **Action contract metadata:** Keep the machine-readable report and cross-layer tests green; introduce a shared runtime metadata table only through a separately reviewed migration.
 4. **Reconnect state machine and server socket handler split:** Move timing/event orchestration only after helper/facade tests are stable and manual-device verification is scheduled.
 5. **Restore trust boundary ADR:** Start only when product/security requirements justify durable or signed authority.
 

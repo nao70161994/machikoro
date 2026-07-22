@@ -40,17 +40,17 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-22 保守性改善の現在地
+## 2026-07-23 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
 - CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/出目頻度/重複購入/経済バランスprimitive、合法建設filter、人数別profile、重み付き出目表、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、乱数消費、行動選択は未変更。
-- server: 既存helper群に加え、`server/clientErrorReporting.js`、`server/clientErrorAuth.js`、`server/reportThrottle.js`、`server/rejoinPayload.js` が通知整形/認可/throttleと再参加payloadを所有。Socket.IO/HTTP handler、event名、wire payload意味、restore authorityは移動・変更していない。
-- online: `js/onlinePayload.js` にrejoin payload、action-log/pending正規化、ACK一致判定を集約し、`js/onlineRestoreRank.js` と `js/onlineReconnectState.js` が復元順位とread-only状態観測を所有。restore queue、retry timer/callback、protocolは未変更。
-- UI: pending/build/detail/select/player/log/orderに加え、`js/uiTutorial.js` にphase/pending案内と建設候補計算を分離。script/SW asset順は静的契約で固定し、modal lifecycle、focus/inert、DOM副作用、event処理、PWA更新挙動は未変更。
-- contracts: action metadata/phase/actor/payload/replay/UI、card/effect登録、主要状態のsnapshot roundtrip、同一action traceのclient/server最終snapshot完全一致を固定。
-- tooling: 抽出moduleのproduction/主要VM/self-play依存順を静的テストで固定。JSDoc/checkJs/ESLintは依存追加と大量警告の可能性があるためdeferred。
+- server: existing helpers plus `server/restoreValidation.js` own game-start validation, undo sanitation, and restored human-slot construction. Socket.IO/HTTP handlers, event names, wire payload meaning, and restore authority are unchanged.
+- online: `js/onlinePayload.js` now also owns pure room ownership, duplicate-free restore append, and resend eligibility. Restore queues, retry timers/callbacks, ACK timing, and protocol remain unchanged.
+- UI/app shell: `js/actionUiRegistry.js` owns the frozen action container/child-selector manifest. Modal lifecycle, focus/inert, DOM effects, event handling, and PWA behavior remain unchanged.
+- contracts: run `npm run report:action-contract`; its 15-action JSON manifest must have an empty `issues` array in addition to the existing action/snapshot/replay tests.
+- tooling: scoped ESLint 10.7.0 runs through `test:static` on the pure-helper/report allowlist with bug-detection rules only. Do not enable style rules, `--fix`, or whole-repository lint as incidental cleanup.
 
-2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-22の再監査では、残るreconnect timer/callback、Socket.IO handler、modal lifecycle、CPUの大きなscoring/selectionとlive build executionはいずれもpure抽出ではなくなったためdeferred。新依存なしのcheckJs/ESLint導入余地もない。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-23の再監査では、restore validation、pending resend policy、Action UI registry、機械可読contract report、限定ESLintまで実装した。残るreconnect timer/callback、Socket.IO handler、modal lifecycle、CPUの大きなscoring/selectionとlive build executionはpure抽出ではなくなったためdeferred。
 
 ## 2026-05-16 時点の実施済み範囲
 
@@ -341,10 +341,10 @@ Test index:
 ## UI interactability contract
 
 - Any visible and expected interaction must be both logically allowed and physically clickable. The runtime contract is now represented by `collectUiLockSnapshot()`, `validateUiInteractability()`, `syncUiInteractabilityAfterRender()`, and `recoverUiInteractability()` in `js/appShell.js`.
-- Keep the three action layers distinct: `GAME_ACTION_REGISTRY` is the rule/server/replay payload contract, `currentUiAllowedActions()` / `canShowUiAction()` is the render gate, and `PRIMARY_ACTION_CONTAINER_REGISTRY` is the allowed-action-to-physical-container clickability contract.
-- When adding an action surface, add it to `PRIMARY_ACTION_CONTAINER_REGISTRY` in `js/appShell.js` if it is driven by `allowedActionsFor()`. The registry must cover every `GAME_ACTIONS` entry exactly once: `rollDice -> btnRoll`, dice/harbor choices -> `diceChoose`, build actions -> `buildMenu`, `nextTurn -> btnSkip`, and pending resolvers -> `pendingModal` / `pendingMenu`. `resolveIT` is also registered for the `pendingIT` special case where allowed actions can be `resolveIT` even before phase is normalized to `pending`.
+- Keep the three action layers distinct: `GAME_ACTION_REGISTRY` is the rule/server/replay payload contract, `currentUiAllowedActions()` / `canShowUiAction()` is the render gate, and `ActionUiRegistry.containers` is the allowed-action-to-physical-container clickability contract.
+- When adding an action surface, add it to `ActionUiRegistry.containers` in `js/actionUiRegistry.js` if it is driven by `allowedActionsFor()`. The registry must cover every `GAME_ACTIONS` entry exactly once: `rollDice -> btnRoll`, dice/harbor choices -> `diceChoose`, build actions -> `buildMenu`, `nextTurn -> btnSkip`, and pending resolvers -> `pendingModal` / `pendingMenu`. `resolveIT` is also registered for the `pendingIT` special case where allowed actions can be `resolveIT` even before phase is normalized to `pending`.
 - Do not treat `disabled=false` as sufficient. Check parent/root state too: `display:none`, `hidden`, `inert`, `aria-hidden`, `pointer-events:none`, and `ancestorBlocked` all make a visible control unusable. For content containers, the registry also checks that the expected `data-action` child exists and is usable, so unrelated detail/filter buttons do not satisfy gameplay actions.
-- Content containers also have an action-child selector contract in `PRIMARY_ACTION_CHILD_SELECTOR_REGISTRY`. When changing generated buttons, keep `data-action` values aligned with that registry. For `buildCard` / `buildLandmark`, child clickability is required only when an actual build candidate exists and the player has not already built this turn; `allowedActionsFor(game)` is phase-level and does not mean every build class has an affordable candidate or currently relevant child button.
+- Content containers also have an action-child selector contract in `ActionUiRegistry.childSelectors`. When changing generated buttons, keep `data-action` values aligned with that registry. For `buildCard` / `buildLandmark`, child clickability is required only when an actual build candidate exists and the player has not already built this turn; `allowedActionsFor(game)` is phase-level and does not mean every build class has an affordable candidate or currently relevant child button.
 - `closeAccessibleModal()` must use the actual visible blocking modal set as the close-time source of truth. If `rulesModal` / `cardSelectModal` closes and no blocking modal remains visible, shell roots and `body.modal-open` must not stay locked.
 - Active modals are allowed to lock the background, but the visible modal itself must remain interactive. `pendingModal` is special: it is validated by pending resolver rules so populated pending UI must have `pendingModal` and `pendingMenu` pointer interaction restored to `auto`.
 - Title/reset screens must not be auto-restored into `gameScreen`. `recoverUiInteractability()` should only be used with active game snapshots and must preserve the existing active-modal guard.
