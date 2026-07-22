@@ -309,6 +309,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(lifecycleNotifySource, context, { filename: 'js/lifecycleNotify.js' });
     const uiWatchdogSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdog.js'), 'utf8');
     vm.runInContext(uiWatchdogSource, context, { filename: 'js/uiWatchdog.js' });
+    const actionUiRegistrySource = fs.readFileSync(path.join(__dirname, '..', 'js/actionUiRegistry.js'), 'utf8');
+    vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
@@ -1833,7 +1835,10 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
 });
 
 runTest('UI interactability registry は描画されるaction child selectorと同期する', () => {
-    const appShell = fs.readFileSync(path.join(__dirname, '..', 'js', 'appShell.js'), 'utf8');
+    const appShell = [
+        'js/actionUiRegistry.js',
+        'js/appShell.js',
+    ].map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\n');
     const uiSources = [
         'js/ui.js',
         'js/uiBuildMenu.js',
@@ -1927,6 +1932,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');
     assertBefore('js/uiWatchdog.js', 'js/appShell.js');
+    assertBefore('js/actionUiRegistry.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
 });
