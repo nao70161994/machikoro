@@ -5,6 +5,8 @@ const path = require('path');
 const TEST_GROUPS = {
     unit: [
         'gamemanager.test.js',
+        'action-ui-registry.test.js',
+        'action-contract-report.test.js',
         'card-contract.test.js',
         'server.test.js',
         'server-dice.test.js',
@@ -18,6 +20,7 @@ const TEST_GROUPS = {
         'reconnect-identity.test.js',
         'rejoin-payload.test.js',
         'restore-sanitization.test.js',
+        'restore-validation.test.js',
         'hostless-restore-candidate.test.js',
         'hostless-restore-coordinator.test.js',
         'hostless-restore-gateway.test.js',
@@ -102,6 +105,7 @@ const TEST_GROUPS = {
     ],
     core: [
         'gamemanager.test.js',
+        'action-ui-registry.test.js',
         'card-contract.test.js',
         'integration.test.js',
         'main.test.js',
@@ -121,6 +125,7 @@ const TEST_GROUPS = {
     ],
     online: [
         'gamemanager.test.js',
+        'action-ui-registry.test.js',
         'server.test.js',
         'server-dice.test.js',
         'canonical-mirror-metadata.test.js',
@@ -133,6 +138,7 @@ const TEST_GROUPS = {
         'reconnect-identity.test.js',
         'rejoin-payload.test.js',
         'restore-sanitization.test.js',
+        'restore-validation.test.js',
         'hostless-restore-candidate.test.js',
         'hostless-restore-coordinator.test.js',
         'hostless-restore-gateway.test.js',
@@ -154,6 +160,7 @@ const TEST_GROUPS = {
     ],
     pwa: [
         'storage.test.js',
+        'action-ui-registry.test.js',
         'main.test.js',
         'static-assets.test.js',
         'sw.test.js',

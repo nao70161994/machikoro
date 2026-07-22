@@ -7,7 +7,7 @@
     "test": "node tests/run-all.js unit",
     "test:sim": "node tests/run-all.js sim",
     "test:all": "node tests/run-all.js all",
-    "test:static": "git ls-files --cached --others --exclude-standard -- \"*.js\" \":!:node_modules/*\" | xargs -n 1 node --check && git ls-files --cached --others --exclude-standard -- \"*.json\" \":!:node_modules/*\" | xargs -n 1 node -e \"const fs=require(\\\"fs\\\"); JSON.parse(fs.readFileSync(process.argv[1],\\\"utf8\\\"))\" && git ls-files --cached --others --exclude-standard -- \"*.sh\" \":!:node_modules/*\" | xargs -n 1 sh -n && npm run test:static:py",
+    "test:static": "git ls-files --cached --others --exclude-standard -- \"*.js\" \":!:node_modules/*\" | xargs -n 1 node --check && git ls-files --cached --others --exclude-standard -- \"*.json\" \":!:node_modules/*\" | xargs -n 1 node -e \"const fs=require(\\\"fs\\\"); JSON.parse(fs.readFileSync(process.argv[1],\\\"utf8\\\"))\" && git ls-files --cached --others --exclude-standard -- \"*.sh\" \":!:node_modules/*\" | xargs -n 1 sh -n && npm run test:static:py && npm run lint:maintenance",
     "test:smoke": "npm run test:static && npm run test:core && node tests/run-all.js cpu-smoke && npm run test:online",
     "test:core": "node tests/run-all.js core",
     "test:online": "node tests/run-all.js online",
@@ -58,7 +58,9 @@
     "pretest": "node tests/check-prerequisites.js",
     "test:soak": "node tests/run-all.js soak",
     "test:browser-e2e": "playwright test",
-    "test:apk-validation": "node scripts/validate-apk-config.js"
+    "test:apk-validation": "node scripts/validate-apk-config.js",
+    "lint:maintenance": "eslint scripts/report-action-contract.js js/actionUiRegistry.js js/clientReporting.js js/cpuEvaluation.js js/cpuLegalMoves.js js/lifecycleNotify.js js/onlinePayload.js js/onlineReconnectState.js js/onlineRestoreRank.js js/uiTutorial.js js/uiWatchdog.js server/actionPayload.js server/actionValidation.js server/clientErrorAuth.js server/rejoinPayload.js server/reportThrottle.js server/restoreSanitization.js server/restoreValidation.js server/roomValidation.js server/socketPayload.js",
+    "report:action-contract": "node scripts/report-action-contract.js"
   },
   "keywords": [],
   "author": "",
@@ -70,6 +72,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
+    "eslint": "10.7.0",
     "socket.io-client": "4.8.3",
     "supertest": "^7.2.2"
   }

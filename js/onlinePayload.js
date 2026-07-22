@@ -82,6 +82,48 @@ function normalizePendingOutboundAction(entry, options = {}) {
     return normalized;
 }
 
+function pendingBelongsToSession(entry, currentRoomId, options = {}) {
+    if (!entry) return true;
+    const normalizeRoomId = options.normalizeRoomId || (() => '');
+    const normalizedCurrentRoomId = normalizeRoomId(currentRoomId);
+    const entryRoomId = normalizeRoomId(entry.roomId);
+    if (!entryRoomId) {
+        if (options.requireExplicitRoomId) return false;
+        return !options.requireRoomId || !normalizedCurrentRoomId || Number.isInteger(entry.seq);
+    }
+    if (!normalizedCurrentRoomId) return false;
+    return entryRoomId === normalizedCurrentRoomId;
+}
+
+function appendPendingForRestore(actionLog, pending, options = {}) {
+    if (!pending) return actionLog;
+    if (!pendingBelongsToSession(pending, options.currentRoomId, {
+        normalizeRoomId: options.normalizeRoomId,
+        requireRoomId: true,
+    })) return actionLog;
+    if (!actionLog.some(entry => sameOnlineActionEntry(entry, pending))) {
+        actionLog.push(pending);
+    }
+    return actionLog;
+}
+
+function canResendPendingOutboundAction(pending, state = {}) {
+    if (!pendingBelongsToSession(pending, state.currentRoomId, {
+        normalizeRoomId: state.normalizeRoomId,
+        requireRoomId: true,
+    })) return false;
+    const game = state.game;
+    if (!pending || !game || !Number.isInteger(state.originalPlayerIndex)) return false;
+    if (Number.isInteger(pending.playerIndex) && pending.playerIndex >= 0 &&
+            pending.playerIndex !== state.originalPlayerIndex) return false;
+    if (!Number.isInteger(state.playerIndex) || state.playerIndex < 0) return false;
+    const currentIndex = game.currentPlayerIndex;
+    if (!Number.isInteger(currentIndex) || currentIndex < 0 ||
+            !Array.isArray(game.players) || currentIndex >= game.players.length) return false;
+    if (Array.isArray(state.cpuPlayers) && state.cpuPlayers[currentIndex]) return !!state.isRoomHost;
+    return currentIndex === state.playerIndex;
+}
+
 function sameOnlineActionEntry(a, b) {
     if (!a || !b) return false;
     if (a.clientActionId || b.clientActionId) return a.clientActionId === b.clientActionId;
@@ -108,6 +150,9 @@ const OnlinePayload = Object.freeze({
     normalizeActionLog: normalizeOnlineActionLog,
     normalizePendingOutboundAction,
     sameActionEntry: sameOnlineActionEntry,
+    pendingBelongsToSession,
+    appendPendingForRestore,
+    canResendPendingOutboundAction,
     acceptedClientActionMatchesPending,
     shouldClearPendingForAcceptedAction,
     buildRejoin(session, clientVersion) {

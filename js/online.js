@@ -628,15 +628,9 @@ function _clearPendingOutboundAction(roomId = myRoomId) {
 }
 
 function _pendingOutboundActionBelongsToCurrentSession(entry, options = {}) {
-    if (!entry) return true;
-    const currentRoomId = _normalizeOnlineRoomId(myRoomId);
-    const entryRoomId = _normalizeOnlineRoomId(entry.roomId);
-    if (!entryRoomId) {
-        if (options.requireExplicitRoomId) return false;
-        return !options.requireRoomId || !currentRoomId || Number.isInteger(entry.seq);
-    }
-    if (!currentRoomId) return false;
-    return entryRoomId === currentRoomId;
+    return OnlinePayload.pendingBelongsToSession(entry, myRoomId, Object.assign({
+        normalizeRoomId: _normalizeOnlineRoomId,
+    }, options));
 }
 
 function _clearPendingOutboundActionForCurrentSession(options = {}) {
@@ -707,23 +701,22 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
 }
 
 function _appendPendingForRestore(actionLog, pending) {
-    if (!pending) return actionLog;
-    if (!_pendingOutboundActionBelongsToCurrentSession(pending, { requireRoomId: true })) return actionLog;
-    if (!actionLog.some(entry => _sameOnlineActionEntry(entry, pending))) {
-        actionLog.push(pending);
-    }
-    return actionLog;
+    return OnlinePayload.appendPendingForRestore(actionLog, pending, {
+        currentRoomId: myRoomId,
+        normalizeRoomId: _normalizeOnlineRoomId,
+    });
 }
 
 function _canResendPendingOutboundAction(pending) {
-    if (!_pendingOutboundActionBelongsToCurrentSession(pending, { requireRoomId: true })) return false;
-    if (!pending || !game || !Number.isInteger(myOriginalPlayerIndex)) return false;
-    if (Number.isInteger(pending.playerIndex) && pending.playerIndex >= 0 && pending.playerIndex !== myOriginalPlayerIndex) return false;
-    if (!Number.isInteger(myPlayerIndex) || myPlayerIndex < 0) return false;
-    const currentIndex = game.currentPlayerIndex;
-    if (!Number.isInteger(currentIndex) || currentIndex < 0 || currentIndex >= game.players.length) return false;
-    if (cpuPlayers[currentIndex]) return isRoomHost;
-    return currentIndex === myPlayerIndex;
+    return OnlinePayload.canResendPendingOutboundAction(pending, {
+        currentRoomId: myRoomId,
+        normalizeRoomId: _normalizeOnlineRoomId,
+        game,
+        originalPlayerIndex: myOriginalPlayerIndex,
+        playerIndex: myPlayerIndex,
+        cpuPlayers,
+        isRoomHost,
+    });
 }
 
 function buildOnlineSnapshot() {
