@@ -32,3 +32,15 @@ runTest('online retry policy preserves deadline and waiting text', () => {
         '⏳ ホストの復元を待っています... (8/8)'
     );
 });
+
+runTest('online retry policy uses the ACK timeout boundary for stall detection', () => {
+    const startedAt = 1000;
+
+    assert.strictEqual(OnlineRetryPolicy.actionAckAgeMs(startedAt, 15999), 14999);
+    assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(startedAt, 15999), false);
+    assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(startedAt, 16000), true);
+    assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(startedAt, 16001), true);
+    assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(0, 20000), false);
+    assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(NaN, 20000), false);
+    assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(startedAt, 20000, NaN), false);
+});

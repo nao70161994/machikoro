@@ -45,7 +45,9 @@ const UiWatchdog = (() => {
         if (facts.isCpuTurn && !facts.onlineActionInFlight && !facts.cpuStepScheduled) {
             return freezeKinds.CPU_TURN_STALLED;
         }
-        if (facts.onlineActionInFlight) return freezeKinds.ONLINE_ACTION_IN_FLIGHT_STALLED;
+        if (facts.onlineActionInFlight && facts.onlineActionTimedOut) {
+            return freezeKinds.ONLINE_ACTION_IN_FLIGHT_STALLED;
+        }
         return '';
     }
 

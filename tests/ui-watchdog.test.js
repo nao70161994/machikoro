@@ -29,6 +29,7 @@ const base = {
     noUsablePendingAction: false,
     pendingOpenWithoutContent: false,
     onlineActionInFlight: false,
+    onlineActionTimedOut: false,
     cpuStepScheduled: false,
     modalIssue: null,
     pendingIssue: null,
@@ -45,7 +46,8 @@ assert.strictEqual(classify({ pendingIssue: {} }), 'pending-ui-locked');
 assert.strictEqual(classify({ noUsablePrimaryAction: true }), 'human-turn-ui-locked');
 assert.strictEqual(classify({ pendingOpenWithoutContent: true }), 'pending-without-action');
 assert.strictEqual(classify({ isMyTurn: false, isCpuTurn: true }), 'cpu-turn-stalled');
-assert.strictEqual(classify({ onlineActionInFlight: true }), 'online-action-in-flight-stalled');
+assert.strictEqual(classify({ onlineActionInFlight: true }), '');
+assert.strictEqual(classify({ onlineActionInFlight: true, onlineActionTimedOut: true }), 'online-action-in-flight-stalled');
 
 assert.strictEqual(UiWatchdog.hasPendingWork({ pendingFields: { pendingIT: true } }), true);
 assert.strictEqual(UiWatchdog.hasPendingWork({ pendingFields: {} }), false);

@@ -460,8 +460,14 @@ runTest('integration: online action ACK停止はwatchdogがpendingを保持し�
     const snapshot = rt.buildClientRuntimeSnapshot('online-ack-stalled');
     assert.strictEqual(snapshot.onlineActionInFlight, true);
     assert.strictEqual(snapshot.onlineActionInFlightAt > 0, true);
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
+    rt.__test.advanceTime(14999);
+    assert.strictEqual(rt.classifyLikelyFreeze(rt.buildClientRuntimeSnapshot('online-ack-waiting')), '');
+    rt.__test.advanceTime(1);
+    const timedOutSnapshot = rt.buildClientRuntimeSnapshot('online-ack-timed-out');
+    assert.strictEqual(rt.classifyLikelyFreeze(timedOutSnapshot), 'online-action-in-flight-stalled');
 
-    assert.strictEqual(rt.recoverFreezeKind('online-action-in-flight-stalled', snapshot), true);
+    assert.strictEqual(rt.recoverFreezeKind('online-action-in-flight-stalled', timedOutSnapshot), true);
     assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), pending);
     assert.strictEqual(rt.__test.socketEmits.some(event => event.name === 'rejoinRoom'), true);
     assert.strictEqual(rt.buildClientRuntimeSnapshot().isReconnectingOnline, true);

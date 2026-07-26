@@ -18,11 +18,24 @@ function rejoinWaitingMessage(attemptCount, maxAttempts = ONLINE_RETRY_DEFAULTS.
     return '⏳ ホストの復元を待っています... (' + (attemptCount + 1) + '/' + maxAttempts + ')';
 }
 
+function actionAckAgeMs(startedAt, now = Date.now()) {
+    if (!Number.isFinite(startedAt) || startedAt <= 0 || !Number.isFinite(now)) return 0;
+    return Math.max(0, now - startedAt);
+}
+
+function isActionAckTimedOut(startedAt, now = Date.now(), timeoutMs = ONLINE_RETRY_DEFAULTS.actionAckTimeoutMs) {
+    if (!Number.isFinite(timeoutMs) || timeoutMs < 0) return false;
+    return Number.isFinite(startedAt) && startedAt > 0 &&
+        actionAckAgeMs(startedAt, now) >= timeoutMs;
+}
+
 const OnlineRetryPolicy = Object.freeze({
     defaults: ONLINE_RETRY_DEFAULTS,
     isRejoinExhausted,
     rejoinDeadline,
     rejoinWaitingMessage,
+    actionAckAgeMs,
+    isActionAckTimedOut,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OnlineRetryPolicy;

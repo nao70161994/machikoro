@@ -1477,6 +1477,14 @@ function freezeWatchdogStateKey(snapshot) {
     return UiWatchdog.stateKey(snapshot);
 }
 
+function isOnlineActionTimedOutForWatchdog(snapshot, now = Date.now()) {
+    if (!snapshot || !snapshot.onlineActionInFlight) return false;
+    if (typeof OnlineRetryPolicy === 'undefined' ||
+            !OnlineRetryPolicy ||
+            typeof OnlineRetryPolicy.isActionAckTimedOut !== 'function') return false;
+    return OnlineRetryPolicy.isActionAckTimedOut(snapshot.onlineActionInFlightAt, now);
+}
+
 function hasPendingWork(snapshot) {
     return UiWatchdog.hasPendingWork(snapshot);
 }
@@ -1521,6 +1529,7 @@ function classifyLikelyFreeze(snapshot) {
         pendingOpenWithoutContent,
         onlineActionInFlight: snapshot.onlineActionInFlight,
         cpuStepScheduled: snapshot.cpuStepScheduled,
+        onlineActionTimedOut: isOnlineActionTimedOutForWatchdog(snapshot),
         modalIssue,
         pendingIssue,
         humanIssue,
