@@ -126,9 +126,8 @@ let _onlineRestoreQuarantined = false;
 const _pendingOutboundActionsMemory = new Map();
 const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
-const ONLINE_ACTION_ACK_TIMEOUT_MS = 15000;
-const ONLINE_REJOIN_RETRY_DELAY_MS = 3000;
-const ONLINE_REJOIN_MAX_ATTEMPTS = 8;
+const ONLINE_ACTION_ACK_TIMEOUT_MS = OnlineRetryPolicy.defaults.actionAckTimeoutMs;
+const ONLINE_REJOIN_RETRY_DELAY_MS = OnlineRetryPolicy.defaults.rejoinDelayMs;
 const ONLINE_RESTORE_EVENT_QUEUE_LIMIT = 256;
 const ONLINE_RESTORE_SCHEMA_VERSION = 2;
 const ONLINE_SESSION_STORAGE_KEY = 'onlineSession';
@@ -340,12 +339,12 @@ function _finishRejoinRetryTimeout() {
 
 function _armOnlineRejoinResponseTimeout() {
     if (_rejoinRetryTimer || _rejoinRetryExhausted || typeof setTimeout !== 'function') return true;
-    _rejoinRetryDeadline = Date.now() + ONLINE_REJOIN_RETRY_DELAY_MS;
+    _rejoinRetryDeadline = OnlineRetryPolicy.rejoinDeadline(Date.now());
     _rejoinRetryTimer = setTimeout(() => {
         _rejoinRetryTimer = null;
         _rejoinRetryDeadline = 0;
         if (!isReconnectingOnline) return;
-        if (_rejoinRetryCount >= ONLINE_REJOIN_MAX_ATTEMPTS) {
+        if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) {
             _finishRejoinRetryTimeout();
             return;
         }
@@ -383,7 +382,7 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
     if (!socket || !session.roomId || session.playerIndex < 0 || !session.playerName || !session.reconnectToken) return false;
     isReconnectingOnline = true;
     if (socket.connected === false) return true;
-    if (_rejoinRetryCount >= ONLINE_REJOIN_MAX_ATTEMPTS) return _finishRejoinRetryTimeout();
+    if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) return _finishRejoinRetryTimeout();
     if (_rejoinRetryTimer) {
         clearTimeout(_rejoinRetryTimer);
         _rejoinRetryTimer = null;
@@ -1802,8 +1801,8 @@ function _sendRecreateRoomFromBundle(bundle) {
 }
 
 function _scheduleRejoinRetry() {
-    if (_rejoinRetryCount >= ONLINE_REJOIN_MAX_ATTEMPTS) return _finishRejoinRetryTimeout();
+    if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) return _finishRejoinRetryTimeout();
     const el = document.getElementById("onlineStatus");
-    if (el) el.textContent = `⏳ ホストの復元を待っています... (${_rejoinRetryCount + 1}/${ONLINE_REJOIN_MAX_ATTEMPTS})`;
+    if (el) el.textContent = OnlineRetryPolicy.rejoinWaitingMessage(_rejoinRetryCount);
     return _armOnlineRejoinResponseTimeout();
 }

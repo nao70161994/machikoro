@@ -184,6 +184,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlinePayload.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');
+        files.push('js/onlineRetryPolicy.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');

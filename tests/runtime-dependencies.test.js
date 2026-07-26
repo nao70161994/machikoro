@@ -32,6 +32,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],
             ['js/onlineReconnectState.js', 'js/online.js'],
+            ['js/onlineRetryPolicy.js', 'js/online.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/uiPlayerDisplay.js', 'js/ui.js'],
@@ -86,6 +87,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],
             ['js/onlineReconnectState.js', 'js/online.js'],
+            ['js/onlineRetryPolicy.js', 'js/online.js'],
         ]],
         ['tests/ui.test.js', [
             ['js/uiLogDisplay.js', 'js/ui.js'],
@@ -103,6 +105,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],
             ['js/onlineReconnectState.js', 'js/online.js'],
+            ['js/onlineRetryPolicy.js', 'js/online.js'],
         ]],
         ['tests/release-e2e.test.js', [
             ['js/actionContract.js', 'js/actionUiRegistry.js'],
