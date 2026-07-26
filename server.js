@@ -27,6 +27,7 @@ const {
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
+const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const makeGameSettings = require('./server/gameSettings');
 const {
     sanitizeName,
@@ -941,33 +942,17 @@ io.on('connection', (socket) => {
         socket.emit('actionAccepted', actionEntry);
     });
 
-    socket.on('rejoinRoom', (payload) => {
-        if (!requirePlainSocketPayload(socket, payload)) return;
-        const { roomId, playerIndex, playerName, reconnectToken, clientVersion, hostlessRestoreVersion } = payload;
-        socket.clientVersion = clientVersion || 'unknown';
-        socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
-        if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
-        const room = rooms[roomId];
-        if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
-        if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
-        const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
-        if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
-            emitAppError(socket, 'INVALID_TOKEN');
-            return;
-        }
-
-        detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
-        const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
-        if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }
-
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = playerIndex;
-        room.lastTouchedAt = Date.now();
-
-        socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
-        io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
-        console.log(`再接続: ${playerName} (ルーム: ${roomId})`);
+    registerRejoinSocketHandler(socket, {
+        requirePlainSocketPayload,
+        isValidRoomId,
+        emitAppError,
+        rooms,
+        getExpectedReconnectTokenHash,
+        hashReconnectToken,
+        detachExistingPlayerSocket,
+        resolveRejoinPlayer,
+        buildRejoinDataPayload,
+        io,
     });
 
     // サーバー再起動後にホストがルームを復元する
