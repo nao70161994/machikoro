@@ -3,6 +3,20 @@ const CANONICAL_STATE_STORE_MODES = Object.freeze({
     NOOP: 'noop',
     MEMORY: 'memory',
 });
+const CANONICAL_STATE_STORE_REQUIRED_METHODS = Object.freeze([
+    'save',
+    'load',
+    'delete',
+    'list',
+    'prune',
+    'runExclusive',
+]);
+const CANONICAL_STATE_STORE_CAPABILITY_KEYS = Object.freeze([
+    'durable',
+    'atomicCompareAndSwap',
+    'processSafeLocking',
+    'retention',
+]);
 
 function cloneJson(value) {
     if (value === undefined) return undefined;
@@ -12,6 +26,45 @@ function cloneJson(value) {
 function canonicalStateStoreMode(env = process.env) {
     const mode = String(env.CANONICAL_STATE_STORE || env.CANONICAL_STATE_STORE_MODE || '').trim().toLowerCase();
     return mode === CANONICAL_STATE_STORE_MODES.MEMORY ? CANONICAL_STATE_STORE_MODES.MEMORY : CANONICAL_STATE_STORE_MODES.NOOP;
+}
+
+function canonicalStateStoreRetentionMs(env = process.env) {
+    const value = Number(env.CANONICAL_STATE_RETENTION_MS);
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+function canonicalStateStoreCapabilities(overrides = {}) {
+    return Object.freeze({
+        durable: overrides.durable === true,
+        atomicCompareAndSwap: overrides.atomicCompareAndSwap === true,
+        processSafeLocking: overrides.processSafeLocking === true,
+        retention: overrides.retention === true,
+    });
+}
+
+function validateCanonicalStateStoreAdapter(store, options = {}) {
+    if (!store || typeof store !== 'object') return { ok: false, reason: 'not-object' };
+    for (const method of CANONICAL_STATE_STORE_REQUIRED_METHODS) {
+        if (typeof store[method] !== 'function') return { ok: false, reason: 'missing-' + method };
+    }
+    if (!store.capabilities || typeof store.capabilities !== 'object') {
+        return { ok: false, reason: 'missing-capabilities' };
+    }
+    for (const capability of CANONICAL_STATE_STORE_CAPABILITY_KEYS) {
+        if (typeof store.capabilities[capability] !== 'boolean') {
+            return { ok: false, reason: 'invalid-capability-' + capability };
+        }
+    }
+    if (options.requireAuthoritative === true) {
+        const missing = CANONICAL_STATE_STORE_CAPABILITY_KEYS
+            .filter(capability => store.capabilities[capability] !== true);
+        if (missing.length > 0) return { ok: false, reason: 'not-authoritative', missing };
+    }
+    return { ok: true };
+}
+
+function isAuthoritativeCanonicalStateStore(store) {
+    return validateCanonicalStateStoreAdapter(store, { requireAuthoritative: true }).ok;
 }
 
 function acceptedClientActionRefsFromRoom(room) {
@@ -51,35 +104,88 @@ function validateCanonicalStateRecord(record) {
     if (!Array.isArray(record.acceptedClientActions)) return { ok: false, reason: 'accepted-client-actions' };
     if (!Number.isInteger(record.hostEpoch) || record.hostEpoch < 0) return { ok: false, reason: 'host-epoch' };
     if (!Number.isInteger(record.actionSeq) || record.actionSeq < 0) return { ok: false, reason: 'action-seq' };
+    if (record.storeRevision != null &&
+            (!Number.isSafeInteger(record.storeRevision) || record.storeRevision < 1)) {
+        return { ok: false, reason: 'store-revision' };
+    }
     return { ok: true };
 }
 
 function createNoopCanonicalStateStore() {
     return Object.freeze({
         mode: CANONICAL_STATE_STORE_MODES.NOOP,
+        capabilities: canonicalStateStoreCapabilities(),
         save() { return { ok: true, skipped: true }; },
         load() { return null; },
         delete() { return { ok: true, skipped: true }; },
         list() { return []; },
+        prune() { return { ok: true, skipped: true, deleted: 0 }; },
+        runExclusive(roomId, operation) {
+            if (typeof operation !== 'function') return { ok: false, reason: 'invalid-operation' };
+            return operation();
+        },
     });
 }
 
-function createMemoryCanonicalStateStore(initialRecords = []) {
+function createMemoryCanonicalStateStore(initialRecords = [], options = {}) {
     const records = new Map();
+    const locks = new Set();
+    const retentionMs = Number.isSafeInteger(options.retentionMs) && options.retentionMs > 0
+        ? options.retentionMs
+        : null;
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+
+    function isExpired(record, at = now()) {
+        return retentionMs != null &&
+            Number.isInteger(record?.persistedAt) &&
+            record.persistedAt + retentionMs <= at;
+    }
+
+    function pruneRecords(at = now()) {
+        let deleted = 0;
+        for (const [roomId, record] of records) {
+            if (!isExpired(record, at)) continue;
+            records.delete(roomId);
+            deleted++;
+        }
+        return { ok: true, deleted };
+    }
+
     for (const record of initialRecords) {
         const validation = validateCanonicalStateRecord(record);
-        if (validation.ok) records.set(record.roomId, cloneJson(record));
+        if (validation.ok && !isExpired(record)) {
+            const stored = cloneJson(record);
+            stored.storeRevision = Number.isSafeInteger(stored.storeRevision) ? stored.storeRevision : 1;
+            records.set(record.roomId, stored);
+        }
     }
     return Object.freeze({
         mode: CANONICAL_STATE_STORE_MODES.MEMORY,
-        save(record) {
+        capabilities: canonicalStateStoreCapabilities({
+            atomicCompareAndSwap: true,
+            retention: retentionMs != null,
+        }),
+        save(record, saveOptions = {}) {
             const validation = validateCanonicalStateRecord(record);
             if (!validation.ok) return validation;
-            records.set(record.roomId, cloneJson(record));
+            const current = records.get(record.roomId);
+            const currentRevision = current?.storeRevision || 0;
+            if (saveOptions.expectedRevision != null &&
+                    saveOptions.expectedRevision !== currentRevision) {
+                return { ok: false, reason: 'revision-conflict', currentRevision };
+            }
+            const stored = cloneJson(record);
+            stored.storeRevision = currentRevision + 1;
+            records.set(record.roomId, stored);
             return { ok: true };
         },
         load(roomId) {
-            const record = records.get(String(roomId || ''));
+            const key = String(roomId || '');
+            const record = records.get(key);
+            if (record && isExpired(record)) {
+                records.delete(key);
+                return null;
+            }
             return record ? cloneJson(record) : null;
         },
         delete(roomId) {
@@ -87,21 +193,40 @@ function createMemoryCanonicalStateStore(initialRecords = []) {
             return { ok: true };
         },
         list() {
+            pruneRecords();
             return Array.from(records.values()).map(cloneJson);
+        },
+        prune: pruneRecords,
+        runExclusive(roomId, operation) {
+            const key = String(roomId || '');
+            if (!key || typeof operation !== 'function') return { ok: false, reason: 'invalid-operation' };
+            if (locks.has(key)) return { ok: false, reason: 'lock-conflict' };
+            locks.add(key);
+            try {
+                return operation();
+            } finally {
+                locks.delete(key);
+            }
         },
     });
 }
 
 function createCanonicalStateStoreFromEnv(env = process.env) {
     return canonicalStateStoreMode(env) === CANONICAL_STATE_STORE_MODES.MEMORY
-        ? createMemoryCanonicalStateStore()
+        ? createMemoryCanonicalStateStore([], { retentionMs: canonicalStateStoreRetentionMs(env) })
         : createNoopCanonicalStateStore();
 }
 
 module.exports = {
     CANONICAL_STATE_STORE_SCHEMA_VERSION,
     CANONICAL_STATE_STORE_MODES,
+    CANONICAL_STATE_STORE_REQUIRED_METHODS,
+    CANONICAL_STATE_STORE_CAPABILITY_KEYS,
     canonicalStateStoreMode,
+    canonicalStateStoreRetentionMs,
+    canonicalStateStoreCapabilities,
+    validateCanonicalStateStoreAdapter,
+    isAuthoritativeCanonicalStateStore,
     buildCanonicalStateRecord,
     validateCanonicalStateRecord,
     createNoopCanonicalStateStore,
