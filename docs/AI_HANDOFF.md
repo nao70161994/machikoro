@@ -40,17 +40,17 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-23 保守性改善の現在地
+## 2026-07-26 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
-- CPU: `js/cpuEvaluation.js`、`js/cpuLegalMoves.js`、`js/cpuProfile.js`、`js/cpuSimulation.js` に評価/出目頻度/重複購入/経済バランスprimitive、合法建設filter、人数別profile、重み付き出目表、先読みloop/stepを分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playをbaseline化し、heuristic値、difficulty、乱数消費、行動選択は未変更。
-- server: existing helpers plus `server/restoreValidation.js` own game-start validation, undo sanitation, and restored human-slot construction. Socket.IO/HTTP handlers, event names, wire payload meaning, and restore authority are unchanged.
-- online: `js/onlinePayload.js` now also owns pure room ownership, duplicate-free restore append, and resend eligibility. Restore queues, retry timers/callbacks, ACK timing, and protocol remain unchanged.
-- UI/app shell: `js/actionUiRegistry.js` owns the frozen action container/child-selector manifest. Modal lifecycle, focus/inert, DOM effects, event handling, and PWA behavior remain unchanged.
-- contracts: run `npm run report:action-contract`; its 15-action JSON manifest must have an empty `issues` array in addition to the existing action/snapshot/replay tests.
-- tooling: scoped ESLint 10.7.0 runs through `test:static` on the pure-helper/report allowlist with bug-detection rules only. Do not enable style rules, `--fix`, or whole-repository lint as incidental cleanup.
+- CPU: 既存pure helperに加えて`js/cpuBuildExecution.js`へlocal/online建設実行を分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
+- server: `server/lobbySocketHandlers.js`と`server/rejoinSocketHandler.js`へcreate/join/rejoin familyを分離し、effect/emit順を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
+- online: `js/onlineReconnectState.js`のshadow controllerと`js/onlineRetryPolicy.js`の既存3秒/8回/15秒契約を使用。Restore queues、timer callback、ACK timing、protocolは未変更。
+- UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有し、DOM/focus/inert/pointer/event/PWA effectsは既存ownerに残る。
+- contracts: `js/actionContract.js`が15 actionのphase/actor/payload/replay/UI metadata正本。`npm run report:action-contract`の`issues`を空に保ち、独立validator/executor/snapshot/replay testsも維持する。
+- tooling: scoped ESLint 10.7.0は29 maintenance moduleをbug-detection rulesだけで検査し、config/script driftもtestする。TypeScriptは未導入なのでcheckJsは別task。style rules、`--fix`、全repository lintは禁止。
 
-2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-23の再監査では、restore validation、pending resend policy、Action UI registry、機械可読contract report、限定ESLintまで実装した。残るreconnect timer/callback、Socket.IO handler、modal lifecycle、CPUの大きなscoring/selectionとlive build executionはpure抽出ではなくなったためdeferred。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-23の再監査では、restore validation、pending resend policy、Action UI registry、機械可読contract report、限定ESLintまで実装した。残るreconnect timer/callback、gameAction/recreate/disconnect handler、modal DOM/focus/inert、CPUの大きなscoring/selection、production durable authority切替はpure抽出ではなくなったためdeferred。
 
 ## 2026-05-16 時点の実施済み範囲
 

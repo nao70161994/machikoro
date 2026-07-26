@@ -1,6 +1,6 @@
 # ADR Index
 
-Last updated: 2026-07-19
+Last updated: 2026-07-26
 
 この索引は設計判断の入口です。実装の現在地は `MAINTENANCE_BACKLOG.md`、段階移行計画は `ARCHITECTURE_REFACTOR_PLAN.md` を正本とします。
 
@@ -10,9 +10,9 @@ Last updated: 2026-07-19
 | --- | --- | --- |
 | [Hostless restore design](HOSTLESS_RESTORE_DESIGN.md) | Accepted / provisional | Host-first recovery remains normal; an absent room may use the exact-agreement quorum fallback. Existing-room replacement and durable-authority claims remain forbidden. |
 | [Modal stack policy](ADR_MODAL_STACK_POLICY.md) | Accepted | blocking modalはdeny-by-default。例外のないmodal lifecycle全面統合は行わない。 |
-| [Restore trust boundary](ADR_RESTORE_TRUST_BOUNDARY.md) | Accepted | casual-trustとhost-only restore境界を維持。durable canonical state、hostless restore、追加のauthority変更は別設計とする。 |
+| [Restore trust boundary](ADR_RESTORE_TRUST_BOUNDARY.md) | Accepted / staged | 通常host restoreと暫定hostless fallbackを維持。durable adapter・署名keyring・authority priorityは契約化済みだが、production durable authorityはprovider/retention/secret運用決定まで無効。 |
 
-今回のpure helper抽出、read-only reconnect state観測、実機結果の記録は既存Accepted判断の範囲内であり、新しいprotocol・restore authority・modal policyのADR変更はありません。
+2026-07-26の段階移行では、provider-neutral canonical store契約、restore署名keyring、復元authority優先policyを追加した。既定storeは引き続き`noop`で、protocol・保存形式・production authorityは変更していない。
 
 Current override (2026-07-19): the additive provisional hostless event surface
 is implemented under the accepted design above. It does not add durable authority.

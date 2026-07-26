@@ -109,7 +109,7 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - New helper scripts loaded by `index.html` must also be present in Service Worker static assets and integration runtime loading tests; update `tests/runtime-dependencies.test.js` when the helper has a browser-global consumer.
 - Public root files and directory routes must remain explicit in `server/staticAssets.js`; every local `index.html` asset must resolve through that allowlist, except Socket.IO's own client route.
 - UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
-- `OnlineReconnectState` is observation-only: changing its table must not silently change retry timers, callback order, socket events, status text, or storage cleanup.
+- `OnlineReconnectState` is a shadow controller and `OnlineRetryPolicy` owns the existing 3s/8-attempt/15s calculations; neither authorizes changing timer/callback order, socket events, storage cleanup, or visible outcomes.
 - Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
 - Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
 - Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
@@ -117,7 +117,7 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - CPU helper extraction must preserve wrapper results, the exact decision baseline, the 2–10 player/all-difficulty self-play baseline, fixed traces, and existing CPU tests; do not change heuristic constants, difficulty presets, candidate order, or action selection under a maintenance-only task.
 - Run `npm run test:cpu-regression` after CPU scoring, legal-move, simulation, or execution edits. It compares winner, turns, and completion for 36 seeded full matches.
 - Regenerate CPU baselines only for an intentional, reviewed behavior change. Pass `--source-commit <full-40-character-commit>` identifying the accepted pre-generation behavior; never refresh an artifact merely to make a failing test green.
-- JSDoc/checkJs/ESLint remain deferred until a dependency/config task approves a narrow allowlist; do not turn their introduction into a repository-wide cleanup.
+- Scoped ESLint is approved for the 29-module maintenance allowlist and must keep config/script parity. JSDoc/checkJs still require a separate dependency/config decision; do not turn either into repository-wide cleanup.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
 
@@ -334,7 +334,9 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 
 - `restoreAudit` is HMAC-verified when `RESTORE_AUDIT_SECRET` or `MACHIKORO_RESTORE_AUDIT_SECRET` is configured. A valid signature covers the canonical restore payload and allows the server to trust the compacted client snapshot after restart.
 - Unsigned or invalid audit metadata does not increase authority. If no server canonical state exists, the server ignores unsigned snapshots and falls back to replaying a valid action log from the initial state.
-- Keep the secret stable across restarts. Rotating it invalidates previously issued restore audits unless a migration/key-ring policy is added.
+- Optional `RESTORE_AUDIT_MAX_AGE_MS` and `RESTORE_AUDIT_CLOCK_SKEW_MS` enforce freshness. Unknown key IDs, expired records, and future timestamps fail closed.
+- The authority priority contract is live room > authoritative durable canonical state > valid signed state > host replay > confirmed hostless quorum. It is not yet wired as a production durable dispatcher; the default canonical store remains `noop`.
+- Legacy single-secret configuration remains compatible. For rotation, set `RESTORE_AUDIT_KEYRING_JSON` (or the MACHIKORO alias) with active and old keys, select `RESTORE_AUDIT_ACTIVE_KEY_ID`, retain old verification keys through the configured maximum age, then remove them only after the overlap window.
 
 ## Multiple Room Resume UI
 
