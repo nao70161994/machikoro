@@ -105,6 +105,7 @@ const TEST_GROUPS = {
         'summarize-rl-metrics.test.js',
         'cli-args.test.js',
         'test-utils.test.js',
+        'maintenance-lint-config.test.js',
         'runtime-dependencies.test.js',
     ],
     sim: [
