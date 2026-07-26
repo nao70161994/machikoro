@@ -25,6 +25,7 @@ const TEST_GROUPS = {
         'restore-sanitization.test.js',
         'restore-validation.test.js',
         'restore-audit-keyring.test.js',
+        'restore-authority-policy.test.js',
         'hostless-restore-candidate.test.js',
         'hostless-restore-coordinator.test.js',
         'hostless-restore-gateway.test.js',
