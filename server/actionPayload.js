@@ -1,22 +1,7 @@
 'use strict';
 
-const CANONICAL_ACTION_PAYLOAD_KEYS = Object.freeze({
-    rollDice: Object.freeze(['forceDice', 'tunaDice']),
-    selectDice: Object.freeze(['useTwo', 'diceCount', 'd1', 'd2', 'tunaDice']),
-    rerollDice: Object.freeze(['forceDice', 'tunaDice']),
-    skipReroll: Object.freeze([]),
-    resolveHarbor: Object.freeze(['useBonus']),
-    resolveTV: Object.freeze(['targetIndex']),
-    resolveBusiness: Object.freeze(['myCard', 'targetIndex', 'theirCard']),
-    resolveCleaning: Object.freeze(['cardName']),
-    resolveMover: Object.freeze(['cardName', 'targetIndex']),
-    resolveRenovation: Object.freeze(['landmarkName']),
-    resolveIT: Object.freeze(['doSave']),
-    buildCard: Object.freeze(['cardName']),
-    buildLandmark: Object.freeze(['name']),
-    undoBuild: Object.freeze([]),
-    nextTurn: Object.freeze([]),
-});
+const GameActionContract = require('../js/actionContract');
+const CANONICAL_ACTION_PAYLOAD_KEYS = GameActionContract.canonicalPayloadKeys;
 
 function makeActionPayload({ isPlainObject }) {
     function pickCanonicalPayloadKeys(data, keys) {

@@ -1476,7 +1476,7 @@ function buildGameStartPayload(io, room, randomFn = Math.random) {
 function loadGameRuntime() {
     const context = { console };
     vm.createContext(context);
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/GameManager.js']) {
+    for (const file of ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/GameManager.js']) {
         const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
         vm.runInContext(source, context, { filename: file });
     }

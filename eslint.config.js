@@ -1,6 +1,7 @@
 'use strict';
 
 const browserMaintenanceFiles = Object.freeze([
+    'js/actionContract.js',
     'js/actionUiRegistry.js',
     'js/clientReporting.js',
     'js/cpuEvaluation.js',
@@ -41,7 +42,9 @@ module.exports = [
             ecmaVersion: 'latest',
             sourceType: 'script',
             globals: {
+                GameActionContract: 'readonly',
                 module: 'readonly',
+                require: 'readonly',
                 window: 'readonly',
             },
         },

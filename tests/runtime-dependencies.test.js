@@ -22,6 +22,7 @@ function assertDependencyOrder(file, dependencies) {
 runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み込む', () => {
     const cases = [
         ['index.html', [
+            ['js/actionContract.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBuildExecution.js', 'js/CPU.js'],
@@ -46,6 +47,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/actionUiRegistry.js', 'js/appShell.js'],
         ]],
         ['scripts/selfplay.js', [
+            ['js/actionContract.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBuildExecution.js', 'js/CPU.js'],
@@ -53,6 +55,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/runtime-loaders.js', [
+            ['js/actionContract.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBuildExecution.js', 'js/CPU.js'],
@@ -60,6 +63,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
+            ['js/actionContract.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBuildExecution.js', 'js/CPU.js'],
@@ -101,6 +105,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineReconnectState.js', 'js/online.js'],
         ]],
         ['tests/release-e2e.test.js', [
+            ['js/actionContract.js', 'js/actionUiRegistry.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
@@ -112,6 +117,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiModalPolicy.js', 'js/ui.js']
         ]],
         ['tests/main.test.js', [
+            ['js/actionContract.js', 'js/actionUiRegistry.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],

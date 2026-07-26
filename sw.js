@@ -17,6 +17,7 @@ const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/js/Card.js',
   '/js/Player.js',
+  '/js/actionContract.js',
   '/js/GameManager.js',
   '/js/cpuTuning.js',
   '/js/cpuProfile.js',

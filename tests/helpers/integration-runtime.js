@@ -148,6 +148,7 @@ function loadIntegrationRuntime(options = {}) {
     const files = [
         'js/Card.js',
         'js/Player.js',
+        'js/actionContract.js',
         'js/GameManager.js',
         'js/cpuTuning.js',
         'js/cpuProfile.js',

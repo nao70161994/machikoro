@@ -309,6 +309,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(lifecycleNotifySource, context, { filename: 'js/lifecycleNotify.js' });
     const uiWatchdogSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdog.js'), 'utf8');
     vm.runInContext(uiWatchdogSource, context, { filename: 'js/uiWatchdog.js' });
+    const actionContractSource = fs.readFileSync(path.join(__dirname, '..', 'js/actionContract.js'), 'utf8');
+    vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
     const actionUiRegistrySource = fs.readFileSync(path.join(__dirname, '..', 'js/actionUiRegistry.js'), 'utf8');
     vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
@@ -1836,6 +1838,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
 
 runTest('UI interactability registry は描画されるaction child selectorと同期する', () => {
     const appShell = [
+        'js/actionContract.js',
         'js/actionUiRegistry.js',
         'js/appShell.js',
     ].map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\n');
@@ -1885,9 +1888,11 @@ runTest('UI interactability registry は描画されるaction child selectorと�
         buildLandmark: 'buildLandmark',
         undoBuild: 'undoBuild',
     };
+    const actionContract = require('../js/actionContract');
     for (const [registryAction, renderedAction] of Object.entries(childActions)) {
-        assert.ok(appShell.includes(registryAction + ': Object.freeze'), registryAction + ' child selector registry missing');
-        assert.ok(appShell.includes('data-action="' + renderedAction + '"'), renderedAction + ' selector missing from registry');
+        const selector = actionContract.uiChildSelectors[registryAction];
+        assert.ok(selector, registryAction + ' child selector registry missing');
+        assert.ok(selector.selector.includes('data-action="' + renderedAction + '"'), renderedAction + ' selector missing from registry');
         assert.ok(uiSources.includes('data-action="' + renderedAction + '"'), renderedAction + ' is not rendered by UI sources');
     }
 });
@@ -1906,6 +1911,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
 
     assertBefore('js/Card.js', 'js/GameManager.js');
     assertBefore('js/Player.js', 'js/GameManager.js');
+    assertBefore('js/actionContract.js', 'js/GameManager.js');
     assertBefore('js/GameManager.js', 'js/CPU.js');
     assertBefore('js/cpuTuning.js', 'js/CPU.js');
     assertBefore('js/cpuProfile.js', 'js/CPU.js');

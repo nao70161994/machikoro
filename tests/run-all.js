@@ -5,6 +5,7 @@ const path = require('path');
 const TEST_GROUPS = {
     unit: [
         'gamemanager.test.js',
+        'action-contract.test.js',
         'action-ui-registry.test.js',
         'action-contract-report.test.js',
         'card-contract.test.js',
