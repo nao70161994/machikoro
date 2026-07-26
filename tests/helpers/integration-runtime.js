@@ -148,6 +148,7 @@ function loadIntegrationRuntime(options = {}) {
     const files = [
         'js/Card.js',
         'js/Player.js',
+        'js/actionContract.js',
         'js/GameManager.js',
         'js/cpuTuning.js',
         'js/cpuProfile.js',
@@ -155,6 +156,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuEvaluationCache.js',
         'js/cpuEvaluation.js',
         'js/cpuLegalMoves.js',
+        'js/cpuBuildExecution.js',
         'js/cpuSimulation.js',
         'js/cpuPendingResolution.js',
         'js/CPU.js',
@@ -174,6 +176,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/uiTutorial.js',
+        'js/uiModalPolicy.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {
@@ -181,6 +184,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlinePayload.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');
+        files.push('js/onlineRetryPolicy.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');

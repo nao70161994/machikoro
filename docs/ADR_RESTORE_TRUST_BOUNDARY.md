@@ -248,3 +248,14 @@ exhausted.
 This does not make participant-carried data server-authoritative. It requires two
 or more distinct human identities, exact agreement from every collected
 candidate, explicit confirmation, bounded in-memory retention, generation and
+
+
+## Update: 2026-07-26 Staged Authority Contracts
+
+The following reversible contracts now exist without enabling production durable authority:
+
+- `server/canonicalStateStore.js` requires `save/load/delete/list/prune/runExclusive` and explicit durable, atomic compare-and-swap, process-safe locking, and retention capabilities. The default remains `noop`; the memory adapter is test/development-only and is deliberately non-authoritative.
+- `server/restoreAuditKeyring.js` supports an active signing key, verification by old key IDs, bounded key count, optional maximum age, and clock skew. Legacy single-secret configuration remains compatible.
+- `server/restoreAuthorityPolicy.js` fixes the intended order as live room, authoritative durable canonical state, valid server-signed state, host replay, then explicitly confirmed hostless quorum. Invalid, conflicting, or completed higher-priority state fails closed instead of falling through.
+
+The priority policy is a pure contract and is not yet the live `recreateRoom` dispatcher. Production activation still requires a durable backend choice, retention/deletion policy, process/multi-instance locking evidence, secret/key rotation operations, migration dry-run, and rollback rehearsal. Until those are supplied, the existing host/provisional behavior and `HOSTLESS_RESTORE_ENABLED=0` rollback remain in force.

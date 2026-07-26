@@ -1,6 +1,6 @@
 # Maintenance Backlog
 
-Last updated: 2026-07-23
+Last updated: 2026-07-26
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
@@ -42,8 +42,8 @@ These risks are now covered by code changes, contract tests, or operations guida
 | Action UI registry boundary | Physical action targets and child selectors were embedded in watchdog orchestration. | `js/actionUiRegistry.js` owns a frozen read-only manifest; direct tests require every game action exactly once with matching phase and selector coverage. |
 | Restore payload validation | Game-start validation, undo sanitation, and restored human-slot reconstruction were embedded in `server.js`. | `server/restoreValidation.js` owns injected pure validation; malformed table tests and existing server/online/release suites preserve formats and authority. |
 | Pending outbound resend policy | Room ownership, restore-log append, and resend eligibility were embedded beside reconnect timing. | `js/onlinePayload.js` owns the unchanged pure policy; direct tests fix legacy seq fallback, room mismatch, duplicate append, CPU-host, and human-turn cases. |
-| Action contract report | Cross-layer alignment was only visible as scattered test assertions. | `npm run report:action-contract` emits a 15-action JSON manifest and fails on missing, duplicate, phase-mismatched, or unknown registrations. |
-| Scoped ESLint gate | Extracted pure helpers lacked a shared bug-finding lint gate. | ESLint 10.7.0 checks a narrow browser/server allowlist for undefined names, unreachable code, duplicate cases/imports, and constant conditions through `test:static`; style and giant legacy files remain out of scope. |
+| Action Contract source | Phase, actor authority, payload keys, replay/apply flags, and UI targets could drift across runtime owners. | `js/actionContract.js` is the 15-action machine-readable source projected into `GameManager`, server canonical payload keys, and the UI registry; report/tests still compare independent server validators and client apply behavior. |
+| Scoped ESLint gate | Extracted pure helpers lacked a shared bug-finding lint gate. | ESLint 10.7.0 checks 29 browser/server maintenance modules for undefined names, unreachable code, duplicate cases/imports, and constant conditions through `test:static`; a contract test prevents npm-script/config drift. Style and giant legacy files remain out of scope. |
 | Client report formatting | Error normalization, redaction inputs, and report keys were embedded in `appShell.js`. | `js/clientReporting.js` owns pure report formatting; browser capture, fetch, and watchdog side effects stay in `appShell.js`. |
 | Lifecycle notification formatting | Opt-out parsing and lifecycle payload shaping were embedded beside browser storage, dedupe, and fetch side effects. | `js/lifecycleNotify.js` owns the unchanged pure opt-out/payload contract; `appShell.js` retains storage, session, dedupe, and network behavior. |
 | Server client-error normalization | Notification payload normalization, classification, freeze summaries, UA/room presentation, and ntfy body formatting were coupled to server routes. | `server/clientErrorReporting.js` owns those pure transforms; ntfy delivery and HTTP wiring stay in `server.js`. |
@@ -63,6 +63,13 @@ These risks are now covered by code changes, contract tests, or operations guida
 | Card effect registration | Stable IDs, effect descriptions, rule handlers, and CPU references could drift across layers. | `tests/card-contract.test.js` checks definition identity, known/used effects, UI descriptions, income handlers, rule references, and CPU references. |
 | Snapshot roundtrip fixtures | Roundtrip coverage did not explicitly name representative pending, undo, landmark, multiplayer, and endgame states. | `tests/snapshot-contract.test.js` and its fixture builder require exact serialize/restore/serialize equality across those states. |
 | Runtime module dependency order | Extracted browser-global modules could be omitted from a VM/self-play loader while production still worked. | `tests/runtime-dependencies.test.js` fixes dependency-before-consumer order for production and the principal test/self-play runtimes. |
+| Canonical store authority contract | A storage adapter could be called durable without retention, CAS, or locking guarantees. | `server/canonicalStateStore.js` validates six methods and four explicit capabilities; noop remains default and memory remains non-authoritative. |
+| Restore signing rotation | A single restore secret had no key ID, overlap, or freshness contract. | `server/restoreAuditKeyring.js` supports active/old keys, bounded parsing, max age, and skew while preserving legacy single-secret behavior. |
+| Restore authority priority | Durable, signed, host replay, and quorum candidates lacked one fail-closed priority model. | `server/restoreAuthorityPolicy.js` fixes the intended order and rejects conflict/invalid/completed higher authority; it is a tested footing, not an enabled production dispatcher. |
+| Socket handler families | Lobby and rejoin sequencing were embedded directly in the server entrypoint. | `server/lobbySocketHandlers.js` and `server/rejoinSocketHandler.js` use dependency injection; tests lock registration and effect/emit order while event names/payloads stay unchanged. |
+| Online retry policy | Retry constants, exhaustion boundary, deadline, and status text were embedded beside socket callbacks. | `js/onlineRetryPolicy.js` owns the unchanged 3s/8-attempt/15s constants and pure calculations; timer ownership and callback order remain in `online.js`. |
+| CPU build execution | Local/online card and landmark side effects were embedded beside selection. | `js/cpuBuildExecution.js` owns execution/send result handling; exact decision and 2–10 player/all-difficulty baselines confirm unchanged strength and RNG behavior. |
+| Modal lifecycle policy | Blocking modal registry and nesting decisions were coupled to DOM/focus effects. | `js/uiModalPolicy.js` owns the deny-by-default pure policy/state; `ui.js` retains DOM, focus, inert, pointer, and event effects. |
 
 ## Backlog Classification
 
@@ -76,7 +83,7 @@ No current Critical maintenance item is known from this review. The remaining tr
 
 | Item | Classification | Risk | Impact | Suggested action | Deferred reason |
 | --- | --- | --- | --- | --- | --- |
-| Host-supplied restart restore trust boundary | Design judgment required / future large task | Server restart restore still relies on client-provided bundles unless signed audit or future durable canonical state is available. | Competitive/public trust would be overstated if treated as fully server authoritative. | Keep current casual trust wording. The implemented hostless quorum fallback is explicitly provisional, not durable authority. | Out of scope: real signed restore and durable canonical state. |
+| Host-supplied restart restore trust boundary | Staged footing complete; production choice required | Adapter capabilities, signing rotation/freshness, and fail-closed priority are testable, but default storage is noop and live dispatcher still uses the compatible host/provisional path. | Competitive/public trust would still be overstated without a real durable provider and operations policy. | Select backend/retention/locking and secret rotation, run migration/rollback gates, then separately review activation. | Provider, production state, retention/privacy, and secret operations require human/operator judgment. |
 | Provisional hostless restore | Implemented; real-device timing verification remains | The fail-closed quorum path can recover an absent-host room only after host grace, exact agreement, and explicit confirmation. | Availability improves without allowing one-client or majority selection, while client-carried state remains lower trust. | Keep restored-room replacement host-only and preserve `HOSTLESS_RESTORE_ENABLED=0` as the immediate rollback. | Full 60s grace + 30s collection + confirmation rotation is not yet verified on mixed real devices. |
 | Long-running real online play and reconnect | Partially verified on real devices | A four-player mixed-device match (Android ×2, iPhone ×2) completed through victory with reconnect on 2026-07-18. | Basic mixed-device synchronization and reconnect continuation have direct evidence; specialized recovery paths remain. | Keep automated gates and manually verify host migration, server restart restore, Undo around reconnect, online CPU, background/resume, and PWA update paths separately. | One completed match does not cover every reconnect/PWA/modal failure mode. |
 
@@ -84,13 +91,13 @@ No current Critical maintenance item is known from this review. The remaining tr
 
 | Item | Classification | Risk | Impact | Suggested action | Deferred reason |
 | --- | --- | --- | --- | --- | --- |
-| `server.js` socket handlers remain large | Design judgment required | Pure validation, restore sanitation/game-start validation, reconnect identity, rejoin payload, reporting auth/throttle/formatting, canonical metadata, dice payload, room lifecycle, and static policy now have seams, but live Socket.IO handler sequencing remains centralized. | AI edits can still accidentally cross restore/reconnect/action relay boundaries. | Do not move live Socket.IO handlers until a handler-family migration plan and manual online check exist. | Further movement changes callback/timing ownership and risks online compatibility. |
-| `js/CPU.js` remains a giant mixed file | Now safer, further movement needs design judgment | Diagnostics, evaluation primitives including card/station dice frequency, base legal-move filters, weighted dice outcomes, lookahead loop/steps, pending resolution, cache, tuning, and player-count profiles now have seams. Large scoring/selection methods and live build execution remain coupled. | Candidate or tie-break order changes can alter CPU strength; live execution movement can affect online send/failure behavior. | Extend pure helpers only alongside a concrete scoring change with exact parity evidence. | Moving `_buyCard`/`_buyLandmark` or broad selection orchestration changes side-effect ownership and is deferred. |
-| `js/ui.js` still owns modal/stats/render orchestration | Now safer, still medium | Build/pending/detail/select/player/log/order/tutorial helpers are split, but modal lifecycle, stats entry points, DOM mutation, focus/inert, and event processing remain in `ui.js`. | Selector drift is better guarded, but modal/focus/pointer regressions still need dedicated real-device checks. | Keep modal lifecycle stable until an iPhone/Safari modal matrix is scheduled. | Mixed-device online completion did not exercise modal focus/inert/accessibility; large UI movement needs targeted visual/mobile checks. |
-| `js/online.js` reconnect/session orchestration remains complex | Design judgment required | Storage, payload normalization/ACK matching, pending ownership/resend policy, restore rank, and read-only state observation now have helpers, but socket lifecycle, rejoin retry, restore queue timing, and visible reconnect status still overlap in `online.js`. | Small timing mistakes can resurrect stale room data or drop pending actions. | Use the existing boundaries for new concrete changes. Delay timer/callback state-machine migration until the remaining manual matrix is scheduled. | Full state-machine application could affect save/reconnect compatibility even though one mixed-device reconnect match completed. |
-| Action metadata cross-layer duplication | Guarded; full unification needs design | `GAME_ACTION_REGISTRY`, canonical payloads, client apply, pending specs, and UI registry remain separate runtime owners. | New actions can still drift if their contract tests/report are bypassed. | Run `npm run report:action-contract` and add behavior tests before any new action; keep the report issue-free. | Full dispatch unification changes browser/server ownership and remains larger than this cycle. |
+| `server.js` socket handlers remain large | Partially migrated; further movement needs design | Lobby create/join and rejoin handlers now have dependency-injected families with exact order tests; gameAction, recreate, disconnect, and HTTP wiring remain in `server.js`. | Remaining edits can still cross action/restore/disconnect boundaries. | Extend one handler family at a time only with event/effect-order contracts and online E2E. | gameAction/recreate/disconnect movement changes canonical/timing ownership and is deferred. |
+| `js/CPU.js` remains a giant mixed file | Now safer, further movement needs design judgment | Diagnostics, evaluation primitives including card/station dice frequency, base legal-move filters, weighted dice outcomes, lookahead loop/steps, pending resolution, cache, tuning, and player-count profiles now have seams. Large scoring/selection methods remain coupled; live card/landmark build execution now delegates to `js/cpuBuildExecution.js`. | Candidate or tie-break order changes can alter CPU strength; live execution movement can affect online send/failure behavior. | Extend pure helpers only alongside a concrete scoring change with exact parity evidence. | Moving broad scoring/selection/tie-break orchestration can change candidate order or RNG consumption and is deferred. |
+| `js/ui.js` still owns modal/stats/render orchestration | Now safer, still medium | Build/pending/detail/select/player/log/order/tutorial helpers and pure modal policy/state are split, but stats entry points, DOM mutation, focus/inert, and event processing remain in `ui.js`. | Selector drift is better guarded, but modal/focus/pointer regressions still need dedicated real-device checks. | Keep modal lifecycle stable until an iPhone/Safari modal matrix is scheduled. | Mixed-device online completion did not exercise modal focus/inert/accessibility; large UI movement needs targeted visual/mobile checks. |
+| `js/online.js` reconnect/session orchestration remains complex | Design judgment required | Storage, payload normalization/ACK matching, pending ownership/resend policy, restore rank, shadow state controller, and retry constants/calculations now have helpers, but socket lifecycle, timer callbacks, restore queue timing, and visible reconnect effects still overlap in `online.js`. | Small timing mistakes can resurrect stale room data or drop pending actions. | Use the existing boundaries for new concrete changes. Delay timer/callback state-machine migration until the remaining manual matrix is scheduled. | Full state-machine application could affect save/reconnect compatibility even though one mixed-device reconnect match completed. |
+| Action execution dispatch remains distributed | Manifest unified; dispatch migration needs design | `js/actionContract.js` owns metadata/payload/UI projections, while server validators, pending field specs, and client/server executors intentionally remain behavior owners. | New action behavior can still drift if independent execution tests are bypassed. | Keep `npm run report:action-contract` issue-free and add behavior tests before any action. | A generated universal dispatcher would change browser/server ownership and is deferred. |
 | Test files are also giant | Now acceptable | `tests/server.test.js`, `tests/cpu.test.js`, and `tests/online.test.js` are large. | Future test edits may be hard to localize. | Split only by stable domain boundaries when adding new tests becomes painful. | Mechanical test moves can create noise without behavior value. |
-| JSDoc/checkJs/ESLint | Scoped ESLint implemented | ESLint now covers 20 maintenance-oriented pure/report modules with bug-detection rules and zero warnings. Giant browser-global files and type contracts remain unchecked. | Expand the allowlist only when a touched module can pass without broad cleanup; evaluate JSDoc/checkJs separately. | Whole-repository lint or TypeScript migration would create large legacy churn and remains deferred. |
+| JSDoc/checkJs/ESLint | Scoped ESLint expanded | ESLint covers 29 maintenance modules with bug-detection rules and zero warnings; config/script drift is tested. TypeScript is not installed, so checkJs boundary typing was not added incidentally. | Expand only with touched pure modules; treat JSDoc/checkJs as a separate dependency/config task. | Whole-repository lint, dependency addition, or TypeScript migration would create broad churn and remains deferred. |
 
 ### Low
 
@@ -112,11 +119,11 @@ The 2026-07-22 re-audit found no remaining standalone code extraction that is bo
 
 ### 2. Requires Design Judgment
 
-- Durable canonical state / real signed restore / authoritative hostless restore.
-- Server socket handler decomposition beyond pure helper extraction.
+- Production durable provider, retention/privacy, process-safe locking, and secret rotation/activation policy (the provider-neutral contracts are implemented).
+- Server socket handler decomposition beyond the migrated lobby/rejoin families.
 - Reconnect state machine or room gate redesign beyond the existing `js/onlineStorage.js` facade.
-- CPU evaluation/execution architecture changes.
-- Action metadata unification beyond additional contract tests.
+- CPU scoring/selection architecture changes beyond the extracted build execution boundary.
+- Action executor/validator dispatch unification beyond the shared metadata manifest.
 
 ### 3. Requires Real-Device Verification
 
@@ -135,10 +142,10 @@ The 2026-07-22 re-audit found no remaining standalone code extraction that is bo
 
 ### 5. Future Large Tasks
 
-- Durable server canonical state adapter with retention, locking, and explicit priority over client restore bundles.
+- Concrete durable canonical provider and production activation using the implemented adapter/priority contracts.
 - Durable/signed restore authority beyond the implemented provisional quorum policy.
 - Multi-room resume UI with candidate classification and stale/live/completed retention policy.
-- Server handler module split with stable exported test seams.
+- Remaining gameAction/recreate/disconnect handler split using the established injected family seam.
 - CPU/RL architecture split with parity benchmarks and no-strength-change gates.
 
 ## Next Best Bets
@@ -147,7 +154,7 @@ The next work needs either manual evidence, a concrete feature/bug, or explicit 
 
 1. Run a real-device online/PWA reconnect matrix and record results in `docs/OPERATIONS.md` or a manual test note before reconnect state-machine work.
 2. Keep `npm run report:action-contract` issue-free and add behavior coverage before the next action/pending path change.
-3. Expand the scoped ESLint allowlist only alongside a concrete pure-module change; evaluate JSDoc/checkJs separately without broad legacy cleanup.
+3. Keep the 29-module scoped ESLint gate synchronized; introduce JSDoc/checkJs only as a separately approved dependency/config task.
 
 ## 2026-07-15 B分類オンライン耐障害化
 

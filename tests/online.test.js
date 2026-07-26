@@ -52,7 +52,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 
@@ -147,6 +147,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
+    loadScript(context, 'js/onlineRetryPolicy.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート
@@ -240,7 +241,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
         this.getOnlineLobbyState = () => ({ createPending: onlineCreateRoomPending, joinPending: onlineJoinRoomPending, kind: onlineLobbyRequestKind });
-        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
+        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;
@@ -461,7 +462,13 @@ runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維�
     assert.strictEqual(localRt.getOnlineState().reconnectState, 'replaying');
 
     localRt.setOnlineState({ rejoinRetryExhausted: true });
-    assert.strictEqual(localRt.getOnlineState().reconnectState, 'failed');
+    const failedState = localRt.getOnlineState();
+    assert.strictEqual(failedState.reconnectState, 'failed');
+    assert.strictEqual(failedState.reconnectStateSnapshot.invalidTransitionCount, 0);
+    assert.deepStrictEqual(
+        Array.from(failedState.reconnectStateSnapshot.history.slice(-6), entry => entry.to),
+        ['active', 'connecting', 'rejoining', 'restoring', 'replaying', 'failed']
+    );
 });
 runTest('rejoinRoom送信経路はbuildOnlineRejoinPayloadでclientVersion契約を共有する', () => {
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');

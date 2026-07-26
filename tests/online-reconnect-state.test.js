@@ -77,3 +77,49 @@ runTest('online reconnect state観測は失敗と復元処理を優先する', (
         STATES.COMPLETED
     );
 });
+
+runTest('online reconnect controller は許可遷移とbounded履歴を保持する', () => {
+    const controller = OnlineReconnectState.createController({ historyLimit: 3 });
+    assert.deepStrictEqual(controller.transition(STATES.CONNECTING, { event: 'connect-start' }), {
+        ok: true,
+        from: STATES.IDLE,
+        to: STATES.CONNECTING,
+        state: STATES.CONNECTING,
+    });
+    controller.transition(STATES.REJOINING, { event: 'socket-connect' });
+    controller.transition(STATES.RESTORING, { event: 'rejoin-data' });
+    controller.transition(STATES.REPLAYING, { event: 'replay-start' });
+    const snapshot = controller.snapshot();
+    assert.strictEqual(snapshot.state, STATES.REPLAYING);
+    assert.strictEqual(snapshot.invalidTransitionCount, 0);
+    assert.strictEqual(snapshot.history.length, 3);
+    assert.deepStrictEqual(snapshot.history.map(entry => entry.event), [
+        'socket-connect',
+        'rejoin-data',
+        'replay-start',
+    ]);
+});
+
+runTest('online reconnect controller は明示transitionをfail closed、shadow reconcileを記録する', () => {
+    const controller = OnlineReconnectState.createController();
+    assert.deepStrictEqual(controller.transition(STATES.REPLAYING), {
+        ok: false,
+        reason: 'invalid-transition',
+        from: STATES.IDLE,
+        to: STATES.REPLAYING,
+        state: STATES.IDLE,
+    });
+    assert.strictEqual(controller.getState(), STATES.IDLE);
+    const shadow = controller.reconcile({ replaying: true }, { event: 'legacy-flags' });
+    assert.deepStrictEqual(shadow, {
+        state: STATES.REPLAYING,
+        from: STATES.IDLE,
+        valid: false,
+    });
+    assert.strictEqual(controller.snapshot().invalidTransitionCount, 2);
+    assert.deepStrictEqual(controller.transition('unknown'), {
+        ok: false,
+        reason: 'unknown-state',
+        state: STATES.REPLAYING,
+    });
+});

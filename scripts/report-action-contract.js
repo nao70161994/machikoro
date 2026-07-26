@@ -6,6 +6,7 @@ function buildActionContractReport({
     canonicalPayloadKeys,
     payloadValidators,
     uiRegistry,
+    actionContract = null,
 }) {
     const uiRows = typeof uiRegistry?.snapshot === 'function' ? uiRegistry.snapshot() : [];
     const uiByAction = new Map();
@@ -25,9 +26,11 @@ function buildActionContractReport({
             action,
             phase: metadata && metadata.phase || '',
             payloadKind: metadata && metadata.payloadKind || '',
+            actorAuthority: actionContract && actionContract.byAction[action] && actionContract.byAction[action].actorAuthority || '',
             canonicalPayloadKeys: Array.from(canonicalPayloadKeys && canonicalPayloadKeys[action] || []),
             serverValidator: typeof (payloadValidators && payloadValidators[action]) === 'function',
             serverReplay: !!(metadata && metadata.serverReplay),
+            restoreReplay: !!(actionContract && actionContract.byAction[action] && actionContract.byAction[action].restoreReplay),
             clientApply: !!(metadata && metadata.clientApply),
             uiTarget: ui && ui.targetId || '',
             uiChildActions: Array.from(child && child.actions || []),
@@ -46,6 +49,8 @@ function buildActionContractReport({
         if (!row.serverValidator) issues.push({ action: row.action, kind: 'missing-server-validator' });
         if (!row.serverReplay) issues.push({ action: row.action, kind: 'missing-server-replay' });
         if (!row.clientApply) issues.push({ action: row.action, kind: 'missing-client-apply' });
+        if (actionContract && !row.actorAuthority) issues.push({ action: row.action, kind: 'missing-actor-authority' });
+        if (actionContract && !row.restoreReplay) issues.push({ action: row.action, kind: 'missing-restore-replay' });
         if (!ui) issues.push({ action: row.action, kind: 'missing-ui-target' });
         else if (metadata && ui.phase !== metadata.phase) {
             issues.push({ action: row.action, kind: 'ui-phase-mismatch' });
@@ -73,12 +78,14 @@ function currentActionContractReport() {
     const server = require('../server');
     const runtime = server.loadGameRuntime();
     const { ActionUiRegistry } = require('../js/actionUiRegistry');
+    const actionContract = require('../js/actionContract');
     return buildActionContractReport({
         gameActions: runtime.GAME_ACTIONS,
         registry: runtime.GAME_ACTION_REGISTRY,
         canonicalPayloadKeys: server.CANONICAL_ACTION_PAYLOAD_KEYS,
         payloadValidators: server.ACTION_PAYLOAD_VALIDATORS,
         uiRegistry: ActionUiRegistry,
+        actionContract,
     });
 }
 

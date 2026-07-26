@@ -1,0 +1,70 @@
+const assert = require('assert');
+const UiModalPolicy = require('../js/uiModalPolicy');
+const { runTest } = require('./helpers/test-utils');
+
+runTest('UI modal policy はblocking/non-blocking registryと背景rootを固定する', () => {
+    assert.deepStrictEqual(UiModalPolicy.inertRootIds, [
+        'titleScreen',
+        'gameScreen',
+        'pwaUpdateBanner',
+        'pwaInstallBanner',
+    ]);
+    assert.strictEqual(UiModalPolicy.policyFor('rulesModal').blocking, true);
+    assert.strictEqual(UiModalPolicy.policyFor('pendingModal').blocking, false);
+    assert.strictEqual(UiModalPolicy.policyFor('pendingModal').gameCritical, true);
+    assert.strictEqual(UiModalPolicy.policyFor('unknownModal').blocking, true);
+    assert.strictEqual(Object.isFrozen(UiModalPolicy.registry), true);
+    assert.strictEqual(Object.isFrozen(UiModalPolicy.exceptions), true);
+});
+
+runTest('UI modal policy はvisible blocking modalだけを抽出する', () => {
+    const visible = new Set(['rulesModal', 'pendingModal', 'noticeToast', 'confirmModal']);
+    assert.deepStrictEqual(
+        UiModalPolicy.visibleBlockingIds(id => visible.has(id)),
+        ['rulesModal', 'confirmModal']
+    );
+    assert.deepStrictEqual(UiModalPolicy.visibleBlockingIds(null), []);
+});
+
+runTest('UI modal policy はnested blockingをdenyしnon-blockingを許可する', () => {
+    const visible = new Set(['rulesModal']);
+    const denied = UiModalPolicy.canOpen('confirmModal', {
+        activeModalId: 'rulesModal',
+        isVisible: id => visible.has(id),
+    });
+    assert.deepStrictEqual(denied, {
+        ok: false,
+        reason: 'nested-blocking-modal-denied',
+        parentId: 'rulesModal',
+        childId: 'confirmModal',
+        blockingIds: ['rulesModal'],
+    });
+    assert.deepStrictEqual(UiModalPolicy.canOpen('pendingModal', {
+        activeModalId: 'rulesModal',
+        isVisible: id => visible.has(id),
+    }), { ok: true, parentId: null, blockingIds: [] });
+    assert.strictEqual(UiModalPolicy.hasStackException('rulesModal', 'confirmModal'), false);
+    assert.strictEqual(UiModalPolicy.stackExceptionKey('rulesModal', 'confirmModal'), 'rulesModal->confirmModal');
+});
+
+runTest('UI modal policy はclose後のactive ownerをvisible blocking順で選ぶ', () => {
+    const visible = new Set(['confirmModal']);
+    assert.strictEqual(UiModalPolicy.activeAfterClose(
+        'rulesModal',
+        'rulesModal',
+        ['confirmModal'],
+        id => visible.has(id)
+    ), 'confirmModal');
+    assert.strictEqual(UiModalPolicy.activeAfterClose(
+        'rulesModal',
+        'confirmModal',
+        ['confirmModal'],
+        id => visible.has(id)
+    ), 'confirmModal');
+    assert.strictEqual(UiModalPolicy.activeAfterClose(
+        'rulesModal',
+        'rulesModal',
+        [],
+        () => false
+    ), null);
+});

@@ -1,14 +1,18 @@
 'use strict';
 
 const browserMaintenanceFiles = Object.freeze([
+    'js/actionContract.js',
     'js/actionUiRegistry.js',
     'js/clientReporting.js',
+    'js/cpuBuildExecution.js',
     'js/cpuEvaluation.js',
     'js/cpuLegalMoves.js',
     'js/lifecycleNotify.js',
     'js/onlinePayload.js',
+    'js/onlineRetryPolicy.js',
     'js/onlineReconnectState.js',
     'js/onlineRestoreRank.js',
+    'js/uiModalPolicy.js',
     'js/uiTutorial.js',
     'js/uiWatchdog.js',
 ]);
@@ -17,9 +21,14 @@ const serverMaintenanceFiles = Object.freeze([
     'scripts/report-action-contract.js',
     'server/actionPayload.js',
     'server/actionValidation.js',
+    'server/canonicalStateStore.js',
     'server/clientErrorAuth.js',
+    'server/lobbySocketHandlers.js',
+    'server/rejoinSocketHandler.js',
     'server/rejoinPayload.js',
     'server/reportThrottle.js',
+    'server/restoreAuditKeyring.js',
+    'server/restoreAuthorityPolicy.js',
     'server/restoreSanitization.js',
     'server/restoreValidation.js',
     'server/roomValidation.js',
@@ -41,7 +50,9 @@ module.exports = [
             ecmaVersion: 'latest',
             sourceType: 'script',
             globals: {
+                GameActionContract: 'readonly',
                 module: 'readonly',
+                require: 'readonly',
                 window: 'readonly',
             },
         },
@@ -56,6 +67,7 @@ module.exports = [
             ecmaVersion: 'latest',
             sourceType: 'commonjs',
             globals: {
+                console: 'readonly',
                 process: 'readonly',
                 URL: 'readonly',
             },

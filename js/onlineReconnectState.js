@@ -77,12 +77,73 @@ function deriveOnlineReconnectState(flags = {}) {
     return ONLINE_RECONNECT_STATES.IDLE;
 }
 
+function createOnlineReconnectController(options = {}) {
+    let state = isOnlineReconnectState(options.initialState)
+        ? options.initialState
+        : ONLINE_RECONNECT_STATES.IDLE;
+    const historyLimit = Number.isSafeInteger(options.historyLimit) && options.historyLimit > 0
+        ? options.historyLimit
+        : 64;
+    const history = [];
+    let invalidTransitionCount = 0;
+
+    function remember(from, to, metadata, valid) {
+        history.push(Object.freeze({
+            from,
+            to,
+            valid,
+            event: typeof metadata?.event === 'string' ? metadata.event : '',
+        }));
+        if (history.length > historyLimit) history.splice(0, history.length - historyLimit);
+    }
+
+    function transition(to, metadata = {}) {
+        if (!isOnlineReconnectState(to)) return { ok: false, reason: 'unknown-state', state };
+        const from = state;
+        const valid = canOnlineReconnectTransition(from, to);
+        remember(from, to, metadata, valid);
+        if (!valid) {
+            invalidTransitionCount++;
+            return { ok: false, reason: 'invalid-transition', from, to, state };
+        }
+        state = to;
+        return { ok: true, from, to, state };
+    }
+
+    function reconcile(flags, metadata = {}) {
+        const target = deriveOnlineReconnectState(flags);
+        const from = state;
+        if (from === target) return Object.freeze({ state, from, valid: true });
+        const valid = canOnlineReconnectTransition(from, target);
+        remember(from, target, metadata, valid);
+        if (!valid) invalidTransitionCount++;
+        state = target;
+        return Object.freeze({ state, from, valid });
+    }
+
+    function snapshot() {
+        return Object.freeze({
+            state,
+            invalidTransitionCount,
+            history: Object.freeze(history.slice()),
+        });
+    }
+
+    return Object.freeze({
+        getState() { return state; },
+        transition,
+        reconcile,
+        snapshot,
+    });
+}
+
 const OnlineReconnectState = Object.freeze({
     states: ONLINE_RECONNECT_STATES,
     transitions: ONLINE_RECONNECT_TRANSITIONS,
     isState: isOnlineReconnectState,
     canTransition: canOnlineReconnectTransition,
     derive: deriveOnlineReconnectState,
+    createController: createOnlineReconnectController,
 });
 
 if (typeof module !== 'undefined' && module.exports) {
