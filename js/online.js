@@ -143,17 +143,23 @@ const ONLINE_RESTORE_ROOM_INDEX_KEY = 'onlineRestoreRoomIndex';
 const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
+const _onlineReconnectController = OnlineReconnectState.createController();
 
 function getOnlineReconnectState() {
     const connected = !!socket && socket.connected !== false;
-    return OnlineReconnectState.derive({
+    return _onlineReconnectController.reconcile({
         failed: _rejoinRetryExhausted,
         replaying: isReplaying,
         restoring: _onlineRestoreInProgress,
         rejoining: isReconnectingOnline && connected,
         connecting: isReconnectingOnline && !connected,
         active: isOnlineGame,
-    });
+    }, { event: 'runtime-observation' }).state;
+}
+
+function getOnlineReconnectStateSnapshot() {
+    getOnlineReconnectState();
+    return _onlineReconnectController.snapshot();
 }
 
 function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {
