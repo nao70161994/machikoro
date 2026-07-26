@@ -130,8 +130,25 @@ function verifySignedRestoreAuditRecord(record, payload, options = {}) {
         return { ok: false, reason: 'not-signed' };
     }
     const cryptoModule = options.crypto;
-    const secret = typeof options.secret === 'string' ? options.secret : '';
-    if (!cryptoModule || !secret) return { ok: false, reason: 'missing-secret' };
+    const keyring = options.keyring && typeof options.keyring === 'object' ? options.keyring : null;
+    const secret = keyring
+        ? (typeof keyring[audit.keyId] === 'string' ? keyring[audit.keyId] : '')
+        : (typeof options.secret === 'string' ? options.secret : '');
+    if (!cryptoModule || !secret) {
+        return { ok: false, reason: keyring ? 'unknown-key-id' : 'missing-secret' };
+    }
+    const maxAgeMs = Number.isSafeInteger(options.maxAgeMs) && options.maxAgeMs > 0
+        ? options.maxAgeMs
+        : null;
+    if (maxAgeMs != null) {
+        const now = Number.isInteger(options.now) ? options.now : Date.now();
+        const clockSkewMs = Number.isSafeInteger(options.clockSkewMs) && options.clockSkewMs >= 0
+            ? options.clockSkewMs
+            : 60_000;
+        if (!audit.createdAt) return { ok: false, reason: 'missing-created-at' };
+        if (audit.createdAt > now + clockSkewMs) return { ok: false, reason: 'created-in-future' };
+        if (now - audit.createdAt > maxAgeMs) return { ok: false, reason: 'expired' };
+    }
     const canonicalHash = restoreAuditPayloadHash(cryptoModule, payload);
     if (!canonicalHash || audit.canonicalHash !== canonicalHash) return { ok: false, reason: 'canonical-mismatch' };
     const expectedSignature = restoreAuditSignature(cryptoModule, secret, audit.roomId, canonicalHash);

@@ -151,6 +151,7 @@ const {
     buildSignedRestoreAuditRecord,
     verifySignedRestoreAuditRecord,
 } = require('./server/restoreAudit');
+const { restoreAuditKeyringConfig } = require('./server/restoreAuditKeyring');
 const {
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
@@ -251,8 +252,35 @@ const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
 const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
+function restoreAuditConfig() {
+    return restoreAuditKeyringConfig(process.env);
+}
+
 function restoreAuditSecret() {
-    return String(process.env.RESTORE_AUDIT_SECRET || process.env.MACHIKORO_RESTORE_AUDIT_SECRET || '');
+    return restoreAuditConfig().activeSecret;
+}
+
+function restoreAuditBuildOptions(now, source) {
+    const config = restoreAuditConfig();
+    const options = {
+        crypto,
+        secret: config.activeSecret,
+        keyId: config.activeKeyId,
+        now,
+    };
+    if (source) options.source = source;
+    return options;
+}
+
+function restoreAuditVerificationOptions(roomId) {
+    const config = restoreAuditConfig();
+    return {
+        roomId,
+        crypto,
+        keyring: config.keys,
+        maxAgeMs: config.maxAgeMs,
+        clockSkewMs: config.clockSkewMs,
+    };
 }
 
 function resolveTrustProxySetting(env = process.env) {
@@ -681,7 +709,7 @@ function buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, now 
     return buildSignedRestoreAuditRecord(
         roomId,
         buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot),
-        { crypto, secret: restoreAuditSecret(), now }
+        restoreAuditBuildOptions(now)
     );
 }
 
@@ -690,7 +718,7 @@ function isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot
     const validation = verifySignedRestoreAuditRecord(
         restoreAudit,
         buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot),
-        { roomId, crypto, secret: restoreAuditSecret() }
+        restoreAuditVerificationOptions(roomId)
     );
     return validation.ok;
 }
@@ -713,7 +741,7 @@ function buildRestoreActionAudit(roomId, actionEntry, now = Date.now()) {
     return buildSignedRestoreAuditRecord(
         roomId,
         buildRestoreActionAuditPayload(actionEntry),
-        { crypto, secret: restoreAuditSecret(), now, source: 'server-action-log' }
+        restoreAuditBuildOptions(now, 'server-action-log')
     );
 }
 
@@ -721,7 +749,7 @@ function isVerifiedRestoreActionAudit(roomId, actionEntry) {
     const validation = verifySignedRestoreAuditRecord(
         actionEntry && actionEntry.restoreActionAudit,
         buildRestoreActionAuditPayload(actionEntry),
-        { roomId, crypto, secret: restoreAuditSecret() }
+        restoreAuditVerificationOptions(roomId)
     );
     return validation.ok;
 }
