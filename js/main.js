@@ -905,6 +905,7 @@ function scheduleCPU() {
 }
 
 let cpuResumeSchedulerBound = false;
+let pageHiddenAt = 0;
 
 function resumeCpuTurnAfterPageActivation(reason) {
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -959,7 +960,27 @@ function resumeDelayedHumanActionAfterPageActivation() {
     );
 }
 
+function cpuPageActivationOutcome(before, after, pageHidden) {
+    if (pageHidden) return 'page-hidden';
+    if (!before || !before.isCpuTurn) return 'not-cpu-turn';
+    if (before.blockedReason) return 'blocked:' + before.blockedReason;
+    if (before.stepScheduled) return 'already-scheduled';
+    if (after && after.stepScheduled) return 'rescheduled';
+    return 'not-rescheduled';
+}
+
+function pageHiddenDurationMs(now) {
+    if (!Number.isFinite(pageHiddenAt) || pageHiddenAt <= 0) return null;
+    return Math.max(0, now - pageHiddenAt);
+}
+
 function resumeTurnAfterPageActivation(reason) {
+    const activationAt = Date.now();
+    const pageHidden = typeof document !== 'undefined' && !!document.hidden;
+    if (pageHidden && !pageHiddenAt) pageHiddenAt = activationAt;
+    const hiddenForMs = pageHiddenDurationMs(activationAt);
+    const cpuBefore = currentCpuTurnSchedulerHealth();
+
     if (typeof RLModelPortfolio !== 'undefined' &&
             typeof RLModelPortfolio.resumePendingLoadsAfterPageActivation === 'function') {
         RLModelPortfolio.resumePendingLoadsAfterPageActivation();
@@ -969,6 +990,15 @@ function resumeTurnAfterPageActivation(reason) {
         resumeOnlineReconnectAfterPageActivation();
     }
     resumeCpuTurnAfterPageActivation(reason);
+    const cpuAfter = currentCpuTurnSchedulerHealth();
+    markMainCheckpoint(pageHidden ? 'page-activation-hidden' : 'page-activation-resume', {
+        reason,
+        hiddenForMs,
+        cpuOutcome: cpuPageActivationOutcome(cpuBefore, cpuAfter, pageHidden),
+        cpuBefore,
+        cpuAfter,
+    });
+    if (!pageHidden) pageHiddenAt = 0;
 }
 
 function bindCpuResumeScheduler() {

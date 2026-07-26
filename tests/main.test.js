@@ -352,6 +352,7 @@ function loadMainRuntime(options = {}) {
                 if (delayedHumanActionState) delayedHumanActionState.deadline = 0;
             },
             getDelayedHumanActionPending: () => delayedHumanActionPending,
+            setPageHiddenAt: (value) => { pageHiddenAt = value; },
             scheduleCPU: () => scheduleCPU(),
             counters,
         };
@@ -986,6 +987,14 @@ runTest('main cpuTurnScheduler は画面復帰時に未予約のローカルCPU�
     const expiredHealth = rt.__test.getCpuSchedulerHealth();
     assert.strictEqual(expiredHealth.stepScheduled, false);
     assert.ok(Number.isInteger(expiredHealth.token));
+    rt.__test.setPageHiddenAt(Date.now() - 198131);
+    rt.document.hidden = true;
+    rt.__test.eventHandlers['document:visibilitychange']();
+    const hiddenActivation = rt.window.__machikoroClientCheckpoints.find(entry => entry.event === 'page-activation-hidden');
+    assert.ok(hiddenActivation);
+    assert.strictEqual(hiddenActivation.details.cpuOutcome, 'page-hidden');
+    assert.strictEqual(rt.__test.getCpuSchedulerHealth().stepScheduled, false);
+    rt.document.hidden = false;
 
     rt.__test.eventHandlers['document:visibilitychange']();
 
@@ -994,6 +1003,14 @@ runTest('main cpuTurnScheduler は画面復帰時に未予約のローカルCPU�
     assert.strictEqual(rt.__test.getTimeoutCount(), 2);
     assert.ok(rt.__test.getCpuScheduleToken() > tokenBeforeResume);
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'scheduleCPU-enter' && entry.details.reason === 'visibility-resume'));
+    const activation = rt.window.__machikoroClientCheckpoints.find(entry => entry.event === 'page-activation-resume');
+    assert.ok(activation);
+    assert.strictEqual(activation.details.reason, 'visibility-resume');
+    assert.strictEqual(activation.details.cpuOutcome, 'rescheduled');
+    assert.strictEqual(activation.details.cpuBefore.stepScheduled, false);
+    assert.strictEqual(activation.details.cpuAfter.stepScheduled, true);
+    assert.ok(activation.details.hiddenForMs >= 198131);
+    assert.ok(activation.details.hiddenForMs < 199000);
 });
 
 runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTurnへ進める', () => {
