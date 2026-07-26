@@ -26,6 +26,7 @@ const {
 } = require('./server/reportThrottle');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
+const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const makeGameSettings = require('./server/gameSettings');
 const {
     sanitizeName,
@@ -855,144 +856,27 @@ io.on('connection', (socket) => {
     console.log('接続:', socket.id);
     hostlessRestoreRuntime.registerSocket(socket);
 
-    socket.on('createRoom', (payload) => {
-        if (!requirePlainSocketPayload(socket, payload)) return;
-        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion, hostlessRestoreVersion } = payload;
-        socket.clientVersion = clientVersion || 'unknown';
-        socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
-        playerName = sanitizeName(playerName);
-        if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
-        playerCount = Number(playerCount);
-        if (!Number.isInteger(playerCount) || playerCount < 2 || playerCount > 10) {
-            emitAppError(socket, 'プレイヤー数が無効です');
-            return;
-        }
-        if (hasInvalidOnlineRlModelSettings(playerSettings)) {
-            emitAppError(socket, 'RLモデルIDが無効です');
-            return;
-        }
-        playerSettings = normalizePlayerSettings(playerSettings, playerCount);
-        cpuSpeed = normalizeCpuSpeed(cpuSpeed);
-        const now = Date.now();
-        const roomLifecycle = validateCreateRoomLifecycle(socket, now, rooms);
-        if (!roomLifecycle.ok) {
-            emitAppError(socket, roomLifecycle.message);
-            return;
-        }
-        const roomId = generateRoomId();
-        const reconnectToken = generateReconnectToken();
-        const selectedCards = normalizeEnabledCards(enabledCards);
-        const allLandmarks = gameRuntime.Player.landmarkNames();
-        const validLandmarks = new Set(allLandmarks);
-        const selectedLandmarks = Array.isArray(enabledLandmarks)
-            ? enabledLandmarks.filter(name => validLandmarks.has(name))
-            : allLandmarks;
-        if (selectedLandmarks.length === 0) {
-            emitAppError(socket, 'ランドマークは最低1つ必要です');
-            return;
-        }
-        // ホストの人間枠を探す
-        let hostIndex = 0;
-        if (playerSettings && playerSettings.length > 0) {
-            hostIndex = playerSettings.findIndex(s => s.type === "human");
-            if (hostIndex === -1) {
-                emitAppError(socket, 'オンライン対戦は最低1人の人間プレイヤーが必要です');
-                return;
-            }
-        }
-        markCreateRoomForSocket(socket, now);
-        markCreateRoomForRateKey(createRoomRateKeyForSocket(socket), now);
-        rooms[roomId] = {
-            roomId,
-            createdAt: now,
-            lastTouchedAt: now,
-            enabledCards: selectedCards,
-            enabledLandmarks: selectedLandmarks,
-            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
-            hostPlayerIndex: hostIndex,
-            hostEpoch: 0,
-            actionSeq: 0,
-            acceptedClientActions: {},
-            maxPlayers: playerCount,
-            playerSettings,
-            cpuSpeed,
-            started: false,
-        };
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = hostIndex;
-        socket.emit('roomCreated', { roomId, playerIndex: hostIndex, reconnectToken });
-
-        // 参加者リストを送信
-        const playerList = buildPlayerList(rooms[roomId]);
-        io.to(roomId).emit('playerList', playerList);
-
-        // 人間が1人だけなら即開始チェック
-        checkGameStart(io, roomId);
-        console.log(`ルーム作成: ${roomId} (${playerCount}人)`);
-    });
-
-    socket.on('joinRoom', (payload) => {
-        if (!requirePlainSocketPayload(socket, payload)) return;
-        let { roomId, playerName, clientVersion, hostlessRestoreVersion } = payload;
-        socket.clientVersion = clientVersion || 'unknown';
-        socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
-        playerName = sanitizeName(playerName);
-        if (!playerName) { emitAppError(socket, '名前が無効です'); return; }
-        if (!isValidRoomId(roomId)) { emitAppError(socket, 'ルームが見つかりません'); return; }
-        const room = rooms[roomId];
-        if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
-        const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
-        if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }
-        if (room.started) { emitAppError(socket, 'ゲームはすでに開始されています'); return; }
-
-        // 重複参加チェック
-        if (room.players.some(p => p.id === socket.id)) {
-            emitAppError(socket, 'すでにこのルームに参加しています');
-            return;
-        }
-        if (room.players.some(p => p.name === playerName)) {
-            emitAppError(socket, 'その名前はすでに使われています');
-            return;
-        }
-
-        // 人間枠を探す
-        let playerIndex = -1;
-        if (room.playerSettings.length > 0) {
-            for (let i = 0; i < room.playerSettings.length; i++) {
-                const taken = room.players.some(p => p.index === i);
-                if (!taken && room.playerSettings[i].type === "human") {
-                    playerIndex = i;
-                    break;
-                }
-            }
-        } else {
-            if (room.players.length >= room.maxPlayers) {
-                emitAppError(socket, '参加できる枠がありません');
-                return;
-            }
-            playerIndex = room.players.length;
-        }
-
-        if (playerIndex === -1) {
-            emitAppError(socket, '参加できる枠がありません');
-            return;
-        }
-
-        const reconnectToken = generateReconnectToken();
-        room.lastTouchedAt = Date.now();
-        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken });
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = playerIndex;
-        socket.emit('roomJoined', { roomId, playerIndex, reconnectToken });
-
-        // 参加者リストを送信
-        const playerList = buildPlayerList(room);
-        io.to(roomId).emit('playerList', playerList);
-
-        // ゲーム開始チェック
-        checkGameStart(io, roomId);
+    registerLobbySocketHandlers(socket, {
+        requirePlainSocketPayload,
+        sanitizeName,
+        emitAppError,
+        hasInvalidOnlineRlModelSettings,
+        normalizePlayerSettings,
+        normalizeCpuSpeed,
+        validateCreateRoomLifecycle,
+        rooms,
+        generateRoomId,
+        generateReconnectToken,
+        normalizeEnabledCards,
+        landmarkNames: gameRuntime.Player.landmarkNames,
+        markCreateRoomForSocket,
+        createRoomRateKeyForSocket,
+        markCreateRoomForRateKey,
+        buildPlayerList,
+        io,
+        checkGameStart,
+        validateSocketCanEnterRoom,
+        isValidRoomId,
     });
 
     socket.on('gameAction', (payload) => {
