@@ -183,7 +183,7 @@ function loadUiModalRuntime() {
     elements.rulesModal.focus = () => { elements.rulesModal.focused = true; context.document.activeElement = elements.rulesModal; };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPendingMenu.js', 'js/uiTutorial.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPendingMenu.js', 'js/uiTutorial.js', 'js/uiModalPolicy.js', 'js/ui.js']);
     return { context, elements, opener, first, last };
 }
 

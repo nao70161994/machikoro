@@ -175,6 +175,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/uiTutorial.js',
+        'js/uiModalPolicy.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {

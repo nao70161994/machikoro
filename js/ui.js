@@ -761,18 +761,9 @@ let activeModalId = null;
 let lastModalFocus = null;
 let modalInertRestore = [];
 
-const MODAL_INERT_ROOT_IDS = Object.freeze(['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']);
-const MODAL_POLICY_REGISTRY = Object.freeze({
-    rulesModal: Object.freeze({ blocking: true }),
-    cardSelectModal: Object.freeze({ blocking: true }),
-    cardDetailModal: Object.freeze({ blocking: true }),
-    confirmModal: Object.freeze({ blocking: true }),
-    pendingModal: Object.freeze({ blocking: false, gameCritical: true }),
-    noticeToast: Object.freeze({ blocking: false }),
-    pwaUpdateBanner: Object.freeze({ blocking: false }),
-    pwaInstallBanner: Object.freeze({ blocking: false }),
-});
-const MODAL_STACK_EXCEPTION_REGISTRY = Object.freeze({});
+const MODAL_INERT_ROOT_IDS = UiModalPolicy.inertRootIds;
+const MODAL_POLICY_REGISTRY = UiModalPolicy.registry;
+const MODAL_STACK_EXCEPTION_REGISTRY = UiModalPolicy.exceptions;
 const MODAL_CLOSE_HANDLERS = Object.freeze({
     rulesModal: closeRules,
     cardSelectModal: closeCardSelect,
@@ -989,7 +980,7 @@ function setAppInertForModal(enabled) {
 }
 
 function modalPolicyFor(id) {
-    return MODAL_POLICY_REGISTRY[id] || Object.freeze({ blocking: true });
+    return UiModalPolicy.policyFor(id);
 }
 
 function isModalVisibleById(id) {
@@ -1009,11 +1000,11 @@ function isModalVisibleById(id) {
 }
 
 function modalStackExceptionKey(parentId, childId) {
-    return `${parentId || ''}->${childId || ''}`;
+    return UiModalPolicy.stackExceptionKey(parentId, childId);
 }
 
 function hasRegisteredModalStackException(parentId, childId) {
-    return !!MODAL_STACK_EXCEPTION_REGISTRY[modalStackExceptionKey(parentId, childId)];
+    return UiModalPolicy.hasStackException(parentId, childId);
 }
 
 function recordModalPolicyViolation(type, details = {}) {
@@ -1043,22 +1034,20 @@ function recordModalPolicyViolation(type, details = {}) {
 
 function visibleBlockingModalIds() {
     if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return [];
-    return Object.keys(MODAL_POLICY_REGISTRY)
-        .filter(id => modalPolicyFor(id).blocking && isModalVisibleById(id));
+    return UiModalPolicy.visibleBlockingIds(isModalVisibleById);
 }
 
 function canOpenBlockingModal(id) {
-    const policy = modalPolicyFor(id);
-    if (!policy.blocking) return true;
-    const blockingIds = visibleBlockingModalIds().filter(modalId => modalId !== id);
-    const parentId = activeModalId && activeModalId !== id && isModalVisibleById(activeModalId)
-        ? activeModalId
-        : blockingIds[0];
-    if (!parentId) return true;
-    const activePolicy = modalPolicyFor(parentId);
-    if (!activePolicy.blocking) return true;
-    if (hasRegisteredModalStackException(parentId, id)) return true;
-    recordModalPolicyViolation('nested-blocking-modal-denied', { parentModalId: parentId, childModalId: id, visibleBlockingModalIds: blockingIds });
+    const decision = UiModalPolicy.canOpen(id, {
+        activeModalId,
+        isVisible: isModalVisibleById,
+    });
+    if (decision.ok) return true;
+    recordModalPolicyViolation(decision.reason, {
+        parentModalId: decision.parentId,
+        childModalId: decision.childId,
+        visibleBlockingModalIds: decision.blockingIds,
+    });
     return false;
 }
 
@@ -1102,9 +1091,12 @@ function closeAccessibleModal(id, options = {}) {
     if (modal) modal.style.display = 'none';
 
     const visibleBlockingIds = visibleBlockingModalIds();
-    if (activeModalId === id || (activeModalId && !isModalVisibleById(activeModalId))) {
-        activeModalId = visibleBlockingIds[0] || null;
-    }
+    activeModalId = UiModalPolicy.activeAfterClose(
+        id,
+        activeModalId,
+        visibleBlockingIds,
+        isModalVisibleById
+    );
     if (visibleBlockingIds.length <= 0) {
         activeModalId = null;
         setAppInertForModal(false);

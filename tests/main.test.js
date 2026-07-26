@@ -1928,6 +1928,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiCardDetail.js', 'js/ui.js');
     assertBefore('js/uiCardSelect.js', 'js/ui.js');
     assertBefore('js/uiTutorial.js', 'js/ui.js');
+    assertBefore('js/uiModalPolicy.js', 'js/ui.js');
     assertBefore('js/ui.js', 'js/storage.js');
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/clientReporting.js', 'js/appShell.js');
