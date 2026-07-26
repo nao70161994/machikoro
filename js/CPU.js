@@ -2570,39 +2570,30 @@ class CPU {
         return this._lastBuildActionResult;
     }
 
+    _buildExecutionContext() {
+        return {
+            isOnlineGame: typeof isOnlineGame !== 'undefined' && isOnlineGame,
+            isRoomHost: typeof isRoomHost === 'undefined' || isRoomHost,
+            isReconnectingOnline: typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline,
+            socketConnected: typeof socket === 'undefined' || !socket ? null : socket.connected,
+            sendAction: typeof sendAction === 'function' ? sendAction : null,
+        };
+    }
+
     _setBuildActionResult(result) {
-        this._lastBuildActionResult = result;
-        return result;
+        return CPUBuildExecution.setBuildActionResult(this, result);
     }
 
     _onlineBuildBlocked() {
-        if (typeof isOnlineGame === 'undefined' || !isOnlineGame) return false;
-        if (typeof isRoomHost !== 'undefined' && !isRoomHost) return true;
-        if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return true;
-        return typeof socket !== 'undefined' && socket && socket.connected === false;
+        return CPUBuildExecution.onlineBuildBlocked(this._buildExecutionContext());
     }
 
     _buyCard(card, game, shopStock) {
-        if (!game || game.builtThisTurn || !card) return this._setBuildActionResult(false);
-        if (this._onlineBuildBlocked()) return this._setBuildActionResult(false);
-        if (!shopStock || (shopStock[card.name] || 0) <= 0) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-            return this._setBuildActionResult(typeof sendAction === 'function' && sendAction('buildCard', { cardName: card.name }) === true);
-        }
-        if (game.buildCard(card)) {
-            shopStock[card.name]--;
-            return this._setBuildActionResult(true);
-        }
-        return this._setBuildActionResult(false);
+        return CPUBuildExecution.buyCard(this, card, game, shopStock, this._buildExecutionContext());
     }
 
     _buyLandmark(name, game) {
-        if (!game || game.builtThisTurn || !name) return this._setBuildActionResult(false);
-        if (this._onlineBuildBlocked()) return this._setBuildActionResult(false);
-        if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-            return this._setBuildActionResult(typeof sendAction === 'function' && sendAction('buildLandmark', { name }) === true);
-        }
-        return this._setBuildActionResult(game.buildLandmark(name) === true);
+        return CPUBuildExecution.buyLandmark(this, name, game, this._buildExecutionContext());
     }
 
     _landmarkUrgency(name, current, game) {

@@ -24,6 +24,7 @@ const STATIC_ASSETS = [
   '/js/cpuEvaluationCache.js',
   '/js/cpuEvaluation.js',
   '/js/cpuLegalMoves.js',
+  '/js/cpuBuildExecution.js',
   '/js/cpuSimulation.js',
   '/js/cpuPendingResolution.js',
   '/js/CPU.js',
