@@ -44,7 +44,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | UI surface extraction | Extract pure render helpers for build menu, card detail, card select, and modal content before moving lifecycle state. | P2 |
 | Server pure helper extraction | Move room lifecycle policy helpers before moving Socket.IO event handlers. | P1 |
 | Test architecture | Add new domain tests beside new modules. Avoid moving old assertions until the corresponding module boundary exists. | P2 |
-| Game Engine parity contracts | Extend detached transition parity over representative multi-action traces while preserving the explicit client/server hydrate policies. | P2 |
+| Game Engine parity contracts | Keep representative detached traces green and add fixtures for newly touched rule paths while preserving explicit client/server hydrate policies. | P2 |
 
 ### Needs Manual / Real Device
 
@@ -214,7 +214,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 2. **Complete:** project phase, canonical payload keys, replay/apply flags, and UI targets from that source.
 3. **Complete:** route client replay and server mirror through the shared mutable `js/gameEngine.js` dispatcher, retaining their adapters and authority.
 4. **Shadow only:** compare detached `snapshot -> action -> snapshot` transitions with the mutable server mirror; do not switch live ownership yet.
-5. **Current footing:** shared hydrate mechanics keep client/server legacy policy adapters explicit. **Future:** extend multi-action parity and design capability-gated schema negotiation before any live pure-transition cutover.
+5. **Current footing:** shared hydrate mechanics keep client/server legacy policy adapters explicit, and representative multi-action traces cover build/Undo/next-turn, station dice selection, pending TV, and victory. **Future:** widen parity with touched rules and design capability-gated schema negotiation before any live pure-transition cutover.
 
 **Contract coverage (implemented; extend before live migration):**
 
@@ -319,7 +319,7 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - `js/actionContract.js` is the 15-action metadata source projected into GameManager, canonical payload keys, and UI targets; `js/actionUiRegistry.js` exposes the UI projection used by watchdog diagnostics. Independent validator/executor/report tests remain required.
 - `js/gameSnapshot.js` owns exact current client/server snapshot and undo serialization plus shared mutable hydrate mechanics. Client/server adapters deliberately retain their previous coin/index/log/landmark, inventory, and undo policies. Its legacy v0/current v1 envelope API is internal footing; live save and Socket.IO formats are unchanged.
 - `js/gameEngine.js` owns the shared 15-action mutable dispatch. Client/server adapters still own validation, actor authority, card creation, stock mutation, undo restore, timing, and transport.
-- `GameEngine.transitionSnapshot()` is a detached, fail-closed shadow boundary with stable failure reasons and real `GameManager` parity coverage. It is not a live authority or transport path.
+- `GameEngine.transitionSnapshot()` is a detached, fail-closed shadow boundary with stable failure reasons. Real `GameManager` parity covers single actions and representative 3-player multi-action traces across build/Undo, dice selection, pending, and victory; it is not a live authority or transport path.
 - `js/actionContract.js` also exposes legacy v0/current v1 Action envelope readers. Current live actions remain the legacy `{action, data}` shape until a separately reviewed mixed-client rollout exists.
 - `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log/pending normalization, ACK comparison, room ownership, duplicate-free restore append, and resend eligibility while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, `js/cpuSimulation.js`, and `js/cpuBuildExecution.js` own unchanged evaluation, candidate, simulation, and local/online build-execution boundaries behind existing CPU wrappers.
@@ -332,13 +332,13 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders. Scoped ESLint bug rules run from `test:static` over 29 maintenance modules, and a test keeps config and npm-script file sets identical.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, broader multi-action shadow parity, schema capability negotiation, reconnect timer/callback migration, remaining gameAction/recreate/disconnect handler movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
+The remaining steps below still require the same gates described in each design section. In particular, schema capability negotiation, reconnect timer/callback migration, remaining gameAction/recreate/disconnect handler movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
 
 ## Recommended Migration Order
 
 1. **Keep the implemented helper boundaries stable:** Prefer extending the existing server, online, and UI pure modules before adding equivalent logic back into giant files.
 2. **Further pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
-3. **Game Engine shadow expansion:** Keep the shared action contract/dispatcher/hydrator green and add representative multi-action detached parity before considering a live cutover.
+3. **Game Engine shadow expansion:** Keep the shared action contract/dispatcher/hydrator and representative multi-action parity green; widen fixtures with touched rule paths before considering a live cutover.
 4. **Reconnect state machine and server socket handler split:** Move timing/event orchestration only after helper/facade tests are stable and manual-device verification is scheduled.
 5. **Restore authority activation:** The adapter/keyring/priority contracts are ready; activate only after durable provider, retention/locking, secret operations, migration, and rollback decisions.
 

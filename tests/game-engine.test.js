@@ -3,7 +3,8 @@
 const assert = require('assert');
 const GameActionContract = require('../js/actionContract');
 const GameEngine = require('../js/gameEngine');
-const { restoreMirrorState, serializeMirrorState, applyActionToMirror } = require('../server');
+const GameSnapshot = require('../js/gameSnapshot');
+const { restoreMirrorState, serializeMirrorState, applyActionToMirror, restoreUndoMirror } = require('../server');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const { runTest } = require('./helpers/test-utils');
 
@@ -272,4 +273,141 @@ runTest('pure transition shadowは実GameManagerのmutable適用結果と一致�
         serializeMirrorState(sourceGame, sourceStock, null, 4),
         'shadow transition must not mutate its source snapshot'
     );
+});
+
+function makeInitialStock(runtime, playerCount) {
+    const stock = {};
+    for (const card of runtime.CARDS) {
+        runtime.setShopStockCount(stock, card, runtime.getInitialCardStock(card, playerCount));
+    }
+    return stock;
+}
+
+function applyMutableReplayStep(runtime, replay, action, data) {
+    if (action === 'buildCard' || action === 'buildLandmark') {
+        replay.undoState = GameSnapshot.serializeUndoState(replay.game, replay.shopStock);
+    }
+    const internalData = action === 'undoBuild' ? { state: replay.undoState } : data;
+    assert.strictEqual(
+        applyActionToMirror(replay.game, replay.shopStock, action, internalData, runtime.createCardByName),
+        true,
+        action
+    );
+    if (action === 'undoBuild' || action === 'nextTurn') replay.undoState = null;
+}
+
+function applyShadowReplayStep(runtime, snapshot, action, data) {
+    return GameEngine.transitionSnapshot({
+        snapshot,
+        action,
+        data,
+        hydrate(detachedSnapshot) {
+            const game = new runtime.GameManager(detachedSnapshot.players.length);
+            const shopStock = {};
+            restoreMirrorState(game, shopStock, detachedSnapshot, runtime.createCardByName);
+            const engineRuntime = {
+                game,
+                shopStock,
+                undoState: detachedSnapshot.undoState || null,
+                createCardByName: runtime.createCardByName,
+                decrementShopStock: runtime.decrementShopStock,
+            };
+            if (action === 'buildCard' || action === 'buildLandmark') {
+                engineRuntime.undoState = GameSnapshot.serializeUndoState(game, shopStock);
+            }
+            engineRuntime.restoreUndoState = () => {
+                if (!engineRuntime.undoState) return false;
+                const restored = restoreUndoMirror(
+                    game, shopStock, engineRuntime.undoState, runtime.createCardByName
+                );
+                return restored !== false;
+            };
+            return engineRuntime;
+        },
+        serialize(engineRuntime) {
+            if (action === 'undoBuild' || action === 'nextTurn') {
+                engineRuntime.undoState = null;
+            }
+            return serializeMirrorState(
+                engineRuntime.game, engineRuntime.shopStock, engineRuntime.undoState, snapshot.actionSeq
+            );
+        },
+    });
+}
+
+runTest('pure transition shadowはmulti-action traceごとにmutable replayと一致する', () => {
+    const runtime = loadGameRuntime();
+    const landmarks = runtime.Player.landmarkNames();
+    const cases = [
+        {
+            name: 'build-undo-next-turn',
+            setup(game) { game.phase = runtime.GAME_PHASES.BUILD; game.players[0].coins = 10; },
+            actions: [
+                ['buildCard', { cardName: '麦畑' }],
+                ['undoBuild', {}],
+                ['buildLandmark', { name: '駅' }],
+                ['nextTurn', {}],
+            ],
+        },
+        {
+            name: 'station-dice-selection',
+            setup(game) { game.phase = runtime.GAME_PHASES.ROLL; game.players[0].landmarks['駅'] = true; },
+            actions: [
+                ['rollDice', { forceDice: 1, tunaDice: [1, 1] }],
+                ['selectDice', { useTwo: false, d1: 1, d2: 1, tunaDice: [1, 1] }],
+            ],
+        },
+        {
+            name: 'pending-tv',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.PENDING;
+                game.pendingTV = 1;
+                game.pendingActionQueue = [{ action: 'resolveTV', field: 'pendingTV' }];
+                game.players[1].coins = 8;
+            },
+            actions: [['resolveTV', { targetIndex: 1 }]],
+        },
+        {
+            name: 'winning-landmark',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.BUILD;
+                game.players[0].coins = 100;
+                for (const name of landmarks) game.players[0].landmarks[name] = true;
+                game.players[0].landmarks[landmarks[landmarks.length - 1]] = false;
+            },
+            actions: [['buildLandmark', { name: landmarks[landmarks.length - 1] }]],
+        },
+    ];
+
+    for (const fixture of cases) {
+        const replay = {
+            game: new runtime.GameManager(3),
+            shopStock: makeInitialStock(runtime, 3),
+            undoState: null,
+        };
+        fixture.setup(replay.game);
+        let shadowSnapshot = serializeMirrorState(replay.game, replay.shopStock, null, 12);
+        const initialSnapshot = shadowSnapshot;
+        const originalSnapshot = JSON.parse(JSON.stringify(shadowSnapshot));
+
+        fixture.actions.forEach(([action, data], index) => {
+            applyMutableReplayStep(runtime, replay, action, data);
+            const shadow = applyShadowReplayStep(runtime, shadowSnapshot, action, data);
+            assert.strictEqual(shadow.ok, true, fixture.name + ' step ' + index + ' ' + action);
+            shadowSnapshot = shadow.snapshot;
+            const expected = serializeMirrorState(
+                replay.game, replay.shopStock, replay.undoState, shadowSnapshot.actionSeq
+            );
+            assert.deepStrictEqual(
+                JSON.parse(JSON.stringify(shadowSnapshot)),
+                JSON.parse(JSON.stringify(expected)),
+                fixture.name + ' step ' + index + ' ' + action
+            );
+        });
+        assert.deepStrictEqual(
+            JSON.parse(JSON.stringify(initialSnapshot)),
+            originalSnapshot,
+            fixture.name + ' must not mutate its initial snapshot'
+        );
+    }
 });
