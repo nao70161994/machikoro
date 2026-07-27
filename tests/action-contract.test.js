@@ -68,3 +68,59 @@ runTest('UI registry is a lossless projection of action contract targets', () =>
         assert.strictEqual(container.targetId, entry.ui.targetId, entry.action);
     }
 });
+
+runTest('action schema境界はlegacyとversion 1を同じaction/data形状で読む', () => {
+    const legacy = { action: 'nextTurn', data: {} };
+    const current = GameActionContract.createActionEnvelope('nextTurn', {});
+
+    assert.strictEqual(GameActionContract.schemaVersion, 1);
+    assert.strictEqual(GameActionContract.legacySchemaVersion, 0);
+    assert.strictEqual(GameActionContract.actionSchemaVersionOf(legacy), 0);
+    assert.strictEqual(GameActionContract.actionSchemaVersionOf(current), 1);
+    assert.deepStrictEqual(current, { schemaVersion: 1, action: 'nextTurn', data: {} });
+    assert.deepStrictEqual(GameActionContract.readActionEnvelope(legacy), {
+        ok: true,
+        schemaVersion: 0,
+        action: 'nextTurn',
+        data: legacy.data,
+        legacy: true,
+    });
+    assert.deepStrictEqual(GameActionContract.readActionEnvelope(current), {
+        ok: true,
+        schemaVersion: 1,
+        action: 'nextTurn',
+        data: current.data,
+        legacy: false,
+    });
+});
+
+runTest('action schema境界は全Action Contract entryをversion付きで表現できる', () => {
+    for (const entry of GameActionContract.entries) {
+        const envelope = GameActionContract.createActionEnvelope(entry.action, {});
+        const read = GameActionContract.readActionEnvelope(envelope);
+        assert.strictEqual(read.ok, true, entry.action);
+        assert.strictEqual(read.action, entry.action);
+        assert.strictEqual(read.schemaVersion, GameActionContract.schemaVersion);
+    }
+});
+
+runTest('action schema境界はunknown version/actionとmalformed dataをfail closedにする', () => {
+    assert.strictEqual(GameActionContract.createActionEnvelope('unknown', {}), null);
+    assert.strictEqual(GameActionContract.createActionEnvelope('nextTurn', []), null);
+
+    const malformedValues = [
+        null,
+        [],
+        { action: 'unknown', data: {} },
+        { action: 'nextTurn' },
+        { action: 'nextTurn', data: [] },
+        { schemaVersion: '1', action: 'nextTurn', data: {} },
+        { schemaVersion: 2, action: 'nextTurn', data: {} },
+    ];
+    for (const value of malformedValues) {
+        const result = GameActionContract.readActionEnvelope(value);
+        assert.strictEqual(result.ok, false, JSON.stringify(value));
+        assert.strictEqual(result.action, null, JSON.stringify(value));
+        assert.strictEqual(result.data, null, JSON.stringify(value));
+    }
+});

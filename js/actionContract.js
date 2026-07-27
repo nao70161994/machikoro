@@ -1,5 +1,7 @@
 'use strict';
 
+const ACTION_SCHEMA_VERSION = 1;
+const ACTION_SCHEMA_LEGACY_VERSION = 0;
 const ACTION_CONTRACT_PHASES = Object.freeze({
     ROLL: 'roll',
     SELECT_DICE: 'selectDice',
@@ -88,6 +90,37 @@ const ACTION_CONTRACT_PHASE_ACTIONS = Object.freeze(Object.fromEntries(
             .map(entry => entry.action))])
 ));
 
+function actionSchemaVersionOf(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    if (!Object.prototype.hasOwnProperty.call(value, 'schemaVersion')) {
+        return ACTION_SCHEMA_LEGACY_VERSION;
+    }
+    return Number.isInteger(value.schemaVersion) ? value.schemaVersion : null;
+}
+
+function createActionEnvelope(action, data = {}) {
+    if (!ACTION_CONTRACT_BY_ACTION[action] || !data ||
+            typeof data !== 'object' || Array.isArray(data)) return null;
+    return { schemaVersion: ACTION_SCHEMA_VERSION, action, data };
+}
+
+function readActionEnvelope(value) {
+    const schemaVersion = actionSchemaVersionOf(value);
+    const supportedVersion = schemaVersion === ACTION_SCHEMA_LEGACY_VERSION ||
+        schemaVersion === ACTION_SCHEMA_VERSION;
+    if (!supportedVersion || !value || !ACTION_CONTRACT_BY_ACTION[value.action] ||
+            !value.data || typeof value.data !== 'object' || Array.isArray(value.data)) {
+        return { ok: false, schemaVersion, action: null, data: null, legacy: false };
+    }
+    return {
+        ok: true,
+        schemaVersion,
+        action: value.action,
+        data: value.data,
+        legacy: schemaVersion === ACTION_SCHEMA_LEGACY_VERSION,
+    };
+}
+
 function buildUiContainers() {
     const groups = new Map();
     for (const entry of ACTION_CONTRACT_ENTRIES) {
@@ -124,6 +157,11 @@ function buildUiChildSelectors() {
 }
 
 const GameActionContract = Object.freeze({
+    schemaVersion: ACTION_SCHEMA_VERSION,
+    legacySchemaVersion: ACTION_SCHEMA_LEGACY_VERSION,
+    actionSchemaVersionOf,
+    createActionEnvelope,
+    readActionEnvelope,
     phases: ACTION_CONTRACT_PHASES,
     actions: ACTION_CONTRACT_ACTIONS,
     actorAuthority: ACTION_ACTOR_AUTHORITY,
