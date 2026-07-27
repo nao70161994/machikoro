@@ -40,17 +40,17 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-26 保守性改善の現在地
+## 2026-07-28 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
 - CPU: 既存pure helperに加えて`js/cpuBuildExecution.js`へlocal/online建設実行を分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
 - server: `server/lobbySocketHandlers.js`と`server/rejoinSocketHandler.js`へcreate/join/rejoin familyを分離し、effect/emit順を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
 - online: `js/onlineReconnectState.js`のshadow controllerと`js/onlineRetryPolicy.js`の既存3秒/8回/15秒契約を使用。Restore queues、timer callback、ACK timing、protocolは未変更。
 - UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有し、DOM/focus/inert/pointer/event/PWA effectsは既存ownerに残る。
-- contracts: `js/actionContract.js`が15 actionのphase/actor/payload/replay/UI metadata正本。`npm run report:action-contract`の`issues`を空に保ち、独立validator/executor/snapshot/replay testsも維持する。
+- contracts/engine: `js/actionContract.js`が15 actionのmetadata正本、`js/gameSnapshot.js`がclient/serverのexact snapshot正本、`js/gameEngine.js`が共有action dispatchを所有する。`transitionSnapshot()`とAction/Snapshot v1 envelopeはshadow/移行足場であり、live wire、authority、hydrate、save形式は未変更。
 - tooling: scoped ESLint 10.7.0は29 maintenance moduleをbug-detection rulesだけで検査し、config/script driftもtestする。TypeScriptは未導入なのでcheckJsは別task。style rules、`--fix`、全repository lintは禁止。
 
-2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-23の再監査では、restore validation、pending resend policy、Action UI registry、機械可読contract report、限定ESLintまで実装した。残るreconnect timer/callback、gameAction/recreate/disconnect handler、modal DOM/focus/inert、CPUの大きなscoring/selection、production durable authority切替はpure抽出ではなくなったためdeferred。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-28時点でaction metadata、snapshot serialization、client/server action dispatchは共有済み。pure transitionとschema v1 readerはshadowのみで、live pure-engine切替、version付きwire送信、hydrate policy統合は未実施。残るreconnect timer/callback、gameAction/recreate/disconnect handler、modal DOM/focus/inert、CPUの大きなscoring/selection、production durable authority切替もpure抽出ではなくなったためdeferred。
 
 ## 2026-05-16 時点の実施済み範囲
 

@@ -111,6 +111,9 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - UI action child selectors must stay synchronized with the interactability registry and rendered `data-action` attributes.
 - `OnlineReconnectState` is a shadow controller and `OnlineRetryPolicy` owns the existing 3s/8-attempt/15s calculations; neither authorizes changing timer/callback order, socket events, storage cleanup, or visible outcomes.
 - Client/server replay changes must preserve complete serialized snapshot parity for the same canonical action trace.
+- `js/gameSnapshot.js` is the exact serializer shared by client and server mirror. Its v1 envelope helper does not authorize changing existing save, rejoin, or Socket.IO snapshot shapes.
+- `js/gameEngine.js` is the shared mutable action dispatcher. `GameEngine.transitionSnapshot()` remains shadow-only; do not replace a live owner until hydrate policy, authority, timing, multi-action parity, mixed-client negotiation, and rollback are separately covered.
+- Action/Snapshot schema readers accept legacy v0 and current v1 internally, but live traffic remains legacy/unversioned. Never begin emitting v1 solely because the reader exists.
 - Snapshot changes must preserve exact serialize/restore/serialize equality for initial, build/undo, pending, multiplayer/landmark, and endgame fixtures.
 - Card/effect changes must keep stable IDs, descriptions, metadata, rule handlers, and CPU references synchronized through the card contract test.
 - Client/lifecycle reporting, watchdog classification/diagnostic serialization, server payload/settings/restore sanitation, online payload/restore-rank/state observation, and UI display/HTML helper modules are pure boundaries; keep network, socket, DOM recovery, storage writes, lifecycle, modal, reconnect timing, and PWA side effects in their existing owners.

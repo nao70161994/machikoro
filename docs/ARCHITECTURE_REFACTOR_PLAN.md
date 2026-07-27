@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-23
+Last updated: 2026-07-28
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -13,8 +13,8 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | Server entrypoint | `server.js` plus `server/*` helpers | Express/API/Socket.IO wiring, room/action/restore sequencing, and ntfy delivery remain in `server.js`; validation, identity, payload, reporting, lifecycle, and sanitation policies have focused helpers. |
 | Online client | `js/online.js` plus online helpers | Socket lifecycle, retry/queue/session orchestration and action application remain in `online.js`; storage, payload normalization/ACK comparison, restore rank, and state vocabulary have focused helpers. |
 | UI | `js/ui.js` plus UI helpers | Top-level rendering, modal/focus/inert, DOM mutation, stats hooks, and event processing remain in `ui.js`; build/pending/detail/select/player/log/order/tutorial transforms have pure helpers. |
-| Rules/actions | `js/GameManager.js`, `js/Card.js`, action metadata in related files | Rule execution, phase transitions, pending queue, action names, action metadata, allowed action calculation, replayable action shape. |
-| Restore/replay/canonical payload | `server.js`, `js/online.js`, `js/GameManager.js`, tests | Live action validation, restore action log sanitation, canonical payload building, replay ordering, snapshot-plus-log recovery. |
+| Rules/actions | `js/GameManager.js`, `js/Card.js`, `js/actionContract.js`, `js/gameEngine.js` | `GameManager` remains the mutable rules owner; the action manifest and 15-action execution dispatch are shared. `GameEngine.transitionSnapshot()` is a shadow-only pure boundary. |
+| Restore/replay/canonical payload | `js/gameSnapshot.js`, `server.js`, `js/online.js`, restore helpers | Exact snapshot construction is shared; live validation, authority, hydrate normalization, replay ordering, and snapshot-plus-log recovery remain in their existing owners. |
 | Tests | `tests/server.test.js`, `tests/online.test.js`, `tests/ui.test.js`, `tests/main.test.js`, others | Contract coverage exists, but high-traffic files are large and often test several boundaries in one file. |
 
 ## Where Small Fixes Become Symptomatic
@@ -22,7 +22,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 - `server.js` owns both the Socket.IO event surface and the pure policy decisions behind room lifecycle. A small reconnect or restore fix can accidentally affect payload validation, host selection, restored-room replacement, or action log audit.
 - `js/online.js` mixes storage keys, retry timing, room mismatch handling, restore bundles, and action application. Adding another guard can preserve the immediate bug while making future stale-state paths harder to reason about.
 - `js/ui.js` has safer HTML helpers now, but modal lifecycle, render output, selector registries, and interactability recovery still live close together. A UI fix can mask a missing normal-render contract.
-- Action metadata is still distributed across allowed actions, server canonical payload rules, client apply logic, pending specs, and UI affordances. Contract tests reduce drift, but the ownership model is not yet single-source.
+- Action metadata and 15-action execution dispatch now have shared owners. The remaining risk is the live mutable `GameManager` lifecycle: client/server hydrate policy, authority, inventory/undo adapters, callback timing, and version negotiation still belong to different runtime owners.
 - Restore trust boundaries are deliberately casual today. More patches cannot turn host/client restore bundles into durable server authority without a separate design for signing, persistence, retention, conflict resolution, and hostless policy.
 - Test files cover many contracts but are themselves large. Mechanical splitting is not valuable; future module extraction should create smaller domain test files naturally.
 
@@ -34,7 +34,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | --- | --- | --- |
 | `server.js` room lifecycle and socket handler boundary | Lifecycle decisions and event transport are coupled in one large file. Pure policy needs a stable seam before handler moves are safe. | P1 |
 | `js/online.js` reconnect state and storage facade | Reconnect behavior depends on scattered localStorage keys, retry state, restore bundles, and pending outbound actions. | P1 |
-| Action metadata single source of truth | Existing contract tests catch drift after the fact, but action shape remains duplicated across gameplay, server, online, and UI. | P2 |
+| Shared Game Engine live adoption | Metadata and action dispatch are shared, but the pure transition is shadow-only and live hydrate/authority remain distributed. | P2 |
 | Restore trust boundary | Current restart restore is useful but client-supplied. Trust claims cannot be improved by small validation patches alone. | P3, design-only |
 
 ### Can Be Incremental
@@ -44,7 +44,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | UI surface extraction | Extract pure render helpers for build menu, card detail, card select, and modal content before moving lifecycle state. | P2 |
 | Server pure helper extraction | Move room lifecycle policy helpers before moving Socket.IO event handlers. | P1 |
 | Test architecture | Add new domain tests beside new modules. Avoid moving old assertions until the corresponding module boundary exists. | P2 |
-| Canonical payload contracts | Continue adding contract tests before moving tables into a shared action contract module. | P2 |
+| Game Engine parity and hydration contracts | Extend detached transition parity over representative multi-action traces, then isolate hydrate policy without changing legacy normalization. | P2 |
 
 ### Needs Manual / Real Device
 
@@ -196,27 +196,27 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Design D: Action Metadata Single Source Of Truth
 
-**Current problem:** Action names and payload expectations are distributed across `GameManager.allowedActionsFor()`, server validation/canonicalization, client `applyAction`, pending specs, online replay paths, and UI registries.
+**Current state:** `js/actionContract.js` is the metadata/canonical-key/UI source, and `js/gameEngine.js` owns the shared 15-action dispatch used by client replay and server mirror. `GameEngine.transitionSnapshot()` provides a detached shadow seam. Live runtime owners still validate, hydrate, authorize, schedule, and serialize under their existing compatibility rules.
 
-**Why small fixes are limited:** Contract tests can catch missing entries, but they do not give future editors one place to answer: which phase allows this action, who may send it, which payload fields are canonical, whether restore may replay it, and which client/UI path handles it.
+**Remaining limit:** Shared metadata and dispatch remove duplication, but they do not decide which runtime may authorize an action, how legacy snapshots hydrate, when socket callbacks run, or when mixed clients may emit a new schema. Those boundaries must remain explicit adapters rather than being hidden inside the dispatcher.
 
 **Target structure:**
 
-| Future file | Responsibility |
+| Boundary | Responsibility |
 | --- | --- |
-| `js/actionContract.js` | Browser/CommonJS-compatible metadata table for action name, phase availability, actor authority type, canonical payload keys, replay allowance, restore allowance, and client apply category. |
-| `server/actionGateway.js` | Server-side consumer of the action contract for validation and canonical payload construction. |
-| `tests/action-contract.test.js` | Cross-layer assertions that server, client apply, allowed actions, and UI/pending registries remain aligned. |
+| `js/actionContract.js` | Implemented browser/CommonJS metadata and Action envelope boundary. |
+| Client/server adapters | Retain independent validation, authority, inventory/undo, timing, and transport while consuming shared metadata/dispatch. |
+| Contract/parity tests | Guard registry coverage, exact snapshots, mutable-dispatch parity, detached transitions, and future migration behavior. |
 
 **Migration steps:**
 
-1. Add read-only tests that compare existing registries before moving data.
-2. Introduce `js/actionContract.js` with metadata copied from current behavior, but keep existing code paths as consumers one by one.
-3. Move canonical payload key tables into the shared contract only after live/restore parity tests pass.
-4. Move phase/action availability into the contract only after `GameManager.allowedActionsFor()` behavior is snapshot-tested.
-5. Keep execution logic in `GameManager.js`; the contract describes shape and routing, not rule effects.
+1. **Complete:** add cross-layer registry tests and make `js/actionContract.js` the read-only metadata source.
+2. **Complete:** project phase, canonical payload keys, replay/apply flags, and UI targets from that source.
+3. **Complete:** route client replay and server mirror through the shared mutable `js/gameEngine.js` dispatcher, retaining their adapters and authority.
+4. **Shadow only:** compare detached `snapshot -> action -> snapshot` transitions with the mutable server mirror; do not switch live ownership yet.
+5. **Future:** isolate compatible hydrate policies, extend multi-action parity, and design capability-gated schema negotiation before any live pure-transition cutover.
 
-**Contract tests to add:**
+**Contract coverage (implemented; extend before live migration):**
 
 - Every action in `GAME_ACTIONS` has metadata.
 - Every server-canonicalized action has canonical payload keys in the contract.
@@ -317,6 +317,10 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - `js/uiBuildMenu.js`, `js/uiPendingMenu.js`, `js/uiCardDetail.js`, `js/uiCardSelect.js`, `js/uiPlayerDisplay.js`, `js/uiLogDisplay.js`, `js/uiCardOrder.js`, and `js/uiTutorial.js` own pure HTML/display/order/guidance policy; `ui.js` still owns modal lifecycle, DOM mutation, event handling, and render orchestration.
 - `js/clientReporting.js`, `js/lifecycleNotify.js`, and `js/uiWatchdog.js` own pure report, lifecycle payload, freeze classification, and bounded diagnostic serialization while `appShell.js` retains browser capture, DOM snapshots, recovery, storage writes, dedupe, fetch, timers, and PWA side effects.
 - `js/actionContract.js` is the 15-action metadata source projected into GameManager, canonical payload keys, and UI targets; `js/actionUiRegistry.js` exposes the UI projection used by watchdog diagnostics. Independent validator/executor/report tests remain required.
+- `js/gameSnapshot.js` owns exact current client/server snapshot and undo serialization. Its legacy v0/current v1 envelope API is internal footing; live save and Socket.IO formats are unchanged.
+- `js/gameEngine.js` owns the shared 15-action mutable dispatch. Client/server adapters still own validation, actor authority, card creation, stock mutation, undo restore, timing, and transport.
+- `GameEngine.transitionSnapshot()` is a detached, fail-closed shadow boundary with stable failure reasons and real `GameManager` parity coverage. It is not a live authority or transport path.
+- `js/actionContract.js` also exposes legacy v0/current v1 Action envelope readers. Current live actions remain the legacy `{action, data}` shape until a separately reviewed mixed-client rollout exists.
 - `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log/pending normalization, ACK comparison, room ownership, duplicate-free restore append, and resend eligibility while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, `js/cpuSimulation.js`, and `js/cpuBuildExecution.js` own unchanged evaluation, candidate, simulation, and local/online build-execution boundaries behind existing CPU wrappers.
 - `server/hostlessRestoreCandidate.js`, `server/hostlessRestoreCoordinator.js`,
@@ -328,17 +332,17 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders. Scoped ESLint bug rules run from `test:static` over 29 maintenance modules, and a test keeps config and npm-script file sets identical.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, reconnect timer/callback migration, remaining gameAction/recreate/disconnect handler movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
+The remaining steps below still require the same gates described in each design section. In particular, compatible hydrate-policy isolation, broader multi-action shadow parity, schema capability negotiation, reconnect timer/callback migration, remaining gameAction/recreate/disconnect handler movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
 
 ## Recommended Migration Order
 
 1. **Keep the implemented helper boundaries stable:** Prefer extending the existing server, online, and UI pure modules before adding equivalent logic back into giant files.
 2. **Further pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
-3. **Action behavior consumers:** Keep the shared `js/actionContract.js` manifest and report green; migrate validators/executors only one behavior owner at a time.
+3. **Game Engine shadow expansion:** Keep the shared action contract/dispatcher green; add representative multi-action detached parity and isolate hydration policy before considering a live cutover.
 4. **Reconnect state machine and server socket handler split:** Move timing/event orchestration only after helper/facade tests are stable and manual-device verification is scheduled.
 5. **Restore authority activation:** The adapter/keyring/priority contracts are ready; activate only after durable provider, retention/locking, secret operations, migration, and rollback decisions.
 
-## First Safe Design Units
+## Historical First Safe Design Units
 
 1. `server/roomLifecycle.js` pure helper extraction for create/join/rejoin/disconnect outcomes. This gives high maintenance value while preserving wire protocol and handler behavior.
 2. `js/onlineStorage.js` facade for restore bundle and room-scoped keys. This reduces stale-state risk without changing storage format.
