@@ -111,6 +111,7 @@ const {
     hostlessRestoreDiagnostic,
     getRemainingConnectedPlayers,
     serializeMirrorState,
+    transitionMirrorEnvelope,
     restoreMirrorState,
     compactRoomActionLog,
     createRoomMirror,
@@ -5220,6 +5221,43 @@ runTest('buildGameStartPayload は明示flag時だけ全human共通schema metada
         buildGameStartPayload(io, room, () => 0, { gameSchemaNegotiationEnabled: true }).gameSchema,
         { actionVersion: 0, snapshotVersion: 0 }
     );
+});
+
+runTest('mirror replay shadowはnegotiated v1をmutable mirrorと同じ状態へ進める', () => {
+    const runtime = loadGameRuntime();
+    const room = {
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            playerOrder: [0, 1],
+            enabledCards: runtime.CARDS.map(card => card.name),
+            enabledLandmarks: runtime.Player.landmarkNames(),
+        },
+        stateSnapshot: null,
+        actionLog: [],
+    };
+    const mirror = createRoomMirror(room);
+    mirror.game.phase = runtime.GAME_PHASES.BUILD;
+    const source = serializeMirrorState(mirror.game, mirror.shopStock, null, 0);
+    const original = JSON.parse(JSON.stringify(source));
+    const shadow = transitionMirrorEnvelope({
+        selection: { actionVersion: 1, snapshotVersion: 1 },
+        snapshot: source,
+        action: 'nextTurn',
+        data: {},
+        actionSeq: 1,
+        enabledLandmarks: room.gameStartPayload.enabledLandmarks,
+    });
+    assert.strictEqual(shadow.ok, true);
+    assert.strictEqual(shadow.snapshotEnvelope.schemaVersion, 1);
+    assert.strictEqual(applyActionToMirror(
+        mirror.game, mirror.shopStock, 'nextTurn', {}, runtime.createCardByName
+    ), true);
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(shadow.snapshot)),
+        JSON.parse(JSON.stringify(serializeMirrorState(mirror.game, mirror.shopStock, null, 1)))
+    );
+    assert.strictEqual(JSON.stringify(source), JSON.stringify(original));
 });
 
 if (process.exitCode) {

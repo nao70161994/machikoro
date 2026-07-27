@@ -2,6 +2,7 @@
 
 const GameSnapshot = require('../js/gameSnapshot');
 const GameEngine = require('../js/gameEngine');
+const GameSchemaCodec = require('../js/gameSchemaCodec');
 
 const MAX_SNAPSHOT_PENDING_COUNT = 50;
 const MAX_SNAPSHOT_LOG_ENTRIES = 30;
@@ -23,6 +24,71 @@ function makeMirrorReplay({
                     typeof gameRuntime.GameManager.serializedPendingActionsFor === 'function')
                 ? gameRuntime.GameManager.serializedPendingActionsFor
                 : () => [],
+        });
+    }
+
+    function transitionMirrorEnvelope(options) {
+        if (!options || typeof options.action !== 'string' ||
+                !options.data || typeof options.data !== 'object' || Array.isArray(options.data)) {
+            return Object.freeze({ ok: false, reason: 'invalid-input', snapshot: null, snapshotEnvelope: null });
+        }
+        const snapshotEncoded = GameSchemaCodec.encodeSnapshot(options.selection, options.snapshot);
+        const actionEncoded = GameSchemaCodec.encodeAction(options.selection, options.action, options.data);
+        if (!snapshotEncoded.ok || !actionEncoded.ok) {
+            return Object.freeze({
+                ok: false,
+                reason: !snapshotEncoded.ok ? snapshotEncoded.reason : actionEncoded.reason,
+                snapshot: null,
+                snapshotEnvelope: null,
+            });
+        }
+        const transition = GameEngine.transitionEnvelope({
+            selection: options.selection,
+            snapshotEnvelope: snapshotEncoded.value,
+            actionEnvelope: actionEncoded.value,
+            hydrate(snapshot) {
+                const playerCount = Array.isArray(snapshot.players) ? snapshot.players.length : 0;
+                const game = new gameRuntime.GameManager(playerCount);
+                if (Array.isArray(options.enabledLandmarks) && options.enabledLandmarks.length > 0) {
+                    game.enabledLandmarks = new Set(options.enabledLandmarks);
+                }
+                const shopStock = {};
+                restoreMirrorState(game, shopStock, snapshot, gameRuntime.createCardByName);
+                const runtime = {
+                    game,
+                    shopStock,
+                    undoState: snapshot.undoState || null,
+                    createCardByName: gameRuntime.createCardByName,
+                    decrementShopStock: gameRuntime.decrementShopStock,
+                };
+                if (options.action === 'buildCard' || options.action === 'buildLandmark') {
+                    runtime.undoState = makeUndoStateFromMirror(game, shopStock);
+                }
+                runtime.restoreUndoState = state =>
+                    restoreUndoMirror(game, shopStock, state, gameRuntime.createCardByName);
+                return runtime;
+            },
+            serialize(runtime) {
+                if (options.action === 'undoBuild' || options.action === 'nextTurn') {
+                    runtime.undoState = null;
+                }
+                return serializeMirrorState(
+                    runtime.game, runtime.shopStock, runtime.undoState, options.actionSeq
+                );
+            },
+        });
+        if (!transition.ok) {
+            return Object.freeze({ ok: false, reason: transition.reason, snapshot: null, snapshotEnvelope: null });
+        }
+        const decoded = GameSchemaCodec.decodeSnapshot(options.selection, transition.snapshotEnvelope);
+        if (!decoded.ok) {
+            return Object.freeze({ ok: false, reason: decoded.reason, snapshot: null, snapshotEnvelope: null });
+        }
+        return Object.freeze({
+            ok: true,
+            reason: '',
+            snapshot: decoded.value,
+            snapshotEnvelope: transition.snapshotEnvelope,
         });
     }
 
@@ -381,6 +447,7 @@ function makeMirrorReplay({
 
     return {
         serializeMirrorState,
+        transitionMirrorEnvelope,
         restoreMirrorState,
         compactRoomActionLog,
         createRoomMirror,

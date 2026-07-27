@@ -115,6 +115,7 @@ const {
 const MAX_ACTION_LOG_LENGTH = 200;
 const {
     serializeMirrorState,
+    transitionMirrorEnvelope,
     restoreMirrorState,
     compactRoomActionLog,
     createRoomMirror,
@@ -1697,6 +1698,7 @@ module.exports = {
     getRemainingConnectedPlayers,
     hostlessRestoreDiagnostic,
     serializeMirrorState,
+    transitionMirrorEnvelope,
     restoreMirrorState,
     compactRoomActionLog,
     createRoomMirror,

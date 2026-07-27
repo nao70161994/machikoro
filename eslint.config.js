@@ -29,6 +29,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/clientErrorAuth.js',
     'server/gameSchemaRuntime.js',
     'server/lobbySocketHandlers.js',
+    'server/mirrorReplay.js',
     'server/rejoinSocketHandler.js',
     'server/rejoinPayload.js',
     'server/reportThrottle.js',
