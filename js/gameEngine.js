@@ -6,6 +6,9 @@ const GameActionContractApi = typeof module !== 'undefined' && module.exports
 const GameSnapshotApi = typeof module !== 'undefined' && module.exports
     ? require('./gameSnapshot')
     : globalThis.GameSnapshot;
+const GameSchemaCodecApi = typeof module !== 'undefined' && module.exports
+    ? require('./gameSchemaCodec')
+    : globalThis.GameSchemaCodec;
 // Transitional shared execution boundary. GameManager remains mutable today; callers
 // inject persistence/inventory adapters so this table can move behind a pure
 // snapshot -> action -> snapshot API without duplicating action semantics again.
@@ -174,7 +177,7 @@ function transitionSnapshot(request) {
 }
 
 /**
- * Reads legacy/current envelopes and returns a current-version snapshot envelope.
+ * Reads legacy/current envelopes; an optional negotiated selection fixes both input and output versions.
  * This remains a shadow-only migration seam; it is not used by live transport.
  *
  * @param {Object} request
@@ -184,7 +187,13 @@ function transitionEnvelope(request) {
     if (!request || !GameActionContractApi || !GameSnapshotApi) {
         return Object.freeze({ ok: false, reason: GAME_ENGINE_TRANSITION_FAILURES.INVALID_INPUT, snapshotEnvelope: null });
     }
-    const snapshotRead = GameSnapshotApi.readSnapshotEnvelope(request.snapshotEnvelope);
+    const selected = request.selection != null;
+    if (selected && !GameSchemaCodecApi) {
+        return Object.freeze({ ok: false, reason: GAME_ENGINE_TRANSITION_FAILURES.INVALID_INPUT, snapshotEnvelope: null });
+    }
+    const snapshotRead = selected
+        ? GameSchemaCodecApi.decodeSnapshot(request.selection, request.snapshotEnvelope)
+        : GameSnapshotApi.readSnapshotEnvelope(request.snapshotEnvelope);
     if (!snapshotRead.ok) {
         return Object.freeze({
             ok: false,
@@ -192,7 +201,9 @@ function transitionEnvelope(request) {
             snapshotEnvelope: null,
         });
     }
-    const actionRead = GameActionContractApi.readActionEnvelope(request.actionEnvelope);
+    const actionRead = selected
+        ? GameSchemaCodecApi.decodeAction(request.selection, request.actionEnvelope)
+        : GameActionContractApi.readActionEnvelope(request.actionEnvelope);
     if (!actionRead.ok) {
         return Object.freeze({
             ok: false,
@@ -200,19 +211,20 @@ function transitionEnvelope(request) {
             snapshotEnvelope: null,
         });
     }
-    const transition = transitionSnapshot(Object.assign({}, request, {
-        snapshot: snapshotRead.snapshot,
-        action: actionRead.action,
-        data: actionRead.data,
-    }));
+    const snapshot = selected ? snapshotRead.value : snapshotRead.snapshot;
+    const action = selected ? actionRead.value.action : actionRead.action;
+    const data = selected ? actionRead.value.data : actionRead.data;
+    const transition = transitionSnapshot(Object.assign({}, request, { snapshot, action, data }));
     if (!transition.ok) {
         return Object.freeze({ ok: false, reason: transition.reason, snapshotEnvelope: null });
     }
-    return Object.freeze({
-        ok: true,
-        reason: '',
-        snapshotEnvelope: GameSnapshotApi.createSnapshotEnvelope(transition.snapshot),
-    });
+    const encodedSnapshot = selected
+        ? GameSchemaCodecApi.encodeSnapshot(request.selection, transition.snapshot)
+        : { ok: true, value: GameSnapshotApi.createSnapshotEnvelope(transition.snapshot) };
+    if (!encodedSnapshot.ok) {
+        return Object.freeze({ ok: false, reason: GAME_ENGINE_TRANSITION_FAILURES.SERIALIZE_FAILED, snapshotEnvelope: null });
+    }
+    return Object.freeze({ ok: true, reason: '', snapshotEnvelope: encodedSnapshot.value });
 }
 
 const GameEngine = Object.freeze({

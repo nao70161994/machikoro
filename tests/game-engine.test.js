@@ -443,6 +443,54 @@ runTest('versioned transitionはlegacy/current envelopeを合成してv1 snapsho
     assert.deepStrictEqual(current.snapshotEnvelope, { schemaVersion: 1, snapshot: { counter: 6 } });
 });
 
+runTest('versioned transitionはnegotiated selectionの独立versionで入出力する', () => {
+    const run = (selection, snapshotEnvelope, actionEnvelope) => GameEngine.transitionEnvelope({
+        selection,
+        snapshotEnvelope,
+        actionEnvelope,
+        hydrate(snapshot) {
+            return { state: snapshot, game: { nextTurn() { snapshot.counter++; return true; } } };
+        },
+        serialize(runtime) { return runtime.state; },
+    });
+    const legacy = run(
+        { actionVersion: 0, snapshotVersion: 0 },
+        { counter: 1 },
+        { action: 'nextTurn', data: {} }
+    );
+    assert.deepStrictEqual(legacy.snapshotEnvelope, { counter: 2 });
+    const current = run(
+        { actionVersion: 1, snapshotVersion: 1 },
+        { schemaVersion: 1, snapshot: { counter: 3 } },
+        { schemaVersion: 1, action: 'nextTurn', data: {} }
+    );
+    assert.deepStrictEqual(current.snapshotEnvelope, { schemaVersion: 1, snapshot: { counter: 4 } });
+    const mixed = run(
+        { actionVersion: 1, snapshotVersion: 0 },
+        { counter: 5 },
+        { schemaVersion: 1, action: 'nextTurn', data: {} }
+    );
+    assert.deepStrictEqual(mixed.snapshotEnvelope, { counter: 6 });
+});
+
+runTest('versioned transitionはselectionとwireの不一致をhydrate前に拒否する', () => {
+    let hydrateCalls = 0;
+    const base = {
+        selection: { actionVersion: 1, snapshotVersion: 1 },
+        hydrate() { hydrateCalls++; return { game: {} }; },
+        serialize() { return {}; },
+    };
+    assert.strictEqual(GameEngine.transitionEnvelope(Object.assign({}, base, {
+        snapshotEnvelope: {},
+        actionEnvelope: { schemaVersion: 1, action: 'nextTurn', data: {} },
+    })).reason, GameEngine.transitionFailureReasons.INVALID_SNAPSHOT_SCHEMA);
+    assert.strictEqual(GameEngine.transitionEnvelope(Object.assign({}, base, {
+        snapshotEnvelope: { schemaVersion: 1, snapshot: {} },
+        actionEnvelope: { action: 'nextTurn', data: {} },
+    })).reason, GameEngine.transitionFailureReasons.INVALID_ACTION_SCHEMA);
+    assert.strictEqual(hydrateCalls, 0);
+});
+
 runTest('versioned transitionはunknown schemaをaction適用前にfail closedにする', () => {
     const reasons = GameEngine.transitionFailureReasons;
     let hydrateCalls = 0;

@@ -1932,6 +1932,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/gameSnapshot.js', 'js/online.js');
     assertBefore('js/gameEngine.js', 'js/online.js');
     assertBefore('js/gameSchemaNegotiation.js', 'js/online.js');
+    assertBefore('js/gameSnapshot.js', 'js/gameSchemaCodec.js');
+    assertBefore('js/gameSchemaCodec.js', 'js/gameEngine.js');
     assertBefore('js/GameManager.js', 'js/CPU.js');
     assertBefore('js/cpuTuning.js', 'js/CPU.js');
     assertBefore('js/cpuProfile.js', 'js/CPU.js');

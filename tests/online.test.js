@@ -32,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSnapshot.js', 'js/gameEngine.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameEngine.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 
@@ -124,7 +124,6 @@ function loadOnlineRuntime(options = {}) {
 
     // online storage facade と online.js をロード
     loadScript(context, 'js/onlineStorage.js');
-    loadScript(context, 'js/gameSchemaNegotiation.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
