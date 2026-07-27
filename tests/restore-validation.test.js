@@ -1,5 +1,6 @@
 const assert = require('assert');
 const makeRestoreValidation = require('../server/restoreValidation');
+const { isValidGameSchemaMetadata } = require('../server/gameSchemaRuntime');
 const { runTest } = require('./helpers/test-utils');
 
 const validUndoState = { kind: 'valid-undo' };
@@ -20,6 +21,7 @@ const validation = makeRestoreValidation({
     sanitizeName(name) {
         return typeof name === 'string' ? name.trim() : '';
     },
+    isValidGameSchemaMetadata,
 });
 
 function validPayload(overrides = {}) {
@@ -31,6 +33,7 @@ function validPayload(overrides = {}) {
         enabledCards: ['Card A'],
         enabledLandmarks: ['Station'],
         cpuSpeed: 1500,
+        gameSchema: { actionVersion: 1, snapshotVersion: 1 },
     }, overrides);
 }
 
@@ -42,6 +45,7 @@ runTest('restore validation preserves valid game-start payloads and legacy optio
         enabledCards: undefined,
         enabledLandmarks: undefined,
         cpuSpeed: undefined,
+        gameSchema: undefined,
     }), 2), true);
 });
 
@@ -58,6 +62,8 @@ runTest('restore validation rejects malformed game-start fields by contract boun
         [validPayload({ enabledLandmarks: ['Unknown'] }), 2],
         [validPayload({ cpuSpeed: -1 }), 2],
         [validPayload({ cpuSpeed: Infinity }), 2],
+        [validPayload({ gameSchema: {} }), 2],
+        [validPayload({ gameSchema: { actionVersion: 2, snapshotVersion: 1 } }), 2],
     ];
     for (const [payload, playerCount] of invalidCases) {
         assert.strictEqual(validation.isValidGameStartPayload(payload, playerCount), false);

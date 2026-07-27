@@ -41,8 +41,25 @@ function getClientVersion() {
     return (typeof window !== "undefined" && window.MACHIKORO_CLIENT_VERSION) || "unknown";
 }
 
+function isGameSchemaNegotiationTransportEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED === true;
+}
+
+function getGameSchemaCapabilitiesForTransport() {
+    const enabled = isGameSchemaNegotiationTransportEnabled();
+    if (typeof GameSchemaNegotiation === 'undefined') return null;
+    return GameSchemaNegotiation.transportCapabilities(enabled);
+}
+
+function acceptsNegotiatedGameSchema(selection) {
+    if (!isGameSchemaNegotiationTransportEnabled()) return true;
+    if (typeof GameSchemaNegotiation === 'undefined') return selection == null;
+    return GameSchemaNegotiation.supportsSelection(getGameSchemaCapabilitiesForTransport(), selection);
+}
+
 function buildOnlineRejoinPayload(session) {
-    return OnlinePayload.buildRejoin(session, getClientVersion());
+    return OnlinePayload.buildRejoin(session, getClientVersion(), getGameSchemaCapabilitiesForTransport());
 }
 
 function changeOnlineCount(delta) {
@@ -853,7 +870,11 @@ function initSocket() {
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
-    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount }) => {
+    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount, gameSchema }) => {
+        if (!acceptsNegotiatedGameSchema(gameSchema)) {
+            document.getElementById("onlineStatus").textContent = 'ゲーム状態のschema versionに対応していません。アプリを更新してください。';
+            return;
+        }
         _clearRejoinRetry();
         _hostlessRestorePending = false;
         _onlineRestoreQuarantined = false;
@@ -871,6 +892,7 @@ function initSocket() {
             hostlessRestoreCount: Number.isInteger(hostlessRestoreCount)
                 ? hostlessRestoreCount : 0,
         }, hostPlayerIndex, hostEpoch);
+        if (gameSchema) gameStartPayload.gameSchema = gameSchema;
         const startOnlineGame = () => {
             if (startGeneration !== _onlineRestoreGeneration) return;
             isOnlineGame = true;
@@ -1002,6 +1024,10 @@ function initSocket() {
     socket.on('actionAccepted', handleActionAccepted);
 
     socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch, restoreAudit, provisionalRestore }) => {
+        if (!gameStartPayload || !acceptsNegotiatedGameSchema(gameStartPayload.gameSchema)) {
+            document.getElementById("onlineStatus").textContent = '復元データのschema versionに対応していません。アプリを更新してください。';
+            return;
+        }
         const carriedEvents = (_onlineRestoreInProgress || _onlineRestoreQuarantined)
             ? _onlineRestoreEventQueue.slice()
             : [];
@@ -1458,7 +1484,7 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
     if (!initSocket()) return;
     beginOnlineLobbyRequest('create');
     isRoomHost = true;
-    socket.emit('createRoom', {
+    const createPayload = {
         playerName: name,
         playerCount,
         playerSettings: freezeOnlinePlayerSettings(settings, playerCount),
@@ -1467,7 +1493,10 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
         enabledLandmarks: [...enabledLandmarks],
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
-    });
+    };
+    socket.emit('createRoom', OnlinePayload.withGameSchemaCapabilities(
+        createPayload, getGameSchemaCapabilitiesForTransport()
+    ));
 }
 
 function showCreateRoom() {
@@ -1517,12 +1546,15 @@ function joinRoom() {
     isRoomHost = false;
     if (!initSocket()) return;
     beginOnlineLobbyRequest('join');
-    socket.emit('joinRoom', {
+    const joinPayload = {
         roomId,
         playerName: name,
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
-    });
+    };
+    socket.emit('joinRoom', OnlinePayload.withGameSchemaCapabilities(
+        joinPayload, getGameSchemaCapabilitiesForTransport()
+    ));
 }
 
 function initOnlineGame(playerNames, ps, playerOrder) {

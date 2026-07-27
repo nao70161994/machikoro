@@ -23,10 +23,19 @@ function registerLobbySocketHandlers(socket, dependencies) {
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
+    const resolveGameSchemaCapabilities = typeof dependencies.resolveClientGameSchemaCapabilities === 'function'
+        ? dependencies.resolveClientGameSchemaCapabilities
+        : (() => ({ ok: true, capabilities: null, reason: '' }));
+    const negotiateSchemaCandidate = typeof dependencies.negotiateRoomGameSchemaCandidate === 'function'
+        ? dependencies.negotiateRoomGameSchemaCandidate
+        : (() => ({ ok: true, reason: '' }));
 
     socket.on('createRoom', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion, hostlessRestoreVersion } = payload;
+        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion, hostlessRestoreVersion, gameSchemaCapabilities } = payload;
+        const schemaResolution = resolveGameSchemaCapabilities(gameSchemaCapabilities);
+        if (!schemaResolution.ok) { emitAppError(socket, 'SCHEMA_CAPABILITY_INVALID'); return; }
+        socket.gameSchemaCapabilities = schemaResolution.capabilities;
         socket.clientVersion = clientVersion || 'unknown';
         socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         playerName = sanitizeName(playerName);
@@ -76,7 +85,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
             lastTouchedAt: createdAt,
             enabledCards: selectedCards,
             enabledLandmarks: selectedLandmarks,
-            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken }],
+            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken, gameSchemaCapabilities: schemaResolution.capabilities }],
             hostPlayerIndex: hostIndex,
             hostEpoch: 0,
             actionSeq: 0,
@@ -97,7 +106,10 @@ function registerLobbySocketHandlers(socket, dependencies) {
 
     socket.on('joinRoom', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        let { roomId, playerName, clientVersion, hostlessRestoreVersion } = payload;
+        let { roomId, playerName, clientVersion, hostlessRestoreVersion, gameSchemaCapabilities } = payload;
+        const schemaResolution = resolveGameSchemaCapabilities(gameSchemaCapabilities);
+        if (!schemaResolution.ok) { emitAppError(socket, 'SCHEMA_CAPABILITY_INVALID'); return; }
+        socket.gameSchemaCapabilities = schemaResolution.capabilities;
         socket.clientVersion = clientVersion || 'unknown';
         socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         playerName = sanitizeName(playerName);
@@ -136,9 +148,11 @@ function registerLobbySocketHandlers(socket, dependencies) {
             emitAppError(socket, '参加できる枠がありません');
             return;
         }
+        const schemaCandidate = negotiateSchemaCandidate(room, playerIndex, schemaResolution.capabilities);
+        if (!schemaCandidate.ok) { emitAppError(socket, 'SCHEMA_VERSION_UNSUPPORTED'); return; }
         const reconnectToken = generateReconnectToken();
         room.lastTouchedAt = now();
-        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken });
+        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken, gameSchemaCapabilities: schemaResolution.capabilities });
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;

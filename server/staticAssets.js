@@ -22,9 +22,12 @@ function injectServiceWorkerBuildHash(content, buildHash) {
     return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
 }
 
-function injectIndexBuildHash(content, buildHash) {
+function injectIndexBuildHash(content, buildHash, options = {}) {
     const script = `<script>window.MACHIKORO_CLIENT_VERSION=${JSON.stringify(buildHash)};</script>`;
-    return String(content).replace('</head>', `    ${script}\n</head>`);
+    const scripts = options.gameSchemaNegotiationEnabled === true
+        ? script + '\n    <script>window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;</script>'
+        : script;
+    return String(content).replace('</head>', `    ${scripts}\n</head>`);
 }
 
 function isPublicRootFile(fileName) {

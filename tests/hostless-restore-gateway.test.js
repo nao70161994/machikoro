@@ -32,6 +32,7 @@ function startPayload(overrides = {}) {
         hostPlayerIndex: 0,
         hostEpoch: 4,
         actionSeq: 7,
+        gameSchema: { actionVersion: 1, snapshotVersion: 1 },
         reconnectTokenHashes: ['hash-host', 'hash-guest', 'hash-guest2'],
         hostlessRestoreCapabilities: [1, 1, 1],
         hostlessRestoreGeneration: 2,
@@ -99,6 +100,7 @@ runTest('gatewayは検証済みbundleをserver canonical snapshotとhashへ変�
     assert.strictEqual(result.candidate.canonicalHash.length, 64);
     assert.strictEqual(result.candidate.payload.gameStartPayload.schemaVersion, undefined);
     assert.strictEqual(result.candidate.payload.gameStartPayload.ignoredFutureField, undefined);
+    assert.deepStrictEqual(result.candidate.payload.gameStartPayload.gameSchema, { actionVersion: 1, snapshotVersion: 1 });
 });
 
 runTest('client専用schemaを除外してserver署名snapshotを検証する', () => {

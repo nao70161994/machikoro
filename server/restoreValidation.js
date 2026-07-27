@@ -7,6 +7,7 @@ function makeRestoreValidation({
     cards,
     landmarkNames,
     sanitizeName,
+    isValidGameSchemaMetadata = () => false,
 }) {
     function buildRestoredHumanPlayers(gameStartPayload, reconnectingPlayerIndex, socketId) {
         const playerNames = Array.isArray(gameStartPayload?.playerNames) ? gameStartPayload.playerNames : [];
@@ -64,6 +65,7 @@ function makeRestoreValidation({
             (!Array.isArray(payload.enabledLandmarks) ||
             payload.enabledLandmarks.length === 0 ||
             payload.enabledLandmarks.some(name => !knownLandmarks.has(name)))) return false;
+        if (payload.gameSchema != null && !isValidGameSchemaMetadata(payload.gameSchema)) return false;
         if (payload.cpuSpeed != null && (!Number.isFinite(payload.cpuSpeed) || payload.cpuSpeed < 0)) return false;
         return true;
     }

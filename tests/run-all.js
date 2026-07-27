@@ -36,6 +36,7 @@ const TEST_GROUPS = {
         'game-engine.test.js',
         'game-snapshot.test.js',
         'game-schema-negotiation.test.js',
+        'game-schema-runtime.test.js',
         'snapshot-contract.test.js',
         'client-error-reporting.test.js',
         'report-throttle.test.js',
@@ -165,6 +166,7 @@ const TEST_GROUPS = {
         'game-engine.test.js',
         'game-snapshot.test.js',
         'game-schema-negotiation.test.js',
+        'game-schema-runtime.test.js',
         'snapshot-contract.test.js',
         'client-error-reporting.test.js',
         'report-throttle.test.js',
@@ -178,6 +180,7 @@ const TEST_GROUPS = {
         'online-delivery-handshake.test.js',
         'online-action-reconnect-e2e.test.js',
         'online-completion-e2e.test.js',
+        'game-schema-online-e2e.test.js',
         'storage.test.js',
     ],
     pwa: [
@@ -254,6 +257,7 @@ const repoRoot = path.join(__dirname, '..');
 const REQUIRED_TEST_GROUPS = Object.freeze({
     'online-action-reconnect-e2e.test.js': ['online'],
     'online-completion-e2e.test.js': ['online'],
+    'game-schema-online-e2e.test.js': ['online'],
     'online-soak.test.js': ['soak'],
 });
 

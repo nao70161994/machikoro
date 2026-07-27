@@ -133,3 +133,44 @@ runTest('lobby handler はinvalid payloadを副作用なしで拒否する', () 
     ]);
     assert.deepStrictEqual(Object.keys(runtime.rooms), []);
 });
+
+runTest('lobby handler はschema capabilityをplayerへ保存し不正値を副作用前に拒否する', () => {
+    const runtime = makeRuntime();
+    runtime.dependencies.resolveClientGameSchemaCapabilities = value => value && value.valid
+        ? { ok: true, capabilities: { actionVersions: [0, 1], snapshotVersions: [0, 1] } }
+        : { ok: false, capabilities: null, reason: 'invalid' };
+    const socket = makeSocket('host', runtime.trace);
+    registerLobbySocketHandlers(socket, runtime.dependencies);
+    runtime.trace.length = 0;
+    socket.handlers.createRoom({ playerName: 'Alice', playerCount: 2, playerSettings: [], gameSchemaCapabilities: {} });
+    assert.deepStrictEqual(runtime.trace, [
+        ['require-payload', 'host'], ['error', 'host', 'SCHEMA_CAPABILITY_INVALID'],
+    ]);
+    assert.deepStrictEqual(Object.keys(runtime.rooms), []);
+
+    runtime.trace.length = 0;
+    socket.handlers.createRoom({
+        playerName: 'Alice', playerCount: 2, playerSettings: [],
+        enabledLandmarks: ['駅'], gameSchemaCapabilities: { valid: true },
+    });
+    assert.deepStrictEqual(runtime.rooms.ROOM01.players[0].gameSchemaCapabilities, {
+        actionVersions: [0, 1], snapshotVersions: [0, 1],
+    });
+});
+
+runTest('joinRoom handler はroom内peerと共通schemaがない候補を追加しない', () => {
+    const runtime = makeRuntime();
+    runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01', players: [{ id: 'host', name: 'Alice', index: 0 }],
+        playerSettings: [{ type: 'human' }, { type: 'human' }], maxPlayers: 2, started: false,
+    };
+    runtime.dependencies.negotiateRoomGameSchemaCandidate = () => ({ ok: false, reason: 'no-common' });
+    const socket = makeSocket('guest', runtime.trace);
+    registerLobbySocketHandlers(socket, runtime.dependencies);
+    runtime.trace.length = 0;
+    socket.handlers.joinRoom({ roomId: 'ROOM01', playerName: 'Bob' });
+    assert.deepStrictEqual(runtime.trace, [
+        ['require-payload', 'guest'], ['error', 'guest', 'SCHEMA_VERSION_UNSUPPORTED'],
+    ]);
+    assert.strictEqual(runtime.rooms.ROOM01.players.length, 1);
+});

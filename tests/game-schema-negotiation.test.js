@@ -58,3 +58,18 @@ runTest('schema negotiationは壊れた明示capabilityと共通versionなしを
         reasons.NO_COMMON_SNAPSHOT_VERSION
     );
 });
+
+runTest('schema negotiation transport capabilityは明示flagでだけ公開される', () => {
+    assert.strictEqual(GameSchemaNegotiation.transportCapabilities(false), null);
+    assert.strictEqual(GameSchemaNegotiation.transportCapabilities(undefined), null);
+    assert.strictEqual(GameSchemaNegotiation.transportCapabilities(true), GameSchemaNegotiation.capabilities);
+});
+
+runTest('schema negotiation selectionは広告済みversionだけを受理する', () => {
+    const current = GameSchemaNegotiation.capabilities;
+    assert.strictEqual(GameSchemaNegotiation.supportsSelection(current, { actionVersion: 1, snapshotVersion: 1 }), true);
+    assert.strictEqual(GameSchemaNegotiation.supportsSelection(null, { actionVersion: 0, snapshotVersion: 0 }), true);
+    assert.strictEqual(GameSchemaNegotiation.supportsSelection(null, { actionVersion: 1, snapshotVersion: 1 }), false);
+    assert.strictEqual(GameSchemaNegotiation.supportsSelection(current, { actionVersion: 1, snapshotVersion: 1, extra: true }), false);
+    assert.strictEqual(GameSchemaNegotiation.supportsSelection(current, { actionVersion: 2, snapshotVersion: 1 }), false);
+});

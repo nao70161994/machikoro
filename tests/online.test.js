@@ -124,6 +124,7 @@ function loadOnlineRuntime(options = {}) {
 
     // online storage facade と online.js をロード
     loadScript(context, 'js/onlineStorage.js');
+    loadScript(context, 'js/gameSchemaNegotiation.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -165,6 +166,7 @@ function loadOnlineRuntime(options = {}) {
         this.APP_ERROR_EVENT = APP_ERROR_EVENT;
         this.getClientVersion = getClientVersion;
         this.buildOnlineRejoinPayload = buildOnlineRejoinPayload;
+        this.acceptsNegotiatedGameSchema = acceptsNegotiatedGameSchema;
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
         this.onChangeOnlinePlayerType = onChangeOnlinePlayerType;
         this.showCreateRoom = showCreateRoom;
@@ -479,6 +481,17 @@ runTest('buildOnlineRejoinPayload はclientVersionを含める', () => {
         reconnectToken: 'token-1',
         clientVersion: 'build-rejoin-1',
         hostlessRestoreVersion: 1,
+    });
+});
+
+runTest('buildOnlineRejoinPayload は明示flag時だけschema capabilityを加える', () => {
+    const localRt = loadOnlineRuntime();
+    localRt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    const payload = JSON.parse(JSON.stringify(localRt.buildOnlineRejoinPayload({
+        roomId: 'ROOM01', playerIndex: 1, playerName: 'Alice', reconnectToken: 'token-1',
+    })));
+    assert.deepStrictEqual(payload.gameSchemaCapabilities, {
+        actionVersions: [0, 1], snapshotVersions: [0, 1],
     });
 });
 
@@ -2693,6 +2706,7 @@ runTest('_tryRestoreRoom は古い復元schemaを送信せず破棄する', () =
 
 runTest('gameStart はサーバーの hostPlayerIndex で stale host 状態を補正する', () => {
     const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
@@ -2709,11 +2723,13 @@ runTest('gameStart はサーバーの hostPlayerIndex で stale host 状態を�
         enabledLandmarks: Player.landmarkNames(),
         reconnectTokenHashes: ['hash-a', 'hash-b'],
         hostPlayerIndex: 0,
+        gameSchema: { actionVersion: 1, snapshotVersion: 1 },
     });
 
     assert.strictEqual(rt.getOnlineState().isRoomHost, false);
     const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(storedGameStart.hostPlayerIndex, 0);
+    assert.deepStrictEqual(storedGameStart.gameSchema, { actionVersion: 1, snapshotVersion: 1 });
 });
 
 runTest('joinRoom は createRoom 失敗後に残った host 状態を落とす', () => {
@@ -3626,3 +3642,36 @@ runTest('restore event queue は上限超過時に破棄して再同期する', 
 if (process.exitCode) {
     throw new Error('onlineテストで失敗が発生しました');
 }
+
+runTest('online lobby payloadは明示flag時にcreate/joinへschema capabilityを加える', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.document.getElementById('playerNameInput').value = 'Alice';
+    rt.document.getElementById('onlineCpuSpeed').value = '1500';
+    rt.showCreateRoom();
+    const create = rt.getSocketEmits().find(event => event.name === 'createRoom');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(create.payload.gameSchemaCapabilities)), {
+        actionVersions: [0, 1], snapshotVersions: [0, 1],
+    });
+
+    const joinRt = loadOnlineRuntime();
+    joinRt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    joinRt.document.getElementById('playerNameInput').value = 'Bob';
+    joinRt.document.getElementById('roomIdInput').value = 'room01';
+    joinRt.joinRoom();
+    const join = joinRt.getSocketEmits().find(event => event.name === 'joinRoom');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(join.payload.gameSchemaCapabilities)), {
+        actionVersions: [0, 1], snapshotVersions: [0, 1],
+    });
+});
+
+runTest('online clientはflagで広告したschema selectionだけを受理する', () => {
+    const legacyRt = loadOnlineRuntime();
+    assert.strictEqual(legacyRt.acceptsNegotiatedGameSchema(null), true);
+    assert.strictEqual(legacyRt.acceptsNegotiatedGameSchema({ actionVersion: 0, snapshotVersion: 0 }), true);
+    assert.strictEqual(legacyRt.acceptsNegotiatedGameSchema({ actionVersion: 1, snapshotVersion: 1 }), true);
+    const currentRt = loadOnlineRuntime();
+    currentRt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    assert.strictEqual(currentRt.acceptsNegotiatedGameSchema({ actionVersion: 1, snapshotVersion: 1 }), true);
+    assert.strictEqual(currentRt.acceptsNegotiatedGameSchema({ actionVersion: 2, snapshotVersion: 1 }), false);
+});

@@ -5198,6 +5198,30 @@ runTest('checkGameStart は人間枠が不足している間は開始しない',
     }
 });
 
+
+runTest('buildGameStartPayload は明示flag時だけ全human共通schema metadataを加える', () => {
+    const capabilities = { actionVersions: [0, 1], snapshotVersions: [0, 1] };
+    const io = { sockets: { sockets: new Map() } };
+    const room = {
+        enabledCards: ['麦畑'], enabledLandmarks: ['駅'],
+        players: [
+            { id: 's1', index: 0, name: 'Alice', reconnectToken: 'a', gameSchemaCapabilities: capabilities },
+            { id: 's2', index: 1, name: 'Bob', reconnectToken: 'b', gameSchemaCapabilities: capabilities },
+        ],
+        hostPlayerIndex: 0, maxPlayers: 2,
+        playerSettings: [{ type: 'human' }, { type: 'human' }], cpuSpeed: 1500,
+    };
+    const disabled = buildGameStartPayload(io, room, () => 0, { gameSchemaNegotiationEnabled: false });
+    const enabled = buildGameStartPayload(io, room, () => 0, { gameSchemaNegotiationEnabled: true });
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(disabled, 'gameSchema'), false);
+    assert.deepStrictEqual(enabled.gameSchema, { actionVersion: 1, snapshotVersion: 1 });
+    room.players[1].gameSchemaCapabilities = null;
+    assert.deepStrictEqual(
+        buildGameStartPayload(io, room, () => 0, { gameSchemaNegotiationEnabled: true }).gameSchema,
+        { actionVersion: 0, snapshotVersion: 0 }
+    );
+});
+
 if (process.exitCode) {
     throw new Error('serverテストで失敗が発生しました');
 }

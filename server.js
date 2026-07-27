@@ -63,6 +63,16 @@ const {
     createHostlessRestoreRuntime,
     hostlessRestoreEnabled,
 } = require('./server/hostlessRestoreRuntime');
+const {
+    gameSchemaNegotiationEnabled,
+    resolveClientGameSchemaCapabilities,
+    negotiateRoomGameSchemaCandidate,
+    isValidGameSchemaMetadata,
+    supportsSelectedGameSchema,
+    supportsSelectedGameSchemaForRuntime,
+    gameSchemaStartMetadata,
+} = require('./server/gameSchemaRuntime');
+const GAME_SCHEMA_NEGOTIATION_ENABLED = gameSchemaNegotiationEnabled(process.env);
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -131,6 +141,7 @@ const {
     cards: gameRuntime.CARDS,
     landmarkNames: gameRuntime.Player.landmarkNames,
     sanitizeName,
+    isValidGameSchemaMetadata,
 });
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     startedRoomTtlMs: 2 * 60 * 60 * 1000,
@@ -541,7 +552,9 @@ if (require.main === module) {
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
 const swContent = injectServiceWorkerBuildHash(swTemplate, BUILD_HASH);
 const indexTemplate = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH);
+const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
+    gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
+});
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
     relation: ['delegate_permission/common.handle_all_urls'],
@@ -878,6 +891,8 @@ io.on('connection', (socket) => {
         checkGameStart,
         validateSocketCanEnterRoom,
         isValidRoomId,
+        resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
+        negotiateRoomGameSchemaCandidate: (room, playerIndex, capabilities) => negotiateRoomGameSchemaCandidate(room, playerIndex, capabilities, GAME_SCHEMA_NEGOTIATION_ENABLED),
     });
 
     socket.on('gameAction', (payload) => {
@@ -952,6 +967,10 @@ io.on('connection', (socket) => {
         detachExistingPlayerSocket,
         resolveRejoinPlayer,
         buildRejoinDataPayload,
+        resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
+        supportsSelectedGameSchema: (capabilities, selected) => supportsSelectedGameSchemaForRuntime(
+            capabilities, selected, GAME_SCHEMA_NEGOTIATION_ENABLED
+        ),
         io,
     });
 
@@ -1437,9 +1456,14 @@ function roomHostlessRestoreCapabilities(ioInstance, room, playerNames) {
     });
 }
 
-function buildGameStartPayload(io, room, randomFn = Math.random) {
+function buildGameStartPayload(io, room, randomFn = Math.random, options = {}) {
+    const schemaEnabled = options.gameSchemaNegotiationEnabled !== undefined
+        ? options.gameSchemaNegotiationEnabled === true
+        : GAME_SCHEMA_NEGOTIATION_ENABLED;
+    const gameSchema = gameSchemaStartMetadata(room, schemaEnabled);
+    if (schemaEnabled && !gameSchema) return null;
     const playerNames = buildGameStartPlayerNames(room);
-    return {
+    const payload = {
         enabledCards: room.enabledCards,
         enabledLandmarks: room.enabledLandmarks,
         playerNames,
@@ -1455,6 +1479,8 @@ function buildGameStartPayload(io, room, randomFn = Math.random) {
         hostlessRestoreGeneration: 0,
         hostlessRestoreCount: 0,
     };
+    if (gameSchema) payload.gameSchema = gameSchema;
+    return payload;
 }
 
 // ===== Mirror replay =====
@@ -1528,6 +1554,7 @@ function checkGameStart(io, roomId) {
 
     if (room.players.length >= countRoomHumanSlots(room)) {
         const gameStartPayload = buildGameStartPayload(io, room);
+        if (!gameStartPayload) return;
         markRoomGameStarted(room, gameStartPayload);
         io.to(roomId).emit('gameStart', gameStartPayload);
         console.log(`ゲーム開始: ${roomId} プレイヤー: ${gameStartPayload.playerNames.join(', ')}`);

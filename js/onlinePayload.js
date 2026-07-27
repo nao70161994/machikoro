@@ -138,6 +138,11 @@ function acceptedClientActionMatchesPending(ref, pending) {
         Number.isInteger(ref.playerIndex) && ref.playerIndex === pending.playerIndex);
 }
 
+function withGameSchemaCapabilities(payload, capabilities) {
+    if (!capabilities) return payload;
+    return Object.assign({}, payload, { gameSchemaCapabilities: capabilities });
+}
+
 function shouldClearPendingForAcceptedAction(accepted, pending) {
     if (!pending) return false;
     if (typeof pending.clientActionId === 'string') {
@@ -155,8 +160,9 @@ const OnlinePayload = Object.freeze({
     canResendPendingOutboundAction,
     acceptedClientActionMatchesPending,
     shouldClearPendingForAcceptedAction,
-    buildRejoin(session, clientVersion) {
-        return {
+    withGameSchemaCapabilities,
+    buildRejoin(session, clientVersion, gameSchemaCapabilities = null) {
+        const payload = {
             roomId: session && session.roomId,
             playerIndex: session && session.playerIndex,
             playerName: session && session.playerName,
@@ -164,6 +170,7 @@ const OnlinePayload = Object.freeze({
             clientVersion,
             hostlessRestoreVersion: ONLINE_HOSTLESS_RESTORE_SCHEMA_VERSION,
         };
+        return withGameSchemaCapabilities(payload, gameSchemaCapabilities);
     },
     supportsHostlessRestore,
     buildHostlessRestoreRequest(bundle, identity) {

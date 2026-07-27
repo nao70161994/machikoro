@@ -68,6 +68,7 @@ function makeHostlessRestoreGateway(options = {}) {
             'hostEpoch',
             'actionSeq',
             'versions',
+            'gameSchema',
             'reconnectTokenHashes',
             HOSTLESS_RESTORE_CAPABILITY_FIELD,
             HOSTLESS_RESTORE_GENERATION_FIELD,

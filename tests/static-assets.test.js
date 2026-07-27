@@ -82,3 +82,11 @@ runTest('static assets はclient version scriptをhead末尾へ安全に注入�
     assert.ok(injected.includes('window.MACHIKORO_CLIENT_VERSION="a\\\"</script>";'));
     assert.ok(injected.indexOf('window.MACHIKORO_CLIENT_VERSION') < injected.indexOf('</head>'));
 });
+
+runTest('static assets はschema negotiation flagを明示有効時だけ注入する', () => {
+    const source = '<html><head></head><body></body></html>';
+    const disabled = injectIndexBuildHash(source, 'build-1');
+    const enabled = injectIndexBuildHash(source, 'build-1', { gameSchemaNegotiationEnabled: true });
+    assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED'));
+    assert.ok(enabled.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
+});

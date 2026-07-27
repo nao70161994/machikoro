@@ -15,10 +15,16 @@ function registerRejoinSocketHandler(socket, dependencies) {
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
+    const resolveGameSchemaCapabilities = typeof dependencies.resolveClientGameSchemaCapabilities === 'function'
+        ? dependencies.resolveClientGameSchemaCapabilities
+        : (() => ({ ok: true, capabilities: null, reason: '' }));
+    const supportsSelectedSchema = typeof dependencies.supportsSelectedGameSchema === 'function'
+        ? dependencies.supportsSelectedGameSchema
+        : (() => true);
 
     socket.on('rejoinRoom', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        const { roomId, playerIndex, playerName, reconnectToken, clientVersion, hostlessRestoreVersion } = payload;
+        const { roomId, playerIndex, playerName, reconnectToken, clientVersion, hostlessRestoreVersion, gameSchemaCapabilities } = payload;
         socket.clientVersion = clientVersion || 'unknown';
         socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
@@ -31,9 +37,17 @@ function registerRejoinSocketHandler(socket, dependencies) {
             return;
         }
 
+        const schemaResolution = resolveGameSchemaCapabilities(gameSchemaCapabilities);
+        if (!schemaResolution.ok) { emitAppError(socket, 'SCHEMA_CAPABILITY_INVALID'); return; }
+        if (!supportsSelectedSchema(schemaResolution.capabilities, room.gameStartPayload && room.gameStartPayload.gameSchema)) {
+            emitAppError(socket, 'SCHEMA_VERSION_UNSUPPORTED');
+            return;
+        }
+        socket.gameSchemaCapabilities = schemaResolution.capabilities;
         detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
         const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
         if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }
+        player.gameSchemaCapabilities = schemaResolution.capabilities;
 
         socket.join(roomId);
         socket.roomId = roomId;

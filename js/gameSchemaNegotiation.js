@@ -77,6 +77,22 @@ function negotiateGameSchemaCapabilities(peerValues, localValue = GAME_SCHEMA_CA
     });
 }
 
+function supportsSelection(capabilitiesValue, selection) {
+    if (selection == null) return true;
+    if (!selection || typeof selection !== 'object' || Array.isArray(selection)) return false;
+    const keys = Object.keys(selection).sort();
+    if (keys.length !== 2 || keys[0] !== 'actionVersion' || keys[1] !== 'snapshotVersion') return false;
+    if (!Number.isSafeInteger(selection.actionVersion) || selection.actionVersion < 0 ||
+            !Number.isSafeInteger(selection.snapshotVersion) || selection.snapshotVersion < 0) return false;
+    const capabilities = normalizeSchemaCapabilities(capabilitiesValue, true);
+    return !!capabilities && capabilities.actionVersions.includes(selection.actionVersion) &&
+        capabilities.snapshotVersions.includes(selection.snapshotVersion);
+}
+
+function transportCapabilities(enabled) {
+    return enabled === true ? GAME_SCHEMA_CAPABILITIES : null;
+}
+
 const GameSchemaNegotiation = Object.freeze({
     legacyVersion: GAME_SCHEMA_LEGACY_VERSION,
     currentVersion: GAME_SCHEMA_CURRENT_VERSION,
@@ -84,6 +100,8 @@ const GameSchemaNegotiation = Object.freeze({
     failureReasons: GAME_SCHEMA_NEGOTIATION_FAILURES,
     normalizeSchemaCapabilities,
     negotiateGameSchemaCapabilities,
+    supportsSelection,
+    transportCapabilities,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameSchemaNegotiation;

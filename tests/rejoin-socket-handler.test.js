@@ -102,3 +102,32 @@ runTest('rejoin handler rejects malformed payload without session mutation', () 
     assert.deepStrictEqual(fixture.events, [['plain']]);
     assert.strictEqual(fixture.socket.clientVersion, undefined);
 });
+
+runTest('rejoin handler は認証後にschema capabilityを検証し不正値ではdetachしない', () => {
+    const fixture = makeFixture({
+        resolveClientGameSchemaCapabilities() {
+            fixture.events.push(['schema']);
+            return { ok: false, capabilities: null, reason: 'invalid' };
+        },
+    });
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(Object.assign({}, validPayload, { gameSchemaCapabilities: {} }));
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'], ['room-id'], ['expected-hash'], ['hash-token'],
+        ['schema'], ['error', 'SCHEMA_CAPABILITY_INVALID'],
+    ]);
+});
+
+runTest('rejoin handler はroom選択schema非対応clientをdetach前に拒否する', () => {
+    const fixture = makeFixture({
+        resolveClientGameSchemaCapabilities() { return { ok: true, capabilities: null, reason: '' }; },
+        supportsSelectedGameSchema() { fixture.events.push(['supports-schema']); return false; },
+    });
+    fixture.room.gameStartPayload = { gameSchema: { actionVersion: 1, snapshotVersion: 1 } };
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'], ['room-id'], ['expected-hash'], ['hash-token'],
+        ['supports-schema'], ['error', 'SCHEMA_VERSION_UNSUPPORTED'],
+    ]);
+});
