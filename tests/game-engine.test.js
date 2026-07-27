@@ -3,6 +3,8 @@
 const assert = require('assert');
 const GameActionContract = require('../js/actionContract');
 const GameEngine = require('../js/gameEngine');
+const { restoreMirrorState, serializeMirrorState, applyActionToMirror } = require('../server');
+const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const { runTest } = require('./helpers/test-utils');
 
 function makeRecorder(returnValues = {}) {
@@ -118,4 +120,156 @@ runTest('共有Game Engine executorは未知actionと非object payloadを副作�
         assert.strictEqual(GameEngine.applyMutableAction({ game: recorder.game, action, data }), false);
     }
     assert.deepStrictEqual(recorder.calls, []);
+});
+
+runTest('pure transition境界は入力snapshot/actionを変更せず出力を分離する', () => {
+    const snapshot = Object.freeze({
+        counter: 2,
+        nested: Object.freeze({ label: 'before' }),
+    });
+    const data = Object.freeze({
+        targetIndex: 3,
+        nested: Object.freeze({ label: 'action' }),
+    });
+    let hydratedRuntime = null;
+
+    const result = GameEngine.transitionSnapshot({
+        snapshot,
+        action: 'resolveTV',
+        data,
+        hydrate(detachedSnapshot) {
+            assert.notStrictEqual(detachedSnapshot, snapshot);
+            assert.notStrictEqual(detachedSnapshot.nested, snapshot.nested);
+            hydratedRuntime = {
+                state: detachedSnapshot,
+                game: {
+                    resolveTV(targetIndex) {
+                        detachedSnapshot.counter += targetIndex;
+                        detachedSnapshot.nested.label = 'after';
+                        return true;
+                    },
+                },
+            };
+            return hydratedRuntime;
+        },
+        serialize(runtime) {
+            return runtime.state;
+        },
+    });
+
+    assert.deepStrictEqual(result, {
+        ok: true,
+        reason: '',
+        snapshot: { counter: 5, nested: { label: 'after' } },
+    });
+    assert.deepStrictEqual(snapshot, { counter: 2, nested: { label: 'before' } });
+    assert.deepStrictEqual(data, { targetIndex: 3, nested: { label: 'action' } });
+    hydratedRuntime.state.counter = 99;
+    assert.strictEqual(result.snapshot.counter, 5);
+    assert.ok(Object.isFrozen(result));
+});
+
+runTest('pure transition境界はadapter各段階を安定したfailure reasonでfail closedにする', () => {
+    const reasons = GameEngine.transitionFailureReasons;
+    assert.ok(Object.isFrozen(reasons));
+    assert.strictEqual(GameEngine.transitionSnapshot(null).reason, reasons.INVALID_INPUT);
+    assert.strictEqual(GameEngine.transitionSnapshot({ snapshot: {}, data: {} }).reason, reasons.INVALID_ADAPTER);
+    assert.strictEqual(GameEngine.transitionSnapshot({
+        snapshot: {},
+        data: {},
+        hydrate() { throw new Error('hydrate'); },
+        serialize() { return {}; },
+    }).reason, reasons.HYDRATE_FAILED);
+    assert.strictEqual(GameEngine.transitionSnapshot({
+        snapshot: {},
+        action: 'unknown',
+        data: {},
+        hydrate() { return { game: {} }; },
+        serialize() { return {}; },
+    }).reason, reasons.ACTION_REJECTED);
+    assert.strictEqual(GameEngine.transitionSnapshot({
+        snapshot: {},
+        action: 'nextTurn',
+        data: {},
+        hydrate() {
+            return { game: { nextTurn() { throw new Error('action'); } } };
+        },
+        serialize() { return {}; },
+    }).reason, reasons.ACTION_FAILED);
+    assert.strictEqual(GameEngine.transitionSnapshot({
+        snapshot: {},
+        action: 'nextTurn',
+        data: {},
+        hydrate() {
+            return { game: { nextTurn() { return true; } } };
+        },
+        serialize() { throw new Error('serialize'); },
+    }).reason, reasons.SERIALIZE_FAILED);
+
+    const cyclic = {};
+    cyclic.self = cyclic;
+    assert.strictEqual(GameEngine.transitionSnapshot({
+        snapshot: cyclic,
+        action: 'nextTurn',
+        data: {},
+        hydrate(value) { return { game: {}, value }; },
+        serialize() { return {}; },
+    }).reason, reasons.INVALID_INPUT);
+});
+
+runTest('pure transition shadowは実GameManagerのmutable適用結果と一致する', () => {
+    const runtime = loadGameRuntime();
+    const sourceGame = new runtime.GameManager(2);
+    const sourceStock = {};
+    const sourceSnapshot = serializeMirrorState(sourceGame, sourceStock, null, 4);
+    const action = 'rollDice';
+    const data = { forceDice: 1, tunaDice: [1, 1] };
+
+    const expectedGame = new runtime.GameManager(2);
+    const expectedStock = {};
+    restoreMirrorState(
+        expectedGame,
+        expectedStock,
+        JSON.parse(JSON.stringify(sourceSnapshot)),
+        runtime.createCardByName
+    );
+    assert.strictEqual(
+        applyActionToMirror(expectedGame, expectedStock, action, data, runtime.createCardByName),
+        true
+    );
+    const expectedSnapshot = serializeMirrorState(expectedGame, expectedStock, null, 4);
+
+    const result = GameEngine.transitionSnapshot({
+        snapshot: sourceSnapshot,
+        action,
+        data,
+        hydrate(detachedSnapshot) {
+            const game = new runtime.GameManager(2);
+            const shopStock = {};
+            restoreMirrorState(game, shopStock, detachedSnapshot, runtime.createCardByName);
+            return {
+                game,
+                shopStock,
+                createCardByName: runtime.createCardByName,
+                decrementShopStock(stock, card) {
+                    stock[card.name] = (stock[card.name] || 0) - 1;
+                },
+                restoreUndoState() { return false; },
+            };
+        },
+        serialize(engineRuntime) {
+            return serializeMirrorState(engineRuntime.game, engineRuntime.shopStock, null, 4);
+        },
+    });
+
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(result.snapshot)),
+        JSON.parse(JSON.stringify(expectedSnapshot))
+    );
+    assert.deepStrictEqual(
+        sourceSnapshot,
+        serializeMirrorState(sourceGame, sourceStock, null, 4),
+        'shadow transition must not mutate its source snapshot'
+    );
 });
