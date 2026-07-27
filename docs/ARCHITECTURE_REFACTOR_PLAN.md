@@ -214,7 +214,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 2. **Complete:** project phase, canonical payload keys, replay/apply flags, and UI targets from that source.
 3. **Complete:** route client replay and server mirror through the shared mutable `js/gameEngine.js` dispatcher, retaining their adapters and authority.
 4. **Shadow only:** compare detached `snapshot -> action -> snapshot` transitions with the mutable server mirror; do not switch live ownership yet.
-5. **Current footing:** shared hydrate mechanics keep client/server legacy policy adapters explicit; representative multi-action traces cover build/Undo/next-turn, station dice selection, pending TV, and victory; `transitionEnvelope()` composes legacy/current schema readers and emits a detached v1 Snapshot. **Future:** widen parity with touched rules and design capability negotiation before any live versioned cutover.
+5. **Current footing:** shared hydrate mechanics keep client/server legacy policy adapters explicit; representative multi-action traces cover build/Undo/next-turn, station dice selection, pending TV, and victory; `transitionEnvelope()` composes legacy/current schemas; `js/gameSchemaNegotiation.js` selects the highest all-peer common versions and treats missing capability as legacy v0. **Future:** design additive capability transport and rollback before any live versioned cutover.
 
 **Contract coverage (implemented; extend before live migration):**
 
@@ -321,6 +321,7 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - `js/gameEngine.js` owns the shared 15-action mutable dispatch. Client/server adapters still own validation, actor authority, card creation, stock mutation, undo restore, timing, and transport.
 - `GameEngine.transitionSnapshot()` is a detached, fail-closed shadow boundary with stable failure reasons. Real `GameManager` parity covers single actions and representative 3-player multi-action traces across build/Undo, dice selection, pending, and victory; it is not a live authority or transport path.
 - `GameEngine.transitionEnvelope()` composes legacy v0/current v1 Action and Snapshot readers, rejects unknown schemas before hydration, and returns a v1 Snapshot envelope. It is shadow-only and does not alter live wire/save payloads.
+- `js/gameSchemaNegotiation.js` is a production-unloaded pure policy: all peers must share a version, missing capability means legacy v0, and malformed explicit capability fails closed. Socket.IO fields and live emission remain future rollout work.
 - `js/actionContract.js` also exposes legacy v0/current v1 Action envelope readers. Current live actions remain the legacy `{action, data}` shape until a separately reviewed mixed-client rollout exists.
 - `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log/pending normalization, ACK comparison, room ownership, duplicate-free restore append, and resend eligibility while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, `js/cpuSimulation.js`, and `js/cpuBuildExecution.js` own unchanged evaluation, candidate, simulation, and local/online build-execution boundaries behind existing CPU wrappers.
@@ -333,7 +334,7 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders. Scoped ESLint bug rules run from `test:static` over 29 maintenance modules, and a test keeps config and npm-script file sets identical.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, schema capability negotiation, reconnect timer/callback migration, remaining gameAction/recreate/disconnect handler movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
+The remaining steps below still require the same gates described in each design section. In particular, schema capability transport/rollout, reconnect timer/callback migration, remaining gameAction/recreate/disconnect handler movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
 
 ## Recommended Migration Order
 

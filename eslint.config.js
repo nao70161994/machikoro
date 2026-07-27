@@ -9,6 +9,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/cpuLegalMoves.js',
     'js/gameEngine.js',
     'js/gameSnapshot.js',
+    'js/gameSchemaNegotiation.js',
     'js/lifecycleNotify.js',
     'js/onlinePayload.js',
     'js/onlineRetryPolicy.js',
