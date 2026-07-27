@@ -1,6 +1,7 @@
 'use strict';
 
 const GameSnapshot = require('../js/gameSnapshot');
+const GameEngine = require('../js/gameEngine');
 
 const MAX_SNAPSHOT_PENDING_COUNT = 50;
 const MAX_SNAPSHOT_LOG_ENTRIES = 30;
@@ -378,48 +379,15 @@ function makeMirrorReplay({
 
     function applyActionToMirror(game, shopStock, action, data, createCardByName) {
         if (!isPlainObject(data)) return false;
-        switch (action) {
-            case 'rollDice':
-                game.rollDice(data.forceDice, data.tunaDice);
-                return true;
-            case 'selectDice':
-                game.selectDiceCount(data.useTwo, data.d1, data.d2, data.tunaDice);
-                return true;
-            case 'skipReroll':
-                game.skipReroll();
-                return true;
-            case 'rerollDice':
-                game.rerollDice(data.forceDice, data.tunaDice);
-                return true;
-            case 'resolveHarbor':
-                return game.resolveHarbor(data.useBonus) !== false;
-            case 'resolveTV':
-                return game.resolveTV(data.targetIndex) !== false;
-            case 'resolveBusiness':
-                return game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard) !== false;
-            case 'resolveCleaning':
-                return game.resolveCleaning(data.cardName) !== false;
-            case 'resolveMover':
-                return game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex) !== false;
-            case 'resolveRenovation':
-                return game.resolveRenovation(data.landmarkName) !== false;
-            case 'resolveIT':
-                return game.resolveIT(data.doSave) !== false;
-            case 'buildCard': {
-                const card = createCardByName(data.cardName);
-                if (!card || !game.buildCard(card)) return false;
-                gameRuntime.decrementShopStock(shopStock, card);
-                return true;
-            }
-            case 'buildLandmark':
-                return game.buildLandmark(data.name) !== false;
-            case 'undoBuild':
-                return restoreUndoMirror(game, shopStock, data.state, createCardByName);
-            case 'nextTurn':
-                return game.nextTurn() !== false;
-            default:
-                return false;
-        }
+        return GameEngine.applyMutableAction({
+            game,
+            shopStock,
+            action,
+            data,
+            createCardByName,
+            decrementShopStock: gameRuntime.decrementShopStock,
+            restoreUndoState: state => restoreUndoMirror(game, shopStock, state, createCardByName),
+        });
     }
 
     function restoreUndoMirror(game, shopStock, state, createCardByName) {

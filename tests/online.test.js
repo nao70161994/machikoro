@@ -9,26 +9,6 @@ const {
     makeSeqRankUsesMaxFieldsFixture,
 } = require('./helpers/online-restore-fixtures');
 
-function extractFunctionBody(source, functionName) {
-    const signature = `function ${functionName}`;
-    const start = source.indexOf(signature);
-    assert(start >= 0, `missing function ${functionName}`);
-    const signatureEnd = source.indexOf('\n', start);
-    const openBrace = source.lastIndexOf('{', signatureEnd);
-    let depth = 0;
-    for (let i = openBrace; i < source.length; i++) {
-        const ch = source[i];
-        if (ch === '{') depth++;
-        if (ch === '}') depth--;
-        if (depth === 0) return source.slice(openBrace, i + 1);
-    }
-    throw new Error(`unterminated function ${functionName}`);
-}
-
-function extractSwitchActionCases(functionBody) {
-    return [...functionBody.matchAll(/case ['"]([^'"]+)['"]:/g)].map(match => match[1]).sort();
-}
-
 function loadOnlineRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
     const elements = {};
@@ -52,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSnapshot.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSnapshot.js', 'js/gameEngine.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 
@@ -422,7 +402,6 @@ runTest('GAME_ACTION_REGISTRY は client applyAction で網羅される', () => 
     const runtime = loadOnlineRuntime();
     const actions = Object.values(runtime.GAME_ACTIONS).sort();
     const registry = runtime.GAME_ACTION_REGISTRY;
-    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
 
     assert.deepStrictEqual(Object.keys(registry).sort(), actions);
     for (const action of actions) {
@@ -433,7 +412,8 @@ runTest('GAME_ACTION_REGISTRY は client applyAction で網羅される', () => 
     }
 
     const clientActions = actions.filter(action => registry[action].clientApply);
-    assert.deepStrictEqual(extractSwitchActionCases(extractFunctionBody(source, 'applyAction')), clientActions);
+    const engineActions = Array.from(runtime.GameEngine.handledActions).sort();
+    assert.deepStrictEqual(engineActions, clientActions);
 });
 
 runTest('online.js は未使用 remote action helper を残さない', () => {

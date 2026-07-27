@@ -29,6 +29,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuSimulation.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/gameSnapshot.js', 'js/online.js'],
+            ['js/gameEngine.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],
@@ -85,6 +86,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiTutorial.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
             ['js/gameSnapshot.js', 'js/online.js'],
+            ['js/gameEngine.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],
@@ -104,6 +106,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/online.test.js', [
             ['js/gameSnapshot.js', 'js/online.js'],
+            ['js/gameEngine.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreRank.js', 'js/online.js'],

@@ -3,6 +3,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const GameEngine = require('../js/gameEngine');
 const {
     APP_ERROR_EVENT,
     emitAppError,
@@ -203,26 +204,6 @@ function makeGame() {
         GameManager: runtime.GameManager,
         createCardByName: runtime.createCardByName,
     };
-}
-
-function extractFunctionBody(source, functionName) {
-    const signature = `function ${functionName}`;
-    const start = source.indexOf(signature);
-    assert(start >= 0, `missing function ${functionName}`);
-    const signatureEnd = source.indexOf('\n', start);
-    const openBrace = source.lastIndexOf('{', signatureEnd);
-    let depth = 0;
-    for (let i = openBrace; i < source.length; i++) {
-        const ch = source[i];
-        if (ch === '{') depth++;
-        if (ch === '}') depth--;
-        if (depth === 0) return source.slice(openBrace, i + 1);
-    }
-    throw new Error(`unterminated function ${functionName}`);
-}
-
-function extractSwitchActionCases(functionBody) {
-    return [...functionBody.matchAll(/case ['"]([^'"]+)['"]:/g)].map(match => match[1]).sort();
 }
 
 function extractActionValidatorBranches(functionBody) {
@@ -1067,9 +1048,7 @@ runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で�
     const runtime = loadGameRuntime();
     const actions = Object.values(runtime.GAME_ACTIONS).sort();
     const registry = runtime.GAME_ACTION_REGISTRY;
-    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
     const validationSource = fs.readFileSync(path.join(__dirname, '..', 'server/actionValidation.js'), 'utf8');
-    const mirrorSource = fs.readFileSync(path.join(__dirname, '..', 'server/mirrorReplay.js'), 'utf8');
 
     assert.deepStrictEqual(Object.keys(registry).sort(), actions);
     for (const action of actions) {
@@ -1082,7 +1061,7 @@ runTest('GAME_ACTION_REGISTRY は server payload validator と mirror apply で�
     }
 
     const validatorActions = Object.keys(ACTION_PAYLOAD_VALIDATORS).sort();
-    const mirrorActions = extractSwitchActionCases(extractFunctionBody(mirrorSource, 'applyActionToMirror'));
+    const mirrorActions = Array.from(GameEngine.handledActions).sort();
     const serverPayloadActions = actions.filter(action => registry[action].serverPayload);
     const serverReplayActions = actions.filter(action => registry[action].serverReplay);
 

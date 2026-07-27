@@ -1573,27 +1573,15 @@ function initOnlineGame(playerNames, ps, playerOrder) {
 }
 
 function applyAction(action, data) {
-    switch(action) {
-        case 'rollDice':        game.rollDice(data.forceDice, data.tunaDice); break;
-        case 'selectDice':      game.selectDiceCount(data.useTwo, data.d1, data.d2, data.tunaDice); break;
-        case 'skipReroll':      game.skipReroll(); break;
-        case 'rerollDice':      game.rerollDice(data.forceDice, data.tunaDice); break;
-        case 'resolveHarbor':   game.resolveHarbor(data.useBonus); break;
-        case 'resolveTV':       game.resolveTV(data.targetIndex); break;
-        case 'resolveBusiness': game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard); break;
-        case 'resolveCleaning': game.resolveCleaning(data.cardName); break;
-        case 'resolveMover':    game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex); break;
-        case 'resolveRenovation': game.resolveRenovation(data.landmarkName); break;
-        case 'resolveIT':       game.resolveIT(data.doSave); break;
-        case 'buildCard': {
-            const card = CARDS.find(c => c.name === data.cardName);
-            if (card && game.buildCard(card)) decrementShopStock(SHOP_STOCK, card);
-            break;
-        }
-        case 'buildLandmark':   game.buildLandmark(data.name); break;
-        case 'undoBuild':       restoreUndoSnapshot(data.state); break;
-        case 'nextTurn':        game.nextTurn(); break;
-    }
+    return GameEngine.applyMutableAction({
+        game,
+        shopStock: SHOP_STOCK,
+        action,
+        data,
+        createCardByName: name => CARDS.find(card => card.name === name),
+        decrementShopStock,
+        restoreUndoState: restoreUndoSnapshot,
+    });
 }
 
 function applyReplayedAction(action, data) {
