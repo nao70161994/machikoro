@@ -1,5 +1,7 @@
 'use strict';
 
+const GameSnapshot = require('../js/gameSnapshot');
+
 const MAX_SNAPSHOT_PENDING_COUNT = 50;
 const MAX_SNAPSHOT_LOG_ENTRIES = 30;
 
@@ -12,40 +14,15 @@ function makeMirrorReplay({
     getAllowedActions,
 }) {
     function serializeMirrorState(game, shopStock, undoState = null, actionSeq = 0) {
-        return {
-            players: game.players.map(p => ({
-                name: p.name,
-                coins: p.coins,
-                cards: p.cards.map(c => c.name),
-                dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
-                landmarks: Object.assign({}, p.landmarks),
-                itVentureCoins: p.itVentureCoins,
-                hasYakusho: p.hasYakusho,
-            })),
-            currentPlayerIndex: game.currentPlayerIndex,
-            phase: game.phase,
-            log: Array.isArray(game.log) ? game.log.slice(-MAX_SNAPSHOT_LOG_ENTRIES) : [],
-            lastDiceResult: game.lastDiceResult,
-            lastDice1: game.lastDice1,
-            lastDice2: game.lastDice2,
-            builtThisTurn: game.builtThisTurn,
-            pendingTV: game.pendingTV,
-            pendingBusiness: game.pendingBusiness,
-            pendingCleaning: game.pendingCleaning,
-            pendingMover: game.pendingMover,
-            pendingRenovation: game.pendingRenovation,
-            pendingActions: (gameRuntime.GameManager && typeof gameRuntime.GameManager.serializedPendingActionsFor === 'function')
-                ? gameRuntime.GameManager.serializedPendingActionsFor(game)
-                : [],
-            pendingIT: game.pendingIT,
-            usedReroll: game.usedReroll,
-            pendingTunaDice: game.pendingTunaDice,
-            turnCount: game.turnCount,
-            hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
-            shopStock: Object.assign({}, shopStock),
-            undoState: undoState || null,
+        return GameSnapshot.serializeGameState(game, shopStock, {
+            undoState,
             actionSeq,
-        };
+            logLimit: MAX_SNAPSHOT_LOG_ENTRIES,
+            pendingActionsFor: (gameRuntime.GameManager &&
+                    typeof gameRuntime.GameManager.serializedPendingActionsFor === 'function')
+                ? gameRuntime.GameManager.serializedPendingActionsFor
+                : () => [],
+        });
     }
 
     function compactRoomActionLog(room) {
@@ -468,22 +445,8 @@ function makeMirrorReplay({
     }
 
     function makeUndoStateFromMirror(game, shopStock) {
-        return {
-            playerCoins: game.players.map(p => p.coins),
-            playerCardNames: game.players.map(p => p.cards.map(c => c.name)),
-            playerDormantIndices: game.players.map(p =>
-                p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0)
-            ),
-            playerLandmarks: game.players.map(p => Object.assign({}, p.landmarks)),
-            playerItVenture: game.players.map(p => p.itVentureCoins),
-            playerHasYakusho: game.players.map(p => p.hasYakusho),
-            hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
-            shopStock: Object.assign({}, shopStock),
-            builtThisTurn: game.builtThisTurn,
-            log: Array.isArray(game.log) ? game.log.slice(-MAX_SNAPSHOT_LOG_ENTRIES) : [],
-        };
+        return GameSnapshot.serializeUndoState(game, shopStock, MAX_SNAPSHOT_LOG_ENTRIES);
     }
-
 
     return {
         serializeMirrorState,

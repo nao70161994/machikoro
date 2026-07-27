@@ -726,56 +726,20 @@ function _canResendPendingOutboundAction(pending) {
 
 function buildOnlineSnapshot() {
     if (!game) return null;
-    return {
-        players: game.players.map(p => ({
-            name: p.name,
-            coins: p.coins,
-            cards: p.cards.map(c => c.name),
-            dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
-            landmarks: Object.assign({}, p.landmarks),
-            itVentureCoins: p.itVentureCoins,
-            hasYakusho: p.hasYakusho,
-        })),
-        currentPlayerIndex: game.currentPlayerIndex,
-        phase: game.phase,
-        log: Array.isArray(game.log) ? game.log.slice(-ONLINE_SNAPSHOT_LOG_LIMIT) : [],
-        lastDiceResult: game.lastDiceResult,
-        lastDice1: game.lastDice1,
-        lastDice2: game.lastDice2,
-        builtThisTurn: game.builtThisTurn,
-        pendingTV: game.pendingTV,
-        pendingBusiness: game.pendingBusiness,
-        pendingCleaning: game.pendingCleaning,
-        pendingMover: game.pendingMover,
-        pendingRenovation: game.pendingRenovation,
-        pendingActions: (typeof GameManager !== 'undefined' && typeof GameManager.serializedPendingActionsFor === 'function')
-            ? GameManager.serializedPendingActionsFor(game)
-            : [],
-        pendingIT: game.pendingIT,
-        usedReroll: game.usedReroll,
-        pendingTunaDice: game.pendingTunaDice,
-        turnCount: game.turnCount,
-        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
-        shopStock: Object.assign({}, SHOP_STOCK),
-        undoState: undoState || null,
+    return GameSnapshot.serializeGameState(game, SHOP_STOCK, {
+        undoState,
         actionSeq: _currentOnlineActionSeq(),
-    };
+        logLimit: ONLINE_SNAPSHOT_LOG_LIMIT,
+        pendingActionsFor: (typeof GameManager !== 'undefined' &&
+                typeof GameManager.serializedPendingActionsFor === 'function')
+            ? GameManager.serializedPendingActionsFor
+            : () => [],
+    });
 }
 
 function buildOnlineUndoSnapshot() {
     if (!game) return null;
-    return {
-        playerCoins: game.players.map(p => p.coins),
-        playerCardNames: game.players.map(p => p.cards.map(c => c.name)),
-        playerDormantIndices: game.players.map(p => p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0)),
-        playerLandmarks: game.players.map(p => Object.assign({}, p.landmarks)),
-        playerItVenture: game.players.map(p => p.itVentureCoins),
-        playerHasYakusho: game.players.map(p => p.hasYakusho),
-        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
-        shopStock: Object.assign({}, SHOP_STOCK),
-        builtThisTurn: game.builtThisTurn,
-        log: Array.isArray(game.log) ? game.log.slice(-ONLINE_SNAPSHOT_LOG_LIMIT) : [],
-    };
+    return GameSnapshot.serializeUndoState(game, SHOP_STOCK, ONLINE_SNAPSHOT_LOG_LIMIT);
 }
 
 function saveOnlineSession() {

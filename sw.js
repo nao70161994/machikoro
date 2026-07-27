@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
   '/js/Card.js',
   '/js/Player.js',
   '/js/actionContract.js',
+  '/js/gameSnapshot.js',
   '/js/GameManager.js',
   '/js/cpuTuning.js',
   '/js/cpuProfile.js',
