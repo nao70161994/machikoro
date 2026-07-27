@@ -1,5 +1,11 @@
 'use strict';
 
+const GameActionContractApi = typeof module !== 'undefined' && module.exports
+    ? require('./actionContract')
+    : globalThis.GameActionContract;
+const GameSnapshotApi = typeof module !== 'undefined' && module.exports
+    ? require('./gameSnapshot')
+    : globalThis.GameSnapshot;
 // Transitional shared execution boundary. GameManager remains mutable today; callers
 // inject persistence/inventory adapters so this table can move behind a pure
 // snapshot -> action -> snapshot API without duplicating action semantics again.
@@ -64,6 +70,8 @@ const GAME_ACTION_HANDLERS = Object.freeze({
 const GAME_ENGINE_HANDLED_ACTIONS = Object.freeze(Object.keys(GAME_ACTION_HANDLERS));
 const GAME_ENGINE_TRANSITION_FAILURES = Object.freeze({
     INVALID_INPUT: 'invalid-input',
+    INVALID_ACTION_SCHEMA: 'invalid-action-schema',
+    INVALID_SNAPSHOT_SCHEMA: 'invalid-snapshot-schema',
     INVALID_ADAPTER: 'invalid-adapter',
     HYDRATE_FAILED: 'hydrate-failed',
     ACTION_REJECTED: 'action-rejected',
@@ -165,10 +173,53 @@ function transitionSnapshot(request) {
     }
 }
 
+/**
+ * Reads legacy/current envelopes and returns a current-version snapshot envelope.
+ * This remains a shadow-only migration seam; it is not used by live transport.
+ *
+ * @param {Object} request
+ * @returns {Object}
+ */
+function transitionEnvelope(request) {
+    if (!request || !GameActionContractApi || !GameSnapshotApi) {
+        return Object.freeze({ ok: false, reason: GAME_ENGINE_TRANSITION_FAILURES.INVALID_INPUT, snapshotEnvelope: null });
+    }
+    const snapshotRead = GameSnapshotApi.readSnapshotEnvelope(request.snapshotEnvelope);
+    if (!snapshotRead.ok) {
+        return Object.freeze({
+            ok: false,
+            reason: GAME_ENGINE_TRANSITION_FAILURES.INVALID_SNAPSHOT_SCHEMA,
+            snapshotEnvelope: null,
+        });
+    }
+    const actionRead = GameActionContractApi.readActionEnvelope(request.actionEnvelope);
+    if (!actionRead.ok) {
+        return Object.freeze({
+            ok: false,
+            reason: GAME_ENGINE_TRANSITION_FAILURES.INVALID_ACTION_SCHEMA,
+            snapshotEnvelope: null,
+        });
+    }
+    const transition = transitionSnapshot(Object.assign({}, request, {
+        snapshot: snapshotRead.snapshot,
+        action: actionRead.action,
+        data: actionRead.data,
+    }));
+    if (!transition.ok) {
+        return Object.freeze({ ok: false, reason: transition.reason, snapshotEnvelope: null });
+    }
+    return Object.freeze({
+        ok: true,
+        reason: '',
+        snapshotEnvelope: GameSnapshotApi.createSnapshotEnvelope(transition.snapshot),
+    });
+}
+
 const GameEngine = Object.freeze({
     handledActions: GAME_ENGINE_HANDLED_ACTIONS,
     transitionFailureReasons: GAME_ENGINE_TRANSITION_FAILURES,
     transitionSnapshot,
+    transitionEnvelope,
     applyMutableAction,
 });
 

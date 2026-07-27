@@ -411,3 +411,61 @@ runTest('pure transition shadowはmulti-action traceごとにmutable replayと�
         );
     }
 });
+
+runTest('versioned transitionはlegacy/current envelopeを合成してv1 snapshotを返す', () => {
+    const run = (snapshotEnvelope, actionEnvelope) => GameEngine.transitionEnvelope({
+        snapshotEnvelope,
+        actionEnvelope,
+        hydrate(snapshot) {
+            return {
+                state: snapshot,
+                game: {
+                    resolveTV(targetIndex) { snapshot.counter += targetIndex; return true; },
+                },
+            };
+        },
+        serialize(runtime) { return runtime.state; },
+    });
+
+    const legacy = run(
+        { counter: 2 },
+        { action: 'resolveTV', data: { targetIndex: 3 } }
+    );
+    assert.deepStrictEqual(legacy, {
+        ok: true, reason: '', snapshotEnvelope: { schemaVersion: 1, snapshot: { counter: 5 } },
+    });
+    assert.ok(Object.isFrozen(legacy));
+
+    const current = run(
+        GameSnapshot.createSnapshotEnvelope({ counter: 4 }),
+        GameActionContract.createActionEnvelope('resolveTV', { targetIndex: 2 })
+    );
+    assert.deepStrictEqual(current.snapshotEnvelope, { schemaVersion: 1, snapshot: { counter: 6 } });
+});
+
+runTest('versioned transitionはunknown schemaをaction適用前にfail closedにする', () => {
+    const reasons = GameEngine.transitionFailureReasons;
+    let hydrateCalls = 0;
+    const base = {
+        hydrate() { hydrateCalls++; return { game: {} }; },
+        serialize() { return {}; },
+    };
+    assert.strictEqual(GameEngine.transitionEnvelope(null).reason, reasons.INVALID_INPUT);
+    assert.strictEqual(GameEngine.transitionEnvelope(Object.assign({}, base, {
+        snapshotEnvelope: { schemaVersion: 2, snapshot: {} },
+        actionEnvelope: { action: 'nextTurn', data: {} },
+    })).reason, reasons.INVALID_SNAPSHOT_SCHEMA);
+    assert.strictEqual(GameEngine.transitionEnvelope(Object.assign({}, base, {
+        snapshotEnvelope: {},
+        actionEnvelope: { schemaVersion: 2, action: 'nextTurn', data: {} },
+    })).reason, reasons.INVALID_ACTION_SCHEMA);
+    assert.strictEqual(hydrateCalls, 0);
+
+    const rejected = GameEngine.transitionEnvelope({
+        snapshotEnvelope: {},
+        actionEnvelope: { action: 'nextTurn', data: {} },
+        hydrate() { return { game: { nextTurn() { return false; } } }; },
+        serialize() { return {}; },
+    });
+    assert.deepStrictEqual(rejected, { ok: false, reason: reasons.ACTION_REJECTED, snapshotEnvelope: null });
+});

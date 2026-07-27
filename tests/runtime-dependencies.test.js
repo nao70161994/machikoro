@@ -28,6 +28,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuBuildExecution.js', 'js/CPU.js'],
             ['js/cpuSimulation.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js'],
+            ['js/actionContract.js', 'js/gameEngine.js'],
+            ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/online.js'],
             ['js/gameEngine.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],
@@ -85,6 +87,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardSelect.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
+            ['js/actionContract.js', 'js/gameEngine.js'],
+            ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/online.js'],
             ['js/gameEngine.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],
@@ -105,6 +109,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiModalPolicy.js', 'js/ui.js']
         ]],
         ['tests/online.test.js', [
+            ['js/actionContract.js', 'js/gameEngine.js'],
+            ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/online.js'],
             ['js/gameEngine.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],

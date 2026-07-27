@@ -214,7 +214,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 2. **Complete:** project phase, canonical payload keys, replay/apply flags, and UI targets from that source.
 3. **Complete:** route client replay and server mirror through the shared mutable `js/gameEngine.js` dispatcher, retaining their adapters and authority.
 4. **Shadow only:** compare detached `snapshot -> action -> snapshot` transitions with the mutable server mirror; do not switch live ownership yet.
-5. **Current footing:** shared hydrate mechanics keep client/server legacy policy adapters explicit, and representative multi-action traces cover build/Undo/next-turn, station dice selection, pending TV, and victory. **Future:** widen parity with touched rules and design capability-gated schema negotiation before any live pure-transition cutover.
+5. **Current footing:** shared hydrate mechanics keep client/server legacy policy adapters explicit; representative multi-action traces cover build/Undo/next-turn, station dice selection, pending TV, and victory; `transitionEnvelope()` composes legacy/current schema readers and emits a detached v1 Snapshot. **Future:** widen parity with touched rules and design capability negotiation before any live versioned cutover.
 
 **Contract coverage (implemented; extend before live migration):**
 
@@ -320,6 +320,7 @@ As of 2026-07-23, rollback-friendly units from this plan are implemented without
 - `js/gameSnapshot.js` owns exact current client/server snapshot and undo serialization plus shared mutable hydrate mechanics. Client/server adapters deliberately retain their previous coin/index/log/landmark, inventory, and undo policies. Its legacy v0/current v1 envelope API is internal footing; live save and Socket.IO formats are unchanged.
 - `js/gameEngine.js` owns the shared 15-action mutable dispatch. Client/server adapters still own validation, actor authority, card creation, stock mutation, undo restore, timing, and transport.
 - `GameEngine.transitionSnapshot()` is a detached, fail-closed shadow boundary with stable failure reasons. Real `GameManager` parity covers single actions and representative 3-player multi-action traces across build/Undo, dice selection, pending, and victory; it is not a live authority or transport path.
+- `GameEngine.transitionEnvelope()` composes legacy v0/current v1 Action and Snapshot readers, rejects unknown schemas before hydration, and returns a v1 Snapshot envelope. It is shadow-only and does not alter live wire/save payloads.
 - `js/actionContract.js` also exposes legacy v0/current v1 Action envelope readers. Current live actions remain the legacy `{action, data}` shape until a separately reviewed mixed-client rollout exists.
 - `js/onlinePayload.js` owns the existing rejoin payload shape, restore action-log/pending normalization, ACK comparison, room ownership, duplicate-free restore append, and resend eligibility while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
 - `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuProfile.js`, `js/cpuSimulation.js`, and `js/cpuBuildExecution.js` own unchanged evaluation, candidate, simulation, and local/online build-execution boundaries behind existing CPU wrappers.
