@@ -152,3 +152,58 @@ runTest('共有undo serializerは既存形状とlog上限を保持する', () =>
     });
     assert.deepStrictEqual(GameSnapshot.serializeUndoState(game, stock, 0).log, []);
 });
+
+runTest('共有hydrate境界は復元policyと副作用adapterをcallerへ明示する', () => {
+    const cafe = { name: 'カフェ' };
+    const game = {
+        players: [{
+            name: 'Before', coins: 3, cards: [], dormantCards: [],
+            landmarks: { 駅: false }, itVentureCoins: 9, hasYakusho: true,
+        }],
+        currentPlayerIndex: 0, phase: 'roll', log: [],
+        resetPendingState() { this.resetCount = (this.resetCount || 0) + 1; },
+        rebuildPendingActionsFromFields() { this.rebuildCount = (this.rebuildCount || 0) + 1; },
+    };
+    const shopStock = {};
+    const undoState = { marker: 'undo' };
+    let restoredUndo = null;
+    const hydrated = GameSnapshot.hydrateMutableGameState({
+        game,
+        shopStock,
+        state: {
+            players: [{
+                name: 'Alice', coins: 'invalid', cards: ['カフェ', 'unknown'],
+                dormantIndices: 'adapter-owned', landmarks: 'adapter-owned',
+                itVentureCoins: 2, hasYakusho: false,
+            }],
+            shopStock: { カフェ: 4 }, currentPlayerIndex: 9, phase: 'build',
+            log: 'adapter-owned', builtThisTurn: true, pendingTV: 1,
+            pendingActions: [], turnCount: 7, undoState,
+        },
+        createCardByName: name => name === 'カフェ' ? cafe : null,
+        assignShopStockSnapshot: (target, value) => Object.assign(target, value),
+        normalizePlayerCoins: (_value, currentValue) => currentValue,
+        readDormantIndices: () => [0],
+        readLandmarks: () => ({ 駅: true }),
+        readLog: () => [{ text: 'restored' }],
+        normalizeCurrentPlayerIndex: (_value, currentValue) => currentValue,
+        onUndoState: value => { restoredUndo = value; },
+    });
+
+    assert.strictEqual(hydrated, true);
+    assert.strictEqual(game.players[0].name, 'Alice');
+    assert.strictEqual(game.players[0].coins, 3);
+    assert.deepStrictEqual(game.players[0].cards, [cafe]);
+    assert.deepStrictEqual(game.players[0].dormantCards, [cafe]);
+    assert.deepStrictEqual(game.players[0].landmarks, { 駅: true });
+    assert.strictEqual(game.players[0].itVentureCoins, 2);
+    assert.strictEqual(game.players[0].hasYakusho, false);
+    assert.deepStrictEqual(shopStock, { カフェ: 4 });
+    assert.strictEqual(game.currentPlayerIndex, 0);
+    assert.strictEqual(game.phase, 'build');
+    assert.deepStrictEqual(game.log, [{ text: 'restored' }]);
+    assert.strictEqual(game.resetCount, 1);
+    assert.strictEqual(game.rebuildCount, 1);
+    assert.strictEqual(restoredUndo, undoState);
+    assert.strictEqual(GameSnapshot.hydrateMutableGameState({ game, state: {} }), false);
+});

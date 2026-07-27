@@ -116,6 +116,66 @@ function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LO
     };
 }
 
+function hydrateMutableGameState(options) {
+    if (!options || !options.game || !options.state ||
+            !Array.isArray(options.game.players) ||
+            typeof options.createCardByName !== 'function' ||
+            typeof options.assignShopStockSnapshot !== 'function' ||
+            typeof options.normalizePlayerCoins !== 'function' ||
+            typeof options.readDormantIndices !== 'function' ||
+            typeof options.readLandmarks !== 'function' ||
+            typeof options.readLog !== 'function' ||
+            typeof options.normalizeCurrentPlayerIndex !== 'function') return false;
+
+    const { game, shopStock, state } = options;
+    const playersState = Array.isArray(state.players) ? state.players : [];
+    game.players.forEach((player, index) => {
+        const playerState = playersState[index];
+        if (!playerState) return;
+        player.name = playerState.name;
+        player.coins = options.normalizePlayerCoins(playerState.coins, player.coins, index);
+        if (Array.isArray(playerState.cards)) {
+            player.cards = playerState.cards.map(name => options.createCardByName(name)).filter(Boolean);
+        }
+        const dormantIndices = options.readDormantIndices(playerState.dormantIndices);
+        player.dormantCards = dormantIndices.map(cardIndex => player.cards[cardIndex]).filter(Boolean);
+        player.landmarks = Object.assign({}, player.landmarks, options.readLandmarks(playerState.landmarks));
+        player.itVentureCoins = playerState.itVentureCoins || 0;
+        player.hasYakusho = playerState.hasYakusho !== false;
+    });
+    options.assignShopStockSnapshot(shopStock, state.shopStock || {});
+    game.currentPlayerIndex = options.normalizeCurrentPlayerIndex(
+        state.currentPlayerIndex, game.currentPlayerIndex, game.players.length
+    );
+    game.phase = state.phase || game.phase;
+    game.log = options.readLog(state.log);
+    game.lastDiceResult = state.lastDiceResult || 0;
+    game.lastDice1 = state.lastDice1 || 0;
+    game.lastDice2 = state.lastDice2 || 0;
+    game.builtThisTurn = state.builtThisTurn || false;
+    if (typeof game.resetPendingState === 'function') game.resetPendingState();
+    game.pendingTV = state.pendingTV || 0;
+    game.pendingBusiness = state.pendingBusiness || 0;
+    game.pendingCleaning = state.pendingCleaning || 0;
+    game.pendingMover = state.pendingMover || 0;
+    game.pendingRenovation = state.pendingRenovation || 0;
+    game.pendingActionQueue = Array.isArray(state.pendingActions)
+        ? state.pendingActions
+            .filter(pending => pending && typeof pending === 'object')
+            .map(pending => ({ action: pending.action, field: pending.field }))
+        : [];
+    if (typeof game.rebuildPendingActionsFromFields === 'function' && game.pendingActionQueue.length === 0) {
+        game.rebuildPendingActionsFromFields();
+    }
+    game.pendingIT = state.pendingIT || false;
+    game.usedReroll = state.usedReroll || false;
+    game.pendingTunaDice = state.pendingTunaDice || null;
+    game.turnCount = state.turnCount || 0;
+    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
+    if (typeof options.onUndoState === 'function') options.onUndoState(state.undoState || null);
+    return true;
+}
+
 const GameSnapshot = Object.freeze({
     schemaVersion: GAME_SNAPSHOT_SCHEMA_VERSION,
     legacyVersion: GAME_SNAPSHOT_LEGACY_VERSION,
@@ -125,6 +185,7 @@ const GameSnapshot = Object.freeze({
     createSnapshotEnvelope,
     readSnapshotEnvelope,
     serializeGameState,
+    hydrateMutableGameState,
     serializeUndoState,
 });
 

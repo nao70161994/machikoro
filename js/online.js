@@ -1596,49 +1596,20 @@ function applyReplayedAction(action, data) {
 
 function restoreOnlineSnapshot(state) {
     if (!state || !game) return;
-    game.players.forEach((p, i) => {
-        const playerState = Array.isArray(state.players) ? state.players[i] : null;
-        if (!playerState) return;
-        p.name = playerState.name;
-        p.coins = playerState.coins;
-        p.cards = Array.isArray(playerState.cards)
-            ? playerState.cards.map(name => createCardByName(name)).filter(Boolean)
-            : p.cards;
-        p.dormantCards = (playerState.dormantIndices || []).map(idx => p.cards[idx]).filter(Boolean);
-        p.landmarks = Object.assign({}, p.landmarks, playerState.landmarks || {});
-        p.itVentureCoins = playerState.itVentureCoins || 0;
-        p.hasYakusho = playerState.hasYakusho !== false;
+    GameSnapshot.hydrateMutableGameState({
+        game,
+        shopStock: SHOP_STOCK,
+        state,
+        createCardByName,
+        assignShopStockSnapshot,
+        normalizePlayerCoins: value => value,
+        readDormantIndices: value => value || [],
+        readLandmarks: value => value || {},
+        readLog: value => value || [],
+        normalizeCurrentPlayerIndex: value => value || 0,
+        onUndoState: value => { undoState = value; },
     });
-    assignShopStockSnapshot(SHOP_STOCK, state.shopStock || {});
-    game.currentPlayerIndex = state.currentPlayerIndex || 0;
-    game.phase = state.phase || game.phase;
-    game.log = state.log || [];
-    game.lastDiceResult = state.lastDiceResult || 0;
-    game.lastDice1 = state.lastDice1 || 0;
-    game.lastDice2 = state.lastDice2 || 0;
-    game.builtThisTurn = state.builtThisTurn || false;
-    if (typeof game.resetPendingState === 'function') game.resetPendingState();
-    game.pendingTV = state.pendingTV || 0;
-    game.pendingBusiness = state.pendingBusiness || 0;
-    game.pendingCleaning = state.pendingCleaning || 0;
-    game.pendingMover = state.pendingMover || 0;
-    game.pendingRenovation = state.pendingRenovation || 0;
-    game.pendingActionQueue = Array.isArray(state.pendingActions)
-        ? state.pendingActions
-            .filter(pending => pending && typeof pending === 'object')
-            .map(pending => ({ action: pending.action, field: pending.field }))
-        : [];
-    if (typeof game.rebuildPendingActionsFromFields === 'function' && game.pendingActionQueue.length === 0) {
-        game.rebuildPendingActionsFromFields();
-    }
-    game.pendingIT = state.pendingIT || false;
-    game.usedReroll = state.usedReroll || false;
-    game.pendingTunaDice = state.pendingTunaDice || null;
-    game.turnCount = state.turnCount || 0;
-    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
-    undoState = state.undoState || null;
 }
-
 
 function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {

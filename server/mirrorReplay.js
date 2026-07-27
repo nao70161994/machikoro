@@ -325,56 +325,19 @@ function makeMirrorReplay({
     }
 
     function restoreMirrorState(game, shopStock, state, createCardByName) {
-        if (!state) return;
-        const playersState = Array.isArray(state.players) ? state.players : [];
-        game.players.forEach((p, i) => {
-            const playerState = playersState[i];
-            if (!playerState) return;
-            p.name = playerState.name;
-            p.coins = Number.isFinite(playerState.coins) ? playerState.coins : p.coins;
-            if (Array.isArray(playerState.cards)) {
-                p.cards = playerState.cards.map(name => createCardByName(name)).filter(Boolean);
-            }
-            const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
-            p.dormantCards = dormantIndices.map(idx => p.cards[idx]).filter(Boolean);
-            p.landmarks = Object.assign(
-                {},
-                p.landmarks,
-                playerState.landmarks && typeof playerState.landmarks === 'object' ? playerState.landmarks : {}
-            );
-            p.itVentureCoins = playerState.itVentureCoins || 0;
-            p.hasYakusho = playerState.hasYakusho !== false;
+        GameSnapshot.hydrateMutableGameState({
+            game,
+            shopStock,
+            state,
+            createCardByName,
+            assignShopStockSnapshot: gameRuntime.assignShopStockSnapshot,
+            normalizePlayerCoins: (value, currentValue) => Number.isFinite(value) ? value : currentValue,
+            readDormantIndices: value => Array.isArray(value) ? value : [],
+            readLandmarks: value => value && typeof value === 'object' ? value : {},
+            readLog: value => Array.isArray(value) ? value : [],
+            normalizeCurrentPlayerIndex: (value, _currentValue, playerCount) =>
+                Number.isInteger(value) && value >= 0 && value < playerCount ? value : 0,
         });
-        gameRuntime.assignShopStockSnapshot(shopStock, state.shopStock || {});
-        game.currentPlayerIndex = Number.isInteger(state.currentPlayerIndex) &&
-            state.currentPlayerIndex >= 0 && state.currentPlayerIndex < game.players.length
-            ? state.currentPlayerIndex
-            : 0;
-        game.phase = state.phase || game.phase;
-        game.log = Array.isArray(state.log) ? state.log : [];
-        game.lastDiceResult = state.lastDiceResult || 0;
-        game.lastDice1 = state.lastDice1 || 0;
-        game.lastDice2 = state.lastDice2 || 0;
-        game.builtThisTurn = state.builtThisTurn || false;
-        if (typeof game.resetPendingState === 'function') game.resetPendingState();
-        game.pendingTV = state.pendingTV || 0;
-        game.pendingBusiness = state.pendingBusiness || 0;
-        game.pendingCleaning = state.pendingCleaning || 0;
-        game.pendingMover = state.pendingMover || 0;
-        game.pendingRenovation = state.pendingRenovation || 0;
-        game.pendingActionQueue = Array.isArray(state.pendingActions)
-            ? state.pendingActions
-                .filter(pending => pending && typeof pending === 'object')
-                .map(pending => ({ action: pending.action, field: pending.field }))
-            : [];
-        if (typeof game.rebuildPendingActionsFromFields === 'function' && game.pendingActionQueue.length === 0) {
-            game.rebuildPendingActionsFromFields();
-        }
-        game.pendingIT = state.pendingIT || false;
-        game.usedReroll = state.usedReroll || false;
-        game.pendingTunaDice = state.pendingTunaDice || null;
-        game.turnCount = state.turnCount || 0;
-        game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
     }
 
     function applyActionToMirror(game, shopStock, action, data, createCardByName) {
