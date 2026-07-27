@@ -28,6 +28,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/canonicalStateStore.js',
     'server/clientErrorAuth.js',
     'server/gameSchemaRuntime.js',
+    'server/gameSchemaShadow.js',
     'server/lobbySocketHandlers.js',
     'server/mirrorReplay.js',
     'server/rejoinSocketHandler.js',

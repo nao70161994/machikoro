@@ -5,6 +5,7 @@ const { runTest } = require('./helpers/test-utils');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
 process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
+process.env.GAME_SCHEMA_SHADOW_ENABLED = '1';
 const serverModule = require('../server');
 const connectClient = require('socket.io-client');
 
@@ -60,6 +61,18 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
 
         const currentRoom = await startPair(origin, clients[0], clients[1], 'current', CAPABILITIES, CAPABILITIES);
         currentRoom.gameStarts.forEach(start => assert.deepStrictEqual(start.gameSchema, { actionVersion: 1, snapshotVersion: 1 }));
+        const currentStart = currentRoom.gameStarts[0];
+        const currentOriginalIndex = currentStart.playerOrder[0];
+        const currentSocket = currentOriginalIndex === currentRoom.created.playerIndex ? clients[0] : clients[1];
+        const acceptedPromise = onceEvent(currentSocket, 'actionAccepted');
+        currentSocket.emit('gameAction', {
+            action: 'rollDice', data: {}, clientActionId: 'schema-shadow-roll-1',
+        });
+        await acceptedPromise;
+        assert.strictEqual(
+            serverModule.__rooms[currentRoom.created.roomId].lastGameSchemaShadow.status,
+            'matched'
+        );
 
         clients[1].close();
         rejoined = connect(origin);

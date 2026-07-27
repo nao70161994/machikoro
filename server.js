@@ -73,6 +73,8 @@ const {
     gameSchemaStartMetadata,
 } = require('./server/gameSchemaRuntime');
 const GAME_SCHEMA_NEGOTIATION_ENABLED = gameSchemaNegotiationEnabled(process.env);
+const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
+const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -218,6 +220,12 @@ const {
 } = require('./server/canonicalMirrorMetadata')({
     serializeMirrorState,
     restorePayloadRank,
+});
+const gameSchemaShadow = makeGameSchemaShadow({
+    enabled: GAME_SCHEMA_SHADOW_ENABLED,
+    serializeMirrorState,
+    transitionMirrorEnvelope,
+    stableStateHash,
 });
 const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 1024 * 1024,
@@ -937,6 +945,7 @@ io.on('connection', (socket) => {
         const actionSeq = nextRoomActionSeq(room);
         const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
         if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
+        const schemaShadowTransition = gameSchemaShadow.prepare(room, validation.mirror, actionEntry);
         const restoreActionAudit = buildRestoreActionAudit(roomId, actionEntry);
         if (restoreActionAudit) actionEntry.restoreActionAudit = restoreActionAudit;
         if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
@@ -944,6 +953,13 @@ io.on('connection', (socket) => {
             return;
         }
         room.lastUndoState = room.canonicalMirror?.lastUndoState || null;
+        const schemaShadowReport = gameSchemaShadow.compare(room.canonicalMirror, actionEntry, schemaShadowTransition);
+        if (schemaShadowReport) {
+            room.lastGameSchemaShadow = schemaShadowReport;
+            if (schemaShadowReport.status !== 'matched') {
+                console.warn('game schema shadow mismatch', { roomId, ...schemaShadowReport });
+            }
+        }
         rememberAcceptedClientAction(room, actionEntry);
         if (room.actionLog) {
             room.actionLog.push(actionEntry);
