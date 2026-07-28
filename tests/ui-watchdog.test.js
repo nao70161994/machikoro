@@ -178,4 +178,30 @@ for (const [issue, snapshot, expected] of causeCases) {
 assert.strictEqual(UiWatchdog.normalizeFreezeKind('modal-ui-locked:parent-inert'), 'modal-ui-locked');
 assert.strictEqual(UiWatchdog.normalizeFreezeKind(null), '');
 
+
+assert.strictEqual(UiWatchdog.isHumanTurnSnapshot(null), false);
+assert.strictEqual(UiWatchdog.isHumanTurnSnapshot({ phase: 'build', isCpuTurn: true }), false);
+assert.strictEqual(UiWatchdog.isHumanTurnSnapshot({ phase: 'build', isOnlineGame: false }), true);
+assert.strictEqual(UiWatchdog.isHumanTurnSnapshot({
+    phase: 'build',
+    isOnlineGame: true,
+    currentPlayerIndex: 2,
+    myPlayerIndex: 2,
+}), true);
+assert.strictEqual(UiWatchdog.isHumanTurnSnapshot({
+    phase: 'build',
+    isOnlineGame: true,
+    currentPlayerIndex: 1,
+    myPlayerIndex: 2,
+}), false);
+assert.deepStrictEqual(UiWatchdog.expectedPendingActions({
+    allowedActions: ['rollDice', 'resolveTV', 'resolveIT', 'nextTurn'],
+}), ['resolveTV', 'resolveIT']);
+assert.deepStrictEqual(UiWatchdog.expectedPendingActions({ allowedActions: 'resolveTV' }), []);
+assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: false, socketConnected: false }), false);
+assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, onlineActionInFlight: true }), true);
+assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, isReconnectingOnline: true }), true);
+assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, socketConnected: false }), true);
+assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, socketConnected: true }), false);
+
 console.log('ui watchdog tests passed');

@@ -572,10 +572,8 @@ function buildClientRuntimeSnapshot(reason = '') {
 }
 
 function isHumanTurnSnapshot(snapshot) {
-    if (!snapshot || !snapshot.phase || snapshot.isCpuTurn) return false;
-    return !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
+    return UiWatchdog.isHumanTurnSnapshot(snapshot);
 }
-
 function expectedPrimaryActions(snapshot) {
     return expectedActionContainerEntries(snapshot)
         .filter(entry => ['rollDice', 'nextTurn', 'selectDice', 'rerollDice', 'skipReroll', 'resolveHarbor'].includes(entry.action))
@@ -590,11 +588,8 @@ function hasUsablePrimaryAction(snapshot) {
 }
 
 function expectedPendingActions(snapshot) {
-    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
-    const pendingActions = new Set(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']);
-    return allowed.filter(action => pendingActions.has(action));
+    return UiWatchdog.expectedPendingActions(snapshot);
 }
-
 function hasUsablePendingAction(snapshot) {
     const pendingActions = new Set(expectedPendingActions(snapshot));
     return expectedActionContainerEntries(snapshot)
@@ -603,12 +598,8 @@ function hasUsablePendingAction(snapshot) {
 }
 
 function isOnlineUiBlockedSnapshot(snapshot) {
-    if (!snapshot || !snapshot.isOnlineGame) return false;
-    if (snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return true;
-    return snapshot.socketConnected === false;
+    return UiWatchdog.isOnlineUiBlockedSnapshot(snapshot);
 }
-
-
 function resetAccessibleModalStateForRecovery() {
     try { if (typeof activeModalId !== 'undefined') activeModalId = null; } catch (_) {}
     try { if (typeof lastModalFocus !== 'undefined') lastModalFocus = null; } catch (_) {}

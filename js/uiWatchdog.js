@@ -202,12 +202,32 @@ const UiWatchdog = (() => {
         return String(freezeKind || '').split(':')[0];
     }
 
+    function isHumanTurnSnapshot(snapshot) {
+        if (!snapshot || !snapshot.phase || snapshot.isCpuTurn) return false;
+        return !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
+    }
+
+    function expectedPendingActions(snapshot) {
+        const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+        const pendingActions = new Set(['resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT']);
+        return allowed.filter(action => pendingActions.has(action));
+    }
+
+    function isOnlineUiBlockedSnapshot(snapshot) {
+        if (!snapshot || !snapshot.isOnlineGame) return false;
+        if (snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return true;
+        return snapshot.socketConnected === false;
+    }
+
     return Object.freeze({
         stateKey,
         compactIssueForTrace,
         compactSnapshotForTrace,
         classifyInteractabilityCause,
         normalizeFreezeKind,
+        isHumanTurnSnapshot,
+        expectedPendingActions,
+        isOnlineUiBlockedSnapshot,
         hasPendingWork,
         classifyFreezeFacts,
         compactElementSnapshotForStorage,
