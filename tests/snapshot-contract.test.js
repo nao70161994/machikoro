@@ -17,6 +17,7 @@ runTest('snapshot fixtures は主要状態をserialize/restore/serializeで保�
         'build-with-undo',
         'pending',
         'multiplayer-landmark',
+        'max-players',
         'endgame',
     ]);
 

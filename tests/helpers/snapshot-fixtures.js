@@ -33,6 +33,15 @@ function makeSnapshotRoundtripFixtures(runtime, makeUndoStateFromMirror) {
     multiplayerGame.players[2].dormantCards = [multiplayerGame.players[2].cards[2]];
     multiplayerGame.players[3].itVentureCoins = 4;
 
+    const maxPlayersGame = makeGame(10);
+    maxPlayersGame.phase = runtime.GAME_PHASES.BUILD;
+    maxPlayersGame.currentPlayerIndex = 9;
+    maxPlayersGame.turnCount = 72;
+    maxPlayersGame.players[4].coins = 18;
+    maxPlayersGame.players[4].landmarks['駅'] = true;
+    maxPlayersGame.players[9].cards.push(runtime.createCardByName('カフェ'));
+    maxPlayersGame.players[9].itVentureCoins = 7;
+
     const endgameGame = makeGame(3);
     endgameGame.phase = runtime.GAME_PHASES.BUILD;
     endgameGame.currentPlayerIndex = 2;
@@ -47,6 +56,7 @@ function makeSnapshotRoundtripFixtures(runtime, makeUndoStateFromMirror) {
         { name: 'build-with-undo', game: buildGame, shopStock: buildStock, undoState: buildUndoState, actionSeq: 9 },
         { name: 'pending', game: pendingGame, shopStock: { 麦畑: 6, パン屋: 6 }, undoState: null, actionSeq: 14 },
         { name: 'multiplayer-landmark', game: multiplayerGame, shopStock: { 麦畑: 4, パン屋: 5, カフェ: 3 }, undoState: null, actionSeq: 27 },
+        { name: 'max-players', game: maxPlayersGame, shopStock: { 麦畑: 1, パン屋: 2, カフェ: 4 }, undoState: null, actionSeq: 88 },
         { name: 'endgame', game: endgameGame, shopStock: { 麦畑: 2, パン屋: 3 }, undoState: null, actionSeq: 61 },
     ];
 }
