@@ -141,6 +141,15 @@ runTest('schema shadow parityはAction/Snapshot独立v0/v1で全action traceを�
             actions: [['resolveMover', { cardIndex: 0, targetIndex: 1 }]],
         },
         {
+            name: 'pending-mover-by-name',
+            setup(game) {
+                setPending(game, 'resolveMover', 'pendingMover');
+                game.players[0].cards = [runtime.createCardByName('パン屋')];
+                game.players[1].cards = [];
+            },
+            actions: [['resolveMover', { cardName: 'パン屋', targetIndex: 1 }]],
+        },
+        {
             name: 'pending-renovation',
             setup(game) {
                 setPending(game, 'resolveRenovation', 'pendingRenovation');
