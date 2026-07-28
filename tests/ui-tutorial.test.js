@@ -150,3 +150,38 @@ runTest('tutorial messageは建設済み・建設不可・最安候補を同じ�
         tags: ['所持 5コイン', '候補 3件'],
     });
 });
+
+runTest('tutorial HTMLはtitle・body・tagをescapeして既存構造を維持する', () => {
+    const escapeHtml = value => String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    assert.strictEqual(
+        UiTutorial.buildHtml({
+            title: '<案内>',
+            body: 'A&B',
+            tags: ['<駅>', '1&2'],
+        }, escapeHtml),
+        `
+        <div class="tutorial-title">&lt;案内&gt;</div>
+        <div class="tutorial-body">A&amp;B</div>
+        <div class="tutorial-meta"><span class="tutorial-tag">&lt;駅&gt;</span><span class="tutorial-tag">1&amp;2</span></div>
+    `
+    );
+});
+
+runTest('tutorial HTMLは空メッセージで既存fallbackとtag省略を維持する', () => {
+    const escapeHtml = value => String(value);
+
+    assert.strictEqual(
+        UiTutorial.buildHtml({ title: '', body: '', tags: [] }, escapeHtml),
+        [
+            '',
+            '        <div class="tutorial-title">GUIDE</div>',
+            '        <div class="tutorial-body"></div>',
+            '        ',
+            '    ',
+        ].join('\n')
+    );
+});

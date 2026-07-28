@@ -67,7 +67,17 @@ const UiTutorial = (() => {
         return { title: `${levelText}ガイド`, body: "盤面を確認して次の行動を選んでください。", tags: [] };
     }
 
-    return Object.freeze({ getHints, getMessage });
+    function buildHtml(message, escapeHtml) {
+        const normalizedMessage = message || {};
+        const tags = Array.isArray(normalizedMessage.tags) ? normalizedMessage.tags : [];
+        return `
+        <div class="tutorial-title">${escapeHtml(normalizedMessage.title || "GUIDE")}</div>
+        <div class="tutorial-body">${escapeHtml(normalizedMessage.body || "")}</div>
+        ${tags.length ? `<div class="tutorial-meta">${tags.map(tag => `<span class="tutorial-tag">${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
+    `;
+    }
+
+    return Object.freeze({ getHints, getMessage, buildHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiTutorial;

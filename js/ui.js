@@ -101,11 +101,7 @@ function renderTutorial() {
     }
     const message = getTutorialMessage();
     box.style.display = "block";
-    box.innerHTML = `
-        <div class="tutorial-title">${escapeHtml(message.title || "GUIDE")}</div>
-        <div class="tutorial-body">${escapeHtml(message.body || "")}</div>
-        ${message.tags && message.tags.length ? `<div class="tutorial-meta">${message.tags.map(tag => `<span class="tutorial-tag">${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
-    `;
+    box.innerHTML = UiTutorial.buildHtml(message, escapeHtml);
 }
 
 function setTutorialEnabled(enabled) {
