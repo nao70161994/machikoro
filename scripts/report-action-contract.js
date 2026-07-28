@@ -60,6 +60,20 @@ function buildActionContractReport({
             issues.push({ action: row.action, kind: 'ui-phase-mismatch' });
         }
         if (duplicateUiActions.has(row.action)) issues.push({ action: row.action, kind: 'duplicate-ui-target' });
+        if (actionContract) {
+            if (row.canonicalPayloadVariants.length === 0) {
+                issues.push({ action: row.action, kind: 'missing-canonical-payload-variants' });
+            } else {
+                const canonicalSignature = JSON.stringify(row.canonicalPayloadKeys);
+                const variantSignatures = row.canonicalPayloadVariants.map(keys => JSON.stringify(keys));
+                if (!variantSignatures.includes(canonicalSignature)) {
+                    issues.push({ action: row.action, kind: 'canonical-payload-default-variant-mismatch' });
+                }
+                if (new Set(variantSignatures).size !== variantSignatures.length) {
+                    issues.push({ action: row.action, kind: 'duplicate-canonical-payload-variant' });
+                }
+            }
+        }
     }
 
     for (const action of Object.keys(registry || {})) {

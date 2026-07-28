@@ -85,3 +85,63 @@ runTest('action contract report identifies missing, duplicate, phase, and unknow
         { action: 'extra', kind: 'unknown-ui-action' },
     ]);
 });
+
+runTest('action contract report detects missing, mismatched, and duplicate canonical payload variants', () => {
+    const report = buildActionContractReport({
+        gameActions: { FIRST: 'first', SECOND: 'second' },
+        registry: {
+            first: {
+                phase: 'roll',
+                payloadKind: 'first',
+                serverReplay: true,
+                clientApply: true,
+            },
+            second: {
+                phase: 'build',
+                payloadKind: 'second',
+                serverReplay: true,
+                clientApply: true,
+            },
+        },
+        canonicalPayloadKeys: {
+            first: ['current'],
+            second: [],
+        },
+        payloadValidators: {
+            first() {},
+            second() {},
+        },
+        uiRegistry: {
+            snapshot() {
+                return [
+                    { phase: 'roll', actions: ['first'], targetId: 'one' },
+                    { phase: 'build', actions: ['second'], targetId: 'two' },
+                ];
+            },
+            childSelectors: {},
+        },
+        actionContract: {
+            byAction: {
+                first: {
+                    actorAuthority: 'current-player-or-host-cpu',
+                    restoreReplay: true,
+                    canonicalPayloadVariants: [
+                        ['legacy'],
+                        ['legacy'],
+                    ],
+                },
+                second: {
+                    actorAuthority: 'current-player-or-host-cpu',
+                    restoreReplay: true,
+                    canonicalPayloadVariants: [],
+                },
+            },
+        },
+    });
+
+    assert.deepStrictEqual(report.issues, [
+        { action: 'first', kind: 'canonical-payload-default-variant-mismatch' },
+        { action: 'first', kind: 'duplicate-canonical-payload-variant' },
+        { action: 'second', kind: 'missing-canonical-payload-variants' },
+    ]);
+});
