@@ -19,6 +19,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiModalPolicy.js',
     'js/uiTutorial.js',
     'js/uiWatchdog.js',
+    'js/uiWinner.js',
 ]);
 
 const serverMaintenanceFiles = Object.freeze([

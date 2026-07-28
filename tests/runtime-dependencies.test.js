@@ -51,6 +51,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardSelect.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
+            ['js/uiWinner.js', 'js/ui.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],
@@ -92,6 +93,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardSelect.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
+            ['js/uiWinner.js', 'js/ui.js'],
             ['js/actionContract.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/actionContract.js', 'js/gameSchemaCodec.js'],
@@ -116,7 +118,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiCardDetail.js', 'js/ui.js'],
             ['js/uiCardSelect.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
-            ['js/uiModalPolicy.js', 'js/ui.js']
+            ['js/uiModalPolicy.js', 'js/ui.js'],
+            ['js/uiWinner.js', 'js/ui.js'],
         ]],
         ['tests/online.test.js', [
             ['js/actionContract.js', 'js/gameEngine.js'],
@@ -144,7 +147,8 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/actionUiRegistry.js', 'js/appShell.js'],
             ['js/uiPendingMenu.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
-            ['js/uiModalPolicy.js', 'js/ui.js']
+            ['js/uiModalPolicy.js', 'js/ui.js'],
+            ['js/uiWinner.js', 'js/ui.js'],
         ]],
         ['tests/main.test.js', [
             ['js/actionContract.js', 'js/actionUiRegistry.js'],
