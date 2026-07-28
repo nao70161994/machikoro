@@ -5,6 +5,7 @@ const server = require('../server');
 const { runTest } = require('./helpers/test-utils');
 
 const runtime = server.loadGameRuntime();
+const PARITY_PLAYER_COUNTS = Object.freeze([2, 3, 5, 10]);
 const SCHEMA_SELECTIONS = Object.freeze([
     Object.freeze({ actionVersion: 0, snapshotVersion: 0 }),
     Object.freeze({ actionVersion: 0, snapshotVersion: 1 }),
@@ -68,7 +69,7 @@ function setPending(game, action, field) {
     game.pendingActionQueue = [{ action, field }];
 }
 
-runTest('schema shadow parityはAction/Snapshot独立v0/v1で全action traceを維持する', () => {
+runTest('schema shadow parityは2〜10人・独立v0/v1で全action traceを維持する', () => {
     const landmarks = runtime.Player.landmarkNames();
     const fixtures = [
         {
@@ -183,14 +184,16 @@ runTest('schema shadow parityはAction/Snapshot独立v0/v1で全action traceを�
     ];
     for (const selection of SCHEMA_SELECTIONS) {
         const coveredActions = new Set();
-        for (const fixture of fixtures) {
-            const room = makeRoom(3, selection);
-            fixture.setup(room.canonicalMirror.game);
-            for (const [action, data] of fixture.actions) {
-                coveredActions.add(action);
-                applyTraceStep(room, action, data);
+        for (const playerCount of PARITY_PLAYER_COUNTS) {
+            for (const fixture of fixtures) {
+                const room = makeRoom(playerCount, selection);
+                fixture.setup(room.canonicalMirror.game);
+                for (const [action, data] of fixture.actions) {
+                    coveredActions.add(action);
+                    applyTraceStep(room, action, data);
+                }
+                assert.ok(room.actionSeq > 0, `${fixture.name}-${playerCount}p`);
             }
-            assert.ok(room.actionSeq > 0, fixture.name);
         }
         assert.deepStrictEqual(
             [...coveredActions].sort(),
