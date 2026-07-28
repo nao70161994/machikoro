@@ -42,7 +42,7 @@
 
 ## 2026-07-28 保守性改善の現在地
 
-- app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
+- app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、trace/root-cause整形、手番/online block判定、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
 - CPU: 既存pure helperに加えて`js/cpuBuildExecution.js`へlocal/online建設実行を分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
 - server: `server/lobbySocketHandlers.js`と`server/rejoinSocketHandler.js`へcreate/join/rejoin familyを分離し、effect/emit順を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
 - online: `js/onlineReconnectState.js`のshadow controllerと`js/onlineRetryPolicy.js`の既存3秒/8回/15秒契約を使用。Restore queues、timer callback、ACK timing、protocolは未変更。
