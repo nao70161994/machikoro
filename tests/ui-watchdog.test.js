@@ -128,4 +128,54 @@ const oversizedPayload = {
     },
 };
 assert.strictEqual(JSON.parse(UiWatchdog.freezePayloadStorageJson(oversizedPayload)).snapshot.reason, undefined);
+
+assert.deepStrictEqual(UiWatchdog.compactIssueForTrace({
+    kind: 'disabled',
+    action: 'nextTurn',
+    target: 'btnSkip',
+    extra: 'drop',
+}), {
+    kind: 'disabled',
+    action: 'nextTurn',
+    actionTarget: '',
+    target: 'btnSkip',
+    phase: '',
+    reason: '',
+    freezeKind: '',
+});
+assert.strictEqual(UiWatchdog.compactIssueForTrace(null), null);
+
+const compactTrace = UiWatchdog.compactSnapshotForTrace({
+    phase: 'build',
+    builtThisTurn: 1,
+    allowedActions: ['nextTurn'],
+    visibleModals: ['confirmModal'],
+    ui: { btnSkip: { id: 'btnSkip', disabled: true } },
+    ignored: 'drop',
+});
+assert.strictEqual(compactTrace.phase, 'build');
+assert.strictEqual(compactTrace.builtThisTurn, true);
+assert.deepStrictEqual(compactTrace.allowedActions, ['nextTurn']);
+assert.deepStrictEqual(compactTrace.visibleModals, ['confirmModal']);
+assert.strictEqual(compactTrace.btnSkip.id, 'btnSkip');
+assert.strictEqual(compactTrace.btnSkip.disabled, true);
+assert.strictEqual(Object.prototype.hasOwnProperty.call(compactTrace, 'ignored'), false);
+
+const causeCases = [
+    [null, null, 'unknown'],
+    [{ reason: 'stale-modal' }, null, 'modal-close-lock-leftover'],
+    [{ target: 'body' }, null, 'modal-close-lock-leftover'],
+    [{ target: 'gameScreen', reason: 'parent-inert' }, null, 'screen-lock-leftover'],
+    [{ reason: 'pointer-events-none' }, null, 'inline-style-leftover'],
+    [{ reason: 'hidden-mismatch' }, null, 'render-container-hidden'],
+    [{ reason: 'child-not-clickable' }, null, 'allowed-actions-render-state-mismatch'],
+    [{ action: 'nextTurn' }, { phase: 'build' }, 'build-after-action-display-sync'],
+    [{}, null, 'allowed-actions-render-state-mismatch'],
+];
+for (const [issue, snapshot, expected] of causeCases) {
+    assert.strictEqual(UiWatchdog.classifyInteractabilityCause(issue, snapshot), expected);
+}
+assert.strictEqual(UiWatchdog.normalizeFreezeKind('modal-ui-locked:parent-inert'), 'modal-ui-locked');
+assert.strictEqual(UiWatchdog.normalizeFreezeKind(null), '');
+
 console.log('ui watchdog tests passed');

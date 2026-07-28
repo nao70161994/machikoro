@@ -1537,42 +1537,11 @@ function classifyLikelyFreeze(snapshot) {
 }
 
 function compactIssueForTrace(issue) {
-    if (!issue) return null;
-    return {
-        kind: issue.kind || '',
-        action: issue.action || '',
-        actionTarget: issue.actionTarget || '',
-        target: issue.target || '',
-        phase: issue.phase || '',
-        reason: issue.reason || '',
-        freezeKind: issue.freezeKind || '',
-    };
+    return UiWatchdog.compactIssueForTrace(issue);
 }
 
 function compactSnapshotForUiTrace(snapshot) {
-    const ui = snapshot && snapshot.ui || {};
-    return {
-        phase: snapshot && snapshot.phase || '',
-        builtThisTurn: !!(snapshot && snapshot.builtThisTurn),
-        currentPlayerIndex: snapshot && snapshot.currentPlayerIndex,
-        myPlayerIndex: snapshot && snapshot.myPlayerIndex,
-        isCpuTurn: !!(snapshot && snapshot.isCpuTurn),
-        cpuStepScheduled: !!(snapshot && snapshot.cpuStepScheduled),
-        cpuSchedulerHealth: snapshot && snapshot.cpuSchedulerHealth || null,
-        isOnlineGame: snapshot && snapshot.isOnlineGame,
-        onlineActionInFlight: snapshot && snapshot.onlineActionInFlight,
-        allowedActions: Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [],
-        visibleModals: Array.isArray(snapshot && snapshot.visibleModals) ? snapshot.visibleModals : [],
-        bodyClassName: snapshot && snapshot.bodyClassName || '',
-        gameScreen: compactElementSnapshotForStorage(ui.gameScreen),
-        buildMenu: compactElementSnapshotForStorage(ui.buildMenu),
-        btnSkip: compactElementSnapshotForStorage(ui.btnSkip),
-        btnRoll: compactElementSnapshotForStorage(ui.btnRoll),
-        diceChoose: compactElementSnapshotForStorage(ui.diceChoose),
-        pendingModal: compactElementSnapshotForStorage(ui.pendingModal),
-        pendingMenu: compactElementSnapshotForStorage(ui.pendingMenu),
-        confirmModal: compactElementSnapshotForStorage(ui.confirmModal),
-    };
+    return UiWatchdog.compactSnapshotForTrace(snapshot);
 }
 
 function recentClientCheckpointsForTrace(limit = 8) {
@@ -1592,14 +1561,7 @@ function recentClientCheckpointsForTrace(limit = 8) {
 }
 
 function classifyUiInteractabilityCause(issue, snapshot) {
-    if (!issue) return 'unknown';
-    if (issue.reason === 'stale-modal' || issue.target === 'body') return 'modal-close-lock-leftover';
-    if (issue.target === 'gameScreen' && (issue.reason === 'parent-inert' || issue.reason === 'parent-display-none')) return 'screen-lock-leftover';
-    if (issue.reason === 'pointer-events-none') return 'inline-style-leftover';
-    if (issue.reason === 'parent-display-none' || issue.reason === 'hidden-mismatch') return 'render-container-hidden';
-    if (issue.reason === 'child-not-clickable' || issue.reason === 'disabled-mismatch') return 'allowed-actions-render-state-mismatch';
-    if (snapshot && snapshot.phase === 'build' && issue.action === 'nextTurn') return 'build-after-action-display-sync';
-    return 'allowed-actions-render-state-mismatch';
+    return UiWatchdog.classifyInteractabilityCause(issue, snapshot);
 }
 
 function syncAllowedActionContainersForRender(snapshot, issues = null) {
@@ -1905,7 +1867,7 @@ function recoverOnlineActionInFlightStall(snapshot) {
 }
 
 function normalizedFreezeKindForRecovery(freezeKind) {
-    return String(freezeKind || '').split(':')[0];
+    return UiWatchdog.normalizeFreezeKind(freezeKind);
 }
 
 function freezeRecoveryHandlers() {
