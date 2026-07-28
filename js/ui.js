@@ -931,17 +931,22 @@ function modalPolicyFor(id) {
 function isModalVisibleById(id) {
     if (!id || typeof document === 'undefined' || typeof document.getElementById !== 'function') return false;
     const modal = document.getElementById(id);
-    if (!modal || modal.hidden) return false;
-    const inline = modal.style || {};
-    const inlineDisplay = inline.display || '';
-    if (inlineDisplay === 'none') return false;
-    if (inline.visibility === 'hidden' || inline.opacity === '0' || inline.pointerEvents === 'none') return false;
+    const inline = modal && modal.style || {};
+    let computed = null;
     if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-        const style = window.getComputedStyle(modal);
-        if (style && (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0' || style.pointerEvents === 'none')) return false;
-        if (style && style.display) return true;
+        computed = modal ? window.getComputedStyle(modal) : null;
     }
-    return !!inlineDisplay;
+    return UiModalPolicy.isVisibleState({
+        exists: !!modal,
+        hidden: !!(modal && modal.hidden),
+        inline: {
+            display: inline.display || '',
+            visibility: inline.visibility || '',
+            opacity: inline.opacity || '',
+            pointerEvents: inline.pointerEvents || '',
+        },
+        computed,
+    });
 }
 
 function modalStackExceptionKey(parentId, childId) {
@@ -1094,25 +1099,28 @@ function handleModalKeydown(event) {
         return;
     }
     if (event.key !== 'Tab') return;
-    if (typeof modal.contains === 'function' && !modal.contains(document.activeElement)) {
-        event.preventDefault();
-        focusModal(modal);
-        return;
-    }
     const focusable = getFocusableElements(modal);
-    if (focusable.length === 0) {
+    const containsActive = typeof modal.contains !== 'function' || modal.contains(document.activeElement);
+    const activeIndex = focusable.indexOf(document.activeElement);
+    const action = UiModalPolicy.focusTrapAction({
+        containsActive,
+        focusableCount: focusable.length,
+        activeIndex,
+        shiftKey: !!event.shiftKey,
+    });
+    if (action === 'focus-modal') {
         event.preventDefault();
         focusModal(modal);
         return;
     }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+    if (action === 'focus-last') {
         event.preventDefault();
-        last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
+        focusable[focusable.length - 1].focus();
+        return;
+    }
+    if (action === 'focus-first') {
         event.preventDefault();
-        first.focus();
+        focusable[0].focus();
     }
 }
 

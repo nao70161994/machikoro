@@ -65,6 +65,28 @@ function activeAfterClose(closedId, activeId, blockingIds, isVisible) {
     return activeStillVisible ? activeId : visibleIds[0] || null;
 }
 
+function isVisibleState(state = {}) {
+    if (!state.exists || state.hidden) return false;
+    const inline = state.inline || {};
+    if (inline.display === 'none') return false;
+    if (inline.visibility === 'hidden' || inline.opacity === '0' || inline.pointerEvents === 'none') return false;
+    const computed = state.computed;
+    if (computed) {
+        if (computed.display === 'none' || computed.visibility === 'hidden' ||
+            computed.opacity === '0' || computed.pointerEvents === 'none') return false;
+        if (computed.display) return true;
+    }
+    return !!inline.display;
+}
+
+function focusTrapAction(state = {}) {
+    if (!state.containsActive) return 'focus-modal';
+    if (!state.focusableCount) return 'focus-modal';
+    if (state.shiftKey && state.activeIndex === 0) return 'focus-last';
+    if (!state.shiftKey && state.activeIndex === state.focusableCount - 1) return 'focus-first';
+    return 'none';
+}
+
 const UiModalPolicy = Object.freeze({
     inertRootIds: UI_MODAL_INERT_ROOT_IDS,
     registry: UI_MODAL_POLICY_REGISTRY,
@@ -75,6 +97,8 @@ const UiModalPolicy = Object.freeze({
     visibleBlockingIds,
     canOpen,
     activeAfterClose,
+    isVisibleState,
+    focusTrapAction,
 });
 
 if (typeof module !== 'undefined' && module.exports) {

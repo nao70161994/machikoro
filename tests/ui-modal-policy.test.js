@@ -68,3 +68,37 @@ runTest('UI modal policy はclose後のactive ownerをvisible blocking順で選�
         () => false
     ), null);
 });
+
+
+runTest('UI modal policy はDOM由来の表示状態をpureに判定する', () => {
+    assert.strictEqual(UiModalPolicy.isVisibleState({ exists: false }), false);
+    assert.strictEqual(UiModalPolicy.isVisibleState({ exists: true, inline: { display: 'flex' } }), true);
+    assert.strictEqual(UiModalPolicy.isVisibleState({
+        exists: true,
+        inline: { display: 'flex', pointerEvents: 'none' },
+    }), false);
+    assert.strictEqual(UiModalPolicy.isVisibleState({
+        exists: true,
+        inline: {},
+        computed: { display: 'flex', visibility: 'visible', opacity: '1', pointerEvents: 'auto' },
+    }), true);
+    assert.strictEqual(UiModalPolicy.isVisibleState({
+        exists: true,
+        inline: { display: 'flex' },
+        computed: { display: 'none' },
+    }), false);
+});
+
+runTest('UI modal policy はfocus trapの副作用なしactionを返す', () => {
+    assert.strictEqual(UiModalPolicy.focusTrapAction({ containsActive: false, focusableCount: 2 }), 'focus-modal');
+    assert.strictEqual(UiModalPolicy.focusTrapAction({ containsActive: true, focusableCount: 0 }), 'focus-modal');
+    assert.strictEqual(UiModalPolicy.focusTrapAction({
+        containsActive: true, focusableCount: 2, activeIndex: 0, shiftKey: true,
+    }), 'focus-last');
+    assert.strictEqual(UiModalPolicy.focusTrapAction({
+        containsActive: true, focusableCount: 2, activeIndex: 1, shiftKey: false,
+    }), 'focus-first');
+    assert.strictEqual(UiModalPolicy.focusTrapAction({
+        containsActive: true, focusableCount: 2, activeIndex: 0, shiftKey: false,
+    }), 'none');
+});
