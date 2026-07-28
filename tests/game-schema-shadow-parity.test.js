@@ -5,10 +5,14 @@ const server = require('../server');
 const { runTest } = require('./helpers/test-utils');
 
 const runtime = server.loadGameRuntime();
-const LEGACY_SELECTION = Object.freeze({ actionVersion: 0, snapshotVersion: 0 });
-const SELECTION = Object.freeze({ actionVersion: 1, snapshotVersion: 1 });
+const SCHEMA_SELECTIONS = Object.freeze([
+    Object.freeze({ actionVersion: 0, snapshotVersion: 0 }),
+    Object.freeze({ actionVersion: 0, snapshotVersion: 1 }),
+    Object.freeze({ actionVersion: 1, snapshotVersion: 0 }),
+    Object.freeze({ actionVersion: 1, snapshotVersion: 1 }),
+]);
 
-function makeRoom(playerCount = 3, selection = SELECTION) {
+function makeRoom(playerCount = 3, selection = SCHEMA_SELECTIONS[0]) {
     const playerNames = Array.from({ length: playerCount }, (_, index) => 'P' + index);
     const room = {
         gameStartPayload: {
@@ -64,7 +68,7 @@ function setPending(game, action, field) {
     game.pendingActionQueue = [{ action, field }];
 }
 
-runTest('schema shadow parityはv0/v1でserver mirrorの全action traceを維持する', () => {
+runTest('schema shadow parityはAction/Snapshot独立v0/v1で全action traceを維持する', () => {
     const landmarks = runtime.Player.landmarkNames();
     const fixtures = [
         {
@@ -160,7 +164,7 @@ runTest('schema shadow parityはv0/v1でserver mirrorの全action traceを維持
             actions: [['buildLandmark', { name: landmarks[landmarks.length - 1] }]],
         },
     ];
-    for (const selection of [LEGACY_SELECTION, SELECTION]) {
+    for (const selection of SCHEMA_SELECTIONS) {
         const coveredActions = new Set();
         for (const fixture of fixtures) {
             const room = makeRoom(3, selection);
