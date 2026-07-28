@@ -31,14 +31,6 @@ function currentCpuPlayerAt(index) {
     }
 }
 
-function classifyLogEntry(entry) {
-    return UiLogDisplay.classifyLogEntry(entry, LOG_TYPE_DISPLAY);
-}
-
-function extractLogDetails(entry) {
-    return UiLogDisplay.extractLogDetails(entry);
-}
-
 function renderLog() {
     const logEl = document.getElementById("log");
     const titleEl = document.getElementById("logTitle");
@@ -67,47 +59,8 @@ function renderLog() {
     const entryCount = fullLog.filter(e => e !== "__SEP__").length;
     titleEl.textContent = `📋 ログ (${entryCount})`;
 
-    // 最後の実エントリのインデックスを求める
-    let lastEntryIdx = -1;
-    for (let i = fullLog.length - 1; i >= 0; i--) {
-        if (fullLog[i] !== "__SEP__") { lastEntryIdx = i; break; }
-    }
-
-    logEl.innerHTML = fullLog.map((entry, index) => {
-        if (entry === "__SEP__") return `<div class="log-separator"></div>`;
-        const { cls } = classifyLogEntry(entry);
-        const latestCls = index === lastEntryIdx ? " log-latest" : "";
-        return `<div class="log-item ${cls}${latestCls}">${escapeHtml(entry.message)}</div>`;
-    }).join("");
-
-    // サマリーは現在ターンのログのみ使用
-    const recent = cur.slice(-8);
-    const counts = { "収入": 0, "支払い": 0, "建設": 0, "特殊": 0, "ダイス": 0 };
-    recent.forEach(entry => {
-        const { label } = classifyLogEntry(entry);
-        if (counts[label] !== undefined) counts[label]++;
-    });
-    const summaryParts = [];
-    const latest = cur[cur.length - 1];
-    if (latest) {
-        summaryParts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest.message)}</span>`);
-        const details = extractLogDetails(latest);
-        const detailCards = [];
-        if (details.actor) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">${escapeHtml(details.actor)}</span></span>`);
-        if (details.subject) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">対象カード</span><span class="log-detail-value">${escapeHtml(details.subject)}</span></span>`);
-        if (details.target) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">相手/対象</span><span class="log-detail-value">${escapeHtml(details.target)}</span></span>`);
-        if (details.amount) {
-            const amountText = `${details.amount.startsWith('-') ? '' : '+'}${details.amount}コイン`;
-            detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">${escapeHtml(amountText)}</span></span>`);
-        }
-        if (detailCards.length > 0) summaryParts.push(`<div class="log-detail-row">${detailCards.join("")}</div>`);
-    } else {
-        summaryParts.push(`<span class="log-chip">ログはまだありません</span>`);
-    }
-    Object.entries(counts).forEach(([label, count]) => {
-        if (count > 0) summaryParts.push(`<span class="log-chip">${label} ${count}</span>`);
-    });
-    summaryEl.innerHTML = summaryParts.join("");
+    logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(fullLog, LOG_TYPE_DISPLAY, escapeHtml);
+    summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml);
     logEl.scrollTop = logEl.scrollHeight;
 }
 

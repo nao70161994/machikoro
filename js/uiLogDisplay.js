@@ -56,7 +56,57 @@ const UiLogDisplay = (() => {
         return detail;
     }
 
-    return Object.freeze({ makeLogTypeDisplay, classifyLogEntry, extractLogDetails });
+    function buildLogEntriesHtml(entries, display, escapeHtml) {
+        if (!Array.isArray(entries) || typeof escapeHtml !== 'function') return '';
+        let lastEntryIndex = -1;
+        for (let index = entries.length - 1; index >= 0; index--) {
+            if (entries[index] !== '__SEP__') { lastEntryIndex = index; break; }
+        }
+        return entries.map((entry, index) => {
+            if (entry === '__SEP__') return '<div class="log-separator"></div>';
+            const { cls } = classifyLogEntry(entry, display);
+            const latestClass = index === lastEntryIndex ? ' log-latest' : '';
+            return `<div class="log-item ${cls}${latestClass}">${escapeHtml(entry.message)}</div>`;
+        }).join('');
+    }
+
+    function buildLogSummaryHtml(currentLog, display, escapeHtml) {
+        if (!Array.isArray(currentLog) || typeof escapeHtml !== 'function') return '';
+        const counts = { "収入": 0, "支払い": 0, "建設": 0, "特殊": 0, "ダイス": 0 };
+        currentLog.slice(-8).forEach(entry => {
+            const { label } = classifyLogEntry(entry, display);
+            if (counts[label] !== undefined) counts[label]++;
+        });
+        const parts = [];
+        const latest = currentLog[currentLog.length - 1];
+        if (latest) {
+            parts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest.message)}</span>`);
+            const details = extractLogDetails(latest);
+            const detailCards = [];
+            if (details.actor) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">${escapeHtml(details.actor)}</span></span>`);
+            if (details.subject) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">対象カード</span><span class="log-detail-value">${escapeHtml(details.subject)}</span></span>`);
+            if (details.target) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">相手/対象</span><span class="log-detail-value">${escapeHtml(details.target)}</span></span>`);
+            if (details.amount) {
+                const amountText = `${details.amount.startsWith('-') ? '' : '+'}${details.amount}コイン`;
+                detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">${escapeHtml(amountText)}</span></span>`);
+            }
+            if (detailCards.length > 0) parts.push(`<div class="log-detail-row">${detailCards.join('')}</div>`);
+        } else {
+            parts.push('<span class="log-chip">ログはまだありません</span>');
+        }
+        Object.entries(counts).forEach(([label, count]) => {
+            if (count > 0) parts.push(`<span class="log-chip">${label} ${count}</span>`);
+        });
+        return parts.join('');
+    }
+
+    return Object.freeze({
+        makeLogTypeDisplay,
+        classifyLogEntry,
+        extractLogDetails,
+        buildLogEntriesHtml,
+        buildLogSummaryHtml,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiLogDisplay;
