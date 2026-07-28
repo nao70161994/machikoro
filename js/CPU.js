@@ -872,16 +872,10 @@ class CPU {
     _expertLookaheadSteps(game, focusIndex, baseSteps) {
         const player = game.players[focusIndex];
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        let steps = Math.max(2, baseSteps);
-        if (remainingLandmarks <= 1) steps += game.players.length * 2;
-        else if (remainingLandmarks <= 2) steps += game.players.length;
-        if (game.phase === GAME_PHASES.BUILD) steps += 1;
-        if (game.players.length >= 4 && remainingLandmarks >= 4) steps = Math.max(2, steps - game.players.length);
-        if (this.simulationMode === "fast") steps = Math.max(2, Math.round(steps * 0.8));
-        if (this.simulationMode === "lite") steps = Math.max(2, Math.round(steps * 0.65));
-        return steps;
+        return CPUEvaluation.expertLookaheadSteps(
+            game.players.length, remainingLandmarks, game.phase, GAME_PHASES.BUILD, this.simulationMode, baseSteps
+        );
     }
-
     _scoreExpertChoiceState(game, focusIndex) {
         return this._profileMeasure("expert.choiceState", () => {
             const tuning = this.expertTuning;
@@ -903,22 +897,10 @@ class CPU {
     _shouldUseExpertChoiceLookahead(game, focusIndex) {
         const player = game.players[focusIndex];
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        if (this.simulationMode === "realtime") {
-            if (game.players.length >= 4) return false;
-            return game.phase === GAME_PHASES.BUILD && remainingLandmarks <= 1;
-        }
-        if (this.simulationMode === "lite") {
-            return remainingLandmarks <= 1 && game.phase === GAME_PHASES.BUILD;
-        }
-        if (this.simulationMode === "fast") {
-            return game.phase === GAME_PHASES.BUILD || remainingLandmarks <= 2;
-        }
-        if (game.players.length >= 4) {
-            return game.phase === GAME_PHASES.BUILD && remainingLandmarks <= 2;
-        }
-        return game.phase === GAME_PHASES.BUILD || remainingLandmarks <= 2;
+        return CPUEvaluation.shouldUseExpertChoiceLookahead(
+            game.players.length, remainingLandmarks, game.phase, GAME_PHASES.BUILD, this.simulationMode
+        );
     }
-
     _expectedExpertChoiceValue(game, focusIndex, outcomes, applyOutcome) {
         return this._profileMeasure("expert.expectedChoiceValue", () => {
             let totalWeight = 0;

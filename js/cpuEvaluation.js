@@ -178,6 +178,28 @@ const CPUEvaluation = Object.freeze({
         if (Number.isFinite(deltaEv) && deltaEv > 0.45) return 0;
         return current.countCard(card.name) >= 3 ? 0.75 : 0.45;
     },
+    expertLookaheadSteps(playerCount, remainingLandmarks, phase, buildPhase, simulationMode, baseSteps) {
+        let steps = Math.max(2, baseSteps);
+        if (remainingLandmarks <= 1) steps += playerCount * 2;
+        else if (remainingLandmarks <= 2) steps += playerCount;
+        if (phase === buildPhase) steps += 1;
+        if (playerCount >= 4 && remainingLandmarks >= 4) steps = Math.max(2, steps - playerCount);
+        if (simulationMode === 'fast') steps = Math.max(2, Math.round(steps * 0.8));
+        if (simulationMode === 'lite') steps = Math.max(2, Math.round(steps * 0.65));
+        return steps;
+    },
+
+    shouldUseExpertChoiceLookahead(playerCount, remainingLandmarks, phase, buildPhase, simulationMode) {
+        if (simulationMode === 'realtime') {
+            if (playerCount >= 4) return false;
+            return phase === buildPhase && remainingLandmarks <= 1;
+        }
+        if (simulationMode === 'lite') return remainingLandmarks <= 1 && phase === buildPhase;
+        if (simulationMode === 'fast') return phase === buildPhase || remainingLandmarks <= 2;
+        if (playerCount >= 4) return phase === buildPhase && remainingLandmarks <= 2;
+        return phase === buildPhase || remainingLandmarks <= 2;
+    },
+
 });
 
 if (typeof module !== 'undefined' && module.exports) {

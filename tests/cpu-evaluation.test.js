@@ -279,3 +279,30 @@ runTest('CPU本体のcard dice frequency wrapperはpure evaluationへ同値委�
         CPUEvaluation.cardDiceFrequency(card, game, player, LANDMARK_NAMES.STATION)
     );
 });
+
+runTest('CPU evaluation はlookahead段数と実行gateをpureに維持する', () => {
+    assert.strictEqual(CPUEvaluation.expertLookaheadSteps(4, 1, 'build', 'build', 'full', 8), 17);
+    assert.strictEqual(CPUEvaluation.expertLookaheadSteps(4, 4, 'roll', 'build', 'lite', 8), 3);
+    assert.strictEqual(CPUEvaluation.shouldUseExpertChoiceLookahead(4, 1, 'build', 'build', 'realtime'), false);
+    assert.strictEqual(CPUEvaluation.shouldUseExpertChoiceLookahead(3, 1, 'build', 'build', 'realtime'), true);
+    assert.strictEqual(CPUEvaluation.shouldUseExpertChoiceLookahead(4, 2, 'build', 'build', 'full'), true);
+    assert.strictEqual(CPUEvaluation.shouldUseExpertChoiceLookahead(4, 2, 'roll', 'build', 'full'), false);
+});
+
+runTest('CPU本体のlookahead wrapperはpure evaluation結果を維持する', () => {
+    const { CPU, GameManager, GAME_PHASES } = loadCPURuntime();
+    const cpu = new CPU('expert', { simulationMode: 'fast' });
+    const game = new GameManager(4);
+    game.phase = GAME_PHASES.BUILD;
+    const focusIndex = game.currentPlayerIndex;
+    const remaining = [...game.enabledLandmarks].filter(name => !game.players[focusIndex].landmarks[name]).length;
+
+    assert.strictEqual(
+        cpu._expertLookaheadSteps(game, focusIndex, 8),
+        CPUEvaluation.expertLookaheadSteps(4, remaining, game.phase, GAME_PHASES.BUILD, 'fast', 8)
+    );
+    assert.strictEqual(
+        cpu._shouldUseExpertChoiceLookahead(game, focusIndex),
+        CPUEvaluation.shouldUseExpertChoiceLookahead(4, remaining, game.phase, GAME_PHASES.BUILD, 'fast')
+    );
+});
