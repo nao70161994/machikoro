@@ -1,5 +1,6 @@
 const assert = require('assert');
 const makeActionPayload = require('../server/actionPayload');
+const GameActionContract = require('../js/actionContract');
 const { runTest } = require('./helpers/test-utils');
 
 const isPlainObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -52,3 +53,25 @@ runTest('client action idは現行文字集合と120文字上限を維持する'
     assert.strictEqual(normalizeClientActionId('with space'), '');
     assert.strictEqual(normalizeClientActionId(null), '');
 });
+
+runTest('action payload canonicalizerの出力keyはAction Contract variantと一致する', () => {
+    for (const entry of GameActionContract.entries) {
+        for (const variant of entry.canonicalPayloadVariants) {
+            const data = Object.fromEntries(variant.map(key => [
+                key,
+                key === 'cardIndex' ? 0 : 'value',
+            ]));
+            const canonical = canonicalizeActionData(entry.action, data);
+            const canonicalKeys = Object.keys(canonical);
+            const matchesVariant = entry.canonicalPayloadVariants.some(keys =>
+                assertKeyOrderEqual(keys, canonicalKeys)
+            );
+            assert.strictEqual(matchesVariant, true, entry.action + ': ' + JSON.stringify(variant));
+        }
+    }
+});
+
+function assertKeyOrderEqual(expected, actual) {
+    return expected.length === actual.length &&
+        expected.every((key, index) => key === actual[index]);
+}
