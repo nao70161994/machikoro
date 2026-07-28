@@ -90,6 +90,14 @@ runTest('schema shadow parityはAction/Snapshot独立v0/v1で全action traceを�
             ],
         },
         {
+            name: 'station-two-dice-current-payload',
+            setup(game) { game.phase = runtime.GAME_PHASES.ROLL; game.players[0].landmarks['駅'] = true; },
+            actions: [
+                ['rollDice', { forceDice: 1, tunaDice: [1, 1] }],
+                ['selectDice', { useTwo: true, diceCount: 2, d1: 2, d2: 3, tunaDice: [1, 1] }],
+            ],
+        },
+        {
             name: 'pending-tv',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.PENDING;
