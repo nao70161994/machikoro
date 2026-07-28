@@ -160,11 +160,13 @@ const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const _onlineReconnectController = OnlineReconnectState.createController();
+let _onlineReconnectCompleted = false;
 
 function getOnlineReconnectState() {
     const connected = !!socket && socket.connected !== false;
     return _onlineReconnectController.reconcile({
         failed: _rejoinRetryExhausted,
+        completed: _onlineReconnectCompleted,
         replaying: isReplaying,
         restoring: _onlineRestoreInProgress,
         rejoining: isReconnectingOnline && connected,
@@ -432,6 +434,7 @@ function _handleOnlineActionTimeout() {
 }
 
 function markOnlineGameFinished() {
+    _onlineReconnectCompleted = true;
     isOnlineGame = false;
     isReconnectingOnline = false;
     _setOnlineActionInFlight(false);
@@ -439,6 +442,7 @@ function markOnlineGameFinished() {
 }
 
 function resetOnlineState() {
+    _onlineReconnectCompleted = false;
     finishOnlineLobbyRequest();
     const roomIdBeforeReset = myRoomId;
     cpuScheduleToken++;
@@ -895,6 +899,7 @@ function initSocket() {
         if (gameSchema) gameStartPayload.gameSchema = gameSchema;
         const startOnlineGame = () => {
             if (startGeneration !== _onlineRestoreGeneration) return;
+            _onlineReconnectCompleted = false;
             isOnlineGame = true;
             _setOnlineHostState(hostPlayerIndex);
             cpuSpeed = cs || 1500;
@@ -1144,6 +1149,7 @@ function initSocket() {
                 _abortOnlineRestore(restoreGeneration, "復元データの再生に失敗しました。再接続して再試行します。");
                 return;
             }
+            _onlineReconnectCompleted = false;
             isOnlineGame = true;
             isReconnectingOnline = false;
             prevCoins = null;

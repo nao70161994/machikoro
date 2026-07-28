@@ -201,6 +201,7 @@ function loadOnlineRuntime(options = {}) {
         this.buildOnlineSnapshot = buildOnlineSnapshot;
         this.handleAppError = handleAppError;
         this.resetOnlineState = resetOnlineState;
+        this.markOnlineGameFinished = markOnlineGameFinished;
         this.sendAction = sendAction;
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
         this.initOnlineGame = initOnlineGame;
@@ -451,6 +452,15 @@ runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維�
         ['active', 'connecting', 'rejoining', 'restoring', 'replaying', 'failed']
     );
 });
+runTest('online.jsのreconnect観測状態は完了とresetを区別する', () => {
+    const localRt = loadOnlineRuntime();
+    localRt.setOnlineState({ isOnlineGame: true });
+    localRt.markOnlineGameFinished();
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'completed');
+    localRt.resetOnlineState();
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'idle');
+});
+
 runTest('rejoinRoom送信経路はbuildOnlineRejoinPayloadでclientVersion契約を共有する', () => {
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'storage.js'), 'utf8');
