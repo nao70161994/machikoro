@@ -57,6 +57,12 @@ function applyTraceStep(room, action, rawData) {
     );
 }
 
+function setPending(game, action, field) {
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game[field] = field === 'pendingIT' ? true : 1;
+    game.pendingActionQueue = [{ action, field }];
+}
+
 runTest('schema shadow parityはserver mirrorの代表multi-action traceを維持する', () => {
     const landmarks = runtime.Player.landmarkNames();
     const fixtures = [
@@ -89,6 +95,60 @@ runTest('schema shadow parityはserver mirrorの代表multi-action traceを維�
             actions: [['resolveTV', { targetIndex: 1 }]],
         },
         {
+            name: 'reroll-dice',
+            setup(game) { game.phase = runtime.GAME_PHASES.REROLL_CONFIRM; game.lastDiceResult = 4; },
+            actions: [['rerollDice', { forceDice: 6, tunaDice: [1, 1] }]],
+        },
+        {
+            name: 'skip-reroll',
+            setup(game) { game.phase = runtime.GAME_PHASES.REROLL_CONFIRM; game.lastDiceResult = 4; },
+            actions: [['skipReroll', {}]],
+        },
+        {
+            name: 'harbor-choice',
+            setup(game) { game.phase = runtime.GAME_PHASES.HARBOR_CHOICE; game.lastDiceResult = 10; },
+            actions: [['resolveHarbor', { useBonus: true }]],
+        },
+        {
+            name: 'pending-business',
+            setup(game) {
+                setPending(game, 'resolveBusiness', 'pendingBusiness');
+                game.players[0].cards = [runtime.createCardByName('パン屋')];
+                game.players[1].cards = [runtime.createCardByName('森林')];
+            },
+            actions: [['resolveBusiness', { myCard: 0, targetIndex: 1, theirCard: 0 }]],
+        },
+        {
+            name: 'pending-cleaning',
+            setup(game) {
+                setPending(game, 'resolveCleaning', 'pendingCleaning');
+                game.players[1].cards = [runtime.createCardByName('カフェ')];
+            },
+            actions: [['resolveCleaning', { cardName: 'カフェ' }]],
+        },
+        {
+            name: 'pending-mover',
+            setup(game) {
+                setPending(game, 'resolveMover', 'pendingMover');
+                game.players[0].cards = [runtime.createCardByName('パン屋')];
+                game.players[1].cards = [];
+            },
+            actions: [['resolveMover', { cardIndex: 0, targetIndex: 1 }]],
+        },
+        {
+            name: 'pending-renovation',
+            setup(game) {
+                setPending(game, 'resolveRenovation', 'pendingRenovation');
+                game.players[0].landmarks['駅'] = true;
+            },
+            actions: [['resolveRenovation', { landmarkName: '駅' }]],
+        },
+        {
+            name: 'pending-it',
+            setup(game) { setPending(game, 'resolveIT', 'pendingIT'); game.players[0].coins = 5; },
+            actions: [['resolveIT', { doSave: true }]],
+        },
+        {
             name: 'winning-landmark',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.BUILD;
@@ -99,12 +159,19 @@ runTest('schema shadow parityはserver mirrorの代表multi-action traceを維�
             actions: [['buildLandmark', { name: landmarks[landmarks.length - 1] }]],
         },
     ];
+    const coveredActions = new Set();
     for (const fixture of fixtures) {
         const room = makeRoom();
         fixture.setup(room.canonicalMirror.game);
         for (const [action, data] of fixture.actions) {
+            coveredActions.add(action);
             applyTraceStep(room, action, data);
         }
         assert.ok(room.actionSeq > 0, fixture.name);
     }
+    assert.deepStrictEqual(
+        [...coveredActions].sort(),
+        Object.keys(runtime.GAME_ACTION_REGISTRY).sort(),
+        'shadow parity fixture must cover every Action Contract entry'
+    );
 });
