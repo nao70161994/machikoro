@@ -46,7 +46,7 @@
 - CPU: 既存pure helperに加えて`js/cpuBuildExecution.js`へlocal/online建設実行を分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
 - server: `server/lobbySocketHandlers.js`と`server/rejoinSocketHandler.js`へcreate/join/rejoin familyを分離し、effect/emit順を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
 - online: `js/onlineReconnectState.js`のshadow controllerと`js/onlineRetryPolicy.js`の既存3秒/8回/15秒契約を使用。Restore queues、timer callback、ACK timing、protocolは未変更。
-- UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有し、DOM/focus/inert/pointer/event/PWA effectsは既存ownerに残る。
+- UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有。`js/uiWinner.js`、`js/uiLogDisplay.js`、`js/uiTutorial.js`、`js/uiDiceChoice.js`までexact HTML生成を分離し、DOM/focus/inert/pointer/event/PWA effects、ログ履歴、表示タイミングは既存ownerに残す。
 - contracts/engine: `js/actionContract.js`が15 actionのmetadata正本、`js/gameSnapshot.js`がclient/serverのexact snapshotと共有hydrate mechanics、`js/gameEngine.js`が共有action dispatchを所有する。`js/gameSchemaCodec.js`は選択versionごとのAction/Snapshot encode/decodeをfail closedに行い、`transitionEnvelope()`はselection未指定の既存v1 shadow出力と、指定時のv0/v1独立入出力を両立する。`GAME_SCHEMA_NEGOTIATION_ENABLED`は既定OFFで、ON時だけcreate/join/rejoinへcapabilityを加え、全human共通versionを`gameStart.gameSchema`へ記録する。`GAME_SCHEMA_SHADOW_ENABLED`も併用した場合だけ実server actionをcompare-only shadowへ流す。旧client欠落はv0となり、live Action/Snapshot encoding、authority、timing、save形式は未変更。
 - tooling: scoped ESLint 10.7.0は対象maintenance moduleをbug-detection rulesだけで検査し、config/script driftもtestする。TypeScriptは未導入なのでcheckJsは別task。style rules、`--fix`、全repository lintは禁止。
 
@@ -80,7 +80,7 @@
 
 ## 次に安全な作業の条件
 
-- UI: pure表示helperはtutorialまで実施済み。modal deny-by-default は実装済み。次は具体的なUI変更に伴うexact-output helperだけを対象にし、modal/focus/inertは実機matrixなしで移動しない。
+- UI: pure表示helperはwinner/log/tutorial/dice choiceまで実施済み。modal deny-by-default は実装済み。次は具体的なUI変更に伴うexact-output helperだけを対象にし、modal/focus/inertは実機matrixなしで移動しない。
 - CPU: 新しい具体的なscoring変更がない限り機械的に分割しない。変更時はdecision/self-play baseline、候補順、乱数消費の完全一致を要求する。
 - GameManager / Server / Online: action/payload変更時は既存cross-layer contractを先に拡張する。timer/callback/handler/state-machine移動、hostless authority、signed/durable restore、複数room UIはdesign/manual required。
 - Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection は強化済み。新しい helper script を足す場合は `index.html`、`sw.js`、integration runtime、`tests/main.test.js` の script/asset drift test を同時に更新する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
