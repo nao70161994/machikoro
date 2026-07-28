@@ -28,6 +28,10 @@ function buildActionContractReport({
             payloadKind: metadata && metadata.payloadKind || '',
             actorAuthority: actionContract && actionContract.byAction[action] && actionContract.byAction[action].actorAuthority || '',
             canonicalPayloadKeys: Array.from(canonicalPayloadKeys && canonicalPayloadKeys[action] || []),
+            canonicalPayloadVariants: Array.from(
+                actionContract?.byAction?.[action]?.canonicalPayloadVariants || [],
+                keys => Array.from(keys)
+            ),
             serverValidator: typeof (payloadValidators && payloadValidators[action]) === 'function',
             serverReplay: !!(metadata && metadata.serverReplay),
             restoreReplay: !!(actionContract && actionContract.byAction[action] && actionContract.byAction[action].restoreReplay),

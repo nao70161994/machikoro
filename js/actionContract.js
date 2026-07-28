@@ -31,7 +31,8 @@ const ACTION_ACTOR_AUTHORITY = Object.freeze({
     CURRENT_PLAYER_OR_HOST_CPU: 'current-player-or-host-cpu',
 });
 
-function actionEntry(action, phase, payloadKind, canonicalPayloadKeys, ui, phaseOrder = 0) {
+function actionEntry(action, phase, payloadKind, canonicalPayloadKeys, ui, phaseOrder = 0, canonicalPayloadVariants = null) {
+    const variants = canonicalPayloadVariants || [canonicalPayloadKeys];
     return Object.freeze({
         action,
         phase,
@@ -39,6 +40,7 @@ function actionEntry(action, phase, payloadKind, canonicalPayloadKeys, ui, phase
         actorAuthority: ACTION_ACTOR_AUTHORITY.CURRENT_PLAYER_OR_HOST_CPU,
         payloadKind,
         canonicalPayloadKeys: Object.freeze(canonicalPayloadKeys),
+        canonicalPayloadVariants: Object.freeze(variants.map(keys => Object.freeze(Array.from(keys)))),
         serverPayload: true,
         serverReplay: true,
         restoreReplay: true,
@@ -56,7 +58,7 @@ const ACTION_CONTRACT_ENTRIES = Object.freeze([
     actionEntry('resolveTV', 'pending', 'resolveTV', ['targetIndex'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveTV'] }, 0),
     actionEntry('resolveBusiness', 'pending', 'resolveBusiness', ['myCard', 'targetIndex', 'theirCard'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveBusiness'] }, 1),
     actionEntry('resolveCleaning', 'pending', 'resolveCleaning', ['cardName'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveCleaning'] }, 2),
-    actionEntry('resolveMover', 'pending', 'resolveMover', ['cardName', 'targetIndex'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveMover'] }, 3),
+    actionEntry('resolveMover', 'pending', 'resolveMover', ['cardName', 'targetIndex'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveMover'] }, 3, [['cardName', 'targetIndex'], ['cardIndex', 'targetIndex']]),
     actionEntry('resolveRenovation', 'pending', 'resolveRenovation', ['landmarkName'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveRenovation'] }, 4),
     actionEntry('resolveIT', 'pending', 'resolveIT', ['doSave'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveIT'] }, 5),
     actionEntry('buildCard', 'build', 'buildCard', ['cardName'], { group: 'build', targetId: 'buildMenu', requiresContent: true, childActions: ['buildCard'] }, 0),
@@ -81,6 +83,10 @@ const ACTION_CONTRACT_REGISTRY = Object.freeze(Object.fromEntries(
 const ACTION_CONTRACT_CANONICAL_PAYLOAD_KEYS = Object.freeze(Object.fromEntries(
     ACTION_CONTRACT_ENTRIES.map(entry => [entry.action, entry.canonicalPayloadKeys])
 ));
+const ACTION_CONTRACT_CANONICAL_PAYLOAD_VARIANTS = Object.freeze(Object.fromEntries(
+    ACTION_CONTRACT_ENTRIES.map(entry => [entry.action, entry.canonicalPayloadVariants])
+));
+
 const ACTION_CONTRACT_PHASE_ACTIONS = Object.freeze(Object.fromEntries(
     Object.values(ACTION_CONTRACT_PHASES)
         .filter(phase => phase !== ACTION_CONTRACT_PHASES.PENDING)
@@ -169,6 +175,7 @@ const GameActionContract = Object.freeze({
     byAction: ACTION_CONTRACT_BY_ACTION,
     registry: ACTION_CONTRACT_REGISTRY,
     canonicalPayloadKeys: ACTION_CONTRACT_CANONICAL_PAYLOAD_KEYS,
+    canonicalPayloadVariants: ACTION_CONTRACT_CANONICAL_PAYLOAD_VARIANTS,
     phaseActions: ACTION_CONTRACT_PHASE_ACTIONS,
     uiContainers: buildUiContainers(),
     uiChildSelectors: buildUiChildSelectors(),

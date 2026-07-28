@@ -21,6 +21,8 @@ runTest('action contract is a frozen manifest for all 15 runtime actions', () =>
     for (const entry of GameActionContract.entries) {
         assert.ok(Object.isFrozen(entry), entry.action);
         assert.ok(Object.isFrozen(entry.canonicalPayloadKeys), entry.action);
+        assert.ok(Object.isFrozen(entry.canonicalPayloadVariants), entry.action);
+        assert.ok(entry.canonicalPayloadVariants.every(Object.isFrozen), entry.action);
         assert.ok(Object.isFrozen(entry.ui), entry.action);
         assert.strictEqual(entry.actorAuthority, 'current-player-or-host-cpu', entry.action);
         assert.strictEqual(entry.serverPayload, true, entry.action);
@@ -29,6 +31,10 @@ runTest('action contract is a frozen manifest for all 15 runtime actions', () =>
         assert.strictEqual(entry.clientApply, true, entry.action);
         assert.strictEqual(typeof ACTION_PAYLOAD_VALIDATORS[entry.action], 'function', entry.action);
     }
+    assert.deepStrictEqual(GameActionContract.canonicalPayloadVariants.resolveMover, [
+        ['cardName', 'targetIndex'],
+        ['cardIndex', 'targetIndex'],
+    ]);
 });
 
 runTest('runtime, canonical payload, and phase projections match the manifest exactly', () => {

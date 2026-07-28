@@ -19,9 +19,15 @@ runTest('action contract report exposes current cross-layer manifest without dri
         assert.strictEqual(row.clientApply, true, row.action);
         assert.ok(row.uiTarget, row.action);
         assert.ok(Array.isArray(row.canonicalPayloadKeys));
+        assert.ok(Array.isArray(row.canonicalPayloadVariants));
         assert.ok(Array.isArray(row.uiChildActions));
     }
 
+    const resolveMover = report.actions.find(row => row.action === 'resolveMover');
+    assert.deepStrictEqual(resolveMover.canonicalPayloadVariants, [
+        ['cardName', 'targetIndex'],
+        ['cardIndex', 'targetIndex'],
+    ]);
     const selectDice = report.actions.find(row => row.action === 'selectDice');
     assert.deepStrictEqual(selectDice.uiChildActions, ['selectDiceCount']);
     const nextTurn = report.actions.find(row => row.action === 'nextTurn');
