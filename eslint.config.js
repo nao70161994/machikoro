@@ -25,6 +25,7 @@ const browserMaintenanceFiles = Object.freeze([
 
 const serverMaintenanceFiles = Object.freeze([
     'scripts/report-action-contract.js',
+    'server/actionSocketHandler.js',
     'server/actionPayload.js',
     'server/actionValidation.js',
     'server/canonicalStateStore.js',
