@@ -18,6 +18,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineRestoreRank.js',
     'js/uiModalPolicy.js',
     'js/uiTutorial.js',
+    'js/uiDiceChoice.js',
     'js/uiWatchdog.js',
     'js/uiWinner.js',
 ]);

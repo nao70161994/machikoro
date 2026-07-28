@@ -1842,6 +1842,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/uiTutorial.js',
+        'js/uiDiceChoice.js',
         'js/ui.js',
         'js/onlineStorage.js',
         'js/online.js',
@@ -1865,6 +1866,7 @@ runTest('UI interactability registry は描画されるaction child selectorと�
         'js/uiPendingMenu.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
+        'js/uiDiceChoice.js',
     ].map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\\n');
     const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const actionContainers = {
@@ -1956,6 +1958,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiCardDetail.js', 'js/ui.js');
     assertBefore('js/uiCardSelect.js', 'js/ui.js');
     assertBefore('js/uiTutorial.js', 'js/ui.js');
+    assertBefore('js/uiDiceChoice.js', 'js/ui.js');
     assertBefore('js/uiModalPolicy.js', 'js/ui.js');
     assertBefore('js/uiWinner.js', 'js/ui.js');
     assertBefore('js/ui.js', 'js/storage.js');

@@ -322,21 +322,14 @@ function renderDiceChoose() {
     const el = document.getElementById("diceChoose");
     if (!el) return;
     if (!isCurrentHumanUiTurn()) { setDiceChooseContent(el, ""); return; }
-    if (game.phase === GAME_PHASES.SELECT_DICE && currentUiAllowedActions().has('selectDice')) {
-        const disabled = uiActionDisabledAttr('selectDice');
-        setDiceChooseContent(el, `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}>🎲 1個</button><button data-action="selectDiceCount" data-use-two="true"${disabled}>🎲🎲 2個（合計を使う）</button></div>`);
-        return;
-    }
-    if (game.phase === GAME_PHASES.REROLL_CONFIRM && (currentUiAllowedActions().has('rerollDice') || currentUiAllowedActions().has('skipReroll'))) {
-        setDiceChooseContent(el, `<div class="dice-choose"><p>📡 電波塔：🎲${game.lastDiceResult} を振り直しますか？</p><button data-action="rerollDice"${uiActionDisabledAttr('rerollDice')}>振り直す</button><button data-action="skipReroll"${uiActionDisabledAttr('skipReroll')}>このまま使う</button></div>`);
-        return;
-    }
-    if (game.phase === GAME_PHASES.HARBOR_CHOICE && currentUiAllowedActions().has('resolveHarbor')) {
-        const disabled = uiActionDisabledAttr('resolveHarbor');
-        setDiceChooseContent(el, `<div class="dice-choose"><p>⚓ 港効果：合計${game.lastDiceResult}に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true"${disabled}>+2する（→${game.lastDiceResult + 2}）</button><button data-action="resolveHarbor" data-use-bonus="false"${disabled}>そのまま使う（${game.lastDiceResult}）</button></div>`);
-        return;
-    }
-    setDiceChooseContent(el, "");
+    const html = UiDiceChoice.buildHtml({
+        phase: game.phase,
+        lastDiceResult: game.lastDiceResult,
+        allowedActions: currentUiAllowedActions(),
+        disabledAttr: uiActionDisabledAttr,
+        phases: GAME_PHASES,
+    });
+    setDiceChooseContent(el, html);
 }
 
 function shouldShowPendingForCurrentPlayer() {
