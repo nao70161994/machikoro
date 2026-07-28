@@ -5,9 +5,10 @@ const server = require('../server');
 const { runTest } = require('./helpers/test-utils');
 
 const runtime = server.loadGameRuntime();
+const LEGACY_SELECTION = Object.freeze({ actionVersion: 0, snapshotVersion: 0 });
 const SELECTION = Object.freeze({ actionVersion: 1, snapshotVersion: 1 });
 
-function makeRoom(playerCount = 3) {
+function makeRoom(playerCount = 3, selection = SELECTION) {
     const playerNames = Array.from({ length: playerCount }, (_, index) => 'P' + index);
     const room = {
         gameStartPayload: {
@@ -16,7 +17,7 @@ function makeRoom(playerCount = 3) {
             playerOrder: playerNames.map((_, index) => index),
             enabledCards: runtime.CARDS.map(card => card.name),
             enabledLandmarks: runtime.Player.landmarkNames(),
-            gameSchema: SELECTION,
+            gameSchema: selection,
         },
         stateSnapshot: null,
         actionLog: [],
@@ -35,7 +36,7 @@ function applyTraceStep(room, action, rawData) {
         mirror.game, mirror.shopStock, mirror.lastUndoState, room.actionSeq
     );
     const shadow = server.transitionMirrorEnvelope({
-        selection: SELECTION,
+        selection: room.gameStartPayload.gameSchema,
         snapshot: source,
         action,
         data,
@@ -63,7 +64,7 @@ function setPending(game, action, field) {
     game.pendingActionQueue = [{ action, field }];
 }
 
-runTest('schema shadow parityはserver mirrorの代表multi-action traceを維持する', () => {
+runTest('schema shadow parityはv0/v1でserver mirrorの全action traceを維持する', () => {
     const landmarks = runtime.Player.landmarkNames();
     const fixtures = [
         {
@@ -159,19 +160,21 @@ runTest('schema shadow parityはserver mirrorの代表multi-action traceを維�
             actions: [['buildLandmark', { name: landmarks[landmarks.length - 1] }]],
         },
     ];
-    const coveredActions = new Set();
-    for (const fixture of fixtures) {
-        const room = makeRoom();
-        fixture.setup(room.canonicalMirror.game);
-        for (const [action, data] of fixture.actions) {
-            coveredActions.add(action);
-            applyTraceStep(room, action, data);
+    for (const selection of [LEGACY_SELECTION, SELECTION]) {
+        const coveredActions = new Set();
+        for (const fixture of fixtures) {
+            const room = makeRoom(3, selection);
+            fixture.setup(room.canonicalMirror.game);
+            for (const [action, data] of fixture.actions) {
+                coveredActions.add(action);
+                applyTraceStep(room, action, data);
+            }
+            assert.ok(room.actionSeq > 0, fixture.name);
         }
-        assert.ok(room.actionSeq > 0, fixture.name);
+        assert.deepStrictEqual(
+            [...coveredActions].sort(),
+            Object.keys(runtime.GAME_ACTION_REGISTRY).sort(),
+            `schema v${selection.actionVersion} shadow parity fixtures must cover every Action Contract entry`
+        );
     }
-    assert.deepStrictEqual(
-        [...coveredActions].sort(),
-        Object.keys(runtime.GAME_ACTION_REGISTRY).sort(),
-        'shadow parity fixture must cover every Action Contract entry'
-    );
 });
