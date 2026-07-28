@@ -13,6 +13,8 @@ function registerActionSocketHandler(socket, dependencies) {
         makeUndoStateFromMirror,
         nextRoomActionSeq,
         gameSchemaShadow,
+        decodeGameSchemaAction = (_room, payload) => ({ ok: true, value: payload }),
+        encodeGameSchemaAction = (_room, payload) => ({ ok: true, value: payload }),
         buildRestoreActionAudit,
         applyAcceptedActionToRoomCanonicalMirror,
         rememberAcceptedClientAction,
@@ -27,7 +29,6 @@ function registerActionSocketHandler(socket, dependencies) {
 
     socket.on('gameAction', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        const { action, data, clientActionId } = payload;
         const roomId = socket.roomId;
         if (!roomId) return;
         const room = rooms[roomId];
@@ -36,10 +37,21 @@ function registerActionSocketHandler(socket, dependencies) {
             emitAppError(socket, 'INVALID_SESSION');
             return;
         }
+        const decodedWire = decodeGameSchemaAction(room, payload);
+        if (!decodedWire.ok) {
+            emitAppError(socket, '無効な操作です');
+            return;
+        }
+        const { action, data, clientActionId } = decodedWire.value;
         const safeClientActionId = normalizeClientActionId(clientActionId);
         const acceptedAction = findAcceptedClientAction(room, safeClientActionId, socket.playerIndex);
         if (acceptedAction) {
-            socket.emit('actionAccepted', acceptedAction);
+            const acceptedWire = encodeGameSchemaAction(room, acceptedAction);
+            if (!acceptedWire.ok) {
+                emitAppError(socket, '無効な操作です');
+                return;
+            }
+            socket.emit('actionAccepted', acceptedWire.value);
             return;
         }
         let validation;
@@ -66,6 +78,11 @@ function registerActionSocketHandler(socket, dependencies) {
         const actionSeq = nextRoomActionSeq(room);
         const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
         if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
+        const wirePreflight = encodeGameSchemaAction(room, actionEntry);
+        if (!wirePreflight.ok) {
+            emitAppError(socket, '無効な操作です');
+            return;
+        }
         const schemaShadowTransition = gameSchemaShadow.prepare(room, validation.mirror, actionEntry);
         const restoreActionAudit = buildRestoreActionAudit(roomId, actionEntry);
         if (restoreActionAudit) actionEntry.restoreActionAudit = restoreActionAudit;
@@ -91,8 +108,13 @@ function registerActionSocketHandler(socket, dependencies) {
             room.lastTouchedAt = now();
             persistRoomCanonicalState(roomId, room, 'accepted-action');
         }
-        socket.to(roomId).emit('gameAction', actionEntry);
-        socket.emit('actionAccepted', actionEntry);
+        const emittedWire = encodeGameSchemaAction(room, actionEntry);
+        if (!emittedWire.ok) {
+            logError('encodeGameSchemaAction error:', emittedWire.reason, emittedWire.codecReason || '');
+            return;
+        }
+        socket.to(roomId).emit('gameAction', emittedWire.value);
+        socket.emit('actionAccepted', emittedWire.value);
     });
 }
 

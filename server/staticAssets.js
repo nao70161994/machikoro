@@ -24,9 +24,12 @@ function injectServiceWorkerBuildHash(content, buildHash) {
 
 function injectIndexBuildHash(content, buildHash, options = {}) {
     const script = `<script>window.MACHIKORO_CLIENT_VERSION=${JSON.stringify(buildHash)};</script>`;
-    const scripts = options.gameSchemaNegotiationEnabled === true
+    let scripts = options.gameSchemaNegotiationEnabled === true
         ? script + '\n    <script>window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;</script>'
         : script;
+    if (options.gameSchemaWireEnabled === true) {
+        scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;</script>';
+    }
     return String(content).replace('</head>', `    ${scripts}\n</head>`);
 }
 

@@ -6,6 +6,7 @@ const { runTest } = require('./helpers/test-utils');
 process.env.CANONICAL_STATE_STORE = 'noop';
 process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
 process.env.GAME_SCHEMA_SHADOW_ENABLED = '1';
+process.env.GAME_SCHEMA_WIRE_ENABLED = '1';
 const serverModule = require('../server');
 const connectClient = require('socket.io-client');
 
@@ -58,17 +59,25 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         const html = await (await fetch(origin + '/')).text();
         assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
         assert.ok(html.includes('js/gameSchemaNegotiation.js'));
+        assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
 
         const currentRoom = await startPair(origin, clients[0], clients[1], 'current', CAPABILITIES, CAPABILITIES);
         currentRoom.gameStarts.forEach(start => assert.deepStrictEqual(start.gameSchema, { actionVersion: 1, snapshotVersion: 1 }));
         const currentStart = currentRoom.gameStarts[0];
         const currentOriginalIndex = currentStart.playerOrder[0];
         const currentSocket = currentOriginalIndex === currentRoom.created.playerIndex ? clients[0] : clients[1];
+        const rejectedLegacyWire = onceEvent(currentSocket, 'appError');
+        currentSocket.emit('gameAction', {
+            action: 'rollDice', data: {}, clientActionId: 'schema-shadow-legacy-rejected',
+        });
+        assert.strictEqual(await rejectedLegacyWire, '無効な操作です');
         const acceptedPromise = onceEvent(currentSocket, 'actionAccepted');
         currentSocket.emit('gameAction', {
-            action: 'rollDice', data: {}, clientActionId: 'schema-shadow-roll-1',
+            schemaVersion: 1, action: 'rollDice', data: {}, clientActionId: 'schema-shadow-roll-1',
         });
-        await acceptedPromise;
+        const accepted = await acceptedPromise;
+        assert.strictEqual(accepted.schemaVersion, 1);
+        assert.strictEqual(accepted.action, 'rollDice');
         assert.strictEqual(
             serverModule.__rooms[currentRoom.created.roomId].lastGameSchemaShadow.status,
             'matched'
@@ -98,6 +107,15 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
 
         const legacyRoom = await startPair(origin, clients[2], clients[3], 'legacy', CAPABILITIES, undefined);
         legacyRoom.gameStarts.forEach(start => assert.deepStrictEqual(start.gameSchema, { actionVersion: 0, snapshotVersion: 0 }));
+        const legacyStart = legacyRoom.gameStarts[0];
+        const legacyOriginalIndex = legacyStart.playerOrder[0];
+        const legacySocket = legacyOriginalIndex === legacyRoom.created.playerIndex ? clients[2] : clients[3];
+        const legacyAcceptedPromise = onceEvent(legacySocket, 'actionAccepted');
+        legacySocket.emit('gameAction', {
+            action: 'rollDice', data: {}, clientActionId: 'schema-legacy-roll-1',
+        });
+        const legacyAccepted = await legacyAcceptedPromise;
+        assert.strictEqual(Object.prototype.hasOwnProperty.call(legacyAccepted, 'schemaVersion'), false);
     } finally {
         clients.forEach(socket => socket.close());
         if (rejoined) rejoined.close();

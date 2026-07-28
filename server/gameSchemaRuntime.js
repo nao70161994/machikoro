@@ -8,6 +8,10 @@ function gameSchemaNegotiationEnabled(env = {}) {
     return ENABLED_VALUES.has(String(env.GAME_SCHEMA_NEGOTIATION_ENABLED || '').trim().toLowerCase());
 }
 
+function gameSchemaWireEnabled(env = {}) {
+    return ENABLED_VALUES.has(String(env.GAME_SCHEMA_WIRE_ENABLED || '').trim().toLowerCase());
+}
+
 function resolution(ok, capabilities, reason = '') {
     return Object.freeze({ ok, capabilities, reason });
 }
@@ -73,6 +77,7 @@ function gameSchemaStartMetadata(room, enabled) {
 
 module.exports = Object.freeze({
     gameSchemaNegotiationEnabled,
+    gameSchemaWireEnabled,
     resolveClientGameSchemaCapabilities,
     negotiateRoomGameSchemaCandidate,
     roomHumanCapabilityValues,

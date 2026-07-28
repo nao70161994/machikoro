@@ -32,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameEngine.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/gameEngine.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 
@@ -3683,4 +3683,40 @@ runTest('online clientはflagで広告したschema selectionだけを受理す�
     currentRt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
     assert.strictEqual(currentRt.acceptsNegotiatedGameSchema({ actionVersion: 1, snapshotVersion: 1 }), true);
     assert.strictEqual(currentRt.acceptsNegotiatedGameSchema({ actionVersion: 2, snapshotVersion: 1 }), false);
+});
+
+runTest('versioned action wireは明示flagとnegotiated selectionでだけv1 envelopeを送る', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED = true;
+    rt.setEnabledCards(new Set(CARDS.map(card => card.name)));
+    rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
+    rt.initSocket();
+    const handlers = rt.getSocketHandlers();
+    handlers.roomJoined({ roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-a' });
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(card => card.name),
+        enabledLandmarks: Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        gameSchema: { actionVersion: 1, snapshotVersion: 1 },
+    });
+
+    assert.strictEqual(rt.sendAction('rollDice', {}), true);
+    const emitted = rt.getSocketEmits().filter(entry => entry.name === 'gameAction').pop();
+    assert.strictEqual(emitted.payload.schemaVersion, 1);
+    assert.strictEqual(emitted.payload.action, 'rollDice');
+    assert.strictEqual(typeof emitted.payload.clientActionId, 'string');
+    handlers.actionAccepted({
+        schemaVersion: 1,
+        action: 'rollDice',
+        data: { forceDice: 1, tunaDice: [1, 1] },
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: emitted.payload.clientActionId,
+    });
+    assert.notStrictEqual(rt.getGame().phase, GAME_PHASES.ROLL);
 });

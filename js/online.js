@@ -46,6 +46,11 @@ function isGameSchemaNegotiationTransportEnabled() {
         window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED === true;
 }
 
+function isGameSchemaWireTransportEnabled() {
+    return isGameSchemaNegotiationTransportEnabled() && typeof window !== 'undefined' &&
+        window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED === true;
+}
+
 function getGameSchemaCapabilitiesForTransport() {
     const enabled = isGameSchemaNegotiationTransportEnabled();
     if (typeof GameSchemaNegotiation === 'undefined') return null;
@@ -56,6 +61,18 @@ function acceptsNegotiatedGameSchema(selection) {
     if (!isGameSchemaNegotiationTransportEnabled()) return true;
     if (typeof GameSchemaNegotiation === 'undefined') return selection == null;
     return GameSchemaNegotiation.supportsSelection(getGameSchemaCapabilitiesForTransport(), selection);
+}
+
+function encodeOnlineGameSchemaAction(payload) {
+    if (!isGameSchemaWireTransportEnabled()) return { ok: true, value: payload };
+    if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
+    return GameSchemaWire.encodeAction(true, onlineGameSchemaSelection, payload);
+}
+
+function decodeOnlineGameSchemaAction(payload) {
+    if (!isGameSchemaWireTransportEnabled()) return { ok: true, value: payload };
+    if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
+    return GameSchemaWire.decodeAction(true, onlineGameSchemaSelection, payload);
 }
 
 function buildOnlineRejoinPayload(session) {
@@ -129,6 +146,7 @@ let isReconnectingOnline = false;
 let onlineActionInFlight = false;
 let onlineActionInFlightAt = 0;
 let _onlineActionTimeoutTimer = null;
+let onlineGameSchemaSelection = null;
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
@@ -453,6 +471,7 @@ function resetOnlineState() {
     myOriginalPlayerIndex = -1;
     myRoomId = null;
     reconnectToken = '';
+    onlineGameSchemaSelection = null;
     isReplaying = false;
     isReconnectingOnline = false;
     _setOnlineActionInFlight(false);
@@ -879,6 +898,7 @@ function initSocket() {
             document.getElementById("onlineStatus").textContent = 'ゲーム状態のschema versionに対応していません。アプリを更新してください。';
             return;
         }
+        onlineGameSchemaSelection = gameSchema || null;
         _clearRejoinRetry();
         _hostlessRestorePending = false;
         _onlineRestoreQuarantined = false;
@@ -946,7 +966,14 @@ function initSocket() {
         startOnlineGame();
     });
 
-    const handleGameAction = ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
+    const handleGameAction = wirePayload => {
+        const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
+        if (!decodedWire.ok) {
+            isReconnectingOnline = true;
+            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+            return false;
+        }
+        const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
         const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
         if (_queueOnlineEventDuringRestore('gameAction', payload)) return;
         if (!game) {
@@ -985,7 +1012,15 @@ function initSocket() {
     };
     socket.on('gameAction', handleGameAction);
 
-    const handleActionAccepted = ({ action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit }) => {
+    const handleActionAccepted = wirePayload => {
+        const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
+        if (!decodedWire.ok) {
+            _setOnlineActionInFlight(false);
+            isReconnectingOnline = true;
+            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+            return false;
+        }
+        const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
         const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
         if (_queueOnlineEventDuringRestore('actionAccepted', payload)) return;
         const pendingBeforeAccept = _readPendingOutboundActionForCurrentSession();
@@ -1033,6 +1068,7 @@ function initSocket() {
             document.getElementById("onlineStatus").textContent = '復元データのschema versionに対応していません。アプリを更新してください。';
             return;
         }
+        onlineGameSchemaSelection = gameStartPayload.gameSchema || null;
         const carriedEvents = (_onlineRestoreInProgress || _onlineRestoreQuarantined)
             ? _onlineRestoreEventQueue.slice()
             : [];
@@ -1655,7 +1691,13 @@ function sendAction(action, data = {}) {
         _setOnlineActionInFlight(true);
         cpuScheduleToken++;
         const pending = _savePendingOutboundAction(action, data);
-        socket.emit('gameAction', { action, data, clientActionId: pending.clientActionId });
+        const encodedWire = encodeOnlineGameSchemaAction({ action, data, clientActionId: pending.clientActionId });
+        if (!encodedWire.ok) {
+            _setOnlineActionInFlight(false);
+            _clearPendingOutboundAction();
+            return false;
+        }
+        socket.emit('gameAction', encodedWire.value);
         return true;
     }
     return !isOnlineGame;

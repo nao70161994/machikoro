@@ -71,3 +71,9 @@ runTest('game schema runtimeはflag OFF rollback時に保存済みselectionを�
     assert.strictEqual(GameSchemaRuntime.supportsSelectedGameSchemaForRuntime(null, selectedV1, true), false);
     assert.strictEqual(GameSchemaRuntime.supportsSelectedGameSchemaForRuntime(current, selectedV1, true), true);
 });
+
+runTest('game schema wire flagは明示値だけを受理する', () => {
+    assert.strictEqual(GameSchemaRuntime.gameSchemaWireEnabled({}), false);
+    assert.strictEqual(GameSchemaRuntime.gameSchemaWireEnabled({ GAME_SCHEMA_WIRE_ENABLED: 'on' }), true);
+    assert.strictEqual(GameSchemaRuntime.gameSchemaWireEnabled({ GAME_SCHEMA_WIRE_ENABLED: 'OFF' }), false);
+});

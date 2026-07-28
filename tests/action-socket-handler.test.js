@@ -97,3 +97,14 @@ runTest('action socket handlerはvalidation例外を既存appErrorへ変換す�
     assert.deepStrictEqual(subject.emitted, [{ event: 'appError', payload: '無効な操作です' }]);
     assert.deepStrictEqual(subject.broadcast, []);
 });
+
+runTest('action socket handlerはwire decode拒否をvalidation前にfail closedにする', () => {
+    const subject = createSubject({
+        decodeGameSchemaAction() { return { ok: false, reason: 'codec-rejected' }; },
+    });
+    subject.handlers.gameAction({ schemaVersion: 1, action: 'nextTurn', data: {} });
+
+    assert.deepStrictEqual(subject.emitted, [{ event: 'appError', payload: '無効な操作です' }]);
+    assert.deepStrictEqual(subject.broadcast, []);
+    assert.deepStrictEqual(subject.calls, ['plain', 'active']);
+});

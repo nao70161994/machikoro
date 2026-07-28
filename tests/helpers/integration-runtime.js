@@ -152,6 +152,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/gameSchemaNegotiation.js',
         'js/gameSnapshot.js',
         'js/gameSchemaCodec.js',
+        'js/gameSchemaWire.js',
         'js/gameEngine.js',
         'js/GameManager.js',
         'js/cpuTuning.js',

@@ -29,6 +29,7 @@ const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
+const GameSchemaWire = require('./js/gameSchemaWire');
 const makeGameSettings = require('./server/gameSettings');
 const {
     sanitizeName,
@@ -66,6 +67,7 @@ const {
 } = require('./server/hostlessRestoreRuntime');
 const {
     gameSchemaNegotiationEnabled,
+    gameSchemaWireEnabled,
     resolveClientGameSchemaCapabilities,
     negotiateRoomGameSchemaCandidate,
     isValidGameSchemaMetadata,
@@ -74,6 +76,7 @@ const {
     gameSchemaStartMetadata,
 } = require('./server/gameSchemaRuntime');
 const GAME_SCHEMA_NEGOTIATION_ENABLED = gameSchemaNegotiationEnabled(process.env);
+const GAME_SCHEMA_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaWireEnabled(process.env);
 const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
 const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
 
@@ -564,6 +567,7 @@ const swContent = injectServiceWorkerBuildHash(swTemplate, BUILD_HASH);
 const indexTemplate = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
     gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
+    gameSchemaWireEnabled: GAME_SCHEMA_WIRE_ENABLED,
 });
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
@@ -917,6 +921,12 @@ io.on('connection', (socket) => {
         makeUndoStateFromMirror,
         nextRoomActionSeq,
         gameSchemaShadow,
+        decodeGameSchemaAction: (room, payload) => GameSchemaWire.decodeAction(
+            GAME_SCHEMA_WIRE_ENABLED, room.gameStartPayload && room.gameStartPayload.gameSchema || null, payload
+        ),
+        encodeGameSchemaAction: (room, payload) => GameSchemaWire.encodeAction(
+            GAME_SCHEMA_WIRE_ENABLED, room.gameStartPayload && room.gameStartPayload.gameSchema || null, payload
+        ),
         buildRestoreActionAudit,
         applyAcceptedActionToRoomCanonicalMirror,
         rememberAcceptedClientAction,

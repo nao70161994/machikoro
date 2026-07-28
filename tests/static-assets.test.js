@@ -87,6 +87,13 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
     const source = '<html><head></head><body></body></html>';
     const disabled = injectIndexBuildHash(source, 'build-1');
     const enabled = injectIndexBuildHash(source, 'build-1', { gameSchemaNegotiationEnabled: true });
+    const wireEnabled = injectIndexBuildHash(source, 'build-1', {
+        gameSchemaNegotiationEnabled: true,
+        gameSchemaWireEnabled: true,
+    });
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(enabled.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
+    assert.ok(!enabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
+    assert.ok(wireEnabled.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
 });
