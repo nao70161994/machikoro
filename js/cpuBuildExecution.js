@@ -75,6 +75,30 @@ function buyLandmark(cpu, name, game, context = {}) {
     return setBuildActionResult(cpu, game.buildLandmark(name) === true);
 }
 
+/**
+ * Applies one previously selected canonical build proposal.
+ * @param {Object} cpu
+ * @param {CPUBuildActionProposal|null} proposal
+ * @param {Object} game
+ * @param {Object} shopStock
+ * @param {Object} context
+ * @returns {boolean}
+ */
+function executeAction(cpu, proposal, game, shopStock, context = {}) {
+    if (!proposal || typeof proposal !== 'object') return setBuildActionResult(cpu, false);
+    if (proposal.action === 'buildCard') {
+        const cardName = proposal.data && proposal.data.cardName;
+        const card = typeof context.resolveCard === 'function'
+            ? context.resolveCard(cardName)
+            : null;
+        return buyCard(cpu, card, game, shopStock, context);
+    }
+    if (proposal.action === 'buildLandmark') {
+        return buyLandmark(cpu, proposal.data && proposal.data.name, game, context);
+    }
+    return setBuildActionResult(cpu, false);
+}
+
 const CPUBuildExecution = Object.freeze({
     setBuildActionResult,
     onlineBuildBlocked,
@@ -82,6 +106,7 @@ const CPUBuildExecution = Object.freeze({
     createLandmarkBuildAction,
     buyCard,
     buyLandmark,
+    executeAction,
 });
 
 if (typeof module !== 'undefined' && module.exports) {

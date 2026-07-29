@@ -121,3 +121,37 @@ runTest('CPU build execution はlandmarkのlocal/online結果を同じresultへ�
     }), true);
     assert.deepStrictEqual(calls, [{ action: 'buildLandmark', payload: { name: '港' } }]);
 });
+
+runTest('CPU build execution はproposalをcard resolver経由で一度だけ適用する', () => {
+    const actor = cpu();
+    const card = { name: '麦畑' };
+    const stock = { 麦畑: 2 };
+    let resolves = 0;
+    let builds = 0;
+    const result = CPUBuildExecution.executeAction(actor, {
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+    }, {
+        builtThisTurn: false,
+        buildCard(value) {
+            builds++;
+            assert.strictEqual(value, card);
+            return true;
+        },
+    }, stock, {
+        resolveCard(name) {
+            resolves++;
+            assert.strictEqual(name, '麦畑');
+            return card;
+        },
+    });
+
+    assert.strictEqual(result, true);
+    assert.strictEqual(resolves, 1);
+    assert.strictEqual(builds, 1);
+    assert.strictEqual(stock.麦畑, 1);
+    assert.strictEqual(CPUBuildExecution.executeAction(actor, {
+        action: 'unknown',
+        data: {},
+    }, {}, stock), false);
+});

@@ -61,6 +61,8 @@ class CPU {
         );
         this.activeExpertPreset = this.expertPreset;
         this.expertTuning = Object.assign({}, this.baseExpertTuning);
+        this._collectingBuildAction = false;
+        this._selectedBuildAction = null;
     }
 
     static _finiteOption(options, key, fallback) {
@@ -2533,6 +2535,32 @@ class CPU {
         this._lastBuildActionResult = null;
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
         try {
+            const proposal = this.chooseBuildAction(game, shopStock);
+            if (!proposal) return null;
+            return CPUBuildExecution.executeAction(
+                this,
+                proposal,
+                game,
+                shopStock,
+                Object.assign(this._buildExecutionContext(), {
+                    resolveCard: name => this._cardByName(name),
+                })
+            );
+        } catch (error) {
+            console.error('[cpu] build decision failed:', error);
+            return this._setBuildActionResult(false);
+        }
+    }
+
+    /**
+     * Selects one canonical build action without mutating the game or shop stock.
+     * @returns {{action: string, data: Object}|null}
+     */
+    chooseBuildAction(game, shopStock) {
+        this._selectedBuildAction = null;
+        if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
+        this._collectingBuildAction = true;
+        try {
             this._syncExpertTuningForGame(game);
             if (this.difficulty === "weak") {
                 this.buildWeak(game, shopStock);
@@ -2543,11 +2571,10 @@ class CPU {
             } else {
                 this.buildExpert(game, shopStock);
             }
-        } catch (error) {
-            console.error('[cpu] build decision failed:', error);
-            return this._setBuildActionResult(false);
+            return this._selectedBuildAction;
+        } finally {
+            this._collectingBuildAction = false;
         }
-        return this._lastBuildActionResult;
     }
 
     _buildExecutionContext() {
@@ -2569,10 +2596,20 @@ class CPU {
     }
 
     _buyCard(card, game, shopStock) {
+        if (this._collectingBuildAction) {
+            const proposal = CPUBuildExecution.createCardBuildAction(card);
+            if (proposal && !this._selectedBuildAction) this._selectedBuildAction = proposal;
+            return !!proposal;
+        }
         return CPUBuildExecution.buyCard(this, card, game, shopStock, this._buildExecutionContext());
     }
 
     _buyLandmark(name, game) {
+        if (this._collectingBuildAction) {
+            const proposal = CPUBuildExecution.createLandmarkBuildAction(name);
+            if (proposal && !this._selectedBuildAction) this._selectedBuildAction = proposal;
+            return !!proposal;
+        }
         return CPUBuildExecution.buyLandmark(this, name, game, this._buildExecutionContext());
     }
 

@@ -205,6 +205,28 @@ runTest('CPU build は判断中の例外を失敗結果へ変換して同期的�
     assert.strictEqual(game.builtThisTurn, false);
 });
 
+runTest('CPU chooseBuildAction は盤面と在庫を変えずcanonical proposalだけを返す', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    const stock = makeFullShopStock();
+    const beforeCoins = game.currentPlayer().coins;
+    const beforeCards = game.currentPlayer().cards.length;
+    const beforeStock = JSON.stringify(stock);
+
+    const proposal = cpu.chooseBuildAction(game, stock);
+
+    assert.ok(proposal);
+    assert.ok(['buildCard', 'buildLandmark'].includes(proposal.action));
+    assert.ok(Object.isFrozen(proposal));
+    assert.ok(Object.isFrozen(proposal.data));
+    assert.strictEqual(game.currentPlayer().coins, beforeCoins);
+    assert.strictEqual(game.currentPlayer().cards.length, beforeCards);
+    assert.strictEqual(game.builtThisTurn, false);
+    assert.strictEqual(JSON.stringify(stock), beforeStock);
+});
+
 runTest('choosePendingResolution は pending 順と fallback move を共有する', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);
