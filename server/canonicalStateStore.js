@@ -18,6 +18,80 @@ const CANONICAL_STATE_STORE_CAPABILITY_KEYS = Object.freeze([
     'retention',
 ]);
 
+
+/**
+ * @typedef {Object} CanonicalStateStoreCapabilities
+ * @property {boolean} durable Survives process and host restart.
+ * @property {boolean} atomicCompareAndSwap Enforces expected revision atomically.
+ * @property {boolean} processSafeLocking Serializes a room across processes.
+ * @property {boolean} retention Enforces bounded record lifetime.
+ */
+
+/**
+ * @typedef {Object} CanonicalStateRecord
+ * @property {number} schemaVersion
+ * @property {string} roomId
+ * @property {number} persistedAt
+ * @property {string} reason
+ * @property {Object|null} gameStartPayload
+ * @property {Object|null} stateSnapshot
+ * @property {Array<Object>} actionLog
+ * @property {Array<Object>} acceptedClientActions
+ * @property {number|null} hostPlayerIndex
+ * @property {number} hostEpoch
+ * @property {number} actionSeq
+ * @property {number|null} lastTouchedAt
+ * @property {number} [storeRevision]
+ */
+
+/**
+ * @callback CanonicalStateStoreSave
+ * @param {CanonicalStateRecord} record
+ * @param {Object} [options]
+ * @returns {Object}
+ */
+
+/**
+ * @callback CanonicalStateStoreLoad
+ * @param {string} roomId
+ * @returns {CanonicalStateRecord|null}
+ */
+
+/**
+ * @callback CanonicalStateStoreRoomOperation
+ * @param {string} roomId
+ * @returns {Object}
+ */
+
+/**
+ * @callback CanonicalStateStoreList
+ * @returns {Array<CanonicalStateRecord>}
+ */
+
+/**
+ * @callback CanonicalStateStorePrune
+ * @param {number} [now]
+ * @returns {Object}
+ */
+
+/**
+ * @callback CanonicalStateStoreRunExclusive
+ * @param {string} roomId
+ * @param {function(): *} operation
+ * @returns {*}
+ */
+
+/**
+ * @typedef {Object} CanonicalStateStoreAdapter
+ * @property {string} mode
+ * @property {CanonicalStateStoreCapabilities} capabilities
+ * @property {CanonicalStateStoreSave} save
+ * @property {CanonicalStateStoreLoad} load
+ * @property {CanonicalStateStoreRoomOperation} delete
+ * @property {CanonicalStateStoreList} list
+ * @property {CanonicalStateStorePrune} prune
+ * @property {CanonicalStateStoreRunExclusive} runExclusive
+ */
 function cloneJson(value) {
     if (value === undefined) return undefined;
     return JSON.parse(JSON.stringify(value));
@@ -33,6 +107,7 @@ function canonicalStateStoreRetentionMs(env = process.env) {
     return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
+/** @returns {CanonicalStateStoreCapabilities} */
 function canonicalStateStoreCapabilities(overrides = {}) {
     return Object.freeze({
         durable: overrides.durable === true,
@@ -42,6 +117,11 @@ function canonicalStateStoreCapabilities(overrides = {}) {
     });
 }
 
+/**
+ * @param {CanonicalStateStoreAdapter|Object} store
+ * @param {{requireAuthoritative?: boolean}} [options]
+ * @returns {Object}
+ */
 function validateCanonicalStateStoreAdapter(store, options = {}) {
     if (!store || typeof store !== 'object') return { ok: false, reason: 'not-object' };
     for (const method of CANONICAL_STATE_STORE_REQUIRED_METHODS) {
@@ -78,6 +158,12 @@ function acceptedClientActionRefsFromRoom(room) {
         });
 }
 
+/**
+ * @param {string} roomId
+ * @param {Object} room
+ * @param {{now?: number, reason?: string}} [options]
+ * @returns {CanonicalStateRecord|null}
+ */
 function buildCanonicalStateRecord(roomId, room, options = {}) {
     if (!room || typeof roomId !== 'string' || !roomId.trim()) return null;
     return {
@@ -111,6 +197,7 @@ function validateCanonicalStateRecord(record) {
     return { ok: true };
 }
 
+/** @returns {CanonicalStateStoreAdapter} */
 function createNoopCanonicalStateStore() {
     return Object.freeze({
         mode: CANONICAL_STATE_STORE_MODES.NOOP,
@@ -127,6 +214,7 @@ function createNoopCanonicalStateStore() {
     });
 }
 
+/** @returns {CanonicalStateStoreAdapter} */
 function createMemoryCanonicalStateStore(initialRecords = [], options = {}) {
     const records = new Map();
     const locks = new Set();
@@ -211,6 +299,7 @@ function createMemoryCanonicalStateStore(initialRecords = [], options = {}) {
     });
 }
 
+/** @returns {CanonicalStateStoreAdapter} */
 function createCanonicalStateStoreFromEnv(env = process.env) {
     return canonicalStateStoreMode(env) === CANONICAL_STATE_STORE_MODES.MEMORY
         ? createMemoryCanonicalStateStore([], { retentionMs: canonicalStateStoreRetentionMs(env) })
