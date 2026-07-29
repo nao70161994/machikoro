@@ -79,6 +79,7 @@ const TEST_GROUPS = {
         'ui-watchdog.test.js',
         'ui-winner.test.js',
         'lifecycle-notify.test.js',
+        'pwa-shell.test.js',
         'ui.test.js',
         'integration.test.js',
         'rlcpu.test.js',

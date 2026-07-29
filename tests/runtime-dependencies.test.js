@@ -58,6 +58,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],
+            ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
         ]],
         ['scripts/selfplay.js', [
@@ -86,6 +87,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],
+            ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
@@ -153,6 +155,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],
+            ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
             ['js/uiPendingMenu.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
@@ -165,6 +168,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientReporting.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/appShell.js'],
             ['js/uiWatchdog.js', 'js/appShell.js'],
+            ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
         ]]
     ];

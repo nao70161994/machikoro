@@ -20,7 +20,6 @@ let _clientErrorReportingBound = false;
 let _consoleErrorHooked = false;
 let _lastClientErrorReport = { key: '', time: 0 };
 let _onlineStatusHandlersBound = false;
-let _pwaInstallHandlersBound = false;
 let _mainViewResizeBound = false;
 let _freezeWatchdogBound = false;
 let _freezeWatchdogLastKey = '';
@@ -1335,56 +1334,31 @@ function updateOnlineTabState() {
 }
 
 // ===== PWAインストールバナー =====
-let _pwaInstallEvent = null;
+const _pwaInstallController = PwaShell.createInstallController({
+    document,
+    window,
+    readStorage: safeAppShellStorageGet,
+    writeStorage: safeAppShellStorageSet,
+});
 
 function setPwaBannerVisible(id, visible) {
-    const banner = document.getElementById(id);
-    if (!banner) return;
-    if (id === 'pwaInstallBanner' && visible) {
-        const updateBanner = document.getElementById('pwaUpdateBanner');
-        if (updateBanner && updateBanner.style.display === 'block') {
-            updatePwaBannerBodyState();
-            return;
-        }
-    }
-    banner.style.display = visible ? 'block' : 'none';
-    updatePwaBannerBodyState();
+    return _pwaInstallController.setBannerVisible(id, visible);
 }
 
 function updatePwaBannerBodyState() {
-    if (typeof document === 'undefined' || !document.body || !document.body.classList) return;
-    const installBanner = document.getElementById('pwaInstallBanner');
-    const updateBanner = document.getElementById('pwaUpdateBanner');
-    const visible = (installBanner && installBanner.style.display === 'block') ||
-        (updateBanner && updateBanner.style.display === 'block');
-    document.body.classList.toggle('pwa-banner-open', !!visible);
+    return _pwaInstallController.updateBannerBodyState();
 }
 
 function maybeShowPwaInstallBanner() {
-    if (!_pwaInstallEvent) {
-        updatePwaBannerBodyState();
-        return;
-    }
-    if (safeAppShellStorageGet('pwaInstallDismissed')) {
-        updatePwaBannerBodyState();
-        return;
-    }
-    setPwaBannerVisible('pwaInstallBanner', true);
+    return _pwaInstallController.maybeShowInstallBanner();
 }
 
 function pwaInstallPrompt() {
-    if (!_pwaInstallEvent) return;
-    _pwaInstallEvent.prompt();
-    _pwaInstallEvent.userChoice.then(() => {
-        setPwaBannerVisible('pwaInstallBanner', false);
-        _pwaInstallEvent = null;
-    });
+    return _pwaInstallController.promptInstall();
 }
 
 function pwaInstallDismiss() {
-    setPwaBannerVisible('pwaInstallBanner', false);
-    safeAppShellStorageSet('pwaInstallDismissed', '1');
-    _pwaInstallEvent = null;
+    return _pwaInstallController.dismissInstall();
 }
 
 function handleWindowErrorEvent(e) {
@@ -1448,20 +1422,7 @@ function bindOnlineStatusHandlers() {
 }
 
 function bindPwaInstallHandlers() {
-    if (_pwaInstallHandlersBound) return;
-    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-        _pwaInstallHandlersBound = true;
-        return;
-    }
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        if (safeAppShellStorageGet('pwaInstallDismissed')) {
-            return;
-        }
-        _pwaInstallEvent = e;
-        maybeShowPwaInstallBanner();
-    });
-    _pwaInstallHandlersBound = true;
+    return _pwaInstallController.bindInstallHandlers();
 }
 
 function freezeWatchdogStateKey(snapshot) {

@@ -313,6 +313,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
     const actionUiRegistrySource = fs.readFileSync(path.join(__dirname, '..', 'js/actionUiRegistry.js'), 'utf8');
     vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
+    const pwaShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/pwaShell.js'), 'utf8');
+    vm.runInContext(pwaShellSource, context, { filename: 'js/pwaShell.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
@@ -1968,6 +1970,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');
     assertBefore('js/uiWatchdog.js', 'js/appShell.js');
+    assertBefore('js/pwaShell.js', 'js/appShell.js');
     assertBefore('js/actionUiRegistry.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
