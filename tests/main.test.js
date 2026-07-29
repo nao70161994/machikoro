@@ -358,6 +358,7 @@ function loadMainRuntime(options = {}) {
             getDelayedHumanActionPending: () => delayedHumanActionPending,
             setPageHiddenAt: (value) => { pageHiddenAt = value; },
             scheduleCPU: () => scheduleCPU(),
+            cpuDo: (action, data, fallback) => cpuDo(action, data, fallback),
             counters,
         };
     `, context);
@@ -774,6 +775,30 @@ runTest('main checkAutoSkip は予約後にオンライン手番が変わった�
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.deepStrictEqual(rt.__test.sentActions, []);
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
+});
+
+runTest('main local CPU actionはcanonical proposalを共有Game Engineへ適用する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, null]);
+    const calls = [];
+    let fallbackCalls = 0;
+    rt.GameEngine = {
+        applyMutableAction(context) {
+            calls.push(context);
+            return true;
+        },
+    };
+
+    rt.__test.cpuDo('nextTurn', {}, () => { fallbackCalls++; });
+
+    assert.strictEqual(fallbackCalls, 0);
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].game, game);
+    assert.strictEqual(calls[0].action, 'nextTurn');
+    assert.strictEqual(JSON.stringify(calls[0].data), '{}');
 });
 
 runTest('main scheduleCPU は不正なTV targetを合法な相手へfallbackして解決する', () => {

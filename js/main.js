@@ -454,7 +454,16 @@ function cpuDo(action, data, fallback) {
         sendAction(proposal.action, proposal.data);
         return;
     }
-    fallback();
+    if (typeof GameEngine !== 'undefined' &&
+            typeof GameEngine.applyMutableAction === 'function') {
+        GameEngine.applyMutableAction({
+            game,
+            action: proposal.action,
+            data: proposal.data,
+        });
+    } else {
+        fallback();
+    }
     render();
     scheduleCPU();
 }
