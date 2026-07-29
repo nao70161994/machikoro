@@ -312,43 +312,23 @@ function resumeGame(options = {}) {
         }
         game = new GameManager(state.players.length);
         game.enabledLandmarks = new Set(enabledLandmarks);
-        assignSavedShopStockSnapshot(SHOP_STOCK, state.shopStock || {});
-        state.players.forEach((ps, i) => {
-            const p = game.players[i];
-            p.name = ps.name;
-            p.coins = ps.coins;
-            p.cards = (Array.isArray(ps.cards) ? ps.cards : []).map(name => createCardByName(name)).filter(Boolean);
-            p.dormantCards = (Array.isArray(ps.dormantIndices) ? ps.dormantIndices : []).map(idx => p.cards[idx]).filter(Boolean);
-            p.landmarks = Object.assign({}, makeDefaultLandmarks(), p.landmarks, ps.landmarks);
-            p.itVentureCoins = ps.itVentureCoins || 0;
-            p.hasYakusho = ps.hasYakusho !== false;
+        const hydrated = GameSnapshot.hydrateMutableGameState({
+            game,
+            shopStock: SHOP_STOCK,
+            state,
+            createCardByName,
+            assignShopStockSnapshot: assignSavedShopStockSnapshot,
+            normalizePlayerCoins: value => value,
+            readDormantIndices: value => Array.isArray(value) ? value : [],
+            readLandmarks: value => Object.assign(
+                {},
+                makeDefaultLandmarks(),
+                isPlainObject(value) ? value : {}
+            ),
+            readLog: value => Array.isArray(value) ? value : [],
+            normalizeCurrentPlayerIndex: value => value,
         });
-        game.currentPlayerIndex = state.currentPlayerIndex;
-        game.phase = state.phase;
-        game.log = state.log || [];
-        game.lastDiceResult = state.lastDiceResult || 0;
-        game.lastDice1 = state.lastDice1 || 0;
-        game.lastDice2 = state.lastDice2 || 0;
-        game.builtThisTurn = state.builtThisTurn || false;
-        if (typeof game.resetPendingState === 'function') game.resetPendingState();
-        game.pendingTV = state.pendingTV || 0;
-        game.pendingBusiness = state.pendingBusiness || 0;
-        game.pendingCleaning = state.pendingCleaning || 0;
-        game.pendingMover = state.pendingMover || 0;
-        game.pendingRenovation = state.pendingRenovation || 0;
-        game.pendingActionQueue = Array.isArray(state.pendingActions)
-            ? state.pendingActions
-                .filter(pending => pending && typeof pending === 'object')
-                .map(pending => ({ action: pending.action, field: pending.field }))
-            : [];
-        if (typeof game.rebuildPendingActionsFromFields === 'function' && game.pendingActionQueue.length === 0) {
-            game.rebuildPendingActionsFromFields();
-        }
-        game.pendingIT = state.pendingIT || false;
-        game.usedReroll = state.usedReroll || false;
-        game.pendingTunaDice = state.pendingTunaDice || null;
-        game.turnCount = state.turnCount || 0;
-        game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
+        if (!hydrated) throw new Error('Saved game hydration failed');
         const cpuSettings = savedCpuSettings;
         const opponentDifficulties = cpuSettings.map(s => s ? s.difficulty || "normal" : "human");
         cpuPlayers = cpuSettings.map(s => {

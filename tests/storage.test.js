@@ -427,6 +427,66 @@ runTest('storage resumeGame はCPU復元で共通ファクトリを使う', () =
     assert.strictEqual(rt.__test.getCpuPlayers()[1].createdByFactory, true);
 });
 
+runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        players: [
+            {
+                name: 'Alice', coins: 9, cards: ['麦畑'], dormantIndices: [0],
+                landmarks: { 駅: true }, itVentureCoins: 4, hasYakusho: false,
+            },
+            {
+                name: 'Bob', coins: 2, cards: [], dormantIndices: [],
+                landmarks: {}, itVentureCoins: 0, hasYakusho: true,
+            },
+        ],
+        currentPlayerIndex: 1,
+        phase: 'pending',
+        log: [{ text: 'restored' }],
+        lastDiceResult: 8,
+        lastDice1: 3,
+        lastDice2: 5,
+        builtThisTurn: true,
+        pendingTV: 1,
+        pendingActions: [{ action: 'resolveTV', field: 'pendingTV' }],
+        pendingIT: true,
+        usedReroll: true,
+        pendingTunaDice: [3, 5],
+        turnCount: 7,
+        hadAmusementParkAtRoll: true,
+        shopStock: { 麦畑: 4 },
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    rt.resumeGame();
+
+    const game = rt.__test.getGame();
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.strictEqual(game.phase, 'pending');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(game.log)), [{ text: 'restored' }]);
+    assert.strictEqual(game.lastDiceResult, 8);
+    assert.strictEqual(game.lastDice1, 3);
+    assert.strictEqual(game.lastDice2, 5);
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(game.pendingTV, 1);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(game.pendingActionQueue)), [
+        { action: 'resolveTV', field: 'pendingTV' },
+    ]);
+    assert.strictEqual(game.pendingIT, true);
+    assert.strictEqual(game.usedReroll, true);
+    assert.deepStrictEqual(Array.from(game.pendingTunaDice), [3, 5]);
+    assert.strictEqual(game.turnCount, 7);
+    assert.strictEqual(game.hadAmusementParkAtRoll, true);
+    assert.strictEqual(game.players[0].coins, 9);
+    assert.deepStrictEqual(Array.from(game.players[0].cards, card => card.name), ['麦畑']);
+    assert.deepStrictEqual(Array.from(game.players[0].dormantCards, card => card.name), ['麦畑']);
+    assert.strictEqual(game.players[0].landmarks['駅'], true);
+    assert.strictEqual(game.players[0].landmarks['ショッピングモール'], false);
+    assert.strictEqual(game.players[0].itVentureCoins, 4);
+    assert.strictEqual(game.players[0].hasYakusho, false);
+    assert.strictEqual(rt.__test.getShopStock()['麦畑'], 4);
+});
+
 runTest('storage resumeGame は旧保存データのcpuSettings欠落をnormal CPUとして復元する', () => {
     const rt = loadStorageRuntime();
     const state = makeSavedGameState();
