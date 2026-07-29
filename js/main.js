@@ -446,8 +446,12 @@ function init(playerCount) {
 
 // CPUアクションをローカル・オンライン両対応で実行
 function cpuDo(action, data, fallback) {
+    const proposal = typeof CPUActionProposal !== 'undefined'
+        ? CPUActionProposal.create(action, data)
+        : null;
+    if (!proposal) return false;
     if (isOnlineGame) {
-        sendAction(action, data);
+        sendAction(proposal.action, proposal.data);
         return;
     }
     fallback();

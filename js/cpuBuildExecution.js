@@ -1,5 +1,9 @@
 'use strict';
 
+const CPUActionProposalApi = typeof module !== 'undefined' && module.exports
+    ? require('./cpuActionProposal').CPUActionProposal
+    : globalThis.CPUActionProposal;
+
 function setBuildActionResult(cpu, result) {
     cpu._lastBuildActionResult = result;
     return result;
@@ -23,11 +27,8 @@ function onlineBuildBlocked(context = {}) {
  * @returns {CPUBuildActionProposal|null}
  */
 function createCardBuildAction(card) {
-    if (!card || typeof card.name !== 'string' || !card.name) return null;
-    return Object.freeze({
-        action: 'buildCard',
-        data: Object.freeze({ cardName: card.name }),
-    });
+    if (!card || typeof card.name !== 'string' || !card.name || !CPUActionProposalApi) return null;
+    return CPUActionProposalApi.create('buildCard', { cardName: card.name });
 }
 
 /**
@@ -35,11 +36,8 @@ function createCardBuildAction(card) {
  * @returns {CPUBuildActionProposal|null}
  */
 function createLandmarkBuildAction(name) {
-    if (typeof name !== 'string' || !name) return null;
-    return Object.freeze({
-        action: 'buildLandmark',
-        data: Object.freeze({ name }),
-    });
+    if (typeof name !== 'string' || !name || !CPUActionProposalApi) return null;
+    return CPUActionProposalApi.create('buildLandmark', { name });
 }
 
 function buyCard(cpu, card, game, shopStock, context = {}) {

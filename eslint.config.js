@@ -4,6 +4,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/actionContract.js',
     'js/actionUiRegistry.js',
     'js/clientReporting.js',
+    'js/cpuActionProposal.js',
     'js/cpuBuildExecution.js',
     'js/cpuEvaluation.js',
     'js/cpuLegalMoves.js',

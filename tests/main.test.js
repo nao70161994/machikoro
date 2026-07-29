@@ -311,6 +311,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiWatchdogSource, context, { filename: 'js/uiWatchdog.js' });
     const actionContractSource = fs.readFileSync(path.join(__dirname, '..', 'js/actionContract.js'), 'utf8');
     vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
+    const cpuActionProposalSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuActionProposal.js'), 'utf8');
+    vm.runInContext(cpuActionProposalSource, context, { filename: 'js/cpuActionProposal.js' });
     const actionUiRegistrySource = fs.readFileSync(path.join(__dirname, '..', 'js/actionUiRegistry.js'), 'utf8');
     vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
     const pwaShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/pwaShell.js'), 'utf8');
@@ -1944,6 +1946,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuTuning.js', 'js/CPU.js');
     assertBefore('js/cpuProfile.js', 'js/CPU.js');
     assertBefore('js/cpuLegalMoves.js', 'js/CPU.js');
+    assertBefore('js/cpuActionProposal.js', 'js/cpuBuildExecution.js');
     assertBefore('js/cpuBuildExecution.js', 'js/CPU.js');
     assertBefore('js/cpuSimulation.js', 'js/CPU.js');
     assertBefore('js/cpuDiagnostics.js', 'js/CPU.js');
