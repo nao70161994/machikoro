@@ -124,7 +124,7 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - CPU helper extraction must preserve wrapper results, the exact decision baseline, the 2–10 player/all-difficulty self-play baseline, fixed traces, and existing CPU tests; do not change heuristic constants, difficulty presets, candidate order, or action selection under a maintenance-only task.
 - Run `npm run test:cpu-regression` after CPU scoring, legal-move, simulation, or execution edits. It compares winner, turns, and completion for 36 seeded full matches.
 - Regenerate CPU baselines only for an intentional, reviewed behavior change. Pass `--source-commit <full-40-character-commit>` identifying the accepted pre-generation behavior; never refresh an artifact merely to make a failing test green.
-- Scoped ESLint is approved for the 43-module maintenance allowlist and must keep config/script parity. JSDoc/checkJs still require a separate dependency/config decision; do not turn either into repository-wide cleanup.
+- Engine/Snapshot, canonical repository, and reconnect shadow adapter boundaries have JSDoc contracts. Scoped ESLint is approved for the 43-module maintenance allowlist and must keep config/script parity. TypeScript/checkJs still require a separate dependency/config decision; do not infer runtime authority or turn either into repository-wide cleanup.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
 
