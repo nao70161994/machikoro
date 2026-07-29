@@ -331,7 +331,7 @@ As of 2026-07-30, rollback-friendly units from this plan are implemented without
   capability/payload/consent path fails closed for old or mixed clients.
 - CPU extraction is guarded by 9 representative fixtures across build/dice/reroll/harbor/pending states, 36 exact decision snapshots for all difficulties, and 36 seeded full matches for all difficulties and 2–10 players. Baseline artifacts record their source commit.
 - Contract tests guard action metadata/canonical payload/UI drift, card/effect cross-layer registration, representative snapshot roundtrips, malformed restore, and complete client/server replay snapshot parity. `npm run report:action-contract` emits the current cross-layer manifest and fails on drift.
-- Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders. Scoped ESLint bug rules run from `test:static` over 81 maintenance modules, and a test keeps config and npm-script file sets identical.
+- Static runtime dependency tests guard extracted module load order across production, integration, release, online, UI, main, and self-play loaders. Scoped ESLint bug rules run from `test:static` over 83 maintenance modules, and a test keeps config and npm-script file sets identical.
 - JSDoc contracts now make Engine transition/runtime adapters, Snapshot hydrate/serialize policy, canonical repository capabilities/methods, and reconnect shadow flags/history explicit. This is an editor/tooling boundary only; no checkJs CI or live authority follows implicitly.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
