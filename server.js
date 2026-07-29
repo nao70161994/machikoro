@@ -65,6 +65,7 @@ const {
     createHostlessRestoreRuntime,
     hostlessRestoreEnabled,
 } = require('./server/hostlessRestoreRuntime');
+const { createDisconnectSocketHandler } = require('./server/disconnectSocketHandler');
 const {
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
@@ -870,6 +871,21 @@ hostlessRestoreRuntime = createHostlessRestoreRuntime({
     approveCandidate: approveHostlessRestoreCandidate,
     enabled: hostlessRestoreEnabled(process.env),
 });
+const disconnectSocketHandler = createDisconnectSocketHandler({
+    io,
+    rooms,
+    buildPlayerList,
+    getRemainingConnectedPlayers,
+    setRoomHostPlayerIndex,
+    emitRoomHostChanged,
+    persistRoomCanonicalState,
+    disconnectHostlessRestore: socket => hostlessRestoreRuntime.disconnect(socket),
+});
+const {
+    removeWaitingRoomSocket,
+    handleStartedRoomSocketDisconnect,
+    handleSocketDisconnect,
+} = disconnectSocketHandler;
 
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
@@ -958,61 +974,8 @@ io.on('connection', (socket) => {
         if (result?.ok) hostlessRestoreRuntime.hostRestored(result.roomId);
     });
 
-    socket.on('disconnect', () => {
-        hostlessRestoreRuntime.disconnect(socket);
-        handleSocketDisconnect(io, socket);
-    });
+    disconnectSocketHandler.registerSocket(socket);
 });
-
-function removeWaitingRoomSocket(io, roomId, room, socket) {
-    room.players = room.players.filter(p => p.id !== socket.id);
-    if (room.players.length === 0) {
-        delete rooms[roomId];
-        return { removedRoom: true };
-    }
-    const playerList = buildPlayerList(room);
-    io.to(roomId).emit('playerList', playerList);
-    return { removedRoom: false, playerList };
-}
-
-function handleStartedRoomSocketDisconnect(io, roomId, room, socket) {
-    const disconnectedPlayer = room.players.find(p => p.index === socket.playerIndex);
-    if (!disconnectedPlayer || disconnectedPlayer.id !== socket.id) return { ignored: true };
-    disconnectedPlayer.id = null;
-    io.to(roomId).emit('playerDisconnected', {
-        playerIndex: socket.playerIndex,
-        playerName: disconnectedPlayer.name || `プレイヤー${socket.playerIndex + 1}`,
-    });
-    if (socket.playerIndex === room.hostPlayerIndex) {
-        const remaining = getRemainingConnectedPlayers(room, io.sockets.sockets, socket.id);
-        if (remaining.length > 0) {
-            setRoomHostPlayerIndex(room, remaining[0].index);
-            emitRoomHostChanged(roomId, room, io);
-            persistRoomCanonicalState(roomId, room, 'host-changed');
-            console.log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
-            return { ignored: false, hostChanged: true, playerIndex: socket.playerIndex };
-        }
-    }
-    return { ignored: false, hostChanged: false, playerIndex: socket.playerIndex };
-}
-
-function handleSocketDisconnect(io, socket) {
-    try {
-        const roomId = socket.roomId;
-        if (roomId && rooms[roomId]) {
-            const room = rooms[roomId];
-            if (!room.started) {
-                removeWaitingRoomSocket(io, roomId, room, socket);
-            } else {
-                const result = handleStartedRoomSocketDisconnect(io, roomId, room, socket);
-                if (result.ignored) return;
-            }
-            console.log(`切断: ${socket.id} (ルーム: ${roomId})`);
-        }
-    } catch (e) {
-        console.error('disconnect handler error:', e);
-    }
-}
 
 // ===== Room lifecycle helpers =====
 function setRoomHostPlayerIndex(room, hostPlayerIndex) {

@@ -24,6 +24,7 @@ const TEST_GROUPS = {
         'rejoin-payload.test.js',
         'rejoin-socket-handler.test.js',
         'action-socket-handler.test.js',
+        'disconnect-socket-handler.test.js',
         'restore-sanitization.test.js',
         'restore-validation.test.js',
         'restore-audit-keyring.test.js',
