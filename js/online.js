@@ -51,6 +51,11 @@ function isGameSchemaWireTransportEnabled() {
         window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED === true;
 }
 
+function isGameSchemaSnapshotWireTransportEnabled() {
+    return isGameSchemaNegotiationTransportEnabled() && typeof window !== 'undefined' &&
+        window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED === true;
+}
+
 function getGameSchemaCapabilitiesForTransport() {
     const enabled = isGameSchemaNegotiationTransportEnabled();
     if (typeof GameSchemaNegotiation === 'undefined') return null;
@@ -73,6 +78,14 @@ function decodeOnlineGameSchemaAction(payload) {
     if (!isGameSchemaWireTransportEnabled()) return { ok: true, value: payload };
     if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
     return GameSchemaWire.decodeAction(true, onlineGameSchemaSelection, payload);
+}
+
+function decodeOnlineGameSchemaSnapshotPayload(payload) {
+    if (!isGameSchemaSnapshotWireTransportEnabled()) return { ok: true, value: payload };
+    if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
+    const selection = payload && payload.gameStartPayload && payload.gameStartPayload.gameSchema ||
+        onlineGameSchemaSelection;
+    return GameSchemaWire.decodeSnapshotField(true, selection, payload);
 }
 
 function buildOnlineRejoinPayload(session) {
@@ -1063,7 +1076,17 @@ function initSocket() {
     };
     socket.on('actionAccepted', handleActionAccepted);
 
-    socket.on('rejoinData', ({ gameStartPayload, stateSnapshot, actionLog, acceptedClientActions, playerIndex, hostPlayerIndex, hostEpoch, restoreAudit, provisionalRestore }) => {
+    socket.on('rejoinData', rejoinPayload => {
+        const decodedSnapshotPayload = decodeOnlineGameSchemaSnapshotPayload(rejoinPayload);
+        if (!decodedSnapshotPayload.ok) {
+            document.getElementById("onlineStatus").textContent =
+                '復元データのSnapshot schema versionに対応していません。再接続してください。';
+            return;
+        }
+        const {
+            gameStartPayload, stateSnapshot, actionLog, acceptedClientActions,
+            playerIndex, hostPlayerIndex, hostEpoch, restoreAudit, provisionalRestore,
+        } = decodedSnapshotPayload.value;
         if (!gameStartPayload || !acceptsNegotiatedGameSchema(gameStartPayload.gameSchema)) {
             document.getElementById("onlineStatus").textContent = '復元データのschema versionに対応していません。アプリを更新してください。';
             return;

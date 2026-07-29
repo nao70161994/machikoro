@@ -30,6 +30,9 @@ function injectIndexBuildHash(content, buildHash, options = {}) {
     if (options.gameSchemaWireEnabled === true) {
         scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;</script>';
     }
+    if (options.gameSchemaSnapshotWireEnabled === true) {
+        scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;</script>';
+    }
     return String(content).replace('</head>', `    ${scripts}\n</head>`);
 }
 

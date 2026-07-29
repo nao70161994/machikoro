@@ -7,6 +7,7 @@ process.env.CANONICAL_STATE_STORE = 'noop';
 process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
 process.env.GAME_SCHEMA_SHADOW_ENABLED = '1';
 process.env.GAME_SCHEMA_WIRE_ENABLED = '1';
+process.env.GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = '1';
 const serverModule = require('../server');
 const connectClient = require('socket.io-client');
 
@@ -60,6 +61,7 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
         assert.ok(html.includes('js/gameSchemaNegotiation.js'));
         assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
+        assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;'));
 
         const currentRoom = await startPair(origin, clients[0], clients[1], 'current', CAPABILITIES, CAPABILITIES);
         currentRoom.gameStarts.forEach(start => assert.deepStrictEqual(start.gameSchema, { actionVersion: 1, snapshotVersion: 1 }));
@@ -83,6 +85,8 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
             'matched'
         );
 
+        const currentSnapshot = { actionSeq: 1, phase: 'roll', marker: 'snapshot-wire-e2e' };
+        serverModule.__rooms[currentRoom.created.roomId].stateSnapshot = currentSnapshot;
         clients[1].close();
         rejoined = connect(origin);
         await onceEvent(rejoined, 'connect');
@@ -94,6 +98,10 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         }, CAPABILITIES));
         const rejoinData = await rejoinDataPromise;
         assert.deepStrictEqual(rejoinData.gameStartPayload.gameSchema, { actionVersion: 1, snapshotVersion: 1 });
+        assert.deepStrictEqual(rejoinData.stateSnapshot, {
+            schemaVersion: 1,
+            snapshot: currentSnapshot,
+        });
 
         legacyAttempt = connect(origin);
         await onceEvent(legacyAttempt, 'connect');

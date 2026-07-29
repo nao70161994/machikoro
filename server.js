@@ -69,6 +69,7 @@ const { createDisconnectSocketHandler } = require('./server/disconnectSocketHand
 const {
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
+    gameSchemaSnapshotWireEnabled,
     resolveClientGameSchemaCapabilities,
     negotiateRoomGameSchemaCandidate,
     isValidGameSchemaMetadata,
@@ -78,6 +79,8 @@ const {
 } = require('./server/gameSchemaRuntime');
 const GAME_SCHEMA_NEGOTIATION_ENABLED = gameSchemaNegotiationEnabled(process.env);
 const GAME_SCHEMA_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaWireEnabled(process.env);
+const GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED &&
+    gameSchemaSnapshotWireEnabled(process.env);
 const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
 const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
 
@@ -569,6 +572,7 @@ const indexTemplate = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'
 const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
     gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
     gameSchemaWireEnabled: GAME_SCHEMA_WIRE_ENABLED,
+    gameSchemaSnapshotWireEnabled: GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
 });
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
@@ -693,10 +697,21 @@ function generateRoomId(existingRooms = rooms) {
     return generateUniqueRoomId(existingRooms);
 }
 
-const { buildRejoinDataPayload } = makeRejoinPayload({
+const { buildRejoinDataPayload: buildRawRejoinDataPayload } = makeRejoinPayload({
     acceptedClientActionRefs,
     buildRestoreSnapshotAudit,
 });
+
+function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
+    const payload = buildRawRejoinDataPayload(room, playerIndex, overrides);
+    const selection = payload.gameStartPayload && payload.gameStartPayload.gameSchema || null;
+    const encoded = GameSchemaWire.encodeSnapshotField(
+        GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
+        selection,
+        payload
+    );
+    return encoded.ok ? encoded.value : null;
+}
 
 function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
     if (!store || typeof store.save !== 'function') return { ok: true, skipped: true };

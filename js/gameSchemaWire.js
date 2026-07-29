@@ -36,6 +36,26 @@ function transformAction(enabled, selection, payload, transform) {
     return result(true, '', mergeActionMetadata(payload, transformed.value));
 }
 
+function transformSnapshot(enabled, selection, snapshot, transform) {
+    if (enabled !== true || snapshot == null) return result(true, '', snapshot);
+    const transformed = transform(selection, snapshot);
+    if (!transformed.ok) {
+        return result(false, GAME_SCHEMA_WIRE_FAILURES.CODEC_REJECTED, null, transformed.reason);
+    }
+    return result(true, '', transformed.value);
+}
+
+function transformSnapshotField(enabled, selection, payload, transform) {
+    if (enabled !== true) return result(true, '', payload);
+    if (!isPayloadObject(payload)) return result(false, GAME_SCHEMA_WIRE_FAILURES.INVALID_PAYLOAD);
+    if (!Object.prototype.hasOwnProperty.call(payload, 'stateSnapshot') || payload.stateSnapshot == null) {
+        return result(true, '', payload);
+    }
+    const transformed = transformSnapshot(true, selection, payload.stateSnapshot, transform);
+    if (!transformed.ok) return transformed;
+    return result(true, '', Object.assign({}, payload, { stateSnapshot: transformed.value }));
+}
+
 function encodeAction(enabled, selection, payload) {
     return transformAction(enabled, selection, payload, (selected, source) =>
         GameSchemaWireCodec.encodeAction(selected, source.action, source.data)
@@ -48,10 +68,38 @@ function decodeAction(enabled, selection, payload) {
     );
 }
 
+function encodeSnapshot(enabled, selection, snapshot) {
+    return transformSnapshot(enabled, selection, snapshot, (selected, source) =>
+        GameSchemaWireCodec.encodeSnapshot(selected, source)
+    );
+}
+
+function decodeSnapshot(enabled, selection, snapshot) {
+    return transformSnapshot(enabled, selection, snapshot, (selected, source) =>
+        GameSchemaWireCodec.decodeSnapshot(selected, source)
+    );
+}
+
+function encodeSnapshotField(enabled, selection, payload) {
+    return transformSnapshotField(enabled, selection, payload, (selected, source) =>
+        GameSchemaWireCodec.encodeSnapshot(selected, source)
+    );
+}
+
+function decodeSnapshotField(enabled, selection, payload) {
+    return transformSnapshotField(enabled, selection, payload, (selected, source) =>
+        GameSchemaWireCodec.decodeSnapshot(selected, source)
+    );
+}
+
 const GameSchemaWire = Object.freeze({
     failureReasons: GAME_SCHEMA_WIRE_FAILURES,
     encodeAction,
     decodeAction,
+    encodeSnapshot,
+    decodeSnapshot,
+    encodeSnapshotField,
+    decodeSnapshotField,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameSchemaWire;

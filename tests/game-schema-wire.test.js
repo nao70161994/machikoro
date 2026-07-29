@@ -39,3 +39,42 @@ runTest('game schema wireはversion不一致とmalformed payloadをfail closed�
         action: 'unknown', data: {},
     }).reason, GameSchemaWire.failureReasons.CODEC_REJECTED);
 });
+
+runTest('game schema wireはSnapshot fieldだけを独立してversion変換する', () => {
+    const snapshot = { actionSeq: 4, phase: 'build' };
+    const payload = { stateSnapshot: snapshot, actionLog: [], playerIndex: 1 };
+    const disabled = GameSchemaWire.encodeSnapshotField(false, CURRENT, payload);
+    assert.strictEqual(disabled.value, payload);
+
+    const current = GameSchemaWire.encodeSnapshotField(true, CURRENT, payload);
+    assert.deepStrictEqual(current.value, {
+        stateSnapshot: { schemaVersion: 1, snapshot },
+        actionLog: [],
+        playerIndex: 1,
+    });
+    assert.deepStrictEqual(
+        GameSchemaWire.decodeSnapshotField(true, CURRENT, current.value).value,
+        payload
+    );
+
+    const legacy = GameSchemaWire.encodeSnapshotField(true, LEGACY, payload);
+    assert.deepStrictEqual(legacy.value, payload);
+});
+
+runTest('game schema wireはSnapshot欠落を保持しversion不一致をfail closedにする', () => {
+    const withoutSnapshot = { stateSnapshot: null, actionLog: [] };
+    assert.strictEqual(
+        GameSchemaWire.encodeSnapshotField(true, CURRENT, withoutSnapshot).value,
+        withoutSnapshot
+    );
+    assert.strictEqual(
+        GameSchemaWire.decodeSnapshotField(true, CURRENT, {
+            stateSnapshot: { actionSeq: 4 },
+        }).codecReason,
+        'version-mismatch'
+    );
+    assert.strictEqual(
+        GameSchemaWire.decodeSnapshotField(true, CURRENT, null).reason,
+        GameSchemaWire.failureReasons.INVALID_PAYLOAD
+    );
+});

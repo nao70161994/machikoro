@@ -3685,6 +3685,29 @@ runTest('online clientはflagで広告したschema selectionだけを受理す�
     assert.strictEqual(currentRt.acceptsNegotiatedGameSchema({ actionVersion: 2, snapshotVersion: 1 }), false);
 });
 
+runTest('versioned snapshot wireはrejoin payload内のv1 envelopeを選択情報から復号する', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = true;
+    const snapshot = { actionSeq: 3, phase: 'build' };
+    const payload = {
+        gameStartPayload: { gameSchema: { actionVersion: 1, snapshotVersion: 1 } },
+        stateSnapshot: { schemaVersion: 1, snapshot },
+        actionLog: [],
+    };
+    const realmPayload = vm.runInContext(`(${JSON.stringify(payload)})`, rt);
+    const decoded = rt.decodeOnlineGameSchemaSnapshotPayload(realmPayload);
+    assert.strictEqual(decoded.ok, true, JSON.stringify(decoded));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(decoded.value.stateSnapshot)), snapshot);
+    assert.strictEqual(
+        rt.decodeOnlineGameSchemaSnapshotPayload({
+            gameStartPayload: realmPayload.gameStartPayload,
+            stateSnapshot: snapshot,
+        }).codecReason,
+        'version-mismatch'
+    );
+});
+
 runTest('versioned action wireは明示flagとnegotiated selectionでだけv1 envelopeを送る', () => {
     const rt = loadOnlineRuntime();
     rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;

@@ -77,3 +77,14 @@ runTest('game schema wire flagは明示値だけを受理する', () => {
     assert.strictEqual(GameSchemaRuntime.gameSchemaWireEnabled({ GAME_SCHEMA_WIRE_ENABLED: 'on' }), true);
     assert.strictEqual(GameSchemaRuntime.gameSchemaWireEnabled({ GAME_SCHEMA_WIRE_ENABLED: 'OFF' }), false);
 });
+
+runTest('game schema snapshot wire flagはAction wireと独立して明示値だけを受理する', () => {
+    assert.strictEqual(GameSchemaRuntime.gameSchemaSnapshotWireEnabled({}), false);
+    assert.strictEqual(GameSchemaRuntime.gameSchemaSnapshotWireEnabled({
+        GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED: 'yes',
+    }), true);
+    assert.strictEqual(GameSchemaRuntime.gameSchemaSnapshotWireEnabled({
+        GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED: 'OFF',
+        GAME_SCHEMA_WIRE_ENABLED: 'on',
+    }), false);
+});
