@@ -43,7 +43,7 @@
 ## 2026-07-29 保守性改善の現在地
 
 - app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、trace/root-cause整形、手番/online block判定、保存用診断圧縮を分離。`js/pwaShell.js`にinstall prompt/banner controllerを依存注入で分離。DOM snapshot/recovery、report storage write、dedupe、fetch、timer、SW更新副作用は既存ownerに残す。
-- CPU: 既存pure helperに加えて`js/cpuActionProposal.js`へ全Action Contract variantのcanonical・detached・deep-frozen proposal生成、`js/cpuBuildExecution.js`へlocal/online建設実行、`js/cpuSimulation.js`へ2〜10人lookahead在庫生成を分離。local非build actionはproposalを共有mutable Game Engineへ適用する。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
+- CPU: 既存pure helperに加えて`js/cpuActionProposal.js`へ全Action Contract variantのcanonical・detached・deep-frozen proposal生成、`js/cpuBuildExecution.js`へlocal/online建設実行、`js/cpuSimulation.js`へ2〜10人lookahead在庫生成を分離。local非build actionはproposalを共有mutable Game Engineへ適用し、rule-based buildは`CPU.chooseBuildAction()`が盤面/在庫を変えずproposalだけを返した後、executorが一度だけ適用する。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
 - server: `server/lobbySocketHandlers.js`、`server/rejoinSocketHandler.js`、`server/actionSocketHandler.js`、`server/disconnectSocketHandler.js`へcreate/join/rejoin/action/disconnect familyを分離し、effect/emit順、hostless先行、古いsocket無視、host移譲を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
 - online: `js/onlineReconnectState.js`のshadow controllerは既存booleanから状態を投影するだけでなく、reconnect/disconnect/restore/replay/activation/retry-exhausted/completed/reset eventを履歴化する。`js/onlineRetryPolicy.js`は既存3秒/8回/15秒契約を所有。既存boolean、Restore queues、timer callback、ACK timing、protocolが引き続きauthorityで、挙動は未変更。
 - UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有。`js/uiWinner.js`、`js/uiLogDisplay.js`、`js/uiTutorial.js`、`js/uiDiceChoice.js`、`js/uiPlayerDisplay.js`までexact HTML生成を分離し、`renderPlayers()`は設定解決とDOM反映だけに縮小。DOM/focus/inert/pointer/event/SW更新effects、ログ履歴、表示タイミングは既存ownerに残す。
@@ -81,7 +81,7 @@
 ## 次に安全な作業の条件
 
 - UI: pure表示helperはwinner/log/tutorial/dice choice/full player panelまで実施済み。modal deny-by-default は実装済み。次は具体的なUI変更に伴うexact-output helperだけを対象にし、modal/focus/inertは実機matrixなしで移動しない。
-- CPU: 新しい具体的なscoring変更がない限り機械的に分割しない。変更時はdecision/self-play baseline、候補順、乱数消費の完全一致を要求する。
+- CPU: buildのaction-only strategy/executor境界は実装済み。残る大きなscoring/candidate orchestrationは、具体的な安定境界がない限り機械的に分割しない。変更時はdecision/self-play baseline、候補順、乱数消費の完全一致を要求する。
 - GameManager / Server / Online: action/payload変更時は既存cross-layer contractを先に拡張する。timer/callback/handler/state-machine移動、hostless authority、signed/durable restore、複数room UIはdesign/manual required。
 - Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection は強化済み。新しい helper script を足す場合は `index.html`、`sw.js`、integration runtime、`tests/main.test.js` の script/asset drift test を同時に更新する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
 
