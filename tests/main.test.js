@@ -1993,7 +1993,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiDiceChoice.js', 'js/ui.js');
     assertBefore('js/uiModalPolicy.js', 'js/ui.js');
     assertBefore('js/uiWinner.js', 'js/ui.js');
-    assertBefore('js/ui.js', 'js/storage.js');
+    assertBefore('js/ui.js', 'js/savedGameValidation.js');
+    assertBefore('js/savedGameValidation.js', 'js/storage.js');
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');

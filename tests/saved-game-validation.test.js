@@ -1,0 +1,88 @@
+'use strict';
+
+const assert = require('assert');
+const SavedGameValidation = require('../js/savedGameValidation');
+const { runTest } = require('./helpers/test-utils');
+
+function makeValidator() {
+    return SavedGameValidation.createValidator({
+        isKnownCardName: name => ['麦畑', 'パン屋'].includes(name),
+        isKnownLandmarkName: name => ['駅', 'ショッピングモール'].includes(name),
+        cardNameById: { wheat_field: '麦畑', bakery: 'パン屋' },
+    });
+}
+
+function makeState(overrides = {}) {
+    return Object.assign({
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: { 駅: false } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+        currentPlayerIndex: 0,
+        phase: 'build',
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingActions: [],
+        shopStock: { wheat_field: 4, パン屋: 0 },
+        enabledCardsList: ['麦畑'],
+        enabledLandmarksList: ['駅', 'ショッピングモール'],
+    }, overrides);
+}
+
+runTest('saved game validatorは旧card IDと現在名を同じ在庫名へ解決する', () => {
+    const validator = makeValidator();
+    assert.strictEqual(validator.savedShopStockNameFromKey('wheat_field'), '麦畑');
+    assert.strictEqual(validator.savedShopStockNameFromKey('パン屋'), 'パン屋');
+    assert.strictEqual(validator.savedShopStockNameFromKey('unknown'), null);
+});
+
+runTest('saved game validatorは現行保存shapeと旧CPU設定を保持する', () => {
+    const validator = makeValidator();
+    const state = makeState();
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    assert.deepStrictEqual(SavedGameValidation.normalizeCpuSettings({
+        players: state.players,
+        cpuSettings: ['strong'],
+    }), [
+        { difficulty: 'strong' },
+        { difficulty: 'normal' },
+    ]);
+    assert.deepStrictEqual(SavedGameValidation.normalizeCpuSettings({
+        players: state.players,
+        cpuSettings: [{ difficulty: 'rl', modelId: 'legacy-model' }, null],
+    }), [
+        { difficulty: 'rl', rlModelId: 'legacy-model' },
+        null,
+    ]);
+});
+
+runTest('saved game validatorは既存の不正保存境界をfail closedにする', () => {
+    const validator = makeValidator();
+    const cases = [
+        null,
+        makeState({ currentPlayerIndex: 2 }),
+        makeState({ phase: 'unknown' }),
+        makeState({ pendingBusiness: 1, pendingActions: [] }),
+        makeState({ pendingBusiness: 1, pendingActions: [{ field: 'pendingBusiness', action: 'resolveTV' }] }),
+        makeState({ pendingTunaDice: [0, 7] }),
+        makeState({ enabledCardsList: ['unknown'] }),
+        makeState({ shopStock: { パン屋: 1 }, enabledCardsList: ['麦畑'] }),
+        makeState({ players: [
+            { name: 'P1', coins: 3.5, cards: [], dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ] }),
+        makeState({ players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [0, 0], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ] }),
+    ];
+    for (const value of cases) assert.strictEqual(validator.isValidSavedGameState(value), false);
+});
+
+runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {
+    const validator = SavedGameValidation.createValidator();
+    assert.strictEqual(validator.isValidSavedGameState(makeState()), false);
+});

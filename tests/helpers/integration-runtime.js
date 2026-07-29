@@ -172,6 +172,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/pwaShell.js',
         'js/actionUiRegistry.js',
         'js/appShell.js',
+        'js/savedGameValidation.js',
         'js/storage.js',
         'js/stats.js',
         'js/uiNotice.js',

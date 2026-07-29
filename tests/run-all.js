@@ -63,6 +63,7 @@ const TEST_GROUPS = {
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
         'online-delivery-handshake.test.js',
+        'saved-game-validation.test.js',
         'storage.test.js',
         'main.test.js',
         'client-reporting.test.js',
