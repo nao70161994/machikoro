@@ -217,6 +217,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
             if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
             if (typeof v.hostlessRestorePending !== 'undefined') _hostlessRestorePending = v.hostlessRestorePending;
+            if (typeof v.onlineGameSchemaSelection !== 'undefined') onlineGameSchemaSelection = v.onlineGameSchemaSelection;
             if (typeof v.myRoomId !== 'undefined') myRoomId = v.myRoomId;
             if (typeof v.myOriginalPlayerIndex !== 'undefined') myOriginalPlayerIndex = v.myOriginalPlayerIndex;
             if (typeof v.myPlayerName !== 'undefined') myPlayerName = v.myPlayerName;
@@ -3706,6 +3707,24 @@ runTest('versioned snapshot wireはrejoin payload内のv1 envelopeを選択情�
         }).codecReason,
         'version-mismatch'
     );
+});
+
+runTest('versioned snapshot wireはlegacy actionの圧縮Snapshot metadataだけを復号できる', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = true;
+    rt.setOnlineState({ onlineGameSchemaSelection: { actionVersion: 1, snapshotVersion: 1 } });
+    const snapshot = { actionSeq: 201, phase: 'build' };
+    const decoded = rt.decodeOnlineGameSchemaAction({
+        action: 'nextTurn',
+        data: {},
+        seq: 201,
+        stateSnapshot: { schemaVersion: 1, snapshot },
+    });
+    assert.strictEqual(decoded.ok, true);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(decoded.value)), {
+        action: 'nextTurn', data: {}, seq: 201, stateSnapshot: snapshot,
+    });
 });
 
 runTest('versioned action wireは明示flagとnegotiated selectionでだけv1 envelopeを送る', () => {

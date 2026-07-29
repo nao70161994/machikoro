@@ -69,15 +69,23 @@ function acceptsNegotiatedGameSchema(selection) {
 }
 
 function encodeOnlineGameSchemaAction(payload) {
-    if (!isGameSchemaWireTransportEnabled()) return { ok: true, value: payload };
+    const actionEnabled = isGameSchemaWireTransportEnabled();
+    if (!actionEnabled) return { ok: true, value: payload };
     if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
-    return GameSchemaWire.encodeAction(true, onlineGameSchemaSelection, payload);
+    return GameSchemaWire.encodeActionPayload(actionEnabled, false, onlineGameSchemaSelection, payload);
 }
 
 function decodeOnlineGameSchemaAction(payload) {
-    if (!isGameSchemaWireTransportEnabled()) return { ok: true, value: payload };
+    const actionEnabled = isGameSchemaWireTransportEnabled();
+    const snapshotEnabled = isGameSchemaSnapshotWireTransportEnabled();
+    if (!actionEnabled && !snapshotEnabled) return { ok: true, value: payload };
     if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
-    return GameSchemaWire.decodeAction(true, onlineGameSchemaSelection, payload);
+    return GameSchemaWire.decodeActionPayload(
+        actionEnabled,
+        snapshotEnabled,
+        onlineGameSchemaSelection,
+        payload
+    );
 }
 
 function decodeOnlineGameSchemaSnapshotPayload(payload) {

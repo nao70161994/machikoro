@@ -952,11 +952,17 @@ io.on('connection', (socket) => {
         makeUndoStateFromMirror,
         nextRoomActionSeq,
         gameSchemaShadow,
-        decodeGameSchemaAction: (room, payload) => GameSchemaWire.decodeAction(
-            GAME_SCHEMA_WIRE_ENABLED, room.gameStartPayload && room.gameStartPayload.gameSchema || null, payload
+        decodeGameSchemaAction: (room, payload) => GameSchemaWire.decodeActionPayload(
+            GAME_SCHEMA_WIRE_ENABLED,
+            false,
+            room.gameStartPayload && room.gameStartPayload.gameSchema || null,
+            payload
         ),
-        encodeGameSchemaAction: (room, payload) => GameSchemaWire.encodeAction(
-            GAME_SCHEMA_WIRE_ENABLED, room.gameStartPayload && room.gameStartPayload.gameSchema || null, payload
+        encodeGameSchemaAction: (room, payload) => GameSchemaWire.encodeActionPayload(
+            GAME_SCHEMA_WIRE_ENABLED,
+            GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
+            room.gameStartPayload && room.gameStartPayload.gameSchema || null,
+            payload
         ),
         buildRestoreActionAudit,
         applyAcceptedActionToRoomCanonicalMirror,

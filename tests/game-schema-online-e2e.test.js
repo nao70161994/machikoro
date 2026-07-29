@@ -87,6 +87,31 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
 
         const currentSnapshot = { actionSeq: 1, phase: 'roll', marker: 'snapshot-wire-e2e' };
         serverModule.__rooms[currentRoom.created.roomId].stateSnapshot = currentSnapshot;
+        const duplicateActionId = 'schema-snapshot-duplicate';
+        const currentServerRoom = serverModule.__rooms[currentRoom.created.roomId];
+        currentServerRoom.acceptedClientActions[
+            `${currentOriginalIndex}:${duplicateActionId}`
+        ] = {
+            action: 'rollDice',
+            data: { forceDice: 1, tunaDice: [1, 1] },
+            playerIndex: currentOriginalIndex,
+            seq: 2,
+            clientActionId: duplicateActionId,
+            stateSnapshot: currentSnapshot,
+            restoreAudit: { schemaVersion: 1, signature: 'snapshot-wire-e2e' },
+        };
+        const compactedAcceptedPromise = onceEvent(currentSocket, 'actionAccepted');
+        currentSocket.emit('gameAction', {
+            schemaVersion: 1,
+            action: 'rollDice',
+            data: {},
+            clientActionId: duplicateActionId,
+        });
+        const compactedAccepted = await compactedAcceptedPromise;
+        assert.deepStrictEqual(compactedAccepted.stateSnapshot, {
+            schemaVersion: 1,
+            snapshot: currentSnapshot,
+        });
         clients[1].close();
         rejoined = connect(origin);
         await onceEvent(rejoined, 'connect');

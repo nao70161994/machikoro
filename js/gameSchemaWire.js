@@ -92,6 +92,18 @@ function decodeSnapshotField(enabled, selection, payload) {
     );
 }
 
+function encodeActionPayload(actionEnabled, snapshotEnabled, selection, payload) {
+    const encodedAction = encodeAction(actionEnabled, selection, payload);
+    if (!encodedAction.ok) return encodedAction;
+    return encodeSnapshotField(snapshotEnabled, selection, encodedAction.value);
+}
+
+function decodeActionPayload(actionEnabled, snapshotEnabled, selection, payload) {
+    const decodedAction = decodeAction(actionEnabled, selection, payload);
+    if (!decodedAction.ok) return decodedAction;
+    return decodeSnapshotField(snapshotEnabled, selection, decodedAction.value);
+}
+
 const GameSchemaWire = Object.freeze({
     failureReasons: GAME_SCHEMA_WIRE_FAILURES,
     encodeAction,
@@ -100,6 +112,8 @@ const GameSchemaWire = Object.freeze({
     decodeSnapshot,
     encodeSnapshotField,
     decodeSnapshotField,
+    encodeActionPayload,
+    decodeActionPayload,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameSchemaWire;

@@ -78,3 +78,35 @@ runTest('game schema wireはSnapshot欠落を保持しversion不一致をfail cl
         GameSchemaWire.failureReasons.INVALID_PAYLOAD
     );
 });
+
+runTest('game schema wireはActionと圧縮Snapshot metadataを独立flagで合成する', () => {
+    const snapshot = { actionSeq: 201, phase: 'build' };
+    const payload = {
+        action: 'nextTurn',
+        data: {},
+        seq: 201,
+        stateSnapshot: snapshot,
+        restoreAudit: { signature: 'audit' },
+    };
+    const current = GameSchemaWire.encodeActionPayload(true, true, CURRENT, payload);
+    assert.deepStrictEqual(current.value, {
+        seq: 201,
+        stateSnapshot: { schemaVersion: 1, snapshot },
+        restoreAudit: { signature: 'audit' },
+        schemaVersion: 1,
+        action: 'nextTurn',
+        data: {},
+    });
+    assert.deepStrictEqual(
+        GameSchemaWire.decodeActionPayload(true, true, CURRENT, current.value).value,
+        payload
+    );
+
+    const snapshotOnly = GameSchemaWire.encodeActionPayload(false, true, CURRENT, payload);
+    assert.strictEqual(snapshotOnly.value.schemaVersion, undefined);
+    assert.deepStrictEqual(snapshotOnly.value.stateSnapshot, { schemaVersion: 1, snapshot });
+    assert.deepStrictEqual(
+        GameSchemaWire.decodeActionPayload(false, true, CURRENT, snapshotOnly.value).value,
+        payload
+    );
+});
