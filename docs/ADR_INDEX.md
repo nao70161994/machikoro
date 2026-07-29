@@ -11,9 +11,9 @@ Last updated: 2026-07-29
 | [Hostless restore design](HOSTLESS_RESTORE_DESIGN.md) | Accepted / provisional | Host-first recovery remains normal; an absent room may use the exact-agreement quorum fallback. Existing-room replacement and durable-authority claims remain forbidden. |
 | [Modal stack policy](ADR_MODAL_STACK_POLICY.md) | Accepted | blocking modalはdeny-by-default。例外のないmodal lifecycle全面統合は行わない。 |
 | [Restore trust boundary](ADR_RESTORE_TRUST_BOUNDARY.md) | Accepted / staged | 通常host restoreと暫定hostless fallbackを維持。durable adapter・署名keyring・authority priorityは契約化済みだが、production durable authorityはprovider/retention/secret運用決定まで無効。DB導入は費用判断により保留。 |
-| [Protocol compatibility](PROTOCOL_COMPATIBILITY.md) | Accepted / staged | Socket.IO event名とlegacy payloadを既定として維持。capability negotiation、shadow、versioned live Action wireは独立した既定OFF flagで段階化し、Snapshot/save/rejoinは未移行。 |
+| [Protocol compatibility](PROTOCOL_COMPATIBILITY.md) | Accepted / staged | Socket.IO event名とlegacy defaultを維持。capability negotiation、shadow、versioned live Action wire、rejoin/compacted-Snapshot wireは独立した既定OFF flag。local save、recreate input、restore logはlegacy。 |
 
-2026-07-26の段階移行では、provider-neutral canonical store契約、restore署名keyring、復元authority優先policyを追加した。既定storeは引き続き`noop`で、protocol・保存形式・production authorityは変更していない。2026-07-29時点でもDB/providerは継続費用を理由に保留し、versioned wireはActionだけが独立した既定OFF flagで利用可能、Snapshot/save/rejoinはlegacyのままである。
+2026-07-26の段階移行ではprovider-neutral canonical store、署名keyring、authority priorityを追加した。既定storeは`noop`でDB/providerは継続費用を理由に保留。2026-07-29時点ではAction v1とrejoin/compacted-Snapshot v1が独立した既定OFF gateで利用可能だが、local save・recreate input・restore log・production authorityは変更していない。
 
 Current override (2026-07-19): the additive provisional hostless event surface
 is implemented under the accepted design above. It does not add durable authority.

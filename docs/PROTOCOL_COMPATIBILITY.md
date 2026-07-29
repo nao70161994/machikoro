@@ -20,6 +20,17 @@ Only the host may generate canonical actions and replace canonical restore state
 
 A stream/watermark rollout therefore requires explicit capability negotiation with a legacy fallback. It cannot be enabled by changing the ID format alone.
 
+## Staged versioned schema adapters
+
+Four independent environment gates preserve rollback and mixed-client compatibility:
+
+- `GAME_SCHEMA_NEGOTIATION_ENABLED=1` advertises and selects the highest common Action/Snapshot versions; missing legacy capability selects v0.
+- `GAME_SCHEMA_SHADOW_ENABLED=1` compare-runs accepted actions diagnostically and never changes acceptance, ACK, broadcast, compaction, or persistence.
+- `GAME_SCHEMA_WIRE_ENABLED=1` envelopes negotiated v1 live Action messages.
+- `GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=1` envelopes negotiated v1 rejoin Snapshot responses and compacted Snapshot metadata on accepted actions.
+
+All are off by default, and the latter three require negotiation. Socket.IO event names do not change. Local `savedGame`, recreate-room request snapshots, restore action logs, and negotiated-v0 traffic retain their legacy shapes. Roll back the Action/Snapshot wire flags before disabling negotiation.
+
 ## Deferred changes
 
 The following remain experimental and are not approved for main:
