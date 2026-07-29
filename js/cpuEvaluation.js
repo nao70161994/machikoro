@@ -118,6 +118,35 @@ const CPUEvaluation = Object.freeze({
         return -2.5 * ordinal;
     },
 
+    cardDependencyValue(card, player, game, categories, effects, harborName) {
+        if (!card || !player || !game) return 0;
+        switch (card.effect) {
+            case effects.CHEESE:
+                return player.countCard('牧場') * 1.4;
+            case effects.FURNITURE:
+                return (player.countCard('森林') + player.countCard('鉱山')) * 1.2;
+            case effects.FLOWER:
+                return player.countCard('花畑') * 1.3;
+            case effects.MARKET:
+                return player.cards.filter(c => c.category === categories.FARM && !player.isDormant(c)).length * 1.3;
+            case effects.FOODWAREHOUSE:
+                return player.cards.filter(c => c.category === categories.RESTAURANT && !player.isDormant(c)).length * 0.9;
+            case effects.DRINKFACTORY:
+                return game.players.reduce((sum, owner) =>
+                    sum + owner.cards.filter(c => c.category === categories.RESTAURANT && !owner.isDormant(c)).length, 0) * 0.9;
+            case effects.WINERY:
+                return player.countCard('ブドウ園') * 1.2;
+            case effects.HARBOR:
+            case effects.TUNA:
+            case effects.HARBOR_RED:
+                return player.landmarks[harborName] ? 2.2 : 0.6;
+            case effects.BUSINESS:
+                return player.getMinorCards().length * 0.35;
+            default:
+                return 0;
+        }
+    },
+
     opponentDilutionFactor(playerCount) {
         return 1 / Math.max(1, playerCount - 1);
     },

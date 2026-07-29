@@ -337,6 +337,38 @@ runTest('CPU本体の特殊カード評価wrapperはpure evaluationへ同値委�
     assert.strictEqual(cpu._estimateLoanBurdenValue(player, 2), CPUEvaluation.loanBurdenValue(2));
 });
 
+runTest('CPU evaluation はカード依存価値をpureに集計する', () => {
+    const {
+        CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES,
+    } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(3);
+    const player = game.currentPlayer();
+    player.cards.push(
+        createCardByName('牧場'),
+        createCardByName('牧場'),
+        createCardByName('森林'),
+        createCardByName('鉱山'),
+        createCardByName('花畑'),
+        createCardByName('ブドウ園')
+    );
+    const value = card => CPUEvaluation.cardDependencyValue(
+        card, player, game, CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES.HARBOR
+    );
+
+    assert.strictEqual(value(createCardByName('チーズ工場')), 2.8);
+    assert.strictEqual(value(createCardByName('家具工場')), 2.4);
+    assert.strictEqual(value(createCardByName('フラワーショップ')), 1.3);
+    assert.strictEqual(value(createCardByName('ワイナリー')), 1.2);
+    assert.strictEqual(value(createCardByName('マグロ漁船')), 0.6);
+    player.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    assert.strictEqual(value(createCardByName('マグロ漁船')), 2.2);
+    assert.strictEqual(
+        cpu._cardDependencyValue(createCardByName('チーズ工場'), player, game),
+        value(createCardByName('チーズ工場'))
+    );
+});
+
 runTest('CPU evaluation はlookahead段数と実行gateをpureに維持する', () => {
     assert.strictEqual(CPUEvaluation.expertLookaheadSteps(4, 1, 'build', 'build', 'full', 8), 17);
     assert.strictEqual(CPUEvaluation.expertLookaheadSteps(4, 4, 'roll', 'build', 'lite', 8), 3);

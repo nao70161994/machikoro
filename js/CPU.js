@@ -2859,32 +2859,14 @@ class CPU {
     }
 
     _cardDependencyValue(card, player, game) {
-        if (!card || !player || !game) return 0;
-        switch (card.effect) {
-            case CARD_EFFECTS.CHEESE:
-                return player.countCard('牧場') * 1.4;
-            case CARD_EFFECTS.FURNITURE:
-                return (player.countCard('森林') + player.countCard('鉱山')) * 1.2;
-            case CARD_EFFECTS.FLOWER:
-                return player.countCard('花畑') * 1.3;
-            case CARD_EFFECTS.MARKET:
-                return player.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !player.isDormant(c)).length * 1.3;
-            case CARD_EFFECTS.FOODWAREHOUSE:
-                return player.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !player.isDormant(c)).length * 0.9;
-            case CARD_EFFECTS.DRINKFACTORY:
-                return game.players.reduce((sum, owner) =>
-                    sum + owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length, 0) * 0.9;
-            case CARD_EFFECTS.WINERY:
-                return player.countCard('ブドウ園') * 1.2;
-            case CARD_EFFECTS.HARBOR:
-            case CARD_EFFECTS.TUNA:
-            case CARD_EFFECTS.HARBOR_RED:
-                return player.landmarks[LANDMARK_NAMES.HARBOR] ? 2.2 : 0.6;
-            case CARD_EFFECTS.BUSINESS:
-                return player.getMinorCards().length * 0.35;
-            default:
-                return 0;
-        }
+        return CPUEvaluation.cardDependencyValue(
+            card,
+            player,
+            game,
+            CARD_CATEGORIES,
+            CARD_EFFECTS,
+            LANDMARK_NAMES.HARBOR
+        );
     }
 
     _ownedCardValue(card, game, player) {
