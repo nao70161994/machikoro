@@ -40,17 +40,17 @@
 9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
 10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
-## 2026-07-28 保守性改善の現在地
+## 2026-07-29 保守性改善の現在地
 
-- app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、trace/root-cause整形、手番/online block判定、保存用診断圧縮を分離。DOM snapshot/recovery、storage write、dedupe、fetch、timer、PWA/SW副作用は `appShell.js` に残す。
-- CPU: 既存pure helperに加えて`js/cpuBuildExecution.js`へlocal/online建設実行を分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
-- server: `server/lobbySocketHandlers.js`と`server/rejoinSocketHandler.js`へcreate/join/rejoin familyを分離し、effect/emit順を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
+- app shell: `js/clientReporting.js`、`js/lifecycleNotify.js`、`js/uiWatchdog.js` にreport、lifecycle payload、freeze分類、trace/root-cause整形、手番/online block判定、保存用診断圧縮を分離。`js/pwaShell.js`にinstall prompt/banner controllerを依存注入で分離。DOM snapshot/recovery、report storage write、dedupe、fetch、timer、SW更新副作用は既存ownerに残す。
+- CPU: 既存pure helperに加えて`js/cpuBuildExecution.js`へlocal/online建設実行、`js/cpuSimulation.js`へ2〜10人lookahead在庫生成を分離。9 fixture×全difficultyの36 decision snapshotと、2〜10人×全difficultyの36完走self-playでheuristic値、difficulty、乱数消費、行動選択は未変更。
+- server: `server/lobbySocketHandlers.js`、`server/rejoinSocketHandler.js`、`server/actionSocketHandler.js`、`server/disconnectSocketHandler.js`へcreate/join/rejoin/action/disconnect familyを分離し、effect/emit順、hostless先行、古いsocket無視、host移譲を固定。canonical store capability、restore keyring、authority priorityのpure契約はあるが、既定storeはnoopでproduction authorityは未切替。
 - online: `js/onlineReconnectState.js`のshadow controllerと`js/onlineRetryPolicy.js`の既存3秒/8回/15秒契約を使用。Restore queues、timer callback、ACK timing、protocolは未変更。
-- UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有。`js/uiWinner.js`、`js/uiLogDisplay.js`、`js/uiTutorial.js`、`js/uiDiceChoice.js`までexact HTML生成を分離し、DOM/focus/inert/pointer/event/PWA effects、ログ履歴、表示タイミングは既存ownerに残す。
-- contracts/engine: `js/actionContract.js`が15 actionのmetadata正本とcanonical payload互換variantを所有し、`js/gameSnapshot.js`がclient/serverのexact snapshotと共有hydrate mechanics、`js/gameEngine.js`が共有action dispatchを所有する。server shadow parityは全15 actionを2/3/5/10人境界とAction/Snapshot v0/v1の4組合せで現行mirrorと完全比較し、`resolveMover`のcurrent/legacy payload形も固定する。`GAME_SCHEMA_NEGOTIATION_ENABLED`と`GAME_SCHEMA_SHADOW_ENABLED`は既定OFFで、旧client欠落はv0、shadow差分はdiagnostic-only。live Action/Snapshot encoding、authority、timing、save形式は未変更。
-- tooling: scoped ESLint 10.7.0は30個のmaintenance moduleをbug-detection rulesだけで検査し、config/script driftもtestする。TypeScriptは未導入なのでcheckJsは別task。style rules、`--fix`、全repository lintは禁止。
+- UI/app shell: `js/uiModalPolicy.js`がdeny-by-defaultのpure policy/stateを所有。`js/uiWinner.js`、`js/uiLogDisplay.js`、`js/uiTutorial.js`、`js/uiDiceChoice.js`までexact HTML生成を分離し、DOM/focus/inert/pointer/event/SW更新effects、ログ履歴、表示タイミングは既存ownerに残す。
+- contracts/engine: `js/actionContract.js`が15 actionのmetadata正本とcanonical payload互換variantを所有し、`js/gameSnapshot.js`がclient/serverのexact snapshotと共有hydrate mechanics、`js/gameEngine.js`が共有action dispatchを所有する。server shadow parityは全15 actionを2/3/5/10人境界とAction/Snapshot v0/v1の4組合せで現行mirrorと完全比較し、`resolveMover`のcurrent/legacy payload形も固定する。`GAME_SCHEMA_NEGOTIATION_ENABLED`と`GAME_SCHEMA_SHADOW_ENABLED`は既定OFFで、旧client欠落はv0、shadow差分はdiagnostic-only。live Actionは独立した既定OFFの`GAME_SCHEMA_WIRE_ENABLED`でだけv1 envelopeへ切替可能。Snapshot/save/rejoin encoding、authority、timing、既定wireは未変更。
+- tooling: scoped ESLint 10.7.0は42個のmaintenance moduleをbug-detection rulesだけで検査し、config/script driftもtestする。TypeScriptは未導入なのでcheckJsは別task。style rules、`--fix`、全repository lintは禁止。
 
-2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-28時点でaction metadata、snapshot serialization、client/server action dispatch、version選択codec、server compare-only shadow、全action・全v0/v1組合せparity、既定OFFのversioned live Action wireまで共有済み。Snapshot/save/rejoin wireとlive pure-engine authority切替は未実施。gameAction handlerは抽出済みで、残るreconnect timer/callback、recreate/disconnect handler、modal DOM副作用、CPUの大きなscoring/selectionはdeferred。production durable DB/providerは費用理由で保留し、追加iPhone実機確認も端末不在のため保留する。
+2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を再接続ありで勝利まで完走確認済み。これは基本同期と再接続継続の実機根拠だが、host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新、modal focus/inertは未確認。2026-07-29時点でaction metadata、snapshot serialization、client/server action dispatch、version選択codec、server compare-only shadow、全action・全v0/v1組合せparity、既定OFFのversioned live Action wireまで共有済み。Snapshot/save/rejoin wireとlive pure-engine authority切替は未実施。gameAction/disconnect handlerとPWA install controllerは抽出済みで、残るreconnect timer/callback、recreate/restore authority、Snapshot/save/rejoin wire、modal DOM副作用、CPUの大きなscoring/selectionはdeferred。production durable DB/providerは費用理由で保留し、追加iPhone実機確認も端末不在のため保留する。
 
 ## 2026-05-16 時点の実施済み範囲
 
