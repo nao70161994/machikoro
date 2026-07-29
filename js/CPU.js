@@ -2732,17 +2732,7 @@ class CPU {
     }
 
     _estimatePublisherValue(game, player) {
-        const opponentCount = Math.max(1, game.players.length - 1);
-        let total = 0;
-        for (const target of game.players) {
-            if (!target || target === player || target.coins <= 0) continue;
-            const activeHits = target.cards.filter(card =>
-                !target.isDormant(card) &&
-                (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)
-            );
-            total += Math.min(activeHits.length, target.coins);
-        }
-        return total + total / opponentCount;
+        return CPUEvaluation.publisherValue(game, player, CARD_CATEGORIES);
     }
 
     _estimateTaxOfficeValue(game, player) {
@@ -2759,53 +2749,11 @@ class CPU {
     }
 
     _estimateItStartupValue(game, player, options = {}) {
-        if (typeof options === "boolean") {
-            options = { assumeInvest: options };
-        }
-        const assumeInvest = !!options.assumeInvest;
-        const opponentCount = Math.max(1, game.players.length - 1);
-        const ventureCoins = Math.max(0, player.itVentureCoins) + (assumeInvest ? 1 : 0);
-        if (ventureCoins <= 0) return 0;
-        const totalAt = (coins) => {
-            let total = 0;
-            for (const target of game.players) {
-                if (!target || target === player || target.coins <= 0) continue;
-                total += Math.min(coins, target.coins);
-            }
-            return total;
-        };
-        const total = totalAt(ventureCoins);
-        let value = total + total / opponentCount;
-        if (assumeInvest) {
-            const futureInvestSteps = Math.min(2, Math.max(0, player.coins));
-            let previousTotal = total;
-            for (let step = 1; step <= futureInvestSteps; step++) {
-                const nextTotal = totalAt(ventureCoins + step);
-                const marginal = nextTotal - previousTotal;
-                if (marginal > 0) {
-                    value += (marginal + marginal / opponentCount) * Math.pow(0.5, step);
-                }
-                previousTotal = nextTotal;
-            }
-        }
-        return value;
+        return CPUEvaluation.itStartupValue(game, player, options);
     }
 
     _estimateConditionalRedValue(card, game, player) {
-        if (!card || !game || !player) return 0;
-        let total = 0;
-        for (const target of game.players) {
-            if (!target || target === player) continue;
-            if (card.effect === CARD_EFFECTS.FRENCHR) {
-                if (target.builtLandmarkCount() >= 2) total += card.income;
-                continue;
-            }
-            if (card.effect === CARD_EFFECTS.MEMBERBAR) {
-                if (target.builtLandmarkCount() >= 3) total += Math.max(target.coins, 4);
-                continue;
-            }
-        }
-        return total;
+        return CPUEvaluation.conditionalRedValue(card, game, player, CARD_EFFECTS);
     }
 
     _estimateRenovationValue(game, player, copyOrdinal = 1) {
@@ -2834,8 +2782,7 @@ class CPU {
     }
 
     _estimateLoanBurdenValue(player, copyOrdinal = 1) {
-        const ordinal = Math.max(1, copyOrdinal);
-        return -2.5 * ordinal;
+        return CPUEvaluation.loanBurdenValue(copyOrdinal);
     }
 
     _exchangeReceivedCardValue(card, game, player) {

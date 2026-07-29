@@ -280,6 +280,63 @@ runTest('CPU本体のcard dice frequency wrapperはpure evaluationへ同値委�
     );
 });
 
+runTest('CPU evaluation は特殊カードのpure価値計算を維持する', () => {
+    const categories = { RESTAURANT: 'restaurant', SHOP: 'shop' };
+    const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
+    const player = { coins: 2, itVentureCoins: 2 };
+    const targetA = {
+        coins: 1,
+        cards: [{ category: categories.RESTAURANT }, { category: categories.SHOP }],
+        isDormant: () => false,
+        builtLandmarkCount: () => 2,
+    };
+    const targetB = {
+        coins: 4,
+        cards: [{ category: categories.RESTAURANT }, { category: categories.SHOP }],
+        isDormant: () => false,
+        builtLandmarkCount: () => 3,
+    };
+    const game = { players: [player, targetA, targetB] };
+
+    assert.strictEqual(CPUEvaluation.publisherValue(game, player, categories), 4.5);
+    assert.strictEqual(CPUEvaluation.itStartupValue(game, player), 4.5);
+    assert.strictEqual(CPUEvaluation.itStartupValue(game, player, true), 6.75);
+    assert.strictEqual(
+        CPUEvaluation.conditionalRedValue({ effect: effects.FRENCHR, income: 5 }, game, player, effects),
+        10
+    );
+    assert.strictEqual(CPUEvaluation.loanBurdenValue(3), -7.5);
+});
+
+runTest('CPU本体の特殊カード評価wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(3);
+    const player = game.currentPlayer();
+    const target = game.players[1];
+    target.coins = 12;
+    target.cards.push(createCardByName('カフェ'), createCardByName('コンビニ'));
+    target.landmarks['駅'] = true;
+    target.landmarks['ショッピングモール'] = true;
+    player.itVentureCoins = 2;
+    player.coins = 2;
+    const french = createCardByName('高級フレンチ');
+
+    assert.strictEqual(
+        cpu._estimatePublisherValue(game, player),
+        CPUEvaluation.publisherValue(game, player, CARD_CATEGORIES)
+    );
+    assert.strictEqual(
+        cpu._estimateItStartupValue(game, player, true),
+        CPUEvaluation.itStartupValue(game, player, true)
+    );
+    assert.strictEqual(
+        cpu._estimateConditionalRedValue(french, game, player),
+        CPUEvaluation.conditionalRedValue(french, game, player, CARD_EFFECTS)
+    );
+    assert.strictEqual(cpu._estimateLoanBurdenValue(player, 2), CPUEvaluation.loanBurdenValue(2));
+});
+
 runTest('CPU evaluation はlookahead段数と実行gateをpureに維持する', () => {
     assert.strictEqual(CPUEvaluation.expertLookaheadSteps(4, 1, 'build', 'build', 'full', 8), 17);
     assert.strictEqual(CPUEvaluation.expertLookaheadSteps(4, 4, 'roll', 'build', 'lite', 8), 3);

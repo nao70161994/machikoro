@@ -51,6 +51,73 @@ const CPUEvaluation = Object.freeze({
         return sign * (19 + Math.sqrt(abs - 30));
     },
 
+    publisherValue(game, player, categories) {
+        const opponentCount = Math.max(1, game.players.length - 1);
+        let total = 0;
+        for (const target of game.players) {
+            if (!target || target === player || target.coins <= 0) continue;
+            const activeHits = target.cards.filter(card =>
+                !target.isDormant(card) &&
+                (card.category === categories.RESTAURANT || card.category === categories.SHOP)
+            );
+            total += Math.min(activeHits.length, target.coins);
+        }
+        return total + total / opponentCount;
+    },
+
+    itStartupValue(game, player, options = {}) {
+        if (typeof options === 'boolean') options = { assumeInvest: options };
+        const assumeInvest = !!options.assumeInvest;
+        const opponentCount = Math.max(1, game.players.length - 1);
+        const ventureCoins = Math.max(0, player.itVentureCoins) + (assumeInvest ? 1 : 0);
+        if (ventureCoins <= 0) return 0;
+        const totalAt = (coins) => {
+            let total = 0;
+            for (const target of game.players) {
+                if (!target || target === player || target.coins <= 0) continue;
+                total += Math.min(coins, target.coins);
+            }
+            return total;
+        };
+        const total = totalAt(ventureCoins);
+        let value = total + total / opponentCount;
+        if (assumeInvest) {
+            const futureInvestSteps = Math.min(2, Math.max(0, player.coins));
+            let previousTotal = total;
+            for (let step = 1; step <= futureInvestSteps; step++) {
+                const nextTotal = totalAt(ventureCoins + step);
+                const marginal = nextTotal - previousTotal;
+                if (marginal > 0) {
+                    value += (marginal + marginal / opponentCount) * Math.pow(0.5, step);
+                }
+                previousTotal = nextTotal;
+            }
+        }
+        return value;
+    },
+
+    conditionalRedValue(card, game, player, effects) {
+        if (!card || !game || !player) return 0;
+        let total = 0;
+        for (const target of game.players) {
+            if (!target || target === player) continue;
+            if (card.effect === effects.FRENCHR) {
+                if (target.builtLandmarkCount() >= 2) total += card.income;
+                continue;
+            }
+            if (card.effect === effects.MEMBERBAR) {
+                if (target.builtLandmarkCount() >= 3) total += Math.max(target.coins, 4);
+                continue;
+            }
+        }
+        return total;
+    },
+
+    loanBurdenValue(copyOrdinal = 1) {
+        const ordinal = Math.max(1, copyOrdinal);
+        return -2.5 * ordinal;
+    },
+
     opponentDilutionFactor(playerCount) {
         return 1 / Math.max(1, playerCount - 1);
     },
