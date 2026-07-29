@@ -12,15 +12,47 @@ function onlineBuildBlocked(context = {}) {
     return context.socketConnected === false;
 }
 
+/**
+ * @typedef {Object} CPUBuildActionProposal
+ * @property {'buildCard'|'buildLandmark'} action
+ * @property {Object} data
+ */
+
+/**
+ * @param {{name: string}|null} card
+ * @returns {CPUBuildActionProposal|null}
+ */
+function createCardBuildAction(card) {
+    if (!card || typeof card.name !== 'string' || !card.name) return null;
+    return Object.freeze({
+        action: 'buildCard',
+        data: Object.freeze({ cardName: card.name }),
+    });
+}
+
+/**
+ * @param {string} name
+ * @returns {CPUBuildActionProposal|null}
+ */
+function createLandmarkBuildAction(name) {
+    if (typeof name !== 'string' || !name) return null;
+    return Object.freeze({
+        action: 'buildLandmark',
+        data: Object.freeze({ name }),
+    });
+}
+
 function buyCard(cpu, card, game, shopStock, context = {}) {
     if (!game || game.builtThisTurn || !card) return setBuildActionResult(cpu, false);
     if (onlineBuildBlocked(context)) return setBuildActionResult(cpu, false);
     if (!shopStock || (shopStock[card.name] || 0) <= 0) return setBuildActionResult(cpu, false);
+    const proposal = createCardBuildAction(card);
+    if (!proposal) return setBuildActionResult(cpu, false);
     if (context.isOnlineGame) {
         return setBuildActionResult(
             cpu,
             typeof context.sendAction === 'function' &&
-                context.sendAction('buildCard', { cardName: card.name }) === true
+                context.sendAction(proposal.action, proposal.data) === true
         );
     }
     if (game.buildCard(card)) {
@@ -33,11 +65,13 @@ function buyCard(cpu, card, game, shopStock, context = {}) {
 function buyLandmark(cpu, name, game, context = {}) {
     if (!game || game.builtThisTurn || !name) return setBuildActionResult(cpu, false);
     if (onlineBuildBlocked(context)) return setBuildActionResult(cpu, false);
+    const proposal = createLandmarkBuildAction(name);
+    if (!proposal) return setBuildActionResult(cpu, false);
     if (context.isOnlineGame) {
         return setBuildActionResult(
             cpu,
             typeof context.sendAction === 'function' &&
-                context.sendAction('buildLandmark', { name }) === true
+                context.sendAction(proposal.action, proposal.data) === true
         );
     }
     return setBuildActionResult(cpu, game.buildLandmark(name) === true);
@@ -46,6 +80,8 @@ function buyLandmark(cpu, name, game, context = {}) {
 const CPUBuildExecution = Object.freeze({
     setBuildActionResult,
     onlineBuildBlocked,
+    createCardBuildAction,
+    createLandmarkBuildAction,
     buyCard,
     buyLandmark,
 });

@@ -20,6 +20,29 @@ runTest('CPU build execution はonline block条件を既存順序で判定する
     }), false);
 });
 
+runTest('CPU build proposal はcanonical actionだけを副作用なく返す', () => {
+    const card = { name: '麦畑' };
+    const cardAction = CPUBuildExecution.createCardBuildAction(card);
+    const landmarkAction = CPUBuildExecution.createLandmarkBuildAction('駅');
+
+    assert.deepStrictEqual(cardAction, {
+        action: 'buildCard',
+        data: { cardName: '麦畑' },
+    });
+    assert.deepStrictEqual(landmarkAction, {
+        action: 'buildLandmark',
+        data: { name: '駅' },
+    });
+    assert.ok(Object.isFrozen(cardAction));
+    assert.ok(Object.isFrozen(cardAction.data));
+    assert.ok(Object.isFrozen(landmarkAction));
+    assert.ok(Object.isFrozen(landmarkAction.data));
+    assert.deepStrictEqual(card, { name: '麦畑' });
+    assert.strictEqual(CPUBuildExecution.createCardBuildAction(null), null);
+    assert.strictEqual(CPUBuildExecution.createCardBuildAction({ name: '' }), null);
+    assert.strictEqual(CPUBuildExecution.createLandmarkBuildAction(''), null);
+});
+
 runTest('CPU build execution はlocal card成功時だけstockを減らす', () => {
     const actor = cpu();
     const card = { name: '麦畑' };
