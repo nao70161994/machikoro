@@ -12,7 +12,7 @@ function loadRuntime(options = {}) {
         Math: Object.create(Math),
     };
     vm.createContext(context);
-    const runtimeFiles = ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/GameManager.js', 'js/cpuTuning.js', 'js/cpuProfile.js', 'js/cpuDiagnostics.js', 'js/cpuEvaluationCache.js', 'js/cpuEvaluation.js', 'js/cpuLegalMoves.js', 'js/cpuActionProposal.js', 'js/cpuBuildExecution.js', 'js/cpuSimulation.js', 'js/cpuPendingResolution.js', 'js/CPU.js'];
+    const runtimeFiles = ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameEngine.js', 'js/GameManager.js', 'js/cpuTuning.js', 'js/cpuProfile.js', 'js/cpuDiagnostics.js', 'js/cpuEvaluationCache.js', 'js/cpuEvaluation.js', 'js/cpuLegalMoves.js', 'js/cpuActionProposal.js', 'js/cpuBuildExecution.js', 'js/cpuSimulation.js', 'js/cpuPendingResolution.js', 'js/CPU.js'];
     if (options.includeRL !== false) runtimeFiles.push('js/RLCPU.js');
     for (const file of runtimeFiles) {
         const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');

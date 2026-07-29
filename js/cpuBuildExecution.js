@@ -3,6 +3,9 @@
 const CPUActionProposalApi = typeof module !== 'undefined' && module.exports
     ? require('./cpuActionProposal').CPUActionProposal
     : globalThis.CPUActionProposal;
+const CPUGameEngineApi = typeof module !== 'undefined' && module.exports
+    ? require('./gameEngine')
+    : globalThis.GameEngine;
 
 function setBuildActionResult(cpu, result) {
     cpu._lastBuildActionResult = result;
@@ -86,6 +89,33 @@ function buyLandmark(cpu, name, game, context = {}) {
  */
 function executeAction(cpu, proposal, game, shopStock, context = {}) {
     if (!proposal || typeof proposal !== 'object') return setBuildActionResult(cpu, false);
+    const applyMutableAction = typeof context.applyMutableAction === 'function'
+        ? context.applyMutableAction
+        : CPUGameEngineApi && CPUGameEngineApi.applyMutableAction;
+    if (!context.isOnlineGame && typeof applyMutableAction === 'function') {
+        if (!game || game.builtThisTurn) return setBuildActionResult(cpu, false);
+        if (proposal.action === 'buildCard') {
+            const cardName = proposal.data && proposal.data.cardName;
+            if (!cardName || !shopStock || (shopStock[cardName] || 0) <= 0 ||
+                    typeof context.resolveCard !== 'function') {
+                return setBuildActionResult(cpu, false);
+            }
+        } else if (proposal.action === 'buildLandmark') {
+            if (!proposal.data || !proposal.data.name) return setBuildActionResult(cpu, false);
+        } else {
+            return setBuildActionResult(cpu, false);
+        }
+        return setBuildActionResult(cpu, applyMutableAction({
+            game,
+            shopStock,
+            action: proposal.action,
+            data: proposal.data,
+            createCardByName: context.resolveCard,
+            decrementShopStock(stock, card) {
+                stock[card.name]--;
+            },
+        }) === true);
+    }
     if (proposal.action === 'buildCard') {
         const cardName = proposal.data && proposal.data.cardName;
         const card = typeof context.resolveCard === 'function'

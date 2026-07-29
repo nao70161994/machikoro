@@ -64,6 +64,10 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['scripts/selfplay.js', [
             ['js/actionContract.js', 'js/GameManager.js'],
+            ['js/actionContract.js', 'js/gameEngine.js'],
+            ['js/gameSnapshot.js', 'js/gameEngine.js'],
+            ['js/gameSchemaCodec.js', 'js/gameEngine.js'],
+            ['js/gameEngine.js', 'js/cpuBuildExecution.js'],
             ['js/cpuProfile.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuActionProposal.js', 'js/cpuBuildExecution.js'],
@@ -73,6 +77,10 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/helpers/runtime-loaders.js', [
             ['js/actionContract.js', 'js/GameManager.js'],
+            ['js/actionContract.js', 'js/gameEngine.js'],
+            ['js/gameSnapshot.js', 'js/gameEngine.js'],
+            ['js/gameSchemaCodec.js', 'js/gameEngine.js'],
+            ['js/gameEngine.js', 'js/cpuBuildExecution.js'],
             ['js/cpuProfile.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuActionProposal.js', 'js/cpuBuildExecution.js'],

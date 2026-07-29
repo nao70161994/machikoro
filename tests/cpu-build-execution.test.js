@@ -155,3 +155,50 @@ runTest('CPU build execution はproposalをcard resolver経由で一度だけ適
         data: {},
     }, {}, stock), false);
 });
+
+runTest('CPU local build proposal は共有Game Engine adapterへcanonical actionを渡す', () => {
+    const actor = cpu();
+    const proposal = CPUBuildExecution.createLandmarkBuildAction('駅');
+    const game = { builtThisTurn: false };
+    const calls = [];
+
+    const result = CPUBuildExecution.executeAction(actor, proposal, game, {}, {
+        applyMutableAction(context) {
+            calls.push(context);
+            return true;
+        },
+    });
+
+    assert.strictEqual(result, true);
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].game, game);
+    assert.strictEqual(calls[0].action, 'buildLandmark');
+    assert.deepStrictEqual(calls[0].data, { name: '駅' });
+});
+
+runTest('CPU online build proposal は共有Game Engineを使わず既存sendActionへ渡す', () => {
+    const actor = cpu();
+    const proposal = CPUBuildExecution.createLandmarkBuildAction('港');
+    let engineCalls = 0;
+    const sent = [];
+
+    const result = CPUBuildExecution.executeAction(actor, proposal, {
+        builtThisTurn: false,
+    }, {}, {
+        isOnlineGame: true,
+        isRoomHost: true,
+        socketConnected: true,
+        applyMutableAction() {
+            engineCalls++;
+            return true;
+        },
+        sendAction(action, data) {
+            sent.push({ action, data });
+            return true;
+        },
+    });
+
+    assert.strictEqual(result, true);
+    assert.strictEqual(engineCalls, 0);
+    assert.deepStrictEqual(sent, [{ action: 'buildLandmark', data: { name: '港' } }]);
+});
