@@ -59,6 +59,31 @@ runTest('CPU本体のdice outcome wrapperはpure simulationへ同値委譲する
     );
 });
 
+runTest('CPU simulation shop stockはcard順と人数別初期値をpureに写像する', () => {
+    const cards = [{ name: 'A', base: 3 }, { name: 'B', base: 5 }];
+    const calls = [];
+    const stock = CPUSimulation.buildShopStock(cards, 7, (card, playerCount) => {
+        calls.push([card.name, playerCount]);
+        return card.base + playerCount;
+    });
+
+    assert.deepStrictEqual(stock, { A: 10, B: 12 });
+    assert.deepStrictEqual(calls, [['A', 7], ['B', 7]]);
+});
+
+runTest('CPU本体のsimulation shop stock wrapperは2〜10人でpure helperへ同値委譲する', () => {
+    const runtime = loadCPURuntime();
+    const cpu = new runtime.CPU('expert');
+    for (let playerCount = 2; playerCount <= 10; playerCount++) {
+        const expected = CPUSimulation.buildShopStock(
+            runtime.CARDS,
+            playerCount,
+            runtime.getInitialCardStock
+        );
+        assert.strictEqual(JSON.stringify(cpu._simulationShopStock(playerCount)), JSON.stringify(expected));
+    }
+});
+
 runTest('CPU simulation playoutはwinnerまで既存順でstepを実行する', () => {
     let steps = 0;
     let winnerChecks = 0;

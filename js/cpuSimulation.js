@@ -35,6 +35,12 @@ const CPUSimulation = Object.freeze({
         ];
     },
 
+    buildShopStock(cards, playerCount, initialStockForCard) {
+        const stock = {};
+        for (const card of cards) stock[card.name] = initialStockForCard(card, playerCount);
+        return stock;
+    },
+
     runPlayout(game, maxSteps, step) {
         let safety = 0;
         while (!game.checkWinner() && safety < maxSteps) {

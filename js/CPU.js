@@ -864,9 +864,7 @@ class CPU {
     }
 
     _simulationShopStock(playerCount = 2) {
-        const stock = {};
-        for (const card of CARDS) stock[card.name] = getInitialCardStock(card, playerCount);
-        return stock;
+        return CPUSimulation.buildShopStock(CARDS, playerCount, getInitialCardStock);
     }
 
     _expertLookaheadSteps(game, focusIndex, baseSteps) {
