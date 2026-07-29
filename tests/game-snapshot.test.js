@@ -133,6 +133,28 @@ runTest('共有serializerは既存のversionなしwire形状を保持する', ()
     assert.notStrictEqual(snapshot.shopStock, stock);
 });
 
+runTest('local save serializerは既存savedGame形状をversion fieldなしで保持する', () => {
+    const game = makeGameFixture();
+    const state = GameSnapshot.serializeLocalSaveState(game, { カフェ: 4 }, {
+        logLimit: 1,
+        pendingActionsFor: () => [{ action: 'resolveTV', field: 'pendingTV' }],
+        cpuSettings: [null, { difficulty: 'normal', rlModelId: null }],
+        cpuSpeed: 800,
+        enabledCardsList: ['カフェ'],
+        enabledLandmarksList: ['駅'],
+    });
+
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(state, 'schemaVersion'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(state, 'undoState'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(state, 'actionSeq'), false);
+    assert.deepStrictEqual(state.log, [{ text: 'latest' }]);
+    assert.deepStrictEqual(state.pendingActions, [{ action: 'resolveTV', field: 'pendingTV' }]);
+    assert.deepStrictEqual(state.cpuSettings, [null, { difficulty: 'normal', rlModelId: null }]);
+    assert.strictEqual(state.cpuSpeed, 800);
+    assert.deepStrictEqual(state.enabledCardsList, ['カフェ']);
+    assert.deepStrictEqual(state.enabledLandmarksList, ['駅']);
+});
+
 runTest('共有undo serializerは既存形状とlog上限を保持する', () => {
     const game = makeGameFixture();
     const stock = { カフェ: 4 };

@@ -164,42 +164,20 @@ function saveGameState() {
     if (!game || isOnlineGame) return;
     if (game.checkWinner()) return;
     try {
-        const state = {
-            players: game.players.map(p => ({
-                name: p.name,
-                coins: p.coins,
-                cards: p.cards.map(c => c.name),
-                dormantIndices: p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0),
-                landmarks: Object.assign({}, p.landmarks),
-                itVentureCoins: p.itVentureCoins,
-                hasYakusho: p.hasYakusho,
-            })),
-            currentPlayerIndex: game.currentPlayerIndex,
-            phase: game.phase,
-            log: game.log.slice(-30),
-            lastDiceResult: game.lastDiceResult,
-            lastDice1: game.lastDice1,
-            lastDice2: game.lastDice2,
-            builtThisTurn: game.builtThisTurn,
-            pendingTV: game.pendingTV,
-            pendingBusiness: game.pendingBusiness,
-            pendingCleaning: game.pendingCleaning,
-            pendingMover: game.pendingMover,
-            pendingRenovation: game.pendingRenovation,
-            pendingActions: (typeof GameManager !== 'undefined' && typeof GameManager.serializedPendingActionsFor === 'function')
-                ? GameManager.serializedPendingActionsFor(game)
-                : [],
-            pendingIT: game.pendingIT,
-            usedReroll: game.usedReroll,
-            pendingTunaDice: game.pendingTunaDice,
-            turnCount: game.turnCount,
-            hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
-            shopStock: Object.assign({}, SHOP_STOCK),
-            cpuSettings: cpuPlayers.map(c => c ? { difficulty: c.difficulty, rlModelId: c.modelId || null } : null),
+        const state = GameSnapshot.serializeLocalSaveState(game, SHOP_STOCK, {
+            logLimit: 30,
+            pendingActionsFor: value =>
+                (typeof GameManager !== 'undefined' &&
+                    typeof GameManager.serializedPendingActionsFor === 'function')
+                    ? GameManager.serializedPendingActionsFor(value)
+                    : [],
+            cpuSettings: cpuPlayers.map(cpu => cpu
+                ? { difficulty: cpu.difficulty, rlModelId: cpu.modelId || null }
+                : null),
             cpuSpeed,
             enabledCardsList: [...enabledCards],
             enabledLandmarksList: [...enabledLandmarks],
-        };
+        });
         localStorage.setItem('savedGame', JSON.stringify(state));
     } catch(e) {}
 }

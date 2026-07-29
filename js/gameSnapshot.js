@@ -94,6 +94,24 @@ function serializeGameState(game, shopStock, options = {}) {
     };
 }
 
+function serializeLocalSaveState(game, shopStock, options = {}) {
+    const state = serializeGameState(game, shopStock, {
+        logLimit: options.logLimit,
+        pendingActionsFor: options.pendingActionsFor,
+    });
+    delete state.undoState;
+    delete state.actionSeq;
+    state.cpuSettings = Array.isArray(options.cpuSettings) ? options.cpuSettings.slice() : [];
+    state.cpuSpeed = options.cpuSpeed;
+    state.enabledCardsList = Array.isArray(options.enabledCardsList)
+        ? options.enabledCardsList.slice()
+        : [];
+    state.enabledLandmarksList = Array.isArray(options.enabledLandmarksList)
+        ? options.enabledLandmarksList.slice()
+        : [];
+    return state;
+}
+
 function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LOG_LIMIT) {
     const normalizedLogLimit = Number.isInteger(logLimit) && logLimit >= 0
         ? logLimit
@@ -185,6 +203,7 @@ const GameSnapshot = Object.freeze({
     createSnapshotEnvelope,
     readSnapshotEnvelope,
     serializeGameState,
+    serializeLocalSaveState,
     hydrateMutableGameState,
     serializeUndoState,
 });

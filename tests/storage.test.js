@@ -125,7 +125,7 @@ function loadStorageRuntime() {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/onlineStorage.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/onlineStorage.js', 'js/storage.js']);
     vm.runInContext(`
         this.__test = {
             elements,
@@ -353,6 +353,28 @@ runTest('storage reconnectOnline はCPU復元を行わず再接続だけ送る',
     assert.strictEqual(rt.emits[0].payload.playerIndex, 1);
     assert.strictEqual(rt.emits[0].payload.playerName, 'P2');
     assert.strictEqual(rt.emits[0].payload.reconnectToken, 'token-1');
+});
+
+runTest('storage saveGameState は共有serializerで既存localStorage shapeを維持する', () => {
+    const rt = loadStorageRuntime();
+    const game = new rt.GameManager(2);
+    game.players[0].name = 'Alice';
+    game.log = [{ text: 'saved' }];
+    rt.__test.setGame(game);
+    rt.cpuPlayers = [null, { difficulty: 'normal', modelId: null }];
+
+    rt.saveGameState();
+
+    const state = JSON.parse(rt.localStorage.getItem('savedGame'));
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(state, 'schemaVersion'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(state, 'undoState'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(state, 'actionSeq'), false);
+    assert.strictEqual(state.players[0].name, 'Alice');
+    assert.deepStrictEqual(state.log, [{ text: 'saved' }]);
+    assert.deepStrictEqual(state.cpuSettings, [null, { difficulty: 'normal', rlModelId: null }]);
+    assert.strictEqual(state.cpuSpeed, 1500);
+    assert.deepStrictEqual(state.enabledCardsList, ['麦畑']);
+    assert.deepStrictEqual(state.enabledLandmarksList, ['駅', 'ショッピングモール']);
 });
 
 runTest('storage saveGameState はオンライン中にローカル保存しない', () => {
