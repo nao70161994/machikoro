@@ -201,9 +201,9 @@ const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const _onlineReconnectController = OnlineReconnectState.createController();
 let _onlineReconnectCompleted = false;
 
-function getOnlineReconnectState() {
+function _onlineReconnectObservationFlags() {
     const connected = !!socket && socket.connected !== false;
-    return _onlineReconnectController.reconcile({
+    return {
         failed: _rejoinRetryExhausted,
         completed: _onlineReconnectCompleted,
         replaying: isReplaying,
@@ -211,7 +211,18 @@ function getOnlineReconnectState() {
         rejoining: isReconnectingOnline && connected,
         connecting: isReconnectingOnline && !connected,
         active: isOnlineGame,
-    }, { event: 'runtime-observation' }).state;
+    };
+}
+
+function _observeOnlineReconnectEvent(event) {
+    return _onlineReconnectController.observe(event, _onlineReconnectObservationFlags());
+}
+
+function getOnlineReconnectState() {
+    return _onlineReconnectController.reconcile(
+        _onlineReconnectObservationFlags(),
+        { event: 'runtime-observation' }
+    ).state;
 }
 
 function getOnlineReconnectStateSnapshot() {
@@ -390,6 +401,7 @@ function _finishRejoinRetryTimeout() {
     if (el) el.textContent = '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。';
     // Canonical state is unknown. Keep all game input and host CPU blocked.
     isReconnectingOnline = true;
+    _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
     cpuScheduleToken++;
     try { if (typeof render === 'function') render(); } catch (_) {}
     return false;
@@ -439,6 +451,7 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
     };
     if (!socket || !session.roomId || session.playerIndex < 0 || !session.playerName || !session.reconnectToken) return false;
     isReconnectingOnline = true;
+    _observeOnlineReconnectEvent(OnlineReconnectState.events.RECONNECT_REQUESTED);
     if (socket.connected === false) return true;
     if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) return _finishRejoinRetryTimeout();
     if (_rejoinRetryTimer) {
@@ -478,6 +491,7 @@ function markOnlineGameFinished() {
     isReconnectingOnline = false;
     _setOnlineActionInFlight(false);
     _clearRejoinRetry();
+    _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_COMPLETED);
 }
 
 function resetOnlineState() {
@@ -506,6 +520,7 @@ function resetOnlineState() {
     _flushingOnlineRestoreEvents = false;
     _onlineRestoreQuarantined = false;
     _pendingOutboundActionsMemory.clear();
+    _observeOnlineReconnectEvent(OnlineReconnectState.events.RESET);
 }
 
 function _saveActionLog(action, data, options = {}) {
@@ -1105,6 +1120,7 @@ function initSocket() {
             : [];
         const restoreGeneration = ++_onlineRestoreGeneration;
         _onlineRestoreInProgress = true;
+        _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_STARTED);
         _onlineRestoreQuarantined = false;
         _onlineRestoreEventQueue = carriedEvents.map(event => ({
             type: event.type,
@@ -1195,6 +1211,7 @@ function initSocket() {
             try {
                 // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
                 isReplaying = true;
+                _observeOnlineReconnectEvent(OnlineReconnectState.events.REPLAY_STARTED);
                 initOnlineGame(playerNames, ps, playerOrder);
                 if (stateSnapshot) {
                     restoreOnlineSnapshot(stateSnapshot);
@@ -1226,6 +1243,7 @@ function initSocket() {
                 actionAccepted: handleActionAccepted,
                 hostChanged: handleHostChanged,
             })) return;
+            _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_ACTIVATED);
             if (pendingBeforeRejoin && !pendingAccepted &&
                 _sameOnlineActionEntry(_readPendingOutboundActionForCurrentSession(), pendingBeforeRejoin) &&
                 socket && socket.connected !== false) {
@@ -1319,6 +1337,7 @@ function initSocket() {
         _hostlessRestorePending = false;
         _rejoinRetryExhausted = true;
         isReconnectingOnline = true;
+        _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
         if (el) {
             el.textContent = '❌ ' + OnlinePayload.hostlessRestoreStatusMessage(reason) +
                 ' 再接続をやり直すか、タイトル画面から保存データを明示的に破棄できます。';
@@ -1384,6 +1403,7 @@ function initSocket() {
         _setOnlineActionInFlight(false);
         cpuScheduleToken++;
         const el = document.getElementById("onlineStatus");
+        _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
         if (el) el.textContent = '⏳ 接続が切れました。再接続しています...';
     });
 

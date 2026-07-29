@@ -123,3 +123,34 @@ runTest('online reconnect controller は明示transitionをfail closed、shadow 
         state: STATES.REPLAYING,
     });
 });
+
+runTest('online reconnect controllerは既知lifecycle eventをshadow stateへ記録する', () => {
+    const controller = OnlineReconnectState.createController();
+    const events = OnlineReconnectState.events;
+    assert.strictEqual(OnlineReconnectState.isEvent(events.RECONNECT_REQUESTED), true);
+    assert.strictEqual(OnlineReconnectState.isEvent('unknown'), false);
+
+    assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { connecting: true }).valid, true);
+    assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { rejoining: true }).valid, true);
+    assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { rejoining: true }).valid, true);
+    assert.strictEqual(controller.observe(events.RESTORE_STARTED, { restoring: true }).valid, true);
+    assert.strictEqual(controller.observe(events.REPLAY_STARTED, { replaying: true }).valid, true);
+    assert.strictEqual(controller.observe(events.RESTORE_ACTIVATED, { active: true }).valid, true);
+    assert.strictEqual(controller.observe(events.GAME_COMPLETED, { completed: true }).valid, true);
+    assert.strictEqual(controller.observe(events.RESET, {}).valid, true);
+    assert.deepStrictEqual(controller.snapshot().history.map(entry => entry.event), [
+        events.RECONNECT_REQUESTED,
+        events.RECONNECT_REQUESTED,
+        events.RECONNECT_REQUESTED,
+        events.RESTORE_STARTED,
+        events.REPLAY_STARTED,
+        events.RESTORE_ACTIVATED,
+        events.GAME_COMPLETED,
+        events.RESET,
+    ]);
+    assert.deepStrictEqual(controller.observe('unknown', {}), {
+        ok: false,
+        reason: 'unknown-event',
+        state: STATES.IDLE,
+    });
+});

@@ -11,10 +11,22 @@ const ONLINE_RECONNECT_STATES = Object.freeze({
     COMPLETED: 'completed',
 });
 
+const ONLINE_RECONNECT_EVENTS = Object.freeze({
+    RECONNECT_REQUESTED: 'reconnect-requested',
+    SOCKET_DISCONNECTED: 'socket-disconnected',
+    RESTORE_STARTED: 'restore-started',
+    REPLAY_STARTED: 'replay-started',
+    RESTORE_ACTIVATED: 'restore-activated',
+    RETRY_EXHAUSTED: 'retry-exhausted',
+    GAME_COMPLETED: 'game-completed',
+    RESET: 'reset',
+});
+
 const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
     [ONLINE_RECONNECT_STATES.IDLE]: Object.freeze([
         ONLINE_RECONNECT_STATES.CONNECTING,
         ONLINE_RECONNECT_STATES.ACTIVE,
+        ONLINE_RECONNECT_STATES.REJOINING,
     ]),
     [ONLINE_RECONNECT_STATES.CONNECTING]: Object.freeze([
         ONLINE_RECONNECT_STATES.REJOINING,
@@ -34,11 +46,13 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
         ONLINE_RECONNECT_STATES.REPLAYING,
         ONLINE_RECONNECT_STATES.ACTIVE,
         ONLINE_RECONNECT_STATES.FAILED,
+        ONLINE_RECONNECT_STATES.IDLE,
     ]),
     [ONLINE_RECONNECT_STATES.REPLAYING]: Object.freeze([
         ONLINE_RECONNECT_STATES.REJOINING,
         ONLINE_RECONNECT_STATES.ACTIVE,
         ONLINE_RECONNECT_STATES.FAILED,
+        ONLINE_RECONNECT_STATES.IDLE,
     ]),
     [ONLINE_RECONNECT_STATES.ACTIVE]: Object.freeze([
         ONLINE_RECONNECT_STATES.CONNECTING,
@@ -58,6 +72,10 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
 
 function isOnlineReconnectState(state) {
     return Object.values(ONLINE_RECONNECT_STATES).includes(state);
+}
+
+function isOnlineReconnectEvent(event) {
+    return Object.values(ONLINE_RECONNECT_EVENTS).includes(event);
 }
 
 function canOnlineReconnectTransition(from, to) {
@@ -121,6 +139,26 @@ function createOnlineReconnectController(options = {}) {
         return Object.freeze({ state, from, valid });
     }
 
+    function observe(event, flags) {
+        if (!isOnlineReconnectEvent(event)) {
+            return Object.freeze({ ok: false, reason: 'unknown-event', state });
+        }
+        const target = deriveOnlineReconnectState(flags);
+        const from = state;
+        if (from === target) {
+            remember(from, target, { event }, true);
+            return Object.freeze({ ok: true, event, state, from, valid: true });
+        }
+        const observed = reconcile(flags, { event });
+        return Object.freeze({
+            ok: true,
+            event,
+            state: observed.state,
+            from: observed.from,
+            valid: observed.valid,
+        });
+    }
+
     function snapshot() {
         return Object.freeze({
             state,
@@ -133,14 +171,17 @@ function createOnlineReconnectController(options = {}) {
         getState() { return state; },
         transition,
         reconcile,
+        observe,
         snapshot,
     });
 }
 
 const OnlineReconnectState = Object.freeze({
     states: ONLINE_RECONNECT_STATES,
+    events: ONLINE_RECONNECT_EVENTS,
     transitions: ONLINE_RECONNECT_TRANSITIONS,
     isState: isOnlineReconnectState,
+    isEvent: isOnlineReconnectEvent,
     canTransition: canOnlineReconnectTransition,
     derive: deriveOnlineReconnectState,
     createController: createOnlineReconnectController,

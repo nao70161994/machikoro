@@ -453,12 +453,36 @@ runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維�
         ['active', 'connecting', 'rejoining', 'restoring', 'replaying', 'failed']
     );
 });
+runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す', () => {
+    const localRt = loadOnlineRuntime();
+    localRt.initSocket();
+    localRt.setOnlineState({
+        isOnlineGame: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-a',
+    });
+    assert.strictEqual(localRt.getOnlineState().reconnectState, 'active');
+
+    localRt.getSocketHandlers().disconnect();
+
+    const snapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.history.slice(-1)[0].event, 'socket-disconnected');
+    assert.strictEqual(snapshot.history.slice(-1)[0].valid, true);
+    assert.strictEqual(snapshot.invalidTransitionCount, 0);
+});
+
 runTest('online.jsのreconnect観測状態は完了とresetを区別する', () => {
     const localRt = loadOnlineRuntime();
     localRt.setOnlineState({ isOnlineGame: true });
     localRt.markOnlineGameFinished();
+    const completedSnapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(completedSnapshot.history.slice(-1)[0].event, 'game-completed');
     assert.strictEqual(localRt.getOnlineState().reconnectState, 'completed');
     localRt.resetOnlineState();
+    const resetSnapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(resetSnapshot.history.slice(-1)[0].event, 'reset');
     assert.strictEqual(localRt.getOnlineState().reconnectState, 'idle');
 });
 
