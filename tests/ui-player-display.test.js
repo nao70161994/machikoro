@@ -57,4 +57,53 @@ assert.deepStrictEqual(UiPlayerDisplay.resolvePlayerSetting({
     missing: true,
 });
 
+const players = [
+    {
+        name: '<Alice>',
+        coins: 7,
+        itVentureCoins: 2,
+        landmarks: { 駅: true, 空港: false },
+        cards: [
+            { name: 'パン屋', color: 'green', effect: 'income' },
+            { name: 'ローン会社', color: 'purple', effect: 'loan' },
+            { name: 'パン屋', color: 'green', effect: 'income' },
+        ],
+        isDormant(card) {
+            return card.name === 'パン屋';
+        },
+    },
+    {
+        name: 'CPU',
+        coins: 1,
+        itVentureCoins: 0,
+        landmarks: { 駅: false },
+        cards: [],
+        isDormant() {
+            return false;
+        },
+    },
+];
+const html = UiPlayerDisplay.buildPlayersHtml(players, {
+    settings: [
+        { type: 'human', difficulty: 'human' },
+        { type: 'cpu', difficulty: 'strong' },
+    ],
+    currentPlayerIndex: 1,
+    enabledLandmarks: new Set(['駅']),
+    getLandmarkEmoji: name => name === '駅' ? '🚉' : '?',
+    compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
+    escapeHtml: value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    loanEffect: 'loan',
+});
+assert(html.includes('<span class="player-icon">👤</span>'));
+assert(html.includes('<span class="player-name">&lt;Alice&gt;</span>'));
+assert(html.includes('<span class="landmark-badge built">🚉 駅</span>'));
+assert(!html.includes('空港'));
+assert(html.includes('パン屋×2（休2）'));
+assert(html.includes('<span class="it-badge">💻2</span>'));
+assert(html.includes('<span class="loan-badge">💳×1</span>'));
+assert(html.includes('<div class="player-box active">'));
+assert(html.includes('<span class="player-icon">🤖強</span>'));
+assert(html.includes('<span class="player-name">▶ CPU</span>'));
+
 console.log('ui player display tests passed');
