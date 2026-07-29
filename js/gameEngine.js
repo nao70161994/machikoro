@@ -9,6 +9,44 @@ const GameSnapshotApi = typeof module !== 'undefined' && module.exports
 const GameSchemaCodecApi = typeof module !== 'undefined' && module.exports
     ? require('./gameSchemaCodec')
     : globalThis.GameSchemaCodec;
+
+/**
+ * @typedef {Object} GameEngineMutableContext
+ * @property {Object} game Mutable GameManager-compatible runtime.
+ * @property {string} action Canonical action name from the Action Contract.
+ * @property {Record<string, *>} data Already-canonicalized action payload.
+ * @property {Record<string, number>} [shopStock] Mutable inventory owned by the caller.
+ * @property {function(string): (Object|null)} [createCardByName] Caller-owned card factory.
+ * @property {function(Record<string, number>, Object): void} [decrementShopStock] Caller-owned inventory mutation.
+ * @property {function(*): (boolean|void)} [restoreUndoState] Caller-owned undo restore policy.
+ */
+
+/**
+ * @typedef {Object} GameEngineTransitionRuntime
+ * @property {Object} game Detached mutable GameManager-compatible runtime.
+ * @property {Record<string, number>} [shopStock] Detached caller-owned inventory.
+ * @property {function(string): (Object|null)} [createCardByName]
+ * @property {function(Record<string, number>, Object): void} [decrementShopStock]
+ * @property {function(*): (boolean|void)} [restoreUndoState]
+ */
+
+/**
+ * @typedef {Object} GameEngineTransitionRequest
+ * @property {Object} snapshot Detached input snapshot.
+ * @property {string} action Canonical action name.
+ * @property {Record<string, *>} data Canonical action payload.
+ * @property {function(Object): GameEngineTransitionRuntime} hydrate Caller-owned compatibility policy.
+ * @property {function(GameEngineTransitionRuntime): Object} serialize Caller-owned output policy.
+ */
+
+/**
+ * @typedef {Object} GameEngineEnvelopeTransitionRequest
+ * @property {Object} snapshotEnvelope Legacy or versioned Snapshot envelope.
+ * @property {Object} actionEnvelope Legacy or versioned Action envelope.
+ * @property {Object} [selection] Negotiated independent Action/Snapshot versions.
+ * @property {function(Object): GameEngineTransitionRuntime} hydrate
+ * @property {function(GameEngineTransitionRuntime): Object} serialize
+ */
 // Transitional shared execution boundary. GameManager remains mutable today; callers
 // inject persistence/inventory adapters so this table can move behind a pure
 // snapshot -> action -> snapshot API without duplicating action semantics again.
@@ -105,7 +143,7 @@ function cloneStateValue(value, seen = new WeakMap(), active = new WeakSet()) {
  * Applies one already-canonicalized action to the current mutable GameManager.
  * Validation and actor authority remain adapter responsibilities.
  *
- * @param {Object} context
+ * @param {GameEngineMutableContext} context
  * @returns {boolean} whether the action was handled successfully
  */
 function applyMutableAction(context) {
@@ -120,7 +158,7 @@ function applyMutableAction(context) {
  * Runs the mutable engine against detached state and returns a detached snapshot.
  * This is the pure caller-facing seam used for shadow parity before live migration.
  *
- * @param {Object} request
+ * @param {GameEngineTransitionRequest} request
  * @returns {{ok: boolean, reason: string, snapshot: Object|null}}
  */
 function transitionSnapshot(request) {
@@ -180,7 +218,7 @@ function transitionSnapshot(request) {
  * Reads legacy/current envelopes; an optional negotiated selection fixes both input and output versions.
  * This remains a shadow-only migration seam; it is not used by live transport.
  *
- * @param {Object} request
+ * @param {GameEngineEnvelopeTransitionRequest} request
  * @returns {Object}
  */
 function transitionEnvelope(request) {

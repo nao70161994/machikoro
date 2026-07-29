@@ -5,6 +5,33 @@ const GAME_SNAPSHOT_LEGACY_VERSION = 0;
 const GAME_SNAPSHOT_DEFAULT_LOG_LIMIT = 30;
 
 /**
+ * @typedef {Object} GameSnapshotSerializeOptions
+ * @property {number} [logLimit] Maximum recent structured-log entries.
+ * @property {function(Object): Array<Object>} [pendingActionsFor] Caller-owned pending projection.
+ * @property {*} [undoState] Caller-owned undo payload.
+ * @property {number} [actionSeq] Caller-owned accepted-action sequence.
+ * @property {Array<*>} [cpuSettings] Local-save-only CPU settings.
+ * @property {*} [cpuSpeed] Local-save-only scheduler setting.
+ * @property {Array<string>} [enabledCardsList] Local-save-only enabled card names.
+ * @property {Array<string>} [enabledLandmarksList] Local-save-only enabled landmark names.
+ */
+
+/**
+ * @typedef {Object} GameSnapshotHydrateOptions
+ * @property {Object} game Existing mutable GameManager-compatible runtime.
+ * @property {Record<string, number>} shopStock Existing mutable inventory object.
+ * @property {Object} state Validated or caller-normalized snapshot state.
+ * @property {function(string): (Object|null)} createCardByName Caller-owned card factory.
+ * @property {function(Record<string, number>, Object): void} assignShopStockSnapshot Caller-owned inventory policy.
+ * @property {function(*, number, number): number} normalizePlayerCoins Caller-owned compatibility policy.
+ * @property {function(*): Array<number>} readDormantIndices Caller-owned compatibility policy.
+ * @property {function(*): Record<string, boolean>} readLandmarks Caller-owned compatibility policy.
+ * @property {function(*): Array<Object>} readLog Caller-owned structured-log policy.
+ * @property {function(*, number, number): number} normalizeCurrentPlayerIndex Caller-owned index policy.
+ * @property {function(*): void} [onUndoState] Caller-owned undo sink.
+ */
+
+/**
  * @typedef {Object} GameSnapshotEnvelope
  * @property {number} schemaVersion
  * @property {Object} snapshot
@@ -50,6 +77,12 @@ function copyRecentLog(log, limit) {
     return log.slice(-limit);
 }
 
+/**
+ * @param {Object} game
+ * @param {Record<string, number>} shopStock
+ * @param {GameSnapshotSerializeOptions} [options]
+ * @returns {Object}
+ */
 function serializeGameState(game, shopStock, options = {}) {
     const logLimit = Number.isInteger(options.logLimit) && options.logLimit >= 0
         ? options.logLimit
@@ -94,6 +127,12 @@ function serializeGameState(game, shopStock, options = {}) {
     };
 }
 
+/**
+ * @param {Object} game
+ * @param {Record<string, number>} shopStock
+ * @param {GameSnapshotSerializeOptions} [options]
+ * @returns {Object}
+ */
 function serializeLocalSaveState(game, shopStock, options = {}) {
     const state = serializeGameState(game, shopStock, {
         logLimit: options.logLimit,
@@ -134,6 +173,11 @@ function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LO
     };
 }
 
+/**
+ * Applies caller-validated state while leaving compatibility and side-effect policy in adapters.
+ * @param {GameSnapshotHydrateOptions} options
+ * @returns {boolean}
+ */
 function hydrateMutableGameState(options) {
     if (!options || !options.game || !options.state ||
             !Array.isArray(options.game.players) ||
