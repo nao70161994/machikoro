@@ -21,6 +21,34 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
     GAME_COMPLETED: 'game-completed',
     RESET: 'reset',
 });
+/**
+ * @typedef {Object} OnlineReconnectFlags
+ * @property {boolean} [failed]
+ * @property {boolean} [completed]
+ * @property {boolean} [replaying]
+ * @property {boolean} [restoring]
+ * @property {boolean} [rejoining]
+ * @property {boolean} [connecting]
+ * @property {boolean} [active]
+ */
+
+/**
+ * @typedef {Object} OnlineReconnectHistoryEntry
+ * @property {string} from
+ * @property {string} to
+ * @property {boolean} valid
+ * @property {string} event
+ */
+
+/**
+ * @typedef {Object} OnlineReconnectController
+ * @property {function(): string} getState
+ * @property {function(string, Object=): Object} transition
+ * @property {function(OnlineReconnectFlags, Object=): Object} reconcile
+ * @property {function(string, OnlineReconnectFlags): Object} observe
+ * @property {function(): {state: string, invalidTransitionCount: number, history: Array<OnlineReconnectHistoryEntry>}} snapshot
+ */
+
 
 const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
     [ONLINE_RECONNECT_STATES.IDLE]: Object.freeze([
@@ -84,6 +112,11 @@ function canOnlineReconnectTransition(from, to) {
     return ONLINE_RECONNECT_TRANSITIONS[from].includes(to);
 }
 
+/**
+ * Projects existing runtime booleans without claiming timer or callback authority.
+ * @param {OnlineReconnectFlags} [flags]
+ * @returns {string}
+ */
 function deriveOnlineReconnectState(flags = {}) {
     if (flags.failed) return ONLINE_RECONNECT_STATES.FAILED;
     if (flags.completed) return ONLINE_RECONNECT_STATES.COMPLETED;
@@ -95,6 +128,11 @@ function deriveOnlineReconnectState(flags = {}) {
     return ONLINE_RECONNECT_STATES.IDLE;
 }
 
+/**
+ * Creates a bounded diagnostic shadow controller.
+ * @param {{initialState?: string, historyLimit?: number}} [options]
+ * @returns {OnlineReconnectController}
+ */
 function createOnlineReconnectController(options = {}) {
     let state = isOnlineReconnectState(options.initialState)
         ? options.initialState
@@ -128,6 +166,10 @@ function createOnlineReconnectController(options = {}) {
         return { ok: true, from, to, state };
     }
 
+    /**
+     * @param {OnlineReconnectFlags} flags
+     * @param {Object} [metadata]
+     */
     function reconcile(flags, metadata = {}) {
         const target = deriveOnlineReconnectState(flags);
         const from = state;
@@ -139,6 +181,10 @@ function createOnlineReconnectController(options = {}) {
         return Object.freeze({ state, from, valid });
     }
 
+    /**
+     * @param {string} event
+     * @param {OnlineReconnectFlags} flags
+     */
     function observe(event, flags) {
         if (!isOnlineReconnectEvent(event)) {
             return Object.freeze({ ok: false, reason: 'unknown-event', state });
