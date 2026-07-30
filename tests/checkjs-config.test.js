@@ -1,0 +1,36 @@
+'use strict';
+
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const packageJson = require('../package.json');
+const config = require('../tsconfig.checkjs.json');
+const { runTest } = require('./helpers/test-utils');
+
+runTest('checkJs configは変換なしの限定JavaScript検査だけを有効にする', () => {
+    assert.deepStrictEqual(config.compilerOptions, {
+        allowJs: true,
+        checkJs: true,
+        noEmit: true,
+        skipLibCheck: true,
+        target: 'ES2022',
+        module: 'CommonJS',
+        lib: ['ES2022', 'DOM'],
+    });
+    assert.strictEqual(packageJson.scripts['test:types'], 'tsc -p tsconfig.checkjs.json');
+    assert.ok(packageJson.scripts['test:static'].includes('npm run test:types'));
+});
+
+runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを含めない', () => {
+    assert.strictEqual(config.files[0], 'types/checkjs-globals.d.ts');
+    assert.strictEqual(new Set(config.files).size, config.files.length);
+    for (const file of config.files) {
+        assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
+    }
+    for (const excluded of ['server.js', 'js/online.js', 'js/CPU.js', 'js/ui.js', 'js/appShell.js']) {
+        assert.ok(!config.files.includes(excluded), excluded);
+    }
+    assert.ok(config.files.includes('server/canonicalStateStore.js'));
+    assert.ok(config.files.includes('server/restoreAuthorityPolicy.js'));
+    assert.ok(config.files.includes('server/reportingPolicy.js'));
+});

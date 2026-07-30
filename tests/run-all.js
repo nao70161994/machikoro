@@ -125,6 +125,7 @@ const TEST_GROUPS = {
         'cli-args.test.js',
         'test-utils.test.js',
         'maintenance-lint-config.test.js',
+        'checkjs-config.test.js',
         'runtime-dependencies.test.js',
     ],
     sim: [
@@ -152,6 +153,7 @@ const TEST_GROUPS = {
         'ui-watchdog.test.js',
         'ui-winner.test.js',
         'lifecycle-notify.test.js',
+        'checkjs-config.test.js',
         'runtime-dependencies.test.js',
         'ui.test.js',
     ],

@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
+  },
+  "files": [
+    "types/checkjs-globals.d.ts",
+    "server/hostlessRestoreCoordinator.js",
+    "server/hostlessRestoreGateway.js",
+    "server/ntfyNotifier.js",
+    "server/restoreRank.js",
+    "server/serverDice.js",
+    "server/staticAssets.js",
+    "server/canonicalStateStore.js",
+    "server/clientErrorAuth.js",
+    "server/lobbySocketHandlers.js",
+    "server/restoreAuditKeyring.js",
+    "server/restoreSanitization.js",
+    "server/roomValidation.js",
+    "server/socketPayload.js",
+    "server/reportingPolicy.js",
+    "server/reportThrottle.js",
+    "server/restoreAuthorityPolicy.js"
+  ]
+}
