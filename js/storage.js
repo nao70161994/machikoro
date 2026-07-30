@@ -393,18 +393,7 @@ function isValidSavedGameState(state) {
 }
 
 function saveUndoState() {
-    undoState = {
-        playerCoins: game.players.map(p => p.coins),
-        playerCardNames: game.players.map(p => p.cards.map(c => c.name)),
-        playerDormantIndices: game.players.map(p => p.dormantCards.map(dc => p.cards.indexOf(dc)).filter(i => i >= 0)),
-        playerLandmarks: game.players.map(p => Object.assign({}, p.landmarks)),
-        playerItVenture: game.players.map(p => p.itVentureCoins),
-        playerHasYakusho: game.players.map(p => p.hasYakusho),
-        hadAmusementParkAtRoll: game.hadAmusementParkAtRoll,
-        shopStock: Object.assign({}, SHOP_STOCK),
-        builtThisTurn: game.builtThisTurn,
-        log: [...game.log],
-    };
+    undoState = GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
 }
 
 function restoreUndoSnapshot(state) {

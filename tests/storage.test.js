@@ -698,6 +698,29 @@ runTest('storage resumeGame は共通ファクトリ不在でも既存CPUで復�
     assert.strictEqual(restoredCpuPlayers[1], null);
 });
 
+runTest('storage saveUndoState は共有serializerへ委譲して既存ログ全件を保持する', () => {
+    const rt = loadStorageRuntime();
+    const game = new rt.GameManager(2);
+    game.players[0].coins = 8;
+    game.players[0].cards = [rt.createCardByName('麦畑')];
+    game.players[0].dormantCards = [game.players[0].cards[0]];
+    game.log = Array.from({ length: 35 }, (_, index) => ({ type: 'system', message: String(index) }));
+    rt.SHOP_STOCK['麦畑'] = 4;
+    rt.__test.setGame(game);
+
+    rt.saveUndoState();
+
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(rt.__test.getUndoState())),
+        JSON.parse(JSON.stringify(rt.GameSnapshot.serializeUndoState(
+            game,
+            rt.SHOP_STOCK,
+            Number.MAX_SAFE_INTEGER
+        )))
+    );
+    assert.strictEqual(rt.__test.getUndoState().log.length, 35);
+});
+
 runTest('storage doUndo はローカルで undoState を復元し送信しない', () => {
     const rt = loadStorageRuntime();
     const game = new rt.GameManager(2);
