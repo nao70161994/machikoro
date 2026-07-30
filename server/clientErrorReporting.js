@@ -18,6 +18,7 @@ const KNOWN_CLIENT_ERROR_FREEZE_KINDS = Object.freeze(new Set([
     'stale-modal-ui-locked',
 ]));
 
+/** @type {ReadonlyArray<Readonly<{id: string, pattern: string, priority?: string, tags?: string}>>} */
 const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
     Object.freeze({ id: 'manual-test-endpoint', pattern: 'ダイスシティ ntfy test notification' }),
     Object.freeze({ id: 'client-version-mismatch', pattern: 'Client version mismatch', priority: '2', tags: 'hourglass,known,stale_client' }),
@@ -25,6 +26,14 @@ const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
     Object.freeze({ id: 'pending-render-recovery', pattern: 'updatePendingModalContent recursion' }),
 ]);
 
+/**
+ * @param {{
+ *     isPlainObject: (value: unknown) => boolean,
+ *     limits: Readonly<{maxMessageLength: number, maxStackLength: number}>,
+ *     buildHash?: string | (() => string),
+ *     hashRoomId?: (roomId: string) => string,
+ * }} options
+ */
 function makeClientErrorReporting({ isPlainObject, limits, buildHash = '', hashRoomId = () => '' }) {
     function truncateText(value, maxLength) {
         const text = String(value || '');

@@ -72,6 +72,7 @@
     "server/staticAssets.js",
     "server/canonicalStateStore.js",
     "server/clientErrorAuth.js",
+    "server/clientErrorReporting.js",
     "server/lobbySocketHandlers.js",
     "server/restoreAuditKeyring.js",
     "server/restoreSanitization.js",
