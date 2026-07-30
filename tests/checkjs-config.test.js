@@ -27,10 +27,11 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     for (const file of config.files) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
     }
-    for (const excluded of ['server.js', 'js/online.js', 'js/ui.js', 'js/appShell.js']) {
+    for (const excluded of ['js/online.js', 'js/ui.js', 'js/appShell.js']) {
         assert.ok(!config.files.includes(excluded), excluded);
     }
     assert.ok(config.files.includes('js/Card.js'));
+    assert.ok(config.files.includes('server.js'));
     assert.ok(config.files.includes('js/Player.js'));
     assert.ok(config.files.includes('js/GameManager.js'));
     assert.ok(config.files.includes('js/actionContract.js'));

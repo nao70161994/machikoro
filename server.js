@@ -509,6 +509,7 @@ async function handleGameLifecycleRequest(req, res, options = {}) {
         return;
     }
     const duplicate = isDuplicateGameLifecycle(normalized.report, now, options.dedupeCache || gameLifecycleDedupeCache);
+    /** @type {{sent: boolean, reason?: string}} */
     let result = { sent: false, reason: duplicate ? 'duplicate' : 'not-sent' };
     if (!duplicate) result = await notifyGameLifecycle(normalized.report, { env, ...(options.notifyOptions || {}) });
     res.status(202).json({ ok: true, duplicate, result });
@@ -524,8 +525,9 @@ function resolveBuildHash() {
     }
 }
 
-const BUILD_HASH = require.main === module ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
-if (require.main === module) {
+const IS_MAIN_MODULE = /** @type {{main?: unknown}} */ (require).main === module;
+const BUILD_HASH = IS_MAIN_MODULE ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
+if (IS_MAIN_MODULE) {
     console.log(`Build hash: ${BUILD_HASH}`);
 }
 
@@ -1019,10 +1021,11 @@ function detachSocketFromRoom(socketId, roomId, message = 'INVALID_SESSION') {
     const oldSocket = io.sockets.sockets.get(socketId);
     if (!oldSocket) return;
     emitAppError(oldSocket, message);
-    oldSocket.leave(roomId);
-    if (oldSocket.roomId === roomId) {
-        oldSocket.roomId = null;
-        oldSocket.playerIndex = null;
+    const roomSocket = /** @type {typeof oldSocket & {roomId?: string|null, playerIndex?: number|null}} */ (oldSocket);
+    roomSocket.leave(roomId);
+    if (roomSocket.roomId === roomId) {
+        roomSocket.roomId = null;
+        roomSocket.playerIndex = null;
     }
 }
 
@@ -1495,8 +1498,8 @@ process.on('unhandledRejection', (reason) => {
     console.error('unhandledRejection:', reason);
 });
 
-const PORT = process.env.PORT || 3000;
-if (require.main === module) {
+const PORT = /** @type {number} */ (process.env.PORT || 3000);
+if (IS_MAIN_MODULE) {
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`サーバー起動: http://localhost:${PORT}`);
     });
