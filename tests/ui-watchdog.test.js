@@ -178,6 +178,47 @@ for (const [issue, snapshot, expected] of causeCases) {
 assert.strictEqual(UiWatchdog.normalizeFreezeKind('modal-ui-locked:parent-inert'), 'modal-ui-locked');
 assert.strictEqual(UiWatchdog.normalizeFreezeKind(null), '');
 
+assert.strictEqual(UiWatchdog.classListText(null), '');
+assert.strictEqual(UiWatchdog.classListText({ className: 'game active' }), 'game active');
+assert.strictEqual(UiWatchdog.classListText({ classList: { value: 'modal-open' } }), 'modal-open');
+
+assert.strictEqual(UiWatchdog.isElementUsablyEnabled({ display: 'block' }), true);
+for (const blocked of [
+    { disabled: true },
+    { hidden: true },
+    { inert: true },
+    { ancestorBlocked: true },
+    { computedDisplay: 'none' },
+    { computedVisibility: 'hidden' },
+    { computedPointerEvents: 'none' },
+]) {
+    assert.strictEqual(UiWatchdog.isElementUsablyEnabled(blocked), false);
+}
+
+const lockReasonCases = [
+    [null, 'missing-handler'],
+    [{ ancestorBlocked: true }, 'ancestor-blocked'],
+    [{ display: 'none' }, 'parent-display-none'],
+    [{ inert: true }, 'parent-inert'],
+    [{ pointerEvents: 'none' }, 'pointer-events-none'],
+    [{ hidden: true }, 'hidden-mismatch'],
+    [{ disabled: true }, 'disabled-mismatch'],
+    [{ totalInteractiveChildren: 2, usableInteractiveChildren: 0 }, 'child-not-clickable'],
+    [{}, 'not-clickable'],
+];
+for (const [state, expected] of lockReasonCases) {
+    assert.strictEqual(UiWatchdog.lockReasonForElement(state), expected);
+}
+
+const snapshotLookup = {
+    ui: { shared: { owner: 'ui' }, uiOnly: { owner: 'ui' } },
+    actionButtons: { buttons: { shared: { owner: 'button' }, buttonOnly: { owner: 'button' } } },
+};
+assert.strictEqual(UiWatchdog.snapshotStateById(snapshotLookup, 'shared').owner, 'ui');
+assert.strictEqual(UiWatchdog.snapshotStateById(snapshotLookup, 'shared', 'actionButtons').owner, 'button');
+assert.strictEqual(UiWatchdog.snapshotStateById(snapshotLookup, 'buttonOnly').owner, 'button');
+assert.strictEqual(UiWatchdog.snapshotStateById(null, 'missing'), undefined);
+
 
 assert.strictEqual(UiWatchdog.isHumanTurnSnapshot(null), false);
 assert.strictEqual(UiWatchdog.isHumanTurnSnapshot({ phase: 'build', isCpuTurn: true }), false);

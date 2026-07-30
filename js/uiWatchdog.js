@@ -202,6 +202,41 @@ const UiWatchdog = (() => {
         return String(freezeKind || '').split(':')[0];
     }
 
+    function classListText(element) {
+        if (!element) return '';
+        if (typeof element.className === 'string') return element.className;
+        if (element.classList && typeof element.classList.value === 'string') return element.classList.value;
+        return '';
+    }
+
+    function isElementUsablyEnabled(snapshot) {
+        if (!snapshot) return false;
+        if (snapshot.disabled || snapshot.hidden || snapshot.inert || snapshot.ancestorBlocked) return false;
+        if (snapshot.display === 'none' || snapshot.computedDisplay === 'none') return false;
+        if (snapshot.visibility === 'hidden' || snapshot.computedVisibility === 'hidden') return false;
+        if (snapshot.pointerEvents === 'none' || snapshot.computedPointerEvents === 'none') return false;
+        return true;
+    }
+
+    function lockReasonForElement(state) {
+        if (!state) return 'missing-handler';
+        if (state.ancestorBlocked) return 'ancestor-blocked';
+        if (state.display === 'none' || state.computedDisplay === 'none') return 'parent-display-none';
+        if (state.inert) return 'parent-inert';
+        if (state.pointerEvents === 'none' || state.computedPointerEvents === 'none') return 'pointer-events-none';
+        if (state.hidden || state.visibility === 'hidden' || state.computedVisibility === 'hidden') return 'hidden-mismatch';
+        if (state.disabled) return 'disabled-mismatch';
+        if (state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return 'child-not-clickable';
+        return 'not-clickable';
+    }
+
+    function snapshotStateById(snapshot, id, targetSource = '') {
+        const ui = snapshot && snapshot.ui || {};
+        const buttons = snapshot && snapshot.actionButtons && snapshot.actionButtons.buttons || {};
+        if (targetSource === 'actionButtons') return buttons[id] || ui[id];
+        return ui[id] || buttons[id];
+    }
+
     function isHumanTurnSnapshot(snapshot) {
         if (!snapshot || !snapshot.phase || snapshot.isCpuTurn) return false;
         return !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
@@ -225,6 +260,10 @@ const UiWatchdog = (() => {
         compactSnapshotForTrace,
         classifyInteractabilityCause,
         normalizeFreezeKind,
+        classListText,
+        isElementUsablyEnabled,
+        lockReasonForElement,
+        snapshotStateById,
         isHumanTurnSnapshot,
         expectedPendingActions,
         isOnlineUiBlockedSnapshot,

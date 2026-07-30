@@ -286,10 +286,7 @@ function visibleModalIds() {
 }
 
 function classListText(el) {
-    if (!el) return '';
-    if (typeof el.className === 'string') return el.className;
-    if (el.classList && typeof el.classList.value === 'string') return el.classList.value;
-    return '';
+    return UiWatchdog.classListText(el);
 }
 
 function allowedActionListForSnapshot() {
@@ -302,12 +299,7 @@ function allowedActionListForSnapshot() {
 }
 
 function isElementUsablyEnabled(snapshot) {
-    if (!snapshot) return false;
-    if (snapshot.disabled || snapshot.hidden || snapshot.inert || snapshot.ancestorBlocked) return false;
-    if (snapshot.display === 'none' || snapshot.computedDisplay === 'none') return false;
-    if (snapshot.visibility === 'hidden' || snapshot.computedVisibility === 'hidden') return false;
-    if (snapshot.pointerEvents === 'none' || snapshot.computedPointerEvents === 'none') return false;
-    return true;
+    return UiWatchdog.isElementUsablyEnabled(snapshot);
 }
 
 function collectUiLockSnapshot(reason = 'ui-lock-snapshot') {
@@ -315,15 +307,7 @@ function collectUiLockSnapshot(reason = 'ui-lock-snapshot') {
 }
 
 function uiLockReasonForElement(state) {
-    if (!state) return 'missing-handler';
-    if (state.ancestorBlocked) return 'ancestor-blocked';
-    if (state.display === 'none' || state.computedDisplay === 'none') return 'parent-display-none';
-    if (state.inert) return 'parent-inert';
-    if (state.pointerEvents === 'none' || state.computedPointerEvents === 'none') return 'pointer-events-none';
-    if (state.hidden || state.visibility === 'hidden' || state.computedVisibility === 'hidden') return 'hidden-mismatch';
-    if (state.disabled) return 'disabled-mismatch';
-    if (state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return 'child-not-clickable';
-    return 'not-clickable';
+    return UiWatchdog.lockReasonForElement(state);
 }
 
 function actionContainerSpecForAction(snapshot, action) {
@@ -352,10 +336,7 @@ function primaryActionContainerRegistryForDiagnostics() {
 }
 
 function snapshotStateById(snapshot, id, targetSource = '') {
-    const ui = snapshot && snapshot.ui || {};
-    const buttons = snapshot && snapshot.actionButtons && snapshot.actionButtons.buttons || {};
-    if (targetSource === 'actionButtons') return buttons[id] || ui[id];
-    return ui[id] || buttons[id];
+    return UiWatchdog.snapshotStateById(snapshot, id, targetSource);
 }
 
 function snapshotElementForAction(snapshot, action) {
