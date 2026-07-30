@@ -38,6 +38,7 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
  * @property {string} to
  * @property {boolean} valid
  * @property {string} event
+ * @property {boolean|null} projectionMatched
  */
 
 /**
@@ -46,7 +47,7 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
  * @property {function(string, Object=): Object} transition
  * @property {function(OnlineReconnectFlags, Object=): Object} reconcile
  * @property {function(string, OnlineReconnectFlags): Object} observe
- * @property {function(): {state: string, invalidTransitionCount: number, history: Array<OnlineReconnectHistoryEntry>}} snapshot
+ * @property {function(): {state: string, invalidTransitionCount: number, projectionMismatchCount: number, lastProjectionMismatch: Object|null, history: Array<OnlineReconnectHistoryEntry>}} snapshot
  */
 
 
@@ -224,6 +225,8 @@ function createOnlineReconnectController(options = {}) {
         : 64;
     const history = [];
     let invalidTransitionCount = 0;
+    let projectionMismatchCount = 0;
+    let lastProjectionMismatch = null;
 
     function remember(from, to, metadata, valid) {
         history.push(Object.freeze({
@@ -231,6 +234,9 @@ function createOnlineReconnectController(options = {}) {
             to,
             valid,
             event: typeof metadata?.event === 'string' ? metadata.event : '',
+            projectionMatched: typeof metadata?.projectionMatched === 'boolean'
+                ? metadata.projectionMatched
+                : null,
         }));
         if (history.length > historyLimit) history.splice(0, history.length - historyLimit);
     }
@@ -271,19 +277,37 @@ function createOnlineReconnectController(options = {}) {
         if (!isOnlineReconnectEvent(event)) {
             return Object.freeze({ ok: false, reason: 'unknown-event', state });
         }
-        const target = deriveOnlineReconnectState(flags);
+        const comparison = compareOnlineReconnectEventProjection(event, flags);
+        const target = comparison.projectedState;
         const from = state;
-        if (from === target) {
-            remember(from, target, { event }, true);
-            return Object.freeze({ ok: true, event, state, from, valid: true });
+        if (!comparison.matched) {
+            projectionMismatchCount++;
+            lastProjectionMismatch = Object.freeze({
+                event,
+                eventState: comparison.eventState,
+                projectedState: comparison.projectedState,
+            });
         }
-        const observed = reconcile(flags, { event });
+        const metadata = { event, projectionMatched: comparison.matched };
+        if (from === target) {
+            remember(from, target, metadata, true);
+            return Object.freeze({
+                ok: true,
+                event,
+                state,
+                from,
+                valid: true,
+                projectionMatched: comparison.matched,
+            });
+        }
+        const observed = reconcile(flags, metadata);
         return Object.freeze({
             ok: true,
             event,
             state: observed.state,
             from: observed.from,
             valid: observed.valid,
+            projectionMatched: comparison.matched,
         });
     }
 
@@ -291,6 +315,8 @@ function createOnlineReconnectController(options = {}) {
         return Object.freeze({
             state,
             invalidTransitionCount,
+            projectionMismatchCount,
+            lastProjectionMismatch,
             history: Object.freeze(history.slice()),
         });
     }

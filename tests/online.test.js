@@ -465,12 +465,15 @@ runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す'
     });
     assert.strictEqual(localRt.getOnlineState().reconnectState, 'active');
 
+    localRt.getOnlineState().socket.connected = false;
     localRt.getSocketHandlers().disconnect();
 
     const snapshot = localRt.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(snapshot.history.slice(-1)[0].event, 'socket-disconnected');
     assert.strictEqual(snapshot.history.slice(-1)[0].valid, true);
     assert.strictEqual(snapshot.invalidTransitionCount, 0);
+    assert.strictEqual(snapshot.projectionMismatchCount, 0);
+    assert.strictEqual(snapshot.history.slice(-1)[0].projectionMatched, true);
 });
 
 runTest('online.jsのreconnect観測状態は完了とresetを区別する', () => {
@@ -483,6 +486,8 @@ runTest('online.jsのreconnect観測状態は完了とresetを区別する', () 
     localRt.resetOnlineState();
     const resetSnapshot = localRt.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(resetSnapshot.history.slice(-1)[0].event, 'reset');
+    assert.strictEqual(resetSnapshot.projectionMismatchCount, 0);
+    assert.strictEqual(resetSnapshot.lastProjectionMismatch, null);
     assert.strictEqual(localRt.getOnlineState().reconnectState, 'idle');
 });
 

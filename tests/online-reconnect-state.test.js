@@ -171,6 +171,8 @@ runTest('online reconnect controller は許可遷移とbounded履歴を保持す
     const snapshot = controller.snapshot();
     assert.strictEqual(snapshot.state, STATES.REPLAYING);
     assert.strictEqual(snapshot.invalidTransitionCount, 0);
+    assert.strictEqual(snapshot.projectionMismatchCount, 0);
+    assert.strictEqual(snapshot.lastProjectionMismatch, null);
     assert.strictEqual(snapshot.history.length, 3);
     assert.deepStrictEqual(snapshot.history.map(entry => entry.event), [
         'socket-connect',
@@ -217,7 +219,13 @@ runTest('online reconnect controllerは既知lifecycle eventをshadow stateへ�
     assert.strictEqual(controller.observe(events.RESTORE_ACTIVATED, { active: true }).valid, true);
     assert.strictEqual(controller.observe(events.GAME_COMPLETED, { completed: true }).valid, true);
     assert.strictEqual(controller.observe(events.RESET, {}).valid, true);
-    assert.deepStrictEqual(controller.snapshot().history.map(entry => entry.event), [
+    const snapshot = controller.snapshot();
+    assert.strictEqual(snapshot.projectionMismatchCount, 0);
+    assert.strictEqual(snapshot.lastProjectionMismatch, null);
+    assert.deepStrictEqual(snapshot.history.map(entry => entry.projectionMatched), [
+        true, true, true, true, true, true, true, true,
+    ]);
+    assert.deepStrictEqual(snapshot.history.map(entry => entry.event), [
         events.RECONNECT_REQUESTED,
         events.RECONNECT_REQUESTED,
         events.RECONNECT_REQUESTED,
@@ -231,5 +239,36 @@ runTest('online reconnect controllerは既知lifecycle eventをshadow stateへ�
         ok: false,
         reason: 'unknown-event',
         state: STATES.IDLE,
+    });
+});
+
+runTest('online reconnect controllerはeventとlegacy投影の不一致を状態変更せず診断する', () => {
+    const controller = OnlineReconnectState.createController();
+    const event = OnlineReconnectState.events.RESTORE_STARTED;
+    const observed = controller.observe(event, { connecting: true });
+    assert.deepStrictEqual(observed, {
+        ok: true,
+        event,
+        state: STATES.CONNECTING,
+        from: STATES.IDLE,
+        valid: true,
+        projectionMatched: false,
+    });
+    assert.deepStrictEqual(controller.snapshot(), {
+        state: STATES.CONNECTING,
+        invalidTransitionCount: 0,
+        projectionMismatchCount: 1,
+        lastProjectionMismatch: {
+            event,
+            eventState: STATES.RESTORING,
+            projectedState: STATES.CONNECTING,
+        },
+        history: [{
+            from: STATES.IDLE,
+            to: STATES.CONNECTING,
+            valid: true,
+            event,
+            projectionMatched: false,
+        }],
     });
 });
