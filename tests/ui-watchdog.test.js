@@ -219,6 +219,31 @@ assert.strictEqual(UiWatchdog.snapshotStateById(snapshotLookup, 'shared', 'actio
 assert.strictEqual(UiWatchdog.snapshotStateById(snapshotLookup, 'buttonOnly').owner, 'button');
 assert.strictEqual(UiWatchdog.snapshotStateById(null, 'missing'), undefined);
 
+const contentSpec = { requiresContent: true, modalId: 'pendingModal' };
+const usableContentState = {
+    display: 'block',
+    htmlLength: 20,
+    totalInteractiveChildren: 1,
+    usableInteractiveChildren: 1,
+};
+assert.strictEqual(UiWatchdog.isActionContainerStateUsable(contentSpec, usableContentState, {
+    hasExpectedChildSpec: true,
+    actionChildState: { total: 1, usable: 1 },
+    modalState: { display: 'flex' },
+}), true);
+assert.strictEqual(UiWatchdog.isActionContainerStateUsable(null, usableContentState), false);
+assert.strictEqual(UiWatchdog.isActionContainerStateUsable(contentSpec, Object.assign({}, usableContentState, { htmlLength: 0 })), false);
+assert.strictEqual(UiWatchdog.isActionContainerStateUsable(contentSpec, usableContentState, {
+    hasExpectedChildSpec: true,
+    actionChildState: { total: 1, usable: 0 },
+}), false);
+assert.strictEqual(UiWatchdog.isActionContainerStateUsable(contentSpec, usableContentState, {
+    modalState: { display: 'none' },
+}), false);
+assert.strictEqual(UiWatchdog.shouldIgnoreInactiveActionContainerIssue(contentSpec, false, 'not-clickable'), true);
+assert.strictEqual(UiWatchdog.shouldIgnoreInactiveActionContainerIssue(contentSpec, true, 'not-clickable'), false);
+assert.strictEqual(UiWatchdog.shouldIgnoreInactiveActionContainerIssue({ requiresContent: false }, false, 'not-clickable'), false);
+assert.strictEqual(UiWatchdog.shouldIgnoreInactiveActionContainerIssue(contentSpec, false, 'parent-inert'), false);
 
 assert.strictEqual(UiWatchdog.isHumanTurnSnapshot(null), false);
 assert.strictEqual(UiWatchdog.isHumanTurnSnapshot({ phase: 'build', isCpuTurn: true }), false);

@@ -322,9 +322,8 @@ function expectedActionContainerEntries(snapshot) {
 }
 
 function shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason) {
-    if (!entry || !entry.spec || !entry.spec.requiresContent) return false;
-    if (expectedChildSpecForEntry(snapshot, entry)) return false;
-    return reason === 'not-clickable' || reason === 'action-child-not-clickable' || reason === 'child-not-clickable';
+    const childSpec = expectedChildSpecForEntry(snapshot, entry);
+    return UiWatchdog.shouldIgnoreInactiveActionContainerIssue(entry && entry.spec, !!childSpec, reason);
 }
 
 function missingActionContainerRegistryEntries(snapshot) {
@@ -348,21 +347,17 @@ function isActionContainerUiUsable(snapshot, entry) {
     const spec = entry && entry.spec;
     if (!spec) return false;
     const state = snapshotStateById(snapshot, spec.targetId, spec.targetSource);
-    if (!state) return false;
-    if (spec.requiresContent && state.htmlLength <= 0) return false;
     const expectedChildSpec = expectedChildSpecForEntry(snapshot, entry);
+    let actionChildState = null;
     if (spec.requiresContent && expectedChildSpec) {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
-        const actionChildState = childInteractiveStateForSpec(el, expectedChildSpec);
-        if (actionChildState.total <= 0 || actionChildState.usable <= 0) return false;
+        actionChildState = childInteractiveStateForSpec(el, expectedChildSpec);
     }
-    if (spec.requiresContent && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
-    if (!isElementUsablyEnabled(state)) return false;
-    if (spec.modalId) {
-        const modal = snapshotStateById(snapshot, spec.modalId);
-        if (modal && !isElementUsablyEnabled(modal)) return false;
-    }
-    return true;
+    return UiWatchdog.isActionContainerStateUsable(spec, state, {
+        hasExpectedChildSpec: !!expectedChildSpec,
+        actionChildState,
+        modalState: spec.modalId ? snapshotStateById(snapshot, spec.modalId) : null,
+    });
 }
 
 function isActionUiUsable(snapshot, action) {

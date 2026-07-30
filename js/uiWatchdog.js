@@ -237,6 +237,24 @@ const UiWatchdog = (() => {
         return ui[id] || buttons[id];
     }
 
+    function isActionContainerStateUsable(spec, state, options = {}) {
+        if (!spec || !state) return false;
+        if (spec.requiresContent && state.htmlLength <= 0) return false;
+        if (spec.requiresContent && options.hasExpectedChildSpec) {
+            const childState = options.actionChildState || {};
+            if (childState.total <= 0 || childState.usable <= 0) return false;
+        }
+        if (spec.requiresContent && state.totalInteractiveChildren > 0 && state.usableInteractiveChildren <= 0) return false;
+        if (!isElementUsablyEnabled(state)) return false;
+        if (spec.modalId && options.modalState && !isElementUsablyEnabled(options.modalState)) return false;
+        return true;
+    }
+
+    function shouldIgnoreInactiveActionContainerIssue(spec, hasExpectedChildSpec, reason) {
+        if (!spec || !spec.requiresContent || hasExpectedChildSpec) return false;
+        return reason === 'not-clickable' || reason === 'action-child-not-clickable' || reason === 'child-not-clickable';
+    }
+
     function isHumanTurnSnapshot(snapshot) {
         if (!snapshot || !snapshot.phase || snapshot.isCpuTurn) return false;
         return !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
@@ -316,6 +334,8 @@ const UiWatchdog = (() => {
         isElementUsablyEnabled,
         lockReasonForElement,
         snapshotStateById,
+        isActionContainerStateUsable,
+        shouldIgnoreInactiveActionContainerIssue,
         isHumanTurnSnapshot,
         expectedPendingActions,
         expectedPrimaryActions,
