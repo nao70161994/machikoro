@@ -18,6 +18,7 @@
     "js/actionUiRegistry.js",
     "js/adSlots.js",
     "js/audio.js",
+    "js/confetti.js",
     "js/gameSnapshot.js",
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",

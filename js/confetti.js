@@ -13,7 +13,7 @@ function prefersReducedMotion() {
 }
 
 function startConfetti() {
-    const canvas = document.getElementById('confettiCanvas');
+    const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('confettiCanvas'));
     if (!canvas) return;
     if (prefersReducedMotion()) {
         canvas.style.display = 'none';
@@ -22,7 +22,7 @@ function startConfetti() {
     canvas.style.display = 'block';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
     const colors = ['#f0c040','#e94560','#3b82f6','#22c55e','#a855f7','#ffffff'];
     confettiPieces = Array.from({ length: 80 }, () => ({
         x: Math.random() * canvas.width,
@@ -61,9 +61,10 @@ function stopConfetti() {
         clearTimeout(confettiTimeout);
         confettiTimeout = null;
     }
-    const canvas = document.getElementById('confettiCanvas');
+    const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('confettiCanvas'));
     if (canvas) {
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         canvas.style.display = 'none';
     }
 }
