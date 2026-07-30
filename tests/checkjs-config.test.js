@@ -30,6 +30,7 @@ runTest('checkJs configは限定adapterだけを明示列挙し巨大runtimeを�
     for (const excluded of ['server.js', 'js/online.js', 'js/CPU.js', 'js/ui.js', 'js/appShell.js']) {
         assert.ok(!config.files.includes(excluded), excluded);
     }
+    assert.ok(config.files.includes('js/Card.js'));
     assert.ok(config.files.includes('js/actionContract.js'));
     assert.ok(config.files.includes('js/actionUiRegistry.js'));
     assert.ok(config.files.includes('js/adSlots.js'));

@@ -9,7 +9,6 @@ declare class RLCPU {
     modelLabel: string;
 }
 
-declare var CARD_CATEGORIES: Readonly<{ MAJOR: string }>;
 declare var CPU: { _nowMs(): number };
 declare var Player: { landmarkNames(): ReadonlyArray<string> };
 declare var GameManager: { pendingActionsFor(game: unknown): ReadonlyArray<{ action: string, field: string, count: number }> };
