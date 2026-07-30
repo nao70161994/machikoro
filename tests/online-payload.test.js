@@ -359,3 +359,33 @@ runTest('online payload restore queue planは世代・snapshot seqを除外し�
     assert.strictEqual(JSON.stringify(queue), before);
     assert.deepStrictEqual(OnlinePayload.planRestoreEventFlush(null, 2, 4), []);
 });
+
+
+runTest('online payload restore queue authorityは既定legacy・一致時pure・不一致時fallbackを選ぶ', () => {
+    const queue = [
+        { type: 'already-restored', payload: { seq: 2 }, generation: 3 },
+        { type: 'next-action', payload: { seq: 3 }, generation: 3 },
+    ];
+    const legacy = Object.freeze([{ event: queue[1], index: 1 }]);
+
+    const disabled = OnlinePayload.selectRestoreEventFlushPlan(queue, 3, 2, legacy);
+    assert.strictEqual(disabled.source, 'legacy');
+    assert.strictEqual(disabled.matched, true);
+    assert.strictEqual(disabled.plan[0].event, queue[1]);
+
+    const enabled = OnlinePayload.selectRestoreEventFlushPlan(queue, 3, 2, legacy, {
+        queuePlanAuthorityEnabled: true,
+    });
+    assert.strictEqual(enabled.source, 'pure-plan');
+    assert.strictEqual(enabled.matched, true);
+    assert.strictEqual(enabled.fallbackReason, '');
+    assert.deepStrictEqual(Array.from(enabled.plan, entry => entry.index), [1]);
+
+    const mismatch = OnlinePayload.selectRestoreEventFlushPlan(queue, 3, 2, [], {
+        queuePlanAuthorityEnabled: true,
+    });
+    assert.strictEqual(mismatch.source, 'legacy-fallback');
+    assert.strictEqual(mismatch.matched, false);
+    assert.strictEqual(mismatch.fallbackReason, 'plan-mismatch');
+    assert.deepStrictEqual(mismatch.plan, []);
+});

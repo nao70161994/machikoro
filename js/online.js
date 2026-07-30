@@ -182,6 +182,11 @@ const _onlineRejoinTimerController = OnlineRetryPolicy.createRejoinTimerControll
     now: () => Date.now(),
 });
 let _onlineReconnectCompleted = false;
+let _lastOnlineRestoreQueuePlanSelection = Object.freeze({
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 
 function _onlineReconnectObservationFlags() {
     const connected = !!socket && socket.connected !== false;
@@ -225,6 +230,15 @@ function isOnlineReconnectTimerAuthorityEnabled() {
 function isOnlineReconnectCallbackAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RECONNECT_CALLBACK_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineReconnectQueuePlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function getOnlineRestoreQueuePlanSelection() {
+    return _lastOnlineRestoreQueuePlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -890,6 +904,29 @@ function _abortOnlineRestore(generation, statusMessage, queuedEvents = null) {
     if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
 }
 
+function _legacyOnlineRestoreEventFlushPlan(queue, generation, restoredThroughSeq) {
+    const events = Array.isArray(queue) ? queue : [];
+    const plan = [];
+    for (let index = 0; index < events.length; index++) {
+        const event = events[index];
+        if (!event || event.generation !== generation) continue;
+        if (Number.isInteger(event.payload?.seq) && event.payload.seq <= restoredThroughSeq) continue;
+        plan.push(Object.freeze({ event, index }));
+    }
+    return Object.freeze(plan);
+}
+
+function _onlineRestoreEventFlushPlanSelection(queue, generation, restoredThroughSeq) {
+    const legacyPlan = _legacyOnlineRestoreEventFlushPlan(queue, generation, restoredThroughSeq);
+    return OnlinePayload.selectRestoreEventFlushPlan(
+        queue,
+        generation,
+        restoredThroughSeq,
+        legacyPlan,
+        { queuePlanAuthorityEnabled: isOnlineReconnectQueuePlanAuthorityEnabled() }
+    );
+}
+
 function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     if (generation !== _onlineRestoreGeneration) return false;
     const queuedEvents = _onlineRestoreEventQueue;
@@ -897,12 +934,17 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     _onlineRestoreInProgress = false;
     _flushingOnlineRestoreEvents = true;
     try {
-        const flushPlan = OnlinePayload.planRestoreEventFlush(
+        const flushSelection = _onlineRestoreEventFlushPlanSelection(
             queuedEvents,
             generation,
             restoredThroughSeq
         );
-        for (const entry of flushPlan) {
+        _lastOnlineRestoreQueuePlanSelection = Object.freeze({
+            source: flushSelection.source,
+            matched: flushSelection.matched,
+            fallbackReason: flushSelection.fallbackReason,
+        });
+        for (const entry of flushSelection.plan) {
             const event = entry.event;
             const handler = handlers[event.type];
             if (typeof handler === 'function' && handler(event.payload) === false) {

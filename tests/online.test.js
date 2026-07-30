@@ -3568,6 +3568,7 @@ runTest('disconnect during initial RL preload invalidates stale start and reconn
 
 runTest('gameStart queues actions and host changes while RL preload is pending', async () => {
     const runtime = loadOnlineRuntime(); let resolvePreload;
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket(); runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Bob', reconnectToken: 'token-b' });
     const handlers = runtime.getSocketHandlers();
@@ -3576,6 +3577,11 @@ runTest('gameStart queues actions and host changes while RL preload is pending',
     assert.strictEqual(runtime.getGame(), null); resolvePreload([]); await Promise.resolve();
     assert.ok(runtime.getGame()); assert.strictEqual(runtime._readOnlineActionLog().length, 1);
     assert.strictEqual(runtime._readOnlineGameStartPayload().hostPlayerIndex, 1); assert.strictEqual(runtime.getOnlineState().isRoomHost, true);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueuePlanSelection())), {
+        source: 'pure-plan',
+        matched: true,
+        fallbackReason: '',
+    });
 });
 
 runTest('rejoinData hydrates canonical build then undo into the exact pre-build client state', async () => {

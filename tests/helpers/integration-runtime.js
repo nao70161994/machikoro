@@ -91,6 +91,7 @@ function loadIntegrationRuntime(options = {}) {
             MACHIKORO_ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED: options.onlineReconnectStatusEffectAuthorityEnabled === true,
             MACHIKORO_ONLINE_RECONNECT_TIMER_AUTHORITY_ENABLED: options.onlineReconnectTimerAuthorityEnabled === true,
             MACHIKORO_ONLINE_RECONNECT_CALLBACK_AUTHORITY_ENABLED: options.onlineReconnectCallbackAuthorityEnabled === true,
+            MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED: options.onlineReconnectQueuePlanAuthorityEnabled === true,
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: false }; },

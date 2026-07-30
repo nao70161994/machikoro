@@ -153,6 +153,30 @@ function planOnlineRestoreEventFlush(queue, generation, restoredThroughSeq) {
     return Object.freeze(plan);
 }
 
+function restoreEventFlushPlansMatch(planned, legacy) {
+    if (!Array.isArray(planned) || !Array.isArray(legacy) || planned.length !== legacy.length) return false;
+    return planned.every((entry, index) =>
+        Number.isInteger(entry?.index) && entry.index === legacy[index]?.index &&
+        entry.event === legacy[index]?.event
+    );
+}
+
+function selectOnlineRestoreEventFlushPlan(queue, generation, restoredThroughSeq, legacyPlan, options = {}) {
+    const planned = planOnlineRestoreEventFlush(queue, generation, restoredThroughSeq);
+    const legacy = Object.freeze((Array.isArray(legacyPlan) ? legacyPlan : []).map(entry =>
+        Object.freeze({ event: entry?.event, index: entry?.index })
+    ));
+    const matched = restoreEventFlushPlansMatch(planned, legacy);
+    const enabled = options.queuePlanAuthorityEnabled === true;
+    const usePurePlan = enabled && matched;
+    return Object.freeze({
+        plan: usePurePlan ? planned : legacy,
+        source: usePurePlan ? 'pure-plan' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'plan-mismatch',
+    });
+}
+
 function sameOnlineActionEntry(a, b) {
     if (!a || !b) return false;
     if (a.clientActionId || b.clientActionId) return a.clientActionId === b.clientActionId;
@@ -185,6 +209,7 @@ const OnlinePayload = Object.freeze({
     normalizeActionLog: normalizeOnlineActionLog,
     normalizePendingOutboundAction,
     planRestoreEventFlush: planOnlineRestoreEventFlush,
+    selectRestoreEventFlushPlan: selectOnlineRestoreEventFlushPlan,
     sameActionEntry: sameOnlineActionEntry,
     pendingBelongsToSession,
     appendPendingForRestore,
