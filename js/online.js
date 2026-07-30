@@ -212,6 +212,11 @@ function isOnlineReconnectEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectStatusEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function isOnlineReconnectTimerAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RECONNECT_TIMER_AUTHORITY_ENABLED === true;
@@ -235,6 +240,18 @@ function _applyOnlineReconnectEffectAuthority(legacyValue = isReconnectingOnline
     if (selection.reconnecting !== isReconnectingOnline) {
         setOnlineReconnectLegacyFlag(selection.reconnecting);
     }
+    return selection;
+}
+
+function _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage) {
+    const selection = OnlineReconnectState.selectStatusEffectAuthority(
+        _onlineReconnectController.snapshot(),
+        event,
+        legacyMessage,
+        { statusEffectAuthorityEnabled: isOnlineReconnectStatusEffectAuthorityEnabled() }
+    );
+    const el = document.getElementById('onlineStatus');
+    if (el) el.textContent = selection.message;
     return selection;
 }
 
@@ -1520,9 +1537,11 @@ function initSocket() {
         setOnlineReconnectLegacyFlag(true);
         _setOnlineActionInFlight(false);
         cpuScheduleToken++;
-        const el = document.getElementById("onlineStatus");
         _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
-        if (el) el.textContent = '⏳ 接続が切れました。再接続しています...';
+        _applyOnlineReconnectStatusEffectAuthority(
+            OnlineReconnectState.events.SOCKET_DISCONNECTED,
+            '⏳ 接続が切れました。再接続しています...'
+        );
     });
 
     socket.on('connect_error', () => {

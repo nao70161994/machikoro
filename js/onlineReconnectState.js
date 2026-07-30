@@ -13,6 +13,7 @@ const ONLINE_RECONNECT_STATES = Object.freeze({
 
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
+const ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 const ONLINE_RECONNECT_EVENTS = Object.freeze({
     RECONNECT_REQUESTED: 'reconnect-requested',
@@ -117,6 +118,12 @@ function onlineReconnectEventAuthorityEnabled(env = {}) {
 function onlineReconnectEffectAuthorityEnabled(env = {}) {
     return ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED_VALUES.has(
         String(env.ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED || '').trim().toLowerCase()
+    );
+}
+
+function onlineReconnectStatusEffectAuthorityEnabled(env = {}) {
+    return ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED_VALUES.has(
+        String(env.ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED || '').trim().toLowerCase()
     );
 }
 
@@ -301,6 +308,36 @@ function selectOnlineReconnectEffectAuthority(snapshot = {}, legacyReconnecting,
     });
 }
 
+const ONLINE_RECONNECT_STATUS_EFFECTS = Object.freeze({
+    [ONLINE_RECONNECT_EVENTS.SOCKET_DISCONNECTED]: '⏳ 接続が切れました。再接続しています...',
+});
+
+/**
+ * Selects one event-derived status message without taking socket, queue, or cleanup ownership.
+ * Unsupported events and any parity defect preserve the exact caller-provided legacy message.
+ * @param {Object} snapshot
+ * @param {string} event
+ * @param {string} legacyMessage
+ * @param {{statusEffectAuthorityEnabled?: boolean}} [options]
+ * @returns {{message: string, source: string, ready: boolean, fallbackReason: string}}
+ */
+function selectOnlineReconnectStatusEffectAuthority(snapshot = {}, event, legacyMessage, options = {}) {
+    const legacyValue = typeof legacyMessage === 'string' ? legacyMessage : '';
+    const enabled = options.statusEffectAuthorityEnabled === true;
+    const stateSelection = selectOnlineReconnectAuthorityState(snapshot, {
+        eventAuthorityEnabled: enabled,
+    });
+    const eventMessage = ONLINE_RECONNECT_STATUS_EFFECTS[event];
+    const supported = typeof eventMessage === 'string';
+    const useEvent = enabled && supported && stateSelection.source === 'event';
+    return Object.freeze({
+        message: useEvent ? eventMessage : legacyValue,
+        source: useEvent ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
+        ready: stateSelection.ready && supported,
+        fallbackReason: supported ? stateSelection.fallbackReason : 'unsupported-event',
+    });
+}
+
 /**
  * Creates a bounded diagnostic shadow controller.
  * @param {{initialState?: string, historyLimit?: number}} [options]
@@ -461,6 +498,7 @@ const OnlineReconnectState = Object.freeze({
     transitions: ONLINE_RECONNECT_TRANSITIONS,
     eventAuthorityEnabled: onlineReconnectEventAuthorityEnabled,
     effectAuthorityEnabled: onlineReconnectEffectAuthorityEnabled,
+    statusEffectAuthorityEnabled: onlineReconnectStatusEffectAuthorityEnabled,
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
     blocksInput: onlineReconnectStateBlocksInput,
@@ -471,6 +509,7 @@ const OnlineReconnectState = Object.freeze({
     compareEventProjection: compareOnlineReconnectEventProjection,
     selectAuthorityState: selectOnlineReconnectAuthorityState,
     selectEffectAuthority: selectOnlineReconnectEffectAuthority,
+    selectStatusEffectAuthority: selectOnlineReconnectStatusEffectAuthority,
     createController: createOnlineReconnectController,
 });
 

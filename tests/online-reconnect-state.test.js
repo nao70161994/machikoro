@@ -459,6 +459,41 @@ runTest('online reconnect effect authorityは不整合時にlegacy値へfail clo
     }
 });
 
+runTest('online reconnect status effect authorityは既定OFF・不整合時にlegacyへ戻る', () => {
+    const clean = {
+        state: STATES.CONNECTING,
+        eventState: STATES.CONNECTING,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    assert.strictEqual(
+        OnlineReconnectState.statusEffectAuthorityEnabled({ ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED: 'true' }),
+        true
+    );
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectStatusEffectAuthority(clean, OnlineReconnectState.events.SOCKET_DISCONNECTED, 'legacy'),
+        { message: 'legacy', source: 'legacy', ready: true, fallbackReason: '' }
+    );
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectStatusEffectAuthority(clean, OnlineReconnectState.events.SOCKET_DISCONNECTED, 'legacy', {
+            statusEffectAuthorityEnabled: true,
+        }),
+        { message: '⏳ 接続が切れました。再接続しています...', source: 'event', ready: true, fallbackReason: '' }
+    );
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectStatusEffectAuthority({ ...clean, eventState: STATES.REJOINING }, OnlineReconnectState.events.SOCKET_DISCONNECTED, 'legacy mismatch', {
+            statusEffectAuthorityEnabled: true,
+        }),
+        { message: 'legacy mismatch', source: 'legacy-fallback', ready: false, fallbackReason: 'state-mismatch' }
+    );
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectStatusEffectAuthority(clean, OnlineReconnectState.events.RESTORE_STARTED, 'legacy unsupported', {
+            statusEffectAuthorityEnabled: true,
+        }),
+        { message: 'legacy unsupported', source: 'legacy-fallback', ready: false, fallbackReason: 'unsupported-event' }
+    );
+});
+
 runTest('online reconnect input gateは接続処理中だけをblockする', () => {
     for (const state of [STATES.CONNECTING, STATES.REJOINING, STATES.RESTORING, STATES.REPLAYING, STATES.FAILED]) {
         assert.strictEqual(OnlineReconnectState.blocksInput(state), true, state);
