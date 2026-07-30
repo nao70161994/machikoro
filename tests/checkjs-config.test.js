@@ -21,7 +21,7 @@ runTest('checkJs configは変換なしの限定JavaScript検査だけを有効�
     assert.ok(packageJson.scripts['test:static'].includes('npm run test:types'));
 });
 
-runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを含めない', () => {
+runTest('checkJs configは限定adapterだけを明示列挙し巨大runtimeを含めない', () => {
     assert.strictEqual(config.files[0], 'types/checkjs-globals.d.ts');
     assert.strictEqual(new Set(config.files).size, config.files.length);
     for (const file of config.files) {
@@ -32,6 +32,8 @@ runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを�
     }
     assert.ok(config.files.includes('js/actionContract.js'));
     assert.ok(config.files.includes('js/actionUiRegistry.js'));
+    assert.ok(config.files.includes('js/adSlots.js'));
+    assert.ok(config.files.includes('js/audio.js'));
     assert.ok(config.files.includes('js/gameSnapshot.js'));
     assert.ok(config.files.includes('js/gameEngine.js'));
     assert.ok(config.files.includes('js/cpuActionProposal.js'));

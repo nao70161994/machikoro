@@ -2,6 +2,11 @@ declare var GameActionContract: typeof import("../js/actionContract");
 
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
+    AD_SLOT_CONFIGS: unknown;
+    renderAdSlot: unknown;
+    mountAdSlot: unknown;
+    mountStaticAdSlots: unknown;
+    webkitAudioContext: typeof AudioContext;
     GameSnapshot: unknown;
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
