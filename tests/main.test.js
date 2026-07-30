@@ -171,6 +171,7 @@ function loadMainRuntime(options = {}) {
         myPlayerIndex: 0,
         winSoundPlayed: false,
         LOG_TYPES: { SYSTEM: 'system' },
+        CARD_CATEGORIES: { MAJOR: '大施設' },
         GAME_PHASES: {
             ROLL: 'roll',
             SELECT_DICE: 'selectDice',
@@ -323,6 +324,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
     const cpuActionProposalSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuActionProposal.js'), 'utf8');
     vm.runInContext(cpuActionProposalSource, context, { filename: 'js/cpuActionProposal.js' });
+    const cpuPendingResolutionSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuPendingResolution.js'), 'utf8');
+    vm.runInContext(cpuPendingResolutionSource, context, { filename: 'js/cpuPendingResolution.js' });
     const actionUiRegistrySource = fs.readFileSync(path.join(__dirname, '..', 'js/actionUiRegistry.js'), 'utf8');
     vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
     const pwaShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/pwaShell.js'), 'utf8');
@@ -895,10 +898,11 @@ runTest('main scheduleCPU は不正なcleaning targetを盤面上の合法カー
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
-runTest('main fallback pending は queue 先頭actionだけを見る', () => {
+runTest('main pending は共通helperで queue 先頭actionだけを見る', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
-    assert.ok(source.includes('GameManager.nextPendingActionFor(game)'));
-    assert.ok(source.includes('pendingAction === GAME_ACTIONS.RESOLVE_CLEANING'));
+    assert.ok(source.includes('CPUPendingResolution.choosePendingResolution(game, cpu'));
+    assert.ok(source.includes('nextPending.action === GAME_ACTIONS.RESOLVE_CLEANING'));
+    assert.ok(!source.includes('function fallbackCpuOpponentIndex()'));
     assert.ok(!source.includes('pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)'));
 });
 

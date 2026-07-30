@@ -74,6 +74,27 @@ const CPUPendingResolution = Object.freeze({
         return { cardIndex, targetIndex };
     },
 
+    isCpuCleaningTarget(game, cardName) {
+        if (!game || !cardName || !Array.isArray(game.players)) return false;
+        return game.players.some(player => Array.isArray(player.cards) && player.cards.some(card =>
+            card && card.name === cardName && CPUPendingResolution.isCpuMinorCard(card) &&
+            !(typeof player.isDormant === 'function' && player.isDormant(card))
+        ));
+    },
+
+    fallbackCpuCleaningTarget(game) {
+        if (!game || !Array.isArray(game.players)) return null;
+        for (const player of game.players) {
+            if (!Array.isArray(player.cards)) continue;
+            const card = player.cards.find(entry =>
+                CPUPendingResolution.isCpuMinorCard(entry) &&
+                !(typeof player.isDormant === 'function' && player.isDormant(entry))
+            );
+            if (card) return card.name;
+        }
+        return null;
+    },
+
     fallbackCpuRenovationTarget(game) {
         if (!game) return null;
         const current = game.currentPlayer();

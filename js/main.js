@@ -458,158 +458,8 @@ function queueCPUStep(token, delay, fn) {
     }, delay);
 }
 
-function isMinorCardForCpuFallback(card) {
-    return !!card && card.category !== "大施設";
-}
-
-function isDormantForCpuFallback(player, card) {
-    return !!player && typeof player.isDormant === 'function' && player.isDormant(card);
-}
-
-function findCardForCpuFallback(player, ref) {
-    if (!player || !Array.isArray(player.cards)) return null;
-    const card = Number.isInteger(ref)
-        ? player.cards[ref]
-        : player.cards.find(entry => entry && entry.name === ref);
-    return isMinorCardForCpuFallback(card) ? card : null;
-}
-
-function isValidCpuOpponentIndex(index) {
-    return game && Number.isInteger(index) && index >= 0 && index < game.players.length && index !== game.currentPlayerIndex;
-}
-
-function fallbackCpuOpponentIndex() {
-    if (!game) return null;
-    for (let i = 0; i < game.players.length; i++) {
-        if (i !== game.currentPlayerIndex) return i;
-    }
-    return null;
-}
-
-function isValidCpuBusinessMove(move) {
-    if (!game || !move || !isValidCpuOpponentIndex(move.targetIndex)) return false;
-    const current = game.currentPlayer();
-    const target = game.players[move.targetIndex];
-    return !!findCardForCpuFallback(current, move.myCard) && !!findCardForCpuFallback(target, move.theirCard);
-}
-
-function fallbackCpuBusinessMove() {
-    if (!game) return null;
-    const current = game.currentPlayer();
-    const myCard = current.cards.findIndex(isMinorCardForCpuFallback);
-    if (myCard < 0) return null;
-    for (let i = 0; i < game.players.length; i++) {
-        if (i === game.currentPlayerIndex) continue;
-        const theirCard = game.players[i].cards.findIndex(isMinorCardForCpuFallback);
-        if (theirCard >= 0) return { myCard, targetIndex: i, theirCard };
-    }
-    return null;
-}
-
-function isValidCpuCleaningTarget(cardName) {
-    if (!game || !cardName) return false;
-    return game.players.some(player => Array.isArray(player.cards) && player.cards.some(card =>
-        card && card.name === cardName && isMinorCardForCpuFallback(card) && !isDormantForCpuFallback(player, card)
-    ));
-}
-
-function fallbackCpuCleaningTarget() {
-    if (!game) return null;
-    for (const player of game.players) {
-        const card = player.cards.find(entry => isMinorCardForCpuFallback(entry) && !isDormantForCpuFallback(player, entry));
-        if (card) return card.name;
-    }
-    return null;
-}
-
-function isValidCpuMoverMove(move) {
-    if (!game || !move || !isValidCpuOpponentIndex(move.targetIndex)) return false;
-    return !!findCardForCpuFallback(game.currentPlayer(), move.cardIndex ?? move.cardName);
-}
-
-function fallbackCpuMoverMove() {
-    if (!game) return null;
-    const current = game.currentPlayer();
-    const cardIndex = current.cards.findIndex(isMinorCardForCpuFallback);
-    const targetIndex = fallbackCpuOpponentIndex();
-    if (cardIndex < 0 || targetIndex === null) return null;
-    return { cardIndex, targetIndex };
-}
-
-function fallbackCpuRenovationTarget() {
-    if (!game) return null;
-    const current = game.currentPlayer();
-    const built = Object.entries(current.landmarks || {})
-        .find(([name, value]) => value === true && name !== LANDMARK_NAMES.YAKUSHO);
-    return built ? built[0] : null;
-}
-
 function chooseCpuPendingResolution(cpu) {
-    if (typeof CPU.choosePendingResolution === "function") {
-        return CPU.choosePendingResolution(game, cpu, {
-            clearFallback: false,
-            fallbackTvTarget: fallbackCpuOpponentIndex,
-            fallbackBusinessMove: fallbackCpuBusinessMove,
-            fallbackMoverMove: fallbackCpuMoverMove,
-            fallbackRenovationTarget: fallbackCpuRenovationTarget,
-        });
-    }
-    const nextPending = GameManager.nextPendingActionFor(game);
-    const pendingAction = nextPending && nextPending.action;
-    if (pendingAction === GAME_ACTIONS.RESOLVE_TV) {
-        let targetIndex = cpu.chooseTVTarget(game);
-        if (!isValidCpuOpponentIndex(targetIndex)) targetIndex = fallbackCpuOpponentIndex();
-        if (targetIndex !== null) {
-            return {
-                action: 'resolveTV',
-                payload: { targetIndex },
-                apply: () => game.resolveTV(targetIndex),
-            };
-        }
-    }
-    if (pendingAction === GAME_ACTIONS.RESOLVE_BUSINESS) {
-        let move = cpu.chooseBusinessMove(game);
-        if (!isValidCpuBusinessMove(move)) move = fallbackCpuBusinessMove();
-        if (move) {
-            return {
-                action: 'resolveBusiness',
-                payload: move,
-                apply: () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard),
-            };
-        }
-    }
-    if (pendingAction === GAME_ACTIONS.RESOLVE_IT) {
-        const doSave = cpu.chooseITInvest(game);
-        return {
-            action: 'resolveIT',
-            payload: { doSave },
-            apply: () => game.resolveIT(doSave),
-        };
-    }
-    if (pendingAction === GAME_ACTIONS.RESOLVE_CLEANING) return null;
-    if (pendingAction === GAME_ACTIONS.RESOLVE_MOVER) {
-        let move = cpu.chooseMoverMove(game);
-        if (!isValidCpuMoverMove(move)) move = fallbackCpuMoverMove();
-        if (move) {
-            return {
-                action: 'resolveMover',
-                payload: move,
-                apply: () => game.resolveMover(move.cardIndex, move.targetIndex),
-            };
-        }
-    }
-    if (pendingAction === GAME_ACTIONS.RESOLVE_RENOVATION) {
-        let landmarkName = cpu.chooseRenovationTarget(game);
-        if (!landmarkName) landmarkName = fallbackCpuRenovationTarget();
-        if (landmarkName) {
-            return {
-                action: 'resolveRenovation',
-                payload: { landmarkName },
-                apply: () => game.resolveRenovation(landmarkName),
-            };
-        }
-    }
-    return null;
+    return CPUPendingResolution.choosePendingResolution(game, cpu, { clearFallback: false });
 }
 
 // フェーズごとの CPU ハンドラテーブル。
@@ -686,8 +536,10 @@ const CPU_PHASE_HANDLERS = [
             const nextPending = GameManager.nextPendingActionFor(game);
             if (nextPending && nextPending.action === GAME_ACTIONS.RESOLVE_CLEANING) {
                 let cardName = cpu.chooseCleaningTarget(game);
-                if (!isValidCpuCleaningTarget(cardName)) cardName = fallbackCpuCleaningTarget();
-                if (isValidCpuCleaningTarget(cardName)) {
+                if (!CPUPendingResolution.isCpuCleaningTarget(game, cardName)) {
+                    cardName = CPUPendingResolution.fallbackCpuCleaningTarget(game);
+                }
+                if (CPUPendingResolution.isCpuCleaningTarget(game, cardName)) {
                     cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
                     return;
                 }

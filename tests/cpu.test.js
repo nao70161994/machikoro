@@ -280,6 +280,21 @@ runTest('choosePendingResolution helper は TV/Mover/Renovation のfallbackを�
     assert.strictEqual(renovationResolution.payload.landmarkName, '駅');
 });
 
+runTest('CPU pending helper は清掃対象の休業・大施設を除外して既存順でfallbackする', () => {
+    const game = new GameManager(2);
+    const dormantCafe = createCardByName('カフェ');
+    const activeForest = createCardByName('森林');
+    const major = createCardByName('テレビ局');
+    game.currentPlayer().cards = [major];
+    game.players[1].cards = [dormantCafe, activeForest];
+    game.players[1].dormantCards = [dormantCafe];
+
+    assert.strictEqual(CPUPendingResolution.isCpuCleaningTarget(game, 'テレビ局'), false);
+    assert.strictEqual(CPUPendingResolution.isCpuCleaningTarget(game, 'カフェ'), false);
+    assert.strictEqual(CPUPendingResolution.isCpuCleaningTarget(game, '森林'), true);
+    assert.strictEqual(CPUPendingResolution.fallbackCpuCleaningTarget(game), '森林');
+});
+
 runTest('choosePendingResolution は未対応pendingを飛ばして後続pendingを処理しない', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);
