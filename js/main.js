@@ -801,11 +801,18 @@ const CPU_PHASE_HANDLERS = [
     },
 ];
 
+function isMainOnlineReconnectInputBlocked() {
+    if (typeof isOnlineReconnectInputBlocked === 'function') {
+        return isOnlineReconnectInputBlocked();
+    }
+    return typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline;
+}
+
 function cpuScheduleBlockedReason() {
     if (typeof isReplaying !== 'undefined' && isReplaying) return 'replaying';
     if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return 'non-host';
     if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-        if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) return 'reconnecting';
+        if (isMainOnlineReconnectInputBlocked()) return 'reconnecting';
         if (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) return 'online-in-flight';
         if (typeof socket === 'undefined' || !socket || socket.connected === false) return 'socket-disconnected';
     }
@@ -838,7 +845,7 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
     if (isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return currentCpuTurnSchedulerHealth(); }
     if (isOnlineGame && !isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return currentCpuTurnSchedulerHealth(); }
     if (isOnlineGame && (
-        (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
+        isMainOnlineReconnectInputBlocked() ||
         (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
         (typeof socket === 'undefined' || !socket || socket.connected === false)
     )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : null }); return currentCpuTurnSchedulerHealth(); }
@@ -870,7 +877,7 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             if (isReplaying) return;
             if (isOnlineGame && !isRoomHost) return;
             if (isOnlineGame && (
-                (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
+                isMainOnlineReconnectInputBlocked() ||
                 (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
                 (typeof socket === 'undefined' || !socket || socket.connected === false)
             )) return;
@@ -1031,7 +1038,7 @@ function canRunLocalHumanAction(expectedPlayerIndex = null) {
     if (cpuPlayers[game.currentPlayerIndex]) return false;
     if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return false;
     if (isOnlineGame && (
-        (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) ||
+        isMainOnlineReconnectInputBlocked() ||
         (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
         (typeof socket === 'undefined' || !socket || socket.connected === false)
     )) return false;

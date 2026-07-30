@@ -162,6 +162,12 @@ function loadMainRuntime(options = {}) {
         enabledLandmarks: new Set(),
         isOnlineGame: false,
         isReplaying: false,
+        ...(typeof options.onlineReconnectInputBlocked === 'boolean' ? {
+            isOnlineReconnectInputBlocked() {
+                counters.onlineReconnectInputBlockedCalls = (counters.onlineReconnectInputBlockedCalls || 0) + 1;
+                return options.onlineReconnectInputBlocked;
+            },
+        } : {}),
         myPlayerIndex: 0,
         winSoundPlayed: false,
         LOG_TYPES: { SYSTEM: 'system' },
@@ -352,6 +358,8 @@ function loadMainRuntime(options = {}) {
             getCpuScheduleToken: () => cpuScheduleToken,
             getCpuSchedulerHealth: () => cpuTurnScheduler.getHealth(),
             scheduleCpuTurn: (reason) => cpuTurnScheduler.schedule(reason),
+            canRunLocalHumanAction: (expectedPlayerIndex) => canRunLocalHumanAction(expectedPlayerIndex),
+            isMainOnlineReconnectInputBlocked: () => isMainOnlineReconnectInputBlocked(),
             cancelCpuSchedule: (reason) => cpuTurnScheduler.cancel(reason),
             expireCpuScheduleLease: () => { cpuStepScheduledUntil = 0; },
             expireDelayedHumanAction: () => {
@@ -993,6 +1001,32 @@ runTest('main cpuTurnScheduler はCPU予約不可理由をhealthに返す', () =
     const nonHostHealth = rt.__test.scheduleCpuTurn('test-non-host-blocked');
     assert.strictEqual(nonHostHealth.blockedReason, 'non-host');
     assert.strictEqual(nonHostHealth.stepScheduled, false);
+});
+
+runTest('main online gateは共有reconnect state判定をCPU予約と人間操作へ使う', () => {
+    const rt = loadMainRuntime({ onlineReconnectInputBlocked: true });
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{ build() {} }, null]);
+    rt.isOnlineGame = true;
+    rt.isRoomHost = true;
+    rt.socket = { connected: true };
+    rt.onlineActionInFlight = false;
+
+    const health = rt.__test.scheduleCpuTurn('test-reconnect-state-blocked');
+
+    assert.strictEqual(health.blockedReason, 'reconnecting');
+    assert.strictEqual(health.stepScheduled, false);
+    assert.strictEqual(rt.__test.canRunLocalHumanAction(), false);
+    assert.ok(rt.__test.counters.onlineReconnectInputBlockedCalls >= 2);
+});
+
+runTest('main online gateは共有判定不在時にlegacy reconnect booleanへfallbackする', () => {
+    const rt = loadMainRuntime();
+    rt.isReconnectingOnline = true;
+
+    assert.strictEqual(rt.__test.isMainOnlineReconnectInputBlocked(), true);
 });
 
 runTest('main cpuTurnScheduler は画面復帰時に未予約のローカルCPU手番を再開する', () => {
