@@ -378,6 +378,16 @@ function loadMainRuntime(options = {}) {
     return context;
 }
 
+runTest('main storage helperは共通facadeでget/removeと例外fallbackを維持する', () => {
+    const rt = loadMainRuntime();
+    rt.localStorage.setItem('testKey', 'value');
+    assert.strictEqual(rt.safeMainStorageGet('testKey', 'fallback'), 'value');
+    rt.safeMainStorageRemove('testKey');
+    assert.strictEqual(rt.localStorage.getItem('testKey'), null);
+    rt.localStorage.getItem = () => { throw new Error('blocked'); };
+    assert.strictEqual(rt.safeMainStorageGet('testKey', 'fallback'), 'fallback');
+});
+
 runTest('main changeCount は人数を2..10にクランプして表示を更新する', () => {
     const rt = loadMainRuntime();
     rt.__test.setSelectedCount(2);

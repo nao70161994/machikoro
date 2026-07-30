@@ -7,19 +7,14 @@ let cpuSpeed = 1500;
 
 // コインアニメーション用
 let prevCoins = null;
+const mainClientStorageFacade = ClientStorage.createFacade();
 
 function safeMainStorageGet(key, fallback = null) {
-    try {
-        return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : fallback;
-    } catch (_) {
-        return fallback;
-    }
+    return mainClientStorageFacade.get(key, fallback);
 }
 
 function safeMainStorageRemove(key) {
-    try {
-        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
-    } catch (_) {}
+    mainClientStorageFacade.remove(key);
 }
 
 // 連勝記録
