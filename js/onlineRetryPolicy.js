@@ -18,6 +18,47 @@ function rejoinWaitingMessage(attemptCount, maxAttempts = ONLINE_RETRY_DEFAULTS.
     return '⏳ ホストの復元を待っています... (' + (attemptCount + 1) + '/' + maxAttempts + ')';
 }
 
+function createRejoinTimerController(options = {}) {
+    const setTimer = typeof options.setTimer === 'function' ? options.setTimer : null;
+    const clearTimer = typeof options.clearTimer === 'function' ? options.clearTimer : null;
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    let timerHandle = null;
+    let deadline = 0;
+
+    function clear() {
+        if (timerHandle !== null && clearTimer) clearTimer(timerHandle);
+        timerHandle = null;
+        deadline = 0;
+    }
+
+    function arm(callback, delayMs = ONLINE_RETRY_DEFAULTS.rejoinDelayMs) {
+        if (timerHandle !== null) return Object.freeze({ armed: false, reason: 'already-armed' });
+        if (!setTimer || typeof callback !== 'function') {
+            return Object.freeze({ armed: false, reason: 'timer-unavailable' });
+        }
+        const effectiveDelay = Number.isFinite(delayMs) && delayMs >= 0
+            ? delayMs
+            : ONLINE_RETRY_DEFAULTS.rejoinDelayMs;
+        deadline = rejoinDeadline(now(), effectiveDelay);
+        timerHandle = setTimer(() => {
+            timerHandle = null;
+            deadline = 0;
+            callback();
+        }, effectiveDelay);
+        return Object.freeze({ armed: true, reason: '' });
+    }
+
+    return Object.freeze({
+        arm,
+        clear,
+        hasPending() { return timerHandle !== null; },
+        getDeadline() { return deadline; },
+        snapshot() {
+            return Object.freeze({ pending: timerHandle !== null, deadline });
+        },
+    });
+}
+
 function actionAckAgeMs(startedAt, now = Date.now()) {
     if (!Number.isFinite(startedAt) || startedAt <= 0 || !Number.isFinite(now)) return 0;
     return Math.max(0, now - startedAt);
@@ -34,6 +75,7 @@ const OnlineRetryPolicy = Object.freeze({
     isRejoinExhausted,
     rejoinDeadline,
     rejoinWaitingMessage,
+    createRejoinTimerController,
     actionAckAgeMs,
     isActionAckTimedOut,
 });

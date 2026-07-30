@@ -33,6 +33,57 @@ runTest('online retry policy preserves deadline and waiting text', () => {
     );
 });
 
+runTest('online retry timer controllerはhandleとdeadlineだけを所有する', () => {
+    let currentTime = 1000;
+    const timers = [];
+    const cleared = [];
+    let callbackCount = 0;
+    const controller = OnlineRetryPolicy.createRejoinTimerController({
+        now: () => currentTime,
+        setTimer(callback, delayMs) {
+            timers.push({ callback, delayMs });
+            return timers.length;
+        },
+        clearTimer(handle) { cleared.push(handle); },
+    });
+
+    assert.deepStrictEqual(controller.snapshot(), { pending: false, deadline: 0 });
+    assert.deepStrictEqual(controller.arm(() => { callbackCount++; }), { armed: true, reason: '' });
+    assert.deepStrictEqual(controller.snapshot(), { pending: true, deadline: 4000 });
+    assert.strictEqual(timers[0].delayMs, 3000);
+    assert.deepStrictEqual(controller.arm(() => {}), { armed: false, reason: 'already-armed' });
+
+    currentTime = 4000;
+    timers[0].callback();
+    assert.strictEqual(callbackCount, 1);
+    assert.deepStrictEqual(controller.snapshot(), { pending: false, deadline: 0 });
+
+    controller.arm(() => {});
+    controller.clear();
+    assert.deepStrictEqual(cleared, [2]);
+    assert.deepStrictEqual(controller.snapshot(), { pending: false, deadline: 0 });
+});
+
+runTest('online retry timer controllerはtimer不在と不正delayを安全に扱う', () => {
+    const unavailable = OnlineRetryPolicy.createRejoinTimerController({ now: () => 50 });
+    assert.deepStrictEqual(
+        unavailable.arm(() => {}),
+        { armed: false, reason: 'timer-unavailable' }
+    );
+
+    let recordedDelay = null;
+    const controller = OnlineRetryPolicy.createRejoinTimerController({
+        now: () => 100,
+        setTimer(callback, delayMs) {
+            recordedDelay = delayMs;
+            return callback;
+        },
+    });
+    assert.strictEqual(controller.arm(() => {}, NaN).armed, true);
+    assert.strictEqual(recordedDelay, OnlineRetryPolicy.defaults.rejoinDelayMs);
+    assert.strictEqual(controller.getDeadline(), 3100);
+});
+
 runTest('online retry policy uses the ACK timeout boundary for stall detection', () => {
     const startedAt = 1000;
 

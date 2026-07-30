@@ -204,6 +204,11 @@ const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const _onlineReconnectController = OnlineReconnectState.createController();
+const _onlineRejoinTimerController = OnlineRetryPolicy.createRejoinTimerController({
+    setTimer: typeof setTimeout === 'function' ? setTimeout : null,
+    clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
+    now: () => Date.now(),
+});
 let _onlineReconnectCompleted = false;
 
 function _onlineReconnectObservationFlags() {
@@ -235,6 +240,11 @@ function isOnlineReconnectEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectTimerAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_TIMER_AUTHORITY_ENABLED === true;
+}
+
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
     return OnlineReconnectState.selectEffectAuthority(
         _onlineReconnectController.snapshot(),
@@ -249,6 +259,23 @@ function _applyOnlineReconnectEffectAuthority(legacyValue = isReconnectingOnline
         setOnlineReconnectLegacyFlag(selection.reconnecting);
     }
     return selection;
+}
+
+function _onlineReconnectTimerAuthoritySelection() {
+    const effectSelection = _onlineReconnectEffectSelection(isReconnectingOnline);
+    const enabled = isOnlineReconnectTimerAuthorityEnabled();
+    const active = enabled && effectSelection.source === 'event';
+    return Object.freeze({
+        source: active ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
+        ready: effectSelection.ready,
+        fallbackReason: effectSelection.fallbackReason,
+        pending: active
+            ? _onlineRejoinTimerController.hasPending()
+            : !!_rejoinRetryTimer,
+        deadline: active
+            ? _onlineRejoinTimerController.getDeadline()
+            : _rejoinRetryDeadline,
+    });
 }
 
 function _onlineReconnectAuthoritySelection() {
@@ -273,6 +300,7 @@ function getOnlineReconnectStateSnapshot() {
         ...snapshot,
         authority: _onlineReconnectAuthoritySelection(),
         effectAuthority: _onlineReconnectEffectSelection(isReconnectingOnline),
+        timerAuthority: _onlineReconnectTimerAuthoritySelection(),
     });
 }
 
@@ -428,14 +456,37 @@ function _readOnlineRestoreAudit() {
     return _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, null);
 }
 
+function _isOnlineReconnectTimerAuthorityActive() {
+    if (!isOnlineReconnectTimerAuthorityEnabled()) return false;
+    getOnlineReconnectState();
+    return _onlineReconnectTimerAuthoritySelection().source === 'event';
+}
+
+function _hasOnlineRejoinTimer() {
+    return _isOnlineReconnectTimerAuthorityActive()
+        ? _onlineRejoinTimerController.hasPending()
+        : !!_rejoinRetryTimer;
+}
+
+function _onlineRejoinTimerDeadline() {
+    return _isOnlineReconnectTimerAuthorityActive()
+        ? _onlineRejoinTimerController.getDeadline()
+        : _rejoinRetryDeadline;
+}
+
+function _clearOnlineRejoinTimer() {
+    _onlineRejoinTimerController.clear();
+    if (_rejoinRetryTimer && typeof clearTimeout === 'function') {
+        clearTimeout(_rejoinRetryTimer);
+    }
+    _rejoinRetryTimer = null;
+    _rejoinRetryDeadline = 0;
+}
+
 function _clearRejoinRetry() {
     _rejoinRetryCount = 0;
-    _rejoinRetryDeadline = 0;
     _rejoinRetryExhausted = false;
-    if (_rejoinRetryTimer) {
-        clearTimeout(_rejoinRetryTimer);
-        _rejoinRetryTimer = null;
-    }
+    _clearOnlineRejoinTimer();
 }
 
 function _finishRejoinRetryTimeout() {
@@ -447,9 +498,7 @@ function _finishRejoinRetryTimeout() {
         }
         return true;
     }
-    if (_rejoinRetryTimer) clearTimeout(_rejoinRetryTimer);
-    _rejoinRetryTimer = null;
-    _rejoinRetryDeadline = 0;
+    _clearOnlineRejoinTimer();
     _rejoinRetryExhausted = true;
     const el = document.getElementById("onlineStatus");
     if (el) el.textContent = '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。';
@@ -461,20 +510,31 @@ function _finishRejoinRetryTimeout() {
     return false;
 }
 
+function _handleOnlineRejoinResponseTimeout() {
+    _rejoinRetryTimer = null;
+    _rejoinRetryDeadline = 0;
+    if (!isReconnectingOnline) return;
+    if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) {
+        _finishRejoinRetryTimeout();
+        return;
+    }
+    const session = typeof readOnlineSession === 'function' ? readOnlineSession() : null;
+    _emitOnlineRejoinRequest(session);
+}
+
 function _armOnlineRejoinResponseTimeout() {
-    if (_rejoinRetryTimer || _rejoinRetryExhausted || typeof setTimeout !== 'function') return true;
+    if (_hasOnlineRejoinTimer() || _rejoinRetryExhausted || typeof setTimeout !== 'function') return true;
+    if (_isOnlineReconnectTimerAuthorityActive()) {
+        return _onlineRejoinTimerController.arm(
+            _handleOnlineRejoinResponseTimeout,
+            ONLINE_REJOIN_RETRY_DELAY_MS
+        ).armed;
+    }
     _rejoinRetryDeadline = OnlineRetryPolicy.rejoinDeadline(Date.now());
-    _rejoinRetryTimer = setTimeout(() => {
-        _rejoinRetryTimer = null;
-        _rejoinRetryDeadline = 0;
-        if (!isReconnectingOnline) return;
-        if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) {
-            _finishRejoinRetryTimeout();
-            return;
-        }
-        const session = typeof readOnlineSession === 'function' ? readOnlineSession() : null;
-        _emitOnlineRejoinRequest(session);
-    }, ONLINE_REJOIN_RETRY_DELAY_MS);
+    _rejoinRetryTimer = setTimeout(
+        _handleOnlineRejoinResponseTimeout,
+        ONLINE_REJOIN_RETRY_DELAY_MS
+    );
     return true;
 }
 
@@ -508,10 +568,7 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
     _observeOnlineReconnectEvent(OnlineReconnectState.events.RECONNECT_REQUESTED);
     if (socket.connected === false) return true;
     if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) return _finishRejoinRetryTimeout();
-    if (_rejoinRetryTimer) {
-        clearTimeout(_rejoinRetryTimer);
-        _rejoinRetryTimer = null;
-    }
+    _clearOnlineRejoinTimer();
     _rejoinRetryCount++;
     socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
     _armOnlineRejoinResponseTimeout();
@@ -521,10 +578,8 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
 function resumeOnlineReconnectAfterPageActivation() {
     if (!isReconnectingOnline || _rejoinRetryExhausted) return false;
     if (!socket || socket.connected === false) return false;
-    if (_rejoinRetryTimer && _rejoinRetryDeadline > Date.now()) return false;
-    if (_rejoinRetryTimer) clearTimeout(_rejoinRetryTimer);
-    _rejoinRetryTimer = null;
-    _rejoinRetryDeadline = 0;
+    if (_hasOnlineRejoinTimer() && _onlineRejoinTimerDeadline() > Date.now()) return false;
+    _clearOnlineRejoinTimer();
     return _emitOnlineRejoinRequest();
 }
 
