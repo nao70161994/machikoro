@@ -335,3 +335,27 @@ runTest('online payload isolates pending resend policy from socket and timer sid
         isRoomHost: false,
     })), false);
 });
+
+
+runTest('online payload restore queue planは世代・snapshot seqを除外して元indexを保持する', () => {
+    const queue = [
+        { type: 'old-generation', payload: { seq: 9 }, generation: 1 },
+        { type: 'already-restored', payload: { seq: 4 }, generation: 2 },
+        { type: 'without-seq', payload: {}, generation: 2 },
+        { type: 'new-action', payload: { seq: 6 }, generation: 2 },
+        null,
+    ];
+    const before = JSON.stringify(queue);
+
+    const plan = OnlinePayload.planRestoreEventFlush(queue, 2, 4);
+
+    assert.deepStrictEqual(Array.from(plan, entry => [entry.index, entry.event.type]), [
+        [2, 'without-seq'],
+        [3, 'new-action'],
+    ]);
+    assert.strictEqual(Object.isFrozen(plan), true);
+    assert.strictEqual(plan.every(Object.isFrozen), true);
+    assert.strictEqual(plan[0].event, queue[2]);
+    assert.strictEqual(JSON.stringify(queue), before);
+    assert.deepStrictEqual(OnlinePayload.planRestoreEventFlush(null, 2, 4), []);
+});

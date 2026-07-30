@@ -897,13 +897,16 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     _onlineRestoreInProgress = false;
     _flushingOnlineRestoreEvents = true;
     try {
-        for (let index = 0; index < queuedEvents.length; index++) {
-            const event = queuedEvents[index];
-            if (event.generation !== generation) continue;
-            if (Number.isInteger(event.payload?.seq) && event.payload.seq <= restoredThroughSeq) continue;
+        const flushPlan = OnlinePayload.planRestoreEventFlush(
+            queuedEvents,
+            generation,
+            restoredThroughSeq
+        );
+        for (const entry of flushPlan) {
+            const event = entry.event;
             const handler = handlers[event.type];
             if (typeof handler === 'function' && handler(event.payload) === false) {
-                _abortOnlineRestore(generation, '操作の適用に失敗したため、状態を再同期しています...', queuedEvents.slice(index));
+                _abortOnlineRestore(generation, '操作の適用に失敗したため、状態を再同期しています...', queuedEvents.slice(entry.index));
                 return false;
             }
         }

@@ -141,6 +141,18 @@ function canResendPendingOutboundAction(pending, state = {}) {
     return currentIndex === state.playerIndex;
 }
 
+function planOnlineRestoreEventFlush(queue, generation, restoredThroughSeq) {
+    const events = Array.isArray(queue) ? queue : [];
+    const plan = [];
+    for (let index = 0; index < events.length; index++) {
+        const event = events[index];
+        if (!event || event.generation !== generation) continue;
+        if (Number.isInteger(event.payload?.seq) && event.payload.seq <= restoredThroughSeq) continue;
+        plan.push(Object.freeze({ event, index }));
+    }
+    return Object.freeze(plan);
+}
+
 function sameOnlineActionEntry(a, b) {
     if (!a || !b) return false;
     if (a.clientActionId || b.clientActionId) return a.clientActionId === b.clientActionId;
@@ -172,6 +184,7 @@ const OnlinePayload = Object.freeze({
     normalizeSession: normalizeOnlineSession,
     normalizeActionLog: normalizeOnlineActionLog,
     normalizePendingOutboundAction,
+    planRestoreEventFlush: planOnlineRestoreEventFlush,
     sameActionEntry: sameOnlineActionEntry,
     pendingBelongsToSession,
     appendPendingForRestore,
