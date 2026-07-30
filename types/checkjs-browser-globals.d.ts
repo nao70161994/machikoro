@@ -2,6 +2,13 @@ declare var GameActionContract: typeof import("../js/actionContract");
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
+declare class RLCPU {
+    constructor(modelData: unknown);
+    difficulty: string;
+    modelId: string;
+    modelLabel: string;
+}
+
 
 
 // Browser-global publication names for the explicitly checked compatibility modules.

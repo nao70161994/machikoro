@@ -161,6 +161,7 @@ const RLModelPortfolio = (() => {
     function fetchModelData(model, options) {
         const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(0, options.timeoutMs) : 15000;
         const controller = typeof AbortController === "function" ? new AbortController() : null;
+        /** @type {RequestInit} */
         const fetchOptions = { cache: "force-cache" };
         if (controller) fetchOptions.signal = controller.signal;
         const fetchPromise = fetch(model.path, fetchOptions)

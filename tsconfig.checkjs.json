@@ -20,6 +20,7 @@
     "js/audio.js",
     "js/confetti.js",
     "js/stats.js",
+    "js/RLModelPortfolio.js",
     "js/gameSnapshot.js",
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",
