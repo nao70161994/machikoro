@@ -248,6 +248,38 @@ const UiWatchdog = (() => {
         return allowed.filter(action => pendingActions.has(action));
     }
 
+    function expectedPrimaryActions(snapshot) {
+        const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
+        const primaryActions = new Set(['rollDice', 'nextTurn', 'selectDice', 'rerollDice', 'skipReroll', 'resolveHarbor']);
+        return allowed.filter(action => primaryActions.has(action));
+    }
+
+    function isActiveGameScreenRecoverySnapshot(snapshot) {
+        if (!snapshot || !snapshot.phase) return false;
+        const activePhases = ['roll', 'selectDice', 'rerollConfirm', 'harborChoice', 'pending', 'build'];
+        if (!activePhases.includes(String(snapshot.phase))) return false;
+        const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+        if (!allowed.length) return false;
+        if (!Number.isInteger(snapshot.currentPlayerIndex) || snapshot.currentPlayerIndex < 0) return false;
+        return !!(snapshot.builtThisTurn || snapshot.turnCount !== null || allowed.length);
+    }
+
+    function shouldRestoreGameScreenDisplay(snapshot) {
+        if (!isActiveGameScreenRecoverySnapshot(snapshot)) return false;
+        const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+        if (snapshot.phase === 'build' && allowed.includes('nextTurn')) return true;
+        return expectedPrimaryActions(snapshot).length > 0 || expectedPendingActions(snapshot).length > 0;
+    }
+
+    function isPostBuildNextTurnSnapshot(snapshot, activeBlockingModal = false) {
+        if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
+        if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+        if (activeBlockingModal) return false;
+        const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+        const pending = snapshot.pendingFields || {};
+        return allowed.includes('nextTurn') && !pending.pendingRenovation;
+    }
+
     function isOnlineUiBlockedSnapshot(snapshot) {
         if (!snapshot || !snapshot.isOnlineGame) return false;
         if (snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return true;
@@ -266,6 +298,10 @@ const UiWatchdog = (() => {
         snapshotStateById,
         isHumanTurnSnapshot,
         expectedPendingActions,
+        expectedPrimaryActions,
+        isActiveGameScreenRecoverySnapshot,
+        shouldRestoreGameScreenDisplay,
+        isPostBuildNextTurnSnapshot,
         isOnlineUiBlockedSnapshot,
         hasPendingWork,
         classifyFreezeFacts,

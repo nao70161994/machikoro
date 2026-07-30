@@ -239,6 +239,45 @@ assert.deepStrictEqual(UiWatchdog.expectedPendingActions({
     allowedActions: ['rollDice', 'resolveTV', 'resolveIT', 'nextTurn'],
 }), ['resolveTV', 'resolveIT']);
 assert.deepStrictEqual(UiWatchdog.expectedPendingActions({ allowedActions: 'resolveTV' }), []);
+assert.deepStrictEqual(UiWatchdog.expectedPrimaryActions({
+    allowedActions: ['buildCard', 'rollDice', 'resolveHarbor', 'nextTurn'],
+}), ['rollDice', 'resolveHarbor', 'nextTurn']);
+assert.deepStrictEqual(UiWatchdog.expectedPrimaryActions({ allowedActions: null }), []);
+
+const activeRecoverySnapshot = {
+    phase: 'build',
+    currentPlayerIndex: 0,
+    turnCount: 2,
+    allowedActions: ['nextTurn'],
+};
+assert.strictEqual(UiWatchdog.isActiveGameScreenRecoverySnapshot(activeRecoverySnapshot), true);
+assert.strictEqual(UiWatchdog.isActiveGameScreenRecoverySnapshot(Object.assign({}, activeRecoverySnapshot, { phase: 'finished' })), false);
+assert.strictEqual(UiWatchdog.isActiveGameScreenRecoverySnapshot(Object.assign({}, activeRecoverySnapshot, { currentPlayerIndex: -1 })), false);
+assert.strictEqual(UiWatchdog.isActiveGameScreenRecoverySnapshot(Object.assign({}, activeRecoverySnapshot, { allowedActions: [] })), false);
+assert.strictEqual(UiWatchdog.shouldRestoreGameScreenDisplay(activeRecoverySnapshot), true);
+assert.strictEqual(UiWatchdog.shouldRestoreGameScreenDisplay(Object.assign({}, activeRecoverySnapshot, {
+    phase: 'pending',
+    allowedActions: ['resolveIT'],
+})), true);
+assert.strictEqual(UiWatchdog.shouldRestoreGameScreenDisplay(Object.assign({}, activeRecoverySnapshot, {
+    allowedActions: ['buildCard'],
+})), false);
+
+const postBuildSnapshot = Object.assign({}, activeRecoverySnapshot, {
+    builtThisTurn: true,
+    isCpuTurn: false,
+    isOnlineGame: false,
+    pendingFields: {},
+});
+assert.strictEqual(UiWatchdog.isPostBuildNextTurnSnapshot(postBuildSnapshot), true);
+assert.strictEqual(UiWatchdog.isPostBuildNextTurnSnapshot(postBuildSnapshot, true), false);
+assert.strictEqual(UiWatchdog.isPostBuildNextTurnSnapshot(Object.assign({}, postBuildSnapshot, {
+    pendingFields: { pendingRenovation: 1 },
+})), false);
+assert.strictEqual(UiWatchdog.isPostBuildNextTurnSnapshot(Object.assign({}, postBuildSnapshot, {
+    isOnlineGame: true,
+    onlineActionInFlight: true,
+})), false);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: false, socketConnected: false }), false);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, onlineActionInFlight: true }), true);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, isReconnectingOnline: true }), true);

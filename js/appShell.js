@@ -557,9 +557,7 @@ function isHumanTurnSnapshot(snapshot) {
     return UiWatchdog.isHumanTurnSnapshot(snapshot);
 }
 function expectedPrimaryActions(snapshot) {
-    return expectedActionContainerEntries(snapshot)
-        .filter(entry => ['rollDice', 'nextTurn', 'selectDice', 'rerollDice', 'skipReroll', 'resolveHarbor'].includes(entry.action))
-        .map(entry => entry.action);
+    return UiWatchdog.expectedPrimaryActions(snapshot);
 }
 
 function hasUsablePrimaryAction(snapshot) {
@@ -700,20 +698,11 @@ function clearElementModalLock(id) {
 }
 
 function isActiveGameScreenRecoverySnapshot(snapshot) {
-    if (!snapshot || !snapshot.phase) return false;
-    const activePhases = ['roll', 'selectDice', 'rerollConfirm', 'harborChoice', 'pending', 'build'];
-    if (!activePhases.includes(String(snapshot.phase))) return false;
-    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
-    if (!allowed.length) return false;
-    if (!Number.isInteger(snapshot.currentPlayerIndex) || snapshot.currentPlayerIndex < 0) return false;
-    return !!(snapshot.builtThisTurn || snapshot.turnCount !== null || allowed.length);
+    return UiWatchdog.isActiveGameScreenRecoverySnapshot(snapshot);
 }
 
 function shouldRestoreGameScreenDisplay(snapshot) {
-    if (!isActiveGameScreenRecoverySnapshot(snapshot)) return false;
-    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
-    if (snapshot.phase === 'build' && allowed.includes('nextTurn')) return true;
-    return expectedPrimaryActions(snapshot).length > 0 || expectedPendingActions(snapshot).length > 0;
+    return UiWatchdog.shouldRestoreGameScreenDisplay(snapshot);
 }
 
 function clearGameScreenLockIfNoActiveModal(snapshot, reason = 'game-screen-lock-recovery') {
@@ -794,12 +783,7 @@ function clearUiLocks(reason = 'ui-unlock', snapshot = null) {
 }
 
 function isPostBuildNextTurnSnapshot(snapshot) {
-    if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
-    if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    if (hasActiveBlockingModal(snapshot)) return false;
-    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
-    const pending = snapshot.pendingFields || {};
-    return allowed.includes('nextTurn') && !pending.pendingRenovation;
+    return UiWatchdog.isPostBuildNextTurnSnapshot(snapshot, hasActiveBlockingModal(snapshot));
 }
 
 function stabilizePostBuildNextTurnUi(reason = 'post-build-ui-stabilizer') {
