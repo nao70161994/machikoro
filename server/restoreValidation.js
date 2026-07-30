@@ -1,5 +1,16 @@
 'use strict';
 
+/**
+ * @param {{
+ *     isPlainObject: (value: unknown) => boolean,
+ *     isValidUndoState: (value: unknown, playerCount: number, createCardByName: (name: string) => unknown) => boolean,
+ *     createCardByName: (name: string) => unknown,
+ *     cards: ReadonlyArray<{name: string}>,
+ *     landmarkNames: () => ReadonlyArray<string>,
+ *     sanitizeName: (name: unknown) => string,
+ *     isValidGameSchemaMetadata?: (metadata: unknown) => boolean,
+ * }} options
+ */
 function makeRestoreValidation({
     isPlainObject,
     isValidUndoState,

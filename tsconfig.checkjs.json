@@ -76,6 +76,7 @@
     "server/lobbySocketHandlers.js",
     "server/restoreAuditKeyring.js",
     "server/restoreSanitization.js",
+    "server/restoreValidation.js",
     "server/roomValidation.js",
     "server/socketPayload.js",
     "server/reportingPolicy.js",
