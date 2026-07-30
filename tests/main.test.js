@@ -329,6 +329,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(pwaShellSource, context, { filename: 'js/pwaShell.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
+    const localPlayerSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
+    vm.runInContext(localPlayerSettingsSource, context, { filename: 'js/localPlayerSettings.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
@@ -1901,10 +1903,10 @@ runTest('card detail button はタッチ向けhit areaを持つ', () => {
 });
 
 runTest('player setting select は local/online とも programmatic label を持つ', () => {
-    const main = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    const local = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
     const online = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
 
-    assert.ok(main.includes('aria-label=\"プレイヤー${i + 1}の種類\"'));
+    assert.ok(local.includes('aria-label=\"プレイヤー${index + 1}の種類\"'));
     assert.ok(online.includes('aria-label=\"プレイヤー${i + 1}の種類\"'));
 });
 
@@ -1912,6 +1914,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
     const files = [
         'index.html',
         'js/main.js',
+        'js/localPlayerSettings.js',
         'js/uiLogDisplay.js',
         'js/uiCardOrder.js',
         'js/uiPlayerDisplay.js',
@@ -2059,6 +2062,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/pwaShell.js', 'js/appShell.js');
     assertBefore('js/actionUiRegistry.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
+    assertBefore('js/localPlayerSettings.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
 });
 

@@ -66,44 +66,27 @@ function isCpuStepScheduledNow() {
 }
 
 function escapeAttribute(value) {
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    return LocalPlayerSettings.escapeAttribute(value);
 }
 
 function defaultLocalPlayerName(index) {
-    return `プレイヤー${index + 1}`;
+    return LocalPlayerSettings.defaultPlayerName(index);
 }
 
 function normalizeLocalPlayerName(name, index) {
-    const trimmed = String(name || '').trim();
-    return trimmed || defaultLocalPlayerName(index);
+    return LocalPlayerSettings.normalizePlayerName(name, index);
 }
 
 function normalizeLocalPlayerSetting(setting, index, playerCount) {
-    const current = setting || {};
-    return {
-        type: current.type === "cpu" ? "cpu" : "human",
-        difficulty: current.difficulty || "normal",
-        name: normalizeLocalPlayerName(current.name, index),
-    };
+    return LocalPlayerSettings.normalizePlayerSetting(setting, index, playerCount);
 }
 
 function getLocalCpuLabel(difficulty) {
-    if (difficulty === 'weak') return 'CPU（弱）';
-    if (difficulty === 'normal') return 'CPU（普通）';
-    if (difficulty === 'strong') return 'CPU（強）';
-    if (difficulty === 'rl') return 'AI（深層学習）';
-    return 'CPU（最強）';
+    return LocalPlayerSettings.cpuLabel(difficulty);
 }
 
 function getRlCpuSettingNote(playerCount) {
-    if (playerCount >= 3) {
-        return 'AI（深層学習・ランダム）は多人数用の深層学習モデルから選び、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。';
-    }
-    return 'AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。';
+    return LocalPlayerSettings.rlSettingNote(playerCount);
 }
 
 function createCpuPlayer(difficulty, options = {}) {
@@ -143,16 +126,11 @@ function createCpuPlayer(difficulty, options = {}) {
 }
 
 function cpuOpponentDifficultiesFromSettings(settings) {
-    return settings.map(setting => {
-        if (!setting || setting.type !== "cpu") return "human";
-        return setting.difficulty || "normal";
-    });
+    return LocalPlayerSettings.opponentDifficulties(settings);
 }
 
 function formatCpuSpeedLabel(value) {
-    const speed = parseInt(value, 10);
-    if (speed <= 100) return '超高速';
-    return (speed / 1000) + '秒';
+    return LocalPlayerSettings.formatCpuSpeedLabel(value);
 }
 
 function changeCount(delta) {
@@ -164,41 +142,11 @@ function changeCount(delta) {
 }
 
 function renderPlayerSettings() {
-    while (playerSettings.length < selectedCount) {
-        const index = playerSettings.length;
-        playerSettings.push({ type: "human", difficulty: "normal", name: defaultLocalPlayerName(index) });
-    }
-    playerSettings = playerSettings
-        .slice(0, selectedCount)
-        .map((setting, index) => normalizeLocalPlayerSetting(setting, index, selectedCount));
-    const rlNotice = `<div class="player-setting-note">${getRlCpuSettingNote(selectedCount)}</div>`;
-    const html = playerSettings.map((s, i) => `
-        <div class="player-setting">
-            <div class="player-setting-row">
-                <span class="player-setting-name">プレイヤー${i + 1}</span>
-                <select data-ui-change="localPlayerType" data-player-index="${i}" class="player-setting-select" aria-label="プレイヤー${i + 1}の種類">
-                    <option value="human" ${s.type === "human" ? "selected" : ""}>人間</option>
-                    <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
-                    <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
-                    <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
-                    <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>CPU（最強）</option>
-                    <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
-                </select>
-            </div>
-            ${s.type === "human" ? `
-                <input
-                    type="text"
-                    maxlength="12"
-                    class="text-input player-name-input"
-                    placeholder="${defaultLocalPlayerName(i)}"
-                    value="${escapeAttribute(s.name)}"
-                    data-ui-input="localPlayerName"
-                    data-player-index="${i}"
-                >
-            ` : `<div class="player-setting-cpu-label">${getLocalCpuLabel(s.difficulty)}として統計を記録</div>`}
-        </div>
-    `).join("") + rlNotice;
-    document.getElementById("playerSettings").innerHTML = html;
+    playerSettings = Array.from(LocalPlayerSettings.normalizeSettings(playerSettings, selectedCount));
+    document.getElementById("playerSettings").innerHTML = LocalPlayerSettings.buildSettingsHtml(
+        playerSettings,
+        selectedCount
+    );
     updateLocalRlModelReadinessUi();
 }
 
@@ -230,15 +178,11 @@ function onChangePlayerName(index, value) {
 }
 
 function hasRlCpuSetting(settings, playerCount) {
-    return settings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
+    return LocalPlayerSettings.hasRlCpu(settings, playerCount);
 }
 
 function snapshotLocalPlayerSettings(playerCount = selectedCount) {
-    return playerSettings.slice(0, playerCount).map((setting, index) => Object.assign({
-        type: "human",
-        difficulty: "normal",
-        name: defaultLocalPlayerName(index),
-    }, setting || {}));
+    return LocalPlayerSettings.snapshot(playerSettings, playerCount);
 }
 
 function hasLocalRlCpuSetting(playerCount = selectedCount, settings = playerSettings) {

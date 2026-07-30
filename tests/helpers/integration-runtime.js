@@ -179,6 +179,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/pwaShell.js',
         'js/actionUiRegistry.js',
         'js/appShell.js',
+        'js/localPlayerSettings.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
         'js/storage.js',
