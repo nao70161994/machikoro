@@ -116,6 +116,47 @@ runTest('online reconnect state観測は失敗と復元処理を優先する', (
     );
 });
 
+runTest('online reconnect eventとlegacy boolean投影の一致を表駆動で検査する', () => {
+    const events = OnlineReconnectState.events;
+    const cases = [
+        [events.RECONNECT_REQUESTED, { connecting: true }, STATES.CONNECTING],
+        [events.RECONNECT_REQUESTED, { rejoining: true }, STATES.REJOINING],
+        [events.SOCKET_DISCONNECTED, { connecting: true }, STATES.CONNECTING],
+        [events.RESTORE_STARTED, { restoring: true }, STATES.RESTORING],
+        [events.REPLAY_STARTED, { replaying: true }, STATES.REPLAYING],
+        [events.RESTORE_ACTIVATED, { active: true }, STATES.ACTIVE],
+        [events.RETRY_EXHAUSTED, { failed: true }, STATES.FAILED],
+        [events.GAME_COMPLETED, { completed: true }, STATES.COMPLETED],
+        [events.RESET, {}, STATES.IDLE],
+    ];
+
+    for (const [event, flags, state] of cases) {
+        assert.deepStrictEqual(OnlineReconnectState.compareEventProjection(event, flags), {
+            ok: true,
+            event,
+            eventState: state,
+            projectedState: state,
+            matched: true,
+        });
+    }
+
+    assert.deepStrictEqual(
+        OnlineReconnectState.compareEventProjection(events.REPLAY_STARTED, { restoring: true }),
+        {
+            ok: true,
+            event: events.REPLAY_STARTED,
+            eventState: STATES.REPLAYING,
+            projectedState: STATES.RESTORING,
+            matched: false,
+        }
+    );
+    assert.deepStrictEqual(OnlineReconnectState.compareEventProjection('unknown', { active: true }), {
+        ok: false,
+        reason: 'unknown-event',
+        projectedState: STATES.ACTIVE,
+    });
+});
+
 runTest('online reconnect controller は許可遷移とbounded履歴を保持する', () => {
     const controller = OnlineReconnectState.createController({ historyLimit: 3 });
     assert.deepStrictEqual(controller.transition(STATES.CONNECTING, { event: 'connect-start' }), {

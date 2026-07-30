@@ -183,6 +183,34 @@ function deriveOnlineReconnectState(flags = {}) {
 }
 
 /**
+ * Compares the state implied by a lifecycle event with the legacy boolean projection.
+ * This is diagnostic-only and does not authorize a transition or run effects.
+ * @param {string} event
+ * @param {OnlineReconnectFlags} [flags]
+ * @returns {Object}
+ */
+function compareOnlineReconnectEventProjection(event, flags = {}) {
+    if (!isOnlineReconnectEvent(event)) {
+        return Object.freeze({
+            ok: false,
+            reason: 'unknown-event',
+            projectedState: deriveOnlineReconnectState(flags),
+        });
+    }
+    const projectedState = deriveOnlineReconnectState(flags);
+    const eventState = onlineReconnectEventTarget(event, {
+        socketConnected: flags.rejoining === true,
+    });
+    return Object.freeze({
+        ok: true,
+        event,
+        eventState,
+        projectedState,
+        matched: eventState === projectedState,
+    });
+}
+
+/**
  * Creates a bounded diagnostic shadow controller.
  * @param {{initialState?: string, historyLimit?: number}} [options]
  * @returns {OnlineReconnectController}
@@ -286,6 +314,7 @@ const OnlineReconnectState = Object.freeze({
     eventTarget: onlineReconnectEventTarget,
     reduceEvent: reduceOnlineReconnectEvent,
     derive: deriveOnlineReconnectState,
+    compareEventProjection: compareOnlineReconnectEventProjection,
     createController: createOnlineReconnectController,
 });
 
