@@ -549,7 +549,8 @@ runTest('rejoinRoom送信経路はbuildOnlineRejoinPayloadでclientVersion契約
     assert.ok(onlineSource.includes('_armOnlineRejoinResponseTimeout();'));
     assert.ok(storageSource.includes('_emitOnlineRejoinRequest(session)'));
     assert.ok(!storageSource.includes("socket.emit('rejoinRoom'"));
-    assert.ok(storageSource.includes('clientVersion: getStorageClientVersion()'));
+    assert.ok(!storageSource.includes('buildStorageOnlineRejoinPayload'));
+    assert.ok(!storageSource.includes('getStorageClientVersion'));
 });
 runTest('buildOnlineRejoinPayload はclientVersionを含める', () => {
     const localRt = loadOnlineRuntime();

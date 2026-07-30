@@ -104,7 +104,10 @@ function loadStorageRuntime() {
         },
         _emitOnlineRejoinRequest(session) {
             context.rejoinRequests.push(Object.assign({}, session));
-            context.socket.emit('rejoinRoom', context.buildStorageOnlineRejoinPayload(session));
+            context.socket.emit('rejoinRoom', context.OnlinePayloadApi.buildRejoin(
+                session,
+                context.window.MACHIKORO_CLIENT_VERSION
+            ));
             return true;
         },
         resetOnlineState() { context.resetOnlineStateCalls = (context.resetOnlineStateCalls || 0) + 1; },
@@ -132,6 +135,7 @@ function loadStorageRuntime() {
     context.global = context;
     vm.createContext(context);
     loadScripts(context, ['js/gameSnapshot.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/storage.js']);
+    context.OnlinePayloadApi = vm.runInContext('OnlinePayload', context);
     vm.runInContext(`
         this.__test = {
             elements,

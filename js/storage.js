@@ -38,21 +38,6 @@ function setLocalResumePending(pending) {
     }
 }
 
-function getStorageClientVersion() {
-    if (typeof getClientVersion === 'function') return getClientVersion();
-    return (typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION) || 'unknown';
-}
-
-function buildStorageOnlineRejoinPayload(session) {
-    return {
-        roomId: session && session.roomId,
-        playerIndex: session && session.playerIndex,
-        playerName: session && session.playerName,
-        reconnectToken: session && session.reconnectToken,
-        clientVersion: getStorageClientVersion(),
-    };
-}
-
 const STORAGE_ONLINE_SESSION_KEY = typeof ONLINE_SESSION_STORAGE_KEY !== 'undefined'
     ? ONLINE_SESSION_STORAGE_KEY
     : 'onlineSession';
