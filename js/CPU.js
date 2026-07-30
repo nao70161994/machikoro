@@ -1,3 +1,4 @@
+/** @typedef {{action: 'buildCard'|'buildLandmark', data: Object}} CPUBuildActionProposal */
 class CPU {
     constructor(difficulty, options = {}) {
         this.difficulty = difficulty;
@@ -62,6 +63,7 @@ class CPU {
         this.activeExpertPreset = this.expertPreset;
         this.expertTuning = Object.assign({}, this.baseExpertTuning);
         this._collectingBuildAction = false;
+        /** @type {CPUBuildActionProposal|null} */
         this._selectedBuildAction = null;
     }
 
@@ -89,10 +91,11 @@ class CPU {
     }
 
     static _cardByNameMap() {
-        if (!CPU.__cardByNameMap) {
-            CPU.__cardByNameMap = Object.fromEntries(CARDS.map(card => [card.name, card]));
+        const cacheOwner = /** @type {typeof CPU & {__cardByNameMap?: Record<string, Card>}} */ (CPU);
+        if (!cacheOwner.__cardByNameMap) {
+            cacheOwner.__cardByNameMap = Object.fromEntries(CARDS.map(card => [card.name, card]));
         }
-        return CPU.__cardByNameMap;
+        return cacheOwner.__cardByNameMap;
     }
 
     _cardByName(name) {
@@ -1896,13 +1899,14 @@ class CPU {
         const exposedValue = builtValues
             .slice(0, Math.min(extraCopies, builtValues.length))
             .reduce((sum, entry) => sum + entry.value, 0);
+        const premiumLandmarks = /** @type {string[]} */ ([
+            LANDMARK_NAMES.SHOPPING_MALL,
+            LANDMARK_NAMES.HARBOR,
+            LANDMARK_NAMES.RADIO_TOWER,
+            LANDMARK_NAMES.AIRPORT,
+        ]);
         const premiumExposure = builtValues
-            .filter(entry => [
-                LANDMARK_NAMES.SHOPPING_MALL,
-                LANDMARK_NAMES.HARBOR,
-                LANDMARK_NAMES.RADIO_TOWER,
-                LANDMARK_NAMES.AIRPORT,
-            ].includes(entry.name))
+            .filter(entry => premiumLandmarks.includes(entry.name))
             .length;
 
         if (difficulty === "expert") {
@@ -2462,7 +2466,7 @@ class CPU {
 
     /**
      * Selects one canonical build action without mutating the game or shop stock.
-     * @returns {{action: string, data: Object}|null}
+     * @returns {CPUBuildActionProposal|null}
      */
     chooseBuildAction(game, shopStock) {
         this._selectedBuildAction = null;

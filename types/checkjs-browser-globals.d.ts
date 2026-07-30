@@ -3,10 +3,18 @@ declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
 
-declare var CPU: { _nowMs(): number };
-declare var CPU_EXPERT_DEFAULT_OPTIONS: unknown;
-declare var CPU_EXPERT_PRESETS: unknown;
-declare var CPU_EXPERT_PROFILE_TUNINGS: unknown;
+declare var CPUProfile: typeof import("../js/cpuProfile").CPUProfile;
+declare var CPUDiagnostics: typeof import("../js/cpuDiagnostics").CPUDiagnostics;
+declare var CPUEvaluationCache: typeof import("../js/cpuEvaluationCache").CPUEvaluationCache;
+declare var CPUBusinessMoves: typeof import("../js/cpuBusinessMoves").CPUBusinessMoves;
+declare var CPUSimulation: typeof import("../js/cpuSimulation").CPUSimulation;
+declare var CPUEvaluation: typeof import("../js/cpuEvaluation").CPUEvaluation;
+declare var CPUBuildExecution: typeof import("../js/cpuBuildExecution").CPUBuildExecution;
+declare var CPULegalMoves: typeof import("../js/cpuLegalMoves").CPULegalMoves;
+declare var CPUPendingResolution: typeof import("../js/cpuPendingResolution").CPUPendingResolution;
+declare var CPU_EXPERT_DEFAULT_OPTIONS: typeof import("../js/cpuTuning").CPU_EXPERT_DEFAULT_OPTIONS;
+declare var CPU_EXPERT_PRESETS: typeof import("../js/cpuTuning").CPU_EXPERT_PRESETS;
+declare var CPU_EXPERT_PROFILE_TUNINGS: typeof import("../js/cpuTuning").CPU_EXPERT_PROFILE_TUNINGS;
 
 
 declare var isRoomHost: boolean | undefined;

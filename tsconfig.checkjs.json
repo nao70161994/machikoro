@@ -16,6 +16,7 @@
     "types/checkjs-browser-globals.d.ts",
     "js/Card.js",
     "js/Player.js",
+    "js/CPU.js",
     "js/GameManager.js",
     "js/actionContract.js",
     "js/actionUiRegistry.js",

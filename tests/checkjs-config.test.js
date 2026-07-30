@@ -21,13 +21,13 @@ runTest('checkJs configは変換なしの限定JavaScript検査だけを有効�
     assert.ok(packageJson.scripts['test:static'].includes('npm run test:types'));
 });
 
-runTest('checkJs configは限定adapterだけを明示列挙し巨大runtimeを含めない', () => {
+runTest('checkJs configは段階的な検査対象だけを明示列挙する', () => {
     assert.strictEqual(config.files[0], 'types/checkjs-globals.d.ts');
     assert.strictEqual(new Set(config.files).size, config.files.length);
     for (const file of config.files) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
     }
-    for (const excluded of ['server.js', 'js/online.js', 'js/CPU.js', 'js/ui.js', 'js/appShell.js']) {
+    for (const excluded of ['server.js', 'js/online.js', 'js/ui.js', 'js/appShell.js']) {
         assert.ok(!config.files.includes(excluded), excluded);
     }
     assert.ok(config.files.includes('js/Card.js'));
@@ -37,6 +37,7 @@ runTest('checkJs configは限定adapterだけを明示列挙し巨大runtimeを�
     assert.ok(config.files.includes('js/actionUiRegistry.js'));
     assert.ok(config.files.includes('js/adSlots.js'));
     assert.ok(config.files.includes('js/audio.js'));
+    assert.ok(config.files.includes('js/CPU.js'));
     assert.ok(config.files.includes('js/confetti.js'));
     assert.ok(config.files.includes('js/stats.js'));
     assert.ok(config.files.includes('js/RLModelPortfolio.js'));
