@@ -24,6 +24,7 @@
     "js/confetti.js",
     "js/stats.js",
     "js/RLModelPortfolio.js",
+    "js/RLCPU.js",
     "js/gameSnapshot.js",
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",

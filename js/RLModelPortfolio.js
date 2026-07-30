@@ -270,7 +270,7 @@ const RLModelPortfolio = (() => {
         if (typeof RLCPU === "undefined") {
             throw new Error("RLCPU is not loaded");
         }
-        const cpu = new RLCPU(loadModelData(model));
+        const cpu = /** @type {RLCPU & {difficulty: string, modelId: string, modelLabel: string}} */ (new RLCPU(loadModelData(model)));
         cpu.difficulty = "rl";
         cpu.modelId = model.id;
         cpu.modelLabel = model.label;

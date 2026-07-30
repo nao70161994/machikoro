@@ -2,18 +2,17 @@ declare var GameActionContract: typeof import("../js/actionContract");
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
-declare class RLCPU {
-    constructor(modelData: unknown);
-    difficulty: string;
-    modelId: string;
-    modelLabel: string;
-}
 
 declare var CPU: { _nowMs(): number };
 declare var CPU_EXPERT_DEFAULT_OPTIONS: unknown;
 declare var CPU_EXPERT_PRESETS: unknown;
 declare var CPU_EXPERT_PROFILE_TUNINGS: unknown;
 
+
+declare var isRoomHost: boolean | undefined;
+declare var isReconnectingOnline: boolean | undefined;
+declare var socket: { connected?: boolean } | undefined;
+declare var sendAction: ((action: string, data: Record<string, unknown>) => boolean) | undefined;
 
 
 // Browser-global publication names for the explicitly checked compatibility modules.

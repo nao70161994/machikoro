@@ -40,6 +40,7 @@ runTest('checkJs configは限定adapterだけを明示列挙し巨大runtimeを�
     assert.ok(config.files.includes('js/confetti.js'));
     assert.ok(config.files.includes('js/stats.js'));
     assert.ok(config.files.includes('js/RLModelPortfolio.js'));
+    assert.ok(config.files.includes('js/RLCPU.js'));
     assert.ok(config.files.includes('js/gameSnapshot.js'));
     assert.ok(config.files.includes('js/gameEngine.js'));
     assert.ok(config.files.includes('js/cpuActionProposal.js'));
