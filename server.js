@@ -24,6 +24,14 @@ const {
     isRateLimited: isReportRateLimited,
     rememberAndCheckDuplicate,
 } = require('./server/reportThrottle');
+const {
+    resolveTrustProxySetting,
+    clientReportRateKey,
+    resolveNtfyTopic,
+    isClientErrorTestEnabled,
+    createClientErrorTestPayload,
+    gameLifecycleDedupeKey,
+} = require('./server/reportingPolicy');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
@@ -283,7 +291,6 @@ const GAME_LIFECYCLE_LIMITS = Object.freeze({
 });
 const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
-const CLIENT_ERROR_TEST_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
 function restoreAuditConfig() {
     return restoreAuditKeyringConfig(process.env);
@@ -316,15 +323,6 @@ function restoreAuditVerificationOptions(roomId) {
     };
 }
 
-function resolveTrustProxySetting(env = process.env) {
-    const value = String(env.TRUST_PROXY || env.EXPRESS_TRUST_PROXY || '').trim();
-    if (!value) return false;
-    const lower = value.toLowerCase();
-    if (['0', 'false', 'no', 'off'].includes(lower)) return false;
-    if (['1', 'true', 'yes', 'on'].includes(lower)) return 1;
-    return value;
-}
-
 const {
     truncateText,
     scrubClientErrorText,
@@ -351,19 +349,6 @@ const {
 } = makeGameLifecycleReporting({
     truncateText,
 });
-
-function clientErrorRateKey(req) {
-    return req?.ip || req?.socket?.remoteAddress || 'unknown';
-}
-
-function isNtfyConfigured(env = process.env) {
-    return String(env.NODE_ENV || '').toLowerCase() === 'production' && !!String(env.NTFY_TOPIC || '').trim();
-}
-
-function resolveNtfyTopic(options = {}, env = process.env) {
-    if (Object.prototype.hasOwnProperty.call(options, 'topic')) return options.topic;
-    return isNtfyConfigured(env) ? env.NTFY_TOPIC : '';
-}
 
 function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
     pruneRateBuckets(now, buckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, CLIENT_ERROR_LIMITS.rateLimitMaxBuckets);
@@ -420,7 +405,7 @@ async function handleClientErrorRequest(req, res, options = {}) {
         return;
     }
     const now = options.now || Date.now();
-    const rateKey = clientErrorRateKey(req);
+    const rateKey = clientReportRateKey(req);
     if (isClientErrorRateLimited(rateKey, now, options.rateBuckets || clientErrorRateBuckets)) {
         res.status(429).json({ ok: false, error: 'rate_limited' });
         return;
@@ -438,28 +423,8 @@ async function handleClientErrorRequest(req, res, options = {}) {
 }
 
 
-function isClientErrorTestEnabled(env = process.env) {
-    const explicit = String(env.CLIENT_ERROR_TEST_ENABLED || '').toLowerCase();
-    if (CLIENT_ERROR_TEST_ENABLED_VALUES.has(explicit)) return true;
-    const nodeEnv = String(env.NODE_ENV || '').toLowerCase();
-    return nodeEnv === 'development' || nodeEnv === 'test';
-}
-
 function buildClientErrorTestPayload(now = Date.now(), buildHash = BUILD_HASH) {
-    return {
-        source: 'manual-test-endpoint',
-        message: 'ダイスシティ ntfy test notification',
-        stack: 'Manual test via /api/client-error-test; no real client error occurred.',
-        filename: 'server.js',
-        line: null,
-        column: null,
-        userAgent: 'server-side test endpoint',
-        phase: 'test',
-        roomId: 'TEST01',
-        playerIndex: 0,
-        timestamp: new Date(now).toISOString(),
-        appVersion: buildHash,
-    };
+    return createClientErrorTestPayload(now, buildHash);
 }
 
 async function handleClientErrorTestRequest(req, res, options = {}) {
@@ -490,7 +455,7 @@ async function handleClientErrorTestRequest(req, res, options = {}) {
 
 
 function gameLifecycleRateKey(req) {
-    return clientErrorRateKey(req);
+    return clientReportRateKey(req);
 }
 
 function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecycleRateBuckets) {
@@ -499,10 +464,6 @@ function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecyc
         max: GAME_LIFECYCLE_LIMITS.rateLimitMax,
         maxBuckets: GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets,
     });
-}
-
-function gameLifecycleDedupeKey(report) {
-    return [report.event, report.sessionId].join('|');
 }
 
 function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
