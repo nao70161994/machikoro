@@ -35,6 +35,7 @@ interface Window {
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;
+    OnlinePlayerSettings: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
     GameSchemaWire: unknown;

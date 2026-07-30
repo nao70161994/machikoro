@@ -1904,10 +1904,10 @@ runTest('card detail button はタッチ向けhit areaを持つ', () => {
 
 runTest('player setting select は local/online とも programmatic label を持つ', () => {
     const local = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
-    const online = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    const online = fs.readFileSync(path.join(__dirname, '..', 'js/onlinePlayerSettings.js'), 'utf8');
 
     assert.ok(local.includes('aria-label=\"プレイヤー${index + 1}の種類\"'));
-    assert.ok(online.includes('aria-label=\"プレイヤー${i + 1}の種類\"'));
+    assert.ok(online.includes('aria-label=\"プレイヤー${index + 1}の種類\"'));
 });
 
 runTest('主要HTML/JSには inline handler 属性を再導入しない', () => {
@@ -1915,6 +1915,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'index.html',
         'js/main.js',
         'js/localPlayerSettings.js',
+        'js/onlinePlayerSettings.js',
         'js/uiLogDisplay.js',
         'js/uiCardOrder.js',
         'js/uiPlayerDisplay.js',

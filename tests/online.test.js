@@ -126,6 +126,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/clientStorage.js');
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
+    loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
     loadScript(context, 'js/onlineRetryPolicy.js');

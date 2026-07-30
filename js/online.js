@@ -19,22 +19,14 @@ function createOnlineCpuPlayer(difficulty, options = {}) {
 }
 
 function onlineCpuOpponentDifficultiesFromSettings(settings) {
-    return settings.map(setting => {
-        if (!setting || setting.type !== "cpu") return "human";
-        return setting.difficulty || "normal";
-    });
+    return OnlinePlayerSettings.opponentDifficulties(settings);
 }
 
 function freezeOnlinePlayerSettings(settings, playerCount) {
-    return settings.slice(0, playerCount).map(setting => {
-        if (!setting || setting.type !== "cpu") return setting;
-        const frozen = Object.assign({}, setting);
-        if (frozen.difficulty === "rl" && !frozen.rlModelId && typeof RLModelPortfolio !== "undefined") {
-            const model = RLModelPortfolio.selectRandomModel(playerCount);
-            if (model) frozen.rlModelId = model.id;
-        }
-        return frozen;
-    });
+    const selectRlModel = typeof RLModelPortfolio !== "undefined"
+        ? count => RLModelPortfolio.selectRandomModel(count)
+        : null;
+    return OnlinePlayerSettings.freezeForCreate(settings, playerCount, selectRlModel);
 }
 
 function getClientVersion() {
@@ -108,38 +100,18 @@ function changeOnlineCount(delta) {
 }
 
 function getOnlineRlCpuSettingNote(playerCount) {
-    if (typeof getRlCpuSettingNote === "function") {
-        return getRlCpuSettingNote(playerCount);
-    }
-    if (playerCount >= 3) {
-        return "AI（深層学習・ランダム）は多人数用の深層学習モデルから選び、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。";
-    }
-    return "AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。";
+    return OnlinePlayerSettings.rlSettingNote(playerCount);
 }
 
 function renderOnlinePlayerSettings() {
-    while (onlinePlayerSettings.length < onlineSelectedCount) {
-        onlinePlayerSettings.push({ type: "human", difficulty: "normal" });
-    }
-    onlinePlayerSettings = onlinePlayerSettings.slice(0, onlineSelectedCount).map((setting) => ({
-        type: setting.type === "cpu" ? "cpu" : "human",
-        difficulty: setting.difficulty || "normal",
-    }));
-    const rlNotice = `<div class="player-setting-note">${getOnlineRlCpuSettingNote(onlineSelectedCount)}</div>`;
-    const html = onlinePlayerSettings.map((s, i) => `
-        <div class="player-setting">
-            <span class="player-setting-name">プレイヤー${i + 1}</span>
-            <select data-ui-change="onlinePlayerType" data-player-index="${i}" class="player-setting-select" aria-label="プレイヤー${i + 1}の種類">
-                <option value="human" ${s.type === "human" ? "selected" : ""}>人間</option>
-                <option value="weak"  ${s.type === "cpu" && s.difficulty === "weak"   ? "selected" : ""}>CPU（弱）</option>
-                <option value="normal" ${s.type === "cpu" && s.difficulty === "normal" ? "selected" : ""}>CPU（普通）</option>
-                <option value="strong" ${s.type === "cpu" && s.difficulty === "strong" ? "selected" : ""}>CPU（強）</option>
-                <option value="expert" ${s.type === "cpu" && s.difficulty === "expert" ? "selected" : ""}>CPU（最強）</option>
-                <option value="rl" ${s.type === "cpu" && s.difficulty === "rl" ? "selected" : ""}>AI（深層学習・ランダム）</option>
-            </select>
-        </div>
-    `).join("") + rlNotice;
-    document.getElementById("onlinePlayerSettings").innerHTML = html;
+    onlinePlayerSettings = Array.from(OnlinePlayerSettings.normalizeSettings(
+        onlinePlayerSettings,
+        onlineSelectedCount
+    ));
+    document.getElementById("onlinePlayerSettings").innerHTML = OnlinePlayerSettings.buildSettingsHtml(
+        onlinePlayerSettings,
+        onlineSelectedCount
+    );
     updateOnlineRlModelReadinessUi();
 }
 
@@ -1597,11 +1569,11 @@ function handleAppError(msg) {
 }
 
 function snapshotOnlinePlayerSettings(playerCount = onlineSelectedCount) {
-    return onlinePlayerSettings.slice(0, playerCount).map(setting => Object.assign({ type: "human", difficulty: "normal" }, setting || {}));
+    return OnlinePlayerSettings.snapshot(onlinePlayerSettings, playerCount);
 }
 
 function hasOnlineRlCpuSetting(playerCount = onlineSelectedCount, settings = onlinePlayerSettings) {
-    return settings.slice(0, playerCount).some(setting => setting && setting.type === "cpu" && setting.difficulty === "rl");
+    return OnlinePlayerSettings.hasRlCpu(settings, playerCount);
 }
 
 function canPreloadOnlineRlModels() {
