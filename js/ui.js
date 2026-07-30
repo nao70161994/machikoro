@@ -1193,34 +1193,24 @@ function renderCardSelectModal() {
 }
 
 function toggleCard(name) {
-    if (enabledCards.has(name)) {
-        if (name === "麦畑" || name === "パン屋") return;
-        enabledCards.delete(name);
-    } else {
-        enabledCards.add(name);
-    }
+    const result = UiCardSelect.toggleCardSelection(enabledCards, name);
+    if (!result.changed) return;
+    enabledCards = new Set(result.selectedNames);
     renderCardSelectModal();
 }
 
 function toggleSet(set) {
     const cards = CARD_SETS[set];
     if (!cards) return;
-    const allOn = cards.every(n => enabledCards.has(n));
-    for (const name of cards) {
-        if (name === "麦畑" || name === "パン屋") continue;
-        if (allOn) enabledCards.delete(name);
-        else enabledCards.add(name);
-    }
+    const result = UiCardSelect.toggleCardSetSelection(enabledCards, cards);
+    enabledCards = new Set(result.selectedNames);
     renderCardSelectModal();
 }
 
 function toggleLandmark(name) {
-    if (enabledLandmarks.has(name)) {
-        if (enabledLandmarks.size === 1) return;
-        enabledLandmarks.delete(name);
-    } else {
-        enabledLandmarks.add(name);
-    }
+    const result = UiCardSelect.toggleLandmarkSelection(enabledLandmarks, name);
+    if (!result.changed) return;
+    enabledLandmarks = new Set(result.selectedNames);
     renderCardSelectModal();
 }
 

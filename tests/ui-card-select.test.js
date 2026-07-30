@@ -31,3 +31,72 @@ runTest('ui card select はランドマークtoggleを既存属性で生成す�
     });
     assert.strictEqual(html, '<button class="card-toggle-btn off" data-action="toggleLandmark" data-landmark-name="港" aria-pressed="false">⚓ 港</button>');
 });
+
+runTest('ui card select stateは必須カードを外さず入力Setを変更しない', () => {
+    const selected = new Set(['麦畑', 'パン屋', '牧場']);
+    const required = UiCardSelect.toggleCardSelection(selected, '麦畑');
+    assert.deepStrictEqual(required, {
+        changed: false,
+        selectedNames: ['麦畑', 'パン屋', '牧場'],
+    });
+    assert.deepStrictEqual(Array.from(selected), ['麦畑', 'パン屋', '牧場']);
+
+    const removed = UiCardSelect.toggleCardSelection(selected, '牧場');
+    assert.deepStrictEqual(removed, {
+        changed: true,
+        selectedNames: ['麦畑', 'パン屋'],
+    });
+    const added = UiCardSelect.toggleCardSelection(selected, 'コンビニ');
+    assert.deepStrictEqual(added.selectedNames, ['麦畑', 'パン屋', '牧場', 'コンビニ']);
+    assert.ok(Object.isFrozen(added));
+    assert.ok(Object.isFrozen(added.selectedNames));
+});
+
+runTest('ui card select stateはset一括切替の順序と必須カードを維持する', () => {
+    const current = new Set(['麦畑', 'パン屋', '牧場', 'カフェ']);
+    const disabled = UiCardSelect.toggleCardSetSelection(
+        current,
+        ['麦畑', 'パン屋', '牧場']
+    );
+    assert.deepStrictEqual(disabled, {
+        valid: true,
+        allOn: true,
+        changed: true,
+        selectedNames: ['麦畑', 'パン屋', 'カフェ'],
+    });
+
+    const enabled = UiCardSelect.toggleCardSetSelection(
+        new Set(['麦畑', 'カフェ']),
+        ['麦畑', 'パン屋', '牧場']
+    );
+    assert.deepStrictEqual(enabled, {
+        valid: true,
+        allOn: false,
+        changed: true,
+        selectedNames: ['麦畑', 'カフェ', '牧場'],
+    });
+    assert.deepStrictEqual(
+        UiCardSelect.toggleCardSetSelection(current, null),
+        {
+            valid: false,
+            allOn: false,
+            changed: false,
+            selectedNames: ['麦畑', 'パン屋', '牧場', 'カフェ'],
+        }
+    );
+});
+
+runTest('ui card select stateはランドマークを最低1件維持する', () => {
+    assert.deepStrictEqual(
+        UiCardSelect.toggleLandmarkSelection(new Set(['駅']), '駅'),
+        { changed: false, selectedNames: ['駅'] }
+    );
+    assert.deepStrictEqual(
+        UiCardSelect.toggleLandmarkSelection(new Set(['駅', '港']), '駅'),
+        { changed: true, selectedNames: ['港'] }
+    );
+    assert.deepStrictEqual(
+        UiCardSelect.toggleLandmarkSelection(new Set(['駅']), '港'),
+        { changed: true, selectedNames: ['駅', '港'] }
+    );
+});
