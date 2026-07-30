@@ -129,7 +129,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | Future file | Responsibility |
 | --- | --- |
 | `js/onlineStorage.js` | Browser-global facade for room-scoped session keys, legacy fallback reads, restore bundle read/write/delete, pending outbound persistence, and namespace constants. |
-| `js/onlineReconnectState.js` | Explicit state constants and transition helpers for idle, connecting, rejoining, restoring, replaying, active, failed, and completed flows. The current integration is observation-only. |
+| `js/onlineReconnectState.js` | Explicit state constants and transition helpers for idle, connecting, rejoining, restoring, replaying, active, failed, and completed flows. Event reads and the compatibility reconnecting boolean each have an independent, default-off, fail-closed authority gate; the effect gate is exercised only by tests and is not injected into production HTML. |
 | `js/onlineActions.js` | Client action send/apply helpers only after storage and state are stable. |
 | `js/online.js` | Socket event orchestration and integration with UI/main. |
 
@@ -337,14 +337,14 @@ As of 2026-07-30, rollback-friendly units from this plan are implemented without
 - JSDoc contracts for 90 explicitly listed browser/server runtime files, including `CPU.js`, `RLCPU.js`, `server.js`, and every extracted `server/*.js` module, are enforced by TypeScript 5.9.3 in no-emit checkJs mode through `npm run test:types`, which is part of `test:static`. The five remaining side-effect client runtimes (`appShell`, `main`, `online`, `storage`, `ui`) remain excluded pending staged dependency separation; this typed boundary gate does not imply live authority or a TypeScript migration.
 - New helper modules have focused domain tests; existing giant test files were not mechanically reorganized.
 
-The remaining steps below still require the same gates described in each design section. In particular, live pure-engine authority, recreate-request/local-save versioning, reconnect timer/callback/write-authority migration beyond the completed gated read step, remaining recreate/restore-authority movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
+The remaining steps below still require the same gates described in each design section. In particular, live pure-engine authority, recreate-request/local-save versioning, reconnect timer/callback/queue authority migration beyond the completed gated compatibility-boolean step, remaining recreate/restore-authority movement, modal DOM/focus/inert movement, and broad CPU scoring/selection movement need planned verification beyond current automated parity. The completed mixed Android/iPhone reconnect match is evidence for its exact path only; automated WebKit and that one match must not be recorded as completion of host migration, restart restore, provisional hostless timing, Undo, online CPU, background/PWA, or modal gates.
 
 ## Recommended Migration Order
 
 1. **Keep the implemented helper boundaries stable:** Prefer extending the existing server, online, and UI pure modules before adding equivalent logic back into giant files.
 2. **Further pure render helpers:** Move only exact-output helpers with escape and selector contract tests; do not move modal lifecycle yet.
 3. **Game Engine shadow maintenance:** Keep all-action, four-selection parity green; add richer fixtures when a touched action gains a new state-dependent branch before considering a live cutover.
-4. **Reconnect state machine and server recreate/restore split:** Keep the completed event-state input-read flag independently reversible. Move boolean writes, timing, callbacks, queues, or visible effects only under a separately reviewed rollout/rollback plan; the current integration parity is necessary but not sufficient for effect authority.
+4. **Reconnect state machine and server recreate/restore split:** Keep the event-state input-read flag and compatibility-boolean effect flag independently reversible. The effect flag remains absent from production HTML and falls back to the legacy value on any parity defect. Move timing, callbacks, queues, cleanup, or visible effects only under another rollback gate; current integration parity covers boolean ownership, not those effects.
 5. **Restore authority activation:** The adapter/keyring/priority contracts are ready; activate only after durable provider, retention/locking, secret operations, migration, and rollback decisions.
 
 ## Historical First Safe Design Units
@@ -356,7 +356,7 @@ The remaining steps below still require the same gates described in each design 
 ## Why Not Implement The Remaining Work Now
 
 - The safe pure-helper units above are complete; remaining handler/state/lifecycle moves are no longer pure extraction only.
-- Remaining handler moves and reconnect effect-authority changes need careful sequencing; visible/socket timing changes still need external evidence even though the read-only gate step is automated and reversible.
+- Remaining handler moves and reconnect timer/callback/queue authority changes need careful sequencing; visible/socket timing changes still need external evidence even though the read and compatibility-boolean gates are automated and reversible.
 - Restore trust improvements are product/security decisions, not maintenance cleanup.
 - Broad simultaneous splits would create compatibility risk and make rollback difficult.
 
