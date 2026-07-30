@@ -35,6 +35,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineStorage.js',
     'js/pwaShell.js',
     'js/savedGameValidation.js',
+    'js/storageSettings.js',
     'js/stats.js',
     'js/uiBuildMenu.js',
     'js/uiCardDetail.js',

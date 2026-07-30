@@ -173,6 +173,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/actionUiRegistry.js',
         'js/appShell.js',
         'js/savedGameValidation.js',
+        'js/storageSettings.js',
         'js/storage.js',
         'js/stats.js',
         'js/uiNotice.js',

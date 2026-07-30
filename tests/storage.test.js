@@ -125,7 +125,7 @@ function loadStorageRuntime() {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/storage.js']);
     vm.runInContext(`
         this.__test = {
             elements,

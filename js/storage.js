@@ -443,17 +443,11 @@ function loadSettings() {
         const normalizeName = typeof normalizeLocalPlayerName === 'function'
             ? normalizeLocalPlayerName
             : ((name, index) => String(name || '').trim() || `プレイヤー${index + 1}`);
-        const count = parseInt(localStorage.getItem('selectedCount') || '2');
-        selectedCount = Math.min(10, Math.max(2, count));
+        selectedCount = StorageSettings.normalizePlayerCount(localStorage.getItem('selectedCount'));
         document.getElementById("playerCount").textContent = selectedCount;
         const ps = localStorage.getItem('playerSettings');
-        if (ps) {
-            playerSettings = JSON.parse(ps).slice(0, selectedCount).map((setting, index) => ({
-                type: setting.type === 'cpu' ? 'cpu' : 'human',
-                difficulty: setting.difficulty || 'normal',
-                name: normalizeName(setting.name, index),
-            }));
-        }
+        const normalizedPlayerSettings = StorageSettings.normalizePlayerSettings(ps, selectedCount, normalizeName);
+        if (normalizedPlayerSettings) playerSettings = normalizedPlayerSettings;
         const speed = localStorage.getItem('cpuSpeed');
         if (speed) {
             const speedEl = document.getElementById('cpuSpeed');
@@ -464,8 +458,8 @@ function loadSettings() {
                     : ((parseInt(speed, 10) / 1000) + '秒');
             }
         }
-        tutorialEnabled = localStorage.getItem('tutorialEnabled') !== 'false';
-        tutorialLevel = localStorage.getItem('tutorialLevel') === 'advanced' ? 'advanced' : 'beginner';
+        tutorialEnabled = StorageSettings.normalizeTutorialEnabled(localStorage.getItem('tutorialEnabled'));
+        tutorialLevel = StorageSettings.normalizeTutorialLevel(localStorage.getItem('tutorialLevel'));
     } catch(e) {}
     syncTutorialControls();
     renderPlayerSettings();
