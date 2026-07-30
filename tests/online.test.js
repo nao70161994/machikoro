@@ -122,7 +122,8 @@ function loadOnlineRuntime(options = {}) {
         }
     `, context);
 
-    // online storage facade と online.js をロード
+    // client / online storage facade と online.js をロード
+    loadScript(context, 'js/clientStorage.js');
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreRank.js');

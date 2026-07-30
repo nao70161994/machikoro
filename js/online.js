@@ -267,17 +267,17 @@ function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingActio
     );
 }
 
+const onlineClientStorageFacade = ClientStorage.createFacade();
+const onlineUnavailableClientStorage = Object.freeze({
+    getItem() { return null; },
+    setItem() {},
+    removeItem() {},
+    key() { return null; },
+    length: 0,
+});
+
 function getOnlineClientStorage() {
-    try {
-        if (typeof localStorage !== 'undefined') return localStorage;
-    } catch (_) {}
-    return {
-        getItem() { return null; },
-        setItem() {},
-        removeItem() {},
-        key() { return null; },
-        length: 0,
-    };
+    return onlineClientStorageFacade.storage() || onlineUnavailableClientStorage;
 }
 
 const onlineStorage = createOnlineStorageFacade({
