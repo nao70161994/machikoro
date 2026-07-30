@@ -18,6 +18,19 @@ function rejoinWaitingMessage(attemptCount, maxAttempts = ONLINE_RETRY_DEFAULTS.
     return '⏳ ホストの復元を待っています... (' + (attemptCount + 1) + '/' + maxAttempts + ')';
 }
 
+const REJOIN_TIMEOUT_DECISIONS = Object.freeze({
+    IGNORE: 'ignore',
+    REJOIN: 'rejoin',
+    EXHAUST: 'exhaust',
+});
+
+function rejoinTimeoutDecision(reconnecting, attemptCount) {
+    if (reconnecting !== true) return REJOIN_TIMEOUT_DECISIONS.IGNORE;
+    return isRejoinExhausted(attemptCount)
+        ? REJOIN_TIMEOUT_DECISIONS.EXHAUST
+        : REJOIN_TIMEOUT_DECISIONS.REJOIN;
+}
+
 function createRejoinTimerController(options = {}) {
     const setTimer = typeof options.setTimer === 'function' ? options.setTimer : null;
     const clearTimer = typeof options.clearTimer === 'function' ? options.clearTimer : null;
@@ -75,6 +88,8 @@ const OnlineRetryPolicy = Object.freeze({
     isRejoinExhausted,
     rejoinDeadline,
     rejoinWaitingMessage,
+    timeoutDecisions: REJOIN_TIMEOUT_DECISIONS,
+    rejoinTimeoutDecision,
     createRejoinTimerController,
     actionAckAgeMs,
     isActionAckTimedOut,

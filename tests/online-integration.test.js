@@ -121,6 +121,7 @@ runTest('online integration: event authorityは開始・切断・再join・復�
         onlineReconnectEventAuthorityEnabled: true,
         onlineReconnectEffectAuthorityEnabled: true,
         onlineReconnectTimerAuthorityEnabled: true,
+        onlineReconnectCallbackAuthorityEnabled: true,
     });
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
@@ -146,6 +147,7 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     assert.strictEqual(snapshot.effectAuthority.reconnecting, false);
     assert.strictEqual(snapshot.timerAuthority.source, 'event');
     assert.strictEqual(snapshot.timerAuthority.pending, false);
+    assert.strictEqual(snapshot.callbackAuthority.source, 'event');
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, false);
 
     rt.__test.getOnlineState().socket.connected = false;
@@ -197,6 +199,7 @@ runTest('online integration: timer authorityは再join上限でfailedへ遷移�
         onlineReconnectEventAuthorityEnabled: true,
         onlineReconnectEffectAuthorityEnabled: true,
         onlineReconnectTimerAuthorityEnabled: true,
+        onlineReconnectCallbackAuthorityEnabled: true,
     });
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
@@ -230,6 +233,7 @@ runTest('online integration: timer authorityは再join上限でfailedへ遷移�
     assert.strictEqual(snapshot.timerAuthority.source, 'event');
     assert.strictEqual(snapshot.timerAuthority.pending, false);
     assert.strictEqual(snapshot.timerAuthority.deadline, 0);
+    assert.strictEqual(snapshot.callbackAuthority.source, 'event');
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
     assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
 });
@@ -240,6 +244,7 @@ runTest('online integration: timer authorityはparity不一致時にlegacy timer
         onlineReconnectEventAuthorityEnabled: true,
         onlineReconnectEffectAuthorityEnabled: true,
         onlineReconnectTimerAuthorityEnabled: true,
+        onlineReconnectCallbackAuthorityEnabled: true,
     });
     rt.localStorage.setItem('onlineSession', JSON.stringify({
         roomId: 'ROOM01',
@@ -262,6 +267,8 @@ runTest('online integration: timer authorityはparity不一致時にlegacy timer
     assert.strictEqual(snapshot.timerAuthority.source, 'legacy-fallback');
     assert.strictEqual(snapshot.timerAuthority.pending, true);
     assert.strictEqual(snapshot.timerAuthority.fallbackReason, 'state-mismatch');
+    assert.strictEqual(snapshot.callbackAuthority.source, 'legacy-fallback');
+    assert.strictEqual(snapshot.callbackAuthority.fallbackReason, 'state-mismatch');
 });
 
 runTest('online integration: socket再接続時はrejoinRoomで最新状態を取り直す', () => {

@@ -33,6 +33,20 @@ runTest('online retry policy preserves deadline and waiting text', () => {
     );
 });
 
+runTest('online retry timeout decisionは無視・再送・上限到達を純粋判定する', () => {
+    const decisions = OnlineRetryPolicy.timeoutDecisions;
+    assert.deepStrictEqual(decisions, {
+        IGNORE: 'ignore',
+        REJOIN: 'rejoin',
+        EXHAUST: 'exhaust',
+    });
+    assert.strictEqual(OnlineRetryPolicy.rejoinTimeoutDecision(false, 0), decisions.IGNORE);
+    assert.strictEqual(OnlineRetryPolicy.rejoinTimeoutDecision(undefined, 8), decisions.IGNORE);
+    assert.strictEqual(OnlineRetryPolicy.rejoinTimeoutDecision(true, 0), decisions.REJOIN);
+    assert.strictEqual(OnlineRetryPolicy.rejoinTimeoutDecision(true, 7), decisions.REJOIN);
+    assert.strictEqual(OnlineRetryPolicy.rejoinTimeoutDecision(true, 8), decisions.EXHAUST);
+});
+
 runTest('online retry timer controllerはhandleとdeadlineだけを所有する', () => {
     let currentTime = 1000;
     const timers = [];

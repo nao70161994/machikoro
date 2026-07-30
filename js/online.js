@@ -245,6 +245,11 @@ function isOnlineReconnectTimerAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_TIMER_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectCallbackAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_CALLBACK_AUTHORITY_ENABLED === true;
+}
+
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
     return OnlineReconnectState.selectEffectAuthority(
         _onlineReconnectController.snapshot(),
@@ -278,6 +283,17 @@ function _onlineReconnectTimerAuthoritySelection() {
     });
 }
 
+function _onlineReconnectCallbackAuthoritySelection() {
+    const timerSelection = _onlineReconnectTimerAuthoritySelection();
+    const enabled = isOnlineReconnectCallbackAuthorityEnabled();
+    const active = enabled && timerSelection.source === 'event';
+    return Object.freeze({
+        source: active ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
+        ready: timerSelection.ready,
+        fallbackReason: timerSelection.fallbackReason,
+    });
+}
+
 function _onlineReconnectAuthoritySelection() {
     return OnlineReconnectState.selectAuthorityState(
         _onlineReconnectController.snapshot(),
@@ -301,6 +317,7 @@ function getOnlineReconnectStateSnapshot() {
         authority: _onlineReconnectAuthoritySelection(),
         effectAuthority: _onlineReconnectEffectSelection(isReconnectingOnline),
         timerAuthority: _onlineReconnectTimerAuthoritySelection(),
+        callbackAuthority: _onlineReconnectCallbackAuthoritySelection(),
     });
 }
 
@@ -462,6 +479,12 @@ function _isOnlineReconnectTimerAuthorityActive() {
     return _onlineReconnectTimerAuthoritySelection().source === 'event';
 }
 
+function _isOnlineReconnectCallbackAuthorityActive() {
+    if (!isOnlineReconnectCallbackAuthorityEnabled()) return false;
+    getOnlineReconnectState();
+    return _onlineReconnectCallbackAuthoritySelection().source === 'event';
+}
+
 function _hasOnlineRejoinTimer() {
     return _isOnlineReconnectTimerAuthorityActive()
         ? _onlineRejoinTimerController.hasPending()
@@ -513,8 +536,19 @@ function _finishRejoinRetryTimeout() {
 function _handleOnlineRejoinResponseTimeout() {
     _rejoinRetryTimer = null;
     _rejoinRetryDeadline = 0;
-    if (!isReconnectingOnline) return;
-    if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) {
+    let shouldExhaust = false;
+    if (_isOnlineReconnectCallbackAuthorityActive()) {
+        const decision = OnlineRetryPolicy.rejoinTimeoutDecision(
+            isReconnectingOnline,
+            _rejoinRetryCount
+        );
+        if (decision === OnlineRetryPolicy.timeoutDecisions.IGNORE) return;
+        shouldExhaust = decision === OnlineRetryPolicy.timeoutDecisions.EXHAUST;
+    } else {
+        if (!isReconnectingOnline) return;
+        shouldExhaust = OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount);
+    }
+    if (shouldExhaust) {
         _finishRejoinRetryTimeout();
         return;
     }
