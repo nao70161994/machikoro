@@ -16,6 +16,14 @@ function safeStorageRemove(key) {
     storageClientStorageFacade.remove(key);
 }
 
+function setStorageOnlineReconnectLegacyFlag(value) {
+    if (typeof setOnlineReconnectLegacyFlag === 'function') {
+        return setOnlineReconnectLegacyFlag(value);
+    }
+    isReconnectingOnline = value === true;
+    return isReconnectingOnline;
+}
+
 let localResumePending = false;
 let localResumeGeneration = 0;
 
@@ -191,7 +199,7 @@ function reconnectOnline() {
         return;
     }
     try {
-        isReconnectingOnline = true;
+        setStorageOnlineReconnectLegacyFlag(true);
         if (typeof _clearRejoinRetry === 'function') _clearRejoinRetry();
         isRoomHost = session.isRoomHost || false;
         myPlayerName = session.playerName || '';
@@ -200,7 +208,7 @@ function reconnectOnline() {
         myPlayerIndex = myOriginalPlayerIndex;
         reconnectToken = session.reconnectToken || '';
         if (!initSocket()) {
-            isReconnectingOnline = false;
+            setStorageOnlineReconnectLegacyFlag(false);
             isRoomHost = false;
             myPlayerName = '';
             myRoomId = null;
@@ -215,7 +223,7 @@ function reconnectOnline() {
             showNotice('再接続要求を送信できませんでした');
         }
     } catch(e) {
-        isReconnectingOnline = false;
+        setStorageOnlineReconnectLegacyFlag(false);
         clearOnlineSessionStorage();
         updateResumeButton();
         showNotice('再接続データの読み込みに失敗しました');

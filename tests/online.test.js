@@ -226,6 +226,7 @@ function loadOnlineRuntime(options = {}) {
         };
         this.getOnlineLobbyState = () => ({ createPending: onlineCreateRoomPending, joinPending: onlineJoinRoomPending, kind: onlineLobbyRequestKind });
         this.isOnlineReconnectInputBlocked = isOnlineReconnectInputBlocked;
+        this.setOnlineReconnectLegacyFlag = setOnlineReconnectLegacyFlag;
         this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
@@ -505,6 +506,21 @@ runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す'
     assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
     assert.strictEqual(snapshot.eventState, 'connecting');
     assert.strictEqual(snapshot.history.slice(-1)[0].projectionMatched, true);
+});
+
+runTest('online.jsのlegacy reconnect書き込みは単一setterでboolean契約を維持する', () => {
+    const localRt = loadOnlineRuntime();
+    assert.strictEqual(localRt.setOnlineReconnectLegacyFlag('true'), false);
+    assert.strictEqual(localRt.getOnlineState().isReconnectingOnline, false);
+    assert.strictEqual(localRt.setOnlineReconnectLegacyFlag(true), true);
+    assert.strictEqual(localRt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(localRt.setOnlineReconnectLegacyFlag(false), false);
+    assert.strictEqual(localRt.getOnlineState().isReconnectingOnline, false);
+
+    const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.strictEqual((onlineSource.match(/isReconnectingOnline = true;/g) || []).length, 0);
+    assert.strictEqual((onlineSource.match(/isReconnectingOnline = false;/g) || []).length, 1);
+    assert.ok(onlineSource.includes('isReconnectingOnline = value === true;'));
 });
 
 runTest('online.jsのreconnect観測状態は完了とresetを区別する', () => {

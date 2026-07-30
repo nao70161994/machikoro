@@ -108,6 +108,11 @@ function loadStorageRuntime() {
             return true;
         },
         resetOnlineState() { context.resetOnlineStateCalls = (context.resetOnlineStateCalls || 0) + 1; },
+        setOnlineReconnectLegacyFlag(value) {
+            context.reconnectFlagWrites.push(value === true);
+            context.isReconnectingOnline = value === true;
+            return context.isReconnectingOnline;
+        },
         cancelDelayedHumanAction() { context.cancelDelayedHumanActionCalls = (context.cancelDelayedHumanActionCalls || 0) + 1; },
         resetUiLocksForGameReset(reason) { context.resetUiLocksForGameResetCalls = (context.resetUiLocksForGameResetCalls || 0) + 1; context.resetUiLocksReason = reason; },
         switchTab(tab) { context.switchedTab = tab; },
@@ -122,6 +127,7 @@ function loadStorageRuntime() {
         rejoinRequests: [],
         sentActions: [],
         createdCpuPlayers: [],
+        reconnectFlagWrites: [],
     };
     context.global = context;
     vm.createContext(context);
@@ -143,6 +149,7 @@ function loadStorageRuntime() {
             getResetOnlineStateCalls: () => (typeof resetOnlineStateCalls !== 'undefined' ? resetOnlineStateCalls : 0),
             getResetUiLocksForGameResetCalls: () => (typeof resetUiLocksForGameResetCalls !== 'undefined' ? resetUiLocksForGameResetCalls : 0),
             getResetUiLocksReason: () => (typeof resetUiLocksReason !== 'undefined' ? resetUiLocksReason : ''),
+            getReconnectFlagWrites: () => reconnectFlagWrites.slice(),
         };
     `, context);
     return context;
@@ -178,6 +185,13 @@ function makeSavedGameState(overrides = {}) {
         enabledLandmarksList: ['駅', 'ショッピングモール'],
     }, overrides);
 }
+
+runTest('storage reconnect flag adapterはonlineの単一write境界へ委譲する', () => {
+    const rt = loadStorageRuntime();
+    assert.strictEqual(rt.setStorageOnlineReconnectLegacyFlag(true), true);
+    assert.strictEqual(rt.setStorageOnlineReconnectLegacyFlag(false), false);
+    assert.deepStrictEqual(Array.from(rt.__test.getReconnectFlagWrites()), [true, false]);
+});
 
 runTest('storage updateResumeButton はローカルとオンラインの再開表示を切り替える', () => {
     const rt = loadStorageRuntime();
