@@ -1588,25 +1588,17 @@ function onlineRlModelLoadState(playerCount = onlineSelectedCount) {
 }
 
 function onlineRlModelStatusMessage(state) {
-    if (!state || state.status === 'unused') return '';
-    if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
-    if (state.status === 'loading') return '深層学習AIモデルを読み込んでいます。';
-    if (state.status === 'failed') return '深層学習AIモデルを読み込めませんでした。再試行してください。';
-    return '深層学習AIモデルをルーム作成時に読み込みます。';
+    return OnlinePlayerSettings.rlModelStatusMessage(state);
 }
 
 function updateOnlineRlModelReadinessUi() {
     const state = onlineRlModelLoadState(onlineSelectedCount);
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
     const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineRlModelStatus') : null;
-    if (btn && !onlineCreateRoomPending) {
-        if (state.status === 'loading') {
-            btn.disabled = true;
-            btn.textContent = 'モデル読み込み中';
-        } else {
-            btn.disabled = false;
-            btn.textContent = state.status === 'failed' ? 'モデルを再試行' : 'ルームを作る';
-        }
+    if (btn) {
+        const view = OnlinePlayerSettings.createButtonView(state, onlineCreateRoomPending);
+        btn.disabled = view.disabled;
+        btn.textContent = view.textContent;
     }
     if (status) status.textContent = onlineRlModelStatusMessage(state);
     return state;
@@ -1618,8 +1610,9 @@ function setOnlineJoinRoomPending(pending) {
         ? document.getElementById('onlineJoinSubmitButton')
         : null;
     if (btn) {
-        btn.disabled = onlineJoinRoomPending;
-        btn.textContent = onlineJoinRoomPending ? '参加中' : '参加する';
+        const view = OnlinePlayerSettings.joinButtonView(onlineJoinRoomPending);
+        btn.disabled = view.disabled;
+        btn.textContent = view.textContent;
     }
 }
 
@@ -1651,14 +1644,6 @@ function beginOnlineLobbyRequest(kind) {
 
 function setOnlineCreateRoomPending(pending) {
     onlineCreateRoomPending = pending === true;
-    const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
-    if (onlineCreateRoomPending) {
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = '作成中';
-        }
-        return;
-    }
     updateOnlineRlModelReadinessUi();
 }
 

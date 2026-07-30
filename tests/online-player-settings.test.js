@@ -60,3 +60,16 @@ runTest('online player settingsはsnapshot・相手difficulty・RL判定を固�
     assert.strictEqual(OnlinePlayerSettings.hasRlCpu(source, 2), true);
     assert.ok(OnlinePlayerSettings.rlSettingNote(2).includes('2人用の複数モデル'));
 });
+
+
+runTest('online player settingsはRL状態とpendingからロビー表示だけを純粋計算する', () => {
+    assert.strictEqual(OnlinePlayerSettings.rlModelStatusMessage({ status: 'unused' }), '');
+    assert.strictEqual(OnlinePlayerSettings.rlModelStatusMessage({ status: 'ready' }), '深層学習AIモデルの準備が完了しました。');
+    assert.strictEqual(OnlinePlayerSettings.rlModelStatusMessage({ status: 'loading' }), '深層学習AIモデルを読み込んでいます。');
+    assert.strictEqual(OnlinePlayerSettings.rlModelStatusMessage({ status: 'failed' }), '深層学習AIモデルを読み込めませんでした。再試行してください。');
+    assert.deepStrictEqual(OnlinePlayerSettings.createButtonView({ status: 'loading' }, false), { disabled: true, textContent: 'モデル読み込み中' });
+    assert.deepStrictEqual(OnlinePlayerSettings.createButtonView({ status: 'failed' }, false), { disabled: false, textContent: 'モデルを再試行' });
+    assert.deepStrictEqual(OnlinePlayerSettings.createButtonView({ status: 'ready' }, true), { disabled: true, textContent: '作成中' });
+    assert.deepStrictEqual(OnlinePlayerSettings.joinButtonView(true), { disabled: true, textContent: '参加中' });
+    assert.deepStrictEqual(OnlinePlayerSettings.joinButtonView(false), { disabled: false, textContent: '参加する' });
+});

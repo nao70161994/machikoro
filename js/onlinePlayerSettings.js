@@ -71,6 +71,34 @@ const OnlinePlayerSettings = (() => {
             .some(setting => setting && setting.type === 'cpu' && setting.difficulty === 'rl');
     }
 
+    function rlModelStatusMessage(state) {
+        if (!state || state.status === 'unused') return '';
+        if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
+        if (state.status === 'loading') return '深層学習AIモデルを読み込んでいます。';
+        if (state.status === 'failed') return '深層学習AIモデルを読み込めませんでした。再試行してください。';
+        return '深層学習AIモデルをルーム作成時に読み込みます。';
+    }
+
+    function createButtonView(state, pending) {
+        if (pending === true) {
+            return Object.freeze({ disabled: true, textContent: '作成中' });
+        }
+        if (state && state.status === 'loading') {
+            return Object.freeze({ disabled: true, textContent: 'モデル読み込み中' });
+        }
+        return Object.freeze({
+            disabled: false,
+            textContent: state && state.status === 'failed' ? 'モデルを再試行' : 'ルームを作る',
+        });
+    }
+
+    function joinButtonView(pending) {
+        return Object.freeze({
+            disabled: pending === true,
+            textContent: pending === true ? '参加中' : '参加する',
+        });
+    }
+
     return Object.freeze({
         normalizeSetting,
         normalizeSettings,
@@ -80,6 +108,9 @@ const OnlinePlayerSettings = (() => {
         freezeForCreate,
         snapshot,
         hasRlCpu,
+        rlModelStatusMessage,
+        createButtonView,
+        joinButtonView,
     });
 })();
 
