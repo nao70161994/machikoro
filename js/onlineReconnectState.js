@@ -52,7 +52,7 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
  * @property {function(string, Object=): Object} transition
  * @property {function(OnlineReconnectFlags, Object=): Object} reconcile
  * @property {function(string, OnlineReconnectFlags): Object} observe
- * @property {function(): {state: string, invalidTransitionCount: number, projectionMismatchCount: number, lastProjectionMismatch: Object|null, eventState: string, invalidEventTransitionCount: number, lastInvalidEventTransition: Object|null, history: Array<OnlineReconnectHistoryEntry>}} snapshot
+ * @property {function(): {state: string, invalidTransitionCount: number, projectionMismatchCount: number, lastProjectionMismatch: Object|null, eventState: string, invalidEventTransitionCount: number, lastInvalidEventTransition: Object|null, history: ReadonlyArray<OnlineReconnectHistoryEntry>}} snapshot
  */
 
 

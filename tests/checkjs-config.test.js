@@ -30,6 +30,9 @@ runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを�
     for (const excluded of ['server.js', 'js/online.js', 'js/CPU.js', 'js/ui.js', 'js/appShell.js']) {
         assert.ok(!config.files.includes(excluded), excluded);
     }
+    assert.ok(config.files.includes('js/actionContract.js'));
+    assert.ok(config.files.includes('js/gameSnapshot.js'));
+    assert.ok(config.files.includes('js/onlineReconnectState.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));
     assert.ok(config.files.includes('server/restoreAuthorityPolicy.js'));
     assert.ok(config.files.includes('server/reportingPolicy.js'));

@@ -13,6 +13,13 @@
   },
   "files": [
     "types/checkjs-globals.d.ts",
+    "types/checkjs-browser-globals.d.ts",
+    "js/actionContract.js",
+    "js/gameSnapshot.js",
+    "js/gameSchemaNegotiation.js",
+    "js/gameSchemaCodec.js",
+    "js/onlineReconnectState.js",
+    "js/onlineRetryPolicy.js",
     "server/hostlessRestoreCoordinator.js",
     "server/hostlessRestoreGateway.js",
     "server/ntfyNotifier.js",
