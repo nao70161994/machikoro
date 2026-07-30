@@ -136,7 +136,7 @@ function loadAppShellRuntime(profile = MOBILE_PROFILES[0]) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/actionContract.js', 'js/clientReporting.js', 'js/lifecycleNotify.js', 'js/uiWatchdog.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/appShell.js']);
+    loadScripts(context, ['js/actionContract.js', 'js/appShellStorage.js', 'js/clientReporting.js', 'js/lifecycleNotify.js', 'js/uiWatchdog.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/appShell.js']);
     return { context, elements, fetchCalls };
 }
 

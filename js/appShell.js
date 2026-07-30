@@ -1,3 +1,5 @@
+const appShellStorage = AppShellStorage.createFacade();
+
 // ===== クライアントエラー通知 =====
 const CLIENT_ERROR_REPORT_ENDPOINT = '/api/client-error';
 const CLIENT_ERROR_REPORT_STACK_LIMIT = 2400;
@@ -610,9 +612,7 @@ function resetFreezeWatchdogState(reason = 'watchdog-reset') {
     _freezeWatchdogLastChangedAt = 0;
     _freezeWatchdogLastReportKey = '';
     _freezeWatchdogLastReportAt = 0;
-    try {
-        if (typeof localStorage !== 'undefined') localStorage.removeItem('machikoroFreezeSnapshot');
-    } catch (_) {}
+    safeAppShellStorageRemove('machikoroFreezeSnapshot');
     markClientFlowCheckpoint(reason);
 }
 
@@ -882,26 +882,15 @@ function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
 }
 
 function safeAppShellStorageGet(key, fallback = null) {
-    try {
-        return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : fallback;
-    } catch (_) {
-        return fallback;
-    }
+    return appShellStorage.get(key, fallback);
 }
 
 function safeAppShellStorageSet(key, value) {
-    try {
-        if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
-        return true;
-    } catch (_) {
-        return false;
-    }
+    return appShellStorage.set(key, value);
 }
 
 function safeAppShellStorageRemove(key) {
-    try {
-        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
-    } catch (_) {}
+    appShellStorage.remove(key);
 }
 
 function markClientFlowCheckpoint(event, details = {}) {
@@ -924,11 +913,9 @@ function markClientFlowCheckpoint(event, details = {}) {
             root.__machikoroClientCheckpoints = list;
         }
     } catch (_) {}
-    try {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('machikoroLastClientCheckpoint', JSON.stringify(checkpoint).slice(0, 5000));
-        }
-    } catch (_) {}
+    appShellStorage.access(storage => {
+        storage.setItem('machikoroLastClientCheckpoint', JSON.stringify(checkpoint).slice(0, 5000));
+    });
     return checkpoint;
 }
 
@@ -1055,14 +1042,11 @@ let _gameLifecycleStartSent = false;
 let _gameLifecycleFinishSent = false;
 
 function readGameLifecycleNotifyValue() {
-    try {
-        if (typeof localStorage === 'undefined') return null;
-        const value = localStorage.getItem(GAME_LIFECYCLE_NOTIFY_KEY);
+    return appShellStorage.access(storage => {
+        const value = storage.getItem(GAME_LIFECYCLE_NOTIFY_KEY);
         if (value !== null) return value;
-        return localStorage.getItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
-    } catch (_) {
-        return null;
-    }
+        return storage.getItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
+    }, null);
 }
 
 function isLifecycleNotifyFalse(value) {
@@ -1074,17 +1058,15 @@ function isGameLifecycleNotificationEnabled() {
 }
 
 function setGameLifecycleNotificationEnabled(enabled) {
-    try {
-        if (typeof localStorage !== 'undefined') {
-            if (enabled) {
-                localStorage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'true');
-                localStorage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
-            } else {
-                localStorage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'false');
-                localStorage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
-            }
+    appShellStorage.access(storage => {
+        if (enabled) {
+            storage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'true');
+            storage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
+        } else {
+            storage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'false');
+            storage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
         }
-    } catch (_) {}
+    });
     return isGameLifecycleNotificationEnabled();
 }
 
@@ -1141,8 +1123,7 @@ function gameLifecycleStartSignature() {
 
 function recentlySentGameLifecycleStart(signature, now = Date.now()) {
     try {
-        if (typeof localStorage === 'undefined') return false;
-        const raw = localStorage.getItem(GAME_LIFECYCLE_START_SENT_KEY);
+        const raw = safeAppShellStorageGet(GAME_LIFECYCLE_START_SENT_KEY);
         if (!raw) return false;
         const parsed = JSON.parse(raw);
         return parsed && parsed.signature === signature && now - Number(parsed.timestamp || 0) < GAME_LIFECYCLE_START_SUPPRESS_MS;
@@ -1152,11 +1133,12 @@ function recentlySentGameLifecycleStart(signature, now = Date.now()) {
 }
 
 function rememberGameLifecycleStart(signature, now = Date.now()) {
-    try {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(GAME_LIFECYCLE_START_SENT_KEY, JSON.stringify({ signature, timestamp: now }).slice(0, 300));
-        }
-    } catch (_) {}
+    appShellStorage.access(storage => {
+        storage.setItem(
+            GAME_LIFECYCLE_START_SENT_KEY,
+            JSON.stringify({ signature, timestamp: now }).slice(0, 300)
+        );
+    });
 }
 
 function cpuDifficultyForWinner(winner) {
@@ -1248,9 +1230,7 @@ function resetGameLifecycleForRestart(reason = 'game-restart') {
     _gameLifecycleSessionId = '';
     _gameLifecycleStartSent = false;
     _gameLifecycleFinishSent = false;
-    try {
-        if (typeof localStorage !== 'undefined') localStorage.removeItem(GAME_LIFECYCLE_START_SENT_KEY);
-    } catch (_) {}
+    safeAppShellStorageRemove(GAME_LIFECYCLE_START_SENT_KEY);
     markClientFlowCheckpoint(reason, { lifecycle: 'reset' });
 }
 
@@ -1945,11 +1925,9 @@ function checkFreezeWatchdog() {
     markClientFlowCheckpoint('freeze-watchdog-report', payload);
     const recovered = recoverUiInteractability(snapshot);
     payload.recovery = { attempted: true, success: !!recovered };
-    try {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('machikoroFreezeSnapshot', freezePayloadStorageJson(payload));
-        }
-    } catch (_) {}
+    appShellStorage.access(storage => {
+        storage.setItem('machikoroFreezeSnapshot', freezePayloadStorageJson(payload));
+    });
     if (typeof reportClientError === 'function') {
         reportClientError({
             source: 'freeze-watchdog',
