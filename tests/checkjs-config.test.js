@@ -35,6 +35,11 @@ runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを�
     assert.ok(config.files.includes('js/gameEngine.js'));
     assert.ok(config.files.includes('js/cpuActionProposal.js'));
     assert.ok(config.files.includes('js/savedGameValidation.js'));
+    assert.ok(config.files.includes('js/uiBuildMenu.js'));
+    assert.ok(config.files.includes('js/uiModalPolicy.js'));
+    assert.ok(config.files.includes('js/uiWatchdog.js'));
+    assert.ok(config.files.includes('js/clientReporting.js'));
+    assert.ok(config.files.includes('js/pwaShell.js'));
     assert.ok(config.files.includes('js/onlineReconnectState.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));
     assert.ok(config.files.includes('server/restoreAuthorityPolicy.js'));
