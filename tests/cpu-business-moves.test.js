@@ -52,6 +52,16 @@ runTest('CPU business move helperはscore同点時のindex順と昇降順を固�
     );
 });
 
+runTest('CPU business move helperは交換価値の既存合成式を保持する', () => {
+    assert.deepStrictEqual(CPUBusinessMoves.scoreExchange(8, 3, 6, -2), {
+        selfGain: 8,
+        selfLoss: 3,
+        denial: 6,
+        gift: -2,
+        score: 9,
+    });
+});
+
 runTest('CPU business move wrapperはpure helperと同じ候補順を返す', () => {
     const runtime = loadCPURuntime();
     const game = new runtime.GameManager(3);

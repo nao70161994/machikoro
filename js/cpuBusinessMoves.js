@@ -47,6 +47,11 @@ function rankedCandidateIndexes(player, limit, scoreForIndex, descending = false
         .map(entry => entry.index);
 }
 
+function scoreExchange(selfGain, selfLoss, denial, gift) {
+    const score = selfGain - selfLoss + denial * 0.5 - gift * 0.5;
+    return { selfGain, selfLoss, denial, gift, score };
+}
+
 function forEachCandidate(game, myIndexes, candidateTargets, targetIndexesFor, callback) {
     const current = game.currentPlayer();
     for (const myIndex of myIndexes) {
@@ -75,6 +80,7 @@ const CPUBusinessMoves = Object.freeze({
     minorCardIndexes,
     forEachMove,
     rankedCandidateIndexes,
+    scoreExchange,
     forEachCandidate,
 });
 

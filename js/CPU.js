@@ -244,8 +244,7 @@ class CPU {
         const selfLoss = this._exchangeOwnedCardValue(myCard, game, current);
         const denial = this._exchangeOwnedCardValue(theirCard, game, target);
         const gift = this._exchangeReceivedCardValue(myCard, game, target);
-        const score = selfGain - selfLoss + denial * 0.5 - gift * 0.5;
-        return { selfGain, selfLoss, denial, gift, score };
+        return CPUBusinessMoves.scoreExchange(selfGain, selfLoss, denial, gift);
     }
 
     _scoreBusinessExchange(game, current, move) {
