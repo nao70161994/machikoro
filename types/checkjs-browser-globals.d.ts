@@ -8,6 +8,10 @@ interface Window {
     GameEngine: unknown;
     GameSchemaWire: unknown;
     CPUActionProposal: unknown;
+    CPUBuildExecution: unknown;
+    CPULegalMoves: unknown;
+    CPUProfile: unknown;
+    CPUSimulation: unknown;
     SavedGameValidation: unknown;
     StorageSettings: unknown;
     UiBuildMenu: unknown;
