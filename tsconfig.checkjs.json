@@ -35,6 +35,7 @@
     "js/gameEngine.js",
     "js/gameSchemaWire.js",
     "js/onlinePayload.js",
+    "js/onlineRestoreQueue.js",
     "js/onlinePlayerSettings.js",
     "js/onlineRestoreRank.js",
     "js/onlineStorage.js",

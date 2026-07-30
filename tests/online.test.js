@@ -126,6 +126,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/clientStorage.js');
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
+    loadScript(context, 'js/onlineRestoreQueue.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -1428,6 +1429,10 @@ runTest('rejoinData はRL preload中に受信したgameActionを復元後に一�
 
     assert.strictEqual(rt.getGame().lastDiceResult, 2);
     assert.strictEqual(rt._readOnlineActionLog().filter(entry => entry.seq === 1).length, 1);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.getOnlineRestoreQueueEffectSelection())), {
+        source: 'legacy',
+        fallbackReason: '',
+    });
 });
 
 runTest('gameAction はゲーム未初期化なら適用せず再接続表示にする', () => {
@@ -3455,6 +3460,8 @@ runTest('live sequence tracking survives localStorage write failures', () => {
 
 runTest('queued action apply failure preserves the failed event and following events for resync', async () => {
     const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket();
@@ -3471,6 +3478,10 @@ runTest('queued action apply failure preserves the failed event and following ev
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 2);
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueEffectSelection())), {
+        source: 'pure-executor',
+        fallbackReason: '',
+    });
 
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 3 });
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 3);
@@ -3569,6 +3580,7 @@ runTest('disconnect during initial RL preload invalidates stale start and reconn
 runTest('gameStart queues actions and host changes while RL preload is pending', async () => {
     const runtime = loadOnlineRuntime(); let resolvePreload;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket(); runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Bob', reconnectToken: 'token-b' });
     const handlers = runtime.getSocketHandlers();
@@ -3580,6 +3592,10 @@ runTest('gameStart queues actions and host changes while RL preload is pending',
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueuePlanSelection())), {
         source: 'pure-plan',
         matched: true,
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueEffectSelection())), {
+        source: 'pure-executor',
         fallbackReason: '',
     });
 });

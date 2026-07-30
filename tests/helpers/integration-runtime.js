@@ -92,6 +92,7 @@ function loadIntegrationRuntime(options = {}) {
             MACHIKORO_ONLINE_RECONNECT_TIMER_AUTHORITY_ENABLED: options.onlineReconnectTimerAuthorityEnabled === true,
             MACHIKORO_ONLINE_RECONNECT_CALLBACK_AUTHORITY_ENABLED: options.onlineReconnectCallbackAuthorityEnabled === true,
             MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED: options.onlineReconnectQueuePlanAuthorityEnabled === true,
+            MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED: options.onlineReconnectQueueEffectAuthorityEnabled === true,
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: false }; },
@@ -203,6 +204,7 @@ function loadIntegrationRuntime(options = {}) {
     if (options.includeOnline) {
         files.push('js/onlineStorage.js');
         files.push('js/onlinePayload.js');
+        files.push('js/onlineRestoreQueue.js');
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');

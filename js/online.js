@@ -153,6 +153,7 @@ let _hostlessRestorePending = false;
 let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
+let _lastOnlineRestoreQueueEffectSelection = null;
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -237,8 +238,17 @@ function isOnlineReconnectQueuePlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectQueueEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
+}
+
+function getOnlineRestoreQueueEffectSelection() {
+    return _lastOnlineRestoreQueueEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -927,6 +937,34 @@ function _onlineRestoreEventFlushPlanSelection(queue, generation, restoredThroug
     );
 }
 
+function _legacyExecuteOnlineRestoreQueuePlan(plan, handlers) {
+    for (const entry of plan) {
+        const event = entry.event;
+        const handler = handlers[event.type];
+        if (typeof handler === 'function' && handler(event.payload) === false) {
+            return Object.freeze({ ok: false, failedIndex: entry.index });
+        }
+    }
+    return Object.freeze({ ok: true, failedIndex: -1 });
+}
+
+function _executeOnlineRestoreQueuePlan(flushSelection, handlers) {
+    const authorityEnabled = isOnlineReconnectQueueEffectAuthorityEnabled();
+    const purePlanReady = flushSelection.source === 'pure-plan';
+    const helperAvailable = typeof OnlineRestoreQueue !== 'undefined' &&
+        typeof OnlineRestoreQueue.executePlan === 'function';
+    const usePureExecutor = authorityEnabled && purePlanReady && helperAvailable;
+    _lastOnlineRestoreQueueEffectSelection = Object.freeze({
+        source: usePureExecutor ? 'pure-executor' : (authorityEnabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: usePureExecutor || !authorityEnabled
+            ? ''
+            : (!purePlanReady ? 'queue-plan-not-authoritative' : 'executor-unavailable'),
+    });
+    return usePureExecutor
+        ? OnlineRestoreQueue.executePlan(flushSelection.plan, handlers)
+        : _legacyExecuteOnlineRestoreQueuePlan(flushSelection.plan, handlers);
+}
+
 function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     if (generation !== _onlineRestoreGeneration) return false;
     const queuedEvents = _onlineRestoreEventQueue;
@@ -944,13 +982,10 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
             matched: flushSelection.matched,
             fallbackReason: flushSelection.fallbackReason,
         });
-        for (const entry of flushSelection.plan) {
-            const event = entry.event;
-            const handler = handlers[event.type];
-            if (typeof handler === 'function' && handler(event.payload) === false) {
-                _abortOnlineRestore(generation, '操作の適用に失敗したため、状態を再同期しています...', queuedEvents.slice(entry.index));
-                return false;
-            }
+        const execution = _executeOnlineRestoreQueuePlan(flushSelection, handlers);
+        if (!execution.ok) {
+            _abortOnlineRestore(generation, '操作の適用に失敗したため、状態を再同期しています...', queuedEvents.slice(execution.failedIndex));
+            return false;
         }
     } finally {
         _flushingOnlineRestoreEvents = false;
