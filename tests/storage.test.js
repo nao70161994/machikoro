@@ -845,6 +845,23 @@ runTest('storage doUndo はオンラインで自分の手番でなければ送�
     assert.notStrictEqual(rt.__test.getUndoState(), null);
 });
 
+runTest('storage saveSettings は既存keyと値形式を共通facade経由で保持する', () => {
+    const rt = loadStorageRuntime();
+    rt.saveSettings();
+    assert.strictEqual(rt.localStorage.getItem('selectedCount'), '2');
+    assert.strictEqual(rt.localStorage.getItem('playerSettings'), '[]');
+    assert.strictEqual(rt.localStorage.getItem('tutorialEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('tutorialLevel'), 'beginner');
+    assert.strictEqual(rt.localStorage.getItem('cpuSpeed'), '1500');
+});
+runTest('storage settings はstorage例外を外へ伝播せず既存後処理を維持する', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem = () => { throw new Error('write blocked'); };
+    assert.doesNotThrow(() => rt.saveSettings());
+    rt.localStorage.getItem = () => { throw new Error('read blocked'); };
+    assert.doesNotThrow(() => rt.loadSettings());
+    assert.strictEqual(rt.renderPlayerSettingsCalls, 1);
+});
 runTest('storage loadSettings は旧設定にもローカル名の初期値を補う', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('selectedCount', '3');

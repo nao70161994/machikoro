@@ -401,27 +401,27 @@ function doUndo() {
 }
 
 function saveSettings() {
-    try {
-        localStorage.setItem('selectedCount', selectedCount);
-        localStorage.setItem('playerSettings', JSON.stringify(playerSettings));
-        localStorage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
-        localStorage.setItem('tutorialLevel', tutorialLevel);
+    storageClientStorageFacade.access(storage => {
+        storage.setItem('selectedCount', selectedCount);
+        storage.setItem('playerSettings', JSON.stringify(playerSettings));
+        storage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
+        storage.setItem('tutorialLevel', tutorialLevel);
         const speedEl = document.getElementById('cpuSpeed');
-        if (speedEl) localStorage.setItem('cpuSpeed', speedEl.value);
-    } catch(e) {}
+        if (speedEl) storage.setItem('cpuSpeed', speedEl.value);
+    });
 }
 
 function loadSettings() {
-    try {
+    storageClientStorageFacade.access(storage => {
         const normalizeName = typeof normalizeLocalPlayerName === 'function'
             ? normalizeLocalPlayerName
             : ((name, index) => String(name || '').trim() || `プレイヤー${index + 1}`);
-        selectedCount = StorageSettings.normalizePlayerCount(localStorage.getItem('selectedCount'));
+        selectedCount = StorageSettings.normalizePlayerCount(storage.getItem('selectedCount'));
         document.getElementById("playerCount").textContent = selectedCount;
-        const ps = localStorage.getItem('playerSettings');
+        const ps = storage.getItem('playerSettings');
         const normalizedPlayerSettings = StorageSettings.normalizePlayerSettings(ps, selectedCount, normalizeName);
         if (normalizedPlayerSettings) playerSettings = normalizedPlayerSettings;
-        const speed = localStorage.getItem('cpuSpeed');
+        const speed = storage.getItem('cpuSpeed');
         if (speed) {
             const speedEl = document.getElementById('cpuSpeed');
             if (speedEl) {
@@ -431,9 +431,9 @@ function loadSettings() {
                     : ((parseInt(speed, 10) / 1000) + '秒');
             }
         }
-        tutorialEnabled = StorageSettings.normalizeTutorialEnabled(localStorage.getItem('tutorialEnabled'));
-        tutorialLevel = StorageSettings.normalizeTutorialLevel(localStorage.getItem('tutorialLevel'));
-    } catch(e) {}
+        tutorialEnabled = StorageSettings.normalizeTutorialEnabled(storage.getItem('tutorialEnabled'));
+        tutorialLevel = StorageSettings.normalizeTutorialLevel(storage.getItem('tutorialLevel'));
+    });
     syncTutorialControls();
     renderPlayerSettings();
 }
