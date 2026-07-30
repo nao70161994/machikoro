@@ -95,13 +95,20 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
         gameSchemaNegotiationEnabled: true,
         gameSchemaSnapshotWireEnabled: true,
     });
+    const reconnectAuthorityEnabled = injectIndexBuildHash(source, 'build-1', {
+        onlineReconnectEventAuthorityEnabled: true,
+    });
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED'));
     assert.ok(enabled.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
     assert.ok(!enabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(wireEnabled.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
     assert.ok(snapshotWireEnabled.includes(
         'window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;'
+    ));
+    assert.ok(reconnectAuthorityEnabled.includes(
+        'window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED=true;'
     ));
 });

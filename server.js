@@ -30,6 +30,7 @@ const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const GameSchemaWire = require('./js/gameSchemaWire');
+const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
 const {
     sanitizeName,
@@ -83,6 +84,8 @@ const GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED &&
     gameSchemaSnapshotWireEnabled(process.env);
 const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
 const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
+const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
+    OnlineReconnectState.eventAuthorityEnabled(process.env);
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -573,6 +576,7 @@ const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
     gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
     gameSchemaWireEnabled: GAME_SCHEMA_WIRE_ENABLED,
     gameSchemaSnapshotWireEnabled: GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
+    onlineReconnectEventAuthorityEnabled: ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED,
 });
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{

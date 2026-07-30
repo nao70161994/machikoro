@@ -304,3 +304,62 @@ runTest('online reconnect controllerはeventとlegacy投影の不一致を状態
         }],
     });
 });
+
+runTest('online reconnect authority selectorはclean parity時だけevent stateを採用する', () => {
+    const snapshot = {
+        state: STATES.ACTIVE,
+        eventState: STATES.ACTIVE,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    assert.deepStrictEqual(OnlineReconnectState.selectAuthorityState(snapshot), {
+        state: STATES.ACTIVE,
+        source: 'legacy-projection',
+        ready: true,
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(OnlineReconnectState.selectAuthorityState(snapshot, { eventAuthorityEnabled: true }), {
+        state: STATES.ACTIVE,
+        source: 'event',
+        ready: true,
+        fallbackReason: '',
+    });
+});
+
+runTest('online reconnect authority selectorは不一致と不正履歴をlegacyへfail closedする', () => {
+    const base = {
+        state: STATES.CONNECTING,
+        eventState: STATES.RESTORING,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    const cases = [
+        [{ ...base, state: 'unknown' }, 'malformed-snapshot', STATES.IDLE],
+        [{ ...base, invalidEventTransitionCount: 1 }, 'invalid-event-transition', STATES.CONNECTING],
+        [{ ...base, projectionMismatchCount: 1 }, 'projection-mismatch', STATES.CONNECTING],
+        [base, 'state-mismatch', STATES.CONNECTING],
+    ];
+    for (const [snapshot, fallbackReason, state] of cases) {
+        assert.deepStrictEqual(
+            OnlineReconnectState.selectAuthorityState(snapshot, { eventAuthorityEnabled: true }),
+            { state, source: 'legacy-projection', ready: false, fallbackReason }
+        );
+    }
+});
+
+runTest('online reconnect event authority flagは明示有効値だけを受理する', () => {
+    for (const value of ['1', 'true', 'TRUE', ' yes ', 'on']) {
+        assert.strictEqual(
+            OnlineReconnectState.eventAuthorityEnabled({ ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED: value }),
+            true,
+            value
+        );
+    }
+    for (const value of [undefined, '', '0', 'false', 'enabled']) {
+        assert.strictEqual(
+            OnlineReconnectState.eventAuthorityEnabled({ ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED: value }),
+            false,
+            String(value)
+        );
+    }
+});

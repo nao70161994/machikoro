@@ -33,6 +33,9 @@ function injectIndexBuildHash(content, buildHash, options = {}) {
     if (options.gameSchemaSnapshotWireEnabled === true) {
         scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;</script>';
     }
+    if (options.onlineReconnectEventAuthorityEnabled === true) {
+        scripts += '\n    <script>window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED=true;</script>';
+    }
     return String(content).replace('</head>', `    ${scripts}\n</head>`);
 }
 

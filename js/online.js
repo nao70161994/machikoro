@@ -218,16 +218,33 @@ function _observeOnlineReconnectEvent(event) {
     return _onlineReconnectController.observe(event, _onlineReconnectObservationFlags());
 }
 
+function isOnlineReconnectEventAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED === true;
+}
+
+function _onlineReconnectAuthoritySelection() {
+    return OnlineReconnectState.selectAuthorityState(
+        _onlineReconnectController.snapshot(),
+        { eventAuthorityEnabled: isOnlineReconnectEventAuthorityEnabled() }
+    );
+}
+
 function getOnlineReconnectState() {
-    return _onlineReconnectController.reconcile(
+    _onlineReconnectController.reconcile(
         _onlineReconnectObservationFlags(),
         { event: 'runtime-observation' }
-    ).state;
+    );
+    return _onlineReconnectAuthoritySelection().state;
 }
 
 function getOnlineReconnectStateSnapshot() {
     getOnlineReconnectState();
-    return _onlineReconnectController.snapshot();
+    const snapshot = _onlineReconnectController.snapshot();
+    return Object.freeze({
+        ...snapshot,
+        authority: _onlineReconnectAuthoritySelection(),
+    });
 }
 
 function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {

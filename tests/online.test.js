@@ -453,6 +453,26 @@ runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維�
         ['active', 'connecting', 'rejoining', 'restoring', 'replaying', 'failed']
     );
 });
+runTest('online.jsのevent authority readは明示flagかつclean parity時だけ有効になる', () => {
+    const localRt = loadOnlineRuntime();
+    let snapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.deepStrictEqual({ ...snapshot.authority }, {
+        state: 'idle',
+        source: 'legacy-projection',
+        ready: true,
+        fallbackReason: '',
+    });
+
+    localRt.window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED = true;
+    snapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.deepStrictEqual({ ...snapshot.authority }, {
+        state: 'idle',
+        source: 'event',
+        ready: true,
+        fallbackReason: '',
+    });
+});
+
 runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す', () => {
     const localRt = loadOnlineRuntime();
     localRt.initSocket();

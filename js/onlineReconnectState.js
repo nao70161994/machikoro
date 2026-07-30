@@ -11,6 +11,8 @@ const ONLINE_RECONNECT_STATES = Object.freeze({
     COMPLETED: 'completed',
 });
 
+const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
+
 const ONLINE_RECONNECT_EVENTS = Object.freeze({
     RECONNECT_REQUESTED: 'reconnect-requested',
     SOCKET_DISCONNECTED: 'socket-disconnected',
@@ -104,6 +106,12 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
         ONLINE_RECONNECT_STATES.IDLE,
     ]),
 });
+
+function onlineReconnectEventAuthorityEnabled(env = {}) {
+    return ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES.has(
+        String(env.ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED || '').trim().toLowerCase()
+    );
+}
 
 function isOnlineReconnectState(state) {
     return Object.values(ONLINE_RECONNECT_STATES).includes(state);
@@ -213,6 +221,39 @@ function compareOnlineReconnectEventProjection(event, flags = {}) {
         eventState,
         projectedState,
         matched: eventState === projectedState,
+    });
+}
+
+/**
+ * Selects the event-driven read state only after its entire observed history is clean.
+ * This is a fail-closed migration seam; it does not run reconnect effects.
+ * @param {Object} snapshot
+ * @param {{eventAuthorityEnabled?: boolean}} [options]
+ * @returns {{state: string, source: string, ready: boolean, fallbackReason: string}}
+ */
+function selectOnlineReconnectAuthorityState(snapshot = {}, options = {}) {
+    const legacyState = isOnlineReconnectState(snapshot.state)
+        ? snapshot.state
+        : ONLINE_RECONNECT_STATES.IDLE;
+    let fallbackReason = '';
+    if (!isOnlineReconnectState(snapshot.state) || !isOnlineReconnectState(snapshot.eventState)) {
+        fallbackReason = 'malformed-snapshot';
+    } else if (!Number.isSafeInteger(snapshot.invalidEventTransitionCount) ||
+            snapshot.invalidEventTransitionCount !== 0) {
+        fallbackReason = 'invalid-event-transition';
+    } else if (!Number.isSafeInteger(snapshot.projectionMismatchCount) ||
+            snapshot.projectionMismatchCount !== 0) {
+        fallbackReason = 'projection-mismatch';
+    } else if (snapshot.state !== snapshot.eventState) {
+        fallbackReason = 'state-mismatch';
+    }
+    const ready = fallbackReason === '';
+    const enabled = options.eventAuthorityEnabled === true;
+    return Object.freeze({
+        state: enabled && ready ? snapshot.eventState : legacyState,
+        source: enabled && ready ? 'event' : 'legacy-projection',
+        ready,
+        fallbackReason,
     });
 }
 
@@ -374,6 +415,7 @@ const OnlineReconnectState = Object.freeze({
     states: ONLINE_RECONNECT_STATES,
     events: ONLINE_RECONNECT_EVENTS,
     transitions: ONLINE_RECONNECT_TRANSITIONS,
+    eventAuthorityEnabled: onlineReconnectEventAuthorityEnabled,
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
     canTransition: canOnlineReconnectTransition,
@@ -381,6 +423,7 @@ const OnlineReconnectState = Object.freeze({
     reduceEvent: reduceOnlineReconnectEvent,
     derive: deriveOnlineReconnectState,
     compareEventProjection: compareOnlineReconnectEventProjection,
+    selectAuthorityState: selectOnlineReconnectAuthorityState,
     createController: createOnlineReconnectController,
 });
 
