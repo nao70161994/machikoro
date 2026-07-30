@@ -490,6 +490,73 @@ runTest('CPU evaluation はstrong条件付き赤カード圧力を数値feature�
     );
 });
 
+runTest('CPU evaluation はstrong出目テンポとランドマーク相乗を数値featureで評価する', () => {
+    assert.strictEqual(CPUEvaluation.strongTempoValueBonus({
+        difficulty: 'strong', color: 'blue', lowDice: true, highDice: false,
+        oneDieOpponentCount: 2, selfOneDie: false, playerCount: 3,
+    }), 0.7);
+    assert.ok(Math.abs(CPUEvaluation.strongTempoValueBonus({
+        difficulty: 'strong', color: 'red', lowDice: false, highDice: true,
+        oneDieOpponentCount: 3, selfOneDie: false, playerCount: 4,
+    }) + 1.5) < 1e-12);
+    assert.strictEqual(CPUEvaluation.strongTempoValueBonus({
+        difficulty: 'strong', color: 'green', lowDice: true, highDice: false,
+        oneDieOpponentCount: 0, selfOneDie: true, playerCount: 2,
+    }), 0.9);
+    assert.strictEqual(CPUEvaluation.strongTempoValueBonus({ difficulty: 'expert' }), 0);
+
+    assert.strictEqual(CPUEvaluation.landmarkCardSynergyBonus({
+        hasStation: true, hasMall: false, hasHarbor: false, hasTower: true,
+        hasPark: true, hasAirport: false, lowDice: false, highDice: true,
+        mallCategory: false, harborEffect: false, cost: 5,
+    }), 1.75);
+    assert.strictEqual(CPUEvaluation.landmarkCardSynergyBonus({
+        hasStation: false, hasMall: true, hasHarbor: true, hasTower: false,
+        hasPark: false, hasAirport: false, lowDice: false, highDice: true,
+        mallCategory: true, harborEffect: true, cost: 5,
+    }), 2.1);
+    assert.strictEqual(CPUEvaluation.landmarkCardSynergyBonus({
+        hasStation: false, hasMall: false, hasHarbor: false, hasTower: false,
+        hasPark: false, hasAirport: true, lowDice: true, highDice: false,
+        mallCategory: false, harborEffect: false, cost: 3,
+    }), -0.5);
+});
+
+runTest('CPU本体のtempo/synergy wrapperはfeature adapterからpure policyへ委譲する', () => {
+    const {
+        CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES,
+    } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const card = createCardByName('寿司屋');
+    current.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    const lowDice = Math.max(...card.diceNums) <= 6;
+    const highDice = Math.min(...card.diceNums) >= 7;
+
+    assert.strictEqual(cpu._strongTempoValueBonus(card, game, current), CPUEvaluation.strongTempoValueBonus({
+        difficulty: 'strong', color: card.color, lowDice, highDice,
+        oneDieOpponentCount: game.players.filter(player =>
+            player !== current && !player.landmarks[LANDMARK_NAMES.STATION]
+        ).length,
+        selfOneDie: !current.landmarks[LANDMARK_NAMES.STATION],
+        playerCount: game.players.length,
+    }));
+    assert.strictEqual(cpu._landmarkCardSynergyBonus(card, game, current), CPUEvaluation.landmarkCardSynergyBonus({
+        hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
+        hasMall: !!current.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
+        hasHarbor: !!current.landmarks[LANDMARK_NAMES.HARBOR],
+        hasTower: !!current.landmarks[LANDMARK_NAMES.RADIO_TOWER],
+        hasPark: !!current.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK],
+        hasAirport: !!current.landmarks[LANDMARK_NAMES.AIRPORT],
+        lowDice, highDice,
+        mallCategory: card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP,
+        harborEffect: [CARD_EFFECTS.HARBOR, CARD_EFFECTS.HARBOR_RED, CARD_EFFECTS.TUNA].includes(card.effect),
+        cost: card.cost,
+    }));
+});
+
 runTest('CPU本体のstrong条件付き赤wrapperはfeature adapterからpure policyへ委譲する', () => {
     const {
         CPU, GameManager, createCardByName, CARD_EFFECTS, LANDMARK_NAMES,

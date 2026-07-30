@@ -1979,24 +1979,17 @@ class CPU {
 
     _strongTempoValueBonus(card, game, player) {
         if (this.difficulty !== "strong" || !game || !player || !card || !card.diceNums || card.diceNums.length === 0) return 0;
-        const lowDice = Math.max(...card.diceNums) <= 6;
-        const highDice = Math.min(...card.diceNums) >= 7;
-        let bonus = 0;
-        const opponents = game.players.filter(p => p !== player);
-        const oneDieOpponents = opponents.filter(p => !p.landmarks[LANDMARK_NAMES.STATION]).length;
-        const selfOneDie = !player.landmarks[LANDMARK_NAMES.STATION];
-
-        if ((card.color === "blue" || card.color === "red") && oneDieOpponents > 0) {
-            if (lowDice) bonus += oneDieOpponents * 0.35;
-            if (highDice) bonus -= oneDieOpponents * 0.35;
-            if (game.players.length >= 4 && highDice && card.color === "red") bonus -= oneDieOpponents * 0.15;
-        }
-
-        if ((card.color === "green" || card.color === "purple") && selfOneDie) {
-            if (lowDice) bonus += 0.9;
-            if (highDice) bonus -= 0.9;
-        }
-        return bonus;
+        return CPUEvaluation.strongTempoValueBonus({
+            difficulty: this.difficulty,
+            color: card.color,
+            lowDice: Math.max(...card.diceNums) <= 6,
+            highDice: Math.min(...card.diceNums) >= 7,
+            oneDieOpponentCount: game.players.filter(candidate =>
+                candidate !== player && !candidate.landmarks[LANDMARK_NAMES.STATION]
+            ).length,
+            selfOneDie: !player.landmarks[LANDMARK_NAMES.STATION],
+            playerCount: game.players.length,
+        });
     }
 
     _strongCrowdOneDieOpponents(game, player = null) {
@@ -2030,24 +2023,19 @@ class CPU {
 
     _landmarkCardSynergyBonus(card, game, player) {
         if (!card || !game || !player) return 0;
-        let bonus = 0;
-        const hasStation = !!player.landmarks[LANDMARK_NAMES.STATION];
-        const hasMall = !!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL];
-        const hasHarbor = !!player.landmarks[LANDMARK_NAMES.HARBOR];
-        const hasTower = !!player.landmarks[LANDMARK_NAMES.RADIO_TOWER];
-        const hasPark = !!player.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
-        const hasAirport = !!player.landmarks[LANDMARK_NAMES.AIRPORT];
-        const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
-        const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
-
-        if (hasStation && highDice) bonus += 0.9;
-        if (!hasStation && highDice) bonus -= 0.6;
-        if (hasMall && (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) bonus += 1.1;
-        if (hasHarbor && [CARD_EFFECTS.HARBOR, CARD_EFFECTS.HARBOR_RED, CARD_EFFECTS.TUNA].includes(card.effect)) bonus += 1.6;
-        if (hasTower && highDice) bonus += 0.5;
-        if (hasPark && highDice) bonus += 0.35;
-        if (hasAirport && card.cost <= 3 && lowDice) bonus -= 0.5;
-        return bonus;
+        return CPUEvaluation.landmarkCardSynergyBonus({
+            hasStation: !!player.landmarks[LANDMARK_NAMES.STATION],
+            hasMall: !!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
+            hasHarbor: !!player.landmarks[LANDMARK_NAMES.HARBOR],
+            hasTower: !!player.landmarks[LANDMARK_NAMES.RADIO_TOWER],
+            hasPark: !!player.landmarks[LANDMARK_NAMES.AMUSEMENT_PARK],
+            hasAirport: !!player.landmarks[LANDMARK_NAMES.AIRPORT],
+            lowDice: !!(card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6),
+            highDice: !!(card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7),
+            mallCategory: card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP,
+            harborEffect: [CARD_EFFECTS.HARBOR, CARD_EFFECTS.HARBOR_RED, CARD_EFFECTS.TUNA].includes(card.effect),
+            cost: card.cost,
+        });
     }
 
     _strongPremiumPurpleReady(card, game, player) {

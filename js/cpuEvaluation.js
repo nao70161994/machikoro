@@ -144,6 +144,36 @@ const CPUEvaluation = Object.freeze({
         return penalty;
     },
 
+    strongTempoValueBonus(features) {
+        if (!features || features.difficulty !== 'strong') return 0;
+        let bonus = 0;
+        if ((features.color === 'blue' || features.color === 'red') && features.oneDieOpponentCount > 0) {
+            if (features.lowDice) bonus += features.oneDieOpponentCount * 0.35;
+            if (features.highDice) bonus -= features.oneDieOpponentCount * 0.35;
+            if (features.playerCount >= 4 && features.highDice && features.color === 'red') {
+                bonus -= features.oneDieOpponentCount * 0.15;
+            }
+        }
+        if ((features.color === 'green' || features.color === 'purple') && features.selfOneDie) {
+            if (features.lowDice) bonus += 0.9;
+            if (features.highDice) bonus -= 0.9;
+        }
+        return bonus;
+    },
+
+    landmarkCardSynergyBonus(features) {
+        if (!features) return 0;
+        let bonus = 0;
+        if (features.hasStation && features.highDice) bonus += 0.9;
+        if (!features.hasStation && features.highDice) bonus -= 0.6;
+        if (features.hasMall && features.mallCategory) bonus += 1.1;
+        if (features.hasHarbor && features.harborEffect) bonus += 1.6;
+        if (features.hasTower && features.highDice) bonus += 0.5;
+        if (features.hasPark && features.highDice) bonus += 0.35;
+        if (features.hasAirport && features.cost <= 3 && features.lowDice) bonus -= 0.5;
+        return bonus;
+    },
+
     loanBurdenValue(copyOrdinal = 1) {
         const ordinal = Math.max(1, copyOrdinal);
         return -2.5 * ordinal;
