@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -301,7 +301,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Implemented Safe Units
 
-As of 2026-07-30, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
+As of 2026-07-31, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
 
 - `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle, payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
@@ -327,7 +327,7 @@ As of 2026-07-30, rollback-friendly units from this plan are implemented without
 - `js/gameSchemaNegotiation.js`, `js/gameSchemaCodec.js`, and `server/gameSchemaRuntime.js` define the off-by-default additive rollout boundary. With `GAME_SCHEMA_NEGOTIATION_ENABLED=1`, served clients advertise on create/join/rejoin, malformed or non-overlapping explicit capabilities fail closed, missing old clients select v0, and `gameStart.gameSchema` records the room result through normal/rejoin/restore paths. `GAME_SCHEMA_SHADOW_ENABLED=1` compare-runs accepted actions without affecting live results. `GAME_SCHEMA_WIRE_ENABLED=1` independently versions live Action messages, while `GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=1` independently versions rejoin Snapshot responses and compacted action Snapshot metadata. Real Socket.IO E2E covers v1, mixed-client fallback, incompatible rejoin rejection, matched shadow, and both wire adapters. Local saves, recreate-room input snapshots, and restore logs remain legacy.
 - `js/actionContract.js` also exposes legacy v0/current v1 Action envelope readers. Default live actions remain the legacy `{action, data}` shape; the separate wire flag may envelope negotiated v1 rooms while legacy rooms remain unchanged.
 - `js/onlinePayload.js` owns saved reconnect-session normalization, the existing rejoin payload shape, restore action-log/pending normalization, ACK comparison, room ownership, duplicate-free restore append, and resend eligibility while reconnect timing, restore queues, and Socket.IO ownership stay in `online.js`.
-- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuBusinessMoves.js`, `js/cpuProfile.js`, `js/cpuSimulation.js`, `js/cpuActionProposal.js`, and `js/cpuBuildExecution.js` own unchanged evaluation (including publisher, IT-startup, conditional-red, loan, and card-dependency values), candidate and Business Center exchange enumeration/selection, seeded simulation, 2–10-player lookahead stock construction, canonical detached Action Contract proposals, and local/online build execution. All local rule-based CPU proposals, including builds, apply through the shared mutable Engine. Online proposals keep the existing authority/send path; candidate order and RNG remain unchanged.
+- `js/cpuEvaluation.js`, `js/cpuLegalMoves.js`, `js/cpuBusinessMoves.js`, `js/cpuProfile.js`, `js/cpuSimulation.js`, `js/cpuActionProposal.js`, `js/cpuBuildExecution.js`, and `js/cpuPendingResolution.js` own unchanged evaluation (including publisher, IT-startup, conditional-red, loan, and card-dependency values), candidate and Business Center exchange enumeration/selection, seeded simulation, 2–10-player lookahead stock construction, canonical detached Action Contract proposals, local/online build execution, and pending fallback/target validation. `main.js` no longer carries a second pending fallback implementation; it retains scheduling and action effects. All local rule-based CPU proposals, including builds, apply through the shared mutable Engine. Online proposals keep the existing authority/send path; pending order, dormant filtering, candidate order, and RNG remain unchanged.
 - `server/hostlessRestoreCandidate.js`, `server/hostlessRestoreCoordinator.js`,
   `server/hostlessRestoreGateway.js`, and `server/hostlessRestoreRuntime.js`
   own the provisional quorum policy and additive transport boundary. The client

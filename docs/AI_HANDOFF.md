@@ -284,6 +284,7 @@ AdSense review-period docs/static-page changes use the narrower gate from `docs/
 - Normal human-turn unlock is limited to primary actions and must not close informational modals. Pending recovery is a separate `pending-ui-locked` path and only repairs `pendingModal` / `pendingMenu` visibility/lock state.
 - Client error freeze notifications send compact `FREEZE_SUMMARY` data to ntfy. Keep full text-bearing UI snapshots local-only unless privacy is explicitly reviewed.
 - CPU pending choices should be validated against live board state before sending/applying, especially RL-derived target names.
+- CPU pending fallback and Cleaning target validation belong in `js/cpuPendingResolution.js`; keep `main.js` limited to scheduling and applying the returned action, and do not reintroduce local fallback copies.
 
 ## Implemented helper boundaries
 
