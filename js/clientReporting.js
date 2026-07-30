@@ -20,6 +20,73 @@ const ClientReporting = Object.freeze({
         return value instanceof Error || !!(value && (typeof value.message === 'string' || typeof value.stack === 'string'));
     },
 
+    compactFreezeSummaryStack(stack, options = {}) {
+        const text = String(stack || '');
+        const marker = 'FREEZE_SUMMARY ';
+        const limit = Number.isFinite(options.limit) ? options.limit : 4000;
+        if (!text.startsWith(marker) || text.length <= limit) return text;
+        let summary = null;
+        try {
+            summary = JSON.parse(text.slice(marker.length));
+        } catch (_) {
+            return ClientReporting.truncateField(text, limit);
+        }
+        const compact = {
+            schemaVersion: summary.schemaVersion || options.schemaVersion || 1,
+            freezeKind: summary.freezeKind || '',
+            recoveryStatus: summary.recoveryStatus || '',
+            stagnantMs: summary.stagnantMs,
+            phase: summary.phase || '',
+            currentPlayerIndex: summary.currentPlayerIndex,
+            myPlayerIndex: summary.myPlayerIndex,
+            isOnlineGame: summary.isOnlineGame,
+            cpuSchedulerHealth: summary.cpuSchedulerHealth || null,
+            isReconnectingOnline: summary.isReconnectingOnline,
+            allowedActions: Array.isArray(summary.allowedActions) ? summary.allowedActions : [],
+            visibleModals: Array.isArray(summary.visibleModals) ? summary.visibleModals : [],
+            interactabilityIssues: Array.isArray(summary.interactabilityIssues) ? summary.interactabilityIssues.slice(0, 4) : [],
+            actionChildren: Array.isArray(summary.actionChildren) ? summary.actionChildren.slice(0, 8) : [],
+            gameScreen: summary.gameScreen || null,
+            pendingMenu: summary.pendingMenu || null,
+            pendingModal: summary.pendingModal || null,
+            confirmModal: summary.confirmModal || null,
+            recovery: summary.recovery || null,
+            compacted: true,
+        };
+        let result = marker + JSON.stringify(compact);
+        if (result.length <= limit) return result;
+        delete compact.confirmModal;
+        delete compact.pendingModal;
+        delete compact.pendingMenu;
+        delete compact.gameScreen;
+        result = marker + JSON.stringify(compact);
+        if (result.length <= limit) return result;
+        compact.interactabilityIssues = compact.interactabilityIssues.slice(0, 1);
+        compact.actionChildren = compact.actionChildren.slice(0, 3);
+        result = marker + JSON.stringify(compact);
+        if (result.length <= limit) return result;
+        return marker + JSON.stringify({
+            schemaVersion: compact.schemaVersion || options.schemaVersion || 1,
+            freezeKind: compact.freezeKind,
+            recoveryStatus: compact.recoveryStatus,
+            stagnantMs: compact.stagnantMs,
+            phase: compact.phase,
+            allowedActions: compact.allowedActions,
+            interactabilityIssues: compact.interactabilityIssues.slice(0, 1),
+            recovery: compact.recovery,
+            compacted: true,
+            truncated: true,
+        });
+    },
+
+    stackForReport(input, options = {}) {
+        const stack = input?.stack || ClientReporting.errorStack(input?.error);
+        const compacted = ClientReporting.compactFreezeSummaryStack(stack, options);
+        if (String(compacted || '').startsWith('FREEZE_SUMMARY ')) return compacted;
+        const limit = Number.isFinite(options.limit) ? options.limit : 4000;
+        return ClientReporting.truncateField(compacted, limit);
+    },
+
     buildReport(input, context, options = {}) {
         const source = input?.source || 'unknown';
         const error = input?.error;

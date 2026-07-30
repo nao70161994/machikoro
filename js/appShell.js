@@ -881,68 +881,17 @@ function markClientFlowCheckpoint(event, details = {}) {
 
 
 function compactFreezeSummaryStackForReport(stack, limit = CLIENT_ERROR_REPORT_STACK_LIMIT) {
-    const text = String(stack || '');
-    const marker = 'FREEZE_SUMMARY ';
-    if (!text.startsWith(marker) || text.length <= limit) return text;
-    let summary = null;
-    try {
-        summary = JSON.parse(text.slice(marker.length));
-    } catch (_) {
-        return truncateClientErrorField(text, limit);
-    }
-    const compact = {
-        schemaVersion: summary.schemaVersion || FREEZE_SUMMARY_SCHEMA_VERSION,
-        freezeKind: summary.freezeKind || '',
-        recoveryStatus: summary.recoveryStatus || '',
-        stagnantMs: summary.stagnantMs,
-        phase: summary.phase || '',
-        currentPlayerIndex: summary.currentPlayerIndex,
-        myPlayerIndex: summary.myPlayerIndex,
-        isOnlineGame: summary.isOnlineGame,
-        cpuSchedulerHealth: summary.cpuSchedulerHealth || null,
-        isReconnectingOnline: summary.isReconnectingOnline,
-        allowedActions: Array.isArray(summary.allowedActions) ? summary.allowedActions : [],
-        visibleModals: Array.isArray(summary.visibleModals) ? summary.visibleModals : [],
-        interactabilityIssues: Array.isArray(summary.interactabilityIssues) ? summary.interactabilityIssues.slice(0, 4) : [],
-        actionChildren: Array.isArray(summary.actionChildren) ? summary.actionChildren.slice(0, 8) : [],
-        gameScreen: summary.gameScreen || null,
-        pendingMenu: summary.pendingMenu || null,
-        pendingModal: summary.pendingModal || null,
-        confirmModal: summary.confirmModal || null,
-        recovery: summary.recovery || null,
-        compacted: true,
-    };
-    let result = marker + JSON.stringify(compact);
-    if (result.length <= limit) return result;
-    delete compact.confirmModal;
-    delete compact.pendingModal;
-    delete compact.pendingMenu;
-    delete compact.gameScreen;
-    result = marker + JSON.stringify(compact);
-    if (result.length <= limit) return result;
-    compact.interactabilityIssues = compact.interactabilityIssues.slice(0, 1);
-    compact.actionChildren = compact.actionChildren.slice(0, 3);
-    result = marker + JSON.stringify(compact);
-    if (result.length <= limit) return result;
-    return marker + JSON.stringify({
-        schemaVersion: compact.schemaVersion || FREEZE_SUMMARY_SCHEMA_VERSION,
-        freezeKind: compact.freezeKind,
-        recoveryStatus: compact.recoveryStatus,
-        stagnantMs: compact.stagnantMs,
-        phase: compact.phase,
-        allowedActions: compact.allowedActions,
-        interactabilityIssues: compact.interactabilityIssues.slice(0, 1),
-        recovery: compact.recovery,
-        compacted: true,
-        truncated: true,
+    return ClientReporting.compactFreezeSummaryStack(stack, {
+        limit,
+        schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
     });
 }
 
 function clientErrorStackForReport(input) {
-    const stack = input?.stack || errorLikeStack(input?.error);
-    const freezeStack = compactFreezeSummaryStackForReport(stack, CLIENT_ERROR_REPORT_STACK_LIMIT);
-    if (String(freezeStack || '').startsWith('FREEZE_SUMMARY ')) return freezeStack;
-    return truncateClientErrorField(freezeStack, CLIENT_ERROR_REPORT_STACK_LIMIT);
+    return ClientReporting.stackForReport(input, {
+        limit: CLIENT_ERROR_REPORT_STACK_LIMIT,
+        schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
+    });
 }
 
 function buildClientErrorReport(input) {
