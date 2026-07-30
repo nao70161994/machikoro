@@ -1,4 +1,8 @@
 declare var GameActionContract: typeof import("../js/actionContract");
+declare var escapeHtml: ((value: unknown) => string) | undefined;
+declare var isOnlineGame: boolean | undefined;
+declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
+
 
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
