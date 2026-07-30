@@ -94,6 +94,7 @@ class GameManager {
         this.lastDiceResult = 0;
         this.lastDice1 = 0;
         this.lastDice2 = 0;
+        /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
         this.phase = GAME_PHASES.ROLL;
         this.log = [];
         this.builtThisTurn = false;
@@ -373,6 +374,7 @@ class GameManager {
         this.lastDice1 = 0;
         this.lastDice2 = 0;
         this.log = [];
+        /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
         this.phase = GAME_PHASES.ROLL;
         this.rollDice(forceDice, tunaDice);
         this.addLog(
@@ -878,6 +880,7 @@ class GameManager {
     _doNextTurn() {
         if (this.hadAmusementParkAtRoll &&
             this.lastDice1 > 0 && this.lastDice1 === this.lastDice2) {
+        /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
             this.phase = GAME_PHASES.ROLL;
             this.resetTurnState({ clearLog: true });
             this.addLog(LOG_TYPES.SYSTEM, `🎡 遊園地効果！ゾロ目でもう一度ターン`);
@@ -885,6 +888,7 @@ class GameManager {
         }
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.turnCount++;
+        /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
         this.phase = GAME_PHASES.ROLL;
         this.resetTurnState({ clearLog: true, clearDice: true });
 

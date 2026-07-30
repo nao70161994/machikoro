@@ -166,6 +166,18 @@ const CARD_IDS = Object.freeze({
     PARK:              "park",
 });
 
+/**
+ * @typedef {{
+ *     timing: string,
+ *     targetScope: string,
+ *     cpuKind: string,
+ *     incomeHandler?: string,
+ *     sideEffect?: string,
+ *     triggers?: ReadonlyArray<string>,
+ *     requires?: string,
+ * }} CardEffectMetadata
+ */
+/** @type {Readonly<Record<string, CardEffectMetadata>>} */
 const CARD_EFFECT_METADATA = Object.freeze({
     [CARD_EFFECTS.NORMAL]:        { timing: "income", targetScope: "self",      cpuKind: "income" },
     [CARD_EFFECTS.CHEESE]:        { timing: "income", targetScope: "self",      cpuKind: "comboIncome", incomeHandler: "cheese" },

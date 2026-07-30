@@ -32,6 +32,7 @@ runTest('checkJs configは限定adapterだけを明示列挙し巨大runtimeを�
     }
     assert.ok(config.files.includes('js/Card.js'));
     assert.ok(config.files.includes('js/Player.js'));
+    assert.ok(config.files.includes('js/GameManager.js'));
     assert.ok(config.files.includes('js/actionContract.js'));
     assert.ok(config.files.includes('js/actionUiRegistry.js'));
     assert.ok(config.files.includes('js/adSlots.js'));
