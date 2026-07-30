@@ -55,3 +55,15 @@ runTest('local player settings snapshotは既存defaultを補い入力を共有�
     snapshot[0].name = 'changed';
     assert.strictEqual(source[0].name, 'A');
 });
+
+
+runTest('local player settingsはRL状態と開始pendingから表示だけを純粋計算する', () => {
+    assert.strictEqual(LocalPlayerSettings.rlModelStatusMessage({ status: 'unused' }), '');
+    assert.strictEqual(LocalPlayerSettings.rlModelStatusMessage({ status: 'ready' }), '深層学習AIモデルの準備が完了しました。');
+    assert.strictEqual(LocalPlayerSettings.rlModelStatusMessage({ status: 'loading' }), '深層学習AIモデルを読み込んでいます。');
+    assert.strictEqual(LocalPlayerSettings.rlModelStatusMessage({ status: 'failed' }), '深層学習AIモデルを読み込めませんでした。再試行してください。');
+    assert.deepStrictEqual(LocalPlayerSettings.startButtonView({ status: 'loading' }, false), { disabled: true, textContent: 'モデル読み込み中' });
+    assert.deepStrictEqual(LocalPlayerSettings.startButtonView({ status: 'failed' }, false), { disabled: false, textContent: 'モデルを再試行' });
+    assert.deepStrictEqual(LocalPlayerSettings.startButtonView({ status: 'ready' }, false), { disabled: false, textContent: 'ゲーム開始' });
+    assert.deepStrictEqual(LocalPlayerSettings.startButtonView({ status: 'failed' }, true), { disabled: true, textContent: 'モデル読み込み中' });
+});

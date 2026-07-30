@@ -201,25 +201,17 @@ function localRlModelLoadState(playerCount = selectedCount) {
 }
 
 function localRlModelStatusMessage(state) {
-    if (!state || state.status === 'unused') return '';
-    if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
-    if (state.status === 'loading') return '深層学習AIモデルを読み込んでいます。';
-    if (state.status === 'failed') return '深層学習AIモデルを読み込めませんでした。再試行してください。';
-    return '深層学習AIモデルを開始時に読み込みます。';
+    return LocalPlayerSettings.rlModelStatusMessage(state);
 }
 
 function updateLocalRlModelReadinessUi() {
     const state = localRlModelLoadState(selectedCount);
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnStart') : null;
     const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('localRlModelStatus') : null;
-    if (btn && !localGameStartPending) {
-        if (state.status === 'loading') {
-            btn.disabled = true;
-            btn.textContent = 'モデル読み込み中';
-        } else {
-            btn.disabled = false;
-            btn.textContent = state.status === 'failed' ? 'モデルを再試行' : 'ゲーム開始';
-        }
+    if (btn) {
+        const view = LocalPlayerSettings.startButtonView(state, localGameStartPending);
+        btn.disabled = view.disabled;
+        btn.textContent = view.textContent;
     }
     if (status) status.textContent = localRlModelStatusMessage(state);
     return state;
@@ -274,11 +266,7 @@ function startGame() {
     const preload = preloadLocalRlModelsForStart(startPlayerCount, startPlayerSettings);
     if (preload && typeof preload.then === "function") {
         localGameStartPending = true;
-        const btn = document.getElementById("btnStart");
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = "モデル読み込み中";
-        }
+        updateLocalRlModelReadinessUi();
         showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {

@@ -105,6 +105,24 @@ const LocalPlayerSettings = (() => {
         }, setting || {}));
     }
 
+    function rlModelStatusMessage(state) {
+        if (!state || state.status === 'unused') return '';
+        if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
+        if (state.status === 'loading') return '深層学習AIモデルを読み込んでいます。';
+        if (state.status === 'failed') return '深層学習AIモデルを読み込めませんでした。再試行してください。';
+        return '深層学習AIモデルを開始時に読み込みます。';
+    }
+
+    function startButtonView(state, pending) {
+        if (pending === true || (state && state.status === 'loading')) {
+            return Object.freeze({ disabled: true, textContent: 'モデル読み込み中' });
+        }
+        return Object.freeze({
+            disabled: false,
+            textContent: state && state.status === 'failed' ? 'モデルを再試行' : 'ゲーム開始',
+        });
+    }
+
     return Object.freeze({
         escapeAttribute,
         defaultPlayerName,
@@ -118,6 +136,8 @@ const LocalPlayerSettings = (() => {
         formatCpuSpeedLabel,
         hasRlCpu,
         snapshot,
+        rlModelStatusMessage,
+        startButtonView,
     });
 })();
 
