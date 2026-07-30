@@ -49,6 +49,44 @@ runTest('online reconnect stateは許可遷移と禁止遷移を区別する', (
     assert.strictEqual(OnlineReconnectState.canTransition('unknown', STATES.IDLE), false);
 });
 
+runTest('online reconnect event reducerはlegacy lifecycleを副作用なしで再現する', () => {
+    const events = OnlineReconnectState.events;
+    let state = STATES.IDLE;
+    const step = (event, context = {}) => {
+        const result = OnlineReconnectState.reduceEvent(state, event, context);
+        assert.strictEqual(result.ok, true, JSON.stringify(result));
+        state = result.state;
+        return state;
+    };
+
+    assert.strictEqual(step(events.RECONNECT_REQUESTED), STATES.CONNECTING);
+    assert.strictEqual(step(events.RECONNECT_REQUESTED, { socketConnected: true }), STATES.REJOINING);
+    assert.strictEqual(step(events.RESTORE_STARTED), STATES.RESTORING);
+    assert.strictEqual(step(events.REPLAY_STARTED), STATES.REPLAYING);
+    assert.strictEqual(step(events.RESTORE_ACTIVATED), STATES.ACTIVE);
+    assert.strictEqual(step(events.SOCKET_DISCONNECTED), STATES.CONNECTING);
+    assert.strictEqual(step(events.RECONNECT_REQUESTED, { socketConnected: true }), STATES.REJOINING);
+    assert.strictEqual(step(events.RETRY_EXHAUSTED), STATES.FAILED);
+    assert.strictEqual(step(events.RESET), STATES.IDLE);
+
+    assert.deepStrictEqual(OnlineReconnectState.reduceEvent('unknown', events.RESET), {
+        ok: false,
+        reason: 'unknown-state',
+        state: 'unknown',
+    });
+    assert.deepStrictEqual(OnlineReconnectState.reduceEvent(STATES.IDLE, 'unknown'), {
+        ok: false,
+        reason: 'unknown-event',
+        state: STATES.IDLE,
+    });
+});
+
+runTest('online reconnect stateは復元・replay中の切断をconnectingへ戻せる', () => {
+    const event = OnlineReconnectState.events.SOCKET_DISCONNECTED;
+    assert.strictEqual(OnlineReconnectState.reduceEvent(STATES.RESTORING, event).state, STATES.CONNECTING);
+    assert.strictEqual(OnlineReconnectState.reduceEvent(STATES.REPLAYING, event).state, STATES.CONNECTING);
+});
+
 runTest('online reconnect state観測は失敗と復元処理を優先する', () => {
     assert.strictEqual(OnlineReconnectState.derive(), STATES.IDLE);
     assert.strictEqual(OnlineReconnectState.derive({ active: true }), STATES.ACTIVE);

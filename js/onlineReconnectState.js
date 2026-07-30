@@ -70,6 +70,7 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
         ONLINE_RECONNECT_STATES.IDLE,
     ]),
     [ONLINE_RECONNECT_STATES.RESTORING]: Object.freeze([
+        ONLINE_RECONNECT_STATES.CONNECTING,
         ONLINE_RECONNECT_STATES.REJOINING,
         ONLINE_RECONNECT_STATES.REPLAYING,
         ONLINE_RECONNECT_STATES.ACTIVE,
@@ -77,6 +78,7 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
         ONLINE_RECONNECT_STATES.IDLE,
     ]),
     [ONLINE_RECONNECT_STATES.REPLAYING]: Object.freeze([
+        ONLINE_RECONNECT_STATES.CONNECTING,
         ONLINE_RECONNECT_STATES.REJOINING,
         ONLINE_RECONNECT_STATES.ACTIVE,
         ONLINE_RECONNECT_STATES.FAILED,
@@ -110,6 +112,58 @@ function canOnlineReconnectTransition(from, to) {
     if (!isOnlineReconnectState(from) || !isOnlineReconnectState(to)) return false;
     if (from === to) return true;
     return ONLINE_RECONNECT_TRANSITIONS[from].includes(to);
+}
+
+function onlineReconnectEventTarget(event, context = {}) {
+    switch (event) {
+        case ONLINE_RECONNECT_EVENTS.RECONNECT_REQUESTED:
+            return context.socketConnected === true
+                ? ONLINE_RECONNECT_STATES.REJOINING
+                : ONLINE_RECONNECT_STATES.CONNECTING;
+        case ONLINE_RECONNECT_EVENTS.SOCKET_DISCONNECTED:
+            return ONLINE_RECONNECT_STATES.CONNECTING;
+        case ONLINE_RECONNECT_EVENTS.RESTORE_STARTED:
+            return ONLINE_RECONNECT_STATES.RESTORING;
+        case ONLINE_RECONNECT_EVENTS.REPLAY_STARTED:
+            return ONLINE_RECONNECT_STATES.REPLAYING;
+        case ONLINE_RECONNECT_EVENTS.RESTORE_ACTIVATED:
+            return ONLINE_RECONNECT_STATES.ACTIVE;
+        case ONLINE_RECONNECT_EVENTS.RETRY_EXHAUSTED:
+            return ONLINE_RECONNECT_STATES.FAILED;
+        case ONLINE_RECONNECT_EVENTS.GAME_COMPLETED:
+            return ONLINE_RECONNECT_STATES.COMPLETED;
+        case ONLINE_RECONNECT_EVENTS.RESET:
+            return ONLINE_RECONNECT_STATES.IDLE;
+        default:
+            return null;
+    }
+}
+
+/**
+ * Pure event reducer for a future authority cutover. It does not run effects or mutate a controller.
+ * @param {string} state
+ * @param {string} event
+ * @param {{socketConnected?: boolean}} [context]
+ * @returns {Object}
+ */
+function reduceOnlineReconnectEvent(state, event, context = {}) {
+    if (!isOnlineReconnectState(state)) {
+        return Object.freeze({ ok: false, reason: 'unknown-state', state });
+    }
+    if (!isOnlineReconnectEvent(event)) {
+        return Object.freeze({ ok: false, reason: 'unknown-event', state });
+    }
+    const target = onlineReconnectEventTarget(event, context);
+    if (!canOnlineReconnectTransition(state, target)) {
+        return Object.freeze({
+            ok: false,
+            reason: 'invalid-transition',
+            state,
+            event,
+            target,
+        });
+    }
+    return Object.freeze({ ok: true, state: target, from: state, event });
 }
 
 /**
@@ -229,6 +283,8 @@ const OnlineReconnectState = Object.freeze({
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
     canTransition: canOnlineReconnectTransition,
+    eventTarget: onlineReconnectEventTarget,
+    reduceEvent: reduceOnlineReconnectEvent,
     derive: deriveOnlineReconnectState,
     createController: createOnlineReconnectController,
 });
