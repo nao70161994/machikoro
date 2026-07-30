@@ -119,6 +119,7 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     const rt = loadIntegrationRuntime({
         includeOnline: true,
         onlineReconnectEventAuthorityEnabled: true,
+        onlineReconnectEffectAuthorityEnabled: true,
     });
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
@@ -140,18 +141,27 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     let snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(snapshot.authority.source, 'event');
     assert.strictEqual(snapshot.authority.state, 'active');
+    assert.strictEqual(snapshot.effectAuthority.source, 'event');
+    assert.strictEqual(snapshot.effectAuthority.reconnecting, false);
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, false);
 
     rt.__test.getOnlineState().socket.connected = false;
     rt.__test.socketHandlers.disconnect();
     snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(snapshot.authority.source, 'event');
     assert.strictEqual(snapshot.authority.state, 'connecting');
+    assert.strictEqual(snapshot.effectAuthority.source, 'event');
+    assert.strictEqual(snapshot.effectAuthority.reconnecting, true);
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
 
     rt.__test.getOnlineState().socket.connected = true;
     rt.__test.socketHandlers.connect();
     snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(snapshot.authority.source, 'event');
     assert.strictEqual(snapshot.authority.state, 'rejoining');
+    assert.strictEqual(snapshot.effectAuthority.source, 'event');
+    assert.strictEqual(snapshot.effectAuthority.reconnecting, true);
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload,
@@ -163,6 +173,9 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(snapshot.authority.source, 'event');
     assert.strictEqual(snapshot.authority.state, 'active');
+    assert.strictEqual(snapshot.effectAuthority.source, 'event');
+    assert.strictEqual(snapshot.effectAuthority.reconnecting, false);
+    assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, false);
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
     assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
 });

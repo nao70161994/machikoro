@@ -220,12 +220,35 @@ function _onlineReconnectObservationFlags() {
 }
 
 function _observeOnlineReconnectEvent(event) {
-    return _onlineReconnectController.observe(event, _onlineReconnectObservationFlags());
+    const observation = _onlineReconnectController.observe(event, _onlineReconnectObservationFlags());
+    _applyOnlineReconnectEffectAuthority(isReconnectingOnline);
+    return observation;
 }
 
 function isOnlineReconnectEventAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineReconnectEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
+    return OnlineReconnectState.selectEffectAuthority(
+        _onlineReconnectController.snapshot(),
+        legacyValue === true,
+        { effectAuthorityEnabled: isOnlineReconnectEffectAuthorityEnabled() }
+    );
+}
+
+function _applyOnlineReconnectEffectAuthority(legacyValue = isReconnectingOnline) {
+    const selection = _onlineReconnectEffectSelection(legacyValue);
+    if (selection.reconnecting !== isReconnectingOnline) {
+        setOnlineReconnectLegacyFlag(selection.reconnecting);
+    }
+    return selection;
 }
 
 function _onlineReconnectAuthoritySelection() {
@@ -249,6 +272,7 @@ function getOnlineReconnectStateSnapshot() {
     return Object.freeze({
         ...snapshot,
         authority: _onlineReconnectAuthoritySelection(),
+        effectAuthority: _onlineReconnectEffectSelection(isReconnectingOnline),
     });
 }
 

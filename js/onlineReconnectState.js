@@ -12,6 +12,7 @@ const ONLINE_RECONNECT_STATES = Object.freeze({
 });
 
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
+const ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 const ONLINE_RECONNECT_EVENTS = Object.freeze({
     RECONNECT_REQUESTED: 'reconnect-requested',
@@ -110,6 +111,12 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
 function onlineReconnectEventAuthorityEnabled(env = {}) {
     return ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES.has(
         String(env.ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED || '').trim().toLowerCase()
+    );
+}
+
+function onlineReconnectEffectAuthorityEnabled(env = {}) {
+    return ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED_VALUES.has(
+        String(env.ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED || '').trim().toLowerCase()
     );
 }
 
@@ -264,6 +271,33 @@ function selectOnlineReconnectAuthorityState(snapshot = {}, options = {}) {
         source: enabled && ready ? 'event' : 'legacy-projection',
         ready,
         fallbackReason,
+    });
+}
+
+/**
+ * Selects the reconnecting boolean effect without changing timer or callback ownership.
+ * The legacy value remains authoritative unless the feature is explicitly enabled and
+ * the event/legacy shadow history is fully consistent.
+ * @param {Object} snapshot
+ * @param {boolean} legacyReconnecting
+ * @param {{effectAuthorityEnabled?: boolean}} [options]
+ * @returns {{reconnecting: boolean, source: string, ready: boolean, fallbackReason: string}}
+ */
+function selectOnlineReconnectEffectAuthority(snapshot = {}, legacyReconnecting, options = {}) {
+    const legacyValue = legacyReconnecting === true;
+    const stateSelection = selectOnlineReconnectAuthorityState(snapshot, {
+        eventAuthorityEnabled: options.effectAuthorityEnabled === true,
+    });
+    const useEvent = stateSelection.source === 'event';
+    return Object.freeze({
+        reconnecting: useEvent
+            ? onlineReconnectStateBlocksInput(stateSelection.state)
+            : legacyValue,
+        source: useEvent
+            ? 'event'
+            : (options.effectAuthorityEnabled === true ? 'legacy-fallback' : 'legacy'),
+        ready: stateSelection.ready,
+        fallbackReason: stateSelection.fallbackReason,
     });
 }
 
@@ -426,6 +460,7 @@ const OnlineReconnectState = Object.freeze({
     events: ONLINE_RECONNECT_EVENTS,
     transitions: ONLINE_RECONNECT_TRANSITIONS,
     eventAuthorityEnabled: onlineReconnectEventAuthorityEnabled,
+    effectAuthorityEnabled: onlineReconnectEffectAuthorityEnabled,
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
     blocksInput: onlineReconnectStateBlocksInput,
@@ -435,6 +470,7 @@ const OnlineReconnectState = Object.freeze({
     derive: deriveOnlineReconnectState,
     compareEventProjection: compareOnlineReconnectEventProjection,
     selectAuthorityState: selectOnlineReconnectAuthorityState,
+    selectEffectAuthority: selectOnlineReconnectEffectAuthority,
     createController: createOnlineReconnectController,
 });
 

@@ -364,6 +364,101 @@ runTest('online reconnect event authority flagは明示有効値だけを受理�
     }
 });
 
+runTest('online reconnect effect authority flagは明示有効値だけを受理する', () => {
+    for (const value of ['1', 'true', 'TRUE', ' yes ', 'on']) {
+        assert.strictEqual(
+            OnlineReconnectState.effectAuthorityEnabled({ ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED: value }),
+            true,
+            value
+        );
+    }
+    for (const value of [undefined, '', '0', 'false', 'enabled']) {
+        assert.strictEqual(
+            OnlineReconnectState.effectAuthorityEnabled({ ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED: value }),
+            false,
+            String(value)
+        );
+    }
+});
+
+runTest('online reconnect effect authorityは既定OFFでlegacy値を維持する', () => {
+    const snapshot = {
+        state: STATES.ACTIVE,
+        eventState: STATES.ACTIVE,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectEffectAuthority(snapshot, true),
+        {
+            reconnecting: true,
+            source: 'legacy',
+            ready: true,
+            fallbackReason: '',
+        }
+    );
+});
+
+runTest('online reconnect effect authorityはclean parity時だけevent stateを採用する', () => {
+    const blockedStates = new Set([
+        STATES.CONNECTING,
+        STATES.REJOINING,
+        STATES.RESTORING,
+        STATES.REPLAYING,
+        STATES.FAILED,
+    ]);
+    for (const state of Object.values(STATES)) {
+        const snapshot = {
+            state,
+            eventState: state,
+            invalidEventTransitionCount: 0,
+            projectionMismatchCount: 0,
+        };
+        assert.deepStrictEqual(
+            OnlineReconnectState.selectEffectAuthority(snapshot, !blockedStates.has(state), {
+                effectAuthorityEnabled: true,
+            }),
+            {
+                reconnecting: blockedStates.has(state),
+                source: 'event',
+                ready: true,
+                fallbackReason: '',
+            },
+            state
+        );
+    }
+});
+
+runTest('online reconnect effect authorityは不整合時にlegacy値へfail closedする', () => {
+    const base = {
+        state: STATES.CONNECTING,
+        eventState: STATES.RESTORING,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    const cases = [
+        [{ ...base, state: 'unknown' }, 'malformed-snapshot'],
+        [{ ...base, invalidEventTransitionCount: 1 }, 'invalid-event-transition'],
+        [{ ...base, projectionMismatchCount: 1 }, 'projection-mismatch'],
+        [base, 'state-mismatch'],
+    ];
+    for (const legacyValue of [false, true]) {
+        for (const [snapshot, fallbackReason] of cases) {
+            assert.deepStrictEqual(
+                OnlineReconnectState.selectEffectAuthority(snapshot, legacyValue, {
+                    effectAuthorityEnabled: true,
+                }),
+                {
+                    reconnecting: legacyValue,
+                    source: 'legacy-fallback',
+                    ready: false,
+                    fallbackReason,
+                }
+            );
+        }
+    }
+});
+
 runTest('online reconnect input gateは接続処理中だけをblockする', () => {
     for (const state of [STATES.CONNECTING, STATES.REJOINING, STATES.RESTORING, STATES.REPLAYING, STATES.FAILED]) {
         assert.strictEqual(OnlineReconnectState.blocksInput(state), true, state);
