@@ -10,10 +10,8 @@ declare class RLCPU {
 }
 
 declare var CPU: { _nowMs(): number };
-declare var Player: { landmarkNames(): ReadonlyArray<string> };
 declare var GameManager: { pendingActionsFor(game: unknown): ReadonlyArray<{ action: string, field: string, count: number }> };
 declare var GAME_PHASES: Readonly<{ PENDING: string }>;
-declare var LANDMARK_NAMES: Readonly<{ YAKUSHO: string }>;
 declare var CPU_EXPERT_DEFAULT_OPTIONS: unknown;
 declare var CPU_EXPERT_PRESETS: unknown;
 declare var CPU_EXPERT_PROFILE_TUNINGS: unknown;

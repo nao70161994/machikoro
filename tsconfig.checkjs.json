@@ -15,6 +15,7 @@
     "types/checkjs-globals.d.ts",
     "types/checkjs-browser-globals.d.ts",
     "js/Card.js",
+    "js/Player.js",
     "js/actionContract.js",
     "js/actionUiRegistry.js",
     "js/adSlots.js",
