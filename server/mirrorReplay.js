@@ -420,25 +420,14 @@ function makeMirrorReplay({
     }
 
     function restoreUndoMirror(game, shopStock, state, createCardByName) {
-        if (!state ||
-            !Array.isArray(state.playerCoins) ||
-            !Array.isArray(state.playerCardNames) ||
-            !Array.isArray(state.playerLandmarks) ||
-            !state.shopStock
-        ) return false;
-        game.players.forEach((p, i) => {
-            p.coins = state.playerCoins[i];
-            p.cards = state.playerCardNames[i].map(name => createCardByName(name)).filter(Boolean);
-            p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
-            p.landmarks = Object.assign({}, p.landmarks, state.playerLandmarks[i]);
-            p.itVentureCoins = state.playerItVenture?.[i] ?? 0;
-            p.hasYakusho = state.playerHasYakusho?.[i] !== false;
+        return GameSnapshot.hydrateUndoState({
+            game,
+            shopStock,
+            state,
+            createCardByName,
+            assignShopStockSnapshot: gameRuntime.assignShopStockSnapshot,
+            mergePlayerLandmarks: (current, saved) => Object.assign({}, current, saved),
         });
-        gameRuntime.assignShopStockSnapshot(shopStock, state.shopStock);
-        game.builtThisTurn = state.builtThisTurn === true;
-        game.log = Array.isArray(state.log) ? [...state.log] : [];
-        game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
-        return true;
     }
 
     function makeUndoStateFromMirror(game, shopStock) {

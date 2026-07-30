@@ -175,6 +175,56 @@ runTest('共有undo serializerは既存形状とlog上限を保持する', () =>
     assert.deepStrictEqual(GameSnapshot.serializeUndoState(game, stock, 0).log, []);
 });
 
+runTest('共有undo hydrate境界はcallerのlandmarkと在庫policyを維持する', () => {
+    const cafe = { name: 'カフェ' };
+    const game = {
+        players: [{
+            coins: 3,
+            cards: [],
+            dormantCards: [],
+            landmarks: { 駅: false, 港: true },
+            itVentureCoins: 9,
+            hasYakusho: false,
+        }],
+        builtThisTurn: false,
+        log: [{ text: 'before' }],
+        hadAmusementParkAtRoll: true,
+    };
+    const shopStock = {};
+    const hydrated = GameSnapshot.hydrateUndoState({
+        game,
+        shopStock,
+        state: {
+            playerCoins: [7],
+            playerCardNames: [['カフェ', 'unknown']],
+            playerDormantIndices: [[0]],
+            playerLandmarks: [{ 駅: true }],
+            playerItVenture: [2],
+            playerHasYakusho: [true],
+            shopStock: { カフェ: 4 },
+            builtThisTurn: true,
+            log: [{ text: 'restored' }],
+            hadAmusementParkAtRoll: false,
+        },
+        createCardByName: name => name === 'カフェ' ? cafe : null,
+        assignShopStockSnapshot: (target, value) => Object.assign(target, value),
+        mergePlayerLandmarks: (current, saved) => Object.assign({}, current, saved),
+    });
+
+    assert.strictEqual(hydrated, true);
+    assert.strictEqual(game.players[0].coins, 7);
+    assert.deepStrictEqual(game.players[0].cards, [cafe]);
+    assert.deepStrictEqual(game.players[0].dormantCards, [cafe]);
+    assert.deepStrictEqual(game.players[0].landmarks, { 駅: true, 港: true });
+    assert.strictEqual(game.players[0].itVentureCoins, 2);
+    assert.strictEqual(game.players[0].hasYakusho, true);
+    assert.deepStrictEqual(shopStock, { カフェ: 4 });
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.deepStrictEqual(game.log, [{ text: 'restored' }]);
+    assert.strictEqual(game.hadAmusementParkAtRoll, false);
+    assert.strictEqual(GameSnapshot.hydrateUndoState({ game, state: {} }), false);
+});
+
 runTest('共有hydrate境界は復元policyと副作用adapterをcallerへ明示する', () => {
     const cafe = { name: 'カフェ' };
     const game = {

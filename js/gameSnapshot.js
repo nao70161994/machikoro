@@ -174,6 +174,52 @@ function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LO
 }
 
 /**
+ * Applies caller-validated Undo state while leaving compatibility policy in adapters.
+ * @param {Object} options
+ * @param {Object} options.game
+ * @param {Record<string, number>} options.shopStock
+ * @param {Object} options.state
+ * @param {function(string): (Object|null)} options.createCardByName
+ * @param {function(Record<string, number>, Object): void} options.assignShopStockSnapshot
+ * @param {function(Object, Object, number): Object} options.mergePlayerLandmarks
+ * @returns {boolean}
+ */
+function hydrateUndoState(options) {
+    if (!options || !options.game || !options.state ||
+            !Array.isArray(options.game.players) ||
+            typeof options.createCardByName !== 'function' ||
+            typeof options.assignShopStockSnapshot !== 'function' ||
+            typeof options.mergePlayerLandmarks !== 'function') return false;
+
+    const { game, shopStock, state } = options;
+    if (!Array.isArray(state.playerCoins) ||
+            !Array.isArray(state.playerCardNames) ||
+            !Array.isArray(state.playerLandmarks) ||
+            !state.shopStock) return false;
+    game.players.forEach((player, index) => {
+        player.coins = state.playerCoins[index];
+        player.cards = state.playerCardNames[index]
+            .map(name => options.createCardByName(name))
+            .filter(Boolean);
+        player.dormantCards = (state.playerDormantIndices?.[index] || [])
+            .map(cardIndex => player.cards[cardIndex])
+            .filter(Boolean);
+        player.landmarks = options.mergePlayerLandmarks(
+            player.landmarks,
+            state.playerLandmarks[index],
+            index
+        );
+        player.itVentureCoins = state.playerItVenture?.[index] ?? 0;
+        player.hasYakusho = state.playerHasYakusho?.[index] !== false;
+    });
+    options.assignShopStockSnapshot(shopStock, state.shopStock);
+    game.builtThisTurn = state.builtThisTurn === true;
+    game.log = Array.isArray(state.log) ? [...state.log] : [];
+    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
+    return true;
+}
+
+/**
  * Applies caller-validated state while leaving compatibility and side-effect policy in adapters.
  * @param {GameSnapshotHydrateOptions} options
  * @returns {boolean}
@@ -249,6 +295,7 @@ const GameSnapshot = Object.freeze({
     serializeGameState,
     serializeLocalSaveState,
     hydrateMutableGameState,
+    hydrateUndoState,
     serializeUndoState,
 });
 

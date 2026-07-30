@@ -397,22 +397,24 @@ function saveUndoState() {
 }
 
 function restoreUndoSnapshot(state) {
-    if (!state) return;
-    game.players.forEach((p, i) => {
-        p.coins = state.playerCoins[i];
-        p.cards = state.playerCardNames[i].map(name => createCardByName(name)).filter(Boolean);
-        p.dormantCards = (state.playerDormantIndices?.[i] || []).map(idx => p.cards[idx]).filter(Boolean);
-        p.landmarks = Object.assign({}, makeDefaultLandmarks(), p.landmarks, state.playerLandmarks[i]);
-        p.itVentureCoins = state.playerItVenture?.[i] ?? 0;
-        p.hasYakusho = state.playerHasYakusho?.[i] !== false;
+    const hydrated = GameSnapshot.hydrateUndoState({
+        game,
+        shopStock: SHOP_STOCK,
+        state,
+        createCardByName,
+        assignShopStockSnapshot: assignSavedShopStockSnapshot,
+        mergePlayerLandmarks: (current, saved) => Object.assign(
+            {},
+            makeDefaultLandmarks(),
+            current,
+            saved
+        ),
     });
-    assignSavedShopStockSnapshot(SHOP_STOCK, state.shopStock);
-    game.builtThisTurn = state.builtThisTurn === true;
-    game.log = Array.isArray(state.log) ? [...state.log] : [];
-    game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
+    if (!hydrated) return false;
     undoState = null;
     prevCoins = null;
     cancelAutoSkip();
+    return true;
 }
 
 function doUndo() {
