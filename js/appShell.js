@@ -1118,25 +1118,27 @@ function gameLifecycleAppVersion() {
 }
 
 function gameLifecycleStartSignature() {
-    return [gameLifecycleMode(), gameLifecyclePlayerCount(), gameLifecycleCpuCount()].join('|');
+    return LifecycleNotify.startSignature(
+        gameLifecycleMode(),
+        gameLifecyclePlayerCount(),
+        gameLifecycleCpuCount()
+    );
 }
 
 function recentlySentGameLifecycleStart(signature, now = Date.now()) {
-    try {
-        const raw = safeAppShellStorageGet(GAME_LIFECYCLE_START_SENT_KEY);
-        if (!raw) return false;
-        const parsed = JSON.parse(raw);
-        return parsed && parsed.signature === signature && now - Number(parsed.timestamp || 0) < GAME_LIFECYCLE_START_SUPPRESS_MS;
-    } catch (_) {
-        return false;
-    }
+    return LifecycleNotify.isRecentStart(
+        safeAppShellStorageGet(GAME_LIFECYCLE_START_SENT_KEY),
+        signature,
+        now,
+        GAME_LIFECYCLE_START_SUPPRESS_MS
+    );
 }
 
 function rememberGameLifecycleStart(signature, now = Date.now()) {
     appShellStorage.access(storage => {
         storage.setItem(
             GAME_LIFECYCLE_START_SENT_KEY,
-            JSON.stringify({ signature, timestamp: now }).slice(0, 300)
+            LifecycleNotify.serializeStartMarker(signature, now)
         );
     });
 }

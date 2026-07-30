@@ -5,6 +5,26 @@ const LifecycleNotify = (() => {
         return ['0', 'false', 'no', 'off', 'disabled'].includes(String(value || '').toLowerCase());
     }
 
+    function startSignature(mode, playerCount, cpuCount) {
+        return [mode, playerCount, cpuCount].join('|');
+    }
+
+    function isRecentStart(raw, signature, now, suppressMs) {
+        try {
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            return !!(parsed &&
+                parsed.signature === signature &&
+                now - Number(parsed.timestamp || 0) < suppressMs);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function serializeStartMarker(signature, timestamp) {
+        return JSON.stringify({ signature, timestamp }).slice(0, 300);
+    }
+
     function buildPayload(options) {
         const payload = {
             event: options.event,
@@ -20,7 +40,13 @@ const LifecycleNotify = (() => {
         return payload;
     }
 
-    return Object.freeze({ isDisabledValue, buildPayload });
+    return Object.freeze({
+        isDisabledValue,
+        startSignature,
+        isRecentStart,
+        serializeStartMarker,
+        buildPayload,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LifecycleNotify;
