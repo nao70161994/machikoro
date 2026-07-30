@@ -1747,12 +1747,11 @@ class CPU {
     }
 
     _expertRollIncomeCap(player, game) {
-        if (!player || !game || !game.enabledLandmarks) return Infinity;
-        const remainingCosts = [...game.enabledLandmarks]
-            .filter(name => !player.landmarks[name])
-            .map(name => Player.landmarkCost(name));
-        if (remainingCosts.length === 0) return Infinity;
-        return Math.max(...remainingCosts);
+        return CPUEvaluation.expertRollIncomeCap(
+            player,
+            game && game.enabledLandmarks,
+            Player.landmarkCost
+        );
     }
 
     _estimateOwnRollIncome(game, player, dice, candidateCard = null) {
@@ -1772,22 +1771,11 @@ class CPU {
         if (this.difficulty !== "expert" || !card || !game || !player || !card.diceNums || card.diceNums.length === 0) return 0;
         const cap = this._expertRollIncomeCap(player, game);
         if (!Number.isFinite(cap) || cap <= 0) return 0;
-        let penalty = 0;
-        for (const dice of card.diceNums) {
-            const before = this._estimateOwnRollIncome(game, player, dice);
-            const after = this._estimateOwnRollIncome(game, player, dice, card);
-            const added = Math.max(0, after - before);
-            if (added <= 0) continue;
-            if (before >= cap) {
-                penalty += added * 2.4;
-                continue;
-            }
-            const overflow = Math.max(0, after - cap);
-            if (overflow > 0) {
-                penalty += overflow * 1.8;
-            }
-        }
-        return penalty;
+        const incomePairs = card.diceNums.map(dice => ({
+            before: this._estimateOwnRollIncome(game, player, dice),
+            after: this._estimateOwnRollIncome(game, player, dice, card),
+        }));
+        return CPUEvaluation.expertRollCapPenalty(incomePairs, cap, this.difficulty);
     }
 
     // ダイス出目の重み

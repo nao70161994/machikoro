@@ -192,6 +192,31 @@ const CPUEvaluation = Object.freeze({
         return Math.max(0, after - before) * 1.8;
     },
 
+    expertRollIncomeCap(player, enabledLandmarks, landmarkCost) {
+        if (!player || !enabledLandmarks) return Infinity;
+        const remainingCosts = [...enabledLandmarks]
+            .filter(name => !player.landmarks[name])
+            .map(name => landmarkCost(name));
+        if (remainingCosts.length === 0) return Infinity;
+        return Math.max(...remainingCosts);
+    },
+
+    expertRollCapPenalty(incomePairs, cap, difficulty) {
+        if (difficulty !== 'expert' || !Number.isFinite(cap) || cap <= 0) return 0;
+        let penalty = 0;
+        for (const pair of incomePairs) {
+            const added = Math.max(0, pair.after - pair.before);
+            if (added <= 0) continue;
+            if (pair.before >= cap) {
+                penalty += added * 2.4;
+                continue;
+            }
+            const overflow = Math.max(0, pair.after - cap);
+            if (overflow > 0) penalty += overflow * 1.8;
+        }
+        return penalty;
+    },
+
     sameBuildOption(a, b) {
         if (!a || !b || a.type !== b.type) return false;
         if (a.type === 'landmark') return a.name === b.name;

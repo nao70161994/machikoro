@@ -135,6 +135,65 @@ runTest('CPU本体のランドマーク妨害wrapperはpure evaluationへ完全�
     );
 });
 
+runTest('CPU evaluation はexpertロール収入上限と超過ペナルティをpureに計算する', () => {
+    const costs = { station: 4, airport: 30 };
+    const landmarkCost = name => costs[name];
+    const player = {
+        landmarks: { station: false, airport: false },
+    };
+
+    assert.strictEqual(
+        CPUEvaluation.expertRollIncomeCap(player, Object.keys(costs), landmarkCost),
+        30
+    );
+    assert.strictEqual(
+        CPUEvaluation.expertRollCapPenalty([
+            { before: 30, after: 32 },
+            { before: 29, after: 33 },
+            { before: 10, after: 9 },
+        ], 30, 'expert'),
+        10.2
+    );
+    assert.strictEqual(
+        CPUEvaluation.expertRollCapPenalty([{ before: 30, after: 40 }], 30, 'strong'),
+        0
+    );
+    player.landmarks.station = true;
+    player.landmarks.airport = true;
+    assert.strictEqual(
+        CPUEvaluation.expertRollIncomeCap(player, Object.keys(costs), landmarkCost),
+        Infinity
+    );
+});
+
+runTest('CPU本体のexpertロール上限wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager, LANDMARK_NAMES, Player } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(2);
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION]);
+    const player = game.players[0];
+    const cap = Player.landmarkCost(LANDMARK_NAMES.STATION);
+    const card = { diceNums: [1, 2] };
+    const incomeByDice = {
+        1: { before: cap, after: cap + 2 },
+        2: { before: cap - 1, after: cap + 2 },
+    };
+    cpu._estimateOwnRollIncome = (currentGame, currentPlayer, dice, candidateCard) => {
+        assert.strictEqual(currentGame, game);
+        assert.strictEqual(currentPlayer, player);
+        return candidateCard ? incomeByDice[dice].after : incomeByDice[dice].before;
+    };
+
+    assert.strictEqual(
+        cpu._expertRollIncomeCap(player, game),
+        CPUEvaluation.expertRollIncomeCap(player, game.enabledLandmarks, Player.landmarkCost)
+    );
+    assert.strictEqual(
+        cpu._scoreExpertRollCapPenalty(card, game, player),
+        CPUEvaluation.expertRollCapPenalty(Object.values(incomeByDice), cap, 'expert')
+    );
+});
+
 runTest('CPU本体の評価primitive wrapperはpure evaluationへ同値委譲する', () => {
     const { CPU, Player } = loadCPURuntime();
     const cpu = new CPU('strong');
