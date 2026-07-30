@@ -334,8 +334,9 @@ runTest('hostless確認modalは承認と明示拒否を別payloadで返す', () 
     });
 });
 
-runTest('hostless不一致はbundleを保持し明示破棄と再試行を案内する', () => {
+runTest('hostless不一致statusはeffect flag有効でも固有案内とbundleを保持する', () => {
     const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED = true;
     const { handlers, gameStartPayload } = seedHostlessRestoreBundle(runtime);
     runtime._requestHostlessRestore();
 
