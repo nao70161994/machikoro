@@ -5,6 +5,7 @@ interface Window {
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;
+    createOnlineStorageFacade: unknown;
     GameEngine: unknown;
     GameSchemaWire: unknown;
     CPUActionProposal: unknown;
