@@ -86,6 +86,7 @@ function loadIntegrationRuntime(options = {}) {
         },
         window: {
             MACHIKORO_CLIENT_VERSION: options.clientVersion || 'integration-build',
+            MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED: options.onlineReconnectEventAuthorityEnabled === true,
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: false }; },
@@ -294,7 +295,7 @@ function loadIntegrationRuntime(options = {}) {
             delete context.__tmpOnlineState;
         },
         getOnlineState() {
-            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
+            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
         },
     };
     return context;

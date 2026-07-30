@@ -115,6 +115,58 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     assert.strictEqual(game.currentPlayerIndex, 1);
 });
 
+runTest('online integration: event authorityは開始・切断・再join・復元をclean parityで完了する', () => {
+    const rt = loadIntegrationRuntime({
+        includeOnline: true,
+        onlineReconnectEventAuthorityEnabled: true,
+    });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.__test.socketHandlers.roomCreated({ roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1' });
+    rt.__test.setOnlineState({ myPlayerName: 'Alice' });
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    };
+    rt.__test.socketHandlers.gameStart(gameStartPayload);
+
+    let snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'event');
+    assert.strictEqual(snapshot.authority.state, 'active');
+
+    rt.__test.getOnlineState().socket.connected = false;
+    rt.__test.socketHandlers.disconnect();
+    snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'event');
+    assert.strictEqual(snapshot.authority.state, 'connecting');
+
+    rt.__test.getOnlineState().socket.connected = true;
+    rt.__test.socketHandlers.connect();
+    snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'event');
+    assert.strictEqual(snapshot.authority.state, 'rejoining');
+
+    rt.__test.socketHandlers.rejoinData({
+        gameStartPayload,
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+    snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'event');
+    assert.strictEqual(snapshot.authority.state, 'active');
+    assert.strictEqual(snapshot.projectionMismatchCount, 0);
+    assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
+});
+
 runTest('online integration: socket再接続時はrejoinRoomで最新状態を取り直す', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.initSocket();
