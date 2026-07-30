@@ -278,6 +278,40 @@ assert.strictEqual(UiWatchdog.isPostBuildNextTurnSnapshot(Object.assign({}, post
     isOnlineGame: true,
     onlineActionInFlight: true,
 })), false);
+
+assert.strictEqual(UiWatchdog.isExplicitModalOpen({ display: 'flex' }), true);
+assert.strictEqual(UiWatchdog.isExplicitModalOpen({ computedDisplay: 'block' }), true);
+assert.strictEqual(UiWatchdog.isExplicitModalOpen({ display: 'none' }), false);
+assert.strictEqual(UiWatchdog.isExplicitModalOpen({ display: 'flex', hidden: true }), false);
+assert.strictEqual(UiWatchdog.isExplicitModalOpen({ display: 'flex', computedVisibility: 'hidden' }), false);
+
+assert.strictEqual(UiWatchdog.isStaleConfirmModalSnapshot(postBuildSnapshot, {
+    confirmOpen: true,
+    awaitingChoice: false,
+}), true);
+assert.strictEqual(UiWatchdog.isStaleConfirmModalSnapshot(postBuildSnapshot, {
+    confirmOpen: true,
+    awaitingChoice: true,
+}), false);
+assert.strictEqual(UiWatchdog.isStaleConfirmModalSnapshot({
+    phase: 'roll',
+    allowedActions: ['rollDice'],
+}, { confirmOpen: true }), true);
+assert.strictEqual(UiWatchdog.isStaleConfirmModalSnapshot(postBuildSnapshot, { confirmOpen: false }), false);
+
+assert.strictEqual(UiWatchdog.isStalePendingModalSnapshot({
+    allowedActions: ['resolveIT'],
+    ui: { pendingMenu: { htmlLength: 10 } },
+}, true), false);
+assert.strictEqual(UiWatchdog.isStalePendingModalSnapshot({
+    allowedActions: [],
+    ui: { pendingMenu: { htmlLength: 10 } },
+}, true), true);
+assert.strictEqual(UiWatchdog.isStalePendingModalSnapshot({
+    allowedActions: ['resolveIT'],
+    ui: { pendingMenu: { htmlLength: 0 } },
+}, true), true);
+assert.strictEqual(UiWatchdog.isStalePendingModalSnapshot({}, false), false);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: false, socketConnected: false }), false);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, onlineActionInFlight: true }), true);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, isReconnectingOnline: true }), true);

@@ -633,11 +633,7 @@ function modalSnapshotFromRuntime(snapshot, id) {
 }
 
 function explicitModalOpenFromSnapshot(snapshot, id) {
-    const state = modalSnapshotFromRuntime(snapshot, id);
-    if (!state || state.hidden) return false;
-    if (state.display === 'none' || state.computedDisplay === 'none') return false;
-    if (state.visibility === 'hidden' || state.computedVisibility === 'hidden') return false;
-    return !!(state.display || state.computedDisplay);
+    return UiWatchdog.isExplicitModalOpen(modalSnapshotFromRuntime(snapshot, id));
 }
 
 function confirmModalOpenFromSnapshot(snapshot) {
@@ -654,11 +650,10 @@ function isConfirmModalAwaitingUserChoice() {
 }
 
 function isStaleConfirmModalSnapshot(snapshot) {
-    if (!snapshot || !confirmModalOpenFromSnapshot(snapshot)) return false;
-    if (isConfirmModalAwaitingUserChoice()) return false;
-    const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
-    if (snapshot.phase === 'build' && !!snapshot.builtThisTurn && allowed.includes('nextTurn')) return true;
-    return snapshot.phase === 'roll' && allowed.includes('rollDice');
+    return UiWatchdog.isStaleConfirmModalSnapshot(snapshot, {
+        confirmOpen: confirmModalOpenFromSnapshot(snapshot),
+        awaitingChoice: isConfirmModalAwaitingUserChoice(),
+    });
 }
 
 function activeBlockingModalIds(snapshot) {
@@ -672,10 +667,10 @@ function hasActiveBlockingModal(snapshot) {
 }
 
 function isStalePendingModalSnapshot(snapshot) {
-    if (!snapshot || !explicitModalOpenFromSnapshot(snapshot, 'pendingModal')) return false;
-    const expectedPending = expectedPendingActions(snapshot);
-    const pendingMenu = snapshot.ui && snapshot.ui.pendingMenu;
-    return expectedPending.length === 0 || !pendingMenu || pendingMenu.htmlLength <= 0;
+    return UiWatchdog.isStalePendingModalSnapshot(
+        snapshot,
+        explicitModalOpenFromSnapshot(snapshot, 'pendingModal')
+    );
 }
 
 function clearElementModalLock(id) {

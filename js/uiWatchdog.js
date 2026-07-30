@@ -280,6 +280,26 @@ const UiWatchdog = (() => {
         return allowed.includes('nextTurn') && !pending.pendingRenovation;
     }
 
+    function isExplicitModalOpen(state) {
+        if (!state || state.hidden) return false;
+        if (state.display === 'none' || state.computedDisplay === 'none') return false;
+        if (state.visibility === 'hidden' || state.computedVisibility === 'hidden') return false;
+        return !!(state.display || state.computedDisplay);
+    }
+
+    function isStaleConfirmModalSnapshot(snapshot, options = {}) {
+        if (!snapshot || options.confirmOpen !== true || options.awaitingChoice === true) return false;
+        const allowed = Array.isArray(snapshot.allowedActions) ? snapshot.allowedActions : [];
+        if (snapshot.phase === 'build' && !!snapshot.builtThisTurn && allowed.includes('nextTurn')) return true;
+        return snapshot.phase === 'roll' && allowed.includes('rollDice');
+    }
+
+    function isStalePendingModalSnapshot(snapshot, pendingOpen = false) {
+        if (!snapshot || !pendingOpen) return false;
+        const pendingMenu = snapshot.ui && snapshot.ui.pendingMenu;
+        return expectedPendingActions(snapshot).length === 0 || !pendingMenu || pendingMenu.htmlLength <= 0;
+    }
+
     function isOnlineUiBlockedSnapshot(snapshot) {
         if (!snapshot || !snapshot.isOnlineGame) return false;
         if (snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return true;
@@ -302,6 +322,9 @@ const UiWatchdog = (() => {
         isActiveGameScreenRecoverySnapshot,
         shouldRestoreGameScreenDisplay,
         isPostBuildNextTurnSnapshot,
+        isExplicitModalOpen,
+        isStaleConfirmModalSnapshot,
+        isStalePendingModalSnapshot,
         isOnlineUiBlockedSnapshot,
         hasPendingWork,
         classifyFreezeFacts,
