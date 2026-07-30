@@ -440,6 +440,102 @@ runTest('CPU evaluation は特殊カードのpure価値計算を維持する', (
     assert.strictEqual(CPUEvaluation.loanBurdenValue(3), -7.5);
 });
 
+runTest('CPU evaluation はstrong条件付き赤カード圧力を数値featureだけで評価する', () => {
+    const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
+
+    assert.strictEqual(
+        CPUEvaluation.strongConditionalCardAdjustment(
+            effects.FRENCHR, [1, 2, 3], 'strong', effects
+        ),
+        3.2
+    );
+    assert.strictEqual(
+        CPUEvaluation.strongConditionalCardAdjustment(
+            effects.MEMBERBAR, [1, 2], 'strong', effects
+        ),
+        -1.2
+    );
+    assert.strictEqual(
+        CPUEvaluation.strongConditionalCardAdjustment(
+            effects.MEMBERBAR, [0, 1], 'strong', effects
+        ),
+        -3.6
+    );
+    assert.strictEqual(
+        CPUEvaluation.strongConditionalCardAdjustment(
+            effects.FRENCHR, [2], 'expert', effects
+        ),
+        0
+    );
+    assert.ok(Math.abs(
+        CPUEvaluation.strongLandmarkThresholdPenalty({
+            difficulty: 'strong',
+            hasName: true,
+            nextBuiltCount: 2,
+            progressCardCount: 2,
+            opponentConditionalCards: [{ french: 2, memberBar: 1 }],
+            remainingLandmarkCount: 2,
+        }) - 3.36
+    ) < 1e-12);
+    assert.strictEqual(
+        CPUEvaluation.strongLandmarkThresholdPenalty({
+            difficulty: 'strong',
+            hasName: true,
+            nextBuiltCount: 3,
+            progressCardCount: 0,
+            opponentConditionalCards: [{ french: 1, memberBar: 2 }],
+            remainingLandmarkCount: 3,
+        }),
+        6.6
+    );
+});
+
+runTest('CPU本体のstrong条件付き赤wrapperはfeature adapterからpure policyへ委譲する', () => {
+    const {
+        CPU, GameManager, createCardByName, CARD_EFFECTS, LANDMARK_NAMES,
+    } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    current.cards.push(createCardByName('コーン畑'));
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    game.players[1].landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    game.players[1].cards.push(createCardByName('高級フレンチ'));
+    const french = createCardByName('高級フレンチ');
+    const opponentBuiltCounts = game.players
+        .filter(player => player !== current)
+        .map(player => player.builtLandmarkCount());
+    const opponentConditionalCards = game.players
+        .filter(player => player !== current)
+        .map(player => ({
+            french: player.cards.filter(card =>
+                !player.isDormant(card) && card.effect === CARD_EFFECTS.FRENCHR
+            ).length,
+            memberBar: player.cards.filter(card =>
+                !player.isDormant(card) && card.effect === CARD_EFFECTS.MEMBERBAR
+            ).length,
+        }));
+
+    assert.strictEqual(
+        cpu._strongConditionalCardAdjustment(french, game, current),
+        CPUEvaluation.strongConditionalCardAdjustment(
+            french.effect, opponentBuiltCounts, 'strong', CARD_EFFECTS
+        )
+    );
+    assert.strictEqual(
+        cpu._strongLandmarkThresholdPenalty(LANDMARK_NAMES.SHOPPING_MALL, current, game),
+        CPUEvaluation.strongLandmarkThresholdPenalty({
+            difficulty: 'strong',
+            hasName: true,
+            nextBuiltCount: current.builtLandmarkCount() + 1,
+            progressCardCount: current.countCard('コーン畑') + current.countCard('雑貨屋'),
+            opponentConditionalCards,
+            remainingLandmarkCount: cpu._remainingEnabledLandmarks(current, game).length,
+        })
+    );
+});
+
 runTest('CPU本体の特殊カード評価wrapperはpure evaluationへ同値委譲する', () => {
     const { CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS } = loadCPURuntime();
     const cpu = new CPU('expert');

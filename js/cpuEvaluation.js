@@ -113,6 +113,37 @@ const CPUEvaluation = Object.freeze({
         return total;
     },
 
+    strongConditionalCardAdjustment(effect, opponentBuiltCounts, difficulty, effects) {
+        if (difficulty !== 'strong') return 0;
+        if (effect !== effects.FRENCHR && effect !== effects.MEMBERBAR) return 0;
+        const threshold = effect === effects.FRENCHR ? 2 : 3;
+        const readyOpponents = opponentBuiltCounts.filter(count => count >= threshold).length;
+        if (readyOpponents > 0) {
+            return readyOpponents * (effect === effects.FRENCHR ? 1.6 : 2.2);
+        }
+        const nearOpponents = opponentBuiltCounts.filter(count => count === threshold - 1).length;
+        return nearOpponents > 0 ? -1.2 : -3.6;
+    },
+
+    strongLandmarkThresholdPenalty(features) {
+        if (!features || features.difficulty !== 'strong' || !features.hasName) return 0;
+        let penalty = 0;
+        if (features.nextBuiltCount === 2 && features.progressCardCount > 0) {
+            penalty += features.progressCardCount * 2.2;
+        }
+        for (const counts of features.opponentConditionalCards) {
+            if (features.nextBuiltCount >= 2 && counts.french > 0) {
+                penalty += counts.french * 2.6;
+            }
+            if (features.nextBuiltCount >= 3 && counts.memberBar > 0) {
+                penalty += counts.memberBar * 4.2;
+            }
+        }
+        if (features.remainingLandmarkCount <= 2) penalty *= 0.35;
+        else if (features.remainingLandmarkCount <= 3) penalty *= 0.6;
+        return penalty;
+    },
+
     loanBurdenValue(copyOrdinal = 1) {
         const ordinal = Math.max(1, copyOrdinal);
         return -2.5 * ordinal;

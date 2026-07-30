@@ -1944,32 +1944,37 @@ class CPU {
     _strongConditionalCardAdjustment(card, game, player) {
         if (this.difficulty !== "strong" || !card || !game || !player) return 0;
         if (card.effect !== CARD_EFFECTS.FRENCHR && card.effect !== CARD_EFFECTS.MEMBERBAR) return 0;
-        const threshold = card.effect === CARD_EFFECTS.FRENCHR ? 2 : 3;
-        const readyOpponents = game.players.filter(p => p !== player && p.builtLandmarkCount() >= threshold).length;
-        if (readyOpponents > 0) return readyOpponents * (card.effect === CARD_EFFECTS.FRENCHR ? 1.6 : 2.2);
-        const nearOpponents = game.players.filter(p => p !== player && p.builtLandmarkCount() === threshold - 1).length;
-        return nearOpponents > 0 ? -1.2 : -3.6;
+        const opponentBuiltCounts = game.players
+            .filter(candidate => candidate !== player)
+            .map(candidate => candidate.builtLandmarkCount());
+        return CPUEvaluation.strongConditionalCardAdjustment(
+            card.effect,
+            opponentBuiltCounts,
+            this.difficulty,
+            CARD_EFFECTS
+        );
     }
 
     _strongLandmarkThresholdPenalty(name, current, game) {
         if (this.difficulty !== "strong" || !name || !current || !game) return 0;
-        const nextBuiltCount = current.builtLandmarkCount() + 1;
-        let penalty = 0;
-        if (nextBuiltCount === 2) {
-            const cornfieldCount = current.countCard('コーン畑') + current.countCard('雑貨屋');
-            if (cornfieldCount > 0) penalty += cornfieldCount * 2.2;
-        }
-        for (const opponent of game.players) {
-            if (opponent === current) continue;
-            const frenchCount = opponent.cards.filter(card => !opponent.isDormant(card) && card.effect === CARD_EFFECTS.FRENCHR).length;
-            const memberBarCount = opponent.cards.filter(card => !opponent.isDormant(card) && card.effect === CARD_EFFECTS.MEMBERBAR).length;
-            if (nextBuiltCount >= 2 && frenchCount > 0) penalty += frenchCount * 2.6;
-            if (nextBuiltCount >= 3 && memberBarCount > 0) penalty += memberBarCount * 4.2;
-        }
-        const remaining = this._remainingEnabledLandmarks(current, game).length;
-        if (remaining <= 2) penalty *= 0.35;
-        else if (remaining <= 3) penalty *= 0.6;
-        return penalty;
+        const opponentConditionalCards = game.players
+            .filter(opponent => opponent !== current)
+            .map(opponent => ({
+                french: opponent.cards.filter(card =>
+                    !opponent.isDormant(card) && card.effect === CARD_EFFECTS.FRENCHR
+                ).length,
+                memberBar: opponent.cards.filter(card =>
+                    !opponent.isDormant(card) && card.effect === CARD_EFFECTS.MEMBERBAR
+                ).length,
+            }));
+        return CPUEvaluation.strongLandmarkThresholdPenalty({
+            difficulty: this.difficulty,
+            hasName: !!name,
+            nextBuiltCount: current.builtLandmarkCount() + 1,
+            progressCardCount: current.countCard('コーン畑') + current.countCard('雑貨屋'),
+            opponentConditionalCards,
+            remainingLandmarkCount: this._remainingEnabledLandmarks(current, game).length,
+        });
     }
 
     _strongTempoValueBonus(card, game, player) {
