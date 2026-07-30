@@ -124,9 +124,38 @@ function loadUiRuntime() {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiWinner.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiWinner.js', 'js/ui.js']);
     return { context, elements };
 }
+
+runTest('ui storage境界は既存keyと値形式を共通facade経由で保持する', () => {
+    const { context } = loadUiRuntime();
+
+    context.setTutorialEnabled(true);
+    context.onChangeTutorialLevel('advanced');
+    const trace = context.recordFlowTrace('ui-storage-contract', { ok: true });
+
+    assert.strictEqual(context.localStorage.getItem('tutorialEnabled'), 'true');
+    assert.strictEqual(context.localStorage.getItem('tutorialLevel'), 'advanced');
+    assert.deepStrictEqual(
+        JSON.parse(context.localStorage.getItem('machikoroLastFlowTrace')),
+        JSON.parse(JSON.stringify(trace))
+    );
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/ui.js'), 'utf8');
+    assert.strictEqual(source.includes('localStorage'), false);
+});
+
+runTest('ui storage境界はstorage取得拒否を外へ伝播しない', () => {
+    const { context } = loadUiRuntime();
+    Object.defineProperty(context, 'localStorage', {
+        configurable: true,
+        get() { throw new Error('storage blocked'); },
+    });
+
+    assert.doesNotThrow(() => context.setTutorialEnabled(false));
+    assert.doesNotThrow(() => context.onChangeTutorialLevel('beginner'));
+    assert.doesNotThrow(() => context.recordFlowTrace('blocked-storage'));
+});
 
 runTest('showNotice は non-blocking toast で通知する', () => {
     const { context, elements } = loadUiRuntime();

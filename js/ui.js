@@ -1,12 +1,11 @@
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
+const uiClientStorageFacade = ClientStorage.createFacade();
 let isUpdatingPendingModalContent = false;
 
 function safeUiStorageSet(key, value) {
     try {
         if (typeof safeStorageSet === 'function') return safeStorageSet(key, value);
-        if (typeof localStorage === 'undefined') return false;
-        localStorage.setItem(key, value);
-        return true;
+        return uiClientStorageFacade.set(key, value);
     } catch (_) {
         return false;
     }
@@ -18,7 +17,7 @@ function safeUiStorageRemove(key) {
             safeStorageRemove(key);
             return;
         }
-        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+        uiClientStorageFacade.remove(key);
     } catch (_) {}
 }
 
@@ -106,9 +105,7 @@ function renderTutorial() {
 
 function setTutorialEnabled(enabled) {
     tutorialEnabled = !!enabled;
-    try {
-        localStorage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
-    } catch (e) {}
+    safeUiStorageSet('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
     syncTutorialControls();
     renderTutorial();
 }
@@ -123,9 +120,7 @@ function toggleTutorial() {
 
 function onChangeTutorialLevel(level) {
     tutorialLevel = level === 'advanced' ? 'advanced' : 'beginner';
-    try {
-        localStorage.setItem('tutorialLevel', tutorialLevel);
-    } catch (e) {}
+    safeUiStorageSet('tutorialLevel', tutorialLevel);
     syncTutorialControls();
     renderTutorial();
 }
@@ -775,10 +770,8 @@ function recordFlowTrace(event, details = {}) {
         }
     } catch (_) {}
     try {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('machikoroLastFlowTrace', JSON.stringify(trace).slice(0, 4000));
-            if (typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
-        }
+        const stored = safeUiStorageSet('machikoroLastFlowTrace', JSON.stringify(trace).slice(0, 4000));
+        if (stored && typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
     } catch (_) {}
     return trace;
 }

@@ -47,6 +47,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineRestoreRank.js', 'js/online.js'],
             ['js/onlineReconnectState.js', 'js/online.js'],
             ['js/onlineRetryPolicy.js', 'js/online.js'],
+            ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/uiPlayerDisplay.js', 'js/ui.js'],
@@ -116,6 +117,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/savedGameValidation.js', 'js/storage.js'],
             ['js/storageSettings.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/storage.js'],
+            ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/uiPlayerDisplay.js', 'js/ui.js'],
@@ -146,6 +148,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineRetryPolicy.js', 'js/online.js'],
         ]],
         ['tests/ui.test.js', [
+            ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/uiPlayerDisplay.js', 'js/ui.js'],
@@ -179,6 +182,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/release-e2e.test.js', [
             ['js/actionContract.js', 'js/actionUiRegistry.js'],
+            ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
             ['js/clientStorage.js', 'js/appShellStorage.js'],
