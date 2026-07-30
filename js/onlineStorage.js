@@ -1,7 +1,12 @@
 'use strict';
 
+const OnlineStorageClientStorageApi = typeof module !== 'undefined' && module.exports
+    ? require('./clientStorage')
+    : globalThis.ClientStorage;
+const onlineStorageClientStorageFacade = OnlineStorageClientStorageApi.createFacade();
+
 function createOnlineStorageFacade(options = {}) {
-    const storage = options.storage || (typeof localStorage !== 'undefined' ? localStorage : null);
+    const storage = options.storage || onlineStorageClientStorageFacade.storage();
     const getCurrentRoomId = typeof options.getCurrentRoomId === 'function' ? options.getCurrentRoomId : () => '';
     const sessionKey = options.sessionKey || 'onlineSession';
     const storageKeys = options.storageKeys || Object.freeze({});
