@@ -473,6 +473,8 @@ runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す'
     assert.strictEqual(snapshot.history.slice(-1)[0].valid, true);
     assert.strictEqual(snapshot.invalidTransitionCount, 0);
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
+    assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(snapshot.eventState, 'connecting');
     assert.strictEqual(snapshot.history.slice(-1)[0].projectionMatched, true);
 });
 
@@ -1118,6 +1120,10 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
     });
     const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(storedGameStart.hostPlayerIndex, 0);
+    const startedReconnectSnapshot = rt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(startedReconnectSnapshot.eventState, 'active');
+    assert.strictEqual(startedReconnectSnapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(startedReconnectSnapshot.projectionMismatchCount, 0);
     rt.getGame().phase = GAME_PHASES.BUILD;
     handlers.gameAction({ action: 'buildCard', data: { cardName: '麦畑' }, playerIndex: 0 });
     const snapshot = rt.buildOnlineSnapshot();
@@ -1142,6 +1148,10 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.ok(rt.getRenderCount() > 0);
     assert.ok(rt.getScheduleCount() > 0);
+    const restoredReconnectSnapshot = rt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(restoredReconnectSnapshot.eventState, 'active');
+    assert.strictEqual(restoredReconnectSnapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(restoredReconnectSnapshot.projectionMismatchCount, 0);
 });
 
 runTest('rejoinData は署名なしsnapshotでローカル完全actionLogを短い残差logで上書きしない', () => {

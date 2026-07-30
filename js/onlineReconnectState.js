@@ -16,6 +16,7 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
     SOCKET_DISCONNECTED: 'socket-disconnected',
     RESTORE_STARTED: 'restore-started',
     REPLAY_STARTED: 'replay-started',
+    GAME_ACTIVATED: 'game-activated',
     RESTORE_ACTIVATED: 'restore-activated',
     RETRY_EXHAUSTED: 'retry-exhausted',
     GAME_COMPLETED: 'game-completed',
@@ -39,6 +40,8 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
  * @property {boolean} valid
  * @property {string} event
  * @property {boolean|null} projectionMatched
+ * @property {string|null} eventState
+ * @property {boolean|null} eventTransitionValid
  */
 
 /**
@@ -47,7 +50,7 @@ const ONLINE_RECONNECT_EVENTS = Object.freeze({
  * @property {function(string, Object=): Object} transition
  * @property {function(OnlineReconnectFlags, Object=): Object} reconcile
  * @property {function(string, OnlineReconnectFlags): Object} observe
- * @property {function(): {state: string, invalidTransitionCount: number, projectionMismatchCount: number, lastProjectionMismatch: Object|null, history: Array<OnlineReconnectHistoryEntry>}} snapshot
+ * @property {function(): {state: string, invalidTransitionCount: number, projectionMismatchCount: number, lastProjectionMismatch: Object|null, eventState: string, invalidEventTransitionCount: number, lastInvalidEventTransition: Object|null, history: Array<OnlineReconnectHistoryEntry>}} snapshot
  */
 
 
@@ -87,6 +90,7 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
     ]),
     [ONLINE_RECONNECT_STATES.ACTIVE]: Object.freeze([
         ONLINE_RECONNECT_STATES.CONNECTING,
+        ONLINE_RECONNECT_STATES.RESTORING,
         ONLINE_RECONNECT_STATES.REJOINING,
         ONLINE_RECONNECT_STATES.COMPLETED,
         ONLINE_RECONNECT_STATES.IDLE,
@@ -127,6 +131,7 @@ function onlineReconnectEventTarget(event, context = {}) {
             return ONLINE_RECONNECT_STATES.RESTORING;
         case ONLINE_RECONNECT_EVENTS.REPLAY_STARTED:
             return ONLINE_RECONNECT_STATES.REPLAYING;
+        case ONLINE_RECONNECT_EVENTS.GAME_ACTIVATED:
         case ONLINE_RECONNECT_EVENTS.RESTORE_ACTIVATED:
             return ONLINE_RECONNECT_STATES.ACTIVE;
         case ONLINE_RECONNECT_EVENTS.RETRY_EXHAUSTED:
@@ -227,6 +232,9 @@ function createOnlineReconnectController(options = {}) {
     let invalidTransitionCount = 0;
     let projectionMismatchCount = 0;
     let lastProjectionMismatch = null;
+    let eventState = state;
+    let invalidEventTransitionCount = 0;
+    let lastInvalidEventTransition = null;
 
     function remember(from, to, metadata, valid) {
         history.push(Object.freeze({
@@ -236,6 +244,12 @@ function createOnlineReconnectController(options = {}) {
             event: typeof metadata?.event === 'string' ? metadata.event : '',
             projectionMatched: typeof metadata?.projectionMatched === 'boolean'
                 ? metadata.projectionMatched
+                : null,
+            eventState: isOnlineReconnectState(metadata?.eventState)
+                ? metadata.eventState
+                : null,
+            eventTransitionValid: typeof metadata?.eventTransitionValid === 'boolean'
+                ? metadata.eventTransitionValid
                 : null,
         }));
         if (history.length > historyLimit) history.splice(0, history.length - historyLimit);
@@ -278,6 +292,20 @@ function createOnlineReconnectController(options = {}) {
             return Object.freeze({ ok: false, reason: 'unknown-event', state });
         }
         const comparison = compareOnlineReconnectEventProjection(event, flags);
+        const eventTransition = reduceOnlineReconnectEvent(eventState, event, {
+            socketConnected: flags.rejoining === true,
+        });
+        if (eventTransition.ok) {
+            eventState = eventTransition.state;
+        } else {
+            invalidEventTransitionCount++;
+            lastInvalidEventTransition = Object.freeze({
+                event,
+                from: eventState,
+                target: eventTransition.target || null,
+                reason: eventTransition.reason,
+            });
+        }
         const target = comparison.projectedState;
         const from = state;
         if (!comparison.matched) {
@@ -288,7 +316,12 @@ function createOnlineReconnectController(options = {}) {
                 projectedState: comparison.projectedState,
             });
         }
-        const metadata = { event, projectionMatched: comparison.matched };
+        const metadata = {
+            event,
+            projectionMatched: comparison.matched,
+            eventState,
+            eventTransitionValid: eventTransition.ok,
+        };
         if (from === target) {
             remember(from, target, metadata, true);
             return Object.freeze({
@@ -298,6 +331,8 @@ function createOnlineReconnectController(options = {}) {
                 from,
                 valid: true,
                 projectionMatched: comparison.matched,
+                eventState,
+                eventTransitionValid: eventTransition.ok,
             });
         }
         const observed = reconcile(flags, metadata);
@@ -308,6 +343,8 @@ function createOnlineReconnectController(options = {}) {
             from: observed.from,
             valid: observed.valid,
             projectionMatched: comparison.matched,
+            eventState,
+            eventTransitionValid: eventTransition.ok,
         });
     }
 
@@ -317,6 +354,9 @@ function createOnlineReconnectController(options = {}) {
             invalidTransitionCount,
             projectionMismatchCount,
             lastProjectionMismatch,
+            eventState,
+            invalidEventTransitionCount,
+            lastInvalidEventTransition,
             history: Object.freeze(history.slice()),
         });
     }

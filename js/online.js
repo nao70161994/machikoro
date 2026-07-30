@@ -981,11 +981,14 @@ function initSocket() {
                 }
             }
             _lastAppliedOnlineActionSeqMemory = Number.isInteger(actionSeq) ? actionSeq : 0;
-            _flushOnlineRestoreEvents(startGeneration, _lastAppliedOnlineActionSeqMemory, {
+            const flushed = _flushOnlineRestoreEvents(startGeneration, _lastAppliedOnlineActionSeqMemory, {
                 gameAction: handleGameAction,
                 actionAccepted: handleActionAccepted,
                 hostChanged: handleHostChanged,
             });
+            if (flushed) {
+                _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
+            }
         };
         const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
         if (preload && typeof preload.then === "function") {

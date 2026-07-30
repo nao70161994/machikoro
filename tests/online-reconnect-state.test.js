@@ -39,6 +39,10 @@ runTest('online reconnect stateは許可遷移と禁止遷移を区別する', (
         true
     );
     assert.strictEqual(
+        OnlineReconnectState.canTransition(STATES.ACTIVE, STATES.RESTORING),
+        true
+    );
+    assert.strictEqual(
         OnlineReconnectState.canTransition(STATES.IDLE, STATES.REPLAYING),
         false
     );
@@ -58,6 +62,11 @@ runTest('online reconnect event reducerはlegacy lifecycleを副作用なしで�
         state = result.state;
         return state;
     };
+
+    assert.strictEqual(step(events.GAME_ACTIVATED), STATES.ACTIVE);
+    assert.strictEqual(step(events.SOCKET_DISCONNECTED), STATES.CONNECTING);
+    assert.strictEqual(step(events.RECONNECT_REQUESTED, { socketConnected: true }), STATES.REJOINING);
+    assert.strictEqual(step(events.RESET), STATES.IDLE);
 
     assert.strictEqual(step(events.RECONNECT_REQUESTED), STATES.CONNECTING);
     assert.strictEqual(step(events.RECONNECT_REQUESTED, { socketConnected: true }), STATES.REJOINING);
@@ -124,6 +133,7 @@ runTest('online reconnect eventとlegacy boolean投影の一致を表駆動で�
         [events.SOCKET_DISCONNECTED, { connecting: true }, STATES.CONNECTING],
         [events.RESTORE_STARTED, { restoring: true }, STATES.RESTORING],
         [events.REPLAY_STARTED, { replaying: true }, STATES.REPLAYING],
+        [events.GAME_ACTIVATED, { active: true }, STATES.ACTIVE],
         [events.RESTORE_ACTIVATED, { active: true }, STATES.ACTIVE],
         [events.RETRY_EXHAUSTED, { failed: true }, STATES.FAILED],
         [events.GAME_COMPLETED, { completed: true }, STATES.COMPLETED],
@@ -173,6 +183,12 @@ runTest('online reconnect controller は許可遷移とbounded履歴を保持す
     assert.strictEqual(snapshot.invalidTransitionCount, 0);
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
     assert.strictEqual(snapshot.lastProjectionMismatch, null);
+    assert.strictEqual(snapshot.eventState, STATES.IDLE);
+    assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(snapshot.lastInvalidEventTransition, null);
+    assert.strictEqual(snapshot.eventState, STATES.IDLE);
+    assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(snapshot.lastInvalidEventTransition, null);
     assert.strictEqual(snapshot.history.length, 3);
     assert.deepStrictEqual(snapshot.history.map(entry => entry.event), [
         'socket-connect',
@@ -211,7 +227,9 @@ runTest('online reconnect controllerは既知lifecycle eventをshadow stateへ�
     assert.strictEqual(OnlineReconnectState.isEvent(events.RECONNECT_REQUESTED), true);
     assert.strictEqual(OnlineReconnectState.isEvent('unknown'), false);
 
-    assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { connecting: true }).valid, true);
+    assert.strictEqual(controller.observe(events.GAME_ACTIVATED, { active: true }).valid, true);
+    assert.strictEqual(controller.observe(events.SOCKET_DISCONNECTED, { connecting: true }).valid, true);
+    assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { rejoining: true }).valid, true);
     assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { rejoining: true }).valid, true);
     assert.strictEqual(controller.observe(events.RECONNECT_REQUESTED, { rejoining: true }).valid, true);
     assert.strictEqual(controller.observe(events.RESTORE_STARTED, { restoring: true }).valid, true);
@@ -223,9 +241,11 @@ runTest('online reconnect controllerは既知lifecycle eventをshadow stateへ�
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
     assert.strictEqual(snapshot.lastProjectionMismatch, null);
     assert.deepStrictEqual(snapshot.history.map(entry => entry.projectionMatched), [
-        true, true, true, true, true, true, true, true,
+        true, true, true, true, true, true, true, true, true, true,
     ]);
     assert.deepStrictEqual(snapshot.history.map(entry => entry.event), [
+        events.GAME_ACTIVATED,
+        events.SOCKET_DISCONNECTED,
         events.RECONNECT_REQUESTED,
         events.RECONNECT_REQUESTED,
         events.RECONNECT_REQUESTED,
@@ -253,6 +273,8 @@ runTest('online reconnect controllerはeventとlegacy投影の不一致を状態
         from: STATES.IDLE,
         valid: true,
         projectionMatched: false,
+        eventState: STATES.IDLE,
+        eventTransitionValid: false,
     });
     assert.deepStrictEqual(controller.snapshot(), {
         state: STATES.CONNECTING,
@@ -263,12 +285,22 @@ runTest('online reconnect controllerはeventとlegacy投影の不一致を状態
             eventState: STATES.RESTORING,
             projectedState: STATES.CONNECTING,
         },
+        eventState: STATES.IDLE,
+        invalidEventTransitionCount: 1,
+        lastInvalidEventTransition: {
+            event,
+            from: STATES.IDLE,
+            target: STATES.RESTORING,
+            reason: 'invalid-transition',
+        },
         history: [{
             from: STATES.IDLE,
             to: STATES.CONNECTING,
             valid: true,
             event,
             projectionMatched: false,
+            eventState: STATES.IDLE,
+            eventTransitionValid: false,
         }],
     });
 });
