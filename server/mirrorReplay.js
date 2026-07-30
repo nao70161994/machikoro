@@ -52,6 +52,7 @@ function makeMirrorReplay({
                 if (Array.isArray(options.enabledLandmarks) && options.enabledLandmarks.length > 0) {
                     game.enabledLandmarks = new Set(options.enabledLandmarks);
                 }
+                /** @type {Record<string, number>} */
                 const shopStock = {};
                 restoreMirrorState(game, shopStock, snapshot, gameRuntime.createCardByName);
                 const runtime = {
@@ -107,6 +108,7 @@ function makeMirrorReplay({
         const { playerNames, playerSettings, playerOrder, enabledCards, enabledLandmarks } = room.gameStartPayload;
         const game = new GameManager(playerNames.length);
         game.enabledLandmarks = new Set((enabledLandmarks && enabledLandmarks.length > 0) ? enabledLandmarks : Player.landmarkNames());
+                /** @type {Record<string, number>} */
         const shopStock = {};
         const enabled = new Set(enabledCards || CARDS.map(c => c.name));
         for (const card of CARDS) {

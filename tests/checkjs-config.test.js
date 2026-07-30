@@ -57,6 +57,7 @@ runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを�
     assert.ok(config.files.includes('server/rejoinSocketHandler.js'));
     assert.ok(config.files.includes('server/hostlessRestoreCandidate.js'));
     assert.ok(config.files.includes('server/roomLifecycle.js'));
+    assert.ok(config.files.includes('server/mirrorReplay.js'));
     assert.ok(config.files.includes('server/restoreAuthorityPolicy.js'));
     assert.ok(config.files.includes('server/restoreValidation.js'));
     assert.ok(config.files.includes('server/reportingPolicy.js'));

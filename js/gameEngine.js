@@ -28,6 +28,7 @@ const GameSchemaCodecApi = typeof module !== 'undefined' && module.exports
  * @property {function(string): (Object|null)} [createCardByName]
  * @property {function(Record<string, number>, Object): void} [decrementShopStock]
  * @property {function(*): (boolean|void)} [restoreUndoState]
+ * @property {*} [undoState] Caller-owned detached undo snapshot.
  */
 
 /**
