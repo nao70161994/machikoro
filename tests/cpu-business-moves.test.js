@@ -36,6 +36,32 @@ runTest('CPU business move helperはminor card indexと全交換順を維持す�
     assert.strictEqual(calls, 2);
 });
 
+runTest('CPU business move helperはrandom選択の3呼び出し順を固定する', () => {
+    const game = makeGame();
+    const seen = [];
+    const move = CPUBusinessMoves.chooseRandomMove(game, items => {
+        seen.push(items.map(item => typeof item === 'number' ? item : item.index));
+        return items[items.length - 1];
+    });
+    assert.deepStrictEqual(seen, [[0, 3], [1, 2], [0]]);
+    assert.deepStrictEqual(move, { myCard: 3, targetIndex: 2, theirCard: 0 });
+});
+
+runTest('CPU business move helperはsimple選択の最小損失と先勝ちを維持する', () => {
+    const game = makeGame();
+    const ownedCalls = [];
+    const receivedCalls = [];
+    const move = CPUBusinessMoves.chooseSimpleMove(
+        game,
+        game.players[0],
+        card => { ownedCalls.push(card.name); return card.name === 'b' ? 1 : 2; },
+        card => { receivedCalls.push(card.name); return card.name === 'c' || card.name === 'e' ? 5 : 4; }
+    );
+    assert.deepStrictEqual(ownedCalls, ['a', 'a', 'b']);
+    assert.deepStrictEqual(receivedCalls, ['c', 'd', 'e']);
+    assert.deepStrictEqual(move, { myCard: 3, targetIndex: 1, theirCard: 0 });
+});
+
 runTest('CPU business move helperはscore同点時のindex順と昇降順を固定する', () => {
     const player = makeGame().players[0];
     assert.deepStrictEqual(

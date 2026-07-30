@@ -178,59 +178,16 @@ class CPU {
     }
 
     _chooseRandomBusinessMove(game) {
-        const current = game.currentPlayer();
-        const myIndexes = this._minorCardIndexes(current);
-        if (myIndexes.length === 0) return null;
-        const targetIndexes = game.players
-            .map((player, index) => ({ player, index }))
-            .filter(entry => entry.index !== game.currentPlayerIndex && this._minorCardIndexes(entry.player).length > 0);
-        if (targetIndexes.length === 0) return null;
-        const myCard = this._randomChoice(myIndexes);
-        const targetEntry = this._randomChoice(targetIndexes);
-        const theirCard = this._randomChoice(this._minorCardIndexes(targetEntry.player));
-        if (myCard == null || !targetEntry || theirCard == null) return null;
-        return {
-            myCard,
-            targetIndex: targetEntry.index,
-            theirCard,
-        };
+        return CPUBusinessMoves.chooseRandomMove(game, items => this._randomChoice(items));
     }
 
     _chooseSimpleBusinessMove(game, actor = game.currentPlayer()) {
-        const current = actor;
-        const currentIndex = game.players.indexOf(current);
-        const myIndexes = this._minorCardIndexes(current);
-        if (myIndexes.length === 0) return null;
-
-        let myCard = myIndexes[0];
-        let myLoss = this._exchangeOwnedCardValue(current.cards[myCard], game, current);
-        for (const index of myIndexes) {
-            const loss = this._exchangeOwnedCardValue(current.cards[index], game, current);
-            if (loss < myLoss) {
-                myLoss = loss;
-                myCard = index;
-            }
-        }
-
-        let bestMove = null;
-        let bestScore = -Infinity;
-        for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
-            if (targetIndex === currentIndex) continue;
-            const target = game.players[targetIndex];
-            const theirIndexes = this._minorCardIndexes(target);
-            for (const theirCard of theirIndexes) {
-                const gain = this._exchangeReceivedCardValue(target.cards[theirCard], game, current);
-                if (gain > bestScore) {
-                    bestScore = gain;
-                    bestMove = {
-                        myCard,
-                        targetIndex,
-                        theirCard,
-                    };
-                }
-            }
-        }
-        return bestMove;
+        return CPUBusinessMoves.chooseSimpleMove(
+            game,
+            actor,
+            card => this._exchangeOwnedCardValue(card, game, actor),
+            card => this._exchangeReceivedCardValue(card, game, actor)
+        );
     }
 
     _scoreBusinessExchangeDetails(game, current, move) {

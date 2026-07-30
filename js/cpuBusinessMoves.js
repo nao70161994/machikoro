@@ -52,6 +52,61 @@ function scoreExchange(selfGain, selfLoss, denial, gift) {
     return { selfGain, selfLoss, denial, gift, score };
 }
 
+function chooseRandomMove(game, randomChoice) {
+    const current = game.currentPlayer();
+    const myIndexes = minorCardIndexes(current);
+    if (myIndexes.length === 0) return null;
+    const targetIndexes = game.players
+        .map((player, index) => ({ player, index }))
+        .filter(entry => entry.index !== game.currentPlayerIndex && minorCardIndexes(entry.player).length > 0);
+    if (targetIndexes.length === 0) return null;
+    const myCard = randomChoice(myIndexes);
+    const targetEntry = randomChoice(targetIndexes);
+    const theirCard = randomChoice(minorCardIndexes(targetEntry.player));
+    if (myCard == null || !targetEntry || theirCard == null) return null;
+    return {
+        myCard,
+        targetIndex: targetEntry.index,
+        theirCard,
+    };
+}
+
+function chooseSimpleMove(game, actor, ownedValueForCard, receivedValueForCard) {
+    const currentIndex = game.players.indexOf(actor);
+    const myIndexes = minorCardIndexes(actor);
+    if (myIndexes.length === 0) return null;
+
+    let myCard = myIndexes[0];
+    let myLoss = ownedValueForCard(actor.cards[myCard]);
+    for (const index of myIndexes) {
+        const loss = ownedValueForCard(actor.cards[index]);
+        if (loss < myLoss) {
+            myLoss = loss;
+            myCard = index;
+        }
+    }
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+    for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
+        if (targetIndex === currentIndex) continue;
+        const target = game.players[targetIndex];
+        const theirIndexes = minorCardIndexes(target);
+        for (const theirCard of theirIndexes) {
+            const gain = receivedValueForCard(target.cards[theirCard]);
+            if (gain > bestScore) {
+                bestScore = gain;
+                bestMove = {
+                    myCard,
+                    targetIndex,
+                    theirCard,
+                };
+            }
+        }
+    }
+    return bestMove;
+}
+
 function forEachCandidate(game, myIndexes, candidateTargets, targetIndexesFor, callback) {
     const current = game.currentPlayer();
     for (const myIndex of myIndexes) {
@@ -81,6 +136,8 @@ const CPUBusinessMoves = Object.freeze({
     forEachMove,
     rankedCandidateIndexes,
     scoreExchange,
+    chooseRandomMove,
+    chooseSimpleMove,
     forEachCandidate,
 });
 
