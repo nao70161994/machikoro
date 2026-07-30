@@ -1168,28 +1168,27 @@ function buildLandmarkSelectToggleButtonHtml(name, enabled) {
 }
 
 function renderCardSelectModal() {
-    for (const [set, cards] of Object.entries(CARD_SETS)) {
-        const suffix = set.charAt(0).toUpperCase() + set.slice(1);
-        const el = document.getElementById(`cardList${suffix}`);
-        if (el) {
-            el.innerHTML = [...cards].sort(compareCardNamesForDisplay)
-                .map(name => buildCardSelectToggleButtonHtml(name, enabledCards.has(name)))
-                .join("");
-        }
-        const allOn = cards.every(n => enabledCards.has(n));
-        const btn = document.getElementById(`btnSet${suffix}`);
+    const view = UiCardSelect.buildCardSelectViewModel({
+        cardSets: CARD_SETS,
+        enabledCards,
+        enabledLandmarks,
+        landmarkNames: Player.landmarkNames(),
+        compareCardNames: compareCardNamesForDisplay,
+        buildCardHtml: buildCardSelectToggleButtonHtml,
+        buildLandmarkHtml: buildLandmarkSelectToggleButtonHtml,
+    });
+    for (const setView of view.sets) {
+        const el = document.getElementById(`cardList${setView.suffix}`);
+        if (el) el.innerHTML = setView.cardListHtml;
+        const btn = document.getElementById(`btnSet${setView.suffix}`);
         if (btn) {
-            btn.textContent = allOn ? "ON" : "OFF";
-            btn.className = `set-toggle ${allOn ? 'on' : 'off'}`;
-            if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', allOn ? 'true' : 'false');
+            btn.textContent = setView.allOn ? "ON" : "OFF";
+            btn.className = `set-toggle ${setView.allOn ? 'on' : 'off'}`;
+            if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', setView.allOn ? 'true' : 'false');
         }
     }
     const landmarkList = document.getElementById("landmarkList");
-    if (landmarkList) {
-        landmarkList.innerHTML = Player.landmarkNames()
-            .map(name => buildLandmarkSelectToggleButtonHtml(name, enabledLandmarks.has(name)))
-            .join("");
-    }
+    if (landmarkList) landmarkList.innerHTML = view.landmarkListHtml;
 }
 
 function toggleCard(name) {

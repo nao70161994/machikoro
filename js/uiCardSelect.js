@@ -56,6 +56,38 @@ const UiCardSelect = (() => {
         return selectionResult(current.concat(name), true);
     }
 
+    function buildCardSelectViewModel(options) {
+        const {
+            cardSets,
+            enabledCards,
+            enabledLandmarks,
+            landmarkNames,
+            compareCardNames,
+            buildCardHtml,
+            buildLandmarkHtml,
+        } = options;
+        const selectedCards = new Set(selectedNames(enabledCards));
+        const selectedLandmarks = new Set(selectedNames(enabledLandmarks));
+        const sets = Object.entries(cardSets).map(([set, cards]) => {
+            const suffix = set.charAt(0).toUpperCase() + set.slice(1);
+            const cardNames = Array.from(cards);
+            return Object.freeze({
+                set,
+                suffix,
+                cardListHtml: cardNames.slice().sort(compareCardNames)
+                    .map(name => buildCardHtml(name, selectedCards.has(name)))
+                    .join(''),
+                allOn: cardNames.every(name => selectedCards.has(name)),
+            });
+        });
+        return Object.freeze({
+            sets: Object.freeze(sets),
+            landmarkListHtml: Array.from(landmarkNames)
+                .map(name => buildLandmarkHtml(name, selectedLandmarks.has(name)))
+                .join(''),
+        });
+    }
+
     function buildCardToggleButtonHtml(options) {
         const { name, enabled, escapeHtml } = options;
         const safeName = escapeHtml(name);
@@ -73,6 +105,7 @@ const UiCardSelect = (() => {
         toggleCardSelection,
         toggleCardSetSelection,
         toggleLandmarkSelection,
+        buildCardSelectViewModel,
         buildCardToggleButtonHtml,
         buildLandmarkToggleButtonHtml,
     });

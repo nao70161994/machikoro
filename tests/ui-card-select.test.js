@@ -100,3 +100,44 @@ runTest('ui card select stateはランドマークを最低1件維持する', ()
         { changed: true, selectedNames: ['駅', '港'] }
     );
 });
+
+runTest('ui card select view modelは表示順・set状態・landmark状態を副作用なしで生成する', () => {
+    const cardSets = {
+        base: ['パン屋', '麦畑'],
+        harbor: ['港', '寿司屋'],
+    };
+    const enabledCards = new Set(['麦畑', 'パン屋', '港']);
+    const enabledLandmarks = new Set(['駅']);
+    const view = UiCardSelect.buildCardSelectViewModel({
+        cardSets,
+        enabledCards,
+        enabledLandmarks,
+        landmarkNames: ['駅', '港'],
+        compareCardNames: (left, right) => left.localeCompare(right, 'ja'),
+        buildCardHtml: (name, enabled) => `${name}:${enabled}|`,
+        buildLandmarkHtml: (name, enabled) => `${name}:${enabled}|`,
+    });
+
+    assert.deepStrictEqual(view, {
+        sets: [
+            {
+                set: 'base',
+                suffix: 'Base',
+                cardListHtml: 'パン屋:true|麦畑:true|',
+                allOn: true,
+            },
+            {
+                set: 'harbor',
+                suffix: 'Harbor',
+                cardListHtml: '港:true|寿司屋:false|',
+                allOn: false,
+            },
+        ],
+        landmarkListHtml: '駅:true|港:false|',
+    });
+    assert.deepStrictEqual(cardSets.base, ['パン屋', '麦畑']);
+    assert.deepStrictEqual(Array.from(enabledCards), ['麦畑', 'パン屋', '港']);
+    assert.ok(Object.isFrozen(view));
+    assert.ok(Object.isFrozen(view.sets));
+    assert.ok(view.sets.every(Object.isFrozen));
+});
