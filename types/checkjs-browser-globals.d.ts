@@ -9,10 +9,21 @@ declare class RLCPU {
     modelLabel: string;
 }
 
+declare var CARD_CATEGORIES: Readonly<{ MAJOR: string }>;
+declare var CPU: { _nowMs(): number };
+declare var Player: { landmarkNames(): ReadonlyArray<string> };
+declare var GameManager: { pendingActionsFor(game: unknown): ReadonlyArray<{ action: string, field: string, count: number }> };
+declare var GAME_PHASES: Readonly<{ PENDING: string }>;
+declare var LANDMARK_NAMES: Readonly<{ YAKUSHO: string }>;
+declare var CPU_EXPERT_DEFAULT_OPTIONS: unknown;
+declare var CPU_EXPERT_PRESETS: unknown;
+declare var CPU_EXPERT_PROFILE_TUNINGS: unknown;
+
 
 
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
+    CPUBusinessMoves: unknown;
     AD_SLOT_CONFIGS: unknown;
     renderAdSlot: unknown;
     mountAdSlot: unknown;
