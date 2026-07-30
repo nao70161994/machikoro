@@ -99,6 +99,49 @@ runTest('schema shadow parityは2〜10人・独立v0/v1で全action traceを維�
             ],
         },
         {
+            name: 'roll-multi-pending-dormant-business',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                const bakery = runtime.createCardByName('パン屋');
+                game.players[0].cards = [
+                    runtime.createCardByName('テレビ局'),
+                    runtime.createCardByName('ビジネスセンター'),
+                    bakery,
+                ];
+                game.players[0].dormantCards = [];
+                game.players[0].makeDormant(bakery);
+                game.players[1].cards = [runtime.createCardByName('森林')];
+                game.players[1].dormantCards = [];
+                game.players[1].coins = 8;
+            },
+            actions: [
+                ['rollDice', { forceDice: 6, tunaDice: [1, 1] }],
+                ['resolveTV', { targetIndex: 1 }],
+                ['resolveBusiness', { myCard: 2, targetIndex: 1, theirCard: 0 }],
+            ],
+            assertAfter(game, stepIndex) {
+                if (stepIndex === 0) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.PENDING);
+                    assert.deepStrictEqual(
+                        Array.from(game.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
+                        ['resolveTV:pendingTV', 'resolveBusiness:pendingBusiness']
+                    );
+                } else if (stepIndex === 1) {
+                    assert.strictEqual(game.pendingTV, 0);
+                    assert.strictEqual(game.pendingBusiness, 1);
+                    assert.deepStrictEqual(
+                        Array.from(game.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
+                        ['resolveBusiness:pendingBusiness']
+                    );
+                } else {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+                    assert.strictEqual(game.pendingActionQueue.length, 0);
+                    assert.strictEqual(game.players[1].cards[0].name, 'パン屋');
+                    assert.strictEqual(game.players[1].isDormant(game.players[1].cards[0]), true);
+                }
+            },
+        },
+        {
             name: 'pending-tv',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.PENDING;
@@ -122,6 +165,15 @@ runTest('schema shadow parityは2〜10人・独立v0/v1で全action traceを維�
             name: 'harbor-choice',
             setup(game) { game.phase = runtime.GAME_PHASES.HARBOR_CHOICE; game.lastDiceResult = 10; },
             actions: [['resolveHarbor', { useBonus: true }]],
+        },
+        {
+            name: 'harbor-choice-no-bonus',
+            setup(game) { game.phase = runtime.GAME_PHASES.HARBOR_CHOICE; game.lastDiceResult = 11; },
+            actions: [['resolveHarbor', { useBonus: false }]],
+            assertAfter(game) {
+                assert.strictEqual(game.lastDiceResult, 11);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
         },
         {
             name: 'pending-business',
@@ -172,6 +224,21 @@ runTest('schema shadow parityは2〜10人・独立v0/v1で全action traceを維�
             actions: [['resolveIT', { doSave: true }]],
         },
         {
+            name: 'pending-it-skip',
+            setup(game) {
+                setPending(game, 'resolveIT', 'pendingIT');
+                game.players[0].coins = 5;
+                game.players[0].itVentureCoins = 2;
+            },
+            actions: [['resolveIT', { doSave: false }]],
+            assertAfter(game) {
+                assert.strictEqual(game.players[0].coins, 5);
+                assert.strictEqual(game.players[0].itVentureCoins, 2);
+                assert.strictEqual(game.currentPlayerIndex, 1);
+                assert.strictEqual(game.pendingIT, false);
+            },
+        },
+        {
             name: 'winning-landmark',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.BUILD;
@@ -188,9 +255,12 @@ runTest('schema shadow parityは2〜10人・独立v0/v1で全action traceを維�
             for (const fixture of fixtures) {
                 const room = makeRoom(playerCount, selection);
                 fixture.setup(room.canonicalMirror.game);
-                for (const [action, data] of fixture.actions) {
+                for (const [stepIndex, [action, data]] of fixture.actions.entries()) {
                     coveredActions.add(action);
                     applyTraceStep(room, action, data);
+                    if (typeof fixture.assertAfter === 'function') {
+                        fixture.assertAfter(room.canonicalMirror.game, stepIndex);
+                    }
                 }
                 assert.ok(room.actionSeq > 0, `${fixture.name}-${playerCount}p`);
             }
