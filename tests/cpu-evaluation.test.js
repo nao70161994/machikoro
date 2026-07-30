@@ -62,6 +62,79 @@ runTest('CPU evaluation はランドマーク進捗を注入costだけで集計�
     );
 });
 
+runTest('CPU evaluation はランドマーク不足額とTV妨害価値をpureに計算する', () => {
+    const costs = { station: 5, airport: 10 };
+    const landmarkCost = name => costs[name];
+    const target = {
+        coins: 5,
+        landmarks: { station: false, airport: false },
+    };
+
+    assert.strictEqual(
+        CPUEvaluation.closestLandmarkShortfall(target, Object.keys(costs), landmarkCost),
+        0
+    );
+    assert.strictEqual(
+        CPUEvaluation.tvLandmarkDenialValue(target, 2, Object.keys(costs), landmarkCost, true),
+        11
+    );
+    target.coins = 4;
+    assert.strictEqual(
+        CPUEvaluation.tvLandmarkDenialValue(target, 1, Object.keys(costs), landmarkCost, true),
+        4.5
+    );
+    target.coins = 2;
+    assert.strictEqual(
+        CPUEvaluation.tvLandmarkDenialValue(target, 2, Object.keys(costs), landmarkCost, true),
+        3.6
+    );
+    assert.strictEqual(
+        CPUEvaluation.tvLandmarkDenialValue(target, 2, Object.keys(costs), landmarkCost, false),
+        0
+    );
+    target.landmarks.station = true;
+    target.landmarks.airport = true;
+    assert.strictEqual(
+        CPUEvaluation.closestLandmarkShortfall(target, Object.keys(costs), landmarkCost),
+        0
+    );
+    assert.strictEqual(
+        CPUEvaluation.tvLandmarkDenialValue(target, 2, Object.keys(costs), landmarkCost, true),
+        0
+    );
+});
+
+runTest('CPU本体のランドマーク妨害wrapperはpure evaluationへ完全委譲する', () => {
+    const { CPU, GameManager, LANDMARK_NAMES, Player } = loadCPURuntime();
+    const cpu = new CPU('expert', {
+        expertBehaviorFlags: { tvLandmarkDenial: true },
+    });
+    const game = new GameManager(2);
+    game.enabledLandmarks = new Set([LANDMARK_NAMES.STATION]);
+    const target = game.players[1];
+    target.coins = Player.landmarkCost(LANDMARK_NAMES.STATION);
+    const amount = Math.min(5, target.coins);
+
+    assert.strictEqual(
+        cpu._closestLandmarkShortfall(target, game),
+        CPUEvaluation.closestLandmarkShortfall(
+            target,
+            game.enabledLandmarks,
+            Player.landmarkCost
+        )
+    );
+    assert.strictEqual(
+        cpu._tvLandmarkDenialValue(target, amount, game),
+        CPUEvaluation.tvLandmarkDenialValue(
+            target,
+            amount,
+            game.enabledLandmarks,
+            Player.landmarkCost,
+            true
+        )
+    );
+});
+
 runTest('CPU本体の評価primitive wrapperはpure evaluationへ同値委譲する', () => {
     const { CPU, Player } = loadCPURuntime();
     const cpu = new CPU('strong');

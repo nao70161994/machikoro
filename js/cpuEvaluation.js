@@ -165,6 +165,33 @@ const CPUEvaluation = Object.freeze({
         ).length;
     },
 
+    closestLandmarkShortfall(player, enabledLandmarks, landmarkCost) {
+        if (!player || !enabledLandmarks) return Infinity;
+        const remaining = [...enabledLandmarks]
+            .filter(name => !player.landmarks[name])
+            .map(name => landmarkCost(name) - player.coins);
+        if (remaining.length === 0) return 0;
+        return Math.max(0, Math.min(...remaining));
+    },
+
+    tvLandmarkDenialValue(target, amount, enabledLandmarks, landmarkCost, enabled) {
+        if (!enabled || !target || !enabledLandmarks) return 0;
+        const before = CPUEvaluation.closestLandmarkShortfall(
+            target,
+            enabledLandmarks,
+            landmarkCost
+        );
+        const afterCoins = Math.max(0, target.coins - amount);
+        const remainingCosts = [...enabledLandmarks]
+            .filter(name => !target.landmarks[name])
+            .map(name => landmarkCost(name));
+        if (remainingCosts.length === 0) return 0;
+        const after = Math.max(0, Math.min(...remainingCosts) - afterCoins);
+        if (before <= 0 && after > 0) return 8 + Math.min(4, after * 1.5);
+        if (before <= 1 && after >= 2) return 4.5;
+        return Math.max(0, after - before) * 1.8;
+    },
+
     sameBuildOption(a, b) {
         if (!a || !b || a.type !== b.type) return false;
         if (a.type === 'landmark') return a.name === b.name;

@@ -381,12 +381,11 @@ class CPU {
     }
 
     _closestLandmarkShortfall(player, game) {
-        if (!player || !game || !game.enabledLandmarks) return Infinity;
-        const remaining = [...game.enabledLandmarks]
-            .filter(name => !player.landmarks[name])
-            .map(name => Player.landmarkCost(name) - player.coins);
-        if (remaining.length === 0) return 0;
-        return Math.max(0, Math.min(...remaining));
+        return CPUEvaluation.closestLandmarkShortfall(
+            player,
+            game && game.enabledLandmarks,
+            Player.landmarkCost
+        );
     }
 
     _lookaheadTerminalHeuristic(game, focusIndex) {
@@ -419,17 +418,13 @@ class CPU {
     }
 
     _tvLandmarkDenialValue(target, amount, game) {
-        if (!target || !game || !this._expertFlagEnabled("tvLandmarkDenial")) return 0;
-        const before = this._closestLandmarkShortfall(target, game);
-        const afterCoins = Math.max(0, target.coins - amount);
-        const remainingCosts = [...game.enabledLandmarks]
-            .filter(name => !target.landmarks[name])
-            .map(name => Player.landmarkCost(name));
-        if (remainingCosts.length === 0) return 0;
-        const after = Math.max(0, Math.min(...remainingCosts) - afterCoins);
-        if (before <= 0 && after > 0) return 8 + Math.min(4, after * 1.5);
-        if (before <= 1 && after >= 2) return 4.5;
-        return Math.max(0, after - before) * 1.8;
+        return CPUEvaluation.tvLandmarkDenialValue(
+            target,
+            amount,
+            game && game.enabledLandmarks,
+            Player.landmarkCost,
+            this._expertFlagEnabled("tvLandmarkDenial")
+        );
     }
 
     _expertCandidateTargetIndexes(game, currentIndex) {
