@@ -234,6 +234,7 @@ runTest('online integration: timer authorityは再join上限でfailedへ遷移�
         includeOnline: true,
         onlineReconnectEventAuthorityEnabled: true,
         onlineReconnectEffectAuthorityEnabled: true,
+        onlineReconnectStatusEffectAuthorityEnabled: true,
         onlineReconnectTimerAuthorityEnabled: true,
         onlineReconnectCallbackAuthorityEnabled: true,
     });
@@ -272,6 +273,10 @@ runTest('online integration: timer authorityは再join上限でfailedへ遷移�
     assert.strictEqual(snapshot.callbackAuthority.source, 'event');
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
     assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(
+        rt.__test.elements.onlineStatus.textContent,
+        '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。'
+    );
 });
 
 runTest('online integration: timer authorityはparity不一致時にlegacy timerへ戻る', () => {

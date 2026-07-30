@@ -512,11 +512,14 @@ function _finishRejoinRetryTimeout() {
     }
     _clearOnlineRejoinTimer();
     _rejoinRetryExhausted = true;
-    const el = document.getElementById("onlineStatus");
-    if (el) el.textContent = '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。';
+    const retryExhaustedMessage = '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。';
     // Canonical state is unknown. Keep all game input and host CPU blocked.
     setOnlineReconnectLegacyFlag(true);
     _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
+    _applyOnlineReconnectStatusEffectAuthority(
+        OnlineReconnectState.events.RETRY_EXHAUSTED,
+        retryExhaustedMessage
+    );
     cpuScheduleToken++;
     try { if (typeof render === 'function') render(); } catch (_) {}
     return false;

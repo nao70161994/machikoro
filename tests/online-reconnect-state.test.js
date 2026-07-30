@@ -480,6 +480,13 @@ runTest('online reconnect status effect authorityは既定OFF・不整合時にl
         }),
         { message: '⏳ 接続が切れました。再接続しています...', source: 'event', ready: true, fallbackReason: '' }
     );
+    const failed = { ...clean, state: STATES.FAILED, eventState: STATES.FAILED };
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectStatusEffectAuthority(failed, OnlineReconnectState.events.RETRY_EXHAUSTED, 'legacy timeout', {
+            statusEffectAuthorityEnabled: true,
+        }),
+        { message: '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。', source: 'event', ready: true, fallbackReason: '' }
+    );
     assert.deepStrictEqual(
         OnlineReconnectState.selectStatusEffectAuthority({ ...clean, eventState: STATES.REJOINING }, OnlineReconnectState.events.SOCKET_DISCONNECTED, 'legacy mismatch', {
             statusEffectAuthorityEnabled: true,
