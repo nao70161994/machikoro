@@ -51,6 +51,10 @@ runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを�
     assert.ok(config.files.includes('server/canonicalStateStore.js'));
     assert.ok(config.files.includes('server/clientErrorReporting.js'));
     assert.ok(config.files.includes('server/actionAcceptance.js'));
+    assert.ok(config.files.includes('server/actionSocketHandler.js'));
+    assert.ok(config.files.includes('server/disconnectSocketHandler.js'));
+    assert.ok(config.files.includes('server/hostlessRestoreRuntime.js'));
+    assert.ok(config.files.includes('server/rejoinSocketHandler.js'));
     assert.ok(config.files.includes('server/hostlessRestoreCandidate.js'));
     assert.ok(config.files.includes('server/roomLifecycle.js'));
     assert.ok(config.files.includes('server/restoreAuthorityPolicy.js'));
