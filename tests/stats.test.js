@@ -39,6 +39,7 @@ function loadStatsRuntime(options = {}) {
     }
     context.global = context;
     vm.createContext(context);
+    loadScript(context, 'js/clientStorage.js');
     loadScript(context, 'js/stats.js');
     vm.runInContext(`
         this.__test = {
@@ -69,6 +70,30 @@ function makeGame() {
         ],
     };
 }
+
+runTest('stats storage境界は既存keyと値形式を共通facade経由で保持する', () => {
+    const rt = loadStatsRuntime();
+    const stats = rt.createDefaultStats();
+    stats.all.totalGames = 1;
+
+    rt.saveStats(stats);
+
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('gameStats')), JSON.parse(JSON.stringify(stats)));
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/stats.js'), 'utf8');
+    assert.strictEqual(source.includes('localStorage'), false);
+});
+
+runTest('stats storage境界はstorage取得拒否を外へ伝播しない', () => {
+    const rt = loadStatsRuntime();
+    Object.defineProperty(rt, 'localStorage', {
+        configurable: true,
+        get() { throw new Error('storage blocked'); },
+    });
+
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.loadStats())), JSON.parse(JSON.stringify(rt.createDefaultStats())));
+    assert.doesNotThrow(() => rt.saveStats(rt.createDefaultStats()));
+    assert.doesNotThrow(() => rt.applyClearStats());
+});
 
 runTest('loadStats は旧形式を local/all へ移行する', () => {
     const rt = loadStatsRuntime();

@@ -3,6 +3,11 @@
  * ローカル / オンライン / 全体 を分けて保持する
  */
 
+const StatsClientStorageApi = typeof module !== 'undefined' && module.exports
+    ? require('./clientStorage')
+    : globalThis.ClientStorage;
+const statsClientStorageFacade = StatsClientStorageApi.createFacade();
+
 let _statsRecorded = false;
 let _statsViewMode = 'all';
 let _statsPlayerFilter = '';
@@ -94,14 +99,14 @@ function normalizeStats(raw) {
 
 function loadStats() {
     try {
-        const raw = localStorage.getItem('gameStats');
+        const raw = statsClientStorageFacade.get('gameStats');
         if (raw) return normalizeStats(JSON.parse(raw));
     } catch (e) {}
     return createDefaultStats();
 }
 
 function saveStats(stats) {
-    try { localStorage.setItem('gameStats', JSON.stringify(stats)); } catch (e) {}
+    statsClientStorageFacade.set('gameStats', JSON.stringify(stats));
 }
 
 function getStatsModeLabel(mode) {
@@ -239,7 +244,7 @@ function bindStatsHandlers(el) {
 }
 
 function applyClearStats() {
-    localStorage.removeItem('gameStats');
+    statsClientStorageFacade.remove('gameStats');
     renderStats();
 }
 

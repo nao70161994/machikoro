@@ -2050,6 +2050,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/clientStorage.js', 'js/appShellStorage.js');
     assertBefore('js/clientStorage.js', 'js/storage.js');
+    assertBefore('js/clientStorage.js', 'js/stats.js');
     assertBefore('js/appShellStorage.js', 'js/appShell.js');
     assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');

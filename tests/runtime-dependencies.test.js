@@ -62,6 +62,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/savedGameValidation.js', 'js/storage.js'],
             ['js/storageSettings.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/storage.js'],
+            ['js/clientStorage.js', 'js/stats.js'],
             ['js/clientStorage.js', 'js/appShellStorage.js'],
             ['js/appShellStorage.js', 'js/appShell.js'],
             ['js/clientReporting.js', 'js/appShell.js'],
@@ -117,6 +118,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/savedGameValidation.js', 'js/storage.js'],
             ['js/storageSettings.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/storage.js'],
+            ['js/clientStorage.js', 'js/stats.js'],
             ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
@@ -146,6 +148,9 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineRestoreRank.js', 'js/online.js'],
             ['js/onlineReconnectState.js', 'js/online.js'],
             ['js/onlineRetryPolicy.js', 'js/online.js'],
+        ]],
+        ['tests/stats.test.js', [
+            ['js/clientStorage.js', 'js/stats.js'],
         ]],
         ['tests/ui.test.js', [
             ['js/clientStorage.js', 'js/ui.js'],
