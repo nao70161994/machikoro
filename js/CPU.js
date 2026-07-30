@@ -3977,6 +3977,10 @@ class CPU {
         return CPUPendingResolution.choosePendingItResolution(game, cpu);
     }
 
+    static choosePendingAction(game, cpu, options = {}) {
+        return CPUPendingResolution.choosePendingAction(game, cpu, options);
+    }
+
     static choosePendingResolution(game, cpu, options = {}) {
         return CPUPendingResolution.choosePendingResolution(game, cpu, options);
     }

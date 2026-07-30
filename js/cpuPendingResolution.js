@@ -1,3 +1,9 @@
+'use strict';
+
+const CPUPendingActionProposalApi = typeof module !== 'undefined' && module.exports
+    ? require('./cpuActionProposal').CPUActionProposal
+    : globalThis.CPUActionProposal;
+
 const CPUPendingResolution = Object.freeze({
     pendingActionDescriptors(game) {
         if (!game) return [];
@@ -200,6 +206,55 @@ const CPUPendingResolution = Object.freeze({
             doSave,
             apply: () => game.resolveIT(doSave),
         };
+    },
+
+    proposalFromResolution(resolution) {
+        if (!resolution || !CPUPendingActionProposalApi) return null;
+        return CPUPendingActionProposalApi.create(resolution.action, resolution.payload);
+    },
+
+    choosePendingCleaningAction(game, cpu) {
+        let cardName = cpu.chooseCleaningTarget(game);
+        if (!CPUPendingResolution.isCpuCleaningTarget(game, cardName)) {
+            cardName = CPUPendingResolution.fallbackCpuCleaningTarget(game);
+        }
+        if (!CPUPendingResolution.isCpuCleaningTarget(game, cardName) || !CPUPendingActionProposalApi) return null;
+        return CPUPendingActionProposalApi.create('resolveCleaning', { cardName });
+    },
+
+    choosePendingAction(game, cpu, options = {}) {
+        if (!game || !cpu || game.phase !== GAME_PHASES.PENDING) return null;
+        const descriptor = CPUPendingResolution.pendingActionDescriptors(game)[0];
+        if (!descriptor) return null;
+        if (descriptor.action === 'resolveCleaning') {
+            return CPUPendingResolution.choosePendingCleaningAction(game, cpu);
+        }
+        return CPUPendingResolution.proposalFromResolution(
+            CPUPendingResolution.choosePendingResolution(game, cpu, options)
+        );
+    },
+
+    applyPendingAction(game, proposal) {
+        if (!game || !proposal || !CPUPendingActionProposalApi) return false;
+        const canonical = CPUPendingActionProposalApi.create(proposal.action, proposal.data);
+        if (!canonical) return false;
+        const data = canonical.data;
+        switch (canonical.action) {
+            case 'resolveTV':
+                return game.resolveTV(data.targetIndex) !== false;
+            case 'resolveBusiness':
+                return game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard) !== false;
+            case 'resolveCleaning':
+                return game.resolveCleaning(data.cardName) !== false;
+            case 'resolveMover':
+                return game.resolveMover(data.cardIndex ?? data.cardName, data.targetIndex) !== false;
+            case 'resolveRenovation':
+                return game.resolveRenovation(data.landmarkName) !== false;
+            case 'resolveIT':
+                return game.resolveIT(data.doSave) !== false;
+            default:
+                return false;
+        }
     },
 
     choosePendingResolution(game, cpu, options = {}) {

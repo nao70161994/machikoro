@@ -458,8 +458,8 @@ function queueCPUStep(token, delay, fn) {
     }, delay);
 }
 
-function chooseCpuPendingResolution(cpu) {
-    return CPUPendingResolution.choosePendingResolution(game, cpu, { clearFallback: false });
+function chooseCpuPendingAction(cpu) {
+    return CPUPendingResolution.choosePendingAction(game, cpu, { clearFallback: false });
 }
 
 // フェーズごとの CPU ハンドラテーブル。
@@ -523,26 +523,16 @@ const CPU_PHASE_HANDLERS = [
         name: "pending",
         run(cpu) {
             if (game.phase !== GAME_PHASES.PENDING) return;
-            const pendingResolution = chooseCpuPendingResolution(cpu);
-            if (pendingResolution) {
+            const pendingAction = chooseCpuPendingAction(cpu);
+            if (pendingAction) {
                 markMainCheckpoint('scheduleCPU-pending-resolution', {
-                    action: pendingResolution.action,
+                    action: pendingAction.action,
                     pendingIT: !!game.pendingIT,
                     pendingAction: GameManager.nextPendingActionFor(game),
                 });
-                cpuDo(pendingResolution.action, pendingResolution.payload, () => pendingResolution.apply());
-                return;
-            }
-            const nextPending = GameManager.nextPendingActionFor(game);
-            if (nextPending && nextPending.action === GAME_ACTIONS.RESOLVE_CLEANING) {
-                let cardName = cpu.chooseCleaningTarget(game);
-                if (!CPUPendingResolution.isCpuCleaningTarget(game, cardName)) {
-                    cardName = CPUPendingResolution.fallbackCpuCleaningTarget(game);
-                }
-                if (CPUPendingResolution.isCpuCleaningTarget(game, cardName)) {
-                    cpuDo('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
-                    return;
-                }
+                cpuDo(pendingAction.action, pendingAction.data, () =>
+                    CPUPendingResolution.applyPendingAction(game, pendingAction)
+                );
             }
         },
     },

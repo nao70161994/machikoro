@@ -295,6 +295,114 @@ runTest('CPU pending helper は清掃対象の休業・大施設を除外して�
     assert.strictEqual(CPUPendingResolution.fallbackCpuCleaningTarget(game), '森林');
 });
 
+runTest('CPU pending action strategy は全pendingを副作用なしcanonical frozen proposalで返す', () => {
+    const cases = [
+        {
+            field: 'pendingTV',
+            setup(game, cpu) {
+                game.players[1].coins = 4;
+                cpu.chooseTVTarget = () => 1;
+            },
+            expected: ['resolveTV', { targetIndex: 1 }],
+        },
+        {
+            field: 'pendingBusiness',
+            setup(game, cpu) {
+                game.currentPlayer().cards = [createCardByName('麦畑')];
+                game.players[1].cards = [createCardByName('森林')];
+                cpu.chooseBusinessMove = () => ({ myCard: 0, targetIndex: 1, theirCard: 0 });
+            },
+            expected: ['resolveBusiness', { myCard: 0, targetIndex: 1, theirCard: 0 }],
+        },
+        {
+            field: 'pendingCleaning',
+            setup(game, cpu) {
+                game.players[1].cards = [createCardByName('森林')];
+                cpu.chooseCleaningTarget = () => '森林';
+            },
+            expected: ['resolveCleaning', { cardName: '森林' }],
+        },
+        {
+            field: 'pendingMover',
+            setup(game, cpu) {
+                game.currentPlayer().cards = [createCardByName('麦畑')];
+                cpu.chooseMoverMove = () => ({ cardIndex: 0, targetIndex: 1 });
+            },
+            expected: ['resolveMover', { cardIndex: 0, targetIndex: 1 }],
+        },
+        {
+            field: 'pendingRenovation',
+            setup(game, cpu) {
+                game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+                cpu.chooseRenovationTarget = () => LANDMARK_NAMES.STATION;
+            },
+            expected: ['resolveRenovation', { landmarkName: LANDMARK_NAMES.STATION }],
+        },
+        {
+            field: 'pendingIT',
+            setup(game, cpu) { cpu.chooseITInvest = () => true; },
+            expected: ['resolveIT', { doSave: true }],
+        },
+    ];
+
+    for (const entry of cases) {
+        const game = new GameManager(2);
+        game.phase = runtime.GAME_PHASES.PENDING;
+        game[entry.field] = entry.field === 'pendingIT' ? true : 1;
+        const cpu = new CPU('normal');
+        entry.setup(game, cpu);
+        const before = JSON.stringify(runtime.GameSnapshot.serializeGameState(game, {}));
+
+        const proposal = CPU.choosePendingAction(game, cpu, { clearFallback: false });
+
+        assert.ok(proposal, entry.field);
+        assert.strictEqual(proposal.action, entry.expected[0], entry.field);
+        assert.strictEqual(JSON.stringify(proposal.data), JSON.stringify(entry.expected[1]), entry.field);
+        assert.strictEqual(Object.isFrozen(proposal), true, entry.field);
+        assert.strictEqual(Object.isFrozen(proposal.data), true, entry.field);
+        assert.strictEqual(Object.hasOwn(proposal, 'apply'), false, entry.field);
+        assert.strictEqual(JSON.stringify(runtime.GameSnapshot.serializeGameState(game, {})), before, entry.field);
+    }
+});
+
+runTest('CPU pending cleaning action は不正候補を一度だけ評価して既存順fallbackを返す', () => {
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('森林')];
+    game.players[1].dormantCards = [game.players[1].cards[0]];
+    let calls = 0;
+    const cpu = new CPU('normal');
+    cpu.chooseCleaningTarget = () => { calls++; return '存在しない施設'; };
+
+    const proposal = CPU.choosePendingAction(game, cpu, { clearFallback: false });
+
+    assert.strictEqual(calls, 1);
+    assert.strictEqual(JSON.stringify(proposal.data), JSON.stringify({ cardName: '麦畑' }));
+    assert.strictEqual(game.pendingCleaning, 1);
+});
+
+runTest('CPU pending action互換executorはcanonical proposalだけを適用する', () => {
+    const calls = [];
+    const game = {
+        resolveTV(targetIndex) { calls.push(targetIndex); return true; },
+    };
+
+    assert.strictEqual(CPUPendingResolution.applyPendingAction(game, {
+        action: 'resolveTV',
+        data: { targetIndex: 1 },
+    }), true);
+    assert.strictEqual(CPUPendingResolution.applyPendingAction(game, {
+        action: 'resolveTV',
+        data: { targetIndex: 1, extra: true },
+    }), false);
+    assert.strictEqual(CPUPendingResolution.applyPendingAction(game, {
+        action: 'unknown',
+        data: {},
+    }), false);
+    assert.deepStrictEqual(calls, [1]);
+});
+
 runTest('choosePendingResolution は未対応pendingを飛ばして後続pendingを処理しない', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);
