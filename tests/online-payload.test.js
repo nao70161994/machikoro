@@ -3,6 +3,34 @@ const { OnlinePayload } = require('../js/onlinePayload');
 const { HOSTLESS_RESTORE_EVENTS } = require('../server/hostlessRestoreRuntime');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('online payload は保存sessionの必須fieldを正規化し追加fieldを保持する', () => {
+    assert.deepStrictEqual(OnlinePayload.normalizeSession({
+        roomId: ' room-01 ',
+        playerIndex: 2,
+        playerName: ' Alice ',
+        reconnectToken: ' token-1 ',
+        isRoomHost: true,
+    }), {
+        roomId: 'ROOM-01',
+        playerIndex: 2,
+        playerName: 'Alice',
+        reconnectToken: 'token-1',
+        isRoomHost: true,
+    });
+});
+
+runTest('online payload は不正な保存sessionをfail closedにする', () => {
+    const cases = [
+        null,
+        [],
+        {},
+        { roomId: 'ROOM01', playerIndex: -1, playerName: 'Alice', reconnectToken: 'token-1' },
+        { roomId: 'ROOM01', playerIndex: 0, playerName: ' ', reconnectToken: 'token-1' },
+        { roomId: 'ROOM01', playerIndex: 0, playerName: 'Alice', reconnectToken: '' },
+    ];
+    for (const value of cases) assert.strictEqual(OnlinePayload.normalizeSession(value), null);
+});
+
 runTest('online payload は再接続wire fieldを既存順序と値で生成する', () => {
     assert.deepStrictEqual(OnlinePayload.buildRejoin({
         roomId: 'ROOM01',

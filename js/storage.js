@@ -107,20 +107,7 @@ function getStorageOnlineStorageFacade() {
 }
 
 function normalizeOnlineSessionPayload(session) {
-    if (!session || typeof session !== 'object') return null;
-    const roomId = typeof session.roomId === 'string' ? session.roomId.trim().toUpperCase() : '';
-    const playerName = typeof session.playerName === 'string' ? session.playerName.trim() : '';
-    const reconnectToken = typeof session.reconnectToken === 'string' ? session.reconnectToken.trim() : '';
-    if (
-        roomId === '' ||
-        !Number.isInteger(session.playerIndex) ||
-        session.playerIndex < 0 ||
-        playerName === '' ||
-        reconnectToken === ''
-    ) {
-        return null;
-    }
-    return Object.assign({}, session, { roomId, playerName, reconnectToken });
+    return OnlinePayload.normalizeSession(session);
 }
 
 function removeOnlineRestoreBundleStorageKeyVariants(key) {
