@@ -161,6 +161,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuEvaluationCache.js',
         'js/cpuEvaluation.js',
         'js/cpuLegalMoves.js',
+        'js/cpuBusinessMoves.js',
         'js/cpuActionProposal.js',
         'js/cpuBuildExecution.js',
         'js/cpuSimulation.js',

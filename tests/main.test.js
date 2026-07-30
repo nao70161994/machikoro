@@ -1971,6 +1971,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuTuning.js', 'js/CPU.js');
     assertBefore('js/cpuProfile.js', 'js/CPU.js');
     assertBefore('js/cpuLegalMoves.js', 'js/CPU.js');
+    assertBefore('js/cpuBusinessMoves.js', 'js/CPU.js');
     assertBefore('js/cpuActionProposal.js', 'js/cpuBuildExecution.js');
     assertBefore('js/cpuBuildExecution.js', 'js/CPU.js');
     assertBefore('js/cpuSimulation.js', 'js/CPU.js');

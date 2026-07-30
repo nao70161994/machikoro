@@ -170,40 +170,11 @@ class CPU {
     }
 
     _forEachBusinessMove(game, callback) {
-        const current = game.currentPlayer();
-        const ci = game.currentPlayerIndex;
-        for (let myIndex = 0; myIndex < current.cards.length; myIndex++) {
-            const myCard = current.cards[myIndex];
-            if (!myCard || myCard.category === "大施設") continue;
-            for (let targetIndex = 0; targetIndex < game.players.length; targetIndex++) {
-                if (targetIndex === ci) continue;
-                const target = game.players[targetIndex];
-                for (let theirIndex = 0; theirIndex < target.cards.length; theirIndex++) {
-                    const theirCard = target.cards[theirIndex];
-                    if (!theirCard || theirCard.category === "大施設") continue;
-                    const result = callback({
-                        myCard,
-                        myIndex,
-                        target,
-                        targetIndex,
-                        theirCard,
-                        theirIndex,
-                    });
-                    if (result === false) return false;
-                }
-            }
-        }
-        return true;
+        return CPUBusinessMoves.forEachMove(game, callback);
     }
 
     _minorCardIndexes(player) {
-        const indexes = [];
-        for (let i = 0; i < player.cards.length; i++) {
-            const card = player.cards[i];
-            if (!card || card.category === "大施設") continue;
-            indexes.push(i);
-        }
-        return indexes;
+        return CPUBusinessMoves.minorCardIndexes(player);
     }
 
     _chooseRandomBusinessMove(game) {
@@ -312,33 +283,21 @@ class CPU {
     }
 
     _businessOwnCandidateIndexes(game, current, limit) {
-        const indexes = this._minorCardIndexes(current);
-        if (indexes.length <= limit) return indexes;
-        return indexes
-            .map(index => ({
-                index,
-                score: this._ownedCardValue(current.cards[index], game, current),
-            }))
-            .sort((a, b) => a.score - b.score || a.index - b.index)
-            .slice(0, limit)
-            .map(entry => entry.index);
+        return CPUBusinessMoves.rankedCandidateIndexes(
+            current,
+            limit,
+            index => this._ownedCardValue(current.cards[index], game, current)
+        );
     }
 
     _businessTargetCandidateIndexes(game, current, target, limit, attackScale) {
-        const indexes = this._minorCardIndexes(target);
-        if (indexes.length <= limit) return indexes;
-        return indexes
-            .map(index => {
-                const card = target.cards[index];
-                return {
-                    index,
-                    score: this._receivedCardValue(card, game, current) +
-                        this._ownedCardValue(card, game, target) * 0.7 * attackScale,
-                };
-            })
-            .sort((a, b) => b.score - a.score || a.index - b.index)
-            .slice(0, limit)
-            .map(entry => entry.index);
+        return CPUBusinessMoves.rankedCandidateIndexes(
+            target,
+            limit,
+            (index, card) => this._receivedCardValue(card, game, current) +
+                this._ownedCardValue(card, game, target) * 0.7 * attackScale,
+            true
+        );
     }
 
     _forEachBusinessMoveCandidate(game, candidateTargets, callback) {
@@ -347,26 +306,19 @@ class CPU {
         const ownLimit = this.difficulty === "expert" ? 3 : 2;
         const targetLimit = this.difficulty === "expert" ? 4 : 3;
         const myIndexes = this._businessOwnCandidateIndexes(game, current, ownLimit);
-        for (const myIndex of myIndexes) {
-            const myCard = current.cards[myIndex];
-            for (const targetIndex of candidateTargets) {
-                const target = game.players[targetIndex];
-                const theirIndexes = this._businessTargetCandidateIndexes(game, current, target, targetLimit, attackScale);
-                for (const theirIndex of theirIndexes) {
-                    const theirCard = target.cards[theirIndex];
-                    const result = callback({
-                        myCard,
-                        myIndex,
-                        target,
-                        targetIndex,
-                        theirCard,
-                        theirIndex,
-                    });
-                    if (result === false) return false;
-                }
-            }
-        }
-        return true;
+        return CPUBusinessMoves.forEachCandidate(
+            game,
+            myIndexes,
+            candidateTargets,
+            target => this._businessTargetCandidateIndexes(
+                game,
+                current,
+                target,
+                targetLimit,
+                attackScale
+            ),
+            callback
+        );
     }
 
     getProfileSummary() {

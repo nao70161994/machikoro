@@ -14,6 +14,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/confetti.js',
     'js/cpuActionProposal.js',
     'js/cpuBuildExecution.js',
+    'js/cpuBusinessMoves.js',
     'js/cpuDiagnostics.js',
     'js/cpuEvaluation.js',
     'js/cpuEvaluationCache.js',
