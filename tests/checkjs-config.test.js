@@ -31,6 +31,7 @@ runTest('checkJs configはpure adapterだけを明示列挙し巨大runtimeを�
         assert.ok(!config.files.includes(excluded), excluded);
     }
     assert.ok(config.files.includes('js/actionContract.js'));
+    assert.ok(config.files.includes('js/actionUiRegistry.js'));
     assert.ok(config.files.includes('js/gameSnapshot.js'));
     assert.ok(config.files.includes('js/gameEngine.js'));
     assert.ok(config.files.includes('js/cpuActionProposal.js'));
