@@ -3,6 +3,7 @@
 const browserMaintenanceFiles = Object.freeze([
     'js/Card.js',
     'js/GameManager.js',
+    'js/CPU.js',
     'js/Player.js',
     'js/RLCPU.js',
     'js/RLModelPortfolio.js',
@@ -55,6 +56,7 @@ const browserMaintenanceFiles = Object.freeze([
 ]);
 
 const serverMaintenanceFiles = Object.freeze([
+    'server.js',
     'scripts/report-action-contract.js',
     'server/actionAcceptance.js',
     'server/canonicalMirrorMetadata.js',
@@ -125,6 +127,7 @@ module.exports = [
                 document: 'readonly',
                 escapeHtml: 'readonly',
                 fetch: 'readonly',
+                getInitialCardStock: 'readonly',
                 getCardActivationProfile: 'readonly',
                 isOnlineGame: 'readonly',
                 isCardInCategoryGroup: 'readonly',
@@ -132,6 +135,7 @@ module.exports = [
                 isRoomHost: 'readonly',
                 localStorage: 'readonly',
                 navigator: 'readonly',
+                performance: 'readonly',
                 RLCPU: 'readonly',
                 console: 'readonly',
                 cloneCard: 'readonly',
@@ -139,7 +143,9 @@ module.exports = [
                 setInterval: 'readonly',
                 showConfirm: 'readonly',
                 setTimeout: 'readonly',
+                setInterval: 'readonly',
                 CPU: 'readonly',
+                CPUProfile: 'readonly',                CPUDiagnostics: 'readonly',                CPUEvaluationCache: 'readonly',                CPUBusinessMoves: 'readonly',                CPU_EXPERT_PRESETS: 'readonly',                CPU_EXPERT_DEFAULT_OPTIONS: 'readonly',                CPU_EXPERT_PROFILE_TUNINGS: 'readonly',                CPUSimulation: 'readonly',                CPUEvaluation: 'readonly',                CPUBuildExecution: 'readonly',                CPULegalMoves: 'readonly',                CPUPendingResolution: 'readonly',
                 console: 'readonly',
                 cloneCard: 'readonly',
                 createCardByName: 'readonly',
@@ -166,12 +172,14 @@ module.exports = [
             sourceType: 'commonjs',
             globals: {
                 Buffer: 'readonly',
+                __dirname: 'readonly',
                 clearTimeout: 'readonly',
                 clearInterval: 'readonly',
                 console: 'readonly',
                 global: 'readonly',
                 process: 'readonly',
                 setTimeout: 'readonly',
+                setInterval: 'readonly',
                 URL: 'readonly',
                 URLSearchParams: 'readonly',
             },
