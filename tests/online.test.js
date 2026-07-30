@@ -224,6 +224,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
         this.getOnlineLobbyState = () => ({ createPending: onlineCreateRoomPending, joinPending: onlineJoinRoomPending, kind: onlineLobbyRequestKind });
+        this.isOnlineReconnectInputBlocked = isOnlineReconnectInputBlocked;
         this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
@@ -471,6 +472,13 @@ runTest('online.jsのevent authority readは明示flagかつclean parity時だ�
         ready: true,
         fallbackReason: '',
     });
+    assert.strictEqual(localRt.isOnlineReconnectInputBlocked(), false);
+
+    localRt.setOnlineState({ isReconnectingOnline: true, socket: { connected: false } });
+    assert.strictEqual(localRt.isOnlineReconnectInputBlocked(), true);
+    snapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'legacy-projection');
+    assert.strictEqual(snapshot.authority.fallbackReason, 'state-mismatch');
 });
 
 runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す', () => {

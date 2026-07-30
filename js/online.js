@@ -247,6 +247,14 @@ function getOnlineReconnectStateSnapshot() {
     });
 }
 
+function isOnlineReconnectInputBlocked() {
+    if (!isOnlineReconnectEventAuthorityEnabled()) return !!isReconnectingOnline;
+    getOnlineReconnectState();
+    const selection = _onlineReconnectAuthoritySelection();
+    if (selection.source !== 'event') return !!isReconnectingOnline;
+    return OnlineReconnectState.blocksInput(selection.state);
+}
+
 function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {
     const logSeq = Array.isArray(actionLog)
         ? actionLog.reduce((max, entry) => Number.isInteger(entry && entry.seq) ? Math.max(max, entry.seq) : max, 0)
@@ -1758,7 +1766,7 @@ function restoreOnlineSnapshot(state) {
 
 function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {
-        if (isReconnectingOnline || onlineActionInFlight || socket.connected === false) return false;
+        if (isOnlineReconnectInputBlocked() || onlineActionInFlight || socket.connected === false) return false;
         _setOnlineActionInFlight(true);
         cpuScheduleToken++;
         const pending = _savePendingOutboundAction(action, data);

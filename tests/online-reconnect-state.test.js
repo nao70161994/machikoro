@@ -363,3 +363,12 @@ runTest('online reconnect event authority flagは明示有効値だけを受理�
         );
     }
 });
+
+runTest('online reconnect input gateは接続処理中だけをblockする', () => {
+    for (const state of [STATES.CONNECTING, STATES.REJOINING, STATES.RESTORING, STATES.REPLAYING, STATES.FAILED]) {
+        assert.strictEqual(OnlineReconnectState.blocksInput(state), true, state);
+    }
+    for (const state of [STATES.IDLE, STATES.ACTIVE, STATES.COMPLETED, 'unknown']) {
+        assert.strictEqual(OnlineReconnectState.blocksInput(state), false, state);
+    }
+});

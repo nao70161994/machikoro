@@ -121,6 +121,16 @@ function isOnlineReconnectEvent(event) {
     return Object.values(ONLINE_RECONNECT_EVENTS).includes(event);
 }
 
+function onlineReconnectStateBlocksInput(state) {
+    return [
+        ONLINE_RECONNECT_STATES.CONNECTING,
+        ONLINE_RECONNECT_STATES.REJOINING,
+        ONLINE_RECONNECT_STATES.RESTORING,
+        ONLINE_RECONNECT_STATES.REPLAYING,
+        ONLINE_RECONNECT_STATES.FAILED,
+    ].includes(state);
+}
+
 function canOnlineReconnectTransition(from, to) {
     if (!isOnlineReconnectState(from) || !isOnlineReconnectState(to)) return false;
     if (from === to) return true;
@@ -418,6 +428,7 @@ const OnlineReconnectState = Object.freeze({
     eventAuthorityEnabled: onlineReconnectEventAuthorityEnabled,
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
+    blocksInput: onlineReconnectStateBlocksInput,
     canTransition: canOnlineReconnectTransition,
     eventTarget: onlineReconnectEventTarget,
     reduceEvent: reduceOnlineReconnectEvent,
