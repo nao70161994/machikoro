@@ -309,6 +309,8 @@ function loadMainRuntime(options = {}) {
     context.global = context;
     vm.createContext(context);
 
+    const clientStorageSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientStorage.js'), 'utf8');
+    vm.runInContext(clientStorageSource, context, { filename: 'js/clientStorage.js' });
     const appShellStorageSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellStorage.js'), 'utf8');
     vm.runInContext(appShellStorageSource, context, { filename: 'js/appShellStorage.js' });
     const clientReportingSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientReporting.js'), 'utf8');
@@ -2034,6 +2036,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/savedGameValidation.js', 'js/storage.js');
     assertBefore('js/storageSettings.js', 'js/storage.js');
     assertBefore('js/storage.js', 'js/appShell.js');
+    assertBefore('js/clientStorage.js', 'js/appShellStorage.js');
+    assertBefore('js/clientStorage.js', 'js/storage.js');
     assertBefore('js/appShellStorage.js', 'js/appShell.js');
     assertBefore('js/clientReporting.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');

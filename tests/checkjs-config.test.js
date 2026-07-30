@@ -60,6 +60,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/uiBuildMenu.js'));
     assert.ok(config.files.includes('js/uiModalPolicy.js'));
     assert.ok(config.files.includes('js/uiWatchdog.js'));
+    assert.ok(config.files.includes('js/clientStorage.js'));
     assert.ok(config.files.includes('js/clientReporting.js'));
     assert.ok(config.files.includes('js/pwaShell.js'));
     assert.ok(config.files.includes('js/onlineReconnectState.js'));

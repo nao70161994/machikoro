@@ -58,6 +58,7 @@ interface Window {
     UiWatchdog: unknown;
     UiWinner: unknown;
     LifecycleNotify: unknown;
+    ClientStorage: unknown;
     AppShellStorage: unknown;
     PwaShell: unknown;
 }

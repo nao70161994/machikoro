@@ -70,6 +70,7 @@ const TEST_GROUPS = {
         'storage.test.js',
         'main.test.js',
         'client-reporting.test.js',
+        'client-storage.test.js',
         'app-shell-storage.test.js',
         'sw.test.js',
         'confetti.test.js',
@@ -210,6 +211,7 @@ const TEST_GROUPS = {
     ],
     pwa: [
         'storage.test.js',
+        'client-storage.test.js',
         'app-shell-storage.test.js',
         'action-ui-registry.test.js',
         'main.test.js',

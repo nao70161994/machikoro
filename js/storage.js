@@ -1,36 +1,19 @@
+const storageClientStorageFacade = ClientStorage.createFacade();
+
 function getSafeClientStorage() {
-    try {
-        return typeof localStorage !== 'undefined' ? localStorage : null;
-    } catch (_) {
-        return null;
-    }
+    return storageClientStorageFacade.storage();
 }
 
 function safeStorageGet(key, fallback = null) {
-    try {
-        const storage = getSafeClientStorage();
-        return storage ? storage.getItem(key) : fallback;
-    } catch (_) {
-        return fallback;
-    }
+    return storageClientStorageFacade.get(key, fallback);
 }
 
 function safeStorageSet(key, value) {
-    try {
-        const storage = getSafeClientStorage();
-        if (!storage) return false;
-        storage.setItem(key, value);
-        return true;
-    } catch (_) {
-        return false;
-    }
+    return storageClientStorageFacade.set(key, value);
 }
 
 function safeStorageRemove(key) {
-    try {
-        const storage = getSafeClientStorage();
-        if (storage) storage.removeItem(key);
-    } catch (_) {}
+    storageClientStorageFacade.remove(key);
 }
 
 let localResumePending = false;
@@ -111,26 +94,14 @@ function normalizeOnlineSessionPayload(session) {
 }
 
 function removeOnlineRestoreBundleStorageKeyVariants(key) {
-    const storage = getSafeClientStorage();
     const storageFacade = getStorageOnlineStorageFacade();
     if (storageFacade && typeof storageFacade.removeStorageItem === 'function') {
         storageFacade.removeStorageItem(key);
     } else {
         safeStorageRemove(key);
     }
-    if (!storage) return;
-    try {
-        if (typeof storage.length !== 'number' || typeof storage.key !== 'function') return;
-        const scopedPrefix = key + STORAGE_ONLINE_ROOM_KEY_SEPARATOR;
-        const keysToRemove = [];
-        for (let i = 0; i < storage.length; i++) {
-            const storageKey = storage.key(i);
-            if (typeof storageKey === 'string' && storageKey.startsWith(scopedPrefix)) {
-                keysToRemove.push(storageKey);
-            }
-        }
-        keysToRemove.forEach(safeStorageRemove);
-    } catch (e) {}
+    const scopedPrefix = key + STORAGE_ONLINE_ROOM_KEY_SEPARATOR;
+    storageClientStorageFacade.keysWithPrefix(scopedPrefix).forEach(safeStorageRemove);
 }
 
 function clearOnlineRestoreBundleStorage() {
@@ -165,7 +136,7 @@ function saveGameState() {
             enabledCardsList: [...enabledCards],
             enabledLandmarksList: [...enabledLandmarks],
         });
-        localStorage.setItem('savedGame', JSON.stringify(state));
+        safeStorageSet('savedGame', JSON.stringify(state));
     } catch(e) {}
 }
 

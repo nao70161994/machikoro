@@ -41,6 +41,7 @@ const STATIC_ASSETS = [
   '/js/adSlots.js',
   '/js/confetti.js',
   '/js/audio.js',
+  '/js/clientStorage.js',
   '/js/onlineStorage.js',
   '/js/onlinePayload.js',
   '/js/onlineRestoreRank.js',
