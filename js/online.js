@@ -257,6 +257,11 @@ function isOnlineReconnectQueueEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectCleanupAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -328,6 +333,14 @@ function _onlineReconnectCallbackAuthoritySelection() {
     });
 }
 
+function _onlineReconnectCleanupAuthoritySelection(legacyValue = isReconnectingOnline) {
+    return OnlineReconnectState.selectCleanupAuthority(
+        _onlineReconnectController.snapshot(),
+        legacyValue === true,
+        { cleanupAuthorityEnabled: isOnlineReconnectCleanupAuthorityEnabled() }
+    );
+}
+
 function _onlineReconnectAuthoritySelection() {
     return OnlineReconnectState.selectAuthorityState(
         _onlineReconnectController.snapshot(),
@@ -352,6 +365,7 @@ function getOnlineReconnectStateSnapshot() {
         effectAuthority: _onlineReconnectEffectSelection(isReconnectingOnline),
         timerAuthority: _onlineReconnectTimerAuthoritySelection(),
         callbackAuthority: _onlineReconnectCallbackAuthoritySelection(),
+        cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline),
     });
 }
 
@@ -1673,7 +1687,8 @@ function handleAppError(msg) {
         _emitOnlineRejoinRequest();
         return;
     }
-    if (isReconnectingOnline) {
+    const cleanupSelection = _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline);
+    if (cleanupSelection.cleanup) {
         _clearPendingOutboundActionForCurrentSession();
         setOnlineReconnectLegacyFlag(false);
         _removeOnlineSessionStorageItem();

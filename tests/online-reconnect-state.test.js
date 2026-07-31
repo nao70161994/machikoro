@@ -533,3 +533,63 @@ runTest('online reconnect input gateは接続処理中だけをblockする', () 
         assert.strictEqual(OnlineReconnectState.blocksInput(state), false, state);
     }
 });
+
+runTest('online reconnect cleanup authority flagは明示有効値だけを受理する', () => {
+    for (const value of ['1', 'true', 'TRUE', ' yes ', 'on']) {
+        assert.strictEqual(
+            OnlineReconnectState.cleanupAuthorityEnabled({ ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED: value }),
+            true,
+            value
+        );
+    }
+    for (const value of [undefined, '', '0', 'false', 'enabled']) {
+        assert.strictEqual(
+            OnlineReconnectState.cleanupAuthorityEnabled({ ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED: value }),
+            false,
+            String(value)
+        );
+    }
+});
+
+runTest('online reconnect cleanup authorityはclean parity時だけevent判断を採用する', () => {
+    const connecting = {
+        state: STATES.CONNECTING,
+        eventState: STATES.CONNECTING,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectCleanupAuthority(connecting, true),
+        { cleanup: true, source: 'legacy', ready: true, fallbackReason: '' }
+    );
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectCleanupAuthority(connecting, true, { cleanupAuthorityEnabled: true }),
+        { cleanup: true, source: 'event', ready: true, fallbackReason: '' }
+    );
+    const active = { ...connecting, state: STATES.ACTIVE, eventState: STATES.ACTIVE };
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectCleanupAuthority(active, false, { cleanupAuthorityEnabled: true }),
+        { cleanup: false, source: 'event', ready: true, fallbackReason: '' }
+    );
+});
+
+runTest('online reconnect cleanup authorityはstateまたはlegacy不一致でfail closedする', () => {
+    const connecting = {
+        state: STATES.CONNECTING,
+        eventState: STATES.CONNECTING,
+        invalidEventTransitionCount: 0,
+        projectionMismatchCount: 0,
+    };
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectCleanupAuthority(connecting, false, { cleanupAuthorityEnabled: true }),
+        { cleanup: false, source: 'legacy-fallback', ready: false, fallbackReason: 'cleanup-parity-mismatch' }
+    );
+    assert.deepStrictEqual(
+        OnlineReconnectState.selectCleanupAuthority(
+            { ...connecting, eventState: STATES.REJOINING },
+            true,
+            { cleanupAuthorityEnabled: true }
+        ),
+        { cleanup: true, source: 'legacy-fallback', ready: false, fallbackReason: 'state-mismatch' }
+    );
+});

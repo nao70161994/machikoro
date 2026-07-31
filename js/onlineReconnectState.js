@@ -14,6 +14,7 @@ const ONLINE_RECONNECT_STATES = Object.freeze({
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
+const ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 const ONLINE_RECONNECT_EVENTS = Object.freeze({
     RECONNECT_REQUESTED: 'reconnect-requested',
@@ -124,6 +125,12 @@ function onlineReconnectEffectAuthorityEnabled(env = {}) {
 function onlineReconnectStatusEffectAuthorityEnabled(env = {}) {
     return ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED_VALUES.has(
         String(env.ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED || '').trim().toLowerCase()
+    );
+}
+
+function onlineReconnectCleanupAuthorityEnabled(env = {}) {
+    return ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED_VALUES.has(
+        String(env.ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED || '').trim().toLowerCase()
     );
 }
 
@@ -343,6 +350,33 @@ function selectOnlineReconnectStatusEffectAuthority(snapshot = {}, event, legacy
 }
 
 /**
+ * Selects whether terminal reconnect error cleanup should run. The event state may
+ * take authority only when it exactly matches the current legacy cleanup decision.
+ * This function never performs storage, socket, or UI effects.
+ * @param {Object} snapshot
+ * @param {boolean} legacyCleanup
+ * @param {{cleanupAuthorityEnabled?: boolean}} [options]
+ * @returns {{cleanup: boolean, source: string, ready: boolean, fallbackReason: string}}
+ */
+function selectOnlineReconnectCleanupAuthority(snapshot = {}, legacyCleanup, options = {}) {
+    const legacyValue = legacyCleanup === true;
+    const enabled = options.cleanupAuthorityEnabled === true;
+    const stateSelection = selectOnlineReconnectAuthorityState(snapshot, {
+        eventAuthorityEnabled: enabled,
+    });
+    const eventCleanup = onlineReconnectStateBlocksInput(stateSelection.state);
+    const matched = eventCleanup === legacyValue;
+    const useEvent = enabled && stateSelection.source === 'event' && matched;
+    const fallbackReason = stateSelection.fallbackReason || (matched ? '' : 'cleanup-parity-mismatch');
+    return Object.freeze({
+        cleanup: useEvent ? eventCleanup : legacyValue,
+        source: useEvent ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
+        ready: stateSelection.ready && matched,
+        fallbackReason,
+    });
+}
+
+/**
  * Creates a bounded diagnostic shadow controller.
  * @param {{initialState?: string, historyLimit?: number}} [options]
  * @returns {OnlineReconnectController}
@@ -503,6 +537,7 @@ const OnlineReconnectState = Object.freeze({
     eventAuthorityEnabled: onlineReconnectEventAuthorityEnabled,
     effectAuthorityEnabled: onlineReconnectEffectAuthorityEnabled,
     statusEffectAuthorityEnabled: onlineReconnectStatusEffectAuthorityEnabled,
+    cleanupAuthorityEnabled: onlineReconnectCleanupAuthorityEnabled,
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
     blocksInput: onlineReconnectStateBlocksInput,
@@ -514,6 +549,7 @@ const OnlineReconnectState = Object.freeze({
     selectAuthorityState: selectOnlineReconnectAuthorityState,
     selectEffectAuthority: selectOnlineReconnectEffectAuthority,
     selectStatusEffectAuthority: selectOnlineReconnectStatusEffectAuthority,
+    selectCleanupAuthority: selectOnlineReconnectCleanupAuthority,
     createController: createOnlineReconnectController,
 });
 

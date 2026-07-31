@@ -3359,6 +3359,45 @@ runTest('handleAppError は再接続中にオンラインセッションを破�
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
 });
 
+runTest('handleAppError cleanup authorityはclean event parity時に既存effect順を維持する', () => {
+    const rt = loadOnlineRuntime();
+    rt.initSocket();
+    rt.setOnlineState({
+        isOnlineGame: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    rt.localStorage.setItem('onlineSession', '{"roomId":"ROOM01"}');
+    rt.getOnlineState().socket.connected = false;
+    rt.getSocketHandlers().disconnect();
+    rt.window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED = true;
+    assert.strictEqual(rt.getOnlineState().reconnectStateSnapshot.cleanupAuthority.source, 'event');
+
+    rt.handleAppError('再接続に失敗');
+
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.getSocketDisconnected(), true);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
+});
+
+runTest('handleAppError cleanup authorityは履歴不一致時にlegacy cleanupへ戻る', () => {
+    const rt = loadOnlineRuntime();
+    let disconnected = false;
+    rt.window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED = true;
+    rt.localStorage.setItem('onlineSession', '{"roomId":"ROOM01"}');
+    rt.setOnlineState({
+        socket: { disconnect() { disconnected = true; } },
+        isReconnectingOnline: true,
+    });
+
+    rt.handleAppError('再接続に失敗');
+
+    assert.strictEqual(disconnected, true);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+});
+
 runTest('handleAppError は無効操作時もroomIdなしlegacy pendingを即削除しない', () => {
     const rt = loadOnlineRuntime();
     const emits = [];
