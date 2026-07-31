@@ -50,6 +50,7 @@
     "js/onlineActionCommit.js",
     "js/onlineSocketConnect.js",
     "js/onlineSocketDisconnect.js",
+    "js/onlineHostChanged.js",
     "js/onlinePlayerSettings.js",
     "js/onlineRestoreRank.js",
     "js/onlineStorage.js",

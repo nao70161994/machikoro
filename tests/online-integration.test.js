@@ -618,6 +618,8 @@ runTest('online integration: appError は再接続中のセッションを破棄
 
 runTest('online integration: hostChanged はホスト状態と保存済みセッションを更新する', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.window.MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED = true;
     rt.localStorage.setItem('onlineSession', JSON.stringify({
         roomId: 'ROOM01',
         playerIndex: 1,
@@ -640,10 +642,16 @@ runTest('online integration: hostChanged はホスト状態と保存済みセッ
     assert.strictEqual(rt.__test.getOnlineState().isRoomHost, true);
     assert.strictEqual(session.isRoomHost, true);
     assert.strictEqual(session.reconnectToken, 'new-token');
+    const snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.hostChangedPlanAuthority.source, 'pure-plan');
+    assert.strictEqual(snapshot.hostChangedPlanAuthority.plan.isHost, true);
+    assert.strictEqual(snapshot.hostChangedEffectAuthority.source, 'executor');
 });
 
 runTest('online integration: hostChanged は非ホスト化も保存セッションへ反映する', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.window.MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED = true;
     rt.localStorage.setItem('onlineSession', JSON.stringify({
         roomId: 'ROOM01',
         playerIndex: 0,
@@ -665,6 +673,10 @@ runTest('online integration: hostChanged は非ホスト化も保存セッショ
     const session = JSON.parse(rt.localStorage.getItem('onlineSession'));
     assert.strictEqual(rt.__test.getOnlineState().isRoomHost, false);
     assert.strictEqual(session.isRoomHost, false);
+    const snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.hostChangedPlanAuthority.source, 'pure-plan');
+    assert.strictEqual(snapshot.hostChangedPlanAuthority.plan.isHost, false);
+    assert.strictEqual(snapshot.hostChangedEffectAuthority.source, 'executor');
 });
 
 runTest('online integration: 非ホストはオンラインCPU手番をスケジュールしない', () => {
@@ -685,6 +697,8 @@ runTest('online integration: 非ホストはオンラインCPU手番をスケジ
 
 runTest('online integration: hostChanged でホスト化するとオンラインCPU手番をスケジュールする', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.window.MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED = true;
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
     rt.initSocket();
@@ -700,6 +714,8 @@ runTest('online integration: hostChanged でホスト化するとオンライン
     rt.__test.socketHandlers.hostChanged({ newHostPlayerIndex: 1 });
 
     assert.ok(rt.__test.timeouts.length > 0);
+    const snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.hostChangedEffectAuthority.source, 'executor');
 });
 
 runTest('online integration: playerDisconnected/playerRejoined はゲームログへ反映する', () => {

@@ -273,6 +273,15 @@ let _lastOnlineSocketDisconnectEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlineHostChangedPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlineHostChangedEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -482,6 +491,16 @@ function isOnlineSocketDisconnectEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineHostChangedPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineHostChangedEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -580,6 +599,14 @@ function getOnlineSocketDisconnectPlanSelection() {
 
 function getOnlineSocketDisconnectEffectSelection() {
     return _lastOnlineSocketDisconnectEffectSelection;
+}
+
+function getOnlineHostChangedPlanSelection() {
+    return _lastOnlineHostChangedPlanSelection;
+}
+
+function getOnlineHostChangedEffectSelection() {
+    return _lastOnlineHostChangedEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -711,6 +738,8 @@ function getOnlineReconnectStateSnapshot() {
         socketConnectEffectAuthority: getOnlineSocketConnectEffectSelection(),
         socketDisconnectPlanAuthority: getOnlineSocketDisconnectPlanSelection(),
         socketDisconnectEffectAuthority: getOnlineSocketDisconnectEffectSelection(),
+        hostChangedPlanAuthority: getOnlineHostChangedPlanSelection(),
+        hostChangedEffectAuthority: getOnlineHostChangedEffectSelection(),
     });
 }
 
@@ -1567,6 +1596,69 @@ function _runOnlineSocketDisconnectEffects() {
             OnlineReconnectState.events.SOCKET_DISCONNECTED,
             '⏳ 接続が切れました。再接続しています...'
         ),
+    }).result;
+}
+
+function _legacyOnlineHostChangedPlan(newHostPlayerIndex) {
+    return Object.freeze({
+        isHost: Number.isInteger(newHostPlayerIndex) &&
+            newHostPlayerIndex === myOriginalPlayerIndex,
+    });
+}
+
+function _onlineHostChangedPlanSelection(newHostPlayerIndex) {
+    const legacyPlan = _legacyOnlineHostChangedPlan(newHostPlayerIndex);
+    return OnlineHostChanged.selectPlan({
+        newHostPlayerIndex,
+        myOriginalPlayerIndex,
+    }, legacyPlan, {
+        authorityEnabled: isOnlineHostChangedPlanAuthorityEnabled(),
+    });
+}
+
+function _onlineHostChangedEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineHostChangedEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlineHostChanged !== 'undefined' &&
+        typeof OnlineHostChanged.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan ? 'host-changed-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch) {
+    if (_setOnlineHostState(newHostPlayerIndex)) {
+        game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
+        render();
+        scheduleCPU();
+    } else {
+        cpuScheduleToken++;
+    }
+    _persistOnlineHostState(newHostPlayerIndex, hostEpoch);
+    return true;
+}
+
+function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
+    const planSelection = _onlineHostChangedPlanSelection(newHostPlayerIndex);
+    _lastOnlineHostChangedPlanSelection = planSelection;
+    const effectSelection = _onlineHostChangedEffectAuthoritySelection(planSelection);
+    _lastOnlineHostChangedEffectSelection = effectSelection;
+    if (effectSelection.source !== 'executor') {
+        return _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch);
+    }
+    return OnlineHostChanged.execute(planSelection.plan, {
+        setHostState: isHost => { isRoomHost = isHost === true; },
+        addHostLog: () => {
+            game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
+        },
+        render: () => render(),
+        scheduleCpu: () => scheduleCPU(),
+        invalidateCpuSchedule: () => { cpuScheduleToken++; },
+        persistHostState: () => _persistOnlineHostState(newHostPlayerIndex, hostEpoch),
     }).result;
 }
 
@@ -2661,14 +2753,7 @@ function initSocket() {
 
     const handleHostChanged = ({ newHostPlayerIndex, hostEpoch }) => {
         if (_queueOnlineEventDuringRestore("hostChanged", { newHostPlayerIndex, hostEpoch })) return;
-        if (_setOnlineHostState(newHostPlayerIndex)) {
-            game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
-            render();
-            scheduleCPU();
-        } else {
-            cpuScheduleToken++;
-        }
-        _persistOnlineHostState(newHostPlayerIndex, hostEpoch);
+        return _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch);
     };
     socket.on("hostChanged", handleHostChanged);
 

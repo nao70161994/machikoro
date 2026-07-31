@@ -138,6 +138,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineActionCommit.js');
     loadScript(context, 'js/onlineSocketConnect.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
+    loadScript(context, 'js/onlineHostChanged.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -194,6 +195,8 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineSocketConnectEffectSelection = getOnlineSocketConnectEffectSelection;
         this.getOnlineSocketDisconnectPlanSelection = getOnlineSocketDisconnectPlanSelection;
         this.getOnlineSocketDisconnectEffectSelection = getOnlineSocketDisconnectEffectSelection;
+        this.getOnlineHostChangedPlanSelection = getOnlineHostChangedPlanSelection;
+        this.getOnlineHostChangedEffectSelection = getOnlineHostChangedEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -4022,6 +4025,8 @@ runTest('gameStart queues actions and host changes while RL preload is pending',
     const runtime = loadOnlineRuntime(); let resolvePreload;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED = true;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket(); runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Bob', reconnectToken: 'token-b' });
     const handlers = runtime.getSocketHandlers();
@@ -4039,6 +4044,9 @@ runTest('gameStart queues actions and host changes while RL preload is pending',
         source: 'pure-executor',
         fallbackReason: '',
     });
+    assert.strictEqual(runtime.getOnlineHostChangedPlanSelection().source, 'pure-plan');
+    assert.strictEqual(runtime.getOnlineHostChangedPlanSelection().plan.isHost, true);
+    assert.strictEqual(runtime.getOnlineHostChangedEffectSelection().source, 'executor');
 });
 
 runTest('rejoinData hydrates canonical build then undo into the exact pre-build client state', async () => {
