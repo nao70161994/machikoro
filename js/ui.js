@@ -643,25 +643,27 @@ function showTurnAnnouncer(name, isCPU) {
 }
 
 function switchTab(tab) {
-    document.getElementById("tabContentLocal").style.display  = tab === "local"   ? "flex"  : "none";
-    document.getElementById("tabContentOnline").style.display = tab === "online"  ? "flex"  : "none";
-    document.getElementById("tabContentStats").style.display  = tab === "stats"   ? "block" : "none";
-    document.getElementById("tabLocal").className  = `tab-btn ${tab === "local"  ? "active" : ""}`;
-    document.getElementById("tabOnline").className = `tab-btn ${tab === "online" ? "active" : ""}`;
-    document.getElementById("tabStats").className  = `tab-btn ${tab === "stats"  ? "active" : ""}`;
-    document.getElementById("tabLocal").setAttribute("aria-selected", tab === "local" ? "true" : "false");
-    document.getElementById("tabOnline").setAttribute("aria-selected", tab === "online" ? "true" : "false");
-    document.getElementById("tabStats").setAttribute("aria-selected", tab === "stats" ? "true" : "false");
-    if (tab === "stats") renderStats();
+    const view = UiTabView.buildMainTabView(tab);
+    document.getElementById("tabContentLocal").style.display = view.localDisplay;
+    document.getElementById("tabContentOnline").style.display = view.onlineDisplay;
+    document.getElementById("tabContentStats").style.display = view.statsDisplay;
+    document.getElementById("tabLocal").className = view.localButton.className;
+    document.getElementById("tabOnline").className = view.onlineButton.className;
+    document.getElementById("tabStats").className = view.statsButton.className;
+    document.getElementById("tabLocal").setAttribute("aria-selected", view.localButton.ariaSelected);
+    document.getElementById("tabOnline").setAttribute("aria-selected", view.onlineButton.ariaSelected);
+    document.getElementById("tabStats").setAttribute("aria-selected", view.statsButton.ariaSelected);
+    if (view.renderStats) renderStats();
 }
 
 function switchOnlineTab(tab) {
-    document.getElementById("onlineCreate").style.display = tab === "create" ? "block" : "none";
-    document.getElementById("onlineJoin").style.display = tab === "join" ? "block" : "none";
-    document.getElementById("onlineTabCreate").className = `online-tab-btn ${tab === "create" ? "active" : ""}`;
-    document.getElementById("onlineTabJoin").className = `online-tab-btn ${tab === "join" ? "active" : ""}`;
-    document.getElementById("onlineTabCreate").setAttribute("aria-selected", tab === "create" ? "true" : "false");
-    document.getElementById("onlineTabJoin").setAttribute("aria-selected", tab === "join" ? "true" : "false");
+    const view = UiTabView.buildOnlineTabView(tab);
+    document.getElementById("onlineCreate").style.display = view.createDisplay;
+    document.getElementById("onlineJoin").style.display = view.joinDisplay;
+    document.getElementById("onlineTabCreate").className = view.createButton.className;
+    document.getElementById("onlineTabJoin").className = view.joinButton.className;
+    document.getElementById("onlineTabCreate").setAttribute("aria-selected", view.createButton.ariaSelected);
+    document.getElementById("onlineTabJoin").setAttribute("aria-selected", view.joinButton.ariaSelected);
 }
 
 function showRules() {

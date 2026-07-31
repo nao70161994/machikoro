@@ -65,6 +65,7 @@ const STATIC_ASSETS = [
   '/js/uiDiceChoice.js',
   '/js/uiModalPolicy.js',
   '/js/uiWinner.js',
+  '/js/uiTabView.js',
   '/js/ui.js',
   '/js/savedGameValidation.js',
   '/js/storageSettings.js',

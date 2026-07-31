@@ -58,6 +58,7 @@ interface Window {
     UiPlayerDisplay: unknown;
     UiPendingMenu: unknown;
     UiTutorial: unknown;
+    UiTabView: unknown;
     UiDiceChoice: unknown;
     UiWatchdog: unknown;
     UiWinner: unknown;
