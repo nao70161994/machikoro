@@ -142,6 +142,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRejoinPersistence.js');
     loadScript(context, 'js/onlinePendingResend.js');
     loadScript(context, 'js/onlineRestoreReplay.js');
+    loadScript(context, 'js/onlineRestoreActivation.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -209,6 +210,8 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlinePendingResendEffectSelection = getOnlinePendingResendEffectSelection;
         this.getOnlineRestoreReplayPlanSelection = getOnlineRestoreReplayPlanSelection;
         this.getOnlineRestoreReplayEffectSelection = getOnlineRestoreReplayEffectSelection;
+        this.getOnlineRestoreActivationPlanSelection = getOnlineRestoreActivationPlanSelection;
+        this.getOnlineRestoreActivationEffectSelection = getOnlineRestoreActivationEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1210,6 +1213,8 @@ runTest('initOnlineGame: 統計記録フラグをリセットする', () => {
 runTest('initSocket gameStart→gameAction→rejoinData で再接続復元できる', () => {
     rt.window.MACHIKORO_ONLINE_RESTORE_REPLAY_PLAN_AUTHORITY_ENABLED = true;
     rt.window.MACHIKORO_ONLINE_RESTORE_REPLAY_EFFECT_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_EFFECT_AUTHORITY_ENABLED = true;
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
@@ -1262,6 +1267,13 @@ runTest('initSocket gameStart→gameAction→rejoinData で再接続復元でき
     assert.strictEqual(restoredReconnectSnapshot.restoreReplayPlanAuthority.source, 'pure-plan');
     assert.deepStrictEqual(JSON.parse(JSON.stringify(
         restoredReconnectSnapshot.restoreReplayEffectAuthority
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(
+        restoredReconnectSnapshot.restoreActivationPlanAuthority.source,
+        'pure-plan'
+    );
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        restoredReconnectSnapshot.restoreActivationEffectAuthority
     )), { source: 'executor', fallbackReason: '' });
 });
 

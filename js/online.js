@@ -327,6 +327,15 @@ let _lastOnlineRestoreReplayEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlineRestoreActivationPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlineRestoreActivationEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -591,6 +600,16 @@ function isOnlineRestoreReplayEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RESTORE_REPLAY_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRestoreActivationPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineRestoreActivationEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -735,6 +754,14 @@ function getOnlineRestoreReplayEffectSelection() {
     return _lastOnlineRestoreReplayEffectSelection;
 }
 
+function getOnlineRestoreActivationPlanSelection() {
+    return _lastOnlineRestoreActivationPlanSelection;
+}
+
+function getOnlineRestoreActivationEffectSelection() {
+    return _lastOnlineRestoreActivationEffectSelection;
+}
+
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
     return OnlineReconnectState.selectEffectAuthority(
         _onlineReconnectController.snapshot(),
@@ -872,6 +899,8 @@ function getOnlineReconnectStateSnapshot() {
         pendingResendEffectAuthority: getOnlinePendingResendEffectSelection(),
         restoreReplayPlanAuthority: getOnlineRestoreReplayPlanSelection(),
         restoreReplayEffectAuthority: getOnlineRestoreReplayEffectSelection(),
+        restoreActivationPlanAuthority: getOnlineRestoreActivationPlanSelection(),
+        restoreActivationEffectAuthority: getOnlineRestoreActivationEffectSelection(),
     });
 }
 
@@ -1838,6 +1867,22 @@ function _onlineRestoreReplayEffectAuthoritySelection(planSelection) {
             ? ''
             : (!authoritativePlan
                 ? 'restore-replay-plan-not-authoritative'
+                : 'executor-unavailable'),
+    });
+}
+
+function _onlineRestoreActivationEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineRestoreActivationEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlineRestoreActivation !== 'undefined' &&
+        typeof OnlineRestoreActivation.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan
+                ? 'restore-activation-plan-not-authoritative'
                 : 'executor-unavailable'),
     });
 }
@@ -2992,20 +3037,81 @@ function initSocket() {
                 _abortOnlineRestore(restoreGeneration, "復元データの再生に失敗しました。再接続して再試行します。");
                 return;
             }
-            _onlineReconnectCompleted = false;
-            isOnlineGame = true;
-            setOnlineReconnectLegacyFlag(false);
-            prevCoins = null;
-            _lastAppliedOnlineActionSeqMemory = restoredThroughSeq;
-            if (!_flushOnlineRestoreEvents(restoreGeneration, restoredThroughSeq, {
-                gameAction: handleGameAction,
-                actionAccepted: handleActionAccepted,
-                hostChanged: handleHostChanged,
-            })) return;
-            _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_ACTIVATED);
-            _applyOnlineReconnectLifecycleStatusEffectAuthority(
-                OnlineReconnectState.events.RESTORE_ACTIVATED
-            );
+            const legacyRestoreActivationPlan = Object.freeze({
+                restoredThroughSeq,
+            });
+            _lastOnlineRestoreActivationPlanSelection =
+                OnlineRestoreActivation.selectPlan({
+                    restoredThroughSeq,
+                }, legacyRestoreActivationPlan, {
+                    authorityEnabled: isOnlineRestoreActivationPlanAuthorityEnabled(),
+                });
+            _lastOnlineRestoreActivationEffectSelection =
+                _onlineRestoreActivationEffectAuthoritySelection(
+                    _lastOnlineRestoreActivationPlanSelection
+                );
+            const restoreActivationPlan =
+                _lastOnlineRestoreActivationPlanSelection.plan;
+            if (_lastOnlineRestoreActivationEffectSelection.source === 'executor') {
+                const activationResult = OnlineRestoreActivation.execute(
+                    restoreActivationPlan,
+                    {
+                        resetReconnectCompleted: () => {
+                            _onlineReconnectCompleted = false;
+                        },
+                        activateOnlineGame: () => { isOnlineGame = true; },
+                        clearReconnectFlag: () => {
+                            setOnlineReconnectLegacyFlag(false);
+                        },
+                        resetPreviousCoins: () => { prevCoins = null; },
+                        setAppliedSequence: value => {
+                            _lastAppliedOnlineActionSeqMemory = value;
+                        },
+                        flushRestoreEvents: value => _flushOnlineRestoreEvents(
+                            restoreGeneration,
+                            value,
+                            {
+                                gameAction: handleGameAction,
+                                actionAccepted: handleActionAccepted,
+                                hostChanged: handleHostChanged,
+                            }
+                        ),
+                        observeRestoreActivated: () => {
+                            _observeOnlineReconnectEvent(
+                                OnlineReconnectState.events.RESTORE_ACTIVATED
+                            );
+                        },
+                        applyActivatedStatus: () => {
+                            _applyOnlineReconnectLifecycleStatusEffectAuthority(
+                                OnlineReconnectState.events.RESTORE_ACTIVATED
+                            );
+                        },
+                    }
+                );
+                if (!activationResult.result) return;
+            } else {
+                _onlineReconnectCompleted = false;
+                isOnlineGame = true;
+                setOnlineReconnectLegacyFlag(false);
+                prevCoins = null;
+                _lastAppliedOnlineActionSeqMemory =
+                    restoreActivationPlan.restoredThroughSeq;
+                if (!_flushOnlineRestoreEvents(
+                    restoreGeneration,
+                    restoreActivationPlan.restoredThroughSeq,
+                    {
+                        gameAction: handleGameAction,
+                        actionAccepted: handleActionAccepted,
+                        hostChanged: handleHostChanged,
+                    }
+                )) return;
+                _observeOnlineReconnectEvent(
+                    OnlineReconnectState.events.RESTORE_ACTIVATED
+                );
+                _applyOnlineReconnectLifecycleStatusEffectAuthority(
+                    OnlineReconnectState.events.RESTORE_ACTIVATED
+                );
+            }
             const currentPendingMatches = !!pendingBeforeRejoin &&
                 !acceptedPendingReconciliation &&
                 _sameOnlineActionEntry(

@@ -53,6 +53,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineRejoinPersistence.js',
     'js/onlinePendingResend.js',
     'js/onlineRestoreReplay.js',
+    'js/onlineRestoreActivation.js',
     'js/onlinePlayerSettings.js',
     'js/onlineRetryPolicy.js',
     'js/onlineReconnectState.js',

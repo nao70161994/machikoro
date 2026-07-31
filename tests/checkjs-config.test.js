@@ -81,6 +81,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/onlineRejoinPersistence.js'));
     assert.ok(config.files.includes('js/onlinePendingResend.js'));
     assert.ok(config.files.includes('js/onlineRestoreReplay.js'));
+    assert.ok(config.files.includes('js/onlineRestoreActivation.js'));
     assert.ok(config.files.includes('js/onlineStorage.js'));
     assert.ok(config.files.includes('js/onlinePlayerSettings.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));

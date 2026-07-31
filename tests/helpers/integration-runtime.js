@@ -239,6 +239,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineRejoinPersistence.js');
         files.push('js/onlinePendingResend.js');
         files.push('js/onlineRestoreReplay.js');
+        files.push('js/onlineRestoreActivation.js');
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');
