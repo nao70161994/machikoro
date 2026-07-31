@@ -182,7 +182,7 @@ const {
     sanitizeName,
     isValidGameSchemaMetadata,
 });
-const { buildRestoredRoom } = makeRestoredRoom({
+const { buildRestoredRoom, planRestoredRoomMetadata } = makeRestoredRoom({
     sanitizeStateSnapshot: sanitizeClientStateSnapshot,
 });
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
@@ -1238,15 +1238,20 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
             actionSeq: Number.isInteger(canonicalRecord.actionSeq) ? canonicalRecord.actionSeq : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog).actionSeq,
         }
         : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog);
-    const restoredHostEpoch = approvedHostless ? restoredRank.hostEpoch + 1 : restoredRank.hostEpoch;
-    gameStartPayload.hostPlayerIndex = playerIndex;
-    gameStartPayload.hostEpoch = restoredHostEpoch;
-    gameStartPayload.actionSeq = restoredRank.actionSeq;
-    if (approvedHostless) {
-        gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] =
-            (gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] || 0) + 1;
-        gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] =
-            (gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] || 0) + 1;
+    const restoredMetadata = planRestoredRoomMetadata({
+        playerIndex,
+        hostEpoch: restoredRank.hostEpoch,
+        actionSeq: restoredRank.actionSeq,
+        approvedHostless,
+        hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD],
+        hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
+    });
+    gameStartPayload.hostPlayerIndex = restoredMetadata.hostPlayerIndex;
+    gameStartPayload.hostEpoch = restoredMetadata.hostEpoch;
+    gameStartPayload.actionSeq = restoredMetadata.actionSeq;
+    if (restoredMetadata.applyHostlessMetadata) {
+        gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] = restoredMetadata.hostlessRestoreGeneration;
+        gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] = restoredMetadata.hostlessRestoreCount;
     }
     const restoredRoom = buildRestoredRoom({
         roomId,
@@ -1254,7 +1259,7 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         playerSettings: gameStartPayload.playerSettings,
         playerNames,
         playerIndex,
-        restoredHostEpoch,
+        restoredHostEpoch: restoredMetadata.hostEpoch,
         restoredActionSeq: restoredRank.actionSeq,
         enabledCards: gameStartPayload.enabledCards,
         enabledLandmarks: gameStartPayload.enabledLandmarks,

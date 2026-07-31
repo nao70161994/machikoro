@@ -29,6 +29,55 @@ function fixture(overrides = {}) {
     };
 }
 
+runTest('restored room metadata planは通常復元のhost/seqを入力非破壊で固定する', () => {
+    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    const input = {
+        playerIndex: 1,
+        hostEpoch: 4,
+        actionSeq: 9,
+        approvedHostless: false,
+        hostlessRestoreGeneration: 2,
+        hostlessRestoreCount: 3,
+    };
+    const plan = builder.planRestoredRoomMetadata(input);
+    assert.deepStrictEqual(plan, {
+        hostPlayerIndex: 1,
+        hostEpoch: 4,
+        actionSeq: 9,
+        applyHostlessMetadata: false,
+        hostlessRestoreGeneration: 2,
+        hostlessRestoreCount: 3,
+    });
+    assert.strictEqual(Object.isFrozen(plan), true);
+    assert.deepStrictEqual(input, {
+        playerIndex: 1,
+        hostEpoch: 4,
+        actionSeq: 9,
+        approvedHostless: false,
+        hostlessRestoreGeneration: 2,
+        hostlessRestoreCount: 3,
+    });
+});
+
+runTest('restored room metadata planはhostless復元だけepochと世代を一度進める', () => {
+    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    assert.deepStrictEqual(builder.planRestoredRoomMetadata({
+        playerIndex: 1,
+        hostEpoch: 4,
+        actionSeq: 9,
+        approvedHostless: true,
+        hostlessRestoreGeneration: 2,
+        hostlessRestoreCount: 3,
+    }), {
+        hostPlayerIndex: 1,
+        hostEpoch: 5,
+        actionSeq: 9,
+        applyHostlessMetadata: true,
+        hostlessRestoreGeneration: 3,
+        hostlessRestoreCount: 4,
+    });
+});
+
 runTest('restored room builderは検証済み入力を既存room shapeへ写像する', () => {
     const sanitizeCalls = [];
     const builder = makeRestoredRoom({
