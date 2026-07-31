@@ -294,6 +294,74 @@ runTest('online payload pending reconciliation authorityは完全一致時だけ
     );
 });
 
+runTest('online payload rejoin action log planは署名なしsnapshotだけ完全logを保護する', () => {
+    const stored = [{ seq: 1 }, { seq: 2 }];
+    const replay = [{ seq: 2 }];
+    const reasons = OnlinePayload.rejoinActionLogReasons;
+    const keep = OnlinePayload.planRejoinActionLogPersistence(
+        { actionSeq: 2 }, null, stored, replay
+    );
+    assert.deepStrictEqual(keep, {
+        actionLog: stored,
+        reason: reasons.STORED_UNSIGNED_FULL_LOG,
+    });
+    assert.strictEqual(keep.actionLog, stored);
+    assert.strictEqual(Object.isFrozen(keep), true);
+
+    const cases = [
+        [null, null, reasons.SERVER_REPLAY_LOG],
+        [{ actionSeq: 2 }, { signature: 'signed' }, reasons.SERVER_REPLAY_LOG],
+        [{ actionSeq: 2 }, null, reasons.STORED_UNSIGNED_FULL_LOG],
+    ];
+    for (const [snapshot, audit, reason] of cases) {
+        const plan = OnlinePayload.planRejoinActionLogPersistence(
+            snapshot, audit, stored, replay
+        );
+        assert.strictEqual(plan.reason, reason);
+        assert.strictEqual(
+            plan.actionLog,
+            reason === reasons.STORED_UNSIGNED_FULL_LOG ? stored : replay
+        );
+    }
+    assert.strictEqual(
+        OnlinePayload.planRejoinActionLogPersistence(
+            { actionSeq: 2 }, null, replay, stored
+        ).actionLog,
+        stored
+    );
+});
+
+runTest('online payload rejoin action log authorityは配列identityまで一致した時だけpure planを選ぶ', () => {
+    const stored = [{ seq: 1 }, { seq: 2 }];
+    const replay = [];
+    const legacy = Object.freeze({
+        actionLog: stored,
+        reason: 'stored-unsigned-full-log',
+    });
+    const disabled = OnlinePayload.selectRejoinActionLogPersistencePlan(
+        { actionSeq: 2 }, null, stored, replay, legacy
+    );
+    assert.strictEqual(disabled.source, 'legacy');
+    assert.strictEqual(disabled.plan, legacy);
+    const enabled = OnlinePayload.selectRejoinActionLogPersistencePlan(
+        { actionSeq: 2 }, null, stored, replay, legacy, { authorityEnabled: true }
+    );
+    assert.strictEqual(enabled.source, 'pure-plan');
+    assert.strictEqual(enabled.matched, true);
+    assert.strictEqual(enabled.plan.actionLog, stored);
+    const mismatch = Object.freeze({
+        actionLog: stored.slice(),
+        reason: 'stored-unsigned-full-log',
+    });
+    const fallback = OnlinePayload.selectRejoinActionLogPersistencePlan(
+        { actionSeq: 2 }, null, stored, replay, mismatch, { authorityEnabled: true }
+    );
+    assert.strictEqual(fallback.source, 'legacy-fallback');
+    assert.strictEqual(fallback.matched, false);
+    assert.strictEqual(fallback.plan, mismatch);
+    assert.strictEqual(fallback.fallbackReason, 'rejoin-action-log-plan-mismatch');
+});
+
 runTest('online payload はpending ACK一致判定のclientActionId優先契約を維持する', () => {
     const pending = {
         action: 'buildCard',

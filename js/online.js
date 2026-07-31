@@ -288,6 +288,12 @@ let _lastPendingReconciliationPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastRejoinActionLogPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -512,6 +518,11 @@ function isPendingReconciliationPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_PENDING_RECONCILIATION_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isRejoinActionLogPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_REJOIN_ACTION_LOG_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -622,6 +633,10 @@ function getOnlineHostChangedEffectSelection() {
 
 function getPendingReconciliationPlanSelection() {
     return _lastPendingReconciliationPlanSelection;
+}
+
+function getRejoinActionLogPlanSelection() {
+    return _lastRejoinActionLogPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -2608,9 +2623,25 @@ function initSocket() {
                     !restoreAudit &&
                     Array.isArray(storedActionLog) &&
                     storedActionLog.length > replayActionLog.length;
+                const rejoinActionLogReasons = OnlinePayload.rejoinActionLogReasons;
+                const legacyRejoinActionLogPlan = Object.freeze({
+                    actionLog: shouldKeepUnsignedFullLog ? storedActionLog : replayActionLog,
+                    reason: shouldKeepUnsignedFullLog
+                        ? rejoinActionLogReasons.STORED_UNSIGNED_FULL_LOG
+                        : rejoinActionLogReasons.SERVER_REPLAY_LOG,
+                });
+                _lastRejoinActionLogPlanSelection =
+                    OnlinePayload.selectRejoinActionLogPersistencePlan(
+                        stateSnapshot,
+                        restoreAudit,
+                        storedActionLog,
+                        replayActionLog,
+                        legacyRejoinActionLogPlan,
+                        { authorityEnabled: isRejoinActionLogPlanAuthorityEnabled() }
+                    );
                 _writeOnlineRestoreStorageJson(
                     ONLINE_STORAGE_KEYS.actionLog,
-                    shouldKeepUnsignedFullLog ? storedActionLog : replayActionLog
+                    _lastRejoinActionLogPlanSelection.plan.actionLog
                 );
             } catch(e) {}
             saveOnlineSession();

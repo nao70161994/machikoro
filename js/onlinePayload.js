@@ -324,6 +324,53 @@ function selectPendingReconciliationPlan(
     });
 }
 
+const REJOIN_ACTION_LOG_REASONS = Object.freeze({
+    STORED_UNSIGNED_FULL_LOG: 'stored-unsigned-full-log',
+    SERVER_REPLAY_LOG: 'server-replay-log',
+});
+
+function planRejoinActionLogPersistence(stateSnapshot, restoreAudit, storedActionLog, replayActionLog) {
+    const keepStored = !!stateSnapshot && !restoreAudit &&
+        Array.isArray(storedActionLog) &&
+        storedActionLog.length > replayActionLog.length;
+    return Object.freeze({
+        actionLog: keepStored ? storedActionLog : replayActionLog,
+        reason: keepStored
+            ? REJOIN_ACTION_LOG_REASONS.STORED_UNSIGNED_FULL_LOG
+            : REJOIN_ACTION_LOG_REASONS.SERVER_REPLAY_LOG,
+    });
+}
+
+function rejoinActionLogPersistencePlansMatch(planned, legacy) {
+    return !!planned && !!legacy && planned.actionLog === legacy.actionLog &&
+        planned.reason === legacy.reason;
+}
+
+function selectRejoinActionLogPersistencePlan(
+    stateSnapshot,
+    restoreAudit,
+    storedActionLog,
+    replayActionLog,
+    legacyPlan,
+    options = {}
+) {
+    const purePlan = planRejoinActionLogPersistence(
+        stateSnapshot,
+        restoreAudit,
+        storedActionLog,
+        replayActionLog
+    );
+    const matched = rejoinActionLogPersistencePlansMatch(purePlan, legacyPlan);
+    const enabled = options.authorityEnabled === true;
+    const usePure = enabled && matched;
+    return Object.freeze({
+        plan: usePure ? purePlan : legacyPlan,
+        source: usePure ? 'pure-plan' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'rejoin-action-log-plan-mismatch',
+    });
+}
+
 function withGameSchemaCapabilities(payload, capabilities) {
     if (!capabilities) return payload;
     return Object.assign({}, payload, { gameSchemaCapabilities: capabilities });
@@ -356,6 +403,9 @@ const OnlinePayload = Object.freeze({
     pendingReconciliationReasons: PENDING_RECONCILIATION_REASONS,
     planPendingReconciliation,
     selectPendingReconciliationPlan,
+    rejoinActionLogReasons: REJOIN_ACTION_LOG_REASONS,
+    planRejoinActionLogPersistence,
+    selectRejoinActionLogPersistencePlan,
     shouldClearPendingForAcceptedAction,
     withGameSchemaCapabilities,
     buildRejoin(session, clientVersion, gameSchemaCapabilities = null) {

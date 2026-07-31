@@ -198,6 +198,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineHostChangedPlanSelection = getOnlineHostChangedPlanSelection;
         this.getOnlineHostChangedEffectSelection = getOnlineHostChangedEffectSelection;
         this.getPendingReconciliationPlanSelection = getPendingReconciliationPlanSelection;
+        this.getRejoinActionLogPlanSelection = getRejoinActionLogPlanSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1256,6 +1257,7 @@ runTest('rejoinData は署名なしsnapshotでローカル完全actionLogを短�
     rt.setGame(game);
     for (const card of CARDS) rt.getShopStock()[card.name] = 6;
     rt.initSocket();
+    rt.window.MACHIKORO_ONLINE_REJOIN_ACTION_LOG_PLAN_AUTHORITY_ENABLED = true;
     rt.setOnlineState({
         myRoomId: 'ROOM01',
         myOriginalPlayerIndex: 1,
@@ -1298,6 +1300,11 @@ runTest('rejoinData は署名なしsnapshotでローカル完全actionLogを短�
     assert.strictEqual(storedActionLog.length, 2);
     assert.strictEqual(JSON.stringify(storedActionLog.map(entry => entry.seq)), JSON.stringify([1, 2]));
     assert.strictEqual(JSON.parse(rt.localStorage.getItem('onlineActionLog')).length, 2);
+    const selection = rt.getRejoinActionLogPlanSelection();
+    assert.strictEqual(selection.source, 'pure-plan');
+    assert.strictEqual(selection.matched, true);
+    assert.strictEqual(selection.plan.reason, 'stored-unsigned-full-log');
+    assert.strictEqual(selection.plan.actionLog.length, 2);
 });
 
 runTest('rejoinData は build action replay から undoState を復元する', () => {
