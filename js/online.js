@@ -199,6 +199,10 @@ let _lastOnlineActionTimeoutPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastOnlineActionTimeoutEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -323,6 +327,11 @@ function isOnlineActionTimeoutPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_TIMEOUT_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineActionTimeoutEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -353,6 +362,10 @@ function getOnlineRestoreAbortEffectSelection() {
 
 function getOnlineActionTimeoutPlanSelection() {
     return _lastOnlineActionTimeoutPlanSelection;
+}
+
+function getOnlineActionTimeoutEffectSelection() {
+    return _lastOnlineActionTimeoutEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -467,6 +480,7 @@ function getOnlineReconnectStateSnapshot() {
         restoreAbortPlanAuthority: getOnlineRestoreAbortPlanSelection(),
         restoreAbortEffectAuthority: getOnlineRestoreAbortEffectSelection(),
         actionTimeoutPlanAuthority: getOnlineActionTimeoutPlanSelection(),
+        actionTimeoutEffectAuthority: getOnlineActionTimeoutEffectSelection(),
     });
 }
 
@@ -872,18 +886,54 @@ function _onlineActionTimeoutPlanSelection() {
     });
 }
 
-function _handleOnlineActionTimeout() {
-    const planSelection = _onlineActionTimeoutPlanSelection();
-    _lastOnlineActionTimeoutPlanSelection = planSelection;
+function _onlineActionTimeoutEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineActionTimeoutEffectAuthorityEnabled();
+    const purePlanReady = planSelection.source === 'pure-plan';
+    const helperAvailable = typeof OnlineActionTimeout !== 'undefined' &&
+        typeof OnlineActionTimeout.execute === 'function';
+    const useExecutor = enabled && purePlanReady && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!purePlanReady ? 'action-timeout-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineActionTimeoutEffectsLegacy(plan) {
     const decisions = OnlineRetryPolicy.actionTimeoutDecisions;
-    if (planSelection.plan.decision === decisions.IGNORE) return false;
     _setOnlineActionInFlight(false);
-    if (planSelection.plan.decision === decisions.CLEAR_ONLY) return false;
+    if (plan.decision === decisions.CLEAR_ONLY) return false;
     setOnlineReconnectLegacyFlag(true);
     cpuScheduleToken++;
     const el = document.getElementById("onlineStatus");
     if (el) el.textContent = '⚠️ サーバー応答がタイムアウトしました。状態を再同期しています...';
     return _emitOnlineRejoinRequest();
+}
+
+function _runOnlineActionTimeoutEffects(planSelection) {
+    const effectSelection = _onlineActionTimeoutEffectAuthoritySelection(planSelection);
+    _lastOnlineActionTimeoutEffectSelection = effectSelection;
+    if (effectSelection.source !== 'executor') {
+        return _runOnlineActionTimeoutEffectsLegacy(planSelection.plan);
+    }
+    return OnlineActionTimeout.execute(planSelection.plan, {
+        clearActionFlight: () => _setOnlineActionInFlight(false),
+        markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+        invalidateCpuSchedule: () => { cpuScheduleToken++; },
+        updateStatus: message => {
+            const el = document.getElementById("onlineStatus");
+            if (el) el.textContent = message;
+        },
+        requestRejoin: () => _emitOnlineRejoinRequest(),
+    }).result;
+}
+
+function _handleOnlineActionTimeout() {
+    const planSelection = _onlineActionTimeoutPlanSelection();
+    _lastOnlineActionTimeoutPlanSelection = planSelection;
+    if (planSelection.plan.decision === OnlineRetryPolicy.actionTimeoutDecisions.IGNORE) return false;
+    return _runOnlineActionTimeoutEffects(planSelection);
 }
 
 function markOnlineGameFinished() {

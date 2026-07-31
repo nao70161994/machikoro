@@ -51,6 +51,7 @@ const STATIC_ASSETS = [
   '/js/onlineReconnectCleanup.js',
   '/js/onlineReconnectRequest.js',
   '/js/onlineRestoreAbort.js',
+  '/js/onlineActionTimeout.js',
   '/js/onlinePlayerSettings.js',
   '/js/onlineRestoreRank.js',
   '/js/onlineReconnectState.js',

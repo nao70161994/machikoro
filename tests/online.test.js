@@ -130,6 +130,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineReconnectCleanup.js');
     loadScript(context, 'js/onlineReconnectRequest.js');
     loadScript(context, 'js/onlineRestoreAbort.js');
+    loadScript(context, 'js/onlineActionTimeout.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -168,6 +169,8 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineRestoreAbortEffectSelection = getOnlineRestoreAbortEffectSelection;
         this.getOnlineRestoreAbortEffectAuthoritySelection = _onlineRestoreAbortEffectAuthoritySelection;
         this.getOnlineActionTimeoutPlanSelection = getOnlineActionTimeoutPlanSelection;
+        this.getOnlineActionTimeoutEffectSelection = getOnlineActionTimeoutEffectSelection;
+        this.getOnlineActionTimeoutEffectAuthoritySelection = _onlineActionTimeoutEffectAuthoritySelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -2271,6 +2274,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
     vm.runInContext('isOnlineGame = true;', rt);
     rt.activateOnlineReconnectForTest();
     rt.window.MACHIKORO_ONLINE_ACTION_TIMEOUT_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED = true;
 
     assert.strictEqual(rt.sendAction('nextTurn', {}), true);
     const pending = rt._readPendingOutboundAction();
@@ -2279,6 +2283,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
 
     assert.strictEqual(rt._handleOnlineActionTimeout(), true);
     assert.strictEqual(rt.getOnlineActionTimeoutPlanSelection().source, 'pure-plan');
+    assert.strictEqual(rt.getOnlineActionTimeoutEffectSelection().source, 'executor');
 
     assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
@@ -3371,6 +3376,14 @@ runTest('restore abort effect authorityはpure plan以外をlegacyへfail closed
     const selection = runtime.getOnlineRestoreAbortEffectAuthoritySelection({ source: 'legacy-fallback' });
     assert.strictEqual(selection.source, 'legacy-fallback');
     assert.strictEqual(selection.fallbackReason, 'abort-plan-not-authoritative');
+});
+
+runTest('action timeout effect authorityはpure plan以外をlegacyへfail closedする', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED = true;
+    const selection = runtime.getOnlineActionTimeoutEffectAuthoritySelection({ source: 'legacy-fallback' });
+    assert.strictEqual(selection.source, 'legacy-fallback');
+    assert.strictEqual(selection.fallbackReason, 'action-timeout-plan-not-authoritative');
 });
 
 runTest('handleAppError は別roomのpending actionを消さない', () => {
