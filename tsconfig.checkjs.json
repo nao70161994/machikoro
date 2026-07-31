@@ -28,6 +28,7 @@
     "js/RLModelPortfolio.js",
     "js/RLCPU.js",
     "js/gameSnapshot.js",
+    "js/localSaveRepository.js",
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",
     "js/onlineReconnectState.js",

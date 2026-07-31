@@ -44,6 +44,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/RLModelPortfolio.js'));
     assert.ok(config.files.includes('js/RLCPU.js'));
     assert.ok(config.files.includes('js/gameSnapshot.js'));
+    assert.ok(config.files.includes('js/localSaveRepository.js'));
     assert.ok(config.files.includes('js/gameEngine.js'));
     assert.ok(config.files.includes('js/cpuActionProposal.js'));
     assert.ok(config.files.includes('js/cpuBuildExecution.js'));

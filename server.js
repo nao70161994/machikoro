@@ -79,6 +79,7 @@ const {
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
     gameSchemaSnapshotWireEnabled,
+    localSaveSchemaWriteEnabled,
     resolveClientGameSchemaCapabilities,
     negotiateRoomGameSchemaCandidate,
     isValidGameSchemaMetadata,
@@ -90,6 +91,7 @@ const GAME_SCHEMA_NEGOTIATION_ENABLED = gameSchemaNegotiationEnabled(process.env
 const GAME_SCHEMA_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaWireEnabled(process.env);
 const GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED &&
     gameSchemaSnapshotWireEnabled(process.env);
+const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = localSaveSchemaWriteEnabled(process.env);
 const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
 const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
@@ -539,6 +541,7 @@ const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
     gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
     gameSchemaWireEnabled: GAME_SCHEMA_WIRE_ENABLED,
     gameSchemaSnapshotWireEnabled: GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
+    localSaveSchemaWriteEnabled: LOCAL_SAVE_SCHEMA_WRITE_ENABLED,
     onlineReconnectEventAuthorityEnabled: ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED,
 });
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）

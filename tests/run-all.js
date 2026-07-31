@@ -37,6 +37,7 @@ const TEST_GROUPS = {
         'socket-payload.test.js',
         'game-engine.test.js',
         'game-snapshot.test.js',
+        'local-save-repository.test.js',
         'game-schema-negotiation.test.js',
         'game-schema-codec.test.js',
         'game-schema-wire.test.js',

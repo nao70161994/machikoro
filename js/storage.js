@@ -1,4 +1,16 @@
 const storageClientStorageFacade = ClientStorage.createFacade();
+const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = typeof window !== 'undefined' &&
+    window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED === true;
+let localSaveRepository = null;
+
+function getLocalSaveRepository() {
+    if (localSaveRepository) return localSaveRepository;
+    localSaveRepository = LocalSaveRepository.create({
+        storage: storageClientStorageFacade,
+        versionedEnabled: LOCAL_SAVE_SCHEMA_WRITE_ENABLED,
+    });
+    return localSaveRepository;
+}
 
 function getSafeClientStorage() {
     return storageClientStorageFacade.storage();
@@ -129,13 +141,13 @@ function saveGameState() {
             enabledCardsList: [...enabledCards],
             enabledLandmarksList: [...enabledLandmarks],
         });
-        safeStorageSet('savedGame', JSON.stringify(state));
+        getLocalSaveRepository().save(state);
     } catch(e) {}
 }
 
 function updateResumeButton() {
     const localSection = document.getElementById('resumeSection');
-    if (localSection) localSection.style.display = safeStorageGet('savedGame') ? 'flex' : 'none';
+    if (localSection) localSection.style.display = getLocalSaveRepository().exists() ? 'flex' : 'none';
     const onlineSection = document.getElementById('onlineResumeSection');
     const onlineDescription = document.getElementById('onlineResumeDescription');
     const onlineSession = readOnlineSession();
@@ -161,7 +173,7 @@ function readOnlineSession() {
 
 function deleteSavedGame() {
     showConfirm("セーブデータを削除しますか？", () => {
-        safeStorageRemove('savedGame');
+        getLocalSaveRepository().remove();
         updateResumeButton();
     });
 }
@@ -217,14 +229,11 @@ function reconnectOnline() {
 
 function resumeGame(options = {}) {
     if (localResumePending && !options.fromPreload) return;
-    const raw = safeStorageGet('savedGame');
-    if (!raw) return;
+    const repository = getLocalSaveRepository();
+    if (!repository.exists()) return;
     try {
-        const parsed = JSON.parse(raw);
-        const decoded = GameSnapshot.readLocalSaveState(parsed);
-        if (!decoded.ok || !isValidSavedGameState(decoded.state)) {
-            throw new Error('Invalid saved game');
-        }
+        const decoded = repository.read(isValidSavedGameState);
+        if (!decoded.ok) throw new Error('Invalid saved game');
         const state = decoded.state;
         const savedCpuSettings = normalizeSavedCpuSettings(state);
         const hasRlCpu = savedCpuSettings.some(setting => setting && setting.difficulty === 'rl');
@@ -306,7 +315,7 @@ function resumeGame(options = {}) {
         scheduleCPU();
     } catch(e) {
         setLocalResumePending(false);
-        safeStorageRemove('savedGame');
+        repository.remove();
         updateResumeButton();
         showNotice("セーブデータの読み込みに失敗しました");
     }

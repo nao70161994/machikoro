@@ -2,7 +2,7 @@ const assert = require('assert');
 const vm = require('vm');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
 
-function loadStorageRuntime() {
+function loadStorageRuntime(options = {}) {
     const { localStorage } = createStorage();
     const elements = {
         resumeSection: makeElement(),
@@ -26,7 +26,11 @@ function loadStorageRuntime() {
                 return elements[id];
             },
         },
-        window: { MACHIKORO_CLIENT_VERSION: 'storage-build' },
+        window: {
+            MACHIKORO_CLIENT_VERSION: 'storage-build',
+            MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED:
+                options.localSaveSchemaWriteEnabled === true,
+        },
         elements,
         alerts,
         GameManager: class GameManager {
@@ -134,7 +138,7 @@ function loadStorageRuntime() {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/storage.js']);
     context.OnlinePayloadApi = vm.runInContext('OnlinePayload', context);
     vm.runInContext(`
         this.__test = {
@@ -284,10 +288,12 @@ runTest('storage reconnectOnline はオンライン再接続データの空白�
 runTest('storage deleteSavedGame は確認後に savedGame を削除する', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('savedGame', '{"ok":true}');
+    rt.localStorage.setItem('savedGameV1', '{"schemaVersion":1,"snapshot":{}}');
 
     rt.deleteSavedGame();
 
     assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.localStorage.getItem('savedGameV1'), null);
     assert.strictEqual(rt.elements.resumeSection.style.display, 'none');
 });
 
@@ -393,6 +399,41 @@ runTest('storage saveGameState は共有serializerで既存localStorage shapeを
     assert.strictEqual(state.cpuSpeed, 1500);
     assert.deepStrictEqual(state.enabledCardsList, ['麦畑']);
     assert.deepStrictEqual(state.enabledLandmarksList, ['駅', 'ショッピングモール']);
+});
+
+runTest('storage saveGameState はflag有効時もlegacyを維持してv1 shadowを併記する', () => {
+    const rt = loadStorageRuntime({ localSaveSchemaWriteEnabled: true });
+    const game = new rt.GameManager(2);
+    game.players[0].name = 'DualWrite';
+    rt.__test.setGame(game);
+
+    rt.saveGameState();
+
+    const legacy = JSON.parse(rt.localStorage.getItem('savedGame'));
+    const versioned = JSON.parse(rt.localStorage.getItem('savedGameV1'));
+    assert.strictEqual(legacy.players[0].name, 'DualWrite');
+    assert.deepStrictEqual(
+        versioned,
+        JSON.parse(JSON.stringify(rt.GameSnapshot.createSnapshotEnvelope(legacy)))
+    );
+});
+
+runTest('storage resumeGame は壊れたv1 shadowからlegacyへfallbackする', () => {
+    const rt = loadStorageRuntime({ localSaveSchemaWriteEnabled: true });
+    const legacy = makeSavedGameState({
+        players: [
+            { name: 'Fallback', coins: 7, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+            { name: 'Peer', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+        ],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(legacy));
+    rt.localStorage.setItem('savedGameV1', JSON.stringify({ schemaVersion: 99, snapshot: {} }));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getGame().players[0].name, 'Fallback');
+    assert.strictEqual(rt.__test.getGame().players[0].coins, 7);
+    assert.deepStrictEqual(rt.alerts, []);
 });
 
 runTest('storage saveGameState はオンライン中にローカル保存しない', () => {

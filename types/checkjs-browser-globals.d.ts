@@ -32,6 +32,7 @@ interface Window {
     mountStaticAdSlots: unknown;
     webkitAudioContext: typeof AudioContext;
     GameSnapshot: unknown;
+    LocalSaveRepository: unknown;
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;

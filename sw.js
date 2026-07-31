@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   '/js/actionContract.js',
   '/js/gameSchemaNegotiation.js',
   '/js/gameSnapshot.js',
+  '/js/localSaveRepository.js',
   '/js/gameSchemaCodec.js',
   '/js/gameSchemaWire.js',
   '/js/gameEngine.js',
