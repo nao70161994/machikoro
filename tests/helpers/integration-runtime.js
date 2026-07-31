@@ -93,6 +93,8 @@ function loadIntegrationRuntime(options = {}) {
             MACHIKORO_ONLINE_RECONNECT_CALLBACK_AUTHORITY_ENABLED: options.onlineReconnectCallbackAuthorityEnabled === true,
             MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED: options.onlineReconnectQueuePlanAuthorityEnabled === true,
             MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED: options.onlineReconnectQueueEffectAuthorityEnabled === true,
+            MACHIKORO_ONLINE_RESTORE_ABORT_PLAN_AUTHORITY_ENABLED: options.onlineRestoreAbortPlanAuthorityEnabled === true,
+            MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED: options.onlineRestoreAbortEffectAuthorityEnabled === true,
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: false }; },
@@ -212,6 +214,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineRestoreQueue.js');
         files.push('js/onlineReconnectCleanup.js');
         files.push('js/onlineReconnectRequest.js');
+        files.push('js/onlineRestoreAbort.js');
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');

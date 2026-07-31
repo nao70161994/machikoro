@@ -189,6 +189,10 @@ let _lastOnlineRestoreAbortPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastOnlineRestoreAbortEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -303,6 +307,11 @@ function isOnlineRestoreAbortPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RESTORE_ABORT_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRestoreAbortEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -325,6 +334,10 @@ function getOnlineReconnectRequestEffectSelection() {
 
 function getOnlineRestoreAbortPlanSelection() {
     return _lastOnlineRestoreAbortPlanSelection;
+}
+
+function getOnlineRestoreAbortEffectSelection() {
+    return _lastOnlineRestoreAbortEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -437,6 +450,7 @@ function getOnlineReconnectStateSnapshot() {
         requestPlanAuthority: getOnlineReconnectRequestPlanSelection(),
         requestEffectAuthority: getOnlineReconnectRequestEffectSelection(),
         restoreAbortPlanAuthority: getOnlineRestoreAbortPlanSelection(),
+        restoreAbortEffectAuthority: getOnlineRestoreAbortEffectSelection(),
     });
 }
 
@@ -1113,17 +1127,57 @@ function _onlineRestoreAbortPlanSelection(generation, statusMessage, queuedEvent
     });
 }
 
+function _onlineRestoreAbortEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineRestoreAbortEffectAuthorityEnabled();
+    const purePlanReady = planSelection.source === 'pure-plan';
+    const helperAvailable = typeof OnlineRestoreAbort !== 'undefined' &&
+        typeof OnlineRestoreAbort.execute === 'function';
+    const useExecutor = enabled && purePlanReady && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!purePlanReady ? 'abort-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineRestoreAbortEffectsLegacy(plan) {
+    _onlineRestoreInProgress = false;
+    _onlineRestoreQuarantined = true;
+    _onlineRestoreEventQueue = plan.queuedEvents;
+    setOnlineReconnectLegacyFlag(true);
+    const el = document.getElementById("onlineStatus");
+    if (el && plan.statusMessage) el.textContent = plan.statusMessage;
+    if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+}
+
+function _runOnlineRestoreAbortEffects(planSelection) {
+    const effectSelection = _onlineRestoreAbortEffectAuthoritySelection(planSelection);
+    _lastOnlineRestoreAbortEffectSelection = effectSelection;
+    if (effectSelection.source !== 'executor') {
+        _runOnlineRestoreAbortEffectsLegacy(planSelection.plan);
+        return effectSelection;
+    }
+    OnlineRestoreAbort.execute(planSelection.plan, {
+        finishRestore: () => { _onlineRestoreInProgress = false; },
+        quarantineRestore: () => { _onlineRestoreQuarantined = true; },
+        replaceQueue: queue => { _onlineRestoreEventQueue = queue; },
+        markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+        updateStatus: message => {
+            const el = document.getElementById("onlineStatus");
+            if (el && message) el.textContent = message;
+        },
+        requestRejoin: () => _emitOnlineRejoinRequest(),
+        scheduleRetry: () => _scheduleRejoinRetry(),
+    });
+    return effectSelection;
+}
+
 function _abortOnlineRestore(generation, statusMessage, queuedEvents = null) {
     const planSelection = _onlineRestoreAbortPlanSelection(generation, statusMessage, queuedEvents);
     _lastOnlineRestoreAbortPlanSelection = planSelection;
     if (!planSelection.plan.abort) return;
-    _onlineRestoreInProgress = false;
-    _onlineRestoreQuarantined = true;
-    _onlineRestoreEventQueue = planSelection.plan.queuedEvents;
-    setOnlineReconnectLegacyFlag(true);
-    const el = document.getElementById("onlineStatus");
-    if (el && planSelection.plan.statusMessage) el.textContent = planSelection.plan.statusMessage;
-    if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+    _runOnlineRestoreAbortEffects(planSelection);
 }
 
 function _legacyOnlineRestoreEventFlushPlan(queue, generation, restoredThroughSeq) {

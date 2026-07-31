@@ -129,6 +129,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRestoreQueue.js');
     loadScript(context, 'js/onlineReconnectCleanup.js');
     loadScript(context, 'js/onlineReconnectRequest.js');
+    loadScript(context, 'js/onlineRestoreAbort.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -164,6 +165,8 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
         this.getOnlineReconnectRequestEffectSelection = getOnlineReconnectRequestEffectSelection;
         this.getOnlineRestoreAbortPlanSelection = getOnlineRestoreAbortPlanSelection;
+        this.getOnlineRestoreAbortEffectSelection = getOnlineRestoreAbortEffectSelection;
+        this.getOnlineRestoreAbortEffectAuthoritySelection = _onlineRestoreAbortEffectAuthoritySelection;
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
         this.markOnlineGameFinished = markOnlineGameFinished;
         this.getSocketDisconnected = () => socketDisconnected;
@@ -3356,6 +3359,14 @@ runTest('rejoin request plan authorityはstate履歴不一致時にlegacy plan�
     assert.strictEqual(runtime.getSocketEmits().at(-1).name, 'rejoinRoom');
 });
 
+runTest('restore abort effect authorityはpure plan以外をlegacyへfail closedする', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED = true;
+    const selection = runtime.getOnlineRestoreAbortEffectAuthoritySelection({ source: 'legacy-fallback' });
+    assert.strictEqual(selection.source, 'legacy-fallback');
+    assert.strictEqual(selection.fallbackReason, 'abort-plan-not-authoritative');
+});
+
 runTest('handleAppError は別roomのpending actionを消さない', () => {
     const rt = loadOnlineRuntime();
     rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
@@ -3843,6 +3854,7 @@ runTest('restore event queue は上限超過時に破棄して再同期する', 
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(() => {}); } };
     runtime.initSocket();
     runtime.window.MACHIKORO_ONLINE_RESTORE_ABORT_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED = true;
     runtime.setOnlineState({
         isOnlineGame: true,
         myRoomId: 'ROOM01',
@@ -3864,6 +3876,7 @@ runTest('restore event queue は上限超過時に破棄して再同期する', 
     }
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 0);
     assert.strictEqual(runtime.getOnlineRestoreAbortPlanSelection().source, 'pure-plan');
+    assert.strictEqual(runtime.getOnlineRestoreAbortEffectSelection().source, 'executor');
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
 });
