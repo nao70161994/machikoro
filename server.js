@@ -38,6 +38,7 @@ const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
+const { selectRestoreSource, decideExistingRoomRestore } = require('./server/restoreGateway');
 const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
@@ -1079,8 +1080,8 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         emitAppError(socket, '復元データが大きすぎます');
         return;
     }
-    let { roomId, gameStartPayload, stateSnapshot, actionLog, playerIndex, playerName, reconnectToken } = payload;
-    if (!roomId || !gameStartPayload || !reconnectToken) {
+    const { roomId, playerIndex, playerName, reconnectToken } = payload;
+    if (!roomId || !payload.gameStartPayload || !reconnectToken) {
         emitAppError(socket, '復元データが不完全です');
         return;
     }
@@ -1092,12 +1093,10 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         emitAppError(socket, '同じルームIDが既に使用されています');
         return { ok: false, reason: 'room-exists' };
     }
-    const canonicalRecord = approvedHostless ? null : loadRoomCanonicalStateRecord(roomId);
-    if (canonicalRecord) {
-        gameStartPayload = canonicalRecord.gameStartPayload || gameStartPayload;
-        stateSnapshot = canonicalRecord.stateSnapshot || null;
-        actionLog = Array.isArray(canonicalRecord.actionLog) ? canonicalRecord.actionLog : [];
-    }
+    const loadedCanonicalRecord = approvedHostless ? null : loadRoomCanonicalStateRecord(roomId);
+    const restoreSource = selectRestoreSource(payload, loadedCanonicalRecord, { approvedHostless });
+    const canonicalRecord = restoreSource.canonicalRecord;
+    let { gameStartPayload, stateSnapshot, actionLog } = restoreSource;
     const restoreAuditValidation = approvedHostless
         ? { ok: true }
         : validateRestoreAuditRecord(payload.restoreAudit, { roomId });
@@ -1128,8 +1127,20 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
             existingHostRestoreAuthenticated &&
             clientSnapshotTrusted &&
             canReplaceRestoredRoom(room, playerIndex, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog);
-        if (!incomingCanReplace) {
-            if (existingHostRestoreAuthenticated && isIncomingRestoreNewer(room, gameStartPayload, replayStateSnapshot, sanitizedExistingRoomActionLog)) {
+        const incomingRestoreNewer = !incomingCanReplace && existingHostRestoreAuthenticated &&
+            isIncomingRestoreNewer(
+                room,
+                gameStartPayload,
+                replayStateSnapshot,
+                sanitizedExistingRoomActionLog
+            );
+        const existingRoomDecision = decideExistingRoomRestore({
+            incomingCanReplace,
+            existingHostRestoreAuthenticated: !!existingHostRestoreAuthenticated,
+            incomingRestoreNewer: !!incomingRestoreNewer,
+        });
+        if (existingRoomDecision.action !== 'replace') {
+            if (existingRoomDecision.action === 'reject') {
                 emitAppError(socket, '復元データが壊れています');
                 return;
             }

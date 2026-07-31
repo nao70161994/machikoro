@@ -110,6 +110,7 @@
     "server/socketPayload.js",
     "server/reportingPolicy.js",
     "server/reportThrottle.js",
-    "server/restoreAuthorityPolicy.js"
+    "server/restoreAuthorityPolicy.js",
+    "server/restoreGateway.js"
   ]
 }
