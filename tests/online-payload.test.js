@@ -389,3 +389,47 @@ runTest('online payload restore queue authorityは既定legacy・一致時pure�
     assert.strictEqual(mismatch.fallbackReason, 'plan-mismatch');
     assert.deepStrictEqual(mismatch.plan, []);
 });
+
+
+runTest('online payload restore abort planは世代一致とqueue fallbackをpureに固定する', () => {
+    const queue = [{ type: 'gameAction', generation: 3 }];
+    const active = OnlinePayload.planRestoreAbort(3, 3, '再同期', queue);
+    assert.deepStrictEqual(active, {
+        abort: true,
+        statusMessage: '再同期',
+        queuedEvents: queue,
+    });
+    assert.strictEqual(active.queuedEvents, queue);
+    assert.ok(Object.isFrozen(active));
+    assert.deepStrictEqual(OnlinePayload.planRestoreAbort(2, 3, '', null), {
+        abort: false,
+        statusMessage: '',
+        queuedEvents: [],
+    });
+});
+
+runTest('online payload restore abort authorityはlegacy完全一致時だけpure planを採用する', () => {
+    const queue = [];
+    const legacy = Object.freeze({ abort: true, statusMessage: '再同期', queuedEvents: queue });
+    const disabled = OnlinePayload.selectRestoreAbortPlan(3, 3, '再同期', queue, legacy);
+    assert.strictEqual(disabled.source, 'legacy');
+    assert.strictEqual(disabled.plan, legacy);
+    const enabled = OnlinePayload.selectRestoreAbortPlan(3, 3, '再同期', queue, legacy, {
+        abortPlanAuthorityEnabled: true,
+    });
+    assert.strictEqual(enabled.source, 'pure-plan');
+    assert.strictEqual(enabled.matched, true);
+    assert.strictEqual(enabled.plan.queuedEvents, queue);
+    const mismatch = Object.freeze({ abort: true, statusMessage: '別表示', queuedEvents: queue });
+    assert.deepStrictEqual(
+        OnlinePayload.selectRestoreAbortPlan(3, 3, '再同期', queue, mismatch, {
+            abortPlanAuthorityEnabled: true,
+        }),
+        {
+            plan: mismatch,
+            source: 'legacy-fallback',
+            matched: false,
+            fallbackReason: 'abort-plan-mismatch',
+        }
+    );
+});

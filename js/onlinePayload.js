@@ -141,6 +141,45 @@ function canResendPendingOutboundAction(pending, state = {}) {
     return currentIndex === state.playerIndex;
 }
 
+function planOnlineRestoreAbort(generation, currentGeneration, statusMessage, queuedEvents = null) {
+    return Object.freeze({
+        abort: generation === currentGeneration,
+        statusMessage,
+        queuedEvents: Array.isArray(queuedEvents) ? queuedEvents : [],
+    });
+}
+
+function restoreAbortPlansMatch(planned, legacy) {
+    return !!planned && !!legacy && planned.abort === legacy.abort &&
+        planned.statusMessage === legacy.statusMessage &&
+        planned.queuedEvents === legacy.queuedEvents;
+}
+
+function selectOnlineRestoreAbortPlan(
+    generation,
+    currentGeneration,
+    statusMessage,
+    queuedEvents,
+    legacyPlan,
+    options = {}
+) {
+    const planned = planOnlineRestoreAbort(
+        generation,
+        currentGeneration,
+        statusMessage,
+        queuedEvents
+    );
+    const matched = restoreAbortPlansMatch(planned, legacyPlan);
+    const enabled = options.abortPlanAuthorityEnabled === true;
+    const usePure = enabled && matched;
+    return Object.freeze({
+        plan: usePure ? planned : legacyPlan,
+        source: usePure ? 'pure-plan' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'abort-plan-mismatch',
+    });
+}
+
 function planOnlineRestoreEventFlush(queue, generation, restoredThroughSeq) {
     const events = Array.isArray(queue) ? queue : [];
     const plan = [];
@@ -208,6 +247,8 @@ const OnlinePayload = Object.freeze({
     normalizeSession: normalizeOnlineSession,
     normalizeActionLog: normalizeOnlineActionLog,
     normalizePendingOutboundAction,
+    planRestoreAbort: planOnlineRestoreAbort,
+    selectRestoreAbortPlan: selectOnlineRestoreAbortPlan,
     planRestoreEventFlush: planOnlineRestoreEventFlush,
     selectRestoreEventFlushPlan: selectOnlineRestoreEventFlushPlan,
     sameActionEntry: sameOnlineActionEntry,

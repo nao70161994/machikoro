@@ -163,6 +163,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
         this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
         this.getOnlineReconnectRequestEffectSelection = getOnlineReconnectRequestEffectSelection;
+        this.getOnlineRestoreAbortPlanSelection = getOnlineRestoreAbortPlanSelection;
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
         this.markOnlineGameFinished = markOnlineGameFinished;
         this.getSocketDisconnected = () => socketDisconnected;
@@ -3841,8 +3842,19 @@ runTest('restore event queue は上限超過時に破棄して再同期する', 
     const runtime = loadOnlineRuntime();
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(() => {}); } };
     runtime.initSocket();
-    runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0, myPlayerName: 'Alice', reconnectToken: 'token-a' });
+    runtime.window.MACHIKORO_ONLINE_RESTORE_ABORT_PLAN_AUTHORITY_ENABLED = true;
+    runtime.setOnlineState({
+        isOnlineGame: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-a',
+    });
     const handlers = runtime.getSocketHandlers();
+    runtime.getOnlineState().socket.connected = false;
+    handlers.disconnect();
+    runtime.getOnlineState().socket.connected = true;
+    handlers.connect();
     handlers.rejoinData({
         gameStartPayload: { schemaVersion: 2, playerNames: ['Alice', 'RL CPU'], playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'rl', rlModelId: 'fixed-rl' }], cpuSpeed: 1500, playerOrder: [0, 1], enabledCards: CARDS.map(card => card.name), enabledLandmarks: Player.landmarkNames(), hostPlayerIndex: 0, hostEpoch: 1, actionSeq: 0 },
         stateSnapshot: null, actionLog: [], playerIndex: 0, hostPlayerIndex: 0, hostEpoch: 1
@@ -3851,6 +3863,7 @@ runTest('restore event queue は上限超過時に破棄して再同期する', 
         handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq });
     }
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 0);
+    assert.strictEqual(runtime.getOnlineRestoreAbortPlanSelection().source, 'pure-plan');
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
 });
