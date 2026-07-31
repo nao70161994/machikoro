@@ -343,4 +343,66 @@ assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, is
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, socketConnected: false }), true);
 assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, socketConnected: true }), false);
 
+{
+    const payload = {
+        freezeKind: 'cpu-turn-stalled',
+        stagnantMs: 5000,
+        recovery: { attempted: true, success: false },
+        snapshot: {
+            phase: 'build',
+            currentPlayerIndex: 1,
+            myPlayerIndex: -1,
+            isOnlineGame: false,
+            cpuStepScheduled: false,
+            cpuSchedulerHealth: { blockedReason: '' },
+            onlineActionInFlight: false,
+            isReconnectingOnline: false,
+            socketConnected: null,
+            allowedActions: ['nextTurn'],
+            visibleModals: [],
+            bodyClassName: '',
+            ui: {
+                gameScreen: { display: 'block', hidden: false, inert: false, ariaHidden: null, pointerEvents: 'auto' },
+                confirmModal: { display: 'none', hidden: false, inert: false, ancestorBlocked: false, pointerEvents: 'auto' },
+                pendingMenu: { display: '', hidden: false, inert: false, ancestorBlocked: false, pointerEvents: 'auto', htmlLength: 0 },
+                pendingModal: { display: 'none', hidden: false, inert: false, pointerEvents: 'none' },
+            },
+        },
+    };
+    const before = JSON.stringify(payload);
+    const stack = UiWatchdog.buildFreezeReportStack(payload, {
+        schemaVersion: 2,
+        confirmAwaitingChoice: false,
+        expectedPrimaryActions: ['nextTurn'],
+        interactabilityIssues: [{ reason: 'missing' }],
+        actionChildren: [{ action: 'nextTurn' }],
+    });
+    const report = JSON.parse(stack.replace(/^FREEZE_SUMMARY /, ''));
+
+    assert.strictEqual(report.schemaVersion, 2);
+    assert.strictEqual(report.freezeKind, 'cpu-turn-stalled');
+    assert.strictEqual(report.recoveryStatus, 'recovery=failed');
+    assert.strictEqual(report.phase, 'build');
+    assert.deepStrictEqual(report.expectedPrimaryActions, ['nextTurn']);
+    assert.deepStrictEqual(report.interactabilityIssues, [{ reason: 'missing' }]);
+    assert.deepStrictEqual(report.actionChildren, [{ action: 'nextTurn' }]);
+    assert.strictEqual(report.confirmModal.awaitingChoice, false);
+    assert.deepStrictEqual(report.recovery, { attempted: true, success: false });
+    assert.strictEqual(JSON.stringify(payload), before);
+}
+
+{
+    const stack = UiWatchdog.buildFreezeReportStack({ snapshot: {} });
+    const report = JSON.parse(stack.replace(/^FREEZE_SUMMARY /, ''));
+
+    assert.strictEqual(report.schemaVersion, 1);
+    assert.strictEqual(report.recoveryStatus, 'recovery=none');
+    assert.strictEqual(report.gameScreen, null);
+    assert.strictEqual(report.confirmModal, null);
+    assert.deepStrictEqual(report.expectedPrimaryActions, []);
+    assert.deepStrictEqual(report.interactabilityIssues, []);
+    assert.deepStrictEqual(report.actionChildren, []);
+    assert.strictEqual(report.recovery, null);
+}
+
 console.log('ui watchdog tests passed');

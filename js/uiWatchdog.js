@@ -148,6 +148,71 @@ const UiWatchdog = (() => {
         });
     }
 
+    function buildFreezeReportStack(payload, options = {}) {
+        const snapshot = payload && payload.snapshot || {};
+        const ui = snapshot.ui || {};
+        const recoveryStatus = payload && payload.recovery
+            ? (payload.recovery.success ? 'recovery=success' : 'recovery=failed')
+            : 'recovery=none';
+        return 'FREEZE_SUMMARY ' + JSON.stringify({
+            schemaVersion: options.schemaVersion || 1,
+            freezeKind: payload && payload.freezeKind,
+            recoveryStatus,
+            stagnantMs: payload && payload.stagnantMs,
+            phase: snapshot.phase,
+            currentPlayerIndex: snapshot.currentPlayerIndex,
+            myPlayerIndex: snapshot.myPlayerIndex,
+            isOnlineGame: snapshot.isOnlineGame,
+            cpuStepScheduled: snapshot.cpuStepScheduled,
+            cpuSchedulerHealth: snapshot.cpuSchedulerHealth || null,
+            onlineActionInFlight: snapshot.onlineActionInFlight,
+            isReconnectingOnline: snapshot.isReconnectingOnline,
+            socketConnected: snapshot.socketConnected,
+            allowedActions: snapshot.allowedActions,
+            visibleModals: snapshot.visibleModals,
+            gameScreen: ui.gameScreen ? {
+                display: ui.gameScreen.display,
+                hidden: !!ui.gameScreen.hidden,
+                inert: !!ui.gameScreen.inert,
+                ariaHidden: ui.gameScreen.ariaHidden,
+                pointerEvents: ui.gameScreen.pointerEvents || ui.gameScreen.computedPointerEvents || '',
+            } : null,
+            confirmModal: ui.confirmModal ? {
+                display: ui.confirmModal.display,
+                hidden: !!ui.confirmModal.hidden,
+                inert: !!ui.confirmModal.inert,
+                ariaHidden: ui.confirmModal.ariaHidden,
+                ancestorBlocked: !!ui.confirmModal.ancestorBlocked,
+                pointerEvents: ui.confirmModal.pointerEvents || ui.confirmModal.computedPointerEvents || '',
+                awaitingChoice: options.confirmAwaitingChoice === true,
+            } : null,
+            bodyClassName: snapshot.bodyClassName || '',
+            expectedPrimaryActions: Array.isArray(options.expectedPrimaryActions)
+                ? options.expectedPrimaryActions : [],
+            interactabilityIssues: Array.isArray(options.interactabilityIssues)
+                ? options.interactabilityIssues : [],
+            pendingMenu: ui.pendingMenu ? {
+                display: ui.pendingMenu.display,
+                hidden: !!ui.pendingMenu.hidden,
+                inert: !!ui.pendingMenu.inert,
+                ancestorBlocked: !!ui.pendingMenu.ancestorBlocked,
+                pointerEvents: ui.pendingMenu.pointerEvents || ui.pendingMenu.computedPointerEvents || '',
+                htmlLength: ui.pendingMenu.htmlLength,
+            } : null,
+            pendingModal: ui.pendingModal ? {
+                display: ui.pendingModal.display,
+                hidden: !!ui.pendingModal.hidden,
+                inert: !!ui.pendingModal.inert,
+                pointerEvents: ui.pendingModal.pointerEvents || ui.pendingModal.computedPointerEvents || '',
+            } : null,
+            actionChildren: Array.isArray(options.actionChildren) ? options.actionChildren : [],
+            recovery: payload && payload.recovery ? {
+                attempted: !!payload.recovery.attempted,
+                success: !!payload.recovery.success,
+            } : null,
+        });
+    }
+
     function compactIssueForTrace(issue) {
         if (!issue) return null;
         return {
@@ -351,6 +416,7 @@ const UiWatchdog = (() => {
         compactElementSnapshotForStorage,
         compactFreezePayloadForStorage,
         freezePayloadStorageJson,
+        buildFreezeReportStack,
     });
 
 })();
