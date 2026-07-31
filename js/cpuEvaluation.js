@@ -312,6 +312,42 @@ const CPUEvaluation = Object.freeze({
         ).length;
     },
 
+    estimateWinDistance(features) {
+        const remaining = features.remainingLandmarks;
+        if (!Array.isArray(remaining) || remaining.length === 0) return 0;
+        const totalRemainingCost = remaining.reduce((sum, entry) => sum + entry.cost, 0);
+        const nextLandmark = remaining
+            .slice()
+            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost)[0];
+        const nextShortfall = Math.max(0, nextLandmark.cost - features.playerCoins);
+        let effectiveGainPerTurn = Math.max(
+            1.2,
+            features.progressIncome * 0.85 + features.turnValue * 0.12 + features.reachable * 0.6
+        );
+        const routeCost = totalRemainingCost - Math.min(features.playerCoins, totalRemainingCost);
+        const landmarkSteps = routeCost / effectiveGainPerTurn;
+        let nextStepDelay = nextShortfall / Math.max(
+            1,
+            features.progressIncome * 0.9 + features.turnValue * 0.08
+        );
+        let distance = landmarkSteps + nextStepDelay * 0.7 +
+            remaining.length * 0.45 - features.reachable * 0.5;
+        if (features.crowdFocus) {
+            effectiveGainPerTurn = Math.max(
+                1.3,
+                features.progressIncome * 0.9 + features.turnValue * 0.12 + features.reachable * 0.9
+            );
+            nextStepDelay = nextShortfall / Math.max(
+                1,
+                features.progressIncome + features.turnValue * 0.08
+            );
+            const crowdLandmarkSteps = routeCost / effectiveGainPerTurn;
+            distance = crowdLandmarkSteps + nextStepDelay * 0.95 +
+                remaining.length * 0.35 - features.reachable * 0.85;
+        }
+        return Number(Math.max(0, distance).toFixed(3));
+    },
+
     closestLandmarkShortfall(player, enabledLandmarks, landmarkCost) {
         if (!player || !enabledLandmarks) return Infinity;
         const remaining = [...enabledLandmarks]

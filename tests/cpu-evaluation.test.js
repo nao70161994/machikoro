@@ -62,6 +62,57 @@ runTest('CPU evaluation はランドマーク進捗を注入costだけで集計�
     );
 });
 
+runTest('CPU evaluation は勝利距離の通常・多人数数式をpureに維持する', () => {
+    const features = {
+        remainingLandmarks: [
+            { name: 'station', cost: 4, urgency: 2 },
+            { name: 'airport', cost: 10, urgency: 5 },
+        ],
+        playerCoins: 3,
+        turnValue: 6,
+        reachable: 0,
+        progressIncome: 4,
+        crowdFocus: false,
+    };
+    assert.strictEqual(CPUEvaluation.estimateWinDistance(features), 4.771);
+    assert.strictEqual(CPUEvaluation.estimateWinDistance({
+        ...features,
+        crowdFocus: true,
+    }), 4.731);
+    assert.strictEqual(CPUEvaluation.estimateWinDistance({
+        ...features,
+        remainingLandmarks: [],
+    }), 0);
+});
+
+runTest('CPU本体の勝利距離wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager, LANDMARK_NAMES, Player } = loadCPURuntime();
+    const cpu = new CPU('expert', {
+        expertBehaviorFlags: { crowdWinDistanceFocus: true },
+    });
+    const game = new GameManager(4);
+    const player = game.players[0];
+    player.coins = 3;
+    player.landmarks[LANDMARK_NAMES.STATION] = true;
+    const playerIndex = 0;
+    const remaining = [...game.enabledLandmarks]
+        .filter(name => !player.landmarks[name])
+        .map(name => ({
+            name,
+            cost: Player.landmarkCost(name),
+            urgency: cpu._landmarkUrgency(name, player, game),
+        }));
+    const expected = CPUEvaluation.estimateWinDistance({
+        remainingLandmarks: remaining,
+        playerCoins: player.coins,
+        turnValue: cpu._estimatePlayerTurnValue(game, playerIndex),
+        reachable: remaining.filter(entry => player.coins >= entry.cost).length,
+        progressIncome: cpu._estimateProgressIncome(game, player),
+        crowdFocus: true,
+    });
+    assert.strictEqual(cpu._estimateWinDistanceUncached(player, game, playerIndex), expected);
+});
+
 runTest('CPU evaluation はランドマーク不足額とTV妨害価値をpureに計算する', () => {
     const costs = { station: 5, airport: 10 };
     const landmarkCost = name => costs[name];

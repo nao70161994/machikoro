@@ -3399,30 +3399,15 @@ class CPU {
         if (remaining.length === 0) return 0;
         const turnValue = playerIndex >= 0 ? this._estimatePlayerTurnValue(game, playerIndex) : 0;
         const reachable = remaining.filter(entry => player.coins >= entry.cost).length;
-        const totalRemainingCost = remaining.reduce((sum, entry) => sum + entry.cost, 0);
-        const nextLandmark = remaining
-            .slice()
-            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost)[0];
-        const nextShortfall = Math.max(0, nextLandmark.cost - player.coins);
         const progressIncome = this._estimateProgressIncome(game, player);
-        let effectiveGainPerTurn = Math.max(
-            1.2,
-            progressIncome * 0.85 + turnValue * 0.12 + reachable * 0.6
-        );
-        const routeCost = totalRemainingCost - Math.min(player.coins, totalRemainingCost);
-        const landmarkSteps = routeCost / effectiveGainPerTurn;
-        let nextStepDelay = nextShortfall / Math.max(1, progressIncome * 0.9 + turnValue * 0.08);
-        let distance = landmarkSteps + nextStepDelay * 0.7 + remaining.length * 0.45 - reachable * 0.5;
-        if (this._expertFlagEnabled("crowdWinDistanceFocus") && game.players.length >= 4) {
-            effectiveGainPerTurn = Math.max(
-                1.3,
-                progressIncome * 0.9 + turnValue * 0.12 + reachable * 0.9
-            );
-            nextStepDelay = nextShortfall / Math.max(1, progressIncome + turnValue * 0.08);
-            const crowdLandmarkSteps = routeCost / effectiveGainPerTurn;
-            distance = crowdLandmarkSteps + nextStepDelay * 0.95 + remaining.length * 0.35 - reachable * 0.85;
-        }
-        return Number(Math.max(0, distance).toFixed(3));
+        return CPUEvaluation.estimateWinDistance({
+            remainingLandmarks: remaining,
+            playerCoins: player.coins,
+            turnValue,
+            reachable,
+            progressIncome,
+            crowdFocus: this._expertFlagEnabled("crowdWinDistanceFocus") && game.players.length >= 4,
+        });
     }
 
     _estimateRedPressure(game, playerIndex) {
