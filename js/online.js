@@ -193,6 +193,12 @@ let _lastOnlineRestoreAbortEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlineActionTimeoutPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -312,6 +318,11 @@ function isOnlineRestoreAbortEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineActionTimeoutPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_TIMEOUT_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -338,6 +349,10 @@ function getOnlineRestoreAbortPlanSelection() {
 
 function getOnlineRestoreAbortEffectSelection() {
     return _lastOnlineRestoreAbortEffectSelection;
+}
+
+function getOnlineActionTimeoutPlanSelection() {
+    return _lastOnlineActionTimeoutPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -451,6 +466,7 @@ function getOnlineReconnectStateSnapshot() {
         requestEffectAuthority: getOnlineReconnectRequestEffectSelection(),
         restoreAbortPlanAuthority: getOnlineRestoreAbortPlanSelection(),
         restoreAbortEffectAuthority: getOnlineRestoreAbortEffectSelection(),
+        actionTimeoutPlanAuthority: getOnlineActionTimeoutPlanSelection(),
     });
 }
 
@@ -825,10 +841,44 @@ function resumeOnlineReconnectAfterPageActivation() {
     return _emitOnlineRejoinRequest();
 }
 
+function _legacyOnlineActionTimeoutPlan() {
+    const decisions = OnlineRetryPolicy.actionTimeoutDecisions;
+    return Object.freeze({
+        decision: !onlineActionInFlight
+            ? decisions.IGNORE
+            : (isOnlineGame ? decisions.REJOIN : decisions.CLEAR_ONLY),
+    });
+}
+
+function _onlineActionTimeoutPlanSelection() {
+    const legacyPlan = _legacyOnlineActionTimeoutPlan();
+    const requested = isOnlineActionTimeoutPlanAuthorityEnabled();
+    const stateSelection = OnlineReconnectState.selectAuthorityState(
+        _onlineReconnectController.snapshot(),
+        { eventAuthorityEnabled: requested }
+    );
+    const stateReady = stateSelection.source === 'event';
+    const selected = OnlineRetryPolicy.selectActionTimeoutPlan(
+        onlineActionInFlight,
+        isOnlineGame,
+        legacyPlan,
+        { authorityEnabled: requested && stateReady }
+    );
+    if (!requested || stateReady) return selected;
+    return Object.freeze({
+        ...selected,
+        source: 'legacy-fallback',
+        fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
+    });
+}
+
 function _handleOnlineActionTimeout() {
-    if (!onlineActionInFlight) return false;
+    const planSelection = _onlineActionTimeoutPlanSelection();
+    _lastOnlineActionTimeoutPlanSelection = planSelection;
+    const decisions = OnlineRetryPolicy.actionTimeoutDecisions;
+    if (planSelection.plan.decision === decisions.IGNORE) return false;
     _setOnlineActionInFlight(false);
-    if (!isOnlineGame) return false;
+    if (planSelection.plan.decision === decisions.CLEAR_ONLY) return false;
     setOnlineReconnectLegacyFlag(true);
     cpuScheduleToken++;
     const el = document.getElementById("onlineStatus");

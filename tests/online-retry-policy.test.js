@@ -98,6 +98,37 @@ runTest('online retry timer controllerはtimer不在と不正delayを安全に�
     assert.strictEqual(controller.getDeadline(), 3100);
 });
 
+runTest('online retry action timeout planは無視・clearのみ・再同期をpureに判定する', () => {
+    const decisions = OnlineRetryPolicy.actionTimeoutDecisions;
+    assert.deepStrictEqual(decisions, {
+        IGNORE: 'ignore',
+        CLEAR_ONLY: 'clear-only',
+        REJOIN: 'rejoin',
+    });
+    assert.deepStrictEqual(OnlineRetryPolicy.actionTimeoutPlan(false, true), { decision: decisions.IGNORE });
+    assert.deepStrictEqual(OnlineRetryPolicy.actionTimeoutPlan(true, false), { decision: decisions.CLEAR_ONLY });
+    assert.deepStrictEqual(OnlineRetryPolicy.actionTimeoutPlan(true, true), { decision: decisions.REJOIN });
+    assert.ok(Object.isFrozen(OnlineRetryPolicy.actionTimeoutPlan(true, true)));
+});
+
+runTest('online retry action timeout authorityはlegacy完全一致時だけpure planを採用する', () => {
+    const legacy = Object.freeze({ decision: 'rejoin' });
+    assert.strictEqual(OnlineRetryPolicy.selectActionTimeoutPlan(true, true, legacy).source, 'legacy');
+    const selected = OnlineRetryPolicy.selectActionTimeoutPlan(true, true, legacy, { authorityEnabled: true });
+    assert.strictEqual(selected.source, 'pure-plan');
+    assert.strictEqual(selected.matched, true);
+    const mismatch = Object.freeze({ decision: 'clear-only' });
+    assert.deepStrictEqual(
+        OnlineRetryPolicy.selectActionTimeoutPlan(true, true, mismatch, { authorityEnabled: true }),
+        {
+            plan: mismatch,
+            source: 'legacy-fallback',
+            matched: false,
+            fallbackReason: 'action-timeout-plan-mismatch',
+        }
+    );
+});
+
 runTest('online retry policy uses the ACK timeout boundary for stall detection', () => {
     const startedAt = 1000;
 

@@ -167,6 +167,9 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineRestoreAbortPlanSelection = getOnlineRestoreAbortPlanSelection;
         this.getOnlineRestoreAbortEffectSelection = getOnlineRestoreAbortEffectSelection;
         this.getOnlineRestoreAbortEffectAuthoritySelection = _onlineRestoreAbortEffectAuthoritySelection;
+        this.getOnlineActionTimeoutPlanSelection = getOnlineActionTimeoutPlanSelection;
+        this.activateOnlineReconnectForTest = () =>
+            _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
         this.markOnlineGameFinished = markOnlineGameFinished;
         this.getSocketDisconnected = () => socketDisconnected;
@@ -2266,6 +2269,8 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
         reconnectToken: 'token',
     });
     vm.runInContext('isOnlineGame = true;', rt);
+    rt.activateOnlineReconnectForTest();
+    rt.window.MACHIKORO_ONLINE_ACTION_TIMEOUT_PLAN_AUTHORITY_ENABLED = true;
 
     assert.strictEqual(rt.sendAction('nextTurn', {}), true);
     const pending = rt._readPendingOutboundAction();
@@ -2273,6 +2278,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
     assert.strictEqual(rt.getTimeoutHandlers().length, 1);
 
     assert.strictEqual(rt._handleOnlineActionTimeout(), true);
+    assert.strictEqual(rt.getOnlineActionTimeoutPlanSelection().source, 'pure-plan');
 
     assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);

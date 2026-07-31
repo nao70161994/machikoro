@@ -80,6 +80,36 @@ function selectRejoinRequestPlan(input, legacyPlan, options = {}) {
     });
 }
 
+const ACTION_TIMEOUT_DECISIONS = Object.freeze({
+    IGNORE: 'ignore',
+    CLEAR_ONLY: 'clear-only',
+    REJOIN: 'rejoin',
+});
+
+function actionTimeoutPlan(actionInFlight, onlineGame) {
+    /** @type {string} */
+    let decision = ACTION_TIMEOUT_DECISIONS.IGNORE;
+    if (actionInFlight === true && onlineGame !== true) {
+        decision = ACTION_TIMEOUT_DECISIONS.CLEAR_ONLY;
+    } else if (actionInFlight === true) {
+        decision = ACTION_TIMEOUT_DECISIONS.REJOIN;
+    }
+    return Object.freeze({ decision });
+}
+
+function selectActionTimeoutPlan(actionInFlight, onlineGame, legacyPlan, options = {}) {
+    const purePlan = actionTimeoutPlan(actionInFlight, onlineGame);
+    const matched = !!legacyPlan && purePlan.decision === legacyPlan.decision;
+    const enabled = options.authorityEnabled === true;
+    const usePure = enabled && matched;
+    return Object.freeze({
+        plan: usePure ? purePlan : legacyPlan,
+        source: usePure ? 'pure-plan' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'action-timeout-plan-mismatch',
+    });
+}
+
 const REJOIN_TIMEOUT_DECISIONS = Object.freeze({
     IGNORE: 'ignore',
     REJOIN: 'rejoin',
@@ -153,6 +183,9 @@ const OnlineRetryPolicy = Object.freeze({
     requestDecisions: REJOIN_REQUEST_DECISIONS,
     rejoinRequestPlan,
     selectRejoinRequestPlan,
+    actionTimeoutDecisions: ACTION_TIMEOUT_DECISIONS,
+    actionTimeoutPlan,
+    selectActionTimeoutPlan,
     timeoutDecisions: REJOIN_TIMEOUT_DECISIONS,
     rejoinTimeoutDecision,
     createRejoinTimerController,
