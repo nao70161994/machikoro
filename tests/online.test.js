@@ -2624,6 +2624,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
 
 runTest('resetOnlineState は room-scoped pending outbound copy も消す', () => {
     const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
     rt.setOnlineState({ myRoomId: 'ROOM01' });
     rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
         action: 'nextTurn',
@@ -2647,6 +2648,11 @@ runTest('resetOnlineState は room-scoped pending outbound copy も消す', () =
 
     assert.strictEqual(rt.localStorage.getItem('onlinePendingAction'), null);
     assert.strictEqual(rt.localStorage.getItem(scopedKey), null);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.getOnlineRestoreQueueStateSelection())), {
+        source: 'pure-transition',
+        matched: true,
+        fallbackReason: '',
+    });
 });
 
 runTest('_clearOnlineRestoreBundle は room-scoped pending outbound copy も消す', () => {

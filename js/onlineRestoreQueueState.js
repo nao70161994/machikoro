@@ -49,6 +49,13 @@ function planRestoreQueueFailureRemainder(queue, failedIndex) {
     });
 }
 
+function planRestoreQueueClear() {
+    return Object.freeze({
+        overflow: false,
+        queue: [],
+    });
+}
+
 function sameRestoreQueueTransition(left, right) {
     if (!left || !right || left.overflow !== right.overflow || !sameRestoreQueue(left.queue, right.queue)) {
         return false;
@@ -77,6 +84,7 @@ const OnlineRestoreQueueState = Object.freeze({
     planCarry: planRestoreQueueCarry,
     planDrain: planRestoreQueueDrain,
     planFailureRemainder: planRestoreQueueFailureRemainder,
+    planClear: planRestoreQueueClear,
     selectTransition: selectRestoreQueueTransition,
 });
 

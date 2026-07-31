@@ -1734,7 +1734,7 @@ function _runOnlineSocketDisconnectEffectsLegacy(plan) {
         _onlineRestoreGeneration++;
         _onlineRestoreInProgress = false;
         _onlineRestoreQuarantined = true;
-        _onlineRestoreEventQueue = [];
+        _clearOnlineRestoreEventQueue();
     }
     setOnlineReconnectLegacyFlag(true);
     _setOnlineActionInFlight(false);
@@ -1760,7 +1760,7 @@ function _runOnlineSocketDisconnectEffects() {
         invalidateRestoreGeneration: () => { _onlineRestoreGeneration++; },
         finishRestore: () => { _onlineRestoreInProgress = false; },
         quarantineRestore: () => { _onlineRestoreQuarantined = true; },
-        clearRestoreQueue: () => { _onlineRestoreEventQueue = []; },
+        clearRestoreQueue: () => { _clearOnlineRestoreEventQueue(); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         clearActionFlight: () => _setOnlineActionInFlight(false),
         invalidateCpuSchedule: () => { cpuScheduleToken++; },
@@ -1931,7 +1931,7 @@ function resetOnlineState() {
     _hostlessRestorePending = false;
     _onlineRestoreGeneration++;
     _onlineRestoreInProgress = false;
-    _onlineRestoreEventQueue = [];
+    _clearOnlineRestoreEventQueue();
     _lastAppliedOnlineActionSeqMemory = 0;
     _flushingOnlineRestoreEvents = false;
     _onlineRestoreQuarantined = false;
@@ -2166,6 +2166,24 @@ function _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransiti
         legacyTransition,
         { authorityEnabled: requested }
     );
+}
+
+function _clearOnlineRestoreEventQueue() {
+    const legacyTransition = Object.freeze({ overflow: false, queue: [] });
+    const pureTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
+        typeof OnlineRestoreQueueState.planClear === 'function'
+        ? OnlineRestoreQueueState.planClear()
+        : null;
+    const selection = _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransition);
+    _lastOnlineRestoreQueueStateSelection = Object.freeze({
+        source: selection.source,
+        matched: selection.matched,
+        fallbackReason: selection.fallbackReason,
+    });
+    _onlineRestoreEventQueue = selection.source === 'pure-transition'
+        ? selection.transition.queue
+        : [];
+    return selection;
 }
 
 function _queueOnlineEventDuringRestore(type, payload) {
@@ -2570,7 +2588,7 @@ function initSocket() {
         _onlineRestoreQuarantined = false;
         const startGeneration = ++_onlineRestoreGeneration;
         _onlineRestoreInProgress = true;
-        _onlineRestoreEventQueue = [];
+        _clearOnlineRestoreEventQueue();
         const gameStartPayload = _applyOnlineHostPayload({
             schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps,
             cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null,

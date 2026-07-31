@@ -60,6 +60,13 @@ runTest('restore queue stateは失敗event以降だけを入力非破壊で保�
     assert.deepStrictEqual(queue.map(event => event.type), ['gameAction', 'gameAction', 'hostChanged']);
 });
 
+runTest('restore queue stateはclear transitionを新しい空queueとして返す', () => {
+    const transition = OnlineRestoreQueueState.planClear();
+    assert.strictEqual(transition.overflow, false);
+    assert.deepStrictEqual(transition.queue, []);
+    assert.strictEqual(Object.isFrozen(transition), true);
+});
+
 runTest('restore queue state authorityは完全一致時だけpure transitionを選ぶ', () => {
     const payload = { seq: 1 };
     const legacy = { overflow: false, queue: [{ type: 'gameAction', payload, generation: 1 }] };
