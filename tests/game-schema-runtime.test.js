@@ -89,6 +89,17 @@ runTest('game schema snapshot wire flagはAction wireと独立して明示値だ
     }), false);
 });
 
+runTest('game schema recreate wire flagは独立した明示値だけを受理する', () => {
+    assert.strictEqual(GameSchemaRuntime.gameSchemaRecreateWireEnabled({}), false);
+    assert.strictEqual(GameSchemaRuntime.gameSchemaRecreateWireEnabled({
+        GAME_SCHEMA_RECREATE_WIRE_ENABLED: 'yes',
+    }), true);
+    assert.strictEqual(GameSchemaRuntime.gameSchemaRecreateWireEnabled({
+        GAME_SCHEMA_RECREATE_WIRE_ENABLED: 'OFF',
+        GAME_SCHEMA_WIRE_ENABLED: 'on',
+    }), false);
+});
+
 runTest('local save schema write flagは独立した明示値だけを受理する', () => {
     assert.strictEqual(GameSchemaRuntime.localSaveSchemaWriteEnabled({}), false);
     assert.strictEqual(GameSchemaRuntime.localSaveSchemaWriteEnabled({

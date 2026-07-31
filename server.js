@@ -37,7 +37,9 @@ const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
+const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
 const GameSchemaWire = require('./js/gameSchemaWire');
+const RecreateRoomPayload = require('./js/recreateRoomPayload');
 const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
 const {
@@ -79,6 +81,7 @@ const {
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
     gameSchemaSnapshotWireEnabled,
+    gameSchemaRecreateWireEnabled,
     localSaveSchemaWriteEnabled,
     resolveClientGameSchemaCapabilities,
     negotiateRoomGameSchemaCandidate,
@@ -91,6 +94,8 @@ const GAME_SCHEMA_NEGOTIATION_ENABLED = gameSchemaNegotiationEnabled(process.env
 const GAME_SCHEMA_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaWireEnabled(process.env);
 const GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED &&
     gameSchemaSnapshotWireEnabled(process.env);
+const GAME_SCHEMA_RECREATE_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED &&
+    gameSchemaRecreateWireEnabled(process.env);
 const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = localSaveSchemaWriteEnabled(process.env);
 const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
 const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
@@ -541,6 +546,7 @@ const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
     gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
     gameSchemaWireEnabled: GAME_SCHEMA_WIRE_ENABLED,
     gameSchemaSnapshotWireEnabled: GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
+    gameSchemaRecreateWireEnabled: GAME_SCHEMA_RECREATE_WIRE_ENABLED,
     localSaveSchemaWriteEnabled: LOCAL_SAVE_SCHEMA_WRITE_ENABLED,
     onlineReconnectEventAuthorityEnabled: ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED,
 });
@@ -960,9 +966,14 @@ io.on('connection', (socket) => {
     });
 
     // サーバー再起動後にホストがルームを復元する
-    socket.on('recreateRoom', (payload) => {
-        const result = handleRecreateRoom(socket, payload);
-        if (result?.ok) hostlessRestoreRuntime.hostRestored(result.roomId);
+    registerRecreateSocketHandler(socket, {
+        decodePayload: payload => RecreateRoomPayload.decode(
+            GAME_SCHEMA_RECREATE_WIRE_ENABLED,
+            payload
+        ),
+        emitAppError,
+        handleRecreateRoom,
+        hostRestored: roomId => hostlessRestoreRuntime.hostRestored(roomId),
     });
 
     disconnectSocketHandler.registerSocket(socket);

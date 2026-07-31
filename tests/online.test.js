@@ -169,6 +169,7 @@ function loadOnlineRuntime(options = {}) {
         this.getClientVersion = getClientVersion;
         this.buildOnlineRejoinPayload = buildOnlineRejoinPayload;
         this.acceptsNegotiatedGameSchema = acceptsNegotiatedGameSchema;
+        this.encodeOnlineRecreateRoomPayload = encodeOnlineRecreateRoomPayload;
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
         this.onChangeOnlinePlayerType = onChangeOnlinePlayerType;
         this.showCreateRoom = showCreateRoom;
@@ -3833,6 +3834,26 @@ runTest('versioned snapshot wireはlegacy actionの圧縮Snapshot metadataだけ
     assert.strictEqual(decoded.ok, true);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(decoded.value)), {
         action: 'nextTurn', data: {}, seq: 201, stateSnapshot: snapshot,
+    });
+});
+
+runTest('recreate room wireは既定legacyを維持し明示flag時だけv1 envelopeを送る', () => {
+    const legacy = loadOnlineRuntime();
+    const legacyPayload = vm.runInContext(`({ roomId: 'ROOM01' })`, legacy);
+    assert.strictEqual(
+        legacy.encodeOnlineRecreateRoomPayload(legacyPayload).value,
+        legacyPayload
+    );
+
+    const current = loadOnlineRuntime();
+    current.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    current.window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED = true;
+    const currentPayload = vm.runInContext(`({ roomId: 'ROOM01' })`, current);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        current.encodeOnlineRecreateRoomPayload(currentPayload).value
+    )), {
+        schemaVersion: 1,
+        recreateRoom: { roomId: 'ROOM01' },
     });
 });
 

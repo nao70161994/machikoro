@@ -16,6 +16,10 @@ function gameSchemaSnapshotWireEnabled(env = {}) {
     return ENABLED_VALUES.has(String(env.GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED || '').trim().toLowerCase());
 }
 
+function gameSchemaRecreateWireEnabled(env = {}) {
+    return ENABLED_VALUES.has(String(env.GAME_SCHEMA_RECREATE_WIRE_ENABLED || '').trim().toLowerCase());
+}
+
 function localSaveSchemaWriteEnabled(env = {}) {
     return ENABLED_VALUES.has(String(env.LOCAL_SAVE_SCHEMA_WRITE_ENABLED || '').trim().toLowerCase());
 }
@@ -87,6 +91,7 @@ module.exports = Object.freeze({
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
     gameSchemaSnapshotWireEnabled,
+    gameSchemaRecreateWireEnabled,
     localSaveSchemaWriteEnabled,
     resolveClientGameSchemaCapabilities,
     negotiateRoomGameSchemaCandidate,

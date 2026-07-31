@@ -48,6 +48,11 @@ function isGameSchemaSnapshotWireTransportEnabled() {
         window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED === true;
 }
 
+function isGameSchemaRecreateWireTransportEnabled() {
+    return isGameSchemaNegotiationTransportEnabled() && typeof window !== 'undefined' &&
+        window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED === true;
+}
+
 function getGameSchemaCapabilitiesForTransport() {
     const enabled = isGameSchemaNegotiationTransportEnabled();
     if (typeof GameSchemaNegotiation === 'undefined') return null;
@@ -86,6 +91,15 @@ function decodeOnlineGameSchemaSnapshotPayload(payload) {
     const selection = payload && payload.gameStartPayload && payload.gameStartPayload.gameSchema ||
         onlineGameSchemaSelection;
     return GameSchemaWire.decodeSnapshotField(true, selection, payload);
+}
+
+function encodeOnlineRecreateRoomPayload(payload) {
+    const enabled = isGameSchemaRecreateWireTransportEnabled();
+    if (!enabled) return { ok: true, value: payload };
+    if (typeof RecreateRoomPayload === 'undefined') {
+        return { ok: false, reason: 'recreate-codec-unavailable' };
+    }
+    return RecreateRoomPayload.encode(true, payload);
 }
 
 function buildOnlineRejoinPayload(session) {
@@ -1978,17 +1992,12 @@ function _tryRestoreRoom() {
         const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
         const actionLog = _readOnlineActionLog();
         document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
-        socket.emit('recreateRoom', {
-            roomId: myRoomId,
+        return _sendRecreateRoomFromBundle({
             gameStartPayload,
             stateSnapshot,
             actionLog,
             restoreAudit,
-            playerIndex: myOriginalPlayerIndex,
-            playerName: myPlayerName,
-            reconnectToken,
         });
-        return true;
     } catch(e) {
         document.getElementById("onlineStatus").textContent = '❌ 復元に失敗しました';
         return false;
@@ -2047,7 +2056,7 @@ function _submitHostlessRestoreCandidate(generation) {
 }
 
 function _sendRecreateRoomFromBundle(bundle) {
-    socket.emit('recreateRoom', {
+    const payload = {
         roomId: myRoomId,
         gameStartPayload: bundle.gameStartPayload,
         stateSnapshot: bundle.stateSnapshot,
@@ -2056,7 +2065,15 @@ function _sendRecreateRoomFromBundle(bundle) {
         playerIndex: myOriginalPlayerIndex,
         playerName: myPlayerName,
         reconnectToken,
-    });
+    };
+    const encoded = encodeOnlineRecreateRoomPayload(payload);
+    if (!encoded.ok || !socket || socket.connected === false) {
+        const status = typeof document !== 'undefined' ? document.getElementById('onlineStatus') : null;
+        if (status) status.textContent = '❌ 復元payloadのschema変換に失敗しました';
+        return false;
+    }
+    socket.emit('recreateRoom', encoded.value);
+    return true;
 }
 
 function _scheduleRejoinRetry() {

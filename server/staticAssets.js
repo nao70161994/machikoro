@@ -33,6 +33,9 @@ function injectIndexBuildHash(content, buildHash, options = {}) {
     if (options.gameSchemaSnapshotWireEnabled === true) {
         scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;</script>';
     }
+    if (options.gameSchemaRecreateWireEnabled === true) {
+        scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED=true;</script>';
+    }
     if (options.localSaveSchemaWriteEnabled === true) {
         scripts += '\n    <script>window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED=true;</script>';
     }

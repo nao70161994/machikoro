@@ -95,6 +95,9 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
         gameSchemaNegotiationEnabled: true,
         gameSchemaSnapshotWireEnabled: true,
     });
+    const recreateWireEnabled = injectIndexBuildHash(source, 'build-1', {
+        gameSchemaRecreateWireEnabled: true,
+    });
     const localSaveEnabled = injectIndexBuildHash(source, 'build-1', {
         localSaveSchemaWriteEnabled: true,
     });
@@ -104,6 +107,7 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED'));
@@ -117,6 +121,9 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
     assert.ok(wireEnabled.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
     assert.ok(snapshotWireEnabled.includes(
         'window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;'
+    ));
+    assert.ok(recreateWireEnabled.includes(
+        'window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED=true;'
     ));
     assert.ok(localSaveEnabled.includes(
         'window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED=true;'

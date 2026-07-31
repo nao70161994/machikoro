@@ -8,6 +8,7 @@ process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
 process.env.GAME_SCHEMA_SHADOW_ENABLED = '1';
 process.env.GAME_SCHEMA_WIRE_ENABLED = '1';
 process.env.GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = '1';
+process.env.GAME_SCHEMA_RECREATE_WIRE_ENABLED = '1';
 const serverModule = require('../server');
 const connectClient = require('socket.io-client');
 
@@ -55,6 +56,7 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
     const clients = Array.from({ length: 4 }, () => connect(origin));
     let rejoined = null;
     let legacyAttempt = null;
+    let recreateProbe = null;
     try {
         await Promise.all(clients.map(socket => onceEvent(socket, 'connect')));
         const html = await (await fetch(origin + '/')).text();
@@ -62,6 +64,7 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         assert.ok(html.includes('js/gameSchemaNegotiation.js'));
         assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
         assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;'));
+        assert.ok(html.includes('window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED=true;'));
 
         const currentRoom = await startPair(origin, clients[0], clients[1], 'current', CAPABILITIES, CAPABILITIES);
         currentRoom.gameStarts.forEach(start => assert.deepStrictEqual(start.gameSchema, { actionVersion: 1, snapshotVersion: 1 }));
@@ -138,6 +141,29 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         });
         assert.strictEqual(await unsupportedPromise, 'SCHEMA_VERSION_UNSUPPORTED');
 
+        recreateProbe = connect(origin);
+        await onceEvent(recreateProbe, 'connect');
+        const recreatedRejoinPromise = onceEvent(recreateProbe, 'rejoinData');
+        recreateProbe.emit('recreateRoom', {
+            schemaVersion: 1,
+            recreateRoom: {
+                roomId: currentRoom.created.roomId,
+                gameStartPayload: currentStart,
+                stateSnapshot: null,
+                actionLog: [],
+                restoreAudit: null,
+                playerIndex: currentRoom.created.playerIndex,
+                playerName: 'Host-current',
+                reconnectToken: currentRoom.created.reconnectToken,
+            },
+        });
+        const recreatedRejoin = await recreatedRejoinPromise;
+        assert.strictEqual(recreatedRejoin.playerIndex, currentRoom.created.playerIndex);
+        assert.deepStrictEqual(recreatedRejoin.gameStartPayload.gameSchema, {
+            actionVersion: 1,
+            snapshotVersion: 1,
+        });
+
         const legacyRoom = await startPair(origin, clients[2], clients[3], 'legacy', CAPABILITIES, undefined);
         legacyRoom.gameStarts.forEach(start => assert.deepStrictEqual(start.gameSchema, { actionVersion: 0, snapshotVersion: 0 }));
         const legacyStart = legacyRoom.gameStarts[0];
@@ -153,6 +179,7 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         clients.forEach(socket => socket.close());
         if (rejoined) rejoined.close();
         if (legacyAttempt) legacyAttempt.close();
+        if (recreateProbe) recreateProbe.close();
         await new Promise(resolve => serverModule.__io.close(resolve));
     }
 });
