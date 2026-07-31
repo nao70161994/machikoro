@@ -43,6 +43,7 @@ const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
+const makeGameStartPayload = require('./server/gameStartPayload');
 const {
     sanitizeName,
     isValidRoomId,
@@ -1423,32 +1424,15 @@ function roomHostlessRestoreCapabilities(ioInstance, room, playerNames) {
     });
 }
 
-function buildGameStartPayload(io, room, randomFn = Math.random, options = {}) {
-    const schemaEnabled = options.gameSchemaNegotiationEnabled !== undefined
-        ? options.gameSchemaNegotiationEnabled === true
-        : GAME_SCHEMA_NEGOTIATION_ENABLED;
-    const gameSchema = gameSchemaStartMetadata(room, schemaEnabled);
-    if (schemaEnabled && !gameSchema) return null;
-    const playerNames = buildGameStartPlayerNames(room);
-    const payload = {
-        enabledCards: room.enabledCards,
-        enabledLandmarks: room.enabledLandmarks,
-        playerNames,
-        playerSettings: room.playerSettings,
-        cpuSpeed: room.cpuSpeed,
-        playerOrder: shuffledPlayerOrder(playerNames, randomFn),
-        hostPlayerIndex: room.hostPlayerIndex,
-        hostEpoch: room.hostEpoch || 0,
-        actionSeq: room.actionSeq || 0,
-        versions: roomClientVersions(io, room),
-        reconnectTokenHashes: roomReconnectTokenHashes(room, playerNames),
-        hostlessRestoreCapabilities: roomHostlessRestoreCapabilities(io, room, playerNames),
-        hostlessRestoreGeneration: 0,
-        hostlessRestoreCount: 0,
-    };
-    if (gameSchema) payload.gameSchema = gameSchema;
-    return payload;
-}
+const { buildGameStartPayload } = makeGameStartPayload({
+    defaultSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
+    gameSchemaStartMetadata,
+    buildGameStartPlayerNames,
+    shuffledPlayerOrder,
+    roomClientVersions,
+    roomReconnectTokenHashes,
+    roomHostlessRestoreCapabilities,
+});
 
 // ===== Mirror replay =====
 function loadGameRuntime() {
