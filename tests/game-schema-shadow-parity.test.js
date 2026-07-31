@@ -61,6 +61,20 @@ function applyTraceStep(room, action, rawData) {
         JSON.parse(JSON.stringify(live)),
         action + ' shadow/live mismatch'
     );
+    assert.strictEqual(
+        server.adoptTransitionSnapshotToRoomMirror(room, shadow),
+        true,
+        action + ' pure snapshot adoption failed'
+    );
+    room.lastUndoState = room.canonicalMirror.lastUndoState || null;
+    const adopted = server.serializeMirrorState(
+        room.canonicalMirror.game, room.canonicalMirror.shopStock, room.lastUndoState, nextSeq
+    );
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(adopted)),
+        JSON.parse(JSON.stringify(shadow.snapshot)),
+        action + ' adopted mirror mismatch'
+    );
 }
 
 function setPending(game, action, field) {
@@ -69,7 +83,18 @@ function setPending(game, action, field) {
     game.pendingActionQueue = [{ action, field }];
 }
 
-runTest('schema shadow parityは2〜10人・独立v0/v1で全action traceを維持する', () => {
+
+runTest('pure snapshot採用は不正snapshotで既存mirrorを変更しない', () => {
+    const room = makeRoom(2, SCHEMA_SELECTIONS[3]);
+    const originalMirror = room.canonicalMirror;
+    assert.strictEqual(server.adoptTransitionSnapshotToRoomMirror(room, {
+        ok: true,
+        snapshot: { phase: 'broken' },
+    }), false);
+    assert.strictEqual(room.canonicalMirror, originalMirror);
+});
+
+runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後も全action traceを維持する', () => {
     const landmarks = runtime.Player.landmarkNames();
     const fixtures = [
         {
