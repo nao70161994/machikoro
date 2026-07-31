@@ -69,6 +69,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiCardSelect.js',
     'js/uiLogDisplay.js',
     'js/uiModalPolicy.js',
+    'js/uiModalOpen.js',
     'js/uiPlayerDisplay.js',
     'js/uiNotice.js',
     'js/uiPendingMenu.js',

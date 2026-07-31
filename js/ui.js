@@ -1005,10 +1005,29 @@ function normalizeModalVisualStateForOpen(modal) {
     }
 }
 
-function openAccessibleModal(id) {
-    const modal = document.getElementById(id);
-    if (!modal) return false;
-    if (!canOpenBlockingModal(id)) return false;
+function isUiModalOpenEffectAuthorityEnabled() {
+    try {
+        const root = typeof window !== 'undefined' ? window : globalThis;
+        const value = root && root.MACHIKORO_UI_MODAL_OPEN_EFFECT_AUTHORITY_ENABLED;
+        return value === true || value === 1 || value === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function legacyUiModalOpenPlan(id) {
+    return Object.freeze({ modalId: id });
+}
+
+function uiModalOpenPlanSelection(id) {
+    return UiModalOpen.selectPlan(
+        { modalId: id },
+        legacyUiModalOpenPlan(id),
+        { authorityEnabled: isUiModalOpenEffectAuthorityEnabled() }
+    );
+}
+
+function runUiModalOpenEffectsLegacy(modal, id) {
     if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
     activeModalId = id;
     if (document.body && document.body.classList) document.body.classList.add('modal-open');
@@ -1019,6 +1038,38 @@ function openAccessibleModal(id) {
     }
     focusModal(modal);
     setAppInertForModal(true);
+}
+
+function runUiModalOpenEffects(modal, id) {
+    const selection = uiModalOpenPlanSelection(id);
+    if (selection.source !== 'pure-plan') {
+        runUiModalOpenEffectsLegacy(modal, id);
+        return;
+    }
+    UiModalOpen.execute(selection.plan, {
+        captureFocus() {
+            if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
+        },
+        setActiveModal(modalId) { activeModalId = modalId; },
+        addBodyClass() {
+            if (document.body && document.body.classList) document.body.classList.add('modal-open');
+        },
+        normalizeVisualState() { normalizeModalVisualStateForOpen(modal); },
+        setDialogAttributes() {
+            if (typeof modal.setAttribute !== 'function') return;
+            modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+        },
+        focusModal() { focusModal(modal); },
+        setAppInert() { setAppInertForModal(true); },
+    });
+}
+
+function openAccessibleModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return false;
+    if (!canOpenBlockingModal(id)) return false;
+    runUiModalOpenEffects(modal, id);
     return true;
 }
 

@@ -217,6 +217,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiDiceChoice.js',
         'js/uiDiceDisplay.js',
         'js/uiModalPolicy.js',
+        'js/uiModalOpen.js',
         'js/uiWinner.js',
         'js/uiGameStatusView.js',
         'js/ui.js',

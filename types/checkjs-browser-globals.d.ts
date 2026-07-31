@@ -55,6 +55,7 @@ interface Window {
     UiCardSelect: unknown;
     UiLogDisplay: unknown;
     UiModalPolicy: unknown;
+    UiModalOpen: unknown;
     UiPlayerDisplay: unknown;
     UiPendingMenu: unknown;
     UiTutorial: unknown;

@@ -3,7 +3,7 @@ const vm = require('vm');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
-function loadUiRuntime() {
+function loadUiRuntime(options = {}) {
     const { localStorage } = createStorage();
     const elements = {
         titleScreen: makeElement(),
@@ -121,10 +121,11 @@ function loadUiRuntime() {
         setTimeout(fn) { context.lastTimeout = fn; return 1; },
         clearTimeout() {},
     };
+    Object.assign(context, options.globals || {});
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/ui.js']);
     return { context, elements };
 }
 
@@ -191,6 +192,45 @@ runTest('modal helpers は dialog 属性と表示状態を管理する', () => {
     assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(elements.titleScreen.style.pointerEvents, '');
     assert.strictEqual(elements.gameScreen.style.pointerEvents, '');
+});
+
+runTest('modal open effect authorityは明示flag時も既存DOMとfocus順を維持する', () => {
+    const { context, elements } = loadUiRuntime({
+        globals: { MACHIKORO_UI_MODAL_OPEN_EFFECT_AUTHORITY_ENABLED: '1' },
+    });
+    let hiddenWhileFocusedInTitle = false;
+    const opener = makeElement();
+    elements.titleScreen.contains = target => target === opener;
+    elements.rulesModal.focus = () => { context.document.activeElement = elements.rulesModal; };
+    context.document.activeElement = opener;
+    const originalSetAttribute = elements.titleScreen.setAttribute.bind(elements.titleScreen);
+    elements.titleScreen.setAttribute = (name, value) => {
+        if (name === 'aria-hidden' && elements.titleScreen.contains(context.document.activeElement)) {
+            hiddenWhileFocusedInTitle = true;
+        }
+        originalSetAttribute(name, value);
+    };
+
+    assert.strictEqual(context.uiModalOpenPlanSelection('rulesModal').source, 'pure-plan');
+    assert.strictEqual(context.showRules(), true);
+    assert.strictEqual(elements.rulesModal.style.display, 'flex');
+    assert.strictEqual(elements.rulesModal.getAttribute('role'), 'dialog');
+    assert.strictEqual(elements.rulesModal.getAttribute('aria-modal'), 'true');
+    assert.strictEqual(context.document.body.classList.contains('modal-open'), true);
+    assert.strictEqual(context.document.activeElement, elements.rulesModal);
+    assert.strictEqual(hiddenWhileFocusedInTitle, false);
+    assert.strictEqual(elements.titleScreen.inert, true);
+    assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), 'true');
+    assert.strictEqual(elements.titleScreen.style.pointerEvents, 'none');
+
+    context.closeRules();
+    assert.strictEqual(elements.titleScreen.inert, false);
+    assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
+});
+
+runTest('modal open effect authority flagはproduction HTMLへ注入しない', () => {
+    const index = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+    assert.strictEqual(index.includes('MACHIKORO_UI_MODAL_OPEN_EFFECT_AUTHORITY_ENABLED'), false);
 });
 
 runTest('rules/cardSelect close はvisible modalなしのorphan lockを解除する', () => {

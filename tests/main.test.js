@@ -2083,6 +2083,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiDiceChoice.js', 'js/ui.js');
     assertBefore('js/uiDiceDisplay.js', 'js/main.js');
     assertBefore('js/uiModalPolicy.js', 'js/ui.js');
+    assertBefore('js/uiModalOpen.js', 'js/ui.js');
     assertBefore('js/uiWinner.js', 'js/ui.js');
     assertBefore('js/uiGameStatusView.js', 'js/ui.js');
     assertBefore('js/uiTabView.js', 'js/ui.js');
