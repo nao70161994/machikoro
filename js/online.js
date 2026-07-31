@@ -363,18 +363,6 @@ function isOnlineReconnectInputBlocked() {
     return OnlineReconnectState.blocksInput(selection.state);
 }
 
-function _maxOnlineRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {
-    const logSeq = Array.isArray(actionLog)
-        ? actionLog.reduce((max, entry) => Number.isInteger(entry && entry.seq) ? Math.max(max, entry.seq) : max, 0)
-        : 0;
-    return Math.max(
-        Number.isInteger(gameStart && gameStart.actionSeq) ? gameStart.actionSeq : 0,
-        Number.isInteger(snapshot && snapshot.actionSeq) ? snapshot.actionSeq : 0,
-        logSeq,
-        Number.isInteger(pendingAction && pendingAction.seq) ? pendingAction.seq : 0
-    );
-}
-
 const onlineClientStorageFacade = ClientStorage.createFacade();
 const onlineUnavailableClientStorage = Object.freeze({
     getItem() { return null; },
@@ -396,7 +384,6 @@ const onlineStorage = createOnlineStorageFacade({
     roomIndexKey: ONLINE_RESTORE_ROOM_INDEX_KEY,
     roomIndexSchemaVersion: ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION,
     roomKeySeparator: ONLINE_ROOM_STORAGE_KEY_SEPARATOR,
-    maxRestoreActionSeq: _maxOnlineRestoreActionSeq,
 });
 
 function _normalizeOnlineRoomId(roomId) {

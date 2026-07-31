@@ -5,6 +5,18 @@ const OnlineStorageClientStorageApi = typeof module !== 'undefined' && module.ex
     : globalThis.ClientStorage;
 const onlineStorageClientStorageFacade = OnlineStorageClientStorageApi.createFacade();
 
+function maxRestoreActionSeq(gameStart, snapshot, actionLog, pendingAction) {
+    const logSeq = Array.isArray(actionLog)
+        ? actionLog.reduce((max, entry) => Number.isInteger(entry && entry.seq) ? Math.max(max, entry.seq) : max, 0)
+        : 0;
+    return Math.max(
+        Number.isInteger(gameStart && gameStart.actionSeq) ? gameStart.actionSeq : 0,
+        Number.isInteger(snapshot && snapshot.actionSeq) ? snapshot.actionSeq : 0,
+        logSeq,
+        Number.isInteger(pendingAction && pendingAction.seq) ? pendingAction.seq : 0
+    );
+}
+
 function createOnlineStorageFacade(options = {}) {
     const storage = options.storage || onlineStorageClientStorageFacade.storage();
     const getCurrentRoomId = typeof options.getCurrentRoomId === 'function' ? options.getCurrentRoomId : () => '';
@@ -13,9 +25,9 @@ function createOnlineStorageFacade(options = {}) {
     const roomIndexKey = options.roomIndexKey || 'onlineRestoreRoomIndex';
     const roomIndexSchemaVersion = options.roomIndexSchemaVersion || 1;
     const roomKeySeparator = options.roomKeySeparator || ':room:';
-    const maxRestoreActionSeq = typeof options.maxRestoreActionSeq === 'function'
+    const restoreActionSeq = typeof options.maxRestoreActionSeq === 'function'
         ? options.maxRestoreActionSeq
-        : (() => 0);
+        : maxRestoreActionSeq;
     const storageMissing = Symbol('onlineStorageMissing');
 
     function currentRoomId(roomId) {
@@ -175,7 +187,7 @@ function createOnlineStorageFacade(options = {}) {
             updatedAt: Number.isInteger(now) ? now : Date.now(),
             playerName: typeof session?.playerName === 'string' ? session.playerName : '',
             playerIndex: Number.isInteger(session?.playerIndex) ? session.playerIndex : null,
-            actionSeq: maxRestoreActionSeq(gameStart, stateSnapshot, actionLog, pendingAction),
+            actionSeq: restoreActionSeq(gameStart, stateSnapshot, actionLog, pendingAction),
             hasGameStart,
             hasActionLog,
             hasStateSnapshot,
@@ -234,7 +246,7 @@ function createOnlineStorageFacade(options = {}) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { createOnlineStorageFacade };
+    module.exports = { createOnlineStorageFacade, maxRestoreActionSeq };
 }
 if (typeof window !== 'undefined') {
     window.createOnlineStorageFacade = createOnlineStorageFacade;
