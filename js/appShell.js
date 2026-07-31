@@ -1208,15 +1208,15 @@ function crashResume() {
 
 // ===== オフライン検知 =====
 function updateOnlineTabState() {
-    const offline = !navigator.onLine;
+    const view = UiTabView.buildOnlineAvailabilityView(navigator.onLine);
     const tabBtn = document.getElementById('tabOnline');
     const notice = document.getElementById('offlineNotice');
     const createBtn = document.getElementById('onlineCreateSubmitButton');
     const joinBtn = document.getElementById('onlineJoinSubmitButton');
-    if (tabBtn) tabBtn.style.opacity = offline ? '0.4' : '';
-    if (notice) notice.style.display = offline ? 'block' : 'none';
-    if (createBtn) createBtn.disabled = offline;
-    if (joinBtn) joinBtn.disabled = offline;
+    if (tabBtn) tabBtn.style.opacity = view.tabOpacity;
+    if (notice) notice.style.display = view.noticeDisplay;
+    if (createBtn) createBtn.disabled = view.actionDisabled;
+    if (joinBtn) joinBtn.disabled = view.actionDisabled;
 }
 
 // ===== PWAインストールバナー =====

@@ -184,6 +184,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiWatchdog.js',
         'js/pwaShell.js',
         'js/actionUiRegistry.js',
+        'js/uiTabView.js',
         'js/appShell.js',
         'js/localPlayerSettings.js',
         'js/savedGameValidation.js',
@@ -203,7 +204,6 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiModalPolicy.js',
         'js/uiWinner.js',
         'js/uiGameStatusView.js',
-        'js/uiTabView.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {

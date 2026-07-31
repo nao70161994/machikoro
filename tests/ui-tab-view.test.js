@@ -37,3 +37,18 @@ runTest('UI online tab viewはcreate/joinの既存表示契約を維持する', 
         joinButton: { className: 'online-tab-btn ', ariaSelected: 'false' },
     });
 });
+
+runTest('UI online availability viewはoffline表示と操作禁止を純粋計算する', () => {
+    assert.deepStrictEqual(UiTabView.buildOnlineAvailabilityView(false), {
+        tabOpacity: '0.4',
+        noticeDisplay: 'block',
+        actionDisabled: true,
+    });
+    const online = UiTabView.buildOnlineAvailabilityView(true);
+    assert.deepStrictEqual(online, {
+        tabOpacity: '',
+        noticeDisplay: 'none',
+        actionDisabled: false,
+    });
+    assert.ok(Object.isFrozen(online));
+});

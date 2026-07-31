@@ -330,6 +330,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
     const pwaShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/pwaShell.js'), 'utf8');
     vm.runInContext(pwaShellSource, context, { filename: 'js/pwaShell.js' });
+    const uiTabViewSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTabView.js'), 'utf8');
+    vm.runInContext(uiTabViewSource, context, { filename: 'js/uiTabView.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const localPlayerSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
@@ -2059,6 +2061,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiWinner.js', 'js/ui.js');
     assertBefore('js/uiGameStatusView.js', 'js/ui.js');
     assertBefore('js/uiTabView.js', 'js/ui.js');
+    assertBefore('js/uiTabView.js', 'js/appShell.js');
     assertBefore('js/ui.js', 'js/savedGameValidation.js');
     assertBefore('js/savedGameValidation.js', 'js/storage.js');
     assertBefore('js/storageSettings.js', 'js/storage.js');

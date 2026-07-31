@@ -28,7 +28,15 @@ function buildOnlineTabView(tab) {
     });
 }
 
-const UiTabView = Object.freeze({ buildMainTabView, buildOnlineTabView });
+function buildOnlineAvailabilityView(online) {
+    return Object.freeze({
+        tabOpacity: online ? '' : '0.4',
+        noticeDisplay: online ? 'none' : 'block',
+        actionDisabled: !online,
+    });
+}
+
+const UiTabView = Object.freeze({ buildMainTabView, buildOnlineTabView, buildOnlineAvailabilityView });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiTabView;
 if (typeof window !== 'undefined') window.UiTabView = UiTabView;
 if (typeof globalThis !== 'undefined') globalThis.UiTabView = UiTabView;

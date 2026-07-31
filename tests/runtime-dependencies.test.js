@@ -80,6 +80,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiWatchdog.js', 'js/appShell.js'],
             ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
+            ['js/uiTabView.js', 'js/appShell.js'],
             ['js/localPlayerSettings.js', 'js/main.js'],
         ]],
         ['scripts/selfplay.js', [
@@ -126,6 +127,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiWatchdog.js', 'js/appShell.js'],
             ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
+            ['js/uiTabView.js', 'js/appShell.js'],
             ['js/localPlayerSettings.js', 'js/main.js'],
             ['js/localSaveRepository.js', 'js/storage.js'],
             ['js/savedGameValidation.js', 'js/storage.js'],
@@ -227,6 +229,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiWatchdog.js', 'js/appShell.js'],
             ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
+            ['js/uiTabView.js', 'js/appShell.js'],
             ['js/uiPendingMenu.js', 'js/ui.js'],
             ['js/uiTutorial.js', 'js/ui.js'],
             ['js/uiDiceChoice.js', 'js/ui.js'],
@@ -244,6 +247,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiWatchdog.js', 'js/appShell.js'],
             ['js/pwaShell.js', 'js/appShell.js'],
             ['js/actionUiRegistry.js', 'js/appShell.js'],
+            ['js/uiTabView.js', 'js/appShell.js'],
             ['js/localPlayerSettings.js', 'js/main.js'],
         ]]
     ];
