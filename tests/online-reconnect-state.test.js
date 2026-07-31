@@ -459,6 +459,30 @@ runTest('online reconnect effect authorityは不整合時にlegacy値へfail clo
     }
 });
 
+runTest('online reconnect status effect authorityは復元lifecycleの表示を状態順に返す', () => {
+    const fixtures = [
+        [OnlineReconnectState.events.RESTORE_STARTED, 'restoring', '♻️ ゲーム状態を復元しています...'],
+        [OnlineReconnectState.events.REPLAY_STARTED, 'replaying', '♻️ 保存済み操作を再生しています...'],
+        [OnlineReconnectState.events.RESTORE_ACTIVATED, 'active', ''],
+    ];
+    for (const [event, state, message] of fixtures) {
+        const clean = {
+            state,
+            eventState: state,
+            invalidEventTransitionCount: 0,
+            projectionMismatchCount: 0,
+        };
+        const selected = OnlineReconnectState.selectStatusEffectAuthority(
+            clean,
+            event,
+            'legacy unchanged',
+            { statusEffectAuthorityEnabled: true }
+        );
+        assert.strictEqual(selected.source, 'event');
+        assert.strictEqual(selected.message, message);
+    }
+});
+
 runTest('online reconnect status effect authorityは既定OFF・不整合時にlegacyへ戻る', () => {
     const clean = {
         state: STATES.CONNECTING,
@@ -494,7 +518,7 @@ runTest('online reconnect status effect authorityは既定OFF・不整合時にl
         { message: 'legacy mismatch', source: 'legacy-fallback', ready: false, fallbackReason: 'state-mismatch' }
     );
     assert.deepStrictEqual(
-        OnlineReconnectState.selectStatusEffectAuthority(clean, OnlineReconnectState.events.RESTORE_STARTED, 'legacy unsupported', {
+        OnlineReconnectState.selectStatusEffectAuthority(clean, OnlineReconnectState.events.GAME_ACTIVATED, 'legacy unsupported', {
             statusEffectAuthorityEnabled: true,
         }),
         { message: 'legacy unsupported', source: 'legacy-fallback', ready: false, fallbackReason: 'unsupported-event' }

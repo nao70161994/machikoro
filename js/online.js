@@ -293,6 +293,13 @@ function _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage) {
     return selection;
 }
 
+function _applyOnlineReconnectLifecycleStatusEffectAuthority(event) {
+    if (!isOnlineReconnectStatusEffectAuthorityEnabled()) return null;
+    const el = document.getElementById('onlineStatus');
+    const legacyMessage = el && typeof el.textContent === 'string' ? el.textContent : '';
+    return _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage);
+}
+
 function _onlineReconnectTimerAuthoritySelection() {
     const effectSelection = _onlineReconnectEffectSelection(isReconnectingOnline);
     const enabled = isOnlineReconnectTimerAuthorityEnabled();
@@ -1353,6 +1360,9 @@ function initSocket() {
         const restoreGeneration = ++_onlineRestoreGeneration;
         _onlineRestoreInProgress = true;
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_STARTED);
+        _applyOnlineReconnectLifecycleStatusEffectAuthority(
+            OnlineReconnectState.events.RESTORE_STARTED
+        );
         _onlineRestoreQuarantined = false;
         _onlineRestoreEventQueue = carriedEvents.map(event => ({
             type: event.type,
@@ -1444,6 +1454,9 @@ function initSocket() {
                 // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
                 isReplaying = true;
                 _observeOnlineReconnectEvent(OnlineReconnectState.events.REPLAY_STARTED);
+                _applyOnlineReconnectLifecycleStatusEffectAuthority(
+                    OnlineReconnectState.events.REPLAY_STARTED
+                );
                 initOnlineGame(playerNames, ps, playerOrder);
                 if (stateSnapshot) {
                     restoreOnlineSnapshot(stateSnapshot);
@@ -1476,6 +1489,9 @@ function initSocket() {
                 hostChanged: handleHostChanged,
             })) return;
             _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_ACTIVATED);
+            _applyOnlineReconnectLifecycleStatusEffectAuthority(
+                OnlineReconnectState.events.RESTORE_ACTIVATED
+            );
             if (pendingBeforeRejoin && !pendingAccepted &&
                 _sameOnlineActionEntry(_readPendingOutboundActionForCurrentSession(), pendingBeforeRejoin) &&
                 socket && socket.connected !== false) {

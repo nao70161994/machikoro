@@ -310,6 +310,9 @@ function selectOnlineReconnectEffectAuthority(snapshot = {}, legacyReconnecting,
 
 const ONLINE_RECONNECT_STATUS_EFFECTS = Object.freeze({
     [ONLINE_RECONNECT_EVENTS.SOCKET_DISCONNECTED]: '⏳ 接続が切れました。再接続しています...',
+    [ONLINE_RECONNECT_EVENTS.RESTORE_STARTED]: '♻️ ゲーム状態を復元しています...',
+    [ONLINE_RECONNECT_EVENTS.REPLAY_STARTED]: '♻️ 保存済み操作を再生しています...',
+    [ONLINE_RECONNECT_EVENTS.RESTORE_ACTIVATED]: '',
     [ONLINE_RECONNECT_EVENTS.RETRY_EXHAUSTED]: '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。',
 });
 

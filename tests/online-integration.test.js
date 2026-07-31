@@ -193,7 +193,7 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
 });
 
-runTest('online integration: status effect authorityはclean切断だけをevent表示へ移す', () => {
+runTest('online integration: status effect authorityは対応eventだけをevent表示へ移す', () => {
     const rt = loadIntegrationRuntime({
         includeOnline: true,
         onlineReconnectEventAuthorityEnabled: true,
@@ -222,11 +222,57 @@ runTest('online integration: status effect authorityはclean切断だけをevent
         '⏳ 接続が切れました。再接続しています...'
     );
     const selection = rt._applyOnlineReconnectStatusEffectAuthority(
-        'restore-started',
+        'game-activated',
         'legacy unsupported'
     );
     assert.strictEqual(selection.source, 'legacy-fallback');
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent, 'legacy unsupported');
+});
+
+runTest('online integration: restore lifecycle status authorityは復元完了時に表示を閉じる', async () => {
+    const rt = loadIntegrationRuntime({
+        includeOnline: true,
+        onlineReconnectEventAuthorityEnabled: true,
+        onlineReconnectEffectAuthorityEnabled: true,
+        onlineReconnectStatusEffectAuthorityEnabled: true,
+    });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    rt.__test.socketHandlers.roomCreated({ roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1' });
+    rt.__test.setOnlineState({ myPlayerName: 'Alice' });
+    await rt.__test.socketHandlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+        hostPlayerIndex: 0,
+    });
+    rt.__test.elements.onlineStatus.textContent = 'legacy restore status';
+    await rt.__test.socketHandlers.rejoinData({
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            enabledCards: rt.CARDS.map(card => card.name),
+            enabledLandmarks: rt.Player.landmarkNames(),
+            reconnectTokenHashes: ['hash-a', 'hash-b'],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot: null,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+    const snapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.eventState, 'active');
+    assert.strictEqual(snapshot.projectionMismatchCount, 0);
+    assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '');
 });
 
 runTest('online integration: timer authorityは再join上限でfailedへ遷移する', () => {
