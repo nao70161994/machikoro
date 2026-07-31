@@ -61,6 +61,7 @@ interface Window {
     UiGameStatusView: unknown;
     UiTabView: unknown;
     UiDiceChoice: unknown;
+    UiDiceDisplay: unknown;
     UiWatchdog: unknown;
     UiWinner: unknown;
     LifecycleNotify: unknown;

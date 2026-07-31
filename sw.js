@@ -79,6 +79,7 @@ const STATIC_ASSETS = [
   '/js/uiCardSelect.js',
   '/js/uiTutorial.js',
   '/js/uiDiceChoice.js',
+  '/js/uiDiceDisplay.js',
   '/js/uiModalPolicy.js',
   '/js/uiWinner.js',
   '/js/uiGameStatusView.js',

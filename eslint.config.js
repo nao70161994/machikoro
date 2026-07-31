@@ -76,6 +76,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiGameStatusView.js',
     'js/uiTabView.js',
     'js/uiDiceChoice.js',
+    'js/uiDiceDisplay.js',
     'js/uiWatchdog.js',
     'js/uiWinner.js',
 ]);

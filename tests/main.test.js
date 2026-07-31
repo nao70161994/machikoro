@@ -23,6 +23,7 @@ function loadMainRuntime(options = {}) {
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
         pwaUpdateBanner: makeElement({ style: { display: 'none' } }),
+        diceResult: makeElement(),
         diceChoose: makeElement({
             addEventListener(name, handler) { eventHandlers[`diceChoose:${name}`] = handler; },
         }),
@@ -336,6 +337,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const localPlayerSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
     vm.runInContext(localPlayerSettingsSource, context, { filename: 'js/localPlayerSettings.js' });
+    const uiDiceDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiDiceDisplay.js'), 'utf8');
+    vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
@@ -393,6 +396,25 @@ runTest('main storage helperは共通facadeでget/removeと例外fallbackを維�
     assert.strictEqual(rt.localStorage.getItem('testKey'), null);
     rt.localStorage.getItem = () => { throw new Error('blocked'); };
     assert.strictEqual(rt.safeMainStorageGet('testKey', 'fallback'), 'fallback');
+});
+
+runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
+    const rt = loadMainRuntime();
+    rt.updateDiceDisplay([], false);
+    assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '0.2');
+    assert.strictEqual(
+        rt.__test.elements.diceResult.innerHTML,
+        `<div class="dice-display">${rt.renderDiceFace(1)}</div>`
+    );
+
+    rt.updateDiceDisplay([2, 6], false);
+    assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '1');
+    assert.ok(rt.__test.elements.diceResult.innerHTML.includes(rt.renderDiceFace(2)));
+    assert.ok(rt.__test.elements.diceResult.innerHTML.includes(rt.renderDiceFace(6)));
+
+    rt.updateDiceDisplay(null, true);
+    assert.ok(rt.__test.elements.diceResult.innerHTML.includes('dice-face rolling'));
+    assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '1');
 });
 
 runTest('main changeCount は人数を2..10にクランプして表示を更新する', () => {
@@ -1930,6 +1952,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/uiCardSelect.js',
         'js/uiTutorial.js',
         'js/uiDiceChoice.js',
+        'js/uiDiceDisplay.js',
         'js/ui.js',
         'js/onlineStorage.js',
         'js/online.js',
@@ -1954,6 +1977,7 @@ runTest('UI interactability registry は描画されるaction child selectorと�
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/uiDiceChoice.js',
+        'js/uiDiceDisplay.js',
     ].map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\\n');
     const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const actionContainers = {
@@ -2057,6 +2081,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiCardSelect.js', 'js/ui.js');
     assertBefore('js/uiTutorial.js', 'js/ui.js');
     assertBefore('js/uiDiceChoice.js', 'js/ui.js');
+    assertBefore('js/uiDiceDisplay.js', 'js/main.js');
     assertBefore('js/uiModalPolicy.js', 'js/ui.js');
     assertBefore('js/uiWinner.js', 'js/ui.js');
     assertBefore('js/uiGameStatusView.js', 'js/ui.js');

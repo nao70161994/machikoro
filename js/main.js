@@ -1192,40 +1192,14 @@ function onSkip() {
 
 // サイコロの目を描画
 function renderDiceFace(num) {
-    // 9マスのドット配置（1=中央, 2=左上+右下 など）
-    const layouts = {
-        1: [0,0,0, 0,1,0, 0,0,0],
-        2: [1,0,0, 0,0,0, 0,0,1],
-        3: [1,0,0, 0,1,0, 0,0,1],
-        4: [1,0,1, 0,0,0, 1,0,1],
-        5: [1,0,1, 0,1,0, 1,0,1],
-        6: [1,0,1, 1,0,1, 1,0,1],
-    };
-    const dots = layouts[num] || layouts[1];
-    return `<div class="dice-face">
-        ${dots.map(d => `<div class="dot ${d ? '' : 'hidden'}"></div>`).join('')}
-    </div>`;
+    return UiDiceDisplay.buildFaceHtml(num);
 }
 
 function updateDiceDisplay(nums, rolling = false) {
     const el = document.getElementById("diceResult");
-    if (rolling) {
-        el.innerHTML = `<div class="dice-display">
-            <div class="dice-face rolling">
-                ${[0,0,0,0,0,0,0,0,0].map(() => `<div class="dot"></div>`).join('')}
-            </div>
-        </div>`;
-        return;
-    }
-    if (!nums || nums.length === 0) {
-        el.innerHTML = `<div class="dice-display">${renderDiceFace(1).replace('dice-face', 'dice-face' )}</div>`;
-        el.style.opacity = "0.2";
-        return;
-    }
-    el.style.opacity = "1";
-    el.innerHTML = `<div class="dice-display">
-        ${nums.map(n => renderDiceFace(n)).join('')}
-    </div>`;
+    const view = UiDiceDisplay.buildView(nums, rolling);
+    el.innerHTML = view.html;
+    if (view.opacity !== null) el.style.opacity = view.opacity;
 }
 
 function drawCitySkyline() {
