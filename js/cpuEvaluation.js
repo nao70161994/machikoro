@@ -357,6 +357,36 @@ const CPUEvaluation = Object.freeze({
             Math.max(0, 18 - features.winDistance) * 1.4;
     },
 
+    evaluatePositionScore(features, tuning) {
+        let score = features.coins * tuning.coinWeight +
+            features.turnValue * tuning.turnWeight +
+            features.landmarkProgress * tuning.landmarkWeight +
+            features.builtLandmarkCount * tuning.builtLandmarkWeight +
+            features.reachableLandmarks * tuning.landmarkReachWeight +
+            features.stableIncome * tuning.stableIncomeWeight -
+            features.winDistance * 1.8 -
+            features.redPressure * tuning.redPressureWeight;
+        if (features.remainingLandmarkCount <= 2) {
+            score += features.coins * tuning.lateCoinWeight +
+                features.landmarkProgress * tuning.lateProgressBonus;
+        }
+        if (features.remainingLandmarkCount <= 1) {
+            score += features.coins * tuning.finalCoinWeight;
+        }
+        if (features.lowValueSpam > tuning.lowValueSpamThreshold) {
+            score -= (features.lowValueSpam - tuning.lowValueSpamThreshold) * tuning.lowValueSpamPenalty;
+        }
+        score -= features.duplicateRenovationPenalty;
+        if (features.airportIdleBonus) score += 12;
+        let maxOpponentThreat = 0;
+        for (const threat of features.opponentThreats) {
+            maxOpponentThreat = Math.max(maxOpponentThreat, threat);
+            score -= threat;
+        }
+        score -= maxOpponentThreat * tuning.leaderThreatWeight;
+        return score;
+    },
+
     closestLandmarkShortfall(player, enabledLandmarks, landmarkCost) {
         if (!player || !enabledLandmarks) return Infinity;
         const remaining = [...enabledLandmarks]

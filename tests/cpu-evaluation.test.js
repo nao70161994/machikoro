@@ -142,6 +142,72 @@ runTest('CPU本体の相手脅威度wrapperはpure evaluationへ同値委譲す�
     assert.strictEqual(cpu._estimateOpponentThreatUncached(opponent, game, 1), expected);
 });
 
+runTest('CPU evaluation は盤面featureの最終score合成順をpureに維持する', () => {
+    const score = CPUEvaluation.evaluatePositionScore({
+        coins: 10,
+        turnValue: 5,
+        landmarkProgress: 2,
+        builtLandmarkCount: 1,
+        reachableLandmarks: 1,
+        stableIncome: 3,
+        winDistance: 4,
+        redPressure: 2,
+        remainingLandmarkCount: 1,
+        lowValueSpam: 4,
+        duplicateRenovationPenalty: 3,
+        airportIdleBonus: true,
+        opponentThreats: [10, 20],
+    }, {
+        coinWeight: 0.5,
+        turnWeight: 2,
+        landmarkWeight: 10,
+        builtLandmarkWeight: 5,
+        landmarkReachWeight: 4,
+        stableIncomeWeight: 1,
+        redPressureWeight: 0.5,
+        lateCoinWeight: 0.2,
+        lateProgressBonus: 1,
+        finalCoinWeight: 0.3,
+        lowValueSpamThreshold: 2,
+        lowValueSpamPenalty: 2,
+        leaderThreatWeight: 0.1,
+    });
+    assert.ok(Math.abs(score - 18.8) < 1e-9);
+});
+
+runTest('CPU本体の盤面評価wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager, LANDMARK_NAMES } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(4);
+    const playerIndex = 0;
+    const player = game.players[playerIndex];
+    player.coins = 6;
+    const enabledLandmarks = [...game.enabledLandmarks];
+    const opponentThreats = game.players
+        .filter((_, index) => index !== playerIndex)
+        .map(opponent => cpu._estimateOpponentThreat(opponent, game));
+    const expected = CPUEvaluation.evaluatePositionScore({
+        coins: player.coins,
+        turnValue: cpu._estimatePlayerTurnValue(game, playerIndex),
+        landmarkProgress: enabledLandmarks.filter(name => player.landmarks[name]).length,
+        builtLandmarkCount: player.builtLandmarkCount(),
+        reachableLandmarks: cpu._countReachableLandmarks(player, enabledLandmarks),
+        stableIncome: cpu._estimateStableIncome(game, player),
+        winDistance: cpu._estimateWinDistance(player, game),
+        redPressure: cpu._estimateRedPressure(game, playerIndex),
+        remainingLandmarkCount: enabledLandmarks.filter(name => !player.landmarks[name]).length,
+        lowValueSpam: player.countCard('改装屋') + player.countCard('貸金業') + player.countCard('雑貨屋'),
+        duplicateRenovationPenalty: cpu._duplicateRenovationPenalty(player, 'expert', game),
+        airportIdleBonus: Boolean(
+            player.landmarks[LANDMARK_NAMES.AIRPORT] &&
+            !game.builtThisTurn &&
+            game.currentPlayerIndex === playerIndex
+        ),
+        opponentThreats,
+    }, cpu.expertTuning);
+    assert.strictEqual(cpu._evaluatePosition(game, playerIndex), expected);
+});
+
 runTest('CPU evaluation はランドマーク不足額とTV妨害価値をpureに計算する', () => {
     const costs = { station: 5, airport: 10 };
     const landmarkCost = name => costs[name];

@@ -3476,31 +3476,33 @@ class CPU {
         const winDistance = this._estimateWinDistance(player, game);
         const redPressure = this._estimateRedPressure(game, playerIndex);
         const lowValueSpam = player.countCard("改装屋") + player.countCard("貸金業") + player.countCard("雑貨屋");
-        let score = player.coins * tuning.coinWeight +
-            myTurnValue * tuning.turnWeight +
-            myLandmarkProgress * tuning.landmarkWeight +
-            player.builtLandmarkCount() * tuning.builtLandmarkWeight +
-            reachableLandmarks * tuning.landmarkReachWeight +
-            stableIncome * tuning.stableIncomeWeight -
-            winDistance * 1.8 -
-            redPressure * tuning.redPressureWeight;
-        if (remainingLandmarks.length <= 2) score += player.coins * tuning.lateCoinWeight + myLandmarkProgress * tuning.lateProgressBonus;
-        if (remainingLandmarks.length <= 1) score += player.coins * tuning.finalCoinWeight;
-        if (lowValueSpam > tuning.lowValueSpamThreshold) {
-            score -= (lowValueSpam - tuning.lowValueSpamThreshold) * tuning.lowValueSpamPenalty;
-        }
-        score -= this._duplicateRenovationPenalty(player, "expert", game);
-        if (player.landmarks[LANDMARK_NAMES.AIRPORT] && !game.builtThisTurn && game.currentPlayerIndex === playerIndex) score += 12;
-        let maxOpponentThreat = 0;
+        const builtLandmarkCount = player.builtLandmarkCount();
+        const duplicateRenovationPenalty = this._duplicateRenovationPenalty(player, "expert", game);
+        const airportIdleBonus = Boolean(
+            player.landmarks[LANDMARK_NAMES.AIRPORT] &&
+            !game.builtThisTurn &&
+            game.currentPlayerIndex === playerIndex
+        );
+        const opponentThreats = [];
         for (let i = 0; i < game.players.length; i++) {
             if (i === playerIndex) continue;
-            const opponent = game.players[i];
-            const threat = this._estimateOpponentThreat(opponent, game);
-            maxOpponentThreat = Math.max(maxOpponentThreat, threat);
-            score -= threat;
+            opponentThreats.push(this._estimateOpponentThreat(game.players[i], game));
         }
-        score -= maxOpponentThreat * tuning.leaderThreatWeight;
-        return score;
+        return CPUEvaluation.evaluatePositionScore({
+            coins: player.coins,
+            turnValue: myTurnValue,
+            landmarkProgress: myLandmarkProgress,
+            builtLandmarkCount,
+            reachableLandmarks,
+            stableIncome,
+            winDistance,
+            redPressure,
+            remainingLandmarkCount: remainingLandmarks.length,
+            lowValueSpam,
+            duplicateRenovationPenalty,
+            airportIdleBonus,
+            opponentThreats,
+        }, tuning);
     }
 
     _scoreExpertCardPenalty(cardName, player, game) {
