@@ -131,6 +131,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineReconnectRequest.js');
     loadScript(context, 'js/onlineRestoreAbort.js');
     loadScript(context, 'js/onlineActionTimeout.js');
+    loadScript(context, 'js/onlineDecodeFailure.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -173,6 +174,8 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineActionTimeoutEffectAuthoritySelection = _onlineActionTimeoutEffectAuthoritySelection;
         this.getIncomingGameActionPlanSelection = getIncomingGameActionPlanSelection;
         this.getAcceptedGameActionPlanSelection = getAcceptedGameActionPlanSelection;
+        this.getIncomingGameActionDecodeEffectSelection = getIncomingGameActionDecodeEffectSelection;
+        this.getAcceptedGameActionDecodeEffectSelection = getAcceptedGameActionDecodeEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1472,6 +1475,86 @@ runTest('gameAction はゲーム未初期化なら適用せず再接続表示に
     assert.strictEqual(rt.getIncomingGameActionPlanSelection().source, 'pure-plan');
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(rt.elements.onlineStatus.textContent, '⚠️ ゲーム状態を準備できていないため、再接続しています...');
+    assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
+});
+
+runTest('malformed gameActionは明示flag時だけdecode failure executorから再同期する', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_GAME_ACTION_DECODE_EFFECT_AUTHORITY_ENABLED = true;
+    rt.initSocket();
+    rt.setOnlineState({
+        onlineGameSchemaSelection: { actionVersion: 1, snapshotVersion: 1 },
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+    });
+
+    const result = rt.getSocketHandlers().gameAction({
+        action: 'nextTurn', data: {}, playerIndex: 0, seq: 1,
+    });
+
+    assert.strictEqual(result, false);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getIncomingGameActionDecodeEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
+});
+
+runTest('malformed actionAcceptedはdecode failure executorでACK flightを解除して再同期する', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_DECODE_EFFECT_AUTHORITY_ENABLED = true;
+    rt.initSocket();
+    rt.setOnlineState({
+        onlineActionInFlight: true,
+        onlineGameSchemaSelection: { actionVersion: 1, snapshotVersion: 1 },
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+    });
+
+    const result = rt.getSocketHandlers().actionAccepted({
+        action: 'nextTurn', data: {}, playerIndex: 0, seq: 1,
+    });
+
+    assert.strictEqual(result, false);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getAcceptedGameActionDecodeEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
+});
+
+runTest('decode failure executorはreconnect shadow不整合時にlegacyへfallbackする', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
+    rt.window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_GAME_ACTION_DECODE_EFFECT_AUTHORITY_ENABLED = true;
+    rt.initSocket();
+    rt.setOnlineState({
+        onlineGameSchemaSelection: { actionVersion: 1, snapshotVersion: 1 },
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+    });
+    rt.activateOnlineReconnectForTest();
+
+    rt.getSocketHandlers().gameAction({
+        action: 'nextTurn', data: {}, playerIndex: 0, seq: 1,
+    });
+
+    const selection = rt.getIncomingGameActionDecodeEffectSelection();
+    assert.strictEqual(selection.source, 'legacy-fallback');
+    assert.strictEqual(selection.fallbackReason, 'projection-mismatch');
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
 });
 

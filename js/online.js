@@ -215,6 +215,14 @@ let _lastAcceptedGameActionPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastIncomingGameActionDecodeEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastAcceptedGameActionDecodeEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -354,6 +362,16 @@ function isAcceptedGameActionPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isIncomingGameActionDecodeEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ACTION_DECODE_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function isAcceptedGameActionDecodeEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_DECODE_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -396,6 +414,14 @@ function getIncomingGameActionPlanSelection() {
 
 function getAcceptedGameActionPlanSelection() {
     return _lastAcceptedGameActionPlanSelection;
+}
+
+function getIncomingGameActionDecodeEffectSelection() {
+    return _lastIncomingGameActionDecodeEffectSelection;
+}
+
+function getAcceptedGameActionDecodeEffectSelection() {
+    return _lastAcceptedGameActionDecodeEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -513,6 +539,8 @@ function getOnlineReconnectStateSnapshot() {
         actionTimeoutEffectAuthority: getOnlineActionTimeoutEffectSelection(),
         incomingGameActionPlanAuthority: getIncomingGameActionPlanSelection(),
         acceptedGameActionPlanAuthority: getAcceptedGameActionPlanSelection(),
+        incomingGameActionDecodeEffectAuthority: getIncomingGameActionDecodeEffectSelection(),
+        acceptedGameActionDecodeEffectAuthority: getAcceptedGameActionDecodeEffectSelection(),
     });
 }
 
@@ -966,6 +994,46 @@ function _handleOnlineActionTimeout() {
     _lastOnlineActionTimeoutPlanSelection = planSelection;
     if (planSelection.plan.decision === OnlineRetryPolicy.actionTimeoutDecisions.IGNORE) return false;
     return _runOnlineActionTimeoutEffects(planSelection);
+}
+
+function _onlineDecodeFailureEffectAuthoritySelection(enabled) {
+    const stateSelection = OnlineReconnectState.selectAuthorityState(
+        _onlineReconnectController.snapshot(),
+        { eventAuthorityEnabled: enabled }
+    );
+    const stateReady = stateSelection.source === 'event';
+    const helperAvailable = typeof OnlineDecodeFailure !== 'undefined' &&
+        typeof OnlineDecodeFailure.execute === 'function';
+    const useExecutor = enabled && stateReady && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!stateReady
+                ? (stateSelection.fallbackReason || 'state-authority-unavailable')
+                : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineDecodeFailureEffectsLegacy(plan) {
+    if (plan.clearActionFlight) _setOnlineActionInFlight(false);
+    setOnlineReconnectLegacyFlag(true);
+    if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+    return false;
+}
+
+function _runOnlineDecodeFailureEffects(plan, enabled, recordSelection) {
+    const selection = _onlineDecodeFailureEffectAuthoritySelection(enabled);
+    recordSelection(selection);
+    if (selection.source !== 'executor') {
+        return _runOnlineDecodeFailureEffectsLegacy(plan);
+    }
+    return OnlineDecodeFailure.execute(plan, {
+        clearActionFlight: () => _setOnlineActionInFlight(false),
+        markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+        requestRejoin: () => _emitOnlineRejoinRequest(),
+        scheduleRetry: () => _scheduleRejoinRetry(),
+    }).result;
 }
 
 function markOnlineGameFinished() {
@@ -1652,9 +1720,11 @@ function initSocket() {
     const handleGameAction = wirePayload => {
         const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
         if (!decodedWire.ok) {
-            setOnlineReconnectLegacyFlag(true);
-            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-            return false;
+            return _runOnlineDecodeFailureEffects(
+                { clearActionFlight: false },
+                isIncomingGameActionDecodeEffectAuthorityEnabled(),
+                selection => { _lastIncomingGameActionDecodeEffectSelection = selection; }
+            );
         }
         const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
         const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
@@ -1705,10 +1775,11 @@ function initSocket() {
     const handleActionAccepted = wirePayload => {
         const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
         if (!decodedWire.ok) {
-            _setOnlineActionInFlight(false);
-            setOnlineReconnectLegacyFlag(true);
-            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-            return false;
+            return _runOnlineDecodeFailureEffects(
+                { clearActionFlight: true },
+                isAcceptedGameActionDecodeEffectAuthorityEnabled(),
+                selection => { _lastAcceptedGameActionDecodeEffectSelection = selection; }
+            );
         }
         const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
         const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
