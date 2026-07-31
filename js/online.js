@@ -318,6 +318,15 @@ let _lastOnlinePendingResendEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlineRestoreReplayPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlineRestoreReplayEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -572,6 +581,16 @@ function isOnlinePendingResendEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_PENDING_RESEND_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRestoreReplayPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_REPLAY_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineRestoreReplayEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_REPLAY_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -706,6 +725,14 @@ function getOnlinePendingResendPlanSelection() {
 
 function getOnlinePendingResendEffectSelection() {
     return _lastOnlinePendingResendEffectSelection;
+}
+
+function getOnlineRestoreReplayPlanSelection() {
+    return _lastOnlineRestoreReplayPlanSelection;
+}
+
+function getOnlineRestoreReplayEffectSelection() {
+    return _lastOnlineRestoreReplayEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -843,6 +870,8 @@ function getOnlineReconnectStateSnapshot() {
         rejoinPersistenceEffectAuthority: getOnlineRejoinPersistenceEffectSelection(),
         pendingResendPlanAuthority: getOnlinePendingResendPlanSelection(),
         pendingResendEffectAuthority: getOnlinePendingResendEffectSelection(),
+        restoreReplayPlanAuthority: getOnlineRestoreReplayPlanSelection(),
+        restoreReplayEffectAuthority: getOnlineRestoreReplayEffectSelection(),
     });
 }
 
@@ -1793,6 +1822,22 @@ function _onlinePendingResendEffectAuthoritySelection(planSelection) {
             ? ''
             : (!authoritativePlan
                 ? 'pending-resend-plan-not-authoritative'
+                : 'executor-unavailable'),
+    });
+}
+
+function _onlineRestoreReplayEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineRestoreReplayEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlineRestoreReplay !== 'undefined' &&
+        typeof OnlineRestoreReplay.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan
+                ? 'restore-replay-plan-not-authoritative'
                 : 'executor-unavailable'),
     });
 }
@@ -2859,30 +2904,89 @@ function initSocket() {
             document.getElementById("titleScreen").style.display = "none";
             document.getElementById("gameScreen").style.display = "block";
 
+            const legacyRestoreReplayPlan = Object.freeze({
+                playerNames,
+                playerSettings: ps,
+                playerOrder,
+                stateSnapshot,
+                actionLog: replayActionLog,
+                provisionalRestore: provisionalRestore === true,
+            });
+            _lastOnlineRestoreReplayPlanSelection = OnlineRestoreReplay.selectPlan({
+                playerNames,
+                playerSettings: ps,
+                playerOrder,
+                stateSnapshot,
+                actionLog: replayActionLog,
+                provisionalRestore,
+            }, legacyRestoreReplayPlan, {
+                authorityEnabled: isOnlineRestoreReplayPlanAuthorityEnabled(),
+            });
+            _lastOnlineRestoreReplayEffectSelection =
+                _onlineRestoreReplayEffectAuthoritySelection(
+                    _lastOnlineRestoreReplayPlanSelection
+                );
+            const restoreReplayUsesExecutor =
+                _lastOnlineRestoreReplayEffectSelection.source === 'executor';
+            const restoreReplayPlan = _lastOnlineRestoreReplayPlanSelection.plan;
             let restoredOk = false;
             try {
                 // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
-                isReplaying = true;
-                _observeOnlineReconnectEvent(OnlineReconnectState.events.REPLAY_STARTED);
-                _applyOnlineReconnectLifecycleStatusEffectAuthority(
-                    OnlineReconnectState.events.REPLAY_STARTED
-                );
-                initOnlineGame(playerNames, ps, playerOrder);
-                if (stateSnapshot) {
-                    restoreOnlineSnapshot(stateSnapshot);
-                }
-                for (const { action, data } of replayActionLog) {
-                    applyReplayedAction(action, data);
-                }
-                if (provisionalRestore) {
-                    game.addLog(LOG_TYPES.SYSTEM, '⚠️ 参加者データの全一致確認により暫定復元しました');
+                if (restoreReplayUsesExecutor) {
+                    OnlineRestoreReplay.execute(restoreReplayPlan, {
+                        setReplaying: value => { isReplaying = value === true; },
+                        observeReplayStarted: () => {
+                            _observeOnlineReconnectEvent(
+                                OnlineReconnectState.events.REPLAY_STARTED
+                            );
+                        },
+                        applyReplayStatus: () => {
+                            _applyOnlineReconnectLifecycleStatusEffectAuthority(
+                                OnlineReconnectState.events.REPLAY_STARTED
+                            );
+                        },
+                        initGame: (names, settings, order) => {
+                            initOnlineGame(names, settings, order);
+                        },
+                        restoreSnapshot: snapshot => restoreOnlineSnapshot(snapshot),
+                        applyAction: (action, data) => applyReplayedAction(action, data),
+                        addProvisionalLog: () => {
+                            game.addLog(
+                                LOG_TYPES.SYSTEM,
+                                '⚠️ 参加者データの全一致確認により暫定復元しました'
+                            );
+                        },
+                    });
+                } else {
+                    isReplaying = true;
+                    _observeOnlineReconnectEvent(OnlineReconnectState.events.REPLAY_STARTED);
+                    _applyOnlineReconnectLifecycleStatusEffectAuthority(
+                        OnlineReconnectState.events.REPLAY_STARTED
+                    );
+                    initOnlineGame(
+                        restoreReplayPlan.playerNames,
+                        restoreReplayPlan.playerSettings,
+                        restoreReplayPlan.playerOrder
+                    );
+                    if (restoreReplayPlan.stateSnapshot) {
+                        restoreOnlineSnapshot(restoreReplayPlan.stateSnapshot);
+                    }
+                    for (const { action, data } of restoreReplayPlan.actionLog) {
+                        applyReplayedAction(action, data);
+                    }
+                    if (restoreReplayPlan.provisionalRestore) {
+                        game.addLog(
+                            LOG_TYPES.SYSTEM,
+                            '⚠️ 参加者データの全一致確認により暫定復元しました'
+                        );
+                    }
                 }
                 restoredOk = true;
             } catch (e) {
                 document.getElementById("onlineStatus").textContent = '❌ 復元データの再生に失敗しました。再接続してください。';
                 setOnlineReconnectLegacyFlag(true);
             } finally {
-                isReplaying = false;
+                if (!restoreReplayUsesExecutor) isReplaying = false;
             }
             if (!restoredOk) {
                 _abortOnlineRestore(restoreGeneration, "復元データの再生に失敗しました。再接続して再試行します。");

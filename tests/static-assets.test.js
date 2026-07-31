@@ -145,6 +145,8 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_REJOIN_PERSISTENCE_EFFECT_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_PENDING_RESEND_PLAN_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_PENDING_RESEND_EFFECT_AUTHORITY_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_ONLINE_RESTORE_REPLAY_PLAN_AUTHORITY_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_ONLINE_RESTORE_REPLAY_EFFECT_AUTHORITY_ENABLED'));
     assert.ok(enabled.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
     assert.ok(!enabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(wireEnabled.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
