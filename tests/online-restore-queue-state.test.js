@@ -39,6 +39,15 @@ runTest('restore queue stateはcarry対象だけpayload参照と順序を保っ�
     assert.deepStrictEqual(OnlineRestoreQueueState.planCarry(queue, false, 4).queue, []);
 });
 
+runTest('restore queue stateはdrain時に元queue参照を退避してlive queueを空にする', () => {
+    const queue = [{ type: 'gameAction', payload: { seq: 1 }, generation: 5 }];
+    const transition = OnlineRestoreQueueState.planDrain(queue);
+    assert.strictEqual(transition.drainedQueue, queue);
+    assert.deepStrictEqual(transition.queue, []);
+    assert.notStrictEqual(transition.queue, queue);
+    assert.deepStrictEqual(queue.map(event => event.generation), [5]);
+});
+
 runTest('restore queue state authorityは完全一致時だけpure transitionを選ぶ', () => {
     const payload = { seq: 1 };
     const legacy = { overflow: false, queue: [{ type: 'gameAction', payload, generation: 1 }] };
@@ -54,5 +63,11 @@ runTest('restore queue state authorityは完全一致時だけpure transitionを
     assert.strictEqual(mismatch.source, 'legacy-fallback');
     assert.strictEqual(mismatch.transition, legacy);
     assert.strictEqual(mismatch.fallbackReason, 'restore-queue-state-mismatch');
+    const drainedMismatch = OnlineRestoreQueueState.selectTransition(
+        { overflow: false, queue: [], drainedQueue: legacy.queue },
+        { overflow: false, queue: [], drainedQueue: [] },
+        { authorityEnabled: true }
+    );
+    assert.strictEqual(drainedMismatch.source, 'legacy-fallback');
     assert.strictEqual(Object.isFrozen(OnlineRestoreQueueState), true);
 });

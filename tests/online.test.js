@@ -3927,6 +3927,7 @@ runTest('queued action apply failure preserves the failed event and following ev
     const runtime = loadOnlineRuntime();
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
@@ -3952,6 +3953,11 @@ runTest('queued action apply failure preserves the failed event and following ev
     });
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueEffectSelection())), {
         source: 'pure-executor',
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStateSelection())), {
+        source: 'pure-transition',
+        matched: true,
         fallbackReason: '',
     });
 

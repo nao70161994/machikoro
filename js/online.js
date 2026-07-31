@@ -2341,8 +2341,28 @@ function _executeOnlineRestoreQueuePlan(flushSelection, handlers) {
 
 function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     if (generation !== _onlineRestoreGeneration) return false;
-    const queuedEvents = _onlineRestoreEventQueue;
-    _onlineRestoreEventQueue = [];
+    const legacyDrainTransition = Object.freeze({
+        overflow: false,
+        queue: [],
+        drainedQueue: _onlineRestoreEventQueue,
+    });
+    const pureDrainTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
+        typeof OnlineRestoreQueueState.planDrain === 'function'
+        ? OnlineRestoreQueueState.planDrain(_onlineRestoreEventQueue)
+        : null;
+    const drainSelection = _selectOnlineRestoreQueueStateTransition(
+        pureDrainTransition,
+        legacyDrainTransition
+    );
+    _lastOnlineRestoreQueueStateSelection = Object.freeze({
+        source: drainSelection.source,
+        matched: drainSelection.matched,
+        fallbackReason: drainSelection.fallbackReason,
+    });
+    const queuedEvents = drainSelection.transition.drainedQueue;
+    _onlineRestoreEventQueue = drainSelection.source === 'pure-transition'
+        ? drainSelection.transition.queue
+        : [];
     _onlineRestoreInProgress = false;
     _flushingOnlineRestoreEvents = true;
     try {

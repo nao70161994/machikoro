@@ -32,10 +32,27 @@ function planRestoreQueueCarry(queue, shouldCarry, generation) {
     });
 }
 
+function planRestoreQueueDrain(queue) {
+    const current = Array.isArray(queue) ? queue : [];
+    return Object.freeze({
+        overflow: false,
+        queue: [],
+        drainedQueue: current,
+    });
+}
+
+function sameRestoreQueueTransition(left, right) {
+    if (!left || !right || left.overflow !== right.overflow || !sameRestoreQueue(left.queue, right.queue)) {
+        return false;
+    }
+    const leftHasDrainedQueue = Object.prototype.hasOwnProperty.call(left, 'drainedQueue');
+    const rightHasDrainedQueue = Object.prototype.hasOwnProperty.call(right, 'drainedQueue');
+    return leftHasDrainedQueue === rightHasDrainedQueue &&
+        (!leftHasDrainedQueue || sameRestoreQueue(left.drainedQueue, right.drainedQueue));
+}
+
 function selectRestoreQueueTransition(pureTransition, legacyTransition, options = {}) {
-    const matched = !!pureTransition && !!legacyTransition &&
-        pureTransition.overflow === legacyTransition.overflow &&
-        sameRestoreQueue(pureTransition.queue, legacyTransition.queue);
+    const matched = sameRestoreQueueTransition(pureTransition, legacyTransition);
     const enabled = options.authorityEnabled === true;
     const usePure = enabled && matched;
     return Object.freeze({
@@ -50,6 +67,7 @@ const OnlineRestoreQueueState = Object.freeze({
     sameQueue: sameRestoreQueue,
     planEnqueue: planRestoreQueueEnqueue,
     planCarry: planRestoreQueueCarry,
+    planDrain: planRestoreQueueDrain,
     selectTransition: selectRestoreQueueTransition,
 });
 
