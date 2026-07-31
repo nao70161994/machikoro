@@ -39,7 +39,7 @@ const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
 const GameSchemaWire = require('./js/gameSchemaWire');
-const RecreateRoomPayload = require('./js/recreateRoomPayload');
+const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
 const {
@@ -967,7 +967,7 @@ io.on('connection', (socket) => {
 
     // サーバー再起動後にホストがルームを復元する
     registerRecreateSocketHandler(socket, {
-        decodePayload: payload => RecreateRoomPayload.decode(
+        decodePayload: payload => GameSchemaRecreateWire.decode(
             GAME_SCHEMA_RECREATE_WIRE_ENABLED,
             payload
         ),

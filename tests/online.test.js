@@ -32,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameEngine.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 
@@ -3848,12 +3848,33 @@ runTest('recreate room wireは既定legacyを維持し明示flag時だけv1 enve
     const current = loadOnlineRuntime();
     current.window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED = true;
     current.window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED = true;
-    const currentPayload = vm.runInContext(`({ roomId: 'ROOM01' })`, current);
+    const currentPayload = vm.runInContext(`({
+        roomId: 'ROOM01',
+        gameStartPayload: { gameSchema: { actionVersion: 1, snapshotVersion: 1 } },
+        stateSnapshot: { actionSeq: 2, phase: 'build' },
+        actionLog: [{ action: 'nextTurn', data: {}, seq: 3, clientActionId: 'client-3' }],
+        restoreAudit: { signature: 'snapshot-audit' }
+    })`, current);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(
         current.encodeOnlineRecreateRoomPayload(currentPayload).value
     )), {
         schemaVersion: 1,
-        recreateRoom: { roomId: 'ROOM01' },
+        recreateRoom: {
+            roomId: 'ROOM01',
+            gameStartPayload: { gameSchema: { actionVersion: 1, snapshotVersion: 1 } },
+            stateSnapshot: {
+                schemaVersion: 1,
+                snapshot: { actionSeq: 2, phase: 'build' },
+            },
+            actionLog: [{
+                seq: 3,
+                clientActionId: 'client-3',
+                schemaVersion: 1,
+                action: 'nextTurn',
+                data: {},
+            }],
+            restoreAudit: { signature: 'snapshot-audit' },
+        },
     });
 });
 

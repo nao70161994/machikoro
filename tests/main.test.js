@@ -2023,7 +2023,9 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/gameSnapshot.js', 'js/localSaveRepository.js');
     assertBefore('js/localSaveRepository.js', 'js/storage.js');
     assertBefore('js/gameSchemaCodec.js', 'js/gameSchemaWire.js');
-    assertBefore('js/gameSchemaWire.js', 'js/online.js');
+    assertBefore('js/gameSchemaWire.js', 'js/gameSchemaRecreateWire.js');
+    assertBefore('js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js');
+    assertBefore('js/gameSchemaRecreateWire.js', 'js/online.js');
     assertBefore('js/gameSchemaCodec.js', 'js/gameEngine.js');
     assertBefore('js/clientStorage.js', 'js/onlineStorage.js');
     assertBefore('js/clientStorage.js', 'js/online.js');

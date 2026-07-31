@@ -36,6 +36,7 @@
     "js/gameEngine.js",
     "js/gameSchemaWire.js",
     "js/recreateRoomPayload.js",
+    "js/gameSchemaRecreateWire.js",
     "js/onlinePayload.js",
     "js/onlineRestoreQueue.js",
     "js/onlinePlayerSettings.js",

@@ -162,6 +162,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/gameSchemaCodec.js',
         'js/gameSchemaWire.js',
         'js/recreateRoomPayload.js',
+        'js/gameSchemaRecreateWire.js',
         'js/gameEngine.js',
         'js/GameManager.js',
         'js/cpuTuning.js',

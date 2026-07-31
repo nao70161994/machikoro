@@ -143,14 +143,36 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
 
         recreateProbe = connect(origin);
         await onceEvent(recreateProbe, 'connect');
+        const malformedRecreatePromise = onceEvent(recreateProbe, 'appError');
+        recreateProbe.emit('recreateRoom', {
+            schemaVersion: 1,
+            recreateRoom: {
+                roomId: currentRoom.created.roomId,
+                gameStartPayload: currentStart,
+                stateSnapshot: { schemaVersion: 99, snapshot: currentSnapshot },
+                actionLog: [],
+                playerIndex: currentRoom.created.playerIndex,
+                playerName: 'Host-current',
+                reconnectToken: currentRoom.created.reconnectToken,
+            },
+        });
+        assert.strictEqual(await malformedRecreatePromise, '復元データが不完全です');
+
         const recreatedRejoinPromise = onceEvent(recreateProbe, 'rejoinData');
         recreateProbe.emit('recreateRoom', {
             schemaVersion: 1,
             recreateRoom: {
                 roomId: currentRoom.created.roomId,
                 gameStartPayload: currentStart,
-                stateSnapshot: null,
-                actionLog: [],
+                stateSnapshot: { schemaVersion: 1, snapshot: currentSnapshot },
+                actionLog: [{
+                    schemaVersion: 1,
+                    action: 'rollDice',
+                    data: {},
+                    playerIndex: currentOriginalIndex,
+                    seq: 1,
+                    clientActionId: 'schema-recreate-roll-1',
+                }],
                 restoreAudit: null,
                 playerIndex: currentRoom.created.playerIndex,
                 playerName: 'Host-current',

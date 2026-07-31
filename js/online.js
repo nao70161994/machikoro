@@ -96,10 +96,10 @@ function decodeOnlineGameSchemaSnapshotPayload(payload) {
 function encodeOnlineRecreateRoomPayload(payload) {
     const enabled = isGameSchemaRecreateWireTransportEnabled();
     if (!enabled) return { ok: true, value: payload };
-    if (typeof RecreateRoomPayload === 'undefined') {
+    if (typeof GameSchemaRecreateWire === 'undefined') {
         return { ok: false, reason: 'recreate-codec-unavailable' };
     }
-    return RecreateRoomPayload.encode(true, payload);
+    return GameSchemaRecreateWire.encode(true, payload);
 }
 
 function buildOnlineRejoinPayload(session) {
