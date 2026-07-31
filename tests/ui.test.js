@@ -125,7 +125,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/ui.js']);
     return { context, elements };
 }
 
@@ -228,9 +228,38 @@ runTest('modal open effect authorityは明示flag時も既存DOMとfocus順を�
     assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
 });
 
-runTest('modal open effect authority flagはproduction HTMLへ注入しない', () => {
+runTest('modal close effect authorityは明示flag時もunlock後にfocusを復元する', () => {
+    const calls = [];
+    const { context, elements } = loadUiRuntime({
+        globals: { MACHIKORO_UI_MODAL_CLOSE_EFFECT_AUTHORITY_ENABLED: '1' },
+    });
+    context.renderPending = () => { calls.push('renderPending'); };
+    const opener = makeElement();
+    opener.focus = () => {
+        calls.push('restoreFocus');
+        assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
+        context.document.activeElement = opener;
+    };
+    context.document.activeElement = opener;
+    assert.strictEqual(context.showRules(), true);
+    assert.strictEqual(context.uiModalClosePlanSelection(
+        'rulesModal', {}, [], null
+    ).source, 'pure-plan');
+
+    context.closeRules();
+
+    assert.deepStrictEqual(calls, ['renderPending', 'restoreFocus']);
+    assert.strictEqual(context.document.activeElement, opener);
+    assert.strictEqual(elements.rulesModal.style.display, 'none');
+    assert.strictEqual(elements.titleScreen.inert, false);
+    assert.strictEqual(elements.titleScreen.getAttribute('aria-hidden'), null);
+    assert.strictEqual(context.document.body.classList.contains('modal-open'), false);
+});
+
+runTest('modal effect authority flagsはproduction HTMLへ注入しない', () => {
     const index = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
     assert.strictEqual(index.includes('MACHIKORO_UI_MODAL_OPEN_EFFECT_AUTHORITY_ENABLED'), false);
+    assert.strictEqual(index.includes('MACHIKORO_UI_MODAL_CLOSE_EFFECT_AUTHORITY_ENABLED'), false);
 });
 
 runTest('rules/cardSelect close はvisible modalなしのorphan lockを解除する', () => {
