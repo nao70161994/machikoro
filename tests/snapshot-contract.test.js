@@ -8,6 +8,35 @@ const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const { makeSnapshotRoundtripFixtures } = require('./helpers/snapshot-fixtures');
 const { runTest } = require('./helpers/test-utils');
 
+function assertRestoredFixtureSemantics(runtime, fixture, restoredGame, snapshot, roundtrip) {
+    if (fixture.name === 'build-with-undo') {
+        assert.ok(snapshot.undoState);
+        assert.deepStrictEqual(roundtrip.undoState, snapshot.undoState);
+    }
+    if (fixture.name === 'pending') {
+        assert.strictEqual(restoredGame.phase, runtime.GAME_PHASES.PENDING);
+        assert.deepStrictEqual(
+            Array.from(runtime.GameManager.allowedActionsFor(restoredGame)),
+            [runtime.GAME_ACTIONS.RESOLVE_TV]
+        );
+        assert.deepStrictEqual(
+            Array.from(restoredGame.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
+            [`${runtime.GAME_ACTIONS.RESOLVE_TV}:pendingTV`]
+        );
+    }
+    if (fixture.name === 'max-players') {
+        assert.strictEqual(restoredGame.players.length, 10);
+        assert.strictEqual(restoredGame.currentPlayerIndex, 9);
+    }
+    if (fixture.name === 'endgame') {
+        assert.strictEqual(restoredGame.checkWinner(), restoredGame.players[2]);
+        assert.deepStrictEqual(
+            Array.from(runtime.GameManager.allowedActionsFor(restoredGame)),
+            []
+        );
+    }
+}
+
 runTest('snapshot fixtures は主要状態をserialize/restore/serializeで保持する', () => {
     const runtime = loadGameRuntime();
     const fixtures = makeSnapshotRoundtripFixtures(runtime, makeUndoStateFromMirror);
@@ -39,5 +68,6 @@ runTest('snapshot fixtures は主要状態をserialize/restore/serializeで保�
         );
 
         assert.deepStrictEqual(roundtrip, snapshot, fixture.name);
+        assertRestoredFixtureSemantics(runtime, fixture, restoredGame, snapshot, roundtrip);
     }
 });
