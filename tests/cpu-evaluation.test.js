@@ -541,6 +541,64 @@ runTest('CPU evaluation はstrong紫カード補正と購入準備をpureに判�
     assert.strictEqual(CPUEvaluation.strongPremiumPurpleReady(9, 2, 3), false);
 });
 
+runTest('CPU evaluation はstrong多人数購入補正を同じ加算順でpureに適用する', () => {
+    const base = {
+        blue: false, green: false, red: false, purple: false,
+        premiumPurple: false, premiumPurpleReady: true,
+        stableIncome: 10, remainingLandmarkCount: 2, oneDieOpponentCount: 0,
+        lowDice: false, highDice: false, itStartup: false, cost: 4,
+        hasStation: true, hasMall: true, convenienceStore: false, bakery: false,
+    };
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, {
+        ...base, green: true, stableIncome: 7, oneDieOpponentCount: 2,
+        lowDice: true, cost: 3, hasStation: false,
+    }), 15.299999999999999);
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, {
+        ...base, red: true, stableIncome: 9, oneDieOpponentCount: 2, highDice: true,
+    }), 4.700000000000001);
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, {
+        ...base, purple: true, stableIncome: 9, remainingLandmarkCount: 3,
+        oneDieOpponentCount: 2, highDice: true, itStartup: true,
+    }), 2.2000000000000006);
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, {
+        ...base, purple: true, premiumPurple: true, premiumPurpleReady: false,
+    }), 6.8);
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, {
+        ...base, blue: true, lowDice: true, cost: 2,
+    }), 12.200000000000001);
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, {
+        ...base, convenienceStore: true, bakery: true, hasStation: false, hasMall: false,
+    }), 11.1);
+    assert.strictEqual(CPUEvaluation.strongCrowdPurchaseScore(10, null), 10);
+});
+
+runTest('CPU本体のstrong多人数購入wrapperはfeature adapterからpure policyへ委譲する', () => {
+    const { CPU, GameManager, createCardByName, CARD_EFFECTS, LANDMARK_NAMES } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(4);
+    const player = game.currentPlayer();
+    const card = createCardByName('パン屋');
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    const stableIncome = cpu._estimateStableIncome(game, player);
+    const remainingLandmarkCount = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+    const oneDieOpponentCount = cpu._strongCrowdOneDieOpponents(game, player);
+    const lowDice = Math.max(...card.diceNums) <= 6;
+    const highDice = Math.min(...card.diceNums) >= 7;
+    const premiumPurple = [CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect);
+    const startScore = 3.25;
+
+    assert.strictEqual(cpu._strongCrowdPurchaseScore(startScore, card, game, player), CPUEvaluation.strongCrowdPurchaseScore(startScore, {
+        blue: false, green: true, red: false, purple: false,
+        premiumPurple, premiumPurpleReady: true,
+        stableIncome, remainingLandmarkCount, oneDieOpponentCount,
+        lowDice, highDice, itStartup: card.effect === CARD_EFFECTS.ITSTARTUP,
+        cost: card.cost,
+        hasStation: !!player.landmarks[LANDMARK_NAMES.STATION],
+        hasMall: !!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
+        convenienceStore: false, bakery: true,
+    }));
+});
+
 runTest('CPU evaluation はstrongランドマーク優先度の全分岐をpureに判定する', () => {
     const base = {
         station: false, mall: false, harbor: false, tower: false, park: false, airport: false,

@@ -2050,6 +2050,35 @@ class CPU {
         );
     }
 
+    _strongCrowdPurchaseScore(score, card, game, player) {
+        const stableIncome = this._estimateStableIncome(game, player);
+        const remainingLandmarkCount = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+        const oneDieOpponentCount = this._strongCrowdOneDieOpponents(game, player);
+        const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
+        const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
+        const premiumPurple = [CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect);
+        const premiumPurpleReady = !premiumPurple || this._strongPremiumPurpleReady(card, game, player);
+        return CPUEvaluation.strongCrowdPurchaseScore(score, {
+            blue: card.color === "blue",
+            green: card.color === "green",
+            red: card.color === "red",
+            purple: card.color === "purple",
+            premiumPurple,
+            premiumPurpleReady,
+            stableIncome,
+            remainingLandmarkCount,
+            oneDieOpponentCount,
+            lowDice,
+            highDice,
+            itStartup: card.effect === CARD_EFFECTS.ITSTARTUP,
+            cost: card.cost,
+            hasStation: !!player.landmarks[LANDMARK_NAMES.STATION],
+            hasMall: !!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
+            convenienceStore: card.name === 'コンビニ',
+            bakery: card.name === 'パン屋',
+        });
+    }
+
     _strongLandmarkUrgencyBonus(name, current, game) {
         if (this.difficulty !== "strong" || !current || !game) return 0;
         const stableIncome = this._estimateStableIncome(game, current);
@@ -2125,29 +2154,7 @@ class CPU {
         if (options.difficulty === "strong") score += this._strongRolePressure(card, game, player);
         if (options.difficulty === "normal") score += this._normalSafetyAdjustment(card, game, player);
         if (options.difficulty === "strong" && game.players.length >= 4) {
-            const stableIncome = this._estimateStableIncome(game, player);
-            const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-            const oneDieOpponents = this._strongCrowdOneDieOpponents(game, player);
-            const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
-            const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
-            const premiumPurple = [CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect);
-            if (card.color === "blue" || card.color === "green") score += 0.9;
-            if (card.color === "red") score -= 1.1;
-            if (card.color === "purple" && !premiumPurple) score -= 1.1;
-            if (stableIncome < 8 && (card.color === "blue" || card.color === "green")) score += 1.2;
-            if (stableIncome < 10 && card.color === "red") score -= 1.8;
-            if (stableIncome < 10 && card.color === "purple" && !premiumPurple) score -= 1.8;
-            if (remainingLandmarks > 2 && card.effect === CARD_EFFECTS.ITSTARTUP) score -= 2.5;
-            if (oneDieOpponents >= 2 && lowDice && (card.color === "blue" || card.color === "green")) score += 1.2;
-            if (oneDieOpponents >= 2 && highDice) score -= 1.4;
-            if (oneDieOpponents >= 2 && highDice && (card.color === "red" || card.color === "purple")) score -= 1.0;
-            if (premiumPurple && !this._strongPremiumPurpleReady(card, game, player)) score -= 3.2;
-            if (lowDice && (card.color === "blue" || card.color === "green")) score += 0.9;
-            if (lowDice && card.color === "green" && card.cost <= 3) score += 0.6;
-            if (lowDice && card.color === "blue" && card.cost <= 2) score += 0.4;
-            if (!player.landmarks[LANDMARK_NAMES.STATION] && lowDice && card.color === "green") score += 0.5;
-            if (!player.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.name === 'コンビニ') score += 0.6;
-            if (!player.landmarks[LANDMARK_NAMES.STATION] && card.name === 'パン屋') score += 0.5;
+            score = this._strongCrowdPurchaseScore(score, card, game, player);
         }
         return score;
     }

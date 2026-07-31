@@ -230,6 +230,28 @@ const CPUEvaluation = Object.freeze({
         return 0;
     },
 
+    strongCrowdPurchaseScore(score, features) {
+        if (!features) return score;
+        if (features.blue || features.green) score += 0.9;
+        if (features.red) score -= 1.1;
+        if (features.purple && !features.premiumPurple) score -= 1.1;
+        if (features.stableIncome < 8 && (features.blue || features.green)) score += 1.2;
+        if (features.stableIncome < 10 && features.red) score -= 1.8;
+        if (features.stableIncome < 10 && features.purple && !features.premiumPurple) score -= 1.8;
+        if (features.remainingLandmarkCount > 2 && features.itStartup) score -= 2.5;
+        if (features.oneDieOpponentCount >= 2 && features.lowDice && (features.blue || features.green)) score += 1.2;
+        if (features.oneDieOpponentCount >= 2 && features.highDice) score -= 1.4;
+        if (features.oneDieOpponentCount >= 2 && features.highDice && (features.red || features.purple)) score -= 1.0;
+        if (features.premiumPurple && !features.premiumPurpleReady) score -= 3.2;
+        if (features.lowDice && (features.blue || features.green)) score += 0.9;
+        if (features.lowDice && features.green && features.cost <= 3) score += 0.6;
+        if (features.lowDice && features.blue && features.cost <= 2) score += 0.4;
+        if (!features.hasStation && features.lowDice && features.green) score += 0.5;
+        if (!features.hasMall && features.convenienceStore) score += 0.6;
+        if (!features.hasStation && features.bakery) score += 0.5;
+        return score;
+    },
+
     loanBurdenValue(copyOrdinal = 1) {
         const ordinal = Math.max(1, copyOrdinal);
         return -2.5 * ordinal;
