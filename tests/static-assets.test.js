@@ -120,6 +120,7 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_ACTION_TIMEOUT_PLAN_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED'));
     assert.ok(enabled.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
     assert.ok(!enabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(wireEnabled.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));

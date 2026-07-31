@@ -203,6 +203,12 @@ let _lastOnlineActionTimeoutEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastIncomingGameActionPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -332,6 +338,11 @@ function isOnlineActionTimeoutEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isIncomingGameActionPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -366,6 +377,10 @@ function getOnlineActionTimeoutPlanSelection() {
 
 function getOnlineActionTimeoutEffectSelection() {
     return _lastOnlineActionTimeoutEffectSelection;
+}
+
+function getIncomingGameActionPlanSelection() {
+    return _lastIncomingGameActionPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -481,6 +496,7 @@ function getOnlineReconnectStateSnapshot() {
         restoreAbortEffectAuthority: getOnlineRestoreAbortEffectSelection(),
         actionTimeoutPlanAuthority: getOnlineActionTimeoutPlanSelection(),
         actionTimeoutEffectAuthority: getOnlineActionTimeoutEffectSelection(),
+        incomingGameActionPlanAuthority: getIncomingGameActionPlanSelection(),
     });
 }
 
@@ -1586,6 +1602,38 @@ function initSocket() {
         startOnlineGame();
     });
 
+    function legacyIncomingGameActionPlan(seq, lastAppliedSeq) {
+        const decisions = OnlinePayload.incomingGameActionDecisions;
+        let decision = decisions.APPLY;
+        if (!game) decision = decisions.NO_GAME;
+        else if (Number.isInteger(seq) && seq <= lastAppliedSeq) decision = decisions.DUPLICATE;
+        else if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) decision = decisions.GAP;
+        return Object.freeze({ decision });
+    }
+
+    function incomingGameActionPlanSelection(seq, lastAppliedSeq) {
+        const legacyPlan = legacyIncomingGameActionPlan(seq, lastAppliedSeq);
+        const requested = isIncomingGameActionPlanAuthorityEnabled();
+        const stateSelection = OnlineReconnectState.selectAuthorityState(
+            _onlineReconnectController.snapshot(),
+            { eventAuthorityEnabled: requested }
+        );
+        const stateReady = stateSelection.source === 'event';
+        const selected = OnlinePayload.selectIncomingGameActionPlan(
+            !!game,
+            seq,
+            lastAppliedSeq,
+            legacyPlan,
+            { authorityEnabled: requested && stateReady }
+        );
+        if (!requested || stateReady) return selected;
+        return Object.freeze({
+            ...selected,
+            source: 'legacy-fallback',
+            fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
+        });
+    }
+
     const handleGameAction = wirePayload => {
         const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
         if (!decodedWire.ok) {
@@ -1596,16 +1644,19 @@ function initSocket() {
         const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
         const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
         if (_queueOnlineEventDuringRestore('gameAction', payload)) return;
-        if (!game) {
+        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
+        const planSelection = incomingGameActionPlanSelection(seq, lastAppliedSeq);
+        _lastIncomingGameActionPlanSelection = planSelection;
+        const decisions = OnlinePayload.incomingGameActionDecisions;
+        if (planSelection.plan.decision === decisions.NO_GAME) {
             setOnlineReconnectLegacyFlag(true);
             const el = document.getElementById("onlineStatus");
             if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続しています...';
             _emitOnlineRejoinRequest();
             return !_flushingOnlineRestoreEvents;
         }
-        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
-        if (Number.isInteger(seq) && seq <= lastAppliedSeq) return;
-        if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) {
+        if (planSelection.plan.decision === decisions.DUPLICATE) return;
+        if (planSelection.plan.decision === decisions.GAP) {
             setOnlineReconnectLegacyFlag(true);
             cpuScheduleToken++;
             const el = document.getElementById("onlineStatus");

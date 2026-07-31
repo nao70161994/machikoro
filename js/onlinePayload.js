@@ -141,6 +141,39 @@ function canResendPendingOutboundAction(pending, state = {}) {
     return currentIndex === state.playerIndex;
 }
 
+const INCOMING_GAME_ACTION_DECISIONS = Object.freeze({
+    NO_GAME: 'no-game',
+    DUPLICATE: 'duplicate',
+    GAP: 'gap',
+    APPLY: 'apply',
+});
+
+function planIncomingGameAction(hasGame, seq, lastAppliedSeq) {
+    /** @type {string} */
+    let decision = INCOMING_GAME_ACTION_DECISIONS.APPLY;
+    if (hasGame !== true) {
+        decision = INCOMING_GAME_ACTION_DECISIONS.NO_GAME;
+    } else if (Number.isInteger(seq) && seq <= lastAppliedSeq) {
+        decision = INCOMING_GAME_ACTION_DECISIONS.DUPLICATE;
+    } else if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) {
+        decision = INCOMING_GAME_ACTION_DECISIONS.GAP;
+    }
+    return Object.freeze({ decision });
+}
+
+function selectIncomingGameActionPlan(hasGame, seq, lastAppliedSeq, legacyPlan, options = {}) {
+    const purePlan = planIncomingGameAction(hasGame, seq, lastAppliedSeq);
+    const matched = !!legacyPlan && purePlan.decision === legacyPlan.decision;
+    const enabled = options.authorityEnabled === true;
+    const usePure = enabled && matched;
+    return Object.freeze({
+        plan: usePure ? purePlan : legacyPlan,
+        source: usePure ? 'pure-plan' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'incoming-action-plan-mismatch',
+    });
+}
+
 function planOnlineRestoreAbort(generation, currentGeneration, statusMessage, queuedEvents = null) {
     return Object.freeze({
         abort: generation === currentGeneration,
@@ -247,6 +280,9 @@ const OnlinePayload = Object.freeze({
     normalizeSession: normalizeOnlineSession,
     normalizeActionLog: normalizeOnlineActionLog,
     normalizePendingOutboundAction,
+    incomingGameActionDecisions: INCOMING_GAME_ACTION_DECISIONS,
+    planIncomingGameAction,
+    selectIncomingGameActionPlan,
     planRestoreAbort: planOnlineRestoreAbort,
     selectRestoreAbortPlan: selectOnlineRestoreAbortPlan,
     planRestoreEventFlush: planOnlineRestoreEventFlush,

@@ -171,6 +171,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineActionTimeoutPlanSelection = getOnlineActionTimeoutPlanSelection;
         this.getOnlineActionTimeoutEffectSelection = getOnlineActionTimeoutEffectSelection;
         this.getOnlineActionTimeoutEffectAuthoritySelection = _onlineActionTimeoutEffectAuthoritySelection;
+        this.getIncomingGameActionPlanSelection = getIncomingGameActionPlanSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1455,6 +1456,7 @@ runTest('rejoinData はRL preload中に受信したgameActionを復元後に一�
 
 runTest('gameAction はゲーム未初期化なら適用せず再接続表示にする', () => {
     const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED = true;
     rt.initSocket();
     rt.setOnlineState({
         myOriginalPlayerIndex: 0,
@@ -1466,6 +1468,7 @@ runTest('gameAction はゲーム未初期化なら適用せず再接続表示に
     rt.getSocketHandlers().gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 });
 
     assert.strictEqual(rt.getGame(), null);
+    assert.strictEqual(rt.getIncomingGameActionPlanSelection().source, 'pure-plan');
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(rt.elements.onlineStatus.textContent, '⚠️ ゲーム状態を準備できていないため、再接続しています...');
     assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
@@ -3558,6 +3561,7 @@ runTest('handleAppError は無効操作時にオンライン状態を再同期�
 
 runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', () => {
     const runtime = loadOnlineRuntime(); runtime.initSocket();
+    runtime.window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED = true;
     runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0, myPlayerName: 'Alice', reconnectToken: 'token-a' });
     runtime.getSocketHandlers().gameStart({ playerNames: ['Alice', 'Bob'], playerSettings: [{ type: 'human' }, { type: 'human' }], playerOrder: [0, 1], enabledCards: CARDS.map(card => card.name), enabledLandmarks: Player.landmarkNames(), hostPlayerIndex: 0, actionSeq: 0 });
     const handlers = runtime.getSocketHandlers();
@@ -3565,6 +3569,8 @@ runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', (
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 1 });
     assert.strictEqual(runtime._readOnlineActionLog().length, 1);
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 3 });
+    assert.strictEqual(runtime.getIncomingGameActionPlanSelection().source, 'pure-plan');
+    assert.strictEqual(runtime.getIncomingGameActionPlanSelection().plan.decision, 'gap');
     assert.strictEqual(runtime._readOnlineActionLog().length, 1);
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));

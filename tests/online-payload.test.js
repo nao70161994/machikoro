@@ -391,6 +391,39 @@ runTest('online payload restore queue authorityは既定legacy・一致時pure�
 });
 
 
+runTest('online payload incoming gameAction planはlegacy判断順をpureに固定する', () => {
+    const decisions = OnlinePayload.incomingGameActionDecisions;
+    assert.deepStrictEqual(decisions, {
+        NO_GAME: 'no-game',
+        DUPLICATE: 'duplicate',
+        GAP: 'gap',
+        APPLY: 'apply',
+    });
+    assert.deepStrictEqual(OnlinePayload.planIncomingGameAction(false, 1, 0), { decision: decisions.NO_GAME });
+    assert.deepStrictEqual(OnlinePayload.planIncomingGameAction(true, 2, 2), { decision: decisions.DUPLICATE });
+    assert.deepStrictEqual(OnlinePayload.planIncomingGameAction(true, 4, 2), { decision: decisions.GAP });
+    assert.deepStrictEqual(OnlinePayload.planIncomingGameAction(true, 3, 2), { decision: decisions.APPLY });
+    assert.deepStrictEqual(OnlinePayload.planIncomingGameAction(true, undefined, 2), { decision: decisions.APPLY });
+});
+
+runTest('online payload incoming gameAction authorityはlegacy完全一致時だけpure planを採用する', () => {
+    const legacy = Object.freeze({ decision: 'gap' });
+    assert.strictEqual(OnlinePayload.selectIncomingGameActionPlan(true, 4, 2, legacy).source, 'legacy');
+    const selected = OnlinePayload.selectIncomingGameActionPlan(true, 4, 2, legacy, { authorityEnabled: true });
+    assert.strictEqual(selected.source, 'pure-plan');
+    assert.strictEqual(selected.matched, true);
+    const mismatch = Object.freeze({ decision: 'apply' });
+    assert.deepStrictEqual(
+        OnlinePayload.selectIncomingGameActionPlan(true, 4, 2, mismatch, { authorityEnabled: true }),
+        {
+            plan: mismatch,
+            source: 'legacy-fallback',
+            matched: false,
+            fallbackReason: 'incoming-action-plan-mismatch',
+        }
+    );
+});
+
 runTest('online payload restore abort planは世代一致とqueue fallbackをpureに固定する', () => {
     const queue = [{ type: 'gameAction', generation: 3 }];
     const active = OnlinePayload.planRestoreAbort(3, 3, '再同期', queue);
