@@ -39,6 +39,7 @@
     "js/gameSchemaRecreateWire.js",
     "js/onlinePayload.js",
     "js/onlineRestoreQueue.js",
+    "js/onlineReconnectCleanup.js",
     "js/onlinePlayerSettings.js",
     "js/onlineRestoreRank.js",
     "js/onlineStorage.js",

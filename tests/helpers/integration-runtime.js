@@ -210,6 +210,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineStorage.js');
         files.push('js/onlinePayload.js');
         files.push('js/onlineRestoreQueue.js');
+        files.push('js/onlineReconnectCleanup.js');
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');

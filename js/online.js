@@ -168,6 +168,11 @@ let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
 let _lastOnlineRestoreQueueEffectSelection = null;
+let _lastOnlineReconnectCleanupEffectSelection = Object.freeze({
+    source: 'none',
+    ready: false,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -262,12 +267,21 @@ function isOnlineReconnectCleanupAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectCleanupEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
 
 function getOnlineRestoreQueueEffectSelection() {
     return _lastOnlineRestoreQueueEffectSelection;
+}
+
+function getOnlineReconnectCleanupEffectSelection() {
+    return _lastOnlineReconnectCleanupEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -341,6 +355,16 @@ function _onlineReconnectCleanupAuthoritySelection(legacyValue = isReconnectingO
     );
 }
 
+function _onlineReconnectCleanupEffectAuthoritySelection(cleanupSelection) {
+    const enabled = isOnlineReconnectCleanupEffectAuthorityEnabled();
+    const active = enabled && cleanupSelection && cleanupSelection.source === 'event';
+    return Object.freeze({
+        source: active ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
+        ready: !!(cleanupSelection && cleanupSelection.ready),
+        fallbackReason: cleanupSelection && cleanupSelection.fallbackReason || '',
+    });
+}
+
 function _onlineReconnectAuthoritySelection() {
     return OnlineReconnectState.selectAuthorityState(
         _onlineReconnectController.snapshot(),
@@ -366,6 +390,7 @@ function getOnlineReconnectStateSnapshot() {
         timerAuthority: _onlineReconnectTimerAuthoritySelection(),
         callbackAuthority: _onlineReconnectCallbackAuthoritySelection(),
         cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline),
+        cleanupEffectAuthority: getOnlineReconnectCleanupEffectSelection(),
     });
 }
 
@@ -1667,6 +1692,41 @@ function initSocket() {
     return true;
 }
 
+function _runOnlineReconnectTerminalCleanupLegacy() {
+    _clearPendingOutboundActionForCurrentSession();
+    setOnlineReconnectLegacyFlag(false);
+    _removeOnlineSessionStorageItem();
+    _clearOnlineRestoreBundle();
+    updateResumeButton();
+    if (socket) {
+        socket.disconnect();
+        socket = null;
+    }
+}
+
+function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
+    const effectSelection = _onlineReconnectCleanupEffectAuthoritySelection(cleanupSelection);
+    _lastOnlineReconnectCleanupEffectSelection = effectSelection;
+    if (effectSelection.source !== 'event') {
+        _runOnlineReconnectTerminalCleanupLegacy();
+        return effectSelection;
+    }
+    OnlineReconnectCleanup.executeTerminal({
+        clearPendingOutboundAction: () => _clearPendingOutboundActionForCurrentSession(),
+        clearReconnectFlag: () => setOnlineReconnectLegacyFlag(false),
+        removeOnlineSession: () => _removeOnlineSessionStorageItem(),
+        clearRestoreBundle: () => _clearOnlineRestoreBundle(),
+        updateResumeButton: () => updateResumeButton(),
+        disconnectSocket: () => {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        },
+    });
+    return effectSelection;
+}
+
 function handleAppError(msg) {
     finishOnlineLobbyRequest();
     _setOnlineActionInFlight(false);
@@ -1689,15 +1749,7 @@ function handleAppError(msg) {
     }
     const cleanupSelection = _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline);
     if (cleanupSelection.cleanup) {
-        _clearPendingOutboundActionForCurrentSession();
-        setOnlineReconnectLegacyFlag(false);
-        _removeOnlineSessionStorageItem();
-        _clearOnlineRestoreBundle();
-        updateResumeButton();
-        if (socket) {
-            socket.disconnect();
-            socket = null;
-        }
+        _runOnlineReconnectTerminalCleanup(cleanupSelection);
     }
     document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
 }

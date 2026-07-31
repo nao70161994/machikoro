@@ -127,6 +127,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreQueue.js');
+    loadScript(context, 'js/onlineReconnectCleanup.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -158,6 +159,7 @@ function loadOnlineRuntime(options = {}) {
         this.getSocketHandlers = () => socketHandlers;
         this.getSocketEmits = () => socketEmits;
         this.getOnlineRestoreQueue = () => _onlineRestoreEventQueue.slice();
+        this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
         this.getSocketDisconnected = () => socketDisconnected;
         this.getClientFlowCheckpoints = () => clientFlowCheckpoints;
         this.getClientErrorReports = () => clientErrorReports;
@@ -3373,6 +3375,7 @@ runTest('handleAppError cleanup authorityはclean event parity時に既存effect
     rt.getOnlineState().socket.connected = false;
     rt.getSocketHandlers().disconnect();
     rt.window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_EFFECT_AUTHORITY_ENABLED = true;
     assert.strictEqual(rt.getOnlineState().reconnectStateSnapshot.cleanupAuthority.source, 'event');
 
     rt.handleAppError('再接続に失敗');
@@ -3380,12 +3383,14 @@ runTest('handleAppError cleanup authorityはclean event parity時に既存effect
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(rt.getSocketDisconnected(), true);
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
+    assert.strictEqual(rt.getOnlineReconnectCleanupEffectSelection().source, 'event');
 });
 
 runTest('handleAppError cleanup authorityは履歴不一致時にlegacy cleanupへ戻る', () => {
     const rt = loadOnlineRuntime();
     let disconnected = false;
     rt.window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_EFFECT_AUTHORITY_ENABLED = true;
     rt.localStorage.setItem('onlineSession', '{"roomId":"ROOM01"}');
     rt.setOnlineState({
         socket: { disconnect() { disconnected = true; } },
@@ -3396,6 +3401,7 @@ runTest('handleAppError cleanup authorityは履歴不一致時にlegacy cleanup�
 
     assert.strictEqual(disconnected, true);
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.getOnlineReconnectCleanupEffectSelection().source, 'legacy-fallback');
 });
 
 runTest('handleAppError は無効操作時もroomIdなしlegacy pendingを即削除しない', () => {
