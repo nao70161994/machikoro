@@ -213,6 +213,18 @@ const UiWatchdog = (() => {
         });
     }
 
+    function compactRecentCheckpoints(entries, limit = 8) {
+        const list = Array.isArray(entries) ? entries : [];
+        return list.slice(Math.max(0, list.length - limit)).map(entry => ({
+            event: entry && entry.event || '',
+            timestamp: entry && entry.timestamp || '',
+            details: entry && entry.details || {},
+            phase: entry && entry.snapshot && entry.snapshot.phase || '',
+            allowedActions: entry && entry.snapshot && Array.isArray(entry.snapshot.allowedActions)
+                ? entry.snapshot.allowedActions : [],
+        }));
+    }
+
     function compactIssueForTrace(issue) {
         if (!issue) return null;
         return {
@@ -417,6 +429,7 @@ const UiWatchdog = (() => {
         compactFreezePayloadForStorage,
         freezePayloadStorageJson,
         buildFreezeReportStack,
+        compactRecentCheckpoints,
     });
 
 })();

@@ -405,4 +405,22 @@ assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, so
     assert.strictEqual(report.recovery, null);
 }
 
+{
+    const entries = [
+        { event: 'first', timestamp: 't1', details: { attempt: 1 }, snapshot: { phase: 'roll', allowedActions: ['rollDice'] } },
+        { event: 'second', timestamp: 't2', snapshot: { phase: 'build', allowedActions: ['nextTurn'] } },
+        null,
+    ];
+    const before = JSON.stringify(entries);
+    const compact = UiWatchdog.compactRecentCheckpoints(entries, 2);
+
+    assert.deepStrictEqual(compact, [
+        { event: 'second', timestamp: 't2', details: {}, phase: 'build', allowedActions: ['nextTurn'] },
+        { event: '', timestamp: '', details: {}, phase: '', allowedActions: [] },
+    ]);
+    assert.strictEqual(JSON.stringify(entries), before);
+    assert.deepStrictEqual(UiWatchdog.compactRecentCheckpoints(null), []);
+    assert.deepStrictEqual(UiWatchdog.compactRecentCheckpoints(entries, 0), []);
+}
+
 console.log('ui watchdog tests passed');

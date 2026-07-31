@@ -1385,14 +1385,7 @@ function compactSnapshotForUiTrace(snapshot) {
 function recentClientCheckpointsForTrace(limit = 8) {
     try {
         const root = typeof window !== 'undefined' ? window : globalThis;
-        const list = root && Array.isArray(root.__machikoroClientCheckpoints) ? root.__machikoroClientCheckpoints : [];
-        return list.slice(Math.max(0, list.length - limit)).map(entry => ({
-            event: entry && entry.event || '',
-            timestamp: entry && entry.timestamp || '',
-            details: entry && entry.details || {},
-            phase: entry && entry.snapshot && entry.snapshot.phase || '',
-            allowedActions: entry && entry.snapshot && Array.isArray(entry.snapshot.allowedActions) ? entry.snapshot.allowedActions : [],
-        }));
+        return UiWatchdog.compactRecentCheckpoints(root && root.__machikoroClientCheckpoints, limit);
     } catch (_) {
         return [];
     }
