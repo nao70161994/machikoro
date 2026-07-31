@@ -151,6 +151,28 @@ function serializeLocalSaveState(game, shopStock, options = {}) {
     return state;
 }
 
+function serializeVersionedLocalSaveState(game, shopStock, options = {}) {
+    return createSnapshotEnvelope(serializeLocalSaveState(game, shopStock, options));
+}
+
+function readLocalSaveState(value) {
+    const decoded = readSnapshotEnvelope(value);
+    if (!decoded.ok) {
+        return Object.freeze({
+            ok: false,
+            schemaVersion: decoded.schemaVersion,
+            state: null,
+            legacy: false,
+        });
+    }
+    return Object.freeze({
+        ok: true,
+        schemaVersion: decoded.schemaVersion,
+        state: decoded.snapshot,
+        legacy: decoded.legacy,
+    });
+}
+
 function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LOG_LIMIT) {
     const normalizedLogLimit = Number.isInteger(logLimit) && logLimit >= 0
         ? logLimit
@@ -294,6 +316,8 @@ const GameSnapshot = Object.freeze({
     readSnapshotEnvelope,
     serializeGameState,
     serializeLocalSaveState,
+    serializeVersionedLocalSaveState,
+    readLocalSaveState,
     hydrateMutableGameState,
     hydrateUndoState,
     serializeUndoState,

@@ -220,10 +220,12 @@ function resumeGame(options = {}) {
     const raw = safeStorageGet('savedGame');
     if (!raw) return;
     try {
-        const state = JSON.parse(raw);
-        if (!isValidSavedGameState(state)) {
+        const parsed = JSON.parse(raw);
+        const decoded = GameSnapshot.readLocalSaveState(parsed);
+        if (!decoded.ok || !isValidSavedGameState(decoded.state)) {
             throw new Error('Invalid saved game');
         }
+        const state = decoded.state;
         const savedCpuSettings = normalizeSavedCpuSettings(state);
         const hasRlCpu = savedCpuSettings.some(setting => setting && setting.difficulty === 'rl');
         if (!options.skipRlPreload && hasRlCpu && typeof RLModelPortfolio !== 'undefined' && typeof RLModelPortfolio.preloadEligibleModels === 'function') {

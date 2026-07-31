@@ -416,6 +416,37 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame はv1 local-save envelopeをlegacyと同じ経路で復元する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        players: [
+            { name: 'Versioned', coins: 9, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+            { name: 'LegacyPeer', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: 0, hasYakusho: true },
+        ],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(rt.GameSnapshot.createSnapshotEnvelope(state)));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getGame().players[0].name, 'Versioned');
+    assert.strictEqual(rt.__test.getGame().players[0].coins, 9);
+    assert.strictEqual(rt.localStorage.getItem('savedGame') !== null, true);
+    assert.deepStrictEqual(rt.alerts, []);
+});
+
+runTest('storage resumeGame はunknown local-save schemaを破棄する', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('savedGame', JSON.stringify({
+        schemaVersion: 2,
+        snapshot: makeSavedGameState(),
+    }));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
 runTest('storage resumeGame は古い非同期入力とUI lockを復元前にリセットする', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));

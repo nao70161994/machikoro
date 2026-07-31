@@ -155,6 +155,43 @@ runTest('local save serializerは既存savedGame形状をversion fieldなしで�
     assert.deepStrictEqual(state.enabledLandmarksList, ['駅']);
 });
 
+runTest('local save schema境界はlegacyとv1を同じstateへdecodeする', () => {
+    const game = makeGameFixture();
+    const options = {
+        cpuSettings: [null],
+        cpuSpeed: 800,
+        enabledCardsList: ['カフェ'],
+        enabledLandmarksList: ['駅'],
+    };
+    const legacy = GameSnapshot.serializeLocalSaveState(game, { カフェ: 4 }, options);
+    const versioned = GameSnapshot.serializeVersionedLocalSaveState(game, { カフェ: 4 }, options);
+
+    assert.deepStrictEqual(versioned, { schemaVersion: 1, snapshot: legacy });
+    assert.deepStrictEqual(GameSnapshot.readLocalSaveState(legacy), {
+        ok: true, schemaVersion: 0, state: legacy, legacy: true,
+    });
+    assert.deepStrictEqual(GameSnapshot.readLocalSaveState(versioned), {
+        ok: true, schemaVersion: 1, state: versioned.snapshot, legacy: false,
+    });
+    assert.ok(Object.isFrozen(GameSnapshot.readLocalSaveState(versioned)));
+});
+
+runTest('local save schema境界はunknown versionとmalformed envelopeをfail closedにする', () => {
+    for (const value of [
+        null,
+        [],
+        { schemaVersion: 1 },
+        { schemaVersion: 1, snapshot: [] },
+        { schemaVersion: 2, snapshot: {} },
+    ]) {
+        const decoded = GameSnapshot.readLocalSaveState(value);
+        assert.strictEqual(decoded.ok, false, JSON.stringify(value));
+        assert.strictEqual(decoded.state, null, JSON.stringify(value));
+        assert.strictEqual(decoded.legacy, false, JSON.stringify(value));
+        assert.ok(Object.isFrozen(decoded));
+    }
+});
+
 runTest('共有undo serializerは既存形状とlog上限を保持する', () => {
     const game = makeGameFixture();
     const stock = { カフェ: 4 };
