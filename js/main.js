@@ -729,14 +729,24 @@ function scheduleDelayedHumanAction(action, playerIndex, run, delay = 600) {
 }
 
 function resumeDelayedHumanActionAfterPageActivation() {
-    if (typeof document !== 'undefined' && document.hidden) return;
+    const pageHidden = typeof document !== 'undefined' && !!document.hidden;
     const state = delayedHumanActionState;
-    if (!delayedHumanActionPending || !state) return;
-    if (!canRunHumanAction(state.action, state.playerIndex)) {
+    const hasCandidate = !pageHidden && delayedHumanActionPending && !!state;
+    const canRun = hasCandidate && canRunHumanAction(state.action, state.playerIndex);
+    const decision = DelayedHumanActionPolicy.resumeDecision({
+        pageHidden,
+        pending: delayedHumanActionPending,
+        hasState: !!state,
+        canRun,
+        now: canRun ? Date.now() : 0,
+        deadline: state ? state.deadline : 0,
+    });
+    if (decision === 'idle') return;
+    if (decision === 'cancel') {
         cancelDelayedHumanAction();
         return;
     }
-    if (Date.now() >= state.deadline) {
+    if (decision === 'run') {
         runDelayedHumanAction(state.token);
         return;
     }

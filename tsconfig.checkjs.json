@@ -26,6 +26,7 @@
     "js/citySkyline.js",
     "js/autoSkipPolicy.js",
     "js/confetti.js",
+    "js/delayedHumanActionPolicy.js",
     "js/stats.js",
     "js/RLModelPortfolio.js",
     "js/RLCPU.js",

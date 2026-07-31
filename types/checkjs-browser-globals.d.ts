@@ -72,6 +72,7 @@ interface Window {
     LocalPlayerSettings: unknown;
     PageActivationPolicy: unknown;
     CitySkyline: unknown;
+    DelayedHumanActionPolicy: unknown;
     ClientStorage: unknown;
     AppShellStorage: unknown;
     PwaShell: unknown;

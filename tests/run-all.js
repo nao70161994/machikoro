@@ -98,6 +98,7 @@ const TEST_GROUPS = {
         'local-player-settings.test.js',
         'auto-skip-policy.test.js',
         'page-activation-policy.test.js',
+        'delayed-human-action-policy.test.js',
         'city-skyline.test.js',
     'main.test.js',
         'client-reporting.test.js',
