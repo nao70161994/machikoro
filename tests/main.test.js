@@ -339,6 +339,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(localPlayerSettingsSource, context, { filename: 'js/localPlayerSettings.js' });
     const autoSkipPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/autoSkipPolicy.js'), 'utf8');
     vm.runInContext(autoSkipPolicySource, context, { filename: 'js/autoSkipPolicy.js' });
+    const uiPlayerDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiPlayerDisplay.js'), 'utf8');
+    vm.runInContext(uiPlayerDisplaySource, context, { filename: 'js/uiPlayerDisplay.js' });
     const uiDiceDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiDiceDisplay.js'), 'utf8');
     vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
