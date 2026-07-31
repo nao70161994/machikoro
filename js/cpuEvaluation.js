@@ -348,6 +348,15 @@ const CPUEvaluation = Object.freeze({
         return Number(Math.max(0, distance).toFixed(3));
     },
 
+    estimateOpponentThreat(features) {
+        return features.coins * 0.4 +
+            features.turnValue * 1.8 +
+            features.landmarkProgress * 9 +
+            features.builtLandmarkCount * 5 +
+            features.reachableLandmarks * 6 +
+            Math.max(0, 18 - features.winDistance) * 1.4;
+    },
+
     closestLandmarkShortfall(player, enabledLandmarks, landmarkCost) {
         if (!player || !enabledLandmarks) return Infinity;
         const remaining = [...enabledLandmarks]

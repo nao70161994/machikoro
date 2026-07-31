@@ -3444,12 +3444,14 @@ class CPU {
         const turnValue = this._estimatePlayerTurnValue(game, opponentIndex);
         const reachable = this._countReachableLandmarks(opponent, enabledLandmarks);
         const winDistance = this._estimateWinDistance(opponent, game);
-        return opponent.coins * 0.4 +
-            turnValue * 1.8 +
-            progress * 9 +
-            opponent.builtLandmarkCount() * 5 +
-            reachable * 6 +
-            Math.max(0, 18 - winDistance) * 1.4;
+        return CPUEvaluation.estimateOpponentThreat({
+            coins: opponent.coins,
+            turnValue,
+            landmarkProgress: progress,
+            builtLandmarkCount: opponent.builtLandmarkCount(),
+            reachableLandmarks: reachable,
+            winDistance,
+        });
     }
 
     _bestOpponentWinDistance(game, playerIndex) {

@@ -113,6 +113,35 @@ runTest('CPU本体の勝利距離wrapperはpure evaluationへ同値委譲する'
     assert.strictEqual(cpu._estimateWinDistanceUncached(player, game, playerIndex), expected);
 });
 
+runTest('CPU evaluation は相手脅威度の重み付き数式をpureに維持する', () => {
+    assert.strictEqual(CPUEvaluation.estimateOpponentThreat({
+        coins: 5,
+        turnValue: 4,
+        landmarkProgress: 2,
+        builtLandmarkCount: 1,
+        reachableLandmarks: 1,
+        winDistance: 7,
+    }), 53.6);
+});
+
+runTest('CPU本体の相手脅威度wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(4);
+    const opponent = game.players[1];
+    opponent.coins = 5;
+    const enabledLandmarks = [...game.enabledLandmarks];
+    const expected = CPUEvaluation.estimateOpponentThreat({
+        coins: opponent.coins,
+        turnValue: cpu._estimatePlayerTurnValue(game, 1),
+        landmarkProgress: enabledLandmarks.filter(name => opponent.landmarks[name]).length,
+        builtLandmarkCount: opponent.builtLandmarkCount(),
+        reachableLandmarks: cpu._countReachableLandmarks(opponent, enabledLandmarks),
+        winDistance: cpu._estimateWinDistance(opponent, game),
+    });
+    assert.strictEqual(cpu._estimateOpponentThreatUncached(opponent, game, 1), expected);
+});
+
 runTest('CPU evaluation はランドマーク不足額とTV妨害価値をpureに計算する', () => {
     const costs = { station: 5, airport: 10 };
     const landmarkCost = name => costs[name];
