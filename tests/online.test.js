@@ -132,6 +132,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRestoreAbort.js');
     loadScript(context, 'js/onlineActionTimeout.js');
     loadScript(context, 'js/onlineDecodeFailure.js');
+    loadScript(context, 'js/onlineActionApplyFailure.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -176,6 +177,8 @@ function loadOnlineRuntime(options = {}) {
         this.getAcceptedGameActionPlanSelection = getAcceptedGameActionPlanSelection;
         this.getIncomingGameActionDecodeEffectSelection = getIncomingGameActionDecodeEffectSelection;
         this.getAcceptedGameActionDecodeEffectSelection = getAcceptedGameActionDecodeEffectSelection;
+        this.getIncomingGameActionApplyEffectSelection = getIncomingGameActionApplyEffectSelection;
+        this.getAcceptedGameActionApplyEffectSelection = getAcceptedGameActionApplyEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1554,6 +1557,90 @@ runTest('decode failure executorはreconnect shadow不整合時にlegacyへfallb
     const selection = rt.getIncomingGameActionDecodeEffectSelection();
     assert.strictEqual(selection.source, 'legacy-fallback');
     assert.strictEqual(selection.fallbackReason, 'projection-mismatch');
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
+});
+
+runTest('live gameAction apply失敗はauthoritative plan時だけexecutorから再同期する', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED = true;
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+    });
+    const handlers = rt.getSocketHandlers();
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(card => card.name),
+        enabledLandmarks: Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+    vm.runInContext('applyReplayedAction = () => { throw new Error("live apply failed"); };', rt);
+
+    const result = handlers.gameAction({
+        action: 'nextTurn', data: {}, playerIndex: 1, seq: 1,
+    });
+
+    assert.strictEqual(result, false);
+    assert.strictEqual(rt.getIncomingGameActionPlanSelection().source, 'pure-plan');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getIncomingGameActionApplyEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
+});
+
+runTest('pending-matched actionAccepted apply失敗はflightを解除してexecutorから再同期する', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_APPLY_EFFECT_AUTHORITY_ENABLED = true;
+    rt.initSocket();
+    rt.setOnlineState({
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+    });
+    const handlers = rt.getSocketHandlers();
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(card => card.name),
+        enabledLandmarks: Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+    rt.getGame().phase = GAME_PHASES.BUILD;
+    assert.strictEqual(rt.sendAction('nextTurn', {}), true);
+    const sent = rt.getSocketEmits().filter(event => event.name === 'gameAction').pop();
+    vm.runInContext('applyReplayedAction = () => { throw new Error("accepted apply failed"); };', rt);
+
+    const result = handlers.actionAccepted({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: sent.payload.clientActionId,
+    });
+
+    assert.strictEqual(result, false);
+    assert.strictEqual(rt.getAcceptedGameActionPlanSelection().source, 'pure-plan');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getAcceptedGameActionApplyEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+    assert.strictEqual(
+        rt._readPendingOutboundAction().clientActionId,
+        sent.payload.clientActionId
+    );
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
 });
@@ -3680,6 +3767,7 @@ runTest('queued action apply failure preserves the failed event and following ev
     const runtime = loadOnlineRuntime();
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket();
@@ -3696,6 +3784,12 @@ runTest('queued action apply failure preserves the failed event and following ev
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 2);
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        runtime.getIncomingGameActionApplyEffectSelection()
+    )), {
+        source: 'legacy-fallback',
+        fallbackReason: 'game-action-plan-not-authoritative',
+    });
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueEffectSelection())), {
         source: 'pure-executor',
         fallbackReason: '',

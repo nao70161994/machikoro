@@ -99,6 +99,8 @@ function loadIntegrationRuntime(options = {}) {
             MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED: options.onlineActionTimeoutEffectAuthorityEnabled === true,
             MACHIKORO_ONLINE_GAME_ACTION_DECODE_EFFECT_AUTHORITY_ENABLED: options.onlineGameActionDecodeEffectAuthorityEnabled === true,
             MACHIKORO_ONLINE_ACTION_ACCEPTED_DECODE_EFFECT_AUTHORITY_ENABLED: options.onlineActionAcceptedDecodeEffectAuthorityEnabled === true,
+            MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED: options.onlineGameActionApplyEffectAuthorityEnabled === true,
+            MACHIKORO_ONLINE_ACTION_ACCEPTED_APPLY_EFFECT_AUTHORITY_ENABLED: options.onlineActionAcceptedApplyEffectAuthorityEnabled === true,
             innerWidth: 360,
             addEventListener(name, handler) { eventHandlers[name] = handler; },
             matchMedia() { return { matches: false }; },
@@ -221,6 +223,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineRestoreAbort.js');
         files.push('js/onlineActionTimeout.js');
         files.push('js/onlineDecodeFailure.js');
+        files.push('js/onlineActionApplyFailure.js');
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');

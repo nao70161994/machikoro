@@ -223,6 +223,14 @@ let _lastAcceptedGameActionDecodeEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastIncomingGameActionApplyEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastAcceptedGameActionApplyEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -372,6 +380,16 @@ function isAcceptedGameActionDecodeEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_ACCEPTED_DECODE_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isIncomingGameActionApplyEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function isAcceptedGameActionApplyEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_APPLY_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -422,6 +440,14 @@ function getIncomingGameActionDecodeEffectSelection() {
 
 function getAcceptedGameActionDecodeEffectSelection() {
     return _lastAcceptedGameActionDecodeEffectSelection;
+}
+
+function getIncomingGameActionApplyEffectSelection() {
+    return _lastIncomingGameActionApplyEffectSelection;
+}
+
+function getAcceptedGameActionApplyEffectSelection() {
+    return _lastAcceptedGameActionApplyEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -541,6 +567,8 @@ function getOnlineReconnectStateSnapshot() {
         acceptedGameActionPlanAuthority: getAcceptedGameActionPlanSelection(),
         incomingGameActionDecodeEffectAuthority: getIncomingGameActionDecodeEffectSelection(),
         acceptedGameActionDecodeEffectAuthority: getAcceptedGameActionDecodeEffectSelection(),
+        incomingGameActionApplyEffectAuthority: getIncomingGameActionApplyEffectSelection(),
+        acceptedGameActionApplyEffectAuthority: getAcceptedGameActionApplyEffectSelection(),
     });
 }
 
@@ -1034,6 +1062,47 @@ function _runOnlineDecodeFailureEffects(plan, enabled, recordSelection) {
         requestRejoin: () => _emitOnlineRejoinRequest(),
         scheduleRetry: () => _scheduleRejoinRetry(),
     }).result;
+}
+
+function _onlineActionApplyFailureEffectAuthoritySelection(planSelection, enabled) {
+    const decisions = OnlinePayload.incomingGameActionDecisions;
+    const pureApplyPlan = planSelection && planSelection.source === 'pure-plan' &&
+        planSelection.plan && planSelection.plan.decision === decisions.APPLY;
+    const helperAvailable = typeof OnlineActionApplyFailure !== 'undefined' &&
+        typeof OnlineActionApplyFailure.execute === 'function';
+    const useExecutor = enabled && pureApplyPlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!pureApplyPlan ? 'game-action-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineActionApplyFailureEffectsLegacy(error) {
+    console.error(error);
+    setOnlineReconnectLegacyFlag(true);
+    cpuScheduleToken++;
+    if (!_flushingOnlineRestoreEvents && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+    return false;
+}
+
+function _runOnlineActionApplyFailureEffects(error, planSelection, enabled, recordSelection) {
+    const selection = _onlineActionApplyFailureEffectAuthoritySelection(planSelection, enabled);
+    recordSelection(selection);
+    if (selection.source !== 'executor') {
+        return _runOnlineActionApplyFailureEffectsLegacy(error);
+    }
+    return OnlineActionApplyFailure.execute(
+        { requestRejoin: !_flushingOnlineRestoreEvents },
+        {
+            reportError: () => console.error(error),
+            markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+            invalidateCpuSchedule: () => { cpuScheduleToken++; },
+            requestRejoin: () => _emitOnlineRejoinRequest(),
+            scheduleRetry: () => _scheduleRejoinRetry(),
+        }
+    ).result;
 }
 
 function markOnlineGameFinished() {
@@ -1756,11 +1825,12 @@ function initSocket() {
         try {
             applyReplayedAction(action, data);
         } catch (error) {
-            console.error(error);
-            setOnlineReconnectLegacyFlag(true);
-            cpuScheduleToken++;
-            if (!_flushingOnlineRestoreEvents && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-            return false;
+            return _runOnlineActionApplyFailureEffects(
+                error,
+                planSelection,
+                isIncomingGameActionApplyEffectAuthorityEnabled(),
+                selection => { _lastIncomingGameActionApplyEffectSelection = selection; }
+            );
         }
         _setLastAppliedOnlineActionSeq(seq);
         _saveActionLog(action, data, { playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
@@ -1814,11 +1884,12 @@ function initSocket() {
         try {
             applyReplayedAction(action, data);
         } catch (error) {
-            console.error(error);
-            setOnlineReconnectLegacyFlag(true);
-            cpuScheduleToken++;
-            if (!_flushingOnlineRestoreEvents && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-            return false;
+            return _runOnlineActionApplyFailureEffects(
+                error,
+                planSelection,
+                isAcceptedGameActionApplyEffectAuthorityEnabled(),
+                selection => { _lastAcceptedGameActionApplyEffectSelection = selection; }
+            );
         }
         _setLastAppliedOnlineActionSeq(seq);
         _saveActionLog(action, data, { alreadyApplied: true, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
