@@ -18,6 +18,68 @@ function rejoinWaitingMessage(attemptCount, maxAttempts = ONLINE_RETRY_DEFAULTS.
     return '⏳ ホストの復元を待っています... (' + (attemptCount + 1) + '/' + maxAttempts + ')';
 }
 
+const REJOIN_REQUEST_DECISIONS = Object.freeze({
+    REJECT: 'reject',
+    WAIT_FOR_SOCKET: 'wait-for-socket',
+    EXHAUST: 'exhaust',
+    EMIT: 'emit',
+});
+
+/**
+ * Builds the side-effect-free decision for one rejoin request attempt.
+ * `socketConnected` preserves the legacy `connected === false` check: only an
+ * explicit false waits, while older/mocked sockets without the field can emit.
+ * @param {{hasSocket?: boolean, roomId?: *, playerIndex?: *, playerName?: *, reconnectToken?: *, socketConnected?: *, attemptCount?: number}} input
+ * @returns {{decision: string, result: boolean, nextAttemptCount: number}}
+ */
+function rejoinRequestPlan(input = {}) {
+    const attemptCount = Number.isInteger(input.attemptCount) ? input.attemptCount : 0;
+    const eligible = input.hasSocket === true && !!input.roomId &&
+        !(input.playerIndex < 0) && !!input.playerName && !!input.reconnectToken;
+    /** @type {string} */
+    let decision = REJOIN_REQUEST_DECISIONS.REJECT;
+    if (eligible && input.socketConnected === false) {
+        decision = REJOIN_REQUEST_DECISIONS.WAIT_FOR_SOCKET;
+    } else if (eligible && isRejoinExhausted(attemptCount)) {
+        decision = REJOIN_REQUEST_DECISIONS.EXHAUST;
+    } else if (eligible) {
+        decision = REJOIN_REQUEST_DECISIONS.EMIT;
+    }
+    return Object.freeze({
+        decision,
+        result: decision !== REJOIN_REQUEST_DECISIONS.REJECT,
+        nextAttemptCount: decision === REJOIN_REQUEST_DECISIONS.EMIT
+            ? attemptCount + 1
+            : attemptCount,
+    });
+}
+
+function rejoinRequestPlansEqual(left, right) {
+    return !!left && !!right && left.decision === right.decision &&
+        left.result === right.result && left.nextAttemptCount === right.nextAttemptCount;
+}
+
+/**
+ * Selects the pure request plan only after an independent legacy projection
+ * matches it exactly.
+ * @param {Object} input
+ * @param {{decision: string, result: boolean, nextAttemptCount: number}} legacyPlan
+ * @param {{authorityEnabled?: boolean}} [options]
+ * @returns {{plan: Object, source: string, matched: boolean, fallbackReason: string}}
+ */
+function selectRejoinRequestPlan(input, legacyPlan, options = {}) {
+    const purePlan = rejoinRequestPlan(input);
+    const matched = rejoinRequestPlansEqual(purePlan, legacyPlan);
+    const enabled = options.authorityEnabled === true;
+    const usePure = enabled && matched;
+    return Object.freeze({
+        plan: usePure ? purePlan : legacyPlan,
+        source: usePure ? 'pure' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'request-plan-mismatch',
+    });
+}
+
 const REJOIN_TIMEOUT_DECISIONS = Object.freeze({
     IGNORE: 'ignore',
     REJOIN: 'rejoin',
@@ -88,6 +150,9 @@ const OnlineRetryPolicy = Object.freeze({
     isRejoinExhausted,
     rejoinDeadline,
     rejoinWaitingMessage,
+    requestDecisions: REJOIN_REQUEST_DECISIONS,
+    rejoinRequestPlan,
+    selectRejoinRequestPlan,
     timeoutDecisions: REJOIN_TIMEOUT_DECISIONS,
     rejoinTimeoutDecision,
     createRejoinTimerController,

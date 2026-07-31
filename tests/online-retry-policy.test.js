@@ -109,3 +109,69 @@ runTest('online retry policy uses the ACK timeout boundary for stall detection',
     assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(NaN, 20000), false);
     assert.strictEqual(OnlineRetryPolicy.isActionAckTimedOut(startedAt, 20000, NaN), false);
 });
+
+runTest('online retry rejoin request planは拒否・待機・上限・送信をpureに判定する', () => {
+    const decisions = OnlineRetryPolicy.requestDecisions;
+    const base = {
+        hasSocket: true,
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        socketConnected: true,
+        attemptCount: 3,
+    };
+    assert.deepStrictEqual(OnlineRetryPolicy.rejoinRequestPlan({ ...base, hasSocket: false }), {
+        decision: decisions.REJECT,
+        result: false,
+        nextAttemptCount: 3,
+    });
+    assert.deepStrictEqual(OnlineRetryPolicy.rejoinRequestPlan({ ...base, socketConnected: false }), {
+        decision: decisions.WAIT_FOR_SOCKET,
+        result: true,
+        nextAttemptCount: 3,
+    });
+    assert.deepStrictEqual(OnlineRetryPolicy.rejoinRequestPlan({ ...base, attemptCount: 8 }), {
+        decision: decisions.EXHAUST,
+        result: true,
+        nextAttemptCount: 8,
+    });
+    assert.deepStrictEqual(OnlineRetryPolicy.rejoinRequestPlan(base), {
+        decision: decisions.EMIT,
+        result: true,
+        nextAttemptCount: 4,
+    });
+    assert.ok(Object.isFrozen(OnlineRetryPolicy.rejoinRequestPlan(base)));
+});
+
+runTest('online retry rejoin request planはlegacy完全一致時だけauthorityを採用する', () => {
+    const input = {
+        hasSocket: true,
+        roomId: 'ROOM01',
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        socketConnected: true,
+        attemptCount: 0,
+    };
+    const legacy = Object.freeze({ decision: 'emit', result: true, nextAttemptCount: 1 });
+    assert.deepStrictEqual(OnlineRetryPolicy.selectRejoinRequestPlan(input, legacy), {
+        plan: legacy,
+        source: 'legacy',
+        matched: true,
+        fallbackReason: '',
+    });
+    const selected = OnlineRetryPolicy.selectRejoinRequestPlan(input, legacy, { authorityEnabled: true });
+    assert.strictEqual(selected.source, 'pure');
+    assert.deepStrictEqual(selected.plan, legacy);
+    const mismatch = Object.freeze({ decision: 'emit', result: true, nextAttemptCount: 2 });
+    assert.deepStrictEqual(
+        OnlineRetryPolicy.selectRejoinRequestPlan(input, mismatch, { authorityEnabled: true }),
+        {
+            plan: mismatch,
+            source: 'legacy-fallback',
+            matched: false,
+            fallbackReason: 'request-plan-mismatch',
+        }
+    );
+});

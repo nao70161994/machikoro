@@ -160,6 +160,9 @@ function loadOnlineRuntime(options = {}) {
         this.getSocketEmits = () => socketEmits;
         this.getOnlineRestoreQueue = () => _onlineRestoreEventQueue.slice();
         this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
+        this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
+        this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
+        this.markOnlineGameFinished = markOnlineGameFinished;
         this.getSocketDisconnected = () => socketDisconnected;
         this.getClientFlowCheckpoints = () => clientFlowCheckpoints;
         this.getClientErrorReports = () => clientErrorReports;
@@ -3302,6 +3305,48 @@ runTest('buildOnlineSnapshot は建設後のUndo状態を保持する', () => {
 
     assert.ok(snapshot.undoState);
     assert.deepStrictEqual(snapshot.undoState.playerCoins, [4, 3]);
+});
+
+runTest('rejoin request plan authorityはclean state parity時だけpure planを採用する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.initSocket();
+    runtime.setOnlineState({
+        isOnlineGame: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    runtime.getOnlineState().socket.connected = false;
+    runtime.getSocketHandlers().disconnect();
+    runtime.getOnlineState().socket.connected = true;
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED = true;
+
+    assert.strictEqual(runtime.emitOnlineRejoinRequest(), true);
+    const selection = runtime.getOnlineReconnectRequestPlanSelection();
+    assert.strictEqual(selection.source, 'pure');
+    assert.strictEqual(selection.matched, true);
+    assert.strictEqual(selection.plan.decision, 'emit');
+    assert.strictEqual(runtime.getSocketEmits().at(-1).name, 'rejoinRoom');
+});
+
+runTest('rejoin request plan authorityはstate履歴不一致時にlegacy planへ戻る', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.initSocket();
+    runtime.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token',
+    });
+    runtime.markOnlineGameFinished();
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED = true;
+
+    assert.strictEqual(runtime.emitOnlineRejoinRequest(), true);
+    const selection = runtime.getOnlineReconnectRequestPlanSelection();
+    assert.strictEqual(selection.source, 'legacy-fallback');
+    assert.strictEqual(selection.plan.decision, 'emit');
+    assert.strictEqual(runtime.getSocketEmits().at(-1).name, 'rejoinRoom');
 });
 
 runTest('handleAppError は別roomのpending actionを消さない', () => {

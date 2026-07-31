@@ -173,6 +173,12 @@ let _lastOnlineReconnectCleanupEffectSelection = Object.freeze({
     ready: false,
     fallbackReason: '',
 });
+let _lastOnlineReconnectRequestPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -272,6 +278,11 @@ function isOnlineReconnectCleanupEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectRequestPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -282,6 +293,10 @@ function getOnlineRestoreQueueEffectSelection() {
 
 function getOnlineReconnectCleanupEffectSelection() {
     return _lastOnlineReconnectCleanupEffectSelection;
+}
+
+function getOnlineReconnectRequestPlanSelection() {
+    return _lastOnlineReconnectRequestPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -391,6 +406,7 @@ function getOnlineReconnectStateSnapshot() {
         callbackAuthority: _onlineReconnectCallbackAuthoritySelection(),
         cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline),
         cleanupEffectAuthority: getOnlineReconnectCleanupEffectSelection(),
+        requestPlanAuthority: getOnlineReconnectRequestPlanSelection(),
     });
 }
 
@@ -653,6 +669,50 @@ function _setOnlineActionInFlight(value) {
     }
 }
 
+function _legacyOnlineRejoinRequestPlan(session) {
+    const decisions = OnlineRetryPolicy.requestDecisions;
+    let decision = decisions.REJECT;
+    if (socket && session.roomId && !(session.playerIndex < 0) && session.playerName && session.reconnectToken) {
+        if (socket.connected === false) decision = decisions.WAIT_FOR_SOCKET;
+        else if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) decision = decisions.EXHAUST;
+        else decision = decisions.EMIT;
+    }
+    return Object.freeze({
+        decision,
+        result: decision !== decisions.REJECT,
+        nextAttemptCount: decision === decisions.EMIT
+            ? _rejoinRetryCount + 1
+            : _rejoinRetryCount,
+    });
+}
+
+function _onlineReconnectRequestPlanSelection(session) {
+    const legacyPlan = _legacyOnlineRejoinRequestPlan(session);
+    const requested = isOnlineReconnectRequestPlanAuthorityEnabled();
+    const stateSelection = OnlineReconnectState.selectAuthorityState(
+        _onlineReconnectController.snapshot(),
+        { eventAuthorityEnabled: requested }
+    );
+    const stateReady = stateSelection.source === 'event';
+    const selected = OnlineRetryPolicy.selectRejoinRequestPlan({
+        hasSocket: !!socket,
+        roomId: session.roomId,
+        playerIndex: session.playerIndex,
+        playerName: session.playerName,
+        reconnectToken: session.reconnectToken,
+        socketConnected: socket && socket.connected,
+        attemptCount: _rejoinRetryCount,
+    }, legacyPlan, {
+        authorityEnabled: requested && stateReady,
+    });
+    if (!requested || stateReady) return selected;
+    return Object.freeze({
+        ...selected,
+        source: 'legacy-fallback',
+        fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
+    });
+}
+
 function _emitOnlineRejoinRequest(sessionOverride = null) {
     const session = sessionOverride || {
         roomId: myRoomId,
@@ -660,13 +720,21 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
         playerName: myPlayerName,
         reconnectToken,
     };
-    if (!socket || !session.roomId || session.playerIndex < 0 || !session.playerName || !session.reconnectToken) return false;
+    let planSelection = _onlineReconnectRequestPlanSelection(session);
+    if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.REJECT) {
+        _lastOnlineReconnectRequestPlanSelection = planSelection;
+        return false;
+    }
     setOnlineReconnectLegacyFlag(true);
     _observeOnlineReconnectEvent(OnlineReconnectState.events.RECONNECT_REQUESTED);
-    if (socket.connected === false) return true;
-    if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) return _finishRejoinRetryTimeout();
+    planSelection = _onlineReconnectRequestPlanSelection(session);
+    _lastOnlineReconnectRequestPlanSelection = planSelection;
+    if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.WAIT_FOR_SOCKET) return true;
+    if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.EXHAUST) {
+        return _finishRejoinRetryTimeout();
+    }
     _clearOnlineRejoinTimer();
-    _rejoinRetryCount++;
+    _rejoinRetryCount = planSelection.plan.nextAttemptCount;
     socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
     _armOnlineRejoinResponseTimeout();
     return true;
