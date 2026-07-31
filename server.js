@@ -182,7 +182,12 @@ const {
     sanitizeName,
     isValidGameSchemaMetadata,
 });
-const { buildRestoredRoom, planRestoredRoomMetadata } = makeRestoredRoom({
+const {
+    buildRestoredRoom,
+    planRestoredRoomMetadata,
+    planRestoredRoomActivation,
+    activationDecisions: restoredRoomActivationDecisions,
+} = makeRestoredRoom({
     sanitizeStateSnapshot: sanitizeClientStateSnapshot,
 });
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
@@ -1288,14 +1293,18 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         restoredRoom.actionSeq
     );
     restoredRoom.actionLog = [];
-    if (hasOwnRoom(roomId)) {
-        if (approvedHostless) {
-            emitAppError(socket, '同じルームIDが既に使用されています');
-            return { ok: false, reason: 'room-exists' };
-        }
-        detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
-        delete rooms[roomId];
+    const activationPlan = planRestoredRoomActivation({
+        roomExists: hasOwnRoom(roomId),
+        approvedHostless,
+    });
+    if (activationPlan.decision === restoredRoomActivationDecisions.REJECT_EXISTING_HOSTLESS) {
+        emitAppError(socket, '同じルームIDが既に使用されています');
+        return { ok: false, reason: 'room-exists' };
     }
+    if (activationPlan.detachExisting) {
+        detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+    }
+    if (activationPlan.deleteExisting) delete rooms[roomId];
     rooms[roomId] = restoredRoom;
     persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
     socket.join(roomId);

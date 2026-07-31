@@ -23,12 +23,40 @@ function planRestoredRoomMetadata(input = {}) {
     });
 }
 
+const RESTORED_ROOM_ACTIVATION_DECISIONS = Object.freeze({
+    INSTALL_NEW: 'install-new',
+    REPLACE_EXISTING: 'replace-existing',
+    REJECT_EXISTING_HOSTLESS: 'reject-existing-hostless',
+});
+
+/**
+ * Selects the existing-room activation branch without touching the room map.
+ * @param {{roomExists?: boolean, approvedHostless?: boolean}} input
+ * @returns {{decision: string, detachExisting: boolean, deleteExisting: boolean, install: boolean}}
+ */
+function planRestoredRoomActivation(input = {}) {
+    const roomExists = input.roomExists === true;
+    const approvedHostless = input.approvedHostless === true;
+    const reject = roomExists && approvedHostless;
+    const replace = roomExists && !approvedHostless;
+    return Object.freeze({
+        decision: reject
+            ? RESTORED_ROOM_ACTIVATION_DECISIONS.REJECT_EXISTING_HOSTLESS
+            : (replace
+                ? RESTORED_ROOM_ACTIVATION_DECISIONS.REPLACE_EXISTING
+                : RESTORED_ROOM_ACTIVATION_DECISIONS.INSTALL_NEW),
+        detachExisting: replace,
+        deleteExisting: replace,
+        install: !reject,
+    });
+}
+
 /**
  * Builds the mutable room shell from already-validated restore inputs.
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
  * @param {{sanitizeStateSnapshot?: function(*, number): *}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, planRestoredRoomMetadata: function(Object): Object}}
+ * @returns {{buildRestoredRoom: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
@@ -69,7 +97,12 @@ function makeRestoredRoom(dependencies = {}) {
         };
     }
 
-    return Object.freeze({ buildRestoredRoom, planRestoredRoomMetadata });
+    return Object.freeze({
+        buildRestoredRoom,
+        planRestoredRoomMetadata,
+        planRestoredRoomActivation,
+        activationDecisions: RESTORED_ROOM_ACTIVATION_DECISIONS,
+    });
 }
 
 module.exports = makeRestoredRoom;

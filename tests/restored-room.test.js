@@ -29,6 +29,37 @@ function fixture(overrides = {}) {
     };
 }
 
+runTest('restored room activation planは新規・置換・hostless拒否をpureに分ける', () => {
+    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    assert.deepStrictEqual(builder.planRestoredRoomActivation({
+        roomExists: false,
+        approvedHostless: false,
+    }), {
+        decision: builder.activationDecisions.INSTALL_NEW,
+        detachExisting: false,
+        deleteExisting: false,
+        install: true,
+    });
+    assert.deepStrictEqual(builder.planRestoredRoomActivation({
+        roomExists: true,
+        approvedHostless: false,
+    }), {
+        decision: builder.activationDecisions.REPLACE_EXISTING,
+        detachExisting: true,
+        deleteExisting: true,
+        install: true,
+    });
+    assert.deepStrictEqual(builder.planRestoredRoomActivation({
+        roomExists: true,
+        approvedHostless: true,
+    }), {
+        decision: builder.activationDecisions.REJECT_EXISTING_HOSTLESS,
+        detachExisting: false,
+        deleteExisting: false,
+        install: false,
+    });
+});
+
 runTest('restored room metadata planは通常復元のhost/seqを入力非破壊で固定する', () => {
     const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
     const input = {
