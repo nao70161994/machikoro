@@ -167,6 +167,146 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'loan-dormancy-recovery',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                const loan = runtime.createCardByName('貸金業');
+                game.players[0].cards = [loan];
+                game.players[0].dormantCards = [];
+                game.players[0].makeDormant(loan);
+                game.players[0].coins = 10;
+            },
+            actions: [['rollDice', { forceDice: 5, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                assert.strictEqual(game.players[0].coins, 10);
+                assert.strictEqual(game.players[0].isDormant(game.players[0].cards[0]), false);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
+            name: 'winery-income-and-dormancy',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                const winery = runtime.createCardByName('ワイナリー');
+                game.players[0].cards = [
+                    runtime.createCardByName('ブドウ園'),
+                    runtime.createCardByName('ブドウ園'),
+                    winery,
+                ];
+                game.players[0].dormantCards = [];
+                game.players[0].coins = 3;
+            },
+            actions: [['rollDice', { forceDice: 9, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                assert.strictEqual(game.players[0].coins, 15);
+                assert.strictEqual(game.players[0].isDormant(game.players[0].cards[2]), true);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
+            name: 'publisher-multiplayer-transfer',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                game.players[0].cards = [runtime.createCardByName('出版社')];
+                game.players[0].dormantCards = [];
+                game.players[0].coins = 3;
+                for (let index = 1; index < game.players.length; index++) {
+                    game.players[index].cards = [
+                        runtime.createCardByName('カフェ'),
+                        runtime.createCardByName('カフェ'),
+                        runtime.createCardByName('パン屋'),
+                    ];
+                    game.players[index].dormantCards = [];
+                    game.players[index].coins = 10;
+                }
+            },
+            actions: [['rollDice', { forceDice: 7, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                assert.strictEqual(game.players[0].coins, 3 + 3 * (game.players.length - 1));
+                for (let index = 1; index < game.players.length; index++) {
+                    assert.strictEqual(game.players[index].coins, 7);
+                }
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
+            name: 'tax-office-threshold-transfer',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                game.players[0].cards = [runtime.createCardByName('税務署')];
+                game.players[0].dormantCards = [];
+                game.players[0].coins = 3;
+                for (let index = 1; index < game.players.length; index++) {
+                    game.players[index].cards = [];
+                    game.players[index].dormantCards = [];
+                    game.players[index].coins = index % 2 === 1 ? 12 : 9;
+                }
+            },
+            actions: [['rollDice', { forceDice: 8, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                const taxedPlayers = Math.ceil((game.players.length - 1) / 2);
+                assert.strictEqual(game.players[0].coins, 3 + taxedPlayers * 6);
+                for (let index = 1; index < game.players.length; index++) {
+                    assert.strictEqual(game.players[index].coins, index % 2 === 1 ? 6 : 9);
+                }
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
+            name: 'it-startup-multiplayer-transfer',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                game.players[0].cards = [runtime.createCardByName('ITベンチャー')];
+                game.players[0].dormantCards = [];
+                game.players[0].coins = 3;
+                game.players[0].itVentureCoins = 2;
+                for (let index = 1; index < game.players.length; index++) {
+                    game.players[index].cards = [];
+                    game.players[index].dormantCards = [];
+                    game.players[index].coins = index;
+                }
+            },
+            actions: [['rollDice', { forceDice: 10, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                let expectedIncome = 0;
+                for (let index = 1; index < game.players.length; index++) {
+                    const paid = Math.min(2, index);
+                    expectedIncome += paid;
+                    assert.strictEqual(game.players[index].coins, index - paid);
+                }
+                assert.strictEqual(game.players[0].coins, 3 + expectedIncome);
+                assert.strictEqual(game.players[0].itVentureCoins, 2);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
+            name: 'park-multiplayer-redistribution',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                for (let index = 0; index < game.players.length; index++) {
+                    game.players[index].cards = [];
+                    game.players[index].dormantCards = [];
+                    game.players[index].coins = index + 1;
+                }
+                game.players[0].cards = [runtime.createCardByName('公園')];
+            },
+            actions: [['rollDice', { forceDice: 11, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                const total = game.players.length * (game.players.length + 1) / 2;
+                const each = Math.floor(total / game.players.length);
+                const remainder = total - each * game.players.length;
+                assert.strictEqual(game.players[0].coins, each + remainder);
+                for (let index = 1; index < game.players.length; index++) {
+                    assert.strictEqual(game.players[index].coins, each);
+                }
+                assert.strictEqual(
+                    game.players.reduce((sum, player) => sum + player.coins, 0),
+                    total
+                );
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
             name: 'pending-tv',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.PENDING;
