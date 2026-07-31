@@ -94,6 +94,7 @@
     "js/clientReporting.js",
     "js/lifecycleNotify.js",
     "js/localPlayerSettings.js",
+    "js/pageActivationPolicy.js",
     "js/clientStorage.js",
     "js/appShellStorage.js",
     "js/pwaShell.js",

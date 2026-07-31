@@ -202,6 +202,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/appShell.js',
         'js/localPlayerSettings.js',
         'js/autoSkipPolicy.js',
+        'js/pageActivationPolicy.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
         'js/storage.js',

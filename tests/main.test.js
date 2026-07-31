@@ -339,6 +339,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(localPlayerSettingsSource, context, { filename: 'js/localPlayerSettings.js' });
     const autoSkipPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/autoSkipPolicy.js'), 'utf8');
     vm.runInContext(autoSkipPolicySource, context, { filename: 'js/autoSkipPolicy.js' });
+    const pageActivationPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/pageActivationPolicy.js'), 'utf8');
+    vm.runInContext(pageActivationPolicySource, context, { filename: 'js/pageActivationPolicy.js' });
     const uiPlayerDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiPlayerDisplay.js'), 'utf8');
     vm.runInContext(uiPlayerDisplaySource, context, { filename: 'js/uiPlayerDisplay.js' });
     const uiDiceDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiDiceDisplay.js'), 'utf8');
@@ -2130,6 +2132,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/actionUiRegistry.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
     assertBefore('js/localPlayerSettings.js', 'js/main.js');
+    assertBefore('js/pageActivationPolicy.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
 });
 

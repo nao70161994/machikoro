@@ -70,6 +70,7 @@ interface Window {
     UiWinner: unknown;
     LifecycleNotify: unknown;
     LocalPlayerSettings: unknown;
+    PageActivationPolicy: unknown;
     ClientStorage: unknown;
     AppShellStorage: unknown;
     PwaShell: unknown;

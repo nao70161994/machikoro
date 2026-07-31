@@ -750,17 +750,11 @@ function resumeDelayedHumanActionAfterPageActivation() {
 }
 
 function cpuPageActivationOutcome(before, after, pageHidden) {
-    if (pageHidden) return 'page-hidden';
-    if (!before || !before.isCpuTurn) return 'not-cpu-turn';
-    if (before.blockedReason) return 'blocked:' + before.blockedReason;
-    if (before.stepScheduled) return 'already-scheduled';
-    if (after && after.stepScheduled) return 'rescheduled';
-    return 'not-rescheduled';
+    return PageActivationPolicy.cpuOutcome(before, after, pageHidden);
 }
 
 function pageHiddenDurationMs(now) {
-    if (!Number.isFinite(pageHiddenAt) || pageHiddenAt <= 0) return null;
-    return Math.max(0, now - pageHiddenAt);
+    return PageActivationPolicy.hiddenDurationMs(pageHiddenAt, now);
 }
 
 function resumeTurnAfterPageActivation(reason) {
