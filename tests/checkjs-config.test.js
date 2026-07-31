@@ -76,6 +76,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/onlineActionNoGame.js'));
     assert.ok(config.files.includes('js/onlineActionCommit.js'));
     assert.ok(config.files.includes('js/onlineSocketConnect.js'));
+    assert.ok(config.files.includes('js/onlineSocketDisconnect.js'));
     assert.ok(config.files.includes('js/onlineStorage.js'));
     assert.ok(config.files.includes('js/onlinePlayerSettings.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));

@@ -137,6 +137,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineActionNoGame.js');
     loadScript(context, 'js/onlineActionCommit.js');
     loadScript(context, 'js/onlineSocketConnect.js');
+    loadScript(context, 'js/onlineSocketDisconnect.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -191,6 +192,8 @@ function loadOnlineRuntime(options = {}) {
         this.getAcceptedGameActionCommitEffectSelection = getAcceptedGameActionCommitEffectSelection;
         this.getOnlineSocketConnectPlanSelection = getOnlineSocketConnectPlanSelection;
         this.getOnlineSocketConnectEffectSelection = getOnlineSocketConnectEffectSelection;
+        this.getOnlineSocketDisconnectPlanSelection = getOnlineSocketDisconnectPlanSelection;
+        this.getOnlineSocketDisconnectEffectSelection = getOnlineSocketDisconnectEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;

@@ -125,6 +125,8 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     });
     rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_PLAN_AUTHORITY_ENABLED = true;
     rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_EFFECT_AUTHORITY_ENABLED = true;
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
     rt.initSocket();
@@ -162,6 +164,15 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     assert.strictEqual(snapshot.timerAuthority.source, 'event');
     assert.strictEqual(snapshot.timerAuthority.pending, false);
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(snapshot.socketDisconnectPlanAuthority)), {
+        plan: { active: true, abortRestore: false },
+        source: 'pure-plan',
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(snapshot.socketDisconnectEffectAuthority)), {
+        source: 'executor',
+        fallbackReason: '',
+    });
 
     rt.__test.getOnlineState().socket.connected = true;
     rt.__test.socketHandlers.connect();

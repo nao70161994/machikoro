@@ -264,6 +264,15 @@ let _lastOnlineSocketConnectEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlineSocketDisconnectPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlineSocketDisconnectEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -463,6 +472,16 @@ function isOnlineSocketConnectEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineSocketDisconnectPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineSocketDisconnectEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -553,6 +572,14 @@ function getOnlineSocketConnectPlanSelection() {
 
 function getOnlineSocketConnectEffectSelection() {
     return _lastOnlineSocketConnectEffectSelection;
+}
+
+function getOnlineSocketDisconnectPlanSelection() {
+    return _lastOnlineSocketDisconnectPlanSelection;
+}
+
+function getOnlineSocketDisconnectEffectSelection() {
+    return _lastOnlineSocketDisconnectEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -682,6 +709,8 @@ function getOnlineReconnectStateSnapshot() {
         acceptedGameActionCommitEffectAuthority: getAcceptedGameActionCommitEffectSelection(),
         socketConnectPlanAuthority: getOnlineSocketConnectPlanSelection(),
         socketConnectEffectAuthority: getOnlineSocketConnectEffectSelection(),
+        socketDisconnectPlanAuthority: getOnlineSocketDisconnectPlanSelection(),
+        socketDisconnectEffectAuthority: getOnlineSocketDisconnectEffectSelection(),
     });
 }
 
@@ -1444,6 +1473,100 @@ function _runOnlineSocketConnectEffects() {
         },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         requestRejoin: () => _emitOnlineRejoinRequest(),
+    }).result;
+}
+
+function _legacyOnlineSocketDisconnectPlan() {
+    return Object.freeze({
+        active: isOnlineGame || _onlineRestoreInProgress,
+        abortRestore: _onlineRestoreInProgress,
+    });
+}
+
+function _onlineSocketDisconnectPlanSelection() {
+    _onlineReconnectController.reconcile(
+        _onlineReconnectObservationFlags(),
+        { event: 'socket-disconnect-plan' }
+    );
+    const legacyPlan = _legacyOnlineSocketDisconnectPlan();
+    const requested = isOnlineSocketDisconnectPlanAuthorityEnabled();
+    const stateSelection = OnlineReconnectState.selectAuthorityState(
+        _onlineReconnectController.snapshot(),
+        { eventAuthorityEnabled: requested }
+    );
+    const stateReady = stateSelection.source === 'event';
+    const selected = OnlineSocketDisconnect.selectPlan({
+        onlineActive: isOnlineGame,
+        restoreInProgress: _onlineRestoreInProgress,
+    }, legacyPlan, {
+        authorityEnabled: requested && stateReady,
+    });
+    if (!requested || stateReady) return selected;
+    return Object.freeze({
+        ...selected,
+        source: 'legacy-fallback',
+        fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
+    });
+}
+
+function _onlineSocketDisconnectEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineSocketDisconnectEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlineSocketDisconnect !== 'undefined' &&
+        typeof OnlineSocketDisconnect.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan ? 'socket-disconnect-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineSocketDisconnectEffectsLegacy(plan) {
+    finishOnlineLobbyRequest();
+    if (!plan.active) return false;
+    if (plan.abortRestore) {
+        _onlineRestoreGeneration++;
+        _onlineRestoreInProgress = false;
+        _onlineRestoreQuarantined = true;
+        _onlineRestoreEventQueue = [];
+    }
+    setOnlineReconnectLegacyFlag(true);
+    _setOnlineActionInFlight(false);
+    cpuScheduleToken++;
+    _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
+    _applyOnlineReconnectStatusEffectAuthority(
+        OnlineReconnectState.events.SOCKET_DISCONNECTED,
+        '⏳ 接続が切れました。再接続しています...'
+    );
+    return true;
+}
+
+function _runOnlineSocketDisconnectEffects() {
+    const planSelection = _onlineSocketDisconnectPlanSelection();
+    _lastOnlineSocketDisconnectPlanSelection = planSelection;
+    const effectSelection = _onlineSocketDisconnectEffectAuthoritySelection(planSelection);
+    _lastOnlineSocketDisconnectEffectSelection = effectSelection;
+    if (effectSelection.source !== 'executor') {
+        return _runOnlineSocketDisconnectEffectsLegacy(planSelection.plan);
+    }
+    return OnlineSocketDisconnect.execute(planSelection.plan, {
+        finishLobby: () => finishOnlineLobbyRequest(),
+        invalidateRestoreGeneration: () => { _onlineRestoreGeneration++; },
+        finishRestore: () => { _onlineRestoreInProgress = false; },
+        quarantineRestore: () => { _onlineRestoreQuarantined = true; },
+        clearRestoreQueue: () => { _onlineRestoreEventQueue = []; },
+        markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+        clearActionFlight: () => _setOnlineActionInFlight(false),
+        invalidateCpuSchedule: () => { cpuScheduleToken++; },
+        observeDisconnect: () => _observeOnlineReconnectEvent(
+            OnlineReconnectState.events.SOCKET_DISCONNECTED
+        ),
+        updateStatus: () => _applyOnlineReconnectStatusEffectAuthority(
+            OnlineReconnectState.events.SOCKET_DISCONNECTED,
+            '⏳ 接続が切れました。再接続しています...'
+        ),
     }).result;
 }
 
@@ -2554,22 +2677,7 @@ function initSocket() {
     });
 
     socket.on('disconnect', () => {
-        finishOnlineLobbyRequest();
-        if (!isOnlineGame && !_onlineRestoreInProgress) return;
-        if (_onlineRestoreInProgress) {
-            _onlineRestoreGeneration++;
-            _onlineRestoreInProgress = false;
-            _onlineRestoreQuarantined = true;
-            _onlineRestoreEventQueue = [];
-        }
-        setOnlineReconnectLegacyFlag(true);
-        _setOnlineActionInFlight(false);
-        cpuScheduleToken++;
-        _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
-        _applyOnlineReconnectStatusEffectAuthority(
-            OnlineReconnectState.events.SOCKET_DISCONNECTED,
-            '⏳ 接続が切れました。再接続しています...'
-        );
+        _runOnlineSocketDisconnectEffects();
     });
 
     socket.on('connect_error', () => {
