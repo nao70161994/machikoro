@@ -209,6 +209,12 @@ let _lastIncomingGameActionPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastAcceptedGameActionPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -343,6 +349,11 @@ function isIncomingGameActionPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isAcceptedGameActionPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -381,6 +392,10 @@ function getOnlineActionTimeoutEffectSelection() {
 
 function getIncomingGameActionPlanSelection() {
     return _lastIncomingGameActionPlanSelection;
+}
+
+function getAcceptedGameActionPlanSelection() {
+    return _lastAcceptedGameActionPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -497,6 +512,7 @@ function getOnlineReconnectStateSnapshot() {
         actionTimeoutPlanAuthority: getOnlineActionTimeoutPlanSelection(),
         actionTimeoutEffectAuthority: getOnlineActionTimeoutEffectSelection(),
         incomingGameActionPlanAuthority: getIncomingGameActionPlanSelection(),
+        acceptedGameActionPlanAuthority: getAcceptedGameActionPlanSelection(),
     });
 }
 
@@ -1602,7 +1618,7 @@ function initSocket() {
         startOnlineGame();
     });
 
-    function legacyIncomingGameActionPlan(seq, lastAppliedSeq) {
+    function legacyInboundGameActionPlan(seq, lastAppliedSeq) {
         const decisions = OnlinePayload.incomingGameActionDecisions;
         let decision = decisions.APPLY;
         if (!game) decision = decisions.NO_GAME;
@@ -1611,9 +1627,8 @@ function initSocket() {
         return Object.freeze({ decision });
     }
 
-    function incomingGameActionPlanSelection(seq, lastAppliedSeq) {
-        const legacyPlan = legacyIncomingGameActionPlan(seq, lastAppliedSeq);
-        const requested = isIncomingGameActionPlanAuthorityEnabled();
+    function inboundGameActionPlanSelection(seq, lastAppliedSeq, requested) {
+        const legacyPlan = legacyInboundGameActionPlan(seq, lastAppliedSeq);
         const stateSelection = OnlineReconnectState.selectAuthorityState(
             _onlineReconnectController.snapshot(),
             { eventAuthorityEnabled: requested }
@@ -1645,7 +1660,11 @@ function initSocket() {
         const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
         if (_queueOnlineEventDuringRestore('gameAction', payload)) return;
         const lastAppliedSeq = _lastAppliedOnlineActionSeq();
-        const planSelection = incomingGameActionPlanSelection(seq, lastAppliedSeq);
+        const planSelection = inboundGameActionPlanSelection(
+            seq,
+            lastAppliedSeq,
+            isIncomingGameActionPlanAuthorityEnabled()
+        );
         _lastIncomingGameActionPlanSelection = planSelection;
         const decisions = OnlinePayload.incomingGameActionDecisions;
         if (planSelection.plan.decision === decisions.NO_GAME) {
@@ -1697,18 +1716,25 @@ function initSocket() {
         const pendingBeforeAccept = _readPendingOutboundActionForCurrentSession();
         if (!_shouldClearPendingForAcceptedAction(payload, pendingBeforeAccept)) return;
         _setOnlineActionInFlight(false);
-        if (!game) {
+        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
+        const planSelection = inboundGameActionPlanSelection(
+            seq,
+            lastAppliedSeq,
+            isAcceptedGameActionPlanAuthorityEnabled()
+        );
+        _lastAcceptedGameActionPlanSelection = planSelection;
+        const decisions = OnlinePayload.incomingGameActionDecisions;
+        if (planSelection.plan.decision === decisions.NO_GAME) {
             setOnlineReconnectLegacyFlag(true);
             const el = document.getElementById("onlineStatus");
             if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
             return !_flushingOnlineRestoreEvents;
         }
-        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
-        if (Number.isInteger(seq) && seq <= lastAppliedSeq) {
+        if (planSelection.plan.decision === decisions.DUPLICATE) {
             _clearPendingOutboundAction();
             return;
         }
-        if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) {
+        if (planSelection.plan.decision === decisions.GAP) {
             setOnlineReconnectLegacyFlag(true);
             cpuScheduleToken++;
             if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();

@@ -172,6 +172,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineActionTimeoutEffectSelection = getOnlineActionTimeoutEffectSelection;
         this.getOnlineActionTimeoutEffectAuthoritySelection = _onlineActionTimeoutEffectAuthoritySelection;
         this.getIncomingGameActionPlanSelection = getIncomingGameActionPlanSelection;
+        this.getAcceptedGameActionPlanSelection = getAcceptedGameActionPlanSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -3658,8 +3659,47 @@ runTest('pending outbound memory accepts ACK when localStorage writes fail', asy
     assert.strictEqual(runtime.getOnlineState().onlineActionInFlight, false);
 });
 
+runTest('actionAccepted gapはactive clean stateでpure planから再同期する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.initSocket();
+    runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
+    runtime.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        reconnectToken: 'token-a',
+    });
+    const handlers = runtime.getSocketHandlers();
+    handlers.gameStart({
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        playerOrder: [0, 1],
+        enabledCards: CARDS.map(card => card.name),
+        enabledLandmarks: Player.landmarkNames(),
+        hostPlayerIndex: 0,
+        actionSeq: 0,
+    });
+    runtime.getGame().phase = GAME_PHASES.BUILD;
+    assert.strictEqual(runtime.sendAction('nextTurn', {}), true);
+    const sent = runtime.getSocketEmits().filter(event => event.name === 'gameAction').pop();
+
+    handlers.actionAccepted({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 2,
+        clientActionId: sent.payload.clientActionId,
+    });
+
+    assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().source, 'pure-plan');
+    assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().plan.decision, 'gap');
+    assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(runtime._readPendingOutboundAction().clientActionId, sent.payload.clientActionId);
+});
+
 runTest('queued actionAccepted sequence gap keeps quarantine until canonical restore', async () => {
     const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket();
@@ -3676,6 +3716,8 @@ runTest('queued actionAccepted sequence gap keeps quarantine until canonical res
     await Promise.resolve();
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 });
 
+    assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().source, 'legacy-fallback');
+    assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().plan.decision, 'gap');
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 2);
 });
