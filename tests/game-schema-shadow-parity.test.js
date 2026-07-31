@@ -264,6 +264,72 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'airport-no-build-next-turn',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.BUILD;
+                game.players[0].coins = 3;
+                game.players[0].landmarks['空港'] = true;
+                game.builtThisTurn = false;
+            },
+            actions: [['nextTurn', {}]],
+            assertAfter(game) {
+                assert.strictEqual(game.players[0].coins, 13);
+                assert.strictEqual(game.currentPlayerIndex, 1);
+                assert.strictEqual(game.turnCount, 1);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.ROLL);
+            },
+        },
+        {
+            name: 'airport-it-pending-chain',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.BUILD;
+                game.players[0].coins = 3;
+                game.players[0].landmarks['空港'] = true;
+                game.players[0].cards.push(runtime.createCardByName('ITベンチャー'));
+                game.builtThisTurn = false;
+            },
+            actions: [
+                ['nextTurn', {}],
+                ['resolveIT', { doSave: true }],
+            ],
+            assertAfter(game, stepIndex) {
+                if (stepIndex === 0) {
+                    assert.strictEqual(game.players[0].coins, 13);
+                    assert.strictEqual(game.pendingIT, true);
+                    assert.strictEqual(game.currentPlayerIndex, 0);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.PENDING);
+                } else {
+                    assert.strictEqual(game.players[0].coins, 12);
+                    assert.strictEqual(game.players[0].itVentureCoins, 1);
+                    assert.strictEqual(game.pendingIT, false);
+                    assert.strictEqual(game.currentPlayerIndex, 1);
+                    assert.strictEqual(game.turnCount, 1);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.ROLL);
+                }
+            },
+        },
+        {
+            name: 'amusement-park-double-extra-turn',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.BUILD;
+                game.hadAmusementParkAtRoll = true;
+                game.lastDice1 = 4;
+                game.lastDice2 = 4;
+                game.lastDiceResult = 8;
+                game.builtThisTurn = true;
+            },
+            actions: [['nextTurn', {}]],
+            assertAfter(game) {
+                assert.strictEqual(game.currentPlayerIndex, 0);
+                assert.strictEqual(game.turnCount, 0);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.ROLL);
+                assert.strictEqual(game.lastDice1, 4);
+                assert.strictEqual(game.lastDice2, 4);
+                assert.strictEqual(game.hadAmusementParkAtRoll, false);
+                assert.strictEqual(game.builtThisTurn, false);
+            },
+        },
+        {
             name: 'winning-landmark',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.BUILD;
