@@ -192,6 +192,44 @@ const CPUEvaluation = Object.freeze({
             remainingLandmarkCount <= 2;
     },
 
+    strongLandmarkUrgencyBonus(features) {
+        if (!features) return 0;
+        if (features.station) {
+            if (features.crowd) return features.highVarianceCardCount >= 1 ? 3 : 2;
+            if (features.highVarianceCardCount >= 2) return 2;
+            if (features.highVarianceCardCount >= 1) return 1;
+            return 0;
+        }
+        if (features.mall) {
+            if (features.crowd) return features.shopRestaurantCardCount >= 4 ? 2 : 1;
+            return features.shopRestaurantCardCount >= 5 ? 1 : 0;
+        }
+        if (features.harbor) {
+            let bonus = features.crowd ? 1 : 0;
+            bonus += features.tunaBoatLevel;
+            if (features.harborCardCount >= 3) bonus += 1;
+            return bonus;
+        }
+        if (features.tower) {
+            let bonus = features.hasStation ? 1 : 0;
+            if (features.highVarianceCardCount >= 4) bonus += 2;
+            else if (features.highVarianceCardCount >= 2) bonus += 1;
+            return bonus;
+        }
+        if (features.park) {
+            if (!features.hasStation) return 0;
+            if (features.highVarianceCardCount >= 2) return 2;
+            if (features.highVarianceCardCount >= 1) return 1;
+            return 0;
+        }
+        if (features.airport) {
+            let bonus = features.stableIncome >= 8 ? 1 : 0;
+            if (features.cheapEngineCardCount <= 3) bonus += 1;
+            return bonus;
+        }
+        return 0;
+    },
+
     loanBurdenValue(copyOrdinal = 1) {
         const ordinal = Math.max(1, copyOrdinal);
         return -2.5 * ordinal;

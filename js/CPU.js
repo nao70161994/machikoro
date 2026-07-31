@@ -2063,51 +2063,28 @@ class CPU {
             card && card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7
         ).length;
         const cheapEngineCards = current.cards.filter(card => card && card.cost <= 3).length;
-
-        if (name === LANDMARK_NAMES.STATION) {
-            if (game.players.length >= 4) {
-                if (highVarianceCards >= 1) return 3;
-                return 2;
-            }
-            if (highVarianceCards >= 2) return 2;
-            if (highVarianceCards >= 1) return 1;
-            return 0;
-        }
-        if (name === LANDMARK_NAMES.SHOPPING_MALL) {
-            if (game.players.length >= 4) {
-                if (shopRestaurantCards >= 4) return 2;
-                return 1;
-            }
-            if (shopRestaurantCards >= 5) return 1;
-            return 0;
-        }
+        let tunaBoatLevel = 0;
         if (name === LANDMARK_NAMES.HARBOR) {
-            let bonus = 0;
-            if (game.players.length >= 4) bonus += 1;
-            if (current.countCard('マグロ漁船') >= 2) bonus += 2;
-            else if (current.countCard('マグロ漁船') >= 1) bonus += 1;
-            if (harborCards >= 3) bonus += 1;
-            return bonus;
+            if (current.countCard('マグロ漁船') >= 2) tunaBoatLevel = 2;
+            else if (current.countCard('マグロ漁船') >= 1) tunaBoatLevel = 1;
         }
-        if (name === LANDMARK_NAMES.RADIO_TOWER) {
-            let bonus = current.landmarks[LANDMARK_NAMES.STATION] ? 1 : 0;
-            if (highVarianceCards >= 4) bonus += 2;
-            else if (highVarianceCards >= 2) bonus += 1;
-            return bonus;
-        }
-        if (name === LANDMARK_NAMES.AMUSEMENT_PARK) {
-            if (!current.landmarks[LANDMARK_NAMES.STATION]) return 0;
-            if (highVarianceCards >= 2) return 2;
-            if (highVarianceCards >= 1) return 1;
-            return 0;
-        }
-        if (name === LANDMARK_NAMES.AIRPORT) {
-            let bonus = 0;
-            if (stableIncome >= 8) bonus += 1;
-            if (cheapEngineCards <= 3) bonus += 1;
-            return bonus;
-        }
-        return 0;
+
+        return CPUEvaluation.strongLandmarkUrgencyBonus({
+            station: name === LANDMARK_NAMES.STATION,
+            mall: name === LANDMARK_NAMES.SHOPPING_MALL,
+            harbor: name === LANDMARK_NAMES.HARBOR,
+            tower: name === LANDMARK_NAMES.RADIO_TOWER,
+            park: name === LANDMARK_NAMES.AMUSEMENT_PARK,
+            airport: name === LANDMARK_NAMES.AIRPORT,
+            crowd: game.players.length >= 4,
+            stableIncome,
+            shopRestaurantCardCount: shopRestaurantCards,
+            harborCardCount: harborCards,
+            highVarianceCardCount: highVarianceCards,
+            cheapEngineCardCount: cheapEngineCards,
+            tunaBoatLevel,
+            hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
+        });
     }
 
     _strongSoftCapValue(value) {
