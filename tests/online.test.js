@@ -126,6 +126,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/clientStorage.js');
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
+    loadScript(context, 'js/onlineRestoreQueueState.js');
     loadScript(context, 'js/onlineRestoreQueue.js');
     loadScript(context, 'js/onlineReconnectCleanup.js');
     loadScript(context, 'js/onlineReconnectRequest.js');
@@ -174,6 +175,7 @@ function loadOnlineRuntime(options = {}) {
         this.getSocketHandlers = () => socketHandlers;
         this.getSocketEmits = () => socketEmits;
         this.getOnlineRestoreQueue = () => _onlineRestoreEventQueue.slice();
+        this.getOnlineRestoreQueueStateSelection = getOnlineRestoreQueueStateSelection;
         this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
         this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
         this.getOnlineReconnectRequestEffectSelection = getOnlineReconnectRequestEffectSelection;
@@ -3959,6 +3961,7 @@ runTest('queued action apply failure preserves the failed event and following ev
 
 runTest('duplicate rejoinData preserves events queued by the prior restore generation', () => {
     const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(() => {}); } };
     runtime.initSocket();
     const handlers = runtime.getSocketHandlers();
@@ -3969,10 +3972,21 @@ runTest('duplicate rejoinData preserves events queued by the prior restore gener
     handlers.rejoinData(payload);
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 });
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 1);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStateSelection())), {
+        source: 'pure-transition',
+        matched: true,
+        fallbackReason: '',
+    });
 
     handlers.rejoinData(payload);
 
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 1);
+    assert.strictEqual(runtime.getOnlineRestoreQueue()[0].generation, 2);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStateSelection())), {
+        source: 'pure-transition',
+        matched: true,
+        fallbackReason: '',
+    });
 });
 
 runTest('pending outbound memory accepts ACK when localStorage writes fail', async () => {

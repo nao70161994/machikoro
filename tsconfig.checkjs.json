@@ -42,6 +42,7 @@
     "js/recreateRoomPayload.js",
     "js/gameSchemaRecreateWire.js",
     "js/onlinePayload.js",
+    "js/onlineRestoreQueueState.js",
     "js/onlineRestoreQueue.js",
     "js/onlineReconnectCleanup.js",
     "js/onlineReconnectRequest.js",

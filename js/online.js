@@ -167,6 +167,11 @@ let _hostlessRestorePending = false;
 let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
+let _lastOnlineRestoreQueueStateSelection = Object.freeze({
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastOnlineRestoreQueueEffectSelection = null;
 let _lastOnlineReconnectCleanupEffectSelection = Object.freeze({
     source: 'none',
@@ -425,6 +430,11 @@ function isOnlineReconnectQueueEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRestoreQueueStateAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED === true;
+}
+
 function isOnlineReconnectCleanupAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED === true;
@@ -616,6 +626,10 @@ function getOnlineRestoreQueuePlanSelection() {
 
 function getOnlineRestoreQueueEffectSelection() {
     return _lastOnlineRestoreQueueEffectSelection;
+}
+
+function getOnlineRestoreQueueStateSelection() {
+    return _lastOnlineRestoreQueueStateSelection;
 }
 
 function getOnlineReconnectCleanupEffectSelection() {
@@ -2135,13 +2149,56 @@ function _shouldClearPendingForAcceptedAction(accepted, pending) {
     return OnlinePayload.shouldClearPendingForAcceptedAction(accepted, pending);
 }
 
+function _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransition) {
+    const requested = isOnlineRestoreQueueStateAuthorityEnabled();
+    const helperAvailable = typeof OnlineRestoreQueueState !== 'undefined' &&
+        typeof OnlineRestoreQueueState.selectTransition === 'function';
+    if (!helperAvailable) {
+        return Object.freeze({
+            transition: legacyTransition,
+            source: requested ? 'legacy-fallback' : 'legacy',
+            matched: false,
+            fallbackReason: requested ? 'restore-queue-state-helper-unavailable' : '',
+        });
+    }
+    return OnlineRestoreQueueState.selectTransition(
+        pureTransition,
+        legacyTransition,
+        { authorityEnabled: requested }
+    );
+}
+
 function _queueOnlineEventDuringRestore(type, payload) {
     if (!_onlineRestoreInProgress && !_onlineRestoreQuarantined) return false;
-    if (_onlineRestoreEventQueue.length >= ONLINE_RESTORE_EVENT_QUEUE_LIMIT) {
+    const event = { type, payload, generation: _onlineRestoreGeneration };
+    const overflow = _onlineRestoreEventQueue.length >= ONLINE_RESTORE_EVENT_QUEUE_LIMIT;
+    const legacyTransition = Object.freeze({
+        overflow,
+        queue: overflow ? _onlineRestoreEventQueue : _onlineRestoreEventQueue.concat([event]),
+    });
+    const pureTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
+        typeof OnlineRestoreQueueState.planEnqueue === 'function'
+        ? OnlineRestoreQueueState.planEnqueue(
+            _onlineRestoreEventQueue,
+            event,
+            ONLINE_RESTORE_EVENT_QUEUE_LIMIT
+        )
+        : null;
+    const selection = _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransition);
+    _lastOnlineRestoreQueueStateSelection = Object.freeze({
+        source: selection.source,
+        matched: selection.matched,
+        fallbackReason: selection.fallbackReason,
+    });
+    if (selection.transition.overflow) {
         _abortOnlineRestore(_onlineRestoreGeneration, '復元中の操作が多すぎるため、状態を再同期しています...', []);
         return true;
     }
-    _onlineRestoreEventQueue.push({ type, payload, generation: _onlineRestoreGeneration });
+    if (selection.source === 'pure-transition') {
+        _onlineRestoreEventQueue = selection.transition.queue;
+    } else {
+        _onlineRestoreEventQueue.push(event);
+    }
     return true;
 }
 
@@ -2714,9 +2771,8 @@ function initSocket() {
             return;
         }
         onlineGameSchemaSelection = gameStartPayload.gameSchema || null;
-        const carriedEvents = (_onlineRestoreInProgress || _onlineRestoreQuarantined)
-            ? _onlineRestoreEventQueue.slice()
-            : [];
+        const shouldCarryRestoreEvents = _onlineRestoreInProgress || _onlineRestoreQuarantined;
+        const carriedEvents = shouldCarryRestoreEvents ? _onlineRestoreEventQueue.slice() : [];
         const restoreGeneration = ++_onlineRestoreGeneration;
         _onlineRestoreInProgress = true;
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_STARTED);
@@ -2724,11 +2780,32 @@ function initSocket() {
             OnlineReconnectState.events.RESTORE_STARTED
         );
         _onlineRestoreQuarantined = false;
-        _onlineRestoreEventQueue = carriedEvents.map(event => ({
-            type: event.type,
-            payload: event.payload,
-            generation: restoreGeneration,
-        }));
+        const legacyCarryTransition = Object.freeze({
+            overflow: false,
+            queue: carriedEvents.map(event => ({
+                type: event.type,
+                payload: event.payload,
+                generation: restoreGeneration,
+            })),
+        });
+        const pureCarryTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
+            typeof OnlineRestoreQueueState.planCarry === 'function'
+            ? OnlineRestoreQueueState.planCarry(
+                _onlineRestoreEventQueue,
+                shouldCarryRestoreEvents,
+                restoreGeneration
+            )
+            : null;
+        const carrySelection = _selectOnlineRestoreQueueStateTransition(
+            pureCarryTransition,
+            legacyCarryTransition
+        );
+        _lastOnlineRestoreQueueStateSelection = Object.freeze({
+            source: carrySelection.source,
+            matched: carrySelection.matched,
+            fallbackReason: carrySelection.fallbackReason,
+        });
+        _onlineRestoreEventQueue = carrySelection.transition.queue;
         _clearRejoinRetry();
         _hostlessRestorePending = false;
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
