@@ -105,6 +105,58 @@ runTest('restored room activation planは新規・置換・hostless拒否をpure
     });
 });
 
+runTest('restored room activation effect authorityは明示opt-inだけを許可する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    for (const value of [undefined, '', '0', 'false', 'off']) {
+        assert.strictEqual(builder.activationEffectAuthorityEnabled({
+            RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED: value,
+        }), false);
+    }
+    for (const value of ['1', 'true', 'TRUE']) {
+        assert.strictEqual(builder.activationEffectAuthorityEnabled({
+            RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED: value,
+        }), true);
+    }
+});
+
+runTest('restored room activation executorはdetach・delete・install順を固定する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    const executed = builder.executeRestoredRoomActivation(
+        builder.planRestoredRoomActivation({ roomExists: true, approvedHostless: false }),
+        {
+            detachExisting: () => calls.push('detach'),
+            deleteExisting: () => calls.push('delete'),
+            install: () => calls.push('install'),
+        }
+    );
+    assert.deepStrictEqual(calls, ['detach', 'delete', 'install']);
+    assert.deepStrictEqual(executed, ['detachExisting', 'deleteExisting', 'install']);
+    assert.strictEqual(Object.isFrozen(executed), true);
+});
+
+runTest('restored room activation executorはeffect欠落時に部分実行しない', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    assert.throws(() => builder.executeRestoredRoomActivation(
+        builder.planRestoredRoomActivation({ roomExists: true, approvedHostless: false }),
+        {
+            detachExisting: () => calls.push('detach'),
+            deleteExisting: () => calls.push('delete'),
+        }
+    ), /install effect is required/);
+    assert.deepStrictEqual(calls, []);
+});
+
 runTest('restored room metadata planは通常復元のhost/seqを入力非破壊で固定する', () => {
     const builder = makeRestoredRoom({
         sanitizeStateSnapshot: snapshot => snapshot,

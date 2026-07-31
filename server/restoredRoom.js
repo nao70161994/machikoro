@@ -51,12 +51,36 @@ function planRestoredRoomActivation(input = {}) {
     });
 }
 
+function restoredRoomActivationEffectAuthorityEnabled(env = {}) {
+    return ['1', 'true'].includes(
+        String(env.RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED || '').trim().toLowerCase()
+    );
+}
+
+function executeRestoredRoomActivation(plan = {}, effects = {}) {
+    const requiredEffects = [];
+    if (plan.detachExisting) requiredEffects.push('detachExisting');
+    if (plan.deleteExisting) requiredEffects.push('deleteExisting');
+    if (plan.install) requiredEffects.push('install');
+    for (const name of requiredEffects) {
+        if (typeof effects[name] !== 'function') {
+            throw new TypeError(`${name} effect is required`);
+        }
+    }
+    const executed = [];
+    for (const name of requiredEffects) {
+        effects[name]();
+        executed.push(name);
+    }
+    return Object.freeze(executed);
+}
+
 /**
  * Builds the mutable room shell from already-validated restore inputs.
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
  * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, activationDecisions: Object}}
+ * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
@@ -121,6 +145,8 @@ function makeRestoredRoom(dependencies = {}) {
         buildRestoredMirrorStatePlan,
         planRestoredRoomMetadata,
         planRestoredRoomActivation,
+        executeRestoredRoomActivation,
+        activationEffectAuthorityEnabled: restoredRoomActivationEffectAuthorityEnabled,
         activationDecisions: RESTORED_ROOM_ACTIVATION_DECISIONS,
     });
 }

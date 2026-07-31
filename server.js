@@ -187,11 +187,15 @@ const {
     buildRestoredMirrorStatePlan,
     planRestoredRoomMetadata,
     planRestoredRoomActivation,
+    executeRestoredRoomActivation,
+    activationEffectAuthorityEnabled: restoredRoomActivationEffectAuthorityEnabled,
     activationDecisions: restoredRoomActivationDecisions,
 } = makeRestoredRoom({
     sanitizeStateSnapshot: sanitizeClientStateSnapshot,
     serializeMirrorState,
 });
+const RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED =
+    restoredRoomActivationEffectAuthorityEnabled(process.env);
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     startedRoomTtlMs: 2 * 60 * 60 * 1000,
     pendingRoomTtlMs: 30 * 60 * 1000,
@@ -1302,11 +1306,25 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         emitAppError(socket, '同じルームIDが既に使用されています');
         return { ok: false, reason: 'room-exists' };
     }
-    if (activationPlan.detachExisting) {
-        detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+    if (RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED) {
+        executeRestoredRoomActivation(activationPlan, {
+            detachExisting() {
+                detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+            },
+            deleteExisting() {
+                delete rooms[roomId];
+            },
+            install() {
+                rooms[roomId] = restoredRoom;
+            },
+        });
+    } else {
+        if (activationPlan.detachExisting) {
+            detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+        }
+        if (activationPlan.deleteExisting) delete rooms[roomId];
+        rooms[roomId] = restoredRoom;
     }
-    if (activationPlan.deleteExisting) delete rooms[roomId];
-    rooms[roomId] = restoredRoom;
     persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
     socket.join(roomId);
     socket.roomId = roomId;
