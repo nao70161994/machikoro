@@ -771,6 +771,28 @@ runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（強）として統計を記録'));
 });
 
+runTest('main coin animationはpure viewと既存DOM・1秒timerを同期する', () => {
+    const rt = loadMainRuntime();
+    const box = makeElement();
+    let appended = null;
+    let removed = 0;
+    let soundCalls = 0;
+    box.appendChild = element => { appended = element; };
+    rt.document.querySelectorAll = selector => selector === '.player-box' ? [box] : [];
+    rt.document.createElement = () => makeElement({ remove() { removed++; } });
+    rt.playSound = name => { if (name === 'coin') soundCalls++; };
+
+    rt.showCoinAnimation(0, 4);
+    assert.strictEqual(box.style.position, 'relative');
+    assert.strictEqual(appended.className, 'coin-float coin-gain');
+    assert.strictEqual(appended.textContent, '+4🪙');
+    assert.strictEqual(soundCalls, 1);
+    assert.strictEqual(rt.__test.getTimeoutCount(), 1);
+
+    rt.__test.flushTimeouts();
+    assert.strictEqual(removed, 1);
+});
+
 runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);

@@ -8,6 +8,23 @@ assert.strictEqual(UiPlayerDisplay.difficultyLabel('rl'), '深');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('expert'), 'AI');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('expert'), 'expert');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('unknown'), 'normal');
+assert.deepStrictEqual(UiPlayerDisplay.buildCoinAnimationView(3), {
+    playSound: true,
+    className: 'coin-float coin-gain',
+    text: '+3🪙',
+});
+assert.deepStrictEqual(UiPlayerDisplay.buildCoinAnimationView(-2), {
+    playSound: false,
+    className: 'coin-float coin-lose',
+    text: '-2🪙',
+});
+const zeroCoinView = UiPlayerDisplay.buildCoinAnimationView(0);
+assert.deepStrictEqual(zeroCoinView, {
+    playSound: false,
+    className: 'coin-float coin-lose',
+    text: '0🪙',
+});
+assert.strictEqual(Object.isFrozen(zeroCoinView), true);
 
 assert.deepStrictEqual(UiPlayerDisplay.resolvePlayerSetting({
     playerSettings: [{ type: 'human', name: 'Alice' }],

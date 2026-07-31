@@ -1390,14 +1390,15 @@ function drawCitySkyline() {
 
 // ===== コイン獲得アニメーション =====
 function showCoinAnimation(playerIndex, diff) {
-    if (diff > 0) playSound('coin');
+    const view = UiPlayerDisplay.buildCoinAnimationView(diff);
+    if (view.playSound) playSound('coin');
     const boxes = document.querySelectorAll('.player-box');
     if (!boxes[playerIndex]) return;
     const box = boxes[playerIndex];
     box.style.position = 'relative';
     const el = document.createElement('div');
-    el.className = `coin-float ${diff > 0 ? 'coin-gain' : 'coin-lose'}`;
-    el.textContent = (diff > 0 ? '+' : '') + diff + '🪙';
+    el.className = view.className;
+    el.textContent = view.text;
     box.appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }

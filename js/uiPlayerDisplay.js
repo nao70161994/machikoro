@@ -71,12 +71,23 @@ const UiPlayerDisplay = (() => {
     function buildPlayersHtml(players, options = {}) {
         return players.map((player, index) => buildPlayerHtml(player, index, options)).join('');
     }
+
+    function buildCoinAnimationView(diff) {
+        const isGain = diff > 0;
+        return Object.freeze({
+            playSound: isGain,
+            className: `coin-float ${isGain ? 'coin-gain' : 'coin-lose'}`,
+            text: `${isGain ? '+' : ''}${diff}🪙`,
+        });
+    }
+
     return Object.freeze({
         difficultyLabel,
         normalizeCpuDifficulty,
         resolvePlayerSetting,
         buildPlayerHtml,
         buildPlayersHtml,
+        buildCoinAnimationView,
     });
 })();
 
