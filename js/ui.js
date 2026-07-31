@@ -230,21 +230,25 @@ function renderWinnerState(winner) {
 }
 
 function renderActiveGameState(current) {
-    document.getElementById("status").textContent = `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
+    document.getElementById("status").textContent = UiGameStatusView.buildTurnStatusText(current);
     const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
     if (game.phase === GAME_PHASES.ROLL && game.currentPlayerIndex !== prevPlayerIndex) {
         if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
         prevPlayerIndex = game.currentPlayerIndex;
     }
-    document.getElementById("btnRoll").disabled = !canShowUiAction('rollDice');
+    const rollButtonView = UiGameStatusView.buildRollButtonView(canShowUiAction('rollDice'));
+    document.getElementById("btnRoll").disabled = rollButtonView.disabled;
     const btnSkip = document.getElementById("btnSkip");
-    btnSkip.disabled = !canShowUiAction('nextTurn') || game.pendingRenovation > 0;
-    btnSkip.textContent = game.builtThisTurn ? "建設完了・ターン終了" : "建設しないでターン終了";
+    const skipButtonView = UiGameStatusView.buildSkipButtonView({
+        canNextTurn: canShowUiAction('nextTurn'),
+        pendingRenovation: game.pendingRenovation,
+        builtThisTurn: game.builtThisTurn,
+    });
+    btnSkip.disabled = skipButtonView.disabled;
+    btnSkip.textContent = skipButtonView.textContent;
     document.getElementById("btnReroll").style.display = "none";
 
-    if (game.lastDice1 > 0 && game.lastDice2 > 0) updateDiceDisplay([game.lastDice1, game.lastDice2]);
-    else if (game.lastDiceResult > 0) updateDiceDisplay([game.lastDiceResult]);
-    else updateDiceDisplay(null);
+    updateDiceDisplay(UiGameStatusView.selectDiceValues(game));
 
     safeRenderStep('renderDiceChoose', () => renderDiceChoose());
     safeRenderStep('renderPending', () => renderPending());

@@ -66,6 +66,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiDiceChoice.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
             ['js/uiWinner.js', 'js/ui.js'],
+            ['js/uiGameStatusView.js', 'js/ui.js'],
             ['js/uiTabView.js', 'js/ui.js'],
             ['js/localSaveRepository.js', 'js/storage.js'],
             ['js/savedGameValidation.js', 'js/storage.js'],
@@ -143,6 +144,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiDiceChoice.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
             ['js/uiWinner.js', 'js/ui.js'],
+            ['js/uiGameStatusView.js', 'js/ui.js'],
             ['js/uiTabView.js', 'js/ui.js'],
             ['js/actionContract.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/gameEngine.js'],
@@ -185,6 +187,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiDiceChoice.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
             ['js/uiWinner.js', 'js/ui.js'],
+            ['js/uiGameStatusView.js', 'js/ui.js'],
             ['js/uiTabView.js', 'js/ui.js'],
         ]],
         ['tests/online.test.js', [
@@ -229,6 +232,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiDiceChoice.js', 'js/ui.js'],
             ['js/uiModalPolicy.js', 'js/ui.js'],
             ['js/uiWinner.js', 'js/ui.js'],
+            ['js/uiGameStatusView.js', 'js/ui.js'],
             ['js/uiTabView.js', 'js/ui.js'],
         ]],
         ['tests/main.test.js', [
