@@ -23,6 +23,7 @@ const STATIC_ASSETS = [
   '/js/localSaveRepository.js',
   '/js/gameSchemaCodec.js',
   '/js/gameSchemaWire.js',
+  '/js/recreateRoomPayload.js',
   '/js/gameEngine.js',
   '/js/GameManager.js',
   '/js/cpuTuning.js',
