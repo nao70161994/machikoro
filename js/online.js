@@ -231,6 +231,14 @@ let _lastAcceptedGameActionApplyEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastIncomingGameActionGapEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastAcceptedGameActionGapEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -390,6 +398,16 @@ function isAcceptedGameActionApplyEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_ACCEPTED_APPLY_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isIncomingGameActionGapEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ACTION_GAP_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function isAcceptedGameActionGapEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_GAP_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -448,6 +466,14 @@ function getIncomingGameActionApplyEffectSelection() {
 
 function getAcceptedGameActionApplyEffectSelection() {
     return _lastAcceptedGameActionApplyEffectSelection;
+}
+
+function getIncomingGameActionGapEffectSelection() {
+    return _lastIncomingGameActionGapEffectSelection;
+}
+
+function getAcceptedGameActionGapEffectSelection() {
+    return _lastAcceptedGameActionGapEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -569,6 +595,8 @@ function getOnlineReconnectStateSnapshot() {
         acceptedGameActionDecodeEffectAuthority: getAcceptedGameActionDecodeEffectSelection(),
         incomingGameActionApplyEffectAuthority: getIncomingGameActionApplyEffectSelection(),
         acceptedGameActionApplyEffectAuthority: getAcceptedGameActionApplyEffectSelection(),
+        incomingGameActionGapEffectAuthority: getIncomingGameActionGapEffectSelection(),
+        acceptedGameActionGapEffectAuthority: getAcceptedGameActionGapEffectSelection(),
     });
 }
 
@@ -1099,6 +1127,56 @@ function _runOnlineActionApplyFailureEffects(error, planSelection, enabled, reco
             reportError: () => console.error(error),
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
             invalidateCpuSchedule: () => { cpuScheduleToken++; },
+            requestRejoin: () => _emitOnlineRejoinRequest(),
+            scheduleRetry: () => _scheduleRejoinRetry(),
+        }
+    ).result;
+}
+
+function _onlineActionGapEffectAuthoritySelection(planSelection, enabled) {
+    const decisions = OnlinePayload.incomingGameActionDecisions;
+    const pureGapPlan = planSelection && planSelection.source === 'pure-plan' &&
+        planSelection.plan && planSelection.plan.decision === decisions.GAP;
+    const helperAvailable = typeof OnlineActionGap !== 'undefined' &&
+        typeof OnlineActionGap.execute === 'function';
+    const useExecutor = enabled && pureGapPlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!pureGapPlan ? 'game-action-gap-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineActionGapEffectsLegacy(statusMessage) {
+    setOnlineReconnectLegacyFlag(true);
+    cpuScheduleToken++;
+    if (statusMessage !== null) {
+        const el = document.getElementById("onlineStatus");
+        if (el) el.textContent = statusMessage;
+    }
+    if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+    return !_flushingOnlineRestoreEvents;
+}
+
+function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recordSelection) {
+    const selection = _onlineActionGapEffectAuthoritySelection(planSelection, enabled);
+    recordSelection(selection);
+    if (selection.source !== 'executor') {
+        return _runOnlineActionGapEffectsLegacy(statusMessage);
+    }
+    return OnlineActionGap.execute(
+        {
+            result: !_flushingOnlineRestoreEvents,
+            statusMessage,
+        },
+        {
+            markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+            invalidateCpuSchedule: () => { cpuScheduleToken++; },
+            updateStatus: message => {
+                const el = document.getElementById("onlineStatus");
+                if (el) el.textContent = message;
+            },
             requestRejoin: () => _emitOnlineRejoinRequest(),
             scheduleRetry: () => _scheduleRejoinRetry(),
         }
@@ -1815,12 +1893,12 @@ function initSocket() {
         }
         if (planSelection.plan.decision === decisions.DUPLICATE) return;
         if (planSelection.plan.decision === decisions.GAP) {
-            setOnlineReconnectLegacyFlag(true);
-            cpuScheduleToken++;
-            const el = document.getElementById("onlineStatus");
-            if (el) el.textContent = "操作の欠落を検知したため、状態を再同期しています...";
-            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-            return !_flushingOnlineRestoreEvents;
+            return _runOnlineActionGapEffects(
+                '操作の欠落を検知したため、状態を再同期しています...',
+                planSelection,
+                isIncomingGameActionGapEffectAuthorityEnabled(),
+                selection => { _lastIncomingGameActionGapEffectSelection = selection; }
+            );
         }
         try {
             applyReplayedAction(action, data);
@@ -1876,10 +1954,12 @@ function initSocket() {
             return;
         }
         if (planSelection.plan.decision === decisions.GAP) {
-            setOnlineReconnectLegacyFlag(true);
-            cpuScheduleToken++;
-            if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-            return !_flushingOnlineRestoreEvents;
+            return _runOnlineActionGapEffects(
+                null,
+                planSelection,
+                isAcceptedGameActionGapEffectAuthorityEnabled(),
+                selection => { _lastAcceptedGameActionGapEffectSelection = selection; }
+            );
         }
         try {
             applyReplayedAction(action, data);

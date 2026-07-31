@@ -72,6 +72,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/onlineActionTimeout.js'));
     assert.ok(config.files.includes('js/onlineDecodeFailure.js'));
     assert.ok(config.files.includes('js/onlineActionApplyFailure.js'));
+    assert.ok(config.files.includes('js/onlineActionGap.js'));
     assert.ok(config.files.includes('js/onlineStorage.js'));
     assert.ok(config.files.includes('js/onlinePlayerSettings.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));

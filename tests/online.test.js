@@ -133,6 +133,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineActionTimeout.js');
     loadScript(context, 'js/onlineDecodeFailure.js');
     loadScript(context, 'js/onlineActionApplyFailure.js');
+    loadScript(context, 'js/onlineActionGap.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -179,6 +180,8 @@ function loadOnlineRuntime(options = {}) {
         this.getAcceptedGameActionDecodeEffectSelection = getAcceptedGameActionDecodeEffectSelection;
         this.getIncomingGameActionApplyEffectSelection = getIncomingGameActionApplyEffectSelection;
         this.getAcceptedGameActionApplyEffectSelection = getAcceptedGameActionApplyEffectSelection;
+        this.getIncomingGameActionGapEffectSelection = getIncomingGameActionGapEffectSelection;
+        this.getAcceptedGameActionGapEffectSelection = getAcceptedGameActionGapEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -3733,6 +3736,7 @@ runTest('handleAppError は無効操作時にオンライン状態を再同期�
 runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', () => {
     const runtime = loadOnlineRuntime(); runtime.initSocket();
     runtime.window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_GAME_ACTION_GAP_EFFECT_AUTHORITY_ENABLED = true;
     runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0, myPlayerName: 'Alice', reconnectToken: 'token-a' });
     runtime.getSocketHandlers().gameStart({ playerNames: ['Alice', 'Bob'], playerSettings: [{ type: 'human' }, { type: 'human' }], playerOrder: [0, 1], enabledCards: CARDS.map(card => card.name), enabledLandmarks: Player.landmarkNames(), hostPlayerIndex: 0, actionSeq: 0 });
     const handlers = runtime.getSocketHandlers();
@@ -3742,6 +3746,11 @@ runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', (
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 3 });
     assert.strictEqual(runtime.getIncomingGameActionPlanSelection().source, 'pure-plan');
     assert.strictEqual(runtime.getIncomingGameActionPlanSelection().plan.decision, 'gap');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        runtime.getIncomingGameActionGapEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(runtime.elements.onlineStatus.textContent,
+        '操作の欠落を検知したため、状態を再同期しています...');
     assert.strictEqual(runtime._readOnlineActionLog().length, 1);
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
@@ -3840,6 +3849,7 @@ runTest('actionAccepted gapはactive clean stateでpure planから再同期す�
     const runtime = loadOnlineRuntime();
     runtime.initSocket();
     runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_GAP_EFFECT_AUTHORITY_ENABLED = true;
     runtime.setOnlineState({
         myRoomId: 'ROOM01',
         myOriginalPlayerIndex: 0,
@@ -3870,6 +3880,9 @@ runTest('actionAccepted gapはactive clean stateでpure planから再同期す�
 
     assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().source, 'pure-plan');
     assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().plan.decision, 'gap');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        runtime.getAcceptedGameActionGapEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(runtime._readPendingOutboundAction().clientActionId, sent.payload.clientActionId);
 });
@@ -3877,6 +3890,7 @@ runTest('actionAccepted gapはactive clean stateでpure planから再同期す�
 runTest('queued actionAccepted sequence gap keeps quarantine until canonical restore', async () => {
     const runtime = loadOnlineRuntime();
     runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_GAP_EFFECT_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
     runtime.initSocket();
@@ -3895,6 +3909,12 @@ runTest('queued actionAccepted sequence gap keeps quarantine until canonical res
 
     assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().source, 'legacy-fallback');
     assert.strictEqual(runtime.getAcceptedGameActionPlanSelection().plan.decision, 'gap');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        runtime.getAcceptedGameActionGapEffectSelection()
+    )), {
+        source: 'legacy-fallback',
+        fallbackReason: 'game-action-gap-plan-not-authoritative',
+    });
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 2);
 });

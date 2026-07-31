@@ -54,6 +54,7 @@ const STATIC_ASSETS = [
   '/js/onlineActionTimeout.js',
   '/js/onlineDecodeFailure.js',
   '/js/onlineActionApplyFailure.js',
+  '/js/onlineActionGap.js',
   '/js/onlinePlayerSettings.js',
   '/js/onlineRestoreRank.js',
   '/js/onlineReconnectState.js',
