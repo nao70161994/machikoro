@@ -135,6 +135,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineActionApplyFailure.js');
     loadScript(context, 'js/onlineActionGap.js');
     loadScript(context, 'js/onlineActionNoGame.js');
+    loadScript(context, 'js/onlineActionCommit.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -185,6 +186,8 @@ function loadOnlineRuntime(options = {}) {
         this.getAcceptedGameActionGapEffectSelection = getAcceptedGameActionGapEffectSelection;
         this.getIncomingGameActionNoGameEffectSelection = getIncomingGameActionNoGameEffectSelection;
         this.getAcceptedGameActionNoGameEffectSelection = getAcceptedGameActionNoGameEffectSelection;
+        this.getIncomingGameActionCommitEffectSelection = getIncomingGameActionCommitEffectSelection;
+        this.getAcceptedGameActionCommitEffectSelection = getAcceptedGameActionCommitEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -3807,6 +3810,8 @@ runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', (
 
 runTest('live sequence tracking survives localStorage write failures', () => {
     const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_GAME_ACTION_COMMIT_EFFECT_AUTHORITY_ENABLED = true;
     runtime.initSocket();
     runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0, myPlayerName: 'Alice', reconnectToken: 'token-a' });
     const handlers = runtime.getSocketHandlers();
@@ -3819,6 +3824,9 @@ runTest('live sequence tracking survives localStorage write failures', () => {
     assert.strictEqual(runtime.getGame().currentPlayerIndex, 0);
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, false);
     assert.ok(!runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        runtime.getIncomingGameActionCommitEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
 });
 
 runTest('queued action apply failure preserves the failed event and following events for resync', async () => {
@@ -3877,6 +3885,8 @@ runTest('duplicate rejoinData preserves events queued by the prior restore gener
 
 runTest('pending outbound memory accepts ACK when localStorage writes fail', async () => {
     const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_COMMIT_EFFECT_AUTHORITY_ENABLED = true;
     runtime.initSocket();
     runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0, myPlayerName: 'Alice', reconnectToken: 'token-a' });
     const handlers = runtime.getSocketHandlers();
@@ -3892,6 +3902,9 @@ runTest('pending outbound memory accepts ACK when localStorage writes fail', asy
 
     assert.strictEqual(runtime.getGame().currentPlayerIndex, 1);
     assert.strictEqual(runtime.getOnlineState().onlineActionInFlight, false);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        runtime.getAcceptedGameActionCommitEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
 });
 
 runTest('actionAccepted gapはactive clean stateでpure planから再同期する', () => {

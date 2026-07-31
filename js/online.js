@@ -247,6 +247,14 @@ let _lastAcceptedGameActionNoGameEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastIncomingGameActionCommitEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastAcceptedGameActionCommitEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -426,6 +434,16 @@ function isAcceptedGameActionNoGameEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_ACCEPTED_NO_GAME_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isIncomingGameActionCommitEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ACTION_COMMIT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function isAcceptedGameActionCommitEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_COMMIT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -500,6 +518,14 @@ function getIncomingGameActionNoGameEffectSelection() {
 
 function getAcceptedGameActionNoGameEffectSelection() {
     return _lastAcceptedGameActionNoGameEffectSelection;
+}
+
+function getIncomingGameActionCommitEffectSelection() {
+    return _lastIncomingGameActionCommitEffectSelection;
+}
+
+function getAcceptedGameActionCommitEffectSelection() {
+    return _lastAcceptedGameActionCommitEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -625,6 +651,8 @@ function getOnlineReconnectStateSnapshot() {
         acceptedGameActionGapEffectAuthority: getAcceptedGameActionGapEffectSelection(),
         incomingGameActionNoGameEffectAuthority: getIncomingGameActionNoGameEffectSelection(),
         acceptedGameActionNoGameEffectAuthority: getAcceptedGameActionNoGameEffectSelection(),
+        incomingGameActionCommitEffectAuthority: getIncomingGameActionCommitEffectSelection(),
+        acceptedGameActionCommitEffectAuthority: getAcceptedGameActionCommitEffectSelection(),
     });
 }
 
@@ -1253,6 +1281,56 @@ function _runOnlineActionNoGameEffects(statusMessage, requestRejoin, planSelecti
                 if (el) el.textContent = message;
             },
             requestRejoin: () => _emitOnlineRejoinRequest(),
+        }
+    ).result;
+}
+
+function _onlineActionCommitEffectAuthoritySelection(planSelection, enabled) {
+    const decisions = OnlinePayload.incomingGameActionDecisions;
+    const pureApplyPlan = planSelection && planSelection.source === 'pure-plan' &&
+        planSelection.plan && planSelection.plan.decision === decisions.APPLY;
+    const helperAvailable = typeof OnlineActionCommit !== 'undefined' &&
+        typeof OnlineActionCommit.execute === 'function';
+    const useExecutor = enabled && pureApplyPlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!pureApplyPlan ? 'game-action-commit-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineActionCommitEffectsLegacy(action, data, seq, logOptions, clearPending) {
+    _setLastAppliedOnlineActionSeq(seq);
+    _saveActionLog(action, data, logOptions);
+    if (clearPending) _clearPendingOutboundAction();
+    if (!_flushingOnlineRestoreEvents) {
+        render();
+        scheduleCPU();
+    }
+    return true;
+}
+
+function _runOnlineActionCommitEffects(
+    action, data, seq, logOptions, alreadyApplied, clearPending, planSelection, enabled, recordSelection
+) {
+    const selection = _onlineActionCommitEffectAuthoritySelection(planSelection, enabled);
+    recordSelection(selection);
+    if (selection.source !== 'executor') {
+        return _runOnlineActionCommitEffectsLegacy(action, data, seq, logOptions, clearPending);
+    }
+    return OnlineActionCommit.execute(
+        {
+            alreadyApplied,
+            clearPending,
+            render: !_flushingOnlineRestoreEvents,
+        },
+        {
+            setSequence: () => _setLastAppliedOnlineActionSeq(seq),
+            saveActionLog: () => _saveActionLog(action, data, logOptions),
+            clearPending: () => _clearPendingOutboundAction(),
+            render: () => render(),
+            scheduleCpu: () => scheduleCPU(),
         }
     ).result;
 }
@@ -1986,13 +2064,17 @@ function initSocket() {
                 selection => { _lastIncomingGameActionApplyEffectSelection = selection; }
             );
         }
-        _setLastAppliedOnlineActionSeq(seq);
-        _saveActionLog(action, data, { playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
-        if (!_flushingOnlineRestoreEvents) {
-            render();
-            scheduleCPU();
-        }
-        return true;
+        return _runOnlineActionCommitEffects(
+            action,
+            data,
+            seq,
+            { playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit },
+            false,
+            false,
+            planSelection,
+            isIncomingGameActionCommitEffectAuthorityEnabled(),
+            selection => { _lastIncomingGameActionCommitEffectSelection = selection; }
+        );
     };
     socket.on('gameAction', handleGameAction);
 
@@ -2050,14 +2132,17 @@ function initSocket() {
                 selection => { _lastAcceptedGameActionApplyEffectSelection = selection; }
             );
         }
-        _setLastAppliedOnlineActionSeq(seq);
-        _saveActionLog(action, data, { alreadyApplied: true, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit });
-        _clearPendingOutboundAction();
-        if (!_flushingOnlineRestoreEvents) {
-            render();
-            scheduleCPU();
-        }
-        return true;
+        return _runOnlineActionCommitEffects(
+            action,
+            data,
+            seq,
+            { alreadyApplied: true, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit },
+            true,
+            true,
+            planSelection,
+            isAcceptedGameActionCommitEffectAuthorityEnabled(),
+            selection => { _lastAcceptedGameActionCommitEffectSelection = selection; }
+        );
     };
     socket.on('actionAccepted', handleActionAccepted);
 
