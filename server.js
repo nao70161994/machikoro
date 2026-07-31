@@ -185,6 +185,7 @@ const {
 const {
     buildRestoredRoom,
     buildRestoredMirrorStatePlan,
+    planRestoredRoomCompletion,
     planRestoredRoomMetadata,
     planRestoredRoomActivation,
     executeRestoredRoomActivation,
@@ -195,6 +196,7 @@ const {
 } = makeRestoredRoom({
     sanitizeStateSnapshot: sanitizeClientStateSnapshot,
     serializeMirrorState,
+    hostlessRestoreRoomLogId,
 });
 const RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED =
     restoredRoomActivationEffectAuthorityEnabled(process.env);
@@ -1364,16 +1366,15 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
             hostPlayerIndex: playerIndex,
         }));
     }
-    if (approvedHostless) {
-        console.log(
-            `[hostless-restore] roomHash=${hostlessRestoreRoomLogId(roomId)} ` +
-            `candidates=${restoredRoom.hostlessRestoreCandidateCount} ` +
-            `generation=${restoredRoom.hostlessRestoreGeneration} result=approved`
-        );
-    } else {
-        console.log(`ルーム復元: ${roomId} by ${playerName}(${playerIndex})`);
-    }
-    return { ok: true, roomId, provisionalRestore: approvedHostless };
+    const completionPlan = planRestoredRoomCompletion({
+        roomId,
+        playerName,
+        playerIndex,
+        approvedHostless,
+        restoredRoom,
+    });
+    console.log(completionPlan.logMessage);
+    return completionPlan.result;
 }
 
 // ===== Snapshot limits and restore payload guards =====

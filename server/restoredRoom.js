@@ -102,8 +102,8 @@ function executeRestoredRoomDelivery(effects = {}) {
  * Builds the mutable room shell from already-validated restore inputs.
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
- * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
+ * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *, hostlessRestoreRoomLogId?: function(string): string}} [dependencies]
+ * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomCompletion: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
@@ -126,6 +126,29 @@ function makeRestoredRoom(dependencies = {}) {
                 input.actionSeq
             ),
             actionLog: [],
+        };
+    }
+
+    function planRestoredRoomCompletion(input = {}) {
+        const approvedHostless = input.approvedHostless === true;
+        let logMessage;
+        if (approvedHostless) {
+            if (typeof dependencies.hostlessRestoreRoomLogId !== 'function') {
+                throw new TypeError('hostlessRestoreRoomLogId dependency is required');
+            }
+            logMessage = `[hostless-restore] roomHash=${dependencies.hostlessRestoreRoomLogId(input.roomId)} ` +
+                `candidates=${input.restoredRoom.hostlessRestoreCandidateCount} ` +
+                `generation=${input.restoredRoom.hostlessRestoreGeneration} result=approved`;
+        } else {
+            logMessage = `ルーム復元: ${input.roomId} by ${input.playerName}(${input.playerIndex})`;
+        }
+        return {
+            logMessage,
+            result: {
+                ok: true,
+                roomId: input.roomId,
+                provisionalRestore: approvedHostless,
+            },
         };
     }
 
@@ -166,6 +189,7 @@ function makeRestoredRoom(dependencies = {}) {
     return Object.freeze({
         buildRestoredRoom,
         buildRestoredMirrorStatePlan,
+        planRestoredRoomCompletion,
         planRestoredRoomMetadata,
         planRestoredRoomActivation,
         executeRestoredRoomActivation,

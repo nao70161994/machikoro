@@ -213,6 +213,62 @@ runTest('restored room delivery executorはeffect欠落時に部分実行しな�
     assert.deepStrictEqual(calls, []);
 });
 
+runTest('restored room completion planは通常復元のlogと戻り値をpureに組み立てる', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    assert.deepStrictEqual(builder.planRestoredRoomCompletion({
+        roomId: 'ROOM01',
+        playerName: 'Alice',
+        playerIndex: 1,
+        approvedHostless: false,
+        restoredRoom: {},
+    }), {
+        logMessage: 'ルーム復元: ROOM01 by Alice(1)',
+        result: { ok: true, roomId: 'ROOM01', provisionalRestore: false },
+    });
+});
+
+runTest('restored room completion planはhostless logを匿名room IDで固定する', () => {
+    const calls = [];
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+        hostlessRestoreRoomLogId(roomId) {
+            calls.push(roomId);
+            return 'hash:abc';
+        },
+    });
+    const restoredRoom = {
+        hostlessRestoreCandidateCount: 3,
+        hostlessRestoreGeneration: 4,
+    };
+    assert.deepStrictEqual(builder.planRestoredRoomCompletion({
+        roomId: 'ROOM01',
+        playerName: 'Alice',
+        playerIndex: 1,
+        approvedHostless: true,
+        restoredRoom,
+    }), {
+        logMessage: '[hostless-restore] roomHash=hash:abc candidates=3 generation=4 result=approved',
+        result: { ok: true, roomId: 'ROOM01', provisionalRestore: true },
+    });
+    assert.deepStrictEqual(calls, ['ROOM01']);
+});
+
+runTest('restored room completion planはhostless匿名化dependency欠落を拒否する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    assert.throws(() => builder.planRestoredRoomCompletion({
+        roomId: 'ROOM01',
+        approvedHostless: true,
+        restoredRoom: {},
+    }), /hostlessRestoreRoomLogId dependency is required/);
+});
+
 runTest('restored room metadata planは通常復元のhost/seqを入力非破壊で固定する', () => {
     const builder = makeRestoredRoom({
         sanitizeStateSnapshot: snapshot => snapshot,
