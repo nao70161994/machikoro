@@ -2168,6 +2168,11 @@ function _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransiti
     );
 }
 
+function _replaceOnlineRestoreEventQueue(queue) {
+    _onlineRestoreEventQueue = queue;
+    return queue;
+}
+
 function _clearOnlineRestoreEventQueue() {
     const legacyTransition = Object.freeze({ overflow: false, queue: [] });
     const pureTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
@@ -2180,9 +2185,9 @@ function _clearOnlineRestoreEventQueue() {
         matched: selection.matched,
         fallbackReason: selection.fallbackReason,
     });
-    _onlineRestoreEventQueue = selection.source === 'pure-transition'
-        ? selection.transition.queue
-        : [];
+    _replaceOnlineRestoreEventQueue(
+        selection.source === 'pure-transition' ? selection.transition.queue : []
+    );
     return selection;
 }
 
@@ -2213,7 +2218,7 @@ function _queueOnlineEventDuringRestore(type, payload) {
         return true;
     }
     if (selection.source === 'pure-transition') {
-        _onlineRestoreEventQueue = selection.transition.queue;
+        _replaceOnlineRestoreEventQueue(selection.transition.queue);
     } else {
         _onlineRestoreEventQueue.push(event);
     }
@@ -2270,7 +2275,7 @@ function _onlineRestoreAbortEffectAuthoritySelection(planSelection) {
 function _runOnlineRestoreAbortEffectsLegacy(plan) {
     _onlineRestoreInProgress = false;
     _onlineRestoreQuarantined = true;
-    _onlineRestoreEventQueue = plan.queuedEvents;
+    _replaceOnlineRestoreEventQueue(plan.queuedEvents);
     setOnlineReconnectLegacyFlag(true);
     const el = document.getElementById("onlineStatus");
     if (el && plan.statusMessage) el.textContent = plan.statusMessage;
@@ -2287,7 +2292,7 @@ function _runOnlineRestoreAbortEffects(planSelection) {
     OnlineRestoreAbort.execute(planSelection.plan, {
         finishRestore: () => { _onlineRestoreInProgress = false; },
         quarantineRestore: () => { _onlineRestoreQuarantined = true; },
-        replaceQueue: queue => { _onlineRestoreEventQueue = queue; },
+        replaceQueue: queue => { _replaceOnlineRestoreEventQueue(queue); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         updateStatus: message => {
             const el = document.getElementById("onlineStatus");
@@ -2378,9 +2383,9 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
         fallbackReason: drainSelection.fallbackReason,
     });
     const queuedEvents = drainSelection.transition.drainedQueue;
-    _onlineRestoreEventQueue = drainSelection.source === 'pure-transition'
-        ? drainSelection.transition.queue
-        : [];
+    _replaceOnlineRestoreEventQueue(
+        drainSelection.source === 'pure-transition' ? drainSelection.transition.queue : []
+    );
     _onlineRestoreInProgress = false;
     _flushingOnlineRestoreEvents = true;
     try {
@@ -2864,7 +2869,7 @@ function initSocket() {
             matched: carrySelection.matched,
             fallbackReason: carrySelection.fallbackReason,
         });
-        _onlineRestoreEventQueue = carrySelection.transition.queue;
+        _replaceOnlineRestoreEventQueue(carrySelection.transition.queue);
         _clearRejoinRetry();
         _hostlessRestorePending = false;
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;

@@ -491,6 +491,12 @@ runTest('online.js は未使用 remote action helper を残さない', () => {
     assert.ok(!source.includes('function handleRemoteAction'));
 });
 
+runTest('online restore queueは初期化後のwriteを単一ownerへ集約する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.strictEqual((source.match(/_onlineRestoreEventQueue\s*=(?!=)/g) || []).length, 2);
+    assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
+});
+
 
 runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維持する', () => {
     const localRt = loadOnlineRuntime();
