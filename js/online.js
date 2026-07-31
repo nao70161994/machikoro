@@ -300,6 +300,15 @@ let _lastLocalHostRestoreOfferPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastOnlineRejoinPersistencePlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlineRejoinPersistenceEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -534,6 +543,16 @@ function isLocalHostRestoreOfferPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_LOCAL_HOST_RESTORE_OFFER_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRejoinPersistencePlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineRejoinPersistenceEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -652,6 +671,14 @@ function getRejoinActionLogPlanSelection() {
 
 function getLocalHostRestoreOfferPlanSelection() {
     return _lastLocalHostRestoreOfferPlanSelection;
+}
+
+function getOnlineRejoinPersistencePlanSelection() {
+    return _lastOnlineRejoinPersistencePlanSelection;
+}
+
+function getOnlineRejoinPersistenceEffectSelection() {
+    return _lastOnlineRejoinPersistenceEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -785,6 +812,8 @@ function getOnlineReconnectStateSnapshot() {
         socketDisconnectEffectAuthority: getOnlineSocketDisconnectEffectSelection(),
         hostChangedPlanAuthority: getOnlineHostChangedPlanSelection(),
         hostChangedEffectAuthority: getOnlineHostChangedEffectSelection(),
+        rejoinPersistencePlanAuthority: getOnlineRejoinPersistencePlanSelection(),
+        rejoinPersistenceEffectAuthority: getOnlineRejoinPersistenceEffectSelection(),
     });
 }
 
@@ -1705,6 +1734,22 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
         invalidateCpuSchedule: () => { cpuScheduleToken++; },
         persistHostState: () => _persistOnlineHostState(newHostPlayerIndex, hostEpoch),
     }).result;
+}
+
+function _onlineRejoinPersistenceEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineRejoinPersistenceEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlineRejoinPersistence !== 'undefined' &&
+        typeof OnlineRejoinPersistence.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan
+                ? 'rejoin-persistence-plan-not-authoritative'
+                : 'executor-unavailable'),
+    });
 }
 
 function markOnlineGameFinished() {
@@ -2648,16 +2693,33 @@ function initSocket() {
         );
         const acceptedPendingReconciliation =
             _lastPendingReconciliationPlanSelection.plan.accepted;
-        const persistRejoinBundle = () => {
-            _setOnlineActionInFlight(false);
-            if (acceptedPendingReconciliation) _clearPendingOutboundAction();
-            _clearRejoinRetry();
-            cpuSpeed = cs || 1500;
-            if (ec) enabledCards = new Set(ec);
-            enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
-            myOriginalPlayerIndex = playerIndex;
-            myPlayerIndex = playerIndex;
-            _setOnlineHostState(hostPlayerIndex);
+        const defaultLandmarks = (el && el.length > 0) ? null : Player.landmarkNames();
+        const resolvedEnabledLandmarks = (el && el.length > 0) ? el : defaultLandmarks;
+        const resetUiLocksAvailable = typeof resetUiLocksForGameReset === 'function';
+        const legacyRejoinPersistencePlan = Object.freeze({
+            clearPendingOutboundAction: acceptedPendingReconciliation,
+            cpuSpeed: cs || 1500,
+            updateEnabledCards: !!ec,
+            enabledCards: ec,
+            enabledLandmarks: resolvedEnabledLandmarks,
+            playerIndex,
+            hostPlayerIndex,
+            resetUiLocks: resetUiLocksAvailable,
+        });
+        _lastOnlineRejoinPersistencePlanSelection = OnlineRejoinPersistence.selectPlan({
+            acceptedPending: acceptedPendingReconciliation,
+            cpuSpeed: cs,
+            enabledCards: ec,
+            enabledLandmarks: el,
+            defaultLandmarks,
+            playerIndex,
+            hostPlayerIndex,
+            resetUiLocksAvailable,
+        }, legacyRejoinPersistencePlan, {
+            authorityEnabled: isOnlineRejoinPersistencePlanAuthorityEnabled(),
+        });
+
+        const persistRestoreBundle = () => {
             try {
                 _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
                 if (stateSnapshot) {
@@ -2696,9 +2758,54 @@ function initSocket() {
                     _lastRejoinActionLogPlanSelection.plan.actionLog
                 );
             } catch(e) {}
+        };
+
+        const persistRejoinBundleLegacy = plan => {
+            _setOnlineActionInFlight(false);
+            if (plan.clearPendingOutboundAction) _clearPendingOutboundAction();
+            _clearRejoinRetry();
+            cpuSpeed = plan.cpuSpeed;
+            if (plan.updateEnabledCards) enabledCards = new Set(plan.enabledCards);
+            enabledLandmarks = new Set(plan.enabledLandmarks);
+            myOriginalPlayerIndex = plan.playerIndex;
+            myPlayerIndex = plan.playerIndex;
+            _setOnlineHostState(plan.hostPlayerIndex);
+            persistRestoreBundle();
             saveOnlineSession();
             cpuScheduleToken++;
-            if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+            if (plan.resetUiLocks) {
+                resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+            }
+        };
+
+        const persistRejoinBundle = () => {
+            const planSelection = _lastOnlineRejoinPersistencePlanSelection;
+            const effectSelection =
+                _onlineRejoinPersistenceEffectAuthoritySelection(planSelection);
+            _lastOnlineRejoinPersistenceEffectSelection = effectSelection;
+            if (effectSelection.source !== 'executor') {
+                persistRejoinBundleLegacy(planSelection.plan);
+                return;
+            }
+            OnlineRejoinPersistence.execute(planSelection.plan, {
+                clearActionFlight: () => _setOnlineActionInFlight(false),
+                clearPendingOutboundAction: () => _clearPendingOutboundAction(),
+                clearRetry: () => _clearRejoinRetry(),
+                setCpuSpeed: value => { cpuSpeed = value; },
+                setEnabledCards: values => { enabledCards = new Set(values); },
+                setEnabledLandmarks: values => { enabledLandmarks = new Set(values); },
+                setPlayerIndices: value => {
+                    myOriginalPlayerIndex = value;
+                    myPlayerIndex = value;
+                },
+                setHostState: value => _setOnlineHostState(value),
+                persistRestoreBundle,
+                saveSession: () => saveOnlineSession(),
+                invalidateCpuSchedule: () => { cpuScheduleToken++; },
+                resetUiLocks: () => {
+                    resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+                },
+            });
         };
 
         const restoreOnlineGame = () => {

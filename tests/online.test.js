@@ -139,6 +139,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineSocketConnect.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
     loadScript(context, 'js/onlineHostChanged.js');
+    loadScript(context, 'js/onlineRejoinPersistence.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -200,6 +201,8 @@ function loadOnlineRuntime(options = {}) {
         this.getPendingReconciliationPlanSelection = getPendingReconciliationPlanSelection;
         this.getRejoinActionLogPlanSelection = getRejoinActionLogPlanSelection;
         this.getLocalHostRestoreOfferPlanSelection = getLocalHostRestoreOfferPlanSelection;
+        this.getOnlineRejoinPersistencePlanSelection = getOnlineRejoinPersistencePlanSelection;
+        this.getOnlineRejoinPersistenceEffectSelection = getOnlineRejoinPersistenceEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1750,6 +1753,8 @@ runTest('rejoinData は canonical に受理済みの未ackアクションを破�
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
     rt.window.MACHIKORO_ONLINE_PENDING_RECONCILIATION_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_EFFECT_AUTHORITY_ENABLED = true;
     const handlers = rt.getSocketHandlers();
 
     handlers.gameStart({
@@ -1797,6 +1802,14 @@ runTest('rejoinData は canonical に受理済みの未ackアクションを破�
         matched: true,
         fallbackReason: '',
     });
+    assert.strictEqual(rt.getOnlineRejoinPersistencePlanSelection().source, 'pure-plan');
+    assert.strictEqual(
+        rt.getOnlineRejoinPersistencePlanSelection().plan.clearPendingOutboundAction,
+        true
+    );
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getOnlineRejoinPersistenceEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
 });
 
 runTest('rejoinData は snapshot に畳み込まれた未ackアクションを再送しない', () => {

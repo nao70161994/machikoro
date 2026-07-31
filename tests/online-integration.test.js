@@ -431,6 +431,8 @@ runTest('online integration: rejoinData は現在のホスト状態で保存セ�
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
     rt.initSocket();
+    rt.window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_EFFECT_AUTHORITY_ENABLED = true;
     rt.__test.setOnlineState({
         isRoomHost: true,
         myRoomId: 'ROOM01',
@@ -457,6 +459,11 @@ runTest('online integration: rejoinData は現在のホスト状態で保存セ�
     const session = JSON.parse(rt.localStorage.getItem('onlineSession'));
     assert.strictEqual(rt.__test.getOnlineState().isRoomHost, false);
     assert.strictEqual(session.isRoomHost, false);
+    const reconnectSnapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(reconnectSnapshot.rejoinPersistencePlanAuthority.source, 'pure-plan');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        reconnectSnapshot.rejoinPersistenceEffectAuthority
+    )), { source: 'executor', fallbackReason: '' });
 });
 
 runTest('online integration: rejoinData は復元用snapshotとactionLogを保存し直す', () => {
