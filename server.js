@@ -184,11 +184,13 @@ const {
 });
 const {
     buildRestoredRoom,
+    buildRestoredMirrorStatePlan,
     planRestoredRoomMetadata,
     planRestoredRoomActivation,
     activationDecisions: restoredRoomActivationDecisions,
 } = makeRestoredRoom({
     sanitizeStateSnapshot: sanitizeClientStateSnapshot,
+    serializeMirrorState,
 });
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     startedRoomTtlMs: 2 * 60 * 60 * 1000,
@@ -1284,15 +1286,14 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         emitAppError(socket, '復元データが壊れています');
         return;
     }
-    restoredRoom.canonicalMirror = restoredMirror;
-    restoredRoom.lastUndoState = restoredMirror?.lastUndoState || null;
-    restoredRoom.stateSnapshot = serializeMirrorState(
-        restoredMirror.game,
-        restoredMirror.shopStock,
-        restoredRoom.lastUndoState,
-        restoredRoom.actionSeq
-    );
-    restoredRoom.actionLog = [];
+    const mirrorStatePlan = buildRestoredMirrorStatePlan({
+        mirror: restoredMirror,
+        actionSeq: restoredRoom.actionSeq,
+    });
+    restoredRoom.canonicalMirror = mirrorStatePlan.canonicalMirror;
+    restoredRoom.lastUndoState = mirrorStatePlan.lastUndoState;
+    restoredRoom.stateSnapshot = mirrorStatePlan.stateSnapshot;
+    restoredRoom.actionLog = mirrorStatePlan.actionLog;
     const activationPlan = planRestoredRoomActivation({
         roomExists: hasOwnRoom(roomId),
         approvedHostless,

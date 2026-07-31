@@ -55,12 +55,31 @@ function planRestoredRoomActivation(input = {}) {
  * Builds the mutable room shell from already-validated restore inputs.
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
- * @param {{sanitizeStateSnapshot?: function(*, number): *}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, activationDecisions: Object}}
+ * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *}} [dependencies]
+ * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
         throw new TypeError('sanitizeStateSnapshot dependency is required');
+    }
+
+    function buildRestoredMirrorStatePlan(input = {}) {
+        if (typeof dependencies.serializeMirrorState !== 'function') {
+            throw new TypeError('serializeMirrorState dependency is required');
+        }
+        const mirror = input.mirror;
+        const lastUndoState = mirror && mirror.lastUndoState || null;
+        return {
+            canonicalMirror: mirror,
+            lastUndoState,
+            stateSnapshot: dependencies.serializeMirrorState(
+                mirror.game,
+                mirror.shopStock,
+                lastUndoState,
+                input.actionSeq
+            ),
+            actionLog: [],
+        };
     }
 
     function buildRestoredRoom(input = {}) {
@@ -99,6 +118,7 @@ function makeRestoredRoom(dependencies = {}) {
 
     return Object.freeze({
         buildRestoredRoom,
+        buildRestoredMirrorStatePlan,
         planRestoredRoomMetadata,
         planRestoredRoomActivation,
         activationDecisions: RESTORED_ROOM_ACTIVATION_DECISIONS,

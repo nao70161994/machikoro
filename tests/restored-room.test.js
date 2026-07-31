@@ -29,8 +29,53 @@ function fixture(overrides = {}) {
     };
 }
 
-runTest('restored room activation planは新規・置換・hostless拒否をpureに分ける', () => {
+runTest('restored mirror state planはmirror結果をcanonical snapshotへ副作用なく畳み込む', () => {
+    const calls = [];
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState(game, shopStock, undoState, actionSeq) {
+            calls.push([game, shopStock, undoState, actionSeq]);
+            return { canonical: true, actionSeq };
+        },
+    });
+    const mirror = {
+        game: { phase: 'build' },
+        shopStock: { 麦畑: 4 },
+        lastUndoState: { action: 'buildCard' },
+    };
+    const plan = builder.buildRestoredMirrorStatePlan({ mirror, actionSeq: 8 });
+    assert.deepStrictEqual(calls, [[
+        mirror.game,
+        mirror.shopStock,
+        mirror.lastUndoState,
+        8,
+    ]]);
+    assert.deepStrictEqual(plan, {
+        canonicalMirror: mirror,
+        lastUndoState: mirror.lastUndoState,
+        stateSnapshot: { canonical: true, actionSeq: 8 },
+        actionLog: [],
+    });
+    assert.strictEqual(plan.canonicalMirror, mirror);
+    assert.notStrictEqual(plan.actionLog, builder.buildRestoredMirrorStatePlan({
+        mirror,
+        actionSeq: 8,
+    }).actionLog);
+});
+
+runTest('restored mirror state planはserializer欠落を実行前に拒否する', () => {
     const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    assert.throws(() => builder.buildRestoredMirrorStatePlan({
+        mirror: { game: {}, shopStock: {} },
+        actionSeq: 0,
+    }), /serializeMirrorState/);
+});
+
+runTest('restored room activation planは新規・置換・hostless拒否をpureに分ける', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
     assert.deepStrictEqual(builder.planRestoredRoomActivation({
         roomExists: false,
         approvedHostless: false,
@@ -61,7 +106,10 @@ runTest('restored room activation planは新規・置換・hostless拒否をpure
 });
 
 runTest('restored room metadata planは通常復元のhost/seqを入力非破壊で固定する', () => {
-    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
     const input = {
         playerIndex: 1,
         hostEpoch: 4,
@@ -91,7 +139,10 @@ runTest('restored room metadata planは通常復元のhost/seqを入力非破壊
 });
 
 runTest('restored room metadata planはhostless復元だけepochと世代を一度進める', () => {
-    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
     assert.deepStrictEqual(builder.planRestoredRoomMetadata({
         playerIndex: 1,
         hostEpoch: 4,
@@ -154,7 +205,10 @@ runTest('restored room builderは検証済み入力を既存room shapeへ写像�
 });
 
 runTest('restored room builderはhostless metadataと既存fallback値を維持する', () => {
-    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
     const room = builder.buildRestoredRoom(fixture({
         approvedHostless: true,
         candidateCount: 3,
