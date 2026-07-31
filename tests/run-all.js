@@ -96,6 +96,7 @@ const TEST_GROUPS = {
         'storage-settings.test.js',
         'storage.test.js',
         'local-player-settings.test.js',
+        'auto-skip-policy.test.js',
     'main.test.js',
         'client-reporting.test.js',
         'client-storage.test.js',

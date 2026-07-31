@@ -1417,21 +1417,17 @@ function checkAutoSkip() {
     if (game.pendingRenovation > 0) return;
     if (game.builtThisTurn) { cancelAutoSkip(); return; }
 
-    const current = game.currentPlayer();
-    const canAffordCard = CARDS.some(card =>
-        getShopStockCount(SHOP_STOCK, card) > 0 &&
-        current.coins >= card.cost &&
-        !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
-    );
-    const canAffordLandmark = Object.entries(current.landmarks)
-        .some(([name, built]) =>
-            enabledLandmarks.has(name) &&
-            !built &&
-            name !== LANDMARK_NAMES.YAKUSHO &&
-            current.coins >= Player.landmarkCost(name)
-        );
+    const availability = AutoSkipPolicy.buildAvailability({
+        cards: CARDS,
+        current: game.currentPlayer(),
+        shopStock: SHOP_STOCK,
+        getStockCount: getShopStockCount,
+        enabledLandmarks,
+        yakushoName: LANDMARK_NAMES.YAKUSHO,
+        landmarkCost: name => Player.landmarkCost(name),
+    });
 
-    if (!canAffordCard && !canAffordLandmark) {
+    if (!availability.canAffordAny) {
         const scheduledPlayerIndex = game.currentPlayerIndex;
         autoSkipPending = true;
         autoSkipTimeout = setTimeout(() => {

@@ -100,6 +100,7 @@ const STATIC_ASSETS = [
   '/js/actionUiRegistry.js',
   '/js/appShell.js',
   '/js/localPlayerSettings.js',
+  '/js/autoSkipPolicy.js',
   '/js/main.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

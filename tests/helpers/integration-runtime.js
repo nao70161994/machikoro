@@ -201,6 +201,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiTabView.js',
         'js/appShell.js',
         'js/localPlayerSettings.js',
+        'js/autoSkipPolicy.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
         'js/storage.js',

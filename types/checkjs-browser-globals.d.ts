@@ -64,6 +64,7 @@ interface Window {
     UiTabView: unknown;
     UiDiceChoice: unknown;
     UiDiceDisplay: unknown;
+    AutoSkipPolicy: unknown;
     UiTurnAnnouncer: unknown;
     UiWatchdog: unknown;
     UiWinner: unknown;
