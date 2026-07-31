@@ -2010,15 +2010,16 @@ class CPU {
 
     _strongPurpleAdjustment(card, game, player) {
         if (!card || card.color !== "purple") return 0;
-        const stableIncome = this._estimateStableIncome(game, player);
-        let adjustment = 0;
-        if (card.effect === CARD_EFFECTS.STADIUM) adjustment += game.players.length >= 4 ? 3.4 : 1.8;
-        if (card.effect === CARD_EFFECTS.TV) adjustment += game.players.length >= 4 ? 3.2 : 1.6;
-        if (card.effect === CARD_EFFECTS.BUSINESS) adjustment += game.players.length >= 4 ? 2.4 : 1.2;
-        if (card.effect === CARD_EFFECTS.RENOVATION) adjustment -= 1.8;
-        if (card.effect === CARD_EFFECTS.ITSTARTUP) adjustment -= game.players.length >= 4 ? 2.8 : 1.8;
-        if (card.effect === CARD_EFFECTS.LOAN) adjustment -= stableIncome >= 7 ? 0.4 : 1.2;
-        return adjustment;
+        return CPUEvaluation.strongPurpleAdjustment({
+            stadium: card.effect === CARD_EFFECTS.STADIUM,
+            tv: card.effect === CARD_EFFECTS.TV,
+            business: card.effect === CARD_EFFECTS.BUSINESS,
+            renovation: card.effect === CARD_EFFECTS.RENOVATION,
+            itStartup: card.effect === CARD_EFFECTS.ITSTARTUP,
+            loan: card.effect === CARD_EFFECTS.LOAN,
+            crowd: game.players.length >= 4,
+            stableIncome: this._estimateStableIncome(game, player),
+        });
     }
 
     _landmarkCardSynergyBonus(card, game, player) {
@@ -2042,10 +2043,11 @@ class CPU {
         if (!card || !game || !player) return true;
         if (!this._isStrongCrowd(game)) return true;
         if (![CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.BUSINESS].includes(card.effect)) return true;
-        const stableIncome = this._estimateStableIncome(game, player);
-        const builtCount = player.builtLandmarkCount();
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        return (stableIncome >= 10 && builtCount >= 2) || builtCount >= 3 || remainingLandmarks <= 2;
+        return CPUEvaluation.strongPremiumPurpleReady(
+            this._estimateStableIncome(game, player),
+            player.builtLandmarkCount(),
+            [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length
+        );
     }
 
     _strongLandmarkUrgencyBonus(name, current, game) {

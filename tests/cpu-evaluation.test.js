@@ -522,6 +522,44 @@ runTest('CPU evaluation はstrong出目テンポとランドマーク相乗を�
     }), -0.5);
 });
 
+runTest('CPU evaluation はstrong紫カード補正と購入準備をpureに判定する', () => {
+    assert.strictEqual(CPUEvaluation.strongPurpleAdjustment({
+        stadium: true, tv: false, business: false, renovation: false,
+        itStartup: false, loan: false, crowd: true, stableIncome: 0,
+    }), 3.4);
+    assert.strictEqual(CPUEvaluation.strongPurpleAdjustment({
+        stadium: false, tv: true, business: false, renovation: false,
+        itStartup: false, loan: false, crowd: false, stableIncome: 0,
+    }), 1.6);
+    assert.strictEqual(CPUEvaluation.strongPurpleAdjustment({
+        stadium: false, tv: false, business: false, renovation: true,
+        itStartup: true, loan: true, crowd: true, stableIncome: 6,
+    }), -5.8);
+    assert.strictEqual(CPUEvaluation.strongPremiumPurpleReady(10, 2, 4), true);
+    assert.strictEqual(CPUEvaluation.strongPremiumPurpleReady(5, 3, 4), true);
+    assert.strictEqual(CPUEvaluation.strongPremiumPurpleReady(5, 1, 2), true);
+    assert.strictEqual(CPUEvaluation.strongPremiumPurpleReady(9, 2, 3), false);
+});
+
+runTest('CPU本体のstrong紫カードwrapperはfeature adapterからpure policyへ委譲する', () => {
+    const { CPU, GameManager, createCardByName } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const tv = createCardByName('テレビ局');
+    const stableIncome = cpu._estimateStableIncome(game, current);
+
+    assert.strictEqual(cpu._strongPurpleAdjustment(tv, game, current), CPUEvaluation.strongPurpleAdjustment({
+        stadium: false, tv: true, business: false, renovation: false,
+        itStartup: false, loan: false, crowd: true, stableIncome,
+    }));
+    assert.strictEqual(cpu._strongPremiumPurpleReady(tv, game, current), CPUEvaluation.strongPremiumPurpleReady(
+        stableIncome,
+        current.builtLandmarkCount(),
+        [...game.enabledLandmarks].filter(name => !current.landmarks[name]).length
+    ));
+});
+
 runTest('CPU本体のtempo/synergy wrapperはfeature adapterからpure policyへ委譲する', () => {
     const {
         CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES,

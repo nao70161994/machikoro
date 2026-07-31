@@ -174,6 +174,24 @@ const CPUEvaluation = Object.freeze({
         return bonus;
     },
 
+    strongPurpleAdjustment(features) {
+        if (!features) return 0;
+        let adjustment = 0;
+        if (features.stadium) adjustment += features.crowd ? 3.4 : 1.8;
+        if (features.tv) adjustment += features.crowd ? 3.2 : 1.6;
+        if (features.business) adjustment += features.crowd ? 2.4 : 1.2;
+        if (features.renovation) adjustment -= 1.8;
+        if (features.itStartup) adjustment -= features.crowd ? 2.8 : 1.8;
+        if (features.loan) adjustment -= features.stableIncome >= 7 ? 0.4 : 1.2;
+        return adjustment;
+    },
+
+    strongPremiumPurpleReady(stableIncome, builtCount, remainingLandmarkCount) {
+        return (stableIncome >= 10 && builtCount >= 2) ||
+            builtCount >= 3 ||
+            remainingLandmarkCount <= 2;
+    },
+
     loanBurdenValue(copyOrdinal = 1) {
         const ordinal = Math.max(1, copyOrdinal);
         return -2.5 * ordinal;
