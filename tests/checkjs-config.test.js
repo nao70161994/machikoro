@@ -60,6 +60,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/savedGameValidation.js'));
     assert.ok(config.files.includes('js/uiBuildMenu.js'));
     assert.ok(config.files.includes('js/uiDiceDisplay.js'));
+    assert.ok(config.files.includes('js/uiTurnAnnouncer.js'));
     assert.ok(config.files.includes('js/uiModalPolicy.js'));
     assert.ok(config.files.includes('js/uiModalOpen.js'));
     assert.ok(config.files.includes('js/uiModalClose.js'));

@@ -634,16 +634,17 @@ function showTurnAnnouncer(name, isCPU) {
     if (!el || !text) return;
     if (announcerTimer) { clearTimeout(announcerTimer); announcerTimer = null; }
     el.classList.remove("hiding");
-    el.style.display = "flex";
-    text.textContent = `${isCPU ? "🤖" : "👤"} ${name} のターン`;
+    const view = UiTurnAnnouncer.buildView(name, isCPU);
+    el.style.display = view.display;
+    text.textContent = view.text;
     announcerTimer = setTimeout(() => {
         el.classList.add("hiding");
         announcerTimer = setTimeout(() => {
             el.style.display = "none";
             el.classList.remove("hiding");
             announcerTimer = null;
-        }, 400);
-    }, 1300);
+        }, view.transitionDurationMs);
+    }, view.showDurationMs);
 }
 
 function switchTab(tab) {

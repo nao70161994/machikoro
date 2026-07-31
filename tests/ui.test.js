@@ -65,6 +65,7 @@ function loadUiRuntime(options = {}) {
         prevLogLength: 0,
         fullLog: [],
         announcerTimer: null,
+        timeoutDelays: [],
         cardFilter: '',
         cpuPlayers: [null, null],
         SHOP_STOCK: { 麦畑: 6, 牧場: 6, パン屋: 6, カフェ: 6, コンビニ: 6 },
@@ -118,14 +119,14 @@ function loadUiRuntime(options = {}) {
         game: null,
         alertMessages: [],
         alert(message) { context.alertMessages.push(message); },
-        setTimeout(fn) { context.lastTimeout = fn; return 1; },
+        setTimeout(fn, delay) { context.lastTimeout = fn; context.timeoutDelays.push(delay); return 1; },
         clearTimeout() {},
     };
     Object.assign(context, options.globals || {});
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/ui.js']);
     return { context, elements };
 }
 
@@ -156,6 +157,26 @@ runTest('ui storage境界はstorage取得拒否を外へ伝播しない', () => 
     assert.doesNotThrow(() => context.setTutorialEnabled(false));
     assert.doesNotThrow(() => context.onChangeTutorialLevel('beginner'));
     assert.doesNotThrow(() => context.recordFlowTrace('blocked-storage'));
+});
+
+runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.showTurnAnnouncer('CPU 1', true);
+
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'flex');
+    assert.strictEqual(elements.turnAnnouncerText.textContent, '🤖 CPU 1 のターン');
+    assert.strictEqual(elements.turnAnnouncer.classList.contains('hiding'), false);
+    assert.deepStrictEqual(context.timeoutDelays, [1300]);
+
+    context.lastTimeout();
+    assert.strictEqual(elements.turnAnnouncer.classList.contains('hiding'), true);
+    assert.deepStrictEqual(context.timeoutDelays, [1300, 400]);
+
+    context.lastTimeout();
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(elements.turnAnnouncer.classList.contains('hiding'), false);
+    assert.strictEqual(context.announcerTimer, null);
 });
 
 runTest('showNotice は non-blocking toast で通知する', () => {

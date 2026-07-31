@@ -80,6 +80,7 @@ const STATIC_ASSETS = [
   '/js/uiTutorial.js',
   '/js/uiDiceChoice.js',
   '/js/uiDiceDisplay.js',
+  '/js/uiTurnAnnouncer.js',
   '/js/uiModalPolicy.js',
   '/js/uiModalOpen.js',
   '/js/uiModalClose.js',
