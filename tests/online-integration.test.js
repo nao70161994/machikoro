@@ -123,6 +123,8 @@ runTest('online integration: event authorityは開始・切断・再join・復�
         onlineReconnectTimerAuthorityEnabled: true,
         onlineReconnectCallbackAuthorityEnabled: true,
     });
+    rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED = true;
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
     rt.initSocket();
@@ -172,6 +174,8 @@ runTest('online integration: event authorityは開始・切断・再join・復�
     assert.strictEqual(snapshot.timerAuthority.pending, true);
     assert.ok(snapshot.timerAuthority.deadline > 0);
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(snapshot.socketConnectPlanAuthority.source, 'pure-plan');
+    assert.strictEqual(snapshot.socketConnectEffectAuthority.source, 'executor');
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload,
@@ -402,12 +406,12 @@ runTest('online integration: connect は待機表示を消して再joinを送る
     const reconnectSnapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
     assert.deepStrictEqual(JSON.parse(JSON.stringify(reconnectSnapshot.socketConnectPlanAuthority)), {
         plan: { clearWaitingStatus: true, requestRejoin: true },
-        source: 'pure-plan',
-        fallbackReason: '',
+        source: 'legacy-fallback',
+        fallbackReason: 'socket-connect-state-not-connecting',
     });
     assert.deepStrictEqual(JSON.parse(JSON.stringify(reconnectSnapshot.socketConnectEffectAuthority)), {
-        source: 'executor',
-        fallbackReason: '',
+        source: 'legacy-fallback',
+        fallbackReason: 'socket-connect-plan-not-authoritative',
     });
 });
 

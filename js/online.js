@@ -1380,7 +1380,8 @@ function _onlineSocketConnectPlanSelection() {
         _onlineReconnectController.snapshot(),
         { eventAuthorityEnabled: requested }
     );
-    const stateReady = stateSelection.source === 'event';
+    const stateReady = stateSelection.source === 'event' &&
+        stateSelection.state === OnlineReconnectState.states.CONNECTING;
     const el = document.getElementById("onlineStatus");
     const selected = OnlineSocketConnect.selectPlan({
         waitingStatus: !!(el && el.textContent.startsWith('⏳')),
@@ -1398,7 +1399,9 @@ function _onlineSocketConnectPlanSelection() {
     return Object.freeze({
         ...selected,
         source: 'legacy-fallback',
-        fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
+        fallbackReason: stateSelection.source !== 'event'
+            ? (stateSelection.fallbackReason || 'state-authority-unavailable')
+            : 'socket-connect-state-not-connecting',
     });
 }
 
