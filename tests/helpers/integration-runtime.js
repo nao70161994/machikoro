@@ -203,6 +203,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localPlayerSettings.js',
         'js/autoSkipPolicy.js',
         'js/pageActivationPolicy.js',
+        'js/citySkyline.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
         'js/storage.js',

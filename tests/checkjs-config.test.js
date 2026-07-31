@@ -38,6 +38,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/actionUiRegistry.js'));
     assert.ok(config.files.includes('js/adSlots.js'));
     assert.ok(config.files.includes('js/audio.js'));
+    assert.ok(config.files.includes('js/citySkyline.js'));
     assert.ok(config.files.includes('js/CPU.js'));
     assert.ok(config.files.includes('js/confetti.js'));
     assert.ok(config.files.includes('js/stats.js'));

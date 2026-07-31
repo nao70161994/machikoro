@@ -71,6 +71,7 @@ interface Window {
     LifecycleNotify: unknown;
     LocalPlayerSettings: unknown;
     PageActivationPolicy: unknown;
+    CitySkyline: unknown;
     ClientStorage: unknown;
     AppShellStorage: unknown;
     PwaShell: unknown;

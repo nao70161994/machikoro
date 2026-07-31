@@ -102,6 +102,7 @@ const STATIC_ASSETS = [
   '/js/localPlayerSettings.js',
   '/js/autoSkipPolicy.js',
   '/js/pageActivationPolicy.js',
+  '/js/citySkyline.js',
   '/js/main.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

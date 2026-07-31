@@ -23,6 +23,7 @@
     "js/actionUiRegistry.js",
     "js/adSlots.js",
     "js/audio.js",
+    "js/citySkyline.js",
     "js/autoSkipPolicy.js",
     "js/confetti.js",
     "js/stats.js",
