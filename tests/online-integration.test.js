@@ -383,6 +383,8 @@ runTest('online integration: socket再接続時はrejoinRoomで最新状態を�
 
 runTest('online integration: connect は待機表示を消して再joinを送る', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED = true;
     rt.initSocket();
     rt.__test.elements.onlineStatus.textContent = '⏳ ホストの復元を待っています... (1/8)';
     rt.__test.setOnlineState({
@@ -397,6 +399,16 @@ runTest('online integration: connect は待機表示を消して再joinを送る
 
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '');
     assert.strictEqual(rt.__test.socketEmits[0].name, 'rejoinRoom');
+    const reconnectSnapshot = rt.__test.getOnlineState().reconnectStateSnapshot;
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(reconnectSnapshot.socketConnectPlanAuthority)), {
+        plan: { clearWaitingStatus: true, requestRejoin: true },
+        source: 'pure-plan',
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(reconnectSnapshot.socketConnectEffectAuthority)), {
+        source: 'executor',
+        fallbackReason: '',
+    });
 });
 
 runTest('online integration: rejoinData は現在のホスト状態で保存セッションを更新する', () => {

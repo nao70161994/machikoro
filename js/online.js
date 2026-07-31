@@ -255,6 +255,15 @@ let _lastAcceptedGameActionCommitEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlineSocketConnectPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlineSocketConnectEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -444,6 +453,16 @@ function isAcceptedGameActionCommitEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_ACCEPTED_COMMIT_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineSocketConnectPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_SOCKET_CONNECT_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineSocketConnectEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -526,6 +545,14 @@ function getIncomingGameActionCommitEffectSelection() {
 
 function getAcceptedGameActionCommitEffectSelection() {
     return _lastAcceptedGameActionCommitEffectSelection;
+}
+
+function getOnlineSocketConnectPlanSelection() {
+    return _lastOnlineSocketConnectPlanSelection;
+}
+
+function getOnlineSocketConnectEffectSelection() {
+    return _lastOnlineSocketConnectEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -653,6 +680,8 @@ function getOnlineReconnectStateSnapshot() {
         acceptedGameActionNoGameEffectAuthority: getAcceptedGameActionNoGameEffectSelection(),
         incomingGameActionCommitEffectAuthority: getIncomingGameActionCommitEffectSelection(),
         acceptedGameActionCommitEffectAuthority: getAcceptedGameActionCommitEffectSelection(),
+        socketConnectPlanAuthority: getOnlineSocketConnectPlanSelection(),
+        socketConnectEffectAuthority: getOnlineSocketConnectEffectSelection(),
     });
 }
 
@@ -1333,6 +1362,86 @@ function _runOnlineActionCommitEffects(
             scheduleCpu: () => scheduleCPU(),
         }
     ).result;
+}
+
+function _legacyOnlineSocketConnectPlan() {
+    const el = document.getElementById("onlineStatus");
+    return Object.freeze({
+        clearWaitingStatus: !!(el && el.textContent.startsWith('⏳')),
+        requestRejoin: !!((isOnlineGame || isReconnectingOnline || _onlineRestoreInProgress) &&
+            myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken),
+    });
+}
+
+function _onlineSocketConnectPlanSelection() {
+    const legacyPlan = _legacyOnlineSocketConnectPlan();
+    const requested = isOnlineSocketConnectPlanAuthorityEnabled();
+    const stateSelection = OnlineReconnectState.selectAuthorityState(
+        _onlineReconnectController.snapshot(),
+        { eventAuthorityEnabled: requested }
+    );
+    const stateReady = stateSelection.source === 'event';
+    const el = document.getElementById("onlineStatus");
+    const selected = OnlineSocketConnect.selectPlan({
+        waitingStatus: !!(el && el.textContent.startsWith('⏳')),
+        onlineActive: isOnlineGame,
+        reconnecting: isReconnectingOnline,
+        restoreInProgress: _onlineRestoreInProgress,
+        hasRoomId: !!myRoomId,
+        originalPlayerIndex: myOriginalPlayerIndex,
+        hasPlayerName: !!myPlayerName,
+        hasReconnectToken: !!reconnectToken,
+    }, legacyPlan, {
+        authorityEnabled: requested && stateReady,
+    });
+    if (!requested || stateReady) return selected;
+    return Object.freeze({
+        ...selected,
+        source: 'legacy-fallback',
+        fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
+    });
+}
+
+function _onlineSocketConnectEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineSocketConnectEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlineSocketConnect !== 'undefined' &&
+        typeof OnlineSocketConnect.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan ? 'socket-connect-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineSocketConnectEffectsLegacy(plan) {
+    const el = document.getElementById("onlineStatus");
+    if (plan.clearWaitingStatus && el) el.textContent = '';
+    if (plan.requestRejoin) {
+        setOnlineReconnectLegacyFlag(true);
+        _emitOnlineRejoinRequest();
+    }
+    return true;
+}
+
+function _runOnlineSocketConnectEffects() {
+    const planSelection = _onlineSocketConnectPlanSelection();
+    _lastOnlineSocketConnectPlanSelection = planSelection;
+    const effectSelection = _onlineSocketConnectEffectAuthoritySelection(planSelection);
+    _lastOnlineSocketConnectEffectSelection = effectSelection;
+    if (effectSelection.source !== 'executor') {
+        return _runOnlineSocketConnectEffectsLegacy(planSelection.plan);
+    }
+    return OnlineSocketConnect.execute(planSelection.plan, {
+        clearWaitingStatus: () => {
+            const el = document.getElementById("onlineStatus");
+            if (el) el.textContent = '';
+        },
+        markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+        requestRejoin: () => _emitOnlineRejoinRequest(),
+    }).result;
 }
 
 function markOnlineGameFinished() {
@@ -2438,12 +2547,7 @@ function initSocket() {
     socket.on("hostChanged", handleHostChanged);
 
     socket.on("connect", () => {
-        const el = document.getElementById("onlineStatus");
-        if (el && el.textContent.startsWith('⏳')) el.textContent = '';
-        if ((isOnlineGame || isReconnectingOnline || _onlineRestoreInProgress) && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
-            setOnlineReconnectLegacyFlag(true);
-            _emitOnlineRejoinRequest();
-        }
+        _runOnlineSocketConnectEffects();
     });
 
     socket.on('disconnect', () => {

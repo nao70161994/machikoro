@@ -57,6 +57,7 @@ const STATIC_ASSETS = [
   '/js/onlineActionGap.js',
   '/js/onlineActionNoGame.js',
   '/js/onlineActionCommit.js',
+  '/js/onlineSocketConnect.js',
   '/js/onlinePlayerSettings.js',
   '/js/onlineRestoreRank.js',
   '/js/onlineReconnectState.js',

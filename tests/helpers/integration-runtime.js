@@ -233,6 +233,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineActionGap.js');
         files.push('js/onlineActionNoGame.js');
         files.push('js/onlineActionCommit.js');
+        files.push('js/onlineSocketConnect.js');
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineReconnectState.js');
