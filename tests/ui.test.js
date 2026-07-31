@@ -44,6 +44,10 @@ function loadUiRuntime(options = {}) {
         confirmCancelBtn: makeElement(),
         players: makeElement(),
         tutorialBox: makeElement(),
+        tutorialEnabled: makeElement(),
+        tutorialLevel: makeElement(),
+        btnTutorialToggle: makeElement(),
+        btnTutorialLevel: makeElement(),
     };
     const context = {
         console,
@@ -162,6 +166,28 @@ runTest('ui storage境界はstorage取得拒否を外へ伝播しない', () => 
     assert.doesNotThrow(() => context.setTutorialEnabled(false));
     assert.doesNotThrow(() => context.onChangeTutorialLevel('beginner'));
     assert.doesNotThrow(() => context.recordFlowTrace('blocked-storage'));
+});
+
+runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反映する', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.onToggleTutorial(true);
+    context.onChangeTutorialLevel('advanced');
+    assert.strictEqual(elements.tutorialEnabled.checked, true);
+    assert.strictEqual(elements.tutorialLevel.value, 'advanced');
+    assert.strictEqual(elements.btnTutorialToggle.textContent, '💡 ガイド ON');
+    assert.strictEqual(elements.btnTutorialLevel.textContent, '🧠 上級者');
+    assert.strictEqual(elements.btnTutorialToggle.classList.contains('active'), true);
+    assert.strictEqual(elements.btnTutorialLevel.classList.contains('active'), true);
+
+    context.onToggleTutorial(false);
+    context.onChangeTutorialLevel('invalid');
+    assert.strictEqual(elements.tutorialEnabled.checked, false);
+    assert.strictEqual(elements.tutorialLevel.value, 'beginner');
+    assert.strictEqual(elements.btnTutorialToggle.textContent, '💡 ガイド OFF');
+    assert.strictEqual(elements.btnTutorialLevel.textContent, '🌱 初心者');
+    assert.strictEqual(elements.btnTutorialToggle.classList.contains('active'), false);
+    assert.strictEqual(elements.btnTutorialLevel.classList.contains('active'), false);
 });
 
 runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {

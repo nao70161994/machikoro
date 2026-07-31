@@ -130,19 +130,20 @@ function cycleTutorialLevel() {
 }
 
 function syncTutorialControls() {
+    const view = UiTutorial.buildControlView(tutorialEnabled, tutorialLevel);
     const checkbox = document.getElementById("tutorialEnabled");
-    if (checkbox) checkbox.checked = tutorialEnabled;
+    if (checkbox) checkbox.checked = view.enabled;
     const select = document.getElementById("tutorialLevel");
-    if (select) select.value = tutorialLevel;
+    if (select) select.value = view.selectedLevel;
     const btn = document.getElementById("btnTutorialToggle");
     if (btn) {
-        btn.textContent = tutorialEnabled ? "💡 ガイド ON" : "💡 ガイド OFF";
-        btn.classList.toggle("active", tutorialEnabled);
+        btn.textContent = view.toggleText;
+        btn.classList.toggle("active", view.active);
     }
     const levelBtn = document.getElementById("btnTutorialLevel");
     if (levelBtn) {
-        levelBtn.textContent = tutorialLevel === 'advanced' ? "🧠 上級者" : "🌱 初心者";
-        levelBtn.classList.toggle("active", tutorialEnabled);
+        levelBtn.textContent = view.levelText;
+        levelBtn.classList.toggle("active", view.active);
     }
 }
 

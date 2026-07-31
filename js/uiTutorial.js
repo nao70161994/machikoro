@@ -67,6 +67,17 @@ const UiTutorial = (() => {
         return { title: `${levelText}ガイド`, body: "盤面を確認して次の行動を選んでください。", tags: [] };
     }
 
+    function buildControlView(enabled, level) {
+        const active = !!enabled;
+        return Object.freeze({
+            enabled: active,
+            selectedLevel: level,
+            toggleText: active ? '💡 ガイド ON' : '💡 ガイド OFF',
+            levelText: level === 'advanced' ? '🧠 上級者' : '🌱 初心者',
+            active,
+        });
+    }
+
     function buildHtml(message, escapeHtml) {
         const normalizedMessage = message || {};
         const tags = Array.isArray(normalizedMessage.tags) ? normalizedMessage.tags : [];
@@ -77,7 +88,7 @@ const UiTutorial = (() => {
     `;
     }
 
-    return Object.freeze({ getHints, getMessage, buildHtml });
+    return Object.freeze({ getHints, getMessage, buildControlView, buildHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiTutorial;

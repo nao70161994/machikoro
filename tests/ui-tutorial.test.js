@@ -151,6 +151,25 @@ runTest('tutorial messageは建設済み・建設不可・最安候補を同じ�
     });
 });
 
+runTest('tutorial control viewはON/OFFと難易度表示をpureに同期する', () => {
+    assert.deepStrictEqual(UiTutorial.buildControlView(true, 'advanced'), {
+        enabled: true,
+        selectedLevel: 'advanced',
+        toggleText: '💡 ガイド ON',
+        levelText: '🧠 上級者',
+        active: true,
+    });
+    const disabled = UiTutorial.buildControlView(false, 'beginner');
+    assert.deepStrictEqual(disabled, {
+        enabled: false,
+        selectedLevel: 'beginner',
+        toggleText: '💡 ガイド OFF',
+        levelText: '🌱 初心者',
+        active: false,
+    });
+    assert.strictEqual(Object.isFrozen(disabled), true);
+});
+
 runTest('tutorial HTMLはtitle・body・tagをescapeして既存構造を維持する', () => {
     const escapeHtml = value => String(value)
         .replace(/&/g, '&amp;')
