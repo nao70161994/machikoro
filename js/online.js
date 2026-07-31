@@ -2378,7 +2378,28 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
         });
         const execution = _executeOnlineRestoreQueuePlan(flushSelection, handlers);
         if (!execution.ok) {
-            _abortOnlineRestore(generation, '操作の適用に失敗したため、状態を再同期しています...', queuedEvents.slice(execution.failedIndex));
+            const legacyFailureTransition = Object.freeze({
+                overflow: false,
+                queue: queuedEvents.slice(execution.failedIndex),
+            });
+            const pureFailureTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
+                typeof OnlineRestoreQueueState.planFailureRemainder === 'function'
+                ? OnlineRestoreQueueState.planFailureRemainder(queuedEvents, execution.failedIndex)
+                : null;
+            const failureSelection = _selectOnlineRestoreQueueStateTransition(
+                pureFailureTransition,
+                legacyFailureTransition
+            );
+            _lastOnlineRestoreQueueStateSelection = Object.freeze({
+                source: failureSelection.source,
+                matched: failureSelection.matched,
+                fallbackReason: failureSelection.fallbackReason,
+            });
+            _abortOnlineRestore(
+                generation,
+                '操作の適用に失敗したため、状態を再同期しています...',
+                failureSelection.transition.queue
+            );
             return false;
         }
     } finally {
