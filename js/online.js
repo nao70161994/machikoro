@@ -179,6 +179,10 @@ let _lastOnlineReconnectRequestPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastOnlineReconnectRequestEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -283,6 +287,11 @@ function isOnlineReconnectRequestPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineReconnectRequestEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RECONNECT_REQUEST_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -297,6 +306,10 @@ function getOnlineReconnectCleanupEffectSelection() {
 
 function getOnlineReconnectRequestPlanSelection() {
     return _lastOnlineReconnectRequestPlanSelection;
+}
+
+function getOnlineReconnectRequestEffectSelection() {
+    return _lastOnlineReconnectRequestEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -407,6 +420,7 @@ function getOnlineReconnectStateSnapshot() {
         cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline),
         cleanupEffectAuthority: getOnlineReconnectCleanupEffectSelection(),
         requestPlanAuthority: getOnlineReconnectRequestPlanSelection(),
+        requestEffectAuthority: getOnlineReconnectRequestEffectSelection(),
     });
 }
 
@@ -713,6 +727,42 @@ function _onlineReconnectRequestPlanSelection(session) {
     });
 }
 
+function _onlineReconnectRequestEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlineReconnectRequestEffectAuthorityEnabled();
+    const active = enabled && planSelection && planSelection.source === 'pure';
+    return Object.freeze({
+        source: active ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: planSelection && planSelection.fallbackReason || '',
+    });
+}
+
+function _emitOnlineRejoinSocket(session) {
+    socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
+}
+
+function _runOnlineReconnectRequestEffectsLegacy(plan, session) {
+    _clearOnlineRejoinTimer();
+    _rejoinRetryCount = plan.nextAttemptCount;
+    _emitOnlineRejoinSocket(session);
+    _armOnlineRejoinResponseTimeout();
+}
+
+function _runOnlineReconnectRequestEffects(planSelection, session) {
+    const effectSelection = _onlineReconnectRequestEffectAuthoritySelection(planSelection);
+    _lastOnlineReconnectRequestEffectSelection = effectSelection;
+    if (effectSelection.source !== 'executor') {
+        _runOnlineReconnectRequestEffectsLegacy(planSelection.plan, session);
+        return effectSelection;
+    }
+    OnlineReconnectRequest.execute(planSelection.plan, {
+        clearTimer: () => _clearOnlineRejoinTimer(),
+        setAttemptCount: value => { _rejoinRetryCount = value; },
+        emitRejoin: () => _emitOnlineRejoinSocket(session),
+        armTimer: () => _armOnlineRejoinResponseTimeout(),
+    });
+    return effectSelection;
+}
+
 function _emitOnlineRejoinRequest(sessionOverride = null) {
     const session = sessionOverride || {
         roomId: myRoomId,
@@ -733,10 +783,7 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
     if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.EXHAUST) {
         return _finishRejoinRetryTimeout();
     }
-    _clearOnlineRejoinTimer();
-    _rejoinRetryCount = planSelection.plan.nextAttemptCount;
-    socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
-    _armOnlineRejoinResponseTimeout();
+    _runOnlineReconnectRequestEffects(planSelection, session);
     return true;
 }
 

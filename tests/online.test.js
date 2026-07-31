@@ -128,6 +128,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreQueue.js');
     loadScript(context, 'js/onlineReconnectCleanup.js');
+    loadScript(context, 'js/onlineReconnectRequest.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -161,6 +162,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineRestoreQueue = () => _onlineRestoreEventQueue.slice();
         this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
         this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
+        this.getOnlineReconnectRequestEffectSelection = getOnlineReconnectRequestEffectSelection;
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
         this.markOnlineGameFinished = markOnlineGameFinished;
         this.getSocketDisconnected = () => socketDisconnected;
@@ -3321,12 +3323,14 @@ runTest('rejoin request plan authorityはclean state parity時だけpure planを
     runtime.getSocketHandlers().disconnect();
     runtime.getOnlineState().socket.connected = true;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_EFFECT_AUTHORITY_ENABLED = true;
 
     assert.strictEqual(runtime.emitOnlineRejoinRequest(), true);
     const selection = runtime.getOnlineReconnectRequestPlanSelection();
     assert.strictEqual(selection.source, 'pure');
     assert.strictEqual(selection.matched, true);
     assert.strictEqual(selection.plan.decision, 'emit');
+    assert.strictEqual(runtime.getOnlineReconnectRequestEffectSelection().source, 'executor');
     assert.strictEqual(runtime.getSocketEmits().at(-1).name, 'rejoinRoom');
 });
 
@@ -3341,11 +3345,13 @@ runTest('rejoin request plan authorityはstate履歴不一致時にlegacy plan�
     });
     runtime.markOnlineGameFinished();
     runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_EFFECT_AUTHORITY_ENABLED = true;
 
     assert.strictEqual(runtime.emitOnlineRejoinRequest(), true);
     const selection = runtime.getOnlineReconnectRequestPlanSelection();
     assert.strictEqual(selection.source, 'legacy-fallback');
     assert.strictEqual(selection.plan.decision, 'emit');
+    assert.strictEqual(runtime.getOnlineReconnectRequestEffectSelection().source, 'legacy-fallback');
     assert.strictEqual(runtime.getSocketEmits().at(-1).name, 'rejoinRoom');
 });
 
