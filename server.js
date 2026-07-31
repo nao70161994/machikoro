@@ -39,6 +39,7 @@ const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
 const { selectRestoreSource, decideExistingRoomRestore } = require('./server/restoreGateway');
+const makeRestoredRoom = require('./server/restoredRoom');
 const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
@@ -180,6 +181,9 @@ const {
     landmarkNames: gameRuntime.Player.landmarkNames,
     sanitizeName,
     isValidGameSchemaMetadata,
+});
+const { buildRestoredRoom } = makeRestoredRoom({
+    sanitizeStateSnapshot: sanitizeClientStateSnapshot,
 });
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     startedRoomTtlMs: 2 * 60 * 60 * 1000,
@@ -1244,32 +1248,26 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] =
             (gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] || 0) + 1;
     }
-    const restoredRoom = {
+    const restoredRoom = buildRestoredRoom({
         roomId,
-        players: restoredPlayers,
+        restoredPlayers,
         playerSettings: gameStartPayload.playerSettings,
-        maxPlayers: playerNames.length,
-        started: true,
-        restored: true,
-        hostPlayerIndex: playerIndex,
-        hostEpoch: restoredHostEpoch,
-        actionSeq: restoredRank.actionSeq,
-        enabledCards: gameStartPayload.enabledCards || [],
-        enabledLandmarks: gameStartPayload.enabledLandmarks || [],
-        cpuSpeed: gameStartPayload.cpuSpeed || 1500,
+        playerNames,
+        playerIndex,
+        restoredHostEpoch,
+        restoredActionSeq: restoredRank.actionSeq,
+        enabledCards: gameStartPayload.enabledCards,
+        enabledLandmarks: gameStartPayload.enabledLandmarks,
+        cpuSpeed: gameStartPayload.cpuSpeed,
         gameStartPayload,
-        stateSnapshot: sanitizeClientStateSnapshot(replayStateSnapshot, playerNames.length),
-        acceptedClientActions: {},
-        actionLog: sanitizedActionLog,
-        lastUndoState: null,
-        lastTouchedAt: Date.now(),
-        provisionalRestore: approvedHostless,
-        hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] || 0,
-        hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] || 0,
-        hostlessRestoreCandidateCount: approvedHostless && Number.isInteger(options.candidateCount)
-            ? options.candidateCount
-            : 0,
-    };
+        replayStateSnapshot,
+        sanitizedActionLog,
+        now: Date.now(),
+        approvedHostless,
+        hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD],
+        hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
+        candidateCount: options.candidateCount,
+    });
     for (const entry of restoredRoom.actionLog) rememberAcceptedClientAction(restoredRoom, entry);
     const restoredMirror = createRoomMirror(restoredRoom);
     if (!restoredMirror) {
