@@ -105,6 +105,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/autoSkipPolicy.js', 'js/main.js'],
             ['js/pageActivationPolicy.js', 'js/main.js'],
             ['js/delayedHumanActionPolicy.js', 'js/main.js'],
+            ['js/uiEventDelegation.js', 'js/main.js'],
             ['js/citySkyline.js', 'js/main.js'],
         ]],
         ['scripts/selfplay.js', [
@@ -156,6 +157,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/autoSkipPolicy.js', 'js/main.js'],
             ['js/pageActivationPolicy.js', 'js/main.js'],
             ['js/delayedHumanActionPolicy.js', 'js/main.js'],
+            ['js/uiEventDelegation.js', 'js/main.js'],
             ['js/citySkyline.js', 'js/main.js'],
             ['js/localSaveRepository.js', 'js/storage.js'],
             ['js/savedGameValidation.js', 'js/storage.js'],
@@ -320,6 +322,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/autoSkipPolicy.js', 'js/main.js'],
             ['js/pageActivationPolicy.js', 'js/main.js'],
             ['js/delayedHumanActionPolicy.js', 'js/main.js'],
+            ['js/uiEventDelegation.js', 'js/main.js'],
             ['js/citySkyline.js', 'js/main.js'],
         ]]
     ];

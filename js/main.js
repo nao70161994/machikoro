@@ -895,18 +895,11 @@ let delegatedUiHandlersBound = false;
 let staticUiHandlersBound = false;
 
 function actionButtonFromEvent(event) {
-    const target = event && event.target;
-    if (!target) return null;
-    if (typeof target.closest === 'function') return target.closest('[data-action]');
-    return target.dataset && target.dataset.action ? target : null;
+    return UiEventDelegation.elementFromEvent(event, 'data-action');
 }
 
 function uiActionElementFromEvent(event, attributeName) {
-    const target = event && event.target;
-    if (!target) return null;
-    const selector = '[' + attributeName + ']';
-    if (typeof target.closest === 'function') return target.closest(selector);
-    return target.dataset && target.dataset[attributeName.replace(/^data-/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase())] ? target : null;
+    return UiEventDelegation.elementFromEvent(event, attributeName);
 }
 
 function reloadCurrentPage() {
@@ -991,9 +984,9 @@ function handleStaticUiChange(event) {
 }
 
 function handleStaticUiKeydown(event) {
-    if (!event || (event.key !== 'Enter' && event.key !== ' ')) return;
+    if (!UiEventDelegation.isKeyboardActivationKey(event)) return;
     const element = uiActionElementFromEvent(event, 'data-ui-action');
-    if (!element || element.disabled || element.getAttribute('role') !== 'button') return;
+    if (!UiEventDelegation.isEnabledRoleButton(element)) return;
     handleStaticUiClick(event);
 }
 

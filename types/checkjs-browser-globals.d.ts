@@ -73,6 +73,7 @@ interface Window {
     PageActivationPolicy: unknown;
     CitySkyline: unknown;
     DelayedHumanActionPolicy: unknown;
+    UiEventDelegation: unknown;
     ClientStorage: unknown;
     AppShellStorage: unknown;
     PwaShell: unknown;

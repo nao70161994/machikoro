@@ -204,6 +204,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/autoSkipPolicy.js',
         'js/pageActivationPolicy.js',
         'js/delayedHumanActionPolicy.js',
+        'js/uiEventDelegation.js',
         'js/citySkyline.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
