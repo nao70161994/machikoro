@@ -199,6 +199,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineHostChangedEffectSelection = getOnlineHostChangedEffectSelection;
         this.getPendingReconciliationPlanSelection = getPendingReconciliationPlanSelection;
         this.getRejoinActionLogPlanSelection = getRejoinActionLogPlanSelection;
+        this.getLocalHostRestoreOfferPlanSelection = getLocalHostRestoreOfferPlanSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -2309,6 +2310,7 @@ runTest('rejoinData はサーバー上のホストが別人なら古いホスト
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
+    rt.window.MACHIKORO_ONLINE_LOCAL_HOST_RESTORE_OFFER_PLAN_AUTHORITY_ENABLED = true;
     rt.setOnlineState({
         myOriginalPlayerIndex: 0,
         myPlayerName: 'Alice',
@@ -2359,6 +2361,11 @@ runTest('rejoinData はサーバー上のホストが別人なら古いホスト
     const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(stored.hostPlayerIndex, 1);
     assert.strictEqual(stored.actionSeq, 5);
+    assert.strictEqual(rt.getLocalHostRestoreOfferPlanSelection().source, 'pure-plan');
+    assert.strictEqual(
+        rt.getLocalHostRestoreOfferPlanSelection().plan.reason,
+        'server-host-authority'
+    );
 });
 
 runTest('rejoinData はサーバー上のホストが古くても新しいローカルホストbundleを送る', () => {
@@ -2366,6 +2373,7 @@ runTest('rejoinData はサーバー上のホストが古くても新しいロー
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
+    rt.window.MACHIKORO_ONLINE_LOCAL_HOST_RESTORE_OFFER_PLAN_AUTHORITY_ENABLED = true;
     rt.setOnlineState({
         myOriginalPlayerIndex: 1,
         myPlayerName: 'Bob',
@@ -2412,6 +2420,10 @@ runTest('rejoinData はサーバー上のホストが古くても新しいロー
     assert.ok(emitted);
     assert.strictEqual(emitted.payload.gameStartPayload.hostPlayerIndex, 1);
     assert.strictEqual(emitted.payload.gameStartPayload.hostEpoch, 3);
+    const selection = rt.getLocalHostRestoreOfferPlanSelection();
+    assert.strictEqual(selection.source, 'pure-plan');
+    assert.strictEqual(selection.matched, true);
+    assert.strictEqual(selection.plan.reason, 'offer-newer-bundle');
 });
 
 runTest('actionAccepted undoBuild は送信者もサーバー確定stateへ補正する', () => {

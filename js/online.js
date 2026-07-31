@@ -294,6 +294,12 @@ let _lastRejoinActionLogPlanSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastLocalHostRestoreOfferPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -523,6 +529,11 @@ function isRejoinActionLogPlanAuthorityEnabled() {
         window.MACHIKORO_ONLINE_REJOIN_ACTION_LOG_PLAN_AUTHORITY_ENABLED === true;
 }
 
+function isLocalHostRestoreOfferPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_LOCAL_HOST_RESTORE_OFFER_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -637,6 +648,10 @@ function getPendingReconciliationPlanSelection() {
 
 function getRejoinActionLogPlanSelection() {
     return _lastRejoinActionLogPlanSelection;
+}
+
+function getLocalHostRestoreOfferPlanSelection() {
+    return _lastLocalHostRestoreOfferPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -2540,16 +2555,53 @@ function initSocket() {
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
         const restoredThroughSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
         const localBundle = _readLocalRestoreBundle();
-        if (localBundle && localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex) {
-            const localRank = _onlineRestoreRank(localBundle.gameStartPayload, localBundle.stateSnapshot, localBundle.actionLog);
-            const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
-            const canOfferLocalHostBundle = hostPlayerIndex === myOriginalPlayerIndex || localRank.hostEpoch > serverRank.hostEpoch;
-            if (canOfferLocalHostBundle && _isOnlineRestoreRankNewer(localRank, serverRank)) {
-                setOnlineReconnectLegacyFlag(true);
-                document.getElementById("onlineStatus").textContent = '♻️ より新しいローカル復元データをサーバーへ送信しています...';
-                _sendRecreateRoomFromBundle(localBundle);
-                return;
-            }
+        const ownsLocalHostBundle = !!localBundle &&
+            localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex;
+        const localRank = ownsLocalHostBundle
+            ? _onlineRestoreRank(
+                localBundle.gameStartPayload,
+                localBundle.stateSnapshot,
+                localBundle.actionLog
+            )
+            : null;
+        const localOfferServerRank = ownsLocalHostBundle
+            ? _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog)
+            : null;
+        const canOfferLocalHostBundle = ownsLocalHostBundle &&
+            (hostPlayerIndex === myOriginalPlayerIndex ||
+                localRank.hostEpoch > localOfferServerRank.hostEpoch);
+        const shouldOfferLocalHostBundle = canOfferLocalHostBundle &&
+            _isOnlineRestoreRankNewer(localRank, localOfferServerRank);
+        const localHostOfferReasons = OnlineRestoreRank.localHostRestoreOfferReasons;
+        const legacyLocalHostOfferPlan = Object.freeze({
+            offer: shouldOfferLocalHostBundle,
+            bundle: shouldOfferLocalHostBundle ? localBundle : null,
+            reason: !ownsLocalHostBundle
+                ? localHostOfferReasons.NOT_ORIGINAL_HOST_BUNDLE
+                : (!canOfferLocalHostBundle
+                    ? localHostOfferReasons.SERVER_HOST_AUTHORITY
+                    : (shouldOfferLocalHostBundle
+                        ? localHostOfferReasons.OFFER_NEWER_BUNDLE
+                        : localHostOfferReasons.NOT_NEWER)),
+        });
+        _lastLocalHostRestoreOfferPlanSelection =
+            OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
+                localBundle,
+                myOriginalPlayerIndex,
+                hostPlayerIndex,
+                localRank,
+                localOfferServerRank,
+                legacyLocalHostOfferPlan,
+                { authorityEnabled: isLocalHostRestoreOfferPlanAuthorityEnabled() }
+            );
+        if (_lastLocalHostRestoreOfferPlanSelection.plan.offer) {
+            setOnlineReconnectLegacyFlag(true);
+            document.getElementById("onlineStatus").textContent =
+                '♻️ より新しいローカル復元データをサーバーへ送信しています...';
+            _sendRecreateRoomFromBundle(
+                _lastLocalHostRestoreOfferPlanSelection.plan.bundle
+            );
+            return;
         }
         gameStartPayload.schemaVersion = ONLINE_RESTORE_SCHEMA_VERSION;
         _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch);

@@ -60,3 +60,89 @@ runTest('online restore rank はepoch優先・同epoch進捗優先の比較を�
         { hostEpoch: 2, actionSeq: 10 },
     ), false);
 });
+
+
+runTest('online restore rank は元host bundle再提示のauthority順をpureに固定する', () => {
+    const reasons = OnlineRestoreRank.localHostRestoreOfferReasons;
+    const originalBundle = { gameStartPayload: { hostPlayerIndex: 0 } };
+    const otherBundle = { gameStartPayload: { hostPlayerIndex: 1 } };
+    const cases = [
+        {
+            name: 'bundleなし', bundle: null, original: 0, serverHost: 0,
+            localRank: { hostEpoch: 3, actionSeq: 9 },
+            serverRank: { hostEpoch: 2, actionSeq: 8 },
+            expected: { offer: false, bundle: null, reason: reasons.NOT_ORIGINAL_HOST_BUNDLE },
+        },
+        {
+            name: '別host bundle', bundle: otherBundle, original: 0, serverHost: 0,
+            localRank: { hostEpoch: 3, actionSeq: 9 },
+            serverRank: { hostEpoch: 2, actionSeq: 8 },
+            expected: { offer: false, bundle: null, reason: reasons.NOT_ORIGINAL_HOST_BUNDLE },
+        },
+        {
+            name: 'server現host優先', bundle: originalBundle, original: 0, serverHost: 1,
+            localRank: { hostEpoch: 2, actionSeq: 99 },
+            serverRank: { hostEpoch: 2, actionSeq: 8 },
+            expected: { offer: false, bundle: null, reason: reasons.SERVER_HOST_AUTHORITY },
+        },
+        {
+            name: '同rank', bundle: originalBundle, original: 0, serverHost: 0,
+            localRank: { hostEpoch: 2, actionSeq: 8 },
+            serverRank: { hostEpoch: 2, actionSeq: 8 },
+            expected: { offer: false, bundle: null, reason: reasons.NOT_NEWER },
+        },
+        {
+            name: '現hostかつ新しい進捗', bundle: originalBundle, original: 0, serverHost: 0,
+            localRank: { hostEpoch: 2, actionSeq: 9 },
+            serverRank: { hostEpoch: 2, actionSeq: 8 },
+            expected: { offer: true, bundle: originalBundle, reason: reasons.OFFER_NEWER_BUNDLE },
+        },
+        {
+            name: '新epochでhost移譲を上回る', bundle: originalBundle, original: 0, serverHost: 1,
+            localRank: { hostEpoch: 3, actionSeq: 1 },
+            serverRank: { hostEpoch: 2, actionSeq: 99 },
+            expected: { offer: true, bundle: originalBundle, reason: reasons.OFFER_NEWER_BUNDLE },
+        },
+    ];
+    for (const testCase of cases) {
+        const plan = OnlineRestoreRank.planLocalHostRestoreOffer(
+            testCase.bundle,
+            testCase.original,
+            testCase.serverHost,
+            testCase.localRank,
+            testCase.serverRank
+        );
+        assert.deepStrictEqual(plan, testCase.expected, testCase.name);
+        assert.strictEqual(Object.isFrozen(plan), true, testCase.name);
+    }
+});
+
+runTest('online restore rank local host offer authorityは完全一致時だけpure planを選ぶ', () => {
+    const bundle = { gameStartPayload: { hostPlayerIndex: 0 } };
+    const localRank = { hostEpoch: 2, actionSeq: 9 };
+    const serverRank = { hostEpoch: 2, actionSeq: 8 };
+    const legacy = Object.freeze({
+        offer: true,
+        bundle,
+        reason: 'offer-newer-bundle',
+    });
+    const disabled = OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
+        bundle, 0, 0, localRank, serverRank, legacy
+    );
+    assert.strictEqual(disabled.source, 'legacy');
+    assert.strictEqual(disabled.plan, legacy);
+    const enabled = OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
+        bundle, 0, 0, localRank, serverRank, legacy, { authorityEnabled: true }
+    );
+    assert.strictEqual(enabled.source, 'pure-plan');
+    assert.strictEqual(enabled.matched, true);
+    assert.strictEqual(enabled.plan.bundle, bundle);
+    const mismatch = Object.freeze({ offer: false, bundle: null, reason: 'not-newer' });
+    const fallback = OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
+        bundle, 0, 0, localRank, serverRank, mismatch, { authorityEnabled: true }
+    );
+    assert.strictEqual(fallback.source, 'legacy-fallback');
+    assert.strictEqual(fallback.matched, false);
+    assert.strictEqual(fallback.plan, mismatch);
+    assert.strictEqual(fallback.fallbackReason, 'local-host-restore-offer-plan-mismatch');
+});
