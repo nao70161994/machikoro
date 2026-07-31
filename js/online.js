@@ -239,6 +239,14 @@ let _lastAcceptedGameActionGapEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastIncomingGameActionNoGameEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastAcceptedGameActionNoGameEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -408,6 +416,16 @@ function isAcceptedGameActionGapEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_ACTION_ACCEPTED_GAP_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isIncomingGameActionNoGameEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ACTION_NO_GAME_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function isAcceptedGameActionNoGameEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_NO_GAME_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -474,6 +492,14 @@ function getIncomingGameActionGapEffectSelection() {
 
 function getAcceptedGameActionGapEffectSelection() {
     return _lastAcceptedGameActionGapEffectSelection;
+}
+
+function getIncomingGameActionNoGameEffectSelection() {
+    return _lastIncomingGameActionNoGameEffectSelection;
+}
+
+function getAcceptedGameActionNoGameEffectSelection() {
+    return _lastAcceptedGameActionNoGameEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -597,6 +623,8 @@ function getOnlineReconnectStateSnapshot() {
         acceptedGameActionApplyEffectAuthority: getAcceptedGameActionApplyEffectSelection(),
         incomingGameActionGapEffectAuthority: getIncomingGameActionGapEffectSelection(),
         acceptedGameActionGapEffectAuthority: getAcceptedGameActionGapEffectSelection(),
+        incomingGameActionNoGameEffectAuthority: getIncomingGameActionNoGameEffectSelection(),
+        acceptedGameActionNoGameEffectAuthority: getAcceptedGameActionNoGameEffectSelection(),
     });
 }
 
@@ -1179,6 +1207,52 @@ function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recor
             },
             requestRejoin: () => _emitOnlineRejoinRequest(),
             scheduleRetry: () => _scheduleRejoinRetry(),
+        }
+    ).result;
+}
+
+function _onlineActionNoGameEffectAuthoritySelection(planSelection, enabled) {
+    const decisions = OnlinePayload.incomingGameActionDecisions;
+    const pureNoGamePlan = planSelection && planSelection.source === 'pure-plan' &&
+        planSelection.plan && planSelection.plan.decision === decisions.NO_GAME;
+    const helperAvailable = typeof OnlineActionNoGame !== 'undefined' &&
+        typeof OnlineActionNoGame.execute === 'function';
+    const useExecutor = enabled && pureNoGamePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!pureNoGamePlan ? 'game-action-no-game-plan-not-authoritative' : 'executor-unavailable'),
+    });
+}
+
+function _runOnlineActionNoGameEffectsLegacy(statusMessage, requestRejoin) {
+    setOnlineReconnectLegacyFlag(true);
+    const el = document.getElementById("onlineStatus");
+    if (el) el.textContent = statusMessage;
+    if (requestRejoin) _emitOnlineRejoinRequest();
+    return !_flushingOnlineRestoreEvents;
+}
+
+function _runOnlineActionNoGameEffects(statusMessage, requestRejoin, planSelection, enabled, recordSelection) {
+    const selection = _onlineActionNoGameEffectAuthoritySelection(planSelection, enabled);
+    recordSelection(selection);
+    if (selection.source !== 'executor') {
+        return _runOnlineActionNoGameEffectsLegacy(statusMessage, requestRejoin);
+    }
+    return OnlineActionNoGame.execute(
+        {
+            requestRejoin,
+            result: !_flushingOnlineRestoreEvents,
+            statusMessage,
+        },
+        {
+            markReconnecting: () => setOnlineReconnectLegacyFlag(true),
+            updateStatus: message => {
+                const el = document.getElementById("onlineStatus");
+                if (el) el.textContent = message;
+            },
+            requestRejoin: () => _emitOnlineRejoinRequest(),
         }
     ).result;
 }
@@ -1885,11 +1959,13 @@ function initSocket() {
         _lastIncomingGameActionPlanSelection = planSelection;
         const decisions = OnlinePayload.incomingGameActionDecisions;
         if (planSelection.plan.decision === decisions.NO_GAME) {
-            setOnlineReconnectLegacyFlag(true);
-            const el = document.getElementById("onlineStatus");
-            if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続しています...';
-            _emitOnlineRejoinRequest();
-            return !_flushingOnlineRestoreEvents;
+            return _runOnlineActionNoGameEffects(
+                '⚠️ ゲーム状態を準備できていないため、再接続しています...',
+                true,
+                planSelection,
+                isIncomingGameActionNoGameEffectAuthorityEnabled(),
+                selection => { _lastIncomingGameActionNoGameEffectSelection = selection; }
+            );
         }
         if (planSelection.plan.decision === decisions.DUPLICATE) return;
         if (planSelection.plan.decision === decisions.GAP) {
@@ -1944,10 +2020,13 @@ function initSocket() {
         _lastAcceptedGameActionPlanSelection = planSelection;
         const decisions = OnlinePayload.incomingGameActionDecisions;
         if (planSelection.plan.decision === decisions.NO_GAME) {
-            setOnlineReconnectLegacyFlag(true);
-            const el = document.getElementById("onlineStatus");
-            if (el) el.textContent = '⚠️ ゲーム状態を準備できていないため、再接続してください。';
-            return !_flushingOnlineRestoreEvents;
+            return _runOnlineActionNoGameEffects(
+                '⚠️ ゲーム状態を準備できていないため、再接続してください。',
+                false,
+                planSelection,
+                isAcceptedGameActionNoGameEffectAuthorityEnabled(),
+                selection => { _lastAcceptedGameActionNoGameEffectSelection = selection; }
+            );
         }
         if (planSelection.plan.decision === decisions.DUPLICATE) {
             _clearPendingOutboundAction();

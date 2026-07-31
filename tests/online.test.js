@@ -134,6 +134,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineDecodeFailure.js');
     loadScript(context, 'js/onlineActionApplyFailure.js');
     loadScript(context, 'js/onlineActionGap.js');
+    loadScript(context, 'js/onlineActionNoGame.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -182,6 +183,8 @@ function loadOnlineRuntime(options = {}) {
         this.getAcceptedGameActionApplyEffectSelection = getAcceptedGameActionApplyEffectSelection;
         this.getIncomingGameActionGapEffectSelection = getIncomingGameActionGapEffectSelection;
         this.getAcceptedGameActionGapEffectSelection = getAcceptedGameActionGapEffectSelection;
+        this.getIncomingGameActionNoGameEffectSelection = getIncomingGameActionNoGameEffectSelection;
+        this.getAcceptedGameActionNoGameEffectSelection = getAcceptedGameActionNoGameEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1467,6 +1470,7 @@ runTest('rejoinData はRL preload中に受信したgameActionを復元後に一�
 runTest('gameAction はゲーム未初期化なら適用せず再接続表示にする', () => {
     const rt = loadOnlineRuntime();
     rt.window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_GAME_ACTION_NO_GAME_EFFECT_AUTHORITY_ENABLED = true;
     rt.initSocket();
     rt.setOnlineState({
         myOriginalPlayerIndex: 0,
@@ -1479,9 +1483,54 @@ runTest('gameAction はゲーム未初期化なら適用せず再接続表示に
 
     assert.strictEqual(rt.getGame(), null);
     assert.strictEqual(rt.getIncomingGameActionPlanSelection().source, 'pure-plan');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getIncomingGameActionNoGameEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(rt.elements.onlineStatus.textContent, '⚠️ ゲーム状態を準備できていないため、再接続しています...');
     assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), true);
+});
+
+runTest('pending-matched actionAcceptedはゲーム未初期化時にstatusだけ更新する', () => {
+    const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_ACTION_ACCEPTED_NO_GAME_EFFECT_AUTHORITY_ENABLED = true;
+    rt.initSocket();
+    rt.setOnlineState({
+        onlineActionInFlight: true,
+        myOriginalPlayerIndex: 0,
+        myPlayerName: 'Alice',
+        myRoomId: 'ROOM01',
+        reconnectToken: 'token-alice',
+    });
+    rt.localStorage.setItem('onlinePendingAction', JSON.stringify({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        roomId: 'ROOM01',
+        seq: 1,
+        clientActionId: 'accepted-no-game',
+    }));
+
+    const result = rt.getSocketHandlers().actionAccepted({
+        action: 'nextTurn',
+        data: {},
+        playerIndex: 0,
+        seq: 1,
+        clientActionId: 'accepted-no-game',
+    });
+
+    assert.strictEqual(result, true);
+    assert.strictEqual(rt.getGame(), null);
+    assert.strictEqual(rt.getAcceptedGameActionPlanSelection().source, 'pure-plan');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getAcceptedGameActionNoGameEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
+    assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(rt.elements.onlineStatus.textContent,
+        '⚠️ ゲーム状態を準備できていないため、再接続してください。');
+    assert.strictEqual(rt.getSocketEmits().some(event => event.name === 'rejoinRoom'), false);
 });
 
 runTest('malformed gameActionは明示flag時だけdecode failure executorから再同期する', () => {
