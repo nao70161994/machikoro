@@ -1350,10 +1350,11 @@ function toggleLog() {
     const header = document.querySelector(".log-header");
     if (!log || !icon || !header || !log.classList || !header.classList) return false;
     const collapsed = log.classList.toggle("collapsed");
-    if (summary && summary.classList) summary.classList.toggle("collapsed", collapsed);
-    icon.textContent = collapsed ? "▶" : "▼";
-    header.classList.toggle("collapsed", collapsed);
-    if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const view = UiLogDisplay.buildLogToggleView(collapsed);
+    if (summary && summary.classList) summary.classList.toggle("collapsed", view.collapsed);
+    icon.textContent = view.iconText;
+    header.classList.toggle("collapsed", view.collapsed);
+    if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', view.ariaExpanded);
     return true;
 }
 

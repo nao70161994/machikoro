@@ -100,12 +100,21 @@ const UiLogDisplay = (() => {
         return parts.join('');
     }
 
+    function buildLogToggleView(collapsed) {
+        return Object.freeze({
+            collapsed: collapsed === true,
+            iconText: collapsed === true ? '▶' : '▼',
+            ariaExpanded: collapsed === true ? 'false' : 'true',
+        });
+    }
+
     return Object.freeze({
         makeLogTypeDisplay,
         classifyLogEntry,
         extractLogDetails,
         buildLogEntriesHtml,
         buildLogSummaryHtml,
+        buildLogToggleView,
     });
 })();
 

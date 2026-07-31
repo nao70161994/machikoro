@@ -76,3 +76,16 @@ assert.strictEqual(summary,
     '<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">++2コイン</span></span>' +
     '</div><span class="log-chip">収入 1</span>'
 );
+
+assert.deepStrictEqual(UiLogDisplay.buildLogToggleView(true), {
+    collapsed: true,
+    iconText: '▶',
+    ariaExpanded: 'false',
+});
+const expandedToggle = UiLogDisplay.buildLogToggleView(false);
+assert.deepStrictEqual(expandedToggle, {
+    collapsed: false,
+    iconText: '▼',
+    ariaExpanded: 'true',
+});
+assert.ok(Object.isFrozen(expandedToggle));

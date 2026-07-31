@@ -29,6 +29,8 @@ function loadUiRuntime(options = {}) {
         log: makeElement(),
         logTitle: makeElement(),
         logSummary: makeElement(),
+        logToggleIcon: makeElement(),
+        logHeader: makeElement(),
         pendingModal: makeElement(),
         pendingMenu: makeElement(),
         noticeToast: makeElement(),
@@ -52,6 +54,9 @@ function loadUiRuntime(options = {}) {
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];
+            },
+            querySelector(selector) {
+                return selector === '.log-header' ? elements.logHeader : null;
             },
             addEventListener() {},
         },
@@ -981,6 +986,24 @@ runTest('renderPending は online input block 中に resolver を表示しない
     context.renderPending();
     assert.strictEqual(elements.pendingModal.style.display, 'none');
     assert.strictEqual(elements.pendingMenu.innerHTML, '');
+});
+
+runTest('toggleLog wrapperはpure viewでicon・ARIA・classを同期する', () => {
+    const { context, elements } = loadUiRuntime();
+
+    assert.strictEqual(context.toggleLog(), true);
+    assert.strictEqual(elements.log.classList.contains('collapsed'), true);
+    assert.strictEqual(elements.logSummary.classList.contains('collapsed'), true);
+    assert.strictEqual(elements.logToggleIcon.textContent, '▶');
+    assert.strictEqual(elements.logHeader.classList.contains('collapsed'), true);
+    assert.strictEqual(elements.logHeader.getAttribute('aria-expanded'), 'false');
+
+    assert.strictEqual(context.toggleLog(), true);
+    assert.strictEqual(elements.log.classList.contains('collapsed'), false);
+    assert.strictEqual(elements.logSummary.classList.contains('collapsed'), false);
+    assert.strictEqual(elements.logToggleIcon.textContent, '▼');
+    assert.strictEqual(elements.logHeader.classList.contains('collapsed'), false);
+    assert.strictEqual(elements.logHeader.getAttribute('aria-expanded'), 'true');
 });
 
 runTest('UI更新関数は対象DOM欠落時に例外化しない', () => {
