@@ -80,7 +80,7 @@
 
 ## 次に安全な作業の条件
 
-- UI: pure表示helperはwinner/log/tutorial/dice choice/full player panelまで実施済み。modal deny-by-defaultと既定OFFのmodal-open plan/effect境界は実装済み。次は具体的なUI変更に伴うexact-output helperだけを対象にし、modal-openのproduction有効化やclose/focus trap/inert復元は実機matrixなしで移動しない。
+- UI: pure表示helperはwinner/log/tutorial/dice choice/full player panelまで実施済み。modal deny-by-default は実装済みで、既定OFFのmodal-open plan/effect境界も実装済み。次は具体的なUI変更に伴うexact-output helperだけを対象にし、modal-openのproduction有効化やclose/focus trap/inert復元は実機matrixなしで移動しない。
 - CPU: buildとlive pendingのaction-only strategy/executor境界、ランドマーク不足額・TV妨害価値・expertロール収入上限/超過ペナルティ・strong条件付き赤カード/ランドマーク圧力・出目テンポ/ランドマーク相乗・strong紫カード補正/購入準備・ランドマーク優先度・多人数購入補正・多人数妨害の希釈/解禁のpure evaluation境界は実装済み。pendingの旧resolution APIはsimulation互換のため残す。残る大きなscoring/candidate orchestrationは、具体的な安定境界がない限り機械的に分割しない。変更時はdecision/self-play baseline、候補順、乱数消費の完全一致を要求する。
 - GameManager / Server / Online: action/payload変更時は既存cross-layer contractを先に拡張する。timer/callback/handler/state-machine移動、hostless authority、signed/durable restore、複数room UIはdesign/manual required。
 - Docs / Tooling: script load order、storage key、release pseudo-E2E、CI dependency の drift detection は強化済み。新しい helper script を足す場合は `index.html`、`sw.js`、integration runtime、`tests/main.test.js` の script/asset drift test を同時に更新する。運用docsを触る場合は `docs/OPERATIONS.md` と `docs/NTFY_ERROR_REPORTING.md` の通知分類、Render環境変数、stale-client対応も同期する。
