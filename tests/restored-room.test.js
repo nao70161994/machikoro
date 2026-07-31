@@ -157,6 +157,62 @@ runTest('restored room activation executorはeffect欠落時に部分実行し�
     assert.deepStrictEqual(calls, []);
 });
 
+runTest('restored room delivery effect authorityは明示opt-inだけを許可する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    for (const value of [undefined, '', '0', 'false', 'off']) {
+        assert.strictEqual(builder.deliveryEffectAuthorityEnabled({
+            RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED: value,
+        }), false);
+    }
+    for (const value of ['1', 'true', 'TRUE']) {
+        assert.strictEqual(builder.deliveryEffectAuthorityEnabled({
+            RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED: value,
+        }), true);
+    }
+});
+
+runTest('restored room delivery executorはpersistからrejoinDataまでの順を固定する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    const executed = builder.executeRestoredRoomDelivery({
+        persist: () => calls.push('persist'),
+        joinSocket: () => calls.push('join'),
+        assignSocketRoom: () => calls.push('room'),
+        assignSocketPlayer: () => calls.push('player'),
+        emitRejoinData: () => calls.push('emit'),
+    });
+    assert.deepStrictEqual(calls, ['persist', 'join', 'room', 'player', 'emit']);
+    assert.deepStrictEqual(executed, [
+        'persist',
+        'joinSocket',
+        'assignSocketRoom',
+        'assignSocketPlayer',
+        'emitRejoinData',
+    ]);
+    assert.strictEqual(Object.isFrozen(executed), true);
+});
+
+runTest('restored room delivery executorはeffect欠落時に部分実行しない', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    assert.throws(() => builder.executeRestoredRoomDelivery({
+        persist: () => calls.push('persist'),
+        joinSocket: () => calls.push('join'),
+        assignSocketRoom: () => calls.push('room'),
+        assignSocketPlayer: () => calls.push('player'),
+    }), /emitRejoinData effect is required/);
+    assert.deepStrictEqual(calls, []);
+});
+
 runTest('restored room metadata planは通常復元のhost/seqを入力非破壊で固定する', () => {
     const builder = makeRestoredRoom({
         sanitizeStateSnapshot: snapshot => snapshot,

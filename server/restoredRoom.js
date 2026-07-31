@@ -75,12 +75,35 @@ function executeRestoredRoomActivation(plan = {}, effects = {}) {
     return Object.freeze(executed);
 }
 
+function restoredRoomDeliveryEffectAuthorityEnabled(env = {}) {
+    return ['1', 'true'].includes(
+        String(env.RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED || '').trim().toLowerCase()
+    );
+}
+
+function executeRestoredRoomDelivery(effects = {}) {
+    const orderedEffects = [
+        'persist',
+        'joinSocket',
+        'assignSocketRoom',
+        'assignSocketPlayer',
+        'emitRejoinData',
+    ];
+    for (const name of orderedEffects) {
+        if (typeof effects[name] !== 'function') {
+            throw new TypeError(`${name} effect is required`);
+        }
+    }
+    for (const name of orderedEffects) effects[name]();
+    return Object.freeze(orderedEffects.slice());
+}
+
 /**
  * Builds the mutable room shell from already-validated restore inputs.
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
  * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
+ * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
@@ -147,6 +170,8 @@ function makeRestoredRoom(dependencies = {}) {
         planRestoredRoomActivation,
         executeRestoredRoomActivation,
         activationEffectAuthorityEnabled: restoredRoomActivationEffectAuthorityEnabled,
+        executeRestoredRoomDelivery,
+        deliveryEffectAuthorityEnabled: restoredRoomDeliveryEffectAuthorityEnabled,
         activationDecisions: RESTORED_ROOM_ACTIVATION_DECISIONS,
     });
 }
