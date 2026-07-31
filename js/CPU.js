@@ -2000,8 +2000,8 @@ class CPU {
 
     _strongCrowdAttackScale(game) {
         const scale = this._opponentDilutionFactor(game);
-        if (this.difficulty !== "strong" || !game || game.players.length < 4) return scale;
-        return scale * 0.45;
+        const strongCrowd = this.difficulty === "strong" && game && game.players.length >= 4;
+        return CPUEvaluation.strongCrowdAttackScale(scale, strongCrowd);
     }
 
     _isStrongCrowd(game) {
@@ -2122,9 +2122,10 @@ class CPU {
 
     _strongCrowdDisruptionReady(game, player) {
         if (!this._isStrongCrowd(game) || !player) return true;
-        const stableIncome = this._estimateStableIncome(game, player);
-        const builtCount = player.builtLandmarkCount();
-        return stableIncome >= 10 || builtCount >= 3;
+        return CPUEvaluation.strongCrowdDisruptionReady(
+            this._estimateStableIncome(game, player),
+            player.builtLandmarkCount()
+        );
     }
 
     _strongCrowdPremiumPurple(card) {

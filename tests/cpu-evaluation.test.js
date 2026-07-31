@@ -522,6 +522,34 @@ runTest('CPU evaluation はstrong出目テンポとランドマーク相乗を�
     }), -0.5);
 });
 
+runTest('CPU evaluation はstrong多人数戦の攻撃希釈と妨害解禁をpureに判定する', () => {
+    assert.strictEqual(CPUEvaluation.strongCrowdAttackScale(1 / 3, true), (1 / 3) * 0.45);
+    assert.strictEqual(CPUEvaluation.strongCrowdAttackScale(1 / 3, false), 1 / 3);
+    assert.strictEqual(CPUEvaluation.strongCrowdDisruptionReady(9, 2), false);
+    assert.strictEqual(CPUEvaluation.strongCrowdDisruptionReady(10, 2), true);
+    assert.strictEqual(CPUEvaluation.strongCrowdDisruptionReady(4, 3), true);
+});
+
+runTest('CPU本体のstrong多人数戦policy wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU, GameManager } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(4);
+    const player = game.currentPlayer();
+    const opponentScale = cpu._opponentDilutionFactor(game);
+    const stableIncome = cpu._estimateStableIncome(game, player);
+    const builtCount = player.builtLandmarkCount();
+
+    assert.strictEqual(
+        cpu._strongCrowdAttackScale(game),
+        CPUEvaluation.strongCrowdAttackScale(opponentScale, true)
+    );
+    assert.strictEqual(
+        cpu._strongCrowdDisruptionReady(game, player),
+        CPUEvaluation.strongCrowdDisruptionReady(stableIncome, builtCount)
+    );
+    assert.strictEqual(cpu._strongCrowdDisruptionReady(game, null), true);
+});
+
 runTest('CPU evaluation はstrong紫カード補正と購入準備をpureに判定する', () => {
     assert.strictEqual(CPUEvaluation.strongPurpleAdjustment({
         stadium: true, tv: false, business: false, renovation: false,

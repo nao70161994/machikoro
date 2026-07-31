@@ -174,6 +174,14 @@ const CPUEvaluation = Object.freeze({
         return bonus;
     },
 
+    strongCrowdAttackScale(opponentScale, strongCrowd) {
+        return strongCrowd ? opponentScale * 0.45 : opponentScale;
+    },
+
+    strongCrowdDisruptionReady(stableIncome, builtCount) {
+        return stableIncome >= 10 || builtCount >= 3;
+    },
+
     strongPurpleAdjustment(features) {
         if (!features) return 0;
         let adjustment = 0;
