@@ -76,6 +76,7 @@
     "js/pwaShell.js",
     "server/gameSchemaRuntime.js",
     "server/gameSchemaShadow.js",
+    "server/gameEngineAuthority.js",
     "server/mirrorReplay.js",
     "server/actionPayload.js",
     "server/actionSocketHandler.js",

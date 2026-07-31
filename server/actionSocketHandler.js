@@ -23,6 +23,11 @@ function registerActionSocketHandler(socket, dependencies) {
         markRoomCanonicalMirrorCurrent,
         persistRoomCanonicalState,
     } = dependencies;
+    const gameEngineAuthority = dependencies.gameEngineAuthority || Object.freeze({ enabled: false });
+    const adoptTransitionSnapshotToRoomMirror =
+        typeof dependencies.adoptTransitionSnapshotToRoomMirror === 'function'
+            ? dependencies.adoptTransitionSnapshotToRoomMirror
+            : () => false;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const logError = typeof dependencies.logError === 'function' ? dependencies.logError : console.error;
     const logWarn = typeof dependencies.logWarn === 'function' ? dependencies.logWarn : console.warn;
@@ -90,7 +95,6 @@ function registerActionSocketHandler(socket, dependencies) {
             emitAppError(socket, '無効な操作です');
             return;
         }
-        room.lastUndoState = room.canonicalMirror?.lastUndoState || null;
         const schemaShadowReport = gameSchemaShadow.compare(room.canonicalMirror, actionEntry, schemaShadowTransition);
         if (schemaShadowReport) {
             room.lastGameSchemaShadow = schemaShadowReport;
@@ -98,6 +102,26 @@ function registerActionSocketHandler(socket, dependencies) {
                 logWarn('game schema shadow mismatch', { roomId, ...schemaShadowReport });
             }
         }
+        if (gameEngineAuthority.enabled === true &&
+                typeof gameEngineAuthority.select === 'function') {
+            let authorityDecision = gameEngineAuthority.select(
+                schemaShadowTransition,
+                schemaShadowReport
+            );
+            if (authorityDecision.authority === 'pure-transition' &&
+                    !adoptTransitionSnapshotToRoomMirror(
+                        room,
+                        schemaShadowTransition
+                    )) {
+                authorityDecision = Object.freeze({
+                    authority: 'mutable',
+                    reason: 'adoption-failed',
+                });
+                logWarn('pure game engine authority fallback', { roomId, ...authorityDecision });
+            }
+            room.lastGameEngineAuthority = authorityDecision;
+        }
+        room.lastUndoState = room.canonicalMirror?.lastUndoState || null;
         rememberAcceptedClientAction(room, actionEntry);
         if (room.actionLog) {
             room.actionLog.push(actionEntry);

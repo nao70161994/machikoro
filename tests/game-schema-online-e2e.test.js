@@ -6,6 +6,7 @@ const { runTest } = require('./helpers/test-utils');
 process.env.CANONICAL_STATE_STORE = 'noop';
 process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
 process.env.GAME_SCHEMA_SHADOW_ENABLED = '1';
+process.env.GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED = '1';
 process.env.GAME_SCHEMA_WIRE_ENABLED = '1';
 process.env.GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = '1';
 process.env.GAME_SCHEMA_RECREATE_WIRE_ENABLED = '1';
@@ -86,6 +87,10 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         assert.strictEqual(
             serverModule.__rooms[currentRoom.created.roomId].lastGameSchemaShadow.status,
             'matched'
+        );
+        assert.deepStrictEqual(
+            serverModule.__rooms[currentRoom.created.roomId].lastGameEngineAuthority,
+            { authority: 'pure-transition', reason: '' }
         );
 
         const currentSnapshot = { actionSeq: 1, phase: 'roll', marker: 'snapshot-wire-e2e' };

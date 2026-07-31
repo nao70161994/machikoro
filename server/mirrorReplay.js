@@ -408,6 +408,23 @@ function makeMirrorReplay({
         });
     }
 
+    function adoptTransitionSnapshotToRoomMirror(room, transition) {
+        if (!room || !transition || transition.ok !== true ||
+                !isPlainObject(transition.snapshot)) return false;
+        try {
+            const candidateRoom = Object.assign({}, room, {
+                stateSnapshot: transition.snapshot,
+                actionLog: [],
+            });
+            const adoptedMirror = createRoomMirror(candidateRoom);
+            if (!adoptedMirror) return false;
+            room.canonicalMirror = adoptedMirror;
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
     function applyActionToMirror(game, shopStock, action, data, createCardByName) {
         if (!isPlainObject(data)) return false;
         return GameEngine.applyMutableAction({
@@ -440,6 +457,7 @@ function makeMirrorReplay({
         serializeMirrorState,
         transitionMirrorEnvelope,
         restoreMirrorState,
+        adoptTransitionSnapshotToRoomMirror,
         compactRoomActionLog,
         createRoomMirror,
         applyActionToMirror,

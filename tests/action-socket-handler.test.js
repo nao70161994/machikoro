@@ -108,3 +108,56 @@ runTest('action socket handlerはwire decode拒否をvalidation前にfail closed
     assert.deepStrictEqual(subject.broadcast, []);
     assert.deepStrictEqual(subject.calls, ['plain', 'active']);
 });
+
+runTest('action socket handlerはparity一致時だけpure transition snapshotを採用する', () => {
+    const adopted = [];
+    const subject = createSubject({
+        gameEngineAuthority: {
+            enabled: true,
+            select(transition, report) {
+                subject.calls.push('authority-select');
+                assert.deepStrictEqual(transition, { before: true });
+                assert.deepStrictEqual(report, { status: 'matched' });
+                return { authority: 'pure-transition', reason: '' };
+            },
+        },
+        adoptTransitionSnapshotToRoomMirror(room, transition) {
+            subject.calls.push('authority-adopt');
+            adopted.push({ room, transition });
+            room.canonicalMirror = { lastUndoState: { pure: true } };
+            return true;
+        },
+    });
+    subject.handlers.gameAction({ action: 'nextTurn', data: {}, clientActionId: 'pure-1' });
+
+    assert.strictEqual(adopted.length, 1);
+    assert.deepStrictEqual(subject.room.lastGameEngineAuthority, {
+        authority: 'pure-transition',
+        reason: '',
+    });
+    assert.deepStrictEqual(subject.room.lastUndoState, { pure: true });
+    assert.ok(subject.calls.indexOf('shadow-compare') < subject.calls.indexOf('authority-select'));
+    assert.ok(subject.calls.indexOf('authority-select') < subject.calls.indexOf('authority-adopt'));
+    assert.ok(subject.calls.indexOf('authority-adopt') < subject.calls.indexOf('remember'));
+});
+
+runTest('action socket handlerはpure snapshot採用失敗時にmutable結果で継続する', () => {
+    const warnings = [];
+    const subject = createSubject({
+        gameEngineAuthority: {
+            enabled: true,
+            select() { return { authority: 'pure-transition', reason: '' }; },
+        },
+        adoptTransitionSnapshotToRoomMirror() { return false; },
+        logWarn(...args) { warnings.push(args); },
+    });
+    subject.handlers.gameAction({ action: 'nextTurn', data: {}, clientActionId: 'pure-fallback-1' });
+
+    assert.deepStrictEqual(subject.room.lastGameEngineAuthority, {
+        authority: 'mutable',
+        reason: 'adoption-failed',
+    });
+    assert.strictEqual(warnings.some(args => args[0] === 'pure game engine authority fallback'), true);
+    assert.strictEqual(subject.emitted.some(item => item.event === 'actionAccepted'), true);
+    assert.strictEqual(subject.broadcast.some(item => item.event === 'gameAction'), true);
+});

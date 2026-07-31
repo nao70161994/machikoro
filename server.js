@@ -99,7 +99,13 @@ const GAME_SCHEMA_RECREATE_WIRE_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED &&
     gameSchemaRecreateWireEnabled(process.env);
 const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = localSaveSchemaWriteEnabled(process.env);
 const { gameSchemaShadowEnabled, makeGameSchemaShadow } = require('./server/gameSchemaShadow');
+const {
+    gameEngineTransitionAuthorityEnabled,
+    makeGameEngineTransitionAuthority,
+} = require('./server/gameEngineAuthority');
 const GAME_SCHEMA_SHADOW_ENABLED = GAME_SCHEMA_NEGOTIATION_ENABLED && gameSchemaShadowEnabled(process.env);
+const GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED = GAME_SCHEMA_SHADOW_ENABLED &&
+    gameEngineTransitionAuthorityEnabled(process.env);
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
     OnlineReconnectState.eventAuthorityEnabled(process.env);
 
@@ -146,6 +152,7 @@ const {
     serializeMirrorState,
     transitionMirrorEnvelope,
     restoreMirrorState,
+    adoptTransitionSnapshotToRoomMirror,
     compactRoomActionLog,
     createRoomMirror,
     applyActionToMirror,
@@ -253,6 +260,9 @@ const gameSchemaShadow = makeGameSchemaShadow({
     serializeMirrorState,
     transitionMirrorEnvelope,
     stableStateHash,
+});
+const gameEngineAuthority = makeGameEngineTransitionAuthority({
+    enabled: GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED,
 });
 const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 1024 * 1024,
@@ -929,6 +939,8 @@ io.on('connection', (socket) => {
         makeUndoStateFromMirror,
         nextRoomActionSeq,
         gameSchemaShadow,
+        gameEngineAuthority,
+        adoptTransitionSnapshotToRoomMirror,
         decodeGameSchemaAction: (room, payload) => GameSchemaWire.decodeActionPayload(
             GAME_SCHEMA_WIRE_ENABLED,
             false,
@@ -1654,6 +1666,7 @@ module.exports = {
     serializeMirrorState,
     transitionMirrorEnvelope,
     restoreMirrorState,
+    adoptTransitionSnapshotToRoomMirror,
     compactRoomActionLog,
     createRoomMirror,
     applyActionToMirror,
