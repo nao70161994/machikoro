@@ -309,6 +309,15 @@ let _lastOnlineRejoinPersistenceEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastOnlinePendingResendPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    fallbackReason: '',
+});
+let _lastOnlinePendingResendEffectSelection = Object.freeze({
+    source: 'none',
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -553,6 +562,16 @@ function isOnlineRejoinPersistenceEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isOnlinePendingResendPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_PENDING_RESEND_PLAN_AUTHORITY_ENABLED === true;
+}
+
+function isOnlinePendingResendEffectAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_PENDING_RESEND_EFFECT_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -679,6 +698,14 @@ function getOnlineRejoinPersistencePlanSelection() {
 
 function getOnlineRejoinPersistenceEffectSelection() {
     return _lastOnlineRejoinPersistenceEffectSelection;
+}
+
+function getOnlinePendingResendPlanSelection() {
+    return _lastOnlinePendingResendPlanSelection;
+}
+
+function getOnlinePendingResendEffectSelection() {
+    return _lastOnlinePendingResendEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -814,6 +841,8 @@ function getOnlineReconnectStateSnapshot() {
         hostChangedEffectAuthority: getOnlineHostChangedEffectSelection(),
         rejoinPersistencePlanAuthority: getOnlineRejoinPersistencePlanSelection(),
         rejoinPersistenceEffectAuthority: getOnlineRejoinPersistenceEffectSelection(),
+        pendingResendPlanAuthority: getOnlinePendingResendPlanSelection(),
+        pendingResendEffectAuthority: getOnlinePendingResendEffectSelection(),
     });
 }
 
@@ -1748,6 +1777,22 @@ function _onlineRejoinPersistenceEffectAuthoritySelection(planSelection) {
             ? ''
             : (!authoritativePlan
                 ? 'rejoin-persistence-plan-not-authoritative'
+                : 'executor-unavailable'),
+    });
+}
+
+function _onlinePendingResendEffectAuthoritySelection(planSelection) {
+    const enabled = isOnlinePendingResendEffectAuthorityEnabled();
+    const helperAvailable = typeof OnlinePendingResend !== 'undefined' &&
+        typeof OnlinePendingResend.execute === 'function';
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
+    const useExecutor = enabled && authoritativePlan && helperAvailable;
+    return Object.freeze({
+        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
+        fallbackReason: useExecutor || !enabled
+            ? ''
+            : (!authoritativePlan
+                ? 'pending-resend-plan-not-authoritative'
                 : 'executor-unavailable'),
     });
 }
@@ -2857,18 +2902,62 @@ function initSocket() {
             _applyOnlineReconnectLifecycleStatusEffectAuthority(
                 OnlineReconnectState.events.RESTORE_ACTIVATED
             );
-            if (pendingBeforeRejoin && !acceptedPendingReconciliation &&
-                _sameOnlineActionEntry(_readPendingOutboundActionForCurrentSession(), pendingBeforeRejoin) &&
-                socket && socket.connected !== false) {
-                if (!_canResendPendingOutboundAction(pendingBeforeRejoin)) {
-                    _clearPendingOutboundAction();
-                    return;
-                }
+            const currentPendingMatches = !!pendingBeforeRejoin &&
+                !acceptedPendingReconciliation &&
+                _sameOnlineActionEntry(
+                    _readPendingOutboundActionForCurrentSession(),
+                    pendingBeforeRejoin
+                );
+            const pendingResendEligible = currentPendingMatches &&
+                !!socket && socket.connected !== false;
+            const pendingResendAllowed = pendingResendEligible &&
+                _canResendPendingOutboundAction(pendingBeforeRejoin);
+            const pendingResendDecisions = OnlinePendingResend.decisions;
+            const legacyPendingResendPlan = Object.freeze({
+                decision: !pendingResendEligible
+                    ? pendingResendDecisions.NONE
+                    : (pendingResendAllowed
+                        ? pendingResendDecisions.RESEND
+                        : pendingResendDecisions.CLEAR),
+                pending: pendingResendAllowed ? pendingBeforeRejoin : null,
+            });
+            _lastOnlinePendingResendPlanSelection = OnlinePendingResend.selectPlan({
+                pending: pendingBeforeRejoin,
+                acceptedPending: acceptedPendingReconciliation,
+                currentPendingMatches,
+                socketConnected: !!socket && socket.connected !== false,
+                canResend: pendingResendAllowed,
+            }, legacyPendingResendPlan, {
+                authorityEnabled: isOnlinePendingResendPlanAuthorityEnabled(),
+            });
+            const pendingResendEffectSelection =
+                _onlinePendingResendEffectAuthoritySelection(
+                    _lastOnlinePendingResendPlanSelection
+                );
+            _lastOnlinePendingResendEffectSelection = pendingResendEffectSelection;
+            const pendingResendPlan = _lastOnlinePendingResendPlanSelection.plan;
+            if (pendingResendEffectSelection.source === 'executor') {
+                OnlinePendingResend.execute(pendingResendPlan, {
+                    clearPendingOutboundAction: () => _clearPendingOutboundAction(),
+                    setActionFlight: () => _setOnlineActionInFlight(true),
+                    emitAction: pending => socket.emit('gameAction', {
+                        action: pending.action,
+                        data: pending.data,
+                        clientActionId: pending.clientActionId,
+                    }),
+                });
+                return;
+            }
+            if (pendingResendPlan.decision === pendingResendDecisions.CLEAR) {
+                _clearPendingOutboundAction();
+                return;
+            }
+            if (pendingResendPlan.decision === pendingResendDecisions.RESEND) {
                 _setOnlineActionInFlight(true);
                 socket.emit('gameAction', {
-                    action: pendingBeforeRejoin.action,
-                    data: pendingBeforeRejoin.data,
-                    clientActionId: pendingBeforeRejoin.clientActionId,
+                    action: pendingResendPlan.pending.action,
+                    data: pendingResendPlan.pending.data,
+                    clientActionId: pendingResendPlan.pending.clientActionId,
                 });
             }
         };

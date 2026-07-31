@@ -140,6 +140,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineSocketDisconnect.js');
     loadScript(context, 'js/onlineHostChanged.js');
     loadScript(context, 'js/onlineRejoinPersistence.js');
+    loadScript(context, 'js/onlinePendingResend.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineReconnectState.js');
@@ -203,6 +204,8 @@ function loadOnlineRuntime(options = {}) {
         this.getLocalHostRestoreOfferPlanSelection = getLocalHostRestoreOfferPlanSelection;
         this.getOnlineRejoinPersistencePlanSelection = getOnlineRejoinPersistencePlanSelection;
         this.getOnlineRejoinPersistenceEffectSelection = getOnlineRejoinPersistenceEffectSelection;
+        this.getOnlinePendingResendPlanSelection = getOnlinePendingResendPlanSelection;
+        this.getOnlinePendingResendEffectSelection = getOnlinePendingResendEffectSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1909,6 +1912,8 @@ runTest('rejoinData は受理済みclientActionIdでsnapshot未達seqの未ack�
 
 runTest('rejoinData は canonical に無い未ackアクションを保持して再送する', () => {
     const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_PENDING_RESEND_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_PENDING_RESEND_EFFECT_AUTHORITY_ENABLED = true;
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
@@ -1948,10 +1953,20 @@ runTest('rejoinData は canonical に無い未ackアクションを保持して�
     assert.strictEqual(rt.getSocketEmits().length, beforeEmitCount + 1);
     assert.strictEqual(rt.getSocketEmits()[rt.getSocketEmits().length - 1].name, 'gameAction');
     assert.strictEqual(rt.getSocketEmits()[rt.getSocketEmits().length - 1].payload.clientActionId, pending.clientActionId);
+    assert.strictEqual(rt.getOnlinePendingResendPlanSelection().source, 'pure-plan');
+    assert.strictEqual(
+        rt.getOnlinePendingResendPlanSelection().plan.decision,
+        'resend'
+    );
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getOnlinePendingResendEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
 });
 
 runTest('rejoinData はホスト移譲後の旧ホストCPU pending actionを再送しない', () => {
     const rt = loadOnlineRuntime();
+    rt.window.MACHIKORO_ONLINE_PENDING_RESEND_PLAN_AUTHORITY_ENABLED = true;
+    rt.window.MACHIKORO_ONLINE_PENDING_RESEND_EFFECT_AUTHORITY_ENABLED = true;
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
@@ -1992,6 +2007,11 @@ runTest('rejoinData はホスト移譲後の旧ホストCPU pending actionを再
     assert.strictEqual(rt.getSocketEmits().length, 0);
     assert.strictEqual(rt._readPendingOutboundAction(), null);
     assert.strictEqual(rt.getOnlineState().onlineActionInFlight, false);
+    assert.strictEqual(rt.getOnlinePendingResendPlanSelection().source, 'pure-plan');
+    assert.strictEqual(rt.getOnlinePendingResendPlanSelection().plan.decision, 'clear');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getOnlinePendingResendEffectSelection()
+    )), { source: 'executor', fallbackReason: '' });
 });
 
 runTest('rejoinData は stateSnapshot actionSeq だけ高い場合もclientActionId付きpendingを受理済みにしない', () => {
