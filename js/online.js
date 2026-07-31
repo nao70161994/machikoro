@@ -282,6 +282,12 @@ let _lastOnlineHostChangedEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
+let _lastPendingReconciliationPlanSelection = Object.freeze({
+    plan: null,
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
@@ -501,6 +507,11 @@ function isOnlineHostChangedEffectAuthorityEnabled() {
         window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED === true;
 }
 
+function isPendingReconciliationPlanAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_PENDING_RECONCILIATION_PLAN_AUTHORITY_ENABLED === true;
+}
+
 function getOnlineRestoreQueuePlanSelection() {
     return _lastOnlineRestoreQueuePlanSelection;
 }
@@ -607,6 +618,10 @@ function getOnlineHostChangedPlanSelection() {
 
 function getOnlineHostChangedEffectSelection() {
     return _lastOnlineHostChangedEffectSelection;
+}
+
+function getPendingReconciliationPlanSelection() {
+    return _lastPendingReconciliationPlanSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -2530,6 +2545,8 @@ function initSocket() {
             pendingBeforeRejoin = null;
         }
         const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
+        const pendingMatchedReplayLog = pendingBeforeRejoin &&
+            replayActionLog.some(entry => _sameOnlineActionEntry(entry, pendingBeforeRejoin));
         const pendingCompactedIntoSnapshot = pendingBeforeRejoin &&
             typeof pendingBeforeRejoin.clientActionId !== 'string' &&
             Number.isInteger(pendingBeforeRejoin.seq) &&
@@ -2538,12 +2555,35 @@ function initSocket() {
         const pendingAcceptedById = pendingBeforeRejoin && Array.isArray(acceptedClientActions) &&
             acceptedClientActions.some(ref => _acceptedClientActionMatchesPending(ref, pendingBeforeRejoin));
         const pendingAccepted = !pendingBeforeRejoin ||
-            replayActionLog.some(entry => _sameOnlineActionEntry(entry, pendingBeforeRejoin)) ||
+            pendingMatchedReplayLog ||
             pendingCompactedIntoSnapshot ||
             pendingAcceptedById;
+        const pendingReconciliationReasons = OnlinePayload.pendingReconciliationReasons;
+        const legacyPendingReconciliationPlan = Object.freeze({
+            accepted: pendingAccepted,
+            reason: !pendingBeforeRejoin
+                ? pendingReconciliationReasons.NO_PENDING
+                : (pendingMatchedReplayLog
+                    ? pendingReconciliationReasons.REPLAY_LOG
+                    : (pendingCompactedIntoSnapshot
+                        ? pendingReconciliationReasons.SNAPSHOT_COMPACTED
+                        : (pendingAcceptedById
+                            ? pendingReconciliationReasons.ACCEPTED_CLIENT_ACTION
+                            : pendingReconciliationReasons.UNACCEPTED))),
+        });
+        _lastPendingReconciliationPlanSelection = OnlinePayload.selectPendingReconciliationPlan(
+            pendingBeforeRejoin,
+            replayActionLog,
+            stateSnapshot,
+            acceptedClientActions,
+            legacyPendingReconciliationPlan,
+            { authorityEnabled: isPendingReconciliationPlanAuthorityEnabled() }
+        );
+        const acceptedPendingReconciliation =
+            _lastPendingReconciliationPlanSelection.plan.accepted;
         const persistRejoinBundle = () => {
             _setOnlineActionInFlight(false);
-            if (pendingAccepted) _clearPendingOutboundAction();
+            if (acceptedPendingReconciliation) _clearPendingOutboundAction();
             _clearRejoinRetry();
             cpuSpeed = cs || 1500;
             if (ec) enabledCards = new Set(ec);
@@ -2627,7 +2667,7 @@ function initSocket() {
             _applyOnlineReconnectLifecycleStatusEffectAuthority(
                 OnlineReconnectState.events.RESTORE_ACTIVATED
             );
-            if (pendingBeforeRejoin && !pendingAccepted &&
+            if (pendingBeforeRejoin && !acceptedPendingReconciliation &&
                 _sameOnlineActionEntry(_readPendingOutboundActionForCurrentSession(), pendingBeforeRejoin) &&
                 socket && socket.connected !== false) {
                 if (!_canResendPendingOutboundAction(pendingBeforeRejoin)) {

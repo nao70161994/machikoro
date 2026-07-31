@@ -197,6 +197,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineSocketDisconnectEffectSelection = getOnlineSocketDisconnectEffectSelection;
         this.getOnlineHostChangedPlanSelection = getOnlineHostChangedPlanSelection;
         this.getOnlineHostChangedEffectSelection = getOnlineHostChangedEffectSelection;
+        this.getPendingReconciliationPlanSelection = getPendingReconciliationPlanSelection;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1740,6 +1741,7 @@ runTest('rejoinData は canonical に受理済みの未ackアクションを破�
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
     rt.setEnabledLandmarks(new Set(Player.landmarkNames()));
     rt.initSocket();
+    rt.window.MACHIKORO_ONLINE_PENDING_RECONCILIATION_PLAN_AUTHORITY_ENABLED = true;
     const handlers = rt.getSocketHandlers();
 
     handlers.gameStart({
@@ -1779,6 +1781,14 @@ runTest('rejoinData は canonical に受理済みの未ackアクションを破�
     });
 
     assert.strictEqual(rt._readPendingOutboundAction(), null);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(
+        rt.getPendingReconciliationPlanSelection()
+    )), {
+        plan: { accepted: true, reason: 'replay-log' },
+        source: 'pure-plan',
+        matched: true,
+        fallbackReason: '',
+    });
 });
 
 runTest('rejoinData は snapshot に畳み込まれた未ackアクションを再送しない', () => {

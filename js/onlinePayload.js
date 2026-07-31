@@ -263,6 +263,67 @@ function acceptedClientActionMatchesPending(ref, pending) {
         Number.isInteger(ref.playerIndex) && ref.playerIndex === pending.playerIndex);
 }
 
+const PENDING_RECONCILIATION_REASONS = Object.freeze({
+    NO_PENDING: 'no-pending',
+    REPLAY_LOG: 'replay-log',
+    SNAPSHOT_COMPACTED: 'snapshot-compacted',
+    ACCEPTED_CLIENT_ACTION: 'accepted-client-action',
+    UNACCEPTED: 'unaccepted',
+});
+
+function planPendingReconciliation(pending, replayActionLog, stateSnapshot, acceptedClientActions) {
+    /** @type {string} */
+    let reason = PENDING_RECONCILIATION_REASONS.UNACCEPTED;
+    if (!pending) {
+        reason = PENDING_RECONCILIATION_REASONS.NO_PENDING;
+    } else if (Array.isArray(replayActionLog) &&
+            replayActionLog.some(entry => sameOnlineActionEntry(entry, pending))) {
+        reason = PENDING_RECONCILIATION_REASONS.REPLAY_LOG;
+    } else if (typeof pending.clientActionId !== 'string' &&
+            Number.isInteger(pending.seq) &&
+            Number.isInteger(stateSnapshot?.actionSeq) &&
+            stateSnapshot.actionSeq >= pending.seq) {
+        reason = PENDING_RECONCILIATION_REASONS.SNAPSHOT_COMPACTED;
+    } else if (Array.isArray(acceptedClientActions) &&
+            acceptedClientActions.some(ref => acceptedClientActionMatchesPending(ref, pending))) {
+        reason = PENDING_RECONCILIATION_REASONS.ACCEPTED_CLIENT_ACTION;
+    }
+    return Object.freeze({
+        accepted: reason !== PENDING_RECONCILIATION_REASONS.UNACCEPTED,
+        reason,
+    });
+}
+
+function pendingReconciliationPlansMatch(planned, legacy) {
+    return !!planned && !!legacy && planned.accepted === legacy.accepted &&
+        planned.reason === legacy.reason;
+}
+
+function selectPendingReconciliationPlan(
+    pending,
+    replayActionLog,
+    stateSnapshot,
+    acceptedClientActions,
+    legacyPlan,
+    options = {}
+) {
+    const purePlan = planPendingReconciliation(
+        pending,
+        replayActionLog,
+        stateSnapshot,
+        acceptedClientActions
+    );
+    const matched = pendingReconciliationPlansMatch(purePlan, legacyPlan);
+    const enabled = options.authorityEnabled === true;
+    const usePure = enabled && matched;
+    return Object.freeze({
+        plan: usePure ? purePlan : legacyPlan,
+        source: usePure ? 'pure-plan' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'pending-reconciliation-plan-mismatch',
+    });
+}
+
 function withGameSchemaCapabilities(payload, capabilities) {
     if (!capabilities) return payload;
     return Object.assign({}, payload, { gameSchemaCapabilities: capabilities });
@@ -292,6 +353,9 @@ const OnlinePayload = Object.freeze({
     appendPendingForRestore,
     canResendPendingOutboundAction,
     acceptedClientActionMatchesPending,
+    pendingReconciliationReasons: PENDING_RECONCILIATION_REASONS,
+    planPendingReconciliation,
+    selectPendingReconciliationPlan,
     shouldClearPendingForAcceptedAction,
     withGameSchemaCapabilities,
     buildRejoin(session, clientVersion, gameSchemaCapabilities = null) {

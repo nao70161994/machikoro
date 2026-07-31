@@ -210,6 +210,90 @@ runTest('online payload はpending actionを既知actionとroom正規化の注�
     });
 });
 
+runTest('online payload pending reconciliationは受理根拠を優先順つきで固定する', () => {
+    const reasons = OnlinePayload.pendingReconciliationReasons;
+    const pendingWithId = {
+        action: 'nextTurn', data: {}, playerIndex: 1, seq: 4, clientActionId: 'client-4',
+    };
+    const legacyPending = { action: 'nextTurn', data: {}, playerIndex: 1, seq: 4 };
+    const cases = [
+        {
+            name: 'pendingなし', pending: null, log: [], snapshot: null, accepted: [],
+            expected: { accepted: true, reason: reasons.NO_PENDING },
+        },
+        {
+            name: 'replay log一致を最優先', pending: pendingWithId,
+            log: [Object.assign({}, pendingWithId)], snapshot: { actionSeq: 99 },
+            accepted: [{ playerIndex: 1, clientActionId: 'client-4' }],
+            expected: { accepted: true, reason: reasons.REPLAY_LOG },
+        },
+        {
+            name: 'legacy pendingのsnapshot圧縮', pending: legacyPending, log: [],
+            snapshot: { actionSeq: 4 }, accepted: [],
+            expected: { accepted: true, reason: reasons.SNAPSHOT_COMPACTED },
+        },
+        {
+            name: 'clientActionId付きはsnapshot seqだけで受理しない', pending: pendingWithId,
+            log: [], snapshot: { actionSeq: 99 }, accepted: [],
+            expected: { accepted: false, reason: reasons.UNACCEPTED },
+        },
+        {
+            name: 'accepted client action一致', pending: pendingWithId, log: [],
+            snapshot: { actionSeq: 1 },
+            accepted: [{ playerIndex: 1, clientActionId: 'client-4' }],
+            expected: { accepted: true, reason: reasons.ACCEPTED_CLIENT_ACTION },
+        },
+        {
+            name: 'player不一致は未受理', pending: pendingWithId, log: [], snapshot: null,
+            accepted: [{ playerIndex: 0, clientActionId: 'client-4' }],
+            expected: { accepted: false, reason: reasons.UNACCEPTED },
+        },
+    ];
+    for (const testCase of cases) {
+        const before = JSON.stringify(testCase);
+        const plan = OnlinePayload.planPendingReconciliation(
+            testCase.pending,
+            testCase.log,
+            testCase.snapshot,
+            testCase.accepted
+        );
+        assert.deepStrictEqual(plan, testCase.expected, testCase.name);
+        assert.strictEqual(Object.isFrozen(plan), true, testCase.name);
+        assert.strictEqual(JSON.stringify(testCase), before, testCase.name);
+    }
+});
+
+runTest('online payload pending reconciliation authorityは完全一致時だけpure planを選ぶ', () => {
+    const pending = {
+        action: 'nextTurn', data: {}, playerIndex: 0, clientActionId: 'client-1',
+    };
+    const log = [Object.assign({}, pending)];
+    const legacy = Object.freeze({ accepted: true, reason: 'replay-log' });
+    const disabled = OnlinePayload.selectPendingReconciliationPlan(
+        pending, log, null, [], legacy
+    );
+    assert.strictEqual(disabled.source, 'legacy');
+    assert.strictEqual(disabled.plan, legacy);
+    const enabled = OnlinePayload.selectPendingReconciliationPlan(
+        pending, log, null, [], legacy, { authorityEnabled: true }
+    );
+    assert.strictEqual(enabled.source, 'pure-plan');
+    assert.strictEqual(enabled.matched, true);
+    assert.deepStrictEqual(enabled.plan, legacy);
+    const mismatch = Object.freeze({ accepted: false, reason: 'unaccepted' });
+    assert.deepStrictEqual(
+        OnlinePayload.selectPendingReconciliationPlan(
+            pending, log, null, [], mismatch, { authorityEnabled: true }
+        ),
+        {
+            plan: mismatch,
+            source: 'legacy-fallback',
+            matched: false,
+            fallbackReason: 'pending-reconciliation-plan-mismatch',
+        }
+    );
+});
+
 runTest('online payload はpending ACK一致判定のclientActionId優先契約を維持する', () => {
     const pending = {
         action: 'buildCard',

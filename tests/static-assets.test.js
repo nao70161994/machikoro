@@ -138,6 +138,7 @@ runTest('static assets はschema negotiation flagを明示有効時だけ注入�
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_SOCKET_DISCONNECT_EFFECT_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED'));
     assert.ok(!disabled.includes('MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED'));
+    assert.ok(!disabled.includes('MACHIKORO_ONLINE_PENDING_RECONCILIATION_PLAN_AUTHORITY_ENABLED'));
     assert.ok(enabled.includes('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;'));
     assert.ok(!enabled.includes('MACHIKORO_GAME_SCHEMA_WIRE_ENABLED'));
     assert.ok(wireEnabled.includes('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;'));
