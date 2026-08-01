@@ -174,8 +174,9 @@ function loadOnlineRuntime(options = {}) {
         this.getScheduleCount = () => scheduleCount;
         this.getSocketHandlers = () => socketHandlers;
         this.getSocketEmits = () => socketEmits;
-        this.getOnlineRestoreQueue = () => _onlineRestoreEventQueue.slice();
+        this.getOnlineRestoreQueue = () => _readOnlineRestoreEventQueue().slice();
         this.getOnlineRestoreQueueStateSelection = getOnlineRestoreQueueStateSelection;
+        this.getOnlineRestoreQueueStoreSelection = getOnlineRestoreQueueStoreSelection;
         this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
         this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
         this.getOnlineReconnectRequestEffectSelection = getOnlineReconnectRequestEffectSelection;
@@ -495,10 +496,28 @@ runTest('online restore queueは生の状態accessをowner関数へ集約する'
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     assert.strictEqual((source.match(/_onlineRestoreEventQueue\s*=(?!=)/g) || []).length, 2);
     assert.strictEqual((source.match(/_onlineRestoreEventQueue\.push\(/g) || []).length, 1);
-    assert.strictEqual((source.match(/_onlineRestoreEventQueue/g) || []).length, 5);
+    assert.strictEqual((source.match(/\b_onlineRestoreEventQueue\b/g) || []).length, 6);
     assert.ok(source.includes('function _readOnlineRestoreEventQueue()'));
     assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
     assert.ok(source.includes('function _appendOnlineRestoreEventQueueLegacy(event)'));
+});
+
+runTest('online restore queue store read authorityは既定legacyで明示時だけshadowを読む', () => {
+    const runtime = loadOnlineRuntime();
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueue())), []);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
+        source: 'legacy',
+        matched: true,
+        fallbackReason: '',
+    });
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED = true;
+    runtime.resetOnlineState();
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueue())), []);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
+        source: 'store-read',
+        matched: true,
+        fallbackReason: '',
+    });
 });
 
 
@@ -3944,6 +3963,7 @@ runTest('queued action apply failure preserves the failed event and following ev
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
@@ -3960,6 +3980,11 @@ runTest('queued action apply failure preserves the failed event and following ev
 
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 2);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
+        source: 'store-read',
+        matched: true,
+        fallbackReason: '',
+    });
     assert.ok(runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
     assert.deepStrictEqual(JSON.parse(JSON.stringify(
         runtime.getIncomingGameActionApplyEffectSelection()
@@ -3984,6 +4009,7 @@ runTest('queued action apply failure preserves the failed event and following ev
 runTest('duplicate rejoinData preserves events queued by the prior restore generation', () => {
     const runtime = loadOnlineRuntime();
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED = true;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(() => {}); } };
     runtime.initSocket();
     const handlers = runtime.getSocketHandlers();
@@ -4004,6 +4030,11 @@ runTest('duplicate rejoinData preserves events queued by the prior restore gener
 
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 1);
     assert.strictEqual(runtime.getOnlineRestoreQueue()[0].generation, 2);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
+        source: 'store-read',
+        matched: true,
+        fallbackReason: '',
+    });
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStateSelection())), {
         source: 'pure-transition',
         matched: true,

@@ -167,6 +167,15 @@ let _hostlessRestorePending = false;
 let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
+const _onlineRestoreEventQueueStore = typeof OnlineRestoreQueueState !== 'undefined' &&
+    typeof OnlineRestoreQueueState.createStore === 'function'
+    ? OnlineRestoreQueueState.createStore([])
+    : null;
+let _lastOnlineRestoreQueueStoreSelection = Object.freeze({
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastOnlineRestoreQueueStateSelection = Object.freeze({
     source: 'none',
     matched: true,
@@ -435,6 +444,11 @@ function isOnlineRestoreQueueStateAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRestoreQueueStoreReadAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED === true;
+}
+
 function isOnlineReconnectCleanupAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED === true;
@@ -630,6 +644,10 @@ function getOnlineRestoreQueueEffectSelection() {
 
 function getOnlineRestoreQueueStateSelection() {
     return _lastOnlineRestoreQueueStateSelection;
+}
+
+function getOnlineRestoreQueueStoreSelection() {
+    return _lastOnlineRestoreQueueStoreSelection;
 }
 
 function getOnlineReconnectCleanupEffectSelection() {
@@ -2169,17 +2187,44 @@ function _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransiti
 }
 
 function _readOnlineRestoreEventQueue() {
-    return _onlineRestoreEventQueue;
+    const requested = isOnlineRestoreQueueStoreReadAuthorityEnabled();
+    const helperAvailable = _onlineRestoreEventQueueStore &&
+        typeof OnlineRestoreQueueState !== 'undefined' &&
+        typeof OnlineRestoreQueueState.selectRead === 'function';
+    const selection = helperAvailable
+        ? OnlineRestoreQueueState.selectRead(
+            _onlineRestoreEventQueueStore.read(),
+            _onlineRestoreEventQueue,
+            { authorityEnabled: requested }
+        )
+        : Object.freeze({
+            queue: _onlineRestoreEventQueue,
+            source: requested ? 'legacy-fallback' : 'legacy',
+            matched: false,
+            fallbackReason: requested ? 'restore-queue-store-helper-unavailable' : '',
+        });
+    _lastOnlineRestoreQueueStoreSelection = Object.freeze({
+        source: selection.source,
+        matched: selection.matched,
+        fallbackReason: selection.fallbackReason,
+    });
+    return selection.queue;
 }
 
 function _replaceOnlineRestoreEventQueue(queue) {
     _onlineRestoreEventQueue = queue;
-    return queue;
+    if (_onlineRestoreEventQueueStore) {
+        _onlineRestoreEventQueueStore.replace(queue.slice());
+    }
+    return _readOnlineRestoreEventQueue();
 }
 
 function _appendOnlineRestoreEventQueueLegacy(event) {
     _onlineRestoreEventQueue.push(event);
-    return _onlineRestoreEventQueue;
+    if (_onlineRestoreEventQueueStore) {
+        _onlineRestoreEventQueueStore.replace(_onlineRestoreEventQueue.slice());
+    }
+    return _readOnlineRestoreEventQueue();
 }
 
 function _clearOnlineRestoreEventQueue() {

@@ -67,6 +67,33 @@ runTest('restore queue stateはclear transitionを新しい空queueとして返�
     assert.strictEqual(Object.isFrozen(transition), true);
 });
 
+runTest('restore queue storeは状態参照とreplacementを外部ownerへ閉じ込める', () => {
+    const initial = [{ type: 'gameAction', payload: { seq: 1 }, generation: 1 }];
+    const replacement = [{ type: 'hostChanged', payload: { host: 1 }, generation: 2 }];
+    const store = OnlineRestoreQueueState.createStore(initial);
+    assert.strictEqual(store.read(), initial);
+    assert.strictEqual(store.replace(replacement), replacement);
+    assert.strictEqual(store.read(), replacement);
+    assert.strictEqual(Object.isFrozen(store), true);
+});
+
+runTest('restore queue store read authorityは完全一致時だけshadowを選ぶ', () => {
+    const payload = { seq: 1 };
+    const legacy = [{ type: 'gameAction', payload, generation: 1 }];
+    const shadow = [{ type: 'gameAction', payload, generation: 1 }];
+    const selected = OnlineRestoreQueueState.selectRead(shadow, legacy, { authorityEnabled: true });
+    assert.strictEqual(selected.source, 'store-read');
+    assert.strictEqual(selected.queue, shadow);
+    assert.strictEqual(selected.matched, true);
+    const disabled = OnlineRestoreQueueState.selectRead(shadow, legacy);
+    assert.strictEqual(disabled.source, 'legacy');
+    assert.strictEqual(disabled.queue, legacy);
+    const mismatch = OnlineRestoreQueueState.selectRead([], legacy, { authorityEnabled: true });
+    assert.strictEqual(mismatch.source, 'legacy-fallback');
+    assert.strictEqual(mismatch.queue, legacy);
+    assert.strictEqual(mismatch.fallbackReason, 'restore-queue-store-mismatch');
+});
+
 runTest('restore queue state authorityは完全一致時だけpure transitionを選ぶ', () => {
     const payload = { seq: 1 };
     const legacy = { overflow: false, queue: [{ type: 'gameAction', payload, generation: 1 }] };

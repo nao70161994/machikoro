@@ -11,6 +11,31 @@ function sameRestoreQueue(left, right) {
     });
 }
 
+function createRestoreQueueStore(initialQueue = []) {
+    let queue = Array.isArray(initialQueue) ? initialQueue : [];
+    return Object.freeze({
+        read() {
+            return queue;
+        },
+        replace(nextQueue) {
+            queue = Array.isArray(nextQueue) ? nextQueue : [];
+            return queue;
+        },
+    });
+}
+
+function selectRestoreQueueRead(storeQueue, legacyQueue, options = {}) {
+    const matched = sameRestoreQueue(storeQueue, legacyQueue);
+    const enabled = options.authorityEnabled === true;
+    const useStore = enabled && matched;
+    return Object.freeze({
+        queue: useStore ? storeQueue : legacyQueue,
+        source: useStore ? 'store-read' : (enabled ? 'legacy-fallback' : 'legacy'),
+        matched,
+        fallbackReason: matched ? '' : 'restore-queue-store-mismatch',
+    });
+}
+
 function planRestoreQueueEnqueue(queue, event, limit) {
     const current = Array.isArray(queue) ? queue : [];
     const overflow = !Number.isInteger(limit) || limit < 0 || current.length >= limit;
@@ -80,6 +105,8 @@ function selectRestoreQueueTransition(pureTransition, legacyTransition, options 
 
 const OnlineRestoreQueueState = Object.freeze({
     sameQueue: sameRestoreQueue,
+    createStore: createRestoreQueueStore,
+    selectRead: selectRestoreQueueRead,
     planEnqueue: planRestoreQueueEnqueue,
     planCarry: planRestoreQueueCarry,
     planDrain: planRestoreQueueDrain,
