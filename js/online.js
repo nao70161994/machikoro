@@ -176,6 +176,11 @@ let _lastOnlineRestoreQueueStoreSelection = Object.freeze({
     matched: true,
     fallbackReason: '',
 });
+let _lastOnlineRestoreQueueStoreWriteSelection = Object.freeze({
+    source: 'none',
+    matched: true,
+    fallbackReason: '',
+});
 let _lastOnlineRestoreQueueStateSelection = Object.freeze({
     source: 'none',
     matched: true,
@@ -449,6 +454,11 @@ function isOnlineRestoreQueueStoreReadAuthorityEnabled() {
         window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED === true;
 }
 
+function isOnlineRestoreQueueStoreWriteAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_WRITE_AUTHORITY_ENABLED === true;
+}
+
 function isOnlineReconnectCleanupAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED === true;
@@ -648,6 +658,10 @@ function getOnlineRestoreQueueStateSelection() {
 
 function getOnlineRestoreQueueStoreSelection() {
     return _lastOnlineRestoreQueueStoreSelection;
+}
+
+function getOnlineRestoreQueueStoreWriteSelection() {
+    return _lastOnlineRestoreQueueStoreWriteSelection;
 }
 
 function getOnlineReconnectCleanupEffectSelection() {
@@ -2211,18 +2225,81 @@ function _readOnlineRestoreEventQueue() {
     return selection.queue;
 }
 
+function _recordOnlineRestoreQueueStoreWriteSelection(selection) {
+    _lastOnlineRestoreQueueStoreWriteSelection = Object.freeze({
+        source: selection.source,
+        matched: selection.matched,
+        fallbackReason: selection.fallbackReason,
+    });
+    return selection;
+}
+
+function _selectOnlineRestoreQueueStoreWrite(storeQueue, legacyQueue) {
+    const requested = isOnlineRestoreQueueStoreWriteAuthorityEnabled();
+    const helperAvailable = _onlineRestoreEventQueueStore &&
+        typeof OnlineRestoreQueueState !== 'undefined' &&
+        typeof OnlineRestoreQueueState.selectWrite === 'function';
+    if (!helperAvailable) {
+        return _recordOnlineRestoreQueueStoreWriteSelection(Object.freeze({
+            queue: legacyQueue,
+            source: requested ? 'legacy-fallback' : 'legacy',
+            matched: false,
+            fallbackReason: requested ? 'restore-queue-store-helper-unavailable' : '',
+        }));
+    }
+    return _recordOnlineRestoreQueueStoreWriteSelection(
+        OnlineRestoreQueueState.selectWrite(storeQueue, legacyQueue, {
+            authorityEnabled: requested,
+        })
+    );
+}
+
 function _replaceOnlineRestoreEventQueue(queue) {
+    const storeAuthorityRequested = isOnlineRestoreQueueStoreWriteAuthorityEnabled();
+    if (storeAuthorityRequested && _onlineRestoreEventQueueStore) {
+        const storeQueue = _onlineRestoreEventQueueStore.replace(queue.slice());
+        const selection = _selectOnlineRestoreQueueStoreWrite(storeQueue, queue);
+        if (selection.source === 'store-write') {
+            _onlineRestoreEventQueue = storeQueue.slice();
+            return _readOnlineRestoreEventQueue();
+        }
+    }
     _onlineRestoreEventQueue = queue;
-    if (_onlineRestoreEventQueueStore) {
-        _onlineRestoreEventQueueStore.replace(queue.slice());
+    const storeQueue = _onlineRestoreEventQueueStore
+        ? _onlineRestoreEventQueueStore.replace(queue.slice())
+        : null;
+    if (!storeAuthorityRequested || !_onlineRestoreEventQueueStore) {
+        _selectOnlineRestoreQueueStoreWrite(storeQueue, _onlineRestoreEventQueue);
     }
     return _readOnlineRestoreEventQueue();
 }
 
 function _appendOnlineRestoreEventQueueLegacy(event) {
+    const storeAuthorityRequested = isOnlineRestoreQueueStoreWriteAuthorityEnabled();
+    if (storeAuthorityRequested && _onlineRestoreEventQueueStore &&
+        typeof _onlineRestoreEventQueueStore.append === 'function') {
+        const expectedLegacyQueue = _onlineRestoreEventQueue.concat([event]);
+        const storeQueue = _onlineRestoreEventQueueStore.append(event);
+        const selection = _selectOnlineRestoreQueueStoreWrite(storeQueue, expectedLegacyQueue);
+        if (selection.source === 'store-write') {
+            _onlineRestoreEventQueue = storeQueue.slice();
+            return _readOnlineRestoreEventQueue();
+        }
+    }
     _onlineRestoreEventQueue.push(event);
-    if (_onlineRestoreEventQueueStore) {
-        _onlineRestoreEventQueueStore.replace(_onlineRestoreEventQueue.slice());
+    const storeQueue = _onlineRestoreEventQueueStore
+        ? _onlineRestoreEventQueueStore.replace(_onlineRestoreEventQueue.slice())
+        : null;
+    if (storeAuthorityRequested && _onlineRestoreEventQueueStore &&
+        typeof _onlineRestoreEventQueueStore.append !== 'function') {
+        _recordOnlineRestoreQueueStoreWriteSelection(Object.freeze({
+            queue: _onlineRestoreEventQueue,
+            source: 'legacy-fallback',
+            matched: false,
+            fallbackReason: 'restore-queue-store-append-unavailable',
+        }));
+    } else if (!storeAuthorityRequested || !_onlineRestoreEventQueueStore) {
+        _selectOnlineRestoreQueueStoreWrite(storeQueue, _onlineRestoreEventQueue);
     }
     return _readOnlineRestoreEventQueue();
 }

@@ -177,6 +177,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineRestoreQueue = () => _readOnlineRestoreEventQueue().slice();
         this.getOnlineRestoreQueueStateSelection = getOnlineRestoreQueueStateSelection;
         this.getOnlineRestoreQueueStoreSelection = getOnlineRestoreQueueStoreSelection;
+        this.getOnlineRestoreQueueStoreWriteSelection = getOnlineRestoreQueueStoreWriteSelection;
         this.getOnlineReconnectCleanupEffectSelection = getOnlineReconnectCleanupEffectSelection;
         this.getOnlineReconnectRequestPlanSelection = getOnlineReconnectRequestPlanSelection;
         this.getOnlineReconnectRequestEffectSelection = getOnlineReconnectRequestEffectSelection;
@@ -494,15 +495,15 @@ runTest('online.js は未使用 remote action helper を残さない', () => {
 
 runTest('online restore queueは生の状態accessをowner関数へ集約する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.strictEqual((source.match(/_onlineRestoreEventQueue\s*=(?!=)/g) || []).length, 2);
+    assert.strictEqual((source.match(/_onlineRestoreEventQueue\s*=(?!=)/g) || []).length, 4);
     assert.strictEqual((source.match(/_onlineRestoreEventQueue\.push\(/g) || []).length, 1);
-    assert.strictEqual((source.match(/\b_onlineRestoreEventQueue\b/g) || []).length, 6);
+    assert.strictEqual((source.match(/\b_onlineRestoreEventQueue\b/g) || []).length, 12);
     assert.ok(source.includes('function _readOnlineRestoreEventQueue()'));
     assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
     assert.ok(source.includes('function _appendOnlineRestoreEventQueueLegacy(event)'));
 });
 
-runTest('online restore queue store read authorityは既定legacyで明示時だけshadowを読む', () => {
+runTest('online restore queue store authorityは既定legacyで明示時だけshadowを読む', () => {
     const runtime = loadOnlineRuntime();
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueue())), []);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
@@ -511,10 +512,16 @@ runTest('online restore queue store read authorityは既定legacyで明示時だ
         fallbackReason: '',
     });
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_WRITE_AUTHORITY_ENABLED = true;
     runtime.resetOnlineState();
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueue())), []);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
         source: 'store-read',
+        matched: true,
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreWriteSelection())), {
+        source: 'store-write',
         matched: true,
         fallbackReason: '',
     });
@@ -3964,6 +3971,7 @@ runTest('queued action apply failure preserves the failed event and following ev
     runtime.window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_WRITE_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED = true;
     let resolvePreload;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(resolve => { resolvePreload = resolve; }); } };
@@ -3982,6 +3990,11 @@ runTest('queued action apply failure preserves the failed event and following ev
     assert.strictEqual(runtime.getOnlineRestoreQueue().length, 2);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
         source: 'store-read',
+        matched: true,
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreWriteSelection())), {
+        source: 'store-write',
         matched: true,
         fallbackReason: '',
     });
@@ -4010,6 +4023,7 @@ runTest('duplicate rejoinData preserves events queued by the prior restore gener
     const runtime = loadOnlineRuntime();
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_WRITE_AUTHORITY_ENABLED = true;
     runtime.RLModelPortfolio = { preloadEligibleModels() { return new Promise(() => {}); } };
     runtime.initSocket();
     const handlers = runtime.getSocketHandlers();
@@ -4032,6 +4046,11 @@ runTest('duplicate rejoinData preserves events queued by the prior restore gener
     assert.strictEqual(runtime.getOnlineRestoreQueue()[0].generation, 2);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreSelection())), {
         source: 'store-read',
+        matched: true,
+        fallbackReason: '',
+    });
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(runtime.getOnlineRestoreQueueStoreWriteSelection())), {
+        source: 'store-write',
         matched: true,
         fallbackReason: '',
     });

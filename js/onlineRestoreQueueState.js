@@ -21,6 +21,10 @@ function createRestoreQueueStore(initialQueue = []) {
             queue = Array.isArray(nextQueue) ? nextQueue : [];
             return queue;
         },
+        append(event) {
+            queue.push(event);
+            return queue;
+        },
     });
 }
 
@@ -33,6 +37,16 @@ function selectRestoreQueueRead(storeQueue, legacyQueue, options = {}) {
         source: useStore ? 'store-read' : (enabled ? 'legacy-fallback' : 'legacy'),
         matched,
         fallbackReason: matched ? '' : 'restore-queue-store-mismatch',
+    });
+}
+
+function selectRestoreQueueWrite(storeQueue, legacyQueue, options = {}) {
+    const selected = selectRestoreQueueRead(storeQueue, legacyQueue, options);
+    return Object.freeze({
+        queue: selected.queue,
+        source: selected.source === 'store-read' ? 'store-write' : selected.source,
+        matched: selected.matched,
+        fallbackReason: selected.fallbackReason,
     });
 }
 
@@ -107,6 +121,7 @@ const OnlineRestoreQueueState = Object.freeze({
     sameQueue: sameRestoreQueue,
     createStore: createRestoreQueueStore,
     selectRead: selectRestoreQueueRead,
+    selectWrite: selectRestoreQueueWrite,
     planEnqueue: planRestoreQueueEnqueue,
     planCarry: planRestoreQueueCarry,
     planDrain: planRestoreQueueDrain,
