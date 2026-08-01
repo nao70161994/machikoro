@@ -491,10 +491,14 @@ runTest('online.js は未使用 remote action helper を残さない', () => {
     assert.ok(!source.includes('function handleRemoteAction'));
 });
 
-runTest('online restore queueは初期化後のwriteを単一ownerへ集約する', () => {
+runTest('online restore queueは生の状態accessをowner関数へ集約する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     assert.strictEqual((source.match(/_onlineRestoreEventQueue\s*=(?!=)/g) || []).length, 2);
+    assert.strictEqual((source.match(/_onlineRestoreEventQueue\.push\(/g) || []).length, 1);
+    assert.strictEqual((source.match(/_onlineRestoreEventQueue/g) || []).length, 5);
+    assert.ok(source.includes('function _readOnlineRestoreEventQueue()'));
     assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
+    assert.ok(source.includes('function _appendOnlineRestoreEventQueueLegacy(event)'));
 });
 
 

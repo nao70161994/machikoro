@@ -2168,9 +2168,18 @@ function _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransiti
     );
 }
 
+function _readOnlineRestoreEventQueue() {
+    return _onlineRestoreEventQueue;
+}
+
 function _replaceOnlineRestoreEventQueue(queue) {
     _onlineRestoreEventQueue = queue;
     return queue;
+}
+
+function _appendOnlineRestoreEventQueueLegacy(event) {
+    _onlineRestoreEventQueue.push(event);
+    return _onlineRestoreEventQueue;
 }
 
 function _clearOnlineRestoreEventQueue() {
@@ -2194,15 +2203,16 @@ function _clearOnlineRestoreEventQueue() {
 function _queueOnlineEventDuringRestore(type, payload) {
     if (!_onlineRestoreInProgress && !_onlineRestoreQuarantined) return false;
     const event = { type, payload, generation: _onlineRestoreGeneration };
-    const overflow = _onlineRestoreEventQueue.length >= ONLINE_RESTORE_EVENT_QUEUE_LIMIT;
+    const queue = _readOnlineRestoreEventQueue();
+    const overflow = queue.length >= ONLINE_RESTORE_EVENT_QUEUE_LIMIT;
     const legacyTransition = Object.freeze({
         overflow,
-        queue: overflow ? _onlineRestoreEventQueue : _onlineRestoreEventQueue.concat([event]),
+        queue: overflow ? queue : queue.concat([event]),
     });
     const pureTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
         typeof OnlineRestoreQueueState.planEnqueue === 'function'
         ? OnlineRestoreQueueState.planEnqueue(
-            _onlineRestoreEventQueue,
+            queue,
             event,
             ONLINE_RESTORE_EVENT_QUEUE_LIMIT
         )
@@ -2220,7 +2230,7 @@ function _queueOnlineEventDuringRestore(type, payload) {
     if (selection.source === 'pure-transition') {
         _replaceOnlineRestoreEventQueue(selection.transition.queue);
     } else {
-        _onlineRestoreEventQueue.push(event);
+        _appendOnlineRestoreEventQueueLegacy(event);
     }
     return true;
 }
@@ -2367,11 +2377,11 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     const legacyDrainTransition = Object.freeze({
         overflow: false,
         queue: [],
-        drainedQueue: _onlineRestoreEventQueue,
+        drainedQueue: _readOnlineRestoreEventQueue(),
     });
     const pureDrainTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
         typeof OnlineRestoreQueueState.planDrain === 'function'
-        ? OnlineRestoreQueueState.planDrain(_onlineRestoreEventQueue)
+        ? OnlineRestoreQueueState.planDrain(_readOnlineRestoreEventQueue())
         : null;
     const drainSelection = _selectOnlineRestoreQueueStateTransition(
         pureDrainTransition,
@@ -2836,7 +2846,7 @@ function initSocket() {
         }
         onlineGameSchemaSelection = gameStartPayload.gameSchema || null;
         const shouldCarryRestoreEvents = _onlineRestoreInProgress || _onlineRestoreQuarantined;
-        const carriedEvents = shouldCarryRestoreEvents ? _onlineRestoreEventQueue.slice() : [];
+        const carriedEvents = shouldCarryRestoreEvents ? _readOnlineRestoreEventQueue().slice() : [];
         const restoreGeneration = ++_onlineRestoreGeneration;
         _onlineRestoreInProgress = true;
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_STARTED);
@@ -2855,7 +2865,7 @@ function initSocket() {
         const pureCarryTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
             typeof OnlineRestoreQueueState.planCarry === 'function'
             ? OnlineRestoreQueueState.planCarry(
-                _onlineRestoreEventQueue,
+                _readOnlineRestoreEventQueue(),
                 shouldCarryRestoreEvents,
                 restoreGeneration
             )
