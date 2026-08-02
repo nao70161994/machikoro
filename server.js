@@ -35,7 +35,7 @@ const {
 } = require('./server/reportingPolicy');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const makeGameLifecycleGateway = require('./server/gameLifecycleGateway');
-const { makeSocketPayloadValidation } = require('./server/socketPayload');
+const { makeSocketPayloadValidation, makeSocketPayloadGateway } = require('./server/socketPayload');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
@@ -601,17 +601,14 @@ for (const entry of PUBLIC_STATIC_DIRS) {
 
 // ===== Room lifecycle =====
 const APP_ERROR_EVENT = 'appError';
-
-function emitAppError(socket, message) {
-    socket.emit(APP_ERROR_EVENT, message);
-}
-
-function requirePlainSocketPayload(socket, payload) {
-    const validation = validateSocketPayloadLimits(payload);
-    if (validation.ok) return true;
-    emitAppError(socket, '無効なリクエストです');
-    return false;
-}
+const {
+    emitAppError,
+    requirePlainSocketPayload,
+} = makeSocketPayloadGateway({
+    validateSocketPayloadLimits,
+    appErrorEvent: APP_ERROR_EVENT,
+    invalidMessage: '無効なリクエストです',
+});
 
 function cpuDifficultyLabel(difficulty) {
     if (difficulty === 'weak') return '弱';

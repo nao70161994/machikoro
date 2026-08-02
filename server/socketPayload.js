@@ -101,4 +101,32 @@ function makeSocketPayloadValidation({ isPlainObject, byteLength, socketLimits, 
     });
 }
 
-module.exports = { makeSocketPayloadValidation };
+function makeSocketPayloadGateway(options = {}) {
+    if (typeof options.validateSocketPayloadLimits !== 'function') {
+        throw new TypeError('validateSocketPayloadLimits must be a function');
+    }
+    const validateSocketPayloadLimits = options.validateSocketPayloadLimits;
+    const appErrorEvent = options.appErrorEvent || 'appError';
+    const invalidMessage = options.invalidMessage || '無効なリクエストです';
+
+    function emitAppError(socket, message) {
+        socket.emit(appErrorEvent, message);
+    }
+
+    function requirePlainSocketPayload(socket, payload) {
+        const validation = validateSocketPayloadLimits(payload);
+        if (validation.ok) return true;
+        emitAppError(socket, invalidMessage);
+        return false;
+    }
+
+    return Object.freeze({
+        emitAppError,
+        requirePlainSocketPayload,
+    });
+}
+
+module.exports = {
+    makeSocketPayloadValidation,
+    makeSocketPayloadGateway,
+};

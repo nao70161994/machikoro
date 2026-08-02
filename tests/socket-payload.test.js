@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { makeSocketPayloadValidation } = require('../server/socketPayload');
+const { makeSocketPayloadValidation, makeSocketPayloadGateway } = require('../server/socketPayload');
 const { runTest } = require('./helpers/test-utils');
 
 const socketLimits = Object.freeze({
@@ -24,6 +24,41 @@ const validation = makeSocketPayloadValidation({
     byteLength: value => Buffer.byteLength(value, 'utf8'),
     socketLimits,
     restoreLimits,
+});
+
+runTest('socket payload gateway はappError eventと既存拒否messageを固定する', () => {
+    const emitted = [];
+    const validated = [];
+    const gateway = makeSocketPayloadGateway({
+        validateSocketPayloadLimits(payload) {
+            validated.push(payload);
+            return { ok: payload && payload.valid === true };
+        },
+        appErrorEvent: 'appError',
+        invalidMessage: '無効なリクエストです',
+    });
+    const socket = {
+        emit(name, payload) {
+            emitted.push([name, payload]);
+        },
+    };
+
+    gateway.emitAppError(socket, '個別エラー');
+    assert.strictEqual(gateway.requirePlainSocketPayload(socket, { valid: true }), true);
+    assert.strictEqual(gateway.requirePlainSocketPayload(socket, { valid: false }), false);
+    assert.deepStrictEqual(validated, [{ valid: true }, { valid: false }]);
+    assert.deepStrictEqual(emitted, [
+        ['appError', '個別エラー'],
+        ['appError', '無効なリクエストです'],
+    ]);
+    assert.ok(Object.isFrozen(gateway));
+});
+
+runTest('socket payload gateway はvalidator注入を必須にする', () => {
+    assert.throws(
+        () => makeSocketPayloadGateway(),
+        /validateSocketPayloadLimits must be a function/
+    );
 });
 
 runTest('socket payload helper はobject・JSON・byte上限を既存reasonで判定する', () => {
