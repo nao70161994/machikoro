@@ -180,11 +180,32 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
         );
     }
 
+    function setRoomHostPlayerIndex(room, hostPlayerIndex) {
+        if (room.hostPlayerIndex !== hostPlayerIndex) {
+            room.hostEpoch = (Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0) + 1;
+        }
+        room.hostPlayerIndex = hostPlayerIndex;
+        if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
+            room.gameStartPayload.hostPlayerIndex = hostPlayerIndex;
+            room.gameStartPayload.hostEpoch = room.hostEpoch || 0;
+        }
+    }
+
     function roomHostChangedPayload(room) {
         return {
             newHostPlayerIndex: room?.hostPlayerIndex,
             hostEpoch: Number.isInteger(room?.hostEpoch) ? room.hostEpoch : 0,
         };
+    }
+
+    function roomHostlessRestoreCapabilities(sockets, room, playerNames) {
+        return playerNames.map((_, index) => {
+            const setting = Array.isArray(room.playerSettings) ? room.playerSettings[index] : null;
+            if (setting?.type === 'cpu') return 0;
+            const player = room.players.find(candidate => candidate.index === index);
+            const playerSocket = player?.id ? sockets.get(player.id) : null;
+            return playerSocket?.hostlessRestoreVersion === 1 ? 1 : 0;
+        });
     }
 
     return {
@@ -206,7 +227,9 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
         roomClientVersions,
         roomReconnectTokenHashes,
         getRemainingConnectedPlayers,
+        setRoomHostPlayerIndex,
         roomHostChangedPayload,
+        roomHostlessRestoreCapabilities,
     };
 }
 

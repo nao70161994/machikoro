@@ -267,7 +267,9 @@ const {
     roomClientVersions: roomClientVersionsForSockets,
     roomReconnectTokenHashes: roomReconnectTokenHashesForRoom,
     getRemainingConnectedPlayers: getRemainingConnectedRoomPlayers,
+    setRoomHostPlayerIndex,
     roomHostChangedPayload: buildRoomHostChangedPayload,
+    roomHostlessRestoreCapabilities: roomHostlessRestoreCapabilitiesForSockets,
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
     defaultRooms: rooms,
@@ -902,17 +904,6 @@ io.on('connection', (socket) => {
 });
 
 // ===== Room lifecycle helpers =====
-function setRoomHostPlayerIndex(room, hostPlayerIndex) {
-    if (room.hostPlayerIndex !== hostPlayerIndex) {
-        room.hostEpoch = (Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0) + 1;
-    }
-    room.hostPlayerIndex = hostPlayerIndex;
-    if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
-        room.gameStartPayload.hostPlayerIndex = hostPlayerIndex;
-        room.gameStartPayload.hostEpoch = room.hostEpoch || 0;
-    }
-}
-
 function roomHostChangedPayload(room) {
     return buildRoomHostChangedPayload(room);
 }
@@ -1363,13 +1354,11 @@ function roomReconnectTokenHashes(room, playerNames) {
 }
 
 function roomHostlessRestoreCapabilities(ioInstance, room, playerNames) {
-    return playerNames.map((_, index) => {
-        const setting = Array.isArray(room.playerSettings) ? room.playerSettings[index] : null;
-        if (setting?.type === 'cpu') return 0;
-        const player = room.players.find(candidate => candidate.index === index);
-        const playerSocket = player?.id ? ioInstance.sockets.sockets.get(player.id) : null;
-        return playerSocket?.hostlessRestoreVersion === 1 ? 1 : 0;
-    });
+    return roomHostlessRestoreCapabilitiesForSockets(
+        ioInstance.sockets.sockets,
+        room,
+        playerNames
+    );
 }
 
 const { buildGameStartPayload } = makeGameStartPayload({
