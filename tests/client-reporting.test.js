@@ -2,6 +2,45 @@ const assert = require('assert');
 const { ClientReporting } = require('../js/clientReporting');
 const { runTest } = require('./helpers/test-utils');
 
+
+runTest('client reporting はbrowser URLからqueryとhashを除いた既存URLを作る', () => {
+    assert.strictEqual(ClientReporting.clientUrl({
+        origin: 'https://example.com',
+        pathname: '/game',
+        href: 'https://example.com/game?token=secret#room',
+    }), 'https://example.com/game');
+    assert.strictEqual(ClientReporting.clientUrl({
+        href: 'file:///index.html?token=secret#room',
+    }), 'file:///index.html');
+    assert.strictEqual(ClientReporting.clientUrl(null), '');
+});
+
+runTest('client reporting はruntime値を既存context shapeへ投影する', () => {
+    assert.deepStrictEqual(ClientReporting.runtimeContext({
+        userAgent: 'Safari iPhone',
+        phase: 'build',
+        roomId: 'ROOM',
+        playerIndex: 0,
+        appVersion: 'abc123',
+        url: 'https://example.com/game',
+    }), {
+        userAgent: 'Safari iPhone',
+        phase: 'build',
+        roomId: 'ROOM',
+        playerIndex: 0,
+        appVersion: 'abc123',
+        url: 'https://example.com/game',
+    });
+    assert.deepStrictEqual(ClientReporting.runtimeContext(), {
+        userAgent: '',
+        phase: '',
+        roomId: '',
+        playerIndex: null,
+        appVersion: '',
+        url: '',
+    });
+});
+
 runTest('client reporting はError風入力を既存payload形式へ正規化する', () => {
     const report = ClientReporting.buildReport({
         source: 'window-error',

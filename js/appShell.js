@@ -36,23 +36,20 @@ const errorLikeStack = ClientReporting.errorStack;
 const isErrorLike = ClientReporting.isErrorLike;
 
 function safeClientErrorUrl() {
-    if (typeof window === 'undefined' || !window.location) return '';
-    const origin = window.location.origin || '';
-    const pathname = window.location.pathname || '';
-    if (origin || pathname) return origin + pathname;
-    const href = window.location.href || '';
-    return href.split(/[?#]/)[0];
+    return ClientReporting.clientUrl(
+        typeof window !== 'undefined' ? window.location : null
+    );
 }
 
 function safeClientErrorContext() {
-    return {
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent || '' : '',
-        phase: typeof game !== 'undefined' && game ? game.phase || '' : '',
-        roomId: typeof myRoomId !== 'undefined' && myRoomId ? myRoomId : '',
+    return ClientReporting.runtimeContext({
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        phase: typeof game !== 'undefined' && game ? game.phase : '',
+        roomId: typeof myRoomId !== 'undefined' ? myRoomId : '',
         playerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
-        appVersion: typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION ? window.MACHIKORO_CLIENT_VERSION : '',
+        appVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
         url: safeClientErrorUrl(),
-    };
+    });
 }
 
 function elementHasBlockingAncestor(id, el) {

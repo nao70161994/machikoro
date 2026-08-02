@@ -1,4 +1,24 @@
 const ClientReporting = Object.freeze({
+    clientUrl(location) {
+        if (!location) return '';
+        const origin = location.origin || '';
+        const pathname = location.pathname || '';
+        if (origin || pathname) return origin + pathname;
+        const href = location.href || '';
+        return href.split(/[?#]/)[0];
+    },
+
+    runtimeContext(input = {}) {
+        return {
+            userAgent: input.userAgent || '',
+            phase: input.phase || '',
+            roomId: input.roomId || '',
+            playerIndex: typeof input.playerIndex !== 'undefined' ? input.playerIndex : null,
+            appVersion: input.appVersion || '',
+            url: input.url || '',
+        };
+    },
+
     truncateField(value, limit) {
         const text = String(value || '');
         return text.length > limit ? text.slice(0, limit) + '...' : text;
