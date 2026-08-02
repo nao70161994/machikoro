@@ -69,6 +69,7 @@ interface Window {
     UiWatchdog: unknown;
     UiWinner: unknown;
     LifecycleNotify: unknown;
+    LifecycleTransport: unknown;
     LocalPlayerSettings: unknown;
     PageActivationPolicy: unknown;
     CitySkyline: unknown;

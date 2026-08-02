@@ -97,6 +97,7 @@
     "js/uiWinner.js",
     "js/clientReporting.js",
     "js/lifecycleNotify.js",
+    "js/lifecycleTransport.js",
     "js/localPlayerSettings.js",
     "js/pageActivationPolicy.js",
     "js/clientStorage.js",

@@ -39,6 +39,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/recreateRoomPayload.js',
     'js/gameSchemaRecreateWire.js',
     'js/lifecycleNotify.js',
+    'js/lifecycleTransport.js',
     'js/localPlayerSettings.js',
     'js/pageActivationPolicy.js',
     'js/onlinePayload.js',

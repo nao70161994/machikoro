@@ -1080,35 +1080,14 @@ function buildGameLifecyclePayload(event, extra = {}) {
 }
 
 function sendGameLifecycleNotification(event, extra = {}) {
-    if (!isGameLifecycleNotificationEnabled()) {
-        markClientFlowCheckpoint('game-lifecycle-disabled', { event });
-        return false;
-    }
-    if (typeof fetch !== 'function') {
-        markClientFlowCheckpoint('game-lifecycle-fetch-unavailable', { event });
-        return false;
-    }
-    const payload = buildGameLifecyclePayload(event, extra);
-    try {
-        markClientFlowCheckpoint('game-lifecycle-fetch-start', { event, mode: payload.mode, playerCount: payload.playerCount, cpuCount: payload.cpuCount });
-        const request = fetch(GAME_LIFECYCLE_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            keepalive: true,
-        });
-        if (request && typeof request.then === 'function') {
-            request.then(response => {
-                markClientFlowCheckpoint('game-lifecycle-fetch-complete', { event, ok: response && response.ok !== false, status: response && response.status });
-            }).catch(error => {
-                markClientFlowCheckpoint('game-lifecycle-fetch-failed', { event, message: error && error.message || String(error) });
-            });
-        }
-        return true;
-    } catch (error) {
-        markClientFlowCheckpoint('game-lifecycle-fetch-threw', { event, message: error && error.message || String(error) });
-        return false;
-    }
+    return LifecycleTransport.send({
+        enabled: isGameLifecycleNotificationEnabled(),
+        fetchImpl: typeof fetch === 'function' ? fetch : null,
+        endpoint: GAME_LIFECYCLE_ENDPOINT,
+        event,
+        buildPayload: () => buildGameLifecyclePayload(event, extra),
+        checkpoint: markClientFlowCheckpoint,
+    });
 }
 
 function notifyGameLifecycleStart() {
