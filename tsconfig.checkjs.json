@@ -153,6 +153,7 @@
     "server/clientErrorGateway.js",
     "server/lobbySocketHandlers.js",
     "server/restoreAuditKeyring.js",
+    "server/restoreAuditRuntime.js",
     "server/restoreSanitization.js",
     "server/restoreValidation.js",
     "server/roomValidation.js",

@@ -248,6 +248,7 @@ const {
     verifySignedRestoreAuditRecord,
 } = require('./server/restoreAudit');
 const { restoreAuditKeyringConfig } = require('./server/restoreAuditKeyring');
+const makeRestoreAuditRuntime = require('./server/restoreAuditRuntime');
 const {
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
@@ -397,36 +398,15 @@ const { markRoomGameStarted } = makeGameStartLifecycle({
     resetRoomCanonicalMirror,
     persistRoomCanonicalState,
 });
-function restoreAuditConfig() {
-    return restoreAuditKeyringConfig(process.env);
-}
-
-function restoreAuditSecret() {
-    return restoreAuditConfig().activeSecret;
-}
-
-function restoreAuditBuildOptions(now, source) {
-    const config = restoreAuditConfig();
-    const options = {
-        crypto,
-        secret: config.activeSecret,
-        keyId: config.activeKeyId,
-        now,
-    };
-    if (source) options.source = source;
-    return options;
-}
-
-function restoreAuditVerificationOptions(roomId) {
-    const config = restoreAuditConfig();
-    return {
-        roomId,
-        crypto,
-        keyring: config.keys,
-        maxAgeMs: config.maxAgeMs,
-        clockSkewMs: config.clockSkewMs,
-    };
-}
+const {
+    restoreAuditConfig,
+    restoreAuditSecret,
+    restoreAuditBuildOptions,
+    restoreAuditVerificationOptions,
+} = makeRestoreAuditRuntime({
+    getConfig: () => restoreAuditKeyringConfig(process.env),
+    crypto,
+});
 
 const {
     truncateText,
