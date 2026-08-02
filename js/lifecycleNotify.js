@@ -30,6 +30,62 @@ const LifecycleNotify = (() => {
         return value ? value : '';
     }
 
+    function lifecycleState(sessionId = '', startSent = false, finishSent = false) {
+        return Object.freeze({
+            sessionId,
+            startSent: !!startSent,
+            finishSent: !!finishSent,
+        });
+    }
+
+    function ensureSessionState(state, sessionId) {
+        if (state.sessionId) return state;
+        return lifecycleState(sessionId, state.startSent, state.finishSent);
+    }
+
+    function lifecycleTransition(status, state, shouldSend, shouldRememberStart = false) {
+        return Object.freeze({
+            status,
+            state,
+            shouldSend,
+            shouldRememberStart,
+        });
+    }
+
+    function startTransition(state, recentlySent, sessionId) {
+        if (state.startSent) {
+            return lifecycleTransition('already-sent', state, false);
+        }
+        if (recentlySent) {
+            return lifecycleTransition(
+                'suppressed',
+                lifecycleState(state.sessionId, true, state.finishSent),
+                false
+            );
+        }
+        return lifecycleTransition(
+            'send',
+            lifecycleState(sessionId, true, false),
+            true,
+            true
+        );
+    }
+
+    function finishTransition(state) {
+        if (state.finishSent) {
+            return lifecycleTransition('already-sent', state, false);
+        }
+        return lifecycleTransition(
+            'send',
+            lifecycleState(state.sessionId, state.startSent, true),
+            true
+        );
+    }
+
+    function resetLifecycleState() {
+        return lifecycleState();
+    }
+
     function startSignature(mode, playerCount, cpuCount) {
         return [mode, playerCount, cpuCount].join('|');
     }
@@ -105,6 +161,11 @@ const LifecycleNotify = (() => {
         playerCount,
         gameMode,
         appVersion,
+        lifecycleState,
+        ensureSessionState,
+        startTransition,
+        finishTransition,
+        resetLifecycleState,
         startSignature,
         notificationState,
         createSessionId,

@@ -46,6 +46,73 @@ runTest('lifecycle runtime metadataは既存の不正値fallbackを維持する'
     assert.strictEqual(LifecycleNotify.playerCount(null, throwingCount), 0);
 });
 
+runTest('lifecycle stateはsession/start/finishをimmutableに保持する', () => {
+    const state = LifecycleNotify.lifecycleState('session-1', true, false);
+    assert.deepStrictEqual(state, {
+        sessionId: 'session-1',
+        startSent: true,
+        finishSent: false,
+    });
+    assert.strictEqual(Object.isFrozen(state), true);
+    assert.strictEqual(
+        LifecycleNotify.ensureSessionState(state, 'ignored-session'),
+        state
+    );
+    assert.deepStrictEqual(
+        LifecycleNotify.ensureSessionState(LifecycleNotify.lifecycleState(), 'session-2'),
+        { sessionId: 'session-2', startSent: false, finishSent: false }
+    );
+});
+
+runTest('lifecycle start transitionは送信・reload抑止・多重送信をpureに区別する', () => {
+    const initial = LifecycleNotify.lifecycleState();
+    const send = LifecycleNotify.startTransition(initial, false, 'session-1');
+    assert.deepStrictEqual(send, {
+        status: 'send',
+        state: { sessionId: 'session-1', startSent: true, finishSent: false },
+        shouldSend: true,
+        shouldRememberStart: true,
+    });
+    assert.strictEqual(Object.isFrozen(send), true);
+    assert.strictEqual(Object.isFrozen(send.state), true);
+    assert.deepStrictEqual(initial, { sessionId: '', startSent: false, finishSent: false });
+
+    const suppressedSource = LifecycleNotify.lifecycleState('', false, true);
+    const suppressed = LifecycleNotify.startTransition(suppressedSource, true, 'unused');
+    assert.deepStrictEqual(suppressed, {
+        status: 'suppressed',
+        state: { sessionId: '', startSent: true, finishSent: true },
+        shouldSend: false,
+        shouldRememberStart: false,
+    });
+
+    const duplicate = LifecycleNotify.startTransition(send.state, false, 'unused');
+    assert.strictEqual(duplicate.status, 'already-sent');
+    assert.strictEqual(duplicate.state, send.state);
+    assert.strictEqual(duplicate.shouldSend, false);
+    assert.strictEqual(duplicate.shouldRememberStart, false);
+});
+
+runTest('lifecycle finish/reset transitionは一度だけ送信して初期stateへ戻す', () => {
+    const started = LifecycleNotify.lifecycleState('session-1', true, false);
+    const finish = LifecycleNotify.finishTransition(started);
+    assert.deepStrictEqual(finish, {
+        status: 'send',
+        state: { sessionId: 'session-1', startSent: true, finishSent: true },
+        shouldSend: true,
+        shouldRememberStart: false,
+    });
+    const duplicate = LifecycleNotify.finishTransition(finish.state);
+    assert.strictEqual(duplicate.status, 'already-sent');
+    assert.strictEqual(duplicate.state, finish.state);
+    assert.strictEqual(duplicate.shouldSend, false);
+    assert.deepStrictEqual(LifecycleNotify.resetLifecycleState(), {
+        sessionId: '',
+        startSent: false,
+        finishSent: false,
+    });
+});
+
 runTest('lifecycle finish payload追加fieldは勝者種別を決定論的に投影する', () => {
     assert.deepStrictEqual(LifecycleNotify.finishPayloadExtras(12, 'strong'), {
         turn: 12,

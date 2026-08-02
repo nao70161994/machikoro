@@ -941,9 +941,7 @@ const GAME_LIFECYCLE_NOTIFY_KEY = 'machikoroLifecycleNotifyEnabled';
 const GAME_LIFECYCLE_LEGACY_NOTIFY_KEY = 'machikoroLifecycleNotificationsEnabled';
 const GAME_LIFECYCLE_START_SENT_KEY = 'machikoroLifecycleStartSent';
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
-let _gameLifecycleSessionId = '';
-let _gameLifecycleStartSent = false;
-let _gameLifecycleFinishSent = false;
+let _gameLifecycleState = LifecycleNotify.lifecycleState();
 
 function readGameLifecycleNotifyValue() {
     return appShellStorage.access(storage => {
@@ -1064,13 +1062,16 @@ function cpuDifficultyForWinner(winner) {
 }
 
 function buildGameLifecyclePayload(event, extra = {}) {
-    if (!_gameLifecycleSessionId) _gameLifecycleSessionId = createGameLifecycleSessionId();
+    _gameLifecycleState = LifecycleNotify.ensureSessionState(
+        _gameLifecycleState,
+        _gameLifecycleState.sessionId || createGameLifecycleSessionId()
+    );
     return LifecycleNotify.buildPayload({
         event,
         mode: gameLifecycleMode(),
         playerCount: gameLifecyclePlayerCount(),
         cpuCount: gameLifecycleCpuCount(),
-        sessionId: _gameLifecycleSessionId,
+        sessionId: _gameLifecycleState.sessionId,
         appVersion: gameLifecycleAppVersion(),
         turn: extra.turn,
         winnerKind: extra.winnerKind,
@@ -1111,24 +1112,29 @@ function sendGameLifecycleNotification(event, extra = {}) {
 }
 
 function notifyGameLifecycleStart() {
-    if (_gameLifecycleStartSent) return false;
+    if (_gameLifecycleState.startSent) return false;
     const signature = gameLifecycleStartSignature();
     const now = Date.now();
-    if (recentlySentGameLifecycleStart(signature, now)) {
+    const recentlySent = recentlySentGameLifecycleStart(signature, now);
+    const transition = LifecycleNotify.startTransition(
+        _gameLifecycleState,
+        recentlySent,
+        recentlySent ? _gameLifecycleState.sessionId : createGameLifecycleSessionId()
+    );
+    _gameLifecycleState = transition.state;
+    if (transition.status === 'suppressed') {
         markClientFlowCheckpoint('game-lifecycle-start-suppressed', { signature });
-        _gameLifecycleStartSent = true;
         return false;
     }
-    _gameLifecycleSessionId = createGameLifecycleSessionId();
-    _gameLifecycleStartSent = true;
-    _gameLifecycleFinishSent = false;
-    rememberGameLifecycleStart(signature, now);
+    if (!transition.shouldSend) return false;
+    if (transition.shouldRememberStart) rememberGameLifecycleStart(signature, now);
     return sendGameLifecycleNotification('play-start');
 }
 
 function notifyGameLifecycleFinish(winner) {
-    if (_gameLifecycleFinishSent) return false;
-    _gameLifecycleFinishSent = true;
+    const transition = LifecycleNotify.finishTransition(_gameLifecycleState);
+    _gameLifecycleState = transition.state;
+    if (!transition.shouldSend) return false;
     const cpuDifficulty = cpuDifficultyForWinner(winner);
     return sendGameLifecycleNotification(
         'play-finish',
@@ -1140,9 +1146,7 @@ function notifyGameLifecycleFinish(winner) {
 }
 
 function resetGameLifecycleForRestart(reason = 'game-restart') {
-    _gameLifecycleSessionId = '';
-    _gameLifecycleStartSent = false;
-    _gameLifecycleFinishSent = false;
+    _gameLifecycleState = LifecycleNotify.resetLifecycleState();
     safeAppShellStorageRemove(GAME_LIFECYCLE_START_SENT_KEY);
     markClientFlowCheckpoint(reason, { lifecycle: 'reset' });
 }
