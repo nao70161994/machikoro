@@ -34,6 +34,7 @@ const {
     gameLifecycleDedupeKey,
 } = require('./server/reportingPolicy');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
+const makeGameLifecycleGateway = require('./server/gameLifecycleGateway');
 const { makeSocketPayloadValidation } = require('./server/socketPayload');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
@@ -472,35 +473,6 @@ async function notifyGameLifecycle(report, options = {}) {
     });
 }
 
-async function handleGameLifecycleRequest(req, res, options = {}) {
-    const env = options.env || process.env;
-    if (!isClientErrorOriginAllowed(req, env) || isProductionNoOriginClientErrorBlocked(req, env)) {
-        res.status(403).json({ ok: false, error: 'forbidden_origin' });
-        return;
-    }
-    const expectedToken = clientErrorSharedToken(env);
-    if (!hasClientReportOrigin(req) && expectedToken && requestClientErrorToken(req) !== expectedToken) {
-        res.status(403).json({ ok: false, error: 'invalid_client_error_token' });
-        return;
-    }
-    const now = options.now || Date.now();
-    if (isGameLifecycleRateLimited(gameLifecycleRateKey(req), now, options.rateBuckets || gameLifecycleRateBuckets)) {
-        res.status(429).json({ ok: false, error: 'rate_limited' });
-        return;
-    }
-    const normalized = normalizeGameLifecyclePayload(req.body, now);
-    if (!normalized.ok) {
-        res.status(400).json({ ok: false, error: normalized.reason });
-        return;
-    }
-    const duplicate = isDuplicateGameLifecycle(normalized.report, now, options.dedupeCache || gameLifecycleDedupeCache);
-    /** @type {{sent: boolean, reason?: string}} */
-    let result = { sent: false, reason: duplicate ? 'duplicate' : 'not-sent' };
-    if (!duplicate) result = await notifyGameLifecycle(normalized.report, { env, ...(options.notifyOptions || {}) });
-    res.status(202).json({ ok: true, duplicate, result });
-}
-
-
 function resolveBuildHash() {
     if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
     try {
@@ -534,6 +506,20 @@ const {
     defaultRateBuckets: clientErrorRateBuckets,
     defaultDedupeCache: clientErrorDedupeCache,
     warn: (...args) => console.warn(...args),
+});
+
+const {
+    handleGameLifecycleRequest,
+} = makeGameLifecycleGateway({
+    authorizeRequest: authorizeClientErrorRequest,
+    reportRateKey: gameLifecycleRateKey,
+    isRateLimited: isGameLifecycleRateLimited,
+    normalizePayload: normalizeGameLifecyclePayload,
+    isDuplicate: isDuplicateGameLifecycle,
+    notify: notifyGameLifecycle,
+    defaultEnv: process.env,
+    defaultRateBuckets: gameLifecycleRateBuckets,
+    defaultDedupeCache: gameLifecycleDedupeCache,
 });
 
 // sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）

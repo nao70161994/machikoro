@@ -119,6 +119,7 @@
     "server/actionValidation.js",
     "server/canonicalMirrorMetadata.js",
     "server/gameLifecycleReporting.js",
+    "server/gameLifecycleGateway.js",
     "server/gameSettings.js",
     "server/gameStartPayload.js",
     "server/hostlessRestoreCandidate.js",
