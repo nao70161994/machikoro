@@ -98,6 +98,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/canonicalStateStore.js'));
     assert.ok(config.files.includes('server/gameRuntimeLoader.js'));
     assert.ok(config.files.includes('server/gameStartLifecycle.js'));
+    assert.ok(config.files.includes('server/gameStartCoordinator.js'));
     assert.ok(config.files.includes('server/clientErrorReporting.js'));
     assert.ok(config.files.includes('server/actionAcceptance.js'));
     assert.ok(config.files.includes('server/actionSocketHandler.js'));

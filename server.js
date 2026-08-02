@@ -51,6 +51,7 @@ const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
 const makeGameStartPayload = require('./server/gameStartPayload');
 const makeGameStartLifecycle = require('./server/gameStartLifecycle');
+const makeGameStartCoordinator = require('./server/gameStartCoordinator');
 const {
     sanitizeName,
     isValidRoomId,
@@ -1308,6 +1309,15 @@ const { buildGameStartPayload } = makeGameStartPayload({
     roomReconnectTokenHashes,
     roomHostlessRestoreCapabilities,
 });
+const { checkGameStart } = makeGameStartCoordinator({
+    rooms,
+    countRoomHumanSlots,
+    buildGameStartPayload,
+    markRoomGameStarted,
+    logGameStarted: (roomId, payload) => console.log(
+        `ゲーム開始: ${roomId} プレイヤー: ${payload.playerNames.join(', ')}`
+    ),
+});
 
 
 // ===== Validation =====
@@ -1333,19 +1343,6 @@ function validateGameAction(room, socket, action, data) {
     };
 }
 
-
-function checkGameStart(io, roomId) {
-    const room = rooms[roomId];
-    if (!room || room.started) return;
-
-    if (room.players.length >= countRoomHumanSlots(room)) {
-        const gameStartPayload = buildGameStartPayload(io, room);
-        if (!gameStartPayload) return;
-        markRoomGameStarted(room, gameStartPayload);
-        io.to(roomId).emit('gameStart', gameStartPayload);
-        console.log(`ゲーム開始: ${roomId} プレイヤー: ${gameStartPayload.playerNames.join(', ')}`);
-    }
-}
 
 process.on('uncaughtException', (err) => {
     console.error('uncaughtException:', err);
