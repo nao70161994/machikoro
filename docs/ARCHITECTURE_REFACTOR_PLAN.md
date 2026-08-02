@@ -326,7 +326,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 As of 2026-08-02, rollback-friendly units from this plan are implemented without changing existing wire payload meanings, storage format, game rules, CPU tuning, or PWA behavior:
 
-- `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle (including host index/epoch synchronization and hostless-capability projection), payload-limit, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
+- `server/roomLifecycle.js`, `server/socketPayload.js`, and `server/gameSettings.js` own pure room lifecycle (including host index/epoch synchronization and hostless-capability projection), payload-limit/rejection-gateway, and game-setting normalization policy; Socket.IO handlers remain in `server.js`.
 - `server/serverDice.js`, `server/reconnectIdentity.js`, `server/restoreSanitization.js`, and `server/canonicalMirrorMetadata.js` own pure dice payload, reconnect identity, restore-log sanitation, and mirror metadata policy; transport order and restore authority remain in `server.js`.
 - `server/canonicalStateRepository.js` owns the injected build/save/load/validate/failure-isolation boundary around `server/canonicalStateStore.js`. The configured store remains noop by default; no durable provider or authority priority changed.
 - `server/restoreAuditPayload.js` owns injected, pure snapshot/action audit payload shaping. Signing, keyring selection, verification order, Socket effects, and restore authority remain in `server.js`; the signed bytes and protocol are unchanged.
