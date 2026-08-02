@@ -112,6 +112,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/hostlessRestoreCandidate.js',
     'server/hostlessRestoreCoordinator.js',
     'server/hostlessRestoreGateway.js',
+    'server/hostlessRestoreDiagnostics.js',
     'server/hostlessRestoreRuntime.js',
     'server/ntfyNotifier.js',
     'server/reconnectIdentity.js',

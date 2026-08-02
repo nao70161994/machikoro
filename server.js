@@ -82,6 +82,13 @@ const {
     createHostlessRestoreRuntime,
     hostlessRestoreEnabled,
 } = require('./server/hostlessRestoreRuntime');
+const makeHostlessRestoreDiagnostics = require('./server/hostlessRestoreDiagnostics');
+const {
+    hostlessRestoreRoomLogId,
+    hostlessRestoreDiagnostic,
+} = makeHostlessRestoreDiagnostics({
+    hashRoomId: roomId => crypto.createHash('sha256').update(roomId).digest('hex'),
+});
 const { createDisconnectSocketHandler } = require('./server/disconnectSocketHandler');
 const {
     gameSchemaNegotiationEnabled,
@@ -778,28 +785,6 @@ const hostlessRestoreGateway = makeHostlessRestoreGateway({
     serializeMirrorState,
     restoreAuditSecret,
 });
-
-function hostlessRestoreRoomLogId(roomId) {
-    if (typeof roomId !== 'string' || !roomId) return '-';
-    return crypto.createHash('sha256').update(roomId).digest('hex').slice(0, 12);
-}
-function hostlessRestoreDiagnostic(event = {}) {
-    const rank = event.rank && typeof event.rank === 'object'
-        ? {
-            hostEpoch: Number.isInteger(event.rank.hostEpoch) ? event.rank.hostEpoch : 0,
-            actionSeq: Number.isInteger(event.rank.actionSeq) ? event.rank.actionSeq : 0,
-        }
-        : null;
-    return Object.freeze({
-        event: typeof event.type === 'string' ? event.type : 'unknown',
-        roomHash: hostlessRestoreRoomLogId(event.roomId),
-        generation: Number.isInteger(event.generation) ? event.generation : 0,
-        stage: typeof event.stage === 'string' ? event.stage : '',
-        candidateCount: Number.isInteger(event.candidateCount) ? event.candidateCount : 0,
-        rank,
-        reason: typeof event.reason === 'string' ? event.reason : '',
-    });
-}
 
 function logHostlessRestoreCoordinatorEvent(event) {
     console.log('[hostless-restore]', JSON.stringify(hostlessRestoreDiagnostic(event)));
