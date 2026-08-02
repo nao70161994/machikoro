@@ -102,7 +102,7 @@ AdSense review-period docs/static-page changes use the narrower gate from `docs/
 2026-05-16 に 932c00d をレビューしました。大きな挙動破壊は見つかっていません。確認した責務境界は次の通りです。
 
 - `GameManager.allowedActionsFor(game)`: phase / pending state から action 名だけを返す。payload、在庫、所持金、actor 権限は判定しない。
-- `validateActionPayloadForState()`: server 内の payload 判定専用。caller が actor authority と phase/action gate を先に通す前提。
+- `validateActionPayloadForState()`: server 内の payload 判定専用。caller が phase/action gate を先に通す前提。シャッフル後human位置とCPU host代理のactor authorityは`server/actionValidation.js`の`canSocketSubmitCurrentAction()`でfail closedに判定する。
 - `CARD_INCOME_EFFECT_HANDLERS`: 金額計算だけを共有し、休業・pending・coin transfer などの副作用は実ルール側に残す。
 
 追加で、空 pending / unknown phase の allowed action が空になる test と、payload helper が phase gate を担当しないことを示す server test を足しています。
