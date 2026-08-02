@@ -50,6 +50,7 @@ const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
 const makeGameStartPayload = require('./server/gameStartPayload');
+const makeGameStartLifecycle = require('./server/gameStartLifecycle');
 const {
     sanitizeName,
     isValidRoomId,
@@ -366,6 +367,10 @@ const {
     defaultStore: canonicalStateStore,
     now: Date.now,
     warn: (...args) => console.warn(...args),
+});
+const { markRoomGameStarted } = makeGameStartLifecycle({
+    resetRoomCanonicalMirror,
+    persistRoomCanonicalState,
 });
 function restoreAuditConfig() {
     return restoreAuditKeyringConfig(process.env);
@@ -1328,17 +1333,6 @@ function validateGameAction(room, socket, action, data) {
     };
 }
 
-
-function markRoomGameStarted(room, gameStartPayload, now = Date.now()) {
-    room.started = true;
-    room.gameStartPayload = gameStartPayload;
-    room.stateSnapshot = null;
-    room.actionLog = [];
-    room.lastUndoState = null;
-    resetRoomCanonicalMirror(room);
-    room.lastTouchedAt = now;
-    persistRoomCanonicalState(room.roomId, room, 'game-start', now);
-}
 
 function checkGameStart(io, roomId) {
     const room = rooms[roomId];

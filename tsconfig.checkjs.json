@@ -125,6 +125,7 @@
     "server/gameSettings.js",
     "server/gameRuntimeLoader.js",
     "server/gameStartPayload.js",
+    "server/gameStartLifecycle.js",
     "server/hostlessRestoreCandidate.js",
     "server/hostlessRestoreRuntime.js",
     "server/reconnectIdentity.js",
