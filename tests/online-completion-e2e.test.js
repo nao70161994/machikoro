@@ -1,5 +1,10 @@
 const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
+const {
+    DEFAULT_SOCKET_E2E_TIMEOUT_MS,
+    configureSocketE2EHeartbeat,
+    onceSocketEvent: onceEvent,
+} = require('./helpers/socket-e2e');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
 const serverModule = require('../server');
@@ -14,19 +19,15 @@ const COMPLETION_LANDMARKS = [
     runtime.LANDMARK_NAMES.RADIO_TOWER,
     runtime.LANDMARK_NAMES.AIRPORT,
 ];
+const COMPLETION_TRACE_SEED = 0x5eed1234;
+const COMPLETION_PLAYER_ORDER = Object.freeze([1, 2, 3, 0]);
 
-function onceEvent(socket, event, timeoutMs = 5000) {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-            socket.off(event, onEvent);
-            reject(new Error(event + ' timed out'));
-        }, timeoutMs);
-        function onEvent(payload) {
-            clearTimeout(timer);
-            resolve(payload);
-        }
-        socket.once(event, onEvent);
-    });
+function makeSeededRandom(seed) {
+    let state = seed >>> 0;
+    return function seededRandom() {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 0x100000000;
+    };
 }
 
 function connect(origin) {
@@ -175,6 +176,7 @@ async function rejoinClient(origin, clients, states, credentials, index) {
 
 runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮・host再接続込みで完走する', async () => {
     const httpServer = serverModule.__io.httpServer;
+    const restoreHeartbeat = configureSocketE2EHeartbeat(serverModule.__io);
     await new Promise((resolve, reject) => {
         httpServer.once('error', reject);
         httpServer.listen(0, '127.0.0.1', resolve);
@@ -182,9 +184,11 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
     const origin = 'http://127.0.0.1:' + httpServer.address().port;
     const clients = Array.from({ length: 4 }, () => connect(origin));
     const states = Array.from({ length: 4 }, () => ({ sequences: [], accepted: [], deliveryCounts: new Map(), appErrors: [], pendingContext: null }));
+    const originalRandom = Math.random;
     clients.forEach((socket, index) => trackSocket(socket, states[index]));
 
     try {
+        Math.random = makeSeededRandom(COMPLETION_TRACE_SEED);
         await Promise.all(clients.map(client => onceEvent(client, 'connect')));
         const gameStartPromises = clients.map(client => onceEvent(client, 'gameStart'));
         const createdPromise = onceEvent(clients[0], 'roomCreated');
@@ -209,6 +213,8 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
         }
         const gameStarts = await Promise.all(gameStartPromises);
         const gameStart = gameStarts[0];
+        Math.random = originalRandom;
+        assert.deepStrictEqual(gameStart.playerOrder, COMPLETION_PLAYER_ORDER);
         for (const payload of gameStarts.slice(1)) assert.deepStrictEqual(payload.playerOrder, gameStart.playerOrder);
 
         const credentials = { roomId: created.roomId, tokens };
@@ -234,8 +240,17 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
             const actor = clients[actorIndex];
             const command = nextCompletionAction(game);
             const clientActionId = 'completion-' + (actionCount + 1);
-            const acceptedPromise = onceEvent(actor, 'actionAccepted');
-            states[actorIndex].pendingContext = { actionCount, actorIndex, phase: game.phase, builtThisTurn: game.builtThisTurn, command };
+            const pendingContext = {
+                traceSeed: COMPLETION_TRACE_SEED,
+                playerOrder: gameStart.playerOrder,
+                actionCount,
+                actorIndex,
+                phase: game.phase,
+                builtThisTurn: game.builtThisTurn,
+                command,
+            };
+            const acceptedPromise = onceEvent(actor, 'actionAccepted', DEFAULT_SOCKET_E2E_TIMEOUT_MS, pendingContext);
+            states[actorIndex].pendingContext = pendingContext;
             actor.emit('gameAction', { action: command.action, data: command.data, clientActionId });
             const accepted = await acceptedPromise;
             actionCount++;
@@ -245,7 +260,14 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
             applyAcceptedAction(game, accepted.action, accepted.data);
 
             if (actionCount === 10) {
-                const duplicatePromise = onceEvent(actor, 'actionAccepted');
+                const duplicatePromise = onceEvent(actor, 'actionAccepted', DEFAULT_SOCKET_E2E_TIMEOUT_MS, {
+                    traceSeed: COMPLETION_TRACE_SEED,
+                    playerOrder: gameStart.playerOrder,
+                    actionCount,
+                    actorIndex,
+                    duplicate: true,
+                    command,
+                });
                 actor.emit('gameAction', { action: command.action, data: command.data, clientActionId });
                 const duplicate = await duplicatePromise;
                 assert.strictEqual(duplicate.seq, accepted.seq);
@@ -267,7 +289,23 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
                     const interimActorIndex = gameStart.playerOrder[game.currentPlayerIndex];
                     const interimCommand = nextCompletionAction(game);
                     const interimId = 'completion-' + (actionCount + 1);
-                    const interimAcceptedPromise = onceEvent(clients[interimActorIndex], 'actionAccepted');
+                    const interimContext = {
+                        traceSeed: COMPLETION_TRACE_SEED,
+                        playerOrder: gameStart.playerOrder,
+                        actionCount,
+                        actorIndex: interimActorIndex,
+                        phase: game.phase,
+                        builtThisTurn: game.builtThisTurn,
+                        command: interimCommand,
+                        hostDisconnected: true,
+                    };
+                    states[interimActorIndex].pendingContext = interimContext;
+                    const interimAcceptedPromise = onceEvent(
+                        clients[interimActorIndex],
+                        'actionAccepted',
+                        DEFAULT_SOCKET_E2E_TIMEOUT_MS,
+                        interimContext
+                    );
                     clients[interimActorIndex].emit('gameAction', {
                         action: interimCommand.action,
                         data: interimCommand.data,
@@ -337,7 +375,9 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
             assert.ok((state.deliveryCounts.get(deduplicatedSeq) || 0) <= 1, 'duplicate actionを再broadcastしないこと');
         });
     } finally {
+        Math.random = originalRandom;
         clients.forEach(client => client.close());
         await new Promise(resolve => serverModule.__io.close(resolve));
+        restoreHeartbeat();
     }
 });

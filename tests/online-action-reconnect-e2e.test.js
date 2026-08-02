@@ -1,25 +1,15 @@
 const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
+const {
+    configureSocketE2EHeartbeat,
+    onceSocketEvent: onceEvent,
+} = require('./helpers/socket-e2e');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
 const serverModule = require('../server');
 const runtime = serverModule.loadGameRuntime();
 const connectClient = require('socket.io-client');
 const NAMES = ['Alice', 'Bob'];
-
-function onceEvent(socket, event, timeoutMs = 5000) {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-            socket.off(event, onEvent);
-            reject(new Error(event + ' timed out'));
-        }, timeoutMs);
-        function onEvent(payload) {
-            clearTimeout(timer);
-            resolve(payload);
-        }
-        socket.once(event, onEvent);
-    });
-}
 
 function connect(origin) {
     return connectClient(origin, { transports: ['websocket'], forceNew: true, reconnection: false });
@@ -43,6 +33,7 @@ async function rejoin(origin, clients, credentials, index) {
 
 runTest('online action reconnect e2e: build/undo residualとTV pending snapshotをtransport復元する', async () => {
     const httpServer = serverModule.__io.httpServer;
+    const restoreHeartbeat = configureSocketE2EHeartbeat(serverModule.__io);
     await new Promise((resolve, reject) => {
         httpServer.once('error', reject);
         httpServer.listen(0, '127.0.0.1', resolve);
@@ -135,5 +126,6 @@ runTest('online action reconnect e2e: build/undo residualとTV pending snapshot�
     } finally {
         clients.forEach(socket => socket.close());
         await new Promise(resolve => serverModule.__io.close(resolve));
+        restoreHeartbeat();
     }
 });

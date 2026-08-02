@@ -2,6 +2,10 @@
 
 const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
+const {
+    configureSocketE2EHeartbeat,
+    onceSocketEvent: onceEvent,
+} = require('./helpers/socket-e2e');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
 process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
@@ -14,14 +18,6 @@ const serverModule = require('../server');
 const connectClient = require('socket.io-client');
 
 const CAPABILITIES = Object.freeze({ actionVersions: [0, 1], snapshotVersions: [0, 1] });
-
-function onceEvent(socket, event, timeoutMs = 5000) {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => { socket.off(event, onEvent); reject(new Error(event + ' timed out')); }, timeoutMs);
-        function onEvent(payload) { clearTimeout(timer); resolve(payload); }
-        socket.once(event, onEvent);
-    });
-}
 
 function connect(origin) {
     return connectClient(origin, { transports: ['websocket'], forceNew: true, reconnection: false });
@@ -52,6 +48,7 @@ async function startPair(origin, host, guest, suffix, hostCapabilities, guestCap
 
 runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gateを実transportで固定する', async () => {
     const httpServer = serverModule.__io.httpServer;
+    const restoreHeartbeat = configureSocketE2EHeartbeat(serverModule.__io);
     await new Promise((resolve, reject) => { httpServer.once('error', reject); httpServer.listen(0, '127.0.0.1', resolve); });
     const origin = 'http://127.0.0.1:' + httpServer.address().port;
     const clients = Array.from({ length: 4 }, () => connect(origin));
@@ -208,5 +205,6 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         if (legacyAttempt) legacyAttempt.close();
         if (recreateProbe) recreateProbe.close();
         await new Promise(resolve => serverModule.__io.close(resolve));
+        restoreHeartbeat();
     }
 });
