@@ -211,6 +211,7 @@ const {
     buildRestoredMirrorStatePlan,
     applyRestoredMirrorStatePlan,
     planRestoredRoomCompletion,
+    executeRestoredRoomCompletion,
     planRestoredRoomMetadata,
     applyRestoredRoomMetadata,
     planRestoredRoomActivation,
@@ -1153,8 +1154,11 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         approvedHostless,
         restoredRoom,
     });
-    console.log(completionPlan.logMessage);
-    return completionPlan.result;
+    return executeRestoredRoomCompletion(completionPlan, {
+        log(message) {
+            console.log(message);
+        },
+    });
 }
 
 // ===== Snapshot limits and restore payload guards =====

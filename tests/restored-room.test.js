@@ -289,6 +289,36 @@ runTest('restored room completion planはhostless logを匿名room IDで固定�
     assert.deepStrictEqual(calls, ['ROOM01']);
 });
 
+runTest('restored room completion executorはredacted logを一度出してplan resultを返す', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    const result = { ok: true, restored: true };
+
+    assert.strictEqual(builder.executeRestoredRoomCompletion({
+        logMessage: 'restored room',
+        result,
+    }, {
+        log(message) {
+            calls.push(message);
+        },
+    }), result);
+    assert.deepStrictEqual(calls, ['restored room']);
+});
+
+runTest('restored room completion executorはlog effect欠落を実行前に拒否する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    assert.throws(() => builder.executeRestoredRoomCompletion({
+        logMessage: 'restored room',
+        result: { ok: true },
+    }), /log effect/);
+});
+
 runTest('restored room completion planはhostless匿名化dependency欠落を拒否する', () => {
     const builder = makeRestoredRoom({
         sanitizeStateSnapshot: snapshot => snapshot,
