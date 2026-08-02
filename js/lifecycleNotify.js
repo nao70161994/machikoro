@@ -5,6 +5,31 @@ const LifecycleNotify = (() => {
         return ['0', 'false', 'no', 'off', 'disabled'].includes(String(value || '').toLowerCase());
     }
 
+    function cpuCount(cpuPlayers) {
+        try {
+            return Array.isArray(cpuPlayers) ? cpuPlayers.filter(Boolean).length : 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    function playerCount(players, selectedCount) {
+        try {
+            if (Array.isArray(players)) return players.length;
+            return Number(selectedCount) || 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    function gameMode(isOnline) {
+        return isOnline ? 'online' : 'local';
+    }
+
+    function appVersion(value) {
+        return value ? value : '';
+    }
+
     function startSignature(mode, playerCount, cpuCount) {
         return [mode, playerCount, cpuCount].join('|');
     }
@@ -76,6 +101,10 @@ const LifecycleNotify = (() => {
 
     return Object.freeze({
         isDisabledValue,
+        cpuCount,
+        playerCount,
+        gameMode,
+        appVersion,
         startSignature,
         notificationState,
         createSessionId,

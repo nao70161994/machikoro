@@ -11,6 +11,41 @@ runTest('lifecycle notify は既存opt-out値だけを無効として扱う', ()
     }
 });
 
+runTest('lifecycle runtime metadataはCPU数・人数・mode・versionをpureに投影する', () => {
+    const sparseCpuPlayers = [];
+    sparseCpuPlayers[0] = null;
+    sparseCpuPlayers[2] = { difficulty: 'normal' };
+
+    assert.strictEqual(LifecycleNotify.cpuCount(sparseCpuPlayers), 1);
+    assert.strictEqual(LifecycleNotify.cpuCount(null), 0);
+    assert.strictEqual(LifecycleNotify.playerCount([{}, {}, {}], 9), 3);
+    assert.strictEqual(LifecycleNotify.playerCount(null, '4'), 4);
+    assert.strictEqual(LifecycleNotify.gameMode(true), 'online');
+    assert.strictEqual(LifecycleNotify.gameMode(false), 'local');
+    assert.strictEqual(LifecycleNotify.appVersion('abc123'), 'abc123');
+    assert.strictEqual(LifecycleNotify.appVersion(''), '');
+});
+
+runTest('lifecycle runtime metadataは既存の不正値fallbackを維持する', () => {
+    assert.strictEqual(LifecycleNotify.playerCount(null, 0), 0);
+    assert.strictEqual(LifecycleNotify.playerCount(null, 'invalid'), 0);
+    assert.strictEqual(LifecycleNotify.playerCount(null, -2), -2);
+    assert.strictEqual(LifecycleNotify.appVersion(42), 42);
+
+    const throwingCpuPlayers = new Proxy([], {
+        get() {
+            throw new Error('broken cpu players');
+        },
+    });
+    const throwingCount = {
+        valueOf() {
+            throw new Error('broken selected count');
+        },
+    };
+    assert.strictEqual(LifecycleNotify.cpuCount(throwingCpuPlayers), 0);
+    assert.strictEqual(LifecycleNotify.playerCount(null, throwingCount), 0);
+});
+
 runTest('lifecycle finish payload追加fieldは勝者種別を決定論的に投影する', () => {
     assert.deepStrictEqual(LifecycleNotify.finishPayloadExtras(12, 'strong'), {
         turn: 12,

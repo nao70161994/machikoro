@@ -988,7 +988,9 @@ function createGameLifecycleSessionId() {
 
 function gameLifecycleCpuCount() {
     try {
-        return Array.isArray(cpuPlayers) ? cpuPlayers.filter(Boolean).length : 0;
+        return LifecycleNotify.cpuCount(
+            typeof cpuPlayers !== 'undefined' ? cpuPlayers : null
+        );
     } catch (_) {
         return 0;
     }
@@ -996,10 +998,12 @@ function gameLifecycleCpuCount() {
 
 function gameLifecyclePlayerCount() {
     try {
-        if (typeof game !== 'undefined' && game && Array.isArray(game.players)) return game.players.length;
+        if (typeof game !== 'undefined' && game && Array.isArray(game.players)) {
+            return LifecycleNotify.playerCount(game.players, 0);
+        }
     } catch (_) {}
     try {
-        return Number(selectedCount) || 0;
+        return LifecycleNotify.playerCount(null, selectedCount);
     } catch (_) {
         return 0;
     }
@@ -1007,14 +1011,18 @@ function gameLifecyclePlayerCount() {
 
 function gameLifecycleMode() {
     try {
-        return typeof isOnlineGame !== 'undefined' && isOnlineGame ? 'online' : 'local';
+        return LifecycleNotify.gameMode(
+            typeof isOnlineGame !== 'undefined' && isOnlineGame
+        );
     } catch (_) {
         return 'local';
     }
 }
 
 function gameLifecycleAppVersion() {
-    return typeof window !== 'undefined' && window.MACHIKORO_CLIENT_VERSION ? window.MACHIKORO_CLIENT_VERSION : '';
+    return LifecycleNotify.appVersion(
+        typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : ''
+    );
 }
 
 function gameLifecycleStartSignature() {
