@@ -1461,6 +1461,7 @@ module.exports = {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    resolveRejoinPlayer,
     buildRejoinDataPayload,
     persistRoomCanonicalState,
     loadRoomCanonicalStateRecord,
