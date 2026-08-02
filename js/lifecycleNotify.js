@@ -48,6 +48,17 @@ const LifecycleNotify = (() => {
         });
     }
 
+    function winnerCpuDifficulty(players, cpuPlayers, winner) {
+        try {
+            if (!Array.isArray(players) || !Array.isArray(cpuPlayers)) return '';
+            const index = players.indexOf(winner);
+            const cpu = index >= 0 ? cpuPlayers[index] : null;
+            return cpu && cpu.difficulty ? String(cpu.difficulty) : '';
+        } catch (_) {
+            return '';
+        }
+    }
+
     function buildPayload(options) {
         const payload = {
             event: options.event,
@@ -71,6 +82,7 @@ const LifecycleNotify = (() => {
         isRecentStart,
         serializeStartMarker,
         finishPayloadExtras,
+        winnerCpuDifficulty,
         buildPayload,
     });
 })();

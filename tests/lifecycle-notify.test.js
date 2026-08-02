@@ -25,6 +25,36 @@ runTest('lifecycle finish payload追加fieldは勝者種別を決定論的に投
     assert.strictEqual(Object.isFrozen(LifecycleNotify.finishPayloadExtras(1, null)), true);
 });
 
+runTest('lifecycle finishは勝者参照から既存CPU難易度をpureに取得する', () => {
+    const human = { name: 'human' };
+    const cpuWinner = { name: 'cpu' };
+    const players = [human, cpuWinner];
+    const cpuPlayers = [null, { difficulty: 'expert' }];
+
+    assert.strictEqual(
+        LifecycleNotify.winnerCpuDifficulty(players, cpuPlayers, cpuWinner),
+        'expert'
+    );
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty(players, cpuPlayers, human), '');
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty(players, cpuPlayers, {}), '');
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty(null, cpuPlayers, cpuWinner), '');
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty(players, null, cpuWinner), '');
+});
+
+runTest('lifecycle finishのCPU難易度取得は不正値を既存どおり空文字へfallbackする', () => {
+    const winner = {};
+    const throwingCpu = {};
+    Object.defineProperty(throwingCpu, 'difficulty', {
+        get() {
+            throw new Error('broken difficulty');
+        },
+    });
+
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty([winner], [throwingCpu], winner), '');
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty([winner], [{ difficulty: 0 }], winner), '');
+    assert.strictEqual(LifecycleNotify.winnerCpuDifficulty([winner], [{ difficulty: 42 }], winner), '42');
+});
+
 runTest('lifecycle notify は既存payload fieldとoptional条件を維持する', () => {
     assert.deepStrictEqual(LifecycleNotify.buildPayload({
         event: 'play-finish',

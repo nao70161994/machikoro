@@ -1045,10 +1045,11 @@ function rememberGameLifecycleStart(signature, now = Date.now()) {
 
 function cpuDifficultyForWinner(winner) {
     try {
-        if (typeof game === 'undefined' || !game || !Array.isArray(game.players) || !Array.isArray(cpuPlayers)) return '';
-        const index = game.players.indexOf(winner);
-        const cpu = index >= 0 ? cpuPlayers[index] : null;
-        return cpu && cpu.difficulty ? String(cpu.difficulty) : '';
+        return LifecycleNotify.winnerCpuDifficulty(
+            typeof game !== 'undefined' && game ? game.players : null,
+            typeof cpuPlayers !== 'undefined' ? cpuPlayers : null,
+            winner
+        );
     } catch (_) {
         return '';
     }
