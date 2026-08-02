@@ -163,6 +163,7 @@
     "server/reportingPolicy.js",
     "server/reportThrottle.js",
     "server/restoreAuthorityPolicy.js",
+    "server/restoreAdmission.js",
     "server/restoreGateway.js",
     "server/restoredRoom.js"
   ]

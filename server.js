@@ -44,6 +44,7 @@ const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
 const { selectRestoreSource, decideExistingRoomRestore } = require('./server/restoreGateway');
+const makeRestoreAdmission = require('./server/restoreAdmission');
 const makeRestoredRoom = require('./server/restoredRoom');
 const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
@@ -894,43 +895,34 @@ io.on('connection', (socket) => {
     disconnectSocketHandler.registerSocket(socket);
 });
 
+const { planRestoreAdmission } = makeRestoreAdmission({
+    isPlainObject,
+    validateRestorePayloadLimits,
+    isValidRoomId,
+    hasOwnRoom,
+    loadRoomCanonicalStateRecord,
+    selectRestoreSource,
+    validateRestoreAuditRecord,
+    isVerifiedClientRestoreSnapshot,
+});
+
 function handleRecreateRoom(socket, payload = {}, options = {}) {
-    const approvedHostless = options.approvedHostless === true;
-    if (!isPlainObject(payload)) {
-        emitAppError(socket, '復元データが不完全です');
-        return;
+    const admission = planRestoreAdmission(payload, options);
+    if (admission.ok !== true) {
+        emitAppError(socket, admission.errorMessage);
+        return admission.result;
     }
-    if (!validateRestorePayloadLimits(payload).ok) {
-        emitAppError(socket, '復元データが大きすぎます');
-        return;
-    }
-    const { roomId, playerIndex, playerName, reconnectToken } = payload;
-    if (!roomId || !payload.gameStartPayload || !reconnectToken) {
-        emitAppError(socket, '復元データが不完全です');
-        return;
-    }
-    if (!isValidRoomId(roomId)) {
-        emitAppError(socket, '復元データが不完全です');
-        return;
-    }
-    if (approvedHostless && hasOwnRoom(roomId)) {
-        emitAppError(socket, '同じルームIDが既に使用されています');
-        return { ok: false, reason: 'room-exists' };
-    }
-    const loadedCanonicalRecord = approvedHostless ? null : loadRoomCanonicalStateRecord(roomId);
-    const restoreSource = selectRestoreSource(payload, loadedCanonicalRecord, { approvedHostless });
-    const canonicalRecord = restoreSource.canonicalRecord;
-    let { gameStartPayload, stateSnapshot, actionLog } = restoreSource;
-    const restoreAuditValidation = approvedHostless
-        ? { ok: true }
-        : validateRestoreAuditRecord(payload.restoreAudit, { roomId });
-    if (!restoreAuditValidation.ok) {
-        emitAppError(socket, '復元署名メタデータが無効です');
-        return;
-    }
-    const clientSnapshotTrusted = approvedHostless || !!canonicalRecord ||
-        (stateSnapshot && isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, payload.restoreAudit));
-    const replayStateSnapshot = clientSnapshotTrusted ? stateSnapshot : null;
+    const {
+        approvedHostless,
+        roomId,
+        playerIndex,
+        playerName,
+        reconnectToken,
+        canonicalRecord,
+        clientSnapshotTrusted,
+        replayStateSnapshot,
+    } = admission;
+    let { gameStartPayload, stateSnapshot, actionLog } = admission;
     if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
         if (!room.started) {
