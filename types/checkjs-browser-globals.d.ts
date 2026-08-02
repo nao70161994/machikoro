@@ -70,6 +70,7 @@ interface Window {
     UiWinner: unknown;
     LifecycleNotify: unknown;
     LifecycleTransport: unknown;
+    ClientReportingTransport: unknown;
     LocalPlayerSettings: unknown;
     PageActivationPolicy: unknown;
     CitySkyline: unknown;

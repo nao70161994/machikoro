@@ -901,38 +901,23 @@ function clientErrorReportKey(report) {
 }
 
 function reportClientError(input) {
-    if (typeof fetch !== 'function') {
-        markClientFlowCheckpoint('client-error-fetch-unavailable', { source: input?.source || 'unknown' });
-        return false;
-    }
-    const report = buildClientErrorReport(input || {});
-    const now = Date.now();
-    const key = clientErrorReportKey(report);
-    if (_lastClientErrorReport.key === key && now - _lastClientErrorReport.time < CLIENT_ERROR_REPORT_SUPPRESS_MS) {
-        markClientFlowCheckpoint('client-error-suppressed', { source: report.source, message: report.message });
-        return false;
-    }
-    _lastClientErrorReport = { key, time: now };
-    try {
-        markClientFlowCheckpoint('client-error-fetch-start', { source: report.source, message: report.message });
-        const request = fetch(CLIENT_ERROR_REPORT_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(report),
-            keepalive: true,
-        });
-        if (request && typeof request.then === 'function') {
-            request.then(response => {
-                markClientFlowCheckpoint('client-error-fetch-complete', { source: report.source, ok: response && response.ok !== false, status: response && response.status });
-            }).catch(error => {
-                markClientFlowCheckpoint('client-error-fetch-failed', { source: report.source, message: error && error.message || String(error) });
-            });
-        }
-        return true;
-    } catch (error) {
-        markClientFlowCheckpoint('client-error-fetch-threw', { source: report.source, message: error && error.message || String(error) });
-        return false;
-    }
+    return ClientReportingTransport.send({
+        fetchImpl: typeof fetch === 'function' ? fetch : null,
+        endpoint: CLIENT_ERROR_REPORT_ENDPOINT,
+        source: input?.source || 'unknown',
+        buildReport: () => buildClientErrorReport(input || {}),
+        shouldSend(report) {
+            const now = Date.now();
+            const key = clientErrorReportKey(report);
+            if (_lastClientErrorReport.key === key && now - _lastClientErrorReport.time < CLIENT_ERROR_REPORT_SUPPRESS_MS) {
+                markClientFlowCheckpoint('client-error-suppressed', { source: report.source, message: report.message });
+                return false;
+            }
+            _lastClientErrorReport = { key, time: now };
+            return true;
+        },
+        checkpoint: markClientFlowCheckpoint,
+    });
 }
 
 // ===== ゲームライフサイクル通知 =====

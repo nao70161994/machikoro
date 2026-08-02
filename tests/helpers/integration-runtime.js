@@ -194,6 +194,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/clientStorage.js',
         'js/appShellStorage.js',
         'js/clientReporting.js',
+        'js/clientReportingTransport.js',
         'js/lifecycleNotify.js',
         'js/lifecycleTransport.js',
         'js/uiWatchdog.js',

@@ -11,6 +11,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/actionContract.js',
     'js/actionUiRegistry.js',
     'js/clientReporting.js',
+    'js/clientReportingTransport.js',
     'js/citySkyline.js',
     'js/clientStorage.js',
     'js/appShellStorage.js',

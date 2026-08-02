@@ -96,6 +96,7 @@
     "js/uiWatchdog.js",
     "js/uiWinner.js",
     "js/clientReporting.js",
+    "js/clientReportingTransport.js",
     "js/lifecycleNotify.js",
     "js/lifecycleTransport.js",
     "js/localPlayerSettings.js",
