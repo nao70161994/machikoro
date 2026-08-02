@@ -179,6 +179,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/recreateRoomPayload.js',
         'js/gameSchemaRecreateWire.js',
         'js/gameEngine.js',
+        'js/gameEngineDeterminism.js',
         'js/gameEngineAuthority.js',
         'js/gameEngineClientShadow.js',
         'js/GameManager.js',
@@ -332,6 +333,29 @@ function loadIntegrationRuntime(options = {}) {
         advanceTime: ms => { dateState.now += ms; },
         setPlayerSettings(value) { context.__tmpPlayerSettings = value; vm.runInContext('playerSettings = __tmpPlayerSettings', context); delete context.__tmpPlayerSettings; },
         getGame() { return vm.runInContext('game', context); },
+        getLocalGameEngineSnapshot() { return vm.runInContext('_buildLocalGameEngineSnapshot()', context); },
+        getLocalGameEngineShadowOutcome() { return vm.runInContext('_lastLocalGameEngineShadowOutcome', context); },
+        runLocalEngineAction(action, data) {
+            context.__tmpLocalEngineAction = action;
+            context.__tmpLocalEngineData = data;
+            const localActionSource = [
+                'runLocalOrSendOnline(__tmpLocalEngineAction, __tmpLocalEngineData, () =>',
+                '    GameEngine.applyMutableAction({',
+                '        game,',
+                '        shopStock: SHOP_STOCK,',
+                '        action: __tmpLocalEngineAction,',
+                '        data: __tmpLocalEngineData,',
+                '        createCardByName,',
+                '        decrementShopStock,',
+                '        restoreUndoState: restoreUndoSnapshot,',
+                '    })',
+                ')',
+            ].join('\n');
+            const result = vm.runInContext(localActionSource, context);
+            delete context.__tmpLocalEngineAction;
+            delete context.__tmpLocalEngineData;
+            return result;
+        },
         setGame(value) { context.__tmpGame = value; vm.runInContext('game = __tmpGame', context); delete context.__tmpGame; },
         getCpuPlayers() { return vm.runInContext('cpuPlayers', context); },
         setCpuPlayers(value) { context.__tmpCpuPlayers = value; vm.runInContext('cpuPlayers = __tmpCpuPlayers', context); delete context.__tmpCpuPlayers; },

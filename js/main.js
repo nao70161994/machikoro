@@ -403,6 +403,95 @@ function markMainCheckpoint(event, details = {}) {
     }
 }
 
+let _lastLocalGameEngineShadowOutcome = null;
+
+function isLocalGameEngineShadowEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED === true;
+}
+
+function isLocalGameEngineAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED === true;
+}
+
+function _createLocalGameEngineRuntimeAdapter() {
+    return GameEngineRuntimeAdapter.create({
+        createGame: playerCount => new GameManager(playerCount),
+        enabledLandmarks: game && game.enabledLandmarks
+            ? game.enabledLandmarks
+            : Player.landmarkNames(),
+        landmarkNames: Player.landmarkNames,
+        createCardByName,
+        assignShopStockSnapshot,
+        decrementShopStock,
+        pendingActionsFor: GameManager.serializedPendingActionsFor,
+        logLimit: Number.MAX_SAFE_INTEGER,
+    });
+}
+
+function _buildLocalGameEngineSnapshot() {
+    return GameSnapshot.serializeGameState(game, SHOP_STOCK, {
+        undoState,
+        actionSeq: 0,
+        logLimit: Number.MAX_SAFE_INTEGER,
+        pendingActionsFor: GameManager.serializedPendingActionsFor,
+    });
+}
+
+function _prepareLocalGameEngineShadow(action, data) {
+    if (!isLocalGameEngineShadowEnabled() ||
+            typeof GameEngineClientShadow === 'undefined' ||
+            typeof GameEngineRuntimeAdapter === 'undefined' ||
+            typeof GameEngineDeterminism === 'undefined') return null;
+    const snapshot = _buildLocalGameEngineSnapshot();
+    if (!GameEngineDeterminism.isResolved({
+        action,
+        data,
+        snapshot,
+        stationName: LANDMARK_NAMES.STATION,
+    })) return null;
+    return GameEngineClientShadow.prepare({
+        enabled: true,
+        action,
+        data,
+        snapshot,
+        transition(sourceSnapshot, shadowAction, shadowData) {
+            const adapter = _createLocalGameEngineRuntimeAdapter();
+            return GameEngine.transitionSnapshot({
+                snapshot: sourceSnapshot,
+                action: shadowAction,
+                data: shadowData,
+                hydrate: adapter.hydrate,
+                serialize: adapter.serialize,
+            });
+        },
+    });
+}
+
+function _adoptLocalGameEngineShadowSnapshot(snapshot) {
+    const adapter = _createLocalGameEngineRuntimeAdapter();
+    const runtime = adapter.hydrate(snapshot);
+    const rebuilt = adapter.serialize(runtime);
+    if (!GameEngineClientShadow.equalSnapshots(rebuilt, snapshot)) return false;
+    game = runtime.game;
+    assignShopStockSnapshot(SHOP_STOCK, runtime.shopStock);
+    undoState = runtime.undoState;
+    return true;
+}
+
+function _finishLocalGameEngineShadow(prepared) {
+    if (!prepared) return null;
+    const outcome = GameEngineClientShadow.finish({
+        prepared,
+        liveSnapshot: _buildLocalGameEngineSnapshot(),
+        authorityEnabled: isLocalGameEngineAuthorityEnabled(),
+        adoptSnapshot: _adoptLocalGameEngineShadowSnapshot,
+    });
+    _lastLocalGameEngineShadowOutcome = outcome;
+    return outcome;
+}
+
 function runLocalOrSendOnline(action, data, fallback) {
     markMainCheckpoint('action-start', { action, isOnlineGame });
     if (isOnlineGame) {
@@ -410,8 +499,10 @@ function runLocalOrSendOnline(action, data, fallback) {
         markMainCheckpoint('action-online-send', { action, sent });
         return sent;
     }
+    const shadow = _prepareLocalGameEngineShadow(action, data);
     const result = fallback();
     markMainCheckpoint('action-local-applied', { action, result });
+    _finishLocalGameEngineShadow(shadow);
     if (result === false) return false;
     render();
     markMainCheckpoint('action-rendered', { action });

@@ -27,6 +27,7 @@ const STATIC_ASSETS = [
   '/js/recreateRoomPayload.js',
   '/js/gameSchemaRecreateWire.js',
   '/js/gameEngine.js',
+  '/js/gameEngineDeterminism.js',
   '/js/gameEngineAuthority.js',
   '/js/gameEngineClientShadow.js',
   '/js/GameManager.js',

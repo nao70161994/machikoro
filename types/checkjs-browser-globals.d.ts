@@ -39,6 +39,7 @@ interface Window {
     OnlinePlayerSettings: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
+    GameEngineDeterminism: unknown;
     GameEngineAuthority: unknown;
     GameEngineClientShadow: unknown;
     GameEngineRuntimeAdapter: unknown;

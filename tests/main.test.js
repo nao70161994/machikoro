@@ -2085,6 +2085,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/gameSnapshot.js', 'js/gameEngineRuntimeAdapter.js');
     assertBefore('js/gameEngineRuntimeAdapter.js', 'js/online.js');
     assertBefore('js/gameSnapshot.js', 'js/online.js');
+    assertBefore('js/gameEngine.js', 'js/gameEngineDeterminism.js');
+    assertBefore('js/gameEngineDeterminism.js', 'js/main.js');
     assertBefore('js/gameEngine.js', 'js/online.js');
     assertBefore('js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js');
     assertBefore('js/gameEngineClientShadow.js', 'js/online.js');
@@ -2162,6 +2164,8 @@ runTest('online Game Engine shadow/authority flagはproduction HTMLへ注入し�
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.strictEqual(html.includes('MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED'), false);
     assert.strictEqual(html.includes('MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED'), false);
+    assert.strictEqual(html.includes('MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED'), false);
+    assert.strictEqual(html.includes('MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED'), false);
 });
 
 runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期している', () => {

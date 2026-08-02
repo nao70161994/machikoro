@@ -38,6 +38,7 @@
     "js/onlineReconnectState.js",
     "js/onlineRetryPolicy.js",
     "js/gameEngine.js",
+    "js/gameEngineDeterminism.js",
     "js/gameEngineAuthority.js",
     "js/gameEngineClientShadow.js",
     "js/gameEngineRuntimeAdapter.js",
