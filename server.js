@@ -239,6 +239,7 @@ const {
     validateCanonicalStateRecord,
 } = require('./server/canonicalStateStore');
 const makeCanonicalStateRepository = require('./server/canonicalStateRepository');
+const { makeCanonicalMirrorRuntime } = require('./server/canonicalMirrorRuntime');
 const {
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
@@ -303,6 +304,21 @@ const {
 } = require('./server/canonicalMirrorMetadata')({
     serializeMirrorState,
     restorePayloadRank,
+});
+const {
+    resetRoomCanonicalMirror,
+    getRoomCanonicalMirror,
+    markRoomCanonicalMirrorCurrent,
+    applyAcceptedActionToRoomCanonicalMirror,
+} = makeCanonicalMirrorRuntime({
+    roomCanonicalMirrorMarker,
+    canonicalMirrorStateHash,
+    createRoomMirror,
+    makeUndoStateFromMirror,
+    applyActionToMirror,
+    createCardByName: gameRuntime.createCardByName,
+    now: Date.now,
+    warn: (...args) => console.warn(...args),
 });
 const gameSchemaShadow = makeGameSchemaShadow({
     enabled: GAME_SCHEMA_SHADOW_ENABLED,
@@ -1202,71 +1218,6 @@ function getRemainingConnectedPlayers(room, sockets, disconnectedSocketId) {
 function rollServerDie() {
     return crypto.randomInt(1, 7);
 }
-
-function recordCanonicalMirrorMismatch(room, marker, previousHash, rebuiltHash) {
-    if (!room || !previousHash || !rebuiltHash || previousHash === rebuiltHash) return;
-    room.lastCanonicalMirrorMismatch = {
-        previousHash,
-        rebuiltHash,
-        marker,
-        detectedAt: Date.now(),
-    };
-    console.warn('canonical mirror mismatch detected', {
-        roomId: room.roomId || null,
-        previousHash,
-        rebuiltHash,
-        marker,
-    });
-}
-
-function markRoomCanonicalMirrorCurrent(room) {
-    const marker = roomCanonicalMirrorMarker(room);
-    room.canonicalMirrorActionSeq = marker.actionSeq;
-    room.canonicalMirrorActionLogLength = marker.actionLogLength;
-    room.canonicalMirrorStateHash = canonicalMirrorStateHash(room.canonicalMirror);
-}
-
-function resetRoomCanonicalMirror(room) {
-    room.canonicalMirror = createRoomMirror(room);
-    markRoomCanonicalMirrorCurrent(room);
-    return room.canonicalMirror;
-}
-
-function getRoomCanonicalMirror(room) {
-    if (!room) return null;
-    const marker = roomCanonicalMirrorMarker(room);
-    if (!room.canonicalMirror ||
-            room.canonicalMirrorActionSeq !== marker.actionSeq ||
-            room.canonicalMirrorActionLogLength !== marker.actionLogLength) {
-        const recordedHash = room.canonicalMirrorStateHash;
-        const currentHash = canonicalMirrorStateHash(room.canonicalMirror);
-        const mirror = createRoomMirror(room);
-        const rebuiltHash = canonicalMirrorStateHash(mirror);
-        if (recordedHash && currentHash && recordedHash !== currentHash) {
-            recordCanonicalMirrorMismatch(room, marker, currentHash, rebuiltHash);
-        }
-        room.canonicalMirror = mirror;
-        markRoomCanonicalMirrorCurrent(room);
-        return room.canonicalMirror;
-    }
-    return room.canonicalMirror;
-}
-
-function applyAcceptedActionToRoomCanonicalMirror(room, mirror, actionEntry) {
-    if (!room || !mirror || !actionEntry) return false;
-    const { action, data } = actionEntry;
-    if (action === 'buildCard' || action === 'buildLandmark') {
-        mirror.lastUndoState = makeUndoStateFromMirror(mirror.game, mirror.shopStock);
-    }
-    const ok = applyActionToMirror(mirror.game, mirror.shopStock, action, data, gameRuntime.createCardByName) !== false;
-    if (!ok) return false;
-    if (action === 'undoBuild' || action === 'nextTurn') {
-        mirror.lastUndoState = null;
-    }
-    room.canonicalMirror = mirror;
-    return true;
-}
-
 
 function buildPlayerList(room) {
     return buildRoomPlayerList(room);

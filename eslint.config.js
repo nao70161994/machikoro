@@ -103,6 +103,7 @@ const serverMaintenanceFiles = Object.freeze([
     'scripts/report-action-contract.js',
     'server/actionAcceptance.js',
     'server/canonicalMirrorMetadata.js',
+    'server/canonicalMirrorRuntime.js',
     'server/clientErrorReporting.js',
     'server/clientErrorGateway.js',
     'server/gameLifecycleReporting.js',
