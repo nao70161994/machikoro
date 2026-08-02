@@ -396,6 +396,7 @@ const {
     normalizeClientErrorNumber,
     normalizeClientErrorPlayerIndex,
     normalizeClientErrorPayload,
+    clientErrorDedupeKey,
     extractClientErrorFreezeKind,
     isStaleClientErrorVersion,
     classifyClientErrorReport,
@@ -408,6 +409,7 @@ const {
     limits: CLIENT_ERROR_LIMITS,
     buildHash: () => BUILD_HASH,
     hashRoomId: roomId => crypto.createHash('sha256').update(roomId).digest('hex'),
+    hashClientErrorText: text => crypto.createHash('sha256').update(text).digest('hex'),
 });
 const {
     lifecycleEventTitle,
@@ -442,20 +444,6 @@ function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRa
         max: CLIENT_ERROR_LIMITS.rateLimitMax,
         maxBuckets: CLIENT_ERROR_LIMITS.rateLimitMaxBuckets,
     });
-}
-
-function clientErrorDedupeKey(report) {
-    return crypto.createHash('sha256').update(JSON.stringify({
-        source: report.source,
-        message: report.message,
-        stack: report.stack.slice(0, 600),
-        filename: report.filename,
-        line: report.line,
-        column: report.column,
-        userAgent: report.userAgent,
-        phase: report.phase,
-        roomId: report.roomId,
-    })).digest('hex');
 }
 
 function isDuplicateClientError(report, now = Date.now(), cache = clientErrorDedupeCache) {

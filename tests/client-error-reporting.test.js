@@ -57,6 +57,51 @@ runTest('server client error reporting はURL queryとtoken値を正規化前に
     assert.ok(!serialized.includes('SECRET'));
 });
 
+runTest('server client error reporting は重複keyのfieldとstack境界を固定する', () => {
+    let hashInput = '';
+    const localReporting = makeClientErrorReporting({
+        isPlainObject(value) {
+            return !!value && typeof value === 'object' && !Array.isArray(value);
+        },
+        limits: {
+            maxMessageLength: 500,
+            maxStackLength: 2400,
+        },
+        hashClientErrorText(value) {
+            hashInput = value;
+            return 'hash:' + value.length;
+        },
+    });
+    const report = {
+        source: 'window.onerror',
+        message: 'boom',
+        stack: 's'.repeat(700),
+        filename: 'js/ui.js',
+        line: 12,
+        column: 3,
+        userAgent: 'Safari',
+        phase: 'build',
+        roomId: 'ROOM',
+        ignored: 'not-in-key',
+    };
+
+    assert.strictEqual(
+        localReporting.clientErrorDedupeKey(report),
+        'hash:' + hashInput.length
+    );
+    assert.deepStrictEqual(JSON.parse(hashInput), {
+        source: 'window.onerror',
+        message: 'boom',
+        stack: 's'.repeat(600),
+        filename: 'js/ui.js',
+        line: 12,
+        column: 3,
+        userAgent: 'Safari',
+        phase: 'build',
+        roomId: 'ROOM',
+    });
+});
+
 runTest('server client error reporting はobject以外と空payloadを拒否する', () => {
     assert.strictEqual(reporting.normalizeClientErrorPayload([]).ok, false);
     assert.strictEqual(reporting.normalizeClientErrorPayload({}).ok, false);

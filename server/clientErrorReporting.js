@@ -32,9 +32,10 @@ const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
  *     limits: Readonly<{maxMessageLength: number, maxStackLength: number}>,
  *     buildHash?: string | (() => string),
  *     hashRoomId?: (roomId: string) => string,
+ *     hashClientErrorText?: (value: string) => string,
  * }} options
  */
-function makeClientErrorReporting({ isPlainObject, limits, buildHash = '', hashRoomId = () => '' }) {
+function makeClientErrorReporting({ isPlainObject, limits, buildHash = '', hashRoomId = () => '', hashClientErrorText = value => value }) {
     function truncateText(value, maxLength) {
         const text = String(value || '');
         return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
@@ -85,6 +86,20 @@ function makeClientErrorReporting({ isPlainObject, limits, buildHash = '', hashR
             receivedAt: new Date(now).toISOString(),
         };
         return { ok: true, report };
+    }
+
+    function clientErrorDedupeKey(report) {
+        return hashClientErrorText(JSON.stringify({
+            source: report.source,
+            message: report.message,
+            stack: report.stack.slice(0, 600),
+            filename: report.filename,
+            line: report.line,
+            column: report.column,
+            userAgent: report.userAgent,
+            phase: report.phase,
+            roomId: report.roomId,
+        }));
     }
 
     function summarizeUserAgent(userAgent) {
@@ -221,6 +236,7 @@ function makeClientErrorReporting({ isPlainObject, limits, buildHash = '', hashR
         normalizeClientErrorNumber,
         normalizeClientErrorPlayerIndex,
         normalizeClientErrorPayload,
+        clientErrorDedupeKey,
         summarizeUserAgent,
         redactedClientErrorRoomId,
         extractClientErrorFreezeKind,
