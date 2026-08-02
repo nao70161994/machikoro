@@ -1220,9 +1220,12 @@ function onBuildCard(name) {
             traceBuildFlow('card-online-send', { cardName: name, sent });
             return;
         }
-        if (game.buildCard(card)) {
+        const shadow = _prepareLocalGameEngineShadow('buildCard', { cardName: name });
+        const built = game.buildCard(card);
+        if (built) decrementShopStock(SHOP_STOCK, card);
+        _finishLocalGameEngineShadow(shadow);
+        if (built) {
             traceBuildFlow('card-applied', { cardName: name });
-            decrementShopStock(SHOP_STOCK, card);
             playSound('build');
             render();
             traceBuildFlow('card-rendered', { cardName: name });
@@ -1247,7 +1250,10 @@ function onBuildLandmark(name) {
             traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
             return;
         }
-        if (game.buildLandmark(name)) {
+        const shadow = _prepareLocalGameEngineShadow('buildLandmark', { name });
+        const built = game.buildLandmark(name);
+        _finishLocalGameEngineShadow(shadow);
+        if (built) {
             traceBuildFlow('landmark-applied', { landmarkName: name });
             playSound('build');
             render();

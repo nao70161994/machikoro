@@ -400,7 +400,13 @@ function doUndo() {
         sendAction('undoBuild', { state });
         return;
     }
+    const shadow = typeof _prepareLocalGameEngineShadow === 'function'
+        ? _prepareLocalGameEngineShadow('undoBuild', { state })
+        : null;
     restoreUndoSnapshot(state);
+    if (typeof _finishLocalGameEngineShadow === 'function') {
+        _finishLocalGameEngineShadow(shadow);
+    }
     render();
 }
 

@@ -85,3 +85,47 @@ runTest('local CPU Engine shadow authorityは確定proposal列でlegacy snapshot
         JSON.stringify(legacy.__test.getLocalGameEngineSnapshot())
     );
 });
+
+runTest('local human build/UndoはEngine shadow authorityでrollback前後を維持する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = true;
+    rt.__test.startLocalGame(symmetricSettings());
+    const game = rt.__test.startBuildPhase({ coins: 20 });
+    const before = JSON.stringify(rt.__test.getLocalGameEngineSnapshot());
+    const beforeCount = game.currentPlayer().countCard('麦畑');
+
+    rt.onBuildCard('麦畑');
+    rt.__test.elements.confirmOkBtn.onclick();
+
+    let outcome = rt.__test.getLocalGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.action, 'buildCard');
+    assert.strictEqual(outcome.authority.authority, 'pure-transition');
+    assert.strictEqual(rt.__test.getGame().currentPlayer().countCard('麦畑'), beforeCount + 1);
+
+    rt.doUndo();
+
+    outcome = rt.__test.getLocalGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.action, 'undoBuild');
+    assert.strictEqual(outcome.authority.authority, 'pure-transition');
+    assert.strictEqual(JSON.stringify(rt.__test.getLocalGameEngineSnapshot()), before);
+});
+
+runTest('local human landmark buildはEngine shadow authorityでlegacy結果と一致する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = true;
+    rt.__test.startLocalGame(symmetricSettings());
+    rt.__test.startBuildPhase({ coins: 20 });
+
+    rt.onBuildLandmark('駅');
+    rt.__test.elements.confirmOkBtn.onclick();
+
+    const outcome = rt.__test.getLocalGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.action, 'buildLandmark');
+    assert.strictEqual(outcome.authority.authority, 'pure-transition');
+    assert.strictEqual(rt.__test.getGame().currentPlayer().landmarks['駅'], true);
+});
