@@ -1,5 +1,7 @@
 'use strict';
 
+const GameEngineAuthority = require('../js/gameEngineAuthority');
+
 const ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 /**
@@ -17,28 +19,7 @@ function gameEngineTransitionAuthorityEnabled(env = {}) {
  * @returns {{enabled: boolean, select: (transition: Object|null, parityReport: Object|null) => Readonly<{authority: string, reason: string}>}}
  */
 function makeGameEngineTransitionAuthority(options = {}) {
-    const enabled = options.enabled === true;
-
-    function select(transition, parityReport) {
-        if (!enabled) {
-            return Object.freeze({ authority: 'mutable', reason: 'disabled' });
-        }
-        if (!transition || transition.ok !== true || !transition.snapshot) {
-            return Object.freeze({
-                authority: 'mutable',
-                reason: transition && transition.reason || 'transition-unavailable',
-            });
-        }
-        if (!parityReport || parityReport.status !== 'matched') {
-            return Object.freeze({
-                authority: 'mutable',
-                reason: parityReport && parityReport.status || 'parity-unavailable',
-            });
-        }
-        return Object.freeze({ authority: 'pure-transition', reason: '' });
-    }
-
-    return Object.freeze({ enabled, select });
+    return GameEngineAuthority.create(options);
 }
 
 module.exports = Object.freeze({

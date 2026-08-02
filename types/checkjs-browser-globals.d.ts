@@ -39,6 +39,7 @@ interface Window {
     OnlinePlayerSettings: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
+    GameEngineAuthority: unknown;
     GameSchemaWire: unknown;
     RecreateRoomPayload: unknown;
     GameSchemaRecreateWire: unknown;
