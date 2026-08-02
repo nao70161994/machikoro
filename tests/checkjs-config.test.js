@@ -104,6 +104,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/actionAcceptance.js'));
     assert.ok(config.files.includes('server/actionValidationGateway.js'));
     assert.ok(config.files.includes('server/restoreAuditRuntime.js'));
+    assert.ok(config.files.includes('server/restoreSnapshotAttachment.js'));
     assert.ok(config.files.includes('server/actionSocketHandler.js'));
     assert.ok(config.files.includes('server/disconnectSocketHandler.js'));
     assert.ok(config.files.includes('server/hostlessRestoreRuntime.js'));

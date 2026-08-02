@@ -249,6 +249,7 @@ const {
 } = require('./server/restoreAudit');
 const { restoreAuditKeyringConfig } = require('./server/restoreAuditKeyring');
 const makeRestoreAuditRuntime = require('./server/restoreAuditRuntime');
+const makeRestoreSnapshotAttachment = require('./server/restoreSnapshotAttachment');
 const {
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
@@ -701,16 +702,10 @@ function isVerifiedRestoreActionAudit(roomId, actionEntry) {
     return validation.ok;
 }
 
-function attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actionLogLengthBeforeCompact) {
-    if (!room || !actionEntry || !room.stateSnapshot) return null;
-    if (!Number.isInteger(actionLogLengthBeforeCompact) || actionLogLengthBeforeCompact <= MAX_ACTION_LOG_LENGTH) return null;
-    if (Array.isArray(room.actionLog) && room.actionLog.length !== 0) return null;
-    const restoreAudit = buildRestoreSnapshotAudit(roomId, room.gameStartPayload, room.stateSnapshot);
-    if (!restoreAudit) return null;
-    actionEntry.stateSnapshot = room.stateSnapshot;
-    actionEntry.restoreAudit = restoreAudit;
-    return { stateSnapshot: actionEntry.stateSnapshot, restoreAudit };
-}
+const { attachCompactedRestoreSnapshotToAction } = makeRestoreSnapshotAttachment({
+    maxActionLogLength: MAX_ACTION_LOG_LENGTH,
+    buildRestoreSnapshotAudit,
+});
 
 let hostlessRestoreRuntime = null;
 const hostlessRestoreCoordinator = createHostlessRestoreCoordinator({
