@@ -250,6 +250,7 @@ const {
 const { restoreAuditKeyringConfig } = require('./server/restoreAuditKeyring');
 const makeRestoreAuditRuntime = require('./server/restoreAuditRuntime');
 const makeRestoreSnapshotAttachment = require('./server/restoreSnapshotAttachment');
+const makeRoomSocketRuntime = require('./server/roomSocketRuntime');
 const {
     restoreSnapshotActionSeq,
     sanitizeRestoreActionLogEntry,
@@ -605,6 +606,19 @@ const {
     invalidMessage: '無効なリクエストです',
 });
 
+const {
+    roomHostChangedPayload,
+    emitRoomHostChanged,
+    detachExistingPlayerSocket,
+    detachRoomSockets,
+    isRoomHostConnected,
+} = makeRoomSocketRuntime({
+    defaultIo: io,
+    emitAppError,
+    buildRoomHostChangedPayload,
+    isRoomHostConnectedForSockets,
+});
+
 function cpuDifficultyLabel(difficulty) {
     if (difficulty === 'weak') return '弱';
     if (difficulty === 'normal') return '普';
@@ -879,46 +893,6 @@ io.on('connection', (socket) => {
 
     disconnectSocketHandler.registerSocket(socket);
 });
-
-// ===== Room lifecycle helpers =====
-function roomHostChangedPayload(room) {
-    return buildRoomHostChangedPayload(room);
-}
-
-function emitRoomHostChanged(roomId, room, ioInstance = io) {
-    ioInstance.to(roomId).emit('hostChanged', roomHostChangedPayload(room));
-}
-
-function detachSocketFromRoom(socketId, roomId, message = 'INVALID_SESSION') {
-    if (!socketId) return;
-    const oldSocket = io.sockets.sockets.get(socketId);
-    if (!oldSocket) return;
-    emitAppError(oldSocket, message);
-    const roomSocket = /** @type {typeof oldSocket & {roomId?: string|null, playerIndex?: number|null}} */ (oldSocket);
-    roomSocket.leave(roomId);
-    if (roomSocket.roomId === roomId) {
-        roomSocket.roomId = null;
-        roomSocket.playerIndex = null;
-    }
-}
-
-function detachExistingPlayerSocket(room, roomId, playerIndex, newSocketId) {
-    const existing = room?.players?.find(p => p.index === playerIndex);
-    if (!existing || !existing.id || existing.id === newSocketId) return;
-    detachSocketFromRoom(existing.id, roomId, 'INVALID_SESSION');
-}
-
-function detachRoomSockets(roomId, room, message = 'ROOM_REPLACED') {
-    if (!room || !Array.isArray(room.players)) return;
-    for (const player of room.players) {
-        detachSocketFromRoom(player.id, roomId, message);
-        player.id = null;
-    }
-}
-
-function isRoomHostConnected(room) {
-    return isRoomHostConnectedForSockets(room, io.sockets.sockets);
-}
 
 function handleRecreateRoom(socket, payload = {}, options = {}) {
     const approvedHostless = options.approvedHostless === true;

@@ -138,6 +138,7 @@
     "server/restoreAudit.js",
     "server/restoreAuditPayload.js",
     "server/roomLifecycle.js",
+    "server/roomSocketRuntime.js",
     "server/disconnectSocketHandler.js",
     "server/hostlessRestoreCoordinator.js",
     "server/hostlessRestoreGateway.js",

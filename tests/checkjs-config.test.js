@@ -111,6 +111,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/rejoinSocketHandler.js'));
     assert.ok(config.files.includes('server/hostlessRestoreCandidate.js'));
     assert.ok(config.files.includes('server/roomLifecycle.js'));
+    assert.ok(config.files.includes('server/roomSocketRuntime.js'));
     assert.ok(config.files.includes('server/mirrorReplay.js'));
     assert.ok(config.files.includes('server/restoreAuthorityPolicy.js'));
     assert.ok(config.files.includes('server/restoreValidation.js'));
