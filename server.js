@@ -59,6 +59,7 @@ const {
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
+    makeStaticAssetHandlers,
 } = require('./server/staticAssets');
 const {
     findAcceptedClientAction,
@@ -581,20 +582,17 @@ app.post('/api/game-lifecycle', (req, res) => {
 });
 
 
-function sendIndexWithBuildHash(req, res) {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.send(indexContent);
-}
+const {
+    sendIndexWithBuildHash,
+    sendPublicRootFile,
+} = makeStaticAssetHandlers({
+    indexContent,
+    rootDirectory: __dirname,
+    isPublicRootFile,
+});
 
 app.get('/', sendIndexWithBuildHash);
 app.get('/index.html', sendIndexWithBuildHash);
-
-function sendPublicRootFile(req, res, next) {
-    const fileName = String(req.path || '').replace(/^\/+/, '');
-    if (!isPublicRootFile(fileName)) return next();
-    res.sendFile(path.join(__dirname, fileName));
-}
 
 app.get(Array.from(PUBLIC_ROOT_FILES).map(fileName => '/' + fileName), sendPublicRootFile);
 for (const entry of PUBLIC_STATIC_DIRS) {

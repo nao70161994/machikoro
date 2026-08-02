@@ -1,6 +1,7 @@
 'use strict';
 
 const { execSync: defaultExecSync } = require('child_process');
+const defaultPath = require('path');
 
 const PUBLIC_ROOT_FILES = Object.freeze(new Set([
     'style.css',
@@ -67,6 +68,32 @@ function isPublicRootFile(fileName) {
     return PUBLIC_ROOT_FILES.has(String(fileName || '').replace(/^\/+/, ''));
 }
 
+function makeStaticAssetHandlers(options = {}) {
+    const indexContent = String(options.indexContent || '');
+    const rootDirectory = options.rootDirectory || '.';
+    const pathModule = options.pathModule || defaultPath;
+    const isAllowedRootFile = typeof options.isPublicRootFile === 'function'
+        ? options.isPublicRootFile
+        : isPublicRootFile;
+
+    function sendIndexWithBuildHash(req, res) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.send(indexContent);
+    }
+
+    function sendPublicRootFile(req, res, next) {
+        const fileName = String(req.path || '').replace(/^\/+/, '');
+        if (!isAllowedRootFile(fileName)) return next();
+        res.sendFile(pathModule.join(rootDirectory, fileName));
+    }
+
+    return Object.freeze({
+        sendIndexWithBuildHash,
+        sendPublicRootFile,
+    });
+}
+
 module.exports = {
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,
@@ -74,4 +101,5 @@ module.exports = {
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
+    makeStaticAssetHandlers,
 };

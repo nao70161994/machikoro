@@ -8,6 +8,7 @@ const {
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
+    makeStaticAssetHandlers,
 } = require('../server/staticAssets');
 const { runTest } = require('./helpers/test-utils');
 
@@ -101,6 +102,60 @@ runTest('static assets はbuild hashを環境変数・Git・時刻fallback順で
             return 1700000000000;
         },
     }), (1700000000000).toString(36));
+});
+
+runTest('static asset handlers はindex responseと公開root allowlistを維持する', () => {
+    const calls = [];
+    const handlers = makeStaticAssetHandlers({
+        indexContent: '<html>versioned</html>',
+        rootDirectory: '/app',
+        pathModule: {
+            join(...parts) {
+                calls.push(['join', ...parts]);
+                return parts.join('/');
+            },
+        },
+        isPublicRootFile(fileName) {
+            calls.push(['allowed', fileName]);
+            return fileName === 'style.css';
+        },
+    });
+    const response = {
+        setHeader(name, value) {
+            calls.push(['header', name, value]);
+        },
+        send(value) {
+            calls.push(['send', value]);
+        },
+        sendFile(value) {
+            calls.push(['sendFile', value]);
+        },
+    };
+
+    handlers.sendIndexWithBuildHash({}, response);
+    assert.deepStrictEqual(calls.splice(0), [
+        ['header', 'Content-Type', 'text/html; charset=utf-8'],
+        ['header', 'Cache-Control', 'no-cache, no-store, must-revalidate'],
+        ['send', '<html>versioned</html>'],
+    ]);
+
+    let nextCalls = 0;
+    handlers.sendPublicRootFile({ path: '/style.css' }, response, () => {
+        nextCalls++;
+    });
+    assert.deepStrictEqual(calls.splice(0), [
+        ['allowed', 'style.css'],
+        ['join', '/app', 'style.css'],
+        ['sendFile', '/app/style.css'],
+    ]);
+    assert.strictEqual(nextCalls, 0);
+
+    handlers.sendPublicRootFile({ path: '/server.js' }, response, () => {
+        nextCalls++;
+    });
+    assert.deepStrictEqual(calls, [['allowed', 'server.js']]);
+    assert.strictEqual(nextCalls, 1);
+    assert.ok(Object.isFrozen(handlers));
 });
 
 runTest('static assets はSW cache versionだけをbuild hashへ置換する', () => {
