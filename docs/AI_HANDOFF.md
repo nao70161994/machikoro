@@ -288,7 +288,7 @@ AdSense review-period docs/static-page changes use the narrower gate from `docs/
 
 ## Implemented helper boundaries
 
-- Server room lifecycle: use `server/roomLifecycle.js` for pure room/player/start-payload/version/token/disconnect-candidate policy before editing equivalent logic in `server.js`.
+- Server room lifecycle: use `server/roomLifecycle.js` for pure room/player/start-payload/version/token/disconnect-candidate/host index・epoch同期/hostless capability投影policy before editing equivalent logic in `server.js`.
 - Online storage: use `js/onlineStorage.js` for existing localStorage/session key access and restore bundle/index helpers; do not create new ad-hoc key reads in `online.js`.
 - UI pure rendering: use `js/uiBuildMenu.js` and `js/uiCardDetail.js` for build menu/card detail HTML. Keep modal lifecycle and real-device focus/pointer behavior in `ui.js` until planned verification exists.
 
