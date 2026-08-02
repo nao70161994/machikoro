@@ -139,6 +139,7 @@
     "server/canonicalStateStore.js",
     "server/clientErrorAuth.js",
     "server/clientErrorReporting.js",
+    "server/clientErrorGateway.js",
     "server/lobbySocketHandlers.js",
     "server/restoreAuditKeyring.js",
     "server/restoreSanitization.js",

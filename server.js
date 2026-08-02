@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
+const makeClientErrorGateway = require('./server/clientErrorGateway');
 const {
     requestHeader,
     requestBaseOrigin,
@@ -438,62 +439,6 @@ async function notifyClientError(report, options = {}) {
     });
 }
 
-async function handleClientErrorRequest(req, res, options = {}) {
-    const auth = authorizeClientErrorRequest(req, options.env || process.env);
-    if (!auth.ok) {
-        res.status(403).json({ ok: false, error: auth.error });
-        return;
-    }
-    const now = options.now || Date.now();
-    const rateKey = clientReportRateKey(req);
-    if (isClientErrorRateLimited(rateKey, now, options.rateBuckets || clientErrorRateBuckets)) {
-        res.status(429).json({ ok: false, error: 'rate_limited' });
-        return;
-    }
-    const normalized = normalizeClientErrorPayload(req.body, now);
-    if (!normalized.ok) {
-        res.status(400).json({ ok: false, error: normalized.reason });
-        return;
-    }
-    const duplicate = isDuplicateClientError(normalized.report, now, options.dedupeCache || clientErrorDedupeCache);
-    if (!duplicate) {
-        await notifyClientError(normalized.report, { env: options.env || process.env, ...(options.notifyOptions || {}) });
-    }
-    res.status(202).json({ ok: true, duplicate });
-}
-
-
-function buildClientErrorTestPayload(now = Date.now(), buildHash = BUILD_HASH) {
-    return createClientErrorTestPayload(now, buildHash);
-}
-
-async function handleClientErrorTestRequest(req, res, options = {}) {
-    const env = options.env || process.env;
-    const auth = authorizeClientErrorRequest(req, env, { allowSameOriginWithoutToken: false });
-    if (!auth.ok) {
-        res.status(403).json({ ok: false, error: auth.error });
-        return;
-    }
-    if (!isClientErrorTestEnabled(env)) {
-        res.status(404).json({ ok: false, error: 'client_error_test_disabled' });
-        return;
-    }
-    if (!env.NTFY_TOPIC && !(options.notifyOptions && options.notifyOptions.topic)) {
-        console.warn('[client-error-test] NTFY_TOPIC is not set; test notification was not sent');
-        res.status(503).json({ ok: false, error: 'missing_ntfy_topic', message: 'NTFY_TOPIC is not set' });
-        return;
-    }
-    const now = options.now || Date.now();
-    const normalized = normalizeClientErrorPayload(buildClientErrorTestPayload(now, options.buildHash || BUILD_HASH), now);
-    if (!normalized.ok) {
-        res.status(500).json({ ok: false, error: normalized.reason });
-        return;
-    }
-    const result = await notifyClientError(normalized.report, { env, ...(options.notifyOptions || {}) });
-    res.status(result.sent ? 202 : 503).json({ ok: result.sent, test: true, result });
-}
-
-
 function gameLifecycleRateKey(req) {
     return clientReportRateKey(req);
 }
@@ -570,6 +515,26 @@ const BUILD_HASH = IS_MAIN_MODULE ? resolveBuildHash() : (process.env.BUILD_HASH
 if (IS_MAIN_MODULE) {
     console.log(`Build hash: ${BUILD_HASH}`);
 }
+
+const {
+    handleClientErrorRequest,
+    buildClientErrorTestPayload,
+    handleClientErrorTestRequest,
+} = makeClientErrorGateway({
+    authorizeRequest: authorizeClientErrorRequest,
+    reportRateKey: clientReportRateKey,
+    isRateLimited: isClientErrorRateLimited,
+    normalizePayload: normalizeClientErrorPayload,
+    isDuplicate: isDuplicateClientError,
+    notify: notifyClientError,
+    isTestEnabled: isClientErrorTestEnabled,
+    createTestPayload: createClientErrorTestPayload,
+    defaultEnv: process.env,
+    defaultBuildHash: BUILD_HASH,
+    defaultRateBuckets: clientErrorRateBuckets,
+    defaultDedupeCache: clientErrorDedupeCache,
+    warn: (...args) => console.warn(...args),
+});
 
 // sw.jsにビルドハッシュを注入して返す（staticより前に登録する必要がある）
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
