@@ -106,6 +106,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/clientErrorGateway.js',
     'server/gameLifecycleReporting.js',
     'server/gameLifecycleGateway.js',
+    'server/reportDelivery.js',
     'server/gameSettings.js',
     'server/gameStartPayload.js',
     'server/hostlessRestoreCandidate.js',

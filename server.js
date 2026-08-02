@@ -7,6 +7,7 @@ const vm = require('vm');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { postNtfyNotification } = require('./server/ntfyNotifier');
+const makeReportDelivery = require('./server/reportDelivery');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
 const makeClientErrorGateway = require('./server/clientErrorGateway');
 const {
@@ -391,6 +392,21 @@ const {
 } = makeGameLifecycleReporting({
     truncateText,
 });
+const {
+    notifyClientError,
+    notifyGameLifecycle,
+} = makeReportDelivery({
+    postNotification: postNtfyNotification,
+    resolveTopic: resolveNtfyTopic,
+    classifyClientError: classifyClientErrorReport,
+    formatClientError: formatNtfyClientErrorMessage,
+    redactClientRoomId: redactedClientErrorRoomId,
+    lifecycleTitle: lifecycleEventTitle,
+    formatLifecycle: formatNtfyGameLifecycleMessage,
+    defaultEnv: process.env,
+    getDefaultFetch: () => global.fetch,
+    warn: (...args) => console.warn(...args),
+});
 
 function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
     pruneRateBuckets(now, buckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, CLIENT_ERROR_LIMITS.rateLimitMaxBuckets);
@@ -422,24 +438,6 @@ function isDuplicateClientError(report, now = Date.now(), cache = clientErrorDed
     return rememberAndCheckDuplicate(clientErrorDedupeKey(report), now, cache, CLIENT_ERROR_LIMITS.duplicateWindowMs);
 }
 
-async function notifyClientError(report, options = {}) {
-    const classification = classifyClientErrorReport(report);
-    return postNtfyNotification({
-        topic: resolveNtfyTopic(options, options.env || process.env),
-        fetchImpl: options.fetchImpl || global.fetch,
-        title: classification.classification === 'unknown' ? '[ダイスシティ] Unknown Client Error' : '[ダイスシティ] Client Error',
-        priority: classification.priority,
-        tags: classification.tags,
-        body: formatNtfyClientErrorMessage(report),
-        onMissingTopic() {
-            console.warn('[client-error]', report.message, 'phase=' + (report.phase || 'unknown'), 'room=' + redactedClientErrorRoomId(report.roomId));
-        },
-        fetchUnavailableMessage: '[client-error] fetch unavailable; ntfy notification skipped',
-        statusFailureMessage: '[client-error] ntfy notification failed:',
-        errorFailureMessage: '[client-error] ntfy notification failed:',
-    });
-}
-
 function gameLifecycleRateKey(req) {
     return clientReportRateKey(req);
 }
@@ -454,23 +452,6 @@ function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecyc
 
 function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
     return rememberAndCheckDuplicate(gameLifecycleDedupeKey(report), now, cache, GAME_LIFECYCLE_LIMITS.duplicateWindowMs);
-}
-
-async function notifyGameLifecycle(report, options = {}) {
-    return postNtfyNotification({
-        topic: resolveNtfyTopic(options, options.env || process.env),
-        fetchImpl: options.fetchImpl || global.fetch,
-        title: lifecycleEventTitle(report.event),
-        priority: '2',
-        tags: 'video_game,white_check_mark',
-        body: formatNtfyGameLifecycleMessage(report),
-        onMissingTopic() {
-            console.warn('[game-lifecycle]', report.event, 'mode=' + report.mode, 'players=' + report.playerCount, 'cpu=' + report.cpuCount);
-        },
-        fetchUnavailableMessage: '[game-lifecycle] fetch unavailable; ntfy notification skipped',
-        statusFailureMessage: '[game-lifecycle] ntfy notification failed:',
-        errorFailureMessage: '[game-lifecycle] ntfy notification failed:',
-    });
 }
 
 function resolveBuildHash() {

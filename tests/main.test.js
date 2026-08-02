@@ -2192,6 +2192,8 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.json'), 'utf8'));
     const webmanifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
     const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const reportDelivery = fs.readFileSync(path.join(__dirname, '..', 'server/reportDelivery.js'), 'utf8');
+    const serverReporting = [server, reportDelivery].join('\n');
     const ntfyDocs = fs.readFileSync(path.join(__dirname, '..', 'docs/NTFY_ERROR_REPORTING.md'), 'utf8');
     const publicSurfaces = [html, privacy, rules, howToPlay, cardsPage, aiCpu, readme, riskPlan, ntfyDocs].join('\n');
     assert.ok(ntfyDocs.includes('browser client-error and lifecycle notifications'));
@@ -2278,8 +2280,8 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(!publicSurfaces.includes('街コロ'));
     assert.ok(!publicSurfaces.includes('[Machikoro]'));
     assert.ok(!publicSurfaces.includes('Machikoro ntfy'));
-    assert.ok(!server.includes('[Machikoro]'));
-    assert.ok(server.includes('[ダイスシティ] Client Error'));
+    assert.ok(!serverReporting.includes('[Machikoro]'));
+    assert.ok(serverReporting.includes('[ダイスシティ] Client Error'));
     assert.ok(riskPlan.includes('2026-05-26 Title Logo Layout Update'));
     assert.ok(riskPlan.includes('2026-05-26 Public Name Final Audit'));
 });
