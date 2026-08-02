@@ -62,6 +62,26 @@ runTest('lifecycle notify は開始署名と保存markerの既存形式を固定
     );
 });
 
+runTest('lifecycle notify stateは現行keyとopt-out/default状態をpureに投影する', () => {
+    assert.deepStrictEqual(LifecycleNotify.notificationState('current', 'legacy', null), {
+        key: 'current',
+        legacyKey: 'legacy',
+        value: null,
+        enabled: true,
+        defaultEnabled: true,
+    });
+    assert.deepStrictEqual(LifecycleNotify.notificationState('current', 'legacy', 'false'), {
+        key: 'current',
+        legacyKey: 'legacy',
+        value: 'false',
+        enabled: false,
+        defaultEnabled: false,
+    });
+    assert.strictEqual(Object.isFrozen(
+        LifecycleNotify.notificationState('current', 'legacy', 'true')
+    ), true);
+});
+
 runTest('lifecycle session IDは注入時刻と乱数から決定論的に生成する', () => {
     const now = 1700000000000;
     const randomValue = 0.123456789;

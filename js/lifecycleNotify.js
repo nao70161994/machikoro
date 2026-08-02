@@ -9,6 +9,16 @@ const LifecycleNotify = (() => {
         return [mode, playerCount, cpuCount].join('|');
     }
 
+    function notificationState(key, legacyKey, value) {
+        return Object.freeze({
+            key,
+            legacyKey,
+            value,
+            enabled: !isDisabledValue(value),
+            defaultEnabled: value === null,
+        });
+    }
+
     function createSessionId(now, randomValue) {
         const random = Number(randomValue).toString(36).slice(2, 10);
         return Number(now).toString(36) + '-' + random;
@@ -48,6 +58,7 @@ const LifecycleNotify = (() => {
     return Object.freeze({
         isDisabledValue,
         startSignature,
+        notificationState,
         createSessionId,
         isRecentStart,
         serializeStartMarker,

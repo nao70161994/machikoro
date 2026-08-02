@@ -975,14 +975,11 @@ function setGameLifecycleNotificationEnabled(enabled) {
 }
 
 function gameLifecycleNotifyState() {
-    const value = readGameLifecycleNotifyValue();
-    return {
-        key: GAME_LIFECYCLE_NOTIFY_KEY,
-        legacyKey: GAME_LIFECYCLE_LEGACY_NOTIFY_KEY,
-        value,
-        enabled: !isLifecycleNotifyFalse(value),
-        defaultEnabled: value === null,
-    };
+    return LifecycleNotify.notificationState(
+        GAME_LIFECYCLE_NOTIFY_KEY,
+        GAME_LIFECYCLE_LEGACY_NOTIFY_KEY,
+        readGameLifecycleNotifyValue()
+    );
 }
 
 function createGameLifecycleSessionId() {
