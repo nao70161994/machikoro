@@ -1121,11 +1121,13 @@ function notifyGameLifecycleFinish(winner) {
     if (_gameLifecycleFinishSent) return false;
     _gameLifecycleFinishSent = true;
     const cpuDifficulty = cpuDifficultyForWinner(winner);
-    return sendGameLifecycleNotification('play-finish', {
-        turn: typeof game !== 'undefined' && game ? game.turnCount : 0,
-        winnerKind: cpuDifficulty ? 'cpu' : 'human',
-        winnerCpuDifficulty: cpuDifficulty,
-    });
+    return sendGameLifecycleNotification(
+        'play-finish',
+        LifecycleNotify.finishPayloadExtras(
+            typeof game !== 'undefined' && game ? game.turnCount : 0,
+            cpuDifficulty
+        )
+    );
 }
 
 function resetGameLifecycleForRestart(reason = 'game-restart') {

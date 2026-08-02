@@ -40,6 +40,14 @@ const LifecycleNotify = (() => {
         return JSON.stringify({ signature, timestamp }).slice(0, 300);
     }
 
+    function finishPayloadExtras(turn, winnerCpuDifficulty) {
+        return Object.freeze({
+            turn,
+            winnerKind: winnerCpuDifficulty ? 'cpu' : 'human',
+            winnerCpuDifficulty,
+        });
+    }
+
     function buildPayload(options) {
         const payload = {
             event: options.event,
@@ -62,6 +70,7 @@ const LifecycleNotify = (() => {
         createSessionId,
         isRecentStart,
         serializeStartMarker,
+        finishPayloadExtras,
         buildPayload,
     });
 })();

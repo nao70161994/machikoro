@@ -11,6 +11,20 @@ runTest('lifecycle notify は既存opt-out値だけを無効として扱う', ()
     }
 });
 
+runTest('lifecycle finish payload追加fieldは勝者種別を決定論的に投影する', () => {
+    assert.deepStrictEqual(LifecycleNotify.finishPayloadExtras(12, 'strong'), {
+        turn: 12,
+        winnerKind: 'cpu',
+        winnerCpuDifficulty: 'strong',
+    });
+    assert.deepStrictEqual(LifecycleNotify.finishPayloadExtras(0, ''), {
+        turn: 0,
+        winnerKind: 'human',
+        winnerCpuDifficulty: '',
+    });
+    assert.strictEqual(Object.isFrozen(LifecycleNotify.finishPayloadExtras(1, null)), true);
+});
+
 runTest('lifecycle notify は既存payload fieldとoptional条件を維持する', () => {
     assert.deepStrictEqual(LifecycleNotify.buildPayload({
         event: 'play-finish',
