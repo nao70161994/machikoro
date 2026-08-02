@@ -155,3 +155,136 @@ runTest('local CPU build passes a resolved proposal through Engine shadow author
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(rt.__test.getGame().currentPlayer().landmarks['\u99c5'], true);
 });
+
+
+function setupPending(rt, game, field, action) {
+    game.phase = rt.GAME_PHASES.PENDING;
+    game[field] = 1;
+    game.pendingActionQueue = [{ action, field }];
+}
+
+runTest('local Engine shadow authorityは全決定論action群でlegacy snapshotへ収束する', () => {
+    const cases = [
+        {
+            action: 'selectDice',
+            data: { useTwo: true, d1: 2, d2: 5, tunaDice: [1, 6] },
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.SELECT_DICE;
+                game.currentPlayer().landmarks['駅'] = true;
+            },
+        },
+        {
+            action: 'rerollDice',
+            data: { forceDice: 4, tunaDice: [2, 3] },
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.REROLL_CONFIRM;
+                game.currentPlayer().landmarks['電波塔'] = true;
+                game.lastDice1 = 1;
+                game.lastDiceResult = 1;
+                game.pendingTunaDice = [2, 3];
+            },
+        },
+        {
+            action: 'skipReroll',
+            data: {},
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.REROLL_CONFIRM;
+                game.lastDice1 = 3;
+                game.lastDiceResult = 3;
+                game.pendingTunaDice = [2, 4];
+            },
+        },
+        {
+            action: 'resolveHarbor',
+            data: { useBonus: true },
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.HARBOR_CHOICE;
+                game.currentPlayer().landmarks['港'] = true;
+                game.lastDice1 = 5;
+                game.lastDice2 = 5;
+                game.lastDiceResult = 10;
+                game.pendingTunaDice = [1, 6];
+            },
+        },
+        {
+            action: 'resolveTV',
+            data: { targetIndex: 1 },
+            setup(rt, game) {
+                setupPending(rt, game, 'pendingTV', 'resolveTV');
+                game.players[1].coins = 8;
+            },
+        },
+        {
+            action: 'resolveBusiness',
+            data: { myCard: '麦畑', targetIndex: 1, theirCard: '森林' },
+            setup(rt, game) {
+                setupPending(rt, game, 'pendingBusiness', 'resolveBusiness');
+                game.players[1].cards.push(rt.createCardByName('森林'));
+            },
+        },
+        {
+            action: 'resolveCleaning',
+            data: { cardName: 'カフェ' },
+            setup(rt, game) {
+                setupPending(rt, game, 'pendingCleaning', 'resolveCleaning');
+                game.players[1].cards.push(rt.createCardByName('カフェ'));
+            },
+        },
+        {
+            action: 'resolveMover',
+            data: { cardName: '麦畑', targetIndex: 1 },
+            setup(rt, game) {
+                setupPending(rt, game, 'pendingMover', 'resolveMover');
+            },
+        },
+        {
+            action: 'resolveRenovation',
+            data: { landmarkName: '駅' },
+            setup(rt, game) {
+                setupPending(rt, game, 'pendingRenovation', 'resolveRenovation');
+                game.currentPlayer().landmarks['駅'] = true;
+            },
+        },
+        {
+            action: 'resolveIT',
+            data: { doSave: true },
+            setup(rt, game) {
+                game.phase = rt.GAME_PHASES.PENDING;
+                game.pendingIT = true;
+                game.currentPlayer().coins = 3;
+            },
+        },
+    ];
+
+    for (const fixture of cases) {
+        const legacy = loadIntegrationRuntime();
+        const legacyGame = legacy.__test.startLocalGame(symmetricSettings());
+        fixture.setup(legacy, legacyGame);
+        assert.strictEqual(
+            legacy.__test.runLocalEngineAction(fixture.action, fixture.data),
+            true,
+            fixture.action + ' legacy'
+        );
+
+        const authoritative = loadIntegrationRuntime();
+        authoritative.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
+        authoritative.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = true;
+        const authoritativeGame = authoritative.__test.startLocalGame(symmetricSettings());
+        fixture.setup(authoritative, authoritativeGame);
+        assert.strictEqual(
+            authoritative.__test.runLocalEngineAction(fixture.action, fixture.data),
+            true,
+            fixture.action + ' authority'
+        );
+
+        const outcome = authoritative.__test.getLocalGameEngineShadowOutcome();
+        assert.strictEqual(outcome.report.status, 'matched', fixture.action);
+        assert.strictEqual(outcome.report.action, fixture.action);
+        assert.strictEqual(outcome.authority.authority, 'pure-transition', fixture.action);
+        assert.strictEqual(
+            JSON.stringify(authoritative.__test.getLocalGameEngineSnapshot()),
+            JSON.stringify(legacy.__test.getLocalGameEngineSnapshot()),
+            fixture.action
+        );
+    }
+});
