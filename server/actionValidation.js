@@ -179,6 +179,19 @@ function makeActionValidation({ gameRuntime }) {
         return gameRuntime.GameManager.allowedActionsFor(game);
     }
 
+    function originalPlayerIndexForGamePosition(room, gamePosition) {
+        const playerOrder = room?.gameStartPayload?.playerOrder;
+        return Array.isArray(playerOrder) ? playerOrder[gamePosition] : gamePosition;
+    }
+
+    function canSocketSubmitCurrentAction(room, socket, game, cpuPlayers) {
+        if (!room || !socket || !game) return false;
+        const currentIndex = game.currentPlayerIndex;
+        const currentIsCpu = !!cpuPlayers?.[currentIndex];
+        if (currentIsCpu) return socket.playerIndex === room.hostPlayerIndex;
+        return socket.playerIndex === originalPlayerIndexForGamePosition(room, currentIndex);
+    }
+
     return {
         isPlainObject,
         isNonEmptyString,
@@ -201,6 +214,8 @@ function makeActionValidation({ gameRuntime }) {
         ACTION_PAYLOAD_VALIDATORS,
         validateActionPayloadForState,
         getAllowedActions,
+        originalPlayerIndexForGamePosition,
+        canSocketSubmitCurrentAction,
     };
 }
 

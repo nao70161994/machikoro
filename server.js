@@ -145,6 +145,8 @@ const {
     ACTION_PAYLOAD_VALIDATORS,
     validateActionPayloadForState,
     getAllowedActions,
+    originalPlayerIndexForGamePosition,
+    canSocketSubmitCurrentAction,
 } = require('./server/actionValidation')({ gameRuntime });
 const {
     CANONICAL_ACTION_PAYLOAD_KEYS,
@@ -1387,21 +1389,6 @@ function loadGameRuntime() {
 }
 
 // ===== Validation =====
-
-function originalPlayerIndexForGamePosition(room, gamePosition) {
-    const playerOrder = room?.gameStartPayload?.playerOrder;
-    return Array.isArray(playerOrder) ? playerOrder[gamePosition] : gamePosition;
-}
-
-function canSocketSubmitCurrentAction(room, socket, game, cpuPlayers) {
-    if (!room || !socket || !game) return false;
-    const currentIndex = game.currentPlayerIndex;
-    const currentIsCpu = !!cpuPlayers?.[currentIndex];
-    if (currentIsCpu) return socket.playerIndex === room.hostPlayerIndex;
-
-    // playerOrderシャッフル後のゲーム内位置→元のプレイヤーインデックスに変換
-    return socket.playerIndex === originalPlayerIndexForGamePosition(room, currentIndex);
-}
 
 function validateGameAction(room, socket, action, data) {
     const mirror = getRoomCanonicalMirror(room);
