@@ -29,8 +29,51 @@ function rememberAndCheckDuplicate(key, now, cache, windowMs) {
     return previous !== undefined && now - previous < windowMs;
 }
 
+function makeReportAdmission(options = {}) {
+    if (typeof options.dedupeKey !== 'function') {
+        throw new TypeError('dedupeKey must be a function');
+    }
+    const limits = options.limits || {};
+    const defaultRateBuckets = options.rateBuckets || new Map();
+    const defaultDedupeCache = options.dedupeCache || new Map();
+    const dedupeKey = options.dedupeKey;
+
+    function pruneAdmissionRateBuckets(now, buckets = defaultRateBuckets) {
+        pruneRateBuckets(
+            now,
+            buckets,
+            limits.rateLimitWindowMs,
+            limits.rateLimitMaxBuckets
+        );
+    }
+
+    function isAdmissionRateLimited(key, now = Date.now(), buckets = defaultRateBuckets) {
+        return isRateLimited(key, now, buckets, {
+            windowMs: limits.rateLimitWindowMs,
+            max: limits.rateLimitMax,
+            maxBuckets: limits.rateLimitMaxBuckets,
+        });
+    }
+
+    function isDuplicate(report, now = Date.now(), cache = defaultDedupeCache) {
+        return rememberAndCheckDuplicate(
+            dedupeKey(report),
+            now,
+            cache,
+            limits.duplicateWindowMs
+        );
+    }
+
+    return Object.freeze({
+        pruneRateBuckets: pruneAdmissionRateBuckets,
+        isRateLimited: isAdmissionRateLimited,
+        isDuplicate,
+    });
+}
+
 module.exports = {
     pruneRateBuckets,
     isRateLimited,
     rememberAndCheckDuplicate,
+    makeReportAdmission,
 };

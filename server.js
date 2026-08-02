@@ -22,8 +22,7 @@ const {
 } = require('./server/clientErrorAuth');
 const {
     pruneRateBuckets,
-    isRateLimited: isReportRateLimited,
-    rememberAndCheckDuplicate,
+    makeReportAdmission,
 } = require('./server/reportThrottle');
 const {
     resolveTrustProxySetting,
@@ -434,37 +433,25 @@ const {
     warn: (...args) => console.warn(...args),
 });
 
-function pruneClientErrorRateBuckets(now, buckets = clientErrorRateBuckets) {
-    pruneRateBuckets(now, buckets, CLIENT_ERROR_LIMITS.rateLimitWindowMs, CLIENT_ERROR_LIMITS.rateLimitMaxBuckets);
-}
-
-function isClientErrorRateLimited(key, now = Date.now(), buckets = clientErrorRateBuckets) {
-    return isReportRateLimited(key, now, buckets, {
-        windowMs: CLIENT_ERROR_LIMITS.rateLimitWindowMs,
-        max: CLIENT_ERROR_LIMITS.rateLimitMax,
-        maxBuckets: CLIENT_ERROR_LIMITS.rateLimitMaxBuckets,
-    });
-}
-
-function isDuplicateClientError(report, now = Date.now(), cache = clientErrorDedupeCache) {
-    return rememberAndCheckDuplicate(clientErrorDedupeKey(report), now, cache, CLIENT_ERROR_LIMITS.duplicateWindowMs);
-}
-
-function gameLifecycleRateKey(req) {
-    return clientReportRateKey(req);
-}
-
-function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecycleRateBuckets) {
-    return isReportRateLimited(key, now, buckets, {
-        windowMs: GAME_LIFECYCLE_LIMITS.rateLimitWindowMs,
-        max: GAME_LIFECYCLE_LIMITS.rateLimitMax,
-        maxBuckets: GAME_LIFECYCLE_LIMITS.rateLimitMaxBuckets,
-    });
-}
-
-function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
-    return rememberAndCheckDuplicate(gameLifecycleDedupeKey(report), now, cache, GAME_LIFECYCLE_LIMITS.duplicateWindowMs);
-}
+const {
+    pruneRateBuckets: pruneClientErrorRateBuckets,
+    isRateLimited: isClientErrorRateLimited,
+    isDuplicate: isDuplicateClientError,
+} = makeReportAdmission({
+    limits: CLIENT_ERROR_LIMITS,
+    rateBuckets: clientErrorRateBuckets,
+    dedupeCache: clientErrorDedupeCache,
+    dedupeKey: clientErrorDedupeKey,
+});
+const {
+    isRateLimited: isGameLifecycleRateLimited,
+    isDuplicate: isDuplicateGameLifecycle,
+} = makeReportAdmission({
+    limits: GAME_LIFECYCLE_LIMITS,
+    rateBuckets: gameLifecycleRateBuckets,
+    dedupeCache: gameLifecycleDedupeCache,
+    dedupeKey: gameLifecycleDedupeKey,
+});
 
 const IS_MAIN_MODULE = /** @type {{main?: unknown}} */ (require).main === module;
 const BUILD_HASH = IS_MAIN_MODULE ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
@@ -496,7 +483,7 @@ const {
     handleGameLifecycleRequest,
 } = makeGameLifecycleGateway({
     authorizeRequest: authorizeClientErrorRequest,
-    reportRateKey: gameLifecycleRateKey,
+    reportRateKey: clientReportRateKey,
     isRateLimited: isGameLifecycleRateLimited,
     normalizePayload: normalizeGameLifecyclePayload,
     isDuplicate: isDuplicateGameLifecycle,
