@@ -32,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 
@@ -216,6 +216,8 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineRestoreReplayEffectSelection = getOnlineRestoreReplayEffectSelection;
         this.getOnlineRestoreActivationPlanSelection = getOnlineRestoreActivationPlanSelection;
         this.getOnlineRestoreActivationEffectSelection = getOnlineRestoreActivationEffectSelection;
+        this.getOnlineGameEngineShadowOutcome = getOnlineGameEngineShadowOutcome;
+        this.applyReplayedAction = applyReplayedAction;
         this.activateOnlineReconnectForTest = () =>
             _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
         this.emitOnlineRejoinRequest = _emitOnlineRejoinRequest;
@@ -1043,6 +1045,99 @@ runTest('applyAction nextTurn: ターンが次のプレイヤーへ進む', () =
     const before = game.currentPlayerIndex;
     rt.applyAction('nextTurn', {});
     assert.notStrictEqual(rt.getGame().currentPlayerIndex, before);
+});
+
+runTest('online replay Game Engine shadowはproduction未注入時に従来mutable経路だけを使う', () => {
+    const runtime = loadOnlineRuntime();
+    const game = new runtime.GameManager(2);
+    runtime.setGame(game);
+    runtime.CARDS.forEach(card => { runtime.getShopStock()[card.name] = 6; });
+    assert.strictEqual(runtime.applyReplayedAction('rollDice', { forceDice: 3, tunaDice: [1, 1] }), true);
+    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+    const outcome = runtime.getOnlineGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report, null);
+    assert.strictEqual(outcome.authority.authority, 'mutable');
+    assert.strictEqual(outcome.authority.reason, 'disabled');
+});
+
+runTest('online replay Game Engine shadowはdetached transitionとlegacy結果の一致を記録する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED = true;
+    const game = new runtime.GameManager(2);
+    runtime.setGame(game);
+    runtime.CARDS.forEach(card => { runtime.getShopStock()[card.name] = 6; });
+    assert.strictEqual(runtime.applyReplayedAction('rollDice', { forceDice: 3, tunaDice: [1, 1] }), true);
+    const outcome = runtime.getOnlineGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.authority.authority, 'mutable');
+    assert.strictEqual(outcome.authority.reason, 'disabled');
+    assert.strictEqual(runtime.getGame(), game);
+});
+
+runTest('online replay Game Engine authorityはparity一致時だけdetached stateを採用する', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED = true;
+    const game = new runtime.GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    runtime.setGame(game);
+    runtime.CARDS.forEach(card => { runtime.getShopStock()[card.name] = 6; });
+    assert.strictEqual(runtime.applyReplayedAction('nextTurn', {}), true);
+    const outcome = runtime.getOnlineGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.authority.authority, 'pure-transition');
+    assert.strictEqual(outcome.authority.reason, '');
+    assert.notStrictEqual(runtime.getGame(), game);
+    assert.strictEqual(runtime.getGame().currentPlayerIndex, 1);
+    assert.strictEqual(runtime.getGame().phase, runtime.GAME_PHASES.ROLL);
+});
+
+runTest('online replay Game Engine authorityはdetached採用失敗時にlegacy結果へfallbackする', () => {
+    const runtime = loadOnlineRuntime();
+    runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED = true;
+    runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED = true;
+    const game = new runtime.GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    runtime.setGame(game);
+    runtime.CARDS.forEach(card => { runtime.getShopStock()[card.name] = 6; });
+    vm.runInContext('_adoptOnlineGameEngineShadowSnapshot = () => false;', runtime);
+    assert.strictEqual(runtime.applyReplayedAction('nextTurn', {}), true);
+    const outcome = runtime.getOnlineGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.authority.authority, 'mutable');
+    assert.strictEqual(outcome.authority.reason, 'adoption-failed');
+    assert.strictEqual(runtime.getGame(), game);
+    assert.strictEqual(game.currentPlayerIndex, 1);
+});
+
+runTest('online replay Game Engine authorityは固定action列でlegacy snapshotと一致する', () => {
+    const legacy = loadOnlineRuntime();
+    const authoritative = loadOnlineRuntime();
+    authoritative.window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED = true;
+    authoritative.window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED = true;
+    [legacy, authoritative].forEach(runtime => {
+        runtime.setEnabledCards(new Set(runtime.CARDS.map(card => card.name)));
+        runtime.setEnabledLandmarks(new Set(runtime.Player.landmarkNames()));
+        runtime.initOnlineGame(['Alice', 'Bob'], null, [0, 1]);
+    });
+    const actions = [
+        { action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } },
+        { action: 'buildCard', data: { cardName: '麦畑' } },
+        { action: 'nextTurn', data: {} },
+        { action: 'rollDice', data: { forceDice: 2, tunaDice: [1, 1] } },
+        { action: 'buildCard', data: { cardName: 'パン屋' } },
+    ];
+    actions.forEach(entry => {
+        assert.strictEqual(legacy.applyReplayedAction(entry.action, entry.data), true, entry.action);
+        assert.strictEqual(authoritative.applyReplayedAction(entry.action, entry.data), true, entry.action);
+        const outcome = authoritative.getOnlineGameEngineShadowOutcome();
+        assert.strictEqual(outcome.report.status, 'matched', entry.action);
+        assert.strictEqual(outcome.authority.authority, 'pure-transition', entry.action);
+    });
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(authoritative.buildOnlineSnapshot())),
+        JSON.parse(JSON.stringify(legacy.buildOnlineSnapshot()))
+    );
 });
 
 runTest('applyAction skipReroll: REROLL_CONFIRMフェーズを抜ける', () => {

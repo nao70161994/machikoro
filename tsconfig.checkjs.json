@@ -39,6 +39,7 @@
     "js/onlineRetryPolicy.js",
     "js/gameEngine.js",
     "js/gameEngineAuthority.js",
+    "js/gameEngineClientShadow.js",
     "js/gameSchemaWire.js",
     "js/recreateRoomPayload.js",
     "js/gameSchemaRecreateWire.js",

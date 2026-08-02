@@ -2084,6 +2084,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/actionContract.js', 'js/GameManager.js');
     assertBefore('js/gameSnapshot.js', 'js/online.js');
     assertBefore('js/gameEngine.js', 'js/online.js');
+    assertBefore('js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js');
+    assertBefore('js/gameEngineClientShadow.js', 'js/online.js');
     assertBefore('js/gameSchemaNegotiation.js', 'js/online.js');
     assertBefore('js/gameSnapshot.js', 'js/gameSchemaCodec.js');
     assertBefore('js/gameSnapshot.js', 'js/localSaveRepository.js');
@@ -2152,6 +2154,12 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiEventDelegation.js', 'js/main.js');
     assertBefore('js/citySkyline.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
+});
+
+runTest('online Game Engine shadow/authority flagはproduction HTMLへ注入しない', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.strictEqual(html.includes('MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED'), false);
+    assert.strictEqual(html.includes('MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED'), false);
 });
 
 runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期している', () => {

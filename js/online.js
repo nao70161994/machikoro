@@ -187,6 +187,10 @@ let _lastOnlineRestoreQueueStateSelection = Object.freeze({
     fallbackReason: '',
 });
 let _lastOnlineRestoreQueueEffectSelection = null;
+let _lastOnlineGameEngineShadowOutcome = Object.freeze({
+    report: null,
+    authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
+});
 let _lastOnlineReconnectCleanupEffectSelection = Object.freeze({
     source: 'none',
     ready: false,
@@ -642,6 +646,20 @@ function isOnlineRestoreActivationPlanAuthorityEnabled() {
 function isOnlineRestoreActivationEffectAuthorityEnabled() {
     return typeof window !== 'undefined' &&
         window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_EFFECT_AUTHORITY_ENABLED === true;
+}
+
+function isOnlineGameEngineShadowEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED === true;
+}
+
+function isOnlineGameEngineAuthorityEnabled() {
+    return typeof window !== 'undefined' &&
+        window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED === true;
+}
+
+function getOnlineGameEngineShadowOutcome() {
+    return _lastOnlineGameEngineShadowOutcome;
 }
 
 function getOnlineRestoreQueuePlanSelection() {
@@ -1944,6 +1962,10 @@ function markOnlineGameFinished() {
 
 function resetOnlineState() {
     _onlineReconnectCompleted = false;
+    _lastOnlineGameEngineShadowOutcome = Object.freeze({
+        report: null,
+        authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
+    });
     finishOnlineLobbyRequest();
     const roomIdBeforeReset = myRoomId;
     cpuScheduleToken++;
@@ -3870,6 +3892,114 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     scheduleCPU();
 }
 
+function _hydrateOnlineGameEngineShadowSnapshot(snapshot) {
+    const playerCount = Array.isArray(snapshot && snapshot.players) ? snapshot.players.length : 0;
+    if (playerCount < 1) throw new Error('invalid online shadow snapshot');
+    const shadowGame = new GameManager(playerCount);
+    shadowGame.enabledLandmarks = new Set(
+        game && game.enabledLandmarks ? game.enabledLandmarks : Player.landmarkNames()
+    );
+    const shadowStock = {};
+    let shadowUndoState = null;
+    const hydrated = GameSnapshot.hydrateMutableGameState({
+        game: shadowGame,
+        shopStock: shadowStock,
+        state: snapshot,
+        createCardByName,
+        assignShopStockSnapshot,
+        normalizePlayerCoins: value => value,
+        readDormantIndices: value => value || [],
+        readLandmarks: value => value || {},
+        readLog: value => Array.isArray(value) ? value.slice() : [],
+        normalizeCurrentPlayerIndex: value => value || 0,
+        onUndoState: value => { shadowUndoState = value; },
+    });
+    if (!hydrated) throw new Error('online shadow hydrate failed');
+    const runtime = {
+        game: shadowGame,
+        shopStock: shadowStock,
+        undoState: shadowUndoState,
+        actionSeq: snapshot.actionSeq || 0,
+        createCardByName,
+        decrementShopStock,
+    };
+    runtime.restoreUndoState = state => {
+        const restored = GameSnapshot.hydrateUndoState({
+            game: runtime.game,
+            shopStock: runtime.shopStock,
+            state,
+            createCardByName,
+            assignShopStockSnapshot,
+            mergePlayerLandmarks: (current, saved) => Object.assign(
+                {},
+                Object.fromEntries(Player.landmarkNames().map(name => [name, false])),
+                current,
+                saved
+            ),
+        });
+        if (restored) runtime.undoState = null;
+        return restored;
+    };
+    return runtime;
+}
+
+function _serializeOnlineGameEngineShadowRuntime(runtime) {
+    return GameSnapshot.serializeGameState(runtime.game, runtime.shopStock, {
+        undoState: runtime.undoState,
+        actionSeq: runtime.actionSeq,
+        logLimit: ONLINE_SNAPSHOT_LOG_LIMIT,
+        pendingActionsFor: GameManager.serializedPendingActionsFor,
+    });
+}
+
+function _prepareOnlineGameEngineShadow(action, data) {
+    if (!isOnlineGameEngineShadowEnabled() ||
+            typeof GameEngineClientShadow === 'undefined') return null;
+    const snapshot = buildOnlineSnapshot();
+    return GameEngineClientShadow.prepare({
+        enabled: true,
+        action,
+        data,
+        snapshot,
+        transition(sourceSnapshot, shadowAction, shadowData) {
+            return GameEngine.transitionSnapshot({
+                snapshot: sourceSnapshot,
+                action: shadowAction,
+                data: shadowData,
+                hydrate: _hydrateOnlineGameEngineShadowSnapshot,
+                serialize(runtime) {
+                    if (shadowAction === 'undoBuild' || shadowAction === 'nextTurn') {
+                        runtime.undoState = null;
+                    }
+                    return _serializeOnlineGameEngineShadowRuntime(runtime);
+                },
+            });
+        },
+    });
+}
+
+function _adoptOnlineGameEngineShadowSnapshot(snapshot) {
+    const runtime = _hydrateOnlineGameEngineShadowSnapshot(snapshot);
+    const rebuilt = _serializeOnlineGameEngineShadowRuntime(runtime);
+    if (!GameEngineClientShadow.equalSnapshots(rebuilt, snapshot)) return false;
+    game = runtime.game;
+    assignShopStockSnapshot(SHOP_STOCK, runtime.shopStock);
+    undoState = runtime.undoState;
+    return true;
+}
+
+function _finishOnlineGameEngineShadow(prepared) {
+    if (!prepared) return null;
+    const outcome = GameEngineClientShadow.finish({
+        prepared,
+        liveSnapshot: buildOnlineSnapshot(),
+        authorityEnabled: isOnlineGameEngineAuthorityEnabled(),
+        adoptSnapshot: _adoptOnlineGameEngineShadowSnapshot,
+    });
+    _lastOnlineGameEngineShadowOutcome = outcome;
+    return outcome;
+}
+
 function applyAction(action, data) {
     return GameEngine.applyMutableAction({
         game,
@@ -3886,10 +4016,13 @@ function applyReplayedAction(action, data) {
     if (action === 'buildCard' || action === 'buildLandmark') {
         undoState = buildOnlineUndoSnapshot();
     }
-    applyAction(action, data);
+    const shadow = _prepareOnlineGameEngineShadow(action, data);
+    const applied = applyAction(action, data);
     if (action === 'undoBuild' || action === 'nextTurn') {
         undoState = null;
     }
+    _finishOnlineGameEngineShadow(shadow);
+    return applied;
 }
 
 function restoreOnlineSnapshot(state) {
