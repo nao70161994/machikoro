@@ -123,6 +123,7 @@
     "server/gameLifecycleGateway.js",
     "server/reportDelivery.js",
     "server/gameSettings.js",
+    "server/gameRuntimeLoader.js",
     "server/gameStartPayload.js",
     "server/hostlessRestoreCandidate.js",
     "server/hostlessRestoreRuntime.js",

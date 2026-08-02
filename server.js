@@ -3,8 +3,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
-const vm = require('vm');
 const crypto = require('crypto');
+const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
+const loadGameRuntime = makeGameRuntimeLoader({
+    baseDir: __dirname,
+    runtimeConsole: console,
+});
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const makeReportDelivery = require('./server/reportDelivery');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
@@ -1334,20 +1338,6 @@ const { buildGameStartPayload } = makeGameStartPayload({
     roomHostlessRestoreCapabilities,
 });
 
-// ===== Mirror replay =====
-function loadGameRuntime() {
-    const context = { console };
-    vm.createContext(context);
-    for (const file of ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/GameManager.js']) {
-        const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
-        vm.runInContext(source, context, { filename: file });
-    }
-    vm.runInContext(
-        'this.Card = Card; this.Player = Player; this.GameManager = GameManager; this.CARDS = CARDS; this.createCardByName = createCardByName; this.getInitialCardStock = getInitialCardStock; this.getShopStockCount = getShopStockCount; this.setShopStockCount = setShopStockCount; this.decrementShopStock = decrementShopStock; this.assignShopStockSnapshot = assignShopStockSnapshot; this.resolveCardStockName = resolveCardStockName; this.GAME_PHASES = GAME_PHASES; this.GAME_ACTIONS = GAME_ACTIONS; this.GAME_ACTION_REGISTRY = GAME_ACTION_REGISTRY; this.GAME_PHASE_ACTIONS = GAME_PHASE_ACTIONS; this.CARD_CATEGORIES = CARD_CATEGORIES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
-        context
-    );
-    return context;
-}
 
 // ===== Validation =====
 
