@@ -12,6 +12,10 @@ function makeRestoreAdmission({
     isValidGameStartPayload,
     hasInvalidOnlineRlModelSettings,
     normalizePlayerSettings,
+    getExpectedReconnectTokenHash,
+    hashReconnectToken,
+    isValidRestoreReconnectTokenHashes,
+    buildRestoredHumanPlayers,
 }) {
     const dependencies = {
         isPlainObject,
@@ -25,6 +29,10 @@ function makeRestoreAdmission({
         isValidGameStartPayload,
         hasInvalidOnlineRlModelSettings,
         normalizePlayerSettings,
+        getExpectedReconnectTokenHash,
+        hashReconnectToken,
+        isValidRestoreReconnectTokenHashes,
+        buildRestoredHumanPlayers,
     };
     for (const [name, dependency] of Object.entries(dependencies)) {
         if (typeof dependency !== 'function') throw new TypeError(`${name} must be a function`);
@@ -87,7 +95,45 @@ function makeRestoreAdmission({
         });
     }
 
-    return Object.freeze({ planRestoreAdmission, planRestoreGameStartAdmission });
+    function planRestoreIdentityAdmission(input) {
+        const {
+            gameStartPayload,
+            playerNames,
+            playerIndex,
+            playerName,
+            reconnectToken,
+            approvedHostless,
+            socketId,
+        } = input;
+        if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
+            return reject('復元データが不完全です');
+        }
+        const expectedReconnectTokenHash = getExpectedReconnectTokenHash(
+            { players: [], gameStartPayload },
+            playerIndex,
+            playerName
+        );
+        if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
+            return reject('INVALID_TOKEN');
+        }
+        if (!approvedHostless &&
+            (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex)) {
+            return reject('復元は元のホストのみ実行できます');
+        }
+        if (!isValidRestoreReconnectTokenHashes(gameStartPayload)) {
+            return reject('復元データが不完全です');
+        }
+        return Object.freeze({
+            ok: true,
+            restoredPlayers: buildRestoredHumanPlayers(gameStartPayload, playerIndex, socketId),
+        });
+    }
+
+    return Object.freeze({
+        planRestoreAdmission,
+        planRestoreGameStartAdmission,
+        planRestoreIdentityAdmission,
+    });
 }
 
 module.exports = makeRestoreAdmission;

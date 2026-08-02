@@ -895,7 +895,11 @@ io.on('connection', (socket) => {
     disconnectSocketHandler.registerSocket(socket);
 });
 
-const { planRestoreAdmission, planRestoreGameStartAdmission } = makeRestoreAdmission({
+const {
+    planRestoreAdmission,
+    planRestoreGameStartAdmission,
+    planRestoreIdentityAdmission,
+} = makeRestoreAdmission({
     isPlainObject,
     validateRestorePayloadLimits,
     isValidRoomId,
@@ -907,6 +911,10 @@ const { planRestoreAdmission, planRestoreGameStartAdmission } = makeRestoreAdmis
     isValidGameStartPayload,
     hasInvalidOnlineRlModelSettings,
     normalizePlayerSettings,
+    getExpectedReconnectTokenHash,
+    hashReconnectToken,
+    isValidRestoreReconnectTokenHashes,
+    buildRestoredHumanPlayers,
 });
 
 function handleRecreateRoom(socket, payload = {}, options = {}) {
@@ -996,24 +1004,20 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
     }
     const { playerNames } = gameStartAdmission;
     gameStartPayload.playerSettings = gameStartAdmission.playerSettings;
-    if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
-        emitAppError(socket, '復元データが不完全です');
+    const identityAdmission = planRestoreIdentityAdmission({
+        gameStartPayload,
+        playerNames,
+        playerIndex,
+        playerName,
+        reconnectToken,
+        approvedHostless,
+        socketId: socket.id,
+    });
+    if (identityAdmission.ok !== true) {
+        emitAppError(socket, identityAdmission.errorMessage);
         return;
     }
-    const expectedReconnectTokenHash = getExpectedReconnectTokenHash({ players: [], gameStartPayload }, playerIndex, playerName);
-    if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
-        emitAppError(socket, 'INVALID_TOKEN');
-        return;
-    }
-    if (!approvedHostless && (!Number.isInteger(gameStartPayload.hostPlayerIndex) || gameStartPayload.hostPlayerIndex !== playerIndex)) {
-        emitAppError(socket, '復元は元のホストのみ実行できます');
-        return;
-    }
-    if (!isValidRestoreReconnectTokenHashes(gameStartPayload)) {
-        emitAppError(socket, '復元データが不完全です');
-        return;
-    }
-    const restoredPlayers = buildRestoredHumanPlayers(gameStartPayload, playerIndex, socket.id);
+    const { restoredPlayers } = identityAdmission;
     const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !!restoreAuditSecret() && !canonicalRecord });
     if (!sanitizedActionLog) {
         emitAppError(socket, '復元データが壊れています');

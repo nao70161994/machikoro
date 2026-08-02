@@ -39,6 +39,10 @@ function makeHarness(overrides = {}) {
         isValidGameStartPayload: () => { calls.push('game-start'); return true; },
         hasInvalidOnlineRlModelSettings: () => { calls.push('rl'); return false; },
         normalizePlayerSettings: settings => { calls.push('normalize'); return settings; },
+        getExpectedReconnectTokenHash: () => { calls.push('expected-token'); return 'expected-hash'; },
+        hashReconnectToken: () => { calls.push('hash-token'); return 'expected-hash'; },
+        isValidRestoreReconnectTokenHashes: () => { calls.push('token-hashes'); return true; },
+        buildRestoredHumanPlayers: () => { calls.push('players'); return [{ index: 0 }]; },
         ...overrides,
     };
     const admission = makeRestoreAdmission(dependencies);
@@ -47,12 +51,14 @@ function makeHarness(overrides = {}) {
         payload,
         plan: admission.planRestoreAdmission,
         planGameStart: admission.planRestoreGameStartAdmission,
+        planIdentity: admission.planRestoreIdentityAdmission,
     };
 }
 
 runTest('restore admissionは依存を副作用前に検証する', () => {
     assert.throws(() => makeRestoreAdmission({}), /isPlainObject must be a function/);
     assert.throws(() => makeHarness({ normalizePlayerSettings: null }), /normalizePlayerSettings must be a function/);
+    assert.throws(() => makeHarness({ buildRestoredHumanPlayers: null }), /buildRestoredHumanPlayers must be a function/);
 });
 
 runTest('restore admissionは入口拒否の順序と既存messageを固定する', () => {
@@ -202,4 +208,101 @@ runTest('restore game-start admissionは検証後の設定と元playerNames参�
     assert.strictEqual(result.playerNames, harness.payload.gameStartPayload.playerNames);
     assert.strictEqual(result.playerSettings, normalized);
     assert.strictEqual(harness.payload.gameStartPayload.playerSettings.length, 1);
+});
+
+function identityInput(harness, overrides = {}) {
+    const gameStartPayload = {
+        ...harness.payload.gameStartPayload,
+        playerNames: ['Alice', 'Bob'],
+        hostPlayerIndex: 0,
+        reconnectTokenHashes: ['expected-hash', 'bob-hash'],
+    };
+    return {
+        gameStartPayload,
+        playerNames: gameStartPayload.playerNames,
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        approvedHostless: false,
+        socketId: 'socket-1',
+        ...overrides,
+    };
+}
+
+runTest('restore identity admissionはplayer indexをtoken処理前に拒否する', () => {
+    const harness = makeHarness();
+    assert.deepStrictEqual(harness.planIdentity(identityInput(harness, { playerIndex: -1 })), {
+        ok: false,
+        errorMessage: '復元データが不完全です',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, []);
+});
+
+runTest('restore identity admissionはexpected tokenなしでhash計算を呼ばない', () => {
+    const harness = makeHarness({
+        getExpectedReconnectTokenHash: () => { harness.calls.push('expected-token'); return ''; },
+    });
+    assert.deepStrictEqual(harness.planIdentity(identityInput(harness)), {
+        ok: false,
+        errorMessage: 'INVALID_TOKEN',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, ['expected-token']);
+});
+
+runTest('restore identity admissionはtoken後に通常復元の元host制約を適用する', () => {
+    const harness = makeHarness();
+    const input = identityInput(harness);
+    input.gameStartPayload.hostPlayerIndex = 1;
+    assert.deepStrictEqual(harness.planIdentity(input), {
+        ok: false,
+        errorMessage: '復元は元のホストのみ実行できます',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, ['expected-token', 'hash-token']);
+});
+
+runTest('restore identity admissionはhostlessだけ元host制約を省略する', () => {
+    const harness = makeHarness();
+    const input = identityInput(harness, { approvedHostless: true });
+    input.gameStartPayload.hostPlayerIndex = 1;
+    const result = harness.planIdentity(input);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(harness.calls, ['expected-token', 'hash-token', 'token-hashes', 'players']);
+});
+
+runTest('restore identity admissionはtoken hash集合検証後だけplayerを生成する', () => {
+    const invalid = makeHarness({
+        isValidRestoreReconnectTokenHashes: () => { invalid.calls.push('token-hashes'); return false; },
+    });
+    assert.deepStrictEqual(invalid.planIdentity(identityInput(invalid)), {
+        ok: false,
+        errorMessage: '復元データが不完全です',
+        result: undefined,
+    });
+    assert.deepStrictEqual(invalid.calls, ['expected-token', 'hash-token', 'token-hashes']);
+
+    const restoredPlayers = [{ id: 'socket-1', index: 0 }];
+    const valid = makeHarness({
+        getExpectedReconnectTokenHash: (room, playerIndex, playerName) => {
+            valid.calls.push('expected-token');
+            assert.deepStrictEqual(room.players, []);
+            assert.strictEqual(room.gameStartPayload, input.gameStartPayload);
+            assert.strictEqual(playerIndex, 0);
+            assert.strictEqual(playerName, 'Alice');
+            return 'expected-hash';
+        },
+        buildRestoredHumanPlayers: (payload, playerIndex, socketId) => {
+            valid.calls.push('players');
+            assert.strictEqual(payload, input.gameStartPayload);
+            assert.strictEqual(playerIndex, 0);
+            assert.strictEqual(socketId, 'socket-1');
+            return restoredPlayers;
+        },
+    });
+    const input = identityInput(valid);
+    const result = valid.planIdentity(input);
+    assert.deepStrictEqual(valid.calls, ['expected-token', 'hash-token', 'token-hashes', 'players']);
+    assert.strictEqual(result.restoredPlayers, restoredPlayers);
 });
