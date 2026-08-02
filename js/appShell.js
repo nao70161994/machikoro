@@ -986,8 +986,7 @@ function gameLifecycleNotifyState() {
 }
 
 function createGameLifecycleSessionId() {
-    const random = Math.random().toString(36).slice(2, 10);
-    return Date.now().toString(36) + '-' + random;
+    return LifecycleNotify.createSessionId(Date.now(), Math.random());
 }
 
 function gameLifecycleCpuCount() {

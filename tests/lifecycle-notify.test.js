@@ -62,6 +62,15 @@ runTest('lifecycle notify は開始署名と保存markerの既存形式を固定
     );
 });
 
+runTest('lifecycle session IDは注入時刻と乱数から決定論的に生成する', () => {
+    const now = 1700000000000;
+    const randomValue = 0.123456789;
+    assert.strictEqual(
+        LifecycleNotify.createSessionId(now, randomValue),
+        now.toString(36) + '-' + randomValue.toString(36).slice(2, 10)
+    );
+});
+
 runTest('lifecycle notify は開始通知のstrict抑止境界と壊れたmarkerを固定する', () => {
     const raw = LifecycleNotify.serializeStartMarker('local|2|1', 1000);
     assert.strictEqual(LifecycleNotify.isRecentStart(raw, 'local|2|1', 1099, 100), true);
