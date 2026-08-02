@@ -68,6 +68,7 @@ const {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    makeNextRoomActionSeq,
 } = require('./server/actionAcceptance');
 const makeRejoinPayload = require('./server/rejoinPayload');
 const makeRestoreAuditPayload = require('./server/restoreAuditPayload');
@@ -290,6 +291,7 @@ const {
     isIncomingRestoreNewer,
     canReplaceRestoredRoom,
 } = require('./server/restoreRank');
+const nextRoomActionSeq = makeNextRoomActionSeq(restorePayloadRank);
 const {
     stableStateHash,
     canonicalMirrorStateHash,
@@ -879,16 +881,6 @@ function roomHostChangedPayload(room) {
 function emitRoomHostChanged(roomId, room, ioInstance = io) {
     ioInstance.to(roomId).emit('hostChanged', roomHostChangedPayload(room));
 }
-
-function nextRoomActionSeq(room) {
-    const current = Number.isInteger(room.actionSeq) ? room.actionSeq : restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq;
-    room.actionSeq = current + 1;
-    if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
-        room.gameStartPayload.actionSeq = room.actionSeq;
-    }
-    return room.actionSeq;
-}
-
 
 function detachSocketFromRoom(socketId, roomId, message = 'INVALID_SESSION') {
     if (!socketId) return;

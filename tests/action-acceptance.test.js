@@ -5,6 +5,7 @@ const {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    makeNextRoomActionSeq,
 } = require('../server/actionAcceptance');
 const { runTest } = require('./helpers/test-utils');
 
@@ -41,4 +42,26 @@ runTest('action acceptance は新しい100件だけを保持して最小ACK参�
     assert.strictEqual(findAcceptedClientAction(room, 'id-1', 0), null);
     assert.deepStrictEqual(acceptedClientActionRefs(room)[0], { playerIndex: 0, clientActionId: 'id-2', seq: 2 });
     assert.ok(acceptedClientActionRefs(room).every(ref => !Object.hasOwn(ref, 'action')));
+});
+
+runTest('action acceptance はroom sequenceをrestore rank fallbackから進めpayloadへ同期する', () => {
+    const calls = [];
+    const nextRoomActionSeq = makeNextRoomActionSeq((gameStartPayload, stateSnapshot, actionLog) => {
+        calls.push([gameStartPayload, stateSnapshot, actionLog]);
+        return { actionSeq: 7 };
+    });
+    const room = { gameStartPayload: { actionSeq: 2 }, stateSnapshot: { actionSeq: 5 }, actionLog: [{ seq: 6 }] };
+
+    assert.strictEqual(nextRoomActionSeq(room), 8);
+    assert.strictEqual(room.actionSeq, 8);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 8);
+    assert.deepStrictEqual(calls, [[room.gameStartPayload, room.stateSnapshot, room.actionLog]]);
+    room.actionSeq = 10;
+    assert.strictEqual(nextRoomActionSeq(room), 11);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 11);
+    assert.strictEqual(calls.length, 1);
+});
+
+runTest('action acceptance sequence factoryは不正なrank依存を副作用前に拒否する', () => {
+    assert.throws(() => makeNextRoomActionSeq(null), /resolveRestoreRank must be a function/);
 });

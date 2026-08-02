@@ -41,10 +41,27 @@ function acceptedClientActionRefs(room) {
         });
 }
 
+function makeNextRoomActionSeq(resolveRestoreRank) {
+    if (typeof resolveRestoreRank !== 'function') {
+        throw new TypeError('resolveRestoreRank must be a function');
+    }
+    return function nextRoomActionSeq(room) {
+        const current = Number.isInteger(room.actionSeq)
+            ? room.actionSeq
+            : resolveRestoreRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq;
+        room.actionSeq = current + 1;
+        if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
+            room.gameStartPayload.actionSeq = room.actionSeq;
+        }
+        return room.actionSeq;
+    };
+}
+
 module.exports = {
     MAX_ACCEPTED_CLIENT_ACTIONS,
     acceptedClientActionKey,
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    makeNextRoomActionSeq,
 };
