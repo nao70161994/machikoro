@@ -211,6 +211,7 @@ const {
     buildRestoredMirrorStatePlan,
     planRestoredRoomCompletion,
     planRestoredRoomMetadata,
+    applyRestoredRoomMetadata,
     planRestoredRoomActivation,
     executeRestoredRoomActivation,
     activationEffectAuthorityEnabled: restoredRoomActivationEffectAuthorityEnabled,
@@ -1047,13 +1048,10 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD],
         hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
     });
-    gameStartPayload.hostPlayerIndex = restoredMetadata.hostPlayerIndex;
-    gameStartPayload.hostEpoch = restoredMetadata.hostEpoch;
-    gameStartPayload.actionSeq = restoredMetadata.actionSeq;
-    if (restoredMetadata.applyHostlessMetadata) {
-        gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD] = restoredMetadata.hostlessRestoreGeneration;
-        gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD] = restoredMetadata.hostlessRestoreCount;
-    }
+    applyRestoredRoomMetadata(gameStartPayload, restoredMetadata, {
+        hostlessRestoreGenerationField: HOSTLESS_RESTORE_GENERATION_FIELD,
+        hostlessRestoreCountField: HOSTLESS_RESTORE_COUNT_FIELD,
+    });
     const restoredRoom = buildRestoredRoom({
         roomId,
         restoredPlayers,

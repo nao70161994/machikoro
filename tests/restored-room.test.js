@@ -324,6 +324,76 @@ runTest('restored room metadata planはhostless復元だけepochと世代を一�
     });
 });
 
+runTest('restored room metadata適用は通常復元の代入順とpayload同一性を維持する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const writes = [];
+    const target = new Proxy({ generation: 7, count: 8 }, {
+        set(payload, property, value) {
+            writes.push([property, value]);
+            payload[property] = value;
+            return true;
+        },
+    });
+    const result = builder.applyRestoredRoomMetadata(target, {
+        hostPlayerIndex: 1,
+        hostEpoch: 4,
+        actionSeq: 9,
+        applyHostlessMetadata: false,
+        hostlessRestoreGeneration: 3,
+        hostlessRestoreCount: 4,
+    }, {
+        hostlessRestoreGenerationField: 'generation',
+        hostlessRestoreCountField: 'count',
+    });
+
+    assert.strictEqual(result, target);
+    assert.deepStrictEqual(writes, [
+        ['hostPlayerIndex', 1],
+        ['hostEpoch', 4],
+        ['actionSeq', 9],
+    ]);
+    assert.strictEqual(target.generation, 7);
+    assert.strictEqual(target.count, 8);
+});
+
+runTest('restored room metadata適用はhostless項目を既存順で追記する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const writes = [];
+    const target = new Proxy({}, {
+        set(payload, property, value) {
+            writes.push([property, value]);
+            payload[property] = value;
+            return true;
+        },
+    });
+    const result = builder.applyRestoredRoomMetadata(target, {
+        hostPlayerIndex: 2,
+        hostEpoch: 6,
+        actionSeq: 10,
+        applyHostlessMetadata: true,
+        hostlessRestoreGeneration: 4,
+        hostlessRestoreCount: 5,
+    }, {
+        hostlessRestoreGenerationField: 'generation',
+        hostlessRestoreCountField: 'count',
+    });
+
+    assert.strictEqual(result, target);
+    assert.deepStrictEqual(writes, [
+        ['hostPlayerIndex', 2],
+        ['hostEpoch', 6],
+        ['actionSeq', 10],
+        ['generation', 4],
+        ['count', 5],
+    ]);
+});
+
 runTest('restored room builderは検証済み入力を既存room shapeへ写像する', () => {
     const sanitizeCalls = [];
     const builder = makeRestoredRoom({
