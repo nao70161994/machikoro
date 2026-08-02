@@ -27,6 +27,27 @@ module.exports = function makeReconnectIdentity(options = {}) {
         return reconnectTokenHashes[playerIndex] || '';
     }
 
+    function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socketId) {
+        const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
+        if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) return null;
+
+        let player = room.players.find(candidate => candidate.index === playerIndex && candidate.name === playerName);
+        if (!player) {
+            player = {
+                id: socketId,
+                index: playerIndex,
+                name: playerName,
+                reconnectToken: '',
+                reconnectTokenHash: expectedReconnectTokenHash,
+            };
+            room.players.push(player);
+        } else if (!player.reconnectTokenHash) {
+            player.reconnectTokenHash = expectedReconnectTokenHash;
+        }
+        player.id = socketId;
+        return player;
+    }
+
     function isReconnectTokenHashString(value) {
         return typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value);
     }
@@ -56,6 +77,7 @@ module.exports = function makeReconnectIdentity(options = {}) {
         generateReconnectToken,
         hashReconnectToken,
         getExpectedReconnectTokenHash,
+        resolveRejoinPlayer,
         isReconnectTokenHashString,
         isValidRestoreReconnectTokenHashes,
     });

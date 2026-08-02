@@ -75,6 +75,7 @@ const {
     generateReconnectToken,
     hashReconnectToken,
     getExpectedReconnectTokenHash,
+    resolveRejoinPlayer,
     isValidRestoreReconnectTokenHashes,
 } = require('./server/reconnectIdentity')({ crypto });
 const {
@@ -889,27 +890,6 @@ function nextRoomActionSeq(room) {
 }
 
 
-function resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socketId) {
-    const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
-    if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) return null;
-
-    let player = room.players.find(p => p.index === playerIndex && p.name === playerName);
-    if (!player) {
-        player = {
-            id: socketId,
-            index: playerIndex,
-            name: playerName,
-            reconnectToken: '',
-            reconnectTokenHash: expectedReconnectTokenHash,
-        };
-        room.players.push(player);
-    } else if (!player.reconnectTokenHash) {
-        player.reconnectTokenHash = expectedReconnectTokenHash;
-    }
-    player.id = socketId;
-    return player;
-}
-
 function detachSocketFromRoom(socketId, roomId, message = 'INVALID_SESSION') {
     if (!socketId) return;
     const oldSocket = io.sockets.sockets.get(socketId);
@@ -1512,7 +1492,6 @@ module.exports = {
     buildGameStartPayload,
     markRoomGameStarted,
     buildPlayerList,
-    resolveRejoinPlayer,
     removeWaitingRoomSocket,
     handleStartedRoomSocketDisconnect,
     handleSocketDisconnect,

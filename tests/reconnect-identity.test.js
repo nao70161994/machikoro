@@ -50,3 +50,41 @@ runTest('reconnect identity はhumanにhashを必須化しCPUだけ空hashを許
     assert.strictEqual(identity.isValidRestoreReconnectTokenHashes({ ...payload, reconnectTokenHashes: [validHash, 'bad'] }), false);
     assert.strictEqual(identity.isValidRestoreReconnectTokenHashes({ ...payload, reconnectTokenHashes: [validHash] }), false);
 });
+
+runTest('reconnect identity は一致tokenで既存playerを再接続しlegacy hashを補完する', () => {
+    const identity = makeReconnectIdentity({ crypto });
+    const legacyToken = 'legacy-token';
+    const room = {
+        players: [{ index: 0, name: 'Alice', reconnectToken: legacyToken }],
+        gameStartPayload: { playerNames: ['Alice'], reconnectTokenHashes: [''] },
+    };
+
+    const player = identity.resolveRejoinPlayer(room, 0, 'Alice', legacyToken, 'new-socket');
+    assert.strictEqual(player, room.players[0]);
+    assert.strictEqual(player.id, 'new-socket');
+    assert.strictEqual(player.reconnectTokenHash, identity.hashReconnectToken(legacyToken));
+});
+
+runTest('reconnect identity は復元playerを追加しtoken不一致ではroomを変更しない', () => {
+    const identity = makeReconnectIdentity({ crypto });
+    const token = 'restored-token';
+    const room = {
+        players: [],
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            reconnectTokenHashes: [identity.hashReconnectToken('alice-token'), identity.hashReconnectToken(token)],
+        },
+    };
+
+    assert.strictEqual(identity.resolveRejoinPlayer(room, 1, 'Bob', 'wrong', 'socket-b'), null);
+    assert.deepStrictEqual(room.players, []);
+    const restored = identity.resolveRejoinPlayer(room, 1, 'Bob', token, 'socket-b');
+    assert.deepStrictEqual(restored, {
+        id: 'socket-b',
+        index: 1,
+        name: 'Bob',
+        reconnectToken: '',
+        reconnectTokenHash: identity.hashReconnectToken(token),
+    });
+    assert.strictEqual(room.players.length, 1);
+});
