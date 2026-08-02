@@ -45,6 +45,7 @@ const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
 const { selectRestoreSource, decideExistingRoomRestore } = require('./server/restoreGateway');
 const makeRestoreAdmission = require('./server/restoreAdmission');
+const makeRestoreReplayAdmission = require('./server/restoreReplayAdmission');
 const makeRestoredRoom = require('./server/restoredRoom');
 const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
@@ -917,6 +918,12 @@ const {
     buildRestoredHumanPlayers,
 });
 
+const { planRestoreReplayAdmission } = makeRestoreReplayAdmission({
+    sanitizeRestoreActionLog,
+    restoreAuditSecret,
+    restorePayloadRank,
+});
+
 function handleRecreateRoom(socket, payload = {}, options = {}) {
     const admission = planRestoreAdmission(payload, options);
     if (admission.ok !== true) {
@@ -1018,25 +1025,20 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         return;
     }
     const { restoredPlayers } = identityAdmission;
-    const sanitizedActionLog = sanitizeRestoreActionLog(actionLog, roomId, replayStateSnapshot, { requireSignedActionAudit: !!restoreAuditSecret() && !canonicalRecord });
-    if (!sanitizedActionLog) {
-        emitAppError(socket, '復元データが壊れています');
+    const replayAdmission = planRestoreReplayAdmission({
+        actionLog,
+        roomId,
+        replayStateSnapshot,
+        canonicalRecord,
+        clientSnapshotTrusted,
+        stateSnapshot,
+        gameStartPayload,
+    });
+    if (replayAdmission.ok !== true) {
+        emitAppError(socket, replayAdmission.errorMessage);
         return;
     }
-    if (!canonicalRecord && !clientSnapshotTrusted && sanitizedActionLog.length === 0) {
-        emitAppError(socket, '復元データが壊れています');
-        return;
-    }
-    if (!canonicalRecord && !stateSnapshot && sanitizedActionLog.length === 0) {
-        emitAppError(socket, '復元データが壊れています');
-        return;
-    }
-    const restoredRank = canonicalRecord
-        ? {
-            hostEpoch: Number.isInteger(canonicalRecord.hostEpoch) ? canonicalRecord.hostEpoch : 0,
-            actionSeq: Number.isInteger(canonicalRecord.actionSeq) ? canonicalRecord.actionSeq : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog).actionSeq,
-        }
-        : restorePayloadRank(gameStartPayload, replayStateSnapshot, sanitizedActionLog);
+    const { sanitizedActionLog, restoredRank } = replayAdmission;
     const restoredMetadata = planRestoredRoomMetadata({
         playerIndex,
         hostEpoch: restoredRank.hostEpoch,
