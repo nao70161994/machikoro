@@ -33,24 +33,31 @@ function getClientVersion() {
     return (typeof window !== "undefined" && window.MACHIKORO_CLIENT_VERSION) || "unknown";
 }
 
+function onlineRuntimeFlagRoot() {
+    return typeof window !== 'undefined' ? window : null;
+}
+
+function isOnlineRuntimeFlagEnabled(name) {
+    return OnlineRuntimeFlags.isEnabled(name, onlineRuntimeFlagRoot());
+}
+
 function isGameSchemaNegotiationTransportEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isGameSchemaNegotiationTransportEnabled');
 }
 
 function isGameSchemaWireTransportEnabled() {
-    return isGameSchemaNegotiationTransportEnabled() && typeof window !== 'undefined' &&
-        window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED === true;
+    return isGameSchemaNegotiationTransportEnabled() &&
+        isOnlineRuntimeFlagEnabled('isGameSchemaWireTransportEnabled');
 }
 
 function isGameSchemaSnapshotWireTransportEnabled() {
-    return isGameSchemaNegotiationTransportEnabled() && typeof window !== 'undefined' &&
-        window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED === true;
+    return isGameSchemaNegotiationTransportEnabled() &&
+        isOnlineRuntimeFlagEnabled('isGameSchemaSnapshotWireTransportEnabled');
 }
 
 function isGameSchemaRecreateWireTransportEnabled() {
-    return isGameSchemaNegotiationTransportEnabled() && typeof window !== 'undefined' &&
-        window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED === true;
+    return isGameSchemaNegotiationTransportEnabled() &&
+        isOnlineRuntimeFlagEnabled('isGameSchemaRecreateWireTransportEnabled');
 }
 
 function getGameSchemaCapabilitiesForTransport() {
@@ -414,248 +421,199 @@ function _observeOnlineReconnectEvent(event) {
 }
 
 function isOnlineReconnectEventAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectEventAuthorityEnabled');
 }
 
 function isOnlineReconnectEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectEffectAuthorityEnabled');
 }
 
 function isOnlineReconnectStatusEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_STATUS_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectStatusEffectAuthorityEnabled');
 }
 
 function isOnlineReconnectTimerAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_TIMER_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectTimerAuthorityEnabled');
 }
 
 function isOnlineReconnectCallbackAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_CALLBACK_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectCallbackAuthorityEnabled');
 }
 
 function isOnlineReconnectQueuePlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_QUEUE_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectQueuePlanAuthorityEnabled');
 }
 
 function isOnlineReconnectQueueEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_QUEUE_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectQueueEffectAuthorityEnabled');
 }
 
 function isOnlineRestoreQueueStateAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_QUEUE_STATE_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreQueueStateAuthorityEnabled');
 }
 
 function isOnlineRestoreQueueStoreReadAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_READ_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreQueueStoreReadAuthorityEnabled');
 }
 
 function isOnlineRestoreQueueStoreWriteAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_QUEUE_STORE_WRITE_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreQueueStoreWriteAuthorityEnabled');
 }
 
 function isOnlineReconnectCleanupAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectCleanupAuthorityEnabled');
 }
 
 function isOnlineReconnectCleanupEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_CLEANUP_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectCleanupEffectAuthorityEnabled');
 }
 
 function isOnlineReconnectRequestPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectRequestPlanAuthorityEnabled');
 }
 
 function isOnlineReconnectRequestEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RECONNECT_REQUEST_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineReconnectRequestEffectAuthorityEnabled');
 }
 
 function isOnlineRestoreAbortPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_ABORT_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreAbortPlanAuthorityEnabled');
 }
 
 function isOnlineRestoreAbortEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_ABORT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreAbortEffectAuthorityEnabled');
 }
 
 function isOnlineActionTimeoutPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_TIMEOUT_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineActionTimeoutPlanAuthorityEnabled');
 }
 
 function isOnlineActionTimeoutEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_TIMEOUT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineActionTimeoutEffectAuthorityEnabled');
 }
 
 function isIncomingGameActionPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ACTION_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isIncomingGameActionPlanAuthorityEnabled');
 }
 
 function isAcceptedGameActionPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionPlanAuthorityEnabled');
 }
 
 function isIncomingGameActionDecodeEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ACTION_DECODE_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isIncomingGameActionDecodeEffectAuthorityEnabled');
 }
 
 function isAcceptedGameActionDecodeEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_DECODE_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionDecodeEffectAuthorityEnabled');
 }
 
 function isIncomingGameActionApplyEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ACTION_APPLY_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isIncomingGameActionApplyEffectAuthorityEnabled');
 }
 
 function isAcceptedGameActionApplyEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_APPLY_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionApplyEffectAuthorityEnabled');
 }
 
 function isIncomingGameActionGapEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ACTION_GAP_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isIncomingGameActionGapEffectAuthorityEnabled');
 }
 
 function isAcceptedGameActionGapEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_GAP_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionGapEffectAuthorityEnabled');
 }
 
 function isIncomingGameActionNoGameEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ACTION_NO_GAME_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isIncomingGameActionNoGameEffectAuthorityEnabled');
 }
 
 function isAcceptedGameActionNoGameEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_NO_GAME_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionNoGameEffectAuthorityEnabled');
 }
 
 function isIncomingGameActionCommitEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ACTION_COMMIT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isIncomingGameActionCommitEffectAuthorityEnabled');
 }
 
 function isAcceptedGameActionCommitEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_ACTION_ACCEPTED_COMMIT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionCommitEffectAuthorityEnabled');
 }
 
 function isOnlineSocketConnectPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_SOCKET_CONNECT_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineSocketConnectPlanAuthorityEnabled');
 }
 
 function isOnlineSocketConnectEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineSocketConnectEffectAuthorityEnabled');
 }
 
 function isOnlineSocketDisconnectPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineSocketDisconnectPlanAuthorityEnabled');
 }
 
 function isOnlineSocketDisconnectEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineSocketDisconnectEffectAuthorityEnabled');
 }
 
 function isOnlineHostChangedPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_HOST_CHANGED_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineHostChangedPlanAuthorityEnabled');
 }
 
 function isOnlineHostChangedEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_HOST_CHANGED_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineHostChangedEffectAuthorityEnabled');
 }
 
 function isPendingReconciliationPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_PENDING_RECONCILIATION_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isPendingReconciliationPlanAuthorityEnabled');
 }
 
 function isRejoinActionLogPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_REJOIN_ACTION_LOG_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isRejoinActionLogPlanAuthorityEnabled');
 }
 
 function isLocalHostRestoreOfferPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_LOCAL_HOST_RESTORE_OFFER_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isLocalHostRestoreOfferPlanAuthorityEnabled');
 }
 
 function isOnlineRejoinPersistencePlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRejoinPersistencePlanAuthorityEnabled');
 }
 
 function isOnlineRejoinPersistenceEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_REJOIN_PERSISTENCE_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRejoinPersistenceEffectAuthorityEnabled');
 }
 
 function isOnlinePendingResendPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_PENDING_RESEND_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlinePendingResendPlanAuthorityEnabled');
 }
 
 function isOnlinePendingResendEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_PENDING_RESEND_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlinePendingResendEffectAuthorityEnabled');
 }
 
 function isOnlineRestoreReplayPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_REPLAY_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreReplayPlanAuthorityEnabled');
 }
 
 function isOnlineRestoreReplayEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_REPLAY_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreReplayEffectAuthorityEnabled');
 }
 
 function isOnlineRestoreActivationPlanAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_PLAN_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreActivationPlanAuthorityEnabled');
 }
 
 function isOnlineRestoreActivationEffectAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_RESTORE_ACTIVATION_EFFECT_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineRestoreActivationEffectAuthorityEnabled');
 }
 
 function isOnlineGameEngineShadowEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineGameEngineShadowEnabled');
 }
 
 function isOnlineGameEngineAuthorityEnabled() {
-    return typeof window !== 'undefined' &&
-        window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED === true;
+    return isOnlineRuntimeFlagEnabled('isOnlineGameEngineAuthorityEnabled');
 }
 
 function getOnlineGameEngineShadowOutcome() {

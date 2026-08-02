@@ -36,6 +36,7 @@
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",
     "js/onlineReconnectState.js",
+    "js/onlineRuntimeFlags.js",
     "js/onlineRetryPolicy.js",
     "js/gameEngine.js",
     "js/gameEngineDeterminism.js",
