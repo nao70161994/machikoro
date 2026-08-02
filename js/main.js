@@ -381,6 +381,7 @@ function cpuDo(action, data, fallback) {
         sendAction(proposal.action, proposal.data);
         return;
     }
+    const shadow = _prepareLocalGameEngineShadow(proposal.action, proposal.data);
     if (typeof GameEngine !== 'undefined' &&
             typeof GameEngine.applyMutableAction === 'function') {
         GameEngine.applyMutableAction({
@@ -391,6 +392,7 @@ function cpuDo(action, data, fallback) {
     } else {
         fallback();
     }
+    _finishLocalGameEngineShadow(shadow);
     render();
     scheduleCPU();
 }

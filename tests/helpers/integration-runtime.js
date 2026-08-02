@@ -356,6 +356,17 @@ function loadIntegrationRuntime(options = {}) {
             delete context.__tmpLocalEngineData;
             return result;
         },
+        runLocalCpuEngineAction(action, data) {
+            context.__tmpLocalCpuAction = action;
+            context.__tmpLocalCpuData = data;
+            const result = vm.runInContext(
+                'cpuDo(__tmpLocalCpuAction, __tmpLocalCpuData, () => false)',
+                context
+            );
+            delete context.__tmpLocalCpuAction;
+            delete context.__tmpLocalCpuData;
+            return result;
+        },
         setGame(value) { context.__tmpGame = value; vm.runInContext('game = __tmpGame', context); delete context.__tmpGame; },
         getCpuPlayers() { return vm.runInContext('cpuPlayers', context); },
         setCpuPlayers(value) { context.__tmpCpuPlayers = value; vm.runInContext('cpuPlayers = __tmpCpuPlayers', context); delete context.__tmpCpuPlayers; },
