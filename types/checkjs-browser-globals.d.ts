@@ -41,6 +41,7 @@ interface Window {
     GameEngine: unknown;
     GameEngineAuthority: unknown;
     GameEngineClientShadow: unknown;
+    GameEngineRuntimeAdapter: unknown;
     GameSchemaWire: unknown;
     RecreateRoomPayload: unknown;
     GameSchemaRecreateWire: unknown;

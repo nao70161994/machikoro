@@ -3892,64 +3892,27 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     scheduleCPU();
 }
 
-function _hydrateOnlineGameEngineShadowSnapshot(snapshot) {
-    const playerCount = Array.isArray(snapshot && snapshot.players) ? snapshot.players.length : 0;
-    if (playerCount < 1) throw new Error('invalid online shadow snapshot');
-    const shadowGame = new GameManager(playerCount);
-    shadowGame.enabledLandmarks = new Set(
-        game && game.enabledLandmarks ? game.enabledLandmarks : Player.landmarkNames()
-    );
-    const shadowStock = {};
-    let shadowUndoState = null;
-    const hydrated = GameSnapshot.hydrateMutableGameState({
-        game: shadowGame,
-        shopStock: shadowStock,
-        state: snapshot,
+function _createOnlineGameEngineRuntimeAdapter() {
+    return GameEngineRuntimeAdapter.create({
+        createGame: playerCount => new GameManager(playerCount),
+        enabledLandmarks: game && game.enabledLandmarks
+            ? game.enabledLandmarks
+            : Player.landmarkNames(),
+        landmarkNames: Player.landmarkNames,
         createCardByName,
         assignShopStockSnapshot,
-        normalizePlayerCoins: value => value,
-        readDormantIndices: value => value || [],
-        readLandmarks: value => value || {},
-        readLog: value => Array.isArray(value) ? value.slice() : [],
-        normalizeCurrentPlayerIndex: value => value || 0,
-        onUndoState: value => { shadowUndoState = value; },
-    });
-    if (!hydrated) throw new Error('online shadow hydrate failed');
-    const runtime = {
-        game: shadowGame,
-        shopStock: shadowStock,
-        undoState: shadowUndoState,
-        actionSeq: snapshot.actionSeq || 0,
-        createCardByName,
         decrementShopStock,
-    };
-    runtime.restoreUndoState = state => {
-        const restored = GameSnapshot.hydrateUndoState({
-            game: runtime.game,
-            shopStock: runtime.shopStock,
-            state,
-            createCardByName,
-            assignShopStockSnapshot,
-            mergePlayerLandmarks: (current, saved) => Object.assign(
-                {},
-                Object.fromEntries(Player.landmarkNames().map(name => [name, false])),
-                current,
-                saved
-            ),
-        });
-        if (restored) runtime.undoState = null;
-        return restored;
-    };
-    return runtime;
+        pendingActionsFor: GameManager.serializedPendingActionsFor,
+        logLimit: ONLINE_SNAPSHOT_LOG_LIMIT,
+    });
+}
+
+function _hydrateOnlineGameEngineShadowSnapshot(snapshot) {
+    return _createOnlineGameEngineRuntimeAdapter().hydrate(snapshot);
 }
 
 function _serializeOnlineGameEngineShadowRuntime(runtime) {
-    return GameSnapshot.serializeGameState(runtime.game, runtime.shopStock, {
-        undoState: runtime.undoState,
-        actionSeq: runtime.actionSeq,
-        logLimit: ONLINE_SNAPSHOT_LOG_LIMIT,
-        pendingActionsFor: GameManager.serializedPendingActionsFor,
-    });
+    return _createOnlineGameEngineRuntimeAdapter().serialize(runtime);
 }
 
 function _prepareOnlineGameEngineShadow(action, data) {
