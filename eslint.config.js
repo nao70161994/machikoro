@@ -117,6 +117,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/ntfyNotifier.js',
     'server/reconnectIdentity.js',
     'server/restoreAudit.js',
+    'server/restoreAuditPayload.js',
     'server/restoreRank.js',
     'server/roomLifecycle.js',
     'server/serverDice.js',

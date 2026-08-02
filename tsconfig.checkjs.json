@@ -130,6 +130,7 @@
     "server/rejoinSocketHandler.js",
     "server/recreateSocketHandler.js",
     "server/restoreAudit.js",
+    "server/restoreAuditPayload.js",
     "server/roomLifecycle.js",
     "server/disconnectSocketHandler.js",
     "server/hostlessRestoreCoordinator.js",

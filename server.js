@@ -66,6 +66,7 @@ const {
     acceptedClientActionRefs,
 } = require('./server/actionAcceptance');
 const makeRejoinPayload = require('./server/rejoinPayload');
+const makeRestoreAuditPayload = require('./server/restoreAuditPayload');
 const {
     generateReconnectToken,
     hashReconnectToken,
@@ -648,6 +649,15 @@ const {
     normalizeEnabledCards,
 } = gameSettings;
 
+const {
+    buildRestoreSnapshotAuditPayload,
+    buildRestoreActionAuditPayload,
+} = makeRestoreAuditPayload({
+    normalizePlayerSettings,
+    canonicalizeActionData,
+    normalizeClientActionId,
+});
+
 function hasOwnRoom(roomId) {
     return isValidRoomId(roomId) && Object.prototype.hasOwnProperty.call(rooms, roomId);
 }
@@ -672,18 +682,6 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
     return encoded.ok ? encoded.value : null;
 }
 
-function buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot) {
-    if (!stateSnapshot || !gameStartPayload) return null;
-    const playerCount = Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0;
-    const normalizedGameStartPayload = Object.assign({}, gameStartPayload, {
-        playerSettings: normalizePlayerSettings(gameStartPayload.playerSettings, playerCount),
-    });
-    return {
-        gameStartPayload: normalizedGameStartPayload,
-        stateSnapshot,
-    };
-}
-
 function buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, now = Date.now()) {
     return buildSignedRestoreAuditRecord(
         roomId,
@@ -700,20 +698,6 @@ function isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot
         restoreAuditVerificationOptions(roomId)
     );
     return validation.ok;
-}
-
-function buildRestoreActionAuditPayload(actionEntry) {
-    if (!actionEntry || typeof actionEntry.action !== 'string') return null;
-    if (!Number.isInteger(actionEntry.playerIndex) || !Number.isInteger(actionEntry.seq)) return null;
-    const payload = {
-        action: actionEntry.action,
-        data: canonicalizeActionData(actionEntry.action, actionEntry.data || {}),
-        playerIndex: actionEntry.playerIndex,
-        seq: actionEntry.seq,
-    };
-    const safeClientActionId = normalizeClientActionId(actionEntry.clientActionId);
-    if (safeClientActionId) payload.clientActionId = safeClientActionId;
-    return payload;
 }
 
 function buildRestoreActionAudit(roomId, actionEntry, now = Date.now()) {
