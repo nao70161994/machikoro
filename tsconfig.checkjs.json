@@ -140,6 +140,7 @@
     "server/serverDice.js",
     "server/staticAssets.js",
     "server/canonicalStateStore.js",
+    "server/canonicalStateRepository.js",
     "server/clientErrorAuth.js",
     "server/clientErrorReporting.js",
     "server/clientErrorGateway.js",

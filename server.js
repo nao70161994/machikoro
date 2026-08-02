@@ -227,6 +227,7 @@ const {
     buildCanonicalStateRecord,
     validateCanonicalStateRecord,
 } = require('./server/canonicalStateStore');
+const makeCanonicalStateRepository = require('./server/canonicalStateRepository');
 const {
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
@@ -342,6 +343,16 @@ const GAME_LIFECYCLE_LIMITS = Object.freeze({
 const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
+const {
+    persistRoomCanonicalState,
+    loadRoomCanonicalStateRecord,
+} = makeCanonicalStateRepository({
+    buildRecord: buildCanonicalStateRecord,
+    validateRecord: validateCanonicalStateRecord,
+    defaultStore: canonicalStateStore,
+    now: Date.now,
+    warn: (...args) => console.warn(...args),
+});
 function restoreAuditConfig() {
     return restoreAuditKeyringConfig(process.env);
 }
@@ -659,31 +670,6 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
         payload
     );
     return encoded.ok ? encoded.value : null;
-}
-
-function persistRoomCanonicalState(roomId, room, reason, now = Date.now(), store = canonicalStateStore) {
-    if (!store || typeof store.save !== 'function') return { ok: true, skipped: true };
-    const record = buildCanonicalStateRecord(roomId, room, { reason, now });
-    if (!record) return { ok: false, reason: 'invalid-record' };
-    try {
-        return store.save(record);
-    } catch (error) {
-        console.warn('[canonical-state-store] save failed:', error && error.message || error);
-        return { ok: false, reason: 'save-failed' };
-    }
-}
-
-function loadRoomCanonicalStateRecord(roomId, store = canonicalStateStore) {
-    if (!store || typeof store.load !== 'function') return null;
-    try {
-        const record = store.load(roomId);
-        const validation = validateCanonicalStateRecord(record);
-        if (!validation.ok || record.roomId !== roomId) return null;
-        return record;
-    } catch (error) {
-        console.warn('[canonical-state-store] load failed:', error && error.message || error);
-        return null;
-    }
 }
 
 function buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot) {

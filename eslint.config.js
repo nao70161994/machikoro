@@ -125,6 +125,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/actionPayload.js',
     'server/actionValidation.js',
     'server/canonicalStateStore.js',
+    'server/canonicalStateRepository.js',
     'server/clientErrorAuth.js',
     'server/disconnectSocketHandler.js',
     'server/gameSchemaRuntime.js',
