@@ -3,6 +3,8 @@ const makeRoomLifecycle = require('../server/roomLifecycle');
 const { runTest } = require('./helpers/test-utils');
 
 const {
+    isActiveRoomSocket,
+    isRoomHostConnected,
     roomHostChangedPayload,
     setRoomHostPlayerIndex,
     roomHostlessRestoreCapabilities,
@@ -80,4 +82,20 @@ runTest('room lifecycle はhostChanged wire payloadを既存fieldへ限定する
         newHostPlayerIndex: undefined,
         hostEpoch: 0,
     });
+});
+
+runTest('room lifecycle は再接続後の本人socketとhost接続だけを認識する', () => {
+    const room = {
+        hostPlayerIndex: 1,
+        players: [{ id: 'new-a', index: 0 }, { id: 'host-b', index: 1 }],
+    };
+    const sockets = new Map([['host-b', {}]]);
+
+    assert.strictEqual(isActiveRoomSocket(room, { id: 'new-a', playerIndex: 0 }), true);
+    assert.strictEqual(isActiveRoomSocket(room, { id: 'old-a', playerIndex: 0 }), false);
+    assert.strictEqual(isActiveRoomSocket(room, { id: 'host-b', playerIndex: null }), false);
+    assert.strictEqual(isRoomHostConnected(room, sockets), true);
+    sockets.delete('host-b');
+    assert.strictEqual(isRoomHostConnected(room, sockets), false);
+    assert.strictEqual(isRoomHostConnected(null, sockets), false);
 });

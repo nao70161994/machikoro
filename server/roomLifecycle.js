@@ -90,6 +90,18 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
         return !!(room && socketId && Array.isArray(room.players) && room.players.some(player => player && player.id === socketId));
     }
 
+    function isActiveRoomSocket(room, socket) {
+        if (!room || !socket || !Number.isInteger(socket.playerIndex)) return false;
+        const player = room.players.find(candidate => candidate.index === socket.playerIndex);
+        return !!player && player.id === socket.id;
+    }
+
+    function isRoomHostConnected(room, sockets) {
+        if (!room || !Array.isArray(room.players) || !Number.isInteger(room.hostPlayerIndex)) return false;
+        const hostPlayer = room.players.find(candidate => candidate.index === room.hostPlayerIndex);
+        return !!(hostPlayer?.id && sockets.has(hostPlayer.id));
+    }
+
     function validateSocketCanEnterRoom(socket, targetRoomId = null, targetRooms = defaultRooms) {
         const roomId = socket && socket.roomId;
         if (!isSocketInActiveRoom(socket, targetRooms)) return { ok: true };
@@ -218,6 +230,8 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console, cpuDifficultyL
         canCreateRoomForRateKey,
         markCreateRoomForRateKey,
         isSocketInActiveRoom,
+        isActiveRoomSocket,
+        isRoomHostConnected,
         validateSocketCanEnterRoom,
         validateCreateRoomLifecycle,
         buildPlayerList,

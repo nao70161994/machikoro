@@ -266,6 +266,8 @@ const {
     canCreateRoomForRateKey,
     markCreateRoomForRateKey,
     isSocketInActiveRoom,
+    isActiveRoomSocket,
+    isRoomHostConnected: isRoomHostConnectedForSockets,
     validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
     buildPlayerList: buildRoomPlayerList,
@@ -909,16 +911,8 @@ function detachRoomSockets(roomId, room, message = 'ROOM_REPLACED') {
     }
 }
 
-function isActiveRoomSocket(room, socket) {
-    if (!room || !socket || !Number.isInteger(socket.playerIndex)) return false;
-    const player = room.players.find(p => p.index === socket.playerIndex);
-    return !!player && player.id === socket.id;
-}
-
 function isRoomHostConnected(room) {
-    if (!room || !Array.isArray(room.players) || !Number.isInteger(room.hostPlayerIndex)) return false;
-    const hostPlayer = room.players.find(p => p.index === room.hostPlayerIndex);
-    return !!(hostPlayer?.id && io.sockets.sockets.has(hostPlayer.id));
+    return isRoomHostConnectedForSockets(room, io.sockets.sockets);
 }
 
 function handleRecreateRoom(socket, payload = {}, options = {}) {
