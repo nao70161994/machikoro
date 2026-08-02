@@ -36,13 +36,23 @@ function makeHarness(overrides = {}) {
         },
         validateRestoreAuditRecord: () => { calls.push('audit'); return { ok: true }; },
         isVerifiedClientRestoreSnapshot: () => { calls.push('verify'); return true; },
+        isValidGameStartPayload: () => { calls.push('game-start'); return true; },
+        hasInvalidOnlineRlModelSettings: () => { calls.push('rl'); return false; },
+        normalizePlayerSettings: settings => { calls.push('normalize'); return settings; },
         ...overrides,
     };
-    return { calls, payload, plan: makeRestoreAdmission(dependencies).planRestoreAdmission };
+    const admission = makeRestoreAdmission(dependencies);
+    return {
+        calls,
+        payload,
+        plan: admission.planRestoreAdmission,
+        planGameStart: admission.planRestoreGameStartAdmission,
+    };
 }
 
 runTest('restore admissionは依存を副作用前に検証する', () => {
     assert.throws(() => makeRestoreAdmission({}), /isPlainObject must be a function/);
+    assert.throws(() => makeHarness({ normalizePlayerSettings: null }), /normalizePlayerSettings must be a function/);
 });
 
 runTest('restore admissionは入口拒否の順序と既存messageを固定する', () => {
@@ -143,4 +153,53 @@ runTest('restore admissionはsnapshotなしの既存null trust値を維持する
     assert.deepStrictEqual(harness.calls, ['plain', 'limits', 'room-id', 'load', 'source', 'audit']);
     assert.strictEqual(result.clientSnapshotTrusted, null);
     assert.strictEqual(result.replayStateSnapshot, null);
+});
+
+runTest('restore game-start admissionはplayerNamesとpayload検証を正規化前に行う', () => {
+    const harness = makeHarness();
+    const missingNames = harness.planGameStart({ playerSettings: [] });
+    assert.deepStrictEqual(missingNames, { ok: false, errorMessage: '復元データが不完全です', result: undefined });
+    assert.deepStrictEqual(harness.calls, []);
+
+    const invalid = makeHarness({ isValidGameStartPayload: () => false });
+    invalid.payload.gameStartPayload.playerNames = ['Alice'];
+    assert.deepStrictEqual(invalid.planGameStart(invalid.payload.gameStartPayload), {
+        ok: false,
+        errorMessage: '復元データが不完全です',
+        result: undefined,
+    });
+    assert.deepStrictEqual(invalid.calls, []);
+});
+
+runTest('restore game-start admissionはRL拒否後に設定を正規化しない', () => {
+    const harness = makeHarness({
+        hasInvalidOnlineRlModelSettings: () => { harness.calls.push('rl'); return true; },
+    });
+    harness.payload.gameStartPayload.playerNames = ['Alice', 'CPU'];
+    assert.deepStrictEqual(harness.planGameStart(harness.payload.gameStartPayload), {
+        ok: false,
+        errorMessage: 'RLモデルIDが無効です',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, ['game-start', 'rl']);
+});
+
+runTest('restore game-start admissionは検証後の設定と元playerNames参照を返す', () => {
+    const normalized = [{ type: 'human' }, { type: 'cpu', difficulty: 'normal' }];
+    const harness = makeHarness({
+        normalizePlayerSettings: (settings, count) => {
+            harness.calls.push('normalize');
+            assert.strictEqual(count, 2);
+            assert.strictEqual(settings, harness.payload.gameStartPayload.playerSettings);
+            return normalized;
+        },
+    });
+    harness.payload.gameStartPayload.playerNames = ['Alice', 'CPU'];
+    harness.payload.gameStartPayload.playerSettings = [{ type: 'human' }];
+    const result = harness.planGameStart(harness.payload.gameStartPayload);
+    assert.deepStrictEqual(harness.calls, ['game-start', 'rl', 'normalize']);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.playerNames, harness.payload.gameStartPayload.playerNames);
+    assert.strictEqual(result.playerSettings, normalized);
+    assert.strictEqual(harness.payload.gameStartPayload.playerSettings.length, 1);
 });

@@ -9,6 +9,9 @@ function makeRestoreAdmission({
     selectRestoreSource,
     validateRestoreAuditRecord,
     isVerifiedClientRestoreSnapshot,
+    isValidGameStartPayload,
+    hasInvalidOnlineRlModelSettings,
+    normalizePlayerSettings,
 }) {
     const dependencies = {
         isPlainObject,
@@ -19,6 +22,9 @@ function makeRestoreAdmission({
         selectRestoreSource,
         validateRestoreAuditRecord,
         isVerifiedClientRestoreSnapshot,
+        isValidGameStartPayload,
+        hasInvalidOnlineRlModelSettings,
+        normalizePlayerSettings,
     };
     for (const [name, dependency] of Object.entries(dependencies)) {
         if (typeof dependency !== 'function') throw new TypeError(`${name} must be a function`);
@@ -65,7 +71,23 @@ function makeRestoreAdmission({
         });
     }
 
-    return Object.freeze({ planRestoreAdmission });
+    function planRestoreGameStartAdmission(gameStartPayload) {
+        if (!Array.isArray(gameStartPayload.playerNames)) return reject('復元データが不完全です');
+        const playerNames = gameStartPayload.playerNames;
+        if (!isValidGameStartPayload(gameStartPayload, playerNames.length)) {
+            return reject('復元データが不完全です');
+        }
+        if (hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings)) {
+            return reject('RLモデルIDが無効です');
+        }
+        return Object.freeze({
+            ok: true,
+            playerNames,
+            playerSettings: normalizePlayerSettings(gameStartPayload.playerSettings, playerNames.length),
+        });
+    }
+
+    return Object.freeze({ planRestoreAdmission, planRestoreGameStartAdmission });
 }
 
 module.exports = makeRestoreAdmission;

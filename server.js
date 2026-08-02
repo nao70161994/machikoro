@@ -895,7 +895,7 @@ io.on('connection', (socket) => {
     disconnectSocketHandler.registerSocket(socket);
 });
 
-const { planRestoreAdmission } = makeRestoreAdmission({
+const { planRestoreAdmission, planRestoreGameStartAdmission } = makeRestoreAdmission({
     isPlainObject,
     validateRestorePayloadLimits,
     isValidRoomId,
@@ -904,6 +904,9 @@ const { planRestoreAdmission } = makeRestoreAdmission({
     selectRestoreSource,
     validateRestoreAuditRecord,
     isVerifiedClientRestoreSnapshot,
+    isValidGameStartPayload,
+    hasInvalidOnlineRlModelSettings,
+    normalizePlayerSettings,
 });
 
 function handleRecreateRoom(socket, payload = {}, options = {}) {
@@ -986,20 +989,13 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
             return;
         }
     }
-    if (!Array.isArray(gameStartPayload.playerNames)) {
-        emitAppError(socket, '復元データが不完全です');
+    const gameStartAdmission = planRestoreGameStartAdmission(gameStartPayload);
+    if (gameStartAdmission.ok !== true) {
+        emitAppError(socket, gameStartAdmission.errorMessage);
         return;
     }
-    const playerNames = gameStartPayload.playerNames;
-    if (!isValidGameStartPayload(gameStartPayload, playerNames.length)) {
-        emitAppError(socket, '復元データが不完全です');
-        return;
-    }
-    if (hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings)) {
-        emitAppError(socket, 'RLモデルIDが無効です');
-        return;
-    }
-    gameStartPayload.playerSettings = normalizePlayerSettings(gameStartPayload.playerSettings, playerNames.length);
+    const { playerNames } = gameStartAdmission;
+    gameStartPayload.playerSettings = gameStartAdmission.playerSettings;
     if (!Number.isInteger(playerIndex) || playerIndex < 0 || playerIndex >= playerNames.length) {
         emitAppError(socket, '復元データが不完全です');
         return;
