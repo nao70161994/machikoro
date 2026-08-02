@@ -95,6 +95,85 @@ runTest('restored mirror state plan適用は既存代入順と参照を維持す
     assert.strictEqual(restoredRoom.roomId, 'ROOM01');
 });
 
+runTest('restored mirror preparationはACK再構築からstate適用までを既存順で実行する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const entries = [{ seq: 7 }, { seq: 8 }];
+    const restoredRoom = { actionLog: entries, actionSeq: 8 };
+    const mirror = { game: {} };
+    const statePlan = { canonicalMirror: mirror, actionLog: [] };
+    const calls = [];
+
+    const result = builder.executeRestoredRoomMirrorPreparation(restoredRoom, {
+        rememberAcceptedAction(room, entry) {
+            calls.push(['remember', room, entry]);
+        },
+        createMirror(room) {
+            calls.push(['create', room]);
+            return mirror;
+        },
+        buildStatePlan(input) {
+            calls.push(['build', input]);
+            return statePlan;
+        },
+        applyStatePlan(room, plan) {
+            calls.push(['apply', room, plan]);
+            return room;
+        },
+    });
+
+    assert.deepStrictEqual(result, { ok: true });
+    assert.strictEqual(Object.isFrozen(result), true);
+    assert.deepStrictEqual(calls, [
+        ['remember', restoredRoom, entries[0]],
+        ['remember', restoredRoom, entries[1]],
+        ['create', restoredRoom],
+        ['build', { mirror, actionSeq: 8 }],
+        ['apply', restoredRoom, statePlan],
+    ]);
+});
+
+runTest('restored mirror preparationはmirror失敗後のplan適用を行わない', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const restoredRoom = { actionLog: [{ seq: 8 }], actionSeq: 8 };
+    const calls = [];
+    const result = builder.executeRestoredRoomMirrorPreparation(restoredRoom, {
+        rememberAcceptedAction() { calls.push('remember'); },
+        createMirror() { calls.push('create'); return null; },
+        buildStatePlan() { calls.push('build'); return {}; },
+        applyStatePlan() { calls.push('apply'); },
+    });
+
+    assert.deepStrictEqual(result, {
+        ok: false,
+        errorMessage: '復元データが壊れています',
+    });
+    assert.strictEqual(Object.isFrozen(result), true);
+    assert.deepStrictEqual(calls, ['remember', 'create']);
+});
+
+runTest('restored mirror preparationはeffect欠落をACK再構築前に拒否する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    assert.throws(() => builder.executeRestoredRoomMirrorPreparation({
+        actionLog: [{ seq: 8 }],
+        actionSeq: 8,
+    }, {
+        rememberAcceptedAction() { calls.push('remember'); },
+        createMirror() { return {}; },
+        buildStatePlan() { return {}; },
+    }), /applyStatePlan effect/);
+    assert.deepStrictEqual(calls, []);
+});
+
 runTest('restored mirror state planはserializer欠落を実行前に拒否する', () => {
     const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
     assert.throws(() => builder.buildRestoredMirrorStatePlan({

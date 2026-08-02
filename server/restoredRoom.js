@@ -69,6 +69,42 @@ function executeRestoredRoomCompletion(plan = {}, effects = {}) {
     return plan.result;
 }
 
+/**
+ * Rebuilds accepted-action memory, creates the canonical mirror, and applies its state plan.
+ * @param {Object} restoredRoom
+ * @param {{rememberAcceptedAction?: function(Object, Object): void, createMirror?: function(Object): *, buildStatePlan?: function(Object): Object, applyStatePlan?: function(Object, Object): Object}} effects
+ * @returns {{ok: boolean, errorMessage?: string}}
+ */
+function executeRestoredRoomMirrorPreparation(restoredRoom, effects = {}) {
+    const requiredEffects = [
+        'rememberAcceptedAction',
+        'createMirror',
+        'buildStatePlan',
+        'applyStatePlan',
+    ];
+    for (const name of requiredEffects) {
+        if (typeof effects[name] !== 'function') {
+            throw new TypeError(`${name} effect is required`);
+        }
+    }
+    for (const entry of restoredRoom.actionLog) {
+        effects.rememberAcceptedAction(restoredRoom, entry);
+    }
+    const mirror = effects.createMirror(restoredRoom);
+    if (!mirror) {
+        return Object.freeze({
+            ok: false,
+            errorMessage: '復元データが壊れています',
+        });
+    }
+    const statePlan = effects.buildStatePlan({
+        mirror,
+        actionSeq: restoredRoom.actionSeq,
+    });
+    effects.applyStatePlan(restoredRoom, statePlan);
+    return Object.freeze({ ok: true });
+}
+
 const RESTORED_ROOM_ACTIVATION_DECISIONS = Object.freeze({
     INSTALL_NEW: 'install-new',
     REPLACE_EXISTING: 'replace-existing',
@@ -149,7 +185,7 @@ function executeRestoredRoomDelivery(effects = {}) {
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
  * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *, hostlessRestoreRoomLogId?: function(string): string}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, applyRestoredMirrorStatePlan: function(Object, Object): Object, planRestoredRoomCompletion: function(Object): Object, executeRestoredRoomCompletion: function(Object, Object): *, planRestoredRoomMetadata: function(Object): Object, applyRestoredRoomMetadata: function(Object, Object, Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
+ * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, applyRestoredMirrorStatePlan: function(Object, Object): Object, executeRestoredRoomMirrorPreparation: function(Object, Object): Object, planRestoredRoomCompletion: function(Object): Object, executeRestoredRoomCompletion: function(Object, Object): *, planRestoredRoomMetadata: function(Object): Object, applyRestoredRoomMetadata: function(Object, Object, Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
@@ -236,6 +272,7 @@ function makeRestoredRoom(dependencies = {}) {
         buildRestoredRoom,
         buildRestoredMirrorStatePlan,
         applyRestoredMirrorStatePlan,
+        executeRestoredRoomMirrorPreparation,
         planRestoredRoomCompletion,
         executeRestoredRoomCompletion,
         planRestoredRoomMetadata,

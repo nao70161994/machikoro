@@ -210,6 +210,7 @@ const {
     buildRestoredRoom,
     buildRestoredMirrorStatePlan,
     applyRestoredMirrorStatePlan,
+    executeRestoredRoomMirrorPreparation,
     planRestoredRoomCompletion,
     executeRestoredRoomCompletion,
     planRestoredRoomMetadata,
@@ -1074,17 +1075,16 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
         candidateCount: options.candidateCount,
     });
-    for (const entry of restoredRoom.actionLog) rememberAcceptedClientAction(restoredRoom, entry);
-    const restoredMirror = createRoomMirror(restoredRoom);
-    if (!restoredMirror) {
-        emitAppError(socket, '復元データが壊れています');
+    const mirrorPreparation = executeRestoredRoomMirrorPreparation(restoredRoom, {
+        rememberAcceptedAction: rememberAcceptedClientAction,
+        createMirror: createRoomMirror,
+        buildStatePlan: buildRestoredMirrorStatePlan,
+        applyStatePlan: applyRestoredMirrorStatePlan,
+    });
+    if (mirrorPreparation.ok !== true) {
+        emitAppError(socket, mirrorPreparation.errorMessage);
         return;
     }
-    const mirrorStatePlan = buildRestoredMirrorStatePlan({
-        mirror: restoredMirror,
-        actionSeq: restoredRoom.actionSeq,
-    });
-    applyRestoredMirrorStatePlan(restoredRoom, mirrorStatePlan);
     const activationPlan = planRestoredRoomActivation({
         roomExists: hasOwnRoom(roomId),
         approvedHostless,
