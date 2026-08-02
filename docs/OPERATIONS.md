@@ -248,7 +248,7 @@ Treat a nightly failure as a release blocker until the failing command is green 
 
 ## Client Error Classification
 
-Server-side ntfy client error notifications now include a `classification=` line and use priority by class:
+Server-side client-error dedupe keys are projected by `server/clientErrorReporting.js`; preserve the existing field set and 600-character stack prefix. Server-side ntfy client error notifications include a `classification=` line and use priority by class:
 
 | Classification | Priority | Meaning | First response |
 | --- | --- | --- | --- |
