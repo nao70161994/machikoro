@@ -209,6 +209,7 @@ const {
 const {
     buildRestoredRoom,
     buildRestoredMirrorStatePlan,
+    applyRestoredMirrorStatePlan,
     planRestoredRoomCompletion,
     planRestoredRoomMetadata,
     applyRestoredRoomMetadata,
@@ -1082,10 +1083,7 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         mirror: restoredMirror,
         actionSeq: restoredRoom.actionSeq,
     });
-    restoredRoom.canonicalMirror = mirrorStatePlan.canonicalMirror;
-    restoredRoom.lastUndoState = mirrorStatePlan.lastUndoState;
-    restoredRoom.stateSnapshot = mirrorStatePlan.stateSnapshot;
-    restoredRoom.actionLog = mirrorStatePlan.actionLog;
+    applyRestoredMirrorStatePlan(restoredRoom, mirrorStatePlan);
     const activationPlan = planRestoredRoomActivation({
         roomExists: hasOwnRoom(roomId),
         approvedHostless,

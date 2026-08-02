@@ -63,6 +63,38 @@ runTest('restored mirror state planはmirror結果をcanonical snapshotへ副作
     }).actionLog);
 });
 
+runTest('restored mirror state plan適用は既存代入順と参照を維持する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const writes = [];
+    const restoredRoom = new Proxy({ roomId: 'ROOM01' }, {
+        set(room, property, value) {
+            writes.push([property, value]);
+            room[property] = value;
+            return true;
+        },
+    });
+    const mirrorStatePlan = {
+        canonicalMirror: { game: {} },
+        lastUndoState: { action: 'buildCard' },
+        stateSnapshot: { actionSeq: 8 },
+        actionLog: [],
+    };
+
+    const result = builder.applyRestoredMirrorStatePlan(restoredRoom, mirrorStatePlan);
+
+    assert.strictEqual(result, restoredRoom);
+    assert.deepStrictEqual(writes, [
+        ['canonicalMirror', mirrorStatePlan.canonicalMirror],
+        ['lastUndoState', mirrorStatePlan.lastUndoState],
+        ['stateSnapshot', mirrorStatePlan.stateSnapshot],
+        ['actionLog', mirrorStatePlan.actionLog],
+    ]);
+    assert.strictEqual(restoredRoom.roomId, 'ROOM01');
+});
+
 runTest('restored mirror state planはserializer欠落を実行前に拒否する', () => {
     const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
     assert.throws(() => builder.buildRestoredMirrorStatePlan({

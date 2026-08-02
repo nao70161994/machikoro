@@ -41,6 +41,20 @@ function applyRestoredRoomMetadata(gameStartPayload, metadata, fields = {}) {
     return gameStartPayload;
 }
 
+/**
+ * Applies an already-built mirror state plan to the restored room shell.
+ * @param {Object} restoredRoom
+ * @param {Object} mirrorStatePlan
+ * @returns {Object}
+ */
+function applyRestoredMirrorStatePlan(restoredRoom, mirrorStatePlan) {
+    restoredRoom.canonicalMirror = mirrorStatePlan.canonicalMirror;
+    restoredRoom.lastUndoState = mirrorStatePlan.lastUndoState;
+    restoredRoom.stateSnapshot = mirrorStatePlan.stateSnapshot;
+    restoredRoom.actionLog = mirrorStatePlan.actionLog;
+    return restoredRoom;
+}
+
 const RESTORED_ROOM_ACTIVATION_DECISIONS = Object.freeze({
     INSTALL_NEW: 'install-new',
     REPLACE_EXISTING: 'replace-existing',
@@ -121,7 +135,7 @@ function executeRestoredRoomDelivery(effects = {}) {
  * Validation, authority, replay, persistence, socket effects, and mirror ownership
  * deliberately remain with the caller.
  * @param {{sanitizeStateSnapshot?: function(*, number): *, serializeMirrorState?: function(*, *, *, number): *, hostlessRestoreRoomLogId?: function(string): string}} [dependencies]
- * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, planRestoredRoomCompletion: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, applyRestoredRoomMetadata: function(Object, Object, Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
+ * @returns {{buildRestoredRoom: function(Object): Object, buildRestoredMirrorStatePlan: function(Object): Object, applyRestoredMirrorStatePlan: function(Object, Object): Object, planRestoredRoomCompletion: function(Object): Object, planRestoredRoomMetadata: function(Object): Object, applyRestoredRoomMetadata: function(Object, Object, Object): Object, planRestoredRoomActivation: function(Object): Object, executeRestoredRoomActivation: function(Object, Object): ReadonlyArray<string>, activationEffectAuthorityEnabled: function(Object): boolean, executeRestoredRoomDelivery: function(Object): ReadonlyArray<string>, deliveryEffectAuthorityEnabled: function(Object): boolean, activationDecisions: Object}}
  */
 function makeRestoredRoom(dependencies = {}) {
     if (typeof dependencies.sanitizeStateSnapshot !== 'function') {
@@ -207,6 +221,7 @@ function makeRestoredRoom(dependencies = {}) {
     return Object.freeze({
         buildRestoredRoom,
         buildRestoredMirrorStatePlan,
+        applyRestoredMirrorStatePlan,
         planRestoredRoomCompletion,
         planRestoredRoomMetadata,
         applyRestoredRoomMetadata,
