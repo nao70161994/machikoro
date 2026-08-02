@@ -202,3 +202,50 @@ runTest('CPU online build proposal は共有Game Engineを使わず既存sendAct
     assert.strictEqual(engineCalls, 0);
     assert.deepStrictEqual(sent, [{ action: 'buildLandmark', data: { name: '港' } }]);
 });
+
+
+runTest('CPU local build proposal calls shadow hooks around mutable apply once', () => {
+    const actor = cpu();
+    const proposal = CPUBuildExecution.createCardBuildAction({ name: '\u9ea6\u7551' });
+    const game = { builtThisTurn: false };
+    const stock = { '\u9ea6\u7551': 1 };
+    const calls = [];
+    const marker = { action: 'buildCard' };
+
+    const result = CPUBuildExecution.executeAction(actor, proposal, game, stock, {
+        resolveCard: name => ({ name }),
+        prepareLocalAction(action, data) {
+            calls.push(['prepare', action, data]);
+            return marker;
+        },
+        applyMutableAction(context) {
+            calls.push(['apply', context.action, context.data]);
+            return true;
+        },
+        finishLocalAction(value) {
+            calls.push(['finish', value]);
+        },
+    });
+
+    assert.strictEqual(result, true);
+    assert.deepStrictEqual(calls, [
+        ['prepare', 'buildCard', { cardName: '\u9ea6\u7551' }],
+        ['apply', 'buildCard', { cardName: '\u9ea6\u7551' }],
+        ['finish', marker],
+    ]);
+});
+
+runTest('CPU local build proposal does not start shadow hooks after precheck failure', () => {
+    let hooks = 0;
+    const result = CPUBuildExecution.executeAction(cpu(), {
+        action: 'buildCard',
+        data: { cardName: '\u9ea6\u7551' },
+    }, { builtThisTurn: false }, { '\u9ea6\u7551': 0 }, {
+        resolveCard: name => ({ name }),
+        prepareLocalAction() { hooks++; },
+        finishLocalAction() { hooks++; },
+    });
+
+    assert.strictEqual(result, false);
+    assert.strictEqual(hooks, 0);
+});

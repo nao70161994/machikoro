@@ -367,6 +367,25 @@ function loadIntegrationRuntime(options = {}) {
             delete context.__tmpLocalCpuData;
             return result;
         },
+        runLocalCpuBuildAction(action, data) {
+            context.__tmpLocalCpuBuildAction = action;
+            context.__tmpLocalCpuBuildData = data;
+            const result = vm.runInContext([
+                '(function () {',
+                '    const cpu = cpuPlayers[game.currentPlayerIndex];',
+                '    if (!cpu) return false;',
+                '    const original = cpu.chooseBuildAction;',
+                '    cpu.chooseBuildAction = () => CPUActionProposal.create(',
+                '        __tmpLocalCpuBuildAction, __tmpLocalCpuBuildData',
+                '    );',
+                '    try { return cpu.build(game, SHOP_STOCK); }',
+                '    finally { cpu.chooseBuildAction = original; }',
+                '})()',
+            ].join('\n'), context);
+            delete context.__tmpLocalCpuBuildAction;
+            delete context.__tmpLocalCpuBuildData;
+            return result;
+        },
         setGame(value) { context.__tmpGame = value; vm.runInContext('game = __tmpGame', context); delete context.__tmpGame; },
         getCpuPlayers() { return vm.runInContext('cpuPlayers', context); },
         setCpuPlayers(value) { context.__tmpCpuPlayers = value; vm.runInContext('cpuPlayers = __tmpCpuPlayers', context); delete context.__tmpCpuPlayers; },

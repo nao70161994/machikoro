@@ -129,3 +129,29 @@ runTest('local human landmark buildはEngine shadow authorityでlegacy結果と�
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(rt.__test.getGame().currentPlayer().landmarks['駅'], true);
 });
+
+
+runTest('local CPU build passes a resolved proposal through Engine shadow authority', () => {
+    const rt = loadIntegrationRuntime();
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = true;
+    const game = rt.__test.startLocalGame([
+        { type: 'human', difficulty: 'normal', name: 'Player' },
+        { type: 'cpu', difficulty: 'normal', name: 'CPU' },
+    ]);
+    const cpuIndex = rt.__test.getCpuPlayers().findIndex(Boolean);
+    assert.ok(cpuIndex >= 0);
+    game.currentPlayerIndex = cpuIndex;
+    rt.__test.startBuildPhase({ coins: 20 });
+
+    assert.strictEqual(rt.__test.runLocalCpuBuildAction(
+        'buildLandmark',
+        { name: '\u99c5' }
+    ), true);
+
+    const outcome = rt.__test.getLocalGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.action, 'buildLandmark');
+    assert.strictEqual(outcome.authority.authority, 'pure-transition');
+    assert.strictEqual(rt.__test.getGame().currentPlayer().landmarks['\u99c5'], true);
+});

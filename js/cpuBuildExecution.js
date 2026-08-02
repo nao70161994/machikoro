@@ -105,7 +105,10 @@ function executeAction(cpu, proposal, game, shopStock, context = {}) {
         } else {
             return setBuildActionResult(cpu, false);
         }
-        return setBuildActionResult(cpu, applyMutableAction({
+        const shadow = typeof context.prepareLocalAction === 'function'
+            ? context.prepareLocalAction(proposal.action, proposal.data)
+            : null;
+        const applied = applyMutableAction({
             game,
             shopStock,
             action: proposal.action,
@@ -114,7 +117,11 @@ function executeAction(cpu, proposal, game, shopStock, context = {}) {
             decrementShopStock(stock, card) {
                 stock[card.name]--;
             },
-        }) === true);
+        }) === true;
+        if (typeof context.finishLocalAction === 'function') {
+            context.finishLocalAction(shadow);
+        }
+        return setBuildActionResult(cpu, applied);
     }
     if (proposal.action === 'buildCard') {
         const cardName = proposal.data && proposal.data.cardName;
