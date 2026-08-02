@@ -95,6 +95,7 @@
     "js/uiTurnAnnouncer.js",
     "js/uiWatchdog.js",
     "js/uiWinner.js",
+    "js/clientCheckpoint.js",
     "js/clientReporting.js",
     "js/clientReportingTransport.js",
     "js/lifecycleNotify.js",

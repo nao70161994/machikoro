@@ -71,6 +71,7 @@ interface Window {
     LifecycleNotify: unknown;
     LifecycleTransport: unknown;
     ClientReportingTransport: unknown;
+    ClientCheckpoint: unknown;
     LocalPlayerSettings: unknown;
     PageActivationPolicy: unknown;
     CitySkyline: unknown;

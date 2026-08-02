@@ -94,6 +94,7 @@ const STATIC_ASSETS = [
   '/js/storage.js',
   '/js/stats.js',
   '/js/appShellStorage.js',
+  '/js/clientCheckpoint.js',
   '/js/clientReporting.js',
   '/js/clientReportingTransport.js',
   '/js/lifecycleNotify.js',

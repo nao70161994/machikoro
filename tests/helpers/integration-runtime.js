@@ -193,6 +193,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/CPU.js',
         'js/clientStorage.js',
         'js/appShellStorage.js',
+        'js/clientCheckpoint.js',
         'js/clientReporting.js',
         'js/clientReportingTransport.js',
         'js/lifecycleNotify.js',

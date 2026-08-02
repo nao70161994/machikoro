@@ -849,29 +849,18 @@ function safeAppShellStorageRemove(key) {
 }
 
 function markClientFlowCheckpoint(event, details = {}) {
-    let checkpoint;
-    try {
-        checkpoint = { event, details, snapshot: buildClientRuntimeSnapshot(event), timestamp: new Date().toISOString() };
-    } catch (_) {
-        try {
-            checkpoint = { event, details, snapshot: null, timestamp: new Date().toISOString(), snapshotFailed: true };
-        } catch (_) {
-            return null;
-        }
-    }
-    try {
-        const root = typeof window !== 'undefined' ? window : globalThis;
-        if (root) {
-            const list = Array.isArray(root.__machikoroClientCheckpoints) ? root.__machikoroClientCheckpoints : [];
-            list.push(checkpoint);
-            while (list.length > 80) list.shift();
-            root.__machikoroClientCheckpoints = list;
-        }
-    } catch (_) {}
-    appShellStorage.access(storage => {
-        storage.setItem('machikoroLastClientCheckpoint', JSON.stringify(checkpoint).slice(0, 5000));
+    return ClientCheckpoint.record({
+        event,
+        details,
+        buildSnapshot: () => buildClientRuntimeSnapshot(event),
+        timestamp: () => new Date().toISOString(),
+        getRoot: () => typeof window !== 'undefined' ? window : globalThis,
+        persist(value) {
+            appShellStorage.access(storage => {
+                storage.setItem('machikoroLastClientCheckpoint', value);
+            });
+        },
     });
-    return checkpoint;
 }
 
 
