@@ -4,6 +4,7 @@ const path = require('path');
 const {
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,
+    resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
@@ -65,6 +66,41 @@ runTest('static assets は公開directory routeとindexのlocal asset参照を�
         const suffix = routePath.slice(staticEntry.route.length).replace(/^\/+/, '');
         assert.ok(fs.statSync(path.join(repoRoot, staticEntry.directory, suffix)).isFile(), `missing index asset: ${ref}`);
     }
+});
+
+runTest('static assets はbuild hashを環境変数・Git・時刻fallback順で決める', () => {
+    const calls = [];
+    assert.strictEqual(resolveBuildHash({
+        env: { BUILD_HASH: 'release-1' },
+        execSync() {
+            throw new Error('must not run');
+        },
+    }), 'release-1');
+
+    assert.strictEqual(resolveBuildHash({
+        env: {},
+        execSync(command, options) {
+            calls.push([command, options]);
+            return Buffer.from('abc123\n');
+        },
+        now() {
+            throw new Error('must not run');
+        },
+    }), 'abc123');
+    assert.deepStrictEqual(calls, [[
+        'git rev-parse --short HEAD',
+        { timeout: 3000 },
+    ]]);
+
+    assert.strictEqual(resolveBuildHash({
+        env: {},
+        execSync() {
+            throw new Error('git unavailable');
+        },
+        now() {
+            return 1700000000000;
+        },
+    }), (1700000000000).toString(36));
 });
 
 runTest('static assets はSW cache versionだけをbuild hashへ置換する', () => {

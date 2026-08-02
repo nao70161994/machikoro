@@ -1,5 +1,7 @@
 'use strict';
 
+const { execSync: defaultExecSync } = require('child_process');
+
 const PUBLIC_ROOT_FILES = Object.freeze(new Set([
     'style.css',
     'manifest.json',
@@ -17,6 +19,22 @@ const PUBLIC_STATIC_DIRS = Object.freeze([
     Object.freeze({ route: '/icons', directory: 'icons' }),
     Object.freeze({ route: '/models/rl_model/portfolio', directory: 'models/rl_model/portfolio' }),
 ]);
+
+function resolveBuildHash(options = {}) {
+    const env = options.env || process.env;
+    if (env.BUILD_HASH) return env.BUILD_HASH;
+    const execSync = typeof options.execSync === 'function'
+        ? options.execSync
+        : defaultExecSync;
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    try {
+        return execSync('git rev-parse --short HEAD', { timeout: 3000 })
+            .toString()
+            .trim();
+    } catch (_) {
+        return now().toString(36);
+    }
+}
 
 function injectServiceWorkerBuildHash(content, buildHash) {
     return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
@@ -52,6 +70,7 @@ function isPublicRootFile(fileName) {
 module.exports = {
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,
+    resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,

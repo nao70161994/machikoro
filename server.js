@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const makeReportDelivery = require('./server/reportDelivery');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
@@ -56,6 +55,7 @@ const {
 const {
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,
+    resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     isPublicRootFile,
@@ -475,15 +475,6 @@ function isGameLifecycleRateLimited(key, now = Date.now(), buckets = gameLifecyc
 
 function isDuplicateGameLifecycle(report, now = Date.now(), cache = gameLifecycleDedupeCache) {
     return rememberAndCheckDuplicate(gameLifecycleDedupeKey(report), now, cache, GAME_LIFECYCLE_LIMITS.duplicateWindowMs);
-}
-
-function resolveBuildHash() {
-    if (process.env.BUILD_HASH) return process.env.BUILD_HASH;
-    try {
-        return execSync('git rev-parse --short HEAD', { timeout: 3000 }).toString().trim();
-    } catch {
-        return Date.now().toString(36);
-    }
 }
 
 const IS_MAIN_MODULE = /** @type {{main?: unknown}} */ (require).main === module;
