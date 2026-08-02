@@ -118,6 +118,7 @@
     "server/actionSocketHandler.js",
     "server/actionAcceptance.js",
     "server/actionValidation.js",
+    "server/actionValidationGateway.js",
     "server/canonicalMirrorMetadata.js",
     "server/canonicalMirrorRuntime.js",
     "server/gameLifecycleReporting.js",
