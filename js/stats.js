@@ -7,6 +7,9 @@ const StatsClientStorageApi = typeof module !== 'undefined' && module.exports
     ? require('./clientStorage')
     : globalThis.ClientStorage;
 const statsClientStorageFacade = StatsClientStorageApi.createFacade();
+const StatsViewApi = typeof module !== 'undefined' && module.exports
+    ? require('./uiStatsView')
+    : globalThis.UiStatsView;
 
 let _statsRecorded = false;
 let _statsViewMode = 'all';
@@ -110,9 +113,7 @@ function saveStats(stats) {
 }
 
 function getStatsModeLabel(mode) {
-    if (mode === 'local') return 'ローカル';
-    if (mode === 'online') return 'オンライン';
-    return '全体';
+    return StatsViewApi.statsModeLabel(mode);
 }
 
 function getCurrentStatsBucket(stats, mode) {
@@ -268,57 +269,17 @@ function setStatsPlayerFilter(playerName) {
 }
 
 function buildStatsFilterTabsHtml(stats) {
-    const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
-    const cpuLabels = Object.keys(stats.cpuTypes).sort((a, b) => a.localeCompare(b, 'ja'));
-    return `
-        <div class="stats-filter-tabs">
-            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'all' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all">全体</button>
-            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'local' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="local">ローカル</button>
-            <button class="stats-filter-btn ${!_statsPlayerFilter && _statsViewMode === 'online' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online">オンライン</button>
-        </div>
-        ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
-            ${playerNames.map(name => `<button class="stats-player-btn ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeStatsHtml(name)}">${escapeStatsHtml(name)}</button>`).join('')}
-        </div>` : ''}
-        ${cpuLabels.length ? `<div class="stats-filter-group-label">CPU別</div><div class="stats-player-filters">
-            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${_statsPlayerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escapeStatsHtml(name)}">${escapeStatsHtml(name)}</button>`).join('')}
-        </div>` : ''}
-        ${_statsPlayerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" data-action="setStatsPlayerFilter" data-player-name="">解除</button></div>` : ''}
-    `;
+    return StatsViewApi.buildFilterTabsHtml(
+        stats, _statsViewMode, _statsPlayerFilter, escapeStatsHtml
+    );
 }
 
 function buildStatsCardRowsHtml(bucket) {
-    const cardEntries = Object.entries(bucket.cardStats)
-        .map(([name, s]) => {
-            const total = s.winWith + s.loseWith;
-            return { name, total, rate: total > 0 ? s.winWith / total : 0 };
-        })
-        .filter(e => e.total >= 3)
-        .sort((a, b) => b.rate - a.rate);
-
-    return cardEntries.slice(0, 15).map((e, i) => {
-        const pct = Math.round(e.rate * 100);
-        return `<div class="stats-card-row">
-            <span class="stats-rank">${i + 1}</span>
-            <span class="stats-card-name">${escapeStatsHtml(e.name)}</span>
-            <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
-            <span class="stats-pct">${pct}%</span>
-            <span class="stats-count">${e.total}戦</span>
-        </div>`;
-    }).join('') || '<div class="stats-empty">3戦以上のデータがまだありません</div>';
+    return StatsViewApi.buildCardRowsHtml(bucket, escapeStatsHtml);
 }
 
 function buildStatsLandmarkRowsHtml(bucket) {
-    return Object.entries(bucket.landmarkStats)
-        .map(([name, s]) => {
-            const total = s.winWith + s.loseWith;
-            const pct = total > 0 ? Math.round(s.winWith / total * 100) : 0;
-            return `<div class="stats-card-row">
-                <span class="stats-card-name">${escapeStatsHtml(name)}</span>
-                <div class="stats-bar-wrap"><div class="stats-bar stats-bar-lm" style="width:${pct}%"></div></div>
-                <span class="stats-pct">${pct}%</span>
-                <span class="stats-count">${total}戦</span>
-            </div>`;
-        }).join('');
+    return StatsViewApi.buildLandmarkRowsHtml(bucket, escapeStatsHtml);
 }
 
 function renderStats() {
@@ -327,50 +288,7 @@ function renderStats() {
     bindStatsHandlers(el);
 
     const stats = loadStats();
-    const bucket = _statsPlayerFilter ? getFilteredStatsBucket(stats, _statsPlayerFilter) : getCurrentStatsBucket(stats, _statsViewMode);
-    const modeLabel = _statsPlayerFilter ? `${_statsPlayerFilter}の成績` : `${getStatsModeLabel(_statsViewMode)}の成績`;
-    const safeModeLabel = escapeStatsHtml(modeLabel);
-    const emptyModeLabel = escapeStatsHtml(_statsPlayerFilter || getStatsModeLabel(_statsViewMode));
-    const filterTabsHtml = buildStatsFilterTabsHtml(stats);
-
-    if (bucket.totalGames === 0) {
-        el.innerHTML = `
-            ${filterTabsHtml}
-            <div class="stats-empty">まだ${emptyModeLabel}の記録がありません。<br>${_statsViewMode === 'online' ? 'オンライン対戦を完了すると記録されます。' : 'ゲームをプレイすると記録されます。'}</div>
-        `;
-        return;
-    }
-
-    const winRate = Math.round(bucket.wins / bucket.totalGames * 100);
-    const avgTurns = Math.round(bucket.totalTurns / bucket.totalGames);
-    const cardRows = buildStatsCardRowsHtml(bucket);
-    const lmRows = buildStatsLandmarkRowsHtml(bucket);
-
-    el.innerHTML = `
-        ${filterTabsHtml}
-        <div class="stats-mode-label">${safeModeLabel}</div>
-
-        <div class="stats-overview">
-            <div class="stats-overview-item">
-                <div class="stats-big">${bucket.totalGames}</div>
-                <div class="stats-ov-label">総ゲーム数</div>
-            </div>
-            <div class="stats-overview-item">
-                <div class="stats-big">${winRate}%</div>
-                <div class="stats-ov-label">勝率</div>
-            </div>
-            <div class="stats-overview-item">
-                <div class="stats-big">${avgTurns}</div>
-                <div class="stats-ov-label">平均ターン</div>
-            </div>
-        </div>
-
-        <div class="stats-section-title">🃏 カード勝率ランキング <span class="stats-hint">3戦以上・所持時の勝率</span></div>
-        <div class="stats-cards">${cardRows}</div>
-
-        ${lmRows ? `<div class="stats-section-title">🏛️ ランドマーク建設時勝率</div>
-        <div class="stats-cards">${lmRows}</div>` : ''}
-
-        <button data-action="clearStats" class="delete-save-btn" style="margin-top:16px;width:100%">🗑 統計をリセット</button>
-    `;
+    el.innerHTML = StatsViewApi.buildStatsHtml(
+        stats, _statsViewMode, _statsPlayerFilter, escapeStatsHtml
+    );
 }

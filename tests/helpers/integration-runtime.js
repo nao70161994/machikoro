@@ -225,6 +225,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localResumePolicy.js',
         'js/storedOnlineReconnect.js',
         'js/storage.js',
+        'js/uiStatsView.js',
         'js/stats.js',
         'js/uiNotice.js',
         'js/uiLogDisplay.js',

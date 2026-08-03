@@ -33,6 +33,7 @@
     "js/uiEventDelegation.js",
     "js/uiRuntimeSnapshot.js",
     "js/stats.js",
+    "js/uiStatsView.js",
     "js/RLModelPortfolio.js",
     "js/RLCPU.js",
     "js/gameSnapshot.js",

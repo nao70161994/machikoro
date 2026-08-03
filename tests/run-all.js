@@ -143,6 +143,7 @@ const TEST_GROUPS = {
         'sw.test.js',
         'confetti.test.js',
         'stats.test.js',
+        'ui-stats-view.test.js',
         'ui-log-display.test.js',
         'ui-card-order.test.js',
         'ui-card-detail.test.js',

@@ -67,6 +67,7 @@ interface Window {
     UiTutorial: unknown;
     UiGameStatusView: unknown;
     UiTabView: unknown;
+    UiStatsView: unknown;
     UiDiceChoice: unknown;
     UiDiceDisplay: unknown;
     AutoSkipPolicy: unknown;

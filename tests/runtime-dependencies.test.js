@@ -105,6 +105,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/storageSettings.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/stats.js'],
+            ['js/uiStatsView.js', 'js/stats.js'],
             ['js/clientStorage.js', 'js/appShellStorage.js'],
             ['js/appShellStorage.js', 'js/appShell.js'],
             ['js/clientCheckpoint.js', 'js/appShell.js'],
@@ -198,6 +199,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/storageSettings.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/storage.js'],
             ['js/clientStorage.js', 'js/stats.js'],
+            ['js/uiStatsView.js', 'js/stats.js'],
             ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
@@ -269,6 +271,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/stats.test.js', [
             ['js/clientStorage.js', 'js/stats.js'],
+            ['js/uiStatsView.js', 'js/stats.js'],
         ]],
         ['tests/ui.test.js', [
             ['js/clientStorage.js', 'js/ui.js'],

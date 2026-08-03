@@ -40,6 +40,7 @@ function loadStatsRuntime(options = {}) {
     context.global = context;
     vm.createContext(context);
     loadScript(context, 'js/clientStorage.js');
+    loadScript(context, 'js/uiStatsView.js');
     loadScript(context, 'js/stats.js');
     vm.runInContext(`
         this.__test = {

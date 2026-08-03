@@ -101,6 +101,7 @@ const STATIC_ASSETS = [
   '/js/localResumePolicy.js',
   '/js/storedOnlineReconnect.js',
   '/js/storage.js',
+  '/js/uiStatsView.js',
   '/js/stats.js',
   '/js/appShellStorage.js',
   '/js/clientCheckpoint.js',
