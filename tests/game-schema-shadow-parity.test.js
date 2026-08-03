@@ -204,6 +204,30 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'shopping-mall-red-green-order',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                game.players[0].cards = [runtime.createCardByName('パン屋')];
+                game.players[0].dormantCards = [];
+                game.players[0].landmarks['ショッピングモール'] = true;
+                game.players[0].coins = 100;
+                for (let index = 1; index < game.players.length; index++) {
+                    game.players[index].cards = [runtime.createCardByName('カフェ')];
+                    game.players[index].dormantCards = [];
+                    game.players[index].landmarks['ショッピングモール'] = true;
+                    game.players[index].coins = 1;
+                }
+            },
+            actions: [['rollDice', { forceDice: 3, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                assert.strictEqual(game.players[0].coins, 102 - 2 * (game.players.length - 1));
+                for (let index = 1; index < game.players.length; index++) {
+                    assert.strictEqual(game.players[index].coins, 3);
+                }
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
             name: 'publisher-multiplayer-transfer',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.ROLL;
