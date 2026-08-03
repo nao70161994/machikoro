@@ -7,6 +7,7 @@
     "test": "node tests/run-all.js unit",
     "test:sim": "node tests/run-all.js sim",
     "test:all": "node tests/run-all.js all",
+    "test:batch": "npm run test:static && node tests/run-all.js all && node tests/online-action-reconnect-e2e.test.js && node tests/online-completion-e2e.test.js && node tests/game-schema-online-e2e.test.js && npm run test:release",
     "test:static": "git ls-files --cached --others --exclude-standard -- \"*.js\" \":!:node_modules/*\" | xargs -n 1 node --check && git ls-files --cached --others --exclude-standard -- \"*.json\" \":!:node_modules/*\" | xargs -n 1 node -e \"const fs=require(\\\"fs\\\"); JSON.parse(fs.readFileSync(process.argv[1],\\\"utf8\\\"))\" && git ls-files --cached --others --exclude-standard -- \"*.sh\" \":!:node_modules/*\" | xargs -n 1 sh -n && npm run test:static:py && npm run lint:maintenance && npm run test:types",
     "test:smoke": "npm run test:static && npm run test:core && node tests/run-all.js cpu-smoke && npm run test:online",
     "test:core": "node tests/run-all.js core",

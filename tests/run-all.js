@@ -205,6 +205,7 @@ const TEST_GROUPS = {
         'summarize-rl-metrics.test.js',
         'cli-args.test.js',
         'test-utils.test.js',
+        'batch-test-script.test.js',
         'maintenance-lint-config.test.js',
         'checkjs-config.test.js',
         'runtime-dependencies.test.js',
