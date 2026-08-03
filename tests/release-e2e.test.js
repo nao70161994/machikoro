@@ -136,7 +136,7 @@ function loadAppShellRuntime(profile = MOBILE_PROFILES[0]) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/actionContract.js', 'js/clientStorage.js', 'js/appShellStorage.js', 'js/clientCheckpoint.js', 'js/clientReporting.js', 'js/clientReportingTransport.js', 'js/lifecycleNotify.js', 'js/lifecycleTransport.js', 'js/uiWatchdog.js', 'js/uiWatchdogMonitor.js', 'js/clientRuntimeSnapshot.js', 'js/crashScreen.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/uiTabView.js', 'js/appShell.js']);
+    loadScripts(context, ['js/actionContract.js', 'js/clientStorage.js', 'js/appShellStorage.js', 'js/clientCheckpoint.js', 'js/clientReporting.js', 'js/clientReportingTransport.js', 'js/lifecycleNotify.js', 'js/lifecycleTransport.js', 'js/uiWatchdog.js', 'js/uiWatchdogMonitor.js', 'js/clientRuntimeSnapshot.js', 'js/crashScreen.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/appShell.js']);
     return { context, elements, fetchCalls };
 }
 
@@ -183,7 +183,7 @@ function loadUiModalRuntime() {
     elements.rulesModal.focus = () => { elements.rulesModal.focused = true; context.document.activeElement = elements.rulesModal; };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiInputPolicy.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/uiRuntimeSnapshot.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiInputPolicy.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiGameStatusView.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/ui.js']);
     return { context, elements, opener, first, last };
 }
 

@@ -682,26 +682,25 @@ function showTurnAnnouncer(name, isCPU) {
 
 function switchTab(tab) {
     const view = UiTabView.buildMainTabView(tab);
-    document.getElementById("tabContentLocal").style.display = view.localDisplay;
-    document.getElementById("tabContentOnline").style.display = view.onlineDisplay;
-    document.getElementById("tabContentStats").style.display = view.statsDisplay;
-    document.getElementById("tabLocal").className = view.localButton.className;
-    document.getElementById("tabOnline").className = view.onlineButton.className;
-    document.getElementById("tabStats").className = view.statsButton.className;
-    document.getElementById("tabLocal").setAttribute("aria-selected", view.localButton.ariaSelected);
-    document.getElementById("tabOnline").setAttribute("aria-selected", view.onlineButton.ariaSelected);
-    document.getElementById("tabStats").setAttribute("aria-selected", view.statsButton.ariaSelected);
+    UiTabEffects.applyMainTabView({
+        localContent: document.getElementById("tabContentLocal"),
+        onlineContent: document.getElementById("tabContentOnline"),
+        statsContent: document.getElementById("tabContentStats"),
+        localButton: document.getElementById("tabLocal"),
+        onlineButton: document.getElementById("tabOnline"),
+        statsButton: document.getElementById("tabStats"),
+    }, view);
     if (view.renderStats) renderStats();
 }
 
 function switchOnlineTab(tab) {
     const view = UiTabView.buildOnlineTabView(tab);
-    document.getElementById("onlineCreate").style.display = view.createDisplay;
-    document.getElementById("onlineJoin").style.display = view.joinDisplay;
-    document.getElementById("onlineTabCreate").className = view.createButton.className;
-    document.getElementById("onlineTabJoin").className = view.joinButton.className;
-    document.getElementById("onlineTabCreate").setAttribute("aria-selected", view.createButton.ariaSelected);
-    document.getElementById("onlineTabJoin").setAttribute("aria-selected", view.joinButton.ariaSelected);
+    UiTabEffects.applyOnlineTabView({
+        createContent: document.getElementById("onlineCreate"),
+        joinContent: document.getElementById("onlineJoin"),
+        createButton: document.getElementById("onlineTabCreate"),
+        joinButton: document.getElementById("onlineTabJoin"),
+    }, view);
 }
 
 function showRules() {

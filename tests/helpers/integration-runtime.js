@@ -211,6 +211,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/pwaShell.js',
         'js/actionUiRegistry.js',
         'js/uiTabView.js',
+        'js/uiTabEffects.js',
         'js/appShell.js',
         'js/localPlayerSettings.js',
         'js/localGameStart.js',
