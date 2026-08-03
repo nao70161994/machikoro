@@ -290,54 +290,77 @@ function resumeGame(options = {}) {
                 return;
             }
         }
-        cpuScheduleToken++;
-        if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
-        if (typeof resetOnlineState === 'function') resetOnlineState();
-        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('resume-game-reset-ui-locks');
-        cpuSpeed = state.cpuSpeed || 1500;
-        if (state.enabledCardsList) enabledCards = new Set(state.enabledCardsList);
-        if (state.enabledLandmarksList && state.enabledLandmarksList.length > 0) {
-            enabledLandmarks = new Set(state.enabledLandmarksList);
-        } else {
-            enabledLandmarks = new Set(Player.landmarkNames());
-        }
-        game = new GameManager(state.players.length);
-        game.enabledLandmarks = new Set(enabledLandmarks);
-        const hydrated = GameSnapshot.hydrateMutableGameState({
-            game,
-            shopStock: SHOP_STOCK,
+        const runtimePlan = LocalResumePolicy.runtimePlan(
             state,
-            createCardByName,
-            assignShopStockSnapshot: assignSavedShopStockSnapshot,
-            normalizePlayerCoins: value => value,
-            readDormantIndices: value => Array.isArray(value) ? value : [],
-            readLandmarks: value => Object.assign(
-                {},
-                makeDefaultLandmarks(),
-                isPlainObject(value) ? value : {}
-            ),
-            readLog: value => Array.isArray(value) ? value : [],
-            normalizeCurrentPlayerIndex: value => value,
-        });
-        if (!hydrated) throw new Error('Saved game hydration failed');
-        const cpuCreationPlan = LocalResumePolicy.cpuCreationPlan(
             savedCpuSettings,
-            state.players.length
+            Player.landmarkNames()
         );
-        cpuPlayers = cpuCreationPlan.map(entry => {
-            if (!entry) return null;
-            return typeof createCpuPlayer === "function"
-                ? createCpuPlayer(entry.difficulty, entry.options)
-                : new CPU(entry.difficulty, entry.options);
+        const runtimeResult = LocalResumePolicy.executeRuntime(runtimePlan, {
+            invalidateCpuSchedule() {
+                cpuScheduleToken++;
+            },
+            cancelDelayedHumanAction() {
+                if (typeof globalThis.cancelDelayedHumanAction === 'function') {
+                    globalThis.cancelDelayedHumanAction();
+                }
+            },
+            resetOnline() {
+                if (typeof resetOnlineState === 'function') resetOnlineState();
+            },
+            resetUiLocks() {
+                if (typeof resetUiLocksForGameReset === 'function') {
+                    resetUiLocksForGameReset('resume-game-reset-ui-locks');
+                }
+            },
+            applySettings(plan) {
+                cpuSpeed = plan.cpuSpeed;
+                if (plan.enabledCards) enabledCards = new Set(plan.enabledCards);
+                enabledLandmarks = new Set(plan.enabledLandmarks);
+            },
+            createAndHydrateGame(plan) {
+                game = new GameManager(plan.playerCount);
+                game.enabledLandmarks = new Set(enabledLandmarks);
+                return GameSnapshot.hydrateMutableGameState({
+                    game,
+                    shopStock: SHOP_STOCK,
+                    state: plan.state,
+                    createCardByName,
+                    assignShopStockSnapshot: assignSavedShopStockSnapshot,
+                    normalizePlayerCoins: value => value,
+                    readDormantIndices: value => Array.isArray(value) ? value : [],
+                    readLandmarks: value => Object.assign(
+                        {},
+                        makeDefaultLandmarks(),
+                        isPlainObject(value) ? value : {}
+                    ),
+                    readLog: value => Array.isArray(value) ? value : [],
+                    normalizeCurrentPlayerIndex: value => value,
+                });
+            },
+            createCpuPlayers(plan) {
+                cpuPlayers = plan.map(entry => {
+                    if (!entry) return null;
+                    return typeof createCpuPlayer === "function"
+                        ? createCpuPlayer(entry.difficulty, entry.options)
+                        : new CPU(entry.difficulty, entry.options);
+                });
+            },
+            resetPresentationState() {
+                prevCoins = null;
+                winSoundPlayed = false;
+            },
+            cancelAutoSkip,
+            clearUndo() {
+                undoState = null;
+            },
+            showGame() {
+                document.getElementById("titleScreen").style.display = "none";
+                document.getElementById("gameScreen").style.display = "block";
+            },
+            render,
+            scheduleCpu: scheduleCPU,
         });
-        prevCoins = null;
-        winSoundPlayed = false;
-        cancelAutoSkip();
-        undoState = null;
-        document.getElementById("titleScreen").style.display = "none";
-        document.getElementById("gameScreen").style.display = "block";
-        render();
-        scheduleCPU();
+        if (runtimeResult.ok !== true) throw new Error('Saved game hydration failed');
     } catch(e) {
         setLocalResumePending(false);
         repository.remove();

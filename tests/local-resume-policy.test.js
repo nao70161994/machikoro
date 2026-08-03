@@ -81,4 +81,92 @@ assert.strictEqual(
     creationPlan[2].options.expertOpponentDifficulties
 );
 
+const runtimeState = {
+    players: [{}, {}],
+    cpuSpeed: 800,
+    enabledCardsList: ['麦畑'],
+    enabledLandmarksList: [],
+};
+const runtimePlan = LocalResumePolicy.runtimePlan(
+    runtimeState,
+    [null, { difficulty: 'strong' }],
+    ['駅', '空港']
+);
+assert.strictEqual(runtimePlan.state, runtimeState);
+assert.strictEqual(runtimePlan.playerCount, 2);
+assert.strictEqual(runtimePlan.cpuSpeed, 800);
+assert.deepStrictEqual(runtimePlan.enabledCards, ['麦畑']);
+assert.deepStrictEqual(runtimePlan.enabledLandmarks, ['駅', '空港']);
+assert.ok(Object.isFrozen(runtimePlan));
+assert.ok(Object.isFrozen(runtimePlan.enabledCards));
+assert.ok(Object.isFrozen(runtimePlan.enabledLandmarks));
+
+const effectOrder = [];
+const effects = {};
+for (const name of [
+    'invalidateCpuSchedule',
+    'cancelDelayedHumanAction',
+    'resetOnline',
+    'resetUiLocks',
+    'applySettings',
+    'createCpuPlayers',
+    'resetPresentationState',
+    'cancelAutoSkip',
+    'clearUndo',
+    'showGame',
+    'render',
+    'scheduleCpu',
+]) {
+    effects[name] = () => effectOrder.push(name);
+}
+effects.createAndHydrateGame = plan => {
+    effectOrder.push('createAndHydrateGame');
+    assert.strictEqual(plan, runtimePlan);
+    return true;
+};
+assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, effects), {
+    ok: true,
+    reason: 'resumed',
+});
+assert.deepStrictEqual(effectOrder, [
+    'invalidateCpuSchedule',
+    'cancelDelayedHumanAction',
+    'resetOnline',
+    'resetUiLocks',
+    'applySettings',
+    'createAndHydrateGame',
+    'createCpuPlayers',
+    'resetPresentationState',
+    'cancelAutoSkip',
+    'clearUndo',
+    'showGame',
+    'render',
+    'scheduleCpu',
+]);
+
+const hydrationFailureOrder = [];
+const hydrationFailureEffects = Object.fromEntries(Object.keys(effects).map(name => [
+    name,
+    () => {
+        hydrationFailureOrder.push(name);
+        return name === 'createAndHydrateGame' ? false : undefined;
+    },
+]));
+assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, hydrationFailureEffects), {
+    ok: false,
+    reason: 'hydrate-failed',
+});
+assert.deepStrictEqual(hydrationFailureOrder, [
+    'invalidateCpuSchedule',
+    'cancelDelayedHumanAction',
+    'resetOnline',
+    'resetUiLocks',
+    'applySettings',
+    'createAndHydrateGame',
+]);
+assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, {}), {
+    ok: false,
+    reason: 'invalid-effects',
+});
+
 console.log('local-resume-policy.test.js passed');

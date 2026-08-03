@@ -64,6 +64,65 @@ const LocalResumePolicy = (() => {
         }));
     }
 
+    function runtimePlan(state, cpuSettings, fallbackLandmarks = []) {
+        const enabledCards = Array.isArray(state && state.enabledCardsList)
+            ? Object.freeze(state.enabledCardsList.slice())
+            : null;
+        const savedLandmarks = Array.isArray(state && state.enabledLandmarksList) &&
+            state.enabledLandmarksList.length > 0
+            ? state.enabledLandmarksList
+            : fallbackLandmarks;
+        const enabledLandmarks = Object.freeze(Array.isArray(savedLandmarks)
+            ? savedLandmarks.slice()
+            : []);
+        const playerCount = state && Array.isArray(state.players) ? state.players.length : 0;
+        return Object.freeze({
+            state,
+            playerCount,
+            cpuSpeed: state && state.cpuSpeed ? state.cpuSpeed : 1500,
+            enabledCards,
+            enabledLandmarks,
+            cpuCreationPlan: cpuCreationPlan(cpuSettings, playerCount),
+        });
+    }
+
+    function executeRuntime(plan, effects) {
+        const names = [
+            'invalidateCpuSchedule',
+            'cancelDelayedHumanAction',
+            'resetOnline',
+            'resetUiLocks',
+            'applySettings',
+            'createAndHydrateGame',
+            'createCpuPlayers',
+            'resetPresentationState',
+            'cancelAutoSkip',
+            'clearUndo',
+            'showGame',
+            'render',
+            'scheduleCpu',
+        ];
+        if (!plan || !effects || names.some(name => typeof effects[name] !== 'function')) {
+            return Object.freeze({ ok: false, reason: 'invalid-effects' });
+        }
+        effects.invalidateCpuSchedule();
+        effects.cancelDelayedHumanAction();
+        effects.resetOnline();
+        effects.resetUiLocks();
+        effects.applySettings(plan);
+        if (effects.createAndHydrateGame(plan) !== true) {
+            return Object.freeze({ ok: false, reason: 'hydrate-failed' });
+        }
+        effects.createCpuPlayers(plan.cpuCreationPlan);
+        effects.resetPresentationState();
+        effects.cancelAutoSkip();
+        effects.clearUndo();
+        effects.showGame();
+        effects.render();
+        effects.scheduleCpu();
+        return Object.freeze({ ok: true, reason: 'resumed' });
+    }
+
     return Object.freeze({
         DECISIONS,
         shouldInspectRepository,
@@ -71,6 +130,8 @@ const LocalResumePolicy = (() => {
         shouldInspectRlLoadState,
         decide,
         cpuCreationPlan,
+        runtimePlan,
+        executeRuntime,
     });
 })();
 
