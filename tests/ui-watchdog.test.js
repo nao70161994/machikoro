@@ -568,4 +568,46 @@ assert.deepStrictEqual(UiWatchdog.buildInteractabilityIssues({
     missingRegistryEntries: [{ action: 'nextTurn', phase: 'build' }],
 }, kinds), []);
 
+
+{
+    const snapshot = {
+        phase: 'build',
+        isOnlineGame: false,
+        isCpuTurn: false,
+        allowedActions: ['buildCard', 'nextTurn'],
+    };
+    const entries = [
+        { action: 'buildCard', spec: { targetId: 'buildMenu' }, usable: false },
+        { action: 'nextTurn', spec: { targetId: 'btnSkip' }, usable: false },
+        { action: 'undoBuild', spec: { targetId: 'buildMenu' }, usable: true },
+    ];
+    const issues = [{ kind: 'allowed-action-container-not-clickable', action: 'nextTurn' }];
+    const before = JSON.stringify({ snapshot, entries, issues });
+    assert.strictEqual(UiWatchdog.canRecoverActionContainers(snapshot, false), true);
+    assert.deepStrictEqual(
+        UiWatchdog.actionContainerRecoveryPlan(snapshot, { entries, issues }),
+        [entries[1]]
+    );
+    assert.deepStrictEqual(
+        UiWatchdog.actionContainerRecoveryPlan(snapshot, { entries, issues: [] }),
+        [entries[0], entries[1]]
+    );
+    assert.strictEqual(JSON.stringify({ snapshot, entries, issues }), before);
+}
+
+assert.strictEqual(UiWatchdog.canRecoverActionContainers({
+    phase: 'build', isCpuTurn: true,
+}, false), false);
+assert.strictEqual(UiWatchdog.canRecoverActionContainers({
+    phase: 'build', isOnlineGame: true, currentPlayerIndex: 0, myPlayerIndex: 0,
+    onlineActionInFlight: true,
+}, false), false);
+assert.strictEqual(UiWatchdog.canRecoverActionContainers({
+    phase: 'build', isOnlineGame: false, isCpuTurn: false, allowedActions: ['nextTurn'],
+}, true), false);
+assert.strictEqual(UiWatchdog.canRecoverActionContainers({
+    phase: 'pending', isOnlineGame: false, isCpuTurn: false, allowedActions: ['resolveTV'],
+}, true), true);
+assert.deepStrictEqual(UiWatchdog.actionContainerRecoveryPlan(null, { entries: [{}] }), []);
+
 console.log('ui watchdog tests passed');

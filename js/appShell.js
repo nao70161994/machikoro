@@ -1286,15 +1286,20 @@ function classifyUiInteractabilityCause(issue, snapshot) {
 }
 
 function syncAllowedActionContainersForRender(snapshot, issues = null) {
-    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
-    const issueActions = new Set((issues || [])
-        .filter(issue => issue && issue.kind === 'allowed-action-container-not-clickable' && issue.action)
-        .map(issue => issue.action));
+    const activeBlockingModal = hasActiveBlockingModal(snapshot);
+    if (!UiWatchdog.canRecoverActionContainers(snapshot, activeBlockingModal)) return false;
+    const entries = expectedActionContainerEntries(snapshot).map(entry => ({
+        action: entry.action,
+        spec: entry.spec,
+        usable: isActionContainerUiUsable(snapshot, entry),
+    }));
+    const plan = UiWatchdog.actionContainerRecoveryPlan(snapshot, {
+        activeBlockingModal,
+        issues,
+        entries,
+    });
     let changed = false;
-    for (const entry of expectedActionContainerEntries(snapshot)) {
-        if (issueActions.size && !issueActions.has(entry.action)) continue;
-        if (isActionContainerUiUsable(snapshot, entry)) continue;
+    for (const entry of plan) {
         changed = clearActionContainerForRecovery(entry.spec) || changed;
         changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
         if (entry.action === 'undoBuild') changed = ensurePostBuildUndoButtonForRecovery(snapshot) || changed;

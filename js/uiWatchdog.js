@@ -456,6 +456,24 @@ const UiWatchdog = (() => {
         return snapshot.socketConnected === false;
     }
 
+    function canRecoverActionContainers(snapshot, activeBlockingModal = false) {
+        if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
+        return !activeBlockingModal || expectedPendingActions(snapshot).length > 0;
+    }
+
+    function actionContainerRecoveryPlan(snapshot, observations = {}) {
+        if (!canRecoverActionContainers(snapshot, observations.activeBlockingModal === true)) return [];
+        const entries = Array.isArray(observations.entries) ? observations.entries : [];
+        const issues = Array.isArray(observations.issues) ? observations.issues : [];
+        const issueActions = new Set(issues
+            .filter(issue => issue && issue.kind === 'allowed-action-container-not-clickable' && issue.action)
+            .map(issue => issue.action));
+        return entries.filter(entry => {
+            if (!entry || entry.usable) return false;
+            return !issueActions.size || issueActions.has(entry.action);
+        });
+    }
+
     function buildInteractabilityIssues(snapshot, observations = {}, freezeKinds = {}) {
         const issues = [];
         if (!snapshot || !snapshot.phase) return issues;
@@ -548,6 +566,8 @@ const UiWatchdog = (() => {
         isStaleConfirmModalSnapshot,
         isStalePendingModalSnapshot,
         isOnlineUiBlockedSnapshot,
+        canRecoverActionContainers,
+        actionContainerRecoveryPlan,
         buildInteractabilityIssues,
         hasPendingWork,
         buildFreezeFacts,
