@@ -422,3 +422,14 @@ The remaining steps below still require the same gates described in each design 
 - Broad simultaneous splits would create compatibility risk and make rollback difficult.
 
 Use this plan as a gate: if a future task cannot name the file boundary, contract test, rollback path, and manual verification need from the relevant section above, it is not ready for implementation.
+
+## 2026-08-03 Batch 18 boundary update
+
+Four additional reversible seams were completed without changing runtime authority:
+
+1. Landmark scoring remains in `CPU.js`, while `CPUEvaluation.bestLandmarkCandidate()` owns only the stable score/cost reduction. Candidate enumeration order, heuristic constants, cache/profiling behavior, and RNG are unchanged.
+2. Pending outbound sequence and ID allocation remain in `online.js`, while `OnlinePayload.buildPendingOutboundAction()` owns only the exact six-field entry shape. Storage keys/formats, ACK timing, reconnect queues, and wire events are unchanged.
+3. Business Center HTML and selection projection now share `UiPendingMenu`; `ui.js` remains the DOM-effect owner and preserves reset-before-select ordering, selectors, ARIA values, and hidden input semantics.
+4. `registerStaticContentRoutes()` moves only conventional static-content route registration into `server/staticAssets.js`. The Service Worker and version response policies stay inline before reporting routes, preserving special cache headers and global Express route order.
+
+These units demonstrate the preferred migration pattern: compute or describe a detached result in the focused module, keep side effects and authority with the existing runtime, and fix ordering/tie behavior in direct plus wrapper/integration contracts. They do not authorize broader CPU selection rewrites, online state-machine cutover, PWA policy changes, or Socket handler relocation.

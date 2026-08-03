@@ -466,3 +466,11 @@ Test index:
 - APK validation no longer requires signing secrets. The signed job remains human-blocked until `ANDROID_KEYSTORE_BASE64`, `KEYSTORE_STORE_PASSWORD`, and `KEYSTORE_KEY_PASSWORD` are configured.
 - Durable file persistence and canonical transactions remain experimental. The default canonical store is still `noop`.
 - Dotted action IDs, watermarks, and non-host canonical replacement remain rejected; see `docs/PROTOCOL_COMPATIBILITY.md`. The completed four-device match includes two iPhones and two Android devices with reconnect; untested iPhone-specific paths remain limited to scenarios outside that recorded match.
+
+## 2026-08-03 Batch 18 handoff
+
+- CPU landmark candidate reduction is now pure and contract-tested, but `CPU.js` still owns candidate eligibility and every heuristic input. Preserve score construction and `Player.landmarkNames()` order when extending it.
+- Pending outbound action shape is now built by `OnlinePayload`; keep sequence allocation before client-action-ID generation and keep memory, legacy key, and room-scoped key writes in `online.js`.
+- Business Center selection view is owned by `UiPendingMenu`; `ui.js` deliberately remains responsible for DOM mutation. Preserve group reset before selecting the clicked chip and preserve `bcSelectCard()`'s boolean/public behavior.
+- Static content route registration is owned by `server/staticAssets.js`; asset-links, `/sw.js`, `/api/version`, reporting routes, and their current ordering remain in `server.js` by design.
+- Batch-end verification uses `npm run test:batch` once after the theme commits and docs sync. Continue choosing 3–5 independent seams per batch; do not narrow future batches to visible behavior changes only.
