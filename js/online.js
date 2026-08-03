@@ -147,7 +147,6 @@ function setOnlineReconnectLegacyFlag(value) {
 }
 let onlineActionInFlight = false;
 let onlineActionInFlightAt = 0;
-let _onlineActionTimeoutTimer = null;
 let onlineGameSchemaSelection = null;
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
@@ -373,6 +372,11 @@ const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const _onlineReconnectController = OnlineReconnectState.createController();
 const _onlineRejoinTimerController = OnlineRetryPolicy.createRejoinTimerController({
+    setTimer: typeof setTimeout === 'function' ? setTimeout : null,
+    clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
+    now: () => Date.now(),
+});
+const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightController({
     setTimer: typeof setTimeout === 'function' ? setTimeout : null,
     clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
     now: () => Date.now(),
@@ -1056,22 +1060,22 @@ function _armOnlineRejoinResponseTimeout() {
     return true;
 }
 
+function _syncOnlineActionFlightCompatibilityState(snapshot) {
+    onlineActionInFlight = snapshot.inFlight;
+    onlineActionInFlightAt = snapshot.startedAt;
+}
+
 function _clearOnlineActionTimeout() {
-    onlineActionInFlightAt = 0;
-    if (_onlineActionTimeoutTimer && typeof clearTimeout === 'function') {
-        clearTimeout(_onlineActionTimeoutTimer);
-    }
-    _onlineActionTimeoutTimer = null;
+    _syncOnlineActionFlightCompatibilityState(_onlineActionFlightController.clear());
 }
 
 function _setOnlineActionInFlight(value) {
-    onlineActionInFlight = value === true;
-    _clearOnlineActionTimeout();
-    if (!onlineActionInFlight) return;
-    onlineActionInFlightAt = Date.now();
-    if (typeof setTimeout === 'function') {
-        _onlineActionTimeoutTimer = setTimeout(_handleOnlineActionTimeout, ONLINE_ACTION_ACK_TIMEOUT_MS);
-    }
+    const snapshot = _onlineActionFlightController.set(
+        value,
+        _handleOnlineActionTimeout,
+        ONLINE_ACTION_ACK_TIMEOUT_MS
+    );
+    _syncOnlineActionFlightCompatibilityState(snapshot);
 }
 
 function _legacyOnlineRejoinRequestPlan(session) {

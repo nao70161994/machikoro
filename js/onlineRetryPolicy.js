@@ -164,6 +164,50 @@ function createRejoinTimerController(options = {}) {
     });
 }
 
+function createActionFlightController(options = {}) {
+    const setTimer = typeof options.setTimer === 'function' ? options.setTimer : null;
+    const clearTimer = typeof options.clearTimer === 'function' ? options.clearTimer : null;
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    let inFlight = false;
+    let startedAt = 0;
+    let timerHandle = null;
+
+    function clear() {
+        if (timerHandle !== null && clearTimer) clearTimer(timerHandle);
+        inFlight = false;
+        startedAt = 0;
+        timerHandle = null;
+        return snapshot();
+    }
+
+    function set(value, onTimeout, delayMs = ONLINE_RETRY_DEFAULTS.actionAckTimeoutMs) {
+        clear();
+        inFlight = value === true;
+        if (!inFlight) return snapshot();
+        startedAt = now();
+        if (setTimer && typeof onTimeout === 'function') {
+            const effectiveDelay = Number.isFinite(delayMs) && delayMs >= 0
+                ? delayMs
+                : ONLINE_RETRY_DEFAULTS.actionAckTimeoutMs;
+            timerHandle = setTimer(() => {
+                timerHandle = null;
+                onTimeout();
+            }, effectiveDelay);
+        }
+        return snapshot();
+    }
+
+    function snapshot() {
+        return Object.freeze({
+            inFlight,
+            startedAt,
+            timeoutPending: timerHandle !== null,
+        });
+    }
+
+    return Object.freeze({ set, clear, snapshot });
+}
+
 function actionAckAgeMs(startedAt, now = Date.now()) {
     if (!Number.isFinite(startedAt) || startedAt <= 0 || !Number.isFinite(now)) return 0;
     return Math.max(0, now - startedAt);
@@ -189,6 +233,7 @@ const OnlineRetryPolicy = Object.freeze({
     timeoutDecisions: REJOIN_TIMEOUT_DECISIONS,
     rejoinTimeoutDecision,
     createRejoinTimerController,
+    createActionFlightController,
     actionAckAgeMs,
     isActionAckTimedOut,
 });

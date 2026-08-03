@@ -206,3 +206,67 @@ runTest('online retry rejoin request planはlegacy完全一致時だけauthority
         }
     );
 });
+
+runTest('online action flight controllerはflag・開始時刻・timeoutを一括所有する', () => {
+    let currentTime = 1200;
+    const timers = [];
+    const cleared = [];
+    let timeoutCount = 0;
+    const controller = OnlineRetryPolicy.createActionFlightController({
+        now: () => currentTime,
+        setTimer(callback, delayMs) {
+            timers.push({ callback, delayMs });
+            return timers.length;
+        },
+        clearTimer(handle) { cleared.push(handle); },
+    });
+
+    assert.deepStrictEqual(controller.snapshot(), {
+        inFlight: false,
+        startedAt: 0,
+        timeoutPending: false,
+    });
+    assert.deepStrictEqual(controller.set(true, () => { timeoutCount++; }), {
+        inFlight: true,
+        startedAt: 1200,
+        timeoutPending: true,
+    });
+    assert.strictEqual(timers[0].delayMs, OnlineRetryPolicy.defaults.actionAckTimeoutMs);
+
+    currentTime = 1300;
+    assert.deepStrictEqual(controller.set(true, () => { timeoutCount++; }, 25), {
+        inFlight: true,
+        startedAt: 1300,
+        timeoutPending: true,
+    });
+    assert.deepStrictEqual(cleared, [1]);
+    assert.strictEqual(timers[1].delayMs, 25);
+    timers[1].callback();
+    assert.strictEqual(timeoutCount, 1);
+    assert.deepStrictEqual(controller.snapshot(), {
+        inFlight: true,
+        startedAt: 1300,
+        timeoutPending: false,
+    });
+
+    assert.deepStrictEqual(controller.clear(), {
+        inFlight: false,
+        startedAt: 0,
+        timeoutPending: false,
+    });
+});
+
+runTest('online action flight controllerはtimer不在でもflight時刻を保持する', () => {
+    const controller = OnlineRetryPolicy.createActionFlightController({ now: () => 42 });
+    assert.deepStrictEqual(controller.set(true, () => {}), {
+        inFlight: true,
+        startedAt: 42,
+        timeoutPending: false,
+    });
+    assert.strictEqual(Object.isFrozen(controller.snapshot()), true);
+    assert.deepStrictEqual(controller.set(false), {
+        inFlight: false,
+        startedAt: 0,
+        timeoutPending: false,
+    });
+});
