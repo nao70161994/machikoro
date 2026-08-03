@@ -1844,8 +1844,14 @@ runTest('/api/version は stale cache を避ける Cache-Control を返す', () 
 });
 
 runTest('/api/client-error-test route はdebug endpointにも小さなJSON上限を持つ', () => {
-    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-    assert.ok(source.includes("app.post('/api/client-error-test', express.json({ limit: '1kb' })"));
+    const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const routeSource = fs.readFileSync(
+        path.join(__dirname, '..', 'server', 'reportingHttpRoutes.js'),
+        'utf8'
+    );
+    assert.ok(serverSource.includes("require('./server/reportingHttpRoutes')"));
+    assert.ok(serverSource.includes('registerReportingHttpRoutes({'));
+    assert.ok(routeSource.includes("app.post('/api/client-error-test', json({ limit: '1kb' })"));
 });
 
 // ===== validateGameAction =====

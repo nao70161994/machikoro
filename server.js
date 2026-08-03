@@ -11,6 +11,7 @@ const loadGameRuntime = makeGameRuntimeLoader({
 });
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const makeReportDelivery = require('./server/reportDelivery');
+const registerReportingHttpRoutes = require('./server/reportingHttpRoutes');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
 const makeClientErrorGateway = require('./server/clientErrorGateway');
 const {
@@ -569,27 +570,14 @@ app.get('/api/version', (req, res) => {
 });
 
 
-app.use('/api/client-error', express.json({ limit: CLIENT_ERROR_LIMITS.maxJsonBytes }));
-app.post('/api/client-error', (req, res) => {
-    handleClientErrorRequest(req, res).catch((error) => {
-        console.warn('[client-error] handler failed:', error?.message || error);
-        res.status(202).json({ ok: true, notificationFailed: true });
-    });
-});
-
-app.post('/api/client-error-test', express.json({ limit: '1kb' }), (req, res) => {
-    handleClientErrorTestRequest(req, res).catch((error) => {
-        console.warn('[client-error-test] handler failed:', error?.message || error);
-        res.status(503).json({ ok: false, error: 'client_error_test_failed' });
-    });
-});
-
-app.use('/api/game-lifecycle', express.json({ limit: '8kb' }));
-app.post('/api/game-lifecycle', (req, res) => {
-    handleGameLifecycleRequest(req, res).catch((error) => {
-        console.warn('[game-lifecycle] handler failed:', error?.message || error);
-        res.status(202).json({ ok: true, notificationFailed: true });
-    });
+registerReportingHttpRoutes({
+    app,
+    json: express.json,
+    clientErrorJsonLimit: CLIENT_ERROR_LIMITS.maxJsonBytes,
+    handleClientErrorRequest,
+    handleClientErrorTestRequest,
+    handleGameLifecycleRequest,
+    warn: (...args) => console.warn(...args),
 });
 
 
