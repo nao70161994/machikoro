@@ -131,6 +131,63 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'multi-mover-dormant-transfer-chain',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                const dormantCafe = runtime.createCardByName('カフェ');
+                game.players[0].cards = [
+                    runtime.createCardByName('引越し屋'),
+                    runtime.createCardByName('引越し屋'),
+                    dormantCafe,
+                    runtime.createCardByName('パン屋'),
+                ];
+                game.players[0].dormantCards = [];
+                game.players[0].makeDormant(dormantCafe);
+                game.players[0].coins = 3;
+                game.players[1].cards = [];
+                game.players[1].dormantCards = [];
+            },
+            actions: [
+                ['rollDice', { forceDice: 9, tunaDice: [1, 1] }],
+                ['resolveMover', { cardName: 'カフェ', targetIndex: 1 }],
+                ['resolveMover', { cardName: 'パン屋', targetIndex: 1 }],
+            ],
+            assertAfter(game, stepIndex) {
+                const current = game.players[0];
+                const target = game.players[1];
+                if (stepIndex === 0) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.PENDING);
+                    assert.strictEqual(game.pendingMover, 2);
+                    assert.deepStrictEqual(
+                        Array.from(game.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
+                        ['resolveMover:pendingMover', 'resolveMover:pendingMover']
+                    );
+                    assert.strictEqual(current.isDormant(current.cards[2]), true);
+                } else if (stepIndex === 1) {
+                    assert.strictEqual(game.pendingMover, 1);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.PENDING);
+                    assert.strictEqual(current.coins, 7);
+                    assert.strictEqual(target.cards[0].name, 'カフェ');
+                    assert.strictEqual(target.isDormant(target.cards[0]), true);
+                } else {
+                    assert.strictEqual(game.pendingMover, 0);
+                    assert.strictEqual(game.pendingActionQueue.length, 0);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+                    assert.strictEqual(current.coins, 11);
+                    assert.deepStrictEqual(
+                        Array.from(target.cards, card => card.name),
+                        ['カフェ', 'パン屋']
+                    );
+                    assert.strictEqual(target.isDormant(target.cards[0]), true);
+                    assert.strictEqual(target.isDormant(target.cards[1]), false);
+                    assert.deepStrictEqual(
+                        Array.from(current.cards, card => card.name),
+                        ['引越し屋', '引越し屋']
+                    );
+                }
+            },
+        },
+        {
             name: 'loan-dormancy-recovery',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.ROLL;
