@@ -219,6 +219,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/citySkyline.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
+        'js/localResumePolicy.js',
         'js/storage.js',
         'js/stats.js',
         'js/uiNotice.js',
@@ -266,6 +267,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineReconnectState.js');
         files.push('js/onlineRuntimeFlags.js');
         files.push('js/onlineRetryPolicy.js');
+        files.push('js/onlineSchemaTransport.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');
