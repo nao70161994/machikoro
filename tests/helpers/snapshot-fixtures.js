@@ -25,6 +25,25 @@ function makeSnapshotRoundtripFixtures(runtime, makeUndoStateFromMirror) {
     pendingGame.lastDice1 = 6;
     pendingGame.turnCount = 3;
 
+    const multiPendingDormantGame = makeGame(3);
+    multiPendingDormantGame.phase = runtime.GAME_PHASES.PENDING;
+    multiPendingDormantGame.currentPlayerIndex = 1;
+    multiPendingDormantGame.pendingCleaning = 1;
+    multiPendingDormantGame.pendingRenovation = 1;
+    multiPendingDormantGame.pendingActionQueue = [
+        { action: runtime.GAME_ACTIONS.RESOLVE_CLEANING, field: 'pendingCleaning' },
+        { action: runtime.GAME_ACTIONS.RESOLVE_RENOVATION, field: 'pendingRenovation' },
+    ];
+    multiPendingDormantGame.players[1].cards.push(runtime.createCardByName('カフェ'));
+    multiPendingDormantGame.players[1].dormantCards = [
+        multiPendingDormantGame.players[1].cards[0],
+        multiPendingDormantGame.players[1].cards[2],
+    ];
+    multiPendingDormantGame.lastDiceResult = 8;
+    multiPendingDormantGame.lastDice1 = 3;
+    multiPendingDormantGame.lastDice2 = 5;
+    multiPendingDormantGame.turnCount = 19;
+
     const multiplayerGame = makeGame(4);
     multiplayerGame.currentPlayerIndex = 3;
     multiplayerGame.players[1].coins = 12;
@@ -55,6 +74,7 @@ function makeSnapshotRoundtripFixtures(runtime, makeUndoStateFromMirror) {
         { name: 'initial', game: initialGame, shopStock: { 麦畑: 6, パン屋: 6 }, undoState: null, actionSeq: 0 },
         { name: 'build-with-undo', game: buildGame, shopStock: buildStock, undoState: buildUndoState, actionSeq: 9 },
         { name: 'pending', game: pendingGame, shopStock: { 麦畑: 6, パン屋: 6 }, undoState: null, actionSeq: 14 },
+        { name: 'multi-pending-dormant', game: multiPendingDormantGame, shopStock: { 麦畑: 4, パン屋: 5, カフェ: 5 }, undoState: null, actionSeq: 22 },
         { name: 'multiplayer-landmark', game: multiplayerGame, shopStock: { 麦畑: 4, パン屋: 5, カフェ: 3 }, undoState: null, actionSeq: 27 },
         { name: 'max-players', game: maxPlayersGame, shopStock: { 麦畑: 1, パン屋: 2, カフェ: 4 }, undoState: null, actionSeq: 88 },
         { name: 'endgame', game: endgameGame, shopStock: { 麦畑: 2, パン屋: 3 }, undoState: null, actionSeq: 61 },

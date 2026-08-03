@@ -24,6 +24,28 @@ function assertRestoredFixtureSemantics(runtime, fixture, restoredGame, snapshot
             [`${runtime.GAME_ACTIONS.RESOLVE_TV}:pendingTV`]
         );
     }
+    if (fixture.name === 'multi-pending-dormant') {
+        assert.strictEqual(restoredGame.phase, runtime.GAME_PHASES.PENDING);
+        assert.deepStrictEqual(
+            Array.from(runtime.GameManager.allowedActionsFor(restoredGame)),
+            [runtime.GAME_ACTIONS.RESOLVE_CLEANING]
+        );
+        assert.deepStrictEqual(
+            Array.from(restoredGame.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
+            [
+                `${runtime.GAME_ACTIONS.RESOLVE_CLEANING}:pendingCleaning`,
+                `${runtime.GAME_ACTIONS.RESOLVE_RENOVATION}:pendingRenovation`,
+            ]
+        );
+        const player = restoredGame.players[1];
+        assert.deepStrictEqual(
+            Array.from(player.dormantCards, card => player.cards.indexOf(card)),
+            [0, 2]
+        );
+        assert.strictEqual(restoredGame.lastDiceResult, 8);
+        assert.strictEqual(restoredGame.lastDice1, 3);
+        assert.strictEqual(restoredGame.lastDice2, 5);
+    }
     if (fixture.name === 'max-players') {
         assert.strictEqual(restoredGame.players.length, 10);
         assert.strictEqual(restoredGame.currentPlayerIndex, 9);
@@ -45,6 +67,7 @@ runTest('snapshot fixtures は主要状態をserialize/restore/serializeで保�
         'initial',
         'build-with-undo',
         'pending',
+        'multi-pending-dormant',
         'multiplayer-landmark',
         'max-players',
         'endgame',
