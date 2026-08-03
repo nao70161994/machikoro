@@ -89,3 +89,31 @@ runTest('turn policyはIT pendingと通常進行を排他的なfrozen planにす
     assert.ok(Object.isFrozen(pending));
     assert.ok(Object.isFrozen(GameTurnPolicy.nextTurnRejectionReasons));
 });
+
+runTest('turn policyはIT解決を保存・不足・skipのimmutable planへ分ける', () => {
+    const outcomes = GameTurnPolicy.itResolutionOutcomes;
+    assert.deepStrictEqual(GameTurnPolicy.planItResolution({
+        phase: 'pending', pendingPhase: 'pending', pendingIt: true, doSave: true, coins: 3,
+    }), { ok: true, outcome: outcomes.SAVED, coinDelta: -1, ventureDelta: 1 });
+    assert.deepStrictEqual(GameTurnPolicy.planItResolution({
+        phase: 'pending', pendingPhase: 'pending', pendingIt: true, doSave: true, coins: 0,
+    }), { ok: true, outcome: outcomes.INSUFFICIENT_COINS, coinDelta: 0, ventureDelta: 0 });
+    const skipped = GameTurnPolicy.planItResolution({
+        phase: 'pending', pendingPhase: 'pending', pendingIt: true, doSave: false, coins: 8,
+    });
+    assert.deepStrictEqual(skipped, { ok: true, outcome: outcomes.SKIPPED, coinDelta: 0, ventureDelta: 0 });
+    assert.ok(Object.isFrozen(skipped));
+    assert.ok(Object.isFrozen(outcomes));
+});
+
+runTest('turn policyはIT gateをfail-fastにし拒否・skipでcoinsを読まない', () => {
+    let coinReads = 0;
+    const coins = () => { coinReads++; return 5; };
+    assert.deepStrictEqual(GameTurnPolicy.planItResolution({
+        phase: 'build', pendingPhase: 'pending', pendingIt: true, doSave: true, coins,
+    }), { ok: false, outcome: 'rejected', coinDelta: 0, ventureDelta: 0 });
+    assert.deepStrictEqual(GameTurnPolicy.planItResolution({
+        phase: 'pending', pendingPhase: 'pending', pendingIt: true, doSave: 0, coins,
+    }), { ok: true, outcome: 'skipped', coinDelta: 0, ventureDelta: 0 });
+    assert.strictEqual(coinReads, 0);
+});

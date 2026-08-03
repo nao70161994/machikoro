@@ -55,6 +55,46 @@ const GameTurnPolicy = (() => {
         });
     }
 
+    const itResolutionOutcomes = Object.freeze({
+        REJECTED: 'rejected',
+        SAVED: 'saved',
+        INSUFFICIENT_COINS: 'insufficient-coins',
+        SKIPPED: 'skipped',
+    });
+
+    function planItResolution(facts = {}) {
+        if (readFact(facts.phase) !== readFact(facts.pendingPhase) || !readFact(facts.pendingIt)) {
+            return Object.freeze({
+                ok: false,
+                outcome: itResolutionOutcomes.REJECTED,
+                coinDelta: 0,
+                ventureDelta: 0,
+            });
+        }
+        if (!readFact(facts.doSave)) {
+            return Object.freeze({
+                ok: true,
+                outcome: itResolutionOutcomes.SKIPPED,
+                coinDelta: 0,
+                ventureDelta: 0,
+            });
+        }
+        if (readFact(facts.coins) < 1) {
+            return Object.freeze({
+                ok: true,
+                outcome: itResolutionOutcomes.INSUFFICIENT_COINS,
+                coinDelta: 0,
+                ventureDelta: 0,
+            });
+        }
+        return Object.freeze({
+            ok: true,
+            outcome: itResolutionOutcomes.SAVED,
+            coinDelta: -1,
+            ventureDelta: 1,
+        });
+    }
+
     return Object.freeze({
         phaseAfterIncome,
         shouldRepeatAmusementParkTurn,
@@ -63,6 +103,8 @@ const GameTurnPolicy = (() => {
         planNextTurnAdmission,
         shouldAwardAirportBonus,
         planNextTurnContinuation,
+        itResolutionOutcomes,
+        planItResolution,
     });
 })();
 

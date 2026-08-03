@@ -751,16 +751,25 @@ class GameManager {
 
     // ITベンチャー：任意で1コイン消費して積立
     resolveIT(doSave) {
-        if (this.phase !== GAME_PHASES.PENDING || !this.pendingIT) return false;
-        const current = this.currentPlayer();
-        if (doSave) {
-            if (current.coins < 1) {
-                this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`);
-            } else {
-                current.coins -= 1;
-                current.itVentureCoins += 1;
-                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立 → 合計${current.itVentureCoins}コイン`);
-            }
+        let current;
+        const plan = GameTurnPolicy.planItResolution({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingIt: this.pendingIT,
+            doSave,
+            coins: () => {
+                current = this.currentPlayer();
+                return current.coins;
+            },
+        });
+        if (!plan.ok) return false;
+        if (!current) current = this.currentPlayer();
+        current.coins += plan.coinDelta;
+        current.itVentureCoins += plan.ventureDelta;
+        if (plan.outcome === GameTurnPolicy.itResolutionOutcomes.SAVED) {
+            this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立 → 合計${current.itVentureCoins}コイン`);
+        } else if (plan.outcome === GameTurnPolicy.itResolutionOutcomes.INSUFFICIENT_COINS) {
+            this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`);
         } else {
             this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立スキップ`);
         }
