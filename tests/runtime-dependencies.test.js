@@ -6,16 +6,20 @@ const { runTest } = require('./helpers/test-utils');
 function assertDependencyOrder(file, dependencies) {
     const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
-    for (const [dependency, consumer] of dependencies) {
-        const dependencyIndex = source.indexOf(dependency);
-        const consumerIndex = source.indexOf(consumer);
+    for (const chain of dependencies) {
+        for (let index = 0; index < chain.length - 1; index++) {
+            const dependency = chain[index];
+            const consumer = chain[index + 1];
+            const dependencyIndex = source.indexOf(dependency);
+            const consumerIndex = source.indexOf(consumer);
 
-        assert.ok(dependencyIndex >= 0, `${file}: missing ${dependency}`);
-        assert.ok(consumerIndex >= 0, `${file}: missing ${consumer}`);
-        assert.ok(
-            dependencyIndex < consumerIndex,
-            `${file}: ${dependency} must load before ${consumer}`
-        );
+            assert.ok(dependencyIndex >= 0, `${file}: missing ${dependency}`);
+            assert.ok(consumerIndex >= 0, `${file}: missing ${consumer}`);
+            assert.ok(
+                dependencyIndex < consumerIndex,
+                `${file}: ${dependency} must load before ${consumer}`
+            );
+        }
     }
 }
 
