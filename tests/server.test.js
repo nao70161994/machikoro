@@ -153,6 +153,7 @@ const {
     __io,
 } = require('../server');
 const makeRoomLifecycle = require('../server/roomLifecycle');
+const makeRoomProjection = require('../server/roomProjection');
 const {
     CANONICAL_STATE_STORE_MODES,
     canonicalStateStoreMode,
@@ -360,10 +361,12 @@ runTest('validateCreateRoomLifecycle は期限切れroomを掃除してから上
     assert.strictEqual(validateCreateRoomLifecycle({}, now, targetRooms).ok, false);
 });
 
-runTest('roomLifecycle pure helpers は開始payloadとhost候補判定をserver依存なしで計算する', () => {
+runTest('room projectionとlifecycleは開始payload投影とhost候補判定を分担する', () => {
     const lifecycle = makeRoomLifecycle({
         limits: ROOM_LIFECYCLE_LIMITS,
         defaultRooms: {},
+    });
+    const projection = makeRoomProjection({
         cpuDifficultyLabel: difficulty => ({ strong: '強', rl: '学' }[difficulty] || '普'),
         hashReconnectToken: token => 'hash:' + token,
     });
@@ -382,16 +385,16 @@ runTest('roomLifecycle pure helpers は開始payloadとhost候補判定をserver
         ],
     };
 
-    assert.deepStrictEqual(lifecycle.buildPlayerList(room), ['CPU（学）', 'Alice', 'CPU（強）', 'Bob']);
-    assert.strictEqual(lifecycle.countRoomHumanSlots(room), 2);
-    assert.deepStrictEqual(lifecycle.buildGameStartPlayerNames(room), ['CPU1（学）', 'Alice', 'CPU2（強）', 'Bob']);
-    assert.deepStrictEqual(lifecycle.roomClientVersions(new Map([['socket-a', { clientVersion: 'v-a' }]]), room), ['v-a', 'unknown', 'unknown']);
-    assert.deepStrictEqual(lifecycle.roomReconnectTokenHashes(room, ['CPU1（学）', 'Alice', 'CPU2（強）', 'Bob']), ['', 'hash:ta', '', 'hash:tb']);
+    assert.deepStrictEqual(projection.buildPlayerList(room), ['CPU（学）', 'Alice', 'CPU（強）', 'Bob']);
+    assert.strictEqual(projection.countRoomHumanSlots(room), 2);
+    assert.deepStrictEqual(projection.buildGameStartPlayerNames(room), ['CPU1（学）', 'Alice', 'CPU2（強）', 'Bob']);
+    assert.deepStrictEqual(projection.roomClientVersions(new Map([['socket-a', { clientVersion: 'v-a' }]]), room), ['v-a', 'unknown', 'unknown']);
+    assert.deepStrictEqual(projection.roomReconnectTokenHashes(room, ['CPU1（学）', 'Alice', 'CPU2（強）', 'Bob']), ['', 'hash:ta', '', 'hash:tb']);
     assert.deepStrictEqual(
         lifecycle.getRemainingConnectedPlayers(room, new Map([['socket-b', {}]]), 'socket-a').map(player => player.index),
         [3]
     );
-    assert.deepStrictEqual(lifecycle.shuffledPlayerOrder(['A', 'B', 'C'], () => 0), [1, 2, 0]);
+    assert.deepStrictEqual(projection.shuffledPlayerOrder(['A', 'B', 'C'], () => 0), [1, 2, 0]);
 });
 
 runTest('room lifecycle は同じsocketの別room入室を拒否する', () => {

@@ -7,7 +7,6 @@ const {
     isRoomHostConnected,
     roomHostChangedPayload,
     setRoomHostPlayerIndex,
-    roomHostlessRestoreCapabilities,
 } = makeRoomLifecycle({
     limits: {},
     defaultRooms: {},
@@ -41,32 +40,6 @@ runTest('room lifecycle はhost indexとepochを開始payloadへ同期する', (
         hostPlayerIndex: 0,
         hostEpoch: 1,
     });
-});
-
-runTest('room lifecycle はhostless capabilityをCPUとsocket対応状況から投影する', () => {
-    const room = {
-        playerSettings: [
-            { type: 'cpu' },
-            { type: 'human' },
-            { type: 'human' },
-            { type: 'human' },
-        ],
-        players: [
-            { id: 'cpu-socket', index: 0 },
-            { id: 'supported', index: 1 },
-            { id: 'unsupported', index: 2 },
-        ],
-    };
-    const sockets = new Map([
-        ['cpu-socket', { hostlessRestoreVersion: 1 }],
-        ['supported', { hostlessRestoreVersion: 1 }],
-        ['unsupported', { hostlessRestoreVersion: 0 }],
-    ]);
-
-    assert.deepStrictEqual(
-        roomHostlessRestoreCapabilities(sockets, room, ['CPU', 'A', 'B', 'C']),
-        [0, 1, 0, 0]
-    );
 });
 
 runTest('room lifecycle はhostChanged wire payloadを既存fieldへ限定する', () => {

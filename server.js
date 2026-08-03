@@ -298,19 +298,22 @@ const {
     isRoomHostConnected: isRoomHostConnectedForSockets,
     validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
+    getRemainingConnectedPlayers: getRemainingConnectedRoomPlayers,
+    setRoomHostPlayerIndex,
+    roomHostChangedPayload: buildRoomHostChangedPayload,
+} = require('./server/roomLifecycle')({
+    limits: ROOM_LIFECYCLE_LIMITS,
+    defaultRooms: rooms,
+});
+const {
     buildPlayerList: buildRoomPlayerList,
     countRoomHumanSlots: countRoomHumanSlotsForRoom,
     buildGameStartPlayerNames: buildGameStartPlayerNamesForRoom,
     shuffledPlayerOrder: shuffledRoomPlayerOrder,
     roomClientVersions: roomClientVersionsForSockets,
     roomReconnectTokenHashes: roomReconnectTokenHashesForRoom,
-    getRemainingConnectedPlayers: getRemainingConnectedRoomPlayers,
-    setRoomHostPlayerIndex,
-    roomHostChangedPayload: buildRoomHostChangedPayload,
     roomHostlessRestoreCapabilities: roomHostlessRestoreCapabilitiesForSockets,
-} = require('./server/roomLifecycle')({
-    limits: ROOM_LIFECYCLE_LIMITS,
-    defaultRooms: rooms,
+} = require('./server/roomProjection')({
     cpuDifficultyLabel,
     hashReconnectToken,
 });
