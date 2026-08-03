@@ -7,6 +7,7 @@ const CLIENT_ERROR_REPORT_MESSAGE_LIMIT = 500;
 const CLIENT_ERROR_REPORT_SUPPRESS_MS = 10000;
 const FREEZE_WATCHDOG_INTERVAL_MS = 1000;
 const FREEZE_WATCHDOG_THRESHOLD_MS = 5000;
+const FREEZE_WATCHDOG_REPORT_SUPPRESS_MS = 60000;
 const FREEZE_SUMMARY_SCHEMA_VERSION = 2;
 const FREEZE_KINDS = Object.freeze({
     MODAL_UI_LOCKED: 'modal-ui-locked',
@@ -18,16 +19,16 @@ const FREEZE_KINDS = Object.freeze({
     CPU_TURN_STALLED: 'cpu-turn-stalled',
     ONLINE_ACTION_IN_FLIGHT_STALLED: 'online-action-in-flight-stalled',
 });
+const freezeWatchdogMonitor = UiWatchdogMonitor.create({
+    thresholdMs: FREEZE_WATCHDOG_THRESHOLD_MS,
+    reportSuppressMs: FREEZE_WATCHDOG_REPORT_SUPPRESS_MS,
+});
 let _clientErrorReportingBound = false;
 let _consoleErrorHooked = false;
 let _lastClientErrorReport = { key: '', time: 0 };
 let _onlineStatusHandlersBound = false;
 let _mainViewResizeBound = false;
 let _freezeWatchdogBound = false;
-let _freezeWatchdogLastKey = '';
-let _freezeWatchdogLastChangedAt = 0;
-let _freezeWatchdogLastReportKey = '';
-let _freezeWatchdogLastReportAt = 0;
 let _postBuildUiStabilizerPending = false;
 
 const truncateClientErrorField = ClientReporting.truncateField;
@@ -576,10 +577,7 @@ function resetAccessibleModalStateForRecovery() {
 }
 
 function resetFreezeWatchdogState(reason = 'watchdog-reset') {
-    _freezeWatchdogLastKey = '';
-    _freezeWatchdogLastChangedAt = 0;
-    _freezeWatchdogLastReportKey = '';
-    _freezeWatchdogLastReportAt = 0;
+    freezeWatchdogMonitor.reset();
     safeAppShellStorageRemove('machikoroFreezeSnapshot');
     markClientFlowCheckpoint(reason);
 }
@@ -1718,25 +1716,20 @@ function checkFreezeWatchdog() {
     const now = Date.now();
     const snapshot = buildClientRuntimeSnapshot('freeze-watchdog');
     const key = freezeWatchdogStateKey(snapshot);
-    if (key !== _freezeWatchdogLastKey) {
-        _freezeWatchdogLastKey = key;
-        _freezeWatchdogLastChangedAt = now;
-        return;
-    }
-    if (!_freezeWatchdogLastChangedAt) _freezeWatchdogLastChangedAt = now;
-    if (now - _freezeWatchdogLastChangedAt < FREEZE_WATCHDOG_THRESHOLD_MS) return;
+    const progress = freezeWatchdogMonitor.observeProgress(key, now);
+    if (!progress.shouldClassify) return;
     const freezeKind = classifyLikelyFreeze(snapshot);
     if (!freezeKind) return;
     const reportKey = freezeKind + '|' + freezeIssueDedupeSignature(snapshot);
-    if (_freezeWatchdogLastReportKey === reportKey && now - _freezeWatchdogLastReportAt < 60000) {
+    const action = freezeWatchdogMonitor.decideReport(freezeKind, reportKey, now);
+    if (action === UiWatchdogMonitor.ACTIONS.RECOVER) {
         recoverUiInteractability(snapshot);
         return;
     }
-    _freezeWatchdogLastReportKey = reportKey;
-    _freezeWatchdogLastReportAt = now;
+    if (action !== UiWatchdogMonitor.ACTIONS.REPORT_AND_RECOVER) return;
     const payload = {
         freezeKind,
-        stagnantMs: now - _freezeWatchdogLastChangedAt,
+        stagnantMs: progress.stagnantMs,
         snapshot,
         interactabilityIssues: validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind),
     };
