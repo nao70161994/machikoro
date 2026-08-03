@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
 const { startRoomGc } = require('./server/roomGcRuntime');
 const { registerServerProcessHandlers, startHttpServer } = require('./server/processRuntime');
+const { registerSocketConnectionRuntime } = require('./server/socketConnectionRuntime');
 const loadGameRuntime = makeGameRuntimeLoader({
     baseDir: __dirname,
     runtimeConsole: console,
@@ -772,98 +773,107 @@ const {
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
 startRoomGc({ cleanupExpiredRooms, rooms });
 
-io.on('connection', (socket) => {
-    console.log('接続:', socket.id);
-    hostlessRestoreRuntime.registerSocket(socket);
-
-    registerLobbySocketHandlers(socket, {
-        requirePlainSocketPayload,
-        sanitizeName,
-        emitAppError,
-        hasInvalidOnlineRlModelSettings,
-        normalizePlayerSettings,
-        normalizeCpuSpeed,
-        validateCreateRoomLifecycle,
-        rooms,
-        generateRoomId,
-        generateReconnectToken,
-        normalizeEnabledCards,
-        landmarkNames: gameRuntime.Player.landmarkNames,
-        markCreateRoomForSocket,
-        createRoomRateKeyForSocket,
-        markCreateRoomForRateKey,
-        buildPlayerList,
-        io,
-        checkGameStart,
-        validateSocketCanEnterRoom,
-        isValidRoomId,
-        resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
-        negotiateRoomGameSchemaCandidate: (room, playerIndex, capabilities) => negotiateRoomGameSchemaCandidate(room, playerIndex, capabilities, GAME_SCHEMA_NEGOTIATION_ENABLED),
-    });
-
-    registerActionSocketHandler(socket, {
-        requirePlainSocketPayload,
-        rooms,
-        isActiveRoomSocket,
-        emitAppError,
-        normalizeClientActionId,
-        findAcceptedClientAction,
-        validateGameAction,
-        canonicalizeActionData,
-        makeUndoStateFromMirror,
-        nextRoomActionSeq,
-        gameSchemaShadow,
-        gameEngineAuthority,
-        adoptTransitionSnapshotToRoomMirror,
-        decodeGameSchemaAction: (room, payload) => GameSchemaWire.decodeActionPayload(
-            GAME_SCHEMA_WIRE_ENABLED,
-            false,
-            room.gameStartPayload && room.gameStartPayload.gameSchema || null,
-            payload
-        ),
-        encodeGameSchemaAction: (room, payload) => GameSchemaWire.encodeActionPayload(
-            GAME_SCHEMA_WIRE_ENABLED,
-            GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
-            room.gameStartPayload && room.gameStartPayload.gameSchema || null,
-            payload
-        ),
-        buildRestoreActionAudit,
-        applyAcceptedActionToRoomCanonicalMirror,
-        rememberAcceptedClientAction,
-        compactRoomActionLog,
-        attachCompactedRestoreSnapshotToAction,
-        markRoomCanonicalMirrorCurrent,
-        persistRoomCanonicalState,
-    });
-    registerRejoinSocketHandler(socket, {
-        requirePlainSocketPayload,
-        isValidRoomId,
-        emitAppError,
-        rooms,
-        getExpectedReconnectTokenHash,
-        hashReconnectToken,
-        detachExistingPlayerSocket,
-        resolveRejoinPlayer,
-        buildRejoinDataPayload,
-        resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
-        supportsSelectedGameSchema: (capabilities, selected) => supportsSelectedGameSchemaForRuntime(
-            capabilities, selected, GAME_SCHEMA_NEGOTIATION_ENABLED
-        ),
-        io,
-    });
-
-    // サーバー再起動後にホストがルームを復元する
-    registerRecreateSocketHandler(socket, {
-        decodePayload: payload => GameSchemaRecreateWire.decode(
-            GAME_SCHEMA_RECREATE_WIRE_ENABLED,
-            payload
-        ),
-        emitAppError,
-        handleRecreateRoom,
-        hostRestored: roomId => hostlessRestoreRuntime.hostRestored(roomId),
-    });
-
-    disconnectSocketHandler.registerSocket(socket);
+registerSocketConnectionRuntime({
+    io,
+    logger: console,
+    hostlessRestore(socket) {
+        hostlessRestoreRuntime.registerSocket(socket);
+    },
+    lobby(socket) {
+        registerLobbySocketHandlers(socket, {
+            requirePlainSocketPayload,
+            sanitizeName,
+            emitAppError,
+            hasInvalidOnlineRlModelSettings,
+            normalizePlayerSettings,
+            normalizeCpuSpeed,
+            validateCreateRoomLifecycle,
+            rooms,
+            generateRoomId,
+            generateReconnectToken,
+            normalizeEnabledCards,
+            landmarkNames: gameRuntime.Player.landmarkNames,
+            markCreateRoomForSocket,
+            createRoomRateKeyForSocket,
+            markCreateRoomForRateKey,
+            buildPlayerList,
+            io,
+            checkGameStart,
+            validateSocketCanEnterRoom,
+            isValidRoomId,
+            resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
+            negotiateRoomGameSchemaCandidate: (room, playerIndex, capabilities) => negotiateRoomGameSchemaCandidate(room, playerIndex, capabilities, GAME_SCHEMA_NEGOTIATION_ENABLED),
+        });
+    },
+    action(socket) {
+        registerActionSocketHandler(socket, {
+            requirePlainSocketPayload,
+            rooms,
+            isActiveRoomSocket,
+            emitAppError,
+            normalizeClientActionId,
+            findAcceptedClientAction,
+            validateGameAction,
+            canonicalizeActionData,
+            makeUndoStateFromMirror,
+            nextRoomActionSeq,
+            gameSchemaShadow,
+            gameEngineAuthority,
+            adoptTransitionSnapshotToRoomMirror,
+            decodeGameSchemaAction: (room, payload) => GameSchemaWire.decodeActionPayload(
+                GAME_SCHEMA_WIRE_ENABLED,
+                false,
+                room.gameStartPayload && room.gameStartPayload.gameSchema || null,
+                payload
+            ),
+            encodeGameSchemaAction: (room, payload) => GameSchemaWire.encodeActionPayload(
+                GAME_SCHEMA_WIRE_ENABLED,
+                GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
+                room.gameStartPayload && room.gameStartPayload.gameSchema || null,
+                payload
+            ),
+            buildRestoreActionAudit,
+            applyAcceptedActionToRoomCanonicalMirror,
+            rememberAcceptedClientAction,
+            compactRoomActionLog,
+            attachCompactedRestoreSnapshotToAction,
+            markRoomCanonicalMirrorCurrent,
+            persistRoomCanonicalState,
+        });
+    },
+    rejoin(socket) {
+        registerRejoinSocketHandler(socket, {
+            requirePlainSocketPayload,
+            isValidRoomId,
+            emitAppError,
+            rooms,
+            getExpectedReconnectTokenHash,
+            hashReconnectToken,
+            detachExistingPlayerSocket,
+            resolveRejoinPlayer,
+            buildRejoinDataPayload,
+            resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
+            supportsSelectedGameSchema: (capabilities, selected) => supportsSelectedGameSchemaForRuntime(
+                capabilities, selected, GAME_SCHEMA_NEGOTIATION_ENABLED
+            ),
+            io,
+        });
+    },
+    recreate(socket) {
+        // サーバー再起動後にホストがルームを復元する
+        registerRecreateSocketHandler(socket, {
+            decodePayload: payload => GameSchemaRecreateWire.decode(
+                GAME_SCHEMA_RECREATE_WIRE_ENABLED,
+                payload
+            ),
+            emitAppError,
+            handleRecreateRoom,
+            hostRestored: roomId => hostlessRestoreRuntime.hostRestored(roomId),
+        });
+    },
+    disconnect(socket) {
+        disconnectSocketHandler.registerSocket(socket);
+    },
 });
 
 const {

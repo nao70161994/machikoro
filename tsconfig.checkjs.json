@@ -167,6 +167,7 @@
     "server/roomGcRuntime.js",
     "server/processRuntime.js",
     "server/roomSocketRuntime.js",
+    "server/socketConnectionRuntime.js",
     "server/disconnectSocketHandler.js",
     "server/hostlessRestoreCoordinator.js",
     "server/hostlessRestoreGateway.js",

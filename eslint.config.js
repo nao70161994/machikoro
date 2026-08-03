@@ -154,6 +154,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/roomGcRuntime.js',
     'server/processRuntime.js',
     'server/roomSocketRuntime.js',
+    'server/socketConnectionRuntime.js',
     'server/serverDice.js',
     'server/staticAssets.js',
     'server/actionSocketHandler.js',
