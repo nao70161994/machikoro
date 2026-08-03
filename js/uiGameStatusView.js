@@ -21,11 +21,55 @@ function selectDiceValues({ lastDice1, lastDice2, lastDiceResult }) {
     return null;
 }
 
+function buildTurnTransitionView({
+    phase,
+    rollPhase,
+    currentPlayerIndex,
+    previousPlayerIndex,
+    isReplaying,
+    currentName,
+    isCpuTurn,
+}) {
+    const changed = phase === rollPhase && currentPlayerIndex !== previousPlayerIndex;
+    return Object.freeze({
+        announce: changed && previousPlayerIndex !== -1 && isReplaying !== true,
+        name: currentName,
+        isCpuTurn: isCpuTurn === true,
+        nextPreviousPlayerIndex: changed ? currentPlayerIndex : previousPlayerIndex,
+    });
+}
+
+function buildActiveGameView(facts) {
+    const players = Array.isArray(facts.players) ? facts.players : [];
+    const previousCoins = facts.previousCoins;
+    const coinChanges = previousCoins
+        ? players.map((player, playerIndex) => Object.freeze({
+            playerIndex,
+            diff: player.coins - previousCoins[playerIndex],
+        })).filter(change => change.diff !== 0)
+        : [];
+    return Object.freeze({
+        statusText: buildTurnStatusText(facts.current),
+        rollButton: buildRollButtonView(facts.canRoll),
+        skipButton: buildSkipButtonView({
+            canNextTurn: facts.canNextTurn,
+            pendingRenovation: facts.pendingRenovation,
+            builtThisTurn: facts.builtThisTurn,
+        }),
+        diceValues: selectDiceValues(facts),
+        turnTransition: buildTurnTransitionView(facts),
+        coinChanges: Object.freeze(coinChanges),
+        nextCoins: Object.freeze(players.map(player => player.coins)),
+    });
+}
+
 const UiGameStatusView = Object.freeze({
     buildTurnStatusText,
     buildRollButtonView,
     buildSkipButtonView,
     selectDiceValues,
+    buildTurnTransitionView,
+    buildActiveGameView,
 });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusView;
 if (typeof window !== 'undefined') window.UiGameStatusView = UiGameStatusView;

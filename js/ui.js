@@ -216,25 +216,38 @@ function renderWinnerState(winner) {
 }
 
 function renderActiveGameState(current) {
-    document.getElementById("status").textContent = UiGameStatusView.buildTurnStatusText(current);
     const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
-    if (game.phase === GAME_PHASES.ROLL && game.currentPlayerIndex !== prevPlayerIndex) {
-        if (prevPlayerIndex !== -1 && !isReplaying) showTurnAnnouncer(current.name, isCPUTurn);
-        prevPlayerIndex = game.currentPlayerIndex;
-    }
-    const rollButtonView = UiGameStatusView.buildRollButtonView(canShowUiAction('rollDice'));
-    document.getElementById("btnRoll").disabled = rollButtonView.disabled;
-    const btnSkip = document.getElementById("btnSkip");
-    const skipButtonView = UiGameStatusView.buildSkipButtonView({
+    const view = UiGameStatusView.buildActiveGameView({
+        current,
+        players: game.players,
+        phase: game.phase,
+        rollPhase: GAME_PHASES.ROLL,
+        currentPlayerIndex: game.currentPlayerIndex,
+        previousPlayerIndex: prevPlayerIndex,
+        isReplaying,
+        currentName: current.name,
+        isCpuTurn: isCPUTurn,
+        canRoll: canShowUiAction('rollDice'),
         canNextTurn: canShowUiAction('nextTurn'),
         pendingRenovation: game.pendingRenovation,
         builtThisTurn: game.builtThisTurn,
+        previousCoins: prevCoins,
+        lastDice1: game.lastDice1,
+        lastDice2: game.lastDice2,
+        lastDiceResult: game.lastDiceResult,
     });
-    btnSkip.disabled = skipButtonView.disabled;
-    btnSkip.textContent = skipButtonView.textContent;
+    document.getElementById("status").textContent = view.statusText;
+    if (view.turnTransition.announce) {
+        showTurnAnnouncer(view.turnTransition.name, view.turnTransition.isCpuTurn);
+    }
+    prevPlayerIndex = view.turnTransition.nextPreviousPlayerIndex;
+    document.getElementById("btnRoll").disabled = view.rollButton.disabled;
+    const btnSkip = document.getElementById("btnSkip");
+    btnSkip.disabled = view.skipButton.disabled;
+    btnSkip.textContent = view.skipButton.textContent;
     document.getElementById("btnReroll").style.display = "none";
 
-    updateDiceDisplay(UiGameStatusView.selectDiceValues(game));
+    updateDiceDisplay(view.diceValues);
 
     safeRenderStep('renderDiceChoose', () => renderDiceChoose());
     safeRenderStep('renderPending', () => renderPending());
@@ -243,13 +256,10 @@ function renderActiveGameState(current) {
     safeRenderStep('renderPlayers', () => renderPlayers());
 
     safeRenderStep('coinAnimation', () => {
-        if (prevCoins) {
-            game.players.forEach((p, i) => {
-                const diff = p.coins - prevCoins[i];
-                if (diff !== 0) showCoinAnimation(i, diff);
-            });
-        }
-        prevCoins = game.players.map(p => p.coins);
+        view.coinChanges.forEach(change => {
+            showCoinAnimation(change.playerIndex, change.diff);
+        });
+        prevCoins = view.nextCoins.slice();
     });
     safeRenderStep('renderBuildMenu', () => renderBuildMenu());
     safeRenderStep('syncUiInteractabilityAfterRender', () => {
