@@ -1,3 +1,5 @@
+const { planCreateRoomAdmission, planJoinRoomAdmission } = require('./lobbyAdmission');
+
 function registerLobbySocketHandlers(socket, dependencies) {
     const {
         requirePlainSocketPayload,
@@ -60,23 +62,16 @@ function registerLobbySocketHandlers(socket, dependencies) {
         const roomId = generateRoomId();
         const reconnectToken = generateReconnectToken();
         const selectedCards = normalizeEnabledCards(enabledCards);
-        const allLandmarks = landmarkNames();
-        const validLandmarks = new Set(allLandmarks);
-        const selectedLandmarks = Array.isArray(enabledLandmarks)
-            ? enabledLandmarks.filter(name => validLandmarks.has(name))
-            : allLandmarks;
-        if (selectedLandmarks.length === 0) {
-            emitAppError(socket, 'ランドマークは最低1つ必要です');
+        const admission = planCreateRoomAdmission({
+            enabledLandmarks,
+            allLandmarks: landmarkNames(),
+            playerSettings,
+        });
+        if (!admission.ok) {
+            emitAppError(socket, admission.message);
             return;
         }
-        let hostIndex = 0;
-        if (playerSettings && playerSettings.length > 0) {
-            hostIndex = playerSettings.findIndex(setting => setting.type === 'human');
-            if (hostIndex === -1) {
-                emitAppError(socket, 'オンライン対戦は最低1人の人間プレイヤーが必要です');
-                return;
-            }
-        }
+        const { selectedLandmarks, hostIndex } = admission;
         markCreateRoomForSocket(socket, createdAt);
         markCreateRoomForRateKey(createRoomRateKeyForSocket(socket), createdAt);
         rooms[roomId] = {
@@ -119,35 +114,9 @@ function registerLobbySocketHandlers(socket, dependencies) {
         if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
         const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
         if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }
-        if (room.started) { emitAppError(socket, 'ゲームはすでに開始されています'); return; }
-        if (room.players.some(player => player.id === socket.id)) {
-            emitAppError(socket, 'すでにこのルームに参加しています');
-            return;
-        }
-        if (room.players.some(player => player.name === playerName)) {
-            emitAppError(socket, 'その名前はすでに使われています');
-            return;
-        }
-        let playerIndex = -1;
-        if (room.playerSettings.length > 0) {
-            for (let index = 0; index < room.playerSettings.length; index++) {
-                const taken = room.players.some(player => player.index === index);
-                if (!taken && room.playerSettings[index].type === 'human') {
-                    playerIndex = index;
-                    break;
-                }
-            }
-        } else {
-            if (room.players.length >= room.maxPlayers) {
-                emitAppError(socket, '参加できる枠がありません');
-                return;
-            }
-            playerIndex = room.players.length;
-        }
-        if (playerIndex === -1) {
-            emitAppError(socket, '参加できる枠がありません');
-            return;
-        }
+        const admission = planJoinRoomAdmission({ room, socketId: socket.id, playerName });
+        if (!admission.ok) { emitAppError(socket, admission.message); return; }
+        const { playerIndex } = admission;
         const schemaCandidate = negotiateSchemaCandidate(room, playerIndex, schemaResolution.capabilities);
         if (!schemaCandidate.ok) { emitAppError(socket, 'SCHEMA_VERSION_UNSUPPORTED'); return; }
         const reconnectToken = generateReconnectToken();

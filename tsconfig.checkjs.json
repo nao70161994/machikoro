@@ -170,6 +170,7 @@
     "server/clientErrorAuth.js",
     "server/clientErrorReporting.js",
     "server/clientErrorGateway.js",
+    "server/lobbyAdmission.js",
     "server/lobbySocketHandlers.js",
     "server/restoreAuditKeyring.js",
     "server/restoreAuditRuntime.js",

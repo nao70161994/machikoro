@@ -157,6 +157,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/gameSchemaRuntime.js',
     'server/gameSchemaShadow.js',
     'server/gameEngineAuthority.js',
+    'server/lobbyAdmission.js',
     'server/lobbySocketHandlers.js',
     'server/mirrorReplay.js',
     'server/rejoinSocketHandler.js',
