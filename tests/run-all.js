@@ -127,6 +127,7 @@ const TEST_GROUPS = {
         'auto-skip-policy.test.js',
         'page-activation-policy.test.js',
         'delayed-human-action-policy.test.js',
+        'cpu-scheduler-state.test.js',
         'ui-event-delegation.test.js',
         'city-skyline.test.js',
     'main.test.js',

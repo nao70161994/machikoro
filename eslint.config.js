@@ -31,6 +31,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/cpuSimulation.js',
     'js/cpuTuning.js',
     'js/delayedHumanActionPolicy.js',
+    'js/cpuSchedulerState.js',
     'js/uiEventDelegation.js',
     'js/gameEngine.js',
     'js/gameEngineDeterminism.js',

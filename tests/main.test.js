@@ -351,6 +351,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(pageActivationPolicySource, context, { filename: 'js/pageActivationPolicy.js' });
     const delayedHumanActionPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/delayedHumanActionPolicy.js'), 'utf8');
     vm.runInContext(delayedHumanActionPolicySource, context, { filename: 'js/delayedHumanActionPolicy.js' });
+    const cpuSchedulerStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuSchedulerState.js'), 'utf8');
+    vm.runInContext(cpuSchedulerStateSource, context, { filename: 'js/cpuSchedulerState.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });
     const citySkylineSource = fs.readFileSync(path.join(__dirname, '..', 'js/citySkyline.js'), 'utf8');
@@ -2180,6 +2182,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/localPlayerSettings.js', 'js/main.js');
     assertBefore('js/pageActivationPolicy.js', 'js/main.js');
     assertBefore('js/delayedHumanActionPolicy.js', 'js/main.js');
+    assertBefore('js/cpuSchedulerState.js', 'js/main.js');
     assertBefore('js/uiEventDelegation.js', 'js/main.js');
     assertBefore('js/citySkyline.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');

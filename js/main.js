@@ -51,18 +51,17 @@ function cancelCpuSchedule(reason = 'cpu-schedule-cancel') {
 }
 
 function markCpuStepScheduled(delay, leaseMs = 1500) {
-    const wait = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
-    cpuStepScheduledUntil = Date.now() + wait + leaseMs;
+    cpuStepScheduledUntil = CpuSchedulerState.scheduledUntil(Date.now(), delay, leaseMs);
     return cpuStepScheduledUntil;
 }
 
 function refreshCpuStepScheduleLease(leaseMs = 1500) {
-    cpuStepScheduledUntil = Date.now() + leaseMs;
+    cpuStepScheduledUntil = CpuSchedulerState.refreshedUntil(Date.now(), leaseMs);
     return cpuStepScheduledUntil;
 }
 
 function isCpuStepScheduledNow() {
-    return cpuPendingStepToken !== null && cpuPendingStepToken === cpuScheduleToken;
+    return CpuSchedulerState.tokenIsScheduled(cpuPendingStepToken, cpuScheduleToken);
 }
 
 function escapeAttribute(value) {
@@ -687,14 +686,15 @@ function cpuScheduleBlockedReason() {
 function currentCpuTurnSchedulerHealth() {
     const blockedReason = cpuScheduleBlockedReason();
     const currentPlayerIndex = game ? game.currentPlayerIndex : null;
-    return {
-        token: cpuScheduleToken,
+    return CpuSchedulerState.buildHealth({
+        scheduleToken: cpuScheduleToken,
+        pendingToken: cpuPendingStepToken,
         scheduledUntil: cpuStepScheduledUntil,
-        stepScheduled: !blockedReason && isCpuStepScheduledNow() && Date.now() < cpuStepScheduledUntil,
+        now: Date.now(),
         isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
         currentPlayerIndex,
         blockedReason,
-    };
+    });
 }
 
 function scheduleCpuTurn(reason = 'scheduleCPU') {

@@ -113,6 +113,7 @@ const STATIC_ASSETS = [
   '/js/autoSkipPolicy.js',
   '/js/pageActivationPolicy.js',
   '/js/delayedHumanActionPolicy.js',
+  '/js/cpuSchedulerState.js',
   '/js/uiEventDelegation.js',
   '/js/citySkyline.js',
   '/js/main.js',
