@@ -548,6 +548,15 @@ function chooseCpuPendingAction(cpu) {
     return CPUPendingResolution.choosePendingAction(game, cpu, { clearFallback: false });
 }
 
+function chooseCpuTurnAction(stepName, cpu) {
+    return CpuTurnStrategy.chooseAction(stepName, {
+        game,
+        cpu,
+        rollDie: rollRandomDie,
+        choosePendingAction: chooseCpuPendingAction,
+    });
+}
+
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
 function shouldRunCpuPhaseStep(stepName) {
@@ -564,32 +573,33 @@ const CPU_PHASE_HANDLERS = [
         name: "roll",
         run(cpu) {
             if (game.phase !== GAME_PHASES.ROLL) return;
-            const forceDice = rollRandomDie();
-            const tunaDice = [rollRandomDie(), rollRandomDie()];
-            cpuDo('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
+            const proposal = chooseCpuTurnAction('roll', cpu);
+            cpuDo(proposal.action, proposal.data, () =>
+                game.rollDice(proposal.data.forceDice, proposal.data.tunaDice)
+            );
         },
     },
     {
         name: "selectDice",
         run(cpu) {
             if (game.phase !== GAME_PHASES.SELECT_DICE) return;
-            const useTwo = cpu.chooseDiceCount(game);
-            const d1 = rollRandomDie();
-            const d2 = rollRandomDie();
-            const tunaDice = [rollRandomDie(), rollRandomDie()];
-            cpuDo('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice }, () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
+            const proposal = chooseCpuTurnAction('selectDice', cpu);
+            cpuDo(proposal.action, proposal.data, () => game.selectDiceCount(
+                proposal.data.useTwo, proposal.data.d1, proposal.data.d2, proposal.data.tunaDice
+            ));
         },
     },
     {
         name: "rerollConfirm",
         run(cpu) {
             if (game.phase !== GAME_PHASES.REROLL_CONFIRM) return;
-            if (cpu.chooseReroll(game)) {
-                const forceDice = rollRandomDie();
-                const tunaDice = [rollRandomDie(), rollRandomDie()];
-                cpuDo('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
+            const proposal = chooseCpuTurnAction('rerollConfirm', cpu);
+            if (proposal.action === MAIN_ACTIONS.REROLL_DICE) {
+                cpuDo(proposal.action, proposal.data, () =>
+                    game.rerollDice(proposal.data.forceDice, proposal.data.tunaDice)
+                );
             } else {
-                cpuDo('skipReroll', {}, () => game.skipReroll());
+                cpuDo(proposal.action, proposal.data, () => game.skipReroll());
             }
         },
     },
@@ -597,15 +607,15 @@ const CPU_PHASE_HANDLERS = [
         name: "harborChoice",
         run(cpu) {
             if (game.phase !== GAME_PHASES.HARBOR_CHOICE) return;
-            const useBonus = cpu.chooseHarbor(game);
-            cpuDo('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
+            const proposal = chooseCpuTurnAction('harborChoice', cpu);
+            cpuDo(proposal.action, proposal.data, () => game.resolveHarbor(proposal.data.useBonus));
         },
     },
     {
         name: "pending",
         run(cpu) {
             if (game.phase !== GAME_PHASES.PENDING) return;
-            const pendingAction = chooseCpuPendingAction(cpu);
+            const pendingAction = chooseCpuTurnAction('pending', cpu);
             if (pendingAction) {
                 markMainCheckpoint('scheduleCPU-pending-resolution', {
                     action: pendingAction.action,
@@ -639,15 +649,16 @@ const CPU_PHASE_HANDLERS = [
         name: "nextTurn",
         run(cpu) {
             if (game.phase !== GAME_PHASES.BUILD || game.pendingIT) return;
-            cpuDo('nextTurn', {}, () => game.nextTurn());
+            const proposal = chooseCpuTurnAction('nextTurn', cpu);
+            cpuDo(proposal.action, proposal.data, () => game.nextTurn());
         },
     },
     {
         name: "resolveIT",
         run(cpu) {
             if (!game.pendingIT) return;
-            const doSave = cpu.chooseITInvest(game);
-            cpuDo('resolveIT', { doSave }, () => game.resolveIT(doSave));
+            const proposal = chooseCpuTurnAction('resolveIT', cpu);
+            cpuDo(proposal.action, proposal.data, () => game.resolveIT(proposal.data.doSave));
         },
     },
 ];
