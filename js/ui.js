@@ -258,37 +258,67 @@ function renderActiveGameState(current) {
         lastDice2: game.lastDice2,
         lastDiceResult: game.lastDiceResult,
     });
-    document.getElementById("status").textContent = view.statusText;
-    if (view.turnTransition.announce) {
-        showTurnAnnouncer(view.turnTransition.name, view.turnTransition.isCpuTurn);
-    }
-    prevPlayerIndex = view.turnTransition.nextPreviousPlayerIndex;
-    document.getElementById("btnRoll").disabled = view.rollButton.disabled;
-    const btnSkip = document.getElementById("btnSkip");
-    btnSkip.disabled = view.skipButton.disabled;
-    btnSkip.textContent = view.skipButton.textContent;
-    document.getElementById("btnReroll").style.display = "none";
-
-    updateDiceDisplay(view.diceValues);
-
-    safeRenderStep('renderDiceChoose', () => renderDiceChoose());
-    safeRenderStep('renderPending', () => renderPending());
-    safeRenderStep('renderTutorial', () => renderTutorial());
-    safeRenderStep('renderLog', () => renderLog());
-    safeRenderStep('renderPlayers', () => renderPlayers());
-
-    safeRenderStep('coinAnimation', () => {
-        view.coinChanges.forEach(change => {
-            showCoinAnimation(change.playerIndex, change.diff);
-        });
-        prevCoins = view.nextCoins.slice();
+    UiGameStatusEffects.execute(view, {
+        setStatusText(text) {
+            document.getElementById("status").textContent = text;
+        },
+        announceTurn(name, isCpuTurn) {
+            showTurnAnnouncer(name, isCpuTurn);
+        },
+        setPreviousPlayerIndex(playerIndex) {
+            prevPlayerIndex = playerIndex;
+        },
+        setRollDisabled(disabled) {
+            document.getElementById("btnRoll").disabled = disabled;
+        },
+        setSkipButton(skipButton) {
+            const btnSkip = document.getElementById("btnSkip");
+            btnSkip.disabled = skipButton.disabled;
+            btnSkip.textContent = skipButton.textContent;
+        },
+        hideReroll() {
+            document.getElementById("btnReroll").style.display = "none";
+        },
+        updateDiceDisplay(diceValues) {
+            updateDiceDisplay(diceValues);
+        },
+        runRenderStep(name, callback) {
+            safeRenderStep(name, callback);
+        },
+        renderDiceChoose() {
+            renderDiceChoose();
+        },
+        renderPending() {
+            renderPending();
+        },
+        renderTutorial() {
+            renderTutorial();
+        },
+        renderLog() {
+            renderLog();
+        },
+        renderPlayers() {
+            renderPlayers();
+        },
+        showCoinAnimation(playerIndex, diff) {
+            showCoinAnimation(playerIndex, diff);
+        },
+        setPreviousCoins(coins) {
+            prevCoins = coins;
+        },
+        renderBuildMenu() {
+            renderBuildMenu();
+        },
+        syncUiInteractabilityAfterRender() {
+            if (typeof syncUiInteractabilityAfterRender === 'function') syncUiInteractabilityAfterRender('render-active-game-state');
+        },
+        schedulePostBuildUiStabilizer() {
+            if (typeof schedulePostBuildUiStabilizer === 'function') schedulePostBuildUiStabilizer('render-active-game-state');
+        },
+        checkAutoSkip() {
+            checkAutoSkip();
+        },
     });
-    safeRenderStep('renderBuildMenu', () => renderBuildMenu());
-    safeRenderStep('syncUiInteractabilityAfterRender', () => {
-        if (typeof syncUiInteractabilityAfterRender === 'function') syncUiInteractabilityAfterRender('render-active-game-state');
-        if (typeof schedulePostBuildUiStabilizer === 'function') schedulePostBuildUiStabilizer('render-active-game-state');
-    });
-    safeRenderStep('checkAutoSkip', () => checkAutoSkip());
 }
 
 function persistAfterRender() {

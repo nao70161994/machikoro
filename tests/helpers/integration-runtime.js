@@ -252,6 +252,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiWinner.js',
         'js/uiWinnerEffects.js',
         'js/uiGameStatusView.js',
+        'js/uiGameStatusEffects.js',
         'js/uiRuntimeSnapshot.js',
         'js/ui.js',
     ];

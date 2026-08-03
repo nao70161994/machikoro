@@ -5,6 +5,7 @@ declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
 declare var UiWinnerEffects: typeof import("../js/uiWinnerEffects");
+declare var UiGameStatusEffects: typeof import("../js/uiGameStatusEffects");
 
 declare var CPUProfile: typeof import("../js/cpuProfile").CPUProfile;
 declare var CPUSelection: typeof import("../js/cpuSelection").CPUSelection;
@@ -74,6 +75,7 @@ interface Window {
     UiPendingEffects: unknown;
     UiTutorial: unknown;
     UiGameStatusView: unknown;
+    UiGameStatusEffects: unknown;
     UiTabView: unknown;
     UiTabEffects: unknown;
     UiStatsView: unknown;
