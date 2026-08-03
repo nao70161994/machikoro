@@ -86,6 +86,10 @@ function normalizeOnlineActionLog(value) {
         });
 }
 
+function buildPendingOutboundAction(action, data, playerIndex, roomId, seq, clientActionId) {
+    return { action, data, playerIndex, roomId, seq, clientActionId };
+}
+
 function normalizePendingOutboundAction(entry, options = {}) {
     const isKnownAction = options.isKnownAction || (() => false);
     const normalizeRoomId = options.normalizeRoomId || (() => '');
@@ -387,6 +391,7 @@ function shouldClearPendingForAcceptedAction(accepted, pending) {
 const OnlinePayload = Object.freeze({
     normalizeSession: normalizeOnlineSession,
     normalizeActionLog: normalizeOnlineActionLog,
+    buildPendingOutboundAction,
     normalizePendingOutboundAction,
     incomingGameActionDecisions: INCOMING_GAME_ACTION_DECISIONS,
     planIncomingGameAction,

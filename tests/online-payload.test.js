@@ -182,6 +182,25 @@ runTest('online payload は保存済みaction logを既存の最小fieldへ正�
     }]);
 });
 
+runTest('online payload はpending outbound actionのwire/storage形を参照維持で生成する', () => {
+    const data = { cardName: '麦畑' };
+    const entry = OnlinePayload.buildPendingOutboundAction(
+        'buildCard', data, 2, 'ROOM01', 7, 'client-7'
+    );
+    assert.deepStrictEqual(entry, {
+        action: 'buildCard',
+        data,
+        playerIndex: 2,
+        roomId: 'ROOM01',
+        seq: 7,
+        clientActionId: 'client-7',
+    });
+    assert.strictEqual(entry.data, data);
+    assert.deepStrictEqual(Object.keys(entry), [
+        'action', 'data', 'playerIndex', 'roomId', 'seq', 'clientActionId',
+    ]);
+});
+
 runTest('online payload はpending actionを既知actionとroom正規化の注入契約で絞る', () => {
     const options = {
         isKnownAction(action) {

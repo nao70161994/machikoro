@@ -1981,14 +1981,16 @@ function _readOnlineActionLog() {
 }
 
 function _savePendingOutboundAction(action, data) {
-    const entry = {
+    const seq = _nextOnlineActionSeq();
+    const clientActionId = _createOnlineClientActionId();
+    const entry = OnlinePayload.buildPendingOutboundAction(
         action,
         data,
-        playerIndex: myOriginalPlayerIndex,
-        roomId: myRoomId,
-        seq: _nextOnlineActionSeq(),
-        clientActionId: _createOnlineClientActionId(),
-    };
+        myOriginalPlayerIndex,
+        myRoomId,
+        seq,
+        clientActionId
+    );
     const memoryKey = _normalizeOnlineRoomId(entry.roomId) || '';
     _pendingOutboundActionsMemory.set(memoryKey, entry);
     try {
