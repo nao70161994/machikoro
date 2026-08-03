@@ -1,6 +1,6 @@
 # ADR Index
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 この索引は設計判断の入口です。実装の現在地は `MAINTENANCE_BACKLOG.md`、段階移行計画は `ARCHITECTURE_REFACTOR_PLAN.md` を正本とします。
 
@@ -13,7 +13,7 @@ Last updated: 2026-08-02
 | [Restore trust boundary](ADR_RESTORE_TRUST_BOUNDARY.md) | Accepted / staged | 通常host restoreと暫定hostless fallbackを維持。durable adapter・署名keyring・authority priorityは契約化済みだが、production durable authorityはprovider/retention/secret運用決定まで無効。DB導入は費用判断により保留。 |
 | [Protocol compatibility](PROTOCOL_COMPATIBILITY.md) | Accepted / staged | Socket.IO event名とlegacy defaultを維持。capability negotiation、shadow、versioned live Action wire、rejoin/compacted-Snapshot wireは独立した既定OFF flag。local save、recreate input、restore logはlegacy。 |
 
-2026-07-26の段階移行ではprovider-neutral canonical store、署名keyring、authority priorityを追加した。既定storeは`noop`でDB/providerは継続費用を理由に保留。2026-08-02時点ではAction/Snapshot/recreate/local-saveのversioned境界と、server mirror・online replay・local actionのpure Engine shadow境界が独立した既定OFF gateで利用可能だが、production authority・既定wire・保存形式は変更していない。
+2026-07-26の段階移行ではprovider-neutral canonical store、署名keyring、authority priorityを追加した。既定storeは`noop`でDB/providerは継続費用を理由に保留。2026-08-02時点ではAction/Snapshot/recreate/local-saveのversioned境界と、server mirror・online replay・local actionのpure Engine shadow境界が独立した既定OFF gateで利用可能だが、production authority・既定wire・保存形式は変更していない。2026-08-03のreporting/settings/CPU集計のpure境界追加とsnapshot fixture強化も、authorityや永続形式を変更しない責務分離としてこの判断を維持する。
 
 Current override (2026-07-19): the additive provisional hostless event surface
 is implemented under the accepted design above. It does not add durable authority.
