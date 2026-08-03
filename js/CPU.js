@@ -1618,41 +1618,23 @@ class CPU {
         const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
         const lowDice = card.diceNums && card.diceNums.length > 0 && Math.max(...card.diceNums) <= 6;
         const highDice = card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7;
-        const earlyCrowd = remainingLandmarks > 2;
-
-        if (this._expertFlagEnabled("crowdLowDiceEngineBoost") && earlyCrowd) {
-            if (lowDice && (card.color === "blue" || card.color === "green")) score += 1.1;
-            if (lowDice && card.cost <= 3) score += 0.8;
-            if (card.name === "パン屋" || card.name === "コンビニ") score += 0.9;
-            if (card.name === "麦畑" || card.name === "牧場") score += 0.6;
-        }
-
-        if (this._expertFlagEnabled("crowdRedRestaurantSuppression") && earlyCrowd) {
-            if (card.color === "red") score -= 1.4;
-            if (card.category === CARD_CATEGORIES.RESTAURANT) score -= 1.1;
-            if (highDice && card.color === "red") score -= 0.8;
-            if (card.name === "会員制BAR" || card.name === "ファミレス") score -= 0.9;
-        }
-
-        if (this._expertFlagEnabled("crowdPurpleShortlistDelay") && earlyCrowd) {
-            if (card.name === "スタジアム" || card.name === "テレビ局" || card.name === "税務署" || card.name === "出版社") {
-                score -= 3.2;
-            }
-        }
-
-        if (remainingLandmarks <= 4) {
-            if (card.name === "食品倉庫") score -= 2.8;
-            if (card.name === "ピザ屋" || card.name === "バーガーショップ") score -= 2.1;
-            if (card.name === "ブドウ園") score -= 1.8;
-        }
-        if (game.players.length >= 4 && remainingLandmarks <= 4) {
-            if (card.name === "食品倉庫") score -= 3.5;
-            if (card.name === "改装屋") score -= 3.2;
-            if (card.name === "ピザ屋" || card.name === "バーガーショップ") score -= 2.6;
-            if (card.name === "寿司屋") score -= 1.4;
-        }
-
-        return score;
+        return score + CPUEvaluation.expertCrowdCardCandidateAdjustment({
+            difficulty: this.difficulty,
+            playerCount: game.players.length,
+            remainingLandmarks,
+            lowDice,
+            highDice,
+            color: card.color,
+            cost: card.cost,
+            name: card.name,
+            category: card.category,
+            restaurantCategory: CARD_CATEGORIES.RESTAURANT,
+            flags: {
+                lowDiceEngineBoost: this._expertFlagEnabled("crowdLowDiceEngineBoost"),
+                redRestaurantSuppression: this._expertFlagEnabled("crowdRedRestaurantSuppression"),
+                purpleShortlistDelay: this._expertFlagEnabled("crowdPurpleShortlistDelay"),
+            },
+        });
     }
 
     _cardSpamPenalty(card, player, intensity = 1) {

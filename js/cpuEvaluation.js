@@ -774,6 +774,45 @@ const CPUEvaluation = Object.freeze({
         }
     },
 
+    expertCrowdCardCandidateAdjustment(features) {
+        if (!features || features.difficulty !== 'expert' || features.playerCount < 4) return 0;
+        let adjustment = 0;
+        const earlyCrowd = features.remainingLandmarks > 2;
+
+        if (features.flags.lowDiceEngineBoost && earlyCrowd) {
+            if (features.lowDice && (features.color === 'blue' || features.color === 'green')) adjustment += 1.1;
+            if (features.lowDice && features.cost <= 3) adjustment += 0.8;
+            if (features.name === 'パン屋' || features.name === 'コンビニ') adjustment += 0.9;
+            if (features.name === '麦畑' || features.name === '牧場') adjustment += 0.6;
+        }
+
+        if (features.flags.redRestaurantSuppression && earlyCrowd) {
+            if (features.color === 'red') adjustment -= 1.4;
+            if (features.category === features.restaurantCategory) adjustment -= 1.1;
+            if (features.highDice && features.color === 'red') adjustment -= 0.8;
+            if (features.name === '会員制BAR' || features.name === 'ファミレス') adjustment -= 0.9;
+        }
+
+        if (features.flags.purpleShortlistDelay && earlyCrowd &&
+                ['スタジアム', 'テレビ局', '税務署', '出版社'].includes(features.name)) {
+            adjustment -= 3.2;
+        }
+
+        if (features.remainingLandmarks <= 4) {
+            if (features.name === '食品倉庫') adjustment -= 2.8;
+            if (features.name === 'ピザ屋' || features.name === 'バーガーショップ') adjustment -= 2.1;
+            if (features.name === 'ブドウ園') adjustment -= 1.8;
+        }
+        if (features.playerCount >= 4 && features.remainingLandmarks <= 4) {
+            if (features.name === '食品倉庫') adjustment -= 3.5;
+            if (features.name === '改装屋') adjustment -= 3.2;
+            if (features.name === 'ピザ屋' || features.name === 'バーガーショップ') adjustment -= 2.6;
+            if (features.name === '寿司屋') adjustment -= 1.4;
+        }
+
+        return adjustment;
+    },
+
     cardSpamPenalty(card, owned, intensity = 1) {
         if (owned <= 0) return 0;
         let penalty = owned * 0.35 * intensity;

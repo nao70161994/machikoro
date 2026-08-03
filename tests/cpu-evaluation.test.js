@@ -562,6 +562,71 @@ runTest('CPU本体のv2simple penalty wrapperはpure evaluation結果を維持�
     assert.strictEqual(cpu._expertV2SimpleLandmarkCardPenalty(game, renovation, true), 12);
 });
 
+runTest('CPU evaluation は4人expert候補の既存補正を数値featureだけで評価する', () => {
+    const base = {
+        difficulty: 'expert', playerCount: 4, remainingLandmarks: 5,
+        lowDice: true, highDice: false, color: 'green', cost: 2,
+        name: 'パン屋', category: 'shop', restaurantCategory: 'restaurant',
+        flags: { lowDiceEngineBoost: true, redRestaurantSuppression: true, purpleShortlistDelay: true },
+    };
+    assert.ok(Math.abs(CPUEvaluation.expertCrowdCardCandidateAdjustment(base) - 2.8) < 1e-12);
+    assert.strictEqual(CPUEvaluation.expertCrowdCardCandidateAdjustment({
+        ...base, lowDice: false, highDice: true, color: 'red', name: '会員制BAR',
+        category: 'restaurant',
+    }), -4.2);
+    assert.strictEqual(CPUEvaluation.expertCrowdCardCandidateAdjustment({
+        ...base, name: 'テレビ局', color: 'purple', lowDice: false,
+    }), -3.2);
+    assert.strictEqual(CPUEvaluation.expertCrowdCardCandidateAdjustment({
+        ...base, remainingLandmarks: 4, name: '食品倉庫', lowDice: false,
+    }), -6.3);
+    assert.strictEqual(CPUEvaluation.expertCrowdCardCandidateAdjustment({
+        ...base, difficulty: 'strong', flags: null,
+    }), 0);
+    assert.strictEqual(CPUEvaluation.expertCrowdCardCandidateAdjustment(null), 0);
+});
+
+runTest('CPU本体の4人expert候補wrapperはpure補正とdifficulty短絡を維持する', () => {
+    const { CPU, GameManager, createCardByName, CARD_CATEGORIES } = loadCPURuntime();
+    const cpu = new CPU('expert', {
+        expertBehaviorFlags: {
+            crowdLowDiceEngineBoost: true,
+            crowdRedRestaurantSuppression: true,
+            crowdPurpleShortlistDelay: true,
+        },
+    });
+    const game = new GameManager(4);
+    const player = game.currentPlayer();
+    const card = createCardByName('パン屋');
+    cpu._baseCardEfficiency = () => 10;
+    cpu._scoreExpertRollCapPenalty = () => 1;
+    const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
+    const expected = 9 + CPUEvaluation.expertCrowdCardCandidateAdjustment({
+        difficulty: 'expert',
+        playerCount: 4,
+        remainingLandmarks,
+        lowDice: true,
+        highDice: false,
+        color: card.color,
+        cost: card.cost,
+        name: card.name,
+        category: card.category,
+        restaurantCategory: CARD_CATEGORIES.RESTAURANT,
+        flags: {
+            lowDiceEngineBoost: true,
+            redRestaurantSuppression: true,
+            purpleShortlistDelay: true,
+        },
+    });
+    assert.strictEqual(cpu._scoreExpertCardCandidate(card, game, player), expected);
+
+    const normal = new CPU('normal');
+    normal._baseCardEfficiency = () => 7;
+    normal._scoreExpertRollCapPenalty = () => 2;
+    normal._expertFlagEnabled = () => { throw new Error('difficulty gate must stay lazy'); };
+    assert.strictEqual(normal._scoreExpertCardCandidate(card, game, player), 5);
+});
+
 runTest('CPU evaluation は重複購入と経済バランスの既存減点を維持する', () => {
     assert.strictEqual(CPUEvaluation.cardSpamPenalty({ color: 'red' }, 2, 1), 2);
     assert.strictEqual(CPUEvaluation.cardSpamPenalty({ color: 'purple' }, 2, 1), 3.5);
