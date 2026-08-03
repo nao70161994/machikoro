@@ -360,76 +360,44 @@ function isActionUiUsable(snapshot, action) {
     return isActionContainerUiUsable(snapshot, { action, spec });
 }
 
-function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
-    const issues = [];
-    if (!snapshot || !snapshot.phase) return issues;
-    const ui = snapshot.ui || {};
-    const expectedContainers = expectedActionContainerEntries(snapshot);
-    const expectedPending = expectedPendingActions(snapshot);
-    const isMyTurn = isHumanTurnSnapshot(snapshot) && !isOnlineUiBlockedSnapshot(snapshot);
-    const activeModals = activeBlockingModalIds(snapshot);
-
-    if (activeModals.length > 1) {
-        issues.push({
-            kind: 'nested-blocking-modal-policy-violation',
-            reason: 'nested-blocking-modal',
-            target: activeModals.join(','),
-            freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED,
-        });
-    }
-
-    for (const id of activeModals) {
-        if (id === 'pendingModal') continue;
-        const modal = modalSnapshotFromRuntime(snapshot, id) || ui[id];
-        if (!modal) continue;
-        if (modal.inert) issues.push({ kind: 'visible-modal-inert', reason: 'parent-inert', target: id, freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED });
-        if (modal.pointerEvents === 'none' || modal.computedPointerEvents === 'none') issues.push({ kind: 'visible-modal-pointer-events-none', reason: 'pointer-events-none', target: id, freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED });
-    }
-
-    if (!isMyTurn) return issues;
-    if (activeModals.length && !expectedPending.length) return issues;
-
-    for (const entry of missingActionContainerRegistryEntries(snapshot)) {
-        issues.push({
-            kind: 'allowed-action-missing-container-registry',
-            action: entry.action,
-            target: '',
-            actionTarget: entry.action,
-            phase: entry.phase,
-            reason: 'missing-registry',
-            freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
-        });
-    }
-
-    for (const entry of expectedContainers) {
-        if (isActionContainerUiUsable(snapshot, entry)) continue;
+function collectInteractabilityObservations(snapshot) {
+    const expectedContainers = expectedActionContainerEntries(snapshot).map(entry => {
+        const usable = isActionContainerUiUsable(snapshot, entry);
+        if (usable) return { action: entry.action, spec: entry.spec, usable: true };
         const state = snapshotStateById(snapshot, entry.spec.targetId, entry.spec.targetSource);
-        let reason = uiLockReasonForElement(state);
         const expectedChildSpec = expectedChildSpecForEntry(snapshot, entry);
+        let reason = uiLockReasonForElement(state);
         if (reason === 'not-clickable' && expectedChildSpec) reason = 'action-child-not-clickable';
         if (entry.spec.modalId) {
             const modal = snapshotStateById(snapshot, entry.spec.modalId);
             if (modal && !isElementUsablyEnabled(modal)) reason = uiLockReasonForElement(modal);
         }
-        if (shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason)) continue;
-        issues.push({
-            kind: 'allowed-action-container-not-clickable',
+        return {
             action: entry.action,
-            target: state && state.id || entry.spec.targetId,
-            actionTarget: entry.action,
-            phase: entry.spec.phase || snapshot.phase,
+            spec: entry.spec,
+            state,
+            usable: false,
             reason,
-            freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
-        });
-    }
+            ignore: shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason),
+        };
+    });
+    return {
+        expectedContainers,
+        missingRegistryEntries: missingActionContainerRegistryEntries(snapshot),
+        activeModals: activeBlockingModalIds(snapshot).map(id => ({
+            id,
+            state: modalSnapshotFromRuntime(snapshot, id) || snapshot && snapshot.ui && snapshot.ui[id],
+        })),
+    };
+}
 
-    if (!activeModals.length && ui.gameScreen && (ui.gameScreen.inert || ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none') && expectedContainers.length) {
-        issues.push({ kind: 'orphan-game-screen-lock', target: 'gameScreen', reason: ui.gameScreen.inert ? 'parent-inert' : 'parent-display-none', freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED });
-    }
-    if (!activeModals.length && snapshot.bodyClassName && /modal-open/.test(snapshot.bodyClassName) && expectedContainers.length) {
-        issues.push({ kind: 'stale-modal-body-lock', target: 'body', reason: 'stale-modal', freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED });
-    }
-    return issues;
+function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
+    if (!snapshot || !snapshot.phase) return [];
+    return UiWatchdog.buildInteractabilityIssues(
+        snapshot,
+        collectInteractabilityObservations(snapshot),
+        FREEZE_KINDS
+    );
 }
 
 function primaryUiIssue(snapshot) {

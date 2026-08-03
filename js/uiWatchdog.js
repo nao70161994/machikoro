@@ -456,6 +456,75 @@ const UiWatchdog = (() => {
         return snapshot.socketConnected === false;
     }
 
+    function buildInteractabilityIssues(snapshot, observations = {}, freezeKinds = {}) {
+        const issues = [];
+        if (!snapshot || !snapshot.phase) return issues;
+        const ui = snapshot.ui || {};
+        const expectedContainers = Array.isArray(observations.expectedContainers)
+            ? observations.expectedContainers : [];
+        const missingRegistryEntries = Array.isArray(observations.missingRegistryEntries)
+            ? observations.missingRegistryEntries : [];
+        const activeModals = Array.isArray(observations.activeModals)
+            ? observations.activeModals : [];
+        const expectedPending = expectedPendingActions(snapshot);
+        const isMyTurn = isHumanTurnSnapshot(snapshot) && !isOnlineUiBlockedSnapshot(snapshot);
+
+        if (activeModals.length > 1) {
+            issues.push({
+                kind: 'nested-blocking-modal-policy-violation',
+                reason: 'nested-blocking-modal',
+                target: activeModals.map(entry => entry.id).join(','),
+                freezeKind: freezeKinds.MODAL_UI_LOCKED,
+            });
+        }
+
+        for (const entry of activeModals) {
+            if (!entry || entry.id === 'pendingModal') continue;
+            const modal = entry.state;
+            if (!modal) continue;
+            if (modal.inert) issues.push({ kind: 'visible-modal-inert', reason: 'parent-inert', target: entry.id, freezeKind: freezeKinds.MODAL_UI_LOCKED });
+            if (modal.pointerEvents === 'none' || modal.computedPointerEvents === 'none') issues.push({ kind: 'visible-modal-pointer-events-none', reason: 'pointer-events-none', target: entry.id, freezeKind: freezeKinds.MODAL_UI_LOCKED });
+        }
+
+        if (!isMyTurn) return issues;
+        if (activeModals.length && !expectedPending.length) return issues;
+
+        for (const entry of missingRegistryEntries) {
+            issues.push({
+                kind: 'allowed-action-missing-container-registry',
+                action: entry.action,
+                target: '',
+                actionTarget: entry.action,
+                phase: entry.phase,
+                reason: 'missing-registry',
+                freezeKind: freezeKinds.HUMAN_TURN_UI_LOCKED,
+            });
+        }
+
+        for (const entry of expectedContainers) {
+            if (!entry || entry.usable || entry.ignore) continue;
+            const spec = entry.spec || {};
+            const state = entry.state;
+            issues.push({
+                kind: 'allowed-action-container-not-clickable',
+                action: entry.action,
+                target: state && state.id || spec.targetId,
+                actionTarget: entry.action,
+                phase: spec.phase || snapshot.phase,
+                reason: entry.reason,
+                freezeKind: freezeKinds.HUMAN_TURN_UI_LOCKED,
+            });
+        }
+
+        if (!activeModals.length && ui.gameScreen && (ui.gameScreen.inert || ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none') && expectedContainers.length) {
+            issues.push({ kind: 'orphan-game-screen-lock', target: 'gameScreen', reason: ui.gameScreen.inert ? 'parent-inert' : 'parent-display-none', freezeKind: freezeKinds.HUMAN_TURN_UI_LOCKED });
+        }
+        if (!activeModals.length && snapshot.bodyClassName && /modal-open/.test(snapshot.bodyClassName) && expectedContainers.length) {
+            issues.push({ kind: 'stale-modal-body-lock', target: 'body', reason: 'stale-modal', freezeKind: freezeKinds.HUMAN_TURN_UI_LOCKED });
+        }
+        return issues;
+    }
+
     return Object.freeze({
         stateKey,
         compactIssueForTrace,
@@ -479,6 +548,7 @@ const UiWatchdog = (() => {
         isStaleConfirmModalSnapshot,
         isStalePendingModalSnapshot,
         isOnlineUiBlockedSnapshot,
+        buildInteractabilityIssues,
         hasPendingWork,
         buildFreezeFacts,
         classifyFreezeFacts,

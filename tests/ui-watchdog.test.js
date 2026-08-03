@@ -472,4 +472,100 @@ assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, so
     ].join('|'));
 }
 
+
+{
+    const snapshot = {
+        phase: 'build',
+        isOnlineGame: false,
+        isCpuTurn: false,
+        allowedActions: ['nextTurn'],
+        bodyClassName: 'modal-open',
+        ui: { gameScreen: { inert: true } },
+    };
+    const observations = {
+        activeModals: [],
+        missingRegistryEntries: [{ action: 'unregistered', phase: 'build' }],
+        expectedContainers: [{
+            action: 'nextTurn',
+            spec: { targetId: 'btnSkip' },
+            state: { id: 'btnSkip', disabled: true },
+            usable: false,
+            reason: 'disabled-mismatch',
+            ignore: false,
+        }],
+    };
+    const before = JSON.stringify({ snapshot, observations });
+    assert.deepStrictEqual(UiWatchdog.buildInteractabilityIssues(snapshot, observations, kinds), [
+        {
+            kind: 'allowed-action-missing-container-registry',
+            action: 'unregistered',
+            target: '',
+            actionTarget: 'unregistered',
+            phase: 'build',
+            reason: 'missing-registry',
+            freezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        },
+        {
+            kind: 'allowed-action-container-not-clickable',
+            action: 'nextTurn',
+            target: 'btnSkip',
+            actionTarget: 'nextTurn',
+            phase: 'build',
+            reason: 'disabled-mismatch',
+            freezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        },
+        {
+            kind: 'orphan-game-screen-lock',
+            target: 'gameScreen',
+            reason: 'parent-inert',
+            freezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        },
+        {
+            kind: 'stale-modal-body-lock',
+            target: 'body',
+            reason: 'stale-modal',
+            freezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        },
+    ]);
+    assert.strictEqual(JSON.stringify({ snapshot, observations }), before);
+}
+
+{
+    const snapshot = {
+        phase: 'build',
+        isOnlineGame: false,
+        isCpuTurn: false,
+        allowedActions: ['nextTurn'],
+        ui: {},
+    };
+    const observations = {
+        activeModals: [
+            { id: 'confirmModal', state: { inert: true, pointerEvents: 'none' } },
+            { id: 'rulesModal', state: { computedPointerEvents: 'none' } },
+        ],
+        expectedContainers: [{ action: 'nextTurn', usable: false }],
+    };
+    assert.deepStrictEqual(UiWatchdog.buildInteractabilityIssues(snapshot, observations, kinds), [
+        {
+            kind: 'nested-blocking-modal-policy-violation',
+            reason: 'nested-blocking-modal',
+            target: 'confirmModal,rulesModal',
+            freezeKind: kinds.MODAL_UI_LOCKED,
+        },
+        { kind: 'visible-modal-inert', reason: 'parent-inert', target: 'confirmModal', freezeKind: kinds.MODAL_UI_LOCKED },
+        { kind: 'visible-modal-pointer-events-none', reason: 'pointer-events-none', target: 'confirmModal', freezeKind: kinds.MODAL_UI_LOCKED },
+        { kind: 'visible-modal-pointer-events-none', reason: 'pointer-events-none', target: 'rulesModal', freezeKind: kinds.MODAL_UI_LOCKED },
+    ]);
+}
+
+assert.deepStrictEqual(UiWatchdog.buildInteractabilityIssues(null, {}, kinds), []);
+assert.deepStrictEqual(UiWatchdog.buildInteractabilityIssues({
+    phase: 'build',
+    isOnlineGame: true,
+    currentPlayerIndex: 0,
+    myPlayerIndex: 1,
+}, {
+    missingRegistryEntries: [{ action: 'nextTurn', phase: 'build' }],
+}, kinds), []);
+
 console.log('ui watchdog tests passed');
