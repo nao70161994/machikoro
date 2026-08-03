@@ -44,15 +44,15 @@ const CPUSelection = Object.freeze({
         },
 
     stableRankDescending(items, scoreOf) {
-        if (!Array.isArray(items) || typeof scoreOf !== 'function') return [];
-        return items.map((item, index) => ({ item, index, score: scoreOf(item) }))
-            .sort((left, right) => {
-                const difference = right.score - left.score;
-                return Number.isNaN(difference) || difference === 0
-                    ? left.index - right.index
-                    : difference;
-            })
-            .map(entry => entry.item);
+        return CPUSelection.stableRankLexicographic(items, [
+            { valueOf: scoreOf, direction: CPUSelection.directions.DESCENDING },
+        ]);
+    },
+
+    stableRankAscending(items, scoreOf) {
+        return CPUSelection.stableRankLexicographic(items, [
+            { valueOf: scoreOf, direction: CPUSelection.directions.ASCENDING },
+        ]);
     },
 
     directions: Object.freeze({ ASCENDING: 'ascending', DESCENDING: 'descending' }),

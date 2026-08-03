@@ -1656,13 +1656,15 @@ class CPU {
             });
         }
 
-        const builtValues = Object.entries(player.landmarks)
-            .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
-            .map(([name]) => ({
-                name,
-                value: this._builtLandmarkValue(name, player, game),
-            }))
-            .sort((a, b) => b.value - a.value);
+        const builtValues = CPUSelection.stableRankDescending(
+            Object.entries(player.landmarks)
+                .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
+                .map(([name]) => ({
+                    name,
+                    value: this._builtLandmarkValue(name, player, game),
+                })),
+            entry => entry.value
+        );
         if (builtValues.length === 0) {
             return CPUEvaluation.duplicateRenovationPenalty({
                 extraCopies,
@@ -2054,10 +2056,12 @@ class CPU {
         if (!current || current.coins < 1) return false;
         const remaining = this._remainingEnabledLandmarks(current, game);
         if (remaining.length === 0) return true;
-        const bestShortfall = remaining
-            .map(name => Player.landmarkCost(name) - current.coins)
-            .filter(shortfall => Number.isFinite(shortfall))
-            .sort((a, b) => a - b)[0];
+        const bestShortfall = CPUSelection.stableRankAscending(
+            remaining
+                .map(name => Player.landmarkCost(name) - current.coins)
+                .filter(shortfall => Number.isFinite(shortfall)),
+            shortfall => shortfall
+        )[0];
         if (bestShortfall <= 0) return false;
         if (remaining.length <= 3 && bestShortfall <= 3) return false;
         return true;
@@ -2427,13 +2431,15 @@ class CPU {
     }
 
     _estimateRenovationValue(game, player, copyOrdinal = 1) {
-        const builtValues = Object.entries(player.landmarks)
-            .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
-            .map(([name]) => ({
-                name,
-                value: this._builtLandmarkValue(name, player, game),
-            }))
-            .sort((a, b) => a.value - b.value);
+        const builtValues = CPUSelection.stableRankAscending(
+            Object.entries(player.landmarks)
+                .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
+                .map(([name]) => ({
+                    name,
+                    value: this._builtLandmarkValue(name, player, game),
+                })),
+            entry => entry.value
+        );
         if (builtValues.length === 0) return 0;
 
         const ordinalIndex = Math.max(0, copyOrdinal - 1);

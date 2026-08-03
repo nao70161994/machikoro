@@ -104,3 +104,22 @@ runTest('CPU selection lexicographic rankはNaN keyを次keyへ倒し不正spec�
     assert.deepStrictEqual(CPUSelection.stableRankLexicographic(items, [{ valueOf: null, direction: 'ascending' }]), []);
     assert.ok(Object.isFrozen(CPUSelection.directions));
 });
+
+runTest('CPU selection stable ascendingはscore昇順と元順tieを同じprimitiveで保持する', () => {
+    const items = [
+        { id: 'a', score: 3 },
+        { id: 'b', score: 1 },
+        { id: 'c', score: 1 },
+        { id: 'd', score: 5 },
+    ];
+    let calls = 0;
+    const ranked = CPUSelection.stableRankAscending(items, item => {
+        calls++;
+        return item.score;
+    });
+    assert.deepStrictEqual(ranked.map(item => item.id), ['b', 'c', 'a', 'd']);
+    assert.strictEqual(calls, items.length);
+    assert.deepStrictEqual(items.map(item => item.id), ['a', 'b', 'c', 'd']);
+    assert.deepStrictEqual(CPUSelection.stableRankAscending(null, item => item.score), []);
+    assert.deepStrictEqual(CPUSelection.stableRankAscending(items, null), []);
+});
