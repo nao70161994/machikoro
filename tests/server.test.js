@@ -1837,10 +1837,12 @@ runTest('injectIndexBuildHash はクライアントversionをheadへ注入する
     assert.ok(injected.indexOf('window.MACHIKORO_CLIENT_VERSION') < injected.indexOf('</head>'));
 });
 
-runTest('/api/version は stale cache を避ける Cache-Control を返す', () => {
-    const source = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-    assert.ok(source.includes("app.get('/api/version'"));
-    assert.ok(source.includes("res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');"));
+runTest('/api/version は static metadata adapter経由でstale cacheを避ける', () => {
+    const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    const assetSource = fs.readFileSync(path.join(__dirname, '..', 'server', 'staticAssets.js'), 'utf8');
+    assert.ok(serverSource.includes('registerStaticMetadataRoutes({'));
+    assert.ok(assetSource.includes("app.get('/api/version'"));
+    assert.ok(assetSource.includes("res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');"));
 });
 
 runTest('/api/client-error-test route はdebug endpointにも小さなJSON上限を持つ', () => {

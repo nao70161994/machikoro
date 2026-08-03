@@ -74,6 +74,7 @@ const {
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
+    registerStaticMetadataRoutes,
     registerStaticContentRoutes,
 } = require('./server/staticAssets');
 const {
@@ -554,20 +555,11 @@ const ASSET_LINKS = [{
         ]
     }
 }];
-app.get('/.well-known/assetlinks.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.json(ASSET_LINKS);
-});
-
-app.get('/sw.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.send(swContent);
-});
-
-app.get('/api/version', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.json({ hash: BUILD_HASH });
+registerStaticMetadataRoutes({
+    app,
+    assetLinks: ASSET_LINKS,
+    serviceWorkerContent: swContent,
+    buildHash: BUILD_HASH,
 });
 
 

@@ -9,6 +9,7 @@ const {
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
+    registerStaticMetadataRoutes,
     registerStaticContentRoutes,
 } = require('../server/staticAssets');
 const { runTest } = require('./helpers/test-utils');
@@ -157,6 +158,42 @@ runTest('static asset handlers はindex responseと公開root allowlistを維持
     assert.deepStrictEqual(calls, [['allowed', 'server.js']]);
     assert.strictEqual(nextCalls, 1);
     assert.ok(Object.isFrozen(handlers));
+});
+
+runTest('static metadata route adapter はassetlinks・SW・version契約を順番どおり登録する', () => {
+    const routes = [];
+    const assetLinks = [{ relation: ['test'] }];
+    registerStaticMetadataRoutes({
+        app: { get(route, handler) { routes.push([route, handler]); } },
+        assetLinks,
+        serviceWorkerContent: 'const CACHE = 1;',
+        buildHash: 'build-19',
+    });
+    assert.deepStrictEqual(routes.map(entry => entry[0]), [
+        '/.well-known/assetlinks.json', '/sw.js', '/api/version',
+    ]);
+
+    const calls = [];
+    const response = {
+        setHeader(name, value) { calls.push(['header', name, value]); },
+        json(value) { calls.push(['json', value]); },
+        send(value) { calls.push(['send', value]); },
+    };
+    routes[0][1]({}, response);
+    assert.deepStrictEqual(calls.splice(0), [
+        ['header', 'Content-Type', 'application/json'], ['json', assetLinks],
+    ]);
+    routes[1][1]({}, response);
+    assert.deepStrictEqual(calls.splice(0), [
+        ['header', 'Content-Type', 'application/javascript'],
+        ['header', 'Cache-Control', 'no-cache, no-store, must-revalidate'],
+        ['send', 'const CACHE = 1;'],
+    ]);
+    routes[2][1]({}, response);
+    assert.deepStrictEqual(calls, [
+        ['header', 'Cache-Control', 'no-cache, no-store, must-revalidate'],
+        ['json', { hash: 'build-19' }],
+    ]);
 });
 
 runTest('static content route adapter は既存route順と注入handlerを維持する', () => {

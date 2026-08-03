@@ -68,6 +68,27 @@ function isPublicRootFile(fileName) {
     return PUBLIC_ROOT_FILES.has(String(fileName || '').replace(/^\/+/, ''));
 }
 
+function registerStaticMetadataRoutes(options = {}) {
+    const app = options.app;
+    const assetLinks = options.assetLinks;
+    const serviceWorkerContent = options.serviceWorkerContent;
+    const buildHash = options.buildHash;
+
+    app.get('/.well-known/assetlinks.json', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.json(assetLinks);
+    });
+    app.get('/sw.js', (req, res) => {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.send(serviceWorkerContent);
+    });
+    app.get('/api/version', (req, res) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.json({ hash: buildHash });
+    });
+}
+
 function registerStaticContentRoutes(options = {}) {
     const app = options.app;
     const staticMiddleware = options.staticMiddleware;
@@ -120,5 +141,6 @@ module.exports = {
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
+    registerStaticMetadataRoutes,
     registerStaticContentRoutes,
 };
