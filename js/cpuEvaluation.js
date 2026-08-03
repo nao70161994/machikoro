@@ -780,6 +780,32 @@ const CPUEvaluation = Object.freeze({
         return steps;
     },
 
+    landmarkUrgency(name, features, landmarkNames) {
+        const values = features || {};
+        let urgency = 0;
+        if (name === landmarkNames.STATION) {
+            urgency = values.builtCount < 2 ? 8 : 5;
+        } else if (name === landmarkNames.SHOPPING_MALL) {
+            urgency = values.mallCategoryCardCount >= 3 ? 8 : 4;
+        } else if (name === landmarkNames.HARBOR) {
+            urgency = values.hasHarborCard ? 7 : 3;
+        } else if (name === landmarkNames.RADIO_TOWER) {
+            urgency = values.builtCount >= 3 || values.opponentMaxBuilt >= 4 ? 8 : 4;
+            if (values.isExpert && (values.builtCount >= 2 || values.opponentMaxBuilt >= 3)) urgency += 2;
+        } else if (name === landmarkNames.AMUSEMENT_PARK) {
+            urgency = values.hasStation ? 5 : 2;
+        } else if (name === landmarkNames.AIRPORT) {
+            urgency = values.builtCount >= 4 ? 6 : 1;
+            if (values.isExpert) {
+                if (values.builtCount >= 3) urgency += 3;
+                else if (values.builtCount >= 2 && values.stableIncome >= 8) urgency += 2;
+            }
+        }
+        urgency += values.strongUrgencyBonus || 0;
+        const bias = name === landmarkNames.AIRPORT ? values.airportBias : values.landmarkBias;
+        return Math.round(urgency * bias);
+    },
+
     expectedOutcomeValue(outcomes, evaluateOutcome) {
         let totalWeight = 0;
         let totalScore = 0;

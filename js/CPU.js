@@ -2300,31 +2300,23 @@ class CPU {
             .filter(p => p !== current)
             .map(p => p.builtLandmarkCount()));
         const profile = this._playerCountProfile(game);
-        let urgency = 0;
-        if (name === LANDMARK_NAMES.STATION) {
-            urgency = builtCount < 2 ? 8 : 5;
-        }
-        else if (name === LANDMARK_NAMES.SHOPPING_MALL) {
-            urgency = current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP).length >= 3 ? 8 : 4;
-        }
-        else if (name === LANDMARK_NAMES.HARBOR) {
-            urgency = current.cards.some(c => c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA) ? 7 : 3;
-        }
-        else if (name === LANDMARK_NAMES.RADIO_TOWER) {
-            urgency = builtCount >= 3 || opponentMaxBuilt >= 4 ? 8 : 4;
-            if (this.difficulty === "expert" && (builtCount >= 2 || opponentMaxBuilt >= 3)) urgency += 2;
-        }
-        else if (name === LANDMARK_NAMES.AMUSEMENT_PARK) urgency = current.landmarks[LANDMARK_NAMES.STATION] ? 5 : 2;
-        else if (name === LANDMARK_NAMES.AIRPORT) {
-            urgency = builtCount >= 4 ? 6 : 1;
-            if (this.difficulty === "expert") {
-                if (builtCount >= 3) urgency += 3;
-                else if (builtCount >= 2 && this._estimateStableIncome(game, current) >= 8) urgency += 2;
-            }
-        }
-        urgency += this._strongLandmarkUrgencyBonus(name, current, game);
-        if (name === LANDMARK_NAMES.AIRPORT) return Math.round(urgency * profile.airportBias);
-        return Math.round(urgency * profile.landmarkBias);
+        return CPUEvaluation.landmarkUrgency(name, {
+            builtCount,
+            opponentMaxBuilt,
+            mallCategoryCardCount: current.cards.filter(card =>
+                card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP
+            ).length,
+            hasHarborCard: current.cards.some(card =>
+                card.effect === CARD_EFFECTS.HARBOR || card.effect === CARD_EFFECTS.HARBOR_RED || card.effect === CARD_EFFECTS.TUNA
+            ),
+            hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
+            isExpert: this.difficulty === "expert",
+            stableIncome: name === LANDMARK_NAMES.AIRPORT && this.difficulty === "expert" && builtCount === 2
+                ? this._estimateStableIncome(game, current) : 0,
+            strongUrgencyBonus: this._strongLandmarkUrgencyBonus(name, current, game),
+            airportBias: profile.airportBias,
+            landmarkBias: profile.landmarkBias,
+        }, LANDMARK_NAMES);
     }
 
     _coinsTowardsNextLandmark(player) {

@@ -33,6 +33,55 @@ runTest('CPU本体のexpert/strong choice集計wrapperはpure evaluationと一�
     assert.deepStrictEqual(game, { value: 5 });
 });
 
+runTest('CPU evaluation はランドマーク優先度の既存分岐とbiasをpureに維持する', () => {
+    const names = {
+        STATION: 'station', SHOPPING_MALL: 'mall', HARBOR: 'harbor',
+        RADIO_TOWER: 'tower', AMUSEMENT_PARK: 'park', AIRPORT: 'airport',
+    };
+    const base = {
+        builtCount: 1, opponentMaxBuilt: 0, mallCategoryCardCount: 0,
+        hasHarborCard: false, hasStation: false, isExpert: false, stableIncome: 0,
+        strongUrgencyBonus: 0, airportBias: 1.5, landmarkBias: 2,
+    };
+    assert.strictEqual(CPUEvaluation.landmarkUrgency(names.STATION, base, names), 16);
+    assert.strictEqual(CPUEvaluation.landmarkUrgency(names.SHOPPING_MALL, { ...base, mallCategoryCardCount: 3 }, names), 16);
+    assert.strictEqual(CPUEvaluation.landmarkUrgency(names.HARBOR, { ...base, hasHarborCard: true }, names), 14);
+    assert.strictEqual(CPUEvaluation.landmarkUrgency(names.RADIO_TOWER, {
+        ...base, builtCount: 2, opponentMaxBuilt: 3, isExpert: true,
+    }, names), 12);
+    assert.strictEqual(CPUEvaluation.landmarkUrgency(names.AMUSEMENT_PARK, { ...base, hasStation: true }, names), 10);
+    assert.strictEqual(CPUEvaluation.landmarkUrgency(names.AIRPORT, {
+        ...base, builtCount: 2, isExpert: true, stableIncome: 8, strongUrgencyBonus: 1,
+    }, names), 6);
+});
+
+runTest('CPUランドマーク優先度wrapperはpure evaluationへ完全委譲する', () => {
+    const { CPU, GameManager, LANDMARK_NAMES, CARD_CATEGORIES, CARD_EFFECTS } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    current.cards.push({ name: 'shop', category: CARD_CATEGORIES.SHOP, effect: CARD_EFFECTS.HARBOR });
+    current.landmarks[LANDMARK_NAMES.STATION] = true;
+    cpu._estimateStableIncome = () => 9;
+    cpu._strongLandmarkUrgencyBonus = () => 2;
+    cpu._playerCountProfile = () => ({ airportBias: 1.25, landmarkBias: 1.5 });
+    const builtCount = current.builtLandmarkCount();
+    const opponentMaxBuilt = Math.max(0, ...game.players.slice(1).map(player => player.builtLandmarkCount()));
+    const expected = CPUEvaluation.landmarkUrgency(LANDMARK_NAMES.AIRPORT, {
+        builtCount,
+        opponentMaxBuilt,
+        mallCategoryCardCount: 1,
+        hasHarborCard: true,
+        hasStation: true,
+        isExpert: true,
+        stableIncome: 0,
+        strongUrgencyBonus: 2,
+        airportBias: 1.25,
+        landmarkBias: 1.5,
+    }, LANDMARK_NAMES);
+    assert.strictEqual(cpu._landmarkUrgency(LANDMARK_NAMES.AIRPORT, current, game), expected);
+});
+
 runTest('CPU evaluation は1個振りの各有効出目を同じ重みで数える', () => {
     assert.strictEqual(CPUEvaluation.singleDiceFrequency([1, 2, 6]), 3);
     assert.strictEqual(CPUEvaluation.singleDiceFrequency([0, 7, 12]), 0);
