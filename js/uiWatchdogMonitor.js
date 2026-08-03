@@ -59,5 +59,5 @@ const UiWatchdogMonitor = (() => {
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiWatchdogMonitor;
-if (typeof window !== 'undefined') window.UiWatchdogMonitor = UiWatchdogMonitor;
+if (typeof window !== 'undefined') Object.assign(window, { UiWatchdogMonitor });
 if (typeof globalThis !== 'undefined') globalThis.UiWatchdogMonitor = UiWatchdogMonitor;

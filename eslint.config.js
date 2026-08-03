@@ -41,6 +41,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/gameEngineRuntimeAdapter.js',
     'js/gameSnapshot.js',
     'js/localSaveRepository.js',
+    'js/localResumePolicy.js',
     'js/gameSchemaNegotiation.js',
     'js/gameSchemaCodec.js',
     'js/gameSchemaWire.js',
@@ -73,6 +74,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineRetryPolicy.js',
     'js/onlineReconnectState.js',
     'js/onlineRuntimeFlags.js',
+    'js/onlineSchemaTransport.js',
     'js/onlineRestoreRank.js',
     'js/onlineStorage.js',
     'js/pwaShell.js',
@@ -97,6 +99,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiDiceDisplay.js',
     'js/uiTurnAnnouncer.js',
     'js/uiWatchdog.js',
+    'js/uiWatchdogMonitor.js',
     'js/crashScreen.js',
     'js/uiWinner.js',
 ]);

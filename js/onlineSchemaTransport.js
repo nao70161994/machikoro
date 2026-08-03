@@ -106,5 +106,5 @@ const OnlineSchemaTransport = (() => {
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OnlineSchemaTransport;
-if (typeof window !== 'undefined') window.OnlineSchemaTransport = OnlineSchemaTransport;
+if (typeof window !== 'undefined') Object.assign(window, { OnlineSchemaTransport });
 if (typeof globalThis !== 'undefined') globalThis.OnlineSchemaTransport = OnlineSchemaTransport;

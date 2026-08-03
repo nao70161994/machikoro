@@ -75,5 +75,5 @@ const LocalResumePolicy = (() => {
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LocalResumePolicy;
-if (typeof window !== 'undefined') window.LocalResumePolicy = LocalResumePolicy;
+if (typeof window !== 'undefined') Object.assign(window, { LocalResumePolicy });
 if (typeof globalThis !== 'undefined') globalThis.LocalResumePolicy = LocalResumePolicy;
