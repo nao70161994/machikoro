@@ -24,10 +24,45 @@ const GameTurnPolicy = (() => {
         return (currentPlayerIndex + 1) % playerCount;
     }
 
+    const nextTurnRejectionReasons = Object.freeze({
+        WRONG_PHASE: 'wrong-phase',
+        WINNER_DECIDED: 'winner-decided',
+    });
+
+    function readFact(value) {
+        return typeof value === 'function' ? value() : value;
+    }
+
+    function planNextTurnAdmission(facts = {}) {
+        if (readFact(facts.phase) !== readFact(facts.buildPhase)) {
+            return Object.freeze({ ok: false, reason: nextTurnRejectionReasons.WRONG_PHASE });
+        }
+        if (readFact(facts.hasWinner)) {
+            return Object.freeze({ ok: false, reason: nextTurnRejectionReasons.WINNER_DECIDED });
+        }
+        return Object.freeze({ ok: true, reason: '' });
+    }
+
+    function shouldAwardAirportBonus(facts = {}) {
+        return !readFact(facts.builtThisTurn) && readFact(facts.hasAirport) === true;
+    }
+
+    function planNextTurnContinuation(facts = {}) {
+        const startPendingIt = readFact(facts.hasActiveItStartup) === true;
+        return Object.freeze({
+            startPendingIt,
+            advanceTurn: !startPendingIt,
+        });
+    }
+
     return Object.freeze({
         phaseAfterIncome,
         shouldRepeatAmusementParkTurn,
         nextPlayerIndex,
+        nextTurnRejectionReasons,
+        planNextTurnAdmission,
+        shouldAwardAirportBonus,
+        planNextTurnContinuation,
     });
 })();
 

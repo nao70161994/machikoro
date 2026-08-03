@@ -27,6 +27,11 @@ const PENDING_ACTION_SPEC_BY_ACTION = PENDING_ACTION_CONTRACT.byAction;
 
 const GAME_ACTION_REGISTRY = GameActionContract.registry;
 
+const NEXT_TURN_REJECTION_MESSAGES = Object.freeze({
+    [GameTurnPolicy.nextTurnRejectionReasons.WRONG_PHASE]: '❌ 今はターン終了できません',
+    [GameTurnPolicy.nextTurnRejectionReasons.WINNER_DECIDED]: '❌ 勝敗決定後はターン終了できません',
+});
+
 const BUILD_REJECTION_MESSAGES = Object.freeze({
     [GameBuildPolicy.reasons.WRONG_PHASE]: '❌ 今は建設できません',
     [GameBuildPolicy.reasons.ALREADY_BUILT]: '❌ 建設は1ターンに1度だけです',
@@ -829,16 +834,27 @@ class GameManager {
     }
 
     nextTurn() {
-        if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今はターン終了できません`); return false; }
-        if (this.checkWinner()) { this.addLog(LOG_TYPES.ERROR, `❌ 勝敗決定後はターン終了できません`); return false; }
+        const admission = GameTurnPolicy.planNextTurnAdmission({
+            phase: this.phase,
+            buildPhase: GAME_PHASES.BUILD,
+            hasWinner: () => !!this.checkWinner(),
+        });
+        if (!admission.ok) {
+            this.addLog(LOG_TYPES.ERROR, NEXT_TURN_REJECTION_MESSAGES[admission.reason]);
+            return false;
+        }
         const current = this.currentPlayer();
-        if (!this.builtThisTurn && current.landmarks[LANDMARK_NAMES.AIRPORT]) {
+        if (GameTurnPolicy.shouldAwardAirportBonus({
+            builtThisTurn: this.builtThisTurn,
+            hasAirport: !!current.landmarks[LANDMARK_NAMES.AIRPORT],
+        })) {
             current.coins += 10;
             this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`);
         }
         // ITベンチャー：任意で積立
         const itCard = current.cards.find(c => c.effect === CARD_EFFECTS.ITSTARTUP && !current.isDormant(c));
-        if (itCard) {
+        const continuation = GameTurnPolicy.planNextTurnContinuation({ hasActiveItStartup: !!itCard });
+        if (continuation.startPendingIt) {
             this.pendingIT = true;
             this.phase = GAME_PHASES.PENDING;
             this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー：1コイン積立しますか？（現在${current.itVentureCoins}コイン積立中）`);
