@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
+const { startRoomGc } = require('./server/roomGcRuntime');
 const loadGameRuntime = makeGameRuntimeLoader({
     baseDir: __dirname,
     runtimeConsole: console,
@@ -768,12 +769,7 @@ const {
 
 // ===== Socket events =====
 // 開始済み/未開始ルームのGC。未開始roomはspam対策として短めに削除する。
-const roomGcInterval = setInterval(() => {
-    cleanupExpiredRooms(Date.now(), rooms);
-}, 10 * 60 * 1000);
-if (typeof roomGcInterval.unref === 'function') {
-    roomGcInterval.unref();
-}
+startRoomGc({ cleanupExpiredRooms, rooms });
 
 io.on('connection', (socket) => {
     console.log('接続:', socket.id);
