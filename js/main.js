@@ -554,6 +554,7 @@ function chooseCpuTurnAction(stepName, cpu) {
         cpu,
         rollDie: rollRandomDie,
         choosePendingAction: chooseCpuPendingAction,
+        shopStock: SHOP_STOCK,
     });
 }
 
@@ -632,7 +633,12 @@ const CPU_PHASE_HANDLERS = [
         name: "build",
         run(cpu) {
             if (game.phase !== GAME_PHASES.BUILD) return;
-            const buildResult = cpu.build(game, SHOP_STOCK);
+            const actionOnlyBuild = typeof cpu.chooseBuildAction === 'function' &&
+                typeof cpu.executeBuildAction === 'function';
+            const proposal = actionOnlyBuild ? chooseCpuTurnAction('build', cpu) : null;
+            const buildResult = actionOnlyBuild
+                ? cpu.executeBuildAction(proposal, game, SHOP_STOCK)
+                : cpu.build(game, SHOP_STOCK);
             if (buildResult === false) {
                 if (isOnlineGame) return false;
                 if (!game.builtThisTurn) {

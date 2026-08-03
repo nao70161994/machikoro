@@ -68,5 +68,21 @@ runTest('CPU turn strategyは残りの非build判断をaction proposal化する'
     assert.strictEqual(CpuTurnStrategy.chooseAction('pending', {
         game, cpu: {}, choosePendingAction: () => pending,
     }), pending);
+    const shopStock = { wheat: 4 };
+    const buildProposal = { action: 'buildCard', data: { cardName: '麦畑' } };
+    let buildCalls = 0;
+    assert.strictEqual(CpuTurnStrategy.chooseAction('build', {
+        game,
+        shopStock,
+        cpu: {
+            chooseBuildAction(actualGame, actualShopStock) {
+                buildCalls++;
+                assert.strictEqual(actualGame, game);
+                assert.strictEqual(actualShopStock, shopStock);
+                return buildProposal;
+            },
+        },
+    }), buildProposal);
+    assert.strictEqual(buildCalls, 1);
     assert.strictEqual(CpuTurnStrategy.chooseAction('build', { game, cpu: {} }), null);
 });

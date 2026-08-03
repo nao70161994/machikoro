@@ -291,6 +291,25 @@ runTest('CPU chooseBuildAction は盤面と在庫を変えずcanonical proposal�
     assert.strictEqual(JSON.stringify(stock), beforeStock);
 });
 
+runTest('CPU executeBuildAction は選択済みcanonical proposalだけを適用する', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    const stock = makeFullShopStock();
+    const proposal = cpu.chooseBuildAction(game, stock);
+    const beforeStockTotal = Object.values(stock).reduce((sum, count) => sum + count, 0);
+
+    assert.ok(proposal);
+    assert.strictEqual(cpu.executeBuildAction(proposal, game, stock), true);
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(
+        Object.values(stock).reduce((sum, count) => sum + count, 0),
+        proposal.action === 'buildCard' ? beforeStockTotal - 1 : beforeStockTotal
+    );
+    assert.strictEqual(cpu.executeBuildAction(proposal, game, stock), null);
+});
+
 runTest('choosePendingResolution は pending 順と fallback move を共有する', () => {
     const cpu = new CPU('normal');
     const game = new GameManager(2);

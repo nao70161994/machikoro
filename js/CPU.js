@@ -2212,7 +2212,23 @@ class CPU {
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
         try {
             const proposal = this.chooseBuildAction(game, shopStock);
-            if (!proposal) return null;
+            return this.executeBuildAction(proposal, game, shopStock);
+        } catch (error) {
+            console.error('[cpu] build decision failed:', error);
+            return this._setBuildActionResult(false);
+        }
+    }
+
+    /**
+     * Applies one already-selected canonical build action.
+     * @param {CPUBuildActionProposal|null} proposal
+     * @returns {boolean|null}
+     */
+    executeBuildAction(proposal, game, shopStock) {
+        this._lastBuildActionResult = null;
+        if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
+        if (!proposal) return null;
+        try {
             return CPUBuildExecution.executeAction(
                 this,
                 proposal,
@@ -2223,7 +2239,7 @@ class CPU {
                 })
             );
         } catch (error) {
-            console.error('[cpu] build decision failed:', error);
+            console.error('[cpu] build execution failed:', error);
             return this._setBuildActionResult(false);
         }
     }

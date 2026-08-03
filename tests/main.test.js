@@ -1207,6 +1207,41 @@ runTest('main scheduleCPU はローカルCPU build failureをpass扱いでnextTu
     assert.deepStrictEqual(rt.__test.sentActions, []);
 });
 
+runTest('main scheduleCPU はlive CPU buildをcanonical proposal経由で一度だけ実行する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    const proposal = { action: 'buildCard', data: { cardName: '麦畑' } };
+    const calls = [];
+    let selectedShopStock = null;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        chooseBuildAction(actualGame, actualShopStock) {
+            calls.push('choose');
+            assert.strictEqual(actualGame, game);
+            selectedShopStock = actualShopStock;
+            return proposal;
+        },
+        executeBuildAction(actualProposal, actualGame, actualShopStock) {
+            calls.push('execute');
+            assert.strictEqual(actualProposal, proposal);
+            assert.strictEqual(actualGame, game);
+            assert.strictEqual(actualShopStock, selectedShopStock);
+            game.builtThisTurn = true;
+            return true;
+        },
+        build() {
+            throw new Error('legacy build should not run');
+        },
+    }, null]);
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.deepStrictEqual(calls, ['choose', 'execute']);
+    assert.deepStrictEqual(rt.__test.sentActions, []);
+});
+
 runTest('main scheduleCPU は未知CPUのBUILD例外でもローカル手番をpassする', () => {
     const rt = loadMainRuntime();
     const game = new rt.GameManager(2);

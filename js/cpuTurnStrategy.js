@@ -10,7 +10,7 @@ const CpuTurnStrategy = (() => {
     }
 
     function chooseAction(stepName, context = {}) {
-        const { game, cpu, rollDie, choosePendingAction } = context;
+        const { game, cpu, rollDie, choosePendingAction, shopStock } = context;
         if (!game || !cpu) return null;
 
         switch (stepName) {
@@ -36,6 +36,10 @@ const CpuTurnStrategy = (() => {
             return proposal('resolveHarbor', { useBonus: cpu.chooseHarbor(game) });
         case 'pending':
             return typeof choosePendingAction === 'function' ? choosePendingAction(cpu) : null;
+        case 'build':
+            return typeof cpu.chooseBuildAction === 'function'
+                ? cpu.chooseBuildAction(game, shopStock)
+                : null;
         case 'nextTurn':
             return proposal('nextTurn', {});
         case 'resolveIT':
