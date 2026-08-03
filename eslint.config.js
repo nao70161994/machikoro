@@ -102,6 +102,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiTurnAnnouncer.js',
     'js/uiWatchdog.js',
     'js/uiWatchdogMonitor.js',
+    'js/clientRuntimeSnapshot.js',
     'js/crashScreen.js',
     'js/uiWinner.js',
 ]);

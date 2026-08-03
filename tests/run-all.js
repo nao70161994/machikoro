@@ -158,6 +158,7 @@ const TEST_GROUPS = {
         'ui-pending-menu.test.js',
         'ui-watchdog.test.js',
         'ui-watchdog-monitor.test.js',
+        'client-runtime-snapshot.test.js',
         'crash-screen.test.js',
         'ui-winner.test.js',
         'lifecycle-notify.test.js',
