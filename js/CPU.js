@@ -411,34 +411,24 @@ class CPU {
 
     _expertCandidateTargetIndexes(game, currentIndex) {
         if (!game || !game.players) return [];
-        const indexes = game.players
-            .map((player, index) => ({ player, index }))
-            .filter(entry => entry.index !== currentIndex)
-            .sort((a, b) => {
-                const threatDiff = this._estimateOpponentThreat(b.player, game) - this._estimateOpponentThreat(a.player, game);
-                if (threatDiff !== 0) return threatDiff;
-                return b.player.coins - a.player.coins;
-            })
-            .map(entry => entry.index);
-        if (!this._expertFlagEnabled("disruptionCandidatePruning") || game.players.length < 4) return indexes;
-        return indexes.slice(0, 2);
+        const prune = this._expertFlagEnabled("disruptionCandidatePruning") && game.players.length >= 4;
+        return CPULegalMoves.disruptionTargetIndexes(
+            game.players,
+            currentIndex,
+            player => this._estimateOpponentThreat(player, game),
+            prune
+        );
     }
 
     _expertCandidateCleaningNames(game) {
         if (!game) return [];
-        const allNames = [...new Set(game.players.flatMap(p =>
-            p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
-        if (!this._expertFlagEnabled("disruptionCandidatePruning") || game.players.length < 4) return allNames;
-        return allNames
-            .map(name => ({
-                name,
-                score: game.players.reduce((sum, player) => sum + player.getMinorCards()
-                    .filter(card => card.name === name && !player.isDormant(card))
-                    .reduce((inner, card) => inner + this._ownedCardValue(card, game, player), 0), 0),
-            }))
-            .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-            .slice(0, 3)
-            .map(entry => entry.name);
+        const prune = this._expertFlagEnabled("disruptionCandidatePruning") && game.players.length >= 4;
+        return CPULegalMoves.disruptionCleaningNames(
+            game.players,
+            player => player.getMinorCards().filter(card => !player.isDormant(card)),
+            (card, player) => this._ownedCardValue(card, game, player),
+            prune
+        );
     }
 
     // ===== サイコロ判断 =====
