@@ -126,6 +126,7 @@ const TEST_GROUPS = {
         'local-resume-policy.test.js',
         'storage.test.js',
         'local-player-settings.test.js',
+        'local-game-start.test.js',
         'auto-skip-policy.test.js',
         'page-activation-policy.test.js',
         'delayed-human-action-policy.test.js',

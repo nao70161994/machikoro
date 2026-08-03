@@ -213,30 +213,51 @@ function preloadLocalRlModelsInBackground(reason = 'local-rl-background-preload'
 }
 
 function startGameNow(playerCount = selectedCount, settings = playerSettings) {
-    selectedCount = playerCount;
-    playerSettings = snapshotLocalPlayerSettings(playerCount).map((_, index) => Object.assign({}, settings[index] || {}));
-    cpuSpeed = parseInt(document.getElementById("cpuSpeed").value);
-    saveSettings();
-    resetStatsRecorded();
-    if (typeof resetOnlineState === 'function') resetOnlineState();
-    if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('start-game-reset-ui-locks');
-    document.getElementById("titleScreen").style.display = "none";
-    document.getElementById("gameScreen").style.display = "block";
-    init(playerCount);
-    if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
+    const plan = LocalGameStart.runtimePlan(
+        playerCount,
+        settings,
+        parseInt(document.getElementById("cpuSpeed").value)
+    );
+    LocalGameStart.execute(plan, {
+        setRuntime(value) {
+            selectedCount = value.playerCount;
+            playerSettings = Array.from(value.playerSettings, setting => Object.assign({}, setting));
+            cpuSpeed = value.cpuSpeed;
+        },
+        saveSettings,
+        resetStats: resetStatsRecorded,
+        resetOnline() {
+            if (typeof resetOnlineState === 'function') resetOnlineState();
+        },
+        resetUiLocks() {
+            if (typeof resetUiLocksForGameReset === 'function') {
+                resetUiLocksForGameReset('start-game-reset-ui-locks');
+            }
+        },
+        showGame() {
+            document.getElementById("titleScreen").style.display = "none";
+            document.getElementById("gameScreen").style.display = "block";
+        },
+        initializeGame: init,
+        notifyLifecycleStart() {
+            if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
+        },
+    });
 }
 
 function startGame() {
-    if (localGameStartPending) return;
+    if (LocalGameStart.initialDecision({ startPending: localGameStartPending }) ===
+            LocalGameStart.REQUEST_DECISIONS.IGNORE_PENDING) return;
     const startPlayerCount = selectedCount;
     const startPlayerSettings = snapshotLocalPlayerSettings(startPlayerCount);
     const state = updateLocalRlModelReadinessUi();
-    if (state.status === 'loading') {
+    if (LocalGameStart.initialDecision({ loadStatus: state.status }) ===
+            LocalGameStart.REQUEST_DECISIONS.WAIT_LOADING) {
         showNotice("深層学習AIモデルを読み込んでいます。");
         return;
     }
     const preload = preloadLocalRlModelsForStart(startPlayerCount, startPlayerSettings);
-    if (preload && typeof preload.then === "function") {
+    if (LocalGameStart.preloadDecision(preload) === LocalGameStart.REQUEST_DECISIONS.PRELOAD) {
         localGameStartPending = true;
         updateLocalRlModelReadinessUi();
         showNotice("深層学習AIモデルを読み込んでいます。");

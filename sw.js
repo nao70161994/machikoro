@@ -113,6 +113,7 @@ const STATIC_ASSETS = [
   '/js/actionUiRegistry.js',
   '/js/appShell.js',
   '/js/localPlayerSettings.js',
+  '/js/localGameStart.js',
   '/js/autoSkipPolicy.js',
   '/js/pageActivationPolicy.js',
   '/js/delayedHumanActionPolicy.js',
