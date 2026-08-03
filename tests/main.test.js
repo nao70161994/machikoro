@@ -2202,6 +2202,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/RLModelPortfolio.js', 'js/online.js');
     assertBefore('js/onlineStorage.js', 'js/online.js');
     assertBefore('js/onlinePayload.js', 'js/online.js');
+    assertBefore('js/onlineSessionLifecycle.js', 'js/online.js');
     assertBefore('js/onlineSocketRegistry.js', 'js/online.js');
     assertBefore('js/clientStorage.js', 'js/ui.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');

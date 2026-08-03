@@ -1799,45 +1799,62 @@ function _onlineRestoreActivationEffectAuthoritySelection(planSelection) {
 }
 
 function markOnlineGameFinished() {
-    _onlineReconnectCompleted = true;
-    isOnlineGame = false;
-    setOnlineReconnectLegacyFlag(false);
-    _setOnlineActionInFlight(false);
-    _clearRejoinRetry();
-    _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_COMPLETED);
+    const plan = OnlineSessionLifecycle.completedPlan();
+    OnlineSessionLifecycle.execute(plan, {
+        markCompleted() { _onlineReconnectCompleted = true; },
+        leaveOnlineGame() { isOnlineGame = false; },
+        clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
+        clearActionInFlight() { _setOnlineActionInFlight(false); },
+        clearRejoinRetry() { _clearRejoinRetry(); },
+        observeCompleted() {
+            _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_COMPLETED);
+        },
+    });
 }
 
 function resetOnlineState() {
-    _onlineReconnectCompleted = false;
-    _lastOnlineGameEngineShadowOutcome = Object.freeze({
-        report: null,
-        authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
+    const plan = OnlineSessionLifecycle.resetPlan(myRoomId);
+    OnlineSessionLifecycle.execute(plan, {
+        markNotCompleted() { _onlineReconnectCompleted = false; },
+        resetEngineShadow() {
+            _lastOnlineGameEngineShadowOutcome = Object.freeze({
+                report: null,
+                authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
+            });
+        },
+        finishLobbyRequest() { finishOnlineLobbyRequest(); },
+        incrementCpuScheduleToken() { cpuScheduleToken++; },
+        disconnectSocket() {
+            if (socket) { socket.disconnect(); socket = null; }
+        },
+        leaveOnlineGame() { isOnlineGame = false; },
+        clearHost() { isRoomHost = false; },
+        clearPlayerIndexes() {
+            myPlayerIndex = -1;
+            myOriginalPlayerIndex = -1;
+        },
+        clearRoom() { myRoomId = null; },
+        clearReconnectToken() { reconnectToken = ''; },
+        clearSchemaSelection() { onlineGameSchemaSelection = null; },
+        clearReplayFlag() { isReplaying = false; },
+        clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
+        clearActionInFlight() { _setOnlineActionInFlight(false); },
+        clearPendingOutboundAction(currentPlan) {
+            _clearPendingOutboundAction(currentPlan.roomIdBeforeReset);
+        },
+        clearRejoinRetry() { _clearRejoinRetry(); },
+        clearHostlessPending() { _hostlessRestorePending = false; },
+        incrementRestoreGeneration() { _onlineRestoreGeneration++; },
+        clearRestoreInProgress() { _onlineRestoreInProgress = false; },
+        clearRestoreQueue() { _clearOnlineRestoreEventQueue(); },
+        resetLastAppliedSequence() { _lastAppliedOnlineActionSeqMemory = 0; },
+        clearRestoreFlushFlag() { _flushingOnlineRestoreEvents = false; },
+        clearRestoreQuarantine() { _onlineRestoreQuarantined = false; },
+        clearPendingMemory() { _pendingOutboundActionsMemory.clear(); },
+        observeReset() {
+            _observeOnlineReconnectEvent(OnlineReconnectState.events.RESET);
+        },
     });
-    finishOnlineLobbyRequest();
-    const roomIdBeforeReset = myRoomId;
-    cpuScheduleToken++;
-    if (socket) { socket.disconnect(); socket = null; }
-    isOnlineGame = false;
-    isRoomHost = false;
-    myPlayerIndex = -1;
-    myOriginalPlayerIndex = -1;
-    myRoomId = null;
-    reconnectToken = '';
-    onlineGameSchemaSelection = null;
-    isReplaying = false;
-    setOnlineReconnectLegacyFlag(false);
-    _setOnlineActionInFlight(false);
-    _clearPendingOutboundAction(roomIdBeforeReset);
-    _clearRejoinRetry();
-    _hostlessRestorePending = false;
-    _onlineRestoreGeneration++;
-    _onlineRestoreInProgress = false;
-    _clearOnlineRestoreEventQueue();
-    _lastAppliedOnlineActionSeqMemory = 0;
-    _flushingOnlineRestoreEvents = false;
-    _onlineRestoreQuarantined = false;
-    _pendingOutboundActionsMemory.clear();
-    _observeOnlineReconnectEvent(OnlineReconnectState.events.RESET);
 }
 
 function _saveActionLog(action, data, options = {}) {

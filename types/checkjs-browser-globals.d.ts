@@ -56,6 +56,7 @@ interface Window {
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
     OnlineActionLog: unknown;
+    OnlineSessionLifecycle: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
     GameEngineDeterminism: unknown;

@@ -85,6 +85,7 @@
     "js/onlineRestoreRank.js",
     "js/onlineActionSequence.js",
     "js/onlineActionLog.js",
+    "js/onlineSessionLifecycle.js",
     "js/onlineStorage.js",
     "js/cpuActionProposal.js",
     "js/cpuBuildExecution.js",
