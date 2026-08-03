@@ -1956,7 +1956,7 @@ class CPU {
     }
 
     _bestAffordableLandmark(current, game, reserve = 0) {
-        let best = null;
+        const candidates = [];
         for (const name of Player.landmarkNames()) {
             if (!game.enabledLandmarks || !game.enabledLandmarks.has(name) || current.landmarks[name]) continue;
             const cost = Player.landmarkCost(name);
@@ -1964,11 +1964,9 @@ class CPU {
             const urgency = this._landmarkUrgency(name, current, game);
             const thresholdPenalty = this._strongLandmarkThresholdPenalty(name, current, game);
             const score = urgency * 2.2 + Math.max(0, current.coins - cost - reserve) * 0.08 - thresholdPenalty;
-            if (!best || score > best.score || (score === best.score && cost < best.cost)) {
-                best = { name, cost, urgency, score };
-            }
+            candidates.push({ name, cost, urgency, score });
         }
-        return best;
+        return CPUEvaluation.bestLandmarkCandidate(candidates);
     }
 
     _strongTargetLandmark(current, game) {

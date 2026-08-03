@@ -3,6 +3,43 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('CPU evaluation はランドマーク候補の最高scoreと低cost tie-breakをpureに選ぶ', () => {
+    const first = { name: 'first', score: 8, cost: 6 };
+    const cheaperTie = { name: 'cheaper', score: 8, cost: 4 };
+    const sameTie = { name: 'same', score: 8, cost: 4 };
+    const candidates = [first, cheaperTie, sameTie, { name: 'low', score: 7, cost: 1 }];
+    const snapshot = candidates.map(candidate => ({ ...candidate }));
+    assert.strictEqual(CPUEvaluation.bestLandmarkCandidate(candidates), cheaperTie);
+    assert.deepStrictEqual(candidates, snapshot);
+    assert.strictEqual(CPUEvaluation.bestLandmarkCandidate([]), null);
+});
+
+runTest('CPU本体のランドマーク候補wrapperは既存score式と順序を維持する', () => {
+    const { CPU, GameManager, Player } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.coins = 100;
+    const names = Player.landmarkNames().filter(name => game.enabledLandmarks.has(name));
+    const urgency = new Map(names.map((name, index) => [name, index + 1]));
+    cpu._landmarkUrgency = name => urgency.get(name);
+    cpu._strongLandmarkThresholdPenalty = () => 0;
+    const expected = CPUEvaluation.bestLandmarkCandidate(names.map(name => {
+        const cost = Player.landmarkCost(name);
+        return {
+            name,
+            cost,
+            urgency: urgency.get(name),
+            score: urgency.get(name) * 2.2 + Math.max(0, current.coins - cost - 3) * 0.08,
+        };
+    }));
+    const actual = cpu._bestAffordableLandmark(current, game, 3);
+    assert.deepStrictEqual(
+        [actual.name, actual.cost, actual.urgency, actual.score],
+        [expected.name, expected.cost, expected.urgency, expected.score]
+    );
+});
+
 runTest('CPU evaluation は購入候補をscore降順かつ同点入力順でpureに並べる', () => {
     const cards = [{ id: 'first' }, { id: 'best' }, { id: 'tie' }];
     const values = { first: 4, best: 9, tie: 4 };

@@ -1,4 +1,15 @@
 const CPUEvaluation = Object.freeze({
+    bestLandmarkCandidate(candidates) {
+        let best = null;
+        for (const candidate of candidates) {
+            if (!best || candidate.score > best.score ||
+                    (candidate.score === best.score && candidate.cost < best.cost)) {
+                best = candidate;
+            }
+        }
+        return best;
+    },
+
     rankCards(cards, scoreCard) {
         return cards.map(card => ({
             card,
