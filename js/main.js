@@ -89,35 +89,8 @@ function getRlCpuSettingNote(playerCount) {
 }
 
 function createCpuPlayer(difficulty, options = {}) {
-    const resolvedOptions = Object.assign({}, options);
+    const resolvedOptions = resolveLiveExpertOptions(difficulty, options);
     const resolvedDifficulty = difficulty;
-    const applyLiveExpertDefaults = () => {
-        if (!resolvedOptions.expertPreset) {
-            resolvedOptions.expertPreset = "v2simple";
-        }
-        if (resolvedOptions.expertPreset === "v2simple") {
-            if (!resolvedOptions.expertDiceMode) resolvedOptions.expertDiceMode = "strongCrowdThreshold";
-            if (!resolvedOptions.expertRerollMode) resolvedOptions.expertRerollMode = "simple";
-            if (!resolvedOptions.expertBuildMode) resolvedOptions.expertBuildMode = "ev";
-            if (!resolvedOptions.expertInvestMode) resolvedOptions.expertInvestMode = "always";
-            if (!resolvedOptions.expertTvMode) resolvedOptions.expertTvMode = "simple";
-            if (!resolvedOptions.expertBusinessMode) resolvedOptions.expertBusinessMode = "simple";
-            if (!resolvedOptions.expertCleaningMode) resolvedOptions.expertCleaningMode = "simple";
-            if (!resolvedOptions.expertHarborMode) resolvedOptions.expertHarborMode = "simple";
-            if (!resolvedOptions.expertMoverMode) resolvedOptions.expertMoverMode = "simple";
-            if (!resolvedOptions.expertRenovationMode) resolvedOptions.expertRenovationMode = "simple";
-            if (!resolvedOptions.expertComboMode) resolvedOptions.expertComboMode = "core";
-            if (!Number.isFinite(resolvedOptions.expertBuildTempoWeight)) resolvedOptions.expertBuildTempoWeight = 0.03;
-            if (!resolvedOptions.expertAirportSkipMode) resolvedOptions.expertAirportSkipMode = "whenNoLandmark";
-        }
-    };
-    const isLiveExpert = resolvedDifficulty === 'expert' && resolvedOptions.expertPurpose === "live";
-    if (isLiveExpert && !resolvedOptions.expertPreset) {
-        applyLiveExpertDefaults();
-    }
-    if (isLiveExpert && resolvedOptions.expertPreset === "v2simple") {
-        applyLiveExpertDefaults();
-    }
     if (resolvedDifficulty === 'rl') {
         return RLModelPortfolio.createRandomCpu(resolvedOptions);
     }

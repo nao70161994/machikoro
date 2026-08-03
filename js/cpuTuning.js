@@ -113,6 +113,32 @@
         v2simple: {},
     });
 
+
+    /**
+     * @param {string} difficulty
+     * @param {Record<string, any>} options
+     * @returns {Record<string, any>}
+     */
+    function resolveLiveExpertOptions(difficulty, options = {}) {
+        const resolved = Object.assign({}, options);
+        if (difficulty !== "expert" || resolved.expertPurpose !== "live") return resolved;
+        if (!resolved.expertPreset) resolved.expertPreset = "v2simple";
+        if (resolved.expertPreset !== "v2simple") return resolved;
+        if (!resolved.expertDiceMode) resolved.expertDiceMode = "strongCrowdThreshold";
+        if (!resolved.expertRerollMode) resolved.expertRerollMode = "simple";
+        if (!resolved.expertBuildMode) resolved.expertBuildMode = "ev";
+        if (!resolved.expertInvestMode) resolved.expertInvestMode = "always";
+        if (!resolved.expertTvMode) resolved.expertTvMode = "simple";
+        if (!resolved.expertBusinessMode) resolved.expertBusinessMode = "simple";
+        if (!resolved.expertCleaningMode) resolved.expertCleaningMode = "simple";
+        if (!resolved.expertHarborMode) resolved.expertHarborMode = "simple";
+        if (!resolved.expertMoverMode) resolved.expertMoverMode = "simple";
+        if (!resolved.expertRenovationMode) resolved.expertRenovationMode = "simple";
+        if (!resolved.expertComboMode) resolved.expertComboMode = "core";
+        if (!Number.isFinite(resolved.expertBuildTempoWeight)) resolved.expertBuildTempoWeight = 0.03;
+        if (!resolved.expertAirportSkipMode) resolved.expertAirportSkipMode = "whenNoLandmark";
+        return resolved;
+    }
     const CPU_EXPERT_PROFILE_TUNINGS = freezeEntries({
         duel: {
             lowValueSpamPenalty: 5.1,
@@ -145,12 +171,14 @@
     global.CPU_EXPERT_DEFAULT_OPTIONS = CPU_EXPERT_DEFAULT_OPTIONS;
     global.CPU_EXPERT_PRESETS = CPU_EXPERT_PRESETS;
     global.CPU_EXPERT_PROFILE_TUNINGS = CPU_EXPERT_PROFILE_TUNINGS;
+    global.resolveLiveExpertOptions = resolveLiveExpertOptions;
 
     if (typeof module !== "undefined" && module.exports) {
         module.exports = {
             CPU_EXPERT_DEFAULT_OPTIONS,
             CPU_EXPERT_PRESETS,
             CPU_EXPERT_PROFILE_TUNINGS,
+            resolveLiveExpertOptions,
         };
     }
 })(typeof globalThis !== "undefined" ? globalThis : this);

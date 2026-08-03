@@ -352,6 +352,8 @@ function loadMainRuntime(options = {}) {
     const delayedHumanActionPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/delayedHumanActionPolicy.js'), 'utf8');
     vm.runInContext(delayedHumanActionPolicySource, context, { filename: 'js/delayedHumanActionPolicy.js' });
     const cpuSchedulerStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuSchedulerState.js'), 'utf8');
+    const cpuTuningSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTuning.js'), 'utf8');
+    vm.runInContext(cpuTuningSource, context, { filename: 'js/cpuTuning.js' });
     vm.runInContext(cpuSchedulerStateSource, context, { filename: 'js/cpuSchedulerState.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });

@@ -54,6 +54,40 @@ runTest('CPU tuning scaffold は外部tableからexpert presetと既定optionを
     assert.strictEqual(cpu.expertAirportSkipMode, 'whenNoLandmark');
 });
 
+
+runTest('CPU live expert option policyは既存v2simple既定値を入力非破壊で補う', () => {
+    const source = { expertPurpose: 'live', expertBuildTempoWeight: 0 };
+    const resolved = runtime.resolveLiveExpertOptions('expert', source);
+    const plain = value => JSON.parse(JSON.stringify(value));
+
+    assert.notStrictEqual(resolved, source);
+    assert.deepStrictEqual(source, { expertPurpose: 'live', expertBuildTempoWeight: 0 });
+    assert.deepStrictEqual(plain(resolved), {
+        expertPurpose: 'live',
+        expertBuildTempoWeight: 0,
+        expertPreset: 'v2simple',
+        expertDiceMode: 'strongCrowdThreshold',
+        expertRerollMode: 'simple',
+        expertBuildMode: 'ev',
+        expertInvestMode: 'always',
+        expertTvMode: 'simple',
+        expertBusinessMode: 'simple',
+        expertCleaningMode: 'simple',
+        expertHarborMode: 'simple',
+        expertMoverMode: 'simple',
+        expertRenovationMode: 'simple',
+        expertComboMode: 'core',
+        expertAirportSkipMode: 'whenNoLandmark',
+    });
+    assert.deepStrictEqual(plain(runtime.resolveLiveExpertOptions('strong', source)), source);
+    assert.deepStrictEqual(plain(runtime.resolveLiveExpertOptions('expert', {
+        expertPurpose: 'live',
+        expertPreset: 'rush',
+    })), {
+        expertPurpose: 'live',
+        expertPreset: 'rush',
+    });
+});
 runTest('CPU finite option helper は0を保持し非数値だけfallbackする', () => {
     assert.strictEqual(CPU._finiteOption({ value: 0 }, 'value', 9), 0);
     assert.strictEqual(CPU._finiteOption({ value: 0.25 }, 'value', 9), 0.25);
