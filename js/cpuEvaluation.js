@@ -1,4 +1,16 @@
 const CPUEvaluation = Object.freeze({
+    ownRollIncome(cards, dice, candidateCard, isDormant, activationValue) {
+        let total = 0;
+        const evaluatedCards = candidateCard ? cards.concat([candidateCard]) : cards;
+        for (const card of evaluatedCards) {
+            if (!card || !card.diceNums || !card.diceNums.includes(dice)) continue;
+            if (!candidateCard && isDormant(card)) continue;
+            const value = activationValue(card);
+            if (value > 0) total += value;
+        }
+        return total;
+    },
+
     expectedDiceScore(outcomes, scoreForDice, options = {}) {
         const list = Array.isArray(outcomes) ? outcomes : [];
         let totalWeight = 0;

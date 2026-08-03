@@ -3,6 +3,63 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('CPU evaluation は自手番収入を既存順序と休業規則のまま集計する', () => {
+    const dormant = { id: 'dormant', diceNums: [6] };
+    const active = { id: 'active', diceNums: [6] };
+    const loss = { id: 'loss', diceNums: [6] };
+    const otherRoll = { id: 'other', diceNums: [5] };
+    const visited = [];
+    const valueById = { dormant: 20, active: 4, loss: -3, other: 99 };
+    const income = CPUEvaluation.ownRollIncome(
+        [dormant, active, loss, otherRoll, null],
+        6,
+        null,
+        card => card === dormant,
+        card => {
+            visited.push(card.id);
+            return valueById[card.id];
+        }
+    );
+    assert.strictEqual(income, 4);
+    assert.deepStrictEqual(visited, ['active', 'loss']);
+
+    const candidate = { id: 'candidate', diceNums: [6] };
+    visited.length = 0;
+    valueById.candidate = 7;
+    assert.strictEqual(CPUEvaluation.ownRollIncome(
+        [dormant, active],
+        6,
+        candidate,
+        () => true,
+        card => {
+            visited.push(card.id);
+            return valueById[card.id];
+        }
+    ), 31);
+    assert.deepStrictEqual(visited, ['dormant', 'active', 'candidate']);
+});
+
+runTest('CPU本体の自手番収入wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const active = { id: 'active', diceNums: [4] };
+    const dormant = { id: 'dormant', diceNums: [4] };
+    const player = {
+        cards: [active, dormant],
+        isDormant: card => card === dormant,
+    };
+    const game = { players: [player] };
+    const calls = [];
+    cpu._cardActivationValue = (card, currentGame, owner, roller, dice) => {
+        calls.push([card.id, currentGame, owner, roller, dice]);
+        return card === active ? 5 : 9;
+    };
+    assert.strictEqual(cpu._estimateOwnRollIncome(game, player, 4), 5);
+    assert.deepStrictEqual(calls.map(call => call[0]), ['active']);
+    assert.ok(calls.every(call => call[1] === game && call[2] === player && call[3] === player && call[4] === 4));
+    assert.strictEqual(cpu._estimateOwnRollIncome(null, player, 4), 0);
+});
+
 runTest('CPU evaluation はchoice outcomeを入力順のまま重み付き集計する', () => {
     const visited = [];
     const outcomes = [

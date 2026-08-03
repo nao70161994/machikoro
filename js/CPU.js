@@ -1556,15 +1556,13 @@ class CPU {
 
     _estimateOwnRollIncome(game, player, dice, candidateCard = null) {
         if (!game || !player) return 0;
-        let total = 0;
-        const cards = candidateCard ? player.cards.concat([candidateCard]) : player.cards;
-        for (const card of cards) {
-            if (!card || !card.diceNums || !card.diceNums.includes(dice)) continue;
-            if (!candidateCard && player.isDormant(card)) continue;
-            const value = this._cardActivationValue(card, game, player, player, dice);
-            if (value > 0) total += value;
-        }
-        return total;
+        return CPUEvaluation.ownRollIncome(
+            player.cards,
+            dice,
+            candidateCard,
+            card => player.isDormant(card),
+            card => this._cardActivationValue(card, game, player, player, dice)
+        );
     }
 
     _scoreExpertRollCapPenalty(card, game, player) {
