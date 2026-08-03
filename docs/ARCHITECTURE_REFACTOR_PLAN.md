@@ -533,3 +533,11 @@ These are tooling, domain-admission, runtime-composition, and UI-state boundarie
 4. Expert lookahead opponent generation is now a legal-move/candidate concern. CPU orchestration still selects flag mode and evaluates threat, while a pure helper preserves candidate order and pruning.
 
 These are test-orchestration, domain-policy, dependency-contract, and CPU-strategy boundaries rather than effect-only extraction. Scoped gates now cover 199 ESLint maintenance files and 198 checkJs runtime files.
+
+## 2026-08-04 Batch 30 boundary update
+
+1. Pending completion is now an explicit domain transition: the policy decides whether all queued effect counters are clear and returns the build-phase target, while `GameManager` remains the live executor. This extends pending admission into lifecycle completion without creating a second mutable authority.
+2. Multi-player coin movement now has a detached transaction representation. Collection caps and equal-distribution remainder handling are computed from balance arrays before `GameManager` applies the final balances and emits the existing logs. This moves deterministic rule math toward the shared Engine boundary without changing activation or effect ownership.
+3. Online ACK-flight state now has one controller for flag/time/timer lifecycle. Compatibility globals are projections for existing diagnostics; transport, retry decisions, reconnect state-machine effects, and storage remain with `online.js`.
+
+These are domain-transition, transaction, and online-state boundaries rather than effect-only extraction. Scoped gates now cover 200 ESLint maintenance files and 199 checkJs runtime files. Authority defaults, protocol/schema formats, persistence, CPU policy, and PWA behavior remain unchanged.

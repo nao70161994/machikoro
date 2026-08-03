@@ -571,3 +571,11 @@ Test index:
 - Runtime dependency declarations are chains, and every adjacent edge is now enforced. Add extracted GameManager dependencies to production, server loader, integration/online/RL/self-play loaders in the same theme.
 - Expert lookahead opponent indexes belong to `CPULegalMoves`. Preserve CPU flag precedence and threat comparator behavior; any further change requires fixed-decision and 2–10 player self-play parity.
 - Current scoped gate is 199 ESLint maintenance files / 198 checkJs runtime files. The five side-effect client runtime exclusions remain unchanged.
+
+## 2026-08-04 Batch 30 handoff
+
+- Pending resolution completion belongs to `GamePendingResolutionPolicy.completionTransition()`. A non-complete plan must not assign phase; `GameManager` remains the owner of pending counters, queue mutation, logs, and live phase application.
+- Multi-player collection/equalization math belongs to `GameCoinTransaction`. Callers compute effect-specific requested amounts, then `GameManager` applies the frozen final balances and preserves activation/log order. Extend this boundary with direct transaction tests plus affected card-rule tests; do not move card activation or mutation authority into the planner.
+- ACK-flight flag, start time, and timeout handle belong to `OnlineRetryPolicy.createActionFlightController()`. `onlineActionInFlight` and `onlineActionInFlightAt` remain compatibility projections consumed by app-shell diagnostics. Keep the 15-second timeout, pending outbound storage, ACK matching, reconnect effects, and Socket.IO protocol unchanged.
+- Current scoped gate is 200 ESLint maintenance files / 199 checkJs runtime files. The remaining checkJs exclusions are `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with 3–5 independently rollbackable themes selected across domain transitions, shared Engine, CPU strategy, online state, server composition, UI state/view, and contracts. Use one theme per commit, one docs commit, one `test:batch`, one push, and exact-HEAD CI per batch.
