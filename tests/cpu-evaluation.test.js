@@ -3,6 +3,36 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('CPU evaluation はchoice outcomeを入力順のまま重み付き集計する', () => {
+    const visited = [];
+    const outcomes = [
+        { id: 'first', weight: 2, score: 10 },
+        { id: 'second', weight: 1, score: 4 },
+    ];
+    assert.strictEqual(CPUEvaluation.expectedOutcomeValue(outcomes, outcome => {
+        visited.push(outcome.id);
+        return outcome.score;
+    }), 8);
+    assert.deepStrictEqual(visited, ['first', 'second']);
+    assert.strictEqual(CPUEvaluation.expectedOutcomeValue([], () => 99), -Infinity);
+    assert.strictEqual(CPUEvaluation.expectedOutcomeValue([{ weight: 0 }], () => 99), -Infinity);
+});
+
+runTest('CPU本体のexpert/strong choice集計wrapperはpure evaluationと一致する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    cpu._profileMeasure = (_label, fn) => fn();
+    cpu._cloneGame = game => ({ value: game.value });
+    cpu._scoreExpertChoiceState = (clone, focusIndex) => clone.value + focusIndex;
+    cpu._scoreStrongChoiceState = (clone, focusIndex) => clone.value * 2 - focusIndex;
+    const outcomes = [{ weight: 1, delta: 2 }, { weight: 3, delta: 6 }];
+    const apply = (clone, outcome) => { clone.value += outcome.delta; };
+    const game = { value: 5 };
+    assert.strictEqual(cpu._expectedExpertChoiceValue(game, 2, outcomes, apply), 12);
+    assert.strictEqual(cpu._expectedStrongChoiceValue(game, 2, outcomes, apply), 18);
+    assert.deepStrictEqual(game, { value: 5 });
+});
+
 runTest('CPU evaluation は1個振りの各有効出目を同じ重みで数える', () => {
     assert.strictEqual(CPUEvaluation.singleDiceFrequency([1, 2, 6]), 3);
     assert.strictEqual(CPUEvaluation.singleDiceFrequency([0, 7, 12]), 0);

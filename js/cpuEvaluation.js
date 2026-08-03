@@ -780,6 +780,16 @@ const CPUEvaluation = Object.freeze({
         return steps;
     },
 
+    expectedOutcomeValue(outcomes, evaluateOutcome) {
+        let totalWeight = 0;
+        let totalScore = 0;
+        for (const outcome of outcomes) {
+            totalWeight += outcome.weight;
+            totalScore += evaluateOutcome(outcome) * outcome.weight;
+        }
+        return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
+    },
+
     shouldUseExpertChoiceLookahead(playerCount, remainingLandmarks, phase, buildPhase, simulationMode) {
         if (simulationMode === 'realtime') {
             if (playerCount >= 4) return false;

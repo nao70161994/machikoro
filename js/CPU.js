@@ -642,17 +642,13 @@ class CPU {
         );
     }
     _expectedExpertChoiceValue(game, focusIndex, outcomes, applyOutcome) {
-        return this._profileMeasure("expert.expectedChoiceValue", () => {
-            let totalWeight = 0;
-            let totalScore = 0;
-            for (const outcome of outcomes) {
+        return this._profileMeasure("expert.expectedChoiceValue", () =>
+            CPUEvaluation.expectedOutcomeValue(outcomes, outcome => {
                 const clone = this._cloneGame(game);
                 applyOutcome(clone, outcome);
-                totalWeight += outcome.weight;
-                totalScore += this._scoreExpertChoiceState(clone, focusIndex) * outcome.weight;
-            }
-            return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
-        });
+                return this._scoreExpertChoiceState(clone, focusIndex);
+            })
+        );
     }
 
     _scoreExpertPendingChoice(game, applyChoice) {
@@ -772,17 +768,13 @@ class CPU {
     }
 
     _expectedStrongChoiceValue(game, focusIndex, outcomes, applyOutcome) {
-        return this._profileMeasure("strong.expectedChoiceValue", () => {
-            let totalWeight = 0;
-            let totalScore = 0;
-            for (const outcome of outcomes) {
+        return this._profileMeasure("strong.expectedChoiceValue", () =>
+            CPUEvaluation.expectedOutcomeValue(outcomes, outcome => {
                 const clone = this._cloneGame(game);
                 applyOutcome(clone, outcome);
-                totalWeight += outcome.weight;
-                totalScore += this._scoreStrongChoiceState(clone, focusIndex) * outcome.weight;
-            }
-            return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
-        });
+                return this._scoreStrongChoiceState(clone, focusIndex);
+            })
+        );
     }
 
     _strongLiteUseHeuristicChoices() {
