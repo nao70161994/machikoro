@@ -37,3 +37,49 @@ runTest('storage settings は注入された名前正規化とtutorial契約を�
     assert.strictEqual(StorageSettings.normalizeTutorialLevel('advanced'), 'advanced');
     assert.strictEqual(StorageSettings.normalizeTutorialLevel('other'), 'beginner');
 });
+
+runTest('storage settings は既存key向けの保存値形式をpureに組み立てる', () => {
+    const values = StorageSettings.serializeSettings({
+        selectedCount: 4,
+        playerSettings: [{ type: 'cpu', name: 'CPU' }],
+        tutorialEnabled: false,
+        tutorialLevel: 'advanced',
+        cpuSpeed: '500',
+    });
+    assert.deepStrictEqual(values, {
+        selectedCount: 4,
+        playerSettings: '[{"type":"cpu","name":"CPU"}]',
+        tutorialEnabled: 'false',
+        tutorialLevel: 'advanced',
+        cpuSpeed: '500',
+    });
+    assert.ok(Object.isFrozen(values));
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(
+        StorageSettings.serializeSettings({
+            selectedCount: 2,
+            playerSettings: [],
+            tutorialEnabled: true,
+            tutorialLevel: 'beginner',
+            cpuSpeed: null,
+        }),
+        'cpuSpeed'
+    ), false);
+});
+
+runTest('storage settings は読込値を一度に正規化して未保存値を維持する', () => {
+    const values = StorageSettings.normalizeStoredSettings({
+        selectedCount: '12',
+        playerSettings: JSON.stringify([{ type: 'cpu', difficulty: '', name: '' }]),
+        cpuSpeed: null,
+        tutorialEnabled: 'false',
+        tutorialLevel: 'unknown',
+    }, (name, index) => `saved-${index}-${name || 'empty'}`);
+    assert.deepStrictEqual(values, {
+        selectedCount: 10,
+        playerSettings: [{ type: 'cpu', difficulty: 'normal', name: 'saved-0-empty' }],
+        cpuSpeed: null,
+        tutorialEnabled: false,
+        tutorialLevel: 'beginner',
+    });
+    assert.ok(Object.isFrozen(values));
+});

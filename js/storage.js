@@ -460,12 +460,21 @@ function doUndo() {
 
 function saveSettings() {
     storageClientStorageFacade.access(storage => {
-        storage.setItem('selectedCount', selectedCount);
-        storage.setItem('playerSettings', JSON.stringify(playerSettings));
-        storage.setItem('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
-        storage.setItem('tutorialLevel', tutorialLevel);
         const speedEl = document.getElementById('cpuSpeed');
-        if (speedEl) storage.setItem('cpuSpeed', speedEl.value);
+        const values = StorageSettings.serializeSettings({
+            selectedCount,
+            playerSettings,
+            tutorialEnabled,
+            tutorialLevel,
+            cpuSpeed: speedEl ? speedEl.value : null,
+        });
+        storage.setItem('selectedCount', values.selectedCount);
+        storage.setItem('playerSettings', values.playerSettings);
+        storage.setItem('tutorialEnabled', values.tutorialEnabled);
+        storage.setItem('tutorialLevel', values.tutorialLevel);
+        if (Object.prototype.hasOwnProperty.call(values, 'cpuSpeed')) {
+            storage.setItem('cpuSpeed', values.cpuSpeed);
+        }
     });
 }
 
@@ -474,23 +483,27 @@ function loadSettings() {
         const normalizeName = typeof normalizeLocalPlayerName === 'function'
             ? normalizeLocalPlayerName
             : ((name, index) => String(name || '').trim() || `プレイヤー${index + 1}`);
-        selectedCount = StorageSettings.normalizePlayerCount(storage.getItem('selectedCount'));
+        const values = StorageSettings.normalizeStoredSettings({
+            selectedCount: storage.getItem('selectedCount'),
+            playerSettings: storage.getItem('playerSettings'),
+            cpuSpeed: storage.getItem('cpuSpeed'),
+            tutorialEnabled: storage.getItem('tutorialEnabled'),
+            tutorialLevel: storage.getItem('tutorialLevel'),
+        }, normalizeName);
+        selectedCount = values.selectedCount;
         document.getElementById("playerCount").textContent = selectedCount;
-        const ps = storage.getItem('playerSettings');
-        const normalizedPlayerSettings = StorageSettings.normalizePlayerSettings(ps, selectedCount, normalizeName);
-        if (normalizedPlayerSettings) playerSettings = normalizedPlayerSettings;
-        const speed = storage.getItem('cpuSpeed');
-        if (speed) {
+        if (values.playerSettings) playerSettings = values.playerSettings;
+        if (values.cpuSpeed) {
             const speedEl = document.getElementById('cpuSpeed');
             if (speedEl) {
-                speedEl.value = speed;
+                speedEl.value = values.cpuSpeed;
                 document.getElementById('speedLabel').textContent = typeof formatCpuSpeedLabel === 'function'
-                    ? formatCpuSpeedLabel(speed)
-                    : ((parseInt(speed, 10) / 1000) + '秒');
+                    ? formatCpuSpeedLabel(values.cpuSpeed)
+                    : ((parseInt(values.cpuSpeed, 10) / 1000) + '秒');
             }
         }
-        tutorialEnabled = StorageSettings.normalizeTutorialEnabled(storage.getItem('tutorialEnabled'));
-        tutorialLevel = StorageSettings.normalizeTutorialLevel(storage.getItem('tutorialLevel'));
+        tutorialEnabled = values.tutorialEnabled;
+        tutorialLevel = values.tutorialLevel;
     });
     syncTutorialControls();
     renderPlayerSettings();
