@@ -196,27 +196,34 @@ function reconnectOnline() {
         return;
     }
     try {
-        setStorageOnlineReconnectLegacyFlag(true);
-        if (typeof _clearRejoinRetry === 'function') _clearRejoinRetry();
-        isRoomHost = session.isRoomHost || false;
-        myPlayerName = session.playerName || '';
-        myRoomId = session.roomId;
-        myOriginalPlayerIndex = Number.isInteger(session.playerIndex) ? session.playerIndex : -1;
-        myPlayerIndex = myOriginalPlayerIndex;
-        reconnectToken = session.reconnectToken || '';
-        if (!initSocket()) {
-            setStorageOnlineReconnectLegacyFlag(false);
-            isRoomHost = false;
-            myPlayerName = '';
-            myRoomId = null;
-            myOriginalPlayerIndex = -1;
-            myPlayerIndex = -1;
-            reconnectToken = '';
-            return;
-        }
-        document.getElementById('onlineStatus') && (document.getElementById('onlineStatus').textContent = '再接続中...');
-        switchTab('online');
-        if (typeof _emitOnlineRejoinRequest !== 'function' || !_emitOnlineRejoinRequest(session)) {
+        const reconnectPlan = StoredOnlineReconnect.plan(session);
+        const result = StoredOnlineReconnect.execute(reconnectPlan, {
+            setReconnecting: setStorageOnlineReconnectLegacyFlag,
+            clearRetry() {
+                if (typeof _clearRejoinRetry === 'function') _clearRejoinRetry();
+            },
+            setRuntime(value) {
+                isRoomHost = value.isRoomHost;
+                myPlayerName = value.playerName;
+                myRoomId = value.roomId;
+                myOriginalPlayerIndex = value.originalPlayerIndex;
+                myPlayerIndex = value.playerIndex;
+                reconnectToken = value.reconnectToken;
+            },
+            initializeSocket: initSocket,
+            setStatus(message) {
+                const status = document.getElementById('onlineStatus');
+                if (status) status.textContent = message;
+            },
+            switchToOnlineTab() {
+                switchTab('online');
+            },
+            emitRejoin(value) {
+                return typeof _emitOnlineRejoinRequest === 'function' &&
+                    _emitOnlineRejoinRequest(value);
+            },
+        });
+        if (result.kind === 'rejoin-send-failed') {
             showNotice('再接続要求を送信できませんでした');
         }
     } catch(e) {

@@ -2018,6 +2018,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/main.js',
         'js/localPlayerSettings.js',
         'js/localGameStart.js',
+        'js/storedOnlineReconnect.js',
         'js/onlinePlayerSettings.js',
         'js/uiLogDisplay.js',
         'js/uiCardOrder.js',
@@ -2174,6 +2175,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/savedGameValidation.js', 'js/storage.js');
     assertBefore('js/storageSettings.js', 'js/storage.js');
     assertBefore('js/localResumePolicy.js', 'js/storage.js');
+    assertBefore('js/storedOnlineReconnect.js', 'js/storage.js');
     assertBefore('js/onlineSchemaTransport.js', 'js/online.js');
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/clientStorage.js', 'js/appShellStorage.js');

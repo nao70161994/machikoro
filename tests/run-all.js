@@ -124,6 +124,7 @@ const TEST_GROUPS = {
         'saved-game-validation.test.js',
         'storage-settings.test.js',
         'local-resume-policy.test.js',
+        'stored-online-reconnect.test.js',
         'storage.test.js',
         'local-player-settings.test.js',
         'local-game-start.test.js',
