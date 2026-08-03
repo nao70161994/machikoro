@@ -87,6 +87,75 @@ const PendingActionQueue = Object.freeze({
         return PendingActionQueue.ensure(game, contract)
             .map(entry => ({ action: entry.action, field: entry.field }));
     },
+
+    planEnqueue(game, contract, field) {
+        const spec = contract && contract.byField && contract.byField[field];
+        if (!game || !spec) return Object.freeze({ ok: false });
+        const value = (Number.isInteger(game[field]) ? game[field] : 0) + 1;
+        const queue = Array.isArray(game.pendingActionQueue)
+            ? game.pendingActionQueue.slice()
+            : [];
+        queue.push({ action: spec.action, field: spec.field });
+        return Object.freeze({
+            ok: true,
+            field: spec.field,
+            value,
+            queue: Object.freeze(queue),
+        });
+    },
+
+    planConsume(game, contract, field, canResolve) {
+        const spec = contract && contract.byField && contract.byField[field];
+        const currentValue = game && Number.isInteger(game[field]) ? game[field] : 0;
+        if (!game || !spec || currentValue <= 0 || canResolve !== true) {
+            return Object.freeze({ ok: false });
+        }
+        const value = currentValue - 1;
+        let queue;
+        if (Array.isArray(game.pendingActionQueue)) {
+            queue = game.pendingActionQueue.slice();
+            const index = queue.findIndex(entry => entry &&
+                (entry.field === spec.field || entry.action === spec.action));
+            if (index >= 0) queue.splice(index, 1);
+            else queue = PendingActionQueue.entriesFromFieldValues(game, contract, spec.field, value);
+        } else {
+            queue = PendingActionQueue.entriesFromFieldValues(game, contract, spec.field, value);
+        }
+        return Object.freeze({
+            ok: true,
+            field: spec.field,
+            value,
+            queue: Object.freeze(queue),
+        });
+    },
+
+    planClear(game, contract, field) {
+        const spec = contract && contract.byField && contract.byField[field];
+        if (!game || !spec) return Object.freeze({ ok: false });
+        const queue = Array.isArray(game.pendingActionQueue)
+            ? game.pendingActionQueue.filter(entry => entry &&
+                entry.field !== spec.field && entry.action !== spec.action)
+            : PendingActionQueue.entriesFromFieldValues(game, contract, spec.field, 0);
+        return Object.freeze({
+            ok: true,
+            field: spec.field,
+            value: 0,
+            queue: Object.freeze(queue),
+        });
+    },
+
+    entriesFromFieldValues(game, contract, overrideField, overrideValue) {
+        const entries = [];
+        for (const spec of contract.specs) {
+            const count = spec.field === overrideField
+                ? overrideValue
+                : (Number.isInteger(game[spec.field]) ? game[spec.field] : 0);
+            for (let index = 0; index < count; index++) {
+                entries.push({ action: spec.action, field: spec.field });
+            }
+        }
+        return entries;
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { PendingActionQueue };

@@ -207,41 +207,35 @@ class GameManager {
         this.pendingActionQueue = GameManager.serializedPendingActionsFor(this);
     }
 
-    _enqueuePendingAction(field) {
-        const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
-        if (!spec) return false;
-        this[field] = (Number.isInteger(this[field]) ? this[field] : 0) + 1;
-        if (!Array.isArray(this.pendingActionQueue)) this.pendingActionQueue = [];
-        this.pendingActionQueue.push({ action: spec.action, field: spec.field });
+    _applyPendingActionTransition(plan) {
+        if (!plan || plan.ok !== true) return false;
+        this[plan.field] = plan.value;
+        this.pendingActionQueue = plan.queue.map(entry =>
+            entry && typeof entry === 'object'
+                ? { action: entry.action, field: entry.field }
+                : entry
+        );
         return true;
+    }
+
+    _enqueuePendingAction(field) {
+        return this._applyPendingActionTransition(
+            PendingActionQueue.planEnqueue(this, PENDING_ACTION_CONTRACT, field)
+        );
     }
 
     _consumePendingAction(field) {
-        const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
-        if (!spec || (Number.isInteger(this[field]) ? this[field] : 0) <= 0) return false;
-        if (!GameManager.canResolvePendingField(this, field)) return false;
-        this[field]--;
-        if (Array.isArray(this.pendingActionQueue)) {
-            const index = this.pendingActionQueue.findIndex(entry => entry && (entry.field === spec.field || entry.action === spec.action));
-            if (index >= 0) this.pendingActionQueue.splice(index, 1);
-            else this.rebuildPendingActionsFromFields();
-        } else {
-            this.rebuildPendingActionsFromFields();
-        }
-        return true;
+        const canResolve = GameManager.canResolvePendingField(this, field);
+        return this._applyPendingActionTransition(
+            PendingActionQueue.planConsume(this, PENDING_ACTION_CONTRACT, field, canResolve)
+        );
     }
 
     clearPendingField(field) {
-        const spec = PENDING_ACTION_SPEC_BY_FIELD[field];
-        if (!spec) return false;
-        this[field] = 0;
-        if (Array.isArray(this.pendingActionQueue)) {
-            this.pendingActionQueue = this.pendingActionQueue
-                .filter(entry => entry && entry.field !== spec.field && entry.action !== spec.action)
-                .map(entry => ({ action: entry.action, field: entry.field }));
-        } else {
-            this.rebuildPendingActionsFromFields();
-        }
+        const applied = this._applyPendingActionTransition(
+            PendingActionQueue.planClear(this, PENDING_ACTION_CONTRACT, field)
+        );
+        if (!applied) return false;
         this._checkPending();
         return true;
     }

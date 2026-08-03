@@ -93,3 +93,86 @@ runTest('groupは連続entryだけをまとめて順序を保持する', () => {
         { action: 'resolveTV', field: 'pendingTV', count: 1 },
     ]);
 });
+
+
+runTest('pending enqueue planはcounterと末尾entryを入力非変更で返す', () => {
+    const game = {
+        pendingTV: 1,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingActionQueue: [{ action: 'resolveTV', field: 'pendingTV' }],
+    };
+    const before = JSON.stringify(game);
+    const plan = PendingActionQueue.planEnqueue(game, contract, 'pendingBusiness');
+    assert.deepStrictEqual(plan, {
+        ok: true,
+        field: 'pendingBusiness',
+        value: 1,
+        queue: [
+            { action: 'resolveTV', field: 'pendingTV' },
+            { action: 'resolveBusiness', field: 'pendingBusiness' },
+        ],
+    });
+    assert.strictEqual(JSON.stringify(game), before);
+    assert.ok(Object.isFrozen(plan));
+    assert.ok(Object.isFrozen(plan.queue));
+});
+
+runTest('pending consume planは先頭一致entryだけを除き拒否時は変更案を返さない', () => {
+    const game = {
+        pendingTV: 2,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingActionQueue: [
+            { action: 'resolveTV', field: 'pendingTV' },
+            { action: 'resolveBusiness', field: 'pendingBusiness' },
+            { action: 'resolveTV', field: 'pendingTV' },
+        ],
+    };
+    const before = JSON.stringify(game);
+    assert.deepStrictEqual(PendingActionQueue.planConsume(game, contract, 'pendingTV', true), {
+        ok: true,
+        field: 'pendingTV',
+        value: 1,
+        queue: [
+            { action: 'resolveBusiness', field: 'pendingBusiness' },
+            { action: 'resolveTV', field: 'pendingTV' },
+        ],
+    });
+    assert.deepStrictEqual(PendingActionQueue.planConsume(game, contract, 'pendingTV', false), { ok: false });
+    assert.strictEqual(JSON.stringify(game), before);
+});
+
+runTest('pending consume/clear planはqueue欠落時に更新後fieldから再構築する', () => {
+    const game = {
+        pendingTV: 1,
+        pendingBusiness: 2,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 1,
+    };
+    assert.deepStrictEqual(PendingActionQueue.planConsume(game, contract, 'pendingBusiness', true), {
+        ok: true,
+        field: 'pendingBusiness',
+        value: 1,
+        queue: [
+            { action: 'resolveTV', field: 'pendingTV' },
+            { action: 'resolveBusiness', field: 'pendingBusiness' },
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+        ],
+    });
+    assert.deepStrictEqual(PendingActionQueue.planClear(game, contract, 'pendingBusiness'), {
+        ok: true,
+        field: 'pendingBusiness',
+        value: 0,
+        queue: [
+            { action: 'resolveTV', field: 'pendingTV' },
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+        ],
+    });
+    assert.deepStrictEqual(PendingActionQueue.planClear(game, contract, 'unknown'), { ok: false });
+});
