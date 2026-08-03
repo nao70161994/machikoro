@@ -203,6 +203,7 @@
     "server/restoreReplayAdmission.js",
     "server/restorePreparation.js",
     "server/restoreGateway.js",
-    "server/restoredRoom.js"
+    "server/restoredRoom.js",
+    "server/restoredRoomRuntime.js"
   ]
 }

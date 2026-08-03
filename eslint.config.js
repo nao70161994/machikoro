@@ -191,6 +191,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/restorePreparation.js',
     'server/restoreGateway.js',
     'server/restoredRoom.js',
+    'server/restoredRoomRuntime.js',
     'server/restoreSanitization.js',
     'server/restoreValidation.js',
     'server/roomValidation.js',

@@ -52,6 +52,7 @@ const makeRestoreAdmission = require('./server/restoreAdmission');
 const makeRestoreReplayAdmission = require('./server/restoreReplayAdmission');
 const makeRestorePreparation = require('./server/restorePreparation');
 const makeRestoredRoom = require('./server/restoredRoom');
+const makeRestoredRoomRuntime = require('./server/restoredRoomRuntime');
 const {
     existingRoomRejoinEffectAuthorityEnabled,
     executeExistingRoomRejoin,
@@ -242,6 +243,16 @@ const RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED =
     restoredRoomActivationEffectAuthorityEnabled(process.env);
 const RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED =
     restoredRoomDeliveryEffectAuthorityEnabled(process.env);
+const { activateRestoredRoom } = makeRestoredRoomRuntime({
+    planActivation: planRestoredRoomActivation,
+    executeActivation: executeRestoredRoomActivation,
+    activationDecisions: restoredRoomActivationDecisions,
+    activationEffectAuthorityEnabled: RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED,
+    executeDelivery: executeRestoredRoomDelivery,
+    deliveryEffectAuthorityEnabled: RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED,
+    planCompletion: planRestoredRoomCompletion,
+    executeCompletion: executeRestoredRoomCompletion,
+});
 const EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED =
     existingRoomRejoinEffectAuthorityEnabled(process.env);
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
@@ -1060,80 +1071,52 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
     }
     gameStartPayload = preparation.gameStartPayload;
     const { restoredRoom } = preparation;
-    const activationPlan = planRestoredRoomActivation({
+    const activationResult = activateRestoredRoom({
         roomExists: hasOwnRoom(roomId),
         approvedHostless,
-    });
-    if (activationPlan.decision === restoredRoomActivationDecisions.REJECT_EXISTING_HOSTLESS) {
-        emitAppError(socket, '同じルームIDが既に使用されています');
-        return { ok: false, reason: 'room-exists' };
-    }
-    if (RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED) {
-        executeRestoredRoomActivation(activationPlan, {
-            detachExisting() {
-                detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
-            },
-            deleteExisting() {
-                delete rooms[roomId];
-            },
-            install() {
-                rooms[roomId] = restoredRoom;
-            },
-        });
-    } else {
-        if (activationPlan.detachExisting) {
-            detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
-        }
-        if (activationPlan.deleteExisting) delete rooms[roomId];
-        rooms[roomId] = restoredRoom;
-    }
-    if (RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED) {
-        executeRestoredRoomDelivery({
-            persist() {
-                persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
-            },
-            joinSocket() {
-                socket.join(roomId);
-            },
-            assignSocketRoom() {
-                socket.roomId = roomId;
-            },
-            assignSocketPlayer() {
-                socket.playerIndex = playerIndex;
-            },
-            emitRejoinData() {
-                socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
-                    gameStartPayload,
-                    stateSnapshot: restoredRoom.stateSnapshot,
-                    actionLog: restoredRoom.actionLog,
-                    hostPlayerIndex: playerIndex,
-                }));
-            },
-        });
-    } else {
-        persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.playerIndex = playerIndex;
-        socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
-            gameStartPayload,
-            stateSnapshot: restoredRoom.stateSnapshot,
-            actionLog: restoredRoom.actionLog,
-            hostPlayerIndex: playerIndex,
-        }));
-    }
-    const completionPlan = planRestoredRoomCompletion({
         roomId,
         playerName,
         playerIndex,
-        approvedHostless,
         restoredRoom,
-    });
-    return executeRestoredRoomCompletion(completionPlan, {
+    }, {
+        detachExisting() {
+            detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
+        },
+        deleteExisting() {
+            delete rooms[roomId];
+        },
+        install() {
+            rooms[roomId] = restoredRoom;
+        },
+        persist() {
+            persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
+        },
+        joinSocket() {
+            socket.join(roomId);
+        },
+        assignSocketRoom() {
+            socket.roomId = roomId;
+        },
+        assignSocketPlayer() {
+            socket.playerIndex = playerIndex;
+        },
+        emitRejoinData() {
+            socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
+                gameStartPayload,
+                stateSnapshot: restoredRoom.stateSnapshot,
+                actionLog: restoredRoom.actionLog,
+                hostPlayerIndex: playerIndex,
+            }));
+        },
         log(message) {
             console.log(message);
         },
     });
+    if (activationResult.ok !== true) {
+        emitAppError(socket, activationResult.errorMessage);
+        return { ok: false, reason: activationResult.reason };
+    }
+    return activationResult;
 }
 
 // ===== Snapshot limits and restore payload guards =====
