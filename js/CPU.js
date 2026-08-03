@@ -1603,10 +1603,10 @@ class CPU {
 
     // 購入可能カードをスコア順にソート（ダイス確率を加味）
     sortAffordable(cards, game, player) {
-        return cards.map(card => ({
-            card,
-            score: this._baseCardEfficiency(card, game, player)
-        })).sort((a, b) => b.score - a.score);
+        return CPUEvaluation.rankCards(
+            cards,
+            card => this._baseCardEfficiency(card, game, player)
+        );
     }
 
     _scoreExpertCardCandidate(card, game, player) {
@@ -1949,10 +1949,10 @@ class CPU {
 
     _sortAffordableForDifficulty(cards, game, player, difficulty) {
         const intensity = difficulty === "strong" ? 1.4 : 0.8;
-        return cards.map(card => ({
-            card,
-            score: this._scoreAffordablePurchase(card, game, player, { intensity, difficulty }),
-        })).sort((a, b) => b.score - a.score);
+        return CPUEvaluation.rankCards(
+            cards,
+            card => this._scoreAffordablePurchase(card, game, player, { intensity, difficulty })
+        );
     }
 
     _bestAffordableLandmark(current, game, reserve = 0) {

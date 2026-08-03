@@ -1,4 +1,11 @@
 const CPUEvaluation = Object.freeze({
+    rankCards(cards, scoreCard) {
+        return cards.map(card => ({
+            card,
+            score: scoreCard(card),
+        })).sort((a, b) => b.score - a.score);
+    },
+
     ownRollIncome(cards, dice, candidateCard, isDormant, activationValue) {
         let total = 0;
         const evaluatedCards = candidateCard ? cards.concat([candidateCard]) : cards;

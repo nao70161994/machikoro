@@ -3,6 +3,56 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('CPU evaluation は購入候補をscore降順かつ同点入力順でpureに並べる', () => {
+    const cards = [{ id: 'first' }, { id: 'best' }, { id: 'tie' }];
+    const values = { first: 4, best: 9, tie: 4 };
+    const visited = [];
+    const ranked = CPUEvaluation.rankCards(cards, card => {
+        visited.push(card.id);
+        return values[card.id];
+    });
+    assert.deepStrictEqual(visited, ['first', 'best', 'tie']);
+    assert.deepStrictEqual(ranked.map(entry => [entry.card.id, entry.score]), [
+        ['best', 9],
+        ['first', 4],
+        ['tie', 4],
+    ]);
+    assert.deepStrictEqual(cards.map(card => card.id), ['first', 'best', 'tie']);
+    assert.ok(ranked[0].card === cards[1]);
+});
+
+runTest('CPU本体の購入候補ranking wrapperはpure evaluationへ同値委譲する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const cards = [{ id: 'low' }, { id: 'high' }];
+    const game = { marker: 'game' };
+    const player = { marker: 'player' };
+    const baseCalls = [];
+    cpu._baseCardEfficiency = (card, currentGame, currentPlayer) => {
+        baseCalls.push([card.id, currentGame, currentPlayer]);
+        return card.id === 'high' ? 8 : 2;
+    };
+    assert.deepStrictEqual(cpu.sortAffordable(cards, game, player).map(entry => entry.card.id), ['high', 'low']);
+    assert.ok(baseCalls.every(call => call[1] === game && call[2] === player));
+
+    const purchaseCalls = [];
+    cpu._scoreAffordablePurchase = (card, currentGame, currentPlayer, options) => {
+        purchaseCalls.push([card.id, currentGame, currentPlayer, options]);
+        return card.id === 'high' ? 6 : 1;
+    };
+    assert.deepStrictEqual(
+        cpu._sortAffordableForDifficulty(cards, game, player, 'strong').map(entry => entry.card.id),
+        ['high', 'low']
+    );
+    assert.deepStrictEqual(purchaseCalls.map(call => [
+        call[3].intensity,
+        call[3].difficulty,
+    ]), [
+        [1.4, 'strong'],
+        [1.4, 'strong'],
+    ]);
+});
+
 runTest('CPU evaluation は自手番収入を既存順序と休業規則のまま集計する', () => {
     const dormant = { id: 'dormant', diceNums: [6] };
     const active = { id: 'active', diceNums: [6] };
