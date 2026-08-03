@@ -650,17 +650,27 @@ function setCardFilter(color) {
 function bcSelectCard(btn, inputId) {
     if (!btn) return false;
     const group = typeof btn.closest === 'function' ? btn.closest('.bc-chip-group') : null;
-    if (group && typeof group.querySelectorAll === 'function') {
-        group.querySelectorAll('.bc-chip').forEach(b => {
-            if (b.classList && typeof b.classList.remove === 'function') b.classList.remove('selected');
-            if (typeof b.setAttribute === 'function') b.setAttribute('aria-pressed', 'false');
-        });
+    const groupButtons = group && typeof group.querySelectorAll === 'function'
+        ? group.querySelectorAll('.bc-chip')
+        : [];
+    const view = UiPendingMenu.businessCardSelectionView(groupButtons.length, btn.dataset?.idx ?? '');
+    groupButtons.forEach((b, index) => {
+        if (b.classList && typeof b.classList.remove === 'function' && !view.groupButtons[index].selected) {
+            b.classList.remove('selected');
+        }
+        if (typeof b.setAttribute === 'function') {
+            b.setAttribute('aria-pressed', view.groupButtons[index].ariaPressed);
+        }
+    });
+    if (btn.classList && typeof btn.classList.add === 'function' && view.selectedButton.selected) {
+        btn.classList.add('selected');
     }
-    if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('selected');
-    if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', 'true');
+    if (typeof btn.setAttribute === 'function') {
+        btn.setAttribute('aria-pressed', view.selectedButton.ariaPressed);
+    }
     const input = document.getElementById(inputId);
     if (!input) return false;
-    input.value = btn.dataset?.idx ?? '';
+    input.value = view.inputValue;
     return true;
 }
 

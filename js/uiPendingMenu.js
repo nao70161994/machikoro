@@ -32,6 +32,18 @@ const UiPendingMenu = (() => {
         });
     }
 
+    function businessCardSelectionView(groupButtonCount, inputValue) {
+        const count = Number.isInteger(groupButtonCount) && groupButtonCount > 0 ? groupButtonCount : 0;
+        return Object.freeze({
+            groupButtons: Object.freeze(Array.from({ length: count }, () => Object.freeze({
+                selected: false,
+                ariaPressed: 'false',
+            }))),
+            selectedButton: Object.freeze({ selected: true, ariaPressed: 'true' }),
+            inputValue: inputValue ?? '',
+        });
+    }
+
     function pendingInspectHintHtml() {
         return `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
     }
@@ -118,7 +130,7 @@ const UiPendingMenu = (() => {
             .join("");
     }
 
-    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
+    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, businessCardSelectionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiPendingMenu;

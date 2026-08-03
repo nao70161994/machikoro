@@ -54,6 +54,26 @@ runTest('ui pending menu はphase・IT・改装とhuman turnから表示gateをp
     assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer({ ...base, phase: 'pending', isHumanTurn: false }), false);
 });
 
+runTest('ui pending menu はBusiness Center選択を既存class・ARIA・input viewへpureに投影する', () => {
+    const view = UiPendingMenu.businessCardSelectionView(2, '7');
+    assert.deepStrictEqual(view, {
+        groupButtons: [
+            { selected: false, ariaPressed: 'false' },
+            { selected: false, ariaPressed: 'false' },
+        ],
+        selectedButton: { selected: true, ariaPressed: 'true' },
+        inputValue: '7',
+    });
+    assert.ok(Object.isFrozen(view));
+    assert.ok(Object.isFrozen(view.groupButtons));
+    assert.ok(view.groupButtons.every(Object.isFrozen));
+    assert.deepStrictEqual(UiPendingMenu.businessCardSelectionView(-1, null), {
+        groupButtons: [],
+        selectedButton: { selected: true, ariaPressed: 'true' },
+        inputValue: '',
+    });
+});
+
 runTest('ui pending menu はcontent有無を既存modal styleへpureに投影する', () => {
     assert.deepStrictEqual(UiPendingMenu.pendingModalInteractionView(true), {
         modal: { display: 'flex', visibility: 'visible', opacity: '1', pointerEvents: 'auto', transform: '' },
