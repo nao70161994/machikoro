@@ -1842,35 +1842,39 @@ function resetOnlineState() {
 
 function _saveActionLog(action, data, options = {}) {
     try {
-        let log = _readOnlineActionLog();
-        const seq = Number.isInteger(options.seq) ? options.seq : _nextOnlineActionSeq(log);
-        if (Number.isInteger(options.seq) && options.alreadyApplied) {
-            _writeOnlineGameStartPatch({ actionSeq: seq });
-        }
-        if (log.length >= ONLINE_ACTION_LOG_LIMIT && game) {
-            const snapshot = buildOnlineSnapshot();
-            if (snapshot) {
+        const log = _readOnlineActionLog();
+        const hasExplicitSeq = Number.isInteger(options.seq);
+        const seq = hasExplicitSeq ? options.seq : _nextOnlineActionSeq(log);
+        const plan = OnlineActionLog.planAppend({
+            log,
+            action,
+            data,
+            seq,
+            hasExplicitSeq,
+            actionLogLimit: ONLINE_ACTION_LOG_LIMIT,
+            hasGame: !!game,
+            options,
+        });
+        OnlineActionLog.executeAppend(plan, {
+            patchGameStart(actionSeq) {
+                _writeOnlineGameStartPatch({ actionSeq });
+            },
+            buildCompactionSnapshot() {
+                return buildOnlineSnapshot();
+            },
+            writeStateSnapshot(snapshot) {
                 _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, snapshot);
+            },
+            removeRestoreAudit() {
                 _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
-            }
-        }
-        if (Number.isInteger(options.seq) && !options.alreadyApplied) {
-            _writeOnlineGameStartPatch({ actionSeq: seq });
-        }
-        const entry = { action, data };
-        if (Number.isInteger(options.playerIndex)) entry.playerIndex = options.playerIndex;
-        if (typeof options.clientActionId === 'string') entry.clientActionId = options.clientActionId;
-        if (options.restoreActionAudit && typeof options.restoreActionAudit === 'object') entry.restoreActionAudit = options.restoreActionAudit;
-        entry.seq = seq;
-        log.push(entry);
-        const serverSnapshotSeq = Number.isInteger(options.stateSnapshot?.actionSeq) ? options.stateSnapshot.actionSeq : null;
-        if (options.stateSnapshot && options.restoreAudit && Number.isInteger(serverSnapshotSeq)) {
-            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, options.stateSnapshot);
-            _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, options.restoreAudit);
-            log = log.filter(item => !Number.isInteger(item.seq) || item.seq > serverSnapshotSeq);
-            _writeOnlineGameStartPatch({ actionSeq: Math.max(seq, serverSnapshotSeq) });
-        }
-        _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, log);
+            },
+            writeRestoreAudit(restoreAudit) {
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, restoreAudit);
+            },
+            writeActionLog(nextLog) {
+                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, nextLog);
+            },
+        });
     } catch(e) {}
 }
 

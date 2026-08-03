@@ -52,6 +52,7 @@ interface Window {
     OnlineRetryPolicy: unknown;
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
+    OnlineActionLog: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
     GameEngineDeterminism: unknown;

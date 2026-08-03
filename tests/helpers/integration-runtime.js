@@ -285,6 +285,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlinePlayerSettings.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineActionSequence.js');
+        files.push('js/onlineActionLog.js');
         files.push('js/onlineReconnectState.js');
         files.push('js/onlineRuntimeFlags.js');
         files.push('js/onlineRetryPolicy.js');

@@ -148,6 +148,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineActionSequence.js');
+    loadScript(context, 'js/onlineActionLog.js');
     loadScript(context, 'js/onlineReconnectState.js');
     loadScript(context, 'js/onlineRuntimeFlags.js');
     loadScript(context, 'js/onlineRetryPolicy.js');

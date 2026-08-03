@@ -90,6 +90,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineSchemaTransport.js',
     'js/onlineRestoreRank.js',
     'js/onlineActionSequence.js',
+    'js/onlineActionLog.js',
     'js/onlineStorage.js',
     'js/pwaShell.js',
     'js/savedGameValidation.js',
