@@ -87,6 +87,13 @@ function focusTrapAction(state = {}) {
     return 'none';
 }
 
+function keydownAction(state = {}) {
+    if (!state.active || !state.visible) return 'none';
+    if (state.key === 'Escape') return state.hasCloseHandler ? 'close' : 'none';
+    if (state.key !== 'Tab') return 'none';
+    return focusTrapAction(state);
+}
+
 const UiModalPolicy = Object.freeze({
     inertRootIds: UI_MODAL_INERT_ROOT_IDS,
     registry: UI_MODAL_POLICY_REGISTRY,
@@ -99,6 +106,7 @@ const UiModalPolicy = Object.freeze({
     activeAfterClose,
     isVisibleState,
     focusTrapAction,
+    keydownAction,
 });
 
 if (typeof module !== 'undefined' && module.exports) {

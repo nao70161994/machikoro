@@ -1184,24 +1184,27 @@ function handleModalKeydown(event) {
     if (!activeModalId) return;
     const modal = document.getElementById(activeModalId);
     if (!modal || modal.style.display === 'none') return;
-    if (event.key === 'Escape') {
-        const closeHandler = MODAL_CLOSE_HANDLERS[activeModalId];
-        if (closeHandler) {
-            event.preventDefault();
-            closeHandler();
-        }
+    const closeHandler = event.key === 'Escape' ? MODAL_CLOSE_HANDLERS[activeModalId] : null;
+    const state = {
+        active: true,
+        visible: true,
+        key: event.key,
+        hasCloseHandler: !!closeHandler,
+    };
+    let focusable = [];
+    if (event.key === 'Tab') {
+        focusable = getFocusableElements(modal);
+        state.containsActive = typeof modal.contains !== 'function' || modal.contains(document.activeElement);
+        state.focusableCount = focusable.length;
+        state.activeIndex = focusable.indexOf(document.activeElement);
+        state.shiftKey = !!event.shiftKey;
+    }
+    const action = UiModalPolicy.keydownAction(state);
+    if (action === 'close') {
+        event.preventDefault();
+        closeHandler();
         return;
     }
-    if (event.key !== 'Tab') return;
-    const focusable = getFocusableElements(modal);
-    const containsActive = typeof modal.contains !== 'function' || modal.contains(document.activeElement);
-    const activeIndex = focusable.indexOf(document.activeElement);
-    const action = UiModalPolicy.focusTrapAction({
-        containsActive,
-        focusableCount: focusable.length,
-        activeIndex,
-        shiftKey: !!event.shiftKey,
-    });
     if (action === 'focus-modal') {
         event.preventDefault();
         focusModal(modal);

@@ -102,3 +102,14 @@ runTest('UI modal policy はfocus trapの副作用なしactionを返す', () => 
         containsActive: true, focusableCount: 2, activeIndex: 0, shiftKey: false,
     }), 'none');
 });
+runTest('UI modal policy はkeydown観測から副作用なしcommandを返す', () => {
+    assert.strictEqual(UiModalPolicy.keydownAction({ active: false, visible: true, key: 'Escape', hasCloseHandler: true }), 'none');
+    assert.strictEqual(UiModalPolicy.keydownAction({ active: true, visible: false, key: 'Escape', hasCloseHandler: true }), 'none');
+    assert.strictEqual(UiModalPolicy.keydownAction({ active: true, visible: true, key: 'Escape', hasCloseHandler: true }), 'close');
+    assert.strictEqual(UiModalPolicy.keydownAction({ active: true, visible: true, key: 'Escape', hasCloseHandler: false }), 'none');
+    assert.strictEqual(UiModalPolicy.keydownAction({ active: true, visible: true, key: 'Enter' }), 'none');
+    assert.strictEqual(UiModalPolicy.keydownAction({
+        active: true, visible: true, key: 'Tab', containsActive: true,
+        focusableCount: 2, activeIndex: 1, shiftKey: false,
+    }), 'focus-first');
+});
