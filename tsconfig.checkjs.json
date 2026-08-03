@@ -22,6 +22,7 @@
     "js/pendingActionQueue.js",
     "js/gameTurnPolicy.js",
     "js/gameDicePolicy.js",
+    "js/gameCardActivationPolicy.js",
     "js/gameBuildPolicy.js",
     "js/actionContract.js",
     "js/actionUiRegistry.js",

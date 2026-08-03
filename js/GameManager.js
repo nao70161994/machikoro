@@ -414,8 +414,12 @@ class GameManager {
 
     _reviveDormantCardsForDice(player, dice, shouldRevive) {
         const revived = new Set();
-        for (const card of [...player.dormantCards]) {
-            if (!card.diceNums.includes(dice) || !shouldRevive(card)) continue;
+        const eligible = GameCardActivationPolicy.eligibleDormantCards(
+            player.dormantCards,
+            dice,
+            shouldRevive
+        );
+        for (const card of eligible) {
             player.revive(card);
             revived.add(card);
             this.addLog(LOG_TYPES.SPECIAL, `💤 ${player.name}の${card.name}が休業解除`);

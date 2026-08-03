@@ -33,6 +33,7 @@ const STATIC_ASSETS = [
   '/js/pendingActionQueue.js',
   '/js/gameTurnPolicy.js',
   '/js/gameDicePolicy.js',
+  '/js/gameCardActivationPolicy.js',
   '/js/gameBuildPolicy.js',
   '/js/GameManager.js',
   '/js/cpuTuning.js',

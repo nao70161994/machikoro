@@ -2,6 +2,7 @@ declare var GameActionContract: typeof import("../js/actionContract");
 declare var PendingActionQueue: typeof import("../js/pendingActionQueue").PendingActionQueue;
 declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
 declare var GameDicePolicy: typeof import("../js/gameDicePolicy");
+declare var GameCardActivationPolicy: typeof import("../js/gameCardActivationPolicy");
 declare var GameBuildPolicy: typeof import("../js/gameBuildPolicy");
 declare var OnlineSocketRegistry: typeof import("../js/onlineSocketRegistry");
 declare var ClientEventRuntime: typeof import("../js/clientEventRuntime");
@@ -38,6 +39,7 @@ declare var sendAction: ((action: string, data: Record<string, unknown>) => bool
 interface Window {
     GameTurnPolicy: unknown;
     GameDicePolicy: unknown;
+    GameCardActivationPolicy: unknown;
     GameBuildPolicy: unknown;
     CPUBusinessMoves: unknown;
     AD_SLOT_CONFIGS: unknown;
