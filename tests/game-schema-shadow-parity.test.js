@@ -124,6 +124,41 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             ],
         },
         {
+            name: 'tuna-dice-through-station-reroll-harbor',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                game.players[0].cards = [runtime.createCardByName('マグロ漁船')];
+                game.players[0].dormantCards = [];
+                game.players[0].landmarks['駅'] = true;
+                game.players[0].landmarks['電波塔'] = true;
+                game.players[0].landmarks['港'] = true;
+                game.players[0].coins = 3;
+            },
+            actions: [
+                ['rollDice', { forceDice: 1, tunaDice: [2, 6] }],
+                ['selectDice', { useTwo: true, diceCount: 2, d1: 5, d2: 5, tunaDice: [2, 6] }],
+                ['skipReroll', {}],
+                ['resolveHarbor', { useBonus: true }],
+            ],
+            assertAfter(game, stepIndex) {
+                if (stepIndex === 0) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.SELECT_DICE);
+                    assert.deepStrictEqual(Array.from(game.pendingTunaDice), [2, 6]);
+                } else if (stepIndex === 1) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.REROLL_CONFIRM);
+                    assert.strictEqual(game.lastDiceResult, 10);
+                    assert.deepStrictEqual(Array.from(game.pendingTunaDice), [2, 6]);
+                } else if (stepIndex === 2) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.HARBOR_CHOICE);
+                    assert.deepStrictEqual(Array.from(game.pendingTunaDice), [2, 6]);
+                } else {
+                    assert.strictEqual(game.lastDiceResult, 12);
+                    assert.strictEqual(game.players[0].coins, 11);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+                }
+            },
+        },
+        {
             name: 'roll-multi-pending-dormant-business',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.ROLL;
