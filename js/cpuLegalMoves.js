@@ -63,6 +63,22 @@ const CPULegalMoves = Object.freeze({
             .slice(0, 3)
             .map(entry => entry.name);
     },
+
+    lookaheadStrongOpponentIndexes(players, focusIndex, mode, estimateThreat) {
+        if (!Array.isArray(players) || players.length < 4) return [];
+        const opponents = players
+            .map((player, index) => ({ player, index }))
+            .filter(entry => entry.index !== focusIndex);
+        if (mode === 'next-seat') return [(focusIndex + 1) % players.length];
+        if (mode === 'leader' || mode === 'top-two') {
+            const ranked = opponents.slice().sort((a, b) =>
+                estimateThreat(b.player) - estimateThreat(a.player));
+            return ranked
+                .slice(0, mode === 'leader' ? 1 : 2)
+                .map(entry => entry.index);
+        }
+        return opponents.map(entry => entry.index);
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) {

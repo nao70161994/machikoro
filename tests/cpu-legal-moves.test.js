@@ -160,3 +160,60 @@ runTest('CPU disruption candidate wrapperはpure helperと同じ順序を返す'
     assert.deepStrictEqual(Array.from(cpu._expertCandidateTargetIndexes(game, 0)), [2, 3]);
     assert.deepStrictEqual(Array.from(cpu._expertCandidateCleaningNames(game)), ['C', 'D', 'A']);
 });
+
+runTest('CPU legal movesはlookahead strong相手をflag mode別に安定選択する', () => {
+    const players = [
+        { name: 'focus', threat: 100 },
+        { name: 'first-tie', threat: 8 },
+        { name: 'leader', threat: 12 },
+        { name: 'second-tie', threat: 8 },
+    ];
+    const threat = player => player.threat;
+
+    assert.deepStrictEqual(
+        CPULegalMoves.lookaheadStrongOpponentIndexes(players, 0, 'leader', threat),
+        [2]
+    );
+    assert.deepStrictEqual(
+        CPULegalMoves.lookaheadStrongOpponentIndexes(players, 0, 'top-two', threat),
+        [2, 1]
+    );
+    assert.deepStrictEqual(
+        CPULegalMoves.lookaheadStrongOpponentIndexes(players, 2, 'next-seat', threat),
+        [3]
+    );
+    assert.deepStrictEqual(
+        CPULegalMoves.lookaheadStrongOpponentIndexes(players, 0, 'all', threat),
+        [1, 2, 3]
+    );
+    assert.deepStrictEqual(
+        CPULegalMoves.lookaheadStrongOpponentIndexes(players.slice(0, 3), 0, 'all', threat),
+        []
+    );
+});
+
+runTest('CPU本体のlookahead相手wrapperは既存flag優先順位でpure helperへ委譲する', () => {
+    const game = {
+        players: [
+            { name: 'focus', coins: 0 },
+            { name: 'next', coins: 1 },
+            { name: 'leader', coins: 9 },
+            { name: 'other', coins: 2 },
+        ],
+    };
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    cpu._estimateOpponentThreat = player => player.coins;
+    cpu.expertBehaviorFlags = {
+        lookaheadLeaderStrongOnly: true,
+        lookaheadNextSeatStrongOnly: true,
+        lookaheadTopTwoStrong: true,
+    };
+    assert.deepStrictEqual([...cpu._lookaheadStrongOpponentSet(game, 0)], [2]);
+
+    cpu.expertBehaviorFlags.lookaheadLeaderStrongOnly = false;
+    assert.deepStrictEqual([...cpu._lookaheadStrongOpponentSet(game, 0)], [1]);
+
+    cpu.expertBehaviorFlags.lookaheadNextSeatStrongOnly = false;
+    assert.deepStrictEqual([...cpu._lookaheadStrongOpponentSet(game, 0)], [2, 3]);
+});

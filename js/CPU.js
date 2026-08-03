@@ -3641,36 +3641,17 @@ class CPU {
     }
 
     _lookaheadStrongOpponentSet(game, focusIndex) {
-        const set = new Set();
-        if (!game || !game.players || game.players.length < 4) return set;
-        const opponents = game.players
-            .map((player, index) => ({ player, index }))
-            .filter(entry => entry.index !== focusIndex);
-
-        if (this._expertFlagEnabled("lookaheadLeaderStrongOnly")) {
-            const leader = opponents
-                .slice()
-                .sort((a, b) => this._estimateOpponentThreat(b.player, game) - this._estimateOpponentThreat(a.player, game))[0];
-            if (leader) set.add(leader.index);
-            return set;
-        }
-
-        if (this._expertFlagEnabled("lookaheadNextSeatStrongOnly")) {
-            set.add((focusIndex + 1) % game.players.length);
-            return set;
-        }
-
-        if (this._expertFlagEnabled("lookaheadTopTwoStrong")) {
-            opponents
-                .slice()
-                .sort((a, b) => this._estimateOpponentThreat(b.player, game) - this._estimateOpponentThreat(a.player, game))
-                .slice(0, 2)
-                .forEach(entry => set.add(entry.index));
-            return set;
-        }
-
-        opponents.forEach(entry => set.add(entry.index));
-        return set;
+        let mode = 'all';
+        if (this._expertFlagEnabled("lookaheadLeaderStrongOnly")) mode = 'leader';
+        else if (this._expertFlagEnabled("lookaheadNextSeatStrongOnly")) mode = 'next-seat';
+        else if (this._expertFlagEnabled("lookaheadTopTwoStrong")) mode = 'top-two';
+        const indexes = CPULegalMoves.lookaheadStrongOpponentIndexes(
+            game && game.players,
+            focusIndex,
+            mode,
+            player => this._estimateOpponentThreat(player, game)
+        );
+        return new Set(indexes);
     }
 
     static _pendingActionDescriptors(game) {
