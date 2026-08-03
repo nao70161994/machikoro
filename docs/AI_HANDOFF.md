@@ -471,6 +471,14 @@ Test index:
 
 - CPU landmark candidate reduction is now pure and contract-tested, but `CPU.js` still owns candidate eligibility and every heuristic input. Preserve score construction and `Player.landmarkNames()` order when extending it.
 - Pending outbound action shape is now built by `OnlinePayload`; keep sequence allocation before client-action-ID generation and keep memory, legacy key, and room-scoped key writes in `online.js`.
-- Business Center selection view is owned by `UiPendingMenu`; `ui.js` deliberately remains responsible for DOM mutation. Preserve group reset before selecting the clicked chip and preserve `bcSelectCard()`'s boolean/public behavior.
-- Static content route registration is owned by `server/staticAssets.js`; asset-links, `/sw.js`, `/api/version`, reporting routes, and their current ordering remain in `server.js` by design.
+- Business Center selection view is owned by `UiPendingMenu`; `UiPendingEffects` deliberately owns ordered DOM mutation and `ui.js` retains lookup/public dispatch. Preserve group reset before selecting the clicked chip and preserve `bcSelectCard()`'s boolean/public behavior.
+- Static content and metadata route registration are owned by `server/staticAssets.js`; injected values and the metadata → reporting → content ordering remain in `server.js`.
 - Batch-end verification uses `npm run test:batch` once after the theme commits and docs sync. Continue choosing 3–5 independent seams per batch; do not narrow future batches to visible behavior changes only.
+
+## 2026-08-03 Batch 19 handoff
+
+- Read runtime flags through the single `OnlineRuntimeFlags` reader; do not reintroduce direct `window.MACHIKORO_*` checks. Reader roots are resolved per call so tests and runtime replacement stay observable.
+- Lifecycle notification storage must use `LifecycleNotify.storageKeys` and its injected access functions. Do not duplicate the legacy-key fallback in `appShell.js`.
+- Keep `registerStaticMetadataRoutes()` before reporting registration and `registerStaticContentRoutes()` after it. This ordering protects special routes from broad static middleware.
+- For Business Center selection, preserve `UiPendingMenu` → `UiPendingEffects` → thin `ui.js` ownership and the reset-all → select-clicked → find/write-input order.
+- The scoped gates are now 174 ESLint maintenance files and 173 checkJs runtime files; update package/config/type/global/runtime-loader lists atomically when adding another browser module.
