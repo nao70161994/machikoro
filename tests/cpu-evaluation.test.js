@@ -706,6 +706,55 @@ runTest('CPU本体のnormal安全補正wrapperはpure evaluationへ完全委譲�
         }, CARD_EFFECTS));
 });
 
+runTest('CPU evaluation はstrong色役割補正を数値featureだけで評価する', () => {
+    const base = {
+        color: 'blue', blueCardCount: 0, greenCardCount: 2,
+        redCardCount: 0, purpleCardCount: 0, opponentHasEightCoins: false,
+        isEndgameMode: false, playerCount: 4, purpleAdjustment: 0.25,
+    };
+    assert.strictEqual(CPUEvaluation.strongRolePressure(base), 1.65);
+    assert.ok(Math.abs(CPUEvaluation.strongRolePressure({
+        ...base, color: 'green', greenCardCount: 1, isEndgameMode: true,
+        purpleAdjustment: -0.2,
+    }) - 2.2) < 1e-12);
+    assert.ok(Math.abs(CPUEvaluation.strongRolePressure({
+        ...base, color: 'red', opponentHasEightCoins: true, purpleAdjustment: 0.3,
+    }) + 1.3) < 1e-12);
+    assert.strictEqual(CPUEvaluation.strongRolePressure({
+        ...base, color: 'purple', purpleCardCount: 1, purpleAdjustment: 0.4,
+    }), -2.8000000000000003);
+    assert.strictEqual(CPUEvaluation.strongRolePressure(null), 0);
+});
+
+runTest('CPU本体のstrong色役割補正wrapperは短絡順を保ってpure evaluationへ委譲する', () => {
+    const { CPU, GameManager, createCardByName } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    const card = createCardByName('パン屋');
+    current.cards.push({ name: 'blue-a', color: 'blue' });
+    let endgameCalls = 0;
+    cpu._isEndgameMode = () => { endgameCalls += 1; return true; };
+    cpu._strongPurpleAdjustment = () => 0.6;
+    const expected = CPUEvaluation.strongRolePressure({
+        color: card.color,
+        blueCardCount: 1,
+        greenCardCount: 1,
+        redCardCount: 0,
+        purpleCardCount: 0,
+        opponentHasEightCoins: false,
+        isEndgameMode: true,
+        playerCount: 4,
+        purpleAdjustment: 0.6,
+    });
+    assert.strictEqual(cpu._strongRolePressure(card, game, current), expected);
+    assert.strictEqual(endgameCalls, 1);
+
+    const redCard = { color: 'red' };
+    cpu._strongRolePressure(redCard, game, current);
+    assert.strictEqual(endgameCalls, 1);
+});
+
 runTest('CPU evaluation はstrong条件付き赤カード圧力を数値featureだけで評価する', () => {
     const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
 

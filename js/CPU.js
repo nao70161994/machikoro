@@ -1708,21 +1708,18 @@ class CPU {
         const greenCount = cards.filter(c => c.color === "green").length;
         const redCount = cards.filter(c => c.color === "red").length;
         const purpleCount = cards.filter(c => c.color === "purple").length;
-        let adjustment = 0;
-        if (card.color === "blue" && blueCount === 0) adjustment += 0.7;
-        if (card.color === "green" && greenCount < 2) adjustment += 0.9;
-        if (card.color === "red" && redCount === 0 && game.players.some((p, i) => p !== player && p.coins >= 8)) adjustment += 0.5;
-        if (card.color === "red" && redCount >= Math.max(2, greenCount + blueCount)) adjustment -= 1.2;
-        if (card.color === "purple" && purpleCount > 0) adjustment -= 2.5;
-        if (card.color === "green" && this._isEndgameMode(player, game, 2)) adjustment += 0.4;
-        if (game.players.length >= 4) {
-            if (card.color === "red") adjustment -= 2.1;
-            if (card.color === "purple") adjustment -= 0.7;
-            if (card.color === "blue") adjustment += 0.7;
-            if (card.color === "green") adjustment += 1.1;
-        }
-        adjustment += this._strongPurpleAdjustment(card, game, player);
-        return adjustment;
+        return CPUEvaluation.strongRolePressure({
+            color: card.color,
+            blueCardCount: blueCount,
+            greenCardCount: greenCount,
+            redCardCount: redCount,
+            purpleCardCount: purpleCount,
+            opponentHasEightCoins: card.color === "red" && redCount === 0 &&
+                game.players.some(candidate => candidate !== player && candidate.coins >= 8),
+            isEndgameMode: card.color === "green" && this._isEndgameMode(player, game, 2),
+            playerCount: game.players.length,
+            purpleAdjustment: this._strongPurpleAdjustment(card, game, player),
+        });
     }
 
     _normalSafetyAdjustment(card, game, player) {

@@ -345,6 +345,24 @@ const CPUEvaluation = Object.freeze({
         return adjustment;
     },
 
+    strongRolePressure(features) {
+        if (!features) return 0;
+        let adjustment = 0;
+        if (features.color === 'blue' && features.blueCardCount === 0) adjustment += 0.7;
+        if (features.color === 'green' && features.greenCardCount < 2) adjustment += 0.9;
+        if (features.color === 'red' && features.redCardCount === 0 && features.opponentHasEightCoins) adjustment += 0.5;
+        if (features.color === 'red' && features.redCardCount >= Math.max(2, features.greenCardCount + features.blueCardCount)) adjustment -= 1.2;
+        if (features.color === 'purple' && features.purpleCardCount > 0) adjustment -= 2.5;
+        if (features.color === 'green' && features.isEndgameMode) adjustment += 0.4;
+        if (features.playerCount >= 4) {
+            if (features.color === 'red') adjustment -= 2.1;
+            if (features.color === 'purple') adjustment -= 0.7;
+            if (features.color === 'blue') adjustment += 0.7;
+            if (features.color === 'green') adjustment += 1.1;
+        }
+        return adjustment + (features.purpleAdjustment || 0);
+    },
+
     strongConditionalCardAdjustment(effect, opponentBuiltCounts, difficulty, effects) {
         if (difficulty !== 'strong') return 0;
         if (effect !== effects.FRENCHR && effect !== effects.MEMBERBAR) return 0;
