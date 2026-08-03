@@ -10,6 +10,7 @@ const GAME_RUNTIME_SOURCE_FILES = Object.freeze([
     'js/actionContract.js',
     'js/pendingActionQueue.js',
     'js/gameTurnPolicy.js',
+    'js/gameDicePolicy.js',
     'js/gameBuildPolicy.js',
     'js/GameManager.js',
 ]);

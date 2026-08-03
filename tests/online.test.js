@@ -32,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameEngineRuntimeAdapter.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameBuildPolicy.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameEngineRuntimeAdapter.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameBuildPolicy.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
 

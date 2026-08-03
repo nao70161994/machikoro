@@ -43,13 +43,6 @@ const BUILD_REJECTION_MESSAGES = Object.freeze({
     [GameBuildPolicy.reasons.LANDMARK_ALREADY_BUILT]: '❌ すでに建設済みです',
 });
 
-function formatDiceOutcome(d1, d2, total) {
-    if (d1 > 0 && d2 > 0) {
-        return `${d1}+${d2}=${total}`;
-    }
-    return `${total}`;
-}
-
 function rollRandomDie() {
     const cryptoApi = (typeof window !== "undefined" && window.crypto && typeof window.crypto.getRandomValues === "function")
         ? window.crypto
@@ -271,55 +264,78 @@ class GameManager {
         return GameManager.allowedActionsFor(this);
     }
 
+    _applyDiceOutcome(plan) {
+        this.lastDice1 = plan.lastDice1;
+        this.lastDice2 = plan.lastDice2;
+        this.lastDiceResult = plan.lastDiceResult;
+        this.hadAmusementParkAtRoll = plan.hadAmusementParkAtRoll;
+    }
+
     rollDice(forceDice = null, tunaDice = null) {
-        if (this.phase !== GAME_PHASES.ROLL) return;
-        if (this.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
+        const start = GameDicePolicy.planRollStart({
+            phase: this.phase,
+            rollPhase: GAME_PHASES.ROLL,
+            hasStation: () => this.currentPlayer().landmarks[LANDMARK_NAMES.STATION],
+        });
+        if (!start.ok) return;
+        if (start.decision === GameDicePolicy.rollStartDecisions.SELECT_DICE) {
             this.phase = GAME_PHASES.SELECT_DICE;
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `🚉 駅：1個か2個か選んでください`);
-        } else {
-            const d1 = forceDice !== null ? forceDice : rollRandomDie();
-            this.lastDice1 = d1;
-            this.lastDice2 = 0;
-            this.lastDiceResult = d1;
-            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
-            this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
-            this.afterRoll(tunaDice);
+            return;
         }
+        const d1 = forceDice !== null ? forceDice : rollRandomDie();
+        this._applyDiceOutcome(GameDicePolicy.planDiceOutcome({
+            useTwo: false,
+            dice1: d1,
+            hasAmusementPark: () => this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK],
+        }));
+        this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
+        this.afterRoll(tunaDice);
     }
 
     selectDiceCount(useTwo, forceDice1 = null, forceDice2 = null, tunaDice = null) {
-        if (this.phase !== GAME_PHASES.SELECT_DICE) return;
-        if (useTwo) {
-            const d1 = forceDice1 !== null ? forceDice1 : rollRandomDie();
-            const d2 = forceDice2 !== null ? forceDice2 : rollRandomDie();
-            this.lastDice1 = d1;
-            this.lastDice2 = d2;
-            this.lastDiceResult = d1 + d2;
-            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
-            this.addLog(LOG_TYPES.DICE, `🎲 ${d1}+${d2}=${this.lastDiceResult}`);
-        } else {
-            const d1 = forceDice1 !== null ? forceDice1 : rollRandomDie();
-            this.lastDice1 = d1;
-            this.lastDice2 = 0;
-            this.lastDiceResult = d1;
-            this.hadAmusementParkAtRoll = this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK];
-            this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
-        }
+        const selection = GameDicePolicy.planDiceSelection({
+            phase: this.phase,
+            selectDicePhase: GAME_PHASES.SELECT_DICE,
+            useTwo,
+        });
+        if (!selection.ok) return;
+        const d1 = forceDice1 !== null ? forceDice1 : rollRandomDie();
+        const d2 = selection.useTwo
+            ? (forceDice2 !== null ? forceDice2 : rollRandomDie())
+            : 0;
+        this._applyDiceOutcome(GameDicePolicy.planDiceOutcome({
+            useTwo: selection.useTwo,
+            dice1: d1,
+            dice2: d2,
+            hasAmusementPark: () => this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK],
+        }));
+        this.addLog(LOG_TYPES.DICE, selection.useTwo
+            ? `🎲 ${d1}+${d2}=${this.lastDiceResult}`
+            : `🎲 ${d1} が出ました`);
         this.afterRoll(tunaDice || this.pendingTunaDice);
     }
 
     afterRoll(tunaDice = null) {
-        if (this.currentPlayer().landmarks[LANDMARK_NAMES.RADIO_TOWER] && !this.usedReroll) {
+        const plan = GameDicePolicy.planAfterRoll({
+            hasRadioTower: () => this.currentPlayer().landmarks[LANDMARK_NAMES.RADIO_TOWER],
+            usedReroll: () => this.usedReroll,
+        });
+        if (plan.requestReroll) {
             this.phase = GAME_PHASES.REROLL_CONFIRM;
             this.pendingTunaDice = tunaDice;
-        } else {
-            this.applyHarborOrIncome(tunaDice);
+            return;
         }
+        this.applyHarborOrIncome(tunaDice);
     }
 
     rerollDice(forceDice = null, tunaDice = null) {
-        if (this.phase !== GAME_PHASES.REROLL_CONFIRM) return;
+        const admission = GameDicePolicy.planRerollAdmission({
+            phase: this.phase,
+            rerollPhase: GAME_PHASES.REROLL_CONFIRM,
+        });
+        if (!admission.ok) return;
         const prevDice1 = this.lastDice1;
         const prevDice2 = this.lastDice2;
         const prevResult = this.lastDiceResult;
@@ -333,34 +349,47 @@ class GameManager {
         this.rollDice(forceDice, tunaDice);
         this.addLog(
             LOG_TYPES.DICE,
-            `📡 電波塔で振り直し: ${formatDiceOutcome(prevDice1, prevDice2, prevResult)} → ${formatDiceOutcome(this.lastDice1, this.lastDice2, this.lastDiceResult)}`
+            `📡 電波塔で振り直し: ${GameDicePolicy.formatDiceOutcome(prevDice1, prevDice2, prevResult)} → ${GameDicePolicy.formatDiceOutcome(this.lastDice1, this.lastDice2, this.lastDiceResult)}`
         );
     }
 
     skipReroll() {
-        if (this.phase !== GAME_PHASES.REROLL_CONFIRM) return;
+        const admission = GameDicePolicy.planRerollAdmission({
+            phase: this.phase,
+            rerollPhase: GAME_PHASES.REROLL_CONFIRM,
+        });
+        if (!admission.ok) return;
         this.applyHarborOrIncome(this.pendingTunaDice);
     }
 
     applyHarborOrIncome(tunaDice = null) {
-        const useTwo = this.lastDice1 > 0 && this.lastDice2 > 0;
-        if (useTwo && this.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] && this.lastDiceResult >= 10) {
+        const plan = GameDicePolicy.planHarborOrIncome({
+            lastDice1: this.lastDice1,
+            lastDice2: this.lastDice2,
+            hasHarbor: () => this.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR],
+            lastDiceResult: () => this.lastDiceResult,
+        });
+        if (plan.requestHarborChoice) {
             this.phase = GAME_PHASES.HARBOR_CHOICE;
             this.pendingTunaDice = tunaDice;
             this.addLog(LOG_TYPES.DICE, `⚓ 港効果：合計${this.lastDiceResult}に+2しますか？`);
-        } else {
-            this.processIncome(tunaDice);
+            return;
         }
+        this.processIncome(tunaDice);
     }
 
     resolveHarbor(useBonus, tunaDice = null) {
-        if (this.phase !== GAME_PHASES.HARBOR_CHOICE) return false;
-        if (useBonus) {
-            this.lastDiceResult += 2;
-            this.addLog(LOG_TYPES.DICE, `⚓ 港効果+2 → ${this.lastDiceResult}`);
-        } else {
-            this.addLog(LOG_TYPES.DICE, `→ そのまま ${this.lastDiceResult} を使用`);
-        }
+        const plan = GameDicePolicy.planHarborResolution({
+            phase: this.phase,
+            harborPhase: GAME_PHASES.HARBOR_CHOICE,
+            useBonus,
+            lastDiceResult: () => this.lastDiceResult,
+        });
+        if (!plan.ok) return false;
+        this.lastDiceResult = plan.diceResult;
+        this.addLog(LOG_TYPES.DICE, plan.useBonus
+            ? `⚓ 港効果+2 → ${this.lastDiceResult}`
+            : `→ そのまま ${this.lastDiceResult} を使用`);
         this.processIncome(tunaDice || this.pendingTunaDice);
         return true;
     }
