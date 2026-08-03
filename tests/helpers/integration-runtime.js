@@ -272,6 +272,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineActionNoGame.js');
         files.push('js/onlineActionCommit.js');
         files.push('js/onlineSocketConnect.js');
+        files.push('js/onlineSocketRegistry.js');
         files.push('js/onlineSocketDisconnect.js');
         files.push('js/onlineHostChanged.js');
         files.push('js/onlineRejoinPersistence.js');

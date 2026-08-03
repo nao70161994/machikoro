@@ -2547,8 +2547,16 @@ function initSocket() {
         return false;
     }
     socket = io();
+    const hostlessEvents = OnlinePayload.hostlessRestoreEvents;
+    const socketEvents = OnlineSocketRegistry.createBinder(socket, {
+        hostlessCollect: hostlessEvents.COLLECT,
+        hostlessConfirmation: hostlessEvents.CONFIRMATION,
+        hostlessStatus: hostlessEvents.STATUS,
+        hostlessApproved: hostlessEvents.APPROVED,
+        appError: APP_ERROR_EVENT,
+    });
 
-    socket.on('roomCreated', ({ roomId, playerIndex, reconnectToken: token }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.ROOM_CREATED, ({ roomId, playerIndex, reconnectToken: token }) => {
         finishOnlineLobbyRequest('create');
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
@@ -2561,7 +2569,7 @@ function initSocket() {
             <div class="waiting-players">プレイヤーを待っています...</div>`;
     });
 
-    socket.on('roomJoined', ({ roomId, playerIndex, reconnectToken: token }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.ROOM_JOINED, ({ roomId, playerIndex, reconnectToken: token }) => {
         finishOnlineLobbyRequest('join');
         myOriginalPlayerIndex = playerIndex;
         myPlayerIndex = playerIndex;
@@ -2571,13 +2579,13 @@ function initSocket() {
         document.getElementById("onlineStatus").textContent = `ルーム ${roomId} に参加しました！`;
     });
 
-    socket.on('playerList', (players) => {
+    socketEvents.on(OnlineSocketRegistry.keys.PLAYER_LIST, (players) => {
         document.getElementById("onlineStatus").innerHTML = `
             <div class="room-id-display">${myRoomId}</div>
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
-    socket.on('gameStart', ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount, gameSchema }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.GAME_START, ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount, gameSchema }) => {
         if (!acceptsNegotiatedGameSchema(gameSchema)) {
             document.getElementById("onlineStatus").textContent = 'ゲーム状態のschema versionに対応していません。アプリを更新してください。';
             return;
@@ -2744,7 +2752,7 @@ function initSocket() {
             selection => { _lastIncomingGameActionCommitEffectSelection = selection; }
         );
     };
-    socket.on('gameAction', handleGameAction);
+    socketEvents.on(OnlineSocketRegistry.keys.GAME_ACTION, handleGameAction);
 
     const handleActionAccepted = wirePayload => {
         const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
@@ -2812,9 +2820,9 @@ function initSocket() {
             selection => { _lastAcceptedGameActionCommitEffectSelection = selection; }
         );
     };
-    socket.on('actionAccepted', handleActionAccepted);
+    socketEvents.on(OnlineSocketRegistry.keys.ACTION_ACCEPTED, handleActionAccepted);
 
-    socket.on('rejoinData', rejoinPayload => {
+    socketEvents.on(OnlineSocketRegistry.keys.REJOIN_DATA, rejoinPayload => {
         const decodedSnapshotPayload = decodeOnlineGameSchemaSnapshotPayload(rejoinPayload);
         if (!decodedSnapshotPayload.ok) {
             document.getElementById("onlineStatus").textContent =
@@ -3320,8 +3328,7 @@ function initSocket() {
         restoreOnlineGame();
     });
 
-    const hostlessEvents = OnlinePayload.hostlessRestoreEvents;
-    socket.on(hostlessEvents.COLLECT, ({ roomId, generation }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_COLLECT, ({ roomId, generation }) => {
         if (roomId !== myRoomId) return;
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = '♻️ 参加者間の復元データ一致を確認しています...';
@@ -3330,7 +3337,7 @@ function initSocket() {
         }
     });
 
-    socket.on(hostlessEvents.CONFIRMATION, ({ roomId, candidateCount }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_CONFIRMATION, ({ roomId, candidateCount }) => {
         if (roomId !== myRoomId) return;
         const message =
             `${candidateCount || 0}人の参加者データが完全一致しました。あなたを新しいホストとして暫定復元しますか？`;
@@ -3347,7 +3354,7 @@ function initSocket() {
         }
     });
 
-    socket.on(hostlessEvents.STATUS, ({ roomId, reason, stage, candidateCount }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_STATUS, ({ roomId, reason, stage, candidateCount }) => {
         if (roomId && roomId !== myRoomId) return;
         const el = document.getElementById("onlineStatus");
         if (reason === 'host-restored') {
@@ -3392,7 +3399,7 @@ function initSocket() {
         }
     });
 
-    socket.on(hostlessEvents.APPROVED, ({ roomId, hostPlayerIndex }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_APPROVED, ({ roomId, hostPlayerIndex }) => {
         if (roomId !== myRoomId) return;
         _hostlessRestorePending = false;
         if (hostPlayerIndex === myOriginalPlayerIndex) return;
@@ -3403,14 +3410,14 @@ function initSocket() {
         _emitOnlineRejoinRequest();
     });
 
-    socket.on('playerRejoined', ({ playerIndex, playerName }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.PLAYER_REJOINED, ({ playerIndex, playerName }) => {
         if (playerIndex !== myOriginalPlayerIndex) {
             game && game.addLog(LOG_TYPES.SYSTEM, `🔌 ${playerName}が再接続しました`);
         }
         render();
     });
 
-    socket.on('playerDisconnected', ({ playerIndex, playerName }) => {
+    socketEvents.on(OnlineSocketRegistry.keys.PLAYER_DISCONNECTED, ({ playerIndex, playerName }) => {
         const name = playerName || `プレイヤー${playerIndex + 1}`;
         game && game.addLog(LOG_TYPES.SYSTEM, `🔌 ${name}が切断しました`);
         render();
@@ -3420,22 +3427,23 @@ function initSocket() {
         if (_queueOnlineEventDuringRestore("hostChanged", { newHostPlayerIndex, hostEpoch })) return;
         return _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch);
     };
-    socket.on("hostChanged", handleHostChanged);
+    socketEvents.on(OnlineSocketRegistry.keys.HOST_CHANGED, handleHostChanged);
 
-    socket.on("connect", () => {
+    socketEvents.on(OnlineSocketRegistry.keys.CONNECT, () => {
         _runOnlineSocketConnectEffects();
     });
 
-    socket.on('disconnect', () => {
+    socketEvents.on(OnlineSocketRegistry.keys.DISCONNECT, () => {
         _runOnlineSocketDisconnectEffects();
     });
 
-    socket.on('connect_error', () => {
+    socketEvents.on(OnlineSocketRegistry.keys.CONNECT_ERROR, () => {
         document.getElementById("onlineStatus").textContent =
             '⏳ サーバーに接続中です。初回は起動に30秒ほどかかる場合があります...';
     });
 
-    socket.on(APP_ERROR_EVENT, handleAppError);
+    socketEvents.on(OnlineSocketRegistry.keys.APP_ERROR, handleAppError);
+    socketEvents.assertComplete();
     return true;
 }
 

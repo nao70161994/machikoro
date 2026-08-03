@@ -138,6 +138,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineActionNoGame.js');
     loadScript(context, 'js/onlineActionCommit.js');
     loadScript(context, 'js/onlineSocketConnect.js');
+    loadScript(context, 'js/onlineSocketRegistry.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
     loadScript(context, 'js/onlineHostChanged.js');
     loadScript(context, 'js/onlineRejoinPersistence.js');

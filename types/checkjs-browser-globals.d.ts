@@ -2,6 +2,7 @@ declare var GameActionContract: typeof import("../js/actionContract");
 declare var PendingActionQueue: typeof import("../js/pendingActionQueue").PendingActionQueue;
 declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
 declare var GameBuildPolicy: typeof import("../js/gameBuildPolicy");
+declare var OnlineSocketRegistry: typeof import("../js/onlineSocketRegistry");
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
@@ -46,6 +47,7 @@ interface Window {
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;
+    OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
