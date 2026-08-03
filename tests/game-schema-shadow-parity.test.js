@@ -188,6 +188,49 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'mixed-cleaning-renovation-queue',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.PENDING;
+                game.pendingCleaning = 1;
+                game.pendingRenovation = 2;
+                game.pendingActionQueue = [
+                    { action: 'resolveCleaning', field: 'pendingCleaning' },
+                    { action: 'resolveRenovation', field: 'pendingRenovation' },
+                    { action: 'resolveRenovation', field: 'pendingRenovation' },
+                ];
+                game.players[0].landmarks['駅'] = true;
+                game.players[0].coins = 3;
+                for (const player of game.players) {
+                    player.cards = [runtime.createCardByName('カフェ')];
+                    player.dormantCards = [];
+                }
+            },
+            actions: [
+                ['resolveCleaning', { cardName: 'カフェ' }],
+                ['resolveRenovation', { landmarkName: '駅' }],
+            ],
+            assertAfter(game, stepIndex) {
+                const current = game.players[0];
+                if (stepIndex === 0) {
+                    assert.strictEqual(game.pendingCleaning, 0);
+                    assert.strictEqual(game.pendingRenovation, 2);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.PENDING);
+                    assert.strictEqual(current.coins, 3 + game.players.length);
+                    assert.ok(game.players.every(player => player.isDormant(player.cards[0])));
+                    assert.deepStrictEqual(
+                        Array.from(game.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
+                        ['resolveRenovation:pendingRenovation', 'resolveRenovation:pendingRenovation']
+                    );
+                } else {
+                    assert.strictEqual(current.landmarks['駅'], false);
+                    assert.strictEqual(current.coins, 11 + game.players.length);
+                    assert.strictEqual(game.pendingRenovation, 0);
+                    assert.strictEqual(game.pendingActionQueue.length, 0);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+                }
+            },
+        },
+        {
             name: 'loan-dormancy-recovery',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.ROLL;
