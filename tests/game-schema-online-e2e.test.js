@@ -8,6 +8,7 @@ const {
 } = require('./helpers/socket-e2e');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
+process.env.EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED = '1';
 process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
 process.env.GAME_SCHEMA_SHADOW_ENABLED = '1';
 process.env.GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED = '1';

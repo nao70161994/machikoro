@@ -151,6 +151,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/restoreSnapshotAttachment.js',
     'server/restoreAuthorityPolicy.js',
     'server/restoreAdmission.js',
+    'server/existingRoomRejoin.js',
     'server/restoreReplayAdmission.js',
     'server/restoreGateway.js',
     'server/restoredRoom.js',

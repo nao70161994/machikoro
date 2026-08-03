@@ -47,6 +47,10 @@ const { selectRestoreSource, decideExistingRoomRestore } = require('./server/res
 const makeRestoreAdmission = require('./server/restoreAdmission');
 const makeRestoreReplayAdmission = require('./server/restoreReplayAdmission');
 const makeRestoredRoom = require('./server/restoredRoom');
+const {
+    existingRoomRejoinEffectAuthorityEnabled,
+    executeExistingRoomRejoin,
+} = require('./server/existingRoomRejoin');
 const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
@@ -230,6 +234,8 @@ const RESTORED_ROOM_ACTIVATION_EFFECT_AUTHORITY_ENABLED =
     restoredRoomActivationEffectAuthorityEnabled(process.env);
 const RESTORED_ROOM_DELIVERY_EFFECT_AUTHORITY_ENABLED =
     restoredRoomDeliveryEffectAuthorityEnabled(process.env);
+const EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED =
+    existingRoomRejoinEffectAuthorityEnabled(process.env);
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     startedRoomTtlMs: 2 * 60 * 60 * 1000,
     pendingRoomTtlMs: 30 * 60 * 1000,
@@ -970,6 +976,59 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
             return;
         }
         if (existingRoomAdmission.action !== 'replace') {
+            if (EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED) {
+                const rejoinResult = executeExistingRoomRejoin({
+                    detachExisting() {
+                        detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
+                    },
+                    resolvePlayer() {
+                        return resolveRejoinPlayer(
+                            room,
+                            playerIndex,
+                            playerName,
+                            reconnectToken,
+                            socket.id
+                        );
+                    },
+                    joinSocket() {
+                        socket.join(roomId);
+                    },
+                    assignSocketRoom() {
+                        socket.roomId = roomId;
+                    },
+                    assignSocketPlayer() {
+                        socket.playerIndex = playerIndex;
+                    },
+                    isHostConnected() {
+                        return isRoomHostConnected(room);
+                    },
+                    setHostPlayer() {
+                        setRoomHostPlayerIndex(room, playerIndex);
+                    },
+                    emitHostChanged() {
+                        emitRoomHostChanged(roomId, room);
+                    },
+                    persistHostReselected() {
+                        persistRoomCanonicalState(roomId, room, 'host-reselected');
+                    },
+                    logHostReselected() {
+                        console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+                    },
+                    touchRoom() {
+                        room.lastTouchedAt = Date.now();
+                    },
+                    emitRejoinData() {
+                        socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
+                    },
+                    broadcastPlayerRejoined() {
+                        io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
+                    },
+                });
+                if (rejoinResult.ok !== true) {
+                    emitAppError(socket, rejoinResult.errorMessage);
+                }
+                return;
+            }
             detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
             const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
             if (!player) {
