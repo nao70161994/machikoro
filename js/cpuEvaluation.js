@@ -1,4 +1,21 @@
 const CPUEvaluation = Object.freeze({
+    expectedDiceScore(outcomes, scoreForDice, options = {}) {
+        const list = Array.isArray(outcomes) ? outcomes : [];
+        let totalWeight = 0;
+        let totalScore = 0;
+        for (const outcome of list) {
+            const dice = outcome.total;
+            const weight = outcome.weight;
+            let score = scoreForDice(dice);
+            if (options.alternateScoreForDice && dice >= options.alternateMinDice) {
+                score = Math.max(score, options.alternateScoreForDice(dice));
+            }
+            totalWeight += weight;
+            totalScore += score * weight;
+        }
+        return totalWeight > 0 ? totalScore / totalWeight : 0;
+    },
+
     singleDiceFrequency(diceNums) {
         const weights = {1:1,2:1,3:1,4:1,5:1,6:1};
         return diceNums.reduce((sum, dice) => sum + (weights[dice] || 0), 0);

@@ -573,17 +573,10 @@ class CPU {
         if (cacheKey in cache.expectedDiceScores) {
             return cache.expectedDiceScores[cacheKey];
         }
-        const weights = useTwo
-            ? { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 }
-            : { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1 };
-        let totalWeight = 0;
-        let totalScore = 0;
-        for (const [diceText, weight] of Object.entries(weights)) {
-            const dice = parseInt(diceText, 10);
-            totalWeight += weight;
-            totalScore += this._estimateRiskAdjustedRollScore(game, dice) * weight;
-        }
-        const score = totalWeight > 0 ? totalScore / totalWeight : 0;
+        const score = CPUEvaluation.expectedDiceScore(
+            this._diceOutcomeWeights(useTwo),
+            dice => this._estimateRiskAdjustedRollScore(game, dice)
+        );
         cache.expectedDiceScores[cacheKey] = score;
         return score;
     }
@@ -596,21 +589,14 @@ class CPU {
         }
         const current = game.currentPlayer();
         const canUseHarbor = useTwo && current.landmarks[LANDMARK_NAMES.HARBOR];
-        const weights = useTwo
-            ? { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 }
-            : { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1 };
-        let totalWeight = 0;
-        let totalScore = 0;
-        for (const [diceText, weight] of Object.entries(weights)) {
-            const dice = parseInt(diceText, 10);
-            let score = this._estimateRiskAdjustedRollScore(game, dice);
-            if (canUseHarbor && dice >= 10) {
-                score = Math.max(score, this._estimateRiskAdjustedRollScore(game, dice + 2));
-            }
-            totalWeight += weight;
-            totalScore += score * weight;
-        }
-        const score = totalWeight > 0 ? totalScore / totalWeight : 0;
+        const score = CPUEvaluation.expectedDiceScore(
+            this._diceOutcomeWeights(useTwo),
+            dice => this._estimateRiskAdjustedRollScore(game, dice),
+            canUseHarbor ? {
+                alternateMinDice: 10,
+                alternateScoreForDice: dice => this._estimateRiskAdjustedRollScore(game, dice + 2),
+            } : {}
+        );
         cache.expectedDiceScoresWithHarbor[cacheKey] = score;
         return score;
     }

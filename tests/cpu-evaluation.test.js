@@ -1145,3 +1145,28 @@ runTest('CPU evaluation はcard purchase valueのeffect倍率とcallbackをpure�
     assert.strictEqual(value(effects.PARK), 0);
     assert.strictEqual(value('normal', 'purple', 3), 15);
 });
+
+runTest('CPU evaluation はweighted dice期待値と港代替scoreの呼出順をpureに固定する', () => {
+    const outcomes = [
+        { total: 1, weight: 1 },
+        { total: 10, weight: 2 },
+        { total: 12, weight: 1 },
+    ];
+    const calls = [];
+    const score = CPUEvaluation.expectedDiceScore(
+        outcomes,
+        dice => { calls.push(['base', dice]); return dice; },
+        {
+            alternateMinDice: 10,
+            alternateScoreForDice: dice => { calls.push(['alternate', dice]); return dice + 3; },
+        }
+    );
+    assert.strictEqual(score, 10.5);
+    assert.deepStrictEqual(calls, [
+        ['base', 1],
+        ['base', 10], ['alternate', 10],
+        ['base', 12], ['alternate', 12],
+    ]);
+    assert.strictEqual(CPUEvaluation.expectedDiceScore([], () => 99), 0);
+    assert.strictEqual(CPUEvaluation.expectedDiceScore(null, () => 99), 0);
+});
