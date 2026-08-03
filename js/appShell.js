@@ -1280,49 +1280,20 @@ function hasPendingWork(snapshot) {
 
 function classifyLikelyFreeze(snapshot) {
     if (!snapshot || !snapshot.phase || snapshot.hasWinner) return '';
-    const ui = snapshot.ui || {};
-    const isMyTurn = !snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex;
-    const skipDisabled = !!(ui.btnSkip && ui.btnSkip.disabled);
-    const gameInert = !!(ui.gameScreen && ui.gameScreen.inert);
-    const gameScreenHidden = !!(ui.gameScreen && (ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none'));
-    const confirmOpen = confirmModalOpenFromSnapshot(snapshot);
-    const staleConfirmOpen = isStaleConfirmModalSnapshot(snapshot);
-    const activeBlockingModalOpen = hasActiveBlockingModal(snapshot);
-    const onlineBlocked = isOnlineUiBlockedSnapshot(snapshot);
-    const pendingOpenWithoutContent = snapshot.phase === 'pending' && isMyTurn && !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0);
-    const stalePendingOpen = isStalePendingModalSnapshot(snapshot);
-    const expectedActions = expectedPrimaryActions(snapshot);
-    const expectedPending = expectedPendingActions(snapshot);
-    const noUsablePrimaryAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedActions.length > 0 && !hasUsablePrimaryAction(snapshot);
-    const noUsablePendingAction = isMyTurn && !snapshot.isCpuTurn && !onlineBlocked && expectedPending.length > 0 && !hasUsablePendingAction(snapshot);
-    const interactabilityIssues = validateUiInteractability(snapshot);
-    const modalIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.MODAL_UI_LOCKED);
-    const pendingIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.PENDING_UI_LOCKED);
-    const humanIssue = interactabilityIssues.find(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    return UiWatchdog.classifyFreezeFacts({
-        phase: snapshot.phase,
-        builtThisTurn: snapshot.builtThisTurn,
-        isMyTurn,
-        isCpuTurn: snapshot.isCpuTurn,
-        onlineBlocked,
-        confirmOpen,
-        staleConfirmOpen,
-        activeBlockingModalOpen,
-        hasExpectedPendingActions: expectedPending.length > 0,
-        stalePendingOpen,
-        skipDisabled,
-        gameInert,
-        gameScreenHidden,
-        noUsablePrimaryAction,
-        noUsablePendingAction,
-        pendingOpenWithoutContent,
-        onlineActionInFlight: snapshot.onlineActionInFlight,
-        cpuStepScheduled: snapshot.cpuStepScheduled,
+    const facts = UiWatchdog.buildFreezeFacts(snapshot, {
+        confirmOpen: confirmModalOpenFromSnapshot(snapshot),
+        staleConfirmOpen: isStaleConfirmModalSnapshot(snapshot),
+        activeBlockingModalOpen: hasActiveBlockingModal(snapshot),
+        stalePendingOpen: isStalePendingModalSnapshot(snapshot),
+        hasUsablePrimaryAction: hasUsablePrimaryAction(snapshot),
+        hasUsablePendingAction: hasUsablePendingAction(snapshot),
         onlineActionTimedOut: isOnlineActionTimedOutForWatchdog(snapshot),
-        modalIssue,
-        pendingIssue,
-        humanIssue,
-    }, FREEZE_KINDS);
+        interactabilityIssues: validateUiInteractability(snapshot),
+        modalFreezeKind: FREEZE_KINDS.MODAL_UI_LOCKED,
+        pendingFreezeKind: FREEZE_KINDS.PENDING_UI_LOCKED,
+        humanFreezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
+    });
+    return UiWatchdog.classifyFreezeFacts(facts, FREEZE_KINDS);
 }
 
 function compactIssueForTrace(issue) {

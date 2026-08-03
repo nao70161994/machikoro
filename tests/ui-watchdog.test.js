@@ -37,6 +37,34 @@ const base = {
 };
 const classify = overrides => UiWatchdog.classifyFreezeFacts(Object.assign({}, base, overrides), kinds);
 
+const freezeSnapshotInput = {
+    phase: 'build', builtThisTurn: true, currentPlayerIndex: 1, myPlayerIndex: 1,
+    isOnlineGame: true, isCpuTurn: false, onlineActionInFlight: true,
+    cpuStepScheduled: false, allowedActions: ['nextTurn'],
+    pendingFields: {}, ui: {
+        btnSkip: { disabled: true }, gameScreen: { inert: true }, pendingMenu: { htmlLength: 0 },
+    },
+};
+const freezeFacts = UiWatchdog.buildFreezeFacts(freezeSnapshotInput, {
+    confirmOpen: false, staleConfirmOpen: true, activeBlockingModalOpen: false,
+    hasUsablePrimaryAction: false, hasUsablePendingAction: false,
+    onlineActionTimedOut: true,
+    interactabilityIssues: [
+        { freezeKind: kinds.HUMAN_TURN_UI_LOCKED, reason: 'disabled' },
+    ],
+    modalFreezeKind: kinds.MODAL_UI_LOCKED,
+    pendingFreezeKind: kinds.PENDING_UI_LOCKED,
+    humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+});
+assert.strictEqual(freezeFacts.isMyTurn, true);
+assert.strictEqual(freezeFacts.onlineBlocked, true);
+assert.strictEqual(freezeFacts.skipDisabled, true);
+assert.strictEqual(freezeFacts.gameInert, true);
+assert.strictEqual(freezeFacts.noUsablePrimaryAction, false);
+assert.strictEqual(freezeFacts.onlineActionTimedOut, true);
+assert.strictEqual(freezeFacts.humanIssue.reason, 'disabled');
+assert.strictEqual(Object.prototype.hasOwnProperty.call(freezeSnapshotInput, 'onlineBlocked'), false);
+
 assert.strictEqual(classify({}), '');
 assert.strictEqual(classify({ modalIssue: { freezeKind: 'modal-ui-locked', reason: 'parent-inert' } }), 'modal-ui-locked:parent-inert');
 assert.strictEqual(classify({ stalePendingOpen: true }), 'stale-modal-ui-locked');

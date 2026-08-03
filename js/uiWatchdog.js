@@ -24,6 +24,43 @@ const UiWatchdog = (() => {
             pending.pendingMover || pending.pendingRenovation || pending.pendingIT);
     }
 
+    function buildFreezeFacts(snapshot, observations = {}) {
+        const ui = snapshot && snapshot.ui || {};
+        const isMyTurn = !!snapshot && (!snapshot.isOnlineGame || snapshot.currentPlayerIndex === snapshot.myPlayerIndex);
+        const expectedActions = expectedPrimaryActions(snapshot);
+        const expectedPending = expectedPendingActions(snapshot);
+        const onlineBlocked = isOnlineUiBlockedSnapshot(snapshot);
+        const interactabilityIssues = Array.isArray(observations.interactabilityIssues)
+            ? observations.interactabilityIssues : [];
+        return {
+            phase: snapshot && snapshot.phase || '',
+            builtThisTurn: !!(snapshot && snapshot.builtThisTurn),
+            isMyTurn,
+            isCpuTurn: !!(snapshot && snapshot.isCpuTurn),
+            onlineBlocked,
+            confirmOpen: observations.confirmOpen === true,
+            staleConfirmOpen: observations.staleConfirmOpen === true,
+            activeBlockingModalOpen: observations.activeBlockingModalOpen === true,
+            hasExpectedPendingActions: expectedPending.length > 0,
+            stalePendingOpen: observations.stalePendingOpen === true,
+            skipDisabled: !!(ui.btnSkip && ui.btnSkip.disabled),
+            gameInert: !!(ui.gameScreen && ui.gameScreen.inert),
+            gameScreenHidden: !!(ui.gameScreen && (ui.gameScreen.display === 'none' || ui.gameScreen.computedDisplay === 'none')),
+            noUsablePrimaryAction: isMyTurn && !(snapshot && snapshot.isCpuTurn) && !onlineBlocked &&
+                expectedActions.length > 0 && observations.hasUsablePrimaryAction !== true,
+            noUsablePendingAction: isMyTurn && !(snapshot && snapshot.isCpuTurn) && !onlineBlocked &&
+                expectedPending.length > 0 && observations.hasUsablePendingAction !== true,
+            pendingOpenWithoutContent: !!snapshot && snapshot.phase === 'pending' && isMyTurn &&
+                !snapshot.isCpuTurn && !hasPendingWork(snapshot) && !(ui.pendingMenu && ui.pendingMenu.htmlLength > 0),
+            onlineActionInFlight: !!(snapshot && snapshot.onlineActionInFlight),
+            cpuStepScheduled: !!(snapshot && snapshot.cpuStepScheduled),
+            onlineActionTimedOut: observations.onlineActionTimedOut === true,
+            modalIssue: interactabilityIssues.find(issue => issue && issue.freezeKind === observations.modalFreezeKind) || null,
+            pendingIssue: interactabilityIssues.find(issue => issue && issue.freezeKind === observations.pendingFreezeKind) || null,
+            humanIssue: interactabilityIssues.find(issue => issue && issue.freezeKind === observations.humanFreezeKind) || null,
+        };
+    }
+
     function classifyFreezeFacts(facts, freezeKinds) {
         if (facts.modalIssue) return facts.modalIssue.freezeKind + ':' + facts.modalIssue.reason;
         if (facts.stalePendingOpen && facts.isMyTurn && !facts.isCpuTurn && !facts.onlineBlocked) {
@@ -443,6 +480,7 @@ const UiWatchdog = (() => {
         isStalePendingModalSnapshot,
         isOnlineUiBlockedSnapshot,
         hasPendingWork,
+        buildFreezeFacts,
         classifyFreezeFacts,
         compactElementSnapshotForStorage,
         compactFreezePayloadForStorage,
