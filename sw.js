@@ -97,6 +97,7 @@ const STATIC_ASSETS = [
   '/js/ui.js',
   '/js/savedGameValidation.js',
   '/js/storageSettings.js',
+  '/js/localResumePolicy.js',
   '/js/storage.js',
   '/js/stats.js',
   '/js/appShellStorage.js',

@@ -228,37 +228,59 @@ function reconnectOnline() {
 }
 
 function resumeGame(options = {}) {
-    if (localResumePending && !options.fromPreload) return;
+    if (!LocalResumePolicy.shouldInspectRepository({
+        resumePending: localResumePending,
+        fromPreload: options.fromPreload,
+    })) return;
     const repository = getLocalSaveRepository();
-    if (!repository.exists()) return;
+    const initialDecision = LocalResumePolicy.initialDecision({
+        resumePending: localResumePending,
+        fromPreload: options.fromPreload,
+        repositoryExists: repository.exists(),
+    });
+    if (initialDecision !== 'read-save') return;
     try {
         const decoded = repository.read(isValidSavedGameState);
-        if (!decoded.ok) throw new Error('Invalid saved game');
-        const state = decoded.state;
-        const savedCpuSettings = normalizeSavedCpuSettings(state);
-        const hasRlCpu = savedCpuSettings.some(setting => setting && setting.difficulty === 'rl');
-        if (!options.skipRlPreload && hasRlCpu && typeof RLModelPortfolio !== 'undefined' && typeof RLModelPortfolio.preloadEligibleModels === 'function') {
-            const loadState = typeof RLModelPortfolio.eligibleLoadState === 'function'
-                ? RLModelPortfolio.eligibleLoadState(state.players.length)
-                : null;
-            if (!loadState || loadState.status !== 'ready') {
-                const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
-                if (preload && typeof preload.then === 'function') {
-                    const resumeGeneration = ++localResumeGeneration;
-                    setLocalResumePending(true);
-                    showNotice("深層学習AIモデルを読み込んでいます。");
-                    preload.then(() => {
-                        if (resumeGeneration !== localResumeGeneration) return;
-                        setLocalResumePending(false);
-                        resumeGame({ fromPreload: true, skipRlPreload: true });
-                    }).catch(error => {
-                        if (resumeGeneration !== localResumeGeneration) return;
-                        setLocalResumePending(false);
-                        console.error(error);
-                        showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
-                    });
-                    return;
-                }
+        const decodedState = decoded && decoded.state;
+        const savedCpuSettings = decodedState ? normalizeSavedCpuSettings(decodedState) : [];
+        const canPreloadRl = typeof RLModelPortfolio !== 'undefined' &&
+            typeof RLModelPortfolio.preloadEligibleModels === 'function';
+        const inspectRlLoadState = LocalResumePolicy.shouldInspectRlLoadState(
+            savedCpuSettings,
+            options.skipRlPreload,
+            canPreloadRl
+        );
+        const loadState = inspectRlLoadState && typeof RLModelPortfolio.eligibleLoadState === 'function'
+            ? RLModelPortfolio.eligibleLoadState(decodedState.players.length)
+            : null;
+        const decision = LocalResumePolicy.decide({
+            decoded,
+            cpuSettings: savedCpuSettings,
+            skipRlPreload: options.skipRlPreload,
+            canPreloadRl,
+            rlLoadState: loadState,
+        });
+        if (decision.kind === LocalResumePolicy.DECISIONS.INVALID) {
+            throw new Error('Invalid saved game');
+        }
+        const state = decision.state;
+        if (decision.kind === LocalResumePolicy.DECISIONS.PRELOAD_RL) {
+            const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
+            if (preload && typeof preload.then === 'function') {
+                const resumeGeneration = ++localResumeGeneration;
+                setLocalResumePending(true);
+                showNotice("深層学習AIモデルを読み込んでいます。");
+                preload.then(() => {
+                    if (resumeGeneration !== localResumeGeneration) return;
+                    setLocalResumePending(false);
+                    resumeGame({ fromPreload: true, skipRlPreload: true });
+                }).catch(error => {
+                    if (resumeGeneration !== localResumeGeneration) return;
+                    setLocalResumePending(false);
+                    console.error(error);
+                    showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
+                });
+                return;
             }
         }
         cpuScheduleToken++;
@@ -291,19 +313,15 @@ function resumeGame(options = {}) {
             normalizeCurrentPlayerIndex: value => value,
         });
         if (!hydrated) throw new Error('Saved game hydration failed');
-        const cpuSettings = savedCpuSettings;
-        const opponentDifficulties = cpuSettings.map(s => s ? s.difficulty || "normal" : "human");
-        cpuPlayers = cpuSettings.map(s => {
-            if (!s) return null;
-            const options = {
-                expertPurpose: "live",
-                playerCount: state.players.length,
-                expertOpponentDifficulties: opponentDifficulties,
-                rlModelId: s.rlModelId || s.modelId || null,
-            };
+        const cpuCreationPlan = LocalResumePolicy.cpuCreationPlan(
+            savedCpuSettings,
+            state.players.length
+        );
+        cpuPlayers = cpuCreationPlan.map(entry => {
+            if (!entry) return null;
             return typeof createCpuPlayer === "function"
-                ? createCpuPlayer(s.difficulty, options)
-                : new CPU(s.difficulty, options);
+                ? createCpuPlayer(entry.difficulty, entry.options)
+                : new CPU(entry.difficulty, entry.options);
         });
         prevCoins = null;
         winSoundPlayed = false;

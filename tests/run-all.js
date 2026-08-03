@@ -124,6 +124,7 @@ const TEST_GROUPS = {
         'online-delivery-handshake.test.js',
         'saved-game-validation.test.js',
         'storage-settings.test.js',
+        'local-resume-policy.test.js',
         'storage.test.js',
         'local-player-settings.test.js',
         'auto-skip-policy.test.js',
