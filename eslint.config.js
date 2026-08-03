@@ -130,6 +130,7 @@ const browserMaintenanceFiles = Object.freeze([
 
 const serverMaintenanceFiles = Object.freeze([
     'server.js',
+    'scripts/check-static-files.js',
     'scripts/report-action-contract.js',
     'server/actionAcceptance.js',
     'server/canonicalMirrorMetadata.js',
