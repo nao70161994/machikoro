@@ -1121,20 +1121,23 @@ function trapCrashScreenFocus(event) {
     if (!_crashShown || event.key !== 'Tab') return;
     const el = document.getElementById('crashScreen');
     const focusables = focusableCrashScreenElements(el);
-    if (focusables.length === 0) {
-        event.preventDefault();
+    const plan = CrashScreen.focusTrapPlan({
+        shown: _crashShown,
+        key: event.key,
+        shiftKey: event.shiftKey,
+        focusableCount: focusables.length,
+        activeIndex: focusables.indexOf(document.activeElement),
+    });
+    if (!plan.preventDefault) return;
+    event.preventDefault();
+    if (plan.focusTarget === 'screen') {
         if (el && typeof el.focus === 'function') el.focus();
         return;
     }
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-    }
+    const focusTarget = plan.focusTarget === 'last'
+        ? focusables[focusables.length - 1]
+        : focusables[0];
+    if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
 }
 
 function showCrashScreen(err) {
@@ -1145,15 +1148,15 @@ function showCrashScreen(err) {
     else cpuScheduleToken++; // CPUループを停止
     const el = document.getElementById('crashScreen');
     if (!el) return;
-    const msg = (err instanceof Error ? err.stack || err.message : String(err || '不明なエラー')).slice(0, 300);
-    document.getElementById('crashMessage').textContent = msg;
+    const view = CrashScreen.buildView(err, safeAppShellStorageGet('savedGame'));
+    document.getElementById('crashMessage').textContent = view.message;
     const resumeBtn = document.getElementById('crashResumeBtn');
-    if (resumeBtn) resumeBtn.style.display = safeAppShellStorageGet('savedGame') ? 'block' : 'none';
+    if (resumeBtn) resumeBtn.style.display = view.resumeDisplay;
     el.style.display = 'flex';
     el.setAttribute('aria-modal', 'true');
     if (typeof el.hasAttribute !== 'function' || !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
     if (typeof document.addEventListener === 'function') document.addEventListener('keydown', trapCrashScreenFocus, true);
-    const focusTarget = resumeBtn && resumeBtn.style.display !== 'none'
+    const focusTarget = view.initialFocus === 'resume' && resumeBtn
         ? resumeBtn
         : el.querySelector && el.querySelector('[data-ui-action="reloadPage"]');
     if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();

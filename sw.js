@@ -105,6 +105,7 @@ const STATIC_ASSETS = [
   '/js/lifecycleNotify.js',
   '/js/lifecycleTransport.js',
   '/js/uiWatchdog.js',
+  '/js/crashScreen.js',
   '/js/pwaShell.js',
   '/js/actionUiRegistry.js',
   '/js/appShell.js',

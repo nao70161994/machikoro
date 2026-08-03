@@ -327,6 +327,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(lifecycleTransportSource, context, { filename: 'js/lifecycleTransport.js' });
     const uiWatchdogSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdog.js'), 'utf8');
     vm.runInContext(uiWatchdogSource, context, { filename: 'js/uiWatchdog.js' });
+    const crashScreenSource = fs.readFileSync(path.join(__dirname, '..', 'js/crashScreen.js'), 'utf8');
+    vm.runInContext(crashScreenSource, context, { filename: 'js/crashScreen.js' });
     const actionContractSource = fs.readFileSync(path.join(__dirname, '..', 'js/actionContract.js'), 'utf8');
     vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
     const cpuActionProposalSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuActionProposal.js'), 'utf8');
@@ -1455,6 +1457,28 @@ runTest('main showCrashScreen はクラッシュ表示と保存データ復帰�
     assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
 });
 
+runTest('main crash focus trapは末尾Tabを先頭へ循環させる', () => {
+    const rt = loadMainRuntime();
+    const resume = rt.__test.elements.crashResumeBtn;
+    const reload = rt.__test.elements.crashReloadBtn;
+    resume.offsetParent = {};
+    reload.offsetParent = {};
+    rt.__test.elements.crashScreen.querySelectorAll = () => [resume, reload];
+    rt.showCrashScreen(new Error('boom'));
+    resume.focused = false;
+    rt.document.activeElement = reload;
+    let prevented = false;
+
+    rt.__test.eventHandlers['document:keydown']({
+        key: 'Tab',
+        shiftKey: false,
+        preventDefault() { prevented = true; },
+    });
+
+    assert.strictEqual(prevented, true);
+    assert.strictEqual(resume.focused, true);
+});
+
 runTest('main init は固定乱数でプレイヤー順シャッフル後も名前設定を反映する', () => {
     const rt = loadMainRuntime();
     rt.Math.random = createSequenceRandom([0.9, 0.0, 0.0]);
@@ -2149,6 +2173,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');
     assertBefore('js/lifecycleTransport.js', 'js/appShell.js');
     assertBefore('js/uiWatchdog.js', 'js/appShell.js');
+    assertBefore('js/crashScreen.js', 'js/appShell.js');
     assertBefore('js/pwaShell.js', 'js/appShell.js');
     assertBefore('js/actionUiRegistry.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');

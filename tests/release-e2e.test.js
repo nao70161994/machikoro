@@ -136,7 +136,7 @@ function loadAppShellRuntime(profile = MOBILE_PROFILES[0]) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/actionContract.js', 'js/clientStorage.js', 'js/appShellStorage.js', 'js/clientCheckpoint.js', 'js/clientReporting.js', 'js/clientReportingTransport.js', 'js/lifecycleNotify.js', 'js/lifecycleTransport.js', 'js/uiWatchdog.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/uiTabView.js', 'js/appShell.js']);
+    loadScripts(context, ['js/actionContract.js', 'js/clientStorage.js', 'js/appShellStorage.js', 'js/clientCheckpoint.js', 'js/clientReporting.js', 'js/clientReportingTransport.js', 'js/lifecycleNotify.js', 'js/lifecycleTransport.js', 'js/uiWatchdog.js', 'js/crashScreen.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/uiTabView.js', 'js/appShell.js']);
     return { context, elements, fetchCalls };
 }
 

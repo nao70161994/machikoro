@@ -71,6 +71,7 @@ interface Window {
     AutoSkipPolicy: unknown;
     UiTurnAnnouncer: unknown;
     UiWatchdog: unknown;
+    CrashScreen: unknown;
     UiWinner: unknown;
     LifecycleNotify: unknown;
     LifecycleTransport: unknown;
