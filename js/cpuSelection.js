@@ -54,6 +54,27 @@ const CPUSelection = Object.freeze({
             })
             .map(entry => entry.item);
     },
+
+    directions: Object.freeze({ ASCENDING: 'ascending', DESCENDING: 'descending' }),
+
+    stableRankLexicographic(items, keySpecs) {
+        if (!Array.isArray(items) || !Array.isArray(keySpecs) || keySpecs.length === 0) return [];
+        if (keySpecs.some(spec => !spec || typeof spec.valueOf !== 'function' ||
+                !Object.values(CPUSelection.directions).includes(spec.direction))) return [];
+        return items.map((item, index) => ({
+            item,
+            index,
+            values: keySpecs.map(spec => spec.valueOf(item)),
+        })).sort((left, right) => {
+            for (let index = 0; index < keySpecs.length; index++) {
+                const difference = keySpecs[index].direction === CPUSelection.directions.DESCENDING
+                    ? right.values[index] - left.values[index]
+                    : left.values[index] - right.values[index];
+                if (!Number.isNaN(difference) && difference !== 0) return difference;
+            }
+            return left.index - right.index;
+        }).map(entry => entry.item);
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { CPUSelection };

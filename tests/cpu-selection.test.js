@@ -76,3 +76,31 @@ runTest('CPU selection stable rankはNaN/同Infinityを既存stable sort同様ti
     assert.deepStrictEqual(CPUSelection.stableRankDescending(null, item => item.score), []);
     assert.deepStrictEqual(CPUSelection.stableRankDescending(items, null), []);
 });
+
+runTest('CPU selection lexicographic rankは複合key方向と完全tieの元順を保持する', () => {
+    const items = [
+        { id: 'a', urgency: 4, cost: 5 },
+        { id: 'b', urgency: 7, cost: 6 },
+        { id: 'c', urgency: 7, cost: 3 },
+        { id: 'd', urgency: 7, cost: 3 },
+    ];
+    const calls = { urgency: 0, cost: 0 };
+    const ranked = CPUSelection.stableRankLexicographic(items, [
+        { valueOf: item => { calls.urgency++; return item.urgency; }, direction: CPUSelection.directions.DESCENDING },
+        { valueOf: item => { calls.cost++; return item.cost; }, direction: CPUSelection.directions.ASCENDING },
+    ]);
+    assert.deepStrictEqual(ranked.map(item => item.id), ['c', 'd', 'b', 'a']);
+    assert.deepStrictEqual(calls, { urgency: items.length, cost: items.length });
+    assert.deepStrictEqual(items.map(item => item.id), ['a', 'b', 'c', 'd']);
+});
+
+runTest('CPU selection lexicographic rankはNaN keyを次keyへ倒し不正specを拒否する', () => {
+    const items = [{ id: 'a', first: NaN, second: 2 }, { id: 'b', first: 1, second: 4 }];
+    assert.deepStrictEqual(CPUSelection.stableRankLexicographic(items, [
+        { valueOf: item => item.first, direction: CPUSelection.directions.DESCENDING },
+        { valueOf: item => item.second, direction: CPUSelection.directions.DESCENDING },
+    ]).map(item => item.id), ['b', 'a']);
+    assert.deepStrictEqual(CPUSelection.stableRankLexicographic(items, []), []);
+    assert.deepStrictEqual(CPUSelection.stableRankLexicographic(items, [{ valueOf: null, direction: 'ascending' }]), []);
+    assert.ok(Object.isFrozen(CPUSelection.directions));
+});

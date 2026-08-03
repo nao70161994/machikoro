@@ -1471,15 +1471,18 @@ class CPU {
 
         const remainingLandmarks = Player.landmarkNames()
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
-        const urgentLandmark = remainingLandmarks
+        const urgentLandmarkCandidates = remainingLandmarks
             .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name])
             .map(name => ({
                 name,
                 shortfall: Player.landmarkCost(name) - current.coins,
                 urgency: this._landmarkUrgency(name, current, game),
             }))
-            .filter(entry => entry.shortfall >= 0)
-            .sort((a, b) => a.shortfall - b.shortfall || b.urgency - a.urgency)[0];
+            .filter(entry => entry.shortfall >= 0);
+        const urgentLandmark = CPUSelection.stableRankLexicographic(urgentLandmarkCandidates, [
+            { valueOf: entry => entry.shortfall, direction: CPUSelection.directions.ASCENDING },
+            { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+        ])[0];
         const closeToFinish = remainingLandmarks.length <= 2;
         const airportOnly = remainingLandmarks.length === 1 && remainingLandmarks[0] === LANDMARK_NAMES.AIRPORT;
         const nearLandmark = urgentLandmark && (urgentLandmark.shortfall <= 3 || (airportOnly && urgentLandmark.shortfall <= 6));
@@ -1977,19 +1980,25 @@ class CPU {
             LANDMARK_NAMES.AMUSEMENT_PARK,
             LANDMARK_NAMES.AIRPORT,
         ];
-        const remaining = this._remainingEnabledLandmarks(current, game)
+        const candidates = this._remainingEnabledLandmarks(current, game)
             .map(name => ({
                 name,
                 cost: Player.landmarkCost(name),
                 urgency: this._landmarkUrgency(name, current, game),
                 priority: priority.indexOf(name),
-            }))
-            .sort((a, b) => {
-                if (game.players.length >= 4) {
-                    return b.urgency - a.urgency || a.priority - b.priority || a.cost - b.cost;
-                }
-                return a.priority - b.priority || b.urgency - a.urgency || a.cost - b.cost;
-            });
+            }));
+        const keySpecs = game.players.length >= 4
+            ? [
+                { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+                { valueOf: entry => entry.priority, direction: CPUSelection.directions.ASCENDING },
+                { valueOf: entry => entry.cost, direction: CPUSelection.directions.ASCENDING },
+            ]
+            : [
+                { valueOf: entry => entry.priority, direction: CPUSelection.directions.ASCENDING },
+                { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+                { valueOf: entry => entry.cost, direction: CPUSelection.directions.ASCENDING },
+            ];
+        const remaining = CPUSelection.stableRankLexicographic(candidates, keySpecs);
         return remaining[0] || null;
     }
 
@@ -2965,10 +2974,13 @@ class CPU {
         if (remaining.length === 0) return false;
         if (this.difficulty !== "expert" && remaining.length > 2) return false;
         if (this.difficulty === "expert" && remaining.length > 3) return false;
-        const affordable = remaining
+        const affordableCandidates = remaining
             .map(name => ({ name, cost: Player.landmarkCost(name), urgency: this._landmarkUrgency(name, current, game) }))
-            .filter(entry => current.coins >= entry.cost)
-            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost);
+            .filter(entry => current.coins >= entry.cost);
+        const affordable = CPUSelection.stableRankLexicographic(affordableCandidates, [
+            { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+            { valueOf: entry => entry.cost, direction: CPUSelection.directions.ASCENDING },
+        ]);
         if (affordable.length === 0) return false;
         if (this.difficulty === "expert" && remaining.length === 3 && affordable[0].urgency < 8) return false;
         this._buyLandmark(affordable[0].name, game);
@@ -2980,13 +2992,15 @@ class CPU {
         const remaining = this._remainingEnabledLandmarks(current, game);
         if (remaining.length === 0 || remaining.length > 3) return false;
         const bestLandmark = this._bestAffordableLandmark(current, game);
-        const urgentLandmark = remaining
+        const urgentLandmark = CPUSelection.stableRankLexicographic(remaining
             .map(name => ({
                 name,
                 shortfall: Player.landmarkCost(name) - current.coins,
                 urgency: this._landmarkUrgency(name, current, game),
-            }))
-            .sort((a, b) => b.urgency - a.urgency || a.shortfall - b.shortfall)[0];
+            })), [
+            { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+            { valueOf: entry => entry.shortfall, direction: CPUSelection.directions.ASCENDING },
+        ])[0];
         if (bestLandmark && bestLandmark.urgency >= 7) return true;
         if (urgentLandmark && urgentLandmark.urgency >= 7 && urgentLandmark.shortfall <= 2) return true;
         if (current.builtLandmarkCount() >= 3 && urgentLandmark && urgentLandmark.shortfall <= 4) return true;
@@ -3321,8 +3335,13 @@ class CPU {
             .filter(name => !player.landmarks[name])
             .map(name => ({ name, cost: Player.landmarkCost(name), urgency: this._landmarkUrgency(name, player, game) }));
         if (remaining.length === 0) return 0;
-        const affordable = remaining.filter(entry => player.coins >= entry.cost)
-            .sort((a, b) => b.urgency - a.urgency || a.cost - b.cost);
+        const affordable = CPUSelection.stableRankLexicographic(
+            remaining.filter(entry => player.coins >= entry.cost),
+            [
+                { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+                { valueOf: entry => entry.cost, direction: CPUSelection.directions.ASCENDING },
+            ]
+        );
         if (affordable.length === 0) return 0;
         const best = affordable[0];
         const surplus = player.coins - best.cost;
@@ -3339,11 +3358,14 @@ class CPU {
                 urgency: this._landmarkUrgency(name, player, game),
                 shortfall: Player.landmarkCost(name) - player.coins,
             }))
-            .filter(entry => entry.shortfall > 0 && entry.shortfall <= 3)
-            .sort((a, b) => entrySort(b, a));
+            .filter(entry => entry.shortfall > 0 && entry.shortfall <= 3);
+        const rankedRemaining = CPUSelection.stableRankLexicographic(remaining, [
+            { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
+            { valueOf: entry => entry.shortfall, direction: CPUSelection.directions.ASCENDING },
+        ]);
 
-        if (remaining.length === 0) return 0;
-        const target = remaining[0];
+        if (rankedRemaining.length === 0) return 0;
+        const target = rankedRemaining[0];
         let penalty = target.urgency * (4 - target.shortfall) * 1.35;
         if (card) {
             if (card.cost >= 5) penalty += 4.5;
@@ -3351,10 +3373,6 @@ class CPU {
             if (card.color === "purple") penalty += 3.5;
         }
         return penalty;
-
-        function entrySort(left, right) {
-            return left.urgency - right.urgency || right.shortfall - left.shortfall;
-        }
     }
 
     _expertPremiumPurpleReady(card, game, player) {
