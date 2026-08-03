@@ -1004,77 +1004,89 @@ function reloadCurrentPage() {
     }
 }
 
+function staticUiCommandEffects() {
+    return {
+        showRules: (...args) => showRules(...args),
+        showCardSelect: (...args) => showCardSelect(...args),
+        reconnectOnline: (...args) => reconnectOnline(...args),
+        deleteOnlineSession: (...args) => deleteOnlineSession(...args),
+        switchTab: (...args) => switchTab(...args),
+        changeCount: (...args) => changeCount(...args),
+        startGame: (...args) => startGame(...args),
+        resumeGame: (...args) => resumeGame(...args),
+        deleteSavedGame: (...args) => deleteSavedGame(...args),
+        switchOnlineTab: (...args) => switchOnlineTab(...args),
+        changeOnlineCount: (...args) => changeOnlineCount(...args),
+        showCreateRoom: (...args) => showCreateRoom(...args),
+        joinRoom: (...args) => joinRoom(...args),
+        toggleTutorial: (...args) => toggleTutorial(...args),
+        cycleTutorialLevel: (...args) => cycleTutorialLevel(...args),
+        onRoll: (...args) => onRoll(...args),
+        onReroll: (...args) => onReroll(...args),
+        onSkip: (...args) => onSkip(...args),
+        toggleLog: (...args) => toggleLog(...args),
+        restartGame: (...args) => restartGame(...args),
+        closeRules: (...args) => closeRules(...args),
+        closeCardDetail: (...args) => closeCardDetail(...args),
+        hideNotice: (...args) => hideNotice(...args),
+        reloadPage: (...args) => reloadCurrentPage(...args),
+        crashResume: (...args) => crashResume(...args),
+        pwaApplyUpdate() {
+            if (typeof pwaApplyUpdate === 'function') pwaApplyUpdate();
+            else reloadCurrentPage();
+        },
+        hidePwaUpdateBanner() {
+            if (typeof shouldKeepPwaUpdateBannerVisible === 'function' && shouldKeepPwaUpdateBannerVisible()) return;
+            const banner = document.getElementById('pwaUpdateBanner');
+            if (banner) banner.style.display = 'none';
+            if (typeof maybeShowPwaInstallBanner === 'function') maybeShowPwaInstallBanner();
+            else {
+                const installBanner = document.getElementById('pwaInstallBanner');
+                const stillVisible = installBanner && installBanner.style.display === 'block';
+                if (!stillVisible && document.body && document.body.classList) document.body.classList.remove('pwa-banner-open');
+            }
+        },
+        pwaInstallPrompt: (...args) => pwaInstallPrompt(...args),
+        pwaInstallDismiss: (...args) => pwaInstallDismiss(...args),
+    };
+}
+
 function handleStaticUiClick(event) {
     const element = uiActionElementFromEvent(event, 'data-ui-action');
     if (!element || element.disabled) return;
-    const action = element.dataset.uiAction;
-    if (!action) return;
+    const command = UiEventDelegation.commandFromElement(element, 'static');
+    if (!command) return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    if (action === 'showRules') showRules();
-    else if (action === 'showCardSelect') showCardSelect();
-    else if (action === 'reconnectOnline') reconnectOnline();
-    else if (action === 'deleteOnlineSession') deleteOnlineSession();
-    else if (action === 'switchTab') switchTab(element.dataset.tab);
-    else if (action === 'changeCount') changeCount(parseInt(element.dataset.delta, 10));
-    else if (action === 'startGame') startGame();
-    else if (action === 'resumeGame') resumeGame();
-    else if (action === 'deleteSavedGame') deleteSavedGame();
-    else if (action === 'switchOnlineTab') switchOnlineTab(element.dataset.onlineTab);
-    else if (action === 'changeOnlineCount') changeOnlineCount(parseInt(element.dataset.delta, 10));
-    else if (action === 'showCreateRoom') showCreateRoom();
-    else if (action === 'joinRoom') joinRoom();
-    else if (action === 'toggleTutorial') toggleTutorial();
-    else if (action === 'cycleTutorialLevel') cycleTutorialLevel();
-    else if (action === 'onRoll') onRoll();
-    else if (action === 'onReroll') onReroll();
-    else if (action === 'onSkip') onSkip();
-    else if (action === 'toggleLog') toggleLog();
-    else if (action === 'restartGame') restartGame();
-    else if (action === 'closeRules') closeRules();
-    else if (action === 'closeCardDetail') closeCardDetail();
-    else if (action === 'hideNotice') hideNotice();
-    else if (action === 'reloadPage') reloadCurrentPage();
-    else if (action === 'crashResume') crashResume();
-    else if (action === 'pwaApplyUpdate') {
-        if (typeof pwaApplyUpdate === 'function') pwaApplyUpdate();
-        else reloadCurrentPage();
-    }
-    else if (action === 'hidePwaUpdateBanner') {
-        if (typeof shouldKeepPwaUpdateBannerVisible === 'function' && shouldKeepPwaUpdateBannerVisible()) return;
-        const banner = document.getElementById('pwaUpdateBanner');
-        if (banner) banner.style.display = 'none';
-        if (typeof maybeShowPwaInstallBanner === 'function') maybeShowPwaInstallBanner();
-        else {
-            const installBanner = document.getElementById('pwaInstallBanner');
-            const stillVisible = installBanner && installBanner.style.display === 'block';
-            if (!stillVisible && document.body && document.body.classList) document.body.classList.remove('pwa-banner-open');
-        }
-    }
-    else if (action === 'pwaInstallPrompt') pwaInstallPrompt();
-    else if (action === 'pwaInstallDismiss') pwaInstallDismiss();
+    UiEventDelegation.executeCommand(command, staticUiCommandEffects());
 }
 
 function handleStaticUiInput(event) {
     const element = uiActionElementFromEvent(event, 'data-ui-input');
-    if (!element) return;
-    if (element.dataset.uiInput === 'cpuSpeed') {
-        const label = document.getElementById('speedLabel');
-        if (label) label.textContent = formatCpuSpeedLabel(element.value);
-    } else if (element.dataset.uiInput === 'onlineCpuSpeed') {
-        const label = document.getElementById('onlineSpeedLabel');
-        if (label) label.textContent = formatCpuSpeedLabel(element.value);
-    } else if (element.dataset.uiInput === 'localPlayerName') {
-        onChangePlayerName(parseInt(element.dataset.playerIndex, 10), element.value);
-    }
+    const command = UiEventDelegation.commandFromElement(element, 'input');
+    if (!command) return;
+    UiEventDelegation.executeCommand(command, {
+        cpuSpeed(value) {
+            const label = document.getElementById('speedLabel');
+            if (label) label.textContent = formatCpuSpeedLabel(value);
+        },
+        onlineCpuSpeed(value) {
+            const label = document.getElementById('onlineSpeedLabel');
+            if (label) label.textContent = formatCpuSpeedLabel(value);
+        },
+        localPlayerName: (...args) => onChangePlayerName(...args),
+    });
 }
 
 function handleStaticUiChange(event) {
     const element = uiActionElementFromEvent(event, 'data-ui-change');
-    if (!element) return;
-    if (element.dataset.uiChange === 'toggleTutorialEnabled') onToggleTutorial(element.checked);
-    else if (element.dataset.uiChange === 'tutorialLevel') onChangeTutorialLevel(element.value);
-    else if (element.dataset.uiChange === 'localPlayerType') onChangePlayerType(parseInt(element.dataset.playerIndex, 10), element.value);
-    else if (element.dataset.uiChange === 'onlinePlayerType') onChangeOnlinePlayerType(parseInt(element.dataset.playerIndex, 10), element.value);
+    const command = UiEventDelegation.commandFromElement(element, 'change');
+    if (!command) return;
+    UiEventDelegation.executeCommand(command, {
+        toggleTutorialEnabled: (...args) => onToggleTutorial(...args),
+        tutorialLevel: (...args) => onChangeTutorialLevel(...args),
+        localPlayerType: (...args) => onChangePlayerType(...args),
+        onlinePlayerType: (...args) => onChangeOnlinePlayerType(...args),
+    });
 }
 
 function handleStaticUiKeydown(event) {
@@ -1097,50 +1109,59 @@ function bindStaticUiHandlers() {
 function handleDiceChoiceClick(event) {
     const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
-    const action = button.dataset.action;
-    if (!action) return;
+    const command = UiEventDelegation.commandFromElement(button, 'dice');
+    if (!command) return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    if (action === 'selectDiceCount') onSelectDiceCount(button.dataset.useTwo === 'true');
-    else if (action === 'rerollDice') onReroll();
-    else if (action === 'skipReroll') onSkipReroll();
-    else if (action === 'resolveHarbor') onResolveHarbor(button.dataset.useBonus === 'true');
+    UiEventDelegation.executeCommand(command, {
+        selectDiceCount: onSelectDiceCount,
+        rerollDice: (...args) => onReroll(...args),
+        skipReroll: onSkipReroll,
+        resolveHarbor: onResolveHarbor,
+    });
 }
 
 function handlePendingActionClick(event) {
     const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
-    const action = button.dataset.action;
-    if (!action) return;
+    const command = UiEventDelegation.commandFromElement(button, 'pending');
+    if (!command) return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    if (action === 'selectBusinessCard') { bcSelectCard(button, button.dataset.inputId); return; }
-    if (action === 'resolveTV') onResolveTV(parseInt(button.dataset.targetIndex, 10));
-    if (action === 'resolveBusiness') onResolveBusiness(parseInt(button.dataset.targetIndex, 10));
-    if (action === 'resolveCleaning') onResolveCleaning(button.dataset.cardName);
-    if (action === 'resolveMover') onResolveMover(parseInt(button.dataset.targetIndex, 10));
-    if (action === 'resolveRenovation') onResolveRenovation(button.dataset.landmarkName);
-    if (action === 'resolveIT') onResolveIT(button.dataset.doSave === 'true');
+    UiEventDelegation.executeCommand(command, {
+        selectBusinessCard: inputId => bcSelectCard(button, inputId),
+        resolveTV: onResolveTV,
+        resolveBusiness: onResolveBusiness,
+        resolveCleaning: onResolveCleaning,
+        resolveMover: onResolveMover,
+        resolveRenovation: onResolveRenovation,
+        resolveIT: onResolveIT,
+    });
 }
 
 function handleBuildMenuClick(event) {
     const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
-    const action = button.dataset.action;
-    if (!action) return;
+    const command = UiEventDelegation.commandFromElement(button, 'build');
+    if (!command) return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    if (action === 'buildCard') onBuildCard(button.dataset.cardName);
-    if (action === 'buildLandmark') onBuildLandmark(button.dataset.landmarkName);
-    if (action === 'showCardDetail') showCardDetail(button.dataset.cardName);
-    if (action === 'showLandmarkDetail') showCardDetail(button.dataset.landmarkName, true);
-    if (action === 'setCardFilter') setCardFilter(button.dataset.cardFilter || '');
-    if (action === 'undoBuild') doUndo();
+    UiEventDelegation.executeCommand(command, {
+        buildCard: onBuildCard,
+        buildLandmark: onBuildLandmark,
+        showCardDetail: (...args) => showCardDetail(...args),
+        showLandmarkDetail: (...args) => showCardDetail(...args),
+        setCardFilter: (...args) => setCardFilter(...args),
+        undoBuild: (...args) => doUndo(...args),
+    });
 }
 
 function handlePlayerPanelClick(event) {
     const button = actionButtonFromEvent(event);
     if (!button || button.disabled) return;
-    if (button.dataset.action !== 'showCardDetail') return;
+    const command = UiEventDelegation.commandFromElement(button, 'player');
+    if (!command || command.name !== 'showCardDetail') return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    showCardDetail(button.dataset.cardName);
+    UiEventDelegation.executeCommand(command, {
+        showCardDetail: (...args) => showCardDetail(...args),
+    });
 }
 
 function bindDelegatedUiHandlers() {

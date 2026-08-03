@@ -43,3 +43,39 @@ runTest('ui event delegationは有効なrole buttonだけを起動対象にす�
     assert.strictEqual(UiEventDelegation.isEnabledRoleButton(null), false);
     assert.strictEqual(Object.isFrozen(UiEventDelegation), true);
 });
+
+runTest('ui event delegationは各dataset familyをdetached commandへ変換する', () => {
+    const staticCommand = UiEventDelegation.commandFromElement({
+        dataset: { uiAction: 'changeCount', delta: '-1' },
+    }, 'static');
+    assert.deepStrictEqual(staticCommand, { family: 'static', name: 'changeCount', args: [-1] });
+    assert.ok(Object.isFrozen(staticCommand));
+    assert.ok(Object.isFrozen(staticCommand.args));
+    assert.deepStrictEqual(UiEventDelegation.commandFromElement({
+        dataset: { uiInput: 'localPlayerName', playerIndex: '2' },
+        value: 'Alice',
+    }, 'input'), { family: 'input', name: 'localPlayerName', args: [2, 'Alice'] });
+    assert.deepStrictEqual(UiEventDelegation.commandFromElement({
+        dataset: { action: 'resolveHarbor', useBonus: 'true' },
+    }, 'dice'), { family: 'dice', name: 'resolveHarbor', args: [true] });
+    assert.deepStrictEqual(UiEventDelegation.commandFromElement({
+        dataset: { action: 'selectBusinessCard', inputId: 'myCardSelect' },
+    }, 'pending'), { family: 'pending', name: 'selectBusinessCard', args: ['myCardSelect'] });
+    assert.deepStrictEqual(UiEventDelegation.commandFromElement({
+        dataset: { action: 'showLandmarkDetail', landmarkName: '駅' },
+    }, 'build'), { family: 'build', name: 'showLandmarkDetail', args: ['駅', true] });
+    assert.strictEqual(UiEventDelegation.commandFromElement(null, 'static'), null);
+});
+
+runTest('ui event delegationはcommand effectを名前で一度だけ実行する', () => {
+    const calls = [];
+    const command = UiEventDelegation.commandFromElement({
+        dataset: { action: 'resolveTV', targetIndex: '3' },
+    }, 'pending');
+    assert.strictEqual(UiEventDelegation.executeCommand(command, {
+        resolveTV(index) { calls.push(index); },
+    }), true);
+    assert.deepStrictEqual(calls, [3]);
+    assert.strictEqual(UiEventDelegation.executeCommand(command, {}), false);
+    assert.strictEqual(UiEventDelegation.executeCommand(null, {}), false);
+});
