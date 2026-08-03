@@ -530,16 +530,12 @@ function chooseCpuPendingAction(cpu) {
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
 function shouldRunCpuPhaseStep(stepName) {
-    if (!game) return false;
-    if (stepName === "roll") return game.phase === GAME_PHASES.ROLL;
-    if (stepName === "selectDice") return game.phase === GAME_PHASES.SELECT_DICE;
-    if (stepName === "rerollConfirm") return game.phase === GAME_PHASES.REROLL_CONFIRM;
-    if (stepName === "harborChoice") return game.phase === GAME_PHASES.HARBOR_CHOICE;
-    if (stepName === "pending") return game.phase === GAME_PHASES.PENDING;
-    if (stepName === "build") return game.phase === GAME_PHASES.BUILD && !game.pendingIT && !game.builtThisTurn;
-    if (stepName === "nextTurn") return game.phase === GAME_PHASES.BUILD && !game.pendingIT;
-    if (stepName === "resolveIT") return !!game.pendingIT;
-    return true;
+    return CpuSchedulerState.shouldRunPhaseStep(stepName, {
+        hasGame: !!game,
+        phase: game && game.phase,
+        pendingIT: !!(game && game.pendingIT),
+        builtThisTurn: !!(game && game.builtThisTurn),
+    }, GAME_PHASES);
 }
 
 const CPU_PHASE_HANDLERS = [
@@ -643,17 +639,24 @@ function isMainOnlineReconnectInputBlocked() {
 }
 
 function cpuScheduleBlockedReason() {
-    if (typeof isReplaying !== 'undefined' && isReplaying) return 'replaying';
-    if (typeof isOnlineGame !== 'undefined' && isOnlineGame && typeof isRoomHost !== 'undefined' && !isRoomHost) return 'non-host';
-    if (typeof isOnlineGame !== 'undefined' && isOnlineGame) {
-        if (isMainOnlineReconnectInputBlocked()) return 'reconnecting';
-        if (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) return 'online-in-flight';
-        if (typeof socket === 'undefined' || !socket || socket.connected === false) return 'socket-disconnected';
-    }
-    if (!game) return 'no-game';
-    if (game.checkWinner && game.checkWinner()) return 'winner';
-    if (!Array.isArray(cpuPlayers) || !cpuPlayers[game.currentPlayerIndex]) return 'human-turn';
-    return '';
+    const online = typeof isOnlineGame !== 'undefined' && isOnlineGame;
+    const transportReason = CpuSchedulerState.blockedReason({
+        isReplaying: typeof isReplaying !== 'undefined' && isReplaying,
+        isOnlineGame: online,
+        isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
+        isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
+        onlineActionInFlight: online && typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        socketConnected: !online || (typeof socket !== 'undefined' && !!socket && socket.connected !== false),
+        hasGame: true,
+        isCpuTurn: true,
+    });
+    if (transportReason) return transportReason;
+    const currentPlayerIndex = game ? game.currentPlayerIndex : null;
+    return CpuSchedulerState.blockedReason({
+        hasGame: !!game,
+        hasWinner: !!(game && game.checkWinner && game.checkWinner()),
+        isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
+    });
 }
 
 function currentCpuTurnSchedulerHealth() {
