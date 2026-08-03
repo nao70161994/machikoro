@@ -7,6 +7,12 @@ const OnlineRuntimeFlags = require('../js/onlineRuntimeFlags');
 const { runTest } = require('./helpers/test-utils');
 
 const EXPECTED_READERS = Object.freeze(['isGameSchemaNegotiationTransportEnabled', 'isGameSchemaWireTransportEnabled', 'isGameSchemaSnapshotWireTransportEnabled', 'isGameSchemaRecreateWireTransportEnabled', 'isOnlineReconnectEventAuthorityEnabled', 'isOnlineReconnectEffectAuthorityEnabled', 'isOnlineReconnectStatusEffectAuthorityEnabled', 'isOnlineReconnectTimerAuthorityEnabled', 'isOnlineReconnectCallbackAuthorityEnabled', 'isOnlineReconnectQueuePlanAuthorityEnabled', 'isOnlineReconnectQueueEffectAuthorityEnabled', 'isOnlineRestoreQueueStateAuthorityEnabled', 'isOnlineRestoreQueueStoreReadAuthorityEnabled', 'isOnlineRestoreQueueStoreWriteAuthorityEnabled', 'isOnlineReconnectCleanupAuthorityEnabled', 'isOnlineReconnectCleanupEffectAuthorityEnabled', 'isOnlineReconnectRequestPlanAuthorityEnabled', 'isOnlineReconnectRequestEffectAuthorityEnabled', 'isOnlineRestoreAbortPlanAuthorityEnabled', 'isOnlineRestoreAbortEffectAuthorityEnabled', 'isOnlineActionTimeoutPlanAuthorityEnabled', 'isOnlineActionTimeoutEffectAuthorityEnabled', 'isIncomingGameActionPlanAuthorityEnabled', 'isAcceptedGameActionPlanAuthorityEnabled', 'isIncomingGameActionDecodeEffectAuthorityEnabled', 'isAcceptedGameActionDecodeEffectAuthorityEnabled', 'isIncomingGameActionApplyEffectAuthorityEnabled', 'isAcceptedGameActionApplyEffectAuthorityEnabled', 'isIncomingGameActionGapEffectAuthorityEnabled', 'isAcceptedGameActionGapEffectAuthorityEnabled', 'isIncomingGameActionNoGameEffectAuthorityEnabled', 'isAcceptedGameActionNoGameEffectAuthorityEnabled', 'isIncomingGameActionCommitEffectAuthorityEnabled', 'isAcceptedGameActionCommitEffectAuthorityEnabled', 'isOnlineSocketConnectPlanAuthorityEnabled', 'isOnlineSocketConnectEffectAuthorityEnabled', 'isOnlineSocketDisconnectPlanAuthorityEnabled', 'isOnlineSocketDisconnectEffectAuthorityEnabled', 'isOnlineHostChangedPlanAuthorityEnabled', 'isOnlineHostChangedEffectAuthorityEnabled', 'isPendingReconciliationPlanAuthorityEnabled', 'isRejoinActionLogPlanAuthorityEnabled', 'isLocalHostRestoreOfferPlanAuthorityEnabled', 'isOnlineRejoinPersistencePlanAuthorityEnabled', 'isOnlineRejoinPersistenceEffectAuthorityEnabled', 'isOnlinePendingResendPlanAuthorityEnabled', 'isOnlinePendingResendEffectAuthorityEnabled', 'isOnlineRestoreReplayPlanAuthorityEnabled', 'isOnlineRestoreReplayEffectAuthorityEnabled', 'isOnlineRestoreActivationPlanAuthorityEnabled', 'isOnlineRestoreActivationEffectAuthorityEnabled', 'isOnlineGameEngineShadowEnabled', 'isOnlineGameEngineAuthorityEnabled']);
+const SCHEMA_TRANSPORT_READERS = Object.freeze([
+    'isGameSchemaNegotiationTransportEnabled',
+    'isGameSchemaWireTransportEnabled',
+    'isGameSchemaSnapshotWireTransportEnabled',
+    'isGameSchemaRecreateWireTransportEnabled',
+]);
 
 runTest('online runtime flagsは全reader名とwindow propertyを一つの正本にする', () => {
     assert.deepStrictEqual(Object.keys(OnlineRuntimeFlags.names), EXPECTED_READERS);
@@ -15,9 +21,18 @@ runTest('online runtime flagsは全reader名とwindow propertyを一つの正本
     assert.ok(Object.isFrozen(OnlineRuntimeFlags.names));
 
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    const schemaTransportSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'onlineSchemaTransport.js'),
+        'utf8'
+    );
     for (const reader of EXPECTED_READERS) {
-        assert.ok(onlineSource.includes("isOnlineRuntimeFlagEnabled('" + reader + "')"), reader);
-        assert.ok(!onlineSource.includes(
+        if (SCHEMA_TRANSPORT_READERS.includes(reader)) {
+            assert.ok(onlineSource.includes('function ' + reader + '('), reader + ' wrapper');
+            assert.ok(schemaTransportSource.includes("isFlagEnabled('" + reader + "')"), reader);
+        } else {
+            assert.ok(onlineSource.includes("isOnlineRuntimeFlagEnabled('" + reader + "')"), reader);
+        }
+        assert.ok(!(onlineSource + schemaTransportSource).includes(
             'window.' + OnlineRuntimeFlags.names[reader] + ' === true'
         ), reader);
     }
