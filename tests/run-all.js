@@ -1,4 +1,4 @@
-const { spawnSync } = require('child_process');
+const { resolveTestConcurrency, runTestFiles } = require('./helpers/test-process-runner');
 const fs = require('fs');
 const path = require('path');
 
@@ -233,6 +233,7 @@ const TEST_GROUPS = {
         'summarize-rl-metrics.test.js',
         'cli-args.test.js',
         'test-utils.test.js',
+        'test-process-runner.test.js',
         'check-static-files.test.js',
         'batch-test-script.test.js',
         'maintenance-lint-config.test.js',
@@ -562,22 +563,20 @@ const testFiles = mode === 'all'
     ? [...TEST_GROUPS.unit, ...TEST_GROUPS.sim]
     : TEST_GROUPS[mode];
 
-let failed = false;
-
-for (const file of testFiles) {
-    console.log(`\n[test] ${file}`);
-    const result = spawnSync(process.execPath, [path.join(__dirname, file)], {
-        cwd: repoRoot,
-        stdio: 'inherit',
-        env: mode === 'cpu-smoke'
-            ? Object.assign({}, process.env, { MACHIKORO_CPU_SMOKE: '1' })
-            : process.env,
+async function main() {
+    const env = mode === 'cpu-smoke'
+        ? Object.assign({}, process.env, { MACHIKORO_CPU_SMOKE: '1' })
+        : process.env;
+    const result = await runTestFiles(testFiles, {
+        concurrency: resolveTestConcurrency(mode),
+        env,
+        repoRoot,
+        testDir: __dirname,
     });
-    if (result.status !== 0) {
-        failed = true;
-    }
+    if (result.failed) process.exitCode = 1;
 }
 
-if (failed) {
-    process.exit(1);
-}
+main().catch(error => {
+    console.error(error && error.stack || error);
+    process.exitCode = 1;
+});
