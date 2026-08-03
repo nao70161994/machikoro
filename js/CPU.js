@@ -2111,9 +2111,13 @@ class CPU {
         );
         if (affordable.length === 0) return false;
 
-        const sorted = affordable
-            .map(card => ({ card, score: this._scoreExpertCrowdAffordable(card, game, current) }))
-            .sort((a, b) => b.score - a.score);
+        const sorted = CPUSelection.stableRankDescending(
+            affordable.map(card => ({
+                card,
+                score: this._scoreExpertCrowdAffordable(card, game, current),
+            })),
+            entry => entry.score
+        );
         const candidatePool = bannedCrowdCards
             ? sorted.filter(entry => !bannedCrowdCards.has(entry.card.name))
             : sorted;
@@ -3395,10 +3399,13 @@ class CPU {
             options.push({ type: 'landmark', name });
         }
         const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
-        const ranked = affordable.map(card => ({
-            card,
-            score: this._scoreExpertCardCandidate(card, game, current),
-        })).sort((a, b) => b.score - a.score);
+        const ranked = CPUSelection.stableRankDescending(
+            affordable.map(card => ({
+                card,
+                score: this._scoreExpertCardCandidate(card, game, current),
+            })),
+            entry => entry.score
+        );
         const candidateLimit = this._expertBuildCandidateLimit(game, current);
         for (const entry of ranked.slice(0, candidateLimit)) {
             if (!this._expertPremiumPurpleReady(entry.card, game, current)) continue;
@@ -3898,9 +3905,13 @@ class CPU {
             this._buyLandmark(targetLandmark.name, game);
             return;
         }
-        const options = this._listStrongBuildOptions(game, shopStock)
-            .map(option => Object.assign({ score: this._scoreStrongBuildOption(game, shopStock, option) }, option))
-            .sort((a, b) => b.score - a.score);
+        const options = CPUSelection.stableRankDescending(
+            this._listStrongBuildOptions(game, shopStock)
+                .map(option => Object.assign({
+                    score: this._scoreStrongBuildOption(game, shopStock, option),
+                }, option)),
+            option => option.score
+        );
         if (options.length === 0) return;
         const best = options[0];
         if (best.type === 'landmark') {
