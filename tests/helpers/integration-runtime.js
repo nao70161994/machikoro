@@ -183,6 +183,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/gameEngineAuthority.js',
         'js/gameEngineClientShadow.js',
         'js/pendingActionQueue.js',
+        'js/gameTurnPolicy.js',
         'js/GameManager.js',
         'js/cpuTuning.js',
         'js/cpuProfile.js',

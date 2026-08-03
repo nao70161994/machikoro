@@ -400,12 +400,7 @@ class GameManager {
             this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`);
         }
 
-        if (!this.pendingTV && !this.pendingBusiness &&
-            !this.pendingCleaning && !this.pendingMover && !this.pendingRenovation) {
-            this.phase = GAME_PHASES.BUILD;
-        } else {
-            this.phase = GAME_PHASES.PENDING;
-        }
+        this.phase = GameTurnPolicy.phaseAfterIncome(this, GAME_PHASES);
     }
 
     _processRed(current, ci, dice) {
@@ -822,15 +817,17 @@ class GameManager {
     }
 
     _doNextTurn() {
-        if (this.hadAmusementParkAtRoll &&
-            this.lastDice1 > 0 && this.lastDice1 === this.lastDice2) {
+        if (GameTurnPolicy.shouldRepeatAmusementParkTurn(this)) {
         /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
             this.phase = GAME_PHASES.ROLL;
             this.resetTurnState({ clearLog: true });
             this.addLog(LOG_TYPES.SYSTEM, `🎡 遊園地効果！ゾロ目でもう一度ターン`);
             return;
         }
-        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        this.currentPlayerIndex = GameTurnPolicy.nextPlayerIndex(
+            this.currentPlayerIndex,
+            this.players.length
+        );
         this.turnCount++;
         /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
         this.phase = GAME_PHASES.ROLL;

@@ -4,6 +4,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/Card.js',
     'js/GameManager.js',
     'js/pendingActionQueue.js',
+    'js/gameTurnPolicy.js',
     'js/CPU.js',
     'js/Player.js',
     'js/RLCPU.js',
@@ -201,6 +202,7 @@ module.exports = [
             globals: {
                 GameActionContract: 'readonly',
                 PendingActionQueue: 'readonly',
+                GameTurnPolicy: 'readonly',
                 AbortController: 'readonly',
                 CARD_CATEGORIES: 'readonly',
                 CARD_EFFECTS: 'readonly',
