@@ -1,6 +1,14 @@
 'use strict';
 
 const UiPendingMenu = (() => {
+    function isPendingDisplayCandidate(options) {
+        return options.phase === options.pendingPhase || !!options.pendingIT || options.pendingRenovation > 0;
+    }
+
+    function shouldShowForCurrentPlayer(options) {
+        return isPendingDisplayCandidate(options) && !!options.isHumanTurn;
+    }
+
     function pendingInspectHintHtml() {
         return `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
     }
@@ -87,7 +95,7 @@ const UiPendingMenu = (() => {
             .join("");
     }
 
-    return Object.freeze({ pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
+    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiPendingMenu;

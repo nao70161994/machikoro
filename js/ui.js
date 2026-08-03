@@ -332,8 +332,17 @@ function renderDiceChoose() {
 }
 
 function shouldShowPendingForCurrentPlayer() {
-    if (game.phase !== GAME_PHASES.PENDING && !game.pendingIT && game.pendingRenovation <= 0) return false;
-    return isCurrentHumanUiTurn();
+    const state = {
+        phase: game.phase,
+        pendingPhase: GAME_PHASES.PENDING,
+        pendingIT: game.pendingIT,
+        pendingRenovation: game.pendingRenovation,
+    };
+    if (!UiPendingMenu.isPendingDisplayCandidate(state)) return false;
+    return UiPendingMenu.shouldShowForCurrentPlayer({
+        ...state,
+        isHumanTurn: isCurrentHumanUiTurn(),
+    });
 }
 
 function normalizePendingModalInteraction(el, modal, hasContent) {

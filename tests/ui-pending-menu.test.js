@@ -38,6 +38,22 @@ function makeGame() {
     };
 }
 
+runTest('ui pending menu はphase・IT・改装とhuman turnから表示gateをpureに判定する', () => {
+    const base = {
+        phase: 'roll',
+        pendingPhase: 'pending',
+        pendingIT: false,
+        pendingRenovation: 0,
+        isHumanTurn: true,
+    };
+    assert.strictEqual(UiPendingMenu.isPendingDisplayCandidate(base), false);
+    assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer(base), false);
+    assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer({ ...base, phase: 'pending' }), true);
+    assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer({ ...base, pendingIT: true }), true);
+    assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer({ ...base, pendingRenovation: 1 }), true);
+    assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer({ ...base, phase: 'pending', isHumanTurn: false }), false);
+});
+
 runTest('ui pending menu はrenderer action/field契約を固定する', () => {
     assert.deepStrictEqual(UiPendingMenu.rendererSpecs(), [
         { field: 'pendingTV', action: 'resolveTV' },
