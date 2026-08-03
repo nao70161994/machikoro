@@ -3618,10 +3618,16 @@ function canPreloadOnlineRlModels() {
 }
 
 function onlineRlModelLoadState(playerCount = onlineSelectedCount) {
-    if (!hasOnlineRlCpuSetting(playerCount)) return { status: 'unused', ready: 0, total: 0, errors: [] };
-    if (!canPreloadOnlineRlModels()) return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
-    if (typeof RLModelPortfolio.eligibleLoadState === "function") return RLModelPortfolio.eligibleLoadState(playerCount);
-    return { status: 'idle', ready: 0, total: 1, errors: [] };
+    const usesRl = hasOnlineRlCpuSetting(playerCount);
+    if (!usesRl) return OnlinePlayerSettings.rlModelLoadState({ usesRl: false, playerCount });
+    const loaderAvailable = canPreloadOnlineRlModels();
+    return OnlinePlayerSettings.rlModelLoadState({
+        usesRl,
+        loaderAvailable,
+        playerCount,
+        eligibleLoadState: loaderAvailable && typeof RLModelPortfolio.eligibleLoadState === "function"
+            ? count => RLModelPortfolio.eligibleLoadState(count) : null,
+    });
 }
 
 function onlineRlModelStatusMessage(state) {

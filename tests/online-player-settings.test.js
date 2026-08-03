@@ -62,6 +62,27 @@ runTest('online player settingsはsnapshot・相手difficulty・RL判定を固�
 });
 
 
+runTest('online player settingsはRL loader状態を既存優先順でpureに解決する', () => {
+    assert.deepStrictEqual(OnlinePlayerSettings.rlModelLoadState({ usesRl: false }), {
+        status: 'unused', ready: 0, total: 0, errors: [],
+    });
+    assert.deepStrictEqual(OnlinePlayerSettings.rlModelLoadState({ usesRl: true, loaderAvailable: false }), {
+        status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'],
+    });
+    assert.deepStrictEqual(OnlinePlayerSettings.rlModelLoadState({ usesRl: true, loaderAvailable: true }), {
+        status: 'idle', ready: 0, total: 1, errors: [],
+    });
+    const ready = { status: 'ready', ready: 2, total: 2, errors: [] };
+    const calls = [];
+    assert.strictEqual(OnlinePlayerSettings.rlModelLoadState({
+        usesRl: true,
+        loaderAvailable: true,
+        playerCount: 4,
+        eligibleLoadState: count => { calls.push(count); return ready; },
+    }), ready);
+    assert.deepStrictEqual(calls, [4]);
+});
+
 runTest('online player settingsはRL状態とpendingからロビー表示だけを純粋計算する', () => {
     assert.strictEqual(OnlinePlayerSettings.rlModelStatusMessage({ status: 'unused' }), '');
     assert.strictEqual(OnlinePlayerSettings.rlModelStatusMessage({ status: 'ready' }), '深層学習AIモデルの準備が完了しました。');

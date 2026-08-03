@@ -71,6 +71,17 @@ const OnlinePlayerSettings = (() => {
             .some(setting => setting && setting.type === 'cpu' && setting.difficulty === 'rl');
     }
 
+    function rlModelLoadState(options = {}) {
+        if (!options.usesRl) return { status: 'unused', ready: 0, total: 0, errors: [] };
+        if (!options.loaderAvailable) {
+            return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
+        }
+        if (typeof options.eligibleLoadState === 'function') {
+            return options.eligibleLoadState(options.playerCount);
+        }
+        return { status: 'idle', ready: 0, total: 1, errors: [] };
+    }
+
     function rlModelStatusMessage(state) {
         if (!state || state.status === 'unused') return '';
         if (state.status === 'ready') return '深層学習AIモデルの準備が完了しました。';
@@ -108,6 +119,7 @@ const OnlinePlayerSettings = (() => {
         freezeForCreate,
         snapshot,
         hasRlCpu,
+        rlModelLoadState,
         rlModelStatusMessage,
         createButtonView,
         joinButtonView,
