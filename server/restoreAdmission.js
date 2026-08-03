@@ -16,6 +16,11 @@ function makeRestoreAdmission({
     hashReconnectToken,
     isValidRestoreReconnectTokenHashes,
     buildRestoredHumanPlayers,
+    sanitizeRestoreActionLog,
+    restoreAuditSecret,
+    canReplaceRestoredRoom,
+    isIncomingRestoreNewer,
+    decideExistingRoomRestore,
 }) {
     const dependencies = {
         isPlainObject,
@@ -129,10 +134,88 @@ function makeRestoreAdmission({
         });
     }
 
+    function planExistingRoomRestoreAdmission(input = {}) {
+        const {
+            room,
+            roomId,
+            playerIndex,
+            playerName,
+            reconnectToken,
+            actionLog,
+            replayStateSnapshot,
+            canonicalRecord,
+            gameStartPayload,
+            clientSnapshotTrusted,
+        } = input;
+        if (!room.started) return reject('同じルームIDが既に使用されています');
+        const existingReconnectTokenHash = getExpectedReconnectTokenHash(
+            room,
+            playerIndex,
+            playerName
+        );
+        const existingRestoreAuthenticated = Number.isInteger(playerIndex) &&
+            existingReconnectTokenHash &&
+            hashReconnectToken(reconnectToken) === existingReconnectTokenHash;
+        const existingHostRestoreAuthenticated = existingRestoreAuthenticated &&
+            room.hostPlayerIndex === playerIndex;
+        const rawSanitizedActionLog = sanitizeRestoreActionLog(
+            actionLog,
+            roomId,
+            replayStateSnapshot,
+            { requireSignedActionAudit: !!restoreAuditSecret() && !canonicalRecord }
+        );
+        const sanitizedActionLog = rawSanitizedActionLog || [];
+        const incomingRestoreLogValid = rawSanitizedActionLog !== null;
+        const incomingCanReplace = incomingRestoreLogValid &&
+            isValidGameStartPayload(
+                gameStartPayload,
+                Array.isArray(gameStartPayload.playerNames) ? gameStartPayload.playerNames.length : 0
+            ) &&
+            !hasInvalidOnlineRlModelSettings(gameStartPayload.playerSettings) &&
+            existingHostRestoreAuthenticated &&
+            clientSnapshotTrusted &&
+            canReplaceRestoredRoom(
+                room,
+                playerIndex,
+                gameStartPayload,
+                replayStateSnapshot,
+                sanitizedActionLog
+            );
+        const incomingRestoreNewer = !incomingCanReplace && existingHostRestoreAuthenticated &&
+            isIncomingRestoreNewer(
+                room,
+                gameStartPayload,
+                replayStateSnapshot,
+                sanitizedActionLog
+            );
+        const decision = decideExistingRoomRestore({
+            incomingCanReplace,
+            existingHostRestoreAuthenticated: !!existingHostRestoreAuthenticated,
+            incomingRestoreNewer: !!incomingRestoreNewer,
+        });
+        if (decision.action === 'replace') {
+            return Object.freeze({ ok: true, action: 'replace' });
+        }
+        if (decision.action === 'reject') {
+            return reject('復元データが壊れています');
+        }
+        const expectedReconnectTokenHash = getExpectedReconnectTokenHash(
+            room,
+            playerIndex,
+            playerName
+        );
+        if (!expectedReconnectTokenHash ||
+            hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
+            return reject('INVALID_TOKEN');
+        }
+        return Object.freeze({ ok: true, action: 'rejoin' });
+    }
+
     return Object.freeze({
         planRestoreAdmission,
         planRestoreGameStartAdmission,
         planRestoreIdentityAdmission,
+        planExistingRoomRestoreAdmission,
     });
 }
 

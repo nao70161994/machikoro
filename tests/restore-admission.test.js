@@ -43,6 +43,18 @@ function makeHarness(overrides = {}) {
         hashReconnectToken: () => { calls.push('hash-token'); return 'expected-hash'; },
         isValidRestoreReconnectTokenHashes: () => { calls.push('token-hashes'); return true; },
         buildRestoredHumanPlayers: () => { calls.push('players'); return [{ index: 0 }]; },
+        sanitizeRestoreActionLog: log => { calls.push('sanitize-existing'); return log; },
+        restoreAuditSecret: () => { calls.push('secret-existing'); return 'secret'; },
+        canReplaceRestoredRoom: () => { calls.push('replace-existing'); return true; },
+        isIncomingRestoreNewer: () => { calls.push('newer-existing'); return false; },
+        decideExistingRoomRestore: input => {
+            calls.push('decision-existing');
+            if (input.incomingCanReplace) return { action: 'replace' };
+            if (input.existingHostRestoreAuthenticated && input.incomingRestoreNewer) {
+                return { action: 'reject' };
+            }
+            return { action: 'rejoin' };
+        },
         ...overrides,
     };
     const admission = makeRestoreAdmission(dependencies);
@@ -52,6 +64,7 @@ function makeHarness(overrides = {}) {
         plan: admission.planRestoreAdmission,
         planGameStart: admission.planRestoreGameStartAdmission,
         planIdentity: admission.planRestoreIdentityAdmission,
+        planExisting: admission.planExistingRoomRestoreAdmission,
     };
 }
 
@@ -208,6 +221,110 @@ runTest('restore game-start admissionは検証後の設定と元playerNames参�
     assert.strictEqual(result.playerNames, harness.payload.gameStartPayload.playerNames);
     assert.strictEqual(result.playerSettings, normalized);
     assert.strictEqual(harness.payload.gameStartPayload.playerSettings.length, 1);
+});
+
+function existingRoomInput(harness, overrides = {}) {
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+    };
+    return {
+        room: { started: true, hostPlayerIndex: 1 },
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        actionLog: [{ action: 'nextTurn', seq: 8 }],
+        replayStateSnapshot: { actionSeq: 7 },
+        canonicalRecord: null,
+        gameStartPayload,
+        clientSnapshotTrusted: true,
+        ...overrides,
+    };
+}
+
+runTest('existing room restore admissionは未開始roomをtoken処理前に拒否する', () => {
+    const harness = makeHarness();
+    assert.deepStrictEqual(harness.planExisting(existingRoomInput(harness, {
+        room: { started: false, hostPlayerIndex: 1 },
+    })), {
+        ok: false,
+        errorMessage: '同じルームIDが既に使用されています',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, []);
+});
+
+runTest('existing room restore admissionはhost認証とsanitize後だけ置換を許可する', () => {
+    const harness = makeHarness({
+        sanitizeRestoreActionLog: (log, roomId, snapshot, options) => {
+            harness.calls.push('sanitize-existing');
+            const input = existingRoomInput(harness);
+            assert.strictEqual(log[0].seq, input.actionLog[0].seq);
+            assert.strictEqual(roomId, input.roomId);
+            assert.strictEqual(snapshot.actionSeq, input.replayStateSnapshot.actionSeq);
+            assert.deepStrictEqual(options, { requireSignedActionAudit: true });
+            return log;
+        },
+    });
+    const result = harness.planExisting(existingRoomInput(harness));
+    assert.deepStrictEqual(result, { ok: true, action: 'replace' });
+    assert.strictEqual(Object.isFrozen(result), true);
+    assert.deepStrictEqual(harness.calls, [
+        'expected-token',
+        'hash-token',
+        'secret-existing',
+        'sanitize-existing',
+        'game-start',
+        'rl',
+        'replace-existing',
+        'decision-existing',
+    ]);
+});
+
+runTest('existing room restore admissionはnewerなhost復元破損を再join前に拒否する', () => {
+    const harness = makeHarness({
+        canReplaceRestoredRoom: () => { harness.calls.push('replace-existing'); return false; },
+        isIncomingRestoreNewer: () => { harness.calls.push('newer-existing'); return true; },
+    });
+    assert.deepStrictEqual(harness.planExisting(existingRoomInput(harness)), {
+        ok: false,
+        errorMessage: '復元データが壊れています',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, [
+        'expected-token', 'hash-token', 'secret-existing', 'sanitize-existing',
+        'game-start', 'rl', 'replace-existing', 'newer-existing', 'decision-existing',
+    ]);
+});
+
+runTest('existing room restore admissionは通常再join時に既存どおりtokenを再確認する', () => {
+    const harness = makeHarness({
+        canReplaceRestoredRoom: () => { harness.calls.push('replace-existing'); return false; },
+    });
+    assert.deepStrictEqual(harness.planExisting(existingRoomInput(harness)), {
+        ok: true,
+        action: 'rejoin',
+    });
+    assert.deepStrictEqual(harness.calls, [
+        'expected-token', 'hash-token', 'secret-existing', 'sanitize-existing',
+        'game-start', 'rl', 'replace-existing', 'newer-existing', 'decision-existing',
+        'expected-token', 'hash-token',
+    ]);
+});
+
+runTest('existing room restore admissionはsanitize失敗を置換根拠にせず再joinへ倒す', () => {
+    const harness = makeHarness({
+        sanitizeRestoreActionLog: () => { harness.calls.push('sanitize-existing'); return null; },
+    });
+    assert.deepStrictEqual(harness.planExisting(existingRoomInput(harness)), {
+        ok: true,
+        action: 'rejoin',
+    });
+    assert.deepStrictEqual(harness.calls, [
+        'expected-token', 'hash-token', 'secret-existing', 'sanitize-existing',
+        'newer-existing', 'decision-existing', 'expected-token', 'hash-token',
+    ]);
 });
 
 function identityInput(harness, overrides = {}) {
