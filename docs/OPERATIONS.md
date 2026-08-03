@@ -158,6 +158,9 @@ When changing online/server/UI safety code, keep these contracts covered by targ
 - `server/rejoinPayload.js` owns negotiated Snapshot wire composition. Keep `GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED` default OFF and preserve the raw payload, schema selection, null-on-encode-rejection, event name, and send order.
 - `js/uiWatchdog.js` owns sorted freeze-issue dedupe signatures. Reporting dedupe must never suppress recovery; DOM reads, dedupe state, and recovery effects remain in `appShell.js`.
 - `js/clientReporting.js` owns browser error/rejection/console input projection, but browser handler binding, console replacement, dedupe, transport, and crash-screen effects remain in `appShell.js`.
+- `js/clientRuntimeSnapshot.js` owns only the mapping from captured game, CPU, online, and DOM facts to the existing watchdog diagnostic schema. Keep browser reads, clocks, recovery, storage, and reporting effects in `appShell.js`.
+- `js/storedOnlineReconnect.js` owns the validated stored-session application and effect order; do not move the `onlineSession` key, payload format, or Socket callbacks out of their current owners.
+- `js/localGameStart.js` owns local start decisions and effect order; RL preload Promise handling, CPU construction, DOM access, and real initialization remain in `main.js`.
 - `server/gameSettings.js` owns the CPU difficulty display labels used by room lifecycle. Preserve the hoisted `server.js` adapter because room-lifecycle dependency wiring executes before the settings instance is created.
 
 These are compatibility guardrails, not design expansion points. Do not weaken them to unblock a broader refactor; add a focused regression test instead.
