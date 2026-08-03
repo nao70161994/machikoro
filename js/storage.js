@@ -218,9 +218,9 @@ function reconnectOnline() {
             switchToOnlineTab() {
                 switchTab('online');
             },
-            emitRejoin(value) {
+            emitRejoin(session) {
                 return typeof _emitOnlineRejoinRequest === 'function' &&
-                    _emitOnlineRejoinRequest(value);
+                    _emitOnlineRejoinRequest(session);
             },
         });
         if (result.kind === 'rejoin-send-failed') {
