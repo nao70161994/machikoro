@@ -54,6 +54,19 @@ runTest('ui pending menu はphase・IT・改装とhuman turnから表示gateをp
     assert.strictEqual(UiPendingMenu.shouldShowForCurrentPlayer({ ...base, phase: 'pending', isHumanTurn: false }), false);
 });
 
+runTest('ui pending menu はcontent有無を既存modal styleへpureに投影する', () => {
+    assert.deepStrictEqual(UiPendingMenu.pendingModalInteractionView(true), {
+        modal: { display: 'flex', visibility: 'visible', opacity: '1', pointerEvents: 'auto', transform: '' },
+        content: { visibility: 'visible', opacity: '1', pointerEvents: 'auto' },
+        inner: { visibility: 'visible', opacity: '1', pointerEvents: 'auto' },
+    });
+    assert.deepStrictEqual(UiPendingMenu.pendingModalInteractionView(false), {
+        modal: { display: 'none', visibility: '', opacity: '', pointerEvents: '', transform: '' },
+        content: { visibility: '', opacity: '', pointerEvents: '' },
+        inner: null,
+    });
+});
+
 runTest('ui pending menu はrenderer action/field契約を固定する', () => {
     assert.deepStrictEqual(UiPendingMenu.rendererSpecs(), [
         { field: 'pendingTV', action: 'resolveTV' },

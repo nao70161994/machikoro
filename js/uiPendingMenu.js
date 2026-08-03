@@ -9,6 +9,29 @@ const UiPendingMenu = (() => {
         return isPendingDisplayCandidate(options) && !!options.isHumanTurn;
     }
 
+    function pendingModalInteractionView(hasContent) {
+        const visible = !!hasContent;
+        return Object.freeze({
+            modal: Object.freeze({
+                display: visible ? 'flex' : 'none',
+                visibility: visible ? 'visible' : '',
+                opacity: visible ? '1' : '',
+                pointerEvents: visible ? 'auto' : '',
+                transform: '',
+            }),
+            content: Object.freeze({
+                visibility: visible ? 'visible' : '',
+                opacity: visible ? '1' : '',
+                pointerEvents: visible ? 'auto' : '',
+            }),
+            inner: visible ? Object.freeze({
+                visibility: 'visible',
+                opacity: '1',
+                pointerEvents: 'auto',
+            }) : null,
+        });
+    }
+
     function pendingInspectHintHtml() {
         return `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
     }
@@ -95,7 +118,7 @@ const UiPendingMenu = (() => {
             .join("");
     }
 
-    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
+    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiPendingMenu;

@@ -346,26 +346,15 @@ function shouldShowPendingForCurrentPlayer() {
 }
 
 function normalizePendingModalInteraction(el, modal, hasContent) {
+    const view = UiPendingMenu.pendingModalInteractionView(hasContent);
     if (modal && modal.style) {
-        modal.style.display = hasContent ? "flex" : "none";
-        modal.style.visibility = hasContent ? "visible" : "";
-        modal.style.opacity = hasContent ? "1" : "";
-        modal.style.pointerEvents = hasContent ? "auto" : "";
-        modal.style.transform = hasContent ? "" : "";
-        if (hasContent && typeof modal.querySelector === 'function') {
+        Object.assign(modal.style, view.modal);
+        if (view.inner && typeof modal.querySelector === 'function') {
             const inner = modal.querySelector('.pending-modal-inner');
-            if (inner && inner.style) {
-                inner.style.visibility = 'visible';
-                inner.style.opacity = '1';
-                inner.style.pointerEvents = 'auto';
-            }
+            if (inner && inner.style) Object.assign(inner.style, view.inner);
         }
     }
-    if (el && el.style) {
-        el.style.visibility = hasContent ? "visible" : "";
-        el.style.opacity = hasContent ? "1" : "";
-        el.style.pointerEvents = hasContent ? "auto" : "";
-    }
+    if (el && el.style) Object.assign(el.style, view.content);
 }
 
 function updatePendingModalContent(el, modal, html) {
