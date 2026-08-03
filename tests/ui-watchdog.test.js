@@ -102,6 +102,23 @@ assert.strictEqual(UiWatchdog.classifySnapshot({
     hasWinner: true,
 }, { onlineActionTimedOut: true }, kinds), '');
 
+assert.strictEqual(UiWatchdog.shouldRequireActionChildren('rollDice'), true);
+assert.strictEqual(UiWatchdog.shouldRequireActionChildren('buildCard', {
+    builtThisTurn: false, hasBuildableCardCandidate: true,
+}), true);
+assert.strictEqual(UiWatchdog.shouldRequireActionChildren('buildCard', {
+    builtThisTurn: false, hasBuildableCardCandidate: false,
+}), false);
+assert.strictEqual(UiWatchdog.shouldRequireActionChildren('buildLandmark', {
+    builtThisTurn: true, hasBuildableLandmarkCandidate: true,
+}), false);
+assert.strictEqual(UiWatchdog.shouldRequireActionChildren('undoBuild', {
+    builtThisTurn: true, hasUndoState: true,
+}), true);
+assert.strictEqual(UiWatchdog.shouldRequireActionChildren('undoBuild', {
+    builtThisTurn: true, hasUndoState: false,
+}), false);
+
 assert.strictEqual(UiWatchdog.hasPendingWork({ pendingFields: { pendingIT: true } }), true);
 assert.strictEqual(UiWatchdog.hasPendingWork({ pendingFields: {} }), false);
 assert.strictEqual(UiWatchdog.stateKey({

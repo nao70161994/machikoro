@@ -88,6 +88,14 @@ const UiWatchdog = (() => {
         return '';
     }
 
+    function shouldRequireActionChildren(action, facts = {}) {
+        if ((action === 'buildCard' || action === 'buildLandmark') && facts.builtThisTurn) return false;
+        if (action === 'buildCard') return facts.hasBuildableCardCandidate === true;
+        if (action === 'buildLandmark') return facts.hasBuildableLandmarkCandidate === true;
+        if (action === 'undoBuild') return facts.hasUndoState === true && facts.builtThisTurn === true;
+        return true;
+    }
+
     function compactElementSnapshotForStorage(state) {
         if (!state) return null;
         return {
@@ -585,6 +593,7 @@ const UiWatchdog = (() => {
         isActiveGameScreenRecoverySnapshot,
         shouldRestoreGameScreenDisplay,
         isPostBuildNextTurnSnapshot,
+        shouldRequireActionChildren,
         isExplicitModalOpen,
         isStaleConfirmModalSnapshot,
         isStalePendingModalSnapshot,

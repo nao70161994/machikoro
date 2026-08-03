@@ -135,17 +135,19 @@ function expectedChildSpecForAction(action) {
 
 function expectedChildSpecForEntry(snapshot, entry) {
     const action = entry && entry.action || '';
-    if ((action === 'buildCard' || action === 'buildLandmark') && snapshot && snapshot.builtThisTurn) return null;
-    if (action === 'buildCard' && !hasBuildableCardCandidate()) return null;
-    if (action === 'buildLandmark' && !hasBuildableLandmarkCandidate()) return null;
+    let hasUndoState = false;
     if (action === 'undoBuild') {
         try {
-            if (typeof undoState === 'undefined' || !undoState || !(snapshot && snapshot.builtThisTurn)) return null;
-        } catch (_) {
-            return null;
-        }
+            hasUndoState = typeof undoState !== 'undefined' && !!undoState;
+        } catch (_) {}
     }
-    return expectedChildSpecForAction(action);
+    const required = UiWatchdog.shouldRequireActionChildren(action, {
+        builtThisTurn: !!(snapshot && snapshot.builtThisTurn),
+        hasBuildableCardCandidate: action === 'buildCard' && hasBuildableCardCandidate(),
+        hasBuildableLandmarkCandidate: action === 'buildLandmark' && hasBuildableLandmarkCandidate(),
+        hasUndoState,
+    });
+    return required ? expectedChildSpecForAction(action) : null;
 }
 
 function expectedChildActionsForAction(action) {
