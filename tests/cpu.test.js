@@ -88,6 +88,36 @@ runTest('CPU live expert option policyは既存v2simple既定値を入力非破�
         expertPreset: 'rush',
     });
 });
+runTest('CPU runtime configはconstructor optionを入力非破壊で完全投影する', () => {
+    const source = {
+        expertPurpose: 'live',
+        expertPreset: 'v2simple',
+        expertComboWeight: 0,
+        expertLandmarkCostWeight: Infinity,
+        expertBehaviorFlags: { futureLandmarkHold: false },
+        expertOpponentDifficulties: ['human', 'strong'],
+        expertProfileTunings: { duel: { coinWeight: 9 } },
+    };
+    const original = structuredClone(source);
+    const config = runtime.resolveCpuRuntimeConfig('expert', source);
+    const cpu = new CPU('expert', source);
+    assert.deepStrictEqual(source, original);
+    assert.ok(Object.isFrozen(config));
+    for (const key of Object.keys(config)) {
+        assert.deepStrictEqual(cpu[key], config[key]);
+    }
+    assert.strictEqual(config.expertPurpose, 'live');
+    assert.strictEqual(config.simulationMode, 'realtime');
+    assert.strictEqual(config.expertBusinessMode, 'simple');
+    assert.strictEqual(config.expertComboWeight, 0);
+    assert.strictEqual(config.expertLandmarkCostWeight, 0.12);
+    assert.strictEqual(config.expertBehaviorFlags.futureLandmarkHold, false);
+    assert.notStrictEqual(config.expertBehaviorFlags, source.expertBehaviorFlags);
+    assert.notStrictEqual(config.expertOpponentDifficulties, source.expertOpponentDifficulties);
+    assert.notStrictEqual(config.expertProfileTunings, source.expertProfileTunings);
+    assert.notStrictEqual(config.expertTuning, config.baseExpertTuning);
+});
+
 runTest('CPU finite option helper は0を保持し非数値だけfallbackする', () => {
     assert.strictEqual(CPU._finiteOption({ value: 0 }, 'value', 9), 0);
     assert.strictEqual(CPU._finiteOption({ value: 0.25 }, 'value', 9), 0.25);

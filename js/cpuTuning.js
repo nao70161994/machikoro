@@ -139,6 +139,85 @@
         if (!resolved.expertAirportSkipMode) resolved.expertAirportSkipMode = "whenNoLandmark";
         return resolved;
     }
+    /**
+     * @param {string} difficulty
+     * @param {Record<string, any>} options
+     * @returns {Readonly<Record<string, any>>}
+     */
+    function resolveCpuRuntimeConfig(difficulty, options = {}) {
+        const presetName = options.expertPreset || "default";
+        const expertDefaults = Object.assign(
+            {},
+            CPU_EXPERT_DEFAULT_OPTIONS,
+            CPU_EXPERT_DEFAULT_OPTIONS.byPreset[presetName] || {}
+        );
+        const expertPreset = options.expertPreset || expertDefaults.expertPreset;
+        const finiteOption = (key, fallback) => Number.isFinite(options[key])
+            ? options[key]
+            : fallback;
+        const baseExpertTuning = Object.assign(
+            {},
+            CPU_EXPERT_PRESETS.default,
+            CPU_EXPERT_PRESETS[expertPreset] || {},
+            options.expertTuning || {}
+        );
+        return Object.freeze({
+            difficulty,
+            expertPurpose: options.expertPurpose || expertDefaults.expertPurpose,
+            expertBehaviorFlags: Object.assign({
+                crowdBuildLookahead: difficulty === "expert",
+                futureLandmarkHold: difficulty === "expert",
+                lookaheadLeaderStrongOnly: difficulty === "expert",
+            }, options.expertBehaviorFlags || {}),
+            simulationMode: options.simulationMode || (
+                difficulty === "expert" && (options.expertPurpose || expertDefaults.expertPurpose) === "live"
+                    ? expertDefaults.liveSimulationMode
+                    : expertDefaults.simulationMode
+            ),
+            expertPreset,
+            expertDiceMode: options.expertDiceMode || expertDefaults.expertDiceMode,
+            expertRerollMode: options.expertRerollMode || expertDefaults.expertRerollMode,
+            expertBuildMode: options.expertBuildMode || expertDefaults.expertBuildMode,
+            expertInvestMode: options.expertInvestMode || expertDefaults.expertInvestMode,
+            expertTvMode: options.expertTvMode || expertDefaults.expertTvMode,
+            expertBusinessMode: options.expertBusinessMode || expertDefaults.expertBusinessMode,
+            expertCleaningMode: options.expertCleaningMode || expertDefaults.expertCleaningMode,
+            expertHarborMode: options.expertHarborMode || expertDefaults.expertHarborMode,
+            expertHarborMargin: finiteOption('expertHarborMargin', 0),
+            expertMoverMode: options.expertMoverMode || expertDefaults.expertMoverMode,
+            expertRenovationMode: options.expertRenovationMode || expertDefaults.expertRenovationMode,
+            expertRerollMargin: finiteOption('expertRerollMargin', 0),
+            expertIncomeCapMode: options.expertIncomeCapMode || expertDefaults.expertIncomeCapMode,
+            expertComboMode: options.expertComboMode || expertDefaults.expertComboMode,
+            expertComboWeight: finiteOption('expertComboWeight', 0.35),
+            expertBuildTempoWeight: finiteOption('expertBuildTempoWeight', 0),
+            expertRollRiskMode: options.expertRollRiskMode || expertDefaults.expertRollRiskMode,
+            expertRollRedRiskWeight: finiteOption('expertRollRedRiskWeight', 0),
+            expertAirportSkipMode: options.expertAirportSkipMode || expertDefaults.expertAirportSkipMode,
+            expertLandmarkCardMargin: finiteOption('expertLandmarkCardMargin', 25),
+            expertLandmarkCardCompareMode: options.expertLandmarkCardCompareMode || expertDefaults.expertLandmarkCardCompareMode,
+            expertLandmarkCardCompareTargets: options.expertLandmarkCardCompareTargets || expertDefaults.expertLandmarkCardCompareTargets,
+            expertLandmarkCardPenaltyMode: options.expertLandmarkCardPenaltyMode || expertDefaults.expertLandmarkCardPenaltyMode,
+            expertHarborLandmarkBaseBonus: finiteOption('expertHarborLandmarkBaseBonus', 2.5),
+            expertLandmarkProgressRemaining: finiteOption('expertLandmarkProgressRemaining', 3),
+            expertLandmarkCostWeight: finiteOption('expertLandmarkCostWeight', 0.12),
+            expertTraceStats: options.expertTraceStats || null,
+            expertOpponentDifficulties: Array.isArray(options.expertOpponentDifficulties)
+                ? options.expertOpponentDifficulties.slice()
+                : null,
+            profileStats: options.profileStats || null,
+            expertProfilePresets: Object.assign({}, options.expertProfilePresets || {}),
+            expertProfileTunings: Object.assign(
+                {},
+                difficulty === "expert" ? CPU_EXPERT_PROFILE_TUNINGS : {},
+                options.expertProfileTunings || {}
+            ),
+            baseExpertTuning,
+            activeExpertPreset: expertPreset,
+            expertTuning: Object.assign({}, baseExpertTuning),
+        });
+    }
+
     const CPU_EXPERT_PROFILE_TUNINGS = freezeEntries({
         duel: {
             lowValueSpamPenalty: 5.1,
@@ -172,6 +251,7 @@
     global.CPU_EXPERT_PRESETS = CPU_EXPERT_PRESETS;
     global.CPU_EXPERT_PROFILE_TUNINGS = CPU_EXPERT_PROFILE_TUNINGS;
     global.resolveLiveExpertOptions = resolveLiveExpertOptions;
+    /** @type {any} */ (global).resolveCpuRuntimeConfig = resolveCpuRuntimeConfig;
 
     if (typeof module !== "undefined" && module.exports) {
         module.exports = {
@@ -179,6 +259,7 @@
             CPU_EXPERT_PRESETS,
             CPU_EXPERT_PROFILE_TUNINGS,
             resolveLiveExpertOptions,
+            resolveCpuRuntimeConfig,
         };
     }
 })(typeof globalThis !== "undefined" ? globalThis : this);

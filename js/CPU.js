@@ -1,67 +1,49 @@
 /** @typedef {{action: 'buildCard'|'buildLandmark', data: Object}} CPUBuildActionProposal */
 class CPU {
     constructor(difficulty, options = {}) {
-        this.difficulty = difficulty;
-        const expertDefaults = CPU._defaultExpertOptions(options.expertPreset || "default");
-        this.expertPurpose = options.expertPurpose || expertDefaults.expertPurpose;
-        this.expertBehaviorFlags = Object.assign(
-            {
-                crowdBuildLookahead: difficulty === "expert",
-                futureLandmarkHold: difficulty === "expert",
-                lookaheadLeaderStrongOnly: difficulty === "expert",
-            },
-            options.expertBehaviorFlags || {}
+        const runtimeConfig = /** @type {any} */ (globalThis).resolveCpuRuntimeConfig(
+            difficulty,
+            options
         );
-        this.simulationMode = options.simulationMode || (
-            difficulty === "expert" && this.expertPurpose === "live"
-                ? expertDefaults.liveSimulationMode
-                : expertDefaults.simulationMode
-        );
-        this.expertPreset = options.expertPreset || expertDefaults.expertPreset;
-        this.expertDiceMode = options.expertDiceMode || expertDefaults.expertDiceMode;
-        this.expertRerollMode = options.expertRerollMode || expertDefaults.expertRerollMode;
-        this.expertBuildMode = options.expertBuildMode || expertDefaults.expertBuildMode;
-        this.expertInvestMode = options.expertInvestMode || expertDefaults.expertInvestMode;
-        this.expertTvMode = options.expertTvMode || expertDefaults.expertTvMode;
-        this.expertBusinessMode = options.expertBusinessMode || expertDefaults.expertBusinessMode;
-        this.expertCleaningMode = options.expertCleaningMode || expertDefaults.expertCleaningMode;
-        this.expertHarborMode = options.expertHarborMode || expertDefaults.expertHarborMode;
-        this.expertHarborMargin = CPU._finiteOption(options, 'expertHarborMargin', 0);
-        this.expertMoverMode = options.expertMoverMode || expertDefaults.expertMoverMode;
-        this.expertRenovationMode = options.expertRenovationMode || expertDefaults.expertRenovationMode;
-        this.expertRerollMargin = CPU._finiteOption(options, 'expertRerollMargin', 0);
-        this.expertIncomeCapMode = options.expertIncomeCapMode || expertDefaults.expertIncomeCapMode;
-        this.expertComboMode = options.expertComboMode || expertDefaults.expertComboMode;
-        this.expertComboWeight = CPU._finiteOption(options, 'expertComboWeight', 0.35);
-        this.expertBuildTempoWeight = CPU._finiteOption(options, 'expertBuildTempoWeight', 0);
-        this.expertRollRiskMode = options.expertRollRiskMode || expertDefaults.expertRollRiskMode;
-        this.expertRollRedRiskWeight = CPU._finiteOption(options, 'expertRollRedRiskWeight', 0);
-        this.expertAirportSkipMode = options.expertAirportSkipMode || expertDefaults.expertAirportSkipMode;
-        this.expertLandmarkCardMargin = CPU._finiteOption(options, 'expertLandmarkCardMargin', 25);
-        this.expertLandmarkCardCompareMode = options.expertLandmarkCardCompareMode || expertDefaults.expertLandmarkCardCompareMode;
-        this.expertLandmarkCardCompareTargets = options.expertLandmarkCardCompareTargets || expertDefaults.expertLandmarkCardCompareTargets;
-        this.expertLandmarkCardPenaltyMode = options.expertLandmarkCardPenaltyMode || expertDefaults.expertLandmarkCardPenaltyMode;
-        this.expertHarborLandmarkBaseBonus = CPU._finiteOption(options, 'expertHarborLandmarkBaseBonus', 2.5);
-        this.expertLandmarkProgressRemaining = CPU._finiteOption(options, 'expertLandmarkProgressRemaining', 3);
-        this.expertLandmarkCostWeight = CPU._finiteOption(options, 'expertLandmarkCostWeight', 0.12);
-        this.expertTraceStats = options.expertTraceStats || null;
-        this.expertOpponentDifficulties = Array.isArray(options.expertOpponentDifficulties)
-            ? options.expertOpponentDifficulties.slice()
-            : null;
-        this.profileStats = options.profileStats || null;
-        this.expertProfilePresets = Object.assign({}, options.expertProfilePresets || {});
-        this.expertProfileTunings = Object.assign(
-            {},
-            difficulty === "expert" ? CPU._defaultExpertProfileTunings() : {},
-            options.expertProfileTunings || {}
-        );
-        this.baseExpertTuning = Object.assign(
-            {},
-            CPU._resolveExpertTuning(this.expertPreset),
-            options.expertTuning || {}
-        );
-        this.activeExpertPreset = this.expertPreset;
-        this.expertTuning = Object.assign({}, this.baseExpertTuning);
+        this.difficulty = runtimeConfig.difficulty;
+        this.expertPurpose = runtimeConfig.expertPurpose;
+        this.expertBehaviorFlags = runtimeConfig.expertBehaviorFlags;
+        this.simulationMode = runtimeConfig.simulationMode;
+        this.expertPreset = runtimeConfig.expertPreset;
+        this.expertDiceMode = runtimeConfig.expertDiceMode;
+        this.expertRerollMode = runtimeConfig.expertRerollMode;
+        this.expertBuildMode = runtimeConfig.expertBuildMode;
+        this.expertInvestMode = runtimeConfig.expertInvestMode;
+        this.expertTvMode = runtimeConfig.expertTvMode;
+        this.expertBusinessMode = runtimeConfig.expertBusinessMode;
+        this.expertCleaningMode = runtimeConfig.expertCleaningMode;
+        this.expertHarborMode = runtimeConfig.expertHarborMode;
+        this.expertHarborMargin = runtimeConfig.expertHarborMargin;
+        this.expertMoverMode = runtimeConfig.expertMoverMode;
+        this.expertRenovationMode = runtimeConfig.expertRenovationMode;
+        this.expertRerollMargin = runtimeConfig.expertRerollMargin;
+        this.expertIncomeCapMode = runtimeConfig.expertIncomeCapMode;
+        this.expertComboMode = runtimeConfig.expertComboMode;
+        this.expertComboWeight = runtimeConfig.expertComboWeight;
+        this.expertBuildTempoWeight = runtimeConfig.expertBuildTempoWeight;
+        this.expertRollRiskMode = runtimeConfig.expertRollRiskMode;
+        this.expertRollRedRiskWeight = runtimeConfig.expertRollRedRiskWeight;
+        this.expertAirportSkipMode = runtimeConfig.expertAirportSkipMode;
+        this.expertLandmarkCardMargin = runtimeConfig.expertLandmarkCardMargin;
+        this.expertLandmarkCardCompareMode = runtimeConfig.expertLandmarkCardCompareMode;
+        this.expertLandmarkCardCompareTargets = runtimeConfig.expertLandmarkCardCompareTargets;
+        this.expertLandmarkCardPenaltyMode = runtimeConfig.expertLandmarkCardPenaltyMode;
+        this.expertHarborLandmarkBaseBonus = runtimeConfig.expertHarborLandmarkBaseBonus;
+        this.expertLandmarkProgressRemaining = runtimeConfig.expertLandmarkProgressRemaining;
+        this.expertLandmarkCostWeight = runtimeConfig.expertLandmarkCostWeight;
+        this.expertTraceStats = runtimeConfig.expertTraceStats;
+        this.expertOpponentDifficulties = runtimeConfig.expertOpponentDifficulties;
+        this.profileStats = runtimeConfig.profileStats;
+        this.expertProfilePresets = runtimeConfig.expertProfilePresets;
+        this.expertProfileTunings = runtimeConfig.expertProfileTunings;
+        this.baseExpertTuning = runtimeConfig.baseExpertTuning;
+        this.activeExpertPreset = runtimeConfig.activeExpertPreset;
+        this.expertTuning = runtimeConfig.expertTuning;
         this._collectingBuildAction = false;
         /** @type {CPUBuildActionProposal|null} */
         this._selectedBuildAction = null;
