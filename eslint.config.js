@@ -251,7 +251,7 @@ module.exports = [
                 setTimeout: 'readonly',
                 setInterval: 'readonly',
                 CPU: 'readonly',
-                CPUProfile: 'readonly',                CPUSelection: 'readonly',                CPUDiagnostics: 'readonly',                CPUEvaluationCache: 'readonly',                CPUBusinessMoves: 'readonly',                CPU_EXPERT_PRESETS: 'readonly',                CPU_EXPERT_DEFAULT_OPTIONS: 'readonly',                CPU_EXPERT_PROFILE_TUNINGS: 'readonly',                resolveCpuRuntimeConfig: 'readonly',                CPUSimulation: 'readonly',                CPUEvaluation: 'readonly',                CPUBuildExecution: 'readonly',                CPULegalMoves: 'readonly',                CPUPendingResolution: 'readonly',
+                CPUProfile: 'readonly',                CPUSelection: 'readonly',                CPUDiagnostics: 'readonly',                CPUEvaluationCache: 'readonly',                CPUBusinessMoves: 'readonly',                CPU_EXPERT_PRESETS: 'readonly',                CPU_EXPERT_DEFAULT_OPTIONS: 'readonly',                CPU_EXPERT_PROFILE_TUNINGS: 'readonly',                resolveCpuRuntimeConfig: 'readonly',                resolveExpertProfileTuning: 'readonly',                CPUSimulation: 'readonly',                CPUEvaluation: 'readonly',                CPUBuildExecution: 'readonly',                CPULegalMoves: 'readonly',                CPUPendingResolution: 'readonly',
                 console: 'readonly',
                 cloneCard: 'readonly',
                 createCardByName: 'readonly',

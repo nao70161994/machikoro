@@ -300,28 +300,16 @@ class CPU {
 
     _syncExpertTuningForGame(game) {
         if (this.difficulty !== "expert") return this.expertTuning;
-        const profile = this._expertProfileName(game);
-        const profilePreset = this.expertProfilePresets[profile];
-        const profileTuning = this.expertProfileTunings[profile];
-        this.activeExpertPreset = profilePreset || this.expertPreset;
-        this.expertTuning = Object.assign(
-            {},
-            this.baseExpertTuning,
-            profilePreset ? CPU._resolveExpertTuning(profilePreset) : {},
-            profileTuning || {}
-        );
-        if (this.simulationMode === "realtime") {
-            this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.12).toFixed(3));
-            this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(1, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.2));
-        }
-        if (this.simulationMode === "fast" || this.simulationMode === "lite") {
-            this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.65).toFixed(3));
-            this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(2, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.5));
-        }
-        if (this.simulationMode === "lite") {
-            this.expertTuning.lookaheadWeight = Number((this.expertTuning.lookaheadWeight * 0.35).toFixed(3));
-            this.expertTuning.lateGameLookaheadStepsPerPlayer = Math.max(1, Math.round(this.expertTuning.lateGameLookaheadStepsPerPlayer * 0.35));
-        }
+        const resolved = resolveExpertProfileTuning({
+            profile: this._expertProfileName(game),
+            profilePresets: this.expertProfilePresets,
+            profileTunings: this.expertProfileTunings,
+            expertPreset: this.expertPreset,
+            baseTuning: this.baseExpertTuning,
+            simulationMode: this.simulationMode,
+        });
+        this.activeExpertPreset = resolved.activePreset;
+        this.expertTuning = resolved.tuning;
         return this.expertTuning;
     }
 

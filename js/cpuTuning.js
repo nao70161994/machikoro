@@ -218,6 +218,34 @@
         });
     }
 
+    function resolveExpertProfileTuning(options = {}) {
+        const profilePreset = (options.profilePresets || {})[options.profile];
+        const profileTuning = (options.profileTunings || {})[options.profile];
+        const activePreset = profilePreset || options.expertPreset;
+        const presetTuning = profilePreset
+            ? Object.assign({}, CPU_EXPERT_PRESETS.default, CPU_EXPERT_PRESETS[profilePreset] || {})
+            : {};
+        const tuning = Object.assign(
+            {},
+            options.baseTuning || {},
+            presetTuning,
+            profileTuning || {}
+        );
+        if (options.simulationMode === "realtime") {
+            tuning.lookaheadWeight = Number((tuning.lookaheadWeight * 0.12).toFixed(3));
+            tuning.lateGameLookaheadStepsPerPlayer = Math.max(1, Math.round(tuning.lateGameLookaheadStepsPerPlayer * 0.2));
+        }
+        if (options.simulationMode === "fast" || options.simulationMode === "lite") {
+            tuning.lookaheadWeight = Number((tuning.lookaheadWeight * 0.65).toFixed(3));
+            tuning.lateGameLookaheadStepsPerPlayer = Math.max(2, Math.round(tuning.lateGameLookaheadStepsPerPlayer * 0.5));
+        }
+        if (options.simulationMode === "lite") {
+            tuning.lookaheadWeight = Number((tuning.lookaheadWeight * 0.35).toFixed(3));
+            tuning.lateGameLookaheadStepsPerPlayer = Math.max(1, Math.round(tuning.lateGameLookaheadStepsPerPlayer * 0.35));
+        }
+        return Object.freeze({ activePreset, tuning });
+    }
+
     const CPU_EXPERT_PROFILE_TUNINGS = freezeEntries({
         duel: {
             lowValueSpamPenalty: 5.1,
@@ -252,6 +280,7 @@
     global.CPU_EXPERT_PROFILE_TUNINGS = CPU_EXPERT_PROFILE_TUNINGS;
     global.resolveLiveExpertOptions = resolveLiveExpertOptions;
     /** @type {any} */ (global).resolveCpuRuntimeConfig = resolveCpuRuntimeConfig;
+    /** @type {any} */ (global).resolveExpertProfileTuning = resolveExpertProfileTuning;
 
     if (typeof module !== "undefined" && module.exports) {
         module.exports = {
@@ -260,6 +289,7 @@
             CPU_EXPERT_PROFILE_TUNINGS,
             resolveLiveExpertOptions,
             resolveCpuRuntimeConfig,
+            resolveExpertProfileTuning,
         };
     }
 })(typeof globalThis !== "undefined" ? globalThis : this);

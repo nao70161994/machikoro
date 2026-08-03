@@ -1465,6 +1465,27 @@ runTest('chooseBusinessMove: expert v2 simple は random mode なら合法手か
     }
 });
 
+runTest('expert profile tuning policyはpreset/profile/simulation補正を入力非変更で合成する', () => {
+    const baseTuning = { lookaheadWeight: 0.8, lateGameLookaheadStepsPerPlayer: 8 };
+    const profileTunings = { crowd: { coinWeight: 9 } };
+    const resolved = runtime.resolveExpertProfileTuning({
+        profile: 'crowd',
+        profilePresets: { crowd: 'rush' },
+        profileTunings,
+        expertPreset: 'default',
+        baseTuning,
+        simulationMode: 'lite',
+    });
+
+    assert.strictEqual(resolved.activePreset, 'rush');
+    assert.strictEqual(resolved.tuning.coinWeight, 9);
+    assert.strictEqual(resolved.tuning.lookaheadWeight, 0.171);
+    assert.strictEqual(resolved.tuning.lateGameLookaheadStepsPerPlayer, 1);
+    assert.deepStrictEqual(baseTuning, { lookaheadWeight: 0.8, lateGameLookaheadStepsPerPlayer: 8 });
+    assert.deepStrictEqual(profileTunings, { crowd: { coinWeight: 9 } });
+    assert.strictEqual(Object.isFrozen(resolved), true);
+});
+
 runTest('expert tuning は人数別設定で自動切替される', () => {
     const cpu = new CPU("expert", {
         expertProfileTunings: {
