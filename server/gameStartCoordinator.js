@@ -1,5 +1,8 @@
 'use strict';
 
+const { GAME_START_DECISIONS, planGameStart } = require('./gameStartAdmission');
+const { executeGameStartEffects } = require('./gameStartRuntime');
+
 function requiredFunction(name, candidate) {
     if (typeof candidate !== 'function') throw new TypeError(`${name} must be a function`);
     return candidate;
@@ -17,14 +20,25 @@ function makeGameStartCoordinator(dependencies) {
 
     function checkGameStart(io, roomId) {
         const room = rooms[roomId];
-        if (!room || room.started) return;
-        if (room.players.length < countRoomHumanSlots(room)) return;
+        const requiredHumanSlots = room && !room.started
+            ? countRoomHumanSlots(room)
+            : 0;
+        const plan = planGameStart(room, requiredHumanSlots);
+        if (plan.decision !== GAME_START_DECISIONS.START) return;
 
-        const gameStartPayload = buildGameStartPayload(io, room);
+        const gameStartPayload = buildGameStartPayload(io, plan.room);
         if (!gameStartPayload) return;
-        markRoomGameStarted(room, gameStartPayload);
-        io.to(roomId).emit('gameStart', gameStartPayload);
-        logGameStarted(roomId, gameStartPayload);
+        executeGameStartEffects({
+            roomId,
+            room: plan.room,
+            payload: gameStartPayload,
+        }, {
+            markRoomGameStarted,
+            emitGameStart: (targetRoomId, payload) => {
+                io.to(targetRoomId).emit('gameStart', payload);
+            },
+            logGameStarted,
+        });
     }
 
     return Object.freeze({ checkGameStart });
