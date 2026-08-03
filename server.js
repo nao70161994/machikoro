@@ -46,6 +46,7 @@ const { registerRecreateSocketHandler } = require('./server/recreateSocketHandle
 const { selectRestoreSource, decideExistingRoomRestore } = require('./server/restoreGateway');
 const makeRestoreAdmission = require('./server/restoreAdmission');
 const makeRestoreReplayAdmission = require('./server/restoreReplayAdmission');
+const makeRestorePreparation = require('./server/restorePreparation');
 const makeRestoredRoom = require('./server/restoredRoom');
 const {
     existingRoomRejoinEffectAuthorityEnabled,
@@ -939,6 +940,22 @@ const { planRestoreReplayAdmission } = makeRestoreReplayAdmission({
     restoreAuditSecret,
     restorePayloadRank,
 });
+const { prepareRestoredRoom } = makeRestorePreparation({
+    planGameStartAdmission: planRestoreGameStartAdmission,
+    planIdentityAdmission: planRestoreIdentityAdmission,
+    planReplayAdmission: planRestoreReplayAdmission,
+    planRoomMetadata: planRestoredRoomMetadata,
+    applyRoomMetadata: applyRestoredRoomMetadata,
+    buildRoom: buildRestoredRoom,
+    prepareMirror: executeRestoredRoomMirrorPreparation,
+    rememberAcceptedAction: rememberAcceptedClientAction,
+    createMirror: createRoomMirror,
+    buildMirrorStatePlan: buildRestoredMirrorStatePlan,
+    applyMirrorStatePlan: applyRestoredMirrorStatePlan,
+    now: Date.now,
+    hostlessRestoreGenerationField: HOSTLESS_RESTORE_GENERATION_FIELD,
+    hostlessRestoreCountField: HOSTLESS_RESTORE_COUNT_FIELD,
+});
 
 function handleRecreateRoom(socket, payload = {}, options = {}) {
     const admission = planRestoreAdmission(payload, options);
@@ -1050,83 +1067,27 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
             return;
         }
     }
-    const gameStartAdmission = planRestoreGameStartAdmission(gameStartPayload);
-    if (gameStartAdmission.ok !== true) {
-        emitAppError(socket, gameStartAdmission.errorMessage);
-        return;
-    }
-    const { playerNames } = gameStartAdmission;
-    gameStartPayload.playerSettings = gameStartAdmission.playerSettings;
-    const identityAdmission = planRestoreIdentityAdmission({
-        gameStartPayload,
-        playerNames,
+    const preparation = prepareRestoredRoom({
+        roomId,
         playerIndex,
         playerName,
         reconnectToken,
         approvedHostless,
         socketId: socket.id,
-    });
-    if (identityAdmission.ok !== true) {
-        emitAppError(socket, identityAdmission.errorMessage);
-        return;
-    }
-    const { restoredPlayers } = identityAdmission;
-    const replayAdmission = planRestoreReplayAdmission({
-        actionLog,
-        roomId,
+        gameStartPayload,
+        stateSnapshot,
         replayStateSnapshot,
+        actionLog,
         canonicalRecord,
         clientSnapshotTrusted,
-        stateSnapshot,
-        gameStartPayload,
-    });
-    if (replayAdmission.ok !== true) {
-        emitAppError(socket, replayAdmission.errorMessage);
-        return;
-    }
-    const { sanitizedActionLog, restoredRank } = replayAdmission;
-    const restoredMetadata = planRestoredRoomMetadata({
-        playerIndex,
-        hostEpoch: restoredRank.hostEpoch,
-        actionSeq: restoredRank.actionSeq,
-        approvedHostless,
-        hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD],
-        hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
-    });
-    applyRestoredRoomMetadata(gameStartPayload, restoredMetadata, {
-        hostlessRestoreGenerationField: HOSTLESS_RESTORE_GENERATION_FIELD,
-        hostlessRestoreCountField: HOSTLESS_RESTORE_COUNT_FIELD,
-    });
-    const restoredRoom = buildRestoredRoom({
-        roomId,
-        restoredPlayers,
-        playerSettings: gameStartPayload.playerSettings,
-        playerNames,
-        playerIndex,
-        restoredHostEpoch: restoredMetadata.hostEpoch,
-        restoredActionSeq: restoredRank.actionSeq,
-        enabledCards: gameStartPayload.enabledCards,
-        enabledLandmarks: gameStartPayload.enabledLandmarks,
-        cpuSpeed: gameStartPayload.cpuSpeed,
-        gameStartPayload,
-        replayStateSnapshot,
-        sanitizedActionLog,
-        now: Date.now(),
-        approvedHostless,
-        hostlessRestoreGeneration: gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD],
-        hostlessRestoreCount: gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
         candidateCount: options.candidateCount,
     });
-    const mirrorPreparation = executeRestoredRoomMirrorPreparation(restoredRoom, {
-        rememberAcceptedAction: rememberAcceptedClientAction,
-        createMirror: createRoomMirror,
-        buildStatePlan: buildRestoredMirrorStatePlan,
-        applyStatePlan: applyRestoredMirrorStatePlan,
-    });
-    if (mirrorPreparation.ok !== true) {
-        emitAppError(socket, mirrorPreparation.errorMessage);
+    if (preparation.ok !== true) {
+        emitAppError(socket, preparation.errorMessage);
         return;
     }
+    gameStartPayload = preparation.gameStartPayload;
+    const { restoredRoom } = preparation;
     const activationPlan = planRestoredRoomActivation({
         roomExists: hasOwnRoom(roomId),
         approvedHostless,
