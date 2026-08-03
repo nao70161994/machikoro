@@ -2019,28 +2019,20 @@ function _writeOnlineGameStartPatch(patch) {
 }
 
 function _currentOnlineActionSeq(log = null) {
-    const payload = _readOnlineGameStartPayload();
-    const snapshot = _readOnlineStateSnapshot();
-    const snapshotSeq = Number.isInteger(snapshot?.actionSeq) ? snapshot.actionSeq : 0;
-    const actionLog = log || _readOnlineActionLog();
-    const logSeq = actionLog.reduce((max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max, 0);
-    return Math.max(
+    return OnlineActionSequence.current(
         _lastAppliedOnlineActionSeqMemory,
-        Number.isInteger(payload?.actionSeq) ? payload.actionSeq : 0,
-        snapshotSeq,
-        logSeq
+        _readOnlineGameStartPayload(),
+        _readOnlineStateSnapshot(),
+        log || _readOnlineActionLog()
     );
 }
 
 function _lastAppliedOnlineActionSeq(log = null) {
-    const snapshot = _readOnlineStateSnapshot();
-    const snapshotSeq = Number.isInteger(snapshot?.actionSeq) ? snapshot.actionSeq : 0;
-    const actionLog = log || _readOnlineActionLog();
-    const storedSeq = actionLog.reduce(
-        (max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max,
-        snapshotSeq
+    _lastAppliedOnlineActionSeqMemory = OnlineActionSequence.lastApplied(
+        _lastAppliedOnlineActionSeqMemory,
+        _readOnlineStateSnapshot(),
+        log || _readOnlineActionLog()
     );
-    _lastAppliedOnlineActionSeqMemory = Math.max(_lastAppliedOnlineActionSeqMemory, storedSeq);
     return _lastAppliedOnlineActionSeqMemory;
 }
 
@@ -2080,7 +2072,7 @@ function _isOnlineRestoreRankNewer(localRank, serverRank) {
 }
 
 function _nextOnlineActionSeq(log = null) {
-    const seq = _currentOnlineActionSeq(log) + 1;
+    const seq = OnlineActionSequence.next(_currentOnlineActionSeq(log));
     _writeOnlineGameStartPatch({ actionSeq: seq });
     return seq;
 }
