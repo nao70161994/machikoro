@@ -1010,3 +1010,44 @@ runTest('CPU本体のlookahead wrapperはpure evaluation結果を維持する', 
         CPUEvaluation.shouldUseExpertChoiceLookahead(4, remaining, game.phase, GAME_PHASES.BUILD, 'fast')
     );
 });
+
+runTest('CPU evaluation は自己収入をカード効果ごとのpure値へ投影する', () => {
+    const {
+        CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES,
+    } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(3);
+    const owner = game.currentPlayer();
+    const opponent = game.players[1];
+    const other = game.players[2];
+    opponent.coins = 12;
+    other.coins = 3;
+    opponent.cards.push(createCardByName('カフェ'), createCardByName('コンビニ'));
+    const evaluate = card => CPUEvaluation.cardSelfIncomeValue(
+        card, game, owner, owner,
+        CARD_EFFECTS, CARD_CATEGORIES, LANDMARK_NAMES,
+        GameManager.calcCardIncome
+    );
+
+    assert.strictEqual(CPUEvaluation.cardSelfIncomeValue(
+        createCardByName('パン屋'), game, owner, opponent,
+        CARD_EFFECTS, CARD_CATEGORIES, LANDMARK_NAMES, GameManager.calcCardIncome
+    ), 0);
+    assert.strictEqual(evaluate(createCardByName('麦畑')), 1);
+    assert.strictEqual(evaluate(createCardByName('カフェ')), 0);
+    assert.strictEqual(evaluate(createCardByName('スタジアム')), 4);
+    assert.strictEqual(evaluate(createCardByName('テレビ局')), 5);
+    assert.strictEqual(evaluate(createCardByName('出版社')), 4);
+    assert.strictEqual(evaluate(createCardByName('税務署')), 6);
+    owner.itVentureCoins = 2;
+    assert.strictEqual(evaluate(createCardByName('ITベンチャー')), 4);
+    assert.strictEqual(evaluate(createCardByName('公園')), 0);
+    owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    assert.strictEqual(evaluate(createCardByName('パン屋')), 2);
+
+    const cards = ['麦畑', 'チーズ工場', 'スタジアム', 'テレビ局', '出版社', '税務署', 'ITベンチャー', '公園', 'パン屋'];
+    for (const name of cards) {
+        const card = createCardByName(name);
+        assert.strictEqual(cpu._cardSelfIncomeValue(card, game, owner, owner, 6), evaluate(card), name);
+    }
+});

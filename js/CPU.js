@@ -620,85 +620,11 @@ class CPU {
     }
 
     _cardSelfIncomeValue(card, game, owner, roller, dice) {
-        const capped = (value) => value;
-        const ownerIndex = game.players.indexOf(owner);
-        const rollerIndex = game.players.indexOf(roller);
-        const isCurrentTurn = ownerIndex === rollerIndex;
-        const opponents = game.players.filter((_, i) => i !== ownerIndex);
-
-        if (!isCurrentTurn) return 0;
-
-        if (card.color === "blue") {
-            if (card.effect === CARD_EFFECTS.HARBOR) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
-            if (card.effect === CARD_EFFECTS.TUNA) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0);
-            if (card.effect === CARD_EFFECTS.CORNFIELD) return capped(GameManager.calcCardIncome(card, owner, game));
-            return capped(card.income);
-        }
-
-        if (card.color === "red") return 0;
-
-        switch (card.effect) {
-            case CARD_EFFECTS.CHEESE:
-            case CARD_EFFECTS.FURNITURE:
-            case CARD_EFFECTS.FLOWER:
-            case CARD_EFFECTS.MARKET:
-            case CARD_EFFECTS.FOODWAREHOUSE:
-            case CARD_EFFECTS.DRINKFACTORY:
-            case CARD_EFFECTS.WINERY:
-            case CARD_EFFECTS.FEWLANDMARK:
-                return capped(GameManager.calcCardIncome(card, owner, game));
-            case CARD_EFFECTS.STADIUM:
-                return capped(opponents.length * card.income);
-            case CARD_EFFECTS.TV: {
-                let bestSteal = 0;
-                for (const target of opponents) {
-                    bestSteal = Math.max(bestSteal, Math.min(5, target.coins));
-                }
-                return capped(bestSteal);
-            }
-            case CARD_EFFECTS.PUBLISHER: {
-                let total = 0;
-                for (const target of opponents) {
-                    if (!target || target.coins <= 0) continue;
-                    const activeHits = target.cards.filter(candidate =>
-                        !target.isDormant(candidate) &&
-                        (candidate.category === CARD_CATEGORIES.RESTAURANT || candidate.category === CARD_CATEGORIES.SHOP)
-                    );
-                    total += Math.min(activeHits.length, target.coins);
-                }
-                return capped(total);
-            }
-            case CARD_EFFECTS.TAXOFFICE: {
-                let total = 0;
-                for (const target of opponents) {
-                    if (!target || target.coins < 10) continue;
-                    total += Math.floor(target.coins / 2);
-                }
-                return capped(total);
-            }
-            case CARD_EFFECTS.ITSTARTUP: {
-                const ventureCoins = Math.max(0, owner.itVentureCoins);
-                if (ventureCoins <= 0) return 0;
-                let total = 0;
-                for (const target of opponents) {
-                    if (!target || target.coins <= 0) continue;
-                    total += Math.min(ventureCoins, target.coins);
-                }
-                return capped(total);
-            }
-            case CARD_EFFECTS.BUSINESS:
-            case CARD_EFFECTS.CLEANING:
-            case CARD_EFFECTS.MOVER:
-            case CARD_EFFECTS.RENOVATION:
-            case CARD_EFFECTS.PARK:
-                return 0;
-            default: {
-                let amount = card.income;
-                if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
-                return capped(amount);
-            }
-        }
+        return CPUEvaluation.cardSelfIncomeValue(
+            card, game, owner, roller,
+            CARD_EFFECTS, CARD_CATEGORIES, LANDMARK_NAMES,
+            GameManager.calcCardIncome
+        );
     }
 
     _expectedDiceScore(game, useTwo) {

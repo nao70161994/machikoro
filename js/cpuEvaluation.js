@@ -41,6 +41,73 @@ const CPUEvaluation = Object.freeze({
         return CPUEvaluation.diceFrequencyForRoller(card.diceNums, player, stationName);
     },
 
+    cardSelfIncomeValue(card, game, owner, roller, effects, categories, landmarkNames, calcCardIncome) {
+        const ownerIndex = game.players.indexOf(owner);
+        const rollerIndex = game.players.indexOf(roller);
+        const opponents = game.players.filter((_, index) => index !== ownerIndex);
+
+        if (ownerIndex !== rollerIndex) return 0;
+
+        if (card.color === 'blue') {
+            if (card.effect === effects.HARBOR) return owner.landmarks[landmarkNames.HARBOR] ? card.income : 0;
+            if (card.effect === effects.TUNA) return owner.landmarks[landmarkNames.HARBOR] ? 7 : 0;
+            if (card.effect === effects.CORNFIELD) return calcCardIncome(card, owner, game);
+            return card.income;
+        }
+
+        if (card.color === 'red') return 0;
+
+        switch (card.effect) {
+        case effects.CHEESE:
+        case effects.FURNITURE:
+        case effects.FLOWER:
+        case effects.MARKET:
+        case effects.FOODWAREHOUSE:
+        case effects.DRINKFACTORY:
+        case effects.WINERY:
+        case effects.FEWLANDMARK:
+            return calcCardIncome(card, owner, game);
+        case effects.STADIUM:
+            return opponents.length * card.income;
+        case effects.TV:
+            return opponents.reduce((best, target) => Math.max(best, Math.min(5, target.coins)), 0);
+        case effects.PUBLISHER:
+            return opponents.reduce((total, target) => {
+                if (!target || target.coins <= 0) return total;
+                const activeHits = target.cards.filter(candidate =>
+                    !target.isDormant(candidate) &&
+                    (candidate.category === categories.RESTAURANT || candidate.category === categories.SHOP)
+                );
+                return total + Math.min(activeHits.length, target.coins);
+            }, 0);
+        case effects.TAXOFFICE:
+            return opponents.reduce((total, target) =>
+                !target || target.coins < 10 ? total : total + Math.floor(target.coins / 2), 0
+            );
+        case effects.ITSTARTUP: {
+            const ventureCoins = Math.max(0, owner.itVentureCoins);
+            if (ventureCoins <= 0) return 0;
+            return opponents.reduce((total, target) =>
+                !target || target.coins <= 0 ? total : total + Math.min(ventureCoins, target.coins), 0
+            );
+        }
+        case effects.BUSINESS:
+        case effects.CLEANING:
+        case effects.MOVER:
+        case effects.RENOVATION:
+        case effects.PARK:
+            return 0;
+        default: {
+            let amount = card.income;
+            if (owner.landmarks[landmarkNames.SHOPPING_MALL] &&
+                    (card.category === categories.RESTAURANT || card.category === categories.SHOP)) {
+                amount += 1;
+            }
+            return amount;
+        }
+        }
+    },
+
     strongSoftCapValue(value, difficulty) {
         if (difficulty !== 'strong') return value;
         const sign = Math.sign(value);
