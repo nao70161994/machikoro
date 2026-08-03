@@ -148,6 +148,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/restoreRank.js',
     'server/roomLifecycle.js',
     'server/roomGcRuntime.js',
+    'server/processRuntime.js',
     'server/roomSocketRuntime.js',
     'server/serverDice.js',
     'server/staticAssets.js',

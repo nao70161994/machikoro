@@ -161,6 +161,7 @@
     "server/restoreAuditPayload.js",
     "server/roomLifecycle.js",
     "server/roomGcRuntime.js",
+    "server/processRuntime.js",
     "server/roomSocketRuntime.js",
     "server/disconnectSocketHandler.js",
     "server/hostlessRestoreCoordinator.js",

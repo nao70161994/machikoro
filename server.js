@@ -6,6 +6,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
 const { startRoomGc } = require('./server/roomGcRuntime');
+const { registerServerProcessHandlers, startHttpServer } = require('./server/processRuntime');
 const loadGameRuntime = makeGameRuntimeLoader({
     baseDir: __dirname,
     runtimeConsole: console,
@@ -1185,18 +1186,11 @@ const { checkGameStart } = makeGameStartCoordinator({
 
 
 
-process.on('uncaughtException', (err) => {
-    console.error('uncaughtException:', err);
-});
-process.on('unhandledRejection', (reason) => {
-    console.error('unhandledRejection:', reason);
-});
+registerServerProcessHandlers({ processTarget: process, logger: console });
 
 const PORT = /** @type {number} */ (process.env.PORT || 3000);
 if (IS_MAIN_MODULE) {
-    server.listen(PORT, '0.0.0.0', () => {
-        console.log(`サーバー起動: http://localhost:${PORT}`);
-    });
+    startHttpServer({ server, port: PORT, host: '0.0.0.0', logger: console });
 }
 
 // ===== Test exports =====
