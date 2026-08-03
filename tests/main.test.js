@@ -2069,6 +2069,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/uiBuildMenu.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
+        'js/uiTutorialSettings.js',
         'js/uiTutorial.js',
         'js/uiDiceChoice.js',
         'js/uiDiceDisplay.js',
@@ -2215,6 +2216,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiPendingEffects.js', 'js/ui.js');
     assertBefore('js/uiCardDetail.js', 'js/ui.js');
     assertBefore('js/uiCardSelect.js', 'js/ui.js');
+    assertBefore('js/uiTutorialSettings.js', 'js/ui.js');
     assertBefore('js/uiTutorial.js', 'js/ui.js');
     assertBefore('js/uiDiceChoice.js', 'js/ui.js');
     assertBefore('js/uiDiceDisplay.js', 'js/main.js');

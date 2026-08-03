@@ -246,6 +246,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiPendingEffects.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
+        'js/uiTutorialSettings.js',
         'js/uiTutorial.js',
         'js/uiDiceChoice.js',
         'js/uiDiceDisplay.js',

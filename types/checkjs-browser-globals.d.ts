@@ -11,6 +11,7 @@ declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
 declare var UiWinnerEffects: typeof import("../js/uiWinnerEffects");
 declare var UiGameStatusEffects: typeof import("../js/uiGameStatusEffects");
+declare var UiTutorialSettings: typeof import("../js/uiTutorialSettings");
 
 declare var CPUProfile: typeof import("../js/cpuProfile").CPUProfile;
 declare var CPUSelection: typeof import("../js/cpuSelection").CPUSelection;
@@ -85,6 +86,7 @@ interface Window {
     UiInputPolicy: unknown;
     UiPendingMenu: unknown;
     UiPendingEffects: unknown;
+    UiTutorialSettings: unknown;
     UiTutorial: unknown;
     UiGameStatusView: unknown;
     UiGameStatusEffects: unknown;

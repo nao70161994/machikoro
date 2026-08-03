@@ -88,11 +88,18 @@ function renderTutorial() {
     box.innerHTML = UiTutorial.buildHtml(message, escapeHtml);
 }
 
+function applyTutorialSettingChange(plan) {
+    UiTutorialSettings.executeChange(plan, {
+        setEnabled(value) { tutorialEnabled = value; },
+        setLevel(value) { tutorialLevel = value; },
+        persist: safeUiStorageSet,
+        syncControls: syncTutorialControls,
+        renderTutorial,
+    });
+}
+
 function setTutorialEnabled(enabled) {
-    tutorialEnabled = !!enabled;
-    safeUiStorageSet('tutorialEnabled', tutorialEnabled ? 'true' : 'false');
-    syncTutorialControls();
-    renderTutorial();
+    applyTutorialSettingChange(UiTutorialSettings.planEnabledChange(enabled));
 }
 
 function onToggleTutorial(enabled) {
@@ -104,14 +111,11 @@ function toggleTutorial() {
 }
 
 function onChangeTutorialLevel(level) {
-    tutorialLevel = level === 'advanced' ? 'advanced' : 'beginner';
-    safeUiStorageSet('tutorialLevel', tutorialLevel);
-    syncTutorialControls();
-    renderTutorial();
+    applyTutorialSettingChange(UiTutorialSettings.planLevelChange(level));
 }
 
 function cycleTutorialLevel() {
-    onChangeTutorialLevel(tutorialLevel === 'beginner' ? 'advanced' : 'beginner');
+    applyTutorialSettingChange(UiTutorialSettings.planLevelCycle(tutorialLevel));
 }
 
 function syncTutorialControls() {
