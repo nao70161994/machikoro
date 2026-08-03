@@ -89,3 +89,50 @@ assert.deepStrictEqual(expandedToggle, {
     ariaExpanded: 'true',
 });
 assert.ok(Object.isFrozen(expandedToggle));
+
+const firstHistory = UiLogDisplay.updateLogHistory([], 0, [
+    { type: 'dice', message: 'first' },
+    { type: 'gain', message: 'second' },
+]);
+assert.deepStrictEqual(firstHistory, {
+    entries: [
+        { type: 'dice', message: 'first' },
+        { type: 'gain', message: 'second' },
+    ],
+    currentLength: 2,
+    entryCount: 2,
+});
+assert.ok(Object.isFrozen(firstHistory));
+assert.ok(Object.isFrozen(firstHistory.entries));
+
+const resetHistory = UiLogDisplay.updateLogHistory(
+    firstHistory.entries,
+    firstHistory.currentLength,
+    [{ type: 'build', message: 'new turn' }]
+);
+assert.deepStrictEqual(resetHistory.entries, [
+    { type: 'dice', message: 'first' },
+    { type: 'gain', message: 'second' },
+    '__SEP__',
+    { type: 'build', message: 'new turn' },
+]);
+
+const rerollHistory = UiLogDisplay.updateLogHistory(
+    firstHistory.entries,
+    firstHistory.currentLength,
+    [{ type: 'dice', message: '📡 reroll' }]
+);
+assert.deepStrictEqual(rerollHistory.entries, [
+    { type: 'dice', message: 'first' },
+    { type: 'gain', message: 'second' },
+    { type: 'dice', message: '📡 reroll' },
+]);
+
+const boundedHistory = UiLogDisplay.updateLogHistory(
+    ['__SEP__', { message: 'old' }, '__SEP__'],
+    3,
+    [{ message: 'new' }],
+    2
+);
+assert.deepStrictEqual(boundedHistory.entries, [{ message: 'new' }]);
+assert.strictEqual(boundedHistory.entryCount, 1);

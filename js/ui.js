@@ -38,25 +38,10 @@ function renderLog() {
 
     const cur = game.log || [];
 
-    // ターン切り替えやリロール時に game.log がリセットされる
-    if (cur.length < prevLogLength) {
-        const isReroll = cur.length > 0 && cur[0]?.message?.startsWith("📡");
-        if (!isReroll && fullLog.length > 0 && cur.length > 0) fullLog.push("__SEP__");
-        fullLog.push(...cur);
-    } else {
-        fullLog.push(...cur.slice(prevLogLength));
-    }
-    prevLogLength = cur.length;
-
-    // 最大件数を超えたら古いエントリを切り捨て
-    const MAX_FULL_LOG = 300;
-    if (fullLog.length > MAX_FULL_LOG) {
-        fullLog = fullLog.slice(fullLog.length - MAX_FULL_LOG);
-        while (fullLog.length > 0 && fullLog[0] === "__SEP__") fullLog.shift();
-    }
-
-    const entryCount = fullLog.filter(e => e !== "__SEP__").length;
-    titleEl.textContent = `📋 ログ (${entryCount})`;
+    const history = UiLogDisplay.updateLogHistory(fullLog, prevLogLength, cur);
+    fullLog = Array.from(history.entries);
+    prevLogLength = history.currentLength;
+    titleEl.textContent = `📋 ログ (${history.entryCount})`;
 
     logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(fullLog, LOG_TYPE_DISPLAY, escapeHtml);
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml);

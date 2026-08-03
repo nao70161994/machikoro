@@ -1,6 +1,7 @@
 'use strict';
 
 const UiLogDisplay = (() => {
+    const MAX_FULL_LOG = 300;
     function makeLogTypeDisplay(logTypes) {
         return Object.freeze({
             [logTypes.DICE]:    Object.freeze({ cls: 'log-dice',    label: 'ダイス' }),
@@ -100,6 +101,34 @@ const UiLogDisplay = (() => {
         return parts.join('');
     }
 
+    function updateLogHistory(previousEntries, previousLength, currentEntries, maxEntries = MAX_FULL_LOG) {
+        const fullLog = Array.isArray(previousEntries) ? previousEntries.slice() : [];
+        const currentLog = Array.isArray(currentEntries) ? currentEntries : [];
+        const priorLength = Number.isInteger(previousLength) && previousLength >= 0
+            ? previousLength
+            : 0;
+        if (currentLog.length < priorLength) {
+            const isReroll = currentLog.length > 0 && currentLog[0] &&
+                typeof currentLog[0].message === 'string' &&
+                currentLog[0].message.startsWith('📡');
+            if (!isReroll && fullLog.length > 0 && currentLog.length > 0) fullLog.push('__SEP__');
+            fullLog.push(...currentLog);
+        } else {
+            fullLog.push(...currentLog.slice(priorLength));
+        }
+        const limit = Number.isInteger(maxEntries) && maxEntries >= 0 ? maxEntries : MAX_FULL_LOG;
+        let bounded = fullLog;
+        if (bounded.length > limit) {
+            bounded = bounded.slice(bounded.length - limit);
+            while (bounded.length > 0 && bounded[0] === '__SEP__') bounded.shift();
+        }
+        return Object.freeze({
+            entries: Object.freeze(bounded),
+            currentLength: currentLog.length,
+            entryCount: bounded.filter(entry => entry !== '__SEP__').length,
+        });
+    }
+
     function buildLogToggleView(collapsed) {
         return Object.freeze({
             collapsed: collapsed === true,
@@ -115,6 +144,7 @@ const UiLogDisplay = (() => {
         buildLogEntriesHtml,
         buildLogSummaryHtml,
         buildLogToggleView,
+        updateLogHistory,
     });
 })();
 
