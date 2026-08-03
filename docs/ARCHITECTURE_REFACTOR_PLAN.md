@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -12,7 +12,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | --- | --- | --- |
 | Server entrypoint | `server.js` plus `server/*` helpers | Express/API/Socket.IO route and catch wiring plus room/action/restore sequencing remain in `server.js`; validation, identity, game-start/rejoin payload, reporting policy, request gateways, ntfy delivery options, lifecycle, sanitation, and VM game-runtime loading have focused helpers. |
 | Online client | `js/online.js` plus online helpers | Socket lifecycle, retry/queue/session orchestration and action application remain in `online.js`; storage, payload normalization/ACK comparison, restore rank, and state vocabulary have focused helpers. |
-| UI | `js/ui.js` plus UI helpers | Top-level rendering, modal hide/focus-trap/inert handlers, DOM mutation, stats rendering, and event processing remain in `ui.js`; build/pending/detail/select/player/log/order/tutorial transforms, active-game status controls, tab/availability projection, and default-OFF modal-open plus post-hide modal-close plan/effect boundaries have focused helpers. |
+| UI | `js/ui.js` plus UI helpers | Top-level rendering, modal hide/focus/inert effects, DOM mutation, stats rendering, and event processing remain in `ui.js`; build/pending/detail/select/player/log/order/tutorial transforms, active-game status controls, tab/availability projection, pure modal keydown commands, and default-OFF modal-open plus post-hide modal-close plan/effect boundaries have focused helpers. |
 | Rules/actions | `js/GameManager.js`, `js/Card.js`, `js/actionContract.js`, `js/gameEngine.js` | `GameManager` remains the mutable rules owner; the action manifest and 15-action execution dispatch are shared. `GameEngine.transitionSnapshot()` is a pure boundary; shared fail-closed authority policy supports default-OFF, parity-gated server-mirror adoption and production-uninjected online-client adoption while broader live owners remain mutable. |
 | Restore/replay/canonical payload | `js/gameSnapshot.js`, `server.js`, `js/online.js`, restore helpers | Exact snapshot construction and hydrate mechanics are shared; live validation, authority, caller-specific legacy normalization, replay ordering, and snapshot-plus-log recovery remain explicit adapters. |
 | Tests | `tests/server.test.js`, `tests/online.test.js`, `tests/ui.test.js`, `tests/main.test.js`, others | Contract coverage exists, but high-traffic files are large and often test several boundaries in one file. |
@@ -179,7 +179,7 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 ## Design C: UI Surface Extraction Without Lifecycle Rewrite
 
-**Current problem:** `js/ui.js` is safer after helper and escaping work, and top-level tab projection is now pure, but it still owns modal lifecycle, stats rendering, DOM effects, event processing, and interactability recovery.
+**Current problem:** `js/ui.js` is safer after helper and escaping work, top-level tab projection and modal keydown commands are pure, and watchdog issue assembly is separated from DOM observation. It still owns modal lifecycle effects, stats rendering, DOM effects, event processing, and interactability recovery.
 
 **Why small fixes are limited:** A targeted UI patch can keep the current screen working while bypassing selector registries, normal-render affordances, or modal visibility contracts. The earlier invisible-confirm issue is a sign that lifecycle and interactability need stable boundaries.
 
@@ -187,7 +187,8 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 
 | Future file | Responsibility |
 | --- | --- |
-| `js/uiModal.js` | Custom modal close lifecycle, focus-trap/inert restoration/pointer-state handling, confirm/prompt helpers, modal registry. |
+| `js/uiModalPolicy.js` | Deny-by-default modal policy plus pure visibility, focus-trap, and Escape/Tab command decisions. |
+| `js/uiModal.js` | Future custom modal close lifecycle, focus/inert restoration/pointer-state handling, confirm/prompt helpers, modal registry. |
 | `js/uiModalOpen.js` | Exact modal-open identity plan and ordered accessibility effects behind an off-by-default parity gate with inline legacy fallback. |
 | `js/uiModalClose.js` | Exact post-hide active-owner/unlock/pending-render/focus-restore/trace plan and ordered effects behind an off-by-default parity gate with inline legacy fallback. |
 | `js/uiBuildMenu.js` | Pure build menu data-to-HTML helpers, safe button attributes, available-card display. |
@@ -204,8 +205,9 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 1. Extract pure HTML helpers first, starting with surfaces already covered by escape tests.
 2. Keep global function names and call sites compatible with existing `index.html` load order.
 3. Add selector-registry tests for any moved surface.
-4. Move modal lifecycle only after build/card/select helpers are stable.
-5. Treat focus/inert/pointer behavior as a manual-check gate, not a pure refactor.
+4. Keep the extracted keydown command policy separate from its existing DOM/focus executor.
+5. Move modal lifecycle only after build/card/select helpers are stable.
+6. Treat focus/inert/pointer behavior as a manual-check gate, not a pure refactor.
 
 **Contract tests to add:**
 
