@@ -4,6 +4,7 @@ declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
 declare var GameDicePolicy: typeof import("../js/gameDicePolicy");
 declare var GameCardActivationPolicy: typeof import("../js/gameCardActivationPolicy");
 declare var GameBuildPolicy: typeof import("../js/gameBuildPolicy");
+declare var GameCoinTransaction: typeof import("../js/gameCoinTransaction");
 declare var GamePendingResolutionPolicy: typeof import("../js/gamePendingResolutionPolicy");
 declare var OnlineSocketRegistry: typeof import("../js/onlineSocketRegistry");
 declare var ClientEventRuntime: typeof import("../js/clientEventRuntime");
@@ -43,6 +44,7 @@ interface Window {
     GameDicePolicy: unknown;
     GameCardActivationPolicy: unknown;
     GameBuildPolicy: unknown;
+    GameCoinTransaction: unknown;
     GamePendingResolutionPolicy: unknown;
     CPUBusinessMoves: unknown;
     AD_SLOT_CONFIGS: unknown;

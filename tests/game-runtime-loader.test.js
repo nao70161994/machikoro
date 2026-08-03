@@ -19,6 +19,7 @@ runTest('game runtime loaderはsource順と公開symbolをfrozen契約にする'
         'js/gameDicePolicy.js',
         'js/gameCardActivationPolicy.js',
         'js/gameBuildPolicy.js',
+        'js/gameCoinTransaction.js',
         'js/gamePendingResolutionPolicy.js',
         'js/GameManager.js',
     ]);

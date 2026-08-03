@@ -43,6 +43,12 @@ const BUILD_REJECTION_MESSAGES = Object.freeze({
     [GameBuildPolicy.reasons.LANDMARK_ALREADY_BUILT]: '❌ すでに建設済みです',
 });
 
+function applyCoinTransactionPlan(players, plan) {
+    for (let index = 0; index < players.length; index++) {
+        players[index].coins = plan.balances[index];
+    }
+}
+
 function rollRandomDie() {
     const cryptoApi = (typeof window !== "undefined" && window.crypto && typeof window.crypto.getRandomValues === "function")
         ? window.crypto
@@ -588,15 +594,13 @@ class GameManager {
             if (card.color !== "purple" || !card.diceNums.includes(dice)) continue;
 
             if (card.effect === CARD_EFFECTS.STADIUM) {
-                let total = 0;
-                for (let i = 0; i < this.players.length; i++) {
-                    if (i === ci) continue;
-                    const steal = Math.min(2, this.players[i].coins);
-                    this.players[i].coins -= steal;
-                    total += steal;
-                }
-                current.coins += total;
-                this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${total}コイン`);
+                const plan = GameCoinTransaction.collectionPlan(
+                    this.players.map(player => player.coins),
+                    ci,
+                    this.players.map((_, index) => index === ci ? 0 : 2)
+                );
+                applyCoinTransactionPlan(this.players, plan);
+                this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${plan.total}コイン`);
             } else if (card.effect === CARD_EFFECTS.TV) {
                 this._enqueuePendingAction('pendingTV');
                 this.addLog(LOG_TYPES.SPECIAL, `📺 テレビ局発動 → 対象プレイヤーを選んでください`);
@@ -608,31 +612,34 @@ class GameManager {
                     this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター：交換できる施設がないため不発`);
                 }
             } else if (card.effect === CARD_EFFECTS.PUBLISHER) {
-                let total = 0;
-                for (let i = 0; i < this.players.length; i++) {
-                    if (i === ci) continue;
-                    const count = this.players[i].cards.filter(
-                        c => isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) && !this.players[i].isDormant(c)).length;
-                    const steal = Math.min(count, this.players[i].coins);
-                    this.players[i].coins -= steal;
-                    total += steal;
-                    if (steal > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[i].name}から${steal}コイン`);
-                }
-                current.coins += total;
-                this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${total}コイン`);
+                const requestedAmounts = this.players.map((player, index) => index === ci ? 0 :
+                    player.cards.filter(c =>
+                        isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) &&
+                        !player.isDormant(c)
+                    ).length);
+                const plan = GameCoinTransaction.collectionPlan(
+                    this.players.map(player => player.coins),
+                    ci,
+                    requestedAmounts
+                );
+                applyCoinTransactionPlan(this.players, plan);
+                plan.transfers.forEach((transfer, index) => {
+                    if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[index].name}から${transfer}コイン`);
+                });
+                this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${plan.total}コイン`);
             } else if (card.effect === CARD_EFFECTS.TAXOFFICE) {
-                let total = 0;
-                for (let i = 0; i < this.players.length; i++) {
-                    if (i === ci) continue;
-                    if (this.players[i].coins >= 10) {
-                        const steal = Math.floor(this.players[i].coins / 2);
-                        this.players[i].coins -= steal;
-                        total += steal;
-                        this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[i].name}から${steal}コイン`);
-                    }
-                }
-                current.coins += total;
-                this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${total}コイン`);
+                const requestedAmounts = this.players.map((player, index) =>
+                    index !== ci && player.coins >= 10 ? Math.floor(player.coins / 2) : 0);
+                const plan = GameCoinTransaction.collectionPlan(
+                    this.players.map(player => player.coins),
+                    ci,
+                    requestedAmounts
+                );
+                applyCoinTransactionPlan(this.players, plan);
+                plan.transfers.forEach((transfer, index) => {
+                    if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[index].name}から${transfer}コイン`);
+                });
+                this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${plan.total}コイン`);
             } else if (card.effect === CARD_EFFECTS.CLEANING) {
                 if (this._hasCleaningTarget()) {
                     this._enqueuePendingAction('pendingCleaning');
@@ -641,22 +648,20 @@ class GameManager {
                     this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にできる施設がありません`);
                 }
             } else if (card.effect === CARD_EFFECTS.ITSTARTUP) {
-                let total = 0;
-                for (let i = 0; i < this.players.length; i++) {
-                    if (i === ci) continue;
-                    const steal = Math.min(current.itVentureCoins, this.players[i].coins);
-                    this.players[i].coins -= steal;
-                    total += steal;
-                }
-                current.coins += total;
-                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${total}コイン`);
+                const plan = GameCoinTransaction.collectionPlan(
+                    this.players.map(player => player.coins),
+                    ci,
+                    this.players.map((_, index) => index === ci ? 0 : current.itVentureCoins)
+                );
+                applyCoinTransactionPlan(this.players, plan);
+                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`);
             } else if (card.effect === CARD_EFFECTS.PARK) {
-                const total = this.players.reduce((sum, p) => sum + p.coins, 0);
-                const each = Math.floor(total / this.players.length);
-                const remainder = total - each * this.players.length;
-                for (const p of this.players) p.coins = each;
-                current.coins += remainder;
-                this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${each}コインに均等分配`);
+                const plan = GameCoinTransaction.equalDistributionPlan(
+                    this.players.map(player => player.coins),
+                    ci
+                );
+                applyCoinTransactionPlan(this.players, plan);
+                this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${plan.each}コインに均等分配`);
             }
         }
     }

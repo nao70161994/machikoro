@@ -187,6 +187,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/gameDicePolicy.js',
         'js/gameCardActivationPolicy.js',
         'js/gameBuildPolicy.js',
+        'js/gameCoinTransaction.js',
         'js/gamePendingResolutionPolicy.js',
         'js/GameManager.js',
         'js/cpuTuning.js',
