@@ -674,20 +674,19 @@ function generateRoomId(existingRooms = rooms) {
     return generateUniqueRoomId(existingRooms);
 }
 
-const { buildRejoinDataPayload: buildRawRejoinDataPayload } = makeRejoinPayload({
+const { buildWireRejoinDataPayload } = makeRejoinPayload({
     acceptedClientActionRefs,
     buildRestoreSnapshotAudit,
+    encodeSnapshotField: GameSchemaWire.encodeSnapshotField,
 });
 
 function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
-    const payload = buildRawRejoinDataPayload(room, playerIndex, overrides);
-    const selection = payload.gameStartPayload && payload.gameStartPayload.gameSchema || null;
-    const encoded = GameSchemaWire.encodeSnapshotField(
-        GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
-        selection,
-        payload
+    return buildWireRejoinDataPayload(
+        room,
+        playerIndex,
+        overrides,
+        GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED
     );
-    return encoded.ok ? encoded.value : null;
 }
 
 function buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, now = Date.now()) {

@@ -2,10 +2,10 @@ const assert = require('assert');
 const makeRejoinPayload = require('../server/rejoinPayload');
 const { runTest } = require('./helpers/test-utils');
 
-function makeSubject() {
+function makeSubject(options = {}) {
     const calls = [];
     const acceptedClientActions = [{ playerIndex: 0, clientActionId: 'action-1', seq: 4 }];
-    const { buildRejoinDataPayload } = makeRejoinPayload({
+    const { buildRejoinDataPayload, buildWireRejoinDataPayload } = makeRejoinPayload({
         acceptedClientActionRefs(room) {
             calls.push(['accepted', room]);
             return acceptedClientActions;
@@ -14,8 +14,9 @@ function makeSubject() {
             calls.push(['audit', roomId, gameStartPayload, stateSnapshot]);
             return { roomId, snapshotSeq: stateSnapshot && stateSnapshot.actionSeq };
         },
+        encodeSnapshotField: options.encodeSnapshotField,
     });
-    return { buildRejoinDataPayload, calls, acceptedClientActions };
+    return { buildRejoinDataPayload, buildWireRejoinDataPayload, calls, acceptedClientActions };
 }
 
 runTest('rejoin payloadは既存room stateとACK metadataを同じshapeで返す', () => {
@@ -98,4 +99,46 @@ runTest('暫定hostless restore metadataは対象roomにだけ付与する', () 
     assert.strictEqual(provisional.provisionalRestore, true);
     assert.strictEqual(provisional.hostlessRestoreGeneration, 5);
     assert.strictEqual(provisional.hostlessRestoreCount, 2);
+});
+
+runTest('rejoin wire payloadはgame schema selectionと既存payloadをencoderへ渡す', () => {
+    const encodedPayload = { schemaVersion: 1, payload: { encoded: true } };
+    const encoderCalls = [];
+    const subject = makeSubject({
+        encodeSnapshotField(enabled, selection, payload) {
+            encoderCalls.push({ enabled, selection, payload });
+            return { ok: true, value: encodedPayload };
+        },
+    });
+    const gameSchema = { actionVersion: 0, snapshotVersion: 1 };
+    const room = {
+        roomId: 'WIRE01',
+        gameStartPayload: { gameSchema },
+        stateSnapshot: { actionSeq: 3 },
+        actionLog: [],
+        hostPlayerIndex: 0,
+    };
+
+    const result = subject.buildWireRejoinDataPayload(room, 1, { restoreAudit: null }, true);
+
+    assert.strictEqual(result, encodedPayload);
+    assert.strictEqual(encoderCalls.length, 1);
+    assert.strictEqual(encoderCalls[0].enabled, true);
+    assert.strictEqual(encoderCalls[0].selection, gameSchema);
+    assert.strictEqual(encoderCalls[0].payload.gameStartPayload, room.gameStartPayload);
+    assert.strictEqual(encoderCalls[0].payload.stateSnapshot, room.stateSnapshot);
+});
+
+runTest('rejoin wire payloadはencoder拒否をnullへfail closedする', () => {
+    const subject = makeSubject({
+        encodeSnapshotField() { return { ok: false, reason: 'schema-mismatch' }; },
+    });
+    const room = {
+        roomId: 'WIRE02',
+        gameStartPayload: {},
+        actionLog: [],
+        hostPlayerIndex: 0,
+    };
+
+    assert.strictEqual(subject.buildWireRejoinDataPayload(room, 0, { restoreAudit: null }, true), null);
 });

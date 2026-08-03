@@ -1,6 +1,6 @@
 'use strict';
 
-function makeRejoinPayload({ acceptedClientActionRefs, buildRestoreSnapshotAudit }) {
+function makeRejoinPayload({ acceptedClientActionRefs, buildRestoreSnapshotAudit, encodeSnapshotField }) {
     function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
         const gameStartPayload = overrides.gameStartPayload || room.gameStartPayload;
         const stateSnapshot = overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null);
@@ -25,7 +25,15 @@ function makeRejoinPayload({ acceptedClientActionRefs, buildRestoreSnapshotAudit
         return payload;
     }
 
-    return { buildRejoinDataPayload };
+    function buildWireRejoinDataPayload(room, playerIndex, overrides = {}, snapshotWireEnabled = false) {
+        const payload = buildRejoinDataPayload(room, playerIndex, overrides);
+        if (typeof encodeSnapshotField !== 'function') return payload;
+        const selection = payload.gameStartPayload && payload.gameStartPayload.gameSchema || null;
+        const encoded = encodeSnapshotField(snapshotWireEnabled, selection, payload);
+        return encoded && encoded.ok ? encoded.value : null;
+    }
+
+    return { buildRejoinDataPayload, buildWireRejoinDataPayload };
 }
 
 module.exports = makeRejoinPayload;
