@@ -1664,11 +1664,15 @@ class CPU {
         const copies = player.countCard("改装屋");
         const extraCopies = Math.max(0, copies - 1);
         if (extraCopies <= 0) return 0;
-        let penalty = 0;
-        if (difficulty === "expert") penalty = extraCopies * 14 + Math.max(0, extraCopies - 1) * 6;
-        else if (difficulty === "strong") penalty = extraCopies * 8 + Math.max(0, extraCopies - 1) * 3;
-        else penalty = extraCopies * 4;
-        if (!game || !player.landmarks) return penalty;
+        if (!game || !player.landmarks) {
+            return CPUEvaluation.duplicateRenovationPenalty({
+                extraCopies,
+                difficulty,
+                includeBoardRisk: false,
+                exposedValue: 0,
+                premiumExposure: 0,
+            });
+        }
 
         const builtValues = Object.entries(player.landmarks)
             .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
@@ -1677,7 +1681,15 @@ class CPU {
                 value: this._builtLandmarkValue(name, player, game),
             }))
             .sort((a, b) => b.value - a.value);
-        if (builtValues.length === 0) return penalty;
+        if (builtValues.length === 0) {
+            return CPUEvaluation.duplicateRenovationPenalty({
+                extraCopies,
+                difficulty,
+                includeBoardRisk: false,
+                exposedValue: 0,
+                premiumExposure: 0,
+            });
+        }
 
         const exposedValue = builtValues
             .slice(0, Math.min(extraCopies, builtValues.length))
@@ -1688,18 +1700,15 @@ class CPU {
             LANDMARK_NAMES.RADIO_TOWER,
             LANDMARK_NAMES.AIRPORT,
         ]);
-        const premiumExposure = builtValues
-            .filter(entry => premiumLandmarks.includes(entry.name))
-            .length;
-
-        if (difficulty === "expert") {
-            penalty += exposedValue * 0.9 + premiumExposure * 5 * extraCopies;
-        } else if (difficulty === "strong") {
-            penalty += exposedValue * 0.45 + premiumExposure * 2.5 * extraCopies;
-        } else {
-            penalty += exposedValue * 0.2 + premiumExposure * extraCopies;
-        }
-        return penalty;
+        return CPUEvaluation.duplicateRenovationPenalty({
+            extraCopies,
+            difficulty,
+            includeBoardRisk: true,
+            exposedValue,
+            premiumExposure: builtValues
+                .filter(entry => premiumLandmarks.includes(entry.name))
+                .length,
+        });
     }
 
     _strongRolePressure(card, game, player) {

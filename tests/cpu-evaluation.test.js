@@ -773,6 +773,59 @@ runTest('CPU本体のnormal安全補正wrapperはpure evaluationへ完全委譲�
         }, CARD_EFFECTS));
 });
 
+runTest('CPU evaluation は重複改装リスクを数値featureだけで評価する', () => {
+    assert.strictEqual(CPUEvaluation.duplicateRenovationPenalty(null), 0);
+    assert.strictEqual(CPUEvaluation.duplicateRenovationPenalty({
+        extraCopies: 0, difficulty: 'expert', includeBoardRisk: true,
+        exposedValue: 100, premiumExposure: 4,
+    }), 0);
+    assert.strictEqual(CPUEvaluation.duplicateRenovationPenalty({
+        extraCopies: 2, difficulty: 'normal', includeBoardRisk: false,
+        exposedValue: 100, premiumExposure: 4,
+    }), 8);
+    assert.strictEqual(CPUEvaluation.duplicateRenovationPenalty({
+        extraCopies: 2, difficulty: 'strong', includeBoardRisk: true,
+        exposedValue: 17, premiumExposure: 2,
+    }), 36.65);
+    assert.ok(Math.abs(CPUEvaluation.duplicateRenovationPenalty({
+        extraCopies: 2, difficulty: 'expert', includeBoardRisk: true,
+        exposedValue: 17, premiumExposure: 2,
+    }) - 69.3) < 1e-12);
+});
+
+runTest('CPU本体の重複改装risk wrapperは短絡順と既存評価値を維持する', () => {
+    const { CPU, GameManager, createCardByName, LANDMARK_NAMES } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(3);
+    const player = game.currentPlayer();
+    player.cards.push(createCardByName('改装屋'), createCardByName('改装屋'), createCardByName('改装屋'));
+    player.landmarks[LANDMARK_NAMES.STATION] = true;
+    player.landmarks[LANDMARK_NAMES.SHOPPING_MALL] = true;
+    player.landmarks[LANDMARK_NAMES.HARBOR] = true;
+    const values = {
+        [LANDMARK_NAMES.STATION]: 4,
+        [LANDMARK_NAMES.SHOPPING_MALL]: 10,
+        [LANDMARK_NAMES.HARBOR]: 7,
+    };
+    const calls = [];
+    cpu._builtLandmarkValue = name => {
+        calls.push(name);
+        return values[name] || 0;
+    };
+
+    assert.ok(Math.abs(cpu._duplicateRenovationPenalty(player, 'expert', game) - 69.3) < 1e-12);
+    assert.deepStrictEqual(calls, [
+        LANDMARK_NAMES.STATION,
+        LANDMARK_NAMES.SHOPPING_MALL,
+        LANDMARK_NAMES.HARBOR,
+    ]);
+
+    calls.length = 0;
+    player.cards = player.cards.filter(card => card.name !== '改装屋');
+    assert.strictEqual(cpu._duplicateRenovationPenalty(player, 'expert', game), 0);
+    assert.deepStrictEqual(calls, []);
+});
+
 runTest('CPU evaluation はstrong色役割補正を数値featureだけで評価する', () => {
     const base = {
         color: 'blue', blueCardCount: 0, greenCardCount: 2,

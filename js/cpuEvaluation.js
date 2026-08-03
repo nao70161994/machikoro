@@ -782,6 +782,33 @@ const CPUEvaluation = Object.freeze({
         return penalty;
     },
 
+    duplicateRenovationPenalty(features) {
+        if (!features) return 0;
+        const extraCopies = Math.max(0, features.extraCopies);
+        if (extraCopies <= 0) return 0;
+        let penalty = 0;
+        if (features.difficulty === 'expert') {
+            penalty = extraCopies * 14 + Math.max(0, extraCopies - 1) * 6;
+        } else if (features.difficulty === 'strong') {
+            penalty = extraCopies * 8 + Math.max(0, extraCopies - 1) * 3;
+        } else {
+            penalty = extraCopies * 4;
+        }
+        if (!features.includeBoardRisk) return penalty;
+
+        if (features.difficulty === 'expert') {
+            penalty += features.exposedValue * 0.9 +
+                features.premiumExposure * 5 * extraCopies;
+        } else if (features.difficulty === 'strong') {
+            penalty += features.exposedValue * 0.45 +
+                features.premiumExposure * 2.5 * extraCopies;
+        } else {
+            penalty += features.exposedValue * 0.2 +
+                features.premiumExposure * extraCopies;
+        }
+        return penalty;
+    },
+
     economyBalancePenalty(card, cards, intensity, redFactor) {
         const blueCount = cards.filter(candidate => candidate.color === 'blue').length;
         const greenCount = cards.filter(candidate => candidate.color === 'green').length;
