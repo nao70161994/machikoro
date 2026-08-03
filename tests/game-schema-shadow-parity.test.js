@@ -263,6 +263,62 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'conditional-red-landmark-threshold-chain',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                const current = game.players[0];
+                const opponent = game.players[1];
+                current.cards = [runtime.createCardByName('会員制BAR')];
+                current.dormantCards = [];
+                opponent.cards = [runtime.createCardByName('高級フレンチ')];
+                opponent.dormantCards = [];
+                current.coins = 20;
+                opponent.coins = 10;
+                current.landmarks[runtime.LANDMARK_NAMES.STATION] = true;
+                current.landmarks[runtime.LANDMARK_NAMES.SHOPPING_MALL] = true;
+                current.landmarks[runtime.LANDMARK_NAMES.HARBOR] = true;
+                opponent.landmarks[runtime.LANDMARK_NAMES.STATION] = true;
+                opponent.landmarks[runtime.LANDMARK_NAMES.SHOPPING_MALL] = true;
+                opponent.landmarks[runtime.LANDMARK_NAMES.HARBOR] = true;
+            },
+            actions: [
+                ['rollDice', { forceDice: 1, tunaDice: [1, 1] }],
+                ['selectDice', { useTwo: false, diceCount: 1, d1: 5, d2: 1, tunaDice: [1, 1] }],
+                ['nextTurn', {}],
+                ['rollDice', { forceDice: 1, tunaDice: [1, 1] }],
+                ['selectDice', { useTwo: true, diceCount: 2, d1: 6, d2: 6, tunaDice: [1, 1] }],
+                ['resolveHarbor', { useBonus: false }],
+            ],
+            assertAfter(game, stepIndex) {
+                if (stepIndex === 0) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.SELECT_DICE);
+                    assert.strictEqual(game.players[0].coins, 20);
+                    assert.strictEqual(game.players[1].coins, 10);
+                } else if (stepIndex === 1) {
+                    assert.strictEqual(game.players[0].coins, 15);
+                    assert.strictEqual(game.players[1].coins, 15);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+                } else if (stepIndex === 2) {
+                    assert.strictEqual(game.currentPlayerIndex, 1);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.ROLL);
+                } else if (stepIndex === 3) {
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.SELECT_DICE);
+                    assert.strictEqual(game.players[0].coins, 15);
+                    assert.strictEqual(game.players[1].coins, 15);
+                } else if (stepIndex === 4) {
+                    assert.strictEqual(game.lastDiceResult, 12);
+                    assert.strictEqual(game.players[0].coins, 15);
+                    assert.strictEqual(game.players[1].coins, 15);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.HARBOR_CHOICE);
+                } else {
+                    assert.strictEqual(game.lastDiceResult, 12);
+                    assert.strictEqual(game.players[0].coins, 30);
+                    assert.strictEqual(game.players[1].coins, 1);
+                    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+                }
+            },
+        },
+        {
             name: 'publisher-multiplayer-transfer',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.ROLL;
