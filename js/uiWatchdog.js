@@ -342,6 +342,26 @@ const UiWatchdog = (() => {
         return String(freezeKind || '').split(':')[0];
     }
 
+    function recoverableFreezeKinds(freezeKinds) {
+        const source = freezeKinds || {};
+        return Object.freeze([
+            source.POST_BUILD_UI_BLOCKED,
+            source.HUMAN_TURN_UI_LOCKED,
+            source.PENDING_UI_LOCKED,
+            source.STALE_MODAL_UI_LOCKED,
+            source.CPU_TURN_STALLED,
+            source.ONLINE_ACTION_IN_FLIGHT_STALLED,
+            source.MODAL_UI_LOCKED,
+        ].filter(Boolean));
+    }
+
+    function selectRecoveryHandler(freezeKind, handlers, freezeKinds) {
+        const kind = normalizeFreezeKind(freezeKind);
+        if (!recoverableFreezeKinds(freezeKinds).includes(kind)) return null;
+        if (!handlers || !Object.prototype.hasOwnProperty.call(handlers, kind)) return null;
+        return typeof handlers[kind] === 'function' ? handlers[kind] : null;
+    }
+
     function classListText(element) {
         if (!element) return '';
         if (typeof element.className === 'string') return element.className;
@@ -581,6 +601,8 @@ const UiWatchdog = (() => {
         compactSnapshotForTrace,
         classifyInteractabilityCause,
         normalizeFreezeKind,
+        recoverableFreezeKinds,
+        selectRecoveryHandler,
         classListText,
         isElementUsablyEnabled,
         lockReasonForElement,

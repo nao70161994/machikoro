@@ -249,6 +249,37 @@ assert.strictEqual(UiWatchdog.normalizeFreezeKind('modal-ui-locked:parent-inert'
 assert.strictEqual(UiWatchdog.normalizeFreezeKind(null), '');
 
 {
+    const recoverable = UiWatchdog.recoverableFreezeKinds(kinds);
+    assert.deepStrictEqual(recoverable, [
+        kinds.POST_BUILD_UI_BLOCKED,
+        kinds.HUMAN_TURN_UI_LOCKED,
+        kinds.PENDING_UI_LOCKED,
+        kinds.STALE_MODAL_UI_LOCKED,
+        kinds.CPU_TURN_STALLED,
+        kinds.ONLINE_ACTION_IN_FLIGHT_STALLED,
+        kinds.MODAL_UI_LOCKED,
+    ]);
+    assert.strictEqual(Object.isFrozen(recoverable), true);
+    assert.strictEqual(recoverable.includes(kinds.PENDING_WITHOUT_ACTION), false);
+
+    const recover = () => true;
+    const handlers = { [kinds.MODAL_UI_LOCKED]: recover };
+    assert.strictEqual(
+        UiWatchdog.selectRecoveryHandler('modal-ui-locked:parent-inert', handlers, kinds),
+        recover
+    );
+    assert.strictEqual(
+        UiWatchdog.selectRecoveryHandler(kinds.PENDING_WITHOUT_ACTION, {
+            [kinds.PENDING_WITHOUT_ACTION]: recover,
+        }, kinds),
+        null
+    );
+    assert.strictEqual(UiWatchdog.selectRecoveryHandler('unknown', handlers, kinds), null);
+    const inherited = Object.create({ [kinds.MODAL_UI_LOCKED]: recover });
+    assert.strictEqual(UiWatchdog.selectRecoveryHandler(kinds.MODAL_UI_LOCKED, inherited, kinds), null);
+}
+
+{
     const snapshot = {
         phase: 'build',
         isOnlineGame: false,

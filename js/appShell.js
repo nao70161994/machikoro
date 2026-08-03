@@ -1601,10 +1601,6 @@ function recoverOnlineActionInFlightStall(snapshot) {
     }
 }
 
-function normalizedFreezeKindForRecovery(freezeKind) {
-    return UiWatchdog.normalizeFreezeKind(freezeKind);
-}
-
 function freezeRecoveryHandlers() {
     return {
         [FREEZE_KINDS.POST_BUILD_UI_BLOCKED]: recoverPostBuildUiFreeze,
@@ -1618,9 +1614,12 @@ function freezeRecoveryHandlers() {
 }
 
 function recoverFreezeKind(freezeKind, snapshot) {
-    const kind = normalizedFreezeKindForRecovery(freezeKind);
-    const handler = freezeRecoveryHandlers()[kind];
-    return typeof handler === 'function' ? handler(snapshot) : false;
+    const handler = UiWatchdog.selectRecoveryHandler(
+        freezeKind,
+        freezeRecoveryHandlers(),
+        FREEZE_KINDS
+    );
+    return handler ? handler(snapshot) : false;
 }
 
 function recoverUiInteractability(snapshot) {
