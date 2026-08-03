@@ -70,3 +70,22 @@ runTest('pending resolution policyは清掃対象と改装対象を副作用前�
         landmarkBuilt: true,
     }).ok, true);
 });
+
+runTest('pending resolution policyは全pending完了時だけbuild遷移を返す', () => {
+    const clear = {
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+    };
+    assert.deepStrictEqual(
+        GamePendingResolutionPolicy.completionTransition(clear, 'build'),
+        { completed: true, nextPhase: 'build' }
+    );
+    for (const field of Object.keys(clear)) {
+        const transition = GamePendingResolutionPolicy.completionTransition({ ...clear, [field]: 1 }, 'build');
+        assert.deepStrictEqual(transition, { completed: false, nextPhase: null }, field);
+        assert.strictEqual(Object.isFrozen(transition), true);
+    }
+});

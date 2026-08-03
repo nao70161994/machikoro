@@ -58,12 +58,32 @@ const GamePendingResolutionPolicy = (() => {
         return result(true);
     }
 
+    function hasPendingAction(state = {}) {
+        return !!(
+            state.pendingTV ||
+            state.pendingBusiness ||
+            state.pendingCleaning ||
+            state.pendingMover ||
+            state.pendingRenovation
+        );
+    }
+
+    function completionTransition(state = {}, buildPhase) {
+        const completed = !hasPendingAction(state);
+        return Object.freeze({
+            completed,
+            nextPhase: completed ? buildPhase : null,
+        });
+    }
+
     return Object.freeze({
         reasons,
         planPendingAction,
         planOtherPlayerTarget,
         planCleaningTarget,
         planRenovationTarget,
+        hasPendingAction,
+        completionTransition,
     });
 })();
 

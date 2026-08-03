@@ -847,11 +847,8 @@ class GameManager {
     }
 
     _checkPending() {
-        if (this.pendingTV <= 0 && this.pendingBusiness <= 0 &&
-            this.pendingCleaning <= 0 && this.pendingMover <= 0 &&
-            this.pendingRenovation <= 0) {
-            this.phase = GAME_PHASES.BUILD;
-        }
+        const transition = GamePendingResolutionPolicy.completionTransition(this, GAME_PHASES.BUILD);
+        if (transition.completed) this.phase = transition.nextPhase;
     }
 
     // ITベンチャー：任意で1コイン消費して積立
