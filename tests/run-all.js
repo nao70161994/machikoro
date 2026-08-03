@@ -5,6 +5,7 @@ const path = require('path');
 const TEST_GROUPS = {
     unit: [
         'gamemanager.test.js',
+        'pending-action-queue.test.js',
         'action-contract.test.js',
         'action-ui-registry.test.js',
         'action-contract-report.test.js',
@@ -223,6 +224,7 @@ const TEST_GROUPS = {
     ],
     core: [
         'gamemanager.test.js',
+        'pending-action-queue.test.js',
         'action-ui-registry.test.js',
         'card-contract.test.js',
         'integration.test.js',
@@ -259,6 +261,7 @@ const TEST_GROUPS = {
     ],
     online: [
         'gamemanager.test.js',
+        'pending-action-queue.test.js',
         'action-ui-registry.test.js',
         'server.test.js',
         'server-dice.test.js',

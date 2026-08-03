@@ -30,6 +30,7 @@ const STATIC_ASSETS = [
   '/js/gameEngineDeterminism.js',
   '/js/gameEngineAuthority.js',
   '/js/gameEngineClientShadow.js',
+  '/js/pendingActionQueue.js',
   '/js/GameManager.js',
   '/js/cpuTuning.js',
   '/js/cpuProfile.js',

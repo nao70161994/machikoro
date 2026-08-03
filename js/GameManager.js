@@ -12,13 +12,8 @@ const GAME_PHASES = GameActionContract.phases;
 const GAME_ACTIONS = GameActionContract.actions;
 const GAME_PHASE_ACTIONS = GameActionContract.phaseActions;
 
-const PENDING_ACTION_SPECS = Object.freeze([
-    Object.freeze({ field: 'pendingTV', action: GAME_ACTIONS.RESOLVE_TV }),
-    Object.freeze({ field: 'pendingBusiness', action: GAME_ACTIONS.RESOLVE_BUSINESS }),
-    Object.freeze({ field: 'pendingCleaning', action: GAME_ACTIONS.RESOLVE_CLEANING }),
-    Object.freeze({ field: 'pendingMover', action: GAME_ACTIONS.RESOLVE_MOVER }),
-    Object.freeze({ field: 'pendingRenovation', action: GAME_ACTIONS.RESOLVE_RENOVATION }),
-]);
+const PENDING_ACTION_CONTRACT = PendingActionQueue.createContract(GAME_ACTIONS);
+const PENDING_ACTION_SPECS = PENDING_ACTION_CONTRACT.specs;
 
 const PENDING_IT_QUEUE_POLICY = Object.freeze({
     field: 'pendingIT',
@@ -27,13 +22,8 @@ const PENDING_IT_QUEUE_POLICY = Object.freeze({
     reason: 'ITベンチャーはターン終了時の任意確認で、他の同時pending効果と混在しないためqueue外の優先special caseとして扱う',
 });
 
-const PENDING_ACTION_SPEC_BY_FIELD = Object.freeze(Object.fromEntries(
-    PENDING_ACTION_SPECS.map(spec => [spec.field, spec])
-));
-
-const PENDING_ACTION_SPEC_BY_ACTION = Object.freeze(Object.fromEntries(
-    PENDING_ACTION_SPECS.map(spec => [spec.action, spec])
-));
+const PENDING_ACTION_SPEC_BY_FIELD = PENDING_ACTION_CONTRACT.byField;
+const PENDING_ACTION_SPEC_BY_ACTION = PENDING_ACTION_CONTRACT.byAction;
 
 const GAME_ACTION_REGISTRY = GameActionContract.registry;
 
@@ -164,70 +154,25 @@ class GameManager {
     }
 
     static _pendingDescriptorsFromFields(game) {
-        if (!game) return [];
-        return PENDING_ACTION_SPECS
-            .map(spec => ({
-                action: spec.action,
-                field: spec.field,
-                count: Number.isInteger(game[spec.field]) ? game[spec.field] : 0,
-            }))
-            .filter(pending => pending.count > 0);
+        return PendingActionQueue.descriptorsFromFields(game, PENDING_ACTION_CONTRACT);
     }
 
     static _pendingQueueEntriesFromFields(game) {
-        const entries = [];
-        for (const pending of GameManager._pendingDescriptorsFromFields(game)) {
-            for (let i = 0; i < pending.count; i++) {
-                entries.push({ action: pending.action, field: pending.field });
-            }
-        }
-        return entries;
+        return PendingActionQueue.entriesFromFields(game, PENDING_ACTION_CONTRACT);
     }
 
     static _normalizePendingActionQueue(game) {
-        if (!game || !Array.isArray(game.pendingActionQueue)) return [];
-        const counts = Object.fromEntries(PENDING_ACTION_SPECS.map(spec => [spec.field, 0]));
-        const queue = [];
-        for (const entry of game.pendingActionQueue) {
-            if (!entry || typeof entry !== 'object') continue;
-            const fieldSpec = PENDING_ACTION_SPEC_BY_FIELD[entry.field];
-            const actionSpec = PENDING_ACTION_SPEC_BY_ACTION[entry.action];
-            if (entry.field && entry.action && (!fieldSpec || fieldSpec !== actionSpec)) continue;
-            const spec = fieldSpec || actionSpec;
-            if (!spec) continue;
-            queue.push({ action: spec.action, field: spec.field, count: 1 });
-            counts[spec.field]++;
-        }
-        for (const spec of PENDING_ACTION_SPECS) {
-            const fieldCount = Number.isInteger(game[spec.field]) ? game[spec.field] : 0;
-            if (counts[spec.field] !== fieldCount) return [];
-        }
-        return queue;
+        return PendingActionQueue.normalize(game, PENDING_ACTION_CONTRACT);
     }
 
     static _groupPendingQueue(queue) {
-        const grouped = [];
-        for (const entry of queue) {
-            const last = grouped[grouped.length - 1];
-            if (last && last.action === entry.action && last.field === entry.field) {
-                last.count++;
-            } else {
-                grouped.push({ action: entry.action, field: entry.field, count: 1 });
-            }
-        }
-        return grouped;
+        return PendingActionQueue.group(queue);
     }
 
     static ensurePendingActionQueue(game) {
-        if (!game) return [];
-        const queue = GameManager._normalizePendingActionQueue(game);
-        if (queue.length > 0) return queue;
-        const entries = GameManager._pendingQueueEntriesFromFields(game);
-        if (Array.isArray(game.pendingActionQueue) || entries.length > 0) {
-            game.pendingActionQueue = entries.map(entry => ({ action: entry.action, field: entry.field }));
-        }
-        return entries;
+        return PendingActionQueue.ensure(game, PENDING_ACTION_CONTRACT);
     }
+
 
     // Returns pending action descriptors in the order they should be resolved.
     static pendingActionsFor(game) {
@@ -255,8 +200,7 @@ class GameManager {
     }
 
     static serializedPendingActionsFor(game) {
-        return GameManager.ensurePendingActionQueue(game)
-            .map(pending => ({ action: pending.action, field: pending.field }));
+        return PendingActionQueue.serialize(game, PENDING_ACTION_CONTRACT);
     }
 
     rebuildPendingActionsFromFields() {

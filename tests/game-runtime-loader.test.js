@@ -14,6 +14,7 @@ runTest('game runtime loaderはsource順と公開symbolをfrozen契約にする'
         'js/Card.js',
         'js/Player.js',
         'js/actionContract.js',
+        'js/pendingActionQueue.js',
         'js/GameManager.js',
     ]);
     assert.deepStrictEqual(GAME_RUNTIME_EXPORT_NAMES, [
@@ -70,16 +71,16 @@ runTest('game runtime loaderはresolve-read-run順と最後のexport bindingを�
     const result = loadGameRuntime();
     assert.strictEqual(result.console, runtimeConsole);
     assert.strictEqual(calls[0][0], 'create');
-    assert.strictEqual(calls.filter(call => call[0] === 'resolve').length, 4);
-    assert.strictEqual(calls.filter(call => call[0] === 'read').length, 4);
+    assert.strictEqual(calls.filter(call => call[0] === 'resolve').length, 5);
+    assert.strictEqual(calls.filter(call => call[0] === 'read').length, 5);
     const runs = calls.filter(call => call[0] === 'run');
-    assert.strictEqual(runs.length, 5);
+    assert.strictEqual(runs.length, 6);
     GAME_RUNTIME_SOURCE_FILES.forEach((file, index) => {
         assert.deepStrictEqual(runs[index][3], { filename: file });
         assert.strictEqual(runs[index][1], `source:/app/${file}`);
     });
-    assert.strictEqual(runs[4][1], GAME_RUNTIME_EXPORT_SOURCE);
-    assert.strictEqual(runs[4][3], undefined);
+    assert.strictEqual(runs[5][1], GAME_RUNTIME_EXPORT_SOURCE);
+    assert.strictEqual(runs[5][3], undefined);
 });
 
 runTest('game runtime loaderは実sourceからserver mirror依存を公開する', () => {

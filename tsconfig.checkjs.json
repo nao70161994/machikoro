@@ -19,6 +19,7 @@
     "js/Player.js",
     "js/CPU.js",
     "js/GameManager.js",
+    "js/pendingActionQueue.js",
     "js/actionContract.js",
     "js/actionUiRegistry.js",
     "js/adSlots.js",

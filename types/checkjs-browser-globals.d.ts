@@ -1,4 +1,5 @@
 declare var GameActionContract: typeof import("../js/actionContract");
+declare var PendingActionQueue: typeof import("../js/pendingActionQueue").PendingActionQueue;
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
