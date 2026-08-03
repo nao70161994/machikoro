@@ -1482,6 +1482,45 @@ runTest('UiBuildMenu action state はphase・pending・turn・allowedActionsをp
     }
 });
 
+runTest('UiBuildMenu undo stateは表示条件とhuman入力gateをpureに分離する', () => {
+    const helper = require('../js/uiBuildMenu');
+    const visible = helper.undoBuildActionState({
+        hasUndoState: true,
+        hasGame: true,
+        builtThisTurn: true,
+        allowedActions: new Set(['undoBuild']),
+        isHumanTurn: false,
+    });
+    assert.deepStrictEqual({ ...visible }, { visible: true, enabled: false });
+    assert.ok(helper.buildUndoBuildButtonHtml(visible).includes(' disabled'));
+    const enabled = helper.undoBuildActionState({
+        hasUndoState: true,
+        hasGame: true,
+        builtThisTurn: true,
+        allowedActions: ['undoBuild'],
+        isHumanTurn: true,
+    });
+    assert.deepStrictEqual({ ...enabled }, { visible: true, enabled: true });
+    assert.ok(!helper.buildUndoBuildButtonHtml(enabled).includes(' disabled'));
+    for (const blocked of [
+        { hasUndoState: false },
+        { hasGame: false },
+        { builtThisTurn: false },
+        { allowedActions: [] },
+    ]) {
+        const state = helper.undoBuildActionState({
+            hasUndoState: true,
+            hasGame: true,
+            builtThisTurn: true,
+            allowedActions: ['undoBuild'],
+            isHumanTurn: true,
+            ...blocked,
+        });
+        assert.strictEqual(state.visible, false);
+        assert.strictEqual(helper.buildUndoBuildButtonHtml(state), '');
+    }
+});
+
 runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固定する', () => {
     const helper = require('../js/uiBuildMenu');
     const card = {

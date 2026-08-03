@@ -10,17 +10,32 @@ const UiBuildMenu = (() => {
         return phase === buildPhase && pendingRenovation <= 0 && !builtThisTurn;
     }
 
+    function includesAction(allowedActions, action) {
+        return allowedActions && typeof allowedActions.has === 'function'
+            ? allowedActions.has(action)
+            : Array.isArray(allowedActions) && allowedActions.includes(action);
+    }
+
     function buildActionState(options) {
         const buildGateOpen = isBuildGateOpen(options);
         const { isHumanTurn, allowedActions } = options;
-        const hasAction = action => allowedActions && typeof allowedActions.has === 'function'
-            ? allowedActions.has(action)
-            : Array.isArray(allowedActions) && allowedActions.includes(action);
         return Object.freeze({
             buildGateOpen,
-            canBuildCardAction: buildGateOpen && !!isHumanTurn && hasAction('buildCard'),
-            canBuildLandmarkAction: buildGateOpen && !!isHumanTurn && hasAction('buildLandmark'),
+            canBuildCardAction: buildGateOpen && !!isHumanTurn && includesAction(allowedActions, 'buildCard'),
+            canBuildLandmarkAction: buildGateOpen && !!isHumanTurn && includesAction(allowedActions, 'buildLandmark'),
         });
+    }
+
+    function undoBuildActionState(options) {
+        const visible = !!options.hasUndoState && !!options.hasGame && !!options.builtThisTurn &&
+            includesAction(options.allowedActions, 'undoBuild');
+        return Object.freeze({ visible, enabled: visible && !!options.isHumanTurn });
+    }
+
+    function buildUndoBuildButtonHtml(state) {
+        return state && state.visible
+            ? `<button class="undo-btn" data-action="undoBuild"${state.enabled ? '' : ' disabled'}>↩ 建設を取り消す</button>`
+            : '';
     }
 
     function renderBuildCardButton(options) {
@@ -71,7 +86,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ safeCardColorName, isBuildGateOpen, buildActionState, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

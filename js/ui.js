@@ -562,19 +562,40 @@ function buildLandmarkButtonsHtml(current, canBuildLandmarkAction) {
     });
 }
 
-function canRenderUndoBuildAction() {
-    if (!undoState || !game || !game.builtThisTurn) return false;
+function currentUndoBuildActionState() {
+    if (!undoState || !game || !game.builtThisTurn) {
+        return UiBuildMenu.undoBuildActionState({
+            hasUndoState: !!undoState,
+            hasGame: !!game,
+            builtThisTurn: !!(game && game.builtThisTurn),
+        });
+    }
     try {
-        return currentUiAllowedActions().has('undoBuild');
+        const allowedActions = currentUiAllowedActions();
+        const visibleState = UiBuildMenu.undoBuildActionState({
+            hasUndoState: true,
+            hasGame: true,
+            builtThisTurn: true,
+            allowedActions,
+        });
+        return UiBuildMenu.undoBuildActionState({
+            hasUndoState: true,
+            hasGame: true,
+            builtThisTurn: true,
+            allowedActions,
+            isHumanTurn: visibleState.visible && isCurrentHumanUiTurn(),
+        });
     } catch (_) {
-        return false;
+        return UiBuildMenu.undoBuildActionState({});
     }
 }
 
+function canRenderUndoBuildAction() {
+    return currentUndoBuildActionState().visible;
+}
+
 function buildUndoBuildButtonHtml() {
-    return canRenderUndoBuildAction()
-        ? `<button class="undo-btn" data-action="undoBuild"${uiActionDisabledAttr('undoBuild')}>↩ 建設を取り消す</button>`
-        : '';
+    return UiBuildMenu.buildUndoBuildButtonHtml(currentUndoBuildActionState());
 }
 
 function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction) {
