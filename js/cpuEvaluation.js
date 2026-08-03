@@ -334,6 +334,17 @@ const CPUEvaluation = Object.freeze({
         return total;
     },
 
+    normalSafetyAdjustment(features, effects) {
+        if (!features) return 0;
+        let adjustment = 0;
+        if (features.effect === effects.LOAN && features.coins >= 8) adjustment -= 1.5;
+        if (features.effect === effects.RENOVATION && features.builtLandmarkCount === 0) adjustment -= 1.8;
+        if (features.color === 'purple' && features.stableIncome < 6 && features.cost >= 6) adjustment -= 1.1;
+        if (features.color === 'red' && features.redCardCount >= 2) adjustment -= 0.7;
+        if ((features.color === 'blue' || features.color === 'green') && features.stableIncome < 5) adjustment += 0.35;
+        return adjustment;
+    },
+
     strongConditionalCardAdjustment(effect, opponentBuiltCounts, difficulty, effects) {
         if (difficulty !== 'strong') return 0;
         if (effect !== effects.FRENCHR && effect !== effects.MEMBERBAR) return 0;

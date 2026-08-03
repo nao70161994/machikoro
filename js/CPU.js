@@ -1726,14 +1726,15 @@ class CPU {
     }
 
     _normalSafetyAdjustment(card, game, player) {
-        let adjustment = 0;
-        const stableIncome = this._estimateStableIncome(game, player);
-        if (card.effect === CARD_EFFECTS.LOAN && player.coins >= 8) adjustment -= 1.5;
-        if (card.effect === CARD_EFFECTS.RENOVATION && player.builtLandmarkCount() === 0) adjustment -= 1.8;
-        if (card.color === "purple" && stableIncome < 6 && card.cost >= 6) adjustment -= 1.1;
-        if (card.color === "red" && player.cards.filter(c => c.color === "red").length >= 2) adjustment -= 0.7;
-        if ((card.color === "blue" || card.color === "green") && stableIncome < 5) adjustment += 0.35;
-        return adjustment;
+        return CPUEvaluation.normalSafetyAdjustment({
+            effect: card.effect,
+            color: card.color,
+            cost: card.cost,
+            coins: player.coins,
+            builtLandmarkCount: player.builtLandmarkCount(),
+            stableIncome: this._estimateStableIncome(game, player),
+            redCardCount: player.cards.filter(candidate => candidate.color === "red").length,
+        }, CARD_EFFECTS);
     }
 
     _economyBalancePenalty(card, game, player, intensity = 1) {

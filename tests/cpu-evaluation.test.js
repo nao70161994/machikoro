@@ -665,6 +665,47 @@ runTest('CPU evaluation は特殊カードのpure価値計算を維持する', (
     assert.strictEqual(CPUEvaluation.loanBurdenValue(3), -7.5);
 });
 
+runTest('CPU evaluation はnormal安全補正を数値featureだけで評価する', () => {
+    const effects = { LOAN: 'loan', RENOVATION: 'renovation' };
+    const base = {
+        effect: '', color: 'blue', cost: 2, coins: 3,
+        builtLandmarkCount: 1, stableIncome: 4, redCardCount: 0,
+    };
+    assert.strictEqual(CPUEvaluation.normalSafetyAdjustment(base, effects), 0.35);
+    assert.strictEqual(CPUEvaluation.normalSafetyAdjustment({
+        ...base, effect: effects.LOAN, color: 'red', coins: 8, redCardCount: 2,
+    }, effects), -2.2);
+    assert.ok(Math.abs(CPUEvaluation.normalSafetyAdjustment({
+        ...base, effect: effects.RENOVATION, color: 'purple', cost: 6,
+        builtLandmarkCount: 0, stableIncome: 5,
+    }, effects) + 2.9) < 1e-12);
+    assert.strictEqual(CPUEvaluation.normalSafetyAdjustment(null, effects), 0);
+});
+
+runTest('CPU本体のnormal安全補正wrapperはpure evaluationへ完全委譲する', () => {
+    const { CPU, GameManager, createCardByName, CARD_EFFECTS } = loadCPURuntime();
+    const cpu = new CPU('normal');
+    const game = new GameManager(3);
+    const current = game.currentPlayer();
+    const card = createCardByName('貸金業');
+    current.coins = 9;
+    current.cards.push(
+        { name: 'red-a', color: 'red' },
+        { name: 'red-b', color: 'red' }
+    );
+    cpu._estimateStableIncome = () => 4;
+    assert.strictEqual(cpu._normalSafetyAdjustment(card, game, current),
+        CPUEvaluation.normalSafetyAdjustment({
+            effect: card.effect,
+            color: card.color,
+            cost: card.cost,
+            coins: current.coins,
+            builtLandmarkCount: current.builtLandmarkCount(),
+            stableIncome: 4,
+            redCardCount: 2,
+        }, CARD_EFFECTS));
+});
+
 runTest('CPU evaluation はstrong条件付き赤カード圧力を数値featureだけで評価する', () => {
     const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
 
