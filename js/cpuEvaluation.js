@@ -41,6 +41,84 @@ const CPUEvaluation = Object.freeze({
         return CPUEvaluation.diceFrequencyForRoller(card.diceNums, player, stationName);
     },
 
+    cardActivationValue(card, game, owner, roller, dice, options) {
+        const { effects, categories, landmarkNames } = options;
+        const capped = options.capValue;
+        const ownerIndex = game.players.indexOf(owner);
+        const rollerIndex = game.players.indexOf(roller);
+        const isCurrentTurn = ownerIndex === rollerIndex;
+        const opponents = game.players.filter((_, index) => index !== ownerIndex);
+        const copyOrdinal = owner.cards
+            .slice(0, owner.cards.indexOf(card) + 1)
+            .filter(candidate => candidate.name === card.name)
+            .length || 1;
+
+        if (card.color === 'blue') {
+            if (card.effect === effects.HARBOR) return capped(owner.landmarks[landmarkNames.HARBOR] ? card.income : 0);
+            if (card.effect === effects.TUNA) return capped(owner.landmarks[landmarkNames.HARBOR] ? 7 : 0);
+            if (card.effect === effects.CORNFIELD) return capped(options.calcCardIncome(card, owner, game));
+            return capped(card.income);
+        }
+
+        if (card.color === 'red') {
+            if (isCurrentTurn) return 0;
+            if (card.effect === effects.HARBOR_RED) return capped(owner.landmarks[landmarkNames.HARBOR] ? card.income : 0);
+            if (card.effect === effects.FRENCHR) {
+                return capped(roller.landmarks && roller.builtLandmarkCount() >= 2
+                    ? Math.min(card.income, roller.coins) : 0);
+            }
+            if (card.effect === effects.MEMBERBAR) {
+                return capped(roller.landmarks && roller.builtLandmarkCount() >= 3 ? roller.coins : 0);
+            }
+            return capped(card.income + (owner.landmarks[landmarkNames.SHOPPING_MALL] &&
+                card.category === categories.RESTAURANT ? 1 : 0));
+        }
+
+        if (!isCurrentTurn) return 0;
+
+        switch (card.effect) {
+        case effects.CHEESE:
+        case effects.FURNITURE:
+        case effects.FLOWER:
+        case effects.MARKET:
+        case effects.FOODWAREHOUSE:
+        case effects.DRINKFACTORY:
+        case effects.WINERY:
+        case effects.FEWLANDMARK:
+            return capped(options.calcCardIncome(card, owner, game));
+        case effects.STADIUM:
+            return capped(opponents.length * card.income + (opponents.length > 0 ? card.income : 0));
+        case effects.TV:
+            return capped(options.estimateTvValue(game, owner));
+        case effects.PUBLISHER:
+            return capped(options.estimatePublisherValue(game, owner));
+        case effects.TAXOFFICE:
+            return capped(options.estimateTaxOfficeValue(game, owner));
+        case effects.LOAN:
+            return dice === 5 || dice === 6 ? -2 : 0;
+        case effects.BUSINESS:
+            return capped(options.estimateBusinessValue(game, owner));
+        case effects.CLEANING:
+            return capped(options.estimateCleaningValue(game, owner));
+        case effects.MOVER:
+            return capped(options.estimateMoverValue(game, owner));
+        case effects.RENOVATION:
+            return capped(options.estimateRenovationValue(game, owner, copyOrdinal));
+        case effects.ITSTARTUP:
+            return capped(options.estimateItStartupValue(game, owner));
+        case effects.PARK:
+            return capped(options.estimateParkValue(game, owner));
+        default: {
+            let amount = card.income;
+            if (owner.landmarks[landmarkNames.SHOPPING_MALL] &&
+                    (card.category === categories.RESTAURANT || card.category === categories.SHOP)) {
+                amount += 1;
+            }
+            return amount;
+        }
+        }
+    },
+
     cardSelfIncomeValue(card, game, owner, roller, effects, categories, landmarkNames, calcCardIncome) {
         const ownerIndex = game.players.indexOf(owner);
         const rollerIndex = game.players.indexOf(roller);

@@ -1051,3 +1051,48 @@ runTest('CPU evaluation は自己収入をカード効果ごとのpure値へ投�
         assert.strictEqual(cpu._cardSelfIncomeValue(card, game, owner, owner, 6), evaluate(card), name);
     }
 });
+
+runTest('CPU evaluation はcard activationのeffect dispatchと依存呼出をpureに維持する', () => {
+    const effects = {
+        HARBOR: 'harbor', TUNA: 'tuna', CORNFIELD: 'cornfield', HARBOR_RED: 'harborRed',
+        FRENCHR: 'french', MEMBERBAR: 'member', CHEESE: 'cheese', FURNITURE: 'furniture',
+        FLOWER: 'flower', MARKET: 'market', FOODWAREHOUSE: 'food', DRINKFACTORY: 'drink',
+        WINERY: 'winery', FEWLANDMARK: 'few', STADIUM: 'stadium', TV: 'tv',
+        PUBLISHER: 'publisher', TAXOFFICE: 'tax', LOAN: 'loan', BUSINESS: 'business',
+        CLEANING: 'cleaning', MOVER: 'mover', RENOVATION: 'renovation', ITSTARTUP: 'it', PARK: 'park',
+    };
+    const owner = {
+        cards: [], coins: 3, landmarks: { harborName: true, mallName: true },
+        isDormant: () => false,
+    };
+    const roller = { coins: 4, landmarks: {}, builtLandmarkCount: () => 3 };
+    const game = { players: [owner, roller] };
+    const calls = [];
+    const options = {
+        effects,
+        categories: { RESTAURANT: 'restaurant', SHOP: 'shop' },
+        landmarkNames: { HARBOR: 'harborName', SHOPPING_MALL: 'mallName' },
+        capValue: value => { calls.push(['cap', value]); return value * 2; },
+        calcCardIncome: () => 7,
+        estimateTvValue: () => 8,
+        estimatePublisherValue: () => 9,
+        estimateTaxOfficeValue: () => 10,
+        estimateBusinessValue: () => 11,
+        estimateCleaningValue: () => 12,
+        estimateMoverValue: () => 13,
+        estimateRenovationValue: (_game, _owner, ordinal) => 13 + ordinal,
+        estimateItStartupValue: () => 15,
+        estimateParkValue: () => 16,
+    };
+    const card = (color, effect, income = 1, category = '') => ({ color, effect, income, category, name: effect });
+
+    assert.strictEqual(CPUEvaluation.cardActivationValue(card('red', 'normal', 2, 'restaurant'), game, owner, roller, 3, options), 6);
+    assert.strictEqual(CPUEvaluation.cardActivationValue(card('red', effects.MEMBERBAR, 5), game, owner, roller, 3, options), 8);
+    assert.strictEqual(CPUEvaluation.cardActivationValue(card('green', effects.TV), game, owner, owner, 6, options), 16);
+    assert.strictEqual(CPUEvaluation.cardActivationValue(card('green', effects.LOAN), game, owner, owner, 5, options), -2);
+    const renovation = card('green', effects.RENOVATION);
+    owner.cards.push(renovation, renovation);
+    assert.strictEqual(CPUEvaluation.cardActivationValue(renovation, game, owner, owner, 6, options), 28);
+    assert.strictEqual(CPUEvaluation.cardActivationValue(card('blue', effects.CORNFIELD), game, owner, owner, 3, options), 14);
+    assert.ok(calls.length >= 5);
+});

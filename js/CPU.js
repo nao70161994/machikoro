@@ -444,73 +444,23 @@ class CPU {
     // ===== サイコロ判断 =====
 
     _cardActivationValue(card, game, owner, roller, dice) {
-        const capped = (value) => this._strongSoftCapValue(value);
-        const ownerIndex = game.players.indexOf(owner);
-        const rollerIndex = game.players.indexOf(roller);
-        const isCurrentTurn = ownerIndex === rollerIndex;
-        const opponents = game.players.filter((_, i) => i !== ownerIndex);
-        const livingCards = owner.cards.filter(c => !owner.isDormant(c));
-        const copyOrdinal = owner.cards
-            .slice(0, owner.cards.indexOf(card) + 1)
-            .filter(candidate => candidate.name === card.name)
-            .length || 1;
-
-        if (card.color === "blue") {
-            if (card.effect === CARD_EFFECTS.HARBOR) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
-            if (card.effect === CARD_EFFECTS.TUNA) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0);
-            if (card.effect === CARD_EFFECTS.CORNFIELD) return capped(GameManager.calcCardIncome(card, owner, game));
-            return capped(card.income);
-        }
-
-        if (card.color === "red") {
-            if (isCurrentTurn) return 0;
-            if (card.effect === CARD_EFFECTS.HARBOR_RED) return capped(owner.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0);
-            if (card.effect === CARD_EFFECTS.FRENCHR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 2 ? Math.min(card.income, roller.coins) : 0);
-            if (card.effect === CARD_EFFECTS.MEMBERBAR) return capped(roller.landmarks && roller.builtLandmarkCount() >= 3 ? roller.coins : 0);
-            return capped(card.income + (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] && card.category === CARD_CATEGORIES.RESTAURANT ? 1 : 0));
-        }
-
-        if (!isCurrentTurn) return 0;
-
-        switch (card.effect) {
-            case CARD_EFFECTS.CHEESE:
-            case CARD_EFFECTS.FURNITURE:
-            case CARD_EFFECTS.FLOWER:
-            case CARD_EFFECTS.MARKET:
-            case CARD_EFFECTS.FOODWAREHOUSE:
-            case CARD_EFFECTS.DRINKFACTORY:
-            case CARD_EFFECTS.WINERY:
-            case CARD_EFFECTS.FEWLANDMARK:
-                return capped(GameManager.calcCardIncome(card, owner, game));
-            case CARD_EFFECTS.STADIUM:
-                return capped(opponents.length * card.income + (opponents.length > 0 ? card.income : 0));
-            case CARD_EFFECTS.TV:
-                return capped(this._estimateTvValue(game, owner));
-            case CARD_EFFECTS.PUBLISHER:
-                return capped(this._estimatePublisherValue(game, owner));
-            case CARD_EFFECTS.TAXOFFICE:
-                return capped(this._estimateTaxOfficeValue(game, owner));
-            case CARD_EFFECTS.LOAN:
-                return (dice === 5 || dice === 6) ? -2 : 0;
-            case CARD_EFFECTS.BUSINESS:
-                return capped(this._estimateBusinessValue(game, owner));
-            case CARD_EFFECTS.CLEANING:
-                return capped(this._estimateCleaningValue(game, owner));
-            case CARD_EFFECTS.MOVER:
-                return capped(this._estimateMoverValue(game, owner));
-            case CARD_EFFECTS.RENOVATION:
-                return capped(this._estimateRenovationValue(game, owner, copyOrdinal));
-            case CARD_EFFECTS.ITSTARTUP:
-                return capped(this._estimateItStartupValue(game, owner));
-            case CARD_EFFECTS.PARK:
-                return capped(this._estimateParkValue(game, owner));
-            default: {
-                let amount = card.income;
-                if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-                    (card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP)) amount += 1;
-                return amount;
-            }
-        }
+        return CPUEvaluation.cardActivationValue(card, game, owner, roller, dice, {
+            effects: CARD_EFFECTS,
+            categories: CARD_CATEGORIES,
+            landmarkNames: LANDMARK_NAMES,
+            capValue: value => this._strongSoftCapValue(value),
+            calcCardIncome: GameManager.calcCardIncome,
+            estimateTvValue: (runtime, player) => this._estimateTvValue(runtime, player),
+            estimatePublisherValue: (runtime, player) => this._estimatePublisherValue(runtime, player),
+            estimateTaxOfficeValue: (runtime, player) => this._estimateTaxOfficeValue(runtime, player),
+            estimateBusinessValue: (runtime, player) => this._estimateBusinessValue(runtime, player),
+            estimateCleaningValue: (runtime, player) => this._estimateCleaningValue(runtime, player),
+            estimateMoverValue: (runtime, player) => this._estimateMoverValue(runtime, player),
+            estimateRenovationValue: (runtime, player, ordinal) =>
+                this._estimateRenovationValue(runtime, player, ordinal),
+            estimateItStartupValue: (runtime, player) => this._estimateItStartupValue(runtime, player),
+            estimateParkValue: (runtime, player) => this._estimateParkValue(runtime, player),
+        });
     }
 
     _estimateRollScore(game, dice) {
