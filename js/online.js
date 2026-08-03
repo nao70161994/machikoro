@@ -41,72 +41,59 @@ function isOnlineRuntimeFlagEnabled(name) {
     return OnlineRuntimeFlags.isEnabled(name, onlineRuntimeFlagRoot());
 }
 
+let onlineSchemaTransport = null;
+
+function getOnlineSchemaTransport() {
+    if (onlineSchemaTransport) return onlineSchemaTransport;
+    onlineSchemaTransport = OnlineSchemaTransport.create({
+        runtimeFlags: typeof OnlineRuntimeFlags !== 'undefined' ? OnlineRuntimeFlags : null,
+        negotiation: typeof GameSchemaNegotiation !== 'undefined' ? GameSchemaNegotiation : null,
+        actionWire: typeof GameSchemaWire !== 'undefined' ? GameSchemaWire : null,
+        recreateWire: typeof GameSchemaRecreateWire !== 'undefined' ? GameSchemaRecreateWire : null,
+        getFlagRoot: () => typeof window !== 'undefined' ? window : null,
+        getSelection: () => onlineGameSchemaSelection,
+    });
+    return onlineSchemaTransport;
+}
+
 function isGameSchemaNegotiationTransportEnabled() {
-    return isOnlineRuntimeFlagEnabled('isGameSchemaNegotiationTransportEnabled');
+    return getOnlineSchemaTransport().isNegotiationEnabled();
 }
 
 function isGameSchemaWireTransportEnabled() {
-    return isGameSchemaNegotiationTransportEnabled() &&
-        isOnlineRuntimeFlagEnabled('isGameSchemaWireTransportEnabled');
+    return getOnlineSchemaTransport().isActionWireEnabled();
 }
 
 function isGameSchemaSnapshotWireTransportEnabled() {
-    return isGameSchemaNegotiationTransportEnabled() &&
-        isOnlineRuntimeFlagEnabled('isGameSchemaSnapshotWireTransportEnabled');
+    return getOnlineSchemaTransport().isSnapshotWireEnabled();
 }
 
 function isGameSchemaRecreateWireTransportEnabled() {
-    return isGameSchemaNegotiationTransportEnabled() &&
-        isOnlineRuntimeFlagEnabled('isGameSchemaRecreateWireTransportEnabled');
+    return getOnlineSchemaTransport().isRecreateWireEnabled();
 }
 
 function getGameSchemaCapabilitiesForTransport() {
-    const enabled = isGameSchemaNegotiationTransportEnabled();
-    if (typeof GameSchemaNegotiation === 'undefined') return null;
-    return GameSchemaNegotiation.transportCapabilities(enabled);
+    return getOnlineSchemaTransport().capabilities();
 }
 
 function acceptsNegotiatedGameSchema(selection) {
-    if (!isGameSchemaNegotiationTransportEnabled()) return true;
-    if (typeof GameSchemaNegotiation === 'undefined') return selection == null;
-    return GameSchemaNegotiation.supportsSelection(getGameSchemaCapabilitiesForTransport(), selection);
+    return getOnlineSchemaTransport().acceptsSelection(selection);
 }
 
 function encodeOnlineGameSchemaAction(payload) {
-    const actionEnabled = isGameSchemaWireTransportEnabled();
-    if (!actionEnabled) return { ok: true, value: payload };
-    if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
-    return GameSchemaWire.encodeActionPayload(actionEnabled, false, onlineGameSchemaSelection, payload);
+    return getOnlineSchemaTransport().encodeAction(payload);
 }
 
 function decodeOnlineGameSchemaAction(payload) {
-    const actionEnabled = isGameSchemaWireTransportEnabled();
-    const snapshotEnabled = isGameSchemaSnapshotWireTransportEnabled();
-    if (!actionEnabled && !snapshotEnabled) return { ok: true, value: payload };
-    if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
-    return GameSchemaWire.decodeActionPayload(
-        actionEnabled,
-        snapshotEnabled,
-        onlineGameSchemaSelection,
-        payload
-    );
+    return getOnlineSchemaTransport().decodeAction(payload);
 }
 
 function decodeOnlineGameSchemaSnapshotPayload(payload) {
-    if (!isGameSchemaSnapshotWireTransportEnabled()) return { ok: true, value: payload };
-    if (typeof GameSchemaWire === 'undefined') return { ok: false, reason: 'wire-codec-unavailable' };
-    const selection = payload && payload.gameStartPayload && payload.gameStartPayload.gameSchema ||
-        onlineGameSchemaSelection;
-    return GameSchemaWire.decodeSnapshotField(true, selection, payload);
+    return getOnlineSchemaTransport().decodeSnapshot(payload);
 }
 
 function encodeOnlineRecreateRoomPayload(payload) {
-    const enabled = isGameSchemaRecreateWireTransportEnabled();
-    if (!enabled) return { ok: true, value: payload };
-    if (typeof GameSchemaRecreateWire === 'undefined') {
-        return { ok: false, reason: 'recreate-codec-unavailable' };
-    }
-    return GameSchemaRecreateWire.encode(true, payload);
+    return getOnlineSchemaTransport().encodeRecreate(payload);
 }
 
 function buildOnlineRejoinPayload(session) {

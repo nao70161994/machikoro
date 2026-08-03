@@ -74,6 +74,7 @@ const STATIC_ASSETS = [
   '/js/onlineReconnectState.js',
   '/js/onlineRuntimeFlags.js',
   '/js/onlineRetryPolicy.js',
+  '/js/onlineSchemaTransport.js',
   '/js/online.js',
   '/js/uiNotice.js',
   '/js/uiLogDisplay.js',

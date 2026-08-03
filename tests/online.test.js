@@ -149,6 +149,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineReconnectState.js');
     loadScript(context, 'js/onlineRuntimeFlags.js');
     loadScript(context, 'js/onlineRetryPolicy.js');
+    loadScript(context, 'js/onlineSchemaTransport.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート

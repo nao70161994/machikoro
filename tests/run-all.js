@@ -117,6 +117,7 @@ const TEST_GROUPS = {
         'online-restore-rank.test.js',
         'online-reconnect-state.test.js',
         'online-runtime-flags.test.js',
+        'online-schema-transport.test.js',
         'online-retry-policy.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
