@@ -25,12 +25,14 @@ runTest('online runtime flagsは全reader名とwindow propertyを一つの正本
         path.join(__dirname, '..', 'js', 'onlineSchemaTransport.js'),
         'utf8'
     );
+    assert.ok(onlineSource.includes('OnlineRuntimeFlags.createNamedReaders(onlineRuntimeFlagRoot'));
+    assert.ok(!onlineSource.includes('isOnlineRuntimeFlagEnabled'));
     for (const reader of EXPECTED_READERS) {
         if (SCHEMA_TRANSPORT_READERS.includes(reader)) {
             assert.ok(onlineSource.includes('function ' + reader + '('), reader + ' wrapper');
             assert.ok(schemaTransportSource.includes("isFlagEnabled('" + reader + "')"), reader);
         } else {
-            assert.ok(onlineSource.includes("isOnlineRuntimeFlagEnabled('" + reader + "')"), reader);
+            assert.ok(onlineSource.includes("    '" + reader + "',"), reader);
         }
         assert.ok(!(onlineSource + schemaTransportSource).includes(
             'window.' + OnlineRuntimeFlags.names[reader] + ' === true'
@@ -55,6 +57,29 @@ runTest('online runtime flag readerはrootを呼出時に解決し既存判定�
     assert.strictEqual(reader.isEnabled('unknown'), false);
     assert.strictEqual(calls, 3);
     assert.throws(() => OnlineRuntimeFlags.createReader(null), /getRoot is required/);
+});
+
+runTest('online runtime named readersは選択名をfrozen関数へ投影しrootを遅延評価する', () => {
+    const selected = EXPECTED_READERS.slice(4, 7);
+    let root = {};
+    const readers = OnlineRuntimeFlags.createNamedReaders(() => root, selected);
+    assert.deepStrictEqual(Object.keys(readers), selected);
+    assert.ok(Object.isFrozen(readers));
+    for (const name of selected) {
+        assert.strictEqual(typeof readers[name], 'function');
+        assert.strictEqual(readers[name](), false);
+    }
+    root = { [OnlineRuntimeFlags.names[selected[1]]]: true };
+    assert.strictEqual(readers[selected[0]](), false);
+    assert.strictEqual(readers[selected[1]](), true);
+    assert.throws(
+        () => OnlineRuntimeFlags.createNamedReaders(() => root, ['unknown']),
+        /unknown runtime flag reader/
+    );
+    assert.throws(
+        () => OnlineRuntimeFlags.createNamedReaders(() => root, null),
+        /selectedNames must be an array/
+    );
 });
 
 runTest('online runtime flagsは厳密なboolean trueだけを有効にする', () => {

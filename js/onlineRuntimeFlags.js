@@ -79,10 +79,22 @@ const OnlineRuntimeFlags = (() => {
         });
     }
 
+    function createNamedReaders(getRoot, selectedNames = Object.keys(names)) {
+        const reader = createReader(getRoot);
+        if (!Array.isArray(selectedNames)) throw new TypeError('selectedNames must be an array');
+        const readers = {};
+        for (const name of selectedNames) {
+            if (typeof names[name] !== 'string') throw new TypeError(`unknown runtime flag reader: ${name}`);
+            readers[name] = () => reader.isEnabled(name);
+        }
+        return Object.freeze(readers);
+    }
+
     return Object.freeze({
         names,
         isEnabled,
         createReader,
+        createNamedReaders,
     });
 })();
 

@@ -37,12 +37,6 @@ function onlineRuntimeFlagRoot() {
     return typeof window !== 'undefined' ? window : null;
 }
 
-const onlineRuntimeFlagReader = OnlineRuntimeFlags.createReader(onlineRuntimeFlagRoot);
-
-function isOnlineRuntimeFlagEnabled(name) {
-    return onlineRuntimeFlagReader.isEnabled(name);
-}
-
 let onlineSchemaTransport = null;
 
 function getOnlineSchemaTransport() {
@@ -409,201 +403,107 @@ function _observeOnlineReconnectEvent(event) {
     return observation;
 }
 
-function isOnlineReconnectEventAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectEventAuthorityEnabled');
-}
-
-function isOnlineReconnectEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectEffectAuthorityEnabled');
-}
-
-function isOnlineReconnectStatusEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectStatusEffectAuthorityEnabled');
-}
-
-function isOnlineReconnectTimerAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectTimerAuthorityEnabled');
-}
-
-function isOnlineReconnectCallbackAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectCallbackAuthorityEnabled');
-}
-
-function isOnlineReconnectQueuePlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectQueuePlanAuthorityEnabled');
-}
-
-function isOnlineReconnectQueueEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectQueueEffectAuthorityEnabled');
-}
-
-function isOnlineRestoreQueueStateAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreQueueStateAuthorityEnabled');
-}
-
-function isOnlineRestoreQueueStoreReadAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreQueueStoreReadAuthorityEnabled');
-}
-
-function isOnlineRestoreQueueStoreWriteAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreQueueStoreWriteAuthorityEnabled');
-}
-
-function isOnlineReconnectCleanupAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectCleanupAuthorityEnabled');
-}
-
-function isOnlineReconnectCleanupEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectCleanupEffectAuthorityEnabled');
-}
-
-function isOnlineReconnectRequestPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectRequestPlanAuthorityEnabled');
-}
-
-function isOnlineReconnectRequestEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineReconnectRequestEffectAuthorityEnabled');
-}
-
-function isOnlineRestoreAbortPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreAbortPlanAuthorityEnabled');
-}
-
-function isOnlineRestoreAbortEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreAbortEffectAuthorityEnabled');
-}
-
-function isOnlineActionTimeoutPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineActionTimeoutPlanAuthorityEnabled');
-}
-
-function isOnlineActionTimeoutEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineActionTimeoutEffectAuthorityEnabled');
-}
-
-function isIncomingGameActionPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isIncomingGameActionPlanAuthorityEnabled');
-}
-
-function isAcceptedGameActionPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionPlanAuthorityEnabled');
-}
-
-function isIncomingGameActionDecodeEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isIncomingGameActionDecodeEffectAuthorityEnabled');
-}
-
-function isAcceptedGameActionDecodeEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionDecodeEffectAuthorityEnabled');
-}
-
-function isIncomingGameActionApplyEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isIncomingGameActionApplyEffectAuthorityEnabled');
-}
-
-function isAcceptedGameActionApplyEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionApplyEffectAuthorityEnabled');
-}
-
-function isIncomingGameActionGapEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isIncomingGameActionGapEffectAuthorityEnabled');
-}
-
-function isAcceptedGameActionGapEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionGapEffectAuthorityEnabled');
-}
-
-function isIncomingGameActionNoGameEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isIncomingGameActionNoGameEffectAuthorityEnabled');
-}
-
-function isAcceptedGameActionNoGameEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionNoGameEffectAuthorityEnabled');
-}
-
-function isIncomingGameActionCommitEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isIncomingGameActionCommitEffectAuthorityEnabled');
-}
-
-function isAcceptedGameActionCommitEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isAcceptedGameActionCommitEffectAuthorityEnabled');
-}
-
-function isOnlineSocketConnectPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineSocketConnectPlanAuthorityEnabled');
-}
-
-function isOnlineSocketConnectEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineSocketConnectEffectAuthorityEnabled');
-}
-
-function isOnlineSocketDisconnectPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineSocketDisconnectPlanAuthorityEnabled');
-}
-
-function isOnlineSocketDisconnectEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineSocketDisconnectEffectAuthorityEnabled');
-}
-
-function isOnlineHostChangedPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineHostChangedPlanAuthorityEnabled');
-}
-
-function isOnlineHostChangedEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineHostChangedEffectAuthorityEnabled');
-}
-
-function isPendingReconciliationPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isPendingReconciliationPlanAuthorityEnabled');
-}
-
-function isRejoinActionLogPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isRejoinActionLogPlanAuthorityEnabled');
-}
-
-function isLocalHostRestoreOfferPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isLocalHostRestoreOfferPlanAuthorityEnabled');
-}
-
-function isOnlineRejoinPersistencePlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRejoinPersistencePlanAuthorityEnabled');
-}
-
-function isOnlineRejoinPersistenceEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRejoinPersistenceEffectAuthorityEnabled');
-}
-
-function isOnlinePendingResendPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlinePendingResendPlanAuthorityEnabled');
-}
-
-function isOnlinePendingResendEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlinePendingResendEffectAuthorityEnabled');
-}
-
-function isOnlineRestoreReplayPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreReplayPlanAuthorityEnabled');
-}
-
-function isOnlineRestoreReplayEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreReplayEffectAuthorityEnabled');
-}
-
-function isOnlineRestoreActivationPlanAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreActivationPlanAuthorityEnabled');
-}
-
-function isOnlineRestoreActivationEffectAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineRestoreActivationEffectAuthorityEnabled');
-}
-
-function isOnlineGameEngineShadowEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineGameEngineShadowEnabled');
-}
-
-function isOnlineGameEngineAuthorityEnabled() {
-    return isOnlineRuntimeFlagEnabled('isOnlineGameEngineAuthorityEnabled');
-}
+const {
+    isOnlineReconnectEventAuthorityEnabled,
+    isOnlineReconnectEffectAuthorityEnabled,
+    isOnlineReconnectStatusEffectAuthorityEnabled,
+    isOnlineReconnectTimerAuthorityEnabled,
+    isOnlineReconnectCallbackAuthorityEnabled,
+    isOnlineReconnectQueuePlanAuthorityEnabled,
+    isOnlineReconnectQueueEffectAuthorityEnabled,
+    isOnlineRestoreQueueStateAuthorityEnabled,
+    isOnlineRestoreQueueStoreReadAuthorityEnabled,
+    isOnlineRestoreQueueStoreWriteAuthorityEnabled,
+    isOnlineReconnectCleanupAuthorityEnabled,
+    isOnlineReconnectCleanupEffectAuthorityEnabled,
+    isOnlineReconnectRequestPlanAuthorityEnabled,
+    isOnlineReconnectRequestEffectAuthorityEnabled,
+    isOnlineRestoreAbortPlanAuthorityEnabled,
+    isOnlineRestoreAbortEffectAuthorityEnabled,
+    isOnlineActionTimeoutPlanAuthorityEnabled,
+    isOnlineActionTimeoutEffectAuthorityEnabled,
+    isIncomingGameActionPlanAuthorityEnabled,
+    isAcceptedGameActionPlanAuthorityEnabled,
+    isIncomingGameActionDecodeEffectAuthorityEnabled,
+    isAcceptedGameActionDecodeEffectAuthorityEnabled,
+    isIncomingGameActionApplyEffectAuthorityEnabled,
+    isAcceptedGameActionApplyEffectAuthorityEnabled,
+    isIncomingGameActionGapEffectAuthorityEnabled,
+    isAcceptedGameActionGapEffectAuthorityEnabled,
+    isIncomingGameActionNoGameEffectAuthorityEnabled,
+    isAcceptedGameActionNoGameEffectAuthorityEnabled,
+    isIncomingGameActionCommitEffectAuthorityEnabled,
+    isAcceptedGameActionCommitEffectAuthorityEnabled,
+    isOnlineSocketConnectPlanAuthorityEnabled,
+    isOnlineSocketConnectEffectAuthorityEnabled,
+    isOnlineSocketDisconnectPlanAuthorityEnabled,
+    isOnlineSocketDisconnectEffectAuthorityEnabled,
+    isOnlineHostChangedPlanAuthorityEnabled,
+    isOnlineHostChangedEffectAuthorityEnabled,
+    isPendingReconciliationPlanAuthorityEnabled,
+    isRejoinActionLogPlanAuthorityEnabled,
+    isLocalHostRestoreOfferPlanAuthorityEnabled,
+    isOnlineRejoinPersistencePlanAuthorityEnabled,
+    isOnlineRejoinPersistenceEffectAuthorityEnabled,
+    isOnlinePendingResendPlanAuthorityEnabled,
+    isOnlinePendingResendEffectAuthorityEnabled,
+    isOnlineRestoreReplayPlanAuthorityEnabled,
+    isOnlineRestoreReplayEffectAuthorityEnabled,
+    isOnlineRestoreActivationPlanAuthorityEnabled,
+    isOnlineRestoreActivationEffectAuthorityEnabled,
+    isOnlineGameEngineShadowEnabled,
+    isOnlineGameEngineAuthorityEnabled,
+} = OnlineRuntimeFlags.createNamedReaders(onlineRuntimeFlagRoot, [
+    'isOnlineReconnectEventAuthorityEnabled',
+    'isOnlineReconnectEffectAuthorityEnabled',
+    'isOnlineReconnectStatusEffectAuthorityEnabled',
+    'isOnlineReconnectTimerAuthorityEnabled',
+    'isOnlineReconnectCallbackAuthorityEnabled',
+    'isOnlineReconnectQueuePlanAuthorityEnabled',
+    'isOnlineReconnectQueueEffectAuthorityEnabled',
+    'isOnlineRestoreQueueStateAuthorityEnabled',
+    'isOnlineRestoreQueueStoreReadAuthorityEnabled',
+    'isOnlineRestoreQueueStoreWriteAuthorityEnabled',
+    'isOnlineReconnectCleanupAuthorityEnabled',
+    'isOnlineReconnectCleanupEffectAuthorityEnabled',
+    'isOnlineReconnectRequestPlanAuthorityEnabled',
+    'isOnlineReconnectRequestEffectAuthorityEnabled',
+    'isOnlineRestoreAbortPlanAuthorityEnabled',
+    'isOnlineRestoreAbortEffectAuthorityEnabled',
+    'isOnlineActionTimeoutPlanAuthorityEnabled',
+    'isOnlineActionTimeoutEffectAuthorityEnabled',
+    'isIncomingGameActionPlanAuthorityEnabled',
+    'isAcceptedGameActionPlanAuthorityEnabled',
+    'isIncomingGameActionDecodeEffectAuthorityEnabled',
+    'isAcceptedGameActionDecodeEffectAuthorityEnabled',
+    'isIncomingGameActionApplyEffectAuthorityEnabled',
+    'isAcceptedGameActionApplyEffectAuthorityEnabled',
+    'isIncomingGameActionGapEffectAuthorityEnabled',
+    'isAcceptedGameActionGapEffectAuthorityEnabled',
+    'isIncomingGameActionNoGameEffectAuthorityEnabled',
+    'isAcceptedGameActionNoGameEffectAuthorityEnabled',
+    'isIncomingGameActionCommitEffectAuthorityEnabled',
+    'isAcceptedGameActionCommitEffectAuthorityEnabled',
+    'isOnlineSocketConnectPlanAuthorityEnabled',
+    'isOnlineSocketConnectEffectAuthorityEnabled',
+    'isOnlineSocketDisconnectPlanAuthorityEnabled',
+    'isOnlineSocketDisconnectEffectAuthorityEnabled',
+    'isOnlineHostChangedPlanAuthorityEnabled',
+    'isOnlineHostChangedEffectAuthorityEnabled',
+    'isPendingReconciliationPlanAuthorityEnabled',
+    'isRejoinActionLogPlanAuthorityEnabled',
+    'isLocalHostRestoreOfferPlanAuthorityEnabled',
+    'isOnlineRejoinPersistencePlanAuthorityEnabled',
+    'isOnlineRejoinPersistenceEffectAuthorityEnabled',
+    'isOnlinePendingResendPlanAuthorityEnabled',
+    'isOnlinePendingResendEffectAuthorityEnabled',
+    'isOnlineRestoreReplayPlanAuthorityEnabled',
+    'isOnlineRestoreReplayEffectAuthorityEnabled',
+    'isOnlineRestoreActivationPlanAuthorityEnabled',
+    'isOnlineRestoreActivationEffectAuthorityEnabled',
+    'isOnlineGameEngineShadowEnabled',
+    'isOnlineGameEngineAuthorityEnabled',
+]);
 
 function getOnlineGameEngineShadowOutcome() {
     return _lastOnlineGameEngineShadowOutcome;
