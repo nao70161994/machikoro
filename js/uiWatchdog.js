@@ -238,6 +238,24 @@ const UiWatchdog = (() => {
         };
     }
 
+    function issueDedupeSignature(snapshot, issues) {
+        const actionable = Array.isArray(issues)
+            ? issues.filter(issue => issue && issue.freezeKind)
+            : [];
+        if (!actionable.length) return stateKey(snapshot);
+        return actionable
+            .map(issue => [
+                issue.freezeKind,
+                issue.kind,
+                issue.phase || '',
+                issue.action || '',
+                issue.target || '',
+                issue.reason || '',
+            ].join(':'))
+            .sort()
+            .join('|');
+    }
+
     function compactSnapshotForTrace(snapshot) {
         const ui = snapshot && snapshot.ui || {};
         return {
@@ -404,6 +422,7 @@ const UiWatchdog = (() => {
     return Object.freeze({
         stateKey,
         compactIssueForTrace,
+        issueDedupeSignature,
         compactSnapshotForTrace,
         classifyInteractabilityCause,
         normalizeFreezeKind,

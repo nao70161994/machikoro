@@ -423,4 +423,25 @@ assert.strictEqual(UiWatchdog.isOnlineUiBlockedSnapshot({ isOnlineGame: true, so
     assert.deepStrictEqual(UiWatchdog.compactRecentCheckpoints(entries, 0), []);
 }
 
+{
+    const snapshot = {
+        phase: 'build',
+        turnCount: 4,
+        currentPlayerIndex: 1,
+        pendingFields: {},
+    };
+    assert.strictEqual(
+        UiWatchdog.issueDedupeSignature(snapshot, []),
+        UiWatchdog.stateKey(snapshot)
+    );
+    assert.strictEqual(UiWatchdog.issueDedupeSignature(snapshot, [
+        { freezeKind: 'pending-ui-locked', kind: 'hidden', phase: 'pending', action: 'resolveTV', target: 'pendingMenu', reason: 'display-none' },
+        { freezeKind: '', kind: 'ignored' },
+        { freezeKind: 'human-turn-ui-locked', kind: 'disabled', action: 'nextTurn', target: 'btnSkip' },
+    ]), [
+        'human-turn-ui-locked:disabled::nextTurn:btnSkip:',
+        'pending-ui-locked:hidden:pending:resolveTV:pendingMenu:display-none',
+    ].join('|'));
+}
+
 console.log('ui watchdog tests passed');

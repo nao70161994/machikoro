@@ -1685,12 +1685,7 @@ function recoverUiInteractability(snapshot) {
 }
 
 function freezeIssueDedupeSignature(snapshot) {
-    const issues = validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind);
-    if (!issues.length) return freezeWatchdogStateKey(snapshot);
-    return issues
-        .map(issue => [issue.freezeKind, issue.kind, issue.phase || '', issue.action || '', issue.target || '', issue.reason || ''].join(':'))
-        .sort()
-        .join('|');
+    return UiWatchdog.issueDedupeSignature(snapshot, validateUiInteractability(snapshot));
 }
 
 function compactElementSnapshotForStorage(state) {
