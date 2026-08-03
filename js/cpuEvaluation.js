@@ -345,6 +345,31 @@ const CPUEvaluation = Object.freeze({
         return adjustment;
     },
 
+    expertLandmarkEffectBonus(name, features, landmarkNames) {
+        if (!features || !landmarkNames) return 0;
+        const remainingBonus = Math.max(0, 6 - features.remainingLandmarkCount) * 0.6;
+        if (name === landmarkNames.STATION) {
+            return features.hasStation ? 0 : 5 + Math.max(0, features.rollDelta) * 1.5;
+        }
+        if (name === landmarkNames.SHOPPING_MALL) {
+            return Math.min(5, features.mallTargetCardCount * 0.8) + remainingBonus;
+        }
+        if (name === landmarkNames.HARBOR) {
+            return Math.min(8, features.harborBaseBonus + features.harborCardCount * 2) +
+                Math.max(0, features.rollDelta);
+        }
+        if (name === landmarkNames.RADIO_TOWER) {
+            return 2.5 + Math.min(5, Math.max(0, features.rollSwing)) + remainingBonus;
+        }
+        if (name === landmarkNames.AMUSEMENT_PARK) {
+            return features.hasStation ? 3 + remainingBonus : 1;
+        }
+        if (name === landmarkNames.AIRPORT) {
+            return features.remainingLandmarkCount <= 2 ? 4 : 1.5;
+        }
+        return 0;
+    },
+
     strongRolePressure(features) {
         if (!features) return 0;
         let adjustment = 0;

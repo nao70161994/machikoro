@@ -665,6 +665,73 @@ runTest('CPU evaluation は特殊カードのpure価値計算を維持する', (
     assert.strictEqual(CPUEvaluation.loanBurdenValue(3), -7.5);
 });
 
+runTest('CPU evaluation はexpertランドマーク効果bonusを数値featureだけで評価する', () => {
+    const names = {
+        STATION: 'station', SHOPPING_MALL: 'mall', HARBOR: 'harbor',
+        RADIO_TOWER: 'radio', AMUSEMENT_PARK: 'park', AIRPORT: 'airport',
+    };
+    const base = {
+        remainingLandmarkCount: 5,
+        hasStation: false,
+        mallTargetCardCount: 0,
+        harborCardCount: 0,
+        harborBaseBonus: 1.5,
+        rollDelta: 2,
+        rollSwing: 0,
+    };
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.STATION, base, names), 8);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.STATION, {
+        ...base, hasStation: true,
+    }, names), 0);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.SHOPPING_MALL, {
+        ...base, mallTargetCardCount: 10,
+    }, names), 5.6);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.HARBOR, {
+        ...base, harborCardCount: 3,
+    }, names), 9.5);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.RADIO_TOWER, {
+        ...base, rollSwing: 7,
+    }, names), 8.1);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.AMUSEMENT_PARK, {
+        ...base, hasStation: true,
+    }, names), 3.6);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.AMUSEMENT_PARK, base, names), 1);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.AIRPORT, {
+        ...base, remainingLandmarkCount: 2,
+    }, names), 4);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus('unknown', base, names), 0);
+    assert.strictEqual(CPUEvaluation.expertLandmarkEffectBonus(names.STATION, null, names), 0);
+});
+
+runTest('CPU本体のexpertランドマーク効果bonus wrapperは必要な期待値だけ評価してpure計算へ委譲する', () => {
+    const { CPU, GameManager, LANDMARK_NAMES } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const game = new GameManager(4);
+    const current = game.currentPlayer();
+    cpu._remainingEnabledLandmarks = () => ['a', 'b'];
+    const expectedCalls = [];
+    cpu._expectedDiceScoreWithHarbor = (_game, useTwo) => {
+        expectedCalls.push(useTwo);
+        return useTwo ? 10 : 4;
+    };
+    const actual = cpu._expertV2SimpleLandmarkEffectBonus(game, LANDMARK_NAMES.RADIO_TOWER, 1);
+    const expected = CPUEvaluation.expertLandmarkEffectBonus(LANDMARK_NAMES.RADIO_TOWER, {
+        remainingLandmarkCount: 2,
+        hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
+        mallTargetCardCount: 0,
+        harborCardCount: 0,
+        harborBaseBonus: cpu.expertHarborLandmarkBaseBonus,
+        rollDelta: 1,
+        rollSwing: 6,
+    }, LANDMARK_NAMES);
+    assert.strictEqual(actual, expected);
+    assert.deepStrictEqual(expectedCalls, [true, false]);
+
+    expectedCalls.length = 0;
+    cpu._expertV2SimpleLandmarkEffectBonus(game, LANDMARK_NAMES.HARBOR, 1);
+    assert.deepStrictEqual(expectedCalls, []);
+});
+
 runTest('CPU evaluation はnormal安全補正を数値featureだけで評価する', () => {
     const effects = { LOAN: 'loan', RENOVATION: 'renovation' };
     const base = {

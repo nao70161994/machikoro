@@ -2800,35 +2800,30 @@ class CPU {
     _expertV2SimpleLandmarkEffectBonus(game, name, rollDelta = 0) {
         const current = game.currentPlayer();
         const remaining = this._remainingEnabledLandmarks(current, game).length;
-        const remainingBonus = Math.max(0, 6 - remaining) * 0.6;
-        if (name === LANDMARK_NAMES.STATION) {
-            return current.landmarks[LANDMARK_NAMES.STATION] ? 0 : 5 + Math.max(0, rollDelta) * 1.5;
-        }
-        if (name === LANDMARK_NAMES.SHOPPING_MALL) {
-            const mallTargets = current.cards.filter(card =>
+        const mallTargetCardCount = name === LANDMARK_NAMES.SHOPPING_MALL
+            ? current.cards.filter(card =>
                 card.category === CARD_CATEGORIES.RESTAURANT || card.category === CARD_CATEGORIES.SHOP
-            ).length;
-            return Math.min(5, mallTargets * 0.8) + remainingBonus;
-        }
-        if (name === LANDMARK_NAMES.HARBOR) {
-            const harborCards = current.cards.filter(card =>
+            ).length
+            : 0;
+        const harborCardCount = name === LANDMARK_NAMES.HARBOR
+            ? current.cards.filter(card =>
                 card.effect === CARD_EFFECTS.HARBOR ||
                 card.effect === CARD_EFFECTS.HARBOR_RED ||
                 card.effect === CARD_EFFECTS.TUNA
-            ).length;
-            return Math.min(8, this.expertHarborLandmarkBaseBonus + harborCards * 2) + Math.max(0, rollDelta);
-        }
-        if (name === LANDMARK_NAMES.RADIO_TOWER) {
-            const rollSwing = Math.max(0, this._expectedDiceScoreWithHarbor(game, true) - this._expectedDiceScoreWithHarbor(game, false));
-            return 2.5 + Math.min(5, rollSwing) + remainingBonus;
-        }
-        if (name === LANDMARK_NAMES.AMUSEMENT_PARK) {
-            return current.landmarks[LANDMARK_NAMES.STATION] ? 3 + remainingBonus : 1;
-        }
-        if (name === LANDMARK_NAMES.AIRPORT) {
-            return remaining <= 2 ? 4 : 1.5;
-        }
-        return 0;
+            ).length
+            : 0;
+        const rollSwing = name === LANDMARK_NAMES.RADIO_TOWER
+            ? Math.max(0, this._expectedDiceScoreWithHarbor(game, true) - this._expectedDiceScoreWithHarbor(game, false))
+            : 0;
+        return CPUEvaluation.expertLandmarkEffectBonus(name, {
+            remainingLandmarkCount: remaining,
+            hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
+            mallTargetCardCount,
+            harborCardCount,
+            harborBaseBonus: this.expertHarborLandmarkBaseBonus,
+            rollDelta,
+            rollSwing,
+        }, LANDMARK_NAMES);
     }
 
     _sameExpertV2SimpleBuildOption(a, b) {
