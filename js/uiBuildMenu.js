@@ -5,6 +5,24 @@ const UiBuildMenu = (() => {
         return ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue';
     }
 
+    function isBuildGateOpen(options) {
+        const { phase, buildPhase, pendingRenovation, builtThisTurn } = options;
+        return phase === buildPhase && pendingRenovation <= 0 && !builtThisTurn;
+    }
+
+    function buildActionState(options) {
+        const buildGateOpen = isBuildGateOpen(options);
+        const { isHumanTurn, allowedActions } = options;
+        const hasAction = action => allowedActions && typeof allowedActions.has === 'function'
+            ? allowedActions.has(action)
+            : Array.isArray(allowedActions) && allowedActions.includes(action);
+        return Object.freeze({
+            buildGateOpen,
+            canBuildCardAction: buildGateOpen && !!isHumanTurn && hasAction('buildCard'),
+            canBuildLandmarkAction: buildGateOpen && !!isHumanTurn && hasAction('buildLandmark'),
+        });
+    }
+
     function renderBuildCardButton(options) {
         const { card, stock, canBuildThis, escapeHtml, getEffectText } = options;
         const safeName = escapeHtml(card.name);
@@ -53,7 +71,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ safeCardColorName, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ safeCardColorName, isBuildGateOpen, buildActionState, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

@@ -1449,6 +1449,39 @@ runTest('buildLandmarkDetailContent はランドマーク詳細HTMLを生成す�
     assert.ok(content.html.includes('サイコロ'));
 });
 
+runTest('UiBuildMenu action state はphase・pending・turn・allowedActionsをpureに判定する', () => {
+    const helper = require('../js/uiBuildMenu');
+    const base = {
+        phase: 'build',
+        buildPhase: 'build',
+        pendingRenovation: 0,
+        builtThisTurn: false,
+        isHumanTurn: true,
+        allowedActions: new Set(['buildCard', 'buildLandmark']),
+    };
+
+    assert.deepStrictEqual({ ...helper.buildActionState(base) }, {
+        buildGateOpen: true,
+        canBuildCardAction: true,
+        canBuildLandmarkAction: true,
+    });
+    assert.deepStrictEqual({ ...helper.buildActionState({ ...base, allowedActions: ['buildCard'] }) }, {
+        buildGateOpen: true,
+        canBuildCardAction: true,
+        canBuildLandmarkAction: false,
+    });
+    for (const blocked of [
+        { phase: 'roll' },
+        { pendingRenovation: 1 },
+        { builtThisTurn: true },
+        { isHumanTurn: false },
+    ]) {
+        const state = helper.buildActionState({ ...base, ...blocked });
+        assert.strictEqual(state.canBuildCardAction, false);
+        assert.strictEqual(state.canBuildLandmarkAction, false);
+    }
+});
+
 runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固定する', () => {
     const helper = require('../js/uiBuildMenu');
     const card = {

@@ -596,10 +596,19 @@ function renderBuildMenu() {
     const buildMenu = document.getElementById("buildMenu");
     if (!buildMenu || !game) return;
     const current = game.currentPlayer();
-    const buildGateOpen = game.phase === GAME_PHASES.BUILD && game.pendingRenovation <= 0 && !game.builtThisTurn;
-    const canBuildCardAction = buildGateOpen && canShowUiAction('buildCard');
-    const canBuildLandmarkAction = buildGateOpen && canShowUiAction('buildLandmark');
-    buildMenu.innerHTML = buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction);
+    const buildState = {
+        phase: game.phase,
+        buildPhase: GAME_PHASES.BUILD,
+        pendingRenovation: game.pendingRenovation,
+        builtThisTurn: game.builtThisTurn,
+    };
+    const buildGateOpen = UiBuildMenu.isBuildGateOpen(buildState);
+    const actionState = UiBuildMenu.buildActionState({
+        ...buildState,
+        isHumanTurn: buildGateOpen && isCurrentHumanUiTurn(),
+        allowedActions: buildGateOpen ? currentUiAllowedActions() : new Set(),
+    });
+    buildMenu.innerHTML = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction);
 }
 
 function setCardFilter(color) {
