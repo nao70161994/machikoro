@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const eslintConfig = require('../eslint.config');
 const fs = require('fs');
 const path = require('path');
 const packageJson = require('../package.json');
@@ -118,4 +119,21 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/restoreReplayAdmission.js'));
     assert.ok(config.files.includes('server/restoreValidation.js'));
     assert.ok(config.files.includes('server/reportingPolicy.js'));
+});
+
+runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだけを除く', () => {
+    const configuredLintFiles = eslintConfig
+        .flatMap(entry => Array.isArray(entry.files) ? entry.files : []);
+    assert.ok(configuredLintFiles.includes('scripts/report-action-contract.js'));
+    const lintFiles = configuredLintFiles
+        .filter(file => file !== 'scripts/report-action-contract.js')
+        .slice()
+        .sort();
+    const checkJsFiles = config.files
+        .filter(file => file.endsWith('.js'))
+        .slice()
+        .sort();
+
+    assert.deepStrictEqual(checkJsFiles, lintFiles);
+    assert.ok(config.files.includes('js/crashScreen.js'));
 });
