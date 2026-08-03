@@ -1096,3 +1096,52 @@ runTest('CPU evaluation はcard activationのeffect dispatchと依存呼出をpu
     assert.strictEqual(CPUEvaluation.cardActivationValue(card('blue', effects.CORNFIELD), game, owner, owner, 3, options), 14);
     assert.ok(calls.length >= 5);
 });
+
+runTest('CPU evaluation はcard purchase valueのeffect倍率とcallbackをpureに合成する', () => {
+    const effects = {
+        CHEESE: 'cheese', FURNITURE: 'furniture', FLOWER: 'flower', MARKET: 'market',
+        FOODWAREHOUSE: 'food', DRINKFACTORY: 'drink', WINERY: 'winery', FEWLANDMARK: 'few',
+        CORNFIELD: 'cornfield', STADIUM: 'stadium', TV: 'tv', PUBLISHER: 'publisher',
+        TAXOFFICE: 'tax', HARBOR: 'harbor', HARBOR_RED: 'harborRed', TUNA: 'tuna',
+        FRENCHR: 'french', MEMBERBAR: 'member', LOAN: 'loan', ITSTARTUP: 'it',
+        RENOVATION: 'renovation', CLEANING: 'cleaning', MOVER: 'mover', BUSINESS: 'business', PARK: 'park',
+    };
+    const player = {
+        coins: 4,
+        landmarks: { harborName: false },
+        countCard: name => name === 'renovationName' ? 2 : 0,
+    };
+    const game = { players: [player, {}, {}] };
+    const profile = { blueFactor: 2, redFactor: 3, greenFactor: 4, purpleFactor: 5, massAttackFactor: 6 };
+    const options = {
+        effects,
+        landmarkNames: { HARBOR: 'harborName' },
+        calcCardIncome: () => 7,
+        estimateTvValue: () => 8,
+        estimatePublisherValue: () => 9,
+        estimateTaxOfficeValue: () => 10,
+        estimateConditionalRedValue: () => 11,
+        estimateItStartupValue: (_game, _player, assumeInvest) => assumeInvest ? 12 : -1,
+        estimateRenovationValue: (_game, _player, ordinal) => 10 + ordinal,
+        estimateCleaningValue: () => 14,
+        estimateMoverValue: () => 15,
+        estimateBusinessValue: () => 16,
+        renovationCardName: 'renovationName',
+    };
+    const value = (effect, color = 'green', income = 2) => CPUEvaluation.cardPurchaseValue(
+        { effect, color, income }, game, player, profile, options
+    );
+
+    assert.strictEqual(value(effects.CHEESE), 28);
+    assert.strictEqual(value(effects.STADIUM), 36);
+    assert.strictEqual(value(effects.TV), 40);
+    assert.strictEqual(value(effects.HARBOR, 'blue', 5), 4);
+    assert.strictEqual(value(effects.LOAN), 14);
+    assert.strictEqual(value(effects.ITSTARTUP), 72);
+    assert.strictEqual(value(effects.RENOVATION), 52);
+    assert.strictEqual(value(effects.BUSINESS), 16);
+    game.players.pop();
+    assert.strictEqual(value(effects.BUSINESS), 18.4);
+    assert.strictEqual(value(effects.PARK), 0);
+    assert.strictEqual(value('normal', 'purple', 3), 15);
+});

@@ -41,6 +41,65 @@ const CPUEvaluation = Object.freeze({
         return CPUEvaluation.diceFrequencyForRoller(card.diceNums, player, stationName);
     },
 
+    cardPurchaseValue(card, game, player, profile, options) {
+        const effects = options.effects;
+        const opponents = game.players.filter(candidate => candidate !== player);
+
+        switch (card.effect) {
+        case effects.CHEESE:
+        case effects.FURNITURE:
+        case effects.FLOWER:
+        case effects.MARKET:
+        case effects.FOODWAREHOUSE:
+        case effects.DRINKFACTORY:
+        case effects.WINERY:
+        case effects.FEWLANDMARK:
+        case effects.CORNFIELD:
+            return options.calcCardIncome(card, player, game) * profile.greenFactor;
+        case effects.STADIUM:
+            return (opponents.length * card.income + (opponents.length > 0 ? card.income : 0)) *
+                profile.massAttackFactor;
+        case effects.TV:
+            return options.estimateTvValue(game, player) * profile.purpleFactor;
+        case effects.PUBLISHER:
+            return options.estimatePublisherValue(game, player) * profile.massAttackFactor;
+        case effects.TAXOFFICE:
+            return options.estimateTaxOfficeValue(game, player) * profile.massAttackFactor;
+        case effects.HARBOR:
+            return (player.landmarks[options.landmarkNames.HARBOR] ? card.income : card.income * 0.4) *
+                profile.blueFactor;
+        case effects.HARBOR_RED:
+            return (player.landmarks[options.landmarkNames.HARBOR] ? card.income : 0) * profile.redFactor;
+        case effects.TUNA:
+            return (player.landmarks[options.landmarkNames.HARBOR] ? 7 : 0) * profile.blueFactor;
+        case effects.FRENCHR:
+        case effects.MEMBERBAR:
+            return options.estimateConditionalRedValue(card, game, player) * profile.redFactor;
+        case effects.LOAN:
+            return (player.coins <= 4 ? 3.5 : 1.2) * profile.greenFactor;
+        case effects.ITSTARTUP:
+            return options.estimateItStartupValue(game, player, true) * profile.massAttackFactor;
+        case effects.RENOVATION:
+            return options.estimateRenovationValue(
+                game, player, player.countCard(options.renovationCardName) + 1
+            ) * profile.greenFactor;
+        case effects.CLEANING:
+            return options.estimateCleaningValue(game, player) * profile.massAttackFactor;
+        case effects.MOVER:
+            return options.estimateMoverValue(game, player) * profile.greenFactor;
+        case effects.BUSINESS:
+            return options.estimateBusinessValue(game, player) * (game.players.length <= 2 ? 1.15 : 1);
+        case effects.PARK:
+            return 0;
+        default:
+            if (card.color === 'blue') return card.income * profile.blueFactor;
+            if (card.color === 'red') return card.income * profile.redFactor;
+            if (card.color === 'green') return card.income * profile.greenFactor;
+            if (card.color === 'purple') return card.income * profile.purpleFactor;
+            return card.income;
+        }
+    },
+
     cardActivationValue(card, game, owner, roller, dice, options) {
         const { effects, categories, landmarkNames } = options;
         const capped = options.capValue;

@@ -1549,59 +1549,30 @@ class CPU {
 
     // ゲーム状況を踏まえたカードの期待収入スコア
     evalCard(card, game, player) {
-        const ci = game.players.indexOf(player);
-        const opponents = game.players.filter((_, i) => i !== ci);
-        const profile = this._playerCountProfile(game);
-
-        switch (card.effect) {
-            case CARD_EFFECTS.CHEESE:
-            case CARD_EFFECTS.FURNITURE:
-            case CARD_EFFECTS.FLOWER:
-            case CARD_EFFECTS.MARKET:
-            case CARD_EFFECTS.FOODWAREHOUSE:
-            case CARD_EFFECTS.DRINKFACTORY:
-            case CARD_EFFECTS.WINERY:
-            case CARD_EFFECTS.FEWLANDMARK:
-            case CARD_EFFECTS.CORNFIELD:
-                return GameManager.calcCardIncome(card, player, game) * profile.greenFactor;
-            case CARD_EFFECTS.STADIUM:
-                return (opponents.length * card.income + (opponents.length > 0 ? card.income : 0)) * profile.massAttackFactor;
-            case CARD_EFFECTS.TV:
-                return this._estimateTvValue(game, player) * profile.purpleFactor;
-            case CARD_EFFECTS.PUBLISHER:
-                return this._estimatePublisherValue(game, player) * profile.massAttackFactor;
-            case CARD_EFFECTS.TAXOFFICE:
-                return this._estimateTaxOfficeValue(game, player) * profile.massAttackFactor;
-            case CARD_EFFECTS.HARBOR:
-                return (player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : card.income * 0.4) * profile.blueFactor;
-            case CARD_EFFECTS.HARBOR_RED:
-                return (player.landmarks[LANDMARK_NAMES.HARBOR] ? card.income : 0) * profile.redFactor;
-            case CARD_EFFECTS.TUNA:
-                return (player.landmarks[LANDMARK_NAMES.HARBOR] ? 7 : 0) * profile.blueFactor;
-            case CARD_EFFECTS.FRENCHR:
-            case CARD_EFFECTS.MEMBERBAR:
-                return this._estimateConditionalRedValue(card, game, player) * profile.redFactor;
-            case CARD_EFFECTS.LOAN:
-                return (player.coins <= 4 ? 3.5 : 1.2) * profile.greenFactor;
-            case CARD_EFFECTS.ITSTARTUP:
-                return this._estimateItStartupValue(game, player, true) * profile.massAttackFactor;
-            case CARD_EFFECTS.RENOVATION:
-                return this._estimateRenovationValue(game, player, player.countCard("改装屋") + 1) * profile.greenFactor;
-            case CARD_EFFECTS.CLEANING:
-                return this._estimateCleaningValue(game, player) * profile.massAttackFactor;
-            case CARD_EFFECTS.MOVER:
-                return this._estimateMoverValue(game, player) * profile.greenFactor;
-            case CARD_EFFECTS.BUSINESS:
-                return this._estimateBusinessValue(game, player) * (game.players.length <= 2 ? 1.15 : 1);
-            case CARD_EFFECTS.PARK:
-                return 0;
-            default:
-                if (card.color === "blue") return card.income * profile.blueFactor;
-                if (card.color === "red") return card.income * profile.redFactor;
-                if (card.color === "green") return card.income * profile.greenFactor;
-                if (card.color === "purple") return card.income * profile.purpleFactor;
-                return card.income;
-        }
+        return CPUEvaluation.cardPurchaseValue(
+            card,
+            game,
+            player,
+            this._playerCountProfile(game),
+            {
+                effects: CARD_EFFECTS,
+                landmarkNames: LANDMARK_NAMES,
+                calcCardIncome: GameManager.calcCardIncome,
+                estimateTvValue: (runtime, owner) => this._estimateTvValue(runtime, owner),
+                estimatePublisherValue: (runtime, owner) => this._estimatePublisherValue(runtime, owner),
+                estimateTaxOfficeValue: (runtime, owner) => this._estimateTaxOfficeValue(runtime, owner),
+                estimateConditionalRedValue: (candidate, runtime, owner) =>
+                    this._estimateConditionalRedValue(candidate, runtime, owner),
+                estimateItStartupValue: (runtime, owner, options) =>
+                    this._estimateItStartupValue(runtime, owner, options),
+                estimateRenovationValue: (runtime, owner, ordinal) =>
+                    this._estimateRenovationValue(runtime, owner, ordinal),
+                estimateCleaningValue: (runtime, owner) => this._estimateCleaningValue(runtime, owner),
+                estimateMoverValue: (runtime, owner) => this._estimateMoverValue(runtime, owner),
+                estimateBusinessValue: (runtime, owner) => this._estimateBusinessValue(runtime, owner),
+                renovationCardName: '改装屋',
+            }
+        );
     }
 
     _expertRollIncomeCap(player, game) {
