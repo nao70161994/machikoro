@@ -37,8 +37,10 @@ function onlineRuntimeFlagRoot() {
     return typeof window !== 'undefined' ? window : null;
 }
 
+const onlineRuntimeFlagReader = OnlineRuntimeFlags.createReader(onlineRuntimeFlagRoot);
+
 function isOnlineRuntimeFlagEnabled(name) {
-    return OnlineRuntimeFlags.isEnabled(name, onlineRuntimeFlagRoot());
+    return onlineRuntimeFlagReader.isEnabled(name);
 }
 
 let onlineSchemaTransport = null;

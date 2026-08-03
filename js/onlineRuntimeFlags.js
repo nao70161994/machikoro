@@ -70,9 +70,19 @@ const OnlineRuntimeFlags = (() => {
             root[property] === true;
     }
 
+    function createReader(getRoot) {
+        if (typeof getRoot !== 'function') throw new TypeError('getRoot is required');
+        return Object.freeze({
+            isEnabled(name) {
+                return isEnabled(name, getRoot());
+            },
+        });
+    }
+
     return Object.freeze({
         names,
         isEnabled,
+        createReader,
     });
 })();
 

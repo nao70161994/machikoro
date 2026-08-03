@@ -38,6 +38,25 @@ runTest('online runtime flagsは全reader名とwindow propertyを一つの正本
     }
 });
 
+runTest('online runtime flag readerはrootを呼出時に解決し既存判定へ委譲する', () => {
+    const readerName = EXPECTED_READERS[0];
+    const property = OnlineRuntimeFlags.names[readerName];
+    let root = { [property]: false };
+    let calls = 0;
+    const reader = OnlineRuntimeFlags.createReader(() => {
+        calls++;
+        return root;
+    });
+
+    assert.ok(Object.isFrozen(reader));
+    assert.strictEqual(reader.isEnabled(readerName), false);
+    root = { [property]: true };
+    assert.strictEqual(reader.isEnabled(readerName), true);
+    assert.strictEqual(reader.isEnabled('unknown'), false);
+    assert.strictEqual(calls, 3);
+    assert.throws(() => OnlineRuntimeFlags.createReader(null), /getRoot is required/);
+});
+
 runTest('online runtime flagsは厳密なboolean trueだけを有効にする', () => {
     const reader = EXPECTED_READERS[0];
     const property = OnlineRuntimeFlags.names[reader];
