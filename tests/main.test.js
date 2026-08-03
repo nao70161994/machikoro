@@ -2161,6 +2161,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiLogDisplay.js', 'js/ui.js');
     assertBefore('js/uiCardOrder.js', 'js/ui.js');
     assertBefore('js/uiPlayerDisplay.js', 'js/ui.js');
+    assertBefore('js/uiInputPolicy.js', 'js/ui.js');
     assertBefore('js/uiBuildMenu.js', 'js/ui.js');
     assertBefore('js/uiPendingMenu.js', 'js/ui.js');
     assertBefore('js/uiCardDetail.js', 'js/ui.js');

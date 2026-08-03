@@ -231,6 +231,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiLogDisplay.js',
         'js/uiCardOrder.js',
         'js/uiPlayerDisplay.js',
+        'js/uiInputPolicy.js',
         'js/uiBuildMenu.js',
         'js/uiPendingMenu.js',
         'js/uiCardDetail.js',

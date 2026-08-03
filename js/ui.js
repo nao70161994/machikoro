@@ -283,28 +283,39 @@ function currentUiAllowedActions() {
 }
 
 function isOnlineUiInputBlocked() {
-    if (!isOnlineGame) return false;
-    if (typeof isOnlineReconnectInputBlocked === 'function') {
-        if (isOnlineReconnectInputBlocked()) return true;
-    } else if (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline) {
-        return true;
-    }
-    if (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) return true;
-    if (typeof socket === 'undefined' || !socket || socket.connected === false) return true;
-    return false;
+    const isReconnecting = typeof isOnlineReconnectInputBlocked === 'function'
+        ? isOnlineReconnectInputBlocked()
+        : (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline);
+    const socketAvailable = typeof socket !== 'undefined' && !!socket;
+    return UiInputPolicy.onlineBlockReason({
+        isOnlineGame,
+        isReconnecting,
+        actionInFlight: typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight,
+        socketAvailable,
+        socketConnected: socketAvailable ? socket.connected : false,
+    }) !== '';
 }
 
 function isCurrentHumanUiTurn() {
-    if (!game) return false;
-    const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
-    if (isCPUTurn) return false;
-    if (isOnlineUiInputBlocked()) return false;
-    return !isOnlineGame || game.currentPlayerIndex === myPlayerIndex;
+    const hasGame = !!game;
+    const currentPlayerIndex = hasGame ? game.currentPlayerIndex : -1;
+    return UiInputPolicy.isHumanTurn({
+        hasGame,
+        isCpuTurn: hasGame && !!currentCpuPlayerAt(currentPlayerIndex),
+        isOnlineGame,
+        onlineBlockReason: isOnlineUiInputBlocked() ? 'blocked' : '',
+        currentPlayerIndex,
+        myPlayerIndex,
+    });
 }
 
 function canShowUiAction(action) {
-    if (!action || !isCurrentHumanUiTurn()) return false;
-    return currentUiAllowedActions().has(action);
+    const humanTurn = !!action && isCurrentHumanUiTurn();
+    return UiInputPolicy.canShowAction(
+        action,
+        humanTurn,
+        humanTurn ? currentUiAllowedActions() : null
+    );
 }
 
 function uiActionDisabledAttr(action) {
