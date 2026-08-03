@@ -2190,6 +2190,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiTabView.js', 'js/uiTabEffects.js');
     assertBefore('js/uiTabEffects.js', 'js/ui.js');
     assertBefore('js/uiTabEffects.js', 'js/appShell.js');
+    assertBefore('js/uiRenderRuntime.js', 'js/ui.js');
     assertBefore('js/ui.js', 'js/savedGameValidation.js');
     assertBefore('js/savedGameValidation.js', 'js/storage.js');
     assertBefore('js/storageSettings.js', 'js/storage.js');

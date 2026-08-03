@@ -92,6 +92,7 @@ interface Window {
     CrashScreen: unknown;
     UiWinner: unknown;
     UiWinnerEffects: unknown;
+    UiRenderRuntime: unknown;
     LifecycleNotify: unknown;
     LifecycleTransport: unknown;
     ClientReportingTransport: unknown;

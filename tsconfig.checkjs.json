@@ -35,6 +35,7 @@
     "js/localActionPolicy.js",
     "js/uiEventDelegation.js",
     "js/uiRuntimeSnapshot.js",
+    "js/uiRenderRuntime.js",
     "js/stats.js",
     "js/uiStatsView.js",
     "js/RLModelPortfolio.js",

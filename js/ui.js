@@ -141,18 +141,19 @@ function render() {
 }
 
 function _render() {
-    if (!game) return;
-    const current = game.currentPlayer();
-    const winner = game.checkWinner();
-    syncTutorialControls();
-
-    if (winner) {
-        renderWinnerState(winner);
-        return;
-    }
-
-    renderActiveGameState(current);
-    persistAfterRender();
+    const renderPlan = !game
+        ? UiRenderRuntime.plan()
+        : UiRenderRuntime.plan({
+            hasGame: true,
+            current: game.currentPlayer(),
+            winner: game.checkWinner(),
+        });
+    UiRenderRuntime.execute(renderPlan, {
+        syncTutorialControls,
+        renderWinnerState,
+        renderActiveGameState,
+        persistAfterRender,
+    });
 }
 
 function clearOnlineSessionAfterWin() {

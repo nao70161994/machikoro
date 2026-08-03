@@ -256,6 +256,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiGameStatusView.js',
         'js/uiGameStatusEffects.js',
         'js/uiRuntimeSnapshot.js',
+        'js/uiRenderRuntime.js',
         'js/ui.js',
     ];
     if (options.includeOnline) {
