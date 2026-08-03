@@ -1,6 +1,7 @@
 declare var GameActionContract: typeof import("../js/actionContract");
 declare var PendingActionQueue: typeof import("../js/pendingActionQueue").PendingActionQueue;
 declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
+declare var GameBuildPolicy: typeof import("../js/gameBuildPolicy");
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
@@ -32,6 +33,7 @@ declare var sendAction: ((action: string, data: Record<string, unknown>) => bool
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
     GameTurnPolicy: unknown;
+    GameBuildPolicy: unknown;
     CPUBusinessMoves: unknown;
     AD_SLOT_CONFIGS: unknown;
     renderAdSlot: unknown;

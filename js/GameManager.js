@@ -27,6 +27,17 @@ const PENDING_ACTION_SPEC_BY_ACTION = PENDING_ACTION_CONTRACT.byAction;
 
 const GAME_ACTION_REGISTRY = GameActionContract.registry;
 
+const BUILD_REJECTION_MESSAGES = Object.freeze({
+    [GameBuildPolicy.reasons.WRONG_PHASE]: '❌ 今は建設できません',
+    [GameBuildPolicy.reasons.ALREADY_BUILT]: '❌ 建設は1ターンに1度だけです',
+    [GameBuildPolicy.reasons.INVALID_CARD]: '❌ 不正なカードです',
+    [GameBuildPolicy.reasons.INSUFFICIENT_COINS]: '❌ コインが足りません',
+    [GameBuildPolicy.reasons.DUPLICATE_MAJOR]: '❌ 大施設は1枚しか持てません',
+    [GameBuildPolicy.reasons.UNKNOWN_LANDMARK]: '❌ 不正なランドマークです',
+    [GameBuildPolicy.reasons.DISABLED_LANDMARK]: '❌ このランドマークは今回使用しません',
+    [GameBuildPolicy.reasons.LANDMARK_ALREADY_BUILT]: '❌ すでに建設済みです',
+});
+
 function formatDiceOutcome(d1, d2, total) {
     if (d1 > 0 && d2 > 0) {
         return `${d1}+${d2}=${total}`;
@@ -754,19 +765,32 @@ class GameManager {
     }
 
     buildCard(card) {
-        if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今は建設できません`); return false; }
-        if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
-        if (!card || !card.name) { this.addLog(LOG_TYPES.ERROR, `❌ 不正なカードです`); return false; }
-        const current = this.currentPlayer();
-        if (current.coins < card.cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
-        const cardId = card.id || CARD_ID_BY_NAME[card.name];
-        if (card.color === "purple" && current.countCardIncludingDormantById(cardId) > 0) {
-            this.addLog(LOG_TYPES.ERROR, `❌ 大施設は1枚しか持てません`); return false;
+        let current;
+        const plan = GameBuildPolicy.planCardBuild({
+            phase: this.phase,
+            buildPhase: GAME_PHASES.BUILD,
+            builtThisTurn: this.builtThisTurn,
+            cardValid: !!card && !!card.name,
+            coins: () => {
+                current = this.currentPlayer();
+                return current.coins;
+            },
+            cost: card && card.cost,
+            isMajor: !!card && card.color === "purple",
+            ownsMajor: () => {
+                const cardId = card.id || CARD_ID_BY_NAME[card.name];
+                return current.countCardIncludingDormantById(cardId) > 0;
+            },
+        });
+        if (!plan.ok) {
+            this.addLog(LOG_TYPES.ERROR, BUILD_REJECTION_MESSAGES[plan.reason]);
+            return false;
         }
-        current.coins -= card.cost;
-        current.addCard(cloneCard(card));
+        const buildPlayer = /** @type {Player} */ (current);
+        buildPlayer.coins -= card.cost;
+        buildPlayer.addCard(cloneCard(card));
         if (card.effect === CARD_EFFECTS.LOAN) {
-            current.coins += 5;
+            buildPlayer.coins += 5;
             this.addLog(LOG_TYPES.BUILD, `💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`);
         }
         this.addLog(LOG_TYPES.BUILD, `🏗️ ${card.name}を建設！`);
@@ -775,16 +799,30 @@ class GameManager {
     }
 
     buildLandmark(name) {
-        if (this.phase !== GAME_PHASES.BUILD) { this.addLog(LOG_TYPES.ERROR, `❌ 今は建設できません`); return false; }
-        if (this.builtThisTurn) { this.addLog(LOG_TYPES.ERROR, `❌ 建設は1ターンに1度だけです`); return false; }
-        const current = this.currentPlayer();
-        const cost = Player.landmarkCost(name);
-        if (!Player.isKnownLandmark(name)) { this.addLog(LOG_TYPES.ERROR, `❌ 不正なランドマークです`); return false; }
-        if (!this.enabledLandmarks.has(name)) { this.addLog(LOG_TYPES.ERROR, `❌ このランドマークは今回使用しません`); return false; }
-        if (current.coins < cost) { this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`); return false; }
-        if (current.landmarks[name]) { this.addLog(LOG_TYPES.ERROR, `❌ すでに建設済みです`); return false; }
-        current.coins -= cost;
-        current.landmarks[name] = true;
+        let current;
+        let cost;
+        const plan = GameBuildPolicy.planLandmarkBuild({
+            phase: this.phase,
+            buildPhase: GAME_PHASES.BUILD,
+            builtThisTurn: this.builtThisTurn,
+            cost: () => {
+                current = this.currentPlayer();
+                cost = Player.landmarkCost(name);
+                return cost;
+            },
+            knownLandmark: () => Player.isKnownLandmark(name),
+            enabledLandmark: () => this.enabledLandmarks.has(name),
+            coins: () => current.coins,
+            landmarkBuilt: () => !!current.landmarks[name],
+        });
+        if (!plan.ok) {
+            this.addLog(LOG_TYPES.ERROR, BUILD_REJECTION_MESSAGES[plan.reason]);
+            return false;
+        }
+        const buildPlayer = /** @type {Player} */ (current);
+        const buildCost = /** @type {number} */ (cost);
+        buildPlayer.coins -= buildCost;
+        buildPlayer.landmarks[name] = true;
         this.addLog(LOG_TYPES.BUILD, `🏆 ${name}を建設！`);
         this.builtThisTurn = true;
         return true;

@@ -21,6 +21,7 @@
     "js/GameManager.js",
     "js/pendingActionQueue.js",
     "js/gameTurnPolicy.js",
+    "js/gameBuildPolicy.js",
     "js/actionContract.js",
     "js/actionUiRegistry.js",
     "js/adSlots.js",

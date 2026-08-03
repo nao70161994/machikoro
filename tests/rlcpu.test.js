@@ -6,7 +6,7 @@ const { runTest, loadScript, loadScripts } = require('./helpers/test-utils');
 function loadRLRuntime() {
     const context = { console, Math: Object.create(Math) };
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/GameManager.js', 'js/RLCPU.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameBuildPolicy.js', 'js/GameManager.js', 'js/RLCPU.js']);
     vm.runInContext('this.RLCPU = RLCPU; this.GameManager = GameManager; this.LANDMARK_NAMES = LANDMARK_NAMES; this.GAME_PHASES = GAME_PHASES; this.createCardByName = createCardByName; this.CARDS = CARDS; this.Player = Player;', context);
     return context;
 }
