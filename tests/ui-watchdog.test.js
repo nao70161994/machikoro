@@ -77,6 +77,31 @@ assert.strictEqual(classify({ isMyTurn: false, isCpuTurn: true }), 'cpu-turn-sta
 assert.strictEqual(classify({ onlineActionInFlight: true }), '');
 assert.strictEqual(classify({ onlineActionInFlight: true, onlineActionTimedOut: true }), 'online-action-in-flight-stalled');
 
+assert.strictEqual(UiWatchdog.isFreezeClassificationCandidate(null), false);
+assert.strictEqual(UiWatchdog.isFreezeClassificationCandidate({ phase: '' }), false);
+assert.strictEqual(UiWatchdog.isFreezeClassificationCandidate({ phase: 'build', hasWinner: true }), false);
+assert.strictEqual(UiWatchdog.isFreezeClassificationCandidate({ phase: 'build', hasWinner: false }), true);
+const classificationSnapshot = {
+    phase: 'build',
+    currentPlayerIndex: 0,
+    myPlayerIndex: 0,
+    isOnlineGame: true,
+    isCpuTurn: false,
+    onlineActionInFlight: true,
+    allowedActions: ['nextTurn'],
+    ui: {},
+};
+const classificationBefore = JSON.stringify(classificationSnapshot);
+assert.strictEqual(UiWatchdog.classifySnapshot(classificationSnapshot, {
+    onlineActionTimedOut: true,
+    hasUsablePrimaryAction: true,
+}, kinds), kinds.ONLINE_ACTION_IN_FLIGHT_STALLED);
+assert.strictEqual(JSON.stringify(classificationSnapshot), classificationBefore);
+assert.strictEqual(UiWatchdog.classifySnapshot({
+    ...classificationSnapshot,
+    hasWinner: true,
+}, { onlineActionTimedOut: true }, kinds), '');
+
 assert.strictEqual(UiWatchdog.hasPendingWork({ pendingFields: { pendingIT: true } }), true);
 assert.strictEqual(UiWatchdog.hasPendingWork({ pendingFields: {} }), false);
 assert.strictEqual(UiWatchdog.stateKey({

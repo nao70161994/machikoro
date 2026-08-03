@@ -488,6 +488,15 @@ const UiWatchdog = (() => {
         });
     }
 
+    function isFreezeClassificationCandidate(snapshot) {
+        return !!(snapshot && snapshot.phase && !snapshot.hasWinner);
+    }
+
+    function classifySnapshot(snapshot, observations = {}, freezeKinds = {}) {
+        if (!isFreezeClassificationCandidate(snapshot)) return '';
+        return classifyFreezeFacts(buildFreezeFacts(snapshot, observations), freezeKinds);
+    }
+
     function buildInteractabilityIssues(snapshot, observations = {}, freezeKinds = {}) {
         const issues = [];
         if (!snapshot || !snapshot.phase) return issues;
@@ -583,6 +592,8 @@ const UiWatchdog = (() => {
         canRecoverActionContainers,
         actionContainerRecoveryPlan,
         renderInteractabilitySyncPlan,
+        isFreezeClassificationCandidate,
+        classifySnapshot,
         buildInteractabilityIssues,
         hasPendingWork,
         buildFreezeFacts,

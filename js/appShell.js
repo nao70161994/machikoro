@@ -1247,8 +1247,8 @@ function hasPendingWork(snapshot) {
 }
 
 function classifyLikelyFreeze(snapshot) {
-    if (!snapshot || !snapshot.phase || snapshot.hasWinner) return '';
-    const facts = UiWatchdog.buildFreezeFacts(snapshot, {
+    if (!UiWatchdog.isFreezeClassificationCandidate(snapshot)) return '';
+    return UiWatchdog.classifySnapshot(snapshot, {
         confirmOpen: confirmModalOpenFromSnapshot(snapshot),
         staleConfirmOpen: isStaleConfirmModalSnapshot(snapshot),
         activeBlockingModalOpen: hasActiveBlockingModal(snapshot),
@@ -1260,8 +1260,7 @@ function classifyLikelyFreeze(snapshot) {
         modalFreezeKind: FREEZE_KINDS.MODAL_UI_LOCKED,
         pendingFreezeKind: FREEZE_KINDS.PENDING_UI_LOCKED,
         humanFreezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
-    });
-    return UiWatchdog.classifyFreezeFacts(facts, FREEZE_KINDS);
+    }, FREEZE_KINDS);
 }
 
 function compactIssueForTrace(issue) {
