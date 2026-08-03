@@ -151,6 +151,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/reportThrottle.js',
     'server/restoreAuditKeyring.js',
     'server/restoreAuditRuntime.js',
+    'server/restoreAuditGateway.js',
     'server/restoreSnapshotAttachment.js',
     'server/restoreAuthorityPolicy.js',
     'server/restoreAdmission.js',

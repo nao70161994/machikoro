@@ -158,6 +158,7 @@
     "server/lobbySocketHandlers.js",
     "server/restoreAuditKeyring.js",
     "server/restoreAuditRuntime.js",
+    "server/restoreAuditGateway.js",
     "server/restoreSnapshotAttachment.js",
     "server/restoreSanitization.js",
     "server/restoreValidation.js",

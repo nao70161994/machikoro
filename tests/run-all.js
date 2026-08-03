@@ -48,6 +48,7 @@ const TEST_GROUPS = {
         'restore-audit-payload.test.js',
         'restore-audit-keyring.test.js',
         'restore-audit-runtime.test.js',
+        'restore-audit-gateway.test.js',
         'restore-snapshot-attachment.test.js',
         'restore-authority-policy.test.js',
         'hostless-restore-candidate.test.js',

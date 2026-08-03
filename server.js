@@ -82,6 +82,7 @@ const {
 } = require('./server/actionAcceptance');
 const makeRejoinPayload = require('./server/rejoinPayload');
 const makeRestoreAuditPayload = require('./server/restoreAuditPayload');
+const makeRestoreAuditGateway = require('./server/restoreAuditGateway');
 const {
     generateReconnectToken,
     hashReconnectToken,
@@ -274,7 +275,8 @@ const {
     canonicalizeActionData,
     normalizeClientActionId,
     validateRestoreAuditRecord,
-    isVerifiedRestoreActionAudit,
+    isVerifiedRestoreActionAudit: (roomId, actionEntry) =>
+        restoreAuditGateway.isVerifiedRestoreActionAudit(roomId, actionEntry),
 });
 const {
     roomTimestamp,
@@ -666,6 +668,22 @@ const {
     normalizeClientActionId,
 });
 
+const restoreAuditGateway = makeRestoreAuditGateway({
+    buildSignedRestoreAuditRecord,
+    verifySignedRestoreAuditRecord,
+    buildRestoreSnapshotAuditPayload,
+    buildRestoreActionAuditPayload,
+    restoreAuditBuildOptions,
+    restoreAuditVerificationOptions,
+});
+
+const {
+    buildRestoreSnapshotAudit,
+    isVerifiedClientRestoreSnapshot,
+    buildRestoreActionAudit,
+    isVerifiedRestoreActionAudit,
+} = restoreAuditGateway;
+
 function hasOwnRoom(roomId) {
     return isValidRoomId(roomId) && Object.prototype.hasOwnProperty.call(rooms, roomId);
 }
@@ -687,41 +705,6 @@ function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
         overrides,
         GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED
     );
-}
-
-function buildRestoreSnapshotAudit(roomId, gameStartPayload, stateSnapshot, now = Date.now()) {
-    return buildSignedRestoreAuditRecord(
-        roomId,
-        buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot),
-        restoreAuditBuildOptions(now)
-    );
-}
-
-function isVerifiedClientRestoreSnapshot(roomId, gameStartPayload, stateSnapshot, restoreAudit) {
-    if (!stateSnapshot) return true;
-    const validation = verifySignedRestoreAuditRecord(
-        restoreAudit,
-        buildRestoreSnapshotAuditPayload(gameStartPayload, stateSnapshot),
-        restoreAuditVerificationOptions(roomId)
-    );
-    return validation.ok;
-}
-
-function buildRestoreActionAudit(roomId, actionEntry, now = Date.now()) {
-    return buildSignedRestoreAuditRecord(
-        roomId,
-        buildRestoreActionAuditPayload(actionEntry),
-        restoreAuditBuildOptions(now, 'server-action-log')
-    );
-}
-
-function isVerifiedRestoreActionAudit(roomId, actionEntry) {
-    const validation = verifySignedRestoreAuditRecord(
-        actionEntry && actionEntry.restoreActionAudit,
-        buildRestoreActionAuditPayload(actionEntry),
-        restoreAuditVerificationOptions(roomId)
-    );
-    return validation.ok;
 }
 
 const { attachCompactedRestoreSnapshotToAction } = makeRestoreSnapshotAttachment({
