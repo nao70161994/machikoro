@@ -5,6 +5,7 @@ declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
 
 declare var CPUProfile: typeof import("../js/cpuProfile").CPUProfile;
+declare var CPUSelection: typeof import("../js/cpuSelection").CPUSelection;
 declare var CPUDiagnostics: typeof import("../js/cpuDiagnostics").CPUDiagnostics;
 declare var CPUEvaluationCache: typeof import("../js/cpuEvaluationCache").CPUEvaluationCache;
 declare var CPUBusinessMoves: typeof import("../js/cpuBusinessMoves").CPUBusinessMoves;

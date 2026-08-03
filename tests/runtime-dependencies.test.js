@@ -23,7 +23,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
     const cases = [
         ['index.html', [
             ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/GameManager.js'],
-            ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBusinessMoves.js', 'js/CPU.js'],
             ['js/cpuActionProposal.js', 'js/cpuBuildExecution.js'],
@@ -140,7 +140,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSchemaCodec.js', 'js/gameEngine.js'],
             ['js/gameEngine.js', 'js/cpuBuildExecution.js'],
-            ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBusinessMoves.js', 'js/CPU.js'],
             ['js/cpuActionProposal.js', 'js/cpuBuildExecution.js'],
@@ -154,7 +154,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSchemaCodec.js', 'js/gameEngine.js'],
             ['js/gameEngine.js', 'js/cpuBuildExecution.js'],
-            ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBusinessMoves.js', 'js/CPU.js'],
             ['js/cpuActionProposal.js', 'js/cpuBuildExecution.js'],
@@ -164,7 +164,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/helpers/integration-runtime.js', [
             ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/GameManager.js'],
-            ['js/cpuProfile.js', 'js/CPU.js'],
+            ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBusinessMoves.js', 'js/CPU.js'],
             ['js/cpuActionProposal.js', 'js/cpuBuildExecution.js'],

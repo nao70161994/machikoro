@@ -149,9 +149,7 @@ class CPU {
     }
 
     _randomChoice(items) {
-        if (!Array.isArray(items) || items.length === 0) return null;
-        const index = Math.floor(Math.random() * items.length);
-        return items[index];
+        return CPUSelection.randomChoice(items, Math.random);
     }
 
     _forEachBusinessMove(game, callback) {
@@ -1074,27 +1072,28 @@ class CPU {
                 }
                 return this._randomChoice(targets) ?? -1;
             }
-            let best = null;
-            let bestScore = -Infinity;
+            const candidates = [];
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
                 const player = game.players[i];
                 if (!player || player.coins <= 0) continue;
-                const steal = Math.min(5, player.coins);
-                const built = player.builtLandmarkCount ? player.builtLandmarkCount() : 0;
-                if (this.expertTvMode === "denial") {
-                    const score = this._scoreExpertV2SimpleTVTarget(game, player, steal, built);
-                    if (score > bestScore) {
-                        bestScore = score;
-                        best = { index: i, steal, built, coins: player.coins };
-                    }
-                } else if (!best ||
-                    steal > best.steal ||
-                    (steal === best.steal && built > best.built) ||
-                    (steal === best.steal && built === best.built && player.coins > best.coins)) {
-                    best = { index: i, steal, built, coins: player.coins };
-                }
+                candidates.push({
+                    index: i,
+                    player,
+                    steal: Math.min(5, player.coins),
+                    built: player.builtLandmarkCount ? player.builtLandmarkCount() : 0,
+                    coins: player.coins,
+                });
             }
+            const best = this.expertTvMode === "denial"
+                ? CPUSelection.firstMax(candidates, candidate =>
+                    this._scoreExpertV2SimpleTVTarget(game, candidate.player, candidate.steal, candidate.built)
+                )
+                : CPUSelection.firstLexicographicMax(candidates, [
+                    candidate => candidate.steal,
+                    candidate => candidate.built,
+                    candidate => candidate.coins,
+                ]);
             if (best) return best.index;
             for (let i = 0; i < game.players.length; i++) {
                 if (i !== ci && game.players[i]) return i;

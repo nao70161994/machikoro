@@ -87,6 +87,7 @@ const TEST_GROUPS = {
         'report-throttle.test.js',
         'cpu.test.js',
         'cpu-profile.test.js',
+        'cpu-selection.test.js',
         'cpu-evaluation.test.js',
         'cpu-legal-moves.test.js',
         'cpu-business-moves.test.js',
@@ -388,6 +389,7 @@ const TEST_GROUPS = {
     cpu: [
         'cpu.test.js',
         'cpu-profile.test.js',
+        'cpu-selection.test.js',
         'cpu-evaluation.test.js',
         'cpu-legal-moves.test.js',
         'cpu-business-moves.test.js',

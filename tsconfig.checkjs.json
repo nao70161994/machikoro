@@ -84,6 +84,7 @@
     "js/cpuEvaluation.js",
     "js/cpuLegalMoves.js",
     "js/cpuProfile.js",
+    "js/cpuSelection.js",
     "js/cpuSimulation.js",
     "js/cpuBusinessMoves.js",
     "js/cpuDiagnostics.js",
