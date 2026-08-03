@@ -1309,10 +1309,18 @@ function syncAllowedActionContainersForRender(snapshot, issues = null) {
 
 function syncUiInteractabilityAfterRender(reason = 'render-sync') {
     const before = buildClientRuntimeSnapshot(reason);
-    if (!isHumanTurnSnapshot(before) || isOnlineUiBlockedSnapshot(before)) return false;
-    if (hasActiveBlockingModal(before) && !expectedPendingActions(before).length) return false;
-    const issues = validateUiInteractability(before).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    if (!issues.length) return false;
+    const planInput = {
+        activeBlockingModal: hasActiveBlockingModal(before),
+        humanFreezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
+    };
+    const eligibility = UiWatchdog.renderInteractabilitySyncPlan(before, planInput);
+    if (!eligibility.eligible) return false;
+    const plan = UiWatchdog.renderInteractabilitySyncPlan(before, {
+        ...planInput,
+        issues: validateUiInteractability(before),
+    });
+    if (!plan.shouldSync) return false;
+    const issues = plan.issues;
     let changed = clearGameScreenLockIfNoActiveModal(before, reason + '-game-screen');
     changed = syncAllowedActionContainersForRender(before, issues) || changed;
     changed = clearUiInteractabilityIssueTargets(issues) || changed;

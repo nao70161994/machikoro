@@ -206,6 +206,52 @@ for (const [issue, snapshot, expected] of causeCases) {
 assert.strictEqual(UiWatchdog.normalizeFreezeKind('modal-ui-locked:parent-inert'), 'modal-ui-locked');
 assert.strictEqual(UiWatchdog.normalizeFreezeKind(null), '');
 
+{
+    const snapshot = {
+        phase: 'build',
+        isOnlineGame: false,
+        isCpuTurn: false,
+        allowedActions: ['nextTurn'],
+    };
+    const humanIssue = { freezeKind: kinds.HUMAN_TURN_UI_LOCKED, reason: 'disabled' };
+    const modalIssue = { freezeKind: kinds.MODAL_UI_LOCKED, reason: 'parent-inert' };
+    const plan = UiWatchdog.renderInteractabilitySyncPlan(snapshot, {
+        activeBlockingModal: false,
+        humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        issues: [humanIssue, modalIssue],
+    });
+    assert.deepStrictEqual(plan, { eligible: true, shouldSync: true, issues: [humanIssue] });
+    assert.strictEqual(Object.isFrozen(plan), true);
+    assert.strictEqual(Object.isFrozen(plan.issues), true);
+    assert.strictEqual(UiWatchdog.renderInteractabilitySyncPlan(
+        Object.assign({}, snapshot, { isCpuTurn: true }),
+        { humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED, issues: [humanIssue] }
+    ).eligible, false);
+    assert.strictEqual(UiWatchdog.renderInteractabilitySyncPlan(
+        Object.assign({}, snapshot, {
+            isOnlineGame: true, currentPlayerIndex: 0, myPlayerIndex: 0, onlineActionInFlight: true,
+        }),
+        { humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED, issues: [humanIssue] }
+    ).eligible, false);
+    assert.strictEqual(UiWatchdog.renderInteractabilitySyncPlan(snapshot, {
+        activeBlockingModal: true,
+        humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        issues: [humanIssue],
+    }).eligible, false);
+    assert.deepStrictEqual(UiWatchdog.renderInteractabilitySyncPlan(snapshot, {
+        humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+        issues: [modalIssue],
+    }), { eligible: true, shouldSync: false, issues: [] });
+    assert.strictEqual(UiWatchdog.renderInteractabilitySyncPlan(
+        Object.assign({}, snapshot, { phase: 'pending', allowedActions: ['resolveTV'] }),
+        {
+            activeBlockingModal: true,
+            humanFreezeKind: kinds.HUMAN_TURN_UI_LOCKED,
+            issues: [humanIssue],
+        }
+    ).shouldSync, true);
+}
+
 assert.strictEqual(UiWatchdog.classListText(null), '');
 assert.strictEqual(UiWatchdog.classListText({ className: 'game active' }), 'game active');
 assert.strictEqual(UiWatchdog.classListText({ classList: { value: 'modal-open' } }), 'modal-open');

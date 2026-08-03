@@ -474,6 +474,20 @@ const UiWatchdog = (() => {
         });
     }
 
+    function renderInteractabilitySyncPlan(snapshot, observations = {}) {
+        const activeBlockingModal = observations.activeBlockingModal === true;
+        const eligible = isHumanTurnSnapshot(snapshot) && !isOnlineUiBlockedSnapshot(snapshot)
+            && !(activeBlockingModal && expectedPendingActions(snapshot).length === 0);
+        const issues = eligible && Array.isArray(observations.issues)
+            ? observations.issues.filter(issue => issue && issue.freezeKind === observations.humanFreezeKind)
+            : [];
+        return Object.freeze({
+            eligible,
+            shouldSync: eligible && issues.length > 0,
+            issues: Object.freeze(issues.slice()),
+        });
+    }
+
     function buildInteractabilityIssues(snapshot, observations = {}, freezeKinds = {}) {
         const issues = [];
         if (!snapshot || !snapshot.phase) return issues;
@@ -568,6 +582,7 @@ const UiWatchdog = (() => {
         isOnlineUiBlockedSnapshot,
         canRecoverActionContainers,
         actionContainerRecoveryPlan,
+        renderInteractabilitySyncPlan,
         buildInteractabilityIssues,
         hasPendingWork,
         buildFreezeFacts,
