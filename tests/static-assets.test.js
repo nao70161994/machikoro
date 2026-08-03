@@ -9,6 +9,7 @@ const {
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
+    registerStaticContentRoutes,
 } = require('../server/staticAssets');
 const { runTest } = require('./helpers/test-utils');
 
@@ -156,6 +157,41 @@ runTest('static asset handlers はindex responseと公開root allowlistを維持
     assert.deepStrictEqual(calls, [['allowed', 'server.js']]);
     assert.strictEqual(nextCalls, 1);
     assert.ok(Object.isFrozen(handlers));
+});
+
+runTest('static content route adapter は既存route順と注入handlerを維持する', () => {
+    const calls = [];
+    const sendIndex = () => {};
+    const sendRootFile = () => {};
+    const app = {
+        get(route, handler) { calls.push(['get', route, handler]); },
+        use(route, handler) { calls.push(['use', route, handler]); },
+    };
+    registerStaticContentRoutes({
+        app,
+        staticMiddleware(directory) {
+            calls.push(['static', directory]);
+            return `middleware:${directory}`;
+        },
+        rootDirectory: '/app',
+        pathModule: { join: (...parts) => parts.join('/') },
+        rootFiles: new Set(['style.css', 'manifest.json']),
+        staticDirs: [
+            { route: '/js', directory: 'js' },
+            { route: '/icons', directory: 'icons' },
+        ],
+        sendIndex,
+        sendRootFile,
+    });
+    assert.deepStrictEqual(calls, [
+        ['get', '/', sendIndex],
+        ['get', '/index.html', sendIndex],
+        ['get', ['/style.css', '/manifest.json'], sendRootFile],
+        ['static', '/app/js'],
+        ['use', '/js', 'middleware:/app/js'],
+        ['static', '/app/icons'],
+        ['use', '/icons', 'middleware:/app/icons'],
+    ]);
 });
 
 runTest('static assets はSW cache versionだけをbuild hashへ置換する', () => {

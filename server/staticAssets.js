@@ -68,6 +68,24 @@ function isPublicRootFile(fileName) {
     return PUBLIC_ROOT_FILES.has(String(fileName || '').replace(/^\/+/, ''));
 }
 
+function registerStaticContentRoutes(options = {}) {
+    const app = options.app;
+    const staticMiddleware = options.staticMiddleware;
+    const rootDirectory = options.rootDirectory || '.';
+    const pathModule = options.pathModule || defaultPath;
+    const rootFiles = options.rootFiles || PUBLIC_ROOT_FILES;
+    const staticDirs = options.staticDirs || PUBLIC_STATIC_DIRS;
+    const sendIndex = options.sendIndex;
+    const sendRootFile = options.sendRootFile;
+
+    app.get('/', sendIndex);
+    app.get('/index.html', sendIndex);
+    app.get(Array.from(rootFiles).map(fileName => '/' + fileName), sendRootFile);
+    for (const entry of staticDirs) {
+        app.use(entry.route, staticMiddleware(pathModule.join(rootDirectory, entry.directory)));
+    }
+}
+
 function makeStaticAssetHandlers(options = {}) {
     const indexContent = String(options.indexContent || '');
     const rootDirectory = options.rootDirectory || '.';
@@ -102,4 +120,5 @@ module.exports = {
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
+    registerStaticContentRoutes,
 };

@@ -74,6 +74,7 @@ const {
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
+    registerStaticContentRoutes,
 } = require('./server/staticAssets');
 const {
     findAcceptedClientAction,
@@ -590,13 +591,16 @@ const {
     isPublicRootFile,
 });
 
-app.get('/', sendIndexWithBuildHash);
-app.get('/index.html', sendIndexWithBuildHash);
-
-app.get(Array.from(PUBLIC_ROOT_FILES).map(fileName => '/' + fileName), sendPublicRootFile);
-for (const entry of PUBLIC_STATIC_DIRS) {
-    app.use(entry.route, express.static(path.join(__dirname, entry.directory)));
-}
+registerStaticContentRoutes({
+    app,
+    staticMiddleware: express.static,
+    rootDirectory: __dirname,
+    pathModule: path,
+    rootFiles: PUBLIC_ROOT_FILES,
+    staticDirs: PUBLIC_STATIC_DIRS,
+    sendIndex: sendIndexWithBuildHash,
+    sendRootFile: sendPublicRootFile,
+});
 
 // ===== Room lifecycle =====
 const APP_ERROR_EVENT = 'appError';
