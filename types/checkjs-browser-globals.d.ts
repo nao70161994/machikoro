@@ -34,6 +34,7 @@ interface Window {
     webkitAudioContext: typeof AudioContext;
     GameSnapshot: unknown;
     LocalSaveRepository: unknown;
+    LocalResumeView: unknown;
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;

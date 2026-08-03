@@ -45,8 +45,9 @@ function setLocalResumePending(pending) {
         ? document.getElementById('btnResume')
         : null;
     if (button) {
-        button.disabled = localResumePending;
-        button.textContent = localResumePending ? 'モデル読み込み中' : '続きから再開';
+        const view = LocalResumeView.pendingButton(localResumePending);
+        button.disabled = view.disabled;
+        button.textContent = view.textContent;
     }
 }
 
@@ -147,16 +148,15 @@ function saveGameState() {
 
 function updateResumeButton() {
     const localSection = document.getElementById('resumeSection');
-    if (localSection) localSection.style.display = getLocalSaveRepository().exists() ? 'flex' : 'none';
     const onlineSection = document.getElementById('onlineResumeSection');
     const onlineDescription = document.getElementById('onlineResumeDescription');
-    const onlineSession = readOnlineSession();
-    if (onlineSection) onlineSection.style.display = onlineSession ? 'block' : 'none';
-    if (onlineDescription) {
-        onlineDescription.textContent = onlineSession
-            ? `🌐 ${onlineSession.playerName} として ${onlineSession.roomId} に再接続できます`
-            : '🌐 オンラインゲームが中断されました';
-    }
+    const view = LocalResumeView.resumeSections(
+        getLocalSaveRepository().exists(),
+        readOnlineSession()
+    );
+    if (localSection) localSection.style.display = view.localDisplay;
+    if (onlineSection) onlineSection.style.display = view.onlineDisplay;
+    if (onlineDescription) onlineDescription.textContent = view.onlineDescription;
 }
 
 function readOnlineSession() {

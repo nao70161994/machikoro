@@ -223,6 +223,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/savedGameValidation.js',
         'js/storageSettings.js',
         'js/localResumePolicy.js',
+        'js/localResumeView.js',
         'js/storedOnlineReconnect.js',
         'js/storage.js',
         'js/uiStatsView.js',
