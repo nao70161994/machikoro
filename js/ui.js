@@ -642,8 +642,9 @@ function renderBuildMenu() {
 }
 
 function setCardFilter(color) {
-    cardFilter = color;
-    renderBuildMenu();
+    const transition = UiBuildMenu.cardFilterTransition(cardFilter, color);
+    cardFilter = transition.cardFilter;
+    if (transition.shouldRender) renderBuildMenu();
 }
 
 function bcSelectCard(btn, inputId) {

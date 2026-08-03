@@ -1449,6 +1449,25 @@ runTest('buildLandmarkDetailContent はランドマーク詳細HTMLを生成す�
     assert.ok(content.html.includes('サイコロ'));
 });
 
+runTest('UiBuildMenu card filter transitionはstate更新と再描画要求をpureに分離する', () => {
+    const helper = require('../js/uiBuildMenu');
+    assert.deepStrictEqual({ ...helper.cardFilterTransition('', 'green') }, {
+        cardFilter: 'green',
+        changed: true,
+        shouldRender: true,
+    });
+    assert.deepStrictEqual({ ...helper.cardFilterTransition('green', 'green') }, {
+        cardFilter: 'green',
+        changed: false,
+        shouldRender: true,
+    });
+    assert.deepStrictEqual({ ...helper.cardFilterTransition('green', 'future-filter') }, {
+        cardFilter: 'future-filter',
+        changed: true,
+        shouldRender: true,
+    });
+});
+
 runTest('UiBuildMenu action state はphase・pending・turn・allowedActionsをpureに判定する', () => {
     const helper = require('../js/uiBuildMenu');
     const base = {
