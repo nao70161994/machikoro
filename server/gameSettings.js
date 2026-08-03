@@ -1,5 +1,13 @@
 'use strict';
 
+function cpuDifficultyLabel(difficulty) {
+    if (difficulty === 'weak') return '弱';
+    if (difficulty === 'normal') return '普';
+    if (difficulty === 'strong') return '強';
+    if (difficulty === 'rl') return '学';
+    return '最強';
+}
+
 function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds }) {
     function normalizePlayerSettings(playerSettings, playerCount) {
         if (!Array.isArray(playerSettings)) {
@@ -58,6 +66,7 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
 
     return {
         normalizePlayerSettings,
+        cpuDifficultyLabel,
         hasInvalidRlModelId,
         hasMissingRlModelId,
         hasInvalidOnlineRlModelSettings,
@@ -66,4 +75,5 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
     };
 }
 
+makeGameSettings.cpuDifficultyLabel = cpuDifficultyLabel;
 module.exports = makeGameSettings;

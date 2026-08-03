@@ -46,3 +46,12 @@ runTest('game settings はCPU速度と有効カードの既存fallbackを維持�
     assert.deepStrictEqual(settings.normalizeEnabledCards([]), ['麦畑', 'パン屋', 'カフェ']);
     assert.deepStrictEqual(settings.normalizeEnabledCards(null), ['麦畑', 'パン屋', 'カフェ']);
 });
+
+runTest('game settingsはCPU難易度表示の既存日本語labelを正本化する', () => {
+    assert.strictEqual(makeGameSettings.cpuDifficultyLabel('weak'), '弱');
+    assert.strictEqual(settings.cpuDifficultyLabel('normal'), '普');
+    assert.strictEqual(settings.cpuDifficultyLabel('strong'), '強');
+    assert.strictEqual(settings.cpuDifficultyLabel('rl'), '学');
+    assert.strictEqual(settings.cpuDifficultyLabel('expert'), '最強');
+    assert.strictEqual(settings.cpuDifficultyLabel('unknown'), '最強');
+});

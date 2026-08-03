@@ -633,11 +633,7 @@ const {
 });
 
 function cpuDifficultyLabel(difficulty) {
-    if (difficulty === 'weak') return '弱';
-    if (difficulty === 'normal') return '普';
-    if (difficulty === 'strong') return '強';
-    if (difficulty === 'rl') return '学';
-    return '最強';
+    return makeGameSettings.cpuDifficultyLabel(difficulty);
 }
 
 const ALLOWED_CPU_DIFFICULTIES = new Set(['weak', 'normal', 'strong', 'expert', 'rl']);
