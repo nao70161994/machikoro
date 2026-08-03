@@ -26,6 +26,35 @@ runTest('CPU legal movesはlandmark有効化・建設済み・価格を既存順
     );
 });
 
+runTest('CPU legal movesは残存ランドマーク順と終盤thresholdをpureに判定する', () => {
+    const names = ['station', 'mall', 'airport'];
+    const player = { landmarks: { station: true, mall: false, airport: false } };
+    assert.deepStrictEqual(
+        CPULegalMoves.remainingEnabledLandmarkNames(player, new Set(['station', 'airport']), names),
+        ['airport']
+    );
+    assert.deepStrictEqual(
+        CPULegalMoves.remainingEnabledLandmarkNames(player, null, names),
+        ['mall', 'airport']
+    );
+    assert.strictEqual(CPULegalMoves.isEndgame(player, null, names, 2), true);
+    assert.strictEqual(CPULegalMoves.isEndgame(player, null, names, 1), false);
+});
+
+runTest('CPU残存ランドマークwrapperはpure helperと完全一致する', () => {
+    const runtime = loadCPURuntime();
+    const game = new runtime.GameManager(4);
+    const current = game.currentPlayer();
+    current.landmarks[runtime.LANDMARK_NAMES.STATION] = true;
+    const cpu = new runtime.CPU('strong');
+    const expected = CPULegalMoves.remainingEnabledLandmarkNames(
+        current, game.enabledLandmarks, runtime.Player.landmarkNames()
+    );
+    assert.deepStrictEqual(Array.from(cpu._remainingEnabledLandmarks(current, game)), Array.from(expected));
+    assert.strictEqual(cpu._isEndgameMode(current, game, expected.length), true);
+    assert.strictEqual(cpu._isEndgameMode(current, game, expected.length - 1), false);
+});
+
 runTest('CPU legal movesは在庫・価格・紫重複を既存順で絞る', () => {
     const cards = [
         { name: 'cheap', cost: 2, color: 'blue' },

@@ -15,6 +15,16 @@ const CPULegalMoves = Object.freeze({
         );
     },
 
+    remainingEnabledLandmarkNames(player, enabledLandmarks, landmarkNames) {
+        return landmarkNames.filter(name =>
+            (!enabledLandmarks || enabledLandmarks.has(name)) && !player.landmarks[name]
+        );
+    },
+
+    isEndgame(player, enabledLandmarks, landmarkNames, threshold = 2) {
+        return this.remainingEnabledLandmarkNames(player, enabledLandmarks, landmarkNames).length <= threshold;
+    },
+
     affordableCards(player, shopStock, cards) {
         return cards.filter(card =>
             shopStock[card.name] > 0 &&

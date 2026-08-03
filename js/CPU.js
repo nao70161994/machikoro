@@ -700,12 +700,15 @@ class CPU {
     }
 
     _remainingEnabledLandmarks(current, game) {
-        return Player.landmarkNames()
-            .filter(name => (!game.enabledLandmarks || game.enabledLandmarks.has(name)) && !current.landmarks[name]);
+        return CPULegalMoves.remainingEnabledLandmarkNames(
+            current, game.enabledLandmarks, Player.landmarkNames()
+        );
     }
 
     _isEndgameMode(current, game, threshold = 2) {
-        return this._remainingEnabledLandmarks(current, game).length <= threshold;
+        return CPULegalMoves.isEndgame(
+            current, game.enabledLandmarks, Player.landmarkNames(), threshold
+        );
     }
 
     _estimatePurchasePlanValue(player, game, difficulty = this.difficulty) {
