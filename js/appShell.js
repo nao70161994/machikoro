@@ -1190,13 +1190,11 @@ function bindConsoleErrorReporting() {
 
 function bindCrashHandlers() {
     if (_clientErrorReportingBound) return;
-    window.onerror = (message, filename, lineno, colno, error) => {
-        handleWindowErrorEvent({ message, filename, lineno, colno, error });
-        return false;
-    };
-    window.onunhandledrejection = handleWindowUnhandledRejection;
-    window.addEventListener('error', handleWindowErrorEvent);
-    window.addEventListener('unhandledrejection', handleWindowUnhandledRejection);
+    ClientEventRuntime.bindCrashHandlers({
+        windowTarget: window,
+        handleWindowErrorEvent,
+        handleWindowUnhandledRejection,
+    });
     bindConsoleErrorReporting();
     _clientErrorReportingBound = true;
 }
@@ -1206,10 +1204,11 @@ function bindOnlineStatusHandlers() {
         updateOnlineTabState();
         return;
     }
-    window.addEventListener('online', updateOnlineTabState);
-    window.addEventListener('offline', updateOnlineTabState);
+    ClientEventRuntime.bindOnlineStatusHandlers({
+        windowTarget: window,
+        updateOnlineStatus: updateOnlineTabState,
+    });
     _onlineStatusHandlersBound = true;
-    updateOnlineTabState();
 }
 
 function bindPwaInstallHandlers() {

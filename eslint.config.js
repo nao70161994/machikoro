@@ -15,6 +15,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/actionUiRegistry.js',
     'js/clientReporting.js',
     'js/clientReportingTransport.js',
+    'js/clientEventRuntime.js',
     'js/citySkyline.js',
     'js/clientCheckpoint.js',
     'js/clientStorage.js',

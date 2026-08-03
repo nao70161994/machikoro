@@ -3,6 +3,7 @@ declare var PendingActionQueue: typeof import("../js/pendingActionQueue").Pendin
 declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
 declare var GameBuildPolicy: typeof import("../js/gameBuildPolicy");
 declare var OnlineSocketRegistry: typeof import("../js/onlineSocketRegistry");
+declare var ClientEventRuntime: typeof import("../js/clientEventRuntime");
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
@@ -94,6 +95,7 @@ interface Window {
     LifecycleNotify: unknown;
     LifecycleTransport: unknown;
     ClientReportingTransport: unknown;
+    ClientEventRuntime: unknown;
     ClientCheckpoint: unknown;
     LocalPlayerSettings: unknown;
     PageActivationPolicy: unknown;

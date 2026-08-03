@@ -206,6 +206,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/clientReportingTransport.js',
         'js/lifecycleNotify.js',
         'js/lifecycleTransport.js',
+        'js/clientEventRuntime.js',
         'js/uiWatchdog.js',
         'js/uiWatchdogMonitor.js',
         'js/clientRuntimeSnapshot.js',

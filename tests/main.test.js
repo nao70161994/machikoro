@@ -325,6 +325,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(lifecycleNotifySource, context, { filename: 'js/lifecycleNotify.js' });
     const lifecycleTransportSource = fs.readFileSync(path.join(__dirname, '..', 'js/lifecycleTransport.js'), 'utf8');
     vm.runInContext(lifecycleTransportSource, context, { filename: 'js/lifecycleTransport.js' });
+    const clientEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientEventRuntime.js'), 'utf8');
+    vm.runInContext(clientEventRuntimeSource, context, { filename: 'js/clientEventRuntime.js' });
     const uiWatchdogSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdog.js'), 'utf8');
     vm.runInContext(uiWatchdogSource, context, { filename: 'js/uiWatchdog.js' });
     const uiWatchdogMonitorSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogMonitor.js'), 'utf8');
@@ -2204,7 +2206,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/clientReporting.js', 'js/clientReportingTransport.js');
     assertBefore('js/clientReportingTransport.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/appShell.js');
-    assertBefore('js/lifecycleTransport.js', 'js/appShell.js');
+    assertBefore('js/lifecycleTransport.js', 'js/clientEventRuntime.js');
+    assertBefore('js/clientEventRuntime.js', 'js/appShell.js');
     assertBefore('js/uiWatchdog.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogMonitor.js', 'js/appShell.js');
     assertBefore('js/clientRuntimeSnapshot.js', 'js/appShell.js');

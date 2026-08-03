@@ -126,6 +126,7 @@
     "js/clientCheckpoint.js",
     "js/clientReporting.js",
     "js/clientReportingTransport.js",
+    "js/clientEventRuntime.js",
     "js/lifecycleNotify.js",
     "js/lifecycleTransport.js",
     "js/localPlayerSettings.js",
