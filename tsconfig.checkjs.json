@@ -25,6 +25,7 @@
     "js/gameDicePolicy.js",
     "js/gameCardActivationPolicy.js",
     "js/gameBuildPolicy.js",
+    "js/gamePendingResolutionPolicy.js",
     "js/actionContract.js",
     "js/actionUiRegistry.js",
     "js/adSlots.js",

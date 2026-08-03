@@ -13,6 +13,7 @@ const GAME_RUNTIME_SOURCE_FILES = Object.freeze([
     'js/gameDicePolicy.js',
     'js/gameCardActivationPolicy.js',
     'js/gameBuildPolicy.js',
+    'js/gamePendingResolutionPolicy.js',
     'js/GameManager.js',
 ]);
 const GAME_RUNTIME_EXPORT_NAMES = Object.freeze([

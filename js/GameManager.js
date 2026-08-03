@@ -662,14 +662,29 @@ class GameManager {
     }
 
     resolveTV(targetIndex) {
-        if (this.phase !== GAME_PHASES.PENDING || this.pendingTV <= 0) return false;
-        if (!GameManager.canResolvePendingField(this, 'pendingTV')) return false;
-        const current = this.currentPlayer();
-        const target = this.players[targetIndex];
-        if (!target || target === current) {
-            this.addLog(LOG_TYPES.ERROR, `❌ 対象プレイヤーを選び直してください`);
+        /** @type {Player | undefined} */
+        let current;
+        /** @type {Player | undefined} */
+        let target;
+        const plan = GamePendingResolutionPolicy.planOtherPlayerTarget({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingCount: this.pendingTV,
+            canResolve: () => GameManager.canResolvePendingField(this, 'pendingTV'),
+            targetExists: () => {
+                current = this.currentPlayer();
+                target = this.players[targetIndex];
+                return !!target;
+            },
+            targetIsCurrent: () => target === current,
+        });
+        if (!plan.ok) {
+            if (plan.reason === GamePendingResolutionPolicy.reasons.INVALID_PLAYER_TARGET) {
+                this.addLog(LOG_TYPES.ERROR, `❌ 対象プレイヤーを選び直してください`);
+            }
             return false;
         }
+        if (!current || !target) return false;
         const steal = Math.min(5, target.coins);
         target.coins -= steal;
         current.coins += steal;
@@ -680,11 +695,29 @@ class GameManager {
     }
 
     resolveBusiness(myCardRef, targetIndex, theirCardRef) {
-        if (this.phase !== GAME_PHASES.PENDING || this.pendingBusiness <= 0) return false;
-        if (!GameManager.canResolvePendingField(this, 'pendingBusiness')) return false;
-        const current = this.currentPlayer();
-        const target = this.players[targetIndex];
-        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 交換相手を選び直してください`); return false; }
+        /** @type {Player | undefined} */
+        let current;
+        /** @type {Player | undefined} */
+        let target;
+        const plan = GamePendingResolutionPolicy.planOtherPlayerTarget({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingCount: this.pendingBusiness,
+            canResolve: () => GameManager.canResolvePendingField(this, 'pendingBusiness'),
+            targetExists: () => {
+                current = this.currentPlayer();
+                target = this.players[targetIndex];
+                return !!target;
+            },
+            targetIsCurrent: () => target === current,
+        });
+        if (!plan.ok) {
+            if (plan.reason === GamePendingResolutionPolicy.reasons.INVALID_PLAYER_TARGET) {
+                this.addLog(LOG_TYPES.ERROR, `❌ 交換相手を選び直してください`);
+            }
+            return false;
+        }
+        if (!current || !target) return false;
         const myCard = this._resolveCardRef(current, myCardRef);
         const theirCard = this._resolveCardRef(target, theirCardRef);
         if (!myCard || !theirCard) { this.addLog(LOG_TYPES.ERROR, `❌ 交換できない施設です`); return false; }
@@ -705,10 +738,19 @@ class GameManager {
     }
 
     resolveCleaning(cardName) {
-        if (this.phase !== GAME_PHASES.PENDING || this.pendingCleaning <= 0) return false;
-        if (!GameManager.canResolvePendingField(this, 'pendingCleaning')) return false;
-        const targetCard = createCardByName(cardName);
-        if (!targetCard || targetCard.category === CARD_CATEGORIES.MAJOR) return false;
+        let targetCard;
+        const plan = GamePendingResolutionPolicy.planCleaningTarget({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingCount: this.pendingCleaning,
+            canResolve: () => GameManager.canResolvePendingField(this, 'pendingCleaning'),
+            cardExists: () => {
+                targetCard = createCardByName(cardName);
+                return !!targetCard;
+            },
+            cardIsMajor: () => targetCard.category === CARD_CATEGORIES.MAJOR,
+        });
+        if (!plan.ok) return false;
         const current = this.currentPlayer();
         let count = 0;
         for (const p of this.players) {
@@ -728,11 +770,29 @@ class GameManager {
     }
 
     resolveMover(myCardRef, targetIndex) {
-        if (this.phase !== GAME_PHASES.PENDING || this.pendingMover <= 0) return false;
-        if (!GameManager.canResolvePendingField(this, 'pendingMover')) return false;
-        const current = this.currentPlayer();
-        const target = this.players[targetIndex];
-        if (!target || target === current) { this.addLog(LOG_TYPES.ERROR, `❌ 渡す相手を選び直してください`); return false; }
+        /** @type {Player | undefined} */
+        let current;
+        /** @type {Player | undefined} */
+        let target;
+        const plan = GamePendingResolutionPolicy.planOtherPlayerTarget({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingCount: this.pendingMover,
+            canResolve: () => GameManager.canResolvePendingField(this, 'pendingMover'),
+            targetExists: () => {
+                current = this.currentPlayer();
+                target = this.players[targetIndex];
+                return !!target;
+            },
+            targetIsCurrent: () => target === current,
+        });
+        if (!plan.ok) {
+            if (plan.reason === GamePendingResolutionPolicy.reasons.INVALID_PLAYER_TARGET) {
+                this.addLog(LOG_TYPES.ERROR, `❌ 渡す相手を選び直してください`);
+            }
+            return false;
+        }
+        if (!current || !target) return false;
         const myCard = this._resolveCardRef(current, myCardRef);
         if (!myCard) { this.addLog(LOG_TYPES.ERROR, `❌ 渡せない施設です`); return false; }
         const myCardWasDormant = current.isDormant(myCard);
@@ -748,13 +808,25 @@ class GameManager {
     }
 
     resolveRenovation(landmarkName) {
-        if (this.phase !== GAME_PHASES.PENDING || this.pendingRenovation <= 0) return false;
-        if (!GameManager.canResolvePendingField(this, 'pendingRenovation')) return false;
-        const current = this.currentPlayer();
-        if (!current.landmarks[landmarkName]) {
-            this.addLog(LOG_TYPES.ERROR, `❌ そのランドマークは建設されていません`);
+        /** @type {Player | undefined} */
+        let current;
+        const plan = GamePendingResolutionPolicy.planRenovationTarget({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingCount: this.pendingRenovation,
+            canResolve: () => GameManager.canResolvePendingField(this, 'pendingRenovation'),
+            landmarkBuilt: () => {
+                current = this.currentPlayer();
+                return !!current.landmarks[landmarkName];
+            },
+        });
+        if (!plan.ok) {
+            if (plan.reason === GamePendingResolutionPolicy.reasons.LANDMARK_NOT_BUILT) {
+                this.addLog(LOG_TYPES.ERROR, `❌ そのランドマークは建設されていません`);
+            }
             return false;
         }
+        if (!current) return false;
         current.landmarks[landmarkName] = false;
         current.coins += 8;
         this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+8コイン`);
