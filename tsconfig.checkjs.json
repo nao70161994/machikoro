@@ -30,6 +30,7 @@
     "js/cpuSchedulerState.js",
     "js/localActionPolicy.js",
     "js/uiEventDelegation.js",
+    "js/uiRuntimeSnapshot.js",
     "js/stats.js",
     "js/RLModelPortfolio.js",
     "js/RLCPU.js",

@@ -708,11 +708,7 @@ const FLOW_TRACE_LIMIT = 40;
 
 function buildRuntimeStateSnapshot(reason = '') {
     const pendingActions = game && typeof GameManager !== 'undefined' && typeof GameManager.pendingActionsFor === 'function'
-        ? GameManager.pendingActionsFor(game).map(entry => ({
-            action: entry && entry.action,
-            field: entry && entry.field,
-            count: entry && entry.count,
-        }))
+        ? GameManager.pendingActionsFor(game)
         : [];
     const elementState = id => {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
@@ -724,24 +720,15 @@ function buildRuntimeStateSnapshot(reason = '') {
             htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
         };
     };
-    return {
+    return UiRuntimeSnapshot.build({
         reason,
         timestamp: new Date().toISOString(),
-        phase: game && game.phase,
-        builtThisTurn: !!(game && game.builtThisTurn),
-        turnCount: game && game.turnCount,
-        currentPlayerIndex: game && game.currentPlayerIndex,
+        game,
         isCpuTurn: !!(game && currentCpuPlayerAt(game.currentPlayerIndex)),
-        isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
-        myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
-        pendingFields: game ? {
-            pendingTV: game.pendingTV || 0,
-            pendingBusiness: game.pendingBusiness || 0,
-            pendingCleaning: game.pendingCleaning || 0,
-            pendingMover: game.pendingMover || 0,
-            pendingRenovation: game.pendingRenovation || 0,
-            pendingIT: !!game.pendingIT,
-        } : null,
+        online: {
+            isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
+            myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+        },
         pendingActions,
         ui: {
             gameScreen: elementState('gameScreen'),
@@ -754,7 +741,7 @@ function buildRuntimeStateSnapshot(reason = '') {
             cardSelectModal: elementState('cardSelectModal'),
             cardDetailModal: elementState('cardDetailModal'),
         },
-    };
+    });
 }
 
 function recordFlowTrace(event, details = {}) {
