@@ -515,19 +515,19 @@ function renderPlayers() {
 }
 
 function getEffectText(card) {
-    const fn = CARD_EFFECT_DESCRIPTIONS[card.effect];
-    if (fn) return fn(card.income);
-    if (card.color === "red") return "相手から" + card.income + "コイン奪う";
-    return "+" + card.income + "コイン";
+    return UiCardDetail.cardEffectText(card, CARD_EFFECT_DESCRIPTIONS);
+}
+
+function landmarkPresentation(name) {
+    return UiCardDetail.landmarkPresentation(name, Player._LANDMARK_DEFS, LANDMARK_NAMES.YAKUSHO);
 }
 
 function getLandmarkEffectText(name) {
-    return (Player._LANDMARK_DEFS.find(d => d.name === name) || {}).effect || "";
+    return landmarkPresentation(name).effectText;
 }
 
 function getLandmarkEmoji(name) {
-    if (name === LANDMARK_NAMES.YAKUSHO) return "🏛️";
-    return (Player._LANDMARK_DEFS.find(d => d.name === name) || {}).emoji || "🏛️";
+    return landmarkPresentation(name).emoji;
 }
 
 function safeCardColorName(color) {

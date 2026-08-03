@@ -4,6 +4,22 @@ const UiCardDetail = (() => {
     const COLOR_NAMES = Object.freeze({ blue: '青', green: '緑', red: '赤', purple: '紫' });
     const COLOR_BADGES = Object.freeze({ blue: 'blue-badge', green: 'green-badge', red: 'red-badge', purple: 'purple-badge' });
 
+    function cardEffectText(card, effectDescriptions) {
+        const formatter = effectDescriptions && effectDescriptions[card.effect];
+        if (typeof formatter === 'function') return formatter(card.income);
+        if (card.color === 'red') return '相手から' + card.income + 'コイン奪う';
+        return '+' + card.income + 'コイン';
+    }
+
+    function landmarkPresentation(name, definitions, townHallName) {
+        const definition = Array.isArray(definitions)
+            ? definitions.find(candidate => candidate.name === name) : null;
+        return Object.freeze({
+            effectText: definition && definition.effect || '',
+            emoji: name === townHallName ? '🏛️' : definition && definition.emoji || '🏛️',
+        });
+    }
+
     function buildLandmarkDetailContent(options) {
         const { name, emoji, cost, effectText, escapeHtml } = options;
         const effect = escapeHtml(effectText);
@@ -22,7 +38,12 @@ const UiCardDetail = (() => {
         };
     }
 
-    return Object.freeze({ buildLandmarkDetailContent, buildCardDetailContent });
+    return Object.freeze({
+        cardEffectText,
+        landmarkPresentation,
+        buildLandmarkDetailContent,
+        buildCardDetailContent,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardDetail;
