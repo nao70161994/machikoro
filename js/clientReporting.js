@@ -157,6 +157,15 @@ const ClientReporting = Object.freeze({
     reportKey(report) {
         return [report.source, report.message, report.filename, report.line, report.column, report.phase, report.roomId].join('|');
     },
+
+    reportAdmission(previous, key, now, suppressMs) {
+        const current = previous || { key: '', time: 0 };
+        const suppressed = current.key === key && now - current.time < suppressMs;
+        return Object.freeze({
+            shouldSend: !suppressed,
+            nextState: suppressed ? current : Object.freeze({ key, time: now }),
+        });
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) {

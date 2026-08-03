@@ -71,6 +71,26 @@ runTest('client reporting はError風入力を既存payload形式へ正規化す
     assert.strictEqual(ClientReporting.reportKey(report), 'window-error|xxxxxxxxxx...|/index.html|12|4|roll|ROOM');
 });
 
+runTest('client reportingは重複抑止境界と次状態をpureに判定する', () => {
+    const previous = { key: 'same', time: 1000 };
+    const suppressed = ClientReporting.reportAdmission(previous, 'same', 5999, 5000);
+    assert.strictEqual(suppressed.shouldSend, false);
+    assert.strictEqual(suppressed.nextState, previous);
+
+    const boundary = ClientReporting.reportAdmission(previous, 'same', 6000, 5000);
+    assert.deepStrictEqual(boundary, {
+        shouldSend: true,
+        nextState: { key: 'same', time: 6000 },
+    });
+    assert.strictEqual(Object.isFrozen(boundary), true);
+    assert.strictEqual(Object.isFrozen(boundary.nextState), true);
+
+    assert.deepStrictEqual(ClientReporting.reportAdmission(previous, 'other', 1001, 5000), {
+        shouldSend: true,
+        nextState: { key: 'other', time: 1001 },
+    });
+});
+
 runTest('client reporting はErrorとError風objectのmessage/stackを同じ規則で読む', () => {
     const error = new Error('boom');
     assert.strictEqual(ClientReporting.errorMessage(error), 'boom');

@@ -866,13 +866,17 @@ function reportClientError(input) {
         source: input?.source || 'unknown',
         buildReport: () => buildClientErrorReport(input || {}),
         shouldSend(report) {
-            const now = Date.now();
-            const key = clientErrorReportKey(report);
-            if (_lastClientErrorReport.key === key && now - _lastClientErrorReport.time < CLIENT_ERROR_REPORT_SUPPRESS_MS) {
+            const admission = ClientReporting.reportAdmission(
+                _lastClientErrorReport,
+                clientErrorReportKey(report),
+                Date.now(),
+                CLIENT_ERROR_REPORT_SUPPRESS_MS
+            );
+            if (!admission.shouldSend) {
                 markClientFlowCheckpoint('client-error-suppressed', { source: report.source, message: report.message });
                 return false;
             }
-            _lastClientErrorReport = { key, time: now };
+            _lastClientErrorReport = admission.nextState;
             return true;
         },
         checkpoint: markClientFlowCheckpoint,
