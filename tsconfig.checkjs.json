@@ -28,6 +28,7 @@
     "js/confetti.js",
     "js/delayedHumanActionPolicy.js",
     "js/cpuSchedulerState.js",
+    "js/localActionPolicy.js",
     "js/uiEventDelegation.js",
     "js/stats.js",
     "js/RLModelPortfolio.js",

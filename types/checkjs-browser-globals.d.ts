@@ -83,6 +83,7 @@ interface Window {
     CitySkyline: unknown;
     DelayedHumanActionPolicy: unknown;
     CpuSchedulerState: unknown;
+    LocalActionPolicy: unknown;
     UiEventDelegation: unknown;
     ClientStorage: unknown;
     AppShellStorage: unknown;

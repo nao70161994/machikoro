@@ -876,15 +876,19 @@ function bindCpuResumeScheduler() {
 
 function canRunLocalHumanAction(expectedPlayerIndex = null) {
     if (!game || game.checkWinner()) return false;
-    if (expectedPlayerIndex !== null && game.currentPlayerIndex !== expectedPlayerIndex) return false;
-    if (cpuPlayers[game.currentPlayerIndex]) return false;
-    if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return false;
-    if (isOnlineGame && (
-        isMainOnlineReconnectInputBlocked() ||
-        (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
-        (typeof socket === 'undefined' || !socket || socket.connected === false)
-    )) return false;
-    return true;
+    const online = typeof isOnlineGame !== 'undefined' && isOnlineGame;
+    return LocalActionPolicy.canRunHumanAction({
+        hasGame: true,
+        hasWinner: false,
+        expectedPlayerIndex,
+        currentPlayerIndex: game.currentPlayerIndex,
+        isCpuTurn: !!cpuPlayers[game.currentPlayerIndex],
+        isOnlineGame: online,
+        myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+        isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
+        onlineActionInFlight: online && typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        socketConnected: !online || (typeof socket !== 'undefined' && !!socket && socket.connected !== false),
+    });
 }
 
 function canRunHumanAction(action, expectedPlayerIndex = null) {

@@ -213,6 +213,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/pageActivationPolicy.js',
         'js/delayedHumanActionPolicy.js',
         'js/cpuSchedulerState.js',
+        'js/localActionPolicy.js',
         'js/uiEventDelegation.js',
         'js/citySkyline.js',
         'js/savedGameValidation.js',
