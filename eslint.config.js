@@ -100,6 +100,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiInputPolicy.js',
     'js/uiNotice.js',
     'js/uiPendingMenu.js',
+    'js/uiPendingEffects.js',
     'js/uiTutorial.js',
     'js/uiGameStatusView.js',
     'js/uiTabView.js',

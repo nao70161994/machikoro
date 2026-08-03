@@ -654,24 +654,11 @@ function bcSelectCard(btn, inputId) {
         ? group.querySelectorAll('.bc-chip')
         : [];
     const view = UiPendingMenu.businessCardSelectionView(groupButtons.length, btn.dataset?.idx ?? '');
-    groupButtons.forEach((b, index) => {
-        if (b.classList && typeof b.classList.remove === 'function' && !view.groupButtons[index].selected) {
-            b.classList.remove('selected');
-        }
-        if (typeof b.setAttribute === 'function') {
-            b.setAttribute('aria-pressed', view.groupButtons[index].ariaPressed);
-        }
+    return UiPendingEffects.applyBusinessCardSelection(view, {
+        groupButtons,
+        selectedButton: btn,
+        findInput: () => document.getElementById(inputId),
     });
-    if (btn.classList && typeof btn.classList.add === 'function' && view.selectedButton.selected) {
-        btn.classList.add('selected');
-    }
-    if (typeof btn.setAttribute === 'function') {
-        btn.setAttribute('aria-pressed', view.selectedButton.ariaPressed);
-    }
-    const input = document.getElementById(inputId);
-    if (!input) return false;
-    input.value = view.inputValue;
-    return true;
 }
 
 function showTurnAnnouncer(name, isCPU) {

@@ -235,6 +235,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiInputPolicy.js',
         'js/uiBuildMenu.js',
         'js/uiPendingMenu.js',
+        'js/uiPendingEffects.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/uiTutorial.js',

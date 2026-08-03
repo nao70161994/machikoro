@@ -66,6 +66,7 @@ interface Window {
     UiPlayerDisplay: unknown;
     UiInputPolicy: unknown;
     UiPendingMenu: unknown;
+    UiPendingEffects: unknown;
     UiTutorial: unknown;
     UiGameStatusView: unknown;
     UiTabView: unknown;

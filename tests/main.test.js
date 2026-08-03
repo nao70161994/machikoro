@@ -2054,6 +2054,7 @@ runTest('UI interactability registry は描画されるaction child selectorと�
         'js/ui.js',
         'js/uiBuildMenu.js',
         'js/uiPendingMenu.js',
+        'js/uiPendingEffects.js',
         'js/uiCardDetail.js',
         'js/uiCardSelect.js',
         'js/uiDiceChoice.js',
@@ -2164,6 +2165,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiInputPolicy.js', 'js/ui.js');
     assertBefore('js/uiBuildMenu.js', 'js/ui.js');
     assertBefore('js/uiPendingMenu.js', 'js/ui.js');
+    assertBefore('js/uiPendingEffects.js', 'js/ui.js');
     assertBefore('js/uiCardDetail.js', 'js/ui.js');
     assertBefore('js/uiCardSelect.js', 'js/ui.js');
     assertBefore('js/uiTutorial.js', 'js/ui.js');
