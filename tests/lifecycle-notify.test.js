@@ -2,6 +2,47 @@ const assert = require('assert');
 const LifecycleNotify = require('../js/lifecycleNotify');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('lifecycle storage gatewayは現行key・legacy fallback・marker形式を維持する', () => {
+    const values = new Map([[LifecycleNotify.storageKeys.legacyNotify, 'false']]);
+    const calls = [];
+    const accessStorage = (operation, fallback) => {
+        calls.push(['access', fallback]);
+        return operation({
+            getItem(key) {
+                calls.push(['get', key]);
+                return values.has(key) ? values.get(key) : null;
+            },
+            setItem(key, value) {
+                calls.push(['set', key, value]);
+                values.set(key, value);
+            },
+            removeItem(key) {
+                calls.push(['remove', key]);
+                values.delete(key);
+            },
+        });
+    };
+
+    assert.ok(Object.isFrozen(LifecycleNotify.storageKeys));
+    assert.strictEqual(LifecycleNotify.readNotificationValue(accessStorage), 'false');
+    LifecycleNotify.writeNotificationEnabled(accessStorage, true);
+    assert.strictEqual(LifecycleNotify.readNotificationValue(accessStorage), 'true');
+    LifecycleNotify.writeStartMarker(accessStorage, 'online|4|2', 1000);
+    assert.strictEqual(
+        LifecycleNotify.readStartMarker(accessStorage),
+        '{"signature":"online|4|2","timestamp":1000}'
+    );
+    LifecycleNotify.clearStartMarker(accessStorage);
+    assert.strictEqual(LifecycleNotify.readStartMarker(accessStorage), null);
+    assert.deepStrictEqual(calls.slice(0, 3), [
+        ['access', null],
+        ['get', 'machikoroLifecycleNotifyEnabled'],
+        ['get', 'machikoroLifecycleNotificationsEnabled'],
+    ]);
+    assert.ok(calls.some(call => call.join('|') === 'set|machikoroLifecycleNotifyEnabled|true'));
+    assert.ok(calls.some(call => call.join('|') === 'remove|machikoroLifecycleNotificationsEnabled'));
+});
+
 runTest('lifecycle notify は既存opt-out値だけを無効として扱う', () => {
     for (const value of ['0', 'false', 'FALSE', 'no', 'off', 'disabled']) {
         assert.strictEqual(LifecycleNotify.isDisabledValue(value), true, value);

@@ -1,6 +1,41 @@
 'use strict';
 
 const LifecycleNotify = (() => {
+    const storageKeys = Object.freeze({
+        notify: 'machikoroLifecycleNotifyEnabled',
+        legacyNotify: 'machikoroLifecycleNotificationsEnabled',
+        startSent: 'machikoroLifecycleStartSent',
+    });
+
+    function readNotificationValue(accessStorage) {
+        return accessStorage(storage => {
+            const value = storage.getItem(storageKeys.notify);
+            if (value !== null) return value;
+            return storage.getItem(storageKeys.legacyNotify);
+        }, null);
+    }
+
+    function writeNotificationEnabled(accessStorage, enabled) {
+        return accessStorage(storage => {
+            storage.setItem(storageKeys.notify, enabled ? 'true' : 'false');
+            storage.removeItem(storageKeys.legacyNotify);
+        });
+    }
+
+    function readStartMarker(accessStorage) {
+        return accessStorage(storage => storage.getItem(storageKeys.startSent), null);
+    }
+
+    function writeStartMarker(accessStorage, signature, timestamp) {
+        return accessStorage(storage => {
+            storage.setItem(storageKeys.startSent, serializeStartMarker(signature, timestamp));
+        });
+    }
+
+    function clearStartMarker(accessStorage) {
+        return accessStorage(storage => storage.removeItem(storageKeys.startSent));
+    }
+
     function isDisabledValue(value) {
         return ['0', 'false', 'no', 'off', 'disabled'].includes(String(value || '').toLowerCase());
     }
@@ -156,6 +191,12 @@ const LifecycleNotify = (() => {
     }
 
     return Object.freeze({
+        storageKeys,
+        readNotificationValue,
+        writeNotificationEnabled,
+        readStartMarker,
+        writeStartMarker,
+        clearStartMarker,
         isDisabledValue,
         cpuCount,
         playerCount,

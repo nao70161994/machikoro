@@ -885,18 +885,13 @@ function reportClientError(input) {
 
 // ===== ゲームライフサイクル通知 =====
 const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
-const GAME_LIFECYCLE_NOTIFY_KEY = 'machikoroLifecycleNotifyEnabled';
-const GAME_LIFECYCLE_LEGACY_NOTIFY_KEY = 'machikoroLifecycleNotificationsEnabled';
-const GAME_LIFECYCLE_START_SENT_KEY = 'machikoroLifecycleStartSent';
+const GAME_LIFECYCLE_NOTIFY_KEY = LifecycleNotify.storageKeys.notify;
+const GAME_LIFECYCLE_LEGACY_NOTIFY_KEY = LifecycleNotify.storageKeys.legacyNotify;
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
 let _gameLifecycleState = LifecycleNotify.lifecycleState();
 
 function readGameLifecycleNotifyValue() {
-    return appShellStorage.access(storage => {
-        const value = storage.getItem(GAME_LIFECYCLE_NOTIFY_KEY);
-        if (value !== null) return value;
-        return storage.getItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
-    }, null);
+    return LifecycleNotify.readNotificationValue(appShellStorage.access);
 }
 
 function isLifecycleNotifyFalse(value) {
@@ -908,15 +903,7 @@ function isGameLifecycleNotificationEnabled() {
 }
 
 function setGameLifecycleNotificationEnabled(enabled) {
-    appShellStorage.access(storage => {
-        if (enabled) {
-            storage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'true');
-            storage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
-        } else {
-            storage.setItem(GAME_LIFECYCLE_NOTIFY_KEY, 'false');
-            storage.removeItem(GAME_LIFECYCLE_LEGACY_NOTIFY_KEY);
-        }
-    });
+    LifecycleNotify.writeNotificationEnabled(appShellStorage.access, enabled);
     return isGameLifecycleNotificationEnabled();
 }
 
@@ -981,7 +968,7 @@ function gameLifecycleStartSignature() {
 
 function recentlySentGameLifecycleStart(signature, now = Date.now()) {
     return LifecycleNotify.isRecentStart(
-        safeAppShellStorageGet(GAME_LIFECYCLE_START_SENT_KEY),
+        LifecycleNotify.readStartMarker(appShellStorage.access),
         signature,
         now,
         GAME_LIFECYCLE_START_SUPPRESS_MS
@@ -989,12 +976,7 @@ function recentlySentGameLifecycleStart(signature, now = Date.now()) {
 }
 
 function rememberGameLifecycleStart(signature, now = Date.now()) {
-    appShellStorage.access(storage => {
-        storage.setItem(
-            GAME_LIFECYCLE_START_SENT_KEY,
-            LifecycleNotify.serializeStartMarker(signature, now)
-        );
-    });
+    LifecycleNotify.writeStartMarker(appShellStorage.access, signature, now);
 }
 
 function cpuDifficultyForWinner(winner) {
@@ -1074,7 +1056,7 @@ function notifyGameLifecycleFinish(winner) {
 
 function resetGameLifecycleForRestart(reason = 'game-restart') {
     _gameLifecycleState = LifecycleNotify.resetLifecycleState();
-    safeAppShellStorageRemove(GAME_LIFECYCLE_START_SENT_KEY);
+    LifecycleNotify.clearStartMarker(appShellStorage.access);
     markClientFlowCheckpoint(reason, { lifecycle: 'reset' });
 }
 
