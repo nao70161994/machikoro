@@ -181,7 +181,7 @@ function renderWinnerState(winner) {
     } catch (error) {
         resultAdSlot = '';
     }
-    document.getElementById("status").innerHTML = UiWinner.buildWinnerScreenHtml({
+    const statusHtml = UiWinner.buildWinnerScreenHtml({
         winner,
         players: game.players,
         isCpuWinner: isCPUWinner,
@@ -190,29 +190,51 @@ function renderWinnerState(winner) {
         resultAdSlot,
         escapeHtml,
     });
-    if (!winSoundPlayed) {
-        winSoundPlayed = true;
-        playSound('win');
-        const cpuList = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
-        recordGameStats(winner, game, cpuList);
-        if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
-    }
-    safeUiStorageRemove('savedGame');
-    clearOnlineSessionAfterWin();
-    if (typeof markOnlineGameFinished === 'function') markOnlineGameFinished();
-    if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
-    updateResumeButton();
-    startConfetti();
-    document.getElementById("btnRoll").disabled = true;
-    const btnSkip = document.getElementById("btnSkip");
-    btnSkip.disabled = true;
-    btnSkip.textContent = "建設しないでターン終了";
-    document.getElementById("btnReroll").style.display = "none";
-    document.getElementById("diceChoose").innerHTML = "";
-    document.getElementById("buildMenu").innerHTML = "";
-    renderTutorial();
-    renderLog();
-    renderPlayers();
+    const firstPresentation = !winSoundPlayed;
+    UiWinnerEffects.execute({ statusHtml, firstPresentation }, {
+        setStatusHtml(html) {
+            document.getElementById("status").innerHTML = html;
+        },
+        markPresented() {
+            winSoundPlayed = true;
+        },
+        playWinSound() {
+            playSound('win');
+        },
+        recordStats() {
+            const cpuList = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
+            recordGameStats(winner, game, cpuList);
+        },
+        notifyFinish() {
+            if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
+        },
+        clearSavedGame() {
+            safeUiStorageRemove('savedGame');
+        },
+        clearOnlineSession() {
+            clearOnlineSessionAfterWin();
+        },
+        markOnlineFinished() {
+            if (typeof markOnlineGameFinished === 'function') markOnlineGameFinished();
+        },
+        refreshPwaUpdateState() {
+            if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
+        },
+        updateResumeButton,
+        startConfetti,
+        applyTerminalControls(controls) {
+            document.getElementById("btnRoll").disabled = controls.rollDisabled;
+            const btnSkip = document.getElementById("btnSkip");
+            btnSkip.disabled = controls.skipDisabled;
+            btnSkip.textContent = controls.skipText;
+            document.getElementById("btnReroll").style.display = controls.rerollDisplay;
+            document.getElementById("diceChoose").innerHTML = controls.diceChooseHtml;
+            document.getElementById("buildMenu").innerHTML = controls.buildMenuHtml;
+        },
+        renderTutorial,
+        renderLog,
+        renderPlayers,
+    });
 }
 
 function renderActiveGameState(current) {

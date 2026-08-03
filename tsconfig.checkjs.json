@@ -119,6 +119,7 @@
     "js/clientRuntimeSnapshot.js",
     "js/crashScreen.js",
     "js/uiWinner.js",
+    "js/uiWinnerEffects.js",
     "js/clientCheckpoint.js",
     "js/clientReporting.js",
     "js/clientReportingTransport.js",

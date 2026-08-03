@@ -4,6 +4,7 @@ declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
 declare var escapeHtml: ((value: unknown) => string) | undefined;
 declare var isOnlineGame: boolean | undefined;
 declare var showConfirm: ((message: string, onConfirm: () => void) => void) | undefined;
+declare var UiWinnerEffects: typeof import("../js/uiWinnerEffects");
 
 declare var CPUProfile: typeof import("../js/cpuProfile").CPUProfile;
 declare var CPUSelection: typeof import("../js/cpuSelection").CPUSelection;
@@ -83,6 +84,7 @@ interface Window {
     UiWatchdog: unknown;
     CrashScreen: unknown;
     UiWinner: unknown;
+    UiWinnerEffects: unknown;
     LifecycleNotify: unknown;
     LifecycleTransport: unknown;
     ClientReportingTransport: unknown;
