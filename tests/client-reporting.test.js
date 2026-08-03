@@ -123,3 +123,45 @@ runTest('client reporting は壊れたfreeze summaryと通常stackの既存上�
     assert.strictEqual(regular, 's'.repeat(20) + '...');
     assert.strictEqual(ClientReporting.stackForReport({ stack: 'FREEZE_SUMMARY {}' }, { limit: 100 }), 'FREEZE_SUMMARY {}');
 });
+
+runTest('client reportingはbrowser error eventを既存report inputへpureに投影する', () => {
+    const error = new Error('boom');
+    assert.deepStrictEqual(ClientReporting.windowErrorInput({
+        message: 'window boom',
+        error,
+        filename: '/index.html',
+        lineno: 12,
+        colno: 4,
+    }), {
+        source: 'window.onerror',
+        message: 'window boom',
+        error,
+        filename: '/index.html',
+        line: 12,
+        column: 4,
+    });
+    assert.deepStrictEqual(ClientReporting.unhandledRejectionInput({ reason: error }), {
+        source: 'window.onunhandledrejection',
+        error,
+        message: 'boom',
+    });
+});
+
+runTest('client reportingはconsole errorのError風と複数値を既存規則で整形する', () => {
+    const error = { message: 'object boom' };
+    assert.deepStrictEqual(ClientReporting.consoleErrorInput([error, 'ignored']), {
+        source: 'console.error',
+        error,
+        message: 'object boom',
+    });
+    assert.deepStrictEqual(ClientReporting.consoleErrorInput(['plain', 2, null]), {
+        source: 'console.error',
+        error: null,
+        message: 'plain 2 null',
+    });
+    assert.deepStrictEqual(ClientReporting.consoleErrorInput(null), {
+        source: 'console.error',
+        error: null,
+        message: '',
+    });
+});

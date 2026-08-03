@@ -31,9 +31,6 @@ let _freezeWatchdogLastReportAt = 0;
 let _postBuildUiStabilizerPending = false;
 
 const truncateClientErrorField = ClientReporting.truncateField;
-const errorLikeMessage = ClientReporting.errorMessage;
-const errorLikeStack = ClientReporting.errorStack;
-const isErrorLike = ClientReporting.isErrorLike;
 
 function safeClientErrorUrl() {
     return ClientReporting.clientUrl(
@@ -1212,23 +1209,12 @@ function pwaInstallDismiss() {
 }
 
 function handleWindowErrorEvent(e) {
-    reportClientError({
-        source: 'window.onerror',
-        message: e?.message,
-        error: e?.error,
-        filename: e?.filename,
-        line: e?.lineno,
-        column: e?.colno,
-    });
+    reportClientError(ClientReporting.windowErrorInput(e));
     showCrashScreen(e?.error || e?.message);
 }
 
 function handleWindowUnhandledRejection(e) {
-    reportClientError({
-        source: 'window.onunhandledrejection',
-        error: e?.reason,
-        message: errorLikeMessage(e?.reason),
-    });
+    reportClientError(ClientReporting.unhandledRejectionInput(e));
     showCrashScreen(e?.reason);
 }
 
@@ -1237,12 +1223,7 @@ function bindConsoleErrorReporting() {
     const originalConsoleError = console.error.bind(console);
     console.error = (...args) => {
         originalConsoleError(...args);
-        const first = args[0];
-        reportClientError({
-            source: 'console.error',
-            error: isErrorLike(first) ? first : null,
-            message: isErrorLike(first) ? errorLikeMessage(first) : args.map(value => String(value)).join(' '),
-        });
+        reportClientError(ClientReporting.consoleErrorInput(args));
     };
     _consoleErrorHooked = true;
 }

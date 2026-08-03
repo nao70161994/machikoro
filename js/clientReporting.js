@@ -40,6 +40,38 @@ const ClientReporting = Object.freeze({
         return value instanceof Error || !!(value && (typeof value.message === 'string' || typeof value.stack === 'string'));
     },
 
+    windowErrorInput(event = {}) {
+        return {
+            source: 'window.onerror',
+            message: event.message,
+            error: event.error,
+            filename: event.filename,
+            line: event.lineno,
+            column: event.colno,
+        };
+    },
+
+    unhandledRejectionInput(event = {}) {
+        return {
+            source: 'window.onunhandledrejection',
+            error: event.reason,
+            message: ClientReporting.errorMessage(event.reason),
+        };
+    },
+
+    consoleErrorInput(args = []) {
+        const values = Array.isArray(args) ? args : [];
+        const first = values[0];
+        const errorLike = ClientReporting.isErrorLike(first);
+        return {
+            source: 'console.error',
+            error: errorLike ? first : null,
+            message: errorLike
+                ? ClientReporting.errorMessage(first)
+                : values.map(value => String(value)).join(' '),
+        };
+    },
+
     compactFreezeSummaryStack(stack, options = {}) {
         const text = String(stack || '');
         const marker = 'FREEZE_SUMMARY ';
