@@ -1274,14 +1274,14 @@ function setConfirmModalAwaitingChoice(value) {
     } catch (_) {}
 }
 
-let confirmModalCancelHandler = null;
+const confirmModalController = UiModalPolicy.createConfirmController(
+    setConfirmModalAwaitingChoice
+);
 
 function closeConfirmModal(accepted) {
-    const cancelHandler = accepted === true ? null : confirmModalCancelHandler;
-    confirmModalCancelHandler = null;
-    setConfirmModalAwaitingChoice(false);
+    const transition = confirmModalController.close(accepted);
     closeAccessibleModal('confirmModal');
-    if (cancelHandler) cancelHandler();
+    if (transition.cancelHandler) transition.cancelHandler();
 }
 
 function handleModalKeydown(event) {
@@ -1511,8 +1511,7 @@ function showConfirm(message, onOk, onCancel) {
     if (!canOpenBlockingModal('confirmModal')) return false;
     messageEl.textContent = message;
     if (!openAccessibleModal('confirmModal')) return false;
-    setConfirmModalAwaitingChoice(true);
-    confirmModalCancelHandler = typeof onCancel === 'function' ? onCancel : null;
+    confirmModalController.open(onCancel);
     okBtn.onclick = () => {
         closeConfirmModal(true);
         onOk();

@@ -17,6 +17,29 @@ runTest('UI modal policy はblocking/non-blocking registryと背景rootを固定
     assert.strictEqual(Object.isFrozen(UiModalPolicy.exceptions), true);
 });
 
+runTest('UI confirm controllerはawaitingとcancel handlerを一つのstate境界で所有する', () => {
+    const awaitingChanges = [];
+    const calls = [];
+    const cancel = () => calls.push('cancel');
+    const controller = UiModalPolicy.createConfirmController(value => awaitingChanges.push(value));
+    assert.deepStrictEqual(controller.snapshot(), { awaiting: false, hasCancelHandler: false });
+    const opened = controller.open(cancel);
+    assert.deepStrictEqual(opened, { awaiting: true, hasCancelHandler: true });
+    const accepted = controller.close(true);
+    assert.strictEqual(accepted.cancelHandler, null);
+    assert.deepStrictEqual(accepted.state, { awaiting: false, hasCancelHandler: false });
+    controller.open(cancel);
+    const rejected = controller.close(false);
+    assert.strictEqual(rejected.cancelHandler, cancel);
+    assert.deepStrictEqual(calls, []);
+    rejected.cancelHandler();
+    assert.deepStrictEqual(calls, ['cancel']);
+    assert.deepStrictEqual(awaitingChanges, [true, false, true, false]);
+    assert.ok(Object.isFrozen(opened));
+    assert.ok(Object.isFrozen(rejected));
+    assert.ok(Object.isFrozen(rejected.state));
+});
+
 runTest('UI modal policy はvisible blocking modalだけを抽出する', () => {
     const visible = new Set(['rulesModal', 'pendingModal', 'noticeToast', 'confirmModal']);
     assert.deepStrictEqual(

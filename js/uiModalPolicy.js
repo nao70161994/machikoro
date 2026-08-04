@@ -19,6 +19,39 @@ const UI_MODAL_POLICY_REGISTRY = Object.freeze({
 const UI_MODAL_STACK_EXCEPTION_REGISTRY = Object.freeze({});
 const UI_DEFAULT_BLOCKING_MODAL_POLICY = Object.freeze({ blocking: true });
 
+function createConfirmController(onAwaitingChange = null) {
+    let awaiting = false;
+    let cancelHandler = null;
+
+    function publish() {
+        if (typeof onAwaitingChange === 'function') onAwaitingChange(awaiting);
+    }
+
+    function snapshot() {
+        return Object.freeze({
+            awaiting,
+            hasCancelHandler: typeof cancelHandler === 'function',
+        });
+    }
+
+    function open(nextCancelHandler) {
+        awaiting = true;
+        publish();
+        cancelHandler = typeof nextCancelHandler === 'function' ? nextCancelHandler : null;
+        return snapshot();
+    }
+
+    function close(accepted) {
+        const handler = accepted === true ? null : cancelHandler;
+        cancelHandler = null;
+        awaiting = false;
+        publish();
+        return Object.freeze({ cancelHandler: handler, state: snapshot() });
+    }
+
+    return Object.freeze({ snapshot, open, close });
+}
+
 function policyFor(id) {
     return UI_MODAL_POLICY_REGISTRY[id] || UI_DEFAULT_BLOCKING_MODAL_POLICY;
 }
@@ -96,6 +129,7 @@ function keydownAction(state = {}) {
 
 const UiModalPolicy = Object.freeze({
     inertRootIds: UI_MODAL_INERT_ROOT_IDS,
+    createConfirmController,
     registry: UI_MODAL_POLICY_REGISTRY,
     exceptions: UI_MODAL_STACK_EXCEPTION_REGISTRY,
     policyFor,
