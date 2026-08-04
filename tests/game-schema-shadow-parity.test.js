@@ -348,6 +348,32 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
         },
         {
+            name: 'stadium-multiplayer-partial-transfer',
+            setup(game) {
+                game.phase = runtime.GAME_PHASES.ROLL;
+                game.players[0].cards = [runtime.createCardByName('スタジアム')];
+                game.players[0].dormantCards = [];
+                game.players[0].coins = 3;
+                for (let index = 1; index < game.players.length; index++) {
+                    game.players[index].cards = [];
+                    game.players[index].dormantCards = [];
+                    game.players[index].coins = index % 3;
+                }
+            },
+            actions: [['rollDice', { forceDice: 6, tunaDice: [1, 1] }]],
+            assertAfter(game) {
+                let expectedIncome = 0;
+                for (let index = 1; index < game.players.length; index++) {
+                    const initialCoins = index % 3;
+                    const paid = Math.min(2, initialCoins);
+                    expectedIncome += paid;
+                    assert.strictEqual(game.players[index].coins, initialCoins - paid);
+                }
+                assert.strictEqual(game.players[0].coins, 3 + expectedIncome);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
             name: 'publisher-multiplayer-transfer',
             setup(game) {
                 game.phase = runtime.GAME_PHASES.ROLL;
