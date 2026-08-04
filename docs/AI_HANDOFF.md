@@ -892,3 +892,11 @@ Test index:
 - Strong dice-tempo board features belong to `CPUEvaluation.strongTempoValueFeatures()`. Preserve wrapper admission order, card dice-array reads, player order, Station checks, coefficients, and every RNG point.
 - Scoped gates are 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three independent themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 69 handoff (2026-08-05)
+
+- `appShell.js` and `storage.js` read live game/CPU/Undo/session fields through `GameRuntimeState.runtime.snapshot()` and `OnlineRuntimeState.runtime.snapshot()`. Do not reintroduce ambient production reads; preserve one snapshot per admission/serialization/diagnostic operation where a consistent envelope matters.
+- `GameRuntimeState` snapshots deliberately retain live object identity. They are not canonical Game Engine snapshots, save payloads, or immutable deep copies. Resume hydration must continue to install the game through the named operation before applying mutable hydration.
+- Moving Company candidate traversal belongs to `CPUEvaluation.moverValueFeatures()` and its numeric formula to `moverValue()`. Preserve card-major/target-minor order, per-target owned/received/built/dormant callback order, all coefficients, max/zero behavior, and every RNG point.
+- Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three independent themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

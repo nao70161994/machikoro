@@ -846,3 +846,11 @@ Scoped gates now cover 223 ESLint maintenance files and 222 checkJs runtime file
 3. Strong dice-tempo evaluation now separates live admission from immutable feature projection and pure scoring while retaining exact strength and RNG behavior.
 
 Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect behavior, tutorial/UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-05 Batch 69 boundary update
+
+1. App-shell diagnostics and lifecycle orchestration now consume explicit game/online runtime snapshots rather than compatibility globals, making each captured state envelope and its ownership visible without moving DOM, recovery, reporting, or transport effects.
+2. Local save and Undo orchestration now consume explicit game/online runtime snapshots, while hydration reads the named game-install result. The runtime envelope remains a live-reference adapter and does not become a serializable Game Engine or persistence authority.
+3. Moving Company evaluation now separates ordered live-board feature acquisition from its pure numeric policy while preserving exact evaluation and RNG behavior.
+
+Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Rules, CPU strength/RNG, authority defaults, schema/protocol, persistence formats, reconnect behavior, watchdog/lifecycle behavior, UI presentation, and PWA defaults are unchanged.

@@ -679,3 +679,11 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPUEvaluation.strongTempoValueFeatures()` now owns the frozen card/board projection for strong dice-tempo scoring. `CPU.js` retains short-circuit admission and delegates the unchanged numeric policy after the same card/player reads.
 - Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect/Socket ordering, tutorial behavior, UI presentation, and PWA defaults are unchanged.
+
+## 2026-08-05 Batch 69 runtime read and CPU evaluation boundaries
+
+- `appShell.js` now reads live game, CPU, Undo, and online-session state exclusively through `GameRuntimeState.runtime.snapshot()` and `OnlineRuntimeState.runtime.snapshot()`. Client-error context, watchdog snapshots/recovery admission, and lifecycle notification metadata retain the same values and effect order; production and isolated-runtime load order is contract-tested.
+- `storage.js` now captures explicit game/online runtime snapshots for local-save admission/serialization and Undo admission/dispatch. Resume hydration obtains the newly installed game from the named `setGame()` result instead of the compatibility projection. Existing keys, serialized shapes, winner short-circuit, hydrate order, and online Undo payload are unchanged.
+- `CPUEvaluation.moverValueFeatures()` now owns the ordered, frozen Moving Company candidate projection and `moverValue()` owns the existing formula. `CPU.js` remains the live-game adapter; card/target traversal, callback order, coefficients, tie behavior, fixed decisions, self-play results, and RNG points are unchanged.
+- Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Rules, CPU strength/RNG, schema/protocol, persistence keys/formats, reconnect/Socket ordering, watchdog/lifecycle behavior, UI presentation, and PWA defaults are unchanged.
