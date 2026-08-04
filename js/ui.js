@@ -771,6 +771,21 @@ const CARD_SETS = {
 
 let enabledCards = new Set(CARDS.map(c => c.name));
 let enabledLandmarks = new Set(Player.landmarkNames());
+const cardSelectState = UiCardSelect.createSelectionController({
+    enabledCards,
+    enabledLandmarks,
+});
+
+function syncCardSelectStateFromGlobals() {
+    cardSelectState.replaceCards(enabledCards);
+    return cardSelectState.replaceLandmarks(enabledLandmarks);
+}
+
+function applyCardSelectStateSnapshot() {
+    const snapshot = cardSelectState.snapshot();
+    enabledCards = new Set(snapshot.enabledCards);
+    enabledLandmarks = new Set(snapshot.enabledLandmarks);
+}
 let fullLog = [];
 let prevLogLength = 0;
 let prevPlayerIndex = -1;
@@ -1372,10 +1387,11 @@ function buildLandmarkSelectToggleButtonHtml(name, enabled) {
 }
 
 function renderCardSelectModal() {
+    const selection = syncCardSelectStateFromGlobals();
     const view = UiCardSelect.buildCardSelectViewModel({
         cardSets: CARD_SETS,
-        enabledCards,
-        enabledLandmarks,
+        enabledCards: selection.enabledCards,
+        enabledLandmarks: selection.enabledLandmarks,
         landmarkNames: Player.landmarkNames(),
         compareCardNames: compareCardNamesForDisplay,
         buildCardHtml: buildCardSelectToggleButtonHtml,
@@ -1396,24 +1412,27 @@ function renderCardSelectModal() {
 }
 
 function toggleCard(name) {
-    const result = UiCardSelect.toggleCardSelection(enabledCards, name);
+    syncCardSelectStateFromGlobals();
+    const result = cardSelectState.toggleCard(name);
     if (!result.changed) return;
-    enabledCards = new Set(result.selectedNames);
+    applyCardSelectStateSnapshot();
     renderCardSelectModal();
 }
 
 function toggleSet(set) {
     const cards = CARD_SETS[set];
     if (!cards) return;
-    const result = UiCardSelect.toggleCardSetSelection(enabledCards, cards);
-    enabledCards = new Set(result.selectedNames);
+    syncCardSelectStateFromGlobals();
+    cardSelectState.toggleSet(cards);
+    applyCardSelectStateSnapshot();
     renderCardSelectModal();
 }
 
 function toggleLandmark(name) {
-    const result = UiCardSelect.toggleLandmarkSelection(enabledLandmarks, name);
+    syncCardSelectStateFromGlobals();
+    const result = cardSelectState.toggleLandmark(name);
     if (!result.changed) return;
-    enabledLandmarks = new Set(result.selectedNames);
+    applyCardSelectStateSnapshot();
     renderCardSelectModal();
 }
 

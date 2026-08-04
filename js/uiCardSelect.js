@@ -56,6 +56,55 @@ const UiCardSelect = (() => {
         return selectionResult(current.concat(name), true);
     }
 
+    function createSelectionController(options = {}) {
+        let selectedCardNames = selectedNames(options.enabledCards);
+        let selectedLandmarkNames = selectedNames(options.enabledLandmarks);
+
+        function snapshot() {
+            return Object.freeze({
+                enabledCards: Object.freeze(selectedCardNames.slice()),
+                enabledLandmarks: Object.freeze(selectedLandmarkNames.slice()),
+            });
+        }
+
+        function replaceCards(value) {
+            selectedCardNames = selectedNames(value);
+            return snapshot();
+        }
+
+        function replaceLandmarks(value) {
+            selectedLandmarkNames = selectedNames(value);
+            return snapshot();
+        }
+
+        function toggleCard(name) {
+            const result = toggleCardSelection(selectedCardNames, name);
+            selectedCardNames = Array.from(result.selectedNames);
+            return result;
+        }
+
+        function toggleSet(cardNames) {
+            const result = toggleCardSetSelection(selectedCardNames, cardNames);
+            selectedCardNames = Array.from(result.selectedNames);
+            return result;
+        }
+
+        function toggleLandmark(name) {
+            const result = toggleLandmarkSelection(selectedLandmarkNames, name);
+            selectedLandmarkNames = Array.from(result.selectedNames);
+            return result;
+        }
+
+        return Object.freeze({
+            snapshot,
+            replaceCards,
+            replaceLandmarks,
+            toggleCard,
+            toggleSet,
+            toggleLandmark,
+        });
+    }
+
     function buildCardSelectViewModel(options) {
         const {
             cardSets,
@@ -105,6 +154,7 @@ const UiCardSelect = (() => {
         toggleCardSelection,
         toggleCardSetSelection,
         toggleLandmarkSelection,
+        createSelectionController,
         buildCardSelectViewModel,
         buildCardToggleButtonHtml,
         buildLandmarkToggleButtonHtml,

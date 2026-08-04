@@ -141,3 +141,38 @@ runTest('ui card select view modelは表示順・set状態・landmark状態を�
     assert.ok(Object.isFrozen(view.sets));
     assert.ok(view.sets.every(Object.isFrozen));
 });
+
+
+runTest('ui card select controllerはmutable Setをdetached snapshotとして所有する', () => {
+    const sourceCards = new Set(['麦畑', 'パン屋', '牧場']);
+    const sourceLandmarks = new Set(['駅', '港']);
+    const controller = UiCardSelect.createSelectionController({
+        enabledCards: sourceCards,
+        enabledLandmarks: sourceLandmarks,
+    });
+
+    controller.toggleCard('牧場');
+    controller.toggleLandmark('駅');
+    assert.deepStrictEqual(controller.snapshot(), {
+        enabledCards: ['麦畑', 'パン屋'],
+        enabledLandmarks: ['港'],
+    });
+    assert.deepStrictEqual(Array.from(sourceCards), ['麦畑', 'パン屋', '牧場']);
+    assert.deepStrictEqual(Array.from(sourceLandmarks), ['駅', '港']);
+    assert.ok(Object.isFrozen(controller.snapshot()));
+    assert.ok(Object.isFrozen(controller.snapshot().enabledCards));
+});
+
+runTest('ui card select controllerは外部復元値をreplaceして次のtoggleへ反映する', () => {
+    const controller = UiCardSelect.createSelectionController();
+    controller.replaceCards(['麦畑', 'パン屋', 'カフェ']);
+    controller.replaceLandmarks(['駅']);
+    controller.toggleSet(['麦畑', 'パン屋', 'カフェ']);
+    const blocked = controller.toggleLandmark('駅');
+
+    assert.strictEqual(blocked.changed, false);
+    assert.deepStrictEqual(controller.snapshot(), {
+        enabledCards: ['麦畑', 'パン屋'],
+        enabledLandmarks: ['駅'],
+    });
+});
