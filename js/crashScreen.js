@@ -19,6 +19,28 @@ const CrashScreen = (() => {
         });
     }
 
+    function createController() {
+        let shown = false;
+
+        function snapshot() {
+            return Object.freeze({ shown });
+        }
+
+        function show() {
+            if (shown) return Object.freeze({ changed: false, state: snapshot() });
+            shown = true;
+            return Object.freeze({ changed: true, state: snapshot() });
+        }
+
+        function hide() {
+            const changed = shown;
+            shown = false;
+            return Object.freeze({ changed, state: snapshot() });
+        }
+
+        return Object.freeze({ snapshot, show, hide });
+    }
+
     function focusTrapPlan(input = {}) {
         if (input.shown !== true || input.key !== 'Tab') {
             return Object.freeze({ preventDefault: false, focusTarget: '' });
@@ -42,6 +64,7 @@ const CrashScreen = (() => {
         MESSAGE_LIMIT,
         messageForError,
         buildView,
+        createController,
         focusTrapPlan,
     });
 })();

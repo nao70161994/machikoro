@@ -25,6 +25,20 @@ runTest('crash screen viewは既存300文字境界と保存復帰表示を固定
     });
 });
 
+runTest('crash screen controllerは表示の重複を抑止して再開後に再表示できる', () => {
+    const controller = CrashScreen.createController();
+    assert.deepStrictEqual(controller.snapshot(), { shown: false });
+    const first = controller.show();
+    assert.deepStrictEqual(first, { changed: true, state: { shown: true } });
+    assert.deepStrictEqual(controller.show(), { changed: false, state: { shown: true } });
+    const hidden = controller.hide();
+    assert.deepStrictEqual(hidden, { changed: true, state: { shown: false } });
+    assert.deepStrictEqual(controller.hide(), { changed: false, state: { shown: false } });
+    assert.strictEqual(controller.show().changed, true);
+    assert.ok(Object.isFrozen(first));
+    assert.ok(Object.isFrozen(first.state));
+});
+
 runTest('crash screen focus planは非表示とTab以外を無視する', () => {
     assert.deepStrictEqual(CrashScreen.focusTrapPlan({ shown: false, key: 'Tab' }), {
         preventDefault: false,

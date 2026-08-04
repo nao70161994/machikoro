@@ -1064,15 +1064,15 @@ if (typeof window !== 'undefined') {
 }
 
 // ===== クラッシュ回復 =====
-let _crashShown = false;
-
+const crashScreenController = CrashScreen.createController();
 
 function trapCrashScreenFocus(event) {
-    if (!_crashShown || event.key !== 'Tab') return;
+    const crashState = crashScreenController.snapshot();
+    if (!crashState.shown || event.key !== 'Tab') return;
     const el = document.getElementById('crashScreen');
     const focusables = CrashScreenEffects.focusableElements(el);
     const plan = CrashScreen.focusTrapPlan({
-        shown: _crashShown,
+        shown: crashState.shown,
         key: event.key,
         shiftKey: event.shiftKey,
         focusableCount: focusables.length,
@@ -1082,8 +1082,8 @@ function trapCrashScreenFocus(event) {
 }
 
 function showCrashScreen(err) {
-    if (_crashShown) return;
-    _crashShown = true;
+    const transition = crashScreenController.show();
+    if (!transition.changed) return;
     if (typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.cancel === 'function') cpuTurnScheduler.cancel('game-lifecycle-reset-cpu');
     else if (typeof cancelCpuSchedule === 'function') cancelCpuSchedule('game-lifecycle-reset-cpu');
     else cpuScheduleToken++; // CPUループを停止
@@ -1104,7 +1104,7 @@ function showCrashScreen(err) {
 }
 
 function crashResume() {
-    _crashShown = false;
+    crashScreenController.hide();
     if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', trapCrashScreenFocus, true);
     CrashScreenEffects.hide(document.getElementById('crashScreen'));
     resumeGame();
