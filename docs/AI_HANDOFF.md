@@ -986,3 +986,10 @@ Test index:
 - Preserve `buildClientErrorReport`, `reportClientError`, and `window.__machikoroSendTestErrorReport` as app-shell compatibility delegates; online/UI/event consumers resolve `reportClientError` as a classic-script global.
 - Browser/game/online facts and fetch remain injected/lazy. Do not read ambient state or call `ClientReportingTransport.send` directly from `appShell.js`.
 - Scoped gates cover 234 ESLint files and 233 checkJs runtimes; `appShell.js` is now 600 lines and remains the browser composition root.
+
+## Batch 82 handoff (2026-08-05)
+
+- Crash controller transitions, CPU cancellation, view/focus effects, keydown listener identity, hide, and resume ordering belong to `AppShellCrashRuntime`. Keep pure view/focus decisions in `CrashScreen` and DOM mechanics in `CrashScreenEffects`.
+- Preserve `showCrashScreen` and `crashResume` as app-shell compatibility delegates. Crash/rejection event registration still belongs to `ClientEventRuntime` and must remain active before `main.js` evaluates.
+- Saved-game access, DOM lookup, CPU cancellation, and resume remain injected effects; do not reintroduce direct crash orchestration in `appShell.js`.
+- Scoped gates cover 235 ESLint files and 234 checkJs runtimes; `appShell.js` is now 581 lines and remains the browser composition root.

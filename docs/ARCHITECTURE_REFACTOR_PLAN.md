@@ -926,3 +926,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `AppShellClientReportingRuntime` is the application layer over pure `ClientReporting` policy and `ClientReportingTransport`, owning context capture, duplicate admission, payload construction, dispatch, and debug-report sequencing.
 2. Game/online state, browser facts, clock, fetch, checkpoints, and diagnostic snapshots are injected. `appShell.js` retains only dependency composition and its established report compatibility functions.
 3. Unit, main, integration, PWA, release, lint, and checkJs gates preserve redaction, endpoint/payload, suppression timing, checkpoint order, and freeze-report behavior.
+
+## 2026-08-05 Batch 82 boundary update
+
+1. `AppShellCrashRuntime` is the application layer over `CrashScreen` policy and `CrashScreenEffects`, owning controller transitions, CPU cancellation, listener lifecycle, view/focus application, and resume dispatch.
+2. DOM lookup, saved-game access, CPU cancellation, and resume are injected while `appShell.js` retains only composition and compatibility delegates.
+3. Unit, main, integration, PWA, release, lint, and checkJs gates preserve single-show behavior, exact effect order, focus trapping, and saved-game resume presentation.

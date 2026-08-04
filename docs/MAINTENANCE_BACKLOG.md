@@ -768,3 +768,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `appShell.js` retains composition plus the existing `buildClientErrorReport`, `reportClientError`, and debug window entry points. Its size decreased from 650 to 600 lines; direct transport ownership is guarded against returning to the composition root.
 - Focused contracts preserve query/hash redaction, runtime context fields, `/api/client-error`, duplicate suppression, debug checkpoint/snapshot content, and fail-fast dependency validation. Scoped gates now cover 234 ESLint maintenance files and 233 checkJs runtime files.
 - Report payload/schema, notification behavior, game rules, CPU decisions/RNG, online protocol/reconnect, persistence, UI, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 82 app-shell crash recovery runtime
+
+- `js/appShellCrashRuntime.js` now owns crash-screen single-show admission, CPU cancellation, view application, focus-trap planning/effects, keydown listener identity, hide, and resume ordering through injected policy/effect/browser dependencies.
+- `appShell.js` retains dependency composition and the existing `showCrashScreen` / `crashResume` globals used by startup and delegated UI flows. Its size decreased from 600 to 581 lines.
+- Focused contracts preserve CPU-stop-before-view order, duplicate-show suppression, saved-game resume selection, identical focus-handler removal, and remove-listener → hide → resume order. Scoped gates now cover 235 ESLint maintenance files and 234 checkJs runtime files.
+- Crash text/focus behavior, saved-game handling, game rules, CPU decisions/RNG, online protocol/reconnect, persistence formats, reporting, UI, and PWA/SW behavior are unchanged.
