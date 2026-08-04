@@ -37,15 +37,13 @@ function setStorageOnlineReconnectLegacyFlag(value) {
 }
 
 const localResumePreloadController = LocalResumePreloadState.create();
-let localResumePending = false;
 
 function applyLocalResumePreloadState(state) {
-    localResumePending = state.pending;
     const button = typeof document !== 'undefined' && document.getElementById
         ? document.getElementById('btnResume')
         : null;
     if (button) {
-        const view = LocalResumeView.pendingButton(localResumePending);
+        const view = LocalResumeView.pendingButton(state.pending);
         button.disabled = view.disabled;
         button.textContent = view.textContent;
     }
@@ -255,13 +253,14 @@ function reconnectOnline() {
 }
 
 function resumeGame(options = {}) {
+    const resumePending = localResumePreloadController.snapshot().pending;
     if (!LocalResumePolicy.shouldInspectRepository({
-        resumePending: localResumePending,
+        resumePending,
         fromPreload: options.fromPreload,
     })) return;
     const repository = getLocalSaveRepository();
     const initialDecision = LocalResumePolicy.initialDecision({
-        resumePending: localResumePending,
+        resumePending,
         fromPreload: options.fromPreload,
         repositoryExists: repository.exists(),
     });

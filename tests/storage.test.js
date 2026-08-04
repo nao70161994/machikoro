@@ -194,6 +194,13 @@ function makeSavedGameState(overrides = {}) {
     }, overrides);
 }
 
+runTest('local resume pendingはpreload controllerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/storage.js'), 'utf8');
+    assert.strictEqual(source.includes('let localResumePending'), false);
+    assert.ok(source.includes('LocalResumePreloadState.create()'));
+    assert.ok(source.includes('localResumePreloadController.snapshot().pending'));
+});
+
 runTest('storage reconnect flag adapterはonlineの単一write境界へ委譲する', () => {
     const rt = loadStorageRuntime();
     assert.strictEqual(rt.setStorageOnlineReconnectLegacyFlag(true), true);
