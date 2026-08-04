@@ -1684,24 +1684,12 @@ class CPU {
 
     _strongLandmarkThresholdPenalty(name, current, game) {
         if (this.difficulty !== "strong" || !name || !current || !game) return 0;
-        const opponentConditionalCards = game.players
-            .filter(opponent => opponent !== current)
-            .map(opponent => ({
-                french: opponent.cards.filter(card =>
-                    !opponent.isDormant(card) && card.effect === CARD_EFFECTS.FRENCHR
-                ).length,
-                memberBar: opponent.cards.filter(card =>
-                    !opponent.isDormant(card) && card.effect === CARD_EFFECTS.MEMBERBAR
-                ).length,
-            }));
-        return CPUEvaluation.strongLandmarkThresholdPenalty({
+        const features = CPUEvaluation.strongLandmarkThresholdFeatures(name, current, game, {
             difficulty: this.difficulty,
-            hasName: !!name,
-            nextBuiltCount: current.builtLandmarkCount() + 1,
-            progressCardCount: current.countCard('コーン畑') + current.countCard('雑貨屋'),
-            opponentConditionalCards,
-            remainingLandmarkCount: this._remainingEnabledLandmarks(current, game).length,
+            effects: CARD_EFFECTS,
+            remainingEnabledLandmarks: (player, runtime) => this._remainingEnabledLandmarks(player, runtime),
         });
+        return CPUEvaluation.strongLandmarkThresholdPenalty(features);
     }
 
     _strongTempoValueBonus(card, game, player) {

@@ -671,6 +671,27 @@ const CPUEvaluation = Object.freeze({
         return nearOpponents > 0 ? -1.2 : -3.6;
     },
 
+    strongLandmarkThresholdFeatures(name, current, game, dependencies) {
+        const opponentConditionalCards = game.players
+            .filter(opponent => opponent !== current)
+            .map(opponent => Object.freeze({
+                french: opponent.cards.filter(card =>
+                    !opponent.isDormant(card) && card.effect === dependencies.effects.FRENCHR
+                ).length,
+                memberBar: opponent.cards.filter(card =>
+                    !opponent.isDormant(card) && card.effect === dependencies.effects.MEMBERBAR
+                ).length,
+            }));
+        return Object.freeze({
+            difficulty: dependencies.difficulty,
+            hasName: !!name,
+            nextBuiltCount: current.builtLandmarkCount() + 1,
+            progressCardCount: current.countCard('コーン畑') + current.countCard('雑貨屋'),
+            opponentConditionalCards: Object.freeze(opponentConditionalCards),
+            remainingLandmarkCount: dependencies.remainingEnabledLandmarks(current, game).length,
+        });
+    },
+
     strongLandmarkThresholdPenalty(features) {
         if (!features || features.difficulty !== 'strong' || !features.hasName) return 0;
         let penalty = 0;

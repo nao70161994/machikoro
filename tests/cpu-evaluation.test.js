@@ -1248,6 +1248,49 @@ runTest('CPU本体のstrong色役割補正wrapperは短絡順を保ってpure ev
     assert.strictEqual(endgameCalls, 1);
 });
 
+runTest('CPU evaluation はstrongランドマーク閾値特徴量を既存読取順でfrozen投影する', () => {
+    const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
+    const calls = [];
+    const current = {
+        cards: [],
+        builtLandmarkCount() { calls.push('built'); return 1; },
+        countCard(name) { calls.push('count:' + name); return name === 'コーン畑' ? 1 : 2; },
+    };
+    const opponent = {
+        cards: [
+            { id: 'french', effect: effects.FRENCHR },
+            { id: 'dormant-member', effect: effects.MEMBERBAR, dormant: true },
+        ],
+        isDormant(card) { calls.push('dormant:' + card.id); return !!card.dormant; },
+    };
+    const game = { players: [current, opponent] };
+    const features = CPUEvaluation.strongLandmarkThresholdFeatures('mall', current, game, {
+        difficulty: 'strong',
+        effects,
+        remainingEnabledLandmarks(player, runtime) {
+            calls.push(player === current && runtime === game ? 'remaining' : 'wrong');
+            return ['mall', 'harbor', 'airport'];
+        },
+    });
+
+    assert.deepStrictEqual(features, {
+        difficulty: 'strong',
+        hasName: true,
+        nextBuiltCount: 2,
+        progressCardCount: 3,
+        opponentConditionalCards: [{ french: 1, memberBar: 0 }],
+        remainingLandmarkCount: 3,
+    });
+    assert.ok(Object.isFrozen(features));
+    assert.ok(Object.isFrozen(features.opponentConditionalCards));
+    assert.ok(Object.isFrozen(features.opponentConditionalCards[0]));
+    assert.deepStrictEqual(calls, [
+        'dormant:french', 'dormant:dormant-member',
+        'dormant:french', 'dormant:dormant-member',
+        'built', 'count:コーン畑', 'count:雑貨屋', 'remaining',
+    ]);
+});
+
 runTest('CPU evaluation はstrong条件付き赤カード圧力を数値featureだけで評価する', () => {
     const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
 
@@ -1595,16 +1638,6 @@ runTest('CPU本体のstrong条件付き赤wrapperはfeature adapterからpure po
     const opponentBuiltCounts = game.players
         .filter(player => player !== current)
         .map(player => player.builtLandmarkCount());
-    const opponentConditionalCards = game.players
-        .filter(player => player !== current)
-        .map(player => ({
-            french: player.cards.filter(card =>
-                !player.isDormant(card) && card.effect === CARD_EFFECTS.FRENCHR
-            ).length,
-            memberBar: player.cards.filter(card =>
-                !player.isDormant(card) && card.effect === CARD_EFFECTS.MEMBERBAR
-            ).length,
-        }));
 
     assert.strictEqual(
         cpu._strongConditionalCardAdjustment(french, game, current),
@@ -1614,14 +1647,18 @@ runTest('CPU本体のstrong条件付き赤wrapperはfeature adapterからpure po
     );
     assert.strictEqual(
         cpu._strongLandmarkThresholdPenalty(LANDMARK_NAMES.SHOPPING_MALL, current, game),
-        CPUEvaluation.strongLandmarkThresholdPenalty({
-            difficulty: 'strong',
-            hasName: true,
-            nextBuiltCount: current.builtLandmarkCount() + 1,
-            progressCardCount: current.countCard('コーン畑') + current.countCard('雑貨屋'),
-            opponentConditionalCards,
-            remainingLandmarkCount: cpu._remainingEnabledLandmarks(current, game).length,
-        })
+        CPUEvaluation.strongLandmarkThresholdPenalty(
+            CPUEvaluation.strongLandmarkThresholdFeatures(
+                LANDMARK_NAMES.SHOPPING_MALL,
+                current,
+                game,
+                {
+                    difficulty: 'strong',
+                    effects: CARD_EFFECTS,
+                    remainingEnabledLandmarks: (player, runtime) => cpu._remainingEnabledLandmarks(player, runtime),
+                }
+            )
+        )
     );
 });
 
