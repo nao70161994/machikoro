@@ -93,3 +93,29 @@ runTest('game build policyのcontractと結果は外部変更できない', () =
     assert.ok(Object.isFrozen(GameBuildPolicy.reasons));
     assert.ok(Object.isFrozen(result));
 });
+
+
+runTest('game build policyはcard購入と貸金業bonusをdetached transitionにする', () => {
+    assert.deepStrictEqual(GameBuildPolicy.cardBuildTransition(3), {
+        purchaseCoinDelta: -3,
+        loanCoinDelta: 0,
+        builtThisTurn: true,
+    });
+    assert.deepStrictEqual(GameBuildPolicy.cardBuildTransition(2, 5), {
+        purchaseCoinDelta: -2,
+        loanCoinDelta: 5,
+        builtThisTurn: true,
+    });
+    assert.throws(() => GameBuildPolicy.cardBuildTransition(NaN), /must be finite/);
+    assert.strictEqual(Object.isFrozen(GameBuildPolicy.cardBuildTransition(1)), true);
+});
+
+runTest('game build policyはlandmark購入結果をdetached transitionにする', () => {
+    assert.deepStrictEqual(GameBuildPolicy.landmarkBuildTransition('駅', 4), {
+        landmarkName: '駅',
+        coinDelta: -4,
+        builtThisTurn: true,
+    });
+    assert.throws(() => GameBuildPolicy.landmarkBuildTransition(null, 4), /required/);
+    assert.throws(() => GameBuildPolicy.landmarkBuildTransition('駅', Infinity), /required/);
+});

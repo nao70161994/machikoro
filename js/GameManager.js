@@ -935,14 +935,18 @@ class GameManager {
             return false;
         }
         const buildPlayer = /** @type {Player} */ (current);
-        buildPlayer.coins -= card.cost;
+        const transition = GameBuildPolicy.cardBuildTransition(
+            card.cost,
+            card.effect === CARD_EFFECTS.LOAN ? 5 : 0
+        );
+        buildPlayer.coins += transition.purchaseCoinDelta;
         buildPlayer.addCard(cloneCard(card));
-        if (card.effect === CARD_EFFECTS.LOAN) {
-            buildPlayer.coins += 5;
+        if (transition.loanCoinDelta > 0) {
+            buildPlayer.coins += transition.loanCoinDelta;
             this.addLog(LOG_TYPES.BUILD, `💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`);
         }
         this.addLog(LOG_TYPES.BUILD, `🏗️ ${card.name}を建設！`);
-        this.builtThisTurn = true;
+        this.builtThisTurn = transition.builtThisTurn;
         return true;
     }
 
@@ -969,10 +973,11 @@ class GameManager {
         }
         const buildPlayer = /** @type {Player} */ (current);
         const buildCost = /** @type {number} */ (cost);
-        buildPlayer.coins -= buildCost;
-        buildPlayer.landmarks[name] = true;
+        const transition = GameBuildPolicy.landmarkBuildTransition(name, buildCost);
+        buildPlayer.coins += transition.coinDelta;
+        buildPlayer.landmarks[transition.landmarkName] = true;
         this.addLog(LOG_TYPES.BUILD, `🏆 ${name}を建設！`);
-        this.builtThisTurn = true;
+        this.builtThisTurn = transition.builtThisTurn;
         return true;
     }
 

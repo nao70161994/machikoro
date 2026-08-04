@@ -40,7 +40,35 @@ const GameBuildPolicy = (() => {
         return result(true);
     }
 
-    return Object.freeze({ reasons, planCardBuild, planLandmarkBuild });
+    function cardBuildTransition(cost, loanBonus = 0) {
+        if (!Number.isFinite(cost) || !Number.isFinite(loanBonus)) {
+            throw new TypeError('card build cost and loan bonus must be finite');
+        }
+        return Object.freeze({
+            purchaseCoinDelta: -cost,
+            loanCoinDelta: loanBonus,
+            builtThisTurn: true,
+        });
+    }
+
+    function landmarkBuildTransition(name, cost) {
+        if (typeof name !== 'string' || !Number.isFinite(cost)) {
+            throw new TypeError('landmark name and finite cost are required');
+        }
+        return Object.freeze({
+            landmarkName: name,
+            coinDelta: -cost,
+            builtThisTurn: true,
+        });
+    }
+
+    return Object.freeze({
+        reasons,
+        planCardBuild,
+        planLandmarkBuild,
+        cardBuildTransition,
+        landmarkBuildTransition,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameBuildPolicy;
