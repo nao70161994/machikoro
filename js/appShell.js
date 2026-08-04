@@ -38,6 +38,9 @@ const appShellDomSnapshot = UiDomSnapshot.createRuntime({
         ? window.getComputedStyle(element) : null,
     truncateText: truncateClientErrorField,
 });
+const appShellRecoveryEffects = UiRecoveryEffects.createRuntime({
+    getDocument: () => typeof document !== 'undefined' ? document : null,
+});
 
 function safeClientErrorUrl() {
     return ClientReporting.clientUrl(
@@ -457,14 +460,7 @@ function resetFreezeWatchdogState(reason = 'watchdog-reset') {
 }
 
 function clearShellElementLock(id) {
-    const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-    if (!el) return false;
-    let changed = clearElementModalLock(id);
-    if (el.hidden) {
-        el.hidden = false;
-        changed = true;
-    }
-    return changed;
+    return appShellRecoveryEffects.clearShellLock(id);
 }
 
 function resetUiLocksForGameReset(reason = 'game-reset') {
@@ -473,14 +469,10 @@ function resetUiLocksForGameReset(reason = 'game-reset') {
         const root = typeof window !== 'undefined' ? window : globalThis;
         if (root) root.__machikoroConfirmModalOpen = false;
     } catch (_) {}
-    ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal'].forEach(id => {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-        if (el && el.style) el.style.display = 'none';
-    });
+    ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal']
+        .forEach(id => appShellRecoveryEffects.hide(id));
     ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(clearShellElementLock);
-    if (typeof document !== 'undefined' && document.body && document.body.classList) {
-        document.body.classList.remove('modal-open');
-    }
+    appShellRecoveryEffects.removeBodyModalOpen();
     resetFreezeWatchdogState(reason + '-watchdog');
     markClientFlowCheckpoint(reason, { recovery: 'game-reset-ui-locks' });
 }
@@ -535,22 +527,7 @@ function isStalePendingModalSnapshot(snapshot) {
 }
 
 function clearElementModalLock(id) {
-    const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-    if (!el) return false;
-    let changed = false;
-    if (el.inert) {
-        el.inert = false;
-        changed = true;
-    }
-    if (typeof el.getAttribute === 'function' && el.getAttribute('aria-hidden') !== null) {
-        el.removeAttribute('aria-hidden');
-        changed = true;
-    }
-    if (el.style && el.style.pointerEvents === 'none') {
-        el.style.pointerEvents = '';
-        changed = true;
-    }
-    return changed;
+    return appShellRecoveryEffects.clearModalLock(id);
 }
 
 function isActiveGameScreenRecoverySnapshot(snapshot) {
@@ -568,10 +545,8 @@ function clearGameScreenLockIfNoActiveModal(snapshot, reason = 'game-screen-lock
     const expectedPending = expectedPendingActions(snapshot || {});
     if (!allowed.includes('nextTurn') && !expected.length && !expectedPending.length) return false;
     let changed = clearElementModalLock('gameScreen');
-    const gameScreen = typeof document !== 'undefined' && document.getElementById ? document.getElementById('gameScreen') : null;
-    if (gameScreen && gameScreen.style && gameScreen.style.display === 'none' && shouldRestoreGameScreenDisplay(snapshot)) {
-        gameScreen.style.display = 'block';
-        changed = true;
+    if (shouldRestoreGameScreenDisplay(snapshot)) {
+        changed = appShellRecoveryEffects.restoreDisplay('gameScreen') || changed;
     }
     if (changed) markClientFlowCheckpoint(reason, { recovery: 'orphan-game-screen-lock' });
     return changed;
@@ -583,22 +558,14 @@ function forceClearModalLocksForRecovery(snapshot = null) {
     ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
         changed = clearElementModalLock(id) || changed;
     });
-    if (typeof document !== 'undefined' && document.body && document.body.classList && document.body.classList.contains('modal-open')) {
-        document.body.classList.remove('modal-open');
-        changed = true;
-    }
+    changed = appShellRecoveryEffects.removeBodyModalOpen() || changed;
     return changed;
 }
 
 function forceClearStaleModalLocksForRecovery() {
-    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-        if (!el) return;
-        el.inert = false;
-        if (typeof el.removeAttribute === 'function') el.removeAttribute('aria-hidden');
-        if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
-    });
-    if (typeof document !== 'undefined' && document.body && document.body.classList) document.body.classList.remove('modal-open');
+    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']
+        .forEach(id => appShellRecoveryEffects.forceClearModalLock(id));
+    appShellRecoveryEffects.removeBodyModalOpen();
 }
 
 function closeStaleConfirmModal(snapshot, reason = 'stale-confirm-recovery') {
@@ -608,9 +575,9 @@ function closeStaleConfirmModal(snapshot, reason = 'stale-confirm-recovery') {
     try {
         if (typeof closeConfirmModal === 'function') closeConfirmModal(false);
         else if (typeof closeAccessibleModal === 'function') closeAccessibleModal('confirmModal', { restoreFocus: false });
-        else if (confirmModal.style) confirmModal.style.display = 'none';
+        else appShellRecoveryEffects.hide('confirmModal');
     } catch (_) {
-        if (confirmModal.style) confirmModal.style.display = 'none';
+        appShellRecoveryEffects.hide('confirmModal');
     }
     forceClearStaleModalLocksForRecovery();
     resetAccessibleModalStateForRecovery();
@@ -621,10 +588,9 @@ function closeStaleConfirmModal(snapshot, reason = 'stale-confirm-recovery') {
 function closeStaleBlockingModals(snapshot, reason = 'ui-unlock') {
     let closed = closeStaleConfirmModal(snapshot, reason + '-confirm');
     const pendingModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingModal') : null;
-    const pendingMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingMenu') : null;
     if (pendingModal && pendingModal.style && isStalePendingModalSnapshot(snapshot)) {
-        pendingModal.style.display = 'none';
-        if (pendingMenu && pendingMenu.style) pendingMenu.style.pointerEvents = '';
+        appShellRecoveryEffects.hide('pendingModal');
+        appShellRecoveryEffects.clearPointerEvents('pendingMenu');
         closed = true;
     }
     if (closed) resetAccessibleModalStateForRecovery();
