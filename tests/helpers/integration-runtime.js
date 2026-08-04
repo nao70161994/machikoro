@@ -228,6 +228,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/appShellObservationRuntime.js',
         'js/uiWatchdogMonitor.js',
         'js/uiWatchdogReporting.js',
+        'js/uiWatchdogRuntime.js',
         'js/clientRuntimeSnapshot.js',
         'js/crashScreen.js',
         'js/crashScreenEffects.js',

@@ -114,6 +114,7 @@ interface Window {
     UiRecoveryEffects: unknown;
     UiWatchdogAsyncRecovery: unknown;
     UiWatchdogRecoveryRuntime: unknown;
+    UiWatchdogRuntime: unknown;
     AppShellRuntimeEffects: unknown;
     AppShellObservationRuntime: unknown;
     CrashScreen: unknown;

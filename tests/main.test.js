@@ -367,6 +367,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiWatchdogMonitorSource, context, { filename: 'js/uiWatchdogMonitor.js' });
     const uiWatchdogReportingSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogReporting.js'), 'utf8');
     vm.runInContext(uiWatchdogReportingSource, context, { filename: 'js/uiWatchdogReporting.js' });
+    const uiWatchdogRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogRuntime.js'), 'utf8');
+    vm.runInContext(uiWatchdogRuntimeSource, context, { filename: 'js/uiWatchdogRuntime.js' });
     const clientRuntimeSnapshotSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientRuntimeSnapshot.js'), 'utf8');
     vm.runInContext(clientRuntimeSnapshotSource, context, { filename: 'js/clientRuntimeSnapshot.js' });
     const crashScreenSource = fs.readFileSync(path.join(__dirname, '..', 'js/crashScreen.js'), 'utf8');
@@ -2415,6 +2417,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/appShellObservationRuntime.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogMonitor.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogReporting.js', 'js/appShell.js');
+    assertBefore('js/uiWatchdogRuntime.js', 'js/appShell.js');
     assertBefore('js/clientRuntimeSnapshot.js', 'js/appShell.js');
     assertBefore('js/crashScreen.js', 'js/appShell.js');
     assertBefore('js/crashScreenEffects.js', 'js/appShell.js');
@@ -2595,7 +2598,13 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
         path.join(__dirname, '..', 'js/uiWatchdogReporting.js'),
         'utf8'
     );
+    const watchdogRuntimeSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js/uiWatchdogRuntime.js'),
+        'utf8'
+    );
     assert.ok(watchdogReportingSource.includes("effects.markCheckpoint('freeze-watchdog-report'"));
+    assert.ok(watchdogRuntimeSource.includes('reporting.execute({'));
+    assert.ok(!appShellSource.includes('UiWatchdogReporting.execute({'));
     assert.ok(!appShellSource.includes("markClientFlowCheckpoint('freeze-watchdog-tick'"));
     assert.ok(html.includes('if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
     assert.ok(html.includes('updateRequestedByUser = true;'));

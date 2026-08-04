@@ -654,64 +654,44 @@ function bindPwaInstallHandlers() {
     return appShellEventBindings.bindPwaInstallHandlers();
 }
 
-function freezeWatchdogStateKey(snapshot) {
-    return UiWatchdog.stateKey(snapshot);
-}
-
-function isOnlineActionTimedOutForWatchdog(snapshot, now = Date.now()) {
-    if (!snapshot || !snapshot.onlineActionInFlight) return false;
-    if (typeof OnlineRetryPolicy === 'undefined' ||
-            !OnlineRetryPolicy ||
-            typeof OnlineRetryPolicy.isActionAckTimedOut !== 'function') return false;
-    return OnlineRetryPolicy.isActionAckTimedOut(snapshot.onlineActionInFlightAt, now);
-}
-
-function hasPendingWork(snapshot) {
-    return UiWatchdog.hasPendingWork(snapshot);
-}
+const appShellWatchdogRuntime = UiWatchdogRuntime.createRuntime({
+    buildSnapshot: buildClientRuntimeSnapshot,
+    checkpoint: markClientFlowCheckpoint,
+    compactActionChildStates,
+    confirmModalOpen: confirmModalOpenFromSnapshot,
+    freezeKinds: FREEZE_KINDS,
+    getConfirmAwaitingChoice: isConfirmModalAwaitingUserChoice,
+    getOnlineRetryPolicy: () => typeof OnlineRetryPolicy !== 'undefined' ? OnlineRetryPolicy : null,
+    getRoot: () => typeof window !== 'undefined' ? window : globalThis,
+    hasActiveBlockingModal,
+    hasUsablePendingAction,
+    hasUsablePrimaryAction,
+    monitor: freezeWatchdogMonitor,
+    monitorActions: UiWatchdogMonitor.ACTIONS,
+    now: () => Date.now(),
+    recover: snapshot => recoverUiInteractability(snapshot),
+    report(input) {
+        if (typeof reportClientError === 'function') reportClientError(input);
+    },
+    reporting: UiWatchdogReporting,
+    schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
+    staleConfirmModalOpen: isStaleConfirmModalSnapshot,
+    stalePendingModalOpen: isStalePendingModalSnapshot,
+    store(key, value) {
+        appShellStorage.access(storage => storage.setItem(key, value));
+    },
+    uiWatchdog: UiWatchdog,
+    validateInteractability: validateUiInteractability,
+});
 
 function classifyLikelyFreeze(snapshot) {
-    if (!UiWatchdog.isFreezeClassificationCandidate(snapshot)) return '';
-    return UiWatchdog.classifySnapshot(snapshot, {
-        confirmOpen: confirmModalOpenFromSnapshot(snapshot),
-        staleConfirmOpen: isStaleConfirmModalSnapshot(snapshot),
-        activeBlockingModalOpen: hasActiveBlockingModal(snapshot),
-        stalePendingOpen: isStalePendingModalSnapshot(snapshot),
-        hasUsablePrimaryAction: hasUsablePrimaryAction(snapshot),
-        hasUsablePendingAction: hasUsablePendingAction(snapshot),
-        onlineActionTimedOut: isOnlineActionTimedOutForWatchdog(snapshot),
-        interactabilityIssues: validateUiInteractability(snapshot),
-        modalFreezeKind: FREEZE_KINDS.MODAL_UI_LOCKED,
-        pendingFreezeKind: FREEZE_KINDS.PENDING_UI_LOCKED,
-        humanFreezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
-    }, FREEZE_KINDS);
-}
-
-function compactIssueForTrace(issue) {
-    return UiWatchdog.compactIssueForTrace(issue);
-}
-
-function compactSnapshotForUiTrace(snapshot) {
-    return UiWatchdog.compactSnapshotForTrace(snapshot);
-}
-
-function recentClientCheckpointsForTrace(limit = 8) {
-    try {
-        const root = typeof window !== 'undefined' ? window : globalThis;
-        return UiWatchdog.compactRecentCheckpoints(root && root.__machikoroClientCheckpoints, limit);
-    } catch (_) {
-        return [];
-    }
-}
-
-function classifyUiInteractabilityCause(issue, snapshot) {
-    return UiWatchdog.classifyInteractabilityCause(issue, snapshot);
+    return appShellWatchdogRuntime.classify(snapshot);
 }
 
 const appShellAsyncRecovery = UiWatchdogAsyncRecovery.createRuntime({
     buildSnapshot: buildClientRuntimeSnapshot,
     checkpoint: markClientFlowCheckpoint,
-    compactSnapshot: compactSnapshotForUiTrace,
+    compactSnapshot: appShellWatchdogRuntime.compactSnapshot,
     runtimeEffects: appShellRuntimeEffects,
 });
 const appShellRecoveryRuntime = UiWatchdogRecoveryRuntime.createRuntime({
@@ -721,12 +701,12 @@ const appShellRecoveryRuntime = UiWatchdogRecoveryRuntime.createRuntime({
     appShellRuntimeEffects,
     buildClientRuntimeSnapshot,
     classifyLikelyFreeze,
-    classifyUiInteractabilityCause,
+    classifyUiInteractabilityCause: appShellWatchdogRuntime.classifyInteractabilityCause,
     clearGameScreenLockIfNoActiveModal,
     clearUiLocks,
     closeStaleBlockingModals,
-    compactIssueForTrace,
-    compactSnapshotForUiTrace,
+    compactIssueForTrace: appShellWatchdogRuntime.compactIssue,
+    compactSnapshotForUiTrace: appShellWatchdogRuntime.compactSnapshot,
     expectedActionContainerEntries,
     expectedChildSpecForEntry,
     expectedPendingActions,
@@ -736,7 +716,7 @@ const appShellRecoveryRuntime = UiWatchdogRecoveryRuntime.createRuntime({
     isHumanTurnSnapshot,
     isOnlineUiBlockedSnapshot,
     markClientFlowCheckpoint,
-    recentClientCheckpointsForTrace,
+    recentClientCheckpointsForTrace: appShellWatchdogRuntime.recentCheckpoints,
     uiWatchdog: UiWatchdog,
     validateUiInteractability,
 });
@@ -756,68 +736,8 @@ function recoverFreezeKind(freezeKind, snapshot) {
     return appShellRecoveryRuntime.recoverFreezeKind(freezeKind, snapshot);
 }
 
-function freezeIssueDedupeSignature(snapshot) {
-    return UiWatchdog.issueDedupeSignature(snapshot, validateUiInteractability(snapshot));
-}
-
-function compactElementSnapshotForStorage(state) {
-    return UiWatchdog.compactElementSnapshotForStorage(state);
-}
-
-function compactFreezePayloadForStorage(payload) {
-    return UiWatchdog.compactFreezePayloadForStorage(payload, compactIssueForTrace);
-}
-
-function freezePayloadStorageJson(payload) {
-    return UiWatchdog.freezePayloadStorageJson(payload, compactIssueForTrace);
-}
-
-function buildFreezeReportStack(payload) {
-    const snapshot = payload && payload.snapshot || {};
-    const issues = Array.isArray(payload && payload.interactabilityIssues)
-        ? payload.interactabilityIssues.map(compactIssueForTrace)
-        : validateUiInteractability(snapshot);
-    return UiWatchdog.buildFreezeReportStack(payload, {
-        schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
-        confirmAwaitingChoice: isConfirmModalAwaitingUserChoice(),
-        expectedPrimaryActions: expectedPrimaryActions(snapshot),
-        interactabilityIssues: issues,
-        actionChildren: compactActionChildStates(snapshot),
-    });
-}
-
 function checkFreezeWatchdog() {
-    const now = Date.now();
-    const snapshot = buildClientRuntimeSnapshot('freeze-watchdog');
-    const key = freezeWatchdogStateKey(snapshot);
-    const progress = freezeWatchdogMonitor.observeProgress(key, now);
-    if (!progress.shouldClassify) return;
-    const freezeKind = classifyLikelyFreeze(snapshot);
-    if (!freezeKind) return;
-    const reportKey = freezeKind + '|' + freezeIssueDedupeSignature(snapshot);
-    const action = freezeWatchdogMonitor.decideReport(freezeKind, reportKey, now);
-    if (action === UiWatchdogMonitor.ACTIONS.RECOVER) {
-        recoverUiInteractability(snapshot);
-        return;
-    }
-    if (action !== UiWatchdogMonitor.ACTIONS.REPORT_AND_RECOVER) return;
-    UiWatchdogReporting.execute({
-        freezeKind,
-        stagnantMs: progress.stagnantMs,
-        snapshot,
-        interactabilityIssues: validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind),
-    }, {
-        markCheckpoint: markClientFlowCheckpoint,
-        recover: recoverUiInteractability,
-        serialize: freezePayloadStorageJson,
-        store(key, value) {
-            appShellStorage.access(storage => storage.setItem(key, value));
-        },
-        buildStack: buildFreezeReportStack,
-        report(input) {
-            if (typeof reportClientError === 'function') reportClientError(input);
-        },
-    });
+    return appShellWatchdogRuntime.check();
 }
 
 function startFreezeWatchdog() {

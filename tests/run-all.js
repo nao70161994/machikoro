@@ -216,6 +216,7 @@ const TEST_GROUPS = {
         'ui-watchdog-recovery-runtime.test.js',
         'ui-watchdog-monitor.test.js',
         'ui-watchdog-reporting.test.js',
+        'ui-watchdog-runtime.test.js',
         'client-runtime-snapshot.test.js',
         'crash-screen.test.js',
         'crash-screen-effects.test.js',
