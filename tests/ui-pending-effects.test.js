@@ -68,3 +68,47 @@ runTest('ui pending effectsはinput欠落時もbutton適用後にfalseを返す'
         ['find-input'],
     ]);
 });
+
+runTest('ui pending effectsはmodal・inner・content viewを既存順で適用する', () => {
+    const calls = [];
+    const style = name => new Proxy({}, {
+        set(target, key, value) {
+            calls.push([name, key, value]);
+            target[key] = value;
+            return true;
+        },
+    });
+    const inner = { style: style('inner') };
+    const modal = {
+        style: style('modal'),
+        querySelector(selector) {
+            calls.push(['query', selector]);
+            return inner;
+        },
+    };
+    const content = { style: style('content') };
+
+    UiPendingEffects.applyModalInteraction({
+        modal: { display: 'flex', pointerEvents: 'auto' },
+        inner: { pointerEvents: 'auto' },
+        content: { pointerEvents: 'auto' },
+    }, { modal, content });
+
+    assert.deepStrictEqual(calls, [
+        ['modal', 'display', 'flex'],
+        ['modal', 'pointerEvents', 'auto'],
+        ['query', '.pending-modal-inner'],
+        ['inner', 'pointerEvents', 'auto'],
+        ['content', 'pointerEvents', 'auto'],
+    ]);
+});
+
+runTest('ui pending effectsはDOM断片欠落時も残るviewだけ適用する', () => {
+    const content = { style: {} };
+    assert.doesNotThrow(() => UiPendingEffects.applyModalInteraction({
+        modal: { display: 'none' },
+        inner: { pointerEvents: 'none' },
+        content: { pointerEvents: 'none' },
+    }, { modal: null, content }));
+    assert.deepStrictEqual(content.style, { pointerEvents: 'none' });
+});

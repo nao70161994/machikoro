@@ -27,7 +27,23 @@ const UiPendingEffects = (() => {
         return true;
     }
 
-    return Object.freeze({ applyBusinessCardSelection });
+    function applyModalInteraction(view, options = {}) {
+        const modal = options.modal;
+        const content = options.content;
+        if (modal && modal.style) {
+            Object.assign(modal.style, view.modal);
+            if (view.inner && typeof modal.querySelector === 'function') {
+                const inner = modal.querySelector('.pending-modal-inner');
+                if (inner && inner.style) Object.assign(inner.style, view.inner);
+            }
+        }
+        if (content && content.style) Object.assign(content.style, view.content);
+    }
+
+    return Object.freeze({
+        applyBusinessCardSelection,
+        applyModalInteraction,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiPendingEffects;
