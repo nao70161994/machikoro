@@ -3861,6 +3861,19 @@ runTest('chooseITInvest: expert v2 simple は never mode なら積立しない',
     assert.strictEqual(cpu.chooseITInvest(game), false);
 });
 
+runTest('CPU turn score wrapperはcurrent playerを復元してpure集計へ委譲する', () => {
+    const cpu = new CPU('normal');
+    const game = new GameManager(2);
+    game.currentPlayerIndex = 0;
+    game.players[1].landmarks[LANDMARK_NAMES.STATION] = true;
+    cpu._estimateRollScore = (_game, dice) => dice;
+
+    const scores = cpu._estimatePlayerTurnScorePair(game, 1);
+    assert.strictEqual(scores.one, 3.5);
+    assert.strictEqual(scores.two, 7);
+    assert.strictEqual(game.currentPlayerIndex, 0);
+});
+
 if (process.exitCode) {
     throw new Error('CPUテストで失敗が発生しました');
 }

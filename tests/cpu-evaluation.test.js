@@ -1668,3 +1668,20 @@ runTest('CPU evaluation はweighted dice期待値と港代替scoreの呼出順�
     assert.strictEqual(CPUEvaluation.expectedDiceScore([], () => 99), 0);
     assert.strictEqual(CPUEvaluation.expectedDiceScore(null, () => 99), 0);
 });
+
+runTest('CPU evaluation は1個・2個振りの期待値とdice読出順をpureに固定する', () => {
+    const calls = [];
+    const scores = CPUEvaluation.turnScorePair(true, dice => {
+        calls.push(dice);
+        return dice;
+    });
+    assert.deepStrictEqual(scores, { one: 3.5, two: 7 });
+    assert.deepStrictEqual(calls, [1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+    const oneDieCalls = [];
+    assert.deepStrictEqual(
+        CPUEvaluation.turnScorePair(false, dice => { oneDieCalls.push(dice); return 2; }),
+        { one: 2, two: -Infinity }
+    );
+    assert.deepStrictEqual(oneDieCalls, [1, 2, 3, 4, 5, 6]);
+});

@@ -3095,22 +3095,10 @@ class CPU {
                 }
                 return rollCache.rollScores[dice];
             };
-            let oneTotal = 0;
-            for (let dice = 1; dice <= 6; dice++) oneTotal += getRollScore(dice);
-            const one = oneTotal / 6;
-            let two = -Infinity;
-            if (game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION]) {
-                const weights = { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 };
-                let totalWeight = 0;
-                let totalScore = 0;
-                for (const [diceText, weight] of Object.entries(weights)) {
-                    const dice = parseInt(diceText, 10);
-                    totalWeight += weight;
-                    totalScore += getRollScore(dice) * weight;
-                }
-                two = totalWeight > 0 ? totalScore / totalWeight : -Infinity;
-            }
-            const scores = { one, two };
+            const scores = CPUEvaluation.turnScorePair(
+                game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION],
+                getRollScore
+            );
             cache.playerTurnScorePairs[playerIndex] = scores;
             return scores;
         } finally {

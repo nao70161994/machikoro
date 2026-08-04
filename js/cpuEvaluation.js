@@ -956,6 +956,23 @@ const CPUEvaluation = Object.freeze({
         return Math.round(urgency * bias);
     },
 
+    turnScorePair(hasStation, scoreForDice) {
+        let oneTotal = 0;
+        for (let dice = 1; dice <= 6; dice++) oneTotal += scoreForDice(dice);
+        const one = oneTotal / 6;
+        if (!hasStation) return { one, two: -Infinity };
+
+        const weights = { 2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:5, 9:4, 10:3, 11:2, 12:1 };
+        let totalWeight = 0;
+        let totalScore = 0;
+        for (const [diceText, weight] of Object.entries(weights)) {
+            const dice = parseInt(diceText, 10);
+            totalWeight += weight;
+            totalScore += scoreForDice(dice) * weight;
+        }
+        return { one, two: totalWeight > 0 ? totalScore / totalWeight : -Infinity };
+    },
+
     expectedOutcomeValue(outcomes, evaluateOutcome) {
         let totalWeight = 0;
         let totalScore = 0;
