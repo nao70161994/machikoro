@@ -1070,16 +1070,10 @@ if (typeof window !== 'undefined') {
 let _crashShown = false;
 
 
-function focusableCrashScreenElements(el) {
-    if (!el || typeof el.querySelectorAll !== 'function') return [];
-    return Array.from(el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-        .filter(node => !node.disabled && node.offsetParent !== null);
-}
-
 function trapCrashScreenFocus(event) {
     if (!_crashShown || event.key !== 'Tab') return;
     const el = document.getElementById('crashScreen');
-    const focusables = focusableCrashScreenElements(el);
+    const focusables = CrashScreenEffects.focusableElements(el);
     const plan = CrashScreen.focusTrapPlan({
         shown: _crashShown,
         key: event.key,
@@ -1087,16 +1081,7 @@ function trapCrashScreenFocus(event) {
         focusableCount: focusables.length,
         activeIndex: focusables.indexOf(document.activeElement),
     });
-    if (!plan.preventDefault) return;
-    event.preventDefault();
-    if (plan.focusTarget === 'screen') {
-        if (el && typeof el.focus === 'function') el.focus();
-        return;
-    }
-    const focusTarget = plan.focusTarget === 'last'
-        ? focusables[focusables.length - 1]
-        : focusables[0];
-    if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
+    CrashScreenEffects.applyFocusTrap(plan, event, el, focusables);
 }
 
 function showCrashScreen(err) {
@@ -1108,24 +1093,23 @@ function showCrashScreen(err) {
     const el = document.getElementById('crashScreen');
     if (!el) return;
     const view = CrashScreen.buildView(err, safeAppShellStorageGet('savedGame'));
-    document.getElementById('crashMessage').textContent = view.message;
-    const resumeBtn = document.getElementById('crashResumeBtn');
-    if (resumeBtn) resumeBtn.style.display = view.resumeDisplay;
-    el.style.display = 'flex';
-    el.setAttribute('aria-modal', 'true');
-    if (typeof el.hasAttribute !== 'function' || !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
-    if (typeof document.addEventListener === 'function') document.addEventListener('keydown', trapCrashScreenFocus, true);
-    const focusTarget = view.initialFocus === 'resume' && resumeBtn
-        ? resumeBtn
-        : el.querySelector && el.querySelector('[data-ui-action="reloadPage"]');
-    if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
-    else if (typeof el.focus === 'function') el.focus();
+    const elements = {
+        screen: el,
+        message: document.getElementById('crashMessage'),
+        resumeButton: document.getElementById('crashResumeBtn'),
+        reloadButton: el.querySelector && el.querySelector('[data-ui-action="reloadPage"]'),
+    };
+    CrashScreenEffects.applyView(elements, view);
+    if (typeof document.addEventListener === 'function') {
+        document.addEventListener('keydown', trapCrashScreenFocus, true);
+    }
+    CrashScreenEffects.focusInitial(elements, view.initialFocus);
 }
 
 function crashResume() {
     _crashShown = false;
     if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', trapCrashScreenFocus, true);
-    document.getElementById('crashScreen').style.display = 'none';
+    CrashScreenEffects.hide(document.getElementById('crashScreen'));
     resumeGame();
 }
 

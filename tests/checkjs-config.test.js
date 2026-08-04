@@ -143,5 +143,6 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
 
     assert.deepStrictEqual(checkJsFiles, lintFiles);
     assert.ok(config.files.includes('js/crashScreen.js'));
+    assert.ok(config.files.includes('js/crashScreenEffects.js'));
     assert.ok(config.files.includes('scripts/check-static-files.js'));
 });
