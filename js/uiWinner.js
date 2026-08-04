@@ -36,20 +36,21 @@ function createStreakController(initial = {}) {
         return snapshot();
     }
 
-    function bindGlobals(root) {
+    function bindGlobals(root, options = {}) {
         if (!root || (typeof root !== 'object' && typeof root !== 'function')) return false;
+        const writable = options.writable !== false;
         Object.defineProperties(root, {
             winStreak: {
                 configurable: true,
                 enumerable: false,
                 get: () => state.winStreak,
-                set: value => { state.winStreak = value; },
+                set: writable ? value => { state.winStreak = value; } : undefined,
             },
             lastWinnerName: {
                 configurable: true,
                 enumerable: false,
                 get: () => state.lastWinnerName,
-                set: value => { state.lastWinnerName = value; },
+                set: writable ? value => { state.lastWinnerName = value; } : undefined,
             },
         });
         return true;
@@ -91,8 +92,13 @@ function buildWinnerScreenHtml(options = {}) {
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
+const streakBrowserRoot = typeof window !== 'undefined' ? window : null;
 const streakRuntime = createStreakController(currentStreakGlobals(streakRoot));
-if (streakRoot) streakRuntime.bindGlobals(streakRoot);
+if (streakRoot) {
+    streakRuntime.bindGlobals(streakRoot, {
+        writable: !streakBrowserRoot || streakBrowserRoot !== streakRoot,
+    });
+}
 
 const UiWinner = Object.freeze({
     createStreakController,

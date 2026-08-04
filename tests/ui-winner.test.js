@@ -75,3 +75,20 @@ runTest('ui winner streak compatibility globalsは既存値を保持してcontro
     assert.deepStrictEqual(controller.snapshot(), { winStreak: 5, lastWinnerName: 'Bob' });
     assert.strictEqual(Object.keys(root).includes('winStreak'), false);
 });
+
+runTest('ui winner streak compatibility globalsは製品向けread-only投影を選べる', () => {
+    const root = {};
+    const controller = UiWinner.createStreakController({
+        winStreak: 2,
+        lastWinnerName: 'Alice',
+    });
+    assert.strictEqual(controller.bindGlobals(root, { writable: false }), true);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'winStreak').set, undefined);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'lastWinnerName').set, undefined);
+    assert.throws(() => { root.winStreak = 9; }, TypeError);
+    controller.recordWinner('Alice');
+    assert.deepStrictEqual(
+        { winStreak: root.winStreak, lastWinnerName: root.lastWinnerName },
+        { winStreak: 3, lastWinnerName: 'Alice' }
+    );
+});
