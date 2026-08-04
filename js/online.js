@@ -17,6 +17,10 @@ const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
 const onlineSocketUnavailableReportController = OnlineSocketRegistry.createUnavailableReportController();
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
 
+function onlineGameRuntimeSnapshot() {
+    return GameRuntimeState.runtime.snapshot();
+}
+
 function createOnlineCpuPlayer(difficulty, options = {}) {
     if (typeof createCpuPlayer === "function") {
         return createCpuPlayer(difficulty, options);
@@ -1720,7 +1724,8 @@ function _onlineHostChangedEffectAuthoritySelection(planSelection) {
 
 function _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch) {
     if (_setOnlineHostState(newHostPlayerIndex)) {
-        game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
+        const currentGame = onlineGameRuntimeSnapshot().game;
+        currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
         render();
         scheduleCPU();
     } else {
@@ -1741,7 +1746,8 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
     return OnlineHostChanged.execute(planSelection.plan, {
         setHostState: isHost => { OnlineRuntimeState.runtime.setHost(isHost); },
         addHostLog: () => {
-            game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
+            const currentGame = onlineGameRuntimeSnapshot().game;
+            currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
         },
         render: () => render(),
         scheduleCpu: () => scheduleCPU(),
@@ -1875,6 +1881,7 @@ function resetOnlineState() {
 
 function _saveActionLog(action, data, options = {}) {
     try {
+        const gameState = onlineGameRuntimeSnapshot();
         const log = _readOnlineActionLog();
         const hasExplicitSeq = Number.isInteger(options.seq);
         const seq = hasExplicitSeq ? options.seq : _nextOnlineActionSeq(log);
@@ -1885,7 +1892,7 @@ function _saveActionLog(action, data, options = {}) {
             seq,
             hasExplicitSeq,
             actionLogLimit: ONLINE_ACTION_LOG_LIMIT,
-            hasGame: !!game,
+            hasGame: !!gameState.game,
             options,
         });
         OnlineActionLog.executeAppend(plan, {
@@ -2409,21 +2416,23 @@ function _appendPendingForRestore(actionLog, pending) {
 }
 
 function _canResendPendingOutboundAction(pending) {
+    const gameState = onlineGameRuntimeSnapshot();
     return OnlinePayload.canResendPendingOutboundAction(pending, {
         currentRoomId: myRoomId,
         normalizeRoomId: _normalizeOnlineRoomId,
-        game,
+        game: gameState.game,
         originalPlayerIndex: myOriginalPlayerIndex,
         playerIndex: myPlayerIndex,
-        cpuPlayers,
+        cpuPlayers: gameState.cpuPlayers,
         isRoomHost,
     });
 }
 
 function buildOnlineSnapshot() {
-    if (!game) return null;
-    return GameSnapshot.serializeGameState(game, SHOP_STOCK, {
-        undoState,
+    const gameState = onlineGameRuntimeSnapshot();
+    if (!gameState.game) return null;
+    return GameSnapshot.serializeGameState(gameState.game, SHOP_STOCK, {
+        undoState: gameState.undoState,
         actionSeq: _currentOnlineActionSeq(),
         logLimit: ONLINE_SNAPSHOT_LOG_LIMIT,
         pendingActionsFor: (typeof GameManager !== 'undefined' &&
@@ -2434,8 +2443,9 @@ function buildOnlineSnapshot() {
 }
 
 function buildOnlineUndoSnapshot() {
-    if (!game) return null;
-    return GameSnapshot.serializeUndoState(game, SHOP_STOCK, ONLINE_SNAPSHOT_LOG_LIMIT);
+    const currentGame = onlineGameRuntimeSnapshot().game;
+    if (!currentGame) return null;
+    return GameSnapshot.serializeUndoState(currentGame, SHOP_STOCK, ONLINE_SNAPSHOT_LOG_LIMIT);
 }
 
 function saveOnlineSession() {
@@ -2607,7 +2617,7 @@ function initSocket() {
             if (versions && versions.length > 1) {
                 const unique = [...new Set(versions)];
                 if (unique.length > 1) {
-                    game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
+                    onlineGameRuntimeSnapshot().game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
                 }
             }
             const lastAppliedSeq = _onlineActionSequenceController.replace(actionSeq);
@@ -2638,7 +2648,7 @@ function initSocket() {
     function legacyInboundGameActionPlan(seq, lastAppliedSeq) {
         const decisions = OnlinePayload.incomingGameActionDecisions;
         let decision = decisions.APPLY;
-        if (!game) decision = decisions.NO_GAME;
+        if (!onlineGameRuntimeSnapshot().game) decision = decisions.NO_GAME;
         else if (Number.isInteger(seq) && seq <= lastAppliedSeq) decision = decisions.DUPLICATE;
         else if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) decision = decisions.GAP;
         return Object.freeze({ decision });
@@ -2652,7 +2662,7 @@ function initSocket() {
         );
         const stateReady = stateSelection.source === 'event';
         const selected = OnlinePayload.selectIncomingGameActionPlan(
-            !!game,
+            !!onlineGameRuntimeSnapshot().game,
             seq,
             lastAppliedSeq,
             legacyPlan,
@@ -3112,7 +3122,7 @@ function initSocket() {
                         restoreSnapshot: snapshot => restoreOnlineSnapshot(snapshot),
                         applyAction: (action, data) => applyReplayedAction(action, data),
                         addProvisionalLog: () => {
-                            game.addLog(
+                            onlineGameRuntimeSnapshot().game.addLog(
                                 LOG_TYPES.SYSTEM,
                                 '⚠️ 参加者データの全一致確認により暫定復元しました'
                             );
@@ -3136,7 +3146,7 @@ function initSocket() {
                         applyReplayedAction(action, data);
                     }
                     if (restoreReplayPlan.provisionalRestore) {
-                        game.addLog(
+                        onlineGameRuntimeSnapshot().game.addLog(
                             LOG_TYPES.SYSTEM,
                             '⚠️ 参加者データの全一致確認により暫定復元しました'
                         );
@@ -3385,14 +3395,16 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_REJOINED, ({ playerIndex, playerName }) => {
         if (playerIndex !== myOriginalPlayerIndex) {
-            game && game.addLog(LOG_TYPES.SYSTEM, `🔌 ${playerName}が再接続しました`);
+            const currentGame = onlineGameRuntimeSnapshot().game;
+            currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `🔌 ${playerName}が再接続しました`);
         }
         render();
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_DISCONNECTED, ({ playerIndex, playerName }) => {
         const name = playerName || `プレイヤー${playerIndex + 1}`;
-        game && game.addLog(LOG_TYPES.SYSTEM, `🔌 ${name}が切断しました`);
+        const currentGame = onlineGameRuntimeSnapshot().game;
+        currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `🔌 ${name}が切断しました`);
         render();
     });
 
@@ -3689,13 +3701,14 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     if (typeof resetStatsRecorded === "function") {
         resetStatsRecorded();
     }
-    GameRuntimeState.runtime.setGame(new GameManager(count));
+    const initializedGameState = GameRuntimeState.runtime.setGame(new GameManager(count));
+    const currentGame = initializedGameState.game;
     const selection = GameSelectionState.runtime.snapshot();
     const selectedLandmarks = selection.enabledLandmarks.length > 0
         ? selection.enabledLandmarks
         : Player.landmarkNames();
     const selectedCards = new Set(selection.enabledCards);
-    game.enabledLandmarks = new Set(selectedLandmarks);
+    currentGame.enabledLandmarks = new Set(selectedLandmarks);
     for (const card of CARDS) {
         setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, count) : 0);
     }
@@ -3704,7 +3717,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     const order = playerOrder || playerNames.map((_, i) => i);
     for (let i = 0; i < count; i++) {
         const originalIndex = order[i];
-        game.players[i].name = playerNames[originalIndex];
+        currentGame.players[i].name = playerNames[originalIndex];
     }
 
     // CPU設定をorderに合わせて反映
@@ -3717,7 +3730,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
                 : null;
         }));
     } else {
-        GameRuntimeState.runtime.setCpuPlayers(game.players.map(() => null));
+        GameRuntimeState.runtime.setCpuPlayers(currentGame.players.map(() => null));
     }
 
     // myPlayerIndexをシャッフル後の位置に更新
@@ -3727,16 +3740,17 @@ function initOnlineGame(playerNames, ps, playerOrder) {
         orderedPlayerIndex === -1 ? 0 : orderedPlayerIndex
     ); // 見つからない場合はホスト
 
-    game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+    currentGame.addLog(LOG_TYPES.SYSTEM, `👤 ${currentGame.currentPlayer().name}のターン`);
     render();
     scheduleCPU();
 }
 
 function _createOnlineGameEngineRuntimeAdapter() {
+    const currentGame = onlineGameRuntimeSnapshot().game;
     return GameEngineRuntimeAdapter.create({
         createGame: playerCount => new GameManager(playerCount),
-        enabledLandmarks: game && game.enabledLandmarks
-            ? game.enabledLandmarks
+        enabledLandmarks: currentGame && currentGame.enabledLandmarks
+            ? currentGame.enabledLandmarks
             : Player.landmarkNames(),
         landmarkNames: Player.landmarkNames,
         createCardByName,
@@ -3805,7 +3819,7 @@ function _finishOnlineGameEngineShadow(prepared) {
 
 function applyAction(action, data) {
     return GameEngine.applyMutableAction({
-        game,
+        game: onlineGameRuntimeSnapshot().game,
         shopStock: SHOP_STOCK,
         action,
         data,
@@ -3829,9 +3843,10 @@ function applyReplayedAction(action, data) {
 }
 
 function restoreOnlineSnapshot(state) {
-    if (!state || !game) return;
+    const currentGame = onlineGameRuntimeSnapshot().game;
+    if (!state || !currentGame) return;
     GameSnapshot.hydrateMutableGameState({
-        game,
+        game: currentGame,
         shopStock: SHOP_STOCK,
         state,
         createCardByName,
