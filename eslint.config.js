@@ -53,6 +53,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/gameEngineRuntimeAdapter.js',
     'js/gameSnapshot.js',
     'js/localSaveRepository.js',
+    'js/localSaveRuntime.js',
     'js/localResumePolicy.js',
     'js/localResumePreloadState.js',
     'js/localResumeView.js',

@@ -78,6 +78,7 @@ const TEST_GROUPS = {
         'game-engine.test.js',
         'game-snapshot.test.js',
         'local-save-repository.test.js',
+        'local-save-runtime.test.js',
         'game-schema-negotiation.test.js',
         'game-schema-codec.test.js',
         'game-schema-wire.test.js',

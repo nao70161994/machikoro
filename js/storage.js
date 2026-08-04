@@ -141,10 +141,14 @@ function clearOnlineSessionStorage() {
 }
 
 function saveGameState() {
-    if (!game || isOnlineGame) return;
-    if (game.checkWinner()) return;
-    try {
-        const state = GameSnapshot.serializeLocalSaveState(game, SHOP_STOCK, {
+    const decision = LocalSaveRuntime.admission({
+        hasGame: !!game,
+        isOnline: isOnlineGame,
+        hasWinner: () => game.checkWinner(),
+    });
+    if (decision !== LocalSaveRuntime.DECISIONS.SAVE) return;
+    LocalSaveRuntime.execute({
+        serialize: () => GameSnapshot.serializeLocalSaveState(game, SHOP_STOCK, {
             logLimit: 30,
             pendingActionsFor: value =>
                 (typeof GameManager !== 'undefined' &&
@@ -157,9 +161,9 @@ function saveGameState() {
             cpuSpeed,
             enabledCardsList: [...enabledCards],
             enabledLandmarksList: [...enabledLandmarks],
-        });
-        getLocalSaveRepository().save(state);
-    } catch(e) {}
+        }),
+        save: state => getLocalSaveRepository().save(state),
+    });
 }
 
 function updateResumeButton() {
