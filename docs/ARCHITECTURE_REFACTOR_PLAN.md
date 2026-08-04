@@ -659,3 +659,12 @@ Scoped gates now cover 213 ESLint maintenance files and 212 checkJs runtime file
 3. Recreate-room admission routing now has a dedicated server runtime. The composition root no longer expands admission fields or chooses existing/new restore execution inline.
 
 Scoped gates now cover 214 ESLint maintenance files and 213 checkJs runtime files. No authority activation, schema/protocol change, persistence change, rule/CPU change, or PWA behavior change occurred.
+
+## 2026-08-04 Batch 45 boundary update
+
+1. Expert card penalty policy now lives in the pure CPU evaluator; the runtime only supplies player/game features and preserves lazy landmark-count access.
+2. Build-menu filter selection now has one immutable-snapshot controller owner; view construction and DOM effects remain separate.
+3. App-shell one-time listener/watchdog/resize binding state now has one named controller owner in the client event runtime.
+4. Full `nextTurn` airport/IT orchestration remains deferred until a plan can preserve the existing Airport effect/log before IT-card read boundary.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. No rule, CPU tuning, protocol/schema, persistence, event ordering, UI, or PWA behavior changed.

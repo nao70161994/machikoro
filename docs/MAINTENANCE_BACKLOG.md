@@ -457,3 +457,13 @@ No game rule, CPU strength, save/localStorage format, Socket.IO protocol, reconn
 - Scoped gates now cover 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU strength, save/localStorage format, Action/Snapshot schema, Socket.IO protocol, reconnect authority/timing, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 45 architecture boundaries
+
+- `CPUEvaluation.expertCardPenalty()` now owns the complete expert card-name/copy/landmark/player-count penalty table. `CPU.js` remains the player/game feature adapter and keeps built-landmark reads lazy for Renovation Company only; every numeric heuristic and branch order is unchanged.
+- `UiBuildMenu.createFilterController()` is now the sole owner of build-card filter state. `ui.js` retains HTML generation, DOM rendering, public `setCardFilter()`, enabled-card/stock gates, and the existing render-on-every-selection behavior.
+- `ClientEventRuntime.createBindingController()` now owns app-shell one-time binding state for crash reporting, console reporting, online status, freeze watchdog, and resize handling. `appShell.js` retains listener/effect registration and preserves all registration and repeated-call behavior.
+- A combined `nextTurn` airport/IT plan was deferred because the legacy sequence applies and logs Airport income before reading the active IT Startup card. A safe future plan must represent the effect boundary explicitly rather than evaluate all facts before effects.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No CPU heuristic or decision, game rule, save/localStorage format, Socket.IO protocol, reconnect authority/timing, listener order, UI rendering behavior, or PWA/SW behavior changed.

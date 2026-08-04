@@ -693,3 +693,11 @@ Test index:
 - Recreate-room admission and existing/new routing belong to `server/recreateRoomRuntime.js`. Keep validation, identity, room mutation, persistence, hostless policy, and Socket delivery in the injected owners; `handleRecreateRoom` is only the public compatibility wrapper.
 - Scoped gates are 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - New modules must be registered in production/SW where applicable, lint, checkJs, test groups, every partial VM loader, and runtime-dependency contracts within the same theme.
+
+## Batch 45 handoff (2026-08-04)
+
+- Expert card penalty values and branch order belong to `CPUEvaluation.expertCardPenalty()`. Keep the built-landmark callback lazy and require direct table, fixed-decision, and self-play parity for changes.
+- Build-menu filter state belongs to `UiBuildMenu.createFilterController()`. Keep all requested values compatible, including unknown future filters, and preserve render-on-repeat behavior.
+- App-shell binding state belongs to `ClientEventRuntime.createBindingController()` and its frozen keys. Mark a binding only after its existing effect succeeds; repeated online-status binding calls must still refresh the current status.
+- Do not combine Airport and IT Startup `nextTurn` facts into a pre-effect plan: legacy order awards/logs Airport income before reading the active IT card. Introduce an explicit staged plan if this boundary is revisited.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
