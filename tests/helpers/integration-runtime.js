@@ -171,6 +171,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/Player.js',
         'js/gameSelectionState.js',
         'js/gameSetupState.js',
+        'js/gameRuntimeState.js',
         'js/onlineRuntimeState.js',
         'js/onlineSetupState.js',
         'js/actionContract.js',

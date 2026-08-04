@@ -407,6 +407,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
     const gameSetupStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameSetupState.js'), 'utf8');
     vm.runInContext(gameSetupStateSource, context, { filename: 'js/gameSetupState.js' });
+    const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
+    vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
@@ -457,6 +459,13 @@ function loadMainRuntime(options = {}) {
     context.__test.elements = elements;
     return context;
 }
+
+runTest('game runtime globalsはGameRuntimeStateだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    for (const field of require('../js/gameRuntimeState').fields) {
+        assert.strictEqual(new RegExp(`^let ${field}\\b`, 'm').test(source), false, field);
+    }
+});
 
 runTest('game setup globalsはGameSetupStateだけが所有する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
@@ -2259,7 +2268,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/Player.js', 'js/GameManager.js');
     assertBefore('js/Player.js', 'js/gameSelectionState.js');
     assertBefore('js/gameSelectionState.js', 'js/gameSetupState.js');
-    assertBefore('js/gameSetupState.js', 'js/onlineRuntimeState.js');
+    assertBefore('js/gameSetupState.js', 'js/gameRuntimeState.js');
+    assertBefore('js/gameRuntimeState.js', 'js/onlineRuntimeState.js');
     assertBefore('js/onlineRuntimeState.js', 'js/onlineSetupState.js');
     assertBefore('js/onlineSetupState.js', 'js/online.js');
     assertBefore('js/actionContract.js', 'js/pendingActionQueue.js');

@@ -1,9 +1,6 @@
-let game;
 const SHOP_STOCK = {};
-let cpuPlayers = [];
 
-// コインアニメーション用
-let prevCoins = null;
+// live game / CPU / Undo / coin animation state は GameRuntimeState が所有する。
 const mainClientStorageFacade = ClientStorage.createFacade();
 
 function safeMainStorageGet(key, fallback = null) {
@@ -23,8 +20,7 @@ const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();
 const delayedHumanActionController = DelayedHumanActionPolicy.createScheduleController();
 const localGameStartPendingController = LocalGameStart.createPendingController();
 
-// 取り消し
-let undoState = null;
+// 取り消し状態は GameRuntimeState が所有する。
 let tutorialEnabled = safeMainStorageGet('tutorialEnabled') !== 'false';
 let tutorialLevel = safeMainStorageGet('tutorialLevel', 'beginner') || 'beginner';
 
