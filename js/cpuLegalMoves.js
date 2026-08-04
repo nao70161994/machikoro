@@ -33,6 +33,39 @@ const CPULegalMoves = Object.freeze({
         );
     },
 
+    expertBuildOptions(landmarkNames, rankedCards, candidateLimit, cardReady) {
+        const options = [{ type: 'skip' }];
+        for (const name of landmarkNames) {
+            options.push({ type: 'landmark', name });
+        }
+        for (const entry of rankedCards.slice(0, candidateLimit)) {
+            if (!cardReady(entry.card)) continue;
+            options.push({ type: 'card', cardName: entry.card.name });
+        }
+        return options;
+    },
+
+    strongBuildOptions(landmarkNames, rankedCards, context) {
+        const options = landmarkNames.map(name => ({ type: 'landmark', name }));
+        for (const entry of rankedCards) {
+            const card = entry.card;
+            if (context.playerCount >= 4 && context.builtLandmarkCount < 4) {
+                if (card.color === 'purple') continue;
+                if (!context.attackUnlocked && card.color === 'red') continue;
+                if (context.oneDieOpponentCount >= 2 && Math.min(...card.diceNums) >= 7 &&
+                    (card.color === 'blue' || card.color === 'green')) continue;
+            } else if (!context.attackUnlocked && (card.color === 'red' || card.color === 'purple')) {
+                continue;
+            }
+            options.push({ type: 'card', cardName: card.name });
+            if (options.length >= 6) break;
+        }
+        if (options.length === 0 && rankedCards[0]) {
+            options.push({ type: 'card', cardName: rankedCards[0].card.name });
+        }
+        return options;
+    },
+
     disruptionTargetIndexes(players, currentIndex, estimateThreat, prune = false) {
         if (!Array.isArray(players)) return [];
         const indexes = players

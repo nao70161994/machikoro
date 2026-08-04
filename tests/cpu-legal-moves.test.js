@@ -74,6 +74,61 @@ runTest('CPU legal movesは在庫・価格・紫重複を既存順で絞る', ()
     );
 });
 
+runTest('CPU legal movesはexpert候補の順序・上限・purple gateをpureに固定する', () => {
+    const landmarks = ['station', 'airport'];
+    const ranked = [
+        { card: { name: 'first' }, score: 9 },
+        { card: { name: 'blocked' }, score: 8 },
+        { card: { name: 'outside-limit' }, score: 7 },
+    ];
+    assert.deepStrictEqual(
+        CPULegalMoves.expertBuildOptions(
+            landmarks,
+            ranked,
+            2,
+            card => card.name !== 'blocked'
+        ),
+        [
+            { type: 'skip' },
+            { type: 'landmark', name: 'station' },
+            { type: 'landmark', name: 'airport' },
+            { type: 'card', cardName: 'first' },
+        ]
+    );
+});
+
+runTest('CPU legal movesはstrong序盤の攻撃・高出目制限と候補上限をpureに固定する', () => {
+    const ranked = [
+        { card: { name: 'purple', color: 'purple', diceNums: [6] } },
+        { card: { name: 'red', color: 'red', diceNums: [3] } },
+        { card: { name: 'late-blue', color: 'blue', diceNums: [8] } },
+        { card: { name: 'green', color: 'green', diceNums: [4] } },
+        { card: { name: 'blue', color: 'blue', diceNums: [2] } },
+    ];
+    assert.deepStrictEqual(
+        CPULegalMoves.strongBuildOptions(['station'], ranked, {
+            playerCount: 4,
+            builtLandmarkCount: 2,
+            attackUnlocked: false,
+            oneDieOpponentCount: 2,
+        }),
+        [
+            { type: 'landmark', name: 'station' },
+            { type: 'card', cardName: 'green' },
+            { type: 'card', cardName: 'blue' },
+        ]
+    );
+    assert.deepStrictEqual(
+        CPULegalMoves.strongBuildOptions([], [ranked[0]], {
+            playerCount: 4,
+            builtLandmarkCount: 2,
+            attackUnlocked: false,
+            oneDieOpponentCount: 2,
+        }),
+        [{ type: 'card', cardName: 'purple' }]
+    );
+});
+
 runTest('CPU legal move wrapperは代表fixtureでpure helperと完全一致する', () => {
     const runtime = loadCPURuntime();
     const fixtures = makeCpuDecisionFixtures(runtime).filter(fixture => fixture.decision === 'build');

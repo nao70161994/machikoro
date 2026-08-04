@@ -3267,7 +3267,6 @@ class CPU {
 
     _listExpertBuildOptions(game, shopStock) {
         const current = game.currentPlayer();
-        const options = [{ type: 'skip' }];
         const affordableLandmarks = CPULegalMoves.affordableLandmarkNames(
             current,
             game.enabledLandmarks,
@@ -3275,9 +3274,6 @@ class CPU {
             Player.landmarkCost,
             false
         );
-        for (const name of affordableLandmarks) {
-            options.push({ type: 'landmark', name });
-        }
         const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
         const ranked = CPUSelection.stableRankDescending(
             affordable.map(card => ({
@@ -3286,12 +3282,12 @@ class CPU {
             })),
             entry => entry.score
         );
-        const candidateLimit = this._expertBuildCandidateLimit(game, current);
-        for (const entry of ranked.slice(0, candidateLimit)) {
-            if (!this._expertPremiumPurpleReady(entry.card, game, current)) continue;
-            options.push({ type: 'card', cardName: entry.card.name });
-        }
-        return options;
+        return CPULegalMoves.expertBuildOptions(
+            affordableLandmarks,
+            ranked,
+            this._expertBuildCandidateLimit(game, current),
+            card => this._expertPremiumPurpleReady(card, game, current)
+        );
     }
 
     _scoreExpertBuildOption(game, shopStock, action, context = null) {
@@ -3387,7 +3383,6 @@ class CPU {
 
     _listStrongBuildOptions(game, shopStock) {
         const current = game.currentPlayer();
-        const options = [];
         const affordableLandmarks = CPULegalMoves.affordableLandmarkNames(
             current,
             game.enabledLandmarks,
@@ -3395,28 +3390,17 @@ class CPU {
             Player.landmarkCost,
             false
         );
-        for (const name of affordableLandmarks) {
-            options.push({ type: 'landmark', name });
-        }
         const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
         const ranked = this._sortAffordableForDifficulty(affordable, game, current, "strong");
         const targetLandmark = this._strongTargetLandmark(current, game);
-        const attackUnlocked = this._strongAttackUnlocked(current, game, targetLandmark);
-        const oneDieOpponents = game.players.filter(p => p !== current && !p.landmarks[LANDMARK_NAMES.STATION]).length;
-        for (const entry of ranked) {
-            if (game.players.length >= 4 && current.builtLandmarkCount() < 4) {
-                if (entry.card.color === "purple") continue;
-                if (!attackUnlocked && entry.card.color === "red") continue;
-                if (oneDieOpponents >= 2 && Math.min(...entry.card.diceNums) >= 7 &&
-                    (entry.card.color === "blue" || entry.card.color === "green")) continue;
-            } else if (!attackUnlocked && (entry.card.color === "red" || entry.card.color === "purple")) {
-                continue;
-            }
-            options.push({ type: 'card', cardName: entry.card.name });
-            if (options.length >= 6) break;
-        }
-        if (options.length === 0 && ranked[0]) options.push({ type: 'card', cardName: ranked[0].card.name });
-        return options;
+        return CPULegalMoves.strongBuildOptions(affordableLandmarks, ranked, {
+            playerCount: game.players.length,
+            builtLandmarkCount: current.builtLandmarkCount(),
+            attackUnlocked: this._strongAttackUnlocked(current, game, targetLandmark),
+            oneDieOpponentCount: game.players.filter(
+                player => player !== current && !player.landmarks[LANDMARK_NAMES.STATION]
+            ).length,
+        });
     }
 
     _scoreStrongBuildOption(game, shopStock, action) {
