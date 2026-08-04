@@ -921,3 +921,11 @@ Test index:
 - Capture one session envelope for synchronous plans and payload construction. Refresh it inside timeout, Socket, confirmation, replay, and resend callbacks because connection, host, room, or identity may have changed.
 - Socket.IO names/payloads, ACK/retry timing, storage keys/shapes, restore order, feature flags, and legacy fallbacks were not changed.
 - ESLint/checkJs inclusion for `online.js` remains deferred until its remaining classic-script dependencies are injected or grouped; a direct ESLint audit currently reports 373 undefined dependency names, and these must not be silenced with a bulk globals list.
+
+## Batch 73 handoff (2026-08-05)
+
+- Route online render/scheduler/notice/resume/UI-lock/lifecycle effects through `onlineClientEffects`; do not add direct calls back to `render`, `scheduleCPU`, `invalidateCpuScheduleChain`, `showNotice`, `updateResumeButton`, `resetUiLocksForGameReset`, or `notifyGameLifecycleStart` in `online.js`.
+- Lifecycle session/dedupe/payload/storage orchestration belongs to `LifecycleRuntime`. Keep `appShell.js` as dependency wiring plus the existing public wrappers, and preserve both lifecycle opt-out keys and the start-marker format.
+- `OnlineClientEffects` deliberately resolves functions lazily because `online.js` loads before UI/main in the classic-script order. Do not eagerly capture those functions or reorder UI/main ahead of online.
+- Scoped gates cover 225 ESLint files and 224 checkJs runtimes. The five large side-effect files remain excluded as whole files; continue reducing real dependencies before expanding their lint/type scope.
+- Continue in macro batches with a few substantive boundaries, targeted tests per theme, then one `npm run test:batch`, one push, and one exact-HEAD CI check.

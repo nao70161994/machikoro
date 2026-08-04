@@ -872,3 +872,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. The online orchestrator now consumes all shared session state through `OnlineRuntimeState` snapshots and mutates it only through named transitions. Compatibility globals are no longer its internal state boundary.
 2. Reconnect/storage planning and Socket/action/restore effects were migrated as separate rollback units with source contracts and online behavior coverage. Protocol, persistence, callback order, authority flags, and legacy fallbacks remain unchanged.
 3. Whole-file lint/type activation is intentionally sequenced after dependency injection; the current audit found 373 classic-script names in `online.js`, so bulk ambient declarations were rejected as a false boundary.
+
+## 2026-08-05 Batch 73 boundary update
+
+1. Online orchestration now reaches main/UI side effects through `OnlineClientEffects`, replacing repeated ambient calls with one late-bound named adapter while preserving optional UI-lock/lifecycle hooks and required render/scheduler/notice contracts.
+2. Lifecycle notification orchestration moved from `appShell.js` to `LifecycleRuntime`; policy, storage, game/online/setup snapshots, transport, clock/randomness, and checkpoints are injected. App-shell public globals remain compatibility wrappers.
+3. The new boundaries are linted, type-checked, unit-tested, integration-tested, and present in the production/PWA load-order contract. No rule, CPU, wire, save, reconnect, lifecycle-notification, UI, or PWA behavior changed.
