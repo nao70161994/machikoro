@@ -27,6 +27,44 @@ runTest('turn policyはincome後のpending有無だけでphaseを決める', () 
     });
 });
 
+runTest('turn policyはincome終了時の役所救済とphaseを一つのimmutable planにする', () => {
+    const pendingState = {
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+    };
+    const relief = GameTurnPolicy.incomeCompletionPlan({
+        coins: 0,
+        hasCityHall: true,
+        pendingState,
+        phases,
+    });
+    assert.deepStrictEqual(relief, { cityHallCoinDelta: 1, phase: 'build' });
+    assert.ok(Object.isFrozen(relief));
+    assert.deepStrictEqual(GameTurnPolicy.incomeCompletionPlan({
+        coins: 1,
+        hasCityHall: true,
+        pendingState: { ...pendingState, pendingTV: 1 },
+        phases,
+    }), { cityHallCoinDelta: 0, phase: 'pending' });
+    assert.deepStrictEqual(GameTurnPolicy.incomeCompletionPlan({
+        coins: 0,
+        hasCityHall: false,
+        pendingState,
+        phases,
+    }), { cityHallCoinDelta: 0, phase: 'build' });
+    let cityHallReads = 0;
+    GameTurnPolicy.incomeCompletionPlan({
+        coins: 1,
+        hasCityHall: () => { cityHallReads++; return true; },
+        pendingState,
+        phases,
+    });
+    assert.strictEqual(cityHallReads, 0);
+});
+
 runTest('turn policyは遊園地の既存ゾロ目条件を厳密に維持する', () => {
     assert.strictEqual(GameTurnPolicy.shouldRepeatAmusementParkTurn({
         hadAmusementParkAtRoll: true,

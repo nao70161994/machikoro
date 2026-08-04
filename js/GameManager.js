@@ -451,13 +451,18 @@ class GameManager {
         this._processGreen(current, dice);
         this._processPurple(current, ci, dice);
 
+        const completion = GameTurnPolicy.incomeCompletionPlan({
+            coins: current.coins,
+            hasCityHall: current.hasYakusho,
+            pendingState: this,
+            phases: GAME_PHASES,
+        });
         // 役所：建設フェーズ開始時コイン0なら+1
-        if (current.coins === 0 && current.hasYakusho) {
-            current.coins += 1;
+        if (completion.cityHallCoinDelta > 0) {
+            current.coins += completion.cityHallCoinDelta;
             this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`);
         }
-
-        this.phase = GameTurnPolicy.phaseAfterIncome(this, GAME_PHASES);
+        this.phase = completion.phase;
     }
 
     _processRed(current, ci, dice) {

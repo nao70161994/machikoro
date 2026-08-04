@@ -39,6 +39,15 @@ const GameTurnPolicy = (() => {
         return hasPending ? phases.PENDING : phases.BUILD;
     }
 
+    function incomeCompletionPlan(facts = {}) {
+        const coins = readFact(facts.coins);
+        const cityHallCoinDelta = coins === 0 && readFact(facts.hasCityHall) === true ? 1 : 0;
+        return Object.freeze({
+            cityHallCoinDelta,
+            phase: phaseAfterIncome(facts.pendingState, facts.phases),
+        });
+    }
+
     function shouldRepeatAmusementParkTurn(state) {
         return !!state && state.hadAmusementParkAtRoll === true &&
             Number.isFinite(state.lastDice1) && state.lastDice1 > 0 &&
@@ -126,6 +135,7 @@ const GameTurnPolicy = (() => {
         pendingResetState,
         turnResetPlan,
         phaseAfterIncome,
+        incomeCompletionPlan,
         shouldRepeatAmusementParkTurn,
         nextPlayerIndex,
         nextTurnRejectionReasons,
