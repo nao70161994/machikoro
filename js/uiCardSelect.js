@@ -56,6 +56,22 @@ const UiCardSelect = (() => {
         return selectionResult(current.concat(name), true);
     }
 
+    function createBindingController(initialBound = false) {
+        let bound = initialBound === true;
+
+        function isBound() {
+            return bound;
+        }
+
+        function claim() {
+            if (bound) return false;
+            bound = true;
+            return true;
+        }
+
+        return Object.freeze({ isBound, claim });
+    }
+
     function createSelectionController(options = {}) {
         let selectedCardNames = selectedNames(options.enabledCards);
         let selectedLandmarkNames = selectedNames(options.enabledLandmarks);
@@ -155,6 +171,7 @@ const UiCardSelect = (() => {
         toggleCardSetSelection,
         toggleLandmarkSelection,
         createSelectionController,
+        createBindingController,
         buildCardSelectViewModel,
         buildCardToggleButtonHtml,
         buildLandmarkToggleButtonHtml,

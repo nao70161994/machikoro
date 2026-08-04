@@ -176,3 +176,15 @@ runTest('ui card select controllerは外部復元値をreplaceして次のtoggle
         enabledLandmarks: ['駅'],
     });
 });
+
+
+runTest('ui card select binding controllerはhandler claimを一度だけ許可する', () => {
+    const controller = UiCardSelect.createBindingController();
+
+    assert.strictEqual(controller.isBound(), false);
+    assert.strictEqual(controller.claim(), true);
+    assert.strictEqual(controller.isBound(), true);
+    assert.strictEqual(controller.claim(), false);
+    assert.ok(Object.isFrozen(controller));
+    assert.strictEqual(UiCardSelect.createBindingController(true).claim(), false);
+});

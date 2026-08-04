@@ -1350,7 +1350,7 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
     document.addEventListener('keydown', handleModalKeydown);
 }
 
-let cardSelectModalHandlersBound = false;
+const cardSelectModalBindingController = UiCardSelect.createBindingController();
 
 function cardSelectActionFromEvent(event) {
     const target = event && event.target;
@@ -1372,12 +1372,12 @@ function handleCardSelectModalClick(event) {
 }
 
 function bindCardSelectModalHandlers() {
-    if (cardSelectModalHandlersBound) return;
+    if (!cardSelectModalBindingController.claim()) return;
     const modal = document.getElementById('cardSelectModal');
     if (modal && typeof modal.addEventListener === 'function') {
         modal.addEventListener('click', handleCardSelectModalClick);
     }
-    cardSelectModalHandlersBound = true;
+
 }
 
 function showCardSelect() {
