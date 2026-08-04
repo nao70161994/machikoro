@@ -104,6 +104,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/onlinePlayerSettings.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));
     assert.ok(config.files.includes('server/canonicalMirrorRuntime.js'));
+    assert.ok(config.files.includes('server/runtimeLimits.js'));
     assert.ok(config.files.includes('server/gameRuntimeLoader.js'));
     assert.ok(config.files.includes('server/gameStartLifecycle.js'));
     assert.ok(config.files.includes('server/gameStartCoordinator.js'));

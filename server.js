@@ -43,6 +43,14 @@ const {
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
 const makeGameLifecycleGateway = require('./server/gameLifecycleGateway');
 const { makeSocketPayloadValidation, makeSocketPayloadGateway } = require('./server/socketPayload');
+const {
+    MAX_ACTION_LOG_LENGTH,
+    ROOM_LIFECYCLE_LIMITS,
+    RESTORE_PAYLOAD_LIMITS,
+    SOCKET_PAYLOAD_LIMITS,
+    CLIENT_ERROR_LIMITS,
+    GAME_LIFECYCLE_LIMITS,
+} = require('./server/runtimeLimits');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
@@ -187,7 +195,6 @@ const {
     stationName: gameRuntime.LANDMARK_NAMES.STATION,
     rollDie: rollServerDie,
 });
-const MAX_ACTION_LOG_LENGTH = 200;
 const {
     serializeMirrorState,
     transitionMirrorEnvelope,
@@ -256,15 +263,6 @@ const { activateRestoredRoom } = makeRestoredRoomRuntime({
 });
 const EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED =
     existingRoomRejoinEffectAuthorityEnabled(process.env);
-const ROOM_LIFECYCLE_LIMITS = Object.freeze({
-    startedRoomTtlMs: 2 * 60 * 60 * 1000,
-    pendingRoomTtlMs: 30 * 60 * 1000,
-    maxRooms: 500,
-    createRoomRateLimitMs: 5000,
-    createRoomIpRateLimitWindowMs: 60 * 1000,
-    createRoomIpRateLimitMax: 20,
-    createRoomIpRateLimitMaxBuckets: 2000,
-});
 const rooms = Object.create(null);
 const {
     createCanonicalStateStoreFromEnv,
@@ -376,20 +374,6 @@ const gameSchemaShadow = makeGameSchemaShadow({
 const gameEngineAuthority = makeGameEngineTransitionAuthority({
     enabled: GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED,
 });
-const RESTORE_PAYLOAD_LIMITS = Object.freeze({
-    maxJsonBytes: 1024 * 1024,
-    maxActionLogEntries: 1000,
-    maxStringLength: 4000,
-    maxTotalStringChars: 200000,
-    maxPlayerCardRefs: 5000,
-});
-
-const SOCKET_PAYLOAD_LIMITS = Object.freeze({
-    maxJsonBytes: 16 * 1024,
-    maxStringLength: 1000,
-    maxTotalStringChars: 4000,
-    maxDepth: 8,
-});
 const {
     validateSocketPayloadLimits,
     validateRestorePayloadLimits,
@@ -401,24 +385,8 @@ const {
 });
 
 
-const CLIENT_ERROR_LIMITS = Object.freeze({
-    maxJsonBytes: 32 * 1024,
-    maxStringLength: 4000,
-    maxStackLength: 2400,
-    maxMessageLength: 500,
-    rateLimitWindowMs: 60 * 1000,
-    rateLimitMax: 20,
-    rateLimitMaxBuckets: 2000,
-    duplicateWindowMs: 60 * 1000,
-});
 const clientErrorRateBuckets = new Map();
 const clientErrorDedupeCache = new Map();
-const GAME_LIFECYCLE_LIMITS = Object.freeze({
-    duplicateWindowMs: 5 * 60 * 1000,
-    rateLimitWindowMs: 60 * 1000,
-    rateLimitMax: 12,
-    rateLimitMaxBuckets: 1000,
-});
 const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
