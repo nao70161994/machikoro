@@ -883,3 +883,12 @@ Test index:
 - Expert-v2 Cleaning feature traversal belongs to `CPUEvaluation.expertV2SimpleCleaningFeatures()`, and its numeric formula belongs to `expertV2SimpleCleaningScore()`. Preserve player/card order, name-before-dormancy short-circuiting, the `0.2` floor, the self `1.2` multiplier, tie behavior, and every RNG point.
 - Scoped gates are 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three independent themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+
+## Batch 68 handoff (2026-08-04)
+
+- Production setup consumers read `GameSetupState.runtime.snapshot()`; do not reintroduce bare `selectedCount`, `playerSettings`, or `cpuSpeed` reads. Compatibility properties remain getter-only browser projections and are not a second state owner.
+- Production tutorial consumers read `UiTutorialSettings.runtime.snapshot()` and mutate through named operations. Preserve the existing `tutorialEnabled` / `tutorialLevel` keys and state → persistence → controls → render sequence.
+- Strong dice-tempo board features belong to `CPUEvaluation.strongTempoValueFeatures()`. Preserve wrapper admission order, card dice-array reads, player order, Station checks, coefficients, and every RNG point.
+- Scoped gates are 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three independent themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

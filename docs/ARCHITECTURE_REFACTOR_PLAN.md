@@ -837,3 +837,12 @@ Scoped gates now cover 222 ESLint maintenance files and 221 checkJs runtime file
 3. Expert-v2 Cleaning candidate evaluation now projects board reads into immutable numeric features before the pure score formula, preserving traversal and decision behavior.
 
 Scoped gates now cover 223 ESLint maintenance files and 222 checkJs runtime files. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect behavior, UI/focus behavior, and PWA defaults are unchanged.
+
+
+## 2026-08-04 Batch 68 boundary update
+
+1. Shared setup state has an explicit production read/write boundary: consumers read detached snapshots and mutate only through named operations; classic-script compatibility getters no longer mediate application behavior.
+2. Tutorial preference consumers now read the controller snapshot and restore through the controller, leaving compatibility getters as external projections rather than application dependencies.
+3. Strong dice-tempo evaluation now separates live admission from immutable feature projection and pure scoring while retaining exact strength and RNG behavior.
+
+Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect behavior, tutorial/UI behavior, and PWA defaults are unchanged.
