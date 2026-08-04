@@ -25,7 +25,10 @@ const freezeWatchdogMonitor = UiWatchdogMonitor.create({
 });
 let _clientErrorReportingBound = false;
 let _consoleErrorHooked = false;
-let _lastClientErrorReport = { key: '', time: 0 };
+const clientErrorAdmissionController = ClientReporting.createAdmissionController({
+    suppressMs: CLIENT_ERROR_REPORT_SUPPRESS_MS,
+    now: () => Date.now(),
+});
 let _onlineStatusHandlersBound = false;
 let _mainViewResizeBound = false;
 let _freezeWatchdogBound = false;
@@ -866,17 +869,13 @@ function reportClientError(input) {
         source: input?.source || 'unknown',
         buildReport: () => buildClientErrorReport(input || {}),
         shouldSend(report) {
-            const admission = ClientReporting.reportAdmission(
-                _lastClientErrorReport,
-                clientErrorReportKey(report),
-                Date.now(),
-                CLIENT_ERROR_REPORT_SUPPRESS_MS
+            const admission = clientErrorAdmissionController.admit(
+                clientErrorReportKey(report)
             );
             if (!admission.shouldSend) {
                 markClientFlowCheckpoint('client-error-suppressed', { source: report.source, message: report.message });
                 return false;
             }
-            _lastClientErrorReport = admission.nextState;
             return true;
         },
         checkpoint: markClientFlowCheckpoint,

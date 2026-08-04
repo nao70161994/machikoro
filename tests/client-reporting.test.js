@@ -185,3 +185,32 @@ runTest('client reportingはconsole errorのError風と複数値を既存規則�
         message: '',
     });
 });
+
+
+runTest('client reporting admission controllerは重複抑止stateとclockを一括所有する', () => {
+    let now = 1000;
+    const controller = ClientReporting.createAdmissionController({
+        suppressMs: 5000,
+        now: () => now,
+    });
+    assert.deepStrictEqual(controller.snapshot(), { key: '', time: 0 });
+    assert.deepStrictEqual(controller.admit('same'), {
+        shouldSend: true,
+        nextState: { key: 'same', time: 1000 },
+    });
+    now = 5999;
+    assert.strictEqual(controller.admit('same').shouldSend, false);
+    assert.deepStrictEqual(controller.snapshot(), { key: 'same', time: 1000 });
+    now = 6000;
+    assert.strictEqual(controller.admit('same').shouldSend, true);
+    assert.deepStrictEqual(controller.snapshot(), { key: 'same', time: 6000 });
+    assert.strictEqual(Object.isFrozen(controller.snapshot()), true);
+});
+
+runTest('client reporting admission controllerは別keyとresetを明示遷移にする', () => {
+    const controller = ClientReporting.createAdmissionController({ suppressMs: 10000, now: () => 42 });
+    controller.admit('first');
+    assert.strictEqual(controller.admit('second').shouldSend, true);
+    assert.deepStrictEqual(controller.reset(), { key: '', time: 0 });
+    assert.deepStrictEqual(controller.snapshot(), { key: '', time: 0 });
+});

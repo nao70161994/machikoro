@@ -166,6 +166,29 @@ const ClientReporting = Object.freeze({
             nextState: suppressed ? current : Object.freeze({ key, time: now }),
         });
     },
+
+    createAdmissionController(options = {}) {
+        const suppressMs = Number.isFinite(options.suppressMs) ? options.suppressMs : 0;
+        const now = typeof options.now === 'function' ? options.now : Date.now;
+        let state = Object.freeze({ key: '', time: 0 });
+
+        function admit(key) {
+            const admission = ClientReporting.reportAdmission(state, key, now(), suppressMs);
+            state = admission.nextState;
+            return admission;
+        }
+
+        function reset() {
+            state = Object.freeze({ key: '', time: 0 });
+            return state;
+        }
+
+        function snapshot() {
+            return state;
+        }
+
+        return Object.freeze({ admit, reset, snapshot });
+    },
 });
 
 if (typeof module !== 'undefined' && module.exports) {
