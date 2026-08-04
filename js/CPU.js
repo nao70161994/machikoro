@@ -364,31 +364,23 @@ class CPU {
 
     _lookaheadTerminalHeuristic(game, focusIndex) {
         if (!game || focusIndex < 0) return 0;
-        let score = 0;
         const focus = game.players[focusIndex];
-        const focusDistance = this._estimateWinDistance(focus, game);
-        const bestOpponentDistance = this._bestOpponentWinDistance(game, focusIndex);
-        score += (bestOpponentDistance - focusDistance) * 4.5;
-
-        if (this._expertFlagEnabled("lookaheadRaceFocus")) {
-            const remaining = [...game.enabledLandmarks].filter(name => !focus.landmarks[name]).length;
-            const reachable = this._countReachableLandmarks(focus, [...game.enabledLandmarks]);
-            score += Math.max(0, 16 - focusDistance) * 1.6;
-            score += reachable * (remaining <= 2 ? 6 : 2.5);
-        }
-
-        if (this._expertFlagEnabled("lookaheadThreatBalance")) {
-            for (let i = 0; i < game.players.length; i++) {
-                if (i === focusIndex) continue;
-                const opponent = game.players[i];
-                const threat = this._estimateOpponentThreat(opponent, game);
-                const distance = this._estimateWinDistance(opponent, game);
-                score -= Math.max(0, 14 - distance) * 1.2;
-                score -= threat * 0.06;
-            }
-        }
-
-        return score;
+        return CPUEvaluation.lookaheadTerminalHeuristic({
+            focusIndex,
+            playerCount: game.players.length,
+            focusDistance: () => this._estimateWinDistance(focus, game),
+            bestOpponentDistance: () => this._bestOpponentWinDistance(game, focusIndex),
+            raceFocus: () => this._expertFlagEnabled("lookaheadRaceFocus"),
+            remainingLandmarkCount: () => [...game.enabledLandmarks]
+                .filter(name => !focus.landmarks[name]).length,
+            reachableLandmarkCount: () => this._countReachableLandmarks(
+                focus,
+                [...game.enabledLandmarks]
+            ),
+            threatBalance: () => this._expertFlagEnabled("lookaheadThreatBalance"),
+            threatForPlayer: index => this._estimateOpponentThreat(game.players[index], game),
+            distanceForPlayer: index => this._estimateWinDistance(game.players[index], game),
+        });
     }
 
     _tvLandmarkDenialValue(target, amount, game) {

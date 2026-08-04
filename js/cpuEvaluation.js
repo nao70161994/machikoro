@@ -46,6 +46,32 @@ const CPUEvaluation = Object.freeze({
         return score;
     },
 
+    lookaheadTerminalHeuristic(facts = {}) {
+        const read = value => typeof value === 'function' ? value() : value;
+        const focusDistance = read(facts.focusDistance);
+        const bestOpponentDistance = read(facts.bestOpponentDistance);
+        let score = (bestOpponentDistance - focusDistance) * 4.5;
+
+        if (read(facts.raceFocus)) {
+            const remainingLandmarkCount = read(facts.remainingLandmarkCount);
+            const reachableLandmarkCount = read(facts.reachableLandmarkCount);
+            score += Math.max(0, 16 - focusDistance) * 1.6;
+            score += reachableLandmarkCount * (remainingLandmarkCount <= 2 ? 6 : 2.5);
+        }
+
+        if (read(facts.threatBalance)) {
+            for (let index = 0; index < facts.playerCount; index++) {
+                if (index === facts.focusIndex) continue;
+                const threat = facts.threatForPlayer(index);
+                const distance = facts.distanceForPlayer(index);
+                score -= Math.max(0, 14 - distance) * 1.2;
+                score -= threat * 0.06;
+            }
+        }
+
+        return score;
+    },
+
     expertDisruptionScale(facts = {}) {
         if (!facts.gameAvailable || facts.difficulty !== 'expert') return 1;
         const selfRacePriority = typeof facts.selfRacePriority === 'function'

@@ -2026,3 +2026,48 @@ runTest('CPU evaluation の妨害倍率はplayer選択と既存fact短絡順を�
         selfRacePriority() { throw new Error('flag must stay lazy'); },
     }), 1);
 });
+
+runTest('CPU evaluation はlookahead終端scoreをpureに既存順で合成する', () => {
+    const score = CPUEvaluation.lookaheadTerminalHeuristic({
+        focusIndex: 1,
+        playerCount: 3,
+        focusDistance: 5,
+        bestOpponentDistance: 7,
+        raceFocus: true,
+        remainingLandmarkCount: 2,
+        reachableLandmarkCount: 1,
+        threatBalance: true,
+        threatForPlayer: index => index === 0 ? 10 : 20,
+        distanceForPlayer: index => index === 0 ? 8 : 12,
+    });
+    assert.strictEqual(score, 9 + 17.6 + 6 - 7.2 - 0.6 - 2.4 - 1.2);
+    assert.strictEqual(CPUEvaluation.lookaheadTerminalHeuristic({
+        focusIndex: 0,
+        playerCount: 1,
+        focusDistance: 8,
+        bestOpponentDistance: 6,
+        raceFocus: false,
+        threatBalance: false,
+    }), -9);
+});
+
+runTest('CPU evaluation のlookahead終端scoreはflag別factと相手順をlazyに保つ', () => {
+    const trace = [];
+    const result = CPUEvaluation.lookaheadTerminalHeuristic({
+        focusIndex: 1,
+        playerCount: 3,
+        focusDistance() { trace.push('focus-distance'); return 6; },
+        bestOpponentDistance() { trace.push('best-distance'); return 6; },
+        raceFocus() { trace.push('race-flag'); return false; },
+        remainingLandmarkCount() { throw new Error('remaining must stay lazy'); },
+        reachableLandmarkCount() { throw new Error('reachable must stay lazy'); },
+        threatBalance() { trace.push('threat-flag'); return true; },
+        threatForPlayer(index) { trace.push(['threat', index]); return 0; },
+        distanceForPlayer(index) { trace.push(['distance', index]); return 14; },
+    });
+    assert.strictEqual(result, 0);
+    assert.deepStrictEqual(trace, [
+        'focus-distance', 'best-distance', 'race-flag', 'threat-flag',
+        ['threat', 0], ['distance', 0], ['threat', 2], ['distance', 2],
+    ]);
+});
