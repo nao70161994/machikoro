@@ -68,6 +68,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/pageActivationPolicy.js',
     'js/onlinePayload.js',
     'js/onlineRestoreQueueState.js',
+    'js/onlineRestoreLifecycleState.js',
     'js/onlineRestoreQueue.js',
     'js/onlineReconnectCleanup.js',
     'js/onlineReconnectRequest.js',

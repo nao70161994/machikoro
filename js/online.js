@@ -351,6 +351,41 @@ let _lastOnlineRestoreActivationEffectSelection = Object.freeze({
 let _lastAppliedOnlineActionSeqMemory = 0;
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
+const _onlineRestoreLifecycleController = OnlineRestoreLifecycleState.createController({
+    generation: _onlineRestoreGeneration,
+    inProgress: _onlineRestoreInProgress,
+    quarantined: _onlineRestoreQuarantined,
+});
+
+function _applyOnlineRestoreLifecycleState(state) {
+    _onlineRestoreGeneration = state.generation;
+    _onlineRestoreInProgress = state.inProgress;
+    _onlineRestoreQuarantined = state.quarantined;
+    return state;
+}
+
+function _incrementOnlineRestoreGeneration() {
+    return _applyOnlineRestoreLifecycleState(
+        _onlineRestoreLifecycleController.incrementGeneration()
+    ).generation;
+}
+
+function _startOnlineRestore() {
+    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.startRestore());
+}
+
+function _finishOnlineRestore() {
+    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.finishRestore());
+}
+
+function _quarantineOnlineRestore() {
+    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.quarantine());
+}
+
+function _clearOnlineRestoreQuarantine() {
+    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.clearQuarantine());
+}
+
 const _pendingOutboundActionsMemory = new Map();
 const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
@@ -1632,9 +1667,9 @@ function _runOnlineSocketDisconnectEffectsLegacy(plan) {
     finishOnlineLobbyRequest();
     if (!plan.active) return false;
     if (plan.abortRestore) {
-        _onlineRestoreGeneration++;
-        _onlineRestoreInProgress = false;
-        _onlineRestoreQuarantined = true;
+        _incrementOnlineRestoreGeneration();
+        _finishOnlineRestore();
+        _quarantineOnlineRestore();
         _clearOnlineRestoreEventQueue();
     }
     setOnlineReconnectLegacyFlag(true);
@@ -1658,9 +1693,9 @@ function _runOnlineSocketDisconnectEffects() {
     }
     return OnlineSocketDisconnect.execute(planSelection.plan, {
         finishLobby: () => finishOnlineLobbyRequest(),
-        invalidateRestoreGeneration: () => { _onlineRestoreGeneration++; },
-        finishRestore: () => { _onlineRestoreInProgress = false; },
-        quarantineRestore: () => { _onlineRestoreQuarantined = true; },
+        invalidateRestoreGeneration: () => { _incrementOnlineRestoreGeneration(); },
+        finishRestore: () => { _finishOnlineRestore(); },
+        quarantineRestore: () => { _quarantineOnlineRestore(); },
         clearRestoreQueue: () => { _clearOnlineRestoreEventQueue(); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         clearActionFlight: () => _setOnlineActionInFlight(false),
@@ -1848,12 +1883,12 @@ function resetOnlineState() {
         },
         clearRejoinRetry() { _clearRejoinRetry(); },
         clearHostlessPending() { _hostlessRestorePending = false; },
-        incrementRestoreGeneration() { _onlineRestoreGeneration++; },
-        clearRestoreInProgress() { _onlineRestoreInProgress = false; },
+        incrementRestoreGeneration() { _incrementOnlineRestoreGeneration(); },
+        clearRestoreInProgress() { _finishOnlineRestore(); },
         clearRestoreQueue() { _clearOnlineRestoreEventQueue(); },
         resetLastAppliedSequence() { _lastAppliedOnlineActionSeqMemory = 0; },
         clearRestoreFlushFlag() { _flushingOnlineRestoreEvents = false; },
-        clearRestoreQuarantine() { _onlineRestoreQuarantined = false; },
+        clearRestoreQuarantine() { _clearOnlineRestoreQuarantine(); },
         clearPendingMemory() { _pendingOutboundActionsMemory.clear(); },
         observeReset() {
             _observeOnlineReconnectEvent(OnlineReconnectState.events.RESET);
@@ -2293,8 +2328,8 @@ function _onlineRestoreAbortEffectAuthoritySelection(planSelection) {
 }
 
 function _runOnlineRestoreAbortEffectsLegacy(plan) {
-    _onlineRestoreInProgress = false;
-    _onlineRestoreQuarantined = true;
+    _finishOnlineRestore();
+    _quarantineOnlineRestore();
     _replaceOnlineRestoreEventQueue(plan.queuedEvents);
     setOnlineReconnectLegacyFlag(true);
     const el = document.getElementById("onlineStatus");
@@ -2310,8 +2345,8 @@ function _runOnlineRestoreAbortEffects(planSelection) {
         return effectSelection;
     }
     OnlineRestoreAbort.execute(planSelection.plan, {
-        finishRestore: () => { _onlineRestoreInProgress = false; },
-        quarantineRestore: () => { _onlineRestoreQuarantined = true; },
+        finishRestore: () => { _finishOnlineRestore(); },
+        quarantineRestore: () => { _quarantineOnlineRestore(); },
         replaceQueue: queue => { _replaceOnlineRestoreEventQueue(queue); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         updateStatus: message => {
@@ -2406,7 +2441,7 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     _replaceOnlineRestoreEventQueue(
         drainSelection.source === 'pure-transition' ? drainSelection.transition.queue : []
     );
-    _onlineRestoreInProgress = false;
+    _finishOnlineRestore();
     _flushingOnlineRestoreEvents = true;
     try {
         const flushSelection = _onlineRestoreEventFlushPlanSelection(
@@ -2450,7 +2485,7 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     }
     render();
     scheduleCPU();
-    _onlineRestoreQuarantined = false;
+    _clearOnlineRestoreQuarantine();
     return true;
 }
 
@@ -2618,9 +2653,9 @@ function initSocket() {
         onlineGameSchemaSelection = gameSchema || null;
         _clearRejoinRetry();
         _hostlessRestorePending = false;
-        _onlineRestoreQuarantined = false;
-        const startGeneration = ++_onlineRestoreGeneration;
-        _onlineRestoreInProgress = true;
+        _clearOnlineRestoreQuarantine();
+        const startGeneration = _incrementOnlineRestoreGeneration();
+        _startOnlineRestore();
         _clearOnlineRestoreEventQueue();
         const gameStartPayload = _applyOnlineHostPayload({
             schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps,
@@ -2865,13 +2900,13 @@ function initSocket() {
         onlineGameSchemaSelection = gameStartPayload.gameSchema || null;
         const shouldCarryRestoreEvents = _onlineRestoreInProgress || _onlineRestoreQuarantined;
         const carriedEvents = shouldCarryRestoreEvents ? _readOnlineRestoreEventQueue().slice() : [];
-        const restoreGeneration = ++_onlineRestoreGeneration;
-        _onlineRestoreInProgress = true;
+        const restoreGeneration = _incrementOnlineRestoreGeneration();
+        _startOnlineRestore();
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_STARTED);
         _applyOnlineReconnectLifecycleStatusEffectAuthority(
             OnlineReconnectState.events.RESTORE_STARTED
         );
-        _onlineRestoreQuarantined = false;
+        _clearOnlineRestoreQuarantine();
         const legacyCarryTransition = Object.freeze({
             overflow: false,
             queue: carriedEvents.map(event => ({

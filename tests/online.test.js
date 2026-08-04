@@ -127,6 +127,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineStorage.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreQueueState.js');
+    loadScript(context, 'js/onlineRestoreLifecycleState.js');
     loadScript(context, 'js/onlineRestoreQueue.js');
     loadScript(context, 'js/onlineReconnectCleanup.js');
     loadScript(context, 'js/onlineReconnectRequest.js');
@@ -509,6 +510,19 @@ runTest('online restore queueは生の状態accessをowner関数へ集約する'
     assert.ok(source.includes('function _readOnlineRestoreEventQueue()'));
     assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
     assert.ok(source.includes('function _appendOnlineRestoreEventQueueLegacy(event)'));
+});
+
+runTest('online restore lifecycleはgeneration・進行・隔離の書き込みをcontroller境界へ集約する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.strictEqual((source.match(/_onlineRestoreGeneration\s*=(?!=)/g) || []).length, 2);
+    assert.strictEqual((source.match(/_onlineRestoreInProgress\s*=(?!=)/g) || []).length, 2);
+    assert.strictEqual((source.match(/_onlineRestoreQuarantined\s*=(?!=)/g) || []).length, 2);
+    assert.strictEqual((source.match(/(?:\+\+_onlineRestoreGeneration|_onlineRestoreGeneration\+\+)/g) || []).length, 0);
+    assert.ok(source.includes('function _incrementOnlineRestoreGeneration()'));
+    assert.ok(source.includes('function _startOnlineRestore()'));
+    assert.ok(source.includes('function _finishOnlineRestore()'));
+    assert.ok(source.includes('function _quarantineOnlineRestore()'));
+    assert.ok(source.includes('function _clearOnlineRestoreQuarantine()'));
 });
 
 runTest('online restore queue store authorityは既定legacyで明示時だけshadowを読む', () => {

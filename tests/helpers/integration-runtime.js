@@ -268,6 +268,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineStorage.js');
         files.push('js/onlinePayload.js');
         files.push('js/onlineRestoreQueueState.js');
+        files.push('js/onlineRestoreLifecycleState.js');
         files.push('js/onlineRestoreQueue.js');
         files.push('js/onlineReconnectCleanup.js');
         files.push('js/onlineReconnectRequest.js');

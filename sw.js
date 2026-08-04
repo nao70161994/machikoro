@@ -60,6 +60,7 @@ const STATIC_ASSETS = [
   '/js/onlineStorage.js',
   '/js/onlinePayload.js',
   '/js/onlineRestoreQueueState.js',
+  '/js/onlineRestoreLifecycleState.js',
   '/js/onlineRestoreQueue.js',
   '/js/onlineReconnectCleanup.js',
   '/js/onlineReconnectRequest.js',
