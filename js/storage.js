@@ -139,6 +139,7 @@ function clearOnlineSessionStorage() {
 }
 
 function saveGameState() {
+    const selection = GameSelectionState.runtime.snapshot();
     const decision = LocalSaveRuntime.admission({
         hasGame: !!game,
         isOnline: isOnlineGame,
@@ -157,8 +158,8 @@ function saveGameState() {
                 ? { difficulty: cpu.difficulty, rlModelId: cpu.modelId || null }
                 : null),
             cpuSpeed,
-            enabledCardsList: [...enabledCards],
-            enabledLandmarksList: [...enabledLandmarks],
+            enabledCardsList: [...selection.enabledCards],
+            enabledLandmarksList: [...selection.enabledLandmarks],
         }),
         save: state => getLocalSaveRepository().save(state),
     });
@@ -335,7 +336,7 @@ function resumeGame(options = {}) {
             },
             createAndHydrateGame(plan) {
                 game = new GameManager(plan.playerCount);
-                game.enabledLandmarks = new Set(enabledLandmarks);
+                game.enabledLandmarks = getEnabledLandmarkSelection();
                 return GameSnapshot.hydrateMutableGameState({
                     game,
                     shopStock: SHOP_STOCK,

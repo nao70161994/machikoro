@@ -26,6 +26,10 @@ function assertDependencyOrder(file, dependencies) {
 runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み込む', () => {
     const cases = [
         ['index.html', [
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/online.js'],
+            ['js/gameSelectionState.js', 'js/ui.js'],
+            ['js/gameSelectionState.js', 'js/storage.js'],
+            ['js/gameSelectionState.js', 'js/main.js'],
             ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
@@ -179,6 +183,10 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/online.js'],
+            ['js/gameSelectionState.js', 'js/ui.js'],
+            ['js/gameSelectionState.js', 'js/storage.js'],
+            ['js/gameSelectionState.js', 'js/main.js'],
             ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
@@ -308,6 +316,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiStatsView.js', 'js/stats.js'],
         ]],
         ['tests/ui.test.js', [
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/ui.js'],
             ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
             ['js/uiCardOrder.js', 'js/ui.js'],
@@ -385,6 +394,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineRetryPolicy.js', 'js/online.js'],
         ]],
         ['tests/release-e2e.test.js', [
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/ui.js'],
             ['js/actionContract.js', 'js/actionUiRegistry.js'],
             ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],

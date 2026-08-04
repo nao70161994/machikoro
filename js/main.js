@@ -321,10 +321,14 @@ function init(playerCount) {
     undoState = null;
     resetFullLog();
     game = new GameManager(playerCount);
-    if (enabledLandmarks.size === 0) replaceEnabledLandmarkSelection(Player.landmarkNames());
-    game.enabledLandmarks = new Set(enabledLandmarks);
+    let selectedLandmarks = getEnabledLandmarkSelection();
+    if (selectedLandmarks.size === 0) {
+        selectedLandmarks = replaceEnabledLandmarkSelection(Player.landmarkNames());
+    }
+    const selectedCards = getEnabledCardSelection();
+    game.enabledLandmarks = new Set(selectedLandmarks);
     for (const card of CARDS) {
-        setShopStockCount(SHOP_STOCK, card, enabledCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
+        setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
     }
     playerSettings = Array.from({ length: playerCount }, (_, index) =>
         normalizeLocalPlayerSetting(playerSettings[index], index, playerCount)
@@ -1378,7 +1382,7 @@ function checkAutoSkip() {
         current: game.currentPlayer(),
         shopStock: SHOP_STOCK,
         getStockCount: getShopStockCount,
-        enabledLandmarks,
+        enabledLandmarks: getEnabledLandmarkSelection(),
         yakushoName: LANDMARK_NAMES.YAKUSHO,
         landmarkCost: name => Player.landmarkCost(name),
     });

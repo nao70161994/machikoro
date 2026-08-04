@@ -3615,13 +3615,14 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
     if (!initSocket()) return;
     beginOnlineLobbyRequest('create');
     isRoomHost = true;
+    const selection = GameSelectionState.runtime.snapshot();
     const createPayload = {
         playerName: name,
         playerCount,
         playerSettings: freezeOnlinePlayerSettings(settings, playerCount),
         cpuSpeed: onlineCpuSpeed,
-        enabledCards: [...enabledCards],
-        enabledLandmarks: [...enabledLandmarks],
+        enabledCards: [...selection.enabledCards],
+        enabledLandmarks: [...selection.enabledLandmarks],
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
     };
@@ -3700,9 +3701,14 @@ function initOnlineGame(playerNames, ps, playerOrder) {
         resetStatsRecorded();
     }
     game = new GameManager(count);
-    game.enabledLandmarks = new Set(enabledLandmarks.size > 0 ? enabledLandmarks : Player.landmarkNames());
+    const selection = GameSelectionState.runtime.snapshot();
+    const selectedLandmarks = selection.enabledLandmarks.length > 0
+        ? selection.enabledLandmarks
+        : Player.landmarkNames();
+    const selectedCards = new Set(selection.enabledCards);
+    game.enabledLandmarks = new Set(selectedLandmarks);
     for (const card of CARDS) {
-        setShopStockCount(SHOP_STOCK, card, enabledCards.has(card.name) ? getInitialCardStock(card, count) : 0);
+        setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, count) : 0);
     }
 
     // playerOrderに従ってプレイヤー名とCPU設定を設定

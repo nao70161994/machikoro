@@ -52,6 +52,18 @@ function loadOnlineRuntime(options = {}) {
             enabledLandmarks = new Set(values);
             return enabledLandmarks;
         }
+        function getEnabledCardSelection() { return new Set(enabledCards); }
+        function getEnabledLandmarkSelection() { return new Set(enabledLandmarks); }
+        const GameSelectionState = {
+            runtime: {
+                snapshot() {
+                    return {
+                        enabledCards: [...enabledCards],
+                        enabledLandmarks: [...enabledLandmarks],
+                    };
+                },
+            },
+        };
         let prevCoins = null;
         let undoState = null;
         let cpuScheduleInvalidationCount = 0;

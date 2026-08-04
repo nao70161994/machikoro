@@ -135,7 +135,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/ui.js']);
     return { context, elements };
 }
 
@@ -182,19 +182,22 @@ runTest('ui transient stateはeager controllerだけが所有する', () => {
     assert.ok(source.includes('UiBuildMenu.createFilterController()'));
 });
 
-runTest('card selection replacementはuiの共通境界だけが所有する', () => {
+runTest('card selection replacementは中立runtimeだけが所有する', () => {
     const fs = require('fs');
     const path = require('path');
     const readSource = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     const uiSource = readSource('js/ui.js');
+    const stateSource = readSource('js/gameSelectionState.js');
 
-    assert.ok(uiSource.includes('function replaceEnabledCardSelection(values)'));
-    assert.ok(uiSource.includes('function replaceEnabledLandmarkSelection(values)'));
-    for (const file of ['js/main.js', 'js/online.js', 'js/storage.js']) {
+    assert.ok(stateSource.includes('const runtime = createController({'));
+    assert.ok(stateSource.includes('function replaceEnabledCardSelection(values)'));
+    assert.ok(stateSource.includes('function replaceEnabledLandmarkSelection(values)'));
+    for (const file of ['js/ui.js', 'js/main.js', 'js/online.js', 'js/storage.js']) {
         const source = readSource(file);
-        assert.strictEqual(/^\s*enabledCards\s*=\s*new Set\b/m.test(source), false, file);
-        assert.strictEqual(/^\s*enabledLandmarks\s*=\s*new Set\b/m.test(source), false, file);
+        assert.strictEqual(/^let enabledCards\b/m.test(source), false, file);
+        assert.strictEqual(/^let enabledLandmarks\b/m.test(source), false, file);
     }
+    assert.ok(uiSource.includes('syncCardSelectStateFromRuntime'));
 });
 
 runTest('ui modal runtime stateはpolicy controllerだけが所有する', () => {

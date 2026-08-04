@@ -18,6 +18,7 @@
     "scripts/check-static-files.js",
     "js/Card.js",
     "js/Player.js",
+    "js/gameSelectionState.js",
     "js/CPU.js",
     "js/GameManager.js",
     "js/pendingActionQueue.js",

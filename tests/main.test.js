@@ -169,6 +169,18 @@ function loadMainRuntime(options = {}) {
             context.enabledLandmarks = new Set(values);
             return context.enabledLandmarks;
         },
+        getEnabledCardSelection() { return new Set(context.enabledCards); },
+        getEnabledLandmarkSelection() { return new Set(context.enabledLandmarks); },
+        GameSelectionState: {
+            runtime: {
+                snapshot() {
+                    return {
+                        enabledCards: [...context.enabledCards],
+                        enabledLandmarks: [...context.enabledLandmarks],
+                    };
+                },
+            },
+        },
         isOnlineGame: false,
         isReplaying: false,
         ...(typeof options.onlineReconnectInputBlocked === 'boolean' ? {
@@ -2236,6 +2248,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
 
     assertBefore('js/Card.js', 'js/GameManager.js');
     assertBefore('js/Player.js', 'js/GameManager.js');
+    assertBefore('js/Player.js', 'js/gameSelectionState.js');
+    assertBefore('js/gameSelectionState.js', 'js/online.js');
     assertBefore('js/actionContract.js', 'js/pendingActionQueue.js');
     assertBefore('js/pendingActionQueue.js', 'js/gameTurnPolicy.js');
     assertBefore('js/gameTurnPolicy.js', 'js/gameDicePolicy.js');

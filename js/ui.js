@@ -53,10 +53,10 @@ function renderLog() {
 function tutorialOptions() {
     return {
         cards: CARDS,
-        enabledCards,
+        enabledCards: getEnabledCardSelection(),
         getShopStockCount,
         shopStock: SHOP_STOCK,
-        enabledLandmarks,
+        enabledLandmarks: getEnabledLandmarkSelection(),
         landmarkNames: LANDMARK_NAMES,
         landmarkCost: Player.landmarkCost,
         game,
@@ -565,7 +565,7 @@ function renderPlayers() {
     const html = UiPlayerDisplay.buildPlayersHtml(game.players, {
         settings,
         currentPlayerIndex: game.currentPlayerIndex,
-        enabledLandmarks,
+        enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,
         compareCardNames: compareCardNamesForDisplay,
         escapeHtml,
@@ -610,7 +610,7 @@ function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
     return UiBuildMenu.buildVisibleCardButtonsHtml({
         cards: CARDS,
         cardFilter: buildMenuFilterController.get(),
-        enabledCards,
+        enabledCards: getEnabledCardSelection(),
         shopStock: SHOP_STOCK,
         current,
         canBuildCardAction,
@@ -623,7 +623,7 @@ function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
 function buildLandmarkButtonsHtml(current, canBuildLandmarkAction) {
     return UiBuildMenu.buildLandmarkButtonsHtml({
         landmarks: current.landmarks,
-        enabledLandmarks,
+        enabledLandmarks: getEnabledLandmarkSelection(),
         currentCoins: current.coins,
         canBuildLandmarkAction,
         landmarkCost: Player.landmarkCost,
@@ -774,28 +774,12 @@ const CARD_SETS = {
     sharp: ["コーン畑","ブドウ園","雑貨屋","改装屋","貸金業","ワイナリー","引越し屋","ドリンク工場","高級フレンチ","会員制BAR","清掃業","ITベンチャー","公園"],
 };
 
-let enabledCards = new Set(CARDS.map(c => c.name));
-let enabledLandmarks = new Set(Player.landmarkNames());
-const cardSelectState = UiCardSelect.createSelectionController({
-    enabledCards,
-    enabledLandmarks,
-});
+const cardSelectState = UiCardSelect.createSelectionController(GameSelectionState.runtime.snapshot());
 
-function replaceEnabledCardSelection(values) {
-    enabledCards = new Set(values);
-    cardSelectState.replaceCards(enabledCards);
-    return enabledCards;
-}
-
-function replaceEnabledLandmarkSelection(values) {
-    enabledLandmarks = new Set(values);
-    cardSelectState.replaceLandmarks(enabledLandmarks);
-    return enabledLandmarks;
-}
-
-function syncCardSelectStateFromGlobals() {
-    cardSelectState.replaceCards(enabledCards);
-    return cardSelectState.replaceLandmarks(enabledLandmarks);
+function syncCardSelectStateFromRuntime() {
+    const snapshot = GameSelectionState.runtime.snapshot();
+    cardSelectState.replaceCards(snapshot.enabledCards);
+    return cardSelectState.replaceLandmarks(snapshot.enabledLandmarks);
 }
 
 function applyCardSelectStateSnapshot() {
@@ -1404,7 +1388,7 @@ function buildLandmarkSelectToggleButtonHtml(name, enabled) {
 }
 
 function renderCardSelectModal() {
-    const selection = syncCardSelectStateFromGlobals();
+    const selection = syncCardSelectStateFromRuntime();
     const view = UiCardSelect.buildCardSelectViewModel({
         cardSets: CARD_SETS,
         enabledCards: selection.enabledCards,
@@ -1429,7 +1413,7 @@ function renderCardSelectModal() {
 }
 
 function toggleCard(name) {
-    syncCardSelectStateFromGlobals();
+    syncCardSelectStateFromRuntime();
     const result = cardSelectState.toggleCard(name);
     if (!result.changed) return;
     applyCardSelectStateSnapshot();
@@ -1439,14 +1423,14 @@ function toggleCard(name) {
 function toggleSet(set) {
     const cards = CARD_SETS[set];
     if (!cards) return;
-    syncCardSelectStateFromGlobals();
+    syncCardSelectStateFromRuntime();
     cardSelectState.toggleSet(cards);
     applyCardSelectStateSnapshot();
     renderCardSelectModal();
 }
 
 function toggleLandmark(name) {
-    syncCardSelectStateFromGlobals();
+    syncCardSelectStateFromRuntime();
     const result = cardSelectState.toggleLandmark(name);
     if (!result.changed) return;
     applyCardSelectStateSnapshot();

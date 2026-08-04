@@ -83,6 +83,18 @@ function loadStorageRuntime(options = {}) {
             context.enabledLandmarks = new Set(values);
             return context.enabledLandmarks;
         },
+        getEnabledCardSelection() { return new Set(context.enabledCards); },
+        getEnabledLandmarkSelection() { return new Set(context.enabledLandmarks); },
+        GameSelectionState: {
+            runtime: {
+                snapshot() {
+                    return {
+                        enabledCards: [...context.enabledCards],
+                        enabledLandmarks: [...context.enabledLandmarks],
+                    };
+                },
+            },
+        },
         cpuPlayers: [],
         cpuSpeed: 1500,
         selectedCount: 2,
