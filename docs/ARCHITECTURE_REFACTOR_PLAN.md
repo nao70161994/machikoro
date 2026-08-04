@@ -567,3 +567,12 @@ These are rule-policy, online-state, UI-effect, and contract boundaries selected
 3. CPU progress-income eligibility and summation are pure evaluation primitives. Live cache lookup/write and injected card valuation remain in `CPU.js`, so strategy, tuning, RNG, and action traces are outside this migration.
 
 These changes deepen rule-policy, online-state, and CPU-evaluation ownership without activating a new authority path. Scoped gates remain 203 ESLint maintenance files and 202 checkJs runtime files; compatibility defaults are unchanged.
+
+## 2026-08-04 Batch 34 boundary update
+
+1. Purple-card activation now has a detached domain dispatch plan. Target-sensitive Business Center and Cleaning reads are lazy; transactions, mutation, pending counters, and logs remain in the mutable rule engine.
+2. CPU received/owned card value calculation now separates pure effect dispatch and arithmetic from live rule adapters. Copy ordinal, income, dice frequency, dependency, and cache reads remain explicit callbacks owned by `CPU.js`.
+3. Local RL resume preload now has one generation-aware state owner. Stale Promise completion is rejected before UI or resume effects, while existing repository, hydration, and notification behavior remains in `storage.js`.
+4. A direct whole-file `storage.js` checkJs trial produced more than 100 ambient-global errors. The migration therefore continues by extracting typed runtime boundaries instead of declaring globals merely to silence the checker.
+
+Scoped gates now cover 204 ESLint maintenance files and 203 checkJs runtime files. Production authority and compatibility defaults are unchanged.

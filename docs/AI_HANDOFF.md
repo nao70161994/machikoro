@@ -605,3 +605,11 @@ Test index:
 - Progress-income eligibility and ordered aggregation belong to `CPUEvaluation`. `CPU.js` owns cache lifecycle and valuation callbacks. Preserve excluded effects, callback order, heuristic values, and fixed decision/action traces.
 - Scoped gates remain 203 ESLint maintenance files and 202 checkJs runtime files. Remaining checkJs exclusions stay `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Efficiency policy: keep batches at no more than three independently rollbackable themes, use focused checks per theme, then run one `npm run test:batch`, one push, and one exact-HEAD CI check at batch end.
+
+## 2026-08-04 Batch 34 handoff
+
+- Purple-card effect/pending dispatch belongs to `GameCardActivationPolicy.purpleActivationPlan()`. Keep Business Center and Cleaning target facts lazy; all transactions, mutation, logs, revival, and color order remain in `GameManager`.
+- Received-card effect dispatch and ownership arithmetic belong to `CPUEvaluation.receivedCardValue()` / `ownedCardValue()`. Keep copy ordinals, income, soft-cap callback, dice frequency, dependency evaluation, cache, and candidate order in `CPU.js`; require fixed-decision and self-play parity for extensions.
+- Local resume RL preload generation/pending state belongs to `LocalResumePreloadState`. `storage.js` may project pending state to the button, but stale Promise completion must pass `finish(generation)` before resume or error effects.
+- Do not add broad ambient declarations to place `storage.js` in checkJs. Its direct trial exposed more than 100 global-coupling errors; extract typed adapters/controllers first. Scoped gates are 204 ESLint maintenance files and 203 checkJs runtime files, with the same five side-effect runtimes excluded as whole files.
+- Continue with at most three rollbackable themes, focused checks per theme, and one batch-end `test:batch`, push, and exact-HEAD CI check.

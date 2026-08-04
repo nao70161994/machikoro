@@ -358,3 +358,11 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 - `OnlineRestoreLifecycleState` now owns restore queue-flush activity together with generation, in-progress, and quarantine state. `online.js` keeps the existing compatibility projection and exact flush/reset effect order; reconnect authority, queue contents, retry timing, storage, and Socket.IO payloads are unchanged.
 - `CPUEvaluation` now owns progress-income card eligibility and ordered aggregation. `CPU.js` retains state-cache ownership, card value/frequency callbacks, every heuristic and tuning value, and action selection. Focused CPU contracts, type checks, lint, and the fixed decision baseline preserve current behavior.
 - Scoped gates remain 203 ESLint maintenance files and 202 checkJs runtime files. No game result, CPU strength, save/localStorage format, Socket.IO protocol, reconnect authority/default, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 34 architecture boundaries
+
+- `GameCardActivationPolicy.purpleActivationPlan()` now owns frozen purple-card effect dispatch, pending-field selection, and Business Center/Cleaning target availability. Lazy target facts preserve legacy read order. `GameManager` retains all coin transactions, pending mutation, logs, revival, and activation order.
+- `CPUEvaluation.receivedCardValue()` and `ownedCardValue()` now own special-effect dispatch and transfer/ownership arithmetic. `CPU.js` retains card-income adapters, dice frequency, dependency evaluation, copy ordinals, all heuristic values, caches, candidate generation, and action selection.
+- `js/localResumePreloadState.js` now owns RL preload pending state, generation, and stale-completion rejection. `storage.js` projects pending state to the existing resume button and retains repository reads, RL model calls, hydration, notices, and resume effects. Script/PWA cache order is contract-checked.
+- Scoped gates now cover 204 ESLint maintenance files and 203 checkJs runtime files. Whole-file `storage.js` checkJs remains deferred: direct admission exposes more than 100 ambient browser-global errors, so future progress must move typed boundaries out rather than add suppressing ambient declarations.
+- No game result, CPU strength, save/localStorage format, Socket.IO protocol, reconnect authority/default, or PWA/SW cache policy changed.
