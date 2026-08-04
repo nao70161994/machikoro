@@ -914,3 +914,10 @@ Test index:
 - Use one envelope for a synchronous admission/serialization/decision. Refresh inside delayed callbacks and Socket-driven effects where the installed game, turn, CPU ownership, or Undo state may have changed.
 - The envelope intentionally retains live object identity. Canonical Engine snapshots and persisted snapshots remain the responsibility of `GameSnapshot` and schema adapters.
 - Continue with macro batches; the next high-impact client boundary is `online.js` internal session-state reads, followed by staged type-check expansion after ambient dependencies are removed.
+
+## Batch 72 handoff (2026-08-05)
+
+- `online.js` must read shared Socket/session/identity/reconnect state through `onlineSessionSnapshot()` and write through `OnlineRuntimeState.runtime` named transitions. Do not reintroduce bare compatibility-global reads.
+- Capture one session envelope for synchronous plans and payload construction. Refresh it inside timeout, Socket, confirmation, replay, and resend callbacks because connection, host, room, or identity may have changed.
+- Socket.IO names/payloads, ACK/retry timing, storage keys/shapes, restore order, feature flags, and legacy fallbacks were not changed.
+- ESLint/checkJs inclusion for `online.js` remains deferred until its remaining classic-script dependencies are injected or grouped; a direct ESLint audit currently reports 373 undefined dependency names, and these must not be silenced with a bulk globals list.

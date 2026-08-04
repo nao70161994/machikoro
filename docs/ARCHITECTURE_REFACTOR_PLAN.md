@@ -866,3 +866,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. All five side-effect client runtimes now consume the shared live game through the explicit `GameRuntimeState` read boundary rather than compatibility globals.
 2. Online Snapshot/replay/Engine adapters and main CPU/action orchestration take operation-scoped envelopes; delayed work deliberately refreshes them before applying effects.
 3. `GameRuntimeState` remains a live-reference runtime owner, not a canonical or persistence schema. No authority, wire, save, rule, CPU, UI, or PWA behavior changed.
+
+## 2026-08-05 Batch 72 boundary update
+
+1. The online orchestrator now consumes all shared session state through `OnlineRuntimeState` snapshots and mutates it only through named transitions. Compatibility globals are no longer its internal state boundary.
+2. Reconnect/storage planning and Socket/action/restore effects were migrated as separate rollback units with source contracts and online behavior coverage. Protocol, persistence, callback order, authority flags, and legacy fallbacks remain unchanged.
+3. Whole-file lint/type activation is intentionally sequenced after dependency injection; the current audit found 373 classic-script names in `online.js`, so bulk ambient declarations were rejected as a false boundary.
