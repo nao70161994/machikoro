@@ -168,6 +168,25 @@ const purpleActivationKinds = Object.freeze({
     UNKNOWN: 'unknown',
 });
 
+function fixedCollectionRequests(playerCount, currentPlayerIndex, amount) {
+    return Object.freeze(Array.from(
+        { length: playerCount },
+        (_, index) => index === currentPlayerIndex ? 0 : amount
+    ));
+}
+
+function publisherCollectionRequests(players, currentPlayerIndex, eligibleCardCount) {
+    return Object.freeze(players.map((player, index) =>
+        index === currentPlayerIndex ? 0 : eligibleCardCount(player)
+    ));
+}
+
+function taxOfficeCollectionRequests(coinsByPlayer, currentPlayerIndex) {
+    return Object.freeze(coinsByPlayer.map((coins, index) =>
+        index !== currentPlayerIndex && coins >= 10 ? Math.floor(coins / 2) : 0
+    ));
+}
+
 function purpleActivationPlan(facts = {}) {
     const plan = (kind, pendingField = '', hasTarget = false) => Object.freeze({
         kind,
@@ -212,6 +231,9 @@ const GameCardActivationPolicy = Object.freeze({
     greenActivationKinds,
     greenActivationPlan,
     loanRepaymentPlan,
+    fixedCollectionRequests,
+    publisherCollectionRequests,
+    taxOfficeCollectionRequests,
     purpleActivationKinds,
     purpleActivationPlan,
 });

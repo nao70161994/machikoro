@@ -627,7 +627,7 @@ class GameManager {
                 const plan = GameCoinTransaction.collectionPlan(
                     this.players.map(player => player.coins),
                     ci,
-                    this.players.map((_, index) => index === ci ? 0 : 2)
+                    GameCardActivationPolicy.fixedCollectionRequests(this.players.length, ci, 2)
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${plan.total}コイン`);
@@ -642,11 +642,14 @@ class GameManager {
                     this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター：交換できる施設がないため不発`);
                 }
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.PUBLISHER) {
-                const requestedAmounts = this.players.map((player, index) => index === ci ? 0 :
-                    player.cards.filter(c =>
+                const requestedAmounts = GameCardActivationPolicy.publisherCollectionRequests(
+                    this.players,
+                    ci,
+                    player => player.cards.filter(c =>
                         isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) &&
                         !player.isDormant(c)
-                    ).length);
+                    ).length
+                );
                 const plan = GameCoinTransaction.collectionPlan(
                     this.players.map(player => player.coins),
                     ci,
@@ -658,8 +661,10 @@ class GameManager {
                 });
                 this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${plan.total}コイン`);
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.TAXOFFICE) {
-                const requestedAmounts = this.players.map((player, index) =>
-                    index !== ci && player.coins >= 10 ? Math.floor(player.coins / 2) : 0);
+                const requestedAmounts = GameCardActivationPolicy.taxOfficeCollectionRequests(
+                    this.players.map(player => player.coins),
+                    ci
+                );
                 const plan = GameCoinTransaction.collectionPlan(
                     this.players.map(player => player.coins),
                     ci,
@@ -681,7 +686,11 @@ class GameManager {
                 const plan = GameCoinTransaction.collectionPlan(
                     this.players.map(player => player.coins),
                     ci,
-                    this.players.map((_, index) => index === ci ? 0 : current.itVentureCoins)
+                    GameCardActivationPolicy.fixedCollectionRequests(
+                        this.players.length,
+                        ci,
+                        current.itVentureCoins
+                    )
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`);

@@ -195,6 +195,31 @@ runTest('card activation policyは紫カードのeffect・pending・対象有無
     }), { kind: 'unknown', pendingField: '', hasTarget: false });
 });
 
+runTest('card activation policyは紫カードの徴収要求をplayer順のfrozen配列にする', () => {
+    assert.deepStrictEqual(
+        GameCardActivationPolicy.fixedCollectionRequests(4, 1, 2),
+        [2, 0, 2, 2]
+    );
+    const players = [
+        { id: 'a', count: 3 },
+        { id: 'b', count: 8 },
+        { id: 'c', count: 1 },
+    ];
+    const reads = [];
+    const publisher = GameCardActivationPolicy.publisherCollectionRequests(
+        players,
+        1,
+        player => { reads.push(player.id); return player.count; }
+    );
+    assert.deepStrictEqual(publisher, [3, 0, 1]);
+    assert.deepStrictEqual(reads, ['a', 'c']);
+    assert.deepStrictEqual(
+        GameCardActivationPolicy.taxOfficeCollectionRequests([9, 10, 21, 40], 2),
+        [0, 5, 0, 20]
+    );
+    assert.ok(Object.isFrozen(publisher));
+});
+
 runTest('card activation policyは紫カードkind確定後だけ対象factを読む', () => {
     const effects = {
         STADIUM: 'stadium', TV: 'tv', BUSINESS: 'business', PUBLISHER: 'publisher',
