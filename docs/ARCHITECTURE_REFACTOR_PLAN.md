@@ -610,3 +610,12 @@ These changes reduce three giant-runtime responsibilities without authority cuto
 4. The extracted server runtime entered ESLint and checkJs in the same batch. Scoped gates are 210 ESLint maintenance files and 209 checkJs runtime files.
 
 No authority flag was enabled and no rule, protocol, persistence, reconnect timing, UI presentation, or PWA behavior changed.
+
+
+## 2026-08-04 Batch 39 boundary update
+
+1. Turn and pending reset outcomes now have immutable domain plans. The mutable Engine adapter applies them and creates a writable queue, preserving runtime object behavior while moving reset semantics toward the shared Engine.
+2. Expert positive-income caps now live in `CPUEvaluation`. All 18 named/default modes are direct contracts and landmark/coin facts remain lazy, so non-landmark modes do not acquire new game-state reads.
+3. Lifecycle notification state now lives behind a controller. App-shell no longer writes session/start/finish flags directly; persistence markers, notification admission, payload construction, and transport remain separate boundaries.
+
+Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. No authority activation, rule, CPU tuning, schema/protocol, persistence, notification, or PWA behavior changed.

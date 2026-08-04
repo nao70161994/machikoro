@@ -644,3 +644,12 @@ Test index:
 - Card-select modal interaction state belongs to `UiCardSelect.createSelectionController()`. Because online/local restore still writes legacy Sets, synchronize the controller from globals before an interaction and project its immutable snapshot back afterward.
 - Scoped gates are 210 ESLint maintenance files and 209 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with small rollbackable themes, focused checks per theme, one batch-end `test:batch`, one push, and one exact-HEAD CI check.
+
+
+## Batch 39 handoff (2026-08-04)
+
+- Pending/turn reset outcome data belongs to `GameTurnPolicy`. Keep `GameManager` as the mutable adapter and clone `pendingActionQueue` before assigning it; conditional log/dice clearing must remain unchanged.
+- Expert positive-income cap arithmetic belongs to `CPUEvaluation.expertPositiveIncomeCap()`. Keep v2simple admission, tuning selection, landmark-name/cost adaptation, and profiling in `CPU.js`; preserve lazy facts and require decision/self-play parity for changes.
+- Lifecycle session/start/finish writes belong to `LifecycleNotify.createController()`. Keep storage keys/markers, 60-second reload suppression, metadata reads, transport, checkpoints, and browser-global APIs in app-shell adapters.
+- Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

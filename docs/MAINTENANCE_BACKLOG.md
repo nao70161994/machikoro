@@ -1,6 +1,6 @@
 # Maintenance Backlog
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
@@ -402,3 +402,13 @@ This batch advances reproducible CPU simulation, explicit online state ownership
 - The new server runtime is explicitly covered by both scoped gates. Current scope is 210 ESLint maintenance files and 209 checkJs runtime files; whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 This batch advances deterministic rule transitions, a thinner server composition root, and explicit UI state ownership without changing rules, CPU strength, save/localStorage formats, Socket.IO protocol, reconnect rollout defaults, or PWA/SW behavior.
+
+
+## 2026-08-04 Batch 39 architecture boundaries
+
+- `GameTurnPolicy.pendingResetState()` and `turnResetPlan()` now own detached pending/turn reset outcomes, including conditional log/dice clearing. `GameManager` remains the live mutation owner and clones the frozen pending queue before use; constructor, next-turn, schema parity, and local Engine shadow behavior are unchanged.
+- `CPUEvaluation.expertPositiveIncomeCap()` now owns all hard/soft/remaining-landmark cap modes with lazy cost/coin facts. `CPU.js` retains v2simple admission, active tuning mode, game/player adaptation, and every caller; fixed decisions and the complete 2–10 player self-play baseline remain identical.
+- `LifecycleNotify.createController()` is now the sole owner of app-shell lifecycle session/start/finish state. `appShell.js` retains runtime metadata, storage marker, transport, checkpoints, public APIs, and the exact duplicate/reload-suppression effect order.
+- Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+This batch advances deterministic shared-Engine state, action-only reproducible CPU evaluation, and a thinner app-shell without changing game rules, CPU choices/RNG, save/localStorage formats, Socket.IO protocol, notification payloads, PWA/SW behavior, or rollout defaults.
